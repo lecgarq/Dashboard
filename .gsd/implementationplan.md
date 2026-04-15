@@ -235,6 +235,176 @@ async function lodSearch(query: string, ctx: Context) {
 
 ---
 
+## Phase 3.5: Port Addin APS Patterns → `server/routers/aps-search.ts`
+
+The **Revit Addin** (`C:\LECG\Addin\LECGrvt\src\Batch\Services\`) has a production-hardened APS search implementation that is **significantly faster and more reliable** than both the LOD Checker's `aps_data.py` and the Dashboard's current APS code. Port these patterns into a new dedicated tRPC router.
+
+### Source Files from Addin to Port
+
+| Addin File (C#) | Lines | Dashboard Target (TypeScript) |
+| --- | --- | --- |
+| `ApsDataManagementService.cs` | 652 | `server/lib/aps-search.ts` |
+| `ApsTokenProvider.cs` | 79 | Integrate into `lib/aps.ts` |
+| `ApsCloudModelIndexStore.cs` | 101 | `ApsProjectSearchCache` Prisma model |
+| `ApsVersion.cs` | 44 | `types/aps.ts` enriched type |
+| `CloudModelCacheEntry.cs` | 15 | `ApsProjectSearchCache` Prisma model |
+
+### New Prisma Models
+
+```prisma
+model ApsProjectSearchCache {
+  id          String   @id @default(cuid())
+  hubId       String
+  projectId   String
+  projectName String?
+  fetchedAt   DateTime @default(now())
+  models      Json     // Cached ApsVersion[] — avoids re-fetching from APS API
+
+  @@unique([hubId, projectId])
+  @@index([fetchedAt])
+}
+```
+
+### New tRPC Procedures
+
+```typescript
+// server/routers/aps-search.ts
+export const apsSearchRouter = router({
+  searchRevitModels: protectedProcedure
+    .input(z.object({
+      hubId: z.string(),
+      projectId: z.string(),
+      searchText: z.string().optional(),
+      forceRefresh: z.boolean().default(false),
+    }))
+    .query(async ({ input, ctx }) => {
+      // 1. Check ApsProjectSearchCache (1-hour TTL)
+      // 2. If hit → return cached models
+      // 3. If miss → concurrent folder search (pLimit(3))
+      //    - Per-folder 60s timeout (port of CancellationTokenSource)
+      //    - Full folder chain resolution (port of EnsureFolderChainAsync)
+      //    - Rich metadata extraction: ModelGuid, ProjectGuid, IsWorkshared
+      // 4. Upsert cache → return
+    }),
+
+  getHubs: protectedProcedure.query(/* port of GetHubsAsync */),
+  getProjects: protectedProcedure
+    .input(z.object({ hubId: z.string() }))
+    .query(/* port of GetProjectsAsync */),
+  getTopFolders: protectedProcedure
+    .input(z.object({ hubId: z.string(), projectId: z.string() }))
+    .query(/* port of GetTopFoldersAsync + cache */),
+  getFolderContents: protectedProcedure
+    .input(z.object({ projectId: z.string(), folderId: z.string() }))
+    .query(/* port of GetFolderContentsAsync */),
+  getVersions: protectedProcedure
+    .input(z.object({ projectId: z.string(), itemId: z.string() }))
+    .query(/* port of GetVersionsAsync */),
+  invalidateCache: protectedProcedure
+    .input(z.object({ hubId: z.string(), projectId: z.string() }))
+    .mutation(/* delete ApsProjectSearchCache entry */),
+});
+```
+
+### Key Implementation Details (Ported from C# to TypeScript)
+
+#### Concurrent Folder Search with `pLimit`
+
+```typescript
+import pLimit from "p-limit";
+
+const limit = pLimit(3); // MaxDegreeOfParallelism = 3
+
+const results = new Map<string, ApsSearchResult>();
+const topFolders = await getCachedTopFolders(hubId, projectId, token);
+
+await Promise.allSettled(
+  topFolders.map(folder =>
+    limit(async () => {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 60_000); // 60s per folder
+      try {
+        await searchFolderPass(projectId, folder, token, results, controller.signal);
+      } catch (err) {
+        if (err instanceof DOMException && err.name === "AbortError") {
+          logger.warn(`APS search timed out for folder: ${folder.name}`);
+        }
+      } finally {
+        clearTimeout(timeout);
+      }
+    })
+  )
+);
+```
+
+#### Full Folder Path Resolution (Port of `EnsureFolderChainAsync`)
+
+```typescript
+const folderCache = new Map<string, { name: string; parentId: string }>();
+
+async function ensureFolderChain(
+  projectId: string, startId: string, rootId: string,
+  rootName: string, token: string
+): Promise<void> {
+  let current = startId;
+  for (let depth = 0; depth < 25 && current && current !== rootId; depth++) {
+    if (folderCache.has(current)) {
+      current = folderCache.get(current)!.parentId;
+      continue;
+    }
+    // Fetch folder metadata from APS
+    const res = await fetch(
+      `https://developer.api.autodesk.com/data/v1/projects/${projectId}/folders/${encodeURIComponent(current)}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!res.ok) break;
+    const data = await res.json();
+    const name = data.data?.attributes?.name ?? "";
+    const parentId = data.data?.relationships?.parent?.data?.id ?? "";
+    if (!name) break;
+    folderCache.set(current, { name, parentId });
+    current = parentId;
+  }
+}
+
+function resolveFolderPath(startId: string, rootId: string, rootName: string): string {
+  const parts: string[] = [];
+  let current = startId;
+  for (let depth = 0; depth < 25 && current; depth++) {
+    if (current === rootId) { parts.push(rootName); break; }
+    const info = folderCache.get(current);
+    if (!info) break;
+    parts.push(info.name);
+    current = info.parentId;
+  }
+  return parts.reverse().join(" / ") || rootName;
+}
+```
+
+#### Rich ApsVersion Type (Port of Addin's `ApsVersion.cs`)
+
+```typescript
+interface ApsRevitModel {
+  id: string;           // version ID
+  itemId: string;       // item ID
+  hubId: string;
+  projectId: string;
+  projectGuid: string;  // projectId without "b." prefix
+  folderId: string;
+  versionNumber: number;
+  displayName: string;
+  fileName: string;
+  fileType: string;     // "rvt"
+  extensionType: string; // "versions:autodesk.bim360:C4RModel" etc.
+  modelGuid: string | null;  // 4-level cascade extraction
+  region: string;       // "US" | "EMEA"
+  isWorkshared: boolean;
+  fileSizeBytes: number | null;
+  lastModified: string | null;
+  folderPath: string;   // Full hierarchy: "Project Files / Architecture / 2024"
+}
+```
+
 ## Phase 4: Frontend Components
 
 ### New Files

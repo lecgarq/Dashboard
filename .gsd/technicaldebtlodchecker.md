@@ -147,6 +147,158 @@ No structured errors, no classification, no retry hints.
 
 ---
 
+## 4.5 ADDIN'S SUPERIOR APS PATTERNS — Blueprint for the Dashboard Migration
+
+The **Revit Addin** (`C:\LECG\Addin\LECGrvt\src\Batch\`) already solves the exact same APS problems the LOD Checker faces — but with production-hardened C# patterns. These patterns should be **ported to TypeScript** for the Dashboard's tRPC implementation.
+
+### Architecture Comparison: LOD Checker vs Addin
+
+| Pattern | LOD Checker (Python) | Addin (C#) | Winner |
+| --- | --- | --- | --- |
+| **Auth** | Flask session cookies, no PKCE | PKCE + loopback listener, persistent `ApsSession` | 🏆 Addin |
+| **Token management** | Manual `session["expires_at"]` check | `ApsTokenProvider.GetValidTokenAsync()` with auto-refresh + 5-min buffer | 🏆 Addin |
+| **Search concurrency** | Sequential folder iteration | `Parallel.ForEachAsync` with `MaxDegreeOfParallelism = 3` | 🏆 Addin |
+| **Search timeout** | None — can hang forever | Per-folder 60s `CancellationTokenSource` timeout | 🏆 Addin |
+| **Folder path resolution** | Extract parent name from `included[]` only | Full ancestor chain walk via `EnsureFolderChainAsync` + cache | 🏆 Addin |
+| **Folder path caching** | None — every search re-traverses | `ConcurrentDictionary<string, (Name, ParentId)>` cross-search cache | 🏆 Addin |
+| **Model GUID extraction** | Not done — URN-only | 4-level cascade: `modelGuid` → `modelId` → `originalModelId` → `revisionId` | 🏆 Addin |
+| **C4R model detection** | Not done | `extensionType == "versions:autodesk.bim360:C4RModel"` → `IsWorkshared` flag | 🏆 Addin |
+| **Pagination** | While-loop with basic retry-on-429 | While-loop with `page[limit]=100` + `include=tip,refs` (inline metadata) | 🏆 Addin |
+| **Cloud model index** | None — re-fetches every time | `ApsCloudModelIndexStore` disk-persisted JSON cache with `FetchedAtUtc` timestamp | 🏆 Addin |
+| **Streaming results** | Wait for all results before returning | `Action<IReadOnlyList<ApsVersion>> onModelsFound` — streams results per folder | 🏆 Addin |
+| **Result deduplication** | `any(x["id"] == it.get("id"))` — O(N²) | `ConcurrentDictionary.TryAdd()` — O(1) | 🏆 Addin |
+| **Top folder cache** | None | `ConcurrentDictionary<string, IReadOnlyList<ApsFolderItem>>` | 🏆 Addin |
+| **Rate limiting** | Basic 3-attempt retry with `sleep(2**attempt)` | Not explicit, but bounded concurrency prevents bursts | 🟡 LOD has retry |
+| **Error isolation** | `except Exception → 500` (all routes) | Per-folder `try/catch` — one folder failure doesn't kill the search | 🏆 Addin |
+
+### Key Addin Patterns to Port to Dashboard tRPC
+
+#### 1. `ApsTokenProvider` → Token Auto-Refresh Middleware
+
+```typescript
+// Port of ApsTokenProvider.GetValidTokenAsync
+async function getValidApsToken(ctx: Context): Promise<string> {
+  const account = await ctx.db.account.findFirst({
+    where: { userId: ctx.session.user.id, provider: "autodesk" }
+  });
+  if (!account?.access_token) throw new TRPCError({ code: "UNAUTHORIZED" });
+
+  // 5-minute buffer (mirrors Addin's TokenRefreshBufferMin = 5)
+  if (account.expires_at && account.expires_at * 1000 > Date.now() + 300_000) {
+    return account.access_token;
+  }
+  // Auto-refresh via NextAuth's built-in token rotation
+  return refreshAutodeskToken(account);
+}
+```
+
+#### 2. `SearchRevitModelsInProjectAsync` → Parallel Folder Search with Streaming
+
+```typescript
+// Port of the Addin's Parallel.ForEachAsync pattern
+async function searchRevitModelsInProject(
+  projectId: string, hubId: string, token: string
+): Promise<ApsSearchResult[]> {
+  const topFolders = await getCachedTopFolders(hubId, projectId, token);
+
+  // Bounded concurrency (3 concurrent folder searches)
+  const results = new Map<string, ApsSearchResult>();
+  const semaphore = new Semaphore(3); // pLimit(3)
+
+  await Promise.allSettled(
+    topFolders.map(folder =>
+      semaphore.run(() =>
+        searchFolderWithTimeout(projectId, folder, token, results, 60_000)
+      )
+    )
+  );
+
+  return [...results.values()];
+}
+```
+
+#### 3. `ApsCloudModelIndexStore` → Database-Backed Search Cache
+
+Instead of the Addin's disk-based `cloud-model-index.json`, use a Prisma model:
+
+```prisma
+model ApsProjectSearchCache {
+  id          String   @id @default(cuid())
+  hubId       String
+  projectId   String
+  projectName String?
+  fetchedAt   DateTime @default(now())
+  models      Json     // Cached ApsVersion[] array
+
+  @@unique([hubId, projectId])
+  @@index([fetchedAt])
+}
+```
+
+```typescript
+// Cache check with TTL (1 hour)
+const cached = await ctx.db.apsProjectSearchCache.findUnique({
+  where: { hubId_projectId: { hubId, projectId } }
+});
+if (cached && Date.now() - cached.fetchedAt.getTime() < 3600_000) {
+  return cached.models as ApsSearchResult[];
+}
+```
+
+#### 4. `EnsureFolderChainAsync` → Full Path Resolution
+
+The Addin walks up the folder hierarchy from any nested folder to the root, fetching unknown ancestors from the API and caching them. This gives users full breadcrumb paths like `Project Files / 01-Architecture / 2024 / Models` rather than just the parent folder name.
+
+```typescript
+// Port of EnsureFolderChainAsync
+async function resolveFullFolderPath(
+  projectId: string, startFolderId: string, rootId: string,
+  rootName: string, token: string, cache: Map<string, FolderInfo>
+): Promise<string> {
+  let current = startFolderId;
+  for (let depth = 0; depth < 25 && current && current !== rootId; depth++) {
+    if (cache.has(current)) {
+      current = cache.get(current)!.parentId;
+      continue;
+    }
+    // Fetch folder metadata from APS API
+    const folderInfo = await fetchFolderInfo(projectId, current, token);
+    if (!folderInfo) break;
+    cache.set(current, folderInfo);
+    current = folderInfo.parentId;
+  }
+  // Walk back up to build path string
+  return buildPathFromCache(startFolderId, rootId, rootName, cache);
+}
+```
+
+#### 5. `ApsVersion` Model → Rich Model Metadata
+
+The Addin's `ApsVersion` model extracts **far more metadata** than the LOD Checker:
+
+| Field | LOD Checker | Addin | Dashboard Should Have |
+| --- | --- | --- | --- |
+| `ModelGuid` | ❌ Not extracted | ✅ 4-level cascade | ✅ Required for Revit cloud open |
+| `ProjectGuid` | ❌ Not extracted | ✅ Strip `b.` prefix | ✅ Required for Revit cloud open |
+| `IsWorkshared` | ❌ Not checked | ✅ `C4RModel` extension type check | ✅ Needed for batch processing |
+| `VersionNumber` | ❌ Not extracted | ✅ From version attributes | ✅ Display + comparison |
+| `FolderPath` | ❌ Parent name only | ✅ Full hierarchy walk | ✅ Better UX |
+| `FileSizeBytes` | ⚠️ Sometimes from `storageSize` | ✅ From version `storageSize`/`fileSize` | ✅ Always |
+| `Region` | ❌ Not extracted | ✅ From `extension.data.region` | ✅ Multi-region support |
+| `ExtensionType` | ❌ Not extracted | ✅ Full extension type string | ✅ Model type detection |
+
+### Impact on LOD Checker Migration
+
+By porting the Addin's patterns, the Dashboard's APS search will be:
+
+- **3× faster** — Concurrent folder search instead of sequential
+- **Cached** — Database-backed model index instead of re-fetching every time
+- **Richer** — Full folder paths, model GUIDs, workshare status, version numbers
+- **Resilient** — Per-folder timeout + error isolation instead of global failure
+- **Streaming** — Results appear incrementally via tRPC subscription or SSE
+
+---
+
 ## 5. FRONTEND TECHNICAL DEBT
 
 ### Tailwind v3 (LOD) vs v4 (Dashboard)
