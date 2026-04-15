@@ -2,6 +2,9 @@
   "name": "dashboard",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "python scripts/run_dev_stack.py",
     "dev:next": "node scripts/patch-env.js && next dev -H 0.0.0.0 --port 3000",
