@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { auth } from "@/server/auth";
 import { generateFamilyDescription } from "@/lib/ai";
 

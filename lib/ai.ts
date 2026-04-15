@@ -1,13 +1,12 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function generateFamilyDescription(params: {
   name: string;
   category?: string;
   phase?: string;
   changelog?: Array<{ version: string; message: string; impact?: string }>;
 }): Promise<ReadableStream<Uint8Array>> {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const changelogText =
     params.changelog && params.changelog.length > 0
       ? params.changelog
