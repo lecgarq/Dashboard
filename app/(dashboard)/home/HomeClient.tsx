@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { format } from "date-fns";
 import { Activity, CalendarClock, CheckCircle2, Sparkles, Users2 } from "lucide-react";
 
+
 import { Header } from "@/components/layout/Header";
 import { trpc } from "@/lib/trpc";
 
@@ -56,62 +57,39 @@ export default function HomeClient() {
     <div className="flex h-full flex-col bg-transparent">
       <Header title="Mission Control" />
 
-      <div className="custom-scrollbar flex flex-1 flex-col overflow-hidden p-6 space-y-6">
-        <section className="surface-card animate-fade-up relative overflow-hidden rounded-[2rem] border px-6 py-6 sm:px-7">
-          <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(96,165,250,0.16),transparent_28%),radial-gradient(circle_at_bottom_left,rgba(251,191,36,0.14),transparent_24%)]" />
-          <div className="relative flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
-            <div className="max-w-2xl space-y-4">
-              <div className="surface-chip inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-primary">
-                <Sparkles className="h-3.5 w-3.5" />
-                Daily overview
-              </div>
-            </div>
-
-            <div className="surface-panel flex items-center gap-3 rounded-2xl px-4 py-4 text-sm text-slate-600">
-              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                <CalendarClock className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.26em] text-slate-400">
-                  Next milestone
-                </p>
-                <p className="font-medium text-slate-900">{milestoneLabel}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="relative mt-6 grid gap-4 lg:grid-cols-3">
-            {stats.map((stat) => {
-              const Icon = stat.icon;
-
-              return (
-                <div
-                  key={stat.label}
-                  className="surface-panel surface-card-hover rounded-[1.5rem] p-4"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
-                        {stat.label}
-                      </p>
-                      <p className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
-                        {stat.value}
-                      </p>
-                      <p className="text-sm text-slate-600">{stat.detail}</p>
-                    </div>
-                    <div className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${stat.tone}`}>
-                      <Icon className="h-5 w-5" />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </section>
-
-        <div className="ui-paper flex flex-1 flex-col overflow-hidden animate-fade-up">
-          <DashboardCalendar />
+      {/* Compact stats bar */}
+      <div className="shrink-0 border-b border-border/40 bg-card/30 backdrop-blur-sm px-4 py-2 flex items-center gap-2 flex-wrap">
+        <div className="surface-chip inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.22em] text-primary">
+          <Sparkles className="h-3 w-3" />
+          Daily overview
         </div>
+
+        <div className="h-4 w-px bg-border/50 mx-1" />
+
+        {stats.map((stat) => {
+          const Icon = stat.icon;
+          return (
+            <div key={stat.label} className="flex items-center gap-2 px-3 py-1.5 rounded-xl surface-panel">
+              <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${stat.tone}`}>
+                <Icon className="h-3.5 w-3.5" />
+              </div>
+              <span className="text-xs text-slate-400">{stat.label}</span>
+              <span className="text-xs font-semibold text-slate-900">{stat.value}</span>
+              <span className="text-[10px] text-slate-400 hidden sm:inline">{stat.detail}</span>
+            </div>
+          );
+        })}
+
+        <div className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl surface-panel">
+          <CalendarClock className="h-3.5 w-3.5 text-primary" />
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Next</span>
+          <span className="text-xs font-medium text-slate-900">{milestoneLabel}</span>
+        </div>
+      </div>
+
+      {/* Calendar fills remaining height */}
+      <div className="ui-paper flex flex-1 flex-col overflow-hidden">
+        <DashboardCalendar />
       </div>
     </div>
   );
