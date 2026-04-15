@@ -20,6 +20,11 @@ export const metadata: Metadata = {
   description: "ACC-aligned BIM project management dashboard",
 };
 
+export const viewport = {
+  width: "device-width",
+  initialScale: 1,
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
