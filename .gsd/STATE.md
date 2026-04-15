@@ -2,18 +2,18 @@
 
 ## Last Session Summary
 
-Codebase mapping complete (Super Deep Phase - 2026-04-15).
+Codebase mapping complete (Master Deep Phase - 2026-04-15).
 
-- **Concurrency Patterns**: Documented the **Single-Flight** implementation using `Map<string, Promise<T>>` to deduplicate concurrent API calls in the Directory and Chat services.
-- **Real-time SSE Lifecycle**: Mapped the server-sent events (SSE) lifecycle, including the `retry: 5000` headers, 20s heartbeats, 5s polling intervals, and 3-space sequential batching logic.
-- **Metadata Extraction Heuristics**: Documented the "Cost Center" scraping logic that uses fuzzy key matching to extract un-mapped profile data from Google APIs.
-- **Client-Side Invalidation Graph**: Detailed how the `useChatPulse` hook uses `trpc.useUtils().invalidate()` to trigger proactive UI refreshes based on SSE signals.
-- **Auth Session Envelope**: Mapped the exact schema of the JWT and Session objects as extended in `types/next-auth.d.ts`.
+- **Service Integration Topology**: Mapped the high-fidelity connection mesh for 8+ external services (Supabase, Google Cloud, Trello, OpenAI, APS, etc.).
+- **Hybrid API Workarounds**: Documented the **Drive + Forms** workaround used to bypass service account creation quotas for Revit Exams.
+- **BIM AI Streaming**: Mapped the `gpt-4o` metadata-to-tech-description pipeline with real-time token streaming.
+- **Trello Card Sync**: Documented the card/checklist mapping logic and optimized N+1 single-call retrieval patterns.
+- **APS Derivative Flow**: Trace-mapped the binary artifact upload and SVF2 translation lifecycle.
+- **Infrastructure Architecture**: Finalized documentation for the **Railway Nixpacks** environment (Node 20).
 
 ## Current Session Summary
 
-- **Super Deep Mapping (Technical Audit)**: Conducted the absolute highest-fidelity audit of the Dashboard's local folder core.
-- **Concurrency & Caching Mapping**: Formally documented the low-level deduplication and TTL patterns.
-- **SSE Stream Internals**: Detailed the polling and heartbeating logic for the Chat system.
-- **Heuristic Discovery**: Documented the fuzzy-key matching used for profile scraping.
-- **Auth Schema Finalization**: Documented the extended JWT and Session types.
+- **Master Deep Mapping (Service Audit)**: Conducted the absolute highest-fidelity audit of the Dashboard's external service mesh.
+- **Integration Topology**: Formally documented the connection between the service account identity and each downstream API.
+- **Hybrid Pattern Discovery**: Documented the "System Identity" perimeters and API creation hacks.
+- **Persistence Hybridization**: Detailed the storage of SQL metadata alongside CRDT binary states and APS URNs.
