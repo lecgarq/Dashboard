@@ -685,12 +685,7 @@ export default function TrelloPage() {
 
   return (
     <div className="p-6 space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold">Trello Workspace</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          Select a board to view its Kanban layout.
-        </p>
-      </div>
+      <h1 className="text-2xl font-bold">Trello Workspace</h1>
 
       {boardsLoading ? (
         <BoardSkeleton />

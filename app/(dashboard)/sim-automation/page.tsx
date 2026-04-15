@@ -433,10 +433,7 @@ export default function SimAutomationPage() {
           {editingSection && (
             <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
               <div className="bg-card w-full max-w-sm rounded-xl border border-border shadow-2xl p-6 space-y-4">
-                <div className="space-y-1">
-                  <h3 className="text-lg font-semibold">Rename Section</h3>
-                  <p className="text-sm text-muted-foreground">Enter a new title for this documentation section.</p>
-                </div>
+                <h3 className="text-lg font-semibold">Rename Section</h3>
                 <Input 
                   value={editingSection.title}
                   onChange={(e) => setEditingSection({ ...editingSection, title: e.target.value })}
@@ -472,11 +469,6 @@ export default function SimAutomationPage() {
                   {activeConf.label}
                 </span>
               </div>
-              {!isEditor && (
-                <span className="text-[10px] text-muted-foreground/40">
-                  Read only - editor access required to edit
-                </span>
-              )}
             </div>
           )}
 

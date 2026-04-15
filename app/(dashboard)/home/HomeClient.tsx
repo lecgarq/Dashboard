@@ -65,14 +65,6 @@ export default function HomeClient() {
                 <Sparkles className="h-3.5 w-3.5" />
                 Daily overview
               </div>
-              <div className="space-y-2">
-                <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] text-slate-950">
-                  One timeline for modeling, QA, and delivery.
-                </h2>
-                <p className="max-w-2xl text-sm leading-7 text-slate-600 sm:text-base">
-                  Keep the calendar central, but surface the numbers that explain how the team is moving before users start drilling into tasks.
-                </p>
-              </div>
             </div>
 
             <div className="surface-panel flex items-center gap-3 rounded-2xl px-4 py-4 text-sm text-slate-600">

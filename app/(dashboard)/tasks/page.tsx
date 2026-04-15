@@ -315,16 +315,11 @@ export default function TasksPage() {
               <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center">
                 <CheckCircle2 size={28} className="text-muted-foreground/30" />
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">
-                  {filter === "ALL"
-                    ? "No tasks yet"
-                    : `No ${filter.toLowerCase().replace("_", " ")} tasks`}
-                </p>
-                <p className="text-xs text-muted-foreground/50 mt-1">
-                  Click "New Task" to get started
-                </p>
-              </div>
+              <p className="text-sm text-muted-foreground">
+                {filter === "ALL"
+                  ? "No tasks yet"
+                  : `No ${filter.toLowerCase().replace("_", " ")} tasks`}
+              </p>
             </div>
           ) : (
             <div className="space-y-2 stagger-children max-w-3xl">
