@@ -1,0 +1,326 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============ AUTH MODELS ============
+
+model User {
+  id             String             @id @default(cuid())
+  name           String?
+  email          String             @unique
+  username       String?            @unique
+  emailVerified  DateTime?
+  password       String?
+  image          String?
+  department     String?
+  jobTitle       String?
+  role           String             @default("VIEWER")
+  accounts       Account[]
+  sessions       Session[]
+  tasks          UserTask[]
+  moduleAccess   UserModuleAccess[]
+  pendingRequest PendingRequest?
+  createdAt      DateTime           @default(now())
+  lastLoginAt    DateTime?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model ApprovedEmail {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  createdAt DateTime @default(now())
+}
+
+model PendingRequest {
+  id          String   @id @default(cuid())
+  userId      String?  @unique
+  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  email       String   @unique
+  name        String?
+  provider    String
+  requestedAt DateTime @default(now())
+  status      String   @default("PENDING")
+}
+
+model UserModuleAccess {
+  id     String @id @default(cuid())
+  userId String
+  module String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, module])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  email     String
+  token     String   @unique
+  expires   DateTime
+  createdAt DateTime @default(now())
+}
+
+// ============ MULTI-PROJECT MODELS ============
+
+model Project {
+  id           String      @id @default(cuid())
+  name         String
+  client       String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  families     Family[]
+  userTasks    UserTask[]
+  clashWiki    ClashWiki[]
+  clashTasks   ClashTask[]
+  simWiki      SimWiki[]
+  simTasks     SimTask[]
+  apsProjectId String?
+  apsHubId     String?
+}
+
+// ============ MODULE 1: FAMILIAS PARAMÉTRICAS ============
+// phase values: TODO | IN_PROGRESS | REVIEW | DONE
+
+model Family {
+  id             String              @id @default(cuid())
+  projectId      String
+  project        Project             @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  name           String
+  category       String              @default("Generic Models")
+  phase          String              @default("TODO")
+  phaseOrder     Int                 @default(0)
+  description    String?
+  nextSteps      String?
+  dueDate        DateTime?
+  requestDate    DateTime?
+  completionDate DateTime?
+  owner          String?
+  isBlocked      Boolean             @default(false)
+  blockedBy      String?
+  changelog      FamilyChangelog[]
+  attachments    FamilyAttachment[]
+  deliverables   FamilyDeliverable[]
+  apsUrn         String?
+  apsStatus      String?             @default("NONE") // NONE | PROCESSING | SUCCESS | FAILED
+  createdAt      DateTime            @default(now())
+  updatedAt      DateTime            @updatedAt
+}
+
+model FamilyChangelog {
+  id        String   @id @default(cuid())
+  familyId  String
+  family    Family   @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  version   String
+  author    String
+  message   String
+  impact    String?
+  createdAt DateTime @default(now())
+}
+
+model FamilyAttachment {
+  id       String @id @default(cuid())
+  familyId String
+  family   Family @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  type     String // IMAGE | VIDEO | FILE
+  url      String
+  name     String
+}
+
+model FamilyDeliverable {
+  id       String  @id @default(cuid())
+  familyId String
+  family   Family  @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  name     String
+  fileUrl  String?
+  done     Boolean @default(false)
+}
+
+// ============ MODULE 2: CLASH DETECTION ============
+// status values: DRAFT | REVIEW | APPROVED
+// task status values: PLANNING | IN_PROGRESS | REVIEW | DONE
+
+model ClashWiki {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  section   String   @unique
+  title     String
+  content   String
+  yjsState  Bytes?
+  status    String   @default("DRAFT")
+  order     Int
+  updatedAt DateTime @updatedAt
+}
+
+model ClashTask {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String    @default("PLANNING")
+  milestone   String?
+  dueDate     DateTime?
+  owner       String?
+  order       Int       @default(0)
+  isBlocked   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model ClashToolRelease {
+  id          String   @id @default(cuid())
+  version     String
+  changelog   String
+  downloadUrl String?
+  releasedAt  DateTime @default(now())
+  testCases   String?
+}
+
+// ============ MODULE: SIM AUTOMATION ============
+// Cloned from Clash Detection
+
+model SimWiki {
+  id        String   @id @default(cuid())
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  section   String   @unique
+  title     String
+  content   String
+  yjsState  Bytes?
+  status    String   @default("DRAFT")
+  order     Int
+  updatedAt DateTime @updatedAt
+}
+
+model SimTask {
+  id          String    @id @default(cuid())
+  projectId   String
+  project     Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String    @default("PLANNING")
+  milestone   String?
+  dueDate     DateTime?
+  owner       String?
+  order       Int       @default(0)
+  isBlocked   Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model SimToolRelease {
+  id          String   @id @default(cuid())
+  version     String
+  changelog   String
+  downloadUrl String?
+  releasedAt  DateTime @default(now())
+  testCases   String?
+}
+
+// ============ MODULE 3: EXAMEN REVIT ============
+
+model RevitExam {
+  id          String          @id @default(cuid())
+  title       String
+  description String?
+  status      String          @default("PLANNING")
+  formUrl     String?
+  formId      String?
+  dueDate     DateTime?
+  tasks       ExamBuildTask[]
+  results     ExamResult[]
+  createdAt   DateTime        @default(now())
+}
+
+model ExamBuildTask {
+  id      String    @id @default(cuid())
+  examId  String
+  exam    RevitExam @relation(fields: [examId], references: [id], onDelete: Cascade)
+  title   String
+  status  String    @default("PLANNING")
+  order   Int       @default(0)
+  dueDate DateTime?
+}
+
+model ExamResult {
+  id             String    @id @default(cuid())
+  examId         String
+  exam           RevitExam @relation(fields: [examId], references: [id])
+  candidateName  String
+  candidateEmail String?
+  score          Float
+  maxScore       Float
+  attempts       Int       @default(1)
+  completedAt    DateTime  @default(now())
+  notes          String?
+  failureTopics  String?
+}
+
+// ============ TASK / TO-DO SYSTEM ============
+// status values: TODO | IN_PROGRESS | DONE
+// priority values: LOW | MEDIUM | HIGH | URGENT
+
+model UserTask {
+  id          String           @id @default(cuid())
+  projectId   String
+  project     Project          @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title       String
+  description String?
+  status      String           @default("TODO")
+  priority    String           @default("MEDIUM")
+  dueDate     DateTime?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  attachments TaskAttachment[]
+}
+
+model TaskAttachment {
+  id        String   @id @default(cuid())
+  taskId    String
+  task      UserTask @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  url       String
+  name      String
+  type      String // IMAGE | PDF
+  createdAt DateTime @default(now())
+}

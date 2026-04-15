@@ -1,0 +1,6 @@
+- [x] Verify Phase 5 (Environment Automation)
+- [/] Execute Phase 6 (Quality & Accessibility Polish)
+    - [x] Resolve "Buttons must have discernible text" in `clash-detection/page.tsx`
+    - [x] Resolve "Buttons must have discernible text" in `sim-automation/page.tsx`
+    - [x] Cleanup Markdown linting in `.gsd/` documentation files
+    - [ ] Run `npm run lint` and verify success

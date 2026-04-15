@@ -1,0 +1,648 @@
+import { z } from "zod";
+import { router, adminProcedure, publicProcedure, protectedProcedure } from "../trpc";
+import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } from "@/lib/sheets";
+import { listCalendarGuestDirectory } from "@/lib/google-directory";
+import bcrypt from "bcryptjs";
+import { TRPCError } from "@trpc/server";
+import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/email";
+import { randomUUID } from "crypto";
+import userEvents from "@/lib/user-events";
+
+// Raw-SQL row types (avoids needing prisma generate for new models)
+interface PendingRow { id: string; email: string; name: string | null; provider: string; requestedAt: Date; status: string; userId: string | null }
+interface ModuleRow  { module: string }
+interface ResetRow   { id: string; email: string; token: string; expires: Date }
+
+
+export const usersRouter = router({
+  // Org directory: fetches all users from Google Workspace via People API
+  getOrgDirectory: protectedProcedure.query(async ({ ctx }) => {
+    return listCalendarGuestDirectory(ctx.session.user.id);
+  }),
+
+  // Local DB directory (fallback / registered users only)
+  getDirectory: protectedProcedure.query(async ({ ctx }) => {
+    const users = await ctx.db.$queryRaw<Array<{
+      id: string; name: string | null; email: string; role: string;
+      image: string | null; department: string | null; jobTitle: string | null;
+      lastLoginAt: Date | null;
+    }>>`
+      SELECT id, name, email, role, image, department, "jobTitle", "lastLoginAt"
+      FROM "User"
+      ORDER BY name ASC
+    `;
+    return users.map((u) => ({
+      id: u.id,
+      name: u.name ?? null,
+      email: u.email,
+      role: u.role,
+      image: u.image ?? null,
+      department: u.department ?? null,
+      jobTitle: u.jobTitle ?? null,
+      lastLoginAt: u.lastLoginAt ?? null,
+    }));
+  }),
+
+  // Update own profile (department, jobTitle)
+  updateMyProfile: protectedProcedure
+    .input(
+      z.object({
+        department: z.string().optional(),
+        jobTitle: z.string().optional(),
+        name: z.string().optional(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      await ctx.db.$executeRaw`
+        UPDATE "User"
+        SET
+          department = COALESCE(${input.department ?? null}, department),
+          "jobTitle"   = COALESCE(${input.jobTitle ?? null}, "jobTitle"),
+          name       = COALESCE(${input.name ?? null}, name)
+        WHERE id = ${userId}
+      `;
+      return { success: true };
+    }),
+
+  getAll: adminProcedure.query(async ({ ctx }) => {
+    try {
+      // Use raw SQL to bypass stale Prisma client metadata
+      const users = await ctx.db.$queryRaw<Array<{
+        id: string; name: string | null; email: string; role: string;
+        image: string | null; department: string | null; jobTitle: string | null;
+        createdAt: Date; lastLoginAt: Date | null;
+        accounts: Array<{ provider: string }> | null;
+      }>>`
+        SELECT
+          u.id, u.name, u.email, u.role, u.image, u.department, u."jobTitle",
+          u."createdAt", u."lastLoginAt",
+          COALESCE(
+            json_agg(json_build_object('provider', a.provider))
+              FILTER (WHERE a.provider IS NOT NULL),
+            '[]'::json
+          ) AS accounts
+        FROM "User" u
+        LEFT JOIN "Account" a ON a."userId" = u.id
+        GROUP BY u.id
+        ORDER BY u."createdAt" DESC
+      `;
+
+      return users.map((u) => ({
+        id: u.id,
+        name: u.name,
+        email: u.email,
+        role: u.role,
+        image: u.image,
+        department: u.department ?? null,
+        jobTitle: u.jobTitle ?? null,
+        createdAt: u.createdAt,
+        lastLoginAt: u.lastLoginAt,
+        accounts: u.accounts ?? [],
+      }));
+    } catch (error) {
+      console.error("[users.getAll] Fatal Error:", error);
+      throw new TRPCError({
+        code: "INTERNAL_SERVER_ERROR",
+        message: "Failed to fetch users from database",
+      });
+    }
+  }),
+
+  updateRole: adminProcedure
+    .input(
+      z.object({
+        userId: z.string(),
+        role: z.enum(["VIEWER", "EDITOR", "ADMIN"]),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const targetUser = await ctx.db.user.findUnique({ where: { id: input.userId } });
+
+      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+
+      // 1. Prevent demoting the primary admin
+      if (
+        targetUser?.email?.toLowerCase() === PRIMARY_ADMIN.toLowerCase() &&
+        input.role !== "ADMIN"
+      ) {
+        throw new Error("Cannot demote the primary administrator.");
+      }
+
+      // 2. Only the master admin can change any role
+      const currentAdminEmail = ctx.session.user.email?.toLowerCase();
+      if (currentAdminEmail !== PRIMARY_ADMIN.toLowerCase()) {
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "Only the master administrator (luis.ecorteg@gmail.com) can manage user roles.",
+        });
+      }
+
+      const updated = await ctx.db.user.update({
+        where: { id: input.userId },
+        data: { role: input.role },
+      });
+
+      // Sync with Google Sheets
+      try {
+        const modules = await ctx.db.$queryRaw<ModuleRow[]>`SELECT module FROM "UserModuleAccess" WHERE "userId" =${input.userId}`;
+        await writeUserPermissionsToSheets(
+          updated.email,
+          updated.id,
+          modules.map(m => m.module),
+          updated.role
+        );
+      } catch (error) {
+        console.error(`[updateRole] Sheets sync failed for ${updated.email}:`, error);
+      }
+
+      // Emit real-time event
+      userEvents.emit("user-update", {
+        type: "role-updated",
+        userId: updated.id,
+        role: updated.role
+      });
+
+      return updated;
+    }),
+
+  register: publicProcedure
+    .input(
+      z.object({
+        name: z.string(),
+        username: z.string().min(3),
+        email: z.string().email(),
+        password: z.string().min(6),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+      const username = input.username.toLowerCase().trim();
+
+      const approved = await isEmailApproved(email);
+      if (!approved) {
+        try {
+          await enqueuePendingUser({ email, name: input.name, provider: "credentials", providerAccountId: "" });
+          
+          // Upsert PendingRequest in DB so it shows up in User Management
+          const existingReq = await ctx.db.$queryRaw<Array<{ id: string }>>`
+            SELECT id FROM "PendingRequest" WHERE email = ${email} LIMIT 1
+          `;
+          const now = new Date();
+          if (existingReq.length > 0) {
+            await ctx.db.$executeRaw`
+              UPDATE "PendingRequest"
+              SET name = ${input.name}, provider = 'credentials', status = 'PENDING', "requestedAt" = ${now}
+              WHERE email = ${email}
+            `;
+          } else {
+            const id = randomUUID();
+            await ctx.db.$executeRaw`
+              INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
+              VALUES (${id}, ${email}, ${input.name}, 'credentials', 'PENDING', ${now})
+            `;
+          }
+        } catch (err) { 
+          console.error("[register] Failed to enqueue/upsert pending request:", err);
+        }
+        
+        throw new TRPCError({
+          code: "FORBIDDEN",
+          message: "This email is not whitelisted for registration. A request has been sent to the administrator.",
+        });
+      }
+
+      const existing = await ctx.db.user.findFirst({
+        where: { OR: [{ email }, { username }] },
+      });
+
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: "A user with this email or username already exists.",
+        });
+      }
+
+      const hashedPassword = await bcrypt.hash(input.password, 10);
+
+      const newUser = await ctx.db.user.create({
+        data: { name: input.name, username, email, password: hashedPassword },
+      });
+
+      try {
+        await sendWelcomeEmail(email, input.name);
+      } catch (error) {
+        console.error(`[users.register] Welcome email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+      }
+      try {
+        await sendAdminNotificationEmail(email, input.name);
+      } catch (error) {
+        console.error(`[users.register] Admin notification email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+      }
+
+      // Default role for new users
+      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+      if (email === PRIMARY_ADMIN.toLowerCase()) {
+        await ctx.db.user.update({ where: { id: newUser.id }, data: { role: "ADMIN" } });
+      }
+
+      return newUser;
+    }),
+
+  removeAndBlacklistUser: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({ where: { id: input.userId } });
+      if (!user || !user.email) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+
+      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+      if (user.email.toLowerCase() === PRIMARY_ADMIN.toLowerCase()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
+      }
+
+      const email = user.email.toLowerCase().trim();
+
+      // 1. Delete user (and cascades)
+      await ctx.db.user.delete({ where: { id: input.userId } });
+
+      // 2. Clear from approved list and update pending status
+      await ctx.db.approvedEmail.deleteMany({ where: { email } });
+      await ctx.db.$executeRaw`
+        INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
+        VALUES (${randomUUID()}, ${email}, ${user.name || ""}, 'credentials', 'BLACKLISTED', ${new Date()})
+        ON CONFLICT(email) DO UPDATE SET status = 'BLACKLISTED'
+      `;
+
+      return { success: true };
+    }),
+
+  getProvidersByEmail: publicProcedure
+    .input(z.object({ userIdentifier: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const identifier = input.userIdentifier.trim().toLowerCase();
+      const user = await ctx.db.user.findFirst({
+        where: { OR: [{ email: identifier }, { username: identifier }] },
+        include: { accounts: true },
+      });
+      if (!user) return { providers: [] as string[] };
+      return { providers: (user.accounts as { provider: string }[]).map((a) => a.provider) };
+    }),
+
+  requestPasswordReset: publicProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.trim().toLowerCase();
+
+      const user = await ctx.db.user.findUnique({ where: { email } });
+      if (!user) return { success: true };
+
+      const { randomBytes } = await import("crypto");
+      const token = randomBytes(32).toString("hex");
+      const expires = new Date(Date.now() + 60 * 60 * 1000);
+      const now = new Date();
+      const id = randomUUID();
+
+      // Raw SQL — avoids needing prisma generate for PasswordResetToken
+      await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE email = ${email}`;
+      await ctx.db.$executeRaw`INSERT INTO "PasswordResetToken" (id, email, token, expires, "createdAt") VALUES (${id}, ${email}, ${token}, ${expires}, ${now})`;
+
+      const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+      const resetUrl = `${baseUrl}/reset-password?token=${token}`;
+
+      try {
+        await sendPasswordResetEmail(email, resetUrl);
+      } catch (err) {
+        console.error("[requestPasswordReset] Failed to send email:", err);
+        await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE email = ${email}`;
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "Password reset email could not be sent right now. Please contact the administrator.",
+        });
+      }
+
+      return { success: true };
+    }),
+
+  resetPassword: publicProcedure
+    .input(z.object({ token: z.string(), newPassword: z.string().min(6) }))
+    .mutation(async ({ ctx, input }) => {
+      const rows = await ctx.db.$queryRaw<ResetRow[]>`SELECT * FROM "PasswordResetToken" WHERE token = ${input.token} LIMIT 1`;
+      const record = rows[0];
+
+      if (!record || new Date() > new Date(record.expires)) {
+        throw new TRPCError({ code: "NOT_FOUND", message: "Invalid or expired reset token." });
+      }
+
+      const hashed = await bcrypt.hash(input.newPassword, 10);
+      await ctx.db.user.update({
+        where: { email: record.email },
+        data: { password: hashed },
+      });
+
+      await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE token = ${input.token}`;
+
+      return { success: true };
+    }),
+
+  getMyLinkedProviders: protectedProcedure.query(async ({ ctx }) => {
+    const userId = ctx.session.user.id as string;
+    const accounts = await ctx.db.account.findMany({
+      where: { userId },
+      select: { provider: true },
+    });
+    return accounts.map((a) => a.provider);
+  }),
+
+  setupCredentials: protectedProcedure
+    .input(z.object({ username: z.string().min(3), password: z.string().min(6) }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id as string;
+      const dbUser = await ctx.db.user.findUnique({ where: { id: userId } });
+
+      if (!dbUser) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+      if (dbUser.password !== null) {
+        throw new TRPCError({ code: "CONFLICT", message: "Credentials are already set up for this account." });
+      }
+
+      const username = input.username.trim().toLowerCase();
+      const existing = await ctx.db.user.findFirst({ where: { username, NOT: { id: userId } } });
+      if (existing) {
+        throw new TRPCError({ code: "CONFLICT", message: "Username already taken." });
+      }
+
+      const hashed = await bcrypt.hash(input.password, 10);
+      await ctx.db.user.update({ where: { id: userId }, data: { username, password: hashed } });
+
+      return { success: true };
+    }),
+
+  // ─── Pending Approval — raw SQL so prisma generate is not required ───────────
+
+  getPendingRequests: adminProcedure.query(async ({ ctx }) => {
+    return ctx.db.$queryRaw<PendingRow[]>`
+      SELECT id, email, name, provider, "requestedAt", status, "userId"
+      FROM "PendingRequest"
+      WHERE status = 'PENDING'
+      ORDER BY "requestedAt" DESC
+    `;
+  }),
+
+  approvePendingRequest: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+
+      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'APPROVED' WHERE email = ${email}`;
+
+      await ctx.db.approvedEmail.upsert({
+        where: { email },
+        create: { email },
+        update: {},
+      });
+
+      const user = await ctx.db.user.findUnique({ where: { email } });
+      if (user) {
+        const modules = ["families", "clash", "exam", "trello"];
+        for (const module of modules) {
+          const id = randomUUID();
+          await ctx.db.$executeRaw`
+            INSERT INTO "UserModuleAccess" (id, "userId", module)
+            VALUES (${id}, ${user.id}, ${module})
+            ON CONFLICT ("userId", module) DO NOTHING
+          `;
+        }
+      }
+
+      const [pending] = await ctx.db.$queryRaw<Array<{ name: string | null }>>`
+        SELECT name FROM "PendingRequest" WHERE email = ${email} LIMIT 1
+      `;
+      try {
+        await sendApprovedEmail(email, pending?.name ?? undefined);
+      } catch (error) {
+        console.error(`[users.approvePendingRequest] Approval email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+      }
+
+      return { success: true };
+    }),
+
+  declinePendingRequest: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+
+      const [pending] = await ctx.db.$queryRaw<Array<{ name: string | null }>>`
+        SELECT name FROM "PendingRequest" WHERE email = ${email} LIMIT 1
+      `;
+
+      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'BLACKLISTED' WHERE email = ${email}`;
+
+      try {
+        await sendDeclinedEmail(email, pending?.name ?? undefined);
+      } catch (error) {
+        console.error(`[users.declinePendingRequest] Decline email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+      }
+
+      return { success: true };
+    }),
+
+  getBlacklistedRequests: adminProcedure.query(async ({ ctx }) => {
+    return ctx.db.$queryRaw<PendingRow[]>`
+      SELECT id, email, name, provider, "requestedAt", status, "userId"
+      FROM "PendingRequest"
+      WHERE status = 'BLACKLISTED'
+      ORDER BY "requestedAt" DESC
+    `;
+  }),
+
+  restoreBlacklistedRequest: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+      
+      // Move to PENDING so admin can decide again, or just move to APPROVED?
+      // User said: "switching them to the users 'where they are approved'"
+      // Let's move to PENDING as a safe middle ground, 
+      // or provide a direct "Restore & Approve" button.
+      // Let's implement restore as "Move to Pending".
+      
+      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'PENDING' WHERE email = ${email}`;
+
+      return { success: true };
+    }),
+
+  blacklistUser: adminProcedure
+    .input(z.object({ email: z.string().email() }))
+    .mutation(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase().trim();
+      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'BLACKLISTED' WHERE email = ${email}`;
+      await ctx.db.approvedEmail.deleteMany({ where: { email } });
+      return { success: true };
+    }),
+
+  removeAccount: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({ where: { id: input.userId } });
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+      const email = user.email.toLowerCase().trim();
+
+      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+      if (email === PRIMARY_ADMIN.toLowerCase()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
+      }
+
+      await ctx.db.user.delete({ where: { id: input.userId } });
+      await ctx.db.approvedEmail.deleteMany({ where: { email } });
+      await ctx.db.$executeRaw`DELETE FROM "PendingRequest" WHERE email = ${email}`;
+
+      userEvents.emit("user-update", { type: "user-removed", userId: input.userId });
+      return { success: true };
+    }),
+
+  blacklistMember: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const user = await ctx.db.user.findUnique({ where: { id: input.userId } });
+      if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
+      const email = user.email.toLowerCase().trim();
+
+      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+      if (email === PRIMARY_ADMIN.toLowerCase()) {
+        throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
+      }
+
+      await ctx.db.user.delete({ where: { id: input.userId } });
+      await ctx.db.approvedEmail.deleteMany({ where: { email } });
+      await ctx.db.$executeRaw`
+        INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
+        VALUES (${randomUUID()}, ${email}, ${user.name || ""}, 'credentials', 'BLACKLISTED', ${new Date()})
+        ON CONFLICT(email) DO UPDATE SET status = 'BLACKLISTED'
+      `;
+
+      userEvents.emit("user-update", { type: "user-blacklisted", userId: input.userId });
+      return { success: true };
+    }),
+
+  // ─── Module Access — raw SQL ─────────────────────────────────────────────────
+
+  getUserModuleAccess: adminProcedure
+    .input(z.object({ userId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const rows = await ctx.db.$queryRaw<ModuleRow[]>`
+        SELECT module FROM "UserModuleAccess" WHERE "userId" =${input.userId}
+      `;
+      return rows.map((r) => r.module);
+    }),
+
+  setUserModuleAccess: adminProcedure
+    .input(z.object({ userId: z.string(), modules: z.array(z.string()) }))
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.$transaction(async (tx) => {
+        await tx.$executeRaw`DELETE FROM "UserModuleAccess" WHERE "userId" =${input.userId}`;
+        for (const module of input.modules) {
+          const id = randomUUID();
+          await tx.$executeRaw`
+            INSERT INTO "UserModuleAccess" (id, "userId", module)
+            VALUES (${id}, ${input.userId}, ${module})
+          `;
+        }
+      });
+
+      // Sync with Google Sheets
+      try {
+        const user = await ctx.db.user.findUnique({ where: { id: input.userId } });
+        if (user) {
+          await writeUserPermissionsToSheets(
+            user.email,
+            user.id,
+            input.modules,
+            user.role
+          );
+        }
+      } catch (error) {
+        console.error(`[setUserModuleAccess] Sheets sync failed for user ${input.userId}:`, error);
+      }
+
+      // Emit real-time event
+      userEvents.emit("user-update", {
+        type: "module-access-updated",
+        userId: input.userId,
+        modules: input.modules
+      });
+
+      return { success: true };
+    }),
+
+  unlinkAccount: protectedProcedure
+    .input(z.object({ provider: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id as string;
+      
+      await ctx.db.account.deleteMany({
+        where: {
+          userId,
+          provider: input.provider,
+        },
+      });
+
+      // Emit event to refresh frontend session
+      userEvents.emit("user-linked", { userId, provider: `unlinked-${input.provider}` });
+      
+      return { success: true };
+    }),
+
+  // ── Profile Picture ───────────────────────────────────────────────────────
+
+  uploadAvatar: protectedProcedure
+    .input(z.object({
+      // base64 data URL, e.g. "data:image/png;base64,iVBOR..."
+      dataUrl: z.string().min(10),
+    }))
+    .mutation(async ({ ctx, input }) => {
+      const userId = ctx.session.user.id;
+      const fs = await import("fs/promises");
+      const path = await import("path");
+
+      // Extract extension from data URL
+      const match = input.dataUrl.match(/^data:image\/(png|jpeg|jpg|webp|gif);base64,/);
+      if (!match) throw new TRPCError({ code: "BAD_REQUEST", message: "Invalid image format" });
+
+      const ext = match[1] === "jpeg" ? "jpg" : match[1];
+      const base64Data = input.dataUrl.replace(/^data:image\/\w+;base64,/, "");
+      const buffer = Buffer.from(base64Data, "base64");
+
+      // Limit to 2MB
+      if (buffer.length > 2 * 1024 * 1024) {
+        throw new TRPCError({ code: "BAD_REQUEST", message: "Image must be under 2MB" });
+      }
+
+      const dir = path.join(process.cwd(), "public", "avatars");
+      await fs.mkdir(dir, { recursive: true });
+
+      const filename = `${userId}.${ext}`;
+      const filePath = path.join(dir, filename);
+      await fs.writeFile(filePath, buffer);
+
+      const imageUrl = `/avatars/${filename}?t=${Date.now()}`;
+      await ctx.db.$executeRaw`UPDATE "User" SET image = ${imageUrl} WHERE id = ${userId}`;
+
+      return { image: imageUrl };
+    }),
+
+  deleteAvatar: protectedProcedure.mutation(async ({ ctx }) => {
+    const userId = ctx.session.user.id;
+    const fs = await import("fs/promises");
+    const path = await import("path");
+
+    // Try to remove avatar files
+    const dir = path.join(process.cwd(), "public", "avatars");
+    for (const ext of ["png", "jpg", "webp", "gif"]) {
+      try {
+        await fs.unlink(path.join(dir, `${userId}.${ext}`));
+      } catch { /* file may not exist */ }
+    }
+
+    await ctx.db.$executeRaw`UPDATE "User" SET image = NULL WHERE id = ${userId}`;
+    return { success: true };
+  }),
+});

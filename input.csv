@@ -1,0 +1,46 @@
+Prioridad Alta,BuiltInCategory,Prioridad Media,BuiltInCategory,Prioridad Baja,BuiltInCategory,Fuera de Protocolo,BuiltInCategory,No necesario,BuiltInCategory
+Columns,OST_Columns,Air Terminals,OST_DuctTerminal,Audio Visual Devices,OST_AudioVisualDevices,Furniture Systems,OST_FurnitureSystems,Abutments,OST_BridgeAbutments
+Curtain Panels,OST_CurtainWallPanels,Cable Trays,OST_CableTray,Casework,OST_Casework,Generic Models,OST_GenericModel,Bearings,OST_BridgeBearings
+Curtain Wall Mullions,OST_CurtainWallMullions,Cable Tray Fittings,OST_CableTrayFitting,Ceilings,OST_Ceilings,Specialty Equipment,OST_SpecialityEquipment,Bridge Cables,OST_BridgeCables
+Floors,OST_Floors,Conduit,OST_Conduit,Communication Devices,OST_CommunicationDevices,Site,OST_Site,Bridge Decks,OST_BridgeDecks
+Ramps,OST_Ramps,Conduit Fittings,OST_ConduitFitting,Data Devices,OST_DataDevices,Topography,OST_Topography,Bridge Framing,OST_BridgeFraming
+Roofs,OST_Roofs,Doors,OST_Doors,Electrical Fixtures,OST_ElectricalFixtures,,,Curtain Systems,OST_CurtaSystem
+Roofs - Gutters,OST_Gutter,Duct Accessories,OST_DuctAccessory,Entourage,OST_Entourage,,,Detail Items,OST_DetailComponents
+Stairs,OST_Stairs,Duct Fittings,OST_DuctFitting,Fire Alarm Devices,OST_FireAlarmDevices,,,Duct Insulations,OST_DuctInsulations
+Stairs - Landings,OST_StairsLandings,Ducts,OST_DuctCurves,Fire Protection,OST_FireProtection,,,Duct Linings,OST_DuctLinings
+Stairs - Runs,OST_StairsRuns,Electrical Equipment,OST_ElectricalEquipment,Flex Ducts,OST_FlexDuctCurves,,,Duct Placeholders,OST_PlaceHolderDucts
+Stairs - Supports,OST_StairsStringerCarriage,Mechanical Equipment,OST_MechanicalEquipment,Flex Pipes,OST_FlexPipeCurves,,,Expansion Joints,OST_ExpansionJoints
+Stairs - Supports,OST_StairsSupports,MEP Fabrication Ductwork,OST_FabricationDuctwork,Food Service Equipment,OST_FoodServiceEquipment,,,Grids,OST_Grids
+Stairs - Treads/Risers,OST_StairsTrisers,MEP Fabrication Pipework,OST_FabricationPipework,Furniture,OST_Furniture,,,Levels,OST_Levels
+Structural Columns,OST_StructuralColumns,Pipe Accessories,OST_PipeAccessory,Hardscape,OST_Hardscape,,,Lines,OST_Lines
+Structural Foundations,OST_StructuralFoundation,Pipe Fittings,OST_PipeFitting,Lighting Devices,OST_LightingDevices,,,Mass,OST_Mass
+Structural Framing,OST_StructuralFraming,Pipes,OST_PipeCurves,Lighting Fixtures,OST_LightingFixtures,,,Piers,OST_BridgePiers
+Structural Trusses,OST_StructuralTruss,Plumbing Equipment,OST_PlumbingEquipment,Mechanical Control Devices,OST_MechanicalControlDevices,,,Pipe Insulations,OST_PipeInsulations
+Walls,OST_Walls,Sprinklers,OST_Sprinklers,Medical Equipment,OST_MedicalEquipment,,,Pipe Placeholders,OST_PlaceHolderPipes
+,,Windows,OST_Windows,MEP Ancillary Framing,OST_MEPAncillaryFraming,,,Piping Systems,OST_PipingSystem
+,,,,MEP Fabrication Containment,OST_FabricationContainment,,,Raster Images,OST_RasterImages
+,,,,MEP Fabrication Ductwork Stiffeners,OST_FabricationDuctworkStiffeners,,,Roads,OST_Roads
+,,,,MEP Fabrication Hangers,OST_FabricationHangers,,,RVT Links,OST_RvtLinks
+,,,,Nurse Call Devices,OST_NurseCallDevices,,,Scope Boxes,OST_VolumeOfInterest
+,,,,Parking,OST_Parking,,,Section Boxes,OST_SectionBox
+,,,,Planting,OST_Planting,,,Structural Area Reinforcement,OST_AreaRein
+,,,,Plumbing Fixtures,OST_PlumbingFixtures,,,Structural Fabric Areas,OST_FabricAreas
+,,,,Railings,OST_Railings,,,Structural Fabric Reinforcement,OST_FabricReinforcement
+,,,,Railings,OST_RailingSystem,,,Structural Path Reinforcement,OST_PathRein
+,,,,Railings,OST_StairsRailing,,,Structural Rebar,OST_Rebar
+,,,,Railings,OST_StairsRailingBaluster,,,Structural Rebar Couplers,OST_Coupler
+,,,,Railings,OST_StairsRailingRail,,,Structural Tendons,OST_StructuralTendons
+,,,,Railings - Balusters,OST_RailingBalusterRail,,,Temporary Structures,OST_TemporaryStructure
+,,,,Railings - Balusters,OST_RailingSystemBaluster,,,Vertical Circulation,OST_VerticalCirculation
+,,,,Railings - Handrails,OST_RailingHandRail,,,Vibration Management,OST_VibrationManagement
+,,,,Railings - Handrails,OST_RailingSystemHandRail,,,Wire,OST_Wire
+,,,,Railings - Supports,OST_RailingSupport,,,,
+,,,,Railings - Terminations,OST_RailingSystemTermination,,,,
+,,,,Railings - Top Rails,OST_RailingTopRail,,,,
+,,,,Railings - Top Rails,OST_RailingSystemTopRail,,,,
+,,,,Security Devices,OST_SecurityDevices,,,,
+,,,,Signage,OST_Signage,,,,
+,,,,Structural Connections,OST_StructConnections,,,,
+,,,,Structural Stiffeners,OST_StructuralStiffener,,,,
+,,,,Telephone Devices,OST_TelephoneDevices,,,,
+,,,,Toposolid,OST_Toposolid,,,,

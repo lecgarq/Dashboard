@@ -1,0 +1,12 @@
+[
+  "server/auth.ts: signIn, signOut",
+  "components/providers/project-provider.tsx: useProject",
+  "components/providers/navigation-provider.tsx: useNavigationLoader",
+  "hooks/use-role.ts: useModuleAccess",
+  "lib/categories.ts: FAMILY_CATEGORIES",
+  "lib/wiki-utils.ts: stripProjectPrefix",
+  "lib/aps.ts: ensureBucketExists",
+  "lib/sheets.ts: getApprovedEmails, getBlacklistedEmails, getBlacklistedRequestsFromSheets, getPendingRequestsFromSheets, getPendingEmails, blacklistUserInSheets, unblacklistUserInSheets, removeUserFromApprovedInSheets, syncWhitelist, approveUserInSheets, declineUserInSheets, MODULES_LIST",
+  "components/families/KanbanBoard.tsx: KanbanBoard",
+  "lib/holidays.ts: MX_HOLIDAYS_2026, isNonWorkingDay"
+]
