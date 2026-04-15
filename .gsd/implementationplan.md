@@ -130,15 +130,22 @@ A one-time Node.js script that:
 5. Updates pgvector column via raw SQL: `UPDATE "LodEmbedding" SET pgvector = vector FROM (SELECT ...) ...`
 6. Creates `LodCategory` rows
 
-### Image Migration
+### Image Migration (Free Tier)
 
-Two options:
+> **Reality check**: 24,623 images totaling **37 GB** — no free tier can hold the originals.
 
-**Option A: UploadThing** — Upload all thumbnails to UploadThing CDN, store URLs in `imagePath`/`thumbPath`. Pros: CDN-backed, works on Railway. Cons: Slow initial upload (thousands of files).
+**Strategy: Compressed WebP Thumbnails → Supabase Storage (1 GB free)**
 
-**Option B: Static serving** — Copy images to `public/lod-images/` in the Dashboard repo. Pros: Simple. Cons: Bloats repo. Not recommended for production.
+```bash
+# Local batch conversion (one-time)
+# Requires: npm install sharp-cli -g
+find ./00_data/img -name "*.png" | parallel -j8 sharp -i {} -o ./thumbs/{/.}.webp resize 200 200 --fit inside --format webp --quality 80
+```
 
-**Recommended: Option A** (UploadThing) with a batch migration script.
+1. Convert all PNGs → 200×200 WebP (~10 KB each, ~250 MB total)
+2. Upload to Supabase Storage public bucket (`lod-thumbs`)
+3. Store URLs as `https://<project>.supabase.co/storage/v1/object/public/lod-thumbs/<filename>.webp`
+4. Full-res images stay local, never uploaded
 
 ---
 
@@ -469,8 +476,8 @@ This is the most complex component to port. It renders thousands of nodes on a `
 | --- | --- |
 | `GET /api/search` | `trpc.lod.search.useQuery()` |
 | `GET /vectors/graph_data.json` | `trpc.lod.getGraphData.useQuery()` |
-| `GET /img/<path>` | UploadThing URLs in `LodFamily.imagePath` |
-| `GET /img/thumb/<path>` | UploadThing URLs in `LodFamily.thumbPath` |
+| `GET /img/<path>` | Supabase Storage URL in `LodFamily.imagePath` |
+| `GET /img/thumb/<path>` | Supabase Storage URL in `LodFamily.thumbPath` |
 | `POST /api/analyze_batch` | `trpc.lod.analyzeBatch.useMutation()` |
 | `DELETE /api/delete/image` | `trpc.lod.deleteFamily.useMutation()` |
 | `GET /api/aps/token` | Already exists (`trpc.search.getApsToken`) |
@@ -504,27 +511,116 @@ The ML pipeline (CUDA-required) stays local but outputs to the Dashboard databas
 
 ---
 
-## Execution Order
+## ⚠️ FREE-TIER BUDGET ANALYSIS
 
-| # | Phase | Effort | Dependencies |
-| --- | --- | --- | --- |
-| 1 | Database Schema + Migration | 1 day | pgvector enabled on Supabase |
-| 2 | Data Migration Script | 1 day | Phase 1 |
-| 3 | tRPC Router + Search | 2 days | Phase 2 |
-| 4 | Frontend Components | 3-4 days | Phase 3 |
-| 5 | Kill iframe + Integration | 0.5 day | Phase 4 |
-| 6 | Pipeline Adapter | 0.5 day | Phase 3 |
+> **Constraint**: All services must be free tier. Only OpenAI is exempt.
 
-**Total: ~8-9 working days**
+### Service-by-Service Free Tier Audit
+
+| Service | Free Tier Limit | LOD Checker Needs | ✅/❌ | Notes |
+| --- | --- | --- | --- | --- |
+| **Supabase (DB)** | 500 MB database | ~51 MB (families + embeddings + graph) | ✅ Fits | pgvector included. ~449 MB headroom for Dashboard data. |
+| **Supabase (Storage)** | 1 GB file storage | **37 GB images** (24,623 files) | ❌ **WAY OVER** | Must compress or subset. See Image Strategy below. |
+| **Supabase (Egress)** | 5 GB/month | Search results + images | ⚠️ Tight | Must serve images from CDN or static. |
+| **UploadThing** | 2 GB storage | **37 GB images** | ❌ **WAY OVER** | Cannot use for full image library. |
+| **Railway** | $1/month free credit | Next.js app | ⚠️ Tight | Fine for light usage. Will pause on idle. |
+| **OpenAI** | Paid (user approved) | Query expansion + embeddings | ✅ Allowed | User explicitly approved this cost. |
+| **Vercel** (alternative) | 100 GB bandwidth | App hosting | ✅ Fits | Free hobby tier if migrating from Railway. |
+
+### The Image Problem: 37 GB → Free Tier
+
+24,623 images totaling **37 GB** is the biggest free-tier challenge. Here are the options:
+
+#### Option A: Compressed Thumbnails Only (RECOMMENDED)
+
+Generate small WebP thumbnails (200×200px) from the full images. Estimated size reduction:
+
+```
+Original:    37 GB (24,623 files × ~1.5 MB avg PNG)
+WebP 200px:  ~250 MB (24,623 files × ~10 KB avg WebP)
+```
+
+**250 MB fits in Supabase Storage (1 GB free)** with room to spare.
+
+Implementation:
+1. Run a local batch script to convert all PNGs → WebP thumbnails
+2. Upload thumbnails to Supabase Storage (public bucket)
+3. Store CDN URLs in `LodFamily.thumbPath`
+4. Full-res images stay local (never uploaded)
+
+#### Option B: Static Hosting in Next.js `public/`
+
+Copy compressed thumbnails into `public/lod-thumbs/` in the repo.
+
+- Pro: No external storage needed, served by Railway/Vercel
+- Con: Bloats the repo by ~250 MB, slow git operations
+- Verdict: **Acceptable if Supabase Storage egress is a concern**
+
+#### Option C: GitHub Releases as CDN (Hacky but free)
+
+Upload a `.tar.gz` of thumbnails as a GitHub Release asset. Serve via `raw.githubusercontent.com`.
+
+- Pro: Unlimited free bandwidth
+- Con: Not a real CDN, 2 GB release limit per file
+- Verdict: **Last resort**
+
+### Database Size Budget
+
+```
+Current Dashboard DB usage:    ~20 MB (estimated)
+LOD Family records:            ~5 MB
+LOD Embeddings (pgvector):     ~30 MB
+LOD Graph Nodes:               ~1 MB
+LOD Categories:                ~0.1 MB
+LOD Search Cache:              ~2 MB
+APS Project Search Cache:      ~1 MB
+IVFFlat vector index:          ~15 MB
+                               ─────────
+Total estimated:               ~74 MB out of 500 MB
+Headroom:                      ~426 MB (85% free)
+```
+
+✅ **Database fits comfortably in Supabase free tier.**
+
+### Supabase Free Tier Gotchas
+
+| Gotcha | Impact | Mitigation |
+| --- | --- | --- |
+| **Auto-pause after 7 days idle** | Dashboard goes offline on weekends | Add a cron job or UptimeRobot ping to keep it alive |
+| **2 project limit** | Can't create a separate DB for LOD | Use same project — all models in one DB |
+| **500 MB RAM shared CPU** | pgvector IVFFlat search may be slow | Fine for <10K records; HNSW is faster but uses more RAM |
+| **5 GB egress/month** | Heavy search traffic could hit limit | Cache aggressively; serve images from storage CDN |
 
 ---
 
-## Risk Assessment
+## Execution Order (Updated for Free Tier)
+
+| # | Phase | Effort | Dependencies |
+| --- | --- | --- | --- |
+| 1 | Database Schema + pgvector Migration | 1 day | pgvector enabled on Supabase |
+| 2 | Data Migration Script (JSON → PostgreSQL) | 1 day | Phase 1 |
+| 3 | Image Compression + Supabase Storage Upload | 0.5 day | Local imagemagick/sharp |
+| 3.5 | Port Addin APS Patterns → `aps-search.ts` | 1.5 days | Phase 1 (cache model) |
+| 4 | tRPC Router + Search | 2 days | Phase 2 |
+| 5 | Frontend Components | 3-4 days | Phase 4 |
+| 6 | Kill iframe + Integration | 0.5 day | Phase 5 |
+| 7 | Pipeline Adapter (local → DB upload) | 0.5 day | Phase 4 |
+
+**Total: ~10-11 working days**
+
+---
+
+## Risk Assessment (Updated)
 
 | Risk | Mitigation |
 | --- | --- |
-| pgvector not available on Supabase plan | Supabase Free includes pgvector; verify with `SELECT * FROM pg_extension` |
-| 831 MB migration OOM | Use streaming JSON parser (`json-stream-stringify`) |
-| Graph canvas port complexity | Port rendering code as-is; it's vanilla Canvas 2D, framework-agnostic |
-| SigLIP vs OpenAI embedding compatibility | If Dashboard uses OpenAI embeddings instead of SigLIP, must re-embed all families. Budget 1 day. |
-| Image migration to UploadThing | Batch upload in chunks of 50. ~2 GB total. Budget 2-4 hours. |
+| **Supabase 500 MB limit exceeded** | Current estimate is ~74 MB. Monitor with `SELECT pg_database_size(current_database())` |
+| **Supabase auto-pause** | UptimeRobot free plan pings every 5 min to keep project active |
+| **37 GB images can't fit free tier** | Compress to WebP thumbnails (~250 MB) → Supabase Storage 1 GB |
+| **5 GB egress exceeded** | Cache search results aggressively, use browser `Cache-Control` headers |
+| **pgvector not on free Supabase** | Confirmed: pgvector IS included on free tier |
+| **831 MB migration OOM** | Use streaming JSON parser (`json-stream-stringify` or `stream-json`) |
+| **Graph canvas port complexity** | Port rendering code as-is; it's vanilla Canvas 2D, framework-agnostic |
+| **SigLIP vs OpenAI embeddings** | If using OpenAI text-embedding-3-small instead of SigLIP, must re-embed. Budget 1 day + API cost. |
+| **Railway $1/month budget** | Monitor usage. Next.js with SSR may exceed. Consider Vercel free tier as alternative. |
+
