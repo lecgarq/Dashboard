@@ -2,17 +2,17 @@
 
 ## Last Session Summary
 
-Codebase mapping complete (Master Ecosystem Phase - 2026-04-15).
+Codebase mapping complete (Master Internal Phase - 2026-04-15).
 
-- **Global LECG Topology**: Mapped the Dashboard as the hub for the Revit Addin (desktop), LOD Checker, and SimAutomation suite.
-- **Desktop-to-Web Telemetry**: Trace-mapped the common PostgreSQL data layer for Revit Exams and binary Yjs Wiki state synchronization.
-- **Unified Identity**: Documented the shared Autodesk (APS) and Google Workspace identity flow across desktop and web platforms.
-- **Operational Philosophy**: Documented the "Context-Singleton" pattern and tiered procedure isolation logic.
-- **Infrastructure Services**: Finalized the 6-service ecosystem port matrix (Dashboard, Yjs, LOD, Addin Listener, Database, Sim Engine).
+- **Data Model Deep-Dive**: Documented the full Prisma schema relationship graph (Auth -> Project -> Modules).
+- **Internal State Machines**: Mapped the explicit string-based status systems for Families, APS URNs, and Clash Tasks.
+- **Onboarding Workflow**: Deep-dive into the `ApprovedEmail` and `PendingRequest` whitelist logic.
+- **Service Clone Pattern**: Formally documented the duplication between the `Sim` and `Clash` modules.
+- **Real-time Persistence**: Mapped the binary `yjsState` storage within the relational database.
 
 ## Current Session Summary
 
-- **Master Ecosystem Mapping (Global Audit)**: Conducted the absolute highest-fidelity audit of the LECG ecosystem interlinks.
-- **Ecosystem Topology**: Formally documented the relationship between the C# Addin and the Next.js Dashboard.
-- **Telemetry Validation**: Verified the shared database persistence for cross-platform data entities.
-- **Unified Port Mapping**: Finalized the global connectivity matrix for the entire LECG suite.
+- **Master Internal Mapping (Dashboard Audit)**: Conducted the absolute highest-fidelity audit of the Dashboard's local folder.
+- **Data Graph Mapping**: Formally documented the Prisma schema and internal state machines.
+- **Auth Perimeter**: Detailed the custom onboarding and whitelist flow.
+- **Operational Logic**: Traced the internal Project Singleton and tiered procedure protection logic.
