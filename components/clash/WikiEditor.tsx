@@ -158,8 +158,8 @@ import {
   Loader2,
   Link as LinkIcon,
 } from "lucide-react";
-import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { trpc } from "@/lib/core/trpc";
+import { cn } from "@/lib/core/utils";
 import {
   Save,
   Printer,
@@ -173,6 +173,17 @@ import {
   Underline as UnderlineIcon,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
+import { createClientLogger } from "@/lib/core/logger";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 type WikiStatus = "DRAFT" | "REVIEW" | "APPROVED";
 type AutoSaveState = "idle" | "pending" | "saving" | "saved";
@@ -230,16 +241,24 @@ function getYjsWsUrl(): string {
   return envUrl;
 }
 
-const yjsCache = new Map<string, { ydoc: Y.Doc; provider: WebsocketProvider; refCount: number }>();
+const yjsCache = new Map<string, { ydoc: Y.Doc; provider: WebsocketProvider; refCount: number; authToken: string }>();
 
-function getOrCreateYjsProvider(roomName: string, email?: string) {
+const wikiLogger = createClientLogger("WikiEditor");
+
+function getOrCreateYjsProvider(roomName: string, authToken: string) {
   let cached = yjsCache.get(roomName);
+  if (cached && cached.authToken !== authToken) {
+    cached.provider.destroy();
+    cached.ydoc.destroy();
+    yjsCache.delete(roomName);
+    cached = undefined;
+  }
   if (!cached) {
     const baseUrl = getYjsWsUrl();
-    const secureUrl = email ? `${baseUrl}?email=${encodeURIComponent(email)}` : baseUrl;
     const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(secureUrl, roomName, ydoc, {
+    const provider = new WebsocketProvider(baseUrl, roomName, ydoc, {
       connect: false,
+      params: { token: authToken },
       // Reduce reconnect spam when WS server is unavailable
       maxBackoffTime: 10000,
     });
@@ -247,9 +266,9 @@ function getOrCreateYjsProvider(roomName: string, email?: string) {
     try {
       provider.connect();
     } catch {
-      console.warn(`[WikiEditor] Failed to connect WebSocket for room "${roomName}"`);
+      wikiLogger.warn(`Failed to connect WebSocket for room "${roomName}"`);
     }
-    cached = { ydoc, provider, refCount: 0 };
+    cached = { ydoc, provider, refCount: 0, authToken };
     yjsCache.set(roomName, cached);
   }
   return cached;
@@ -264,24 +283,83 @@ export function WikiEditor({
 }: WikiEditorProps) {
   const { data: session } = useSession();
   const utils = trpc.useUtils();
+  const canEdit = isAdmin;
 
   const [status, setStatus] = useState<WikiStatus>(section.status as WikiStatus);
   const [localTitle, setLocalTitle] = useState(section.title);
   const [isDirty, setIsDirty] = useState(false);
   const [contentVersion, setContentVersion] = useState(0);
   const [autoSaveState, setAutoSaveState] = useState<AutoSaveState>("idle");
+  const [collabToken, setCollabToken] = useState<string | null>(null);
+  const [collabError, setCollabError] = useState<string | null>(null);
   const debouncedVersion = useDebounce(contentVersion, 1500);
   const currentHtmlRef = useRef(section.content);
-
-  // Set up Yjs for real-time collaboration using a robust singleton pattern for StrictMode
-  const { ydoc, provider } = useMemo(() => {
-    const roomName = `wiki-room-${module}-${section.id}`;
-    return getOrCreateYjsProvider(roomName, session?.user?.email ?? undefined);
-  }, [module, section.id, session?.user?.email]);
+  const [roomName] = useState(() => `wiki-room-${module}-${section.id}`);
+  
+  // Link dialog state
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState("");
 
   useEffect(() => {
-    const roomName = `wiki-room-${module}-${section.id}`;
-    const cached = getOrCreateYjsProvider(roomName, session?.user?.email ?? undefined);
+    if (!canEdit) {
+      setCollabToken(null);
+      setCollabError(null);
+      return;
+    }
+
+    const controller = new AbortController();
+    setCollabError(null);
+    setCollabToken(null);
+
+    void (async () => {
+      try {
+        const response = await fetch("/api/wiki-collab-token", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            module,
+            sectionId: section.id,
+          }),
+          signal: controller.signal,
+        });
+
+        const payload = await response.json().catch(() => null);
+        if (!response.ok || !payload?.token) {
+          throw new Error(
+            typeof payload?.error === "string"
+              ? payload.error
+              : "Collaboration authorization failed"
+          );
+        }
+
+        setCollabToken(payload.token);
+      } catch (error) {
+        if (controller.signal.aborted) return;
+        setCollabError(error instanceof Error ? error.message : "Collaboration authorization failed");
+      }
+    })();
+
+    return () => {
+      controller.abort();
+    };
+  }, [canEdit, module, section.id]);
+
+  // Set up Yjs for real-time collaboration using a robust singleton pattern for StrictMode
+  const collabSession = useMemo(() => {
+    if (!canEdit || !collabToken) return null;
+    return getOrCreateYjsProvider(roomName, collabToken);
+  }, [canEdit, collabToken, roomName]);
+  const editorCanWrite = canEdit && !!collabSession;
+
+  const ydoc = collabSession?.ydoc ?? null;
+  const provider = collabSession?.provider ?? null;
+
+  useEffect(() => {
+    if (!collabSession) return;
+
+    const cached = collabSession;
     cached.refCount++;
 
     return () => {
@@ -297,7 +375,7 @@ export function WikiEditor({
         }, 100);
       }
     };
-  }, [module, section.id]);
+  }, [collabSession, roomName]);
 
   // Refs for stable closures in useEditor paste/drop handlers
   const editorRef = useRef<ReturnType<typeof useEditor>>(null);
@@ -333,18 +411,22 @@ export function WikiEditor({
           class: 'text-primary underline cursor-pointer',
         },
       }),
-      Collaboration.configure({
-        document: ydoc,
-      }),
-      CollaborationCaret.configure({
-        provider: provider,
-        user: {
-          name: session?.user?.name || session?.user?.email?.split('@')[0] || "Anonymous",
-          color: color,
-        },
-      }),
+      ...(ydoc && provider
+        ? [
+            Collaboration.configure({
+              document: ydoc,
+            }),
+            CollaborationCaret.configure({
+              provider: provider,
+              user: {
+                name: session?.user?.name || session?.user?.email?.split('@')[0] || "Anonymous",
+                color: color,
+              },
+            }),
+          ]
+        : []),
     ];
-  }, [session, ydoc, provider]);
+  }, [provider, session, ydoc]);
 
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
@@ -352,70 +434,113 @@ export function WikiEditor({
 
   const handleMediaUpload = useCallback(async (files: File[]) => {
     const ed = editorRef.current;
-    if (!ed) {
-      console.warn("[WikiEditor] No editor instance found in ref");
-      return;
-    }
+    if (!ed || !editorCanWrite) return;
     
     setUploadError(null);
     setIsUploading(true);
     setUploadProgress(0);
-    console.log(`[WikiEditor] Starting upload of ${files.length} files...`);
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        let file = files[i];
-        console.log(`[WikiEditor] Processing file ${i + 1}: ${file.name} (${file.type})`);
-        setUploadProgress(Math.round(((i) / files.length) * 100));
+      // Parallelize compression and upload
+      const results = await Promise.allSettled(files.map(async (file, index) => {
+        // 1. Create Optimistic Placeholder
+        const localUrl = URL.createObjectURL(file);
+        const tempId = `temp-${Date.now()}-${index}`;
 
-        if (file.type.startsWith('image/')) {
-          file = await compressImage(file);
+        try {
+          if (file.type.startsWith("video/")) {
+            ed.chain().focus().insertContent({
+              type: 'video',
+              attrs: { src: localUrl, id: tempId, isOptimistic: true }
+            }).run();
+          } else {
+            (ed.chain().focus() as any).setImage({ 
+              src: localUrl, 
+              id: tempId,
+              isOptimistic: true 
+            }).run();
+          }
+
+          // 2. Process File
+          let processedFile = file;
+          if (file.type.startsWith('image/')) {
+            processedFile = await compressImage(file);
+          }
+
+          const formData = new FormData();
+          formData.append("file", processedFile);
+
+          const res = await fetch("/api/wiki-media", {
+            method: "POST",
+            headers: {
+              "x-wiki-module": module,
+            },
+            body: formData,
+          });
+
+          if (!res.ok) {
+            const payload = await res.json().catch(() => null);
+            throw new Error(
+              typeof payload?.error === "string" ? payload.error : "Upload failed"
+            );
+          }
+
+          const { url } = await res.json();
+          
+          // 3. Finalize: Replace placeholder with real URL
+          // We find the node with the temp ID and update its src
+          ed.state.doc.descendants((node, pos) => {
+            if (node.attrs.id === tempId) {
+              ed.chain().setNodeSelection(pos).updateAttributes(node.type.name, {
+                src: url,
+                isOptimistic: false,
+                id: null // clear temp id
+              }).run();
+              return false;
+            }
+          });
+        } catch (error) {
+          let failedNodePosition: number | null = null;
+          ed.state.doc.descendants((node, pos) => {
+            if (node.attrs.id === tempId) {
+              failedNodePosition = pos;
+              return false;
+            }
+            return true;
+          });
+
+          if (failedNodePosition !== null) {
+            ed.chain().setNodeSelection(failedNodePosition).deleteSelection().run();
+          }
+
+          throw error;
+        } finally {
+          URL.revokeObjectURL(localUrl);
+          setUploadProgress(prev => Math.min(100, prev + Math.round(100 / files.length)));
         }
+      }));
 
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const res = await fetch("/api/wiki-media", {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!res.ok) {
-          const err = await res.json().catch(() => ({ error: "Upload failed" }));
-          console.error("[WikiMedia] API Error:", err.error);
-          throw new Error(typeof err.error === "string" ? err.error : "Upload failed");
-        }
-
-        const { url } = await res.json();
-        console.log(`[WikiEditor] Upload success: ${url}`);
-
-        if (file.type.startsWith("video/")) {
-          ed.chain().focus().insertContent({
-            type: 'video',
-            attrs: { src: url }
-          }).run();
-        } else {
-          (ed.chain().focus() as any).setImage({ src: url }).run();
-        }
-
-        setUploadProgress(Math.round(((i + 1) / files.length) * 100));
+      const failed = results.filter((result) => result.status === "rejected");
+      if (failed.length > 0) {
+        setUploadError(
+          failed.length === files.length
+            ? "Media upload failed"
+            : `${failed.length} file${failed.length === 1 ? "" : "s"} failed to upload`
+        );
       }
     } catch (err) {
-      console.error("[WikiEditor] Upload sequence failed:", err);
       setUploadError(err instanceof Error ? err.message : "Media upload failed");
     } finally {
       setIsUploading(false);
       setUploadProgress(100);
-      console.log("[WikiEditor] Upload sequence finished.");
     }
-  }, []);
+  }, [editorCanWrite, module]);
 
   const uploadRef = useRef(handleMediaUpload);
   uploadRef.current = handleMediaUpload;
 
   const editorProps = useMemo(() => ({
     handlePaste: (view: any, event: ClipboardEvent) => {
-      console.log("[WikiEditor] handlePaste invoked. clipboardData:", event.clipboardData);
       const clipboardData = event.clipboardData;
       if (!clipboardData) return false;
 
@@ -424,7 +549,6 @@ export function WikiEditor({
         .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
       
       if (files.length > 0) {
-        console.log(`[WikiEditor] Paste detected ${files.length} direct files.`);
         event.preventDefault();
         uploadRef.current(files);
         return true;
@@ -437,13 +561,11 @@ export function WikiEditor({
         .filter((file): file is File => !!file && (file.type.startsWith('image/') || file.type.startsWith('video/')));
       
       if (itemFiles.length > 0) {
-        console.log(`[WikiEditor] Paste detected ${itemFiles.length} item files.`);
         event.preventDefault();
         uploadRef.current(itemFiles);
         return true;
       }
       
-      console.log("[WikiEditor] No media found in paste.");
       return false;
     },
     handleDrop: (view: any, event: DragEvent) => {
@@ -455,7 +577,6 @@ export function WikiEditor({
       
       if (files.length > 0) {
         event.preventDefault();
-        console.log(`[WikiEditor] Drop detected with ${files.length} media files`);
         uploadRef.current(files);
         return true;
       }
@@ -468,7 +589,8 @@ export function WikiEditor({
 
   const editor = useEditor({
     extensions,
-    editable: isAdmin,
+    editable: canEdit && !!collabSession,
+    content: !canEdit ? section.content : "",
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
       currentHtmlRef.current = editor.getHTML();
@@ -481,7 +603,7 @@ export function WikiEditor({
 
   // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty!
   useEffect(() => {
-    if (!editor || !section.content) return;
+    if (!editor || !provider || !section.content) return;
     
     let initialized = false;
     
@@ -672,8 +794,9 @@ export function WikiEditor({
         {
           icon: LinkIcon,
           action: () => {
-            const url = window.prompt('URL');
-            if (url) editor.chain().focus().setLink({ href: url }).run();
+            const currentUrl = editor.getAttributes("link").href || "";
+            setLinkUrl(currentUrl);
+            setLinkDialogOpen(true);
           },
           active: editor.isActive("link"),
           label: "Link",
@@ -701,10 +824,11 @@ export function WikiEditor({
 
   return (
     <div className="flex flex-col h-full">
-      {isAdmin && editor && (
+      {canEdit && editor && (
       <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-card/50 backdrop-blur-sm shrink-0">
         <div className="flex items-center gap-0.5">
             <Select 
+              disabled={!editorCanWrite}
               onValueChange={(value) => editor.chain().focus().setFontFamily(value).run()}
             >
               <SelectTrigger className="h-7 w-[100px] text-[10px] bg-secondary/30 border-none hover:bg-secondary/50 transition-colors">
@@ -730,6 +854,7 @@ export function WikiEditor({
                accept="image/*"
                multiple
                className="hidden"
+               title="Upload Image"
                onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length > 0) handleMediaUpload(files);
@@ -741,6 +866,7 @@ export function WikiEditor({
                accept="video/*"
                multiple
                className="hidden"
+               title="Upload Video"
                onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length > 0) handleMediaUpload(files);
@@ -753,7 +879,7 @@ export function WikiEditor({
                 <button
                   key={btn.label}
                   onClick={btn.action}
-                  disabled={isUploading}
+                  disabled={isUploading || !editorCanWrite}
                   title={btn.label}
                   className={cn(
                     "p-1.5 rounded-md transition-smooth",
@@ -778,6 +904,11 @@ export function WikiEditor({
                 {uploadError}
               </span>
             )}
+            {collabError && (
+              <span className="ml-2 text-[11px] text-destructive">
+                {collabError}
+              </span>
+            )}
           </div>
 
           <div className="flex items-center gap-2">
@@ -796,7 +927,7 @@ export function WikiEditor({
                 <Check size={11} /> Saved
               </span>
             )}
-            {autoSaveState === "idle" && isDirty && (
+            {autoSaveState === "idle" && isDirty && editorCanWrite && (
               <Button
                 size="sm"
                 className="h-7 text-xs gap-1.5 gradient-accent text-white hover:opacity-90"
@@ -824,6 +955,7 @@ export function WikiEditor({
            <input 
               className="w-full bg-transparent text-3xl font-bold text-foreground outline-none border-none placeholder:opacity-20"
               value={localTitle}
+              disabled={!editorCanWrite}
               onChange={(e) => {
                 setLocalTitle(e.target.value);
                 setIsDirty(true);
@@ -835,6 +967,73 @@ export function WikiEditor({
         </div>
         <EditorContent editor={editor} />
       </div>
+      <WikiLinkDialog
+        isOpen={linkDialogOpen}
+        onOpenChange={setLinkDialogOpen}
+        url={linkUrl}
+        setUrl={setLinkUrl}
+        onApply={(url) => {
+          if (!editor) return;
+          if (url) {
+            editor.chain().focus().setLink({ href: url }).run();
+          } else {
+            editor.chain().focus().unsetLink().run();
+          }
+          setLinkDialogOpen(false);
+          setLinkUrl("");
+        }}
+      />
     </div>
+  );
+}
+
+function WikiLinkDialog({
+  isOpen,
+  onOpenChange,
+  url,
+  setUrl,
+  onApply,
+}: {
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
+  url: string;
+  setUrl: (url: string) => void;
+  onApply: (url: string) => void;
+}) {
+  return (
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Insert Link</DialogTitle>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="link-url">Destination URL</Label>
+            <Input
+              id="link-url"
+              placeholder="https://example.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  onApply(url);
+                }
+              }}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <DialogClose asChild>
+            <Button variant="ghost">Cancel</Button>
+          </DialogClose>
+          <Button
+            onClick={() => onApply(url)}
+            disabled={!url.trim()}
+          >
+            Apply Link
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

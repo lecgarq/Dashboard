@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Script from "next/script";
 import { Loader2, Box, Info } from "lucide-react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 interface BimViewerProps {
   urn: string;
@@ -22,9 +22,19 @@ export function BimViewer({ urn }: BimViewerProps) {
   const [error, setError] = useState<string | null>(null);
   const [scriptLoaded, setScriptLoaded] = useState(false);
 
-  const { data: tokenData } = trpc.search.getApsToken.useQuery(undefined, {
+  const {
+    data: tokenData,
+    isError: hasTokenError,
+    error: tokenError,
+  } = trpc.search.getApsToken.useQuery(undefined, {
     refetchInterval: 30 * 60 * 1000, // Token lasts 1hr, refresh at 30min
   });
+
+  useEffect(() => {
+    if (!hasTokenError) return;
+    setIsLoaded(false);
+    setError(tokenError.message ?? "Autodesk connection is required.");
+  }, [hasTokenError, tokenError]);
 
   useEffect(() => {
     if (!tokenData?.token || !scriptLoaded || !window.Autodesk) return;
@@ -32,11 +42,17 @@ export function BimViewer({ urn }: BimViewerProps) {
     const initViewer = () => {
       if (!containerRef.current) return;
 
+      setError(null);
+      setIsLoaded(false);
+
       const options = {
         env: "AutodeskProduction2",
         api: "streamingV2",
         getAccessToken: (cb: (token: string, expires: number) => void) => {
-          cb(tokenData.token, 3600);
+          const expiresIn = tokenData.expiresAt
+            ? Math.max(60, tokenData.expiresAt - Math.floor(Date.now() / 1000))
+            : 3600;
+          cb(tokenData.token, expiresIn);
         },
       };
 
@@ -97,7 +113,11 @@ export function BimViewer({ urn }: BimViewerProps) {
         <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/60 backdrop-blur-sm p-4 text-center">
           <Info className="w-8 h-8 text-destructive mb-2" />
           <p className="text-sm text-foreground font-bold">{error}</p>
-          <p className="text-xs text-muted-foreground mt-1">Check if the translation is complete.</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {hasTokenError
+              ? "Link Autodesk in your account settings and try again."
+              : "Check if the translation is complete."}
+          </p>
         </div>
       )}
 

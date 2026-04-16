@@ -20,6 +20,13 @@ export interface GoogleDriveOAuthConfig extends GooglePrimaryOAuthClientConfig {
   redirectUri: string;
 }
 
+let cachedDriveOAuthClient:
+  | {
+      key: string;
+      client: InstanceType<typeof google.auth.OAuth2>;
+    }
+  | null = null;
+
 export function getPrimaryGoogleOAuthClientConfig(): GooglePrimaryOAuthClientConfig {
   const clientId = process.env.GOOGLE_CLIENT_ID?.trim();
   const clientSecret = process.env.GOOGLE_CLIENT_SECRET?.trim();
@@ -33,8 +40,8 @@ export function getPrimaryGoogleOAuthClientConfig(): GooglePrimaryOAuthClientCon
   }
 
   return {
-    clientId: clientId as string,
-    clientSecret: clientSecret as string,
+    clientId: clientId!,
+    clientSecret: clientSecret!,
   };
 }
 
@@ -76,20 +83,38 @@ export function getGoogleDriveOAuthConfig(): GoogleDriveOAuthConfig {
   }
 
   return {
-    clientId: clientId as string,
-    clientSecret: clientSecret as string,
-    refreshToken: refreshToken as string,
+    clientId: clientId!,
+    clientSecret: clientSecret!,
+    refreshToken: refreshToken!,
     redirectUri,
   };
 }
 
 export function buildGoogleDriveOAuthClient() {
   const config = getGoogleDriveOAuthConfig();
+  const key = [
+    config.clientId,
+    config.clientSecret,
+    config.refreshToken,
+    config.redirectUri,
+  ].join("::");
+
+  if (cachedDriveOAuthClient?.key === key) {
+    cachedDriveOAuthClient.client.setCredentials({
+      refresh_token: config.refreshToken,
+    });
+    return cachedDriveOAuthClient.client;
+  }
+
   const oauth2 = new google.auth.OAuth2(
     config.clientId,
     config.clientSecret,
     config.redirectUri
   );
   oauth2.setCredentials({ refresh_token: config.refreshToken });
+  cachedDriveOAuthClient = {
+    key,
+    client: oauth2,
+  };
   return oauth2;
 }

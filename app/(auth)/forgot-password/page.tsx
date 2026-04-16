@@ -7,7 +7,7 @@ import { ArrowRight, Mail, Sparkles } from "lucide-react";
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 function ForgotPasswordForm() {
   const [email, setEmail] = useState("");

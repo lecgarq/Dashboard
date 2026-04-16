@@ -1,4 +1,4 @@
-import simEvents, { type SimEvent } from "@/lib/sim-events";
+import simEvents, { type SimEvent } from "@/lib/events/sim";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

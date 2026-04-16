@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { trpc } from "@/lib/trpc";
+import { clientLogger } from "@/lib/core/logger";
+import { trpc } from "@/lib/core/trpc";
 
 interface NewMessageEvent {
   type: "new_message";
@@ -28,7 +29,7 @@ export function useChatPulse(onNewMessage?: (event: NewMessageEvent) => void) {
     function connect() {
       if (typeof window === "undefined") return;
       
-      console.log("[Chat Pulse] Connecting to live stream...");
+      clientLogger.log("[Chat Pulse] Connecting to live stream...");
       eventSource = new EventSource("/api/chat/stream");
 
       eventSource.onmessage = (event) => {
@@ -48,7 +49,7 @@ export function useChatPulse(onNewMessage?: (event: NewMessageEvent) => void) {
               if (firstId) processedIdsRef.current.delete(firstId);
             }
 
-            console.log(`[Chat Pulse] New message in ${data.spaceDisplayName}`);
+            clientLogger.log(`[Chat Pulse] New message in ${data.spaceDisplayName}`);
             
             // 1. Invalidate both spaces and messages to refresh the UI
             void utils.chat.getSpaces.invalidate();
@@ -58,12 +59,12 @@ export function useChatPulse(onNewMessage?: (event: NewMessageEvent) => void) {
             onNewMessage?.(data);
           }
         } catch (err) {
-          console.error("[Chat Pulse] Failed to parse message event:", err);
+          clientLogger.error("[Chat Pulse] Failed to parse message event:", err);
         }
       };
 
       eventSource.onerror = (err) => {
-        console.warn("[Chat Pulse] Stream error, attempting reconnect...", err);
+        clientLogger.warn("[Chat Pulse] Stream error, attempting reconnect...", err);
         eventSource?.close();
         
         if (retryCount < MAX_RETRIES) {

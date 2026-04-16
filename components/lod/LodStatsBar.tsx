@@ -1,6 +1,6 @@
 "use client";
 
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { Badge } from "@/components/ui/badge";
 import { LayoutGrid, Tag, Building2, Library } from "lucide-react";
 

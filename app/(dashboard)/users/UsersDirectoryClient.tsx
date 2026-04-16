@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition, useCallback, useRef, useEffect } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -37,7 +37,7 @@ import {
   Check,
   ExternalLink,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 // ---------------------------------------------------------------------------
 // Types

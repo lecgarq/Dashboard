@@ -18,9 +18,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import {
   Plus,
   FileText,

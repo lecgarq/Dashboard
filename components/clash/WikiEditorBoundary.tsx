@@ -4,6 +4,7 @@ import React from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isChunkLoadError } from "@/lib/chunk-load-error";
+import { clientLogger } from "@/lib/core/logger";
 
 interface State {
   hasError: boolean;
@@ -22,7 +23,7 @@ export class WikiEditorBoundary extends React.Component<
   }
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
-    console.error("[WikiEditorBoundary]", error, info);
+    clientLogger.error("[WikiEditorBoundary]", error, info);
   }
 
   handleRetry = () => {

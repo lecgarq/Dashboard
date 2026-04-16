@@ -349,7 +349,7 @@ model LodFamily {
   fullDescription    String?
   confidenceLevel    String?
   fileSizeKb         Float?
-  possibleCategories String[]
+  possibleCategories String[] @default([])
   originalFile       String?
   imagePath          String?
   thumbPath          String?
@@ -380,7 +380,7 @@ model LodGraphNode {
   family    LodFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
   x         Float
   y         Float
-  neighbors Int[]
+  neighbors Int[]     @default([])
 
   @@index([familyId])
 }
@@ -396,13 +396,16 @@ model LodCategory {
 }
 
 model LodSearchCache {
-  id            String   @id @default(cuid())
-  queryHash     String   @unique
-  expandedQuery String
-  resultIds     String[]
-  createdAt     DateTime @default(now())
+  id             String   @id @default(cuid())
+  queryHash      String   @unique
+  expandedQuery  String
+  encoderVersion String   @default("siglip-query-v1")
+  resultIds      String[] @default([])
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
 
   @@index([queryHash])
+  @@index([expiresAt])
 }
 
 model ApsProjectSearchCache {

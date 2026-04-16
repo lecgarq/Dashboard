@@ -12,6 +12,8 @@ import { simRouter } from "./sim";
 import { calendarRouter } from "./calendar";
 import { chatRouter } from "./chat";
 import { lodRouter } from "./lod";
+import { apsSearchRouter } from "./aps-search";
+import { gmailRouter } from "./gmail";
 
 export const appRouter = router({
   project: projectRouter,
@@ -27,6 +29,8 @@ export const appRouter = router({
   calendar: calendarRouter,
   chat: chatRouter,
   lod: lodRouter,
+  apsSearch: apsSearchRouter,
+  gmail: gmailRouter,
 });
 
 export type AppRouter = typeof appRouter;

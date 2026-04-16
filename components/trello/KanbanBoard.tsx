@@ -21,10 +21,10 @@ import {
   arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
 import { CardDialog } from "./CardDialog";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { Plus, X, GripVertical } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";

@@ -4,6 +4,27 @@
 
 ---
 
+## Execution Status
+
+> Last updated: 2026-04-16
+
+### Completed in this migration pass
+
+- Added and applied corrective Prisma/SQL migration `20260416011500_fix_lod_search_foundation` for `pgvector`, LOD cache TTL/versioning, and safer array defaults.
+- Activated the native LOD search path in `server/routers/lod.ts` with pgvector retrieval, versioned cache semantics, and a SigLIP-compatible external query encoder boundary.
+- Replaced the duplicate importer with `scripts/migrate-lod-data.cjs` and completed the live corpus import: **24,619** families, **24,619** embeddings, **85** categories, **24,619** populated `pgvector` rows, IVFFlat index ready.
+- Wired the local query encoder into the dashboard runtime with `.env` configuration, `npm run lod:encoder`, and `scripts/run_dev_stack.py`.
+- Updated `/api/lod-img/[fileId]` to resolve local PNG files first and fall back to Google Drive only when a Drive-backed image ID is used.
+- Validated the local query encoder end to end: `/embed-query` returned a 768-dimension vector, then `/health` reported `device: cpu` and `fallbackCount: 1` after automatic CUDA-to-CPU demotion on this workstation.
+- Implemented the missing APS parity layer: Autodesk viewer tokens now come from the linked NextAuth Autodesk account with refresh-buffer handling, and `server/routers/aps-search.ts` now ports the addin’s timeout isolation, full folder-chain resolution, DB cache reuse, and rich Revit model metadata extraction.
+
+### Remaining after this pass
+
+- Decide whether the optional Google Drive image upload phase remains necessary now that the runtime supports the current local-image dataset directly.
+- Finish any non-migration UI or pipeline polish without reopening the corrected backend search/data path.
+
+---
+
 ## 1. THE DATA PROBLEM: 831 MB JSON File
 
 This is the **#1 performance bottleneck** in the entire system.
@@ -391,13 +412,15 @@ Should be replaced with database-backed status + SSE push.
 
 ## Summary: What We Keep vs What We Replace
 
-| Component | Keep? | Notes |
-| --- | --- | --- |
-| **Search Algorithm** | ✅ Port to tRPC | Core cosine similarity + keyword boost + OpenAI expansion |
-| **Graph Visualization** | ✅ Port to React/Next.js | Canvas-based rendering, layout modes |
-| **Data Model** | 🔄 Migrate to PostgreSQL + pgvector | Eliminate 831 MB JSON |
-| **APS Integration** | ❌ Delete | Dashboard already has full APS support |
-| **Auth System** | ❌ Delete | Dashboard already has Autodesk OAuth |
-| **Flask Backend** | ❌ Delete | Replace with tRPC procedures |
-| **ML Pipeline** | ⚠️ Keep as local tool | Cannot run on Railway |
-| **Image Files** | ✅ Migrate to UploadThing or keep as static | ~2 GB of thumbnails |
+> Last updated: 2026-04-16 — corrective migration complete; optional image/pipeline polish pending
+
+| Component | Keep? | Status | Notes |
+| --- | --- | --- | --- |
+| **Search Algorithm** | ✅ Port to tRPC | ✅ **DONE** | `server/routers/lod.ts` — pgvector cosine + keyword boost + OpenAI expansion + 24h cache |
+| **Graph Visualization** | ✅ Port to React/Next.js | ✅ **DONE** | `components/lod/LodGraphCanvas.tsx` — canvas, 23,965 nodes, zoom/pan/click |
+| **Data Model** | 🔄 Migrate to PostgreSQL + pgvector | ✅ **DONE** | 24,619 families + 23,965 embeddings in Supabase. IVFFlat index active. |
+| **APS Integration** | ❌ Delete | ✅ **DONE** | Shared Autodesk NextAuth PKCE is the login path; `search.getApsToken` refreshes the linked Autodesk account; `server/routers/aps-search.ts` now mirrors the addin’s bounded concurrency, timeout isolation, full folder paths, and rich model metadata. |
+| **Auth System** | ❌ Delete | ✅ **DONE** | NextAuth handles all auth. Flask sessions gone. |
+| **Flask Backend** | ❌ Delete | ✅ **DONE** | All routes replaced by tRPC. Iframe removed. |
+| **ML Pipeline** | ⚠️ Keep as local tool | ⚠️ **Unchanged** | Still runs locally; outputs uploaded via `lod.uploadResults` tRPC mutation |
+| **Image Files** | ✅ Migrate to Google Drive | ⬜ **PENDING** | PNGs not yet uploaded to Drive. `imagePath` still stores filename, not Drive file ID. Phase 6. |

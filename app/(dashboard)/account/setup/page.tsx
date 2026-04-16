@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 export default function AccountSetupPage() {
   const { data: session, update: updateSession, status } = useSession();

@@ -1,0 +1,560 @@
+{
+  "Abutments": {
+    "description": "Abutments models bridge end-support structures that transfer superstructure loads to foundations while retaining approach embankment. Typical items: backwalls, wing walls, bearing seats, approach slabs interfaces, and drainage/weep details. Track station/offset, skew angle, seat elevation, concrete strength, and design load cases. Coordinate with roadway alignment, deck bearings, approach slabs, utilities, and excavation limits.",
+    "subcategories": {
+      "Abutment Foundations": {
+        "description": "Abutment Foundations models the below-grade concrete system supporting an abutment and distributing loads into soil or rock. Typical items: spread footings, pile caps, drilled shaft caps, grade beams, and tie beams integrated with rebar modeling. Track foundation thickness, bearing area, concrete class, reinforcement cover, and top-of-footing elevation. Coordinate with geotechnical strata, excavation shoring, waterproofing, and adjacent utilities."
+      },
+      "Abutment Piles": {
+        "description": "Abutment Piles models deep foundation members used when near-surface soils cannot safely carry abutment loads. Typical items: driven steel H-piles, precast concrete piles, timber piles, or drilled shafts represented as pile families. Track pile type/size, cutoff elevation, embedment length, capacity, and batter angle where applicable. Coordinate with pile caps, reinforcement congestion, underground obstructions, and driving tolerances."
+      },
+      "Abutment Walls": {
+        "description": "Abutment Walls models the retaining and structural walls forming the abutment body that resists earth pressure and supports the bearing seat. Typical items: stem walls, wing walls, return walls, diaphragms, shear keys, and backwall curbs for deck joints. Track wall thickness, height, skew, reinforcement zones, and finish requirements. Coordinate with approach fill slopes, drainage, penetrations, and roadway geometry."
+      },
+      "Approach Slabs": {
+        "description": "Approach Slabs models transition slabs that smooth roadway settlement between embankment and bridge deck, reducing bump-at-the-end. Typical items: reinforced concrete slabs with dowels to the backwall, sleeper slabs, and drainage details. Track slope, thickness, joint type, reinforcement mat description, and tie/dowel spacing. Coordinate with paving limits, expansion joints, utilities crossings, and guardrail transitions."
+      }
+    }
+  },
+  "Air Terminals": {
+    "description": "Air Terminals models supply, return, and exhaust outlets that connect duct systems to rooms and directly affect comfort and airflow distribution. Typical items: diffusers, grilles, registers, linear slots, and transfer-air devices hosted in ceilings or walls. Track airflow, neck size, pressure drop, throw pattern, and room/space assignment. Coordinate with ceilings, lighting layouts, sprinkler coverage, and duct routing within plenum zones.",
+    "subcategories": {}
+  },
+  "Audio Visual Devices": {
+    "description": "Audio Visual Devices models AV endpoints and infrastructure that deliver presentation, conferencing, and media playback capabilities. Typical items: projectors, displays, speakers, microphones, AV wall plates, and equipment racks (if modeled as devices). Track device ID, signal type, mounting height, power needs, and rack/room association. Coordinate with ceiling structure, sightlines, acoustics, and cable pathways to AV closets and racks.",
+    "subcategories": {}
+  },
+  "Bearings": {
+    "description": "Bearings models devices between deck/girders and substructure that transfer vertical loads while allowing rotation and thermal movement. Typical items: elastomeric pads, pot bearings, spherical bearings, and guided bearings with keeper plates. Track bearing type, rotation capacity, movement direction, design load, and seat elevation. Coordinate with deck joints, girder ends, anchor bolts, grout pads, and maintenance access.",
+    "subcategories": {}
+  },
+  "Bridge Cables": {
+    "description": "Bridge Cables models tension elements in cable-stayed or suspension bridges that carry deck loads to pylons or anchorages. Typical items: stay cables, hangers, strands, cable bands, and anchorage hardware represented with adaptive components. Track cable size, strand count, tension, anchorage type, and corrosion protection system. Coordinate with tower geometry, deck connection points, wind bracing, and clearance envelopes.",
+    "subcategories": {}
+  },
+  "Bridge Decks": {
+    "description": "Bridge Decks models the primary riding surface structure that spans between supports and distributes traffic loads to framing. Typical items: concrete deck slabs, orthotropic steel decks, wearing surfaces, curbs/barriers, and deck drainage zones. Track deck thickness, profile/camber, superelevation, concrete/steel grade, and surface finish. Coordinate with girders, diaphragms, joints, scuppers, utilities conduits, and barrier transitions.",
+    "subcategories": {}
+  },
+  "Bridge Framing": {
+    "description": "Bridge Framing models the load-carrying structural members supporting bridge decks and transferring forces to piers and abutments. Typical items: arches, trusses, girders, diaphragms, and bracing systems modeled as framing elements. Track member size, material grade, camber, end releases, and connection requirements. Coordinate with deck geometry, bearing lines, utilities, inspection access, and erection sequencing.",
+    "subcategories": {
+      "Arches": {
+        "description": "Arches models curved primary members that carry compressive forces and support the deck via hangers or spandrel framing. Typical items: steel or concrete arch ribs, arch bracing, and springing supports at foundations or abutments. Track rise/span, section size, camber, material, and connection node coordinates. Coordinate with hanger points, deck tie-ins, clearance envelopes, and temporary erection towers."
+      },
+      "Cross Bracing": {
+        "description": "Cross Bracing models diagonal members that stabilize bridge framing against lateral loads such as wind, seismic forces, and erection loads. Typical items: X-braces, K-braces, sway bracing, and temporary erection bracing. Track angle/pipe size, connection type, bolt/weld specification, and bracing bay identification. Coordinate with utilities clearances, access walkways, diaphragm openings, and fabrication constraints."
+      },
+      "Diaphragms": {
+        "description": "Diaphragms models transverse members that distribute loads and stiffen girders, controlling torsion and providing stability. Typical items: steel cross-frames, concrete diaphragms, end diaphragms at supports, and intermediate diaphragms. Track spacing/station, member sizes, stiffener requirements, and connection details. Coordinate with deck pour sequence, shear studs, utilities passing through, and inspection access."
+      },
+      "Girders": {
+        "description": "Girders models primary longitudinal members that carry deck loads across spans and deliver reactions to bearings and supports. Typical items: steel plate girders, precast prestressed beams, box girders, and spliced built-up members. Track section/plate sizes, camber, splice location, material grade, and girder mark. Coordinate with deck thickness, diaphragm connections, bearing locations, utilities hangers, and clearances."
+      },
+      "Trusses": {
+        "description": "Trusses models triangulated framing systems that carry loads through tension/compression members, often used for long spans. Typical items: through-trusses, deck trusses, Warren/Pratt configurations, and floor beams/stringers connected to nodes. Track panel length, chord sizes, web member sizes, gusset plate requirements, and truss mark. Coordinate with roadway clearances, lateral bracing, deck connection points, and erection sequencing."
+      }
+    }
+  },
+  "Cable Tray Fittings": {
+    "description": "Cable Tray Fittings models direction and transition components that connect cable tray segments while maintaining cable bend and support rules. Typical items: elbows, tees, crosses, reducers, vertical drops/risers, and tray adapters. Track angle, radius, transition size, fitting type, and manufacturer/model data. Coordinate with structure clearances, access requirements, and correct orientation for drops and risers.",
+    "subcategories": {}
+  },
+  "Cable Tray Runs": {
+    "description": "Cable Tray Runs models logical grouped paths representing continuous tray routing used for planning, documentation, and quantity takeoff. Typical items: multi-segment tray routes with shared elevation strategy and coordinated offsets through corridors. Track run name/ID, service, start/end equipment, total length, and typical elevation. Coordinate with multi-discipline corridors, penetrations, and maintainability clearances above ceilings or platforms.",
+    "subcategories": {}
+  },
+  "Cable Trays": {
+    "description": "Cable Trays models open raceway systems used to route power and low-voltage cabling with accessible support and ventilation. Typical items: ladder trays, solid-bottom trays, wire-mesh trays, and tray segments with elevation changes. Track tray width/height, bend radius, service type, fill percentage, and elevation/offset. Coordinate with penetrations, ceilings, equipment terminations, and support spacing requirements.",
+    "subcategories": {}
+  },
+  "Cable Types": {
+    "description": "Cable Types models metadata definitions for specific cable constructions used in electrical/low-voltage design and schedules. Typical items: power feeders, control cables, data pairs, fiber optic cables, and fire alarm cable. Track conductor count, gauge/size, insulation rating, voltage rating, and fire/smoke classification. Coordinate with tray/conduit sizing, pathway fill calculations, and plenum/riser code requirements.",
+    "subcategories": {}
+  },
+  "Casework": {
+    "description": "Casework models built-in cabinetry and millwork that supports storage, counters, and functional layouts in rooms. Typical items: base/wall cabinets, countertops, lab casework, shelving units, and integrated appliance panels. Track module width, height, countertop thickness, finish code, and hardware set. Coordinate with MEP rough-ins, clearances for doors/drawers, appliances, and accessibility requirements.",
+    "subcategories": {}
+  },
+  "Ceilings": {
+    "description": "Ceilings models interior overhead assemblies that define plenum spaces and support lighting, air terminals, and acoustic performance. Typical items: ACT grid ceilings, gypsum board ceilings, specialty clouds, and soffits or bulkheads. Track ceiling height, system type, tile size/pattern, acoustic rating, and finish. Coordinate with ducts, sprinklers, lights, structure, and access panels for above-ceiling equipment.",
+    "subcategories": {}
+  },
+  "Columns": {
+    "description": "Columns models architectural columns that support design intent and may represent structural elements or decorative supports. Typical items: round/square columns, pilasters, wraps, and column covers aligned to grids and levels. Track base/top level, offsets, diameter/width, finish, and fire rating where applicable. Coordinate with structural framing, cladding, interior layouts, and MEP clearances around column wraps.",
+    "subcategories": {}
+  },
+  "Communication Devices": {
+    "description": "Communication Devices models telecom/communications endpoints used for voice, paging, and building communication infrastructure. Typical items: intercom stations, wall jacks, paging speakers (if categorized here), and communication hubs. Track device ID, port count, mounting height, service type, and patch panel references. Coordinate with cable pathways, backboard locations, power needs, and furniture/wall finish constraints.",
+    "subcategories": {}
+  },
+  "Conduit Fittings": {
+    "description": "Conduit Fittings models components that connect conduit segments, change direction, or transition sizes while maintaining routing standards. Typical items: elbows, couplings, connectors, tees, reducers, and junction fittings. Track angle, fitting type, size transition, manufacturer data, and installation notes. Coordinate with minimum bend radius, pull box locations, access for maintenance, and clearance to structure and other services.",
+    "subcategories": {}
+  },
+  "Conduits": {
+    "description": "Conduits models enclosed raceways that protect wiring, typically routed through walls, slabs, and ceilings with fittings and bends. Typical items: EMT, rigid steel, PVC, flex conduit segments, and stubs to equipment or pull boxes. Track diameter, material, bend radius, offset, and circuit/service classification. Coordinate with penetrations, sleeves, firestopping, rebar congestion, and equipment elevations.",
+    "subcategories": {}
+  },
+  "Curtain Panels": {
+    "description": "Curtain Panels models infill elements within a curtain wall or curtain system that form glazing, spandrel panels, or custom modules. Typical items: glass panels, insulated spandrels, metal panels, operable vents, and patterned units. Track panel type, thickness, U-value/SHGC, finish, and panel ID. Coordinate with mullion layout, anchors, building movement joints, and interior liners or shading systems.",
+    "subcategories": {}
+  },
+  "Curtain Wall Mullions": {
+    "description": "Curtain Wall Mullions models framing members that subdivide curtain panels, provide structural support, and define facade module geometry. Typical items: vertical mullions, horizontal transoms, corner mullions, caps, and custom profiles. Track profile, depth, finish, thermal break, and structural capacity tags. Coordinate with panel edges, anchors, slab edges, movement joints, and tolerance requirements for fabrication.",
+    "subcategories": {}
+  },
+  "Data Devices": {
+    "description": "Data Devices models network/data endpoints and components supporting IT connectivity and building systems integration. Typical items: data outlets, wireless access points, network devices, and termination points. Track port type (RJ45/fiber), PoE requirement, device ID, mounting height, and network zone. Coordinate with ceiling obstructions, cable tray fill, backboxes, and access for maintenance and commissioning.",
+    "subcategories": {}
+  },
+  "Doors": {
+    "description": "Doors models openings and assemblies that provide access, security, and fire/smoke separation between spaces. Typical items: single/double doors, storefront doors, revolving doors, and specialty rated doors with hardware sets. Track width/height, fire rating, hardware set, security level, and room-to/room-from assignment. Coordinate with clearances, accessibility, egress paths, wall types, and glazing/frame interfaces.",
+    "subcategories": {
+      "Frame/Mullion": {
+        "description": "Frame/Mullion models the perimeter framing components of a door assembly that anchor to the wall and receive the moving leaf or glazing. Typical items: jambs, heads, sills/thresholds, transom frames, and storefront mullion frames. Track frame depth, stop profile, finish, anchorage type, and thermal break requirements. Coordinate with wall thickness, rough opening tolerances, hardware reinforcements, and adjacent glazing/mullions."
+      },
+      "Glass": {
+        "description": "Glass models glazed portions of door assemblies that provide visibility, daylight, and sometimes rated performance. Typical items: vision lites, full-glass leaves, sidelites, transoms, and laminated or insulated glazing units. Track glass thickness, glazing type, U-value/SHGC, safety rating, and acoustic classification. Coordinate with mullions, gaskets, fire/smoke requirements, and privacy film or frit zones."
+      },
+      "Opening": {
+        "description": "Opening models the cut or reserved void in the host wall that provides the rough opening for the door assembly. Typical items: rough openings, framed openings, oversized equipment doors, and openings with lintels. Track rough width/height, head clearance, sill condition, and structural lintel requirement flags. Coordinate with structural framing, rebar congestion, nearby MEP penetrations, and firestopping at rated assemblies."
+      },
+      "Panel": {
+        "description": "Panel models the moving leaf or operable panel of a door that provides privacy, security, acoustics, and fire separation. Typical items: solid-core leaves, hollow-metal doors, wood veneer panels, acoustic doors, and sliding panels. Track panel thickness, core type, fire rating, acoustic rating, and finish. Coordinate with swing clearances, floor transitions, hardware conflicts, and adjacent casework or walls."
+      }
+    }
+  },
+  "Duct Accessories": {
+    "description": "Duct Accessories models inline duct components that modify airflow, provide access, or meet code requirements within duct systems. Typical items: volume dampers, fire/smoke dampers, access doors, silencers, and sensors. Track pressure class, damper type/rating, actuator requirements, and maintenance clearance. Coordinate with fire-rated barriers, access openings, ceiling tiles, and control wiring to BAS panels and devices.",
+    "subcategories": {}
+  },
+  "Duct Fittings": {
+    "description": "Duct Fittings models components that connect duct segments, change direction, branch, or transition sizes while controlling pressure loss. Typical items: elbows, tees, wyes, reducers, transitions, and takeoffs. Track angle, fitting type, loss coefficient, size transitions, and insulation behavior. Coordinate with tight ceiling zones, access panels, and clashes at intersections with structure and other MEP systems.",
+    "subcategories": {}
+  },
+  "Duct Linings": {
+    "description": "Duct Linings models internal duct insulation/liner layers used for acoustic control or condensation management in specific duct segments. Typical items: acoustic liner sections, thermal liners, and lined elbows or transitions. Track liner thickness, material type, length extents, and acoustic rating references. Coordinate with duct clear internal dimensions, equipment connections, and fire/smoke requirements governing liner use and termination.",
+    "subcategories": {}
+  },
+  "Duct Placeholders": {
+    "description": "Duct Placeholders models conceptual duct routes used early in design to reserve space and communicate intent without full fitting detail. Typical items: simplified trunks and branches with approximate sizes and offsets. Track approximate size, elevation, system type, and design airflow targets. Coordinate with major beams, shafts, and ceiling zones to validate early space claims and prevent later routing dead-ends.",
+    "subcategories": {}
+  },
+  "Ducts": {
+    "description": "Ducts models air distribution conduits that move supply, return, exhaust, and relief air between equipment and terminals. Typical items: rectangular/round ducts, risers, main trunks, branches, and sloped runs where required. Track size, airflow, velocity/pressure loss, insulation thickness, and elevation/offset. Coordinate with structure, ceilings, lighting, sprinkler mains, and access clearances for maintenance.",
+    "subcategories": {}
+  },
+  "Electrical Equipment": {
+    "description": "Electrical Equipment models distribution and control equipment that powers and protects building electrical systems. Typical items: switchboards, panels, transformers, UPS units, MCCs, and disconnects. Track voltage, phase, load classification, breaker ratings, and mounting/clearance requirements. Coordinate with room layouts, access clearances, ventilation, and feeder routing to trays and conduits for constructability.",
+    "subcategories": {}
+  },
+  "Electrical Fixtures": {
+    "description": "Electrical Fixtures models end-use electrical devices that consume or provide power in spaces, excluding luminaires. Typical items: receptacles, floor boxes, switches (when modeled here), appliance outlets, and specialty power devices. Track load, voltage, circuit number, mounting height, and device designation. Coordinate with furniture layouts, wall types, ADA mounting requirements, and coordination with casework and equipment.",
+    "subcategories": {}
+  },
+  "Entourage": {
+    "description": "Entourage models contextual objects used to communicate scale and use, generally not part of quantified building scope. Typical items: people, vehicles, props, and presentation-only 2D/3D scene items. Track symbol/type, basic dimensions, and visibility settings as needed. Coordinate primarily with presentation views so entourage does not clutter permit, coordination, or clash workflows and remains easy to hide by templates.",
+    "subcategories": {}
+  },
+  "Expansion Joints": {
+    "description": "Expansion Joints models movement separation elements that accommodate thermal, seismic, or settlement movement between segments. Typical items: joint assemblies, cover plates, seals, and bridge deck joint hardware. Track joint width, movement capacity, fire rating (if applicable), and finish/cover type. Coordinate with adjacent slabs/walls/decks, waterproofing, drainage, and continuity of finishes or barriers at joints.",
+    "subcategories": {}
+  },
+  "Fire Alarm Devices": {
+    "description": "Fire Alarm Devices models life-safety detection and notification devices that must meet code spacing and system zoning requirements. Typical items: smoke/heat detectors, pull stations, horn/strobes, duct detectors, and annunciators. Track device address, NAC/SLC circuit, candela rating, mounting height, and spacing rules. Coordinate with ceilings, sprinklers, air terminals, and code-required locations near exits and risers.",
+    "subcategories": {}
+  },
+  "Fire Protection": {
+    "description": "Fire Protection models the broader fire suppression piping system and components delivering water (or agent) to sprinklers and standpipes. Typical items: mains/branches, standpipes, valves, FDCs, risers, and test/drain assemblies. Track pipe size/material, hazard area, zone, design density, and valve set ID. Coordinate with fire-rated shafts, pump rooms, seismic bracing, and architectural fire barriers.",
+    "subcategories": {}
+  },
+  "Flex Ducts": {
+    "description": "Flex Ducts models short flexible duct segments used to connect rigid ductwork to terminals while allowing minor offsets. Typical items: insulated flex connections to diffusers and short acoustic flex sections. Track diameter, length, insulation, and allowable airflow limitations. Coordinate with ceiling space, terminal locations, and spec limits on flex length to avoid performance and maintenance issues in the installed system.",
+    "subcategories": {}
+  },
+  "Flex Pipes": {
+    "description": "Flex Pipes models short flexible piping segments used to connect equipment and absorb vibration or minor misalignment. Typical items: flex connectors at pumps, water heaters, fan coils, and small equipment. Track diameter, length, pressure rating, and connection type (threaded/flanged). Coordinate with isolation bases, equipment movement, and maintenance access so flexible segments do not kink or conflict with valves and supports.",
+    "subcategories": {}
+  },
+  "Floors": {
+    "description": "Floors models horizontal building elements representing slabs or finish layers that define levels, rooms, and support surfaces. Typical items: concrete slabs, structural decks, raised floors, finish floors, and sloped or stepped floor conditions. Track thickness, material build-up, slope, elevation offset, and fire/acoustic attributes. Coordinate with stairs/ramps, penetrations, finish transitions at thresholds, and structural framing.",
+    "subcategories": {}
+  },
+  "Food Service Equipment": {
+    "description": "Food Service Equipment models kitchen and serving equipment that impacts power, plumbing, ventilation, and code compliance. Typical items: ranges, ovens, dishwashers, hoods, prep tables, ice machines, refrigeration, and serving counters. Track equipment ID, dimensions, power load, water/gas connections, and heat rejection notes. Coordinate with hood exhaust/makeup air, floor drains, sanitation clearances, and service access.",
+    "subcategories": {}
+  },
+  "Furniture": {
+    "description": "Furniture models movable furnishings used for layout planning, occupancy studies, and interior documentation. Typical items: desks, chairs, beds, sofas, tables, and modular furniture systems. Track type, dimensions, finish, manufacturer/model, and FF&E asset ID. Coordinate with circulation clearances, door swings, power/data outlet locations, and egress requirements so layouts remain code-compliant and functional.",
+    "subcategories": {}
+  },
+  "Hardscape": {
+    "description": "Hardscape models site surface assemblies that form paved areas, plazas, walks, and constructed ground-plane elements. Typical items: sidewalks, pavers, asphalt areas, curbs, and edging details. Track thickness, slope, material/finish, joint pattern, and construction type. Coordinate with toposolid grades, drainage slopes, accessibility cross-slopes, and utilities/structures like covers, inlets, and cleanouts.",
+    "subcategories": {}
+  },
+  "Lighting Devices": {
+    "description": "Lighting Devices models controls and auxiliary components that influence lighting operation rather than acting as the luminaire. Typical items: occupancy sensors, daylight sensors, scene controllers, photocells, and control modules. Track control zone, sensor coverage, mounting height, device address, and power/PoE needs. Coordinate with ceiling layouts, sightlines/coverage, commissioning requirements, and control wiring pathways to panels or gateways.",
+    "subcategories": {}
+  },
+  "Lighting Fixtures": {
+    "description": "Lighting Fixtures models luminaires that provide illumination, typically circuitable and sometimes photometrically defined for analysis. Typical items: downlights, linear pendants, troffers, exterior poles, wall packs, and specialty luminaires. Track wattage, lumen output, CCT/CRI, mounting height, and fixture designation. Coordinate with ceiling grids, sprinklers, air terminals, and circuiting so RCPs and schedules match.",
+    "subcategories": {
+      "Light Source": {
+        "description": "Light Source models the photometric emitter definition that drives illumination calculations and rendering for a lighting fixture family. Typical items: point/line/area emitters with IES distributions, lamp geometry, and aiming/orientation settings. Track lumen output, distribution file, tilt/aim, color temperature, and dimming characteristics. Coordinate with fixture housing geometry, ceiling offsets, and lighting analysis zones/spaces."
+      }
+    }
+  },
+  "Mass": {
+    "description": "Mass models conceptual geometry used for early design studies, envelope exploration, and quick area/volume analysis. Typical items: simple forms, conceptual walls/floors/roofs, openings, glazing surfaces, and shading masses. Track height, area, volume, conceptual material, and mass ID/option. Coordinate with site constraints, program requirements, daylight/shading studies, and early structural grids to test feasibility.",
+    "subcategories": {
+      "Form": {
+        "description": "Form models the base conceptual solid or void geometry that defines overall massing shape before conversion to building elements. Typical items: extrusions, blends, revolves, sweeps, and void cuts creating the main envelope. Track profile dimensions, height, taper, and alignment to key datums. Coordinate with setbacks, height limits, and program volumes while keeping geometry simple enough to iterate quickly."
+      },
+      "Mass Exterior Wall": {
+        "description": "Mass Exterior Wall models conceptual exterior wall surfaces derived from mass faces for quick envelope studies and area checks. Typical items: wall-by-face placeholders representing facade extents and zones. Track wall type assumption, face area, height extents, and facade labels. Coordinate with glazing ratios, shading studies, and early grid alignment to confirm envelope logic before committing to detailed wall assemblies."
+      },
+      "Mass Floor": {
+        "description": "Mass Floor models conceptual floor plates created from mass faces for early GFA/NFA reporting and stacking studies. Typical items: level-based mass floors representing plate extents and core cutouts. Track floor plate area, level association, perimeter offset, and plate ID. Coordinate with structural grids, cores, shafts, and vertical circulation zones so early space planning remains consistent."
+      },
+      "Mass Glazing": {
+        "description": "Mass Glazing models conceptual glazed surfaces used to explore transparency ratios, daylighting potential, and facade articulation early. Typical items: glazing faces, vision bands, and spandrel zones. Track glazing ratio, face area, orientation, and assumed performance values. Coordinate with shading devices, mullion grid intent, and thermal targets so early analysis aligns with future facade decisions."
+      },
+      "Mass Interior Wall": {
+        "description": "Mass Interior Wall models conceptual interior partition faces used to test enclosure, adjacency, and program distribution. Typical items: schematic partition surfaces and core/circulation boundaries generated from massing. Track partition type assumption, area, and adjacency labels. Coordinate with circulation widths, egress paths, and MEP core space requirements to validate layout feasibility before detailed wall modeling."
+      },
+      "Mass Opening": {
+        "description": "Mass Opening models voids or punched openings in massing used to test atria, courtyards, and major penetrations. Typical items: large cutouts, terrace recesses, and multi-level circulation voids. Track opening size, position, and datum relationships. Coordinate with structural spans, smoke zones, and daylight needs so openings are feasible and aligned with core planning and code constraints."
+      },
+      "Mass Roof": {
+        "description": "Mass Roof models conceptual roof surfaces derived from mass faces to study silhouette, slopes, and drainage intent. Typical items: roof-by-face placeholders for pitched roofs, terraces, and parapet extents. Track slope, roof area, drainage direction, and zone labels. Coordinate with mechanical penthouses, skylights, and height limits so the concept remains buildable as detailing increases."
+      },
+      "Mass Shade": {
+        "description": "Mass Shade models conceptual shading elements used to test solar control, overhang depth, and facade articulation at massing level. Typical items: overhang planes, fins, brise-soleil bands, and canopy surfaces. Track depth, spacing, orientation, and shade zone labels. Coordinate with glazing areas and daylight targets to evaluate performance before committing to detailed assemblies and connections."
+      },
+      "Mass Skylight": {
+        "description": "Mass Skylight models conceptual roof glazing used to evaluate daylight penetration and roof articulation. Typical items: skylight faces, linear rooflights, atrium caps, and clerestory-like openings. Track skylight area, orientation, assumed glazing performance, and placement relative to roof slopes. Coordinate with roof drainage, structure, smoke venting needs, and mechanical clearances for feasibility."
+      }
+    }
+  },
+  "Mechanical Control Devices": {
+    "description": "Mechanical Control Devices models building automation and control components that measure and regulate mechanical system performance. Typical items: thermostats, temperature/pressure sensors, BAS controllers, and control points tied to equipment. Track control point name, device address, mounting height, and associated equipment/system. Coordinate with sensor coverage, wiring routes, accessibility, and integration with electrical/data pathways and commissioning I/O lists.",
+    "subcategories": {}
+  },
+  "Mechanical Equipment": {
+    "description": "Mechanical Equipment models major HVAC and mechanical plant components that generate, move, or condition air and water. Typical items: AHUs, RTUs, fans, pumps, boilers, chillers, and packaged units. Track capacity, airflow/flow rate, power, efficiency, and service clearance requirements. Coordinate with structure, access doors, piping/duct routing, electrical feeds, and vibration isolation for maintenance and constructability.",
+    "subcategories": {}
+  },
+  "Medical Equipment": {
+    "description": "Medical Equipment models clinical and diagnostic equipment that drives space planning, structural loads, and MEP needs in healthcare. Typical items: imaging equipment, exam lights, booms, sterilizers, headwalls, and specialty devices. Track equipment ID, weight/load, power/IT needs, shielding requirements, and maintenance clearances. Coordinate with structural support, shielding assemblies, rough-ins, and strict workflow and infection-control constraints.",
+    "subcategories": {}
+  },
+  "Nurse Call Devices": {
+    "description": "Nurse Call Devices models clinical communication devices supporting patient-to-staff alerts and workflows in healthcare facilities. Typical items: patient stations, corridor dome lights, staff assist buttons, code blue stations, and nurse call panels. Track room/bed ID, device address, call type, mounting height, and panel association. Coordinate with headwalls, medical equipment, power/IT pathways, and hospital-specific standards and commissioning.",
+    "subcategories": {}
+  },
+  "Parking": {
+    "description": "Parking models site parking geometry and components used for planning stalls, aisles, and accessible parking compliance. Typical items: stall layouts, striping families, wheel stops, curb ramps, and parking markers. Track stall dimensions, count, accessible designation, slope, and striping type. Coordinate with grading, drainage inlets, pedestrian paths, lighting, and fire lane requirements so circulation and compliance are validated.",
+    "subcategories": {}
+  },
+  "Piers": {
+    "description": "Piers models bridge substructure supports located between abutments that carry superstructure reactions down to foundations. Typical items: pier shafts/columns, caps, wall piers, towers, and associated foundations and pile groups. Track pier ID, station/offset, cap elevation, section dimensions, and design load references. Coordinate with bearing layouts, clearance envelopes, deck geometry, and construction staging and access constraints.",
+    "subcategories": {
+      "Pier Caps": {
+        "description": "Pier Caps models the top beam or cap that spreads girder/deck reactions across pier columns/walls and supports bearings. Typical items: hammerhead caps, multi-column caps, wall caps, bearing pedestals, and diaphragm connections. Track cap depth/width, bearing seat offsets, concrete strength, and reinforcement zones. Coordinate with girder spacing, seismic restraints, deck joint locations, and bearing hardware."
+      },
+      "Pier Columns": {
+        "description": "Pier Columns models vertical pier members that carry compression and bending from the cap to the foundation system. Typical items: round/rectangular columns, flared columns, and hollow sections for tall piers. Track section size, height, taper, concrete class, and reinforcement cage identification. Coordinate with formwork limits, access needs, and clearance to utilities, waterways, or roadway envelopes."
+      },
+      "Pier Foundations": {
+        "description": "Pier Foundations models below-grade elements supporting pier columns/walls and transferring loads into the ground. Typical items: spread footings, mats, pile caps, drilled shaft caps, and tie beams. Track top/bottom elevation, thickness, bearing area, concrete class, and foundation mark. Coordinate with geotechnical conditions, scour depths (if applicable), utilities, and excavation/shoring requirements."
+      },
+      "Pier Piles": {
+        "description": "Pier Piles models deep foundation elements under piers that provide capacity where soil conditions require deeper load transfer. Typical items: driven piles, drilled shafts, micro-piles, and battered pile groups under caps. Track pile type/size, toe elevation, cutoff elevation, batter angle, and capacity. Coordinate with cap reinforcement, obstructions, scour, and installation tolerances and sequencing."
+      },
+      "Pier Towers": {
+        "description": "Pier Towers models tall pier/pylon substructure elements that may support cables or elevated spans and resist lateral loads. Typical items: tower shafts, hollow pylons, cable saddle regions, and integrated access/maintenance platforms. Track tower height, section changes, material grade, and cable anchorage coordinates. Coordinate with cable geometry, wind effects, construction staging, and access/maintenance constraints."
+      },
+      "Pier Walls": {
+        "description": "Pier Walls models wall-type piers that act as continuous supports, often used where lateral forces or aesthetics drive a wall form. Typical items: solid stems, flared pier walls, integrated shear keys, and wall caps supporting multiple bearings. Track thickness, height, reinforcement zones, and pier wall mark. Coordinate with bearing pedestals, joints, clearance envelopes, and waterproofing requirements."
+      }
+    }
+  },
+  "Pipe Accessories": {
+    "description": "Pipe Accessories models inline pipe components that control, protect, or measure flow and support system operation. Typical items: valves, strainers, meters, checks, backflow preventers, and isolation devices. Track accessory ID, type, size, pressure class, and operating position requirements. Coordinate with access clearances, insulation, hanger space, and serviceability in congested shafts and equipment rooms.",
+    "subcategories": {}
+  },
+  "Pipe Fittings": {
+    "description": "Pipe Fittings models components that connect pipe segments, branch systems, or transition sizes while meeting code and hydraulic constraints. Typical items: elbows, tees, wyes, reducers, unions, couplings, and specialty fittings. Track fitting type, angle, size transition, pressure rating, and manufacturer data. Coordinate with shaft congestion, slope changes, clearance to structure, and correct orientation for drainage fittings.",
+    "subcategories": {}
+  },
+  "Pipe Placeholders": {
+    "description": "Pipe Placeholders models conceptual piping routes used in early design to reserve corridors and shafts without detailed fittings. Typical items: simplified mains and risers with approximate sizes and slope intent. Track approximate diameter, slope intent, elevation, and system type. Coordinate with structure and shafts to validate routing feasibility and headroom before replacing placeholders with real pipes and fittings.",
+    "subcategories": {}
+  },
+  "Pipes": {
+    "description": "Pipes models piping systems carrying domestic water, sanitary, storm, hydronic, and specialty fluids throughout a project. Typical items: mains, branches, risers, sloped drainage piping, and service connections to equipment and fixtures. Track diameter, material, slope, flow, and insulation where applicable. Coordinate with penetrations, ceilings, equipment rooms, and required slopes, cleanouts, valves, and maintenance access.",
+    "subcategories": {}
+  },
+  "Planting": {
+    "description": "Planting models landscape vegetation used for planting plans, visualization, and site schedules. Typical items: trees, shrubs, groundcover, planter beds, and turf families. Track species, container size, caliper/height, quantity, and maintenance notes. Coordinate with irrigation zones, root clearance to utilities, sightline requirements, and hardscape edges so planting is buildable and maintainable.",
+    "subcategories": {}
+  },
+  "Plumbing Equipment": {
+    "description": "Plumbing Equipment models plumbing-related equipment supporting water, waste, and specialty systems beyond individual fixtures. Typical items: water heaters, booster pumps, filtration, grease interceptors, ejector pumps, and treatment skids. Track capacity, flow, power, connection sizes, and maintenance requirements. Coordinate with mechanical rooms, floor openings, venting, electrical feeds, and access clearances for service and replacement.",
+    "subcategories": {}
+  },
+  "Plumbing Fixtures": {
+    "description": "Plumbing Fixtures models sanitary and domestic water end-use fixtures that connect to piping and drive code-required counts. Typical items: toilets, urinals, lavatories, sinks, showers, floor drains, and drinking fountains. Track fixture count, connection sizes, flow rates, ADA requirements, and manufacturer/model. Coordinate with partitions, carriers, wall backing, clearances, and rough-ins for constructability and accessibility compliance.",
+    "subcategories": {}
+  },
+  "Railings": {
+    "description": "Railings models guard and handrail assemblies providing fall protection and guidance along stairs, ramps, balconies, and edges. Typical items: guardrails, handrails, balcony rails, platform rails, and barriers around openings. Track height, rail type, post spacing, code load requirements, and railing mark. Coordinate with stairs/ramps, slab edges, wall conditions, and corner/landing transitions and terminations.",
+    "subcategories": {
+      "Balusters": {
+        "description": "Balusters models vertical pickets or infill members that prevent falls and limit openings per safety codes. Typical items: metal pickets, glass clamp supports, cable infill supports, and decorative balusters. Track spacing, profile, height, finish, and infill designation. Coordinate with code maximum opening requirements, stair/ramp slopes, and attachment to rails or stringers so patterns remain safe and consistent."
+      },
+      "Handrails": {
+        "description": "Handrails models graspable rails intended for user support along stairs and ramps, constrained by code requirements. Typical items: round/oval rails, wall-mounted rails, integrated handrails on guards, and continuous returns. Track height, profile, wall clearance, extensions/returns, and finish. Coordinate with ADA requirements, terminations at landings, intersections with doors, and wall finish build-ups."
+      },
+      "Rails": {
+        "description": "Rails models intermediate or infill rails within a guardrail assembly that provide rigidity and meet opening limits. Typical items: mid-rails, horizontal bars, cable rails, and panel support rails. Track profile, spacing, offset, finish, and infill system designation. Coordinate with baluster patterns, glass panels, and structural attachment points so the guard meets code and aligns with design intent."
+      },
+      "Supports": {
+        "description": "Supports models posts, brackets, and anchorage components that transfer railing loads into the building structure. Typical items: corner posts, intermediate posts, wall brackets, base plates, and embedded anchors. Track post spacing, base plate type, anchor specification, and finish. Coordinate with slab edges, waterproofing, embedded items, and reinforcement so attachments are feasible and do not clash."
+      },
+      "Terminations": {
+        "description": "Terminations models end conditions and returns for rails that ensure safety, usability, and code-compliant geometry. Typical items: returns to wall, end loops, bends, end plates, and caps. Track termination type, return length, cap style, and finish. Coordinate with adjacent walls, doors, landings, and egress clearances so ends do not create hazards or conflicts in circulation."
+      },
+      "Top Rails": {
+        "description": "Top Rails models the uppermost rail member defining overall guard height and the continuous edge of a guard assembly. Typical items: flat or round top rails, caps for glass guards, and integrated top-rail/handrail systems. Track height, profile, finish, and cap/cover type. Coordinate with required guard heights, transitions to handrails, and corner joins to maintain continuity in elevations."
+      }
+    }
+  },
+  "Ramps": {
+    "description": "Ramps models sloped circulation elements for accessibility and material handling, connecting levels without steps. Typical items: ADA ramps, loading ramps, exterior site ramps, and interior transitions. Track slope, width, rise/run, landing dimensions, and ramp mark. Coordinate with door thresholds, floor levels, railings/guards, and site grading so ramps meet code, clearances, and constructability requirements.",
+    "subcategories": {
+      "Stringers": {
+        "description": "Stringers models side structural members that support ramp decking or tread systems, common in steel or timber ramp construction. Typical items: steel channels, tubes, timber stringers, and built-up members aligned to ramp edges. Track section size, spacing, connection type, and corrosion/fire protection requirements. Coordinate with ramp thickness, railing posts, and connections to floors or foundations to maintain headroom and stability."
+      }
+    }
+  },
+  "Roads": {
+    "description": "Roads models site roadway alignments and paved travel ways used for civil coordination and access planning. Typical items: centerlines, edges of pavement, lanes/shoulders, curb lines, and turning geometry. Track lane width, slope/crown, pavement build-up, stationing references, and key tie-in points. Coordinate with toposolid grading, drainage, utilities crossings, and bridge approach geometry for consistent civil documentation.",
+    "subcategories": {}
+  },
+  "Roofs": {
+    "description": "Roofs models roof envelope assemblies providing weather protection, insulation, drainage, and architectural form. Typical items: flat roofs, pitched roofs, roof decks, green roofs, and roof areas with openings and parapets. Track slope, thickness, material build-up, insulation value, and roof mark. Coordinate with drainage, skylights, structure, and mechanical equipment/clearances so roof plans and details are buildable.",
+    "subcategories": {
+      "Fascias": {
+        "description": "Fascias models linear edge trims applied along roof eaves or edges to finish and protect roof edge conditions. Typical items: metal trims, wood fascia boards, cornice profiles, and custom edge profiles. Track profile type, height/depth, material/finish, and corner conditions. Coordinate with gutters, soffits, roof membranes, and cladding transitions so elevations and details stay aligned with control lines."
+      },
+      "Gutters": {
+        "description": "Gutters models rainwater collection channels that capture roof runoff and route it to downspouts or internal drainage. Typical items: eave gutters, box gutters, scuppers, and integrated gutter systems with outlets. Track gutter size, slope, outlet locations, material/finish, and capacity notes. Coordinate with roof slopes, fascia/soffit geometry, downspout routing, storm design, and overflow provisions."
+      },
+      "Roof Soffits": {
+        "description": "Roof Soffits models underside roof edge finishes that close eaves and provide finished appearance and ventilation where required. Typical items: flat soffit panels, vented soffits, sloped eave soffits, and boxed soffit assemblies. Track soffit depth, thickness, vent pattern, finish, and terminations. Coordinate with fascia, cladding, exterior lighting, and intake ventilation requirements to avoid conflicts in exterior detailing."
+      }
+    }
+  },
+  "Security Devices": {
+    "description": "Security Devices models physical security components for surveillance, access control, intrusion detection, and monitoring. Typical items: cameras, card readers, door contacts, motion detectors, panic buttons, and modules. Track device ID, coverage/field of view, mounting height, power/PoE needs, and controller/panel association. Coordinate with door hardware, sightlines, privacy zones, and cable routing to security rooms and racks.",
+    "subcategories": {}
+  },
+  "Shaft Openings": {
+    "description": "Shaft Openings models vertical voids cutting through floors/roofs for stairs, elevators, risers, and mechanical shafts. Typical items: rectangular/irregular shafts, multi-level openings, and core openings. Track opening extents, associated system, fire rating requirements, and clearance allowances. Coordinate with structural framing, MEP risers, fire-rated enclosures, and headroom/egress constraints to avoid late clashes and redesign.",
+    "subcategories": {}
+  },
+  "Signage": {
+    "description": "Signage models wayfinding, identification, and regulatory signs used for navigation, safety, and code compliance. Typical items: room numbers, directional signs, ADA/Braille signage, and specialty graphics. Track sign code, text content, mounting height, finish, and room association. Coordinate with door numbering, circulation routes, accessibility requirements, and interior standards so sign schedules and plans remain consistent.",
+    "subcategories": {}
+  },
+  "Site": {
+    "description": "Site models site-wide elements used for ground coordination, earthwork, and civil documentation tied to survey coordinates. Typical items: pads, grading-related objects, site regions, and reference geometry for civil packages. Track site datum, project/true north relationships, cut/fill intents, and region material definitions. Coordinate with utilities, building footprints, roads, drainage, and property constraints to keep all disciplines aligned.",
+    "subcategories": {
+      "Pads": {
+        "description": "Pads models flat or sloped platform regions that cut/fill the toposolid to create a construction-ready footprint. Typical items: building pads, terrace pads, equipment pads, and stepped platforms for phased work. Track pad elevation, slope, material, offset from footprint, and phase. Coordinate with foundation depths, drainage around buildings, retaining structures, and utility entries to keep earthwork and construction sequencing clear."
+      }
+    }
+  },
+  "Specialty Equipment": {
+    "description": "Specialty Equipment models project-specific equipment that does not fit standard categories but must be coordinated and scheduled. Typical items: lockers, lab equipment, stage rigging, kiosks, custom built-ins, and owner-furnished items. Track equipment ID, dimensions, finish, utility needs, and responsible package/vendor. Coordinate with layouts, rough-ins, access clearances, and structural supports where loads are significant.",
+    "subcategories": {}
+  },
+  "Sprinklers": {
+    "description": "Sprinklers models fire suppression heads and related terminal devices that discharge water to control or extinguish fires. Typical items: upright, pendent, sidewall, concealed, dry sprinklers, and specialty heads. Track K-factor, temperature rating, coverage type, elevation, and head ID. Coordinate with ceilings, lights, diffusers, beams, and obstructions that affect coverage, deflector distance, and code compliance.",
+    "subcategories": {}
+  },
+  "Stairs": {
+    "description": "Stairs models multi-level circulation assemblies providing egress between floors, including geometry and component parts. Typical items: straight/L/U stairs, winders, monolithic concrete stairs, and steel/precast stair systems. Track riser/tread counts, width, headroom, slope, and stair mark. Coordinate with floor openings, railings, supports, and finish transitions at landings so code and constructability requirements are satisfied.",
+    "subcategories": {
+      "Landings": {
+        "description": "Landings models horizontal platforms within a stair that provide turning space, rest areas, and transitions at elevation changes. Typical items: intermediate landings, top/bottom landings, and shaped landings around cores or doors. Track landing thickness, elevation, finish, and edge conditions. Coordinate with adjacent floor levels, door clearances, railing terminations, and structural support so landings are buildable and code-compliant."
+      },
+      "Runs": {
+        "description": "Runs models the stepped portion of a stair that provides the primary vertical rise through repeated risers and treads. Typical items: straight runs, winder runs, curved runs, and runs with stringers. Track riser height, tread depth, run width, and run direction/handing. Coordinate with headroom, adjacent walls/finishes, and structural framing beneath so stair geometry matches code and detailing intent."
+      },
+      "Supports": {
+        "description": "Supports models structural or architectural components that carry stair loads and stabilize runs and landings. Typical items: stringers, beams, wall supports, columns, and brackets depending on construction. Track support type, section size, connection method, and finish requirements. Coordinate with framing, wall assemblies, and clearances for finishes and handrails so the stair system remains stable when levels shift."
+      }
+    }
+  },
+  "Structural Area Reinforcement": {
+    "description": "Structural Area Reinforcement models reinforcement defined over a surface area to represent distributed mats in slabs and walls. Typical items: two-way slab mats, wall zones, strengthening patches, and temperature/shrinkage reinforcement. Track bar size, spacing in each direction, cover, and zone ID. Coordinate with openings, pour strips, penetrations, and edge conditions such as thickened slabs or beams for correct detailing.",
+    "subcategories": {}
+  },
+  "Structural Beam Systems": {
+    "description": "Structural Beam Systems models patterned framing layouts used for repetitive beam/joist grids, often for floors and roofs. Typical items: beam arrays, joist systems, and parametric spacing layouts bounded by a region. Track spacing, direction, member type, and boundary offsets. Coordinate with slab edges, openings, load paths, and MEP zones beneath the system so layout changes regenerate cleanly without breaking coordination intent.",
+    "subcategories": {}
+  },
+  "Structural Columns": {
+    "description": "Structural Columns models vertical primary load-carrying members supporting beams, slabs, and lateral systems. Typical items: steel W/HSS columns, concrete columns, composite columns, and multi-story stacks with splices. Track section size, material grade, base/top offsets, and column mark. Coordinate with architectural finishes, openings, MEP clearances, and beam/girder connections so grids, marks, and analysis remain consistent.",
+    "subcategories": {}
+  },
+  "Structural Connections": {
+    "description": "Structural Connections models connection objects defining how members are joined and forces are transferred in steel (and sometimes embeds). Typical items: beam-to-column connections, base plates, moment connections, bracing nodes, and embed interfaces. Track connection type, bolt/weld specs, plate sizes, and connection ID. Coordinate with end cuts, fabrication limits, MEP clashes, and erection sequencing so shop drawings align with design.",
+    "subcategories": {
+      "Anchors": {
+        "description": "Anchors models fasteners or cast-in elements that secure steel to concrete, transferring tension and shear into foundations. Typical items: anchor bolts, headed studs, adhesive anchors, and cast-in channels. Track diameter, embedment, spacing, projection, and grade. Coordinate with rebar congestion, edge distances, setting templates, and grout/pedestal geometry so anchors can be installed and inspected correctly."
+      },
+      "Bolts": {
+        "description": "Bolts models mechanical fasteners used in steel connections, defined by diameter, grade, and installation method. Typical items: high-strength bolts, slip-critical bolts, and bolt groups in shear/moment joints. Track diameter, grade, bolt length, location, and bolt group ID. Coordinate with hole patterns, edge distances, wrench clearance, and erection accessibility so fastening is feasible and matches engineered details."
+      },
+      "Holes": {
+        "description": "Holes models fabrication holes in plates or members needed for bolting, access, or vent/drain requirements. Typical items: standard holes, slotted holes, oversized holes, and access/vent holes. Track diameter/slot size, tolerance class, hole type, and pattern ID. Coordinate with bolt groups, weld zones, edge distances, and stiffeners so holes do not compromise strength or create clashes in connections."
+      },
+      "Modifiers": {
+        "description": "Modifiers models connection-related adjustment components that alter standard connection geometry to meet specific conditions. Typical items: shims, pack plates, cope modifiers, chamfers, and local cut adjustments within assemblies. Track modifier thickness, offset, location, and reason/code reference. Coordinate with fabrication tolerances, erection fit-up, and nearby members/MEP so adjustments are traceable and buildable."
+      },
+      "Plates": {
+        "description": "Plates models steel plates used in connections to transfer forces, provide bearing, and create join surfaces. Typical items: gusset plates, shear tabs, end plates, base plates, splice plates, and continuity plates. Track plate thickness, dimensions, material grade, plate mark, and weld/bolt interfaces. Coordinate with hole patterns, weld access, member geometry, and fabrication limits so plates match shop conventions."
+      },
+      "Profiles": {
+        "description": "Profiles models standard rolled shapes or custom profiles used as parts of connections or supplemental framing components. Typical items: angles, channels, tees, and custom clip/seat profiles. Track shape designation, length, orientation, material grade, and mark. Coordinate with plate interfaces, hole patterns, and clearance for bolts/welds so profile orientation and detailing remain consistent across similar connections."
+      },
+      "Shear Studs": {
+        "description": "Shear Studs models welded headed studs providing composite action between steel members and concrete slabs/decks. Typical items: stud rows on beams/girders and grouped studs near supports. Track stud diameter, length, spacing, count, and stud zone ID. Coordinate with metal deck ribs, reinforcement, openings, and placement restrictions near bolts or stiffeners so composite detailing matches design assumptions."
+      },
+      "Welds": {
+        "description": "Welds models weld definitions joining steel components that must be documented for fabrication and inspection. Typical items: fillet welds, groove welds, plug welds, and weld symbol data tied to connections. Track weld type, size, length, electrode/spec, and inspection class. Coordinate with weld access, assembly sequence, distortion control, and conflicts with bolts/holes so weld requirements are buildable and clear."
+      }
+    }
+  },
+  "Structural Fabric Areas": {
+    "description": "Structural Fabric Areas models welded wire fabric regions used to represent mesh reinforcement in slabs or walls for lighter reinforcement needs. Typical items: mesh sheets in slabs-on-grade, toppings, and panels with standardized sizes. Track fabric type, sheet size, overlap requirements, and placement elevation. Coordinate with openings, edge distances, and sequencing so sheet layout and lap zones are realistic and quantifiable.",
+    "subcategories": {}
+  },
+  "Structural Fabric Reinforcement": {
+    "description": "Structural Fabric Reinforcement models welded wire mesh products used as reinforcement, represented as fabric sheets/rolls with standard designations. Typical items: fabric sheets for slabs, precast panels, and shotcrete applications. Track fabric designation, wire diameter, spacing, sheet size, and material grade. Coordinate with embeds, openings, trimming at edges, and overlaps so reinforcement representation matches engineering standards and quantities.",
+    "subcategories": {
+      "Fabric Wire": {
+        "description": "Fabric Wire models the individual wire definition within a welded wire fabric system that determines spacing and wire diameter. Typical items: longitudinal and transverse wires, deformed wires, and special spacing patterns tied to designations. Track wire diameter, spacing, yield strength, and pattern designation. Coordinate with cover requirements, overlap zones, and trimming near openings/edges so wire data aligns with specification standards and schedules."
+      }
+    }
+  },
+  "Structural Foundations": {
+    "description": "Structural Foundations models load-bearing elements transferring building forces into the ground, including shallow and deep systems. Typical items: isolated/strip footings, mats, pile caps, grade beams, and foundation walls. Track bearing elevation, thickness, concrete strength, reinforcement requirements, and mark/ID. Coordinate with geotechnical data, slab edges, underground utilities, and excavation/shoring so pours, quantities, and staging remain accurate.",
+    "subcategories": {}
+  },
+  "Structural Framing": {
+    "description": "Structural Framing models linear structural members that carry gravity and lateral loads across spans and provide frame stability. Typical items: beams, joists, girders, bracing, purlins, and framing members connected at nodes. Track section, camber, end conditions, member mark, and material grade. Coordinate with decks/slabs, penetrations, MEP hangers, and connection requirements so joins and analytical lines remain consistent.",
+    "subcategories": {
+      "Chord": {
+        "description": "Chord models the main top or bottom member of a truss that carries axial forces and defines the truss boundary. Typical items: top chords following roof slopes, bottom chords spanning level lines, and chord segments at splices. Track section size, material grade, camber (if used), and chord mark/panel index. Coordinate with web nodes, gusset zones, and clearance for openings or roof assemblies so truss geometry stays stable."
+      },
+      "Girder": {
+        "description": "Girder models a primary beam supporting secondary framing and transferring loads to columns or walls. Typical items: wide-flange girders, built-up plate girders, concrete transfer girders, and major collectors. Track section size, camber, end conditions, and girder mark. Coordinate with beam reactions, column connections, penetrations, and deflection-sensitive ceilings and finishes so coordination and detailing reflect real performance needs."
+      },
+      "Horizontal Bracing": {
+        "description": "Horizontal Bracing models in-plane bracing elements that stabilize structures laterally within a floor or roof plane. Typical items: rod bracing, angle bracing, roof-plane X-bracing, and collectors/drag members. Track member size, bracing bay ID, connection type, and design load notes. Coordinate with decking, skylights, mechanical curbs, and penetrations that interrupt bracing continuity so the lateral system remains buildable."
+      },
+      "Joist": {
+        "description": "Joist models repetitive secondary framing members supporting decks or slabs and transferring loads to girders or bearing walls. Typical items: open web steel joists, wood joists, cold-formed joists, and proprietary systems. Track joist designation, spacing, span, camber, and bearing seat data. Coordinate with openings, bridging requirements, MEP penetrations, and ceiling zones so joist layouts align with structure and services."
+      },
+      "Kicker Bracing": {
+        "description": "Kicker Bracing models diagonal brace members stabilizing columns or walls by tying them back to floors, roofs, or adjacent framing. Typical items: kickers at slender columns, parapet braces, and temporary/permanent stability braces. Track brace size, angle, connection type, and brace mark. Coordinate with architectural finishes, openings, and MEP routes so braces do not create conflicts or require late redesign."
+      },
+      "Purlin": {
+        "description": "Purlin models secondary roof framing supporting roof decking or panels and transferring loads to primary frames or trusses. Typical items: cold-formed Z/C purlins, channels, timber purlins, and hat sections. Track section designation, spacing, span, bridging requirements, and coating/finish. Coordinate with roof openings, skylights, curbs, and panel modules so spacing and attachments match manufacturer and detailing requirements."
+      },
+      "Vertical Bracing": {
+        "description": "Vertical Bracing models bracing elements in a vertical plane that resist lateral loads and transfer them to foundations. Typical items: X/K bracing, rod bracing, and braced bays around cores. Track brace size, bay designation, connection type, and design load notes. Coordinate with curtain walls, openings, architectural constraints, and MEP routes crossing braced bays so the lateral system remains continuous and practical."
+      },
+      "Web": {
+        "description": "Web models the interior truss members transferring forces between chords through triangulation. Typical items: diagonal and vertical web members, tension rods, compression struts, and built-up webs at high-force panels. Track member size, panel index, material grade, and web mark. Coordinate with gusset plate geometry, connection eccentricities, and clearance for penetrations through truss depth so detailing remains consistent with design."
+      }
+    }
+  },
+  "Structural Rebar": {
+    "description": "Structural Rebar models reinforcing steel bars placed in concrete to resist tension, control cracking, and satisfy structural design intent. Typical items: straight bars, hooks, stirrups, ties, and bent shapes tied to shape codes. Track bar size, shape code, spacing, length, and rebar mark. Coordinate with embeds, sleeves, openings, congestion at joints, and pour sequencing so reinforcement is buildable and schedulable.",
+    "subcategories": {}
+  },
+  "Structural Rebar Couplers": {
+    "description": "Structural Rebar Couplers models mechanical connectors that join reinforcing bars when lap splices are impractical or restricted. Typical items: threaded couplers, grouted sleeves, position couplers, and transitional couplers between bar sizes. Track coupler type, bar sizes, location, and inspection requirements. Coordinate with rebar congestion, concrete cover, embeds, and installation sequencing so couplers fit and inspection is straightforward.",
+    "subcategories": {}
+  },
+  "Structural Stiffeners": {
+    "description": "Structural Stiffeners models local reinforcement components that strengthen steel elements against buckling, bearing, or connection forces. Typical items: web stiffeners, bearing stiffeners, continuity plates, and doubler plates. Track plate thickness, size, weld type, and stiffener mark. Coordinate with bolt holes, weld access, fabrication constraints, and interference with other connection parts so stiffeners match shop requirements and remain buildable.",
+    "subcategories": {}
+  },
+  "Structural Tendons": {
+    "description": "Structural Tendons models prestressing elements used to induce compressive forces in concrete members (often post-tensioning). Typical items: tendon profiles, strands, ducts, anchorages, and stressing pockets. Track strand count, tendon force, profile elevations, anchorage type, and stressing sequence. Coordinate with openings, slab thickness changes, rebar congestion, and construction staging so stressing operations and detailing are realistic.",
+    "subcategories": {}
+  },
+  "Structural Trusses": {
+    "description": "Structural Trusses models triangulated framing assemblies used to span long distances efficiently and resist complex load patterns. Typical items: roof trusses, transfer trusses, and custom truss assemblies. Track truss depth, panel length, chord/web sizes, and truss mark. Coordinate with roof slopes, mechanical openings, lateral bracing, and transport/erection constraints so node geometry and marks remain consistent for documentation and fabrication.",
+    "subcategories": {}
+  },
+  "Telephone Devices": {
+    "description": "Telephone Devices models voice telephony endpoints and related devices coordinated with structured cabling standards. Typical items: desk phone outlets, wall phone stations, emergency phones, and elevator phone devices. Track device ID, service type, port labeling, mounting height, and emergency designation. Coordinate with accessibility requirements, corridor layouts, telecom room patching standards, and cable pathways so labeling and installation are traceable.",
+    "subcategories": {}
+  },
+  "Temporary Structures": {
+    "description": "Temporary Structures models construction-phase elements used for safety, support, and sequencing, typically removed before turnover. Typical items: scaffolding, shoring, formwork, temporary bracing, barriers, and temporary ramps/platforms. Track installation phase, load capacity, duration, and responsible trade. Coordinate with erection sequencing, access routes, and conflicts with permanent work during staged construction so means-and-methods are clear.",
+    "subcategories": {}
+  },
+  "Toposolid": {
+    "description": "Toposolid models the terrain surface used for grading, earthwork studies, and coordination with site and building footprints. Typical items: existing/proposed ground surfaces, berms, swales, and grading features created from points or contours. Track elevation points, phase (existing/proposed), region identifiers, and appearance/material data. Coordinate with pads, roads, drainage, retaining structures, and utilities so grading updates remain consistent and measurable.",
+    "subcategories": {}
+  },
+  "Vertical Circulation": {
+    "description": "Vertical Circulation models systems moving people and goods between levels beyond standard stairs/ramps categories. Typical items: elevators, escalators, lifts, dumbwaiters, and core equipment placeholders. Track capacity, cab size, speed, pit/overrun requirements, and service type. Coordinate with shafts, structural framing, MEP needs, and code egress/accessibility requirements so vendor and architectural constraints are captured early.",
+    "subcategories": {}
+  },
+  "Vibration Management": {
+    "description": "Vibration Management models components that reduce or isolate vibration and noise transmission from equipment into structure and occupied spaces. Typical items: spring isolators, neoprene pads, inertia bases, dampers, and isolation hangers. Track isolation deflection, load capacity, restraint type, and equipment association. Coordinate with structural pads, service clearances, and flexible connections so equipment movement is accommodated without stressing piping/ductwork.",
+    "subcategories": {
+      "Vibration Dampers": {
+        "description": "Vibration Dampers models devices intended to dissipate vibratory energy and reduce resonance in mechanical systems or structure. Typical items: dashpots, damping connectors, tuned devices, and pipe/duct dampers where specified. Track damping class, allowable movement, connection type, and rated load. Coordinate with vibration sources, attachment points, and clearance for operational movement so damping intent is not defeated by rigid tie-ins or conflicts."
+      },
+      "Vibration Isolators": {
+        "description": "Vibration Isolators models spring or elastomeric supports that decouple equipment from structure to reduce transmitted vibration and noise. Typical items: spring mounts, neoprene isolators, isolator hangers, and restrained isolators. Track static deflection, rated load, lateral restraint, and elevation/offset. Coordinate with housekeeping pads, base frames, flexible connectors, and seismic bracing so isolation and safety requirements are both satisfied."
+      }
+    }
+  },
+  "Walls": {
+    "description": "Walls models vertical building elements defining rooms, structure, and enclosure, including interior partitions and exterior assemblies. Typical items: stud partitions, masonry walls, concrete shear walls, and multi-layer envelope systems. Track type/layer build-up, height constraints, fire/acoustic rating, and finish codes. Coordinate with doors/windows, structural grids, penetrations, and firestopping at rated assemblies so documentation and coordination remain clean.",
+    "subcategories": {
+      "Wall Sweeps": {
+        "description": "Wall Sweeps models continuous profile trims applied along wall edges to represent baseboards, rails, or moldings. Typical items: baseboards, chair rails, caps, and custom profiles following wall geometry. Track profile type, height, offset, material/finish, and termination conditions. Coordinate with floor finishes, door casing, wall reveals, and corner transitions so elevations and finish schedules remain consistent and buildable."
+      }
+    }
+  },
+  "Windows": {
+    "description": "Windows models glazed openings providing daylight, views, ventilation, and envelope performance. Typical items: fixed/operable windows, storefront windows, and curtain-wall hosted windows with mullion systems. Track width/height, sill height, glazing performance, operability, and mark/ID. Coordinate with facade grids, structural openings, waterproofing details, shading, and interior finishes so elevations, schedules, and detailing remain consistent.",
+    "subcategories": {
+      "Frame/Mullion": {
+        "description": "Frame/Mullion models the perimeter framing components of a window assembly that anchor to the wall or curtain system and hold glazing. Typical items: jambs, heads, sills, transom frames, and storefront mullions. Track frame depth, profile, finish, anchorage type, and thermal break requirements. Coordinate with wall thickness, rough opening tolerances, adjacent panels/mullions, and waterproofing interfaces for consistent detailing."
+      },
+      "Glass": {
+        "description": "Glass models glazed portions of window assemblies that provide visibility, daylight, and thermal/acoustic performance. Typical items: IGUs, laminated glazing, spandrel glass, and specialty low-e units. Track glass thickness, glazing type, U-value/SHGC, safety rating, and acoustic classification. Coordinate with mullions, seals, fire/smoke requirements (where applicable), and privacy/frit patterns so schedules and elevations match specs."
+      },
+      "Opening": {
+        "description": "Opening models the reserved void in the host wall/system that provides the rough opening for window installation. Typical items: framed openings, punched openings, ribbon openings, and coordinated openings with lintels. Track rough width/height, sill/head clearances, lintel requirement flags, and tolerance notes. Coordinate with structural framing, rebar congestion, waterproofing and flashing continuity, and nearby MEP penetrations for constructability."
+      },
+      "Sill/Head": {
+        "description": "Sill/Head models the bottom and top conditions of a window opening defining drainage, support, and envelope detailing. Typical items: sloped sills, sub-sills, head flashings, lintels, and trim profiles. Track sill height, head height, slope, flashing type, and thermal break requirements. Coordinate with waterproofing, interior casing, structural headers, and shading devices so details and elevations remain coordinated."
+      }
+    }
+  }
+}

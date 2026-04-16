@@ -1,4 +1,4 @@
-import trelloEvents, { type TrelloEvent } from "@/lib/trello-events";
+import trelloEvents, { type TrelloEvent } from "@/lib/events/trello";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

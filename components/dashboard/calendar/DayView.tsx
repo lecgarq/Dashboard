@@ -2,7 +2,7 @@
 
 import { format } from "date-fns";
 import { CheckSquare, Square } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 interface CheckItem {
   id: string;

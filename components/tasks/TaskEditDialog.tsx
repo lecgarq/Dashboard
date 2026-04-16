@@ -4,7 +4,7 @@ import type { TaskAttachment, UserTask } from "@prisma/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { UploadDropzone } from "@uploadthing/react";
 import type { OurFileRouter } from "@/app/api/uploadthing/core";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 type TaskWithAttachments = UserTask & { attachments: TaskAttachment[] };
 

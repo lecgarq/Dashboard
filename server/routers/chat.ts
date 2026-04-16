@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
 import { TRPCError } from "@trpc/server";
-import { listChatSpaces, listChatMessages, sendChatMessage } from "@/lib/google-chat";
-import { getFreeBusyStatus } from "@/lib/google-calendar";
+import { listChatSpaces, listChatMessages, sendChatMessage } from "@/lib/google/chat";
+import { getFreeBusyStatus } from "@/lib/google/calendar";
 
 export const chatRouter = router({
   getSpaces: protectedProcedure.query(async ({ ctx }) => listChatSpaces(ctx.session.user.id)),

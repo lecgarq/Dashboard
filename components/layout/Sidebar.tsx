@@ -7,12 +7,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Camera, CheckCircle2, ChevronLeft, Link2, LogOut, MessageCircle, RefreshCw, Search, Unlink, User, X, XCircle } from "lucide-react";
 
 import { useDashboardAuth } from "@/components/providers/dashboard-auth-provider";
-import { startOAuthConnect } from "@/lib/oauth-connect";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
 import { useParticleZone } from "@/lib/particle-zones";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { MODULE_NAV_ITEMS, STAFF_NAV_ITEM, isNavItemActive } from "./navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 type AccountModalProps = {
   open: boolean;

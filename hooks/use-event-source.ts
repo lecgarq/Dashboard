@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { clientLogger } from "@/lib/core/logger";
 
 /**
  * Subscribe to a Server-Sent Events endpoint with automatic reconnection.
@@ -31,11 +32,11 @@ export function useEventSource<T = unknown>(
     function connect() {
       if (disposed) return;
 
-      console.log("[SSE] Connecting to", url);
+      clientLogger.log("[SSE] Connecting to", url);
       source = new EventSource(url);
 
       source.onopen = () => {
-        console.log("[SSE] Connected");
+        clientLogger.log("[SSE] Connected");
         retryCount = 0; // Reset on successful connection
       };
 
@@ -49,7 +50,7 @@ export function useEventSource<T = unknown>(
       };
 
       source.onerror = () => {
-        console.warn("[SSE] Connection error, will reconnect...");
+        clientLogger.warn("[SSE] Connection error, will reconnect...");
         source?.close();
         source = null;
 
@@ -57,11 +58,11 @@ export function useEventSource<T = unknown>(
 
         if (retryCount < MAX_RETRIES) {
           const delay = Math.min(BASE_DELAY_MS * Math.pow(1.5, retryCount), MAX_DELAY_MS);
-          console.log(`[SSE] Retry #${retryCount + 1} in ${Math.round(delay / 1000)}s`);
+          clientLogger.log(`[SSE] Retry #${retryCount + 1} in ${Math.round(delay / 1000)}s`);
           retryCount++;
           retryTimer = setTimeout(connect, delay);
         } else {
-          console.error("[SSE] Max retries reached. Waiting for visibility change to retry.");
+          clientLogger.error("[SSE] Max retries reached. Waiting for visibility change to retry.");
         }
       };
     }
@@ -71,7 +72,7 @@ export function useEventSource<T = unknown>(
       if (document.visibilityState === "visible" && !disposed) {
         // If the source is closed or we've exhausted retries, reconnect
         if (!source || source.readyState === EventSource.CLOSED) {
-          console.log("[SSE] Tab visible again, reconnecting...");
+          clientLogger.log("[SSE] Tab visible again, reconnecting...");
           retryCount = 0;
           connect();
         }

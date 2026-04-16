@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { useEventSource } from "@/hooks/use-event-source";
 import {
   format,

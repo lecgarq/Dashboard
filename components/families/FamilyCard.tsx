@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { type Phase } from "./KanbanBoard";
 import { useRole } from "@/hooks/use-role";
 import {

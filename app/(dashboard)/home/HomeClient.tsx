@@ -6,7 +6,7 @@ import { Activity, CalendarClock, CheckCircle2, Sparkles, Users2 } from "lucide-
 
 
 import { Header } from "@/components/layout/Header";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 const DashboardCalendar = dynamic(
   () => import("@/components/dashboard/DashboardCalendar").then((m) => m.DashboardCalendar),

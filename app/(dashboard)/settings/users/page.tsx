@@ -1,6 +1,6 @@
 "use client";
 
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import {
   Users,
   Shield,
@@ -32,7 +32,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { useSession } from "next-auth/react";
 import {
   Sheet,

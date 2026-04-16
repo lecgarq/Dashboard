@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-import { isOAuthConnectProvider } from "@/lib/oauth-connect";
+import { isOAuthConnectProvider } from "@/lib/google/oauth-connect";
 
 function toSafeRedirectTarget(target: string | null, request: NextRequest) {
   const origin = request.nextUrl.origin;

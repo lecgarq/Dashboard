@@ -1,8 +1,8 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, editorProcedure } from "../trpc";
-import * as trelloLib from "@/lib/trello";
-import trelloEvents from "@/lib/trello-events";
+import * as trelloLib from "@/lib/trello/client";
+import trelloEvents from "@/lib/events/trello";
 import { createLogger } from "@/lib/server/logger";
 
 const logger = createLogger("trello");

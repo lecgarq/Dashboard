@@ -19,6 +19,7 @@ import time
 from pathlib import Path
 
 LOD_CHECKER_DIR = Path(r"C:\LECG\LOD Checker")
+LOD_QUERY_ENCODER_SCRIPT = Path(__file__).resolve().parent.parent / "services" / "lod-query-encoder" / "server.py"
 
 # Track child processes for cleanup
 _children: list[subprocess.Popen] = []
@@ -126,6 +127,34 @@ def run_lod_checker() -> None:
         _children.append(proc)
 
     stream_output(proc, "lod-checker")
+
+
+def run_lod_query_encoder(project_root: Path) -> None:
+    """Spawn the local LOD query encoder service."""
+    if not LOD_QUERY_ENCODER_SCRIPT.exists():
+        print("[runner] LOD query encoder script not found, skipping")
+        return
+
+    env = os.environ.copy()
+    # Default to CPU in the shared dev runner unless the user has explicitly
+    # chosen a device in their current shell environment.
+    env.setdefault("LOD_QUERY_ENCODER_DEVICE", "cpu")
+
+    print("[runner] Starting LOD query encoder on port 8091")
+    proc = subprocess.Popen(
+        ["python", str(LOD_QUERY_ENCODER_SCRIPT)],
+        cwd=str(project_root),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    with _lock:
+        _children.append(proc)
+
+    stream_output(proc, "lod-encoder")
 
 
 def run_yjs_server(project_root: Path) -> None:
@@ -264,6 +293,11 @@ def parse_args() -> argparse.Namespace:
         help="Skip launching the LOD Checker",
     )
     parser.add_argument(
+        "--no-lod-encoder",
+        action="store_true",
+        help="Skip launching the LOD query encoder",
+    )
+    parser.add_argument(
         "--no-yjs",
         action="store_true",
         help="Skip launching the Yjs WebSocket server",
@@ -329,6 +363,8 @@ def main() -> int:
         free_port(args.port)
         if not args.no_yjs:
             free_port(4444)
+        if not args.no_lod_encoder:
+            free_port(8091)
         if not args.no_lod:
             free_port(5173)
             free_port(8080)
@@ -341,6 +377,14 @@ def main() -> int:
     if not args.no_yjs:
         yjs_thread = threading.Thread(target=run_yjs_server, args=(project_root,), daemon=True)
         yjs_thread.start()
+
+    if not args.no_lod_encoder:
+        encoder_thread = threading.Thread(
+            target=run_lod_query_encoder,
+            args=(project_root,),
+            daemon=True,
+        )
+        encoder_thread.start()
 
     # Start LOD Checker in background thread
     if not args.no_lod:

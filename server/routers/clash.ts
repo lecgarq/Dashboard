@@ -1,13 +1,13 @@
 import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 import { router, protectedProcedure, editorProcedure } from "../trpc";
-import clashEvents from "@/lib/clash-events";
+import clashEvents from "@/lib/events/clash";
 import { createLogger } from "@/lib/server/logger";
 
 const logger = createLogger("clash");
-import { upsertDriveJsonFile } from "@/lib/google-drive";
-import { DEFAULT_WIKI_SECTIONS, normalizeWikiSectionKey } from "@/lib/wiki-sections";
-import { ensureUniqueSection } from "@/lib/wiki-utils";
+import { upsertDriveJsonFile } from "@/lib/google/drive";
+import { DEFAULT_WIKI_SECTIONS, normalizeWikiSectionKey } from "@/lib/wiki/sections";
+import { ensureUniqueSection } from "@/lib/wiki/utils";
 
 const TaskStatusEnum = z.enum(["PLANNING", "IN_PROGRESS", "REVIEW", "DONE"]);
 const WikiStatusEnum = z.enum(["DRAFT", "REVIEW", "APPROVED"]);

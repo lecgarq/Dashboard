@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
-import { trpc as trpcClient } from "@/lib/trpc";
+import { trpc as trpcClient } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
 import {
   Dialog,
@@ -56,7 +56,7 @@ import {
   Check,
   Copy,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 const LABEL_COLORS: Record<string, string> = {
   green: "#61bd4f",

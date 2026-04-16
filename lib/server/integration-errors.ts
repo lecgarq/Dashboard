@@ -4,7 +4,7 @@ import {
   googleApiErrorMessageIncludes,
   hasGoogleApiReason,
   summarizeGoogleApiError,
-} from "@/lib/google-oauth";
+} from "@/lib/google/oauth";
 
 export type IntegrationErrorCode =
   | "reconnect_required"

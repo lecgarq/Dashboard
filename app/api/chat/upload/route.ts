@@ -8,7 +8,7 @@ import { db } from "@/server/db";
 import {
   getGoogleChatClientId,
   getGoogleChatClientSecret,
-} from "@/lib/google-oauth";
+} from "@/lib/google/oauth";
 import { google } from "googleapis";
 import { createLogger } from "@/lib/server/logger";
 

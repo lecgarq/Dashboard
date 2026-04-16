@@ -71,7 +71,7 @@ export const examRouter = router({
       if (!exam) throw new Error("Exam not found");
 
       // Dynamic import to avoid loading googleapis in client bundles
-      const { createGoogleForm } = await import("@/lib/google-forms");
+      const { createGoogleForm } = await import("@/lib/google/forms");
 
       const { formId, formUrl } = await createGoogleForm(
         exam.title,
@@ -98,7 +98,7 @@ export const examRouter = router({
       if (!exam?.formId) return [];
 
       try {
-        const { getFormResponses } = await import("@/lib/google-forms");
+        const { getFormResponses } = await import("@/lib/google/forms");
         return await getFormResponses(exam.formId);
       } catch {
         return [];

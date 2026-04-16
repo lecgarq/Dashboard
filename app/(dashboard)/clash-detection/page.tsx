@@ -4,11 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import type { ClashWiki } from "@prisma/client";
 import { Header } from "@/components/layout/Header";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
 import { useEventSource } from "@/hooks/use-event-source";
-import { cn } from "@/lib/utils";
-import { DEFAULT_WIKI_SECTIONS, normalizeWikiSectionKey } from "@/lib/wiki-sections";
+import { cn } from "@/lib/core/utils";
+import { DEFAULT_WIKI_SECTIONS, normalizeWikiSectionKey } from "@/lib/wiki/sections";
 import {
   CheckCircle2,
   FileText,

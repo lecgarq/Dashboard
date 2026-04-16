@@ -3,7 +3,7 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/ui/BrandLoading";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 const NavigationContext = createContext<{
   isNavigating: boolean;

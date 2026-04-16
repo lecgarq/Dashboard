@@ -3,8 +3,8 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Search, X, Building2, ListTodo, Zap, FileText, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { cn } from "@/lib/utils";
-import { trpc } from "@/lib/trpc";
+import { cn } from "@/lib/core/utils";
+import { trpc } from "@/lib/core/trpc";
 import { useDebounce } from "@/hooks/use-debounce";
 
 export function GlobalSearch() {

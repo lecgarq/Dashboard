@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { Readable } from "stream";
+import { auth } from "@/server/auth";
 import { createGoogleIntegrationError, getIntegrationErrorResponse } from "@/lib/server/integration-errors";
 import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
 import { createLogger } from "@/lib/server/logger";
+import { canEditWikiModule } from "@/lib/server/wiki-access";
+import { getWikiMediaFolderId } from "@/lib/server/wiki-media-drive";
 
 export const runtime = "nodejs";
 const logger = createLogger("wiki-media-route");
@@ -16,12 +19,18 @@ const logger = createLogger("wiki-media-route");
  */
 export async function POST(request: NextRequest) {
   try {
-    const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID;
-    if (!folderId) {
-      return NextResponse.json(
-        { error: "Google Drive not configured" },
-        { status: 500 }
-      );
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const wikiModule = request.headers.get("x-wiki-module");
+    if (wikiModule !== "clash" && wikiModule !== "sim") {
+      return NextResponse.json({ error: "Invalid wiki module" }, { status: 400 });
+    }
+
+    if (!canEditWikiModule(session.user, wikiModule)) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     const formData = await request.formData();
@@ -33,35 +42,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const auth = buildGoogleDriveOAuthClient();
-    const drive = google.drive({ version: "v3", auth });
+    const driveAuth = buildGoogleDriveOAuthClient();
+    const drive = google.drive({ version: "v3", auth: driveAuth });
 
-    // Ensure a "wiki-media" subfolder exists inside the main folder
-    let mediaFolderId: string;
-    const subfolderQuery = await drive.files.list({
-      q: `name='wiki-media' and '${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
-      fields: "files(id)",
-      spaces: "drive",
-    });
-
-    if (subfolderQuery.data.files && subfolderQuery.data.files.length > 0) {
-      mediaFolderId = subfolderQuery.data.files[0].id!;
-    } else {
-      const created = await drive.files.create({
-        requestBody: {
-          name: "wiki-media",
-          mimeType: "application/vnd.google-apps.folder",
-          parents: [folderId],
-        },
-        fields: "id",
-      });
-      mediaFolderId = created.data.id!;
-
-      // Make the subfolder publicly readable so images render in the wiki
-      await drive.permissions.create({
-        fileId: mediaFolderId,
-        requestBody: { role: "reader", type: "anyone" },
-      });
+    const mediaFolderId = await getWikiMediaFolderId(drive, { createIfMissing: true });
+    if (!mediaFolderId) {
+      return NextResponse.json(
+        { error: "Wiki media folder unavailable" },
+        { status: 500 }
+      );
     }
 
     // Generate a unique name to avoid collisions
@@ -87,12 +76,6 @@ export async function POST(request: NextRequest) {
     });
 
     const fileId = uploaded.data.id!;
-
-    // Make file publicly readable
-    await drive.permissions.create({
-      fileId,
-      requestBody: { role: "reader", type: "anyone" },
-    });
 
     // Return proxy URL to securely stream through our backend to evade 3rd party cookie bugs
     const host = request.headers.get("x-forwarded-host") || request.headers.get("host") || "localhost:3000";

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { BimViewer } from "./BimViewer";
 import { useRole } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";

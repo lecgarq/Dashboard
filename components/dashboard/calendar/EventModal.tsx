@@ -1,8 +1,8 @@
 "use client";
 
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { startOAuthConnect } from "@/lib/oauth-connect";
-import { trpc } from "@/lib/trpc";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
+import { trpc } from "@/lib/core/trpc";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,7 +23,7 @@ import {
   Video,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 interface CalendarEvent {
   id: string;

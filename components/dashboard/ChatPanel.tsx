@@ -23,12 +23,13 @@ import {
   Users,
   X,
 } from "lucide-react";
-import type { ChatAttachment } from "@/lib/google-chat";
+import type { ChatAttachment } from "@/lib/google/chat";
 import { useDashboardAuth } from "@/components/providers/dashboard-auth-provider";
 import { useChatPanel, type SpaceSelection } from "@/components/dashboard/chat-panel-context";
-import { startOAuthConnect } from "@/lib/oauth-connect";
-import { trpc } from "@/lib/trpc";
-import { cn } from "@/lib/utils";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
+import { trpc } from "@/lib/core/trpc";
+import { cn } from "@/lib/core/utils";
+import { PanelErrorBoundary } from "@/components/ui/panel-error-boundary";
 
 // ─── Attachment helpers ──────────────────────────────────────────────────────
 
@@ -425,24 +426,26 @@ function MediaPreviewModal({
 
       {/* Content */}
       <div
-        className="w-screen h-screen flex items-center justify-center overflow-hidden pt-12 pb-4 px-12"
+        className="w-screen h-screen flex items-center justify-center overflow-hidden pt-12 pb-4 px-12 touch-none"
         onClick={(e) => e.stopPropagation()}
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}
+        onPointerCancel={handlePointerUp}
         onDoubleClick={handleDoubleClick}
-        style={{ cursor: isImg && scale > 1 ? "grab" : undefined }}
+        style={{ cursor: isImg && scale > 1 ? (isPanning.current ? "grabbing" : "grab") : undefined }}
       >
         {isImg && (
           <img
             src={url}
             alt={attachment.contentName}
-            className="max-w-full max-h-full object-contain select-none"
+            className="max-w-full max-h-full object-contain select-none shadow-2xl"
             draggable={false}
             style={{
-              transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-              transition: isPanning.current ? "none" : "transform 0.15s ease-out",
+              transform: `translate3d(${pan.x}px, ${pan.y}px, 0) scale(${scale})`,
+              transition: isPanning.current ? "none" : "transform 0.15s cubic-bezier(0.16, 1, 0.3, 1)",
+              willChange: "transform",
             }}
           />
         )}
@@ -497,7 +500,7 @@ export function ChatPanel({
   }, [open, close]);
 
   return (
-    <>
+    <PanelErrorBoundary label="chat-panel">
       <button
         onClick={() => setOpen(true)}
         className={cn(
@@ -555,7 +558,7 @@ export function ChatPanel({
           />
         )}
       </div>
-    </>
+    </PanelErrorBoundary>
   );
 }
 

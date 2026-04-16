@@ -1,6 +1,6 @@
 
 import { NextRequest } from "next/server";
-import userEvents from "@/lib/user-events";
+import userEvents from "@/lib/events/user";
 
 export const dynamic = "force-dynamic";
 

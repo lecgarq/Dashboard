@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import {
   Plus,
   Check,

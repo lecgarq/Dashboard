@@ -17,7 +17,7 @@ import { FamilyCard } from "./FamilyCard";
 import { useRole } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import type { Family, FamilyAttachment, FamilyChangelog, FamilyDeliverable } from "@prisma/client";
 
 export type FamilyWithRelations = Family & {

@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
+import { auth } from "@/server/auth";
 import { createGoogleIntegrationError, getIntegrationErrorResponse } from "@/lib/server/integration-errors";
 import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
 import { createLogger } from "@/lib/server/logger";
+import { getWikiMediaFolderId } from "@/lib/server/wiki-media-drive";
 
 export const runtime = "nodejs";
 const logger = createLogger("wiki-media-proxy-route");
@@ -12,19 +14,30 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> } // In Next 15, dynamic route parameters must be awaited or correctly typed
 ) {
   try {
+    const session = await auth();
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
     const { id } = await params;
     if (!id) {
       return NextResponse.json({ error: "Missing file ID" }, { status: 400 });
     }
 
-    const auth = buildGoogleDriveOAuthClient();
-    const drive = google.drive({ version: "v3", auth });
+    const driveAuth = buildGoogleDriveOAuthClient();
+    const drive = google.drive({ version: "v3", auth: driveAuth });
 
     // Stream the file metadata to get the original mime type
     const meta = await drive.files.get({
       fileId: id,
-      fields: "mimeType,name",
+      fields: "mimeType,name,parents",
     });
+
+    const mediaFolderId = await getWikiMediaFolderId(drive, { createIfMissing: false });
+    const parentIds = meta.data.parents ?? [];
+    if (!mediaFolderId || !parentIds.includes(mediaFolderId)) {
+      return NextResponse.json({ error: "File not found" }, { status: 404 });
+    }
 
     const file = await drive.files.get(
       { fileId: id, alt: "media" },

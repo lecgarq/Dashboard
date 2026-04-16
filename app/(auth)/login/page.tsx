@@ -9,8 +9,8 @@ import { ArrowRight, KeyRound, Loader2, ShieldAlert, Sparkles, UserCircle2 } fro
 import { AuthShell } from "@/components/auth/AuthShell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { startOAuthConnect } from "@/lib/oauth-connect";
-import { trpc } from "@/lib/trpc";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
+import { trpc } from "@/lib/core/trpc";
 
 const OAUTH_ERROR_MESSAGES: Record<string, string> = {
   OAuthAccountAlreadyLinked: "This account is already linked to a different user.",

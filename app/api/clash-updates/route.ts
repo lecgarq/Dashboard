@@ -1,4 +1,4 @@
-import clashEvents, { type ClashEvent } from "@/lib/clash-events";
+import clashEvents, { type ClashEvent } from "@/lib/events/clash";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";

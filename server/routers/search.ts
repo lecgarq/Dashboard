@@ -1,5 +1,27 @@
+import { TRPCError } from "@trpc/server";
 import { z } from "zod";
+import { getValidAutodeskAccessToken } from "@/lib/server/aps-user-token";
+import { IntegrationError } from "@/lib/server/integration-errors";
 import { router, protectedProcedure } from "../trpc";
+
+function toApsSearchError(error: unknown, fallbackMessage: string) {
+  if (error instanceof IntegrationError) {
+    return new TRPCError({
+      code:
+        error.code === "config_missing" || error.code === "reconnect_required"
+          ? "PRECONDITION_FAILED"
+          : "INTERNAL_SERVER_ERROR",
+      message: error.message,
+      cause: error,
+    });
+  }
+
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: fallbackMessage,
+    cause: error instanceof Error ? error : undefined,
+  });
+}
 
 export const searchRouter = router({
   query: protectedProcedure
@@ -53,9 +75,17 @@ export const searchRouter = router({
     }),
 
   getApsToken: protectedProcedure
-    .query(async () => {
-      const { getInternalToken } = await import("@/lib/aps");
-      const token = await getInternalToken();
-      return { token };
+    .query(async ({ ctx }) => {
+      try {
+        const { accessToken, expiresAt } = await getValidAutodeskAccessToken(
+          ctx.session.user.id
+        );
+        return { token: accessToken, expiresAt };
+      } catch (error) {
+        throw toApsSearchError(
+          error,
+          "Unable to acquire an Autodesk token for the viewer."
+        );
+      }
     }),
 });

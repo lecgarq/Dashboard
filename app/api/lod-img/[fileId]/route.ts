@@ -1,8 +1,31 @@
+import { access, readFile } from "fs/promises";
+import path from "path";
+
 import { NextResponse } from "next/server";
+
 import { auth } from "@/server/auth";
 
-// Proxy LOD family images — imagePath is stored as a Google Drive file ID
-// Falls back gracefully if Drive is not configured
+export const runtime = "nodejs";
+
+function getLocalImageRoot() {
+  return process.env.LOD_LOCAL_IMAGE_ROOT?.trim() || "C:/LECG/LOD Checker/00_data/img";
+}
+
+async function readLocalImage(fileId: string) {
+  const decoded = decodeURIComponent(fileId);
+  const safeName = path.basename(decoded);
+  if (!safeName) return null;
+
+  const imagePath = path.join(getLocalImageRoot(), safeName);
+
+  try {
+    await access(imagePath);
+    return await readFile(imagePath);
+  } catch {
+    return null;
+  }
+}
+
 export async function GET(
   _req: Request,
   { params }: { params: Promise<{ fileId: string }> }
@@ -15,8 +38,18 @@ export async function GET(
   const { fileId } = await params;
   const folderId = process.env.LOD_IMAGES_DRIVE_FOLDER_ID;
 
+  const localImage = await readLocalImage(fileId);
+  if (localImage) {
+    return new NextResponse(localImage, {
+      headers: {
+        "Content-Type": "image/png",
+        "Cache-Control": "public, max-age=86400, immutable",
+      },
+    });
+  }
+
   if (!folderId) {
-    return new NextResponse("LOD image storage not configured", { status: 404 });
+    return new NextResponse("Image not found", { status: 404 });
   }
 
   try {

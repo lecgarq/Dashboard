@@ -15,6 +15,7 @@ export const authConfig: NextAuthConfig = {
         pathname.startsWith("/api/auth") ||
         pathname.startsWith("/api/connect") ||
         pathname.startsWith("/api/trpc") ||
+        pathname.startsWith("/api/wiki-collab-token") ||
         pathname.startsWith("/api/wiki-media")
       ) {
         return true;

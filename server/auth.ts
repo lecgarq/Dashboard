@@ -6,16 +6,16 @@ import { PrismaAdapter } from "@auth/prisma-adapter";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { db } from "./db";
-import { enqueuePendingUser, isEmailApproved } from "@/lib/sheets";
+import { enqueuePendingUser, isEmailApproved } from "@/lib/google/sheets";
 import { sendPendingRequestEmail, sendAdminNotificationEmail } from "@/lib/email";
 import { authConfig } from "@/auth.config";
-import userEvents from "@/lib/user-events";
+import userEvents from "@/lib/events/user";
 import {
   getGoogleChatClientId,
   getGoogleChatClientSecret,
   googleAuthScopeString,
   googleChatAuthScopeString,
-} from "@/lib/google-oauth";
+} from "@/lib/google/oauth";
 import { createLogger } from "@/lib/server/logger";
 
 const authLogger = createLogger("auth");

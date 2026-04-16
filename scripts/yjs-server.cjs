@@ -21,6 +21,7 @@ const prisma = new PrismaClient();
 
 const messageSync = 0;
 const messageAwareness = 1;
+const WIKI_COLLAB_TOKEN_SALT = "wiki-collab-token";
 
 const PORT = parseInt(process.env.PORT || "4444", 10);
 
@@ -140,7 +141,62 @@ function broadcastToOthers(room, sender, message) {
   }
 }
 
-function handleMessage(conn, room, data) {
+function extractAwarenessClientIds(update) {
+  const decoder = decoding.createDecoder(update);
+  const clients = [];
+  const length = decoding.readVarUint(decoder);
+
+  for (let index = 0; index < length; index++) {
+    const clientId = decoding.readVarUint(decoder);
+    clients.push(clientId);
+    decoding.readVarUint(decoder);
+    decoding.readVarString(decoder);
+  }
+
+  return clients;
+}
+
+async function decodeCollaborationToken(token) {
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  if (!secret || !token) return null;
+
+  try {
+    const { decode } = await import("@auth/core/jwt");
+    return await decode({
+      token,
+      secret,
+      salt: WIKI_COLLAB_TOKEN_SALT,
+    });
+  } catch (error) {
+    console.error("[yjs] Failed to decode collaboration token", error);
+    return null;
+  }
+}
+
+async function authenticateConnection(urlObj, roomName) {
+  const token = urlObj.searchParams?.get("token");
+  const payload = await decodeCollaborationToken(token);
+  if (!payload) {
+    return { ok: false, code: 4401, reason: "Missing or invalid collaboration token" };
+  }
+
+  const { type, id } = parseRoomDetails(roomName);
+  if (type === "unknown" || !id) {
+    return { ok: false, code: 4403, reason: "Unknown wiki room" };
+  }
+
+  if (payload.room !== roomName || payload.module !== type || payload.sectionId !== id) {
+    return { ok: false, code: 4403, reason: "Token does not match requested room" };
+  }
+
+  if (payload.role !== "ADMIN" && payload.role !== "EDITOR") {
+    return { ok: false, code: 4403, reason: "Insufficient collaboration permissions" };
+  }
+
+  return { ok: true, payload };
+}
+
+function handleMessage(conn, room, data, connState) {
   const message = new Uint8Array(data);
   const decoder = decoding.createDecoder(message);
   const messageType = decoding.readVarUint(decoder);
@@ -158,9 +214,15 @@ function handleMessage(conn, room, data) {
       break;
     }
     case messageAwareness: {
+      const awarenessUpdate = decoding.readVarUint8Array(decoder);
+      const clientIds = extractAwarenessClientIds(awarenessUpdate);
+      for (const clientId of clientIds) {
+        connState.awarenessClientIds.add(clientId);
+      }
+
       awarenessProtocol.applyAwarenessUpdate(
         room.awareness,
-        decoding.readVarUint8Array(decoder),
+        awarenessUpdate,
         conn
       );
       break;
@@ -209,13 +271,23 @@ wss.on("connection", async (conn, req) => {
   }
   
   const roomName = (urlObj.pathname || "/").slice(1) || "default";
+  const authResult = await authenticateConnection(urlObj, roomName);
+  if (!authResult.ok) {
+    conn.close(authResult.code, authResult.reason);
+    return;
+  }
+
+  const connState = {
+    awarenessClientIds: new Set(),
+    auth: authResult.payload,
+  };
   
   // Note: getRoom is now async to allow hydration
   const room = await getRoom(roomName);
   room.conns.add(conn);
 
   console.log(
-    `[yjs] Client joined room "${roomName}" (${room.conns.size} client(s))`
+    `[yjs] Client joined room "${roomName}" as ${connState.auth.sub} (${room.conns.size} client(s))`
   );
 
   // Relay awareness updates to other clients
@@ -238,7 +310,7 @@ wss.on("connection", async (conn, req) => {
 
   conn.on("message", (data) => {
     try {
-      handleMessage(conn, room, data);
+      handleMessage(conn, room, data, connState);
     } catch (err) {
       console.error("[yjs] Error handling message:", err);
     }
@@ -249,8 +321,8 @@ wss.on("connection", async (conn, req) => {
     room.awareness.off("update", awarenessHandler);
     awarenessProtocol.removeAwarenessStates(
       room.awareness,
-      [room.doc.clientID],
-      null
+      Array.from(connState.awarenessClientIds),
+      conn
     );
     console.log(
       `[yjs] Client left room "${roomName}" (${room.conns.size} client(s))`

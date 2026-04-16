@@ -1,9 +1,6 @@
 import { auth } from "@/server/auth";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
-import { GlobalSearch } from "@/components/dashboard/GlobalSearch";
-import { SessionProvider } from "next-auth/react";
-import { DualAuthGuard } from "@/components/auth/DualAuthGuard";
 import { CredentialsBanner } from "@/components/auth/CredentialsBanner";
 import { DashboardAuthProvider } from "@/components/providers/dashboard-auth-provider";
 import { ProjectProvider } from "@/components/providers/project-provider";
@@ -17,6 +14,9 @@ import ParticleBackground from "@/components/ui/ParticleBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { NavigationProvider } from "@/components/providers/navigation-provider";
 import { ChatPanelWrapper } from "@/components/dashboard/ChatPanelWrapper";
+import { MailPanelWrapper } from "@/components/dashboard/MailPanelWrapper";
+import { SessionProvider } from "next-auth/react";
+import { DualAuthGuard } from "@/components/auth/DualAuthGuard";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -63,6 +63,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </NavigationProvider>
                 </main>
                 <ChatPanelWrapper />
+                <MailPanelWrapper />
               </div>
             </ParticleZoneProvider>
           </HydrationBoundary>

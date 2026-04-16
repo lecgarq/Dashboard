@@ -1,20 +1,15 @@
 import { z } from "zod";
 import { router, adminProcedure, publicProcedure, protectedProcedure } from "../trpc";
-import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } from "@/lib/sheets";
-import { listCalendarGuestDirectory } from "@/lib/google-directory";
+import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } from "@/lib/google/sheets";
+import { listCalendarGuestDirectory } from "@/lib/google/directory";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/email";
 import { randomUUID } from "crypto";
-import userEvents from "@/lib/user-events";
+import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 
 const logger = createLogger("users");
-
-// Raw-SQL row types (avoids needing prisma generate for new models)
-interface PendingRow { id: string; email: string; name: string | null; provider: string; requestedAt: Date; status: string; userId: string | null }
-interface ModuleRow  { module: string }
-interface ResetRow   { id: string; email: string; token: string; expires: Date }
 
 
 export const usersRouter = router({
@@ -25,25 +20,19 @@ export const usersRouter = router({
 
   // Local DB directory (fallback / registered users only)
   getDirectory: protectedProcedure.query(async ({ ctx }) => {
-    const users = await ctx.db.$queryRaw<Array<{
-      id: string; name: string | null; email: string; role: string;
-      image: string | null; department: string | null; jobTitle: string | null;
-      lastLoginAt: Date | null;
-    }>>`
-      SELECT id, name, email, role, image, department, "jobTitle", "lastLoginAt"
-      FROM "User"
-      ORDER BY name ASC
-    `;
-    return users.map((u) => ({
-      id: u.id,
-      name: u.name ?? null,
-      email: u.email,
-      role: u.role,
-      image: u.image ?? null,
-      department: u.department ?? null,
-      jobTitle: u.jobTitle ?? null,
-      lastLoginAt: u.lastLoginAt ?? null,
-    }));
+    return ctx.db.user.findMany({
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        role: true,
+        image: true,
+        department: true,
+        jobTitle: true,
+        lastLoginAt: true,
+      },
+      orderBy: { name: "asc" },
+    });
   }),
 
   // Update own profile (department, jobTitle)
@@ -57,52 +46,38 @@ export const usersRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const userId = ctx.session.user.id;
-      await ctx.db.$executeRaw`
-        UPDATE "User"
-        SET
-          department = COALESCE(${input.department ?? null}, department),
-          "jobTitle"   = COALESCE(${input.jobTitle ?? null}, "jobTitle"),
-          name       = COALESCE(${input.name ?? null}, name)
-        WHERE id = ${userId}
-      `;
+      await ctx.db.user.update({
+        where: { id: userId },
+        data: {
+          department: input.department,
+          jobTitle: input.jobTitle,
+          name: input.name,
+        },
+      });
       return { success: true };
     }),
 
   getAll: adminProcedure.query(async ({ ctx }) => {
     try {
-      // Use raw SQL to bypass stale Prisma client metadata
-      const users = await ctx.db.$queryRaw<Array<{
-        id: string; name: string | null; email: string; role: string;
-        image: string | null; department: string | null; jobTitle: string | null;
-        createdAt: Date; lastLoginAt: Date | null;
-        accounts: Array<{ provider: string }> | null;
-      }>>`
-        SELECT
-          u.id, u.name, u.email, u.role, u.image, u.department, u."jobTitle",
-          u."createdAt", u."lastLoginAt",
-          COALESCE(
-            json_agg(json_build_object('provider', a.provider))
-              FILTER (WHERE a.provider IS NOT NULL),
-            '[]'::json
-          ) AS accounts
-        FROM "User" u
-        LEFT JOIN "Account" a ON a."userId" = u.id
-        GROUP BY u.id
-        ORDER BY u."createdAt" DESC
-      `;
-
-      return users.map((u) => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        role: u.role,
-        image: u.image,
-        department: u.department ?? null,
-        jobTitle: u.jobTitle ?? null,
-        createdAt: u.createdAt,
-        lastLoginAt: u.lastLoginAt,
-        accounts: u.accounts ?? [],
-      }));
+      return await ctx.db.user.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          role: true,
+          image: true,
+          department: true,
+          jobTitle: true,
+          createdAt: true,
+          lastLoginAt: true,
+          accounts: {
+            select: {
+              provider: true,
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+      });
     } catch (error) {
       logger.error("Fatal error fetching users", { error });
       throw new TRPCError({
@@ -148,11 +123,14 @@ export const usersRouter = router({
 
       // Sync with Google Sheets
       try {
-        const modules = await ctx.db.$queryRaw<ModuleRow[]>`SELECT module FROM "UserModuleAccess" WHERE "userId" =${input.userId}`;
+        const modules = await ctx.db.userModuleAccess.findMany({
+          where: { userId: input.userId },
+          select: { module: true },
+        });
         await writeUserPermissionsToSheets(
           updated.email,
           updated.id,
-          modules.map(m => m.module),
+          modules.map((m) => m.module),
           updated.role
         );
       } catch (error) {
@@ -186,25 +164,24 @@ export const usersRouter = router({
       if (!approved) {
         try {
           await enqueuePendingUser({ email, name: input.name, provider: "credentials", providerAccountId: "" });
-          
-          // Upsert PendingRequest in DB so it shows up in User Management
-          const existingReq = await ctx.db.$queryRaw<Array<{ id: string }>>`
-            SELECT id FROM "PendingRequest" WHERE email = ${email} LIMIT 1
-          `;
+
           const now = new Date();
-          if (existingReq.length > 0) {
-            await ctx.db.$executeRaw`
-              UPDATE "PendingRequest"
-              SET name = ${input.name}, provider = 'credentials', status = 'PENDING', "requestedAt" = ${now}
-              WHERE email = ${email}
-            `;
-          } else {
-            const id = randomUUID();
-            await ctx.db.$executeRaw`
-              INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
-              VALUES (${id}, ${email}, ${input.name}, 'credentials', 'PENDING', ${now})
-            `;
-          }
+          await ctx.db.pendingRequest.upsert({
+            where: { email },
+            update: {
+              name: input.name,
+              provider: "credentials",
+              status: "PENDING",
+              requestedAt: now,
+            },
+            create: {
+              email,
+              name: input.name,
+              provider: "credentials",
+              status: "PENDING",
+              requestedAt: now,
+            },
+          });
         } catch (err) { 
           logger.error("Failed to enqueue/upsert pending request", { err });
         }
@@ -270,11 +247,22 @@ export const usersRouter = router({
 
       // 2. Clear from approved list and update pending status
       await ctx.db.approvedEmail.deleteMany({ where: { email } });
-      await ctx.db.$executeRaw`
-        INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
-        VALUES (${randomUUID()}, ${email}, ${user.name || ""}, 'credentials', 'BLACKLISTED', ${new Date()})
-        ON CONFLICT(email) DO UPDATE SET status = 'BLACKLISTED'
-      `;
+      await ctx.db.pendingRequest.upsert({
+        where: { email },
+        update: {
+          name: user.name || "",
+          provider: "credentials",
+          status: "BLACKLISTED",
+          requestedAt: new Date(),
+        },
+        create: {
+          email,
+          name: user.name || "",
+          provider: "credentials",
+          status: "BLACKLISTED",
+          requestedAt: new Date(),
+        },
+      });
 
       return { success: true };
     }),
@@ -288,7 +276,7 @@ export const usersRouter = router({
         include: { accounts: true },
       });
       if (!user) return { providers: [] as string[] };
-      return { providers: (user.accounts as { provider: string }[]).map((a) => a.provider) };
+      return { providers: user.accounts.map((account) => account.provider) };
     }),
 
   requestPasswordReset: publicProcedure
@@ -303,11 +291,11 @@ export const usersRouter = router({
       const token = randomBytes(32).toString("hex");
       const expires = new Date(Date.now() + 60 * 60 * 1000);
       const now = new Date();
-      const id = randomUUID();
 
-      // Raw SQL — avoids needing prisma generate for PasswordResetToken
-      await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE email = ${email}`;
-      await ctx.db.$executeRaw`INSERT INTO "PasswordResetToken" (id, email, token, expires, "createdAt") VALUES (${id}, ${email}, ${token}, ${expires}, ${now})`;
+      await ctx.db.passwordResetToken.deleteMany({ where: { email } });
+      await ctx.db.passwordResetToken.create({
+        data: { email, token, expires, createdAt: now },
+      });
 
       const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
       const resetUrl = `${baseUrl}/reset-password?token=${token}`;
@@ -316,7 +304,7 @@ export const usersRouter = router({
         await sendPasswordResetEmail(email, resetUrl);
       } catch (err) {
         logger.error("Failed to send password reset email", { email, err });
-        await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE email = ${email}`;
+        await ctx.db.passwordResetToken.deleteMany({ where: { email } });
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
           message: "Password reset email could not be sent right now. Please contact the administrator.",
@@ -329,8 +317,9 @@ export const usersRouter = router({
   resetPassword: publicProcedure
     .input(z.object({ token: z.string(), newPassword: z.string().min(6) }))
     .mutation(async ({ ctx, input }) => {
-      const rows = await ctx.db.$queryRaw<ResetRow[]>`SELECT * FROM "PasswordResetToken" WHERE token = ${input.token} LIMIT 1`;
-      const record = rows[0];
+      const record = await ctx.db.passwordResetToken.findUnique({
+        where: { token: input.token },
+      });
 
       if (!record || new Date() > new Date(record.expires)) {
         throw new TRPCError({ code: "NOT_FOUND", message: "Invalid or expired reset token." });
@@ -342,7 +331,7 @@ export const usersRouter = router({
         data: { password: hashed },
       });
 
-      await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE token = ${input.token}`;
+      await ctx.db.passwordResetToken.delete({ where: { token: input.token } });
 
       return { success: true };
     }),
@@ -382,20 +371,34 @@ export const usersRouter = router({
   // ─── Pending Approval — raw SQL so prisma generate is not required ───────────
 
   getPendingRequests: adminProcedure.query(async ({ ctx }) => {
-    return ctx.db.$queryRaw<PendingRow[]>`
-      SELECT id, email, name, provider, "requestedAt", status, "userId"
-      FROM "PendingRequest"
-      WHERE status = 'PENDING'
-      ORDER BY "requestedAt" DESC
-    `;
+    return ctx.db.pendingRequest.findMany({
+      where: { status: "PENDING" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        provider: true,
+        requestedAt: true,
+        status: true,
+        userId: true,
+      },
+      orderBy: { requestedAt: "desc" },
+    });
   }),
 
   approvePendingRequest: adminProcedure
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
       const email = input.email.toLowerCase().trim();
+      const pending = await ctx.db.pendingRequest.findUnique({
+        where: { email },
+        select: { name: true },
+      });
 
-      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'APPROVED' WHERE email = ${email}`;
+      await ctx.db.pendingRequest.updateMany({
+        where: { email },
+        data: { status: "APPROVED" },
+      });
 
       await ctx.db.approvedEmail.upsert({
         where: { email },
@@ -406,19 +409,16 @@ export const usersRouter = router({
       const user = await ctx.db.user.findUnique({ where: { email } });
       if (user) {
         const modules = ["families", "clash", "exam", "trello"];
-        for (const module of modules) {
-          const id = randomUUID();
-          await ctx.db.$executeRaw`
-            INSERT INTO "UserModuleAccess" (id, "userId", module)
-            VALUES (${id}, ${user.id}, ${module})
-            ON CONFLICT ("userId", module) DO NOTHING
-          `;
-        }
+        await ctx.db.userModuleAccess.createMany({
+          data: modules.map((module) => ({
+            id: randomUUID(),
+            userId: user.id,
+            module,
+          })),
+          skipDuplicates: true,
+        });
       }
 
-      const [pending] = await ctx.db.$queryRaw<Array<{ name: string | null }>>`
-        SELECT name FROM "PendingRequest" WHERE email = ${email} LIMIT 1
-      `;
       try {
         await sendApprovedEmail(email, pending?.name ?? undefined);
       } catch (error) {
@@ -432,12 +432,15 @@ export const usersRouter = router({
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
       const email = input.email.toLowerCase().trim();
+      const pending = await ctx.db.pendingRequest.findUnique({
+        where: { email },
+        select: { name: true },
+      });
 
-      const [pending] = await ctx.db.$queryRaw<Array<{ name: string | null }>>`
-        SELECT name FROM "PendingRequest" WHERE email = ${email} LIMIT 1
-      `;
-
-      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'BLACKLISTED' WHERE email = ${email}`;
+      await ctx.db.pendingRequest.updateMany({
+        where: { email },
+        data: { status: "BLACKLISTED" },
+      });
 
       try {
         await sendDeclinedEmail(email, pending?.name ?? undefined);
@@ -449,12 +452,19 @@ export const usersRouter = router({
     }),
 
   getBlacklistedRequests: adminProcedure.query(async ({ ctx }) => {
-    return ctx.db.$queryRaw<PendingRow[]>`
-      SELECT id, email, name, provider, "requestedAt", status, "userId"
-      FROM "PendingRequest"
-      WHERE status = 'BLACKLISTED'
-      ORDER BY "requestedAt" DESC
-    `;
+    return ctx.db.pendingRequest.findMany({
+      where: { status: "BLACKLISTED" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        provider: true,
+        requestedAt: true,
+        status: true,
+        userId: true,
+      },
+      orderBy: { requestedAt: "desc" },
+    });
   }),
 
   restoreBlacklistedRequest: adminProcedure
@@ -468,7 +478,10 @@ export const usersRouter = router({
       // or provide a direct "Restore & Approve" button.
       // Let's implement restore as "Move to Pending".
       
-      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'PENDING' WHERE email = ${email}`;
+      await ctx.db.pendingRequest.updateMany({
+        where: { email },
+        data: { status: "PENDING" },
+      });
 
       return { success: true };
     }),
@@ -477,7 +490,10 @@ export const usersRouter = router({
     .input(z.object({ email: z.string().email() }))
     .mutation(async ({ ctx, input }) => {
       const email = input.email.toLowerCase().trim();
-      await ctx.db.$executeRaw`UPDATE "PendingRequest" SET status = 'BLACKLISTED' WHERE email = ${email}`;
+      await ctx.db.pendingRequest.updateMany({
+        where: { email },
+        data: { status: "BLACKLISTED" },
+      });
       await ctx.db.approvedEmail.deleteMany({ where: { email } });
       return { success: true };
     }),
@@ -496,7 +512,7 @@ export const usersRouter = router({
 
       await ctx.db.user.delete({ where: { id: input.userId } });
       await ctx.db.approvedEmail.deleteMany({ where: { email } });
-      await ctx.db.$executeRaw`DELETE FROM "PendingRequest" WHERE email = ${email}`;
+      await ctx.db.pendingRequest.deleteMany({ where: { email } });
 
       userEvents.emit("user-update", { type: "user-removed", userId: input.userId });
       return { success: true };
@@ -516,11 +532,22 @@ export const usersRouter = router({
 
       await ctx.db.user.delete({ where: { id: input.userId } });
       await ctx.db.approvedEmail.deleteMany({ where: { email } });
-      await ctx.db.$executeRaw`
-        INSERT INTO "PendingRequest" (id, email, name, provider, status, "requestedAt")
-        VALUES (${randomUUID()}, ${email}, ${user.name || ""}, 'credentials', 'BLACKLISTED', ${new Date()})
-        ON CONFLICT(email) DO UPDATE SET status = 'BLACKLISTED'
-      `;
+      await ctx.db.pendingRequest.upsert({
+        where: { email },
+        update: {
+          name: user.name || "",
+          provider: "credentials",
+          status: "BLACKLISTED",
+          requestedAt: new Date(),
+        },
+        create: {
+          email,
+          name: user.name || "",
+          provider: "credentials",
+          status: "BLACKLISTED",
+          requestedAt: new Date(),
+        },
+      });
 
       userEvents.emit("user-update", { type: "user-blacklisted", userId: input.userId });
       return { success: true };
@@ -531,23 +558,26 @@ export const usersRouter = router({
   getUserModuleAccess: adminProcedure
     .input(z.object({ userId: z.string() }))
     .query(async ({ ctx, input }) => {
-      const rows = await ctx.db.$queryRaw<ModuleRow[]>`
-        SELECT module FROM "UserModuleAccess" WHERE "userId" =${input.userId}
-      `;
-      return rows.map((r) => r.module);
+      const rows = await ctx.db.userModuleAccess.findMany({
+        where: { userId: input.userId },
+        select: { module: true },
+      });
+      return rows.map((row) => row.module);
     }),
 
   setUserModuleAccess: adminProcedure
     .input(z.object({ userId: z.string(), modules: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {
       await ctx.db.$transaction(async (tx) => {
-        await tx.$executeRaw`DELETE FROM "UserModuleAccess" WHERE "userId" =${input.userId}`;
-        for (const module of input.modules) {
-          const id = randomUUID();
-          await tx.$executeRaw`
-            INSERT INTO "UserModuleAccess" (id, "userId", module)
-            VALUES (${id}, ${input.userId}, ${module})
-          `;
+        await tx.userModuleAccess.deleteMany({ where: { userId: input.userId } });
+        if (input.modules.length > 0) {
+          await tx.userModuleAccess.createMany({
+            data: input.modules.map((module) => ({
+              id: randomUUID(),
+              userId: input.userId,
+              module,
+            })),
+          });
         }
       });
 
@@ -627,7 +657,10 @@ export const usersRouter = router({
       await fs.writeFile(filePath, buffer);
 
       const imageUrl = `/avatars/${filename}?t=${Date.now()}`;
-      await ctx.db.$executeRaw`UPDATE "User" SET image = ${imageUrl} WHERE id = ${userId}`;
+      await ctx.db.user.update({
+        where: { id: userId },
+        data: { image: imageUrl },
+      });
 
       return { image: imageUrl };
     }),
@@ -645,7 +678,10 @@ export const usersRouter = router({
       } catch { /* file may not exist */ }
     }
 
-    await ctx.db.$executeRaw`UPDATE "User" SET image = NULL WHERE id = ${userId}`;
+    await ctx.db.user.update({
+      where: { id: userId },
+      data: { image: null },
+    });
     return { success: true };
   }),
 });

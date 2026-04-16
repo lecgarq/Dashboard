@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { isChunkLoadError } from "@/lib/chunk-load-error";
+import { clientLogger } from "@/lib/core/logger";
 
 const RETRY_KEY = (path: string) => `chunk_retry_${path}`;
 const AUTO_RETRY_WINDOW_MS = 15_000;
@@ -21,7 +22,7 @@ export default function DashboardError({
 
   useEffect(() => {
     if (!isChunk) {
-      console.error("[DashboardError]", error);
+      clientLogger.error("[DashboardError]", error);
       return;
     }
 

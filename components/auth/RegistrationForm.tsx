@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { signIn } from "next-auth/react";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";

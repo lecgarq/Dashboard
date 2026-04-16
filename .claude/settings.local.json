@@ -78,7 +78,28 @@
       "Bash(RAILWAY_TOKEN=d0fe907f-c4ea-419c-b309-9ced5457bb93 railway up --detach --service dashboard)",
       "Bash(RAILWAY_TOKEN=f5ec67cb-c3f8-4c6d-96d0-0f3aa3e3f48c railway up --detach --service yjs-server)",
       "Bash(RAILWAY_TOKEN=f5ec67cb-c3f8-4c6d-96d0-0f3aa3e3f48c railway up --detach --service 232d26e6-d60a-493b-81c9-ecd42ac4b235)",
-      "Bash(RAILWAY_TOKEN=d0fe907f-c4ea-419c-b309-9ced5457bb93 railway up --detach --service d26ac1a5-5b6e-4479-9515-d5a332083843)"
+      "Bash(RAILWAY_TOKEN=d0fe907f-c4ea-419c-b309-9ced5457bb93 railway up --detach --service d26ac1a5-5b6e-4479-9515-d5a332083843)",
+      "Bash(git push *)",
+      "Bash(railway variables *)",
+      "Bash(RAILWAY_TOKEN=rlwy_oacs_be274977e26d0efb50aeb78aab0735ed70495b6c railway variables *)",
+      "Bash(RAILWAY_TOKEN=rlwy_oaci_2vMpO42yE3RKcxLjwv5cL3Um railway variables *)",
+      "Bash(RAILWAY_TOKEN=rlwy_oaci_2vMpO42yE3RKcxLjwv5cL3Um railway whoami)",
+      "Bash(RAILWAY_TOKEN=rlwy_oacs_be274977e26d0efb50aeb78aab0735ed70495b6c railway whoami)",
+      "Bash(RAILWAY_TOKEN=5085ef1f-bb0d-4695-83ad-4be9ec3880ab railway whoami *)",
+      "Bash(npm show *)",
+      "Bash(npm uninstall *)",
+      "Skill(update-config)",
+      "Bash(where python *)",
+      "Bash(where python3 *)",
+      "Bash(mkdir -p /c/Users/luis.cortes/bin)",
+      "Bash(cat)",
+      "Bash(chmod +x /c/Users/luis.cortes/bin/python3)",
+      "Bash(head -20 /c/LECG/Dashboard/components/families/*.tsx)",
+      "Bash(python3 *)",
+      "Bash(xargs -I{} du -sh {})",
+      "Read(//tmp/**)",
+      "Bash(2>&1)",
+      "Skill(gsd:resume-work)"
     ]
   }
 }

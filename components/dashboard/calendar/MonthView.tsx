@@ -13,11 +13,11 @@ import {
   format,
 } from "date-fns";
 import { CheckSquare, Square, Plus, Trash2, Pencil, Shuffle, ChevronRight, X, Calendar as CalendarIcon } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { isHoliday } from "@/lib/holidays";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 
 interface CheckItem {
   id: string;

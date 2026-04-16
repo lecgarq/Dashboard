@@ -2,7 +2,7 @@
 
 import { Suspense, useState, useMemo, useCallback } from "react";
 import dynamic from "next/dynamic";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
 import {
   ArrowLeft,
@@ -39,7 +39,7 @@ import {
   DropdownMenuRadioGroup,
   DropdownMenuRadioItem,
 } from "@/components/ui/dropdown-menu";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 function ViewSkeleton() {
   return (

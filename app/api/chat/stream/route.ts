@@ -1,7 +1,7 @@
 // app/api/chat/stream/route.ts
 import { NextRequest } from "next/server";
 import { auth } from "@/server/auth";
-import { listChatSpaces, pollLatestMessage } from "@/lib/google-chat";
+import { listChatSpaces, pollLatestMessage } from "@/lib/google/chat";
 import { createLogger } from "@/lib/server/logger";
 
 export const dynamic = "force-dynamic";

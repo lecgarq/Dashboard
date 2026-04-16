@@ -10,7 +10,7 @@ import {
   isWeekend,
 } from "date-fns";
 import { CheckSquare, Square, Plus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 interface CheckItem {
   id: string;

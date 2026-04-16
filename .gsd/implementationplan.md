@@ -21,6 +21,37 @@
 
 ---
 
+## Execution Tracking
+
+> Last updated: 2026-04-16
+
+| Phase | Status | Notes |
+| --- | --- | --- |
+| Phase 1 — Database Schema | ✅ Done | Corrective migration added and applied with `pgvector`, `expiresAt`, and `encoderVersion` support. |
+| Phase 2 — Data Migration | ✅ Done | `npm run lod:migrate` completed the live import and built the IVFFlat index. |
+| Phase 3 — APS/Search Backend | ✅ Done | Autodesk OAuth stays in NextAuth, viewer tokens now come from the linked Autodesk account with refresh-buffer handling, and `aps-search.ts` ports the addin search patterns. |
+| Phase 4 — Frontend Components | ⚠️ Partial | Native shell exists; remaining graph/detail UX cleanup is separate from the backend migration fix. |
+| Phase 5 — Kill the iframe | ✅ Done | Runtime search/data path no longer depends on Flask. |
+| Phase 6 — Pipeline Adapter | ⚠️ Partial | `lod.uploadResults` exists; broader local-pipeline ergonomics can still improve. |
+| Phase 7 — Local Query Encoder | ✅ Done | Service is wired locally and verified with automatic CUDA-to-CPU fallback during live inference. |
+
+### Current completed items
+
+- `prisma migrate deploy` applied the corrective LOD migration successfully.
+- `server/routers/lod.ts` now uses a SigLIP-compatible query encoder service instead of mismatched OpenAI embeddings.
+- `scripts/migrate-lod-data.cjs` is the canonical importer and populated both `vector` and `pgvector`.
+- `/api/lod-img/[fileId]` now supports the current local-image dataset layout without forcing the Drive migration first.
+- `scripts/run_dev_stack.py` can launch the local query encoder alongside the dashboard stack.
+- Live encoder validation passed: `/embed-query` returned a 768-dimension vector and the service downgraded itself from CUDA to CPU with `fallbackCount: 1`.
+- Autodesk APS parity is now implemented at the dashboard layer: shared NextAuth Autodesk login remains the entrypoint, viewer tokens refresh against the stored Autodesk account, and `aps-search.ts` returns addin-style folder-path and model metadata.
+
+### Current remaining items
+
+- Decide whether the Google Drive image migration remains a requirement or is now optional given the local-image runtime support.
+- Fold any remaining UI/pipeline polish into later phases without reopening the corrected search/data migration.
+
+---
+
 ## Phase 1: Database Schema (Prisma + pgvector)
 
 ### New Models in `prisma/schema.prisma`

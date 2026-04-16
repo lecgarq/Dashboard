@@ -1,112 +1,343 @@
-import { z } from "zod";
-import { router, protectedProcedure, adminProcedure, editorProcedure } from "../trpc";
-import { createLogger } from "@/lib/server/logger";
-import OpenAI from "openai";
 import crypto from "crypto";
 
+import { TRPCError } from "@trpc/server";
+import OpenAI from "openai";
+import { z } from "zod";
+
+import { IntegrationError } from "@/lib/server/integration-errors";
+import {
+  LOD_QUERY_ENCODER_VERSION,
+  encodeLodQuery,
+} from "@/lib/server/lod-query-encoder";
+import { createLogger } from "@/lib/server/logger";
+
+import {
+  adminProcedure,
+  editorProcedure,
+  protectedProcedure,
+  router,
+} from "../trpc";
+
 const logger = createLogger("lod");
+const SEARCH_CACHE_TTL_MS = 1000 * 60 * 60 * 24;
+const SEARCH_RESULT_LIMIT = 200;
+const SEARCH_CANDIDATE_LIMIT = 400;
+
+type LodSearchCandidate = {
+  id: string;
+  nameOfFile: string;
+  familyName: string | null;
+  finalCategory: string | null;
+  lodLabel: string | null;
+  provider: string | null;
+  caption: string | null;
+  fullDescription: string | null;
+  confidenceLevel: string | null;
+  imagePath: string | null;
+  possibleCategories: string[];
+  distance: number;
+};
 
 function getOpenAI() {
-  return new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-}
-
-async function computeEmbedding(text: string): Promise<number[]> {
-  const openai = getOpenAI();
-  const res = await openai.embeddings.create({
-    model: "text-embedding-3-small",
-    input: text,
-    dimensions: 768,
-  });
-  return res.data[0].embedding;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
+  return apiKey ? new OpenAI({ apiKey }) : null;
 }
 
 async function expandQuery(query: string): Promise<string> {
   const openai = getOpenAI();
-  const res = await openai.chat.completions.create({
-    model: process.env.OPENAI_MODEL ?? "gpt-4o",
-    messages: [
-      {
-        role: "system",
-        content:
-          "You are a BIM/Revit expert. Expand the user's search query with synonyms and related technical terms for finding Revit families. Return only the expanded query text, no explanation.",
-      },
-      { role: "user", content: query },
-    ],
-    max_tokens: 100,
-    temperature: 0.3,
+  if (!openai) return query;
+
+  try {
+    const res = await openai.chat.completions.create({
+      model: process.env.OPENAI_MODEL ?? "gpt-4o",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a BIM/Revit expert. Expand the user's search query with synonyms and related technical terms for finding Revit families. Return only the expanded query text, no explanation.",
+        },
+        { role: "user", content: query },
+      ],
+      max_tokens: 100,
+      temperature: 0.3,
+    });
+
+    return res.choices[0].message.content?.trim() || query;
+  } catch (error) {
+    logger.warn("LOD query expansion failed; falling back to original query", {
+      err: error,
+      query,
+    });
+    return query;
+  }
+}
+
+function toLodRouterError(error: unknown, fallbackMessage: string) {
+  if (error instanceof IntegrationError) {
+    return new TRPCError({
+      code:
+        error.code === "config_missing" || error.code === "reconnect_required"
+          ? "PRECONDITION_FAILED"
+          : "INTERNAL_SERVER_ERROR",
+      message: error.message,
+      cause: error,
+    });
+  }
+
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: fallbackMessage,
+    cause: error instanceof Error ? error : undefined,
   });
-  return res.choices[0].message.content ?? query;
+}
+
+function normalizeQuery(query: string) {
+  return query.trim().replace(/\s+/g, " ").toLowerCase();
+}
+
+function toVectorLiteral(vector: number[]) {
+  return `[${vector.join(",")}]`;
+}
+
+function isValidEmbedding(vector: number[] | undefined): vector is number[] {
+  return (
+    Array.isArray(vector) &&
+    vector.length === 768 &&
+    vector.every((value) => Number.isFinite(value))
+  );
+}
+
+function normalizeVector(vector: number[]) {
+  let magnitude = 0;
+
+  for (const value of vector) {
+    magnitude += value * value;
+  }
+
+  if (!magnitude) return vector;
+
+  const scale = Math.sqrt(magnitude);
+  return vector.map((value) => value / scale);
+}
+
+function blendVectors(base: number[], expanded?: number[]) {
+  if (!expanded) return normalizeVector(base);
+  return normalizeVector(
+    base.map((value, index) => value * 0.3 + expanded[index] * 0.7)
+  );
+}
+
+function getQueryTerms(...queries: string[]) {
+  return [
+    ...new Set(
+      queries
+        .flatMap((query) => query.split(/[^a-z0-9]+/i))
+        .map((term) => term.trim().toLowerCase())
+        .filter((term) => term.length >= 2)
+    ),
+  ];
+}
+
+function rankCandidate(candidate: LodSearchCandidate, terms: string[]) {
+  const weightedFields: Array<[string | null | undefined, number]> = [
+    [candidate.familyName, 0.2],
+    [candidate.nameOfFile, 0.18],
+    [candidate.finalCategory, 0.16],
+    [candidate.lodLabel, 0.14],
+    [candidate.provider, 0.12],
+    [candidate.caption, 0.08],
+    [candidate.fullDescription, 0.04],
+  ];
+
+  let boost = 0;
+
+  for (const term of terms) {
+    for (const [field, weight] of weightedFields) {
+      if (field?.toLowerCase().includes(term)) {
+        boost += weight;
+      }
+    }
+
+    if (
+      candidate.possibleCategories.some((value) =>
+        value.toLowerCase().includes(term)
+      )
+    ) {
+      boost += 0.08;
+    }
+  }
+
+  const similarity = 1 - candidate.distance;
+  return similarity + Math.min(boost, 1.5);
 }
 
 export const lodRouter = router({
-  // ── Search ──
   search: protectedProcedure
     .input(z.object({ query: z.string().min(1) }))
     .query(async ({ input, ctx }) => {
-      const queryHash = crypto.createHash("sha256").update(input.query.toLowerCase().trim()).digest("hex");
+      const normalizedQuery = normalizeQuery(input.query);
+      const queryHash = crypto
+        .createHash("sha256")
+        .update(normalizedQuery)
+        .digest("hex");
+      const now = new Date();
 
-      // Check cache
-      const cached = await ctx.db.lodSearchCache.findUnique({ where: { queryHash } });
-      if (cached) {
+      await ctx.db.$executeRawUnsafe(
+        `DELETE FROM "LodSearchCache"
+         WHERE "expiresAt" <= $1
+            OR "encoderVersion" <> $2`,
+        now,
+        LOD_QUERY_ENCODER_VERSION
+      );
+
+      const cachedRows = await ctx.db.$queryRawUnsafe<
+        Array<{
+          expandedQuery: string;
+          encoderVersion: string;
+          resultIds: string[];
+          expiresAt: Date | string;
+        }>
+      >(
+        `SELECT "expandedQuery", "encoderVersion", "resultIds", "expiresAt"
+         FROM "LodSearchCache"
+         WHERE "queryHash" = $1
+         LIMIT 1`,
+        queryHash
+      );
+      const cached = cachedRows[0];
+      if (
+        cached &&
+        cached.encoderVersion === LOD_QUERY_ENCODER_VERSION &&
+        new Date(cached.expiresAt) > now
+      ) {
         const families = await ctx.db.lodFamily.findMany({
           where: { id: { in: cached.resultIds } },
         });
-        // Preserve cache order
-        const map = new Map(families.map((f) => [f.id, f]));
-        return { results: cached.resultIds.map((id) => map.get(id)).filter(Boolean), fromCache: true };
+        const familyMap = new Map(families.map((family) => [family.id, family]));
+
+        return {
+          results: cached.resultIds
+            .map((id) => familyMap.get(id))
+            .filter((family): family is NonNullable<typeof family> => Boolean(family)),
+          fromCache: true,
+          expandedQuery: cached.expandedQuery,
+        };
       }
 
-      // Expand query + embed
-      const expandedQuery = await expandQuery(input.query);
-      const embedding = await computeEmbedding(expandedQuery);
+      try {
+        const [expandedQuery, baseEmbedding] = await Promise.all([
+          expandQuery(normalizedQuery),
+          encodeLodQuery(normalizedQuery),
+        ]);
 
-      // pgvector cosine similarity search using the dedicated vector(768) column
-      const vectorLiteral = `[${embedding.join(",")}]`;
-      const results = await ctx.db.$queryRawUnsafe<Array<{ id: string; distance: number }>>(
-        `SELECT f.id, (e.pgvector <=> $1::vector) AS distance
-         FROM "LodEmbedding" e
-         JOIN "LodFamily" f ON f.id = e."familyId"
-         WHERE e.pgvector IS NOT NULL
-         ORDER BY e.pgvector <=> $1::vector
-         LIMIT 200`,
-        vectorLiteral
-      );
+        const expandedEmbedding =
+          expandedQuery !== normalizedQuery
+            ? await encodeLodQuery(expandedQuery)
+            : null;
 
-      const ids = results.map((r) => r.id);
+        const queryVector = blendVectors(
+          baseEmbedding.vector,
+          expandedEmbedding?.vector
+        );
 
-      // Store in cache
-      await ctx.db.lodSearchCache.create({
-        data: { queryHash, expandedQuery, resultIds: ids },
-      });
+        const candidates = await ctx.db.$queryRawUnsafe<LodSearchCandidate[]>(
+          `SELECT
+             f.id,
+             f."nameOfFile",
+             f."familyName",
+             f."finalCategory",
+             f."lodLabel",
+             f.provider,
+             f.caption,
+             f."fullDescription",
+             f."confidenceLevel",
+             f."imagePath",
+             COALESCE(f."possibleCategories", ARRAY[]::text[]) AS "possibleCategories",
+             (e."pgvector" <=> $1::vector) AS distance
+           FROM "LodEmbedding" e
+           JOIN "LodFamily" f ON f.id = e."familyId"
+           WHERE e."pgvector" IS NOT NULL
+           ORDER BY e."pgvector" <=> $1::vector
+           LIMIT ${SEARCH_CANDIDATE_LIMIT}`,
+          toVectorLiteral(queryVector)
+        );
 
-      const families = await ctx.db.lodFamily.findMany({ where: { id: { in: ids } } });
-      const map = new Map(families.map((f) => [f.id, f]));
-      return { results: ids.map((id) => map.get(id)).filter(Boolean), fromCache: false };
+        const queryTerms = getQueryTerms(normalizedQuery, expandedQuery);
+        const ranked = candidates
+          .map((candidate) => ({
+            ...candidate,
+            score: rankCandidate(candidate, queryTerms),
+          }))
+          .sort((left, right) => {
+            if (right.score !== left.score) return right.score - left.score;
+            if (left.distance !== right.distance) return left.distance - right.distance;
+            return left.nameOfFile.localeCompare(right.nameOfFile);
+          })
+          .slice(0, SEARCH_RESULT_LIMIT)
+          .map(({ score: _score, ...candidate }) => candidate);
+
+        const resultIds = ranked.map((candidate) => candidate.id);
+
+        await ctx.db.$executeRawUnsafe(
+          `INSERT INTO "LodSearchCache"
+             ("id", "queryHash", "expandedQuery", "encoderVersion", "resultIds", "expiresAt", "createdAt")
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT ("queryHash")
+           DO UPDATE SET
+             "expandedQuery" = EXCLUDED."expandedQuery",
+             "encoderVersion" = EXCLUDED."encoderVersion",
+             "resultIds" = EXCLUDED."resultIds",
+             "expiresAt" = EXCLUDED."expiresAt"`,
+          crypto.randomUUID(),
+          queryHash,
+          expandedQuery,
+          LOD_QUERY_ENCODER_VERSION,
+          resultIds,
+          new Date(now.getTime() + SEARCH_CACHE_TTL_MS),
+          now
+        );
+
+        return {
+          results: ranked,
+          fromCache: false,
+          expandedQuery,
+        };
+      } catch (error) {
+        throw toLodRouterError(error, "LOD search failed.");
+      }
     }),
 
-  // ── Graph Data ──
   getGraphData: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.lodGraphNode.findMany({
-      include: { family: { select: { id: true, familyName: true, finalCategory: true, lodLabel: true } } },
+      include: {
+        family: {
+          select: {
+            id: true,
+            familyName: true,
+            finalCategory: true,
+            lodLabel: true,
+          },
+        },
+      },
     });
   }),
 
-  // ── Single Family ──
   getFamily: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {
       return ctx.db.lodFamily.findUnique({ where: { id: input.id } });
     }),
 
-  // ── Delete Family ──
   deleteFamily: editorProcedure
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       await ctx.db.lodFamily.delete({ where: { id: input.id } });
+      await ctx.db.lodSearchCache.deleteMany({
+        where: { resultIds: { has: input.id } },
+      });
       return { success: true };
     }),
 
-  // ── Stats ──
   getStats: protectedProcedure.query(async ({ ctx }) => {
     const [total, byCategory, byLod, byProvider] = await Promise.all([
       ctx.db.lodFamily.count(),
@@ -114,34 +345,51 @@ export const lodRouter = router({
       ctx.db.lodFamily.groupBy({ by: ["lodLabel"], _count: { id: true } }),
       ctx.db.lodFamily.groupBy({ by: ["provider"], _count: { id: true } }),
     ]);
+
     return { total, byCategory, byLod, byProvider };
   }),
 
-  // ── Categories ──
   getCategories: protectedProcedure.query(async ({ ctx }) => {
     return ctx.db.lodCategory.findMany({ orderBy: { name: "asc" } });
   }),
 
-  // ── Batch Analysis ──
   analyzeBatch: protectedProcedure
     .input(z.object({ familyIds: z.array(z.string()) }))
     .mutation(async ({ input, ctx }) => {
+      const openai = getOpenAI();
+      if (!openai) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "OpenAI is not configured for batch analysis.",
+        });
+      }
+
       const families = await ctx.db.lodFamily.findMany({
         where: { id: { in: input.familyIds } },
-        select: { id: true, familyName: true, finalCategory: true, lodLabel: true, fullDescription: true },
+        select: {
+          id: true,
+          familyName: true,
+          finalCategory: true,
+          lodLabel: true,
+          fullDescription: true,
+        },
       });
 
-      const openai = getOpenAI();
       const res = await openai.chat.completions.create({
         model: process.env.OPENAI_MODEL ?? "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "You are a BIM expert analyzing Revit families for LOD compliance and quality.",
+            content:
+              "You are a BIM expert analyzing Revit families for LOD compliance and quality.",
           },
           {
             role: "user",
-            content: `Analyze these Revit families and provide a brief summary of patterns, LOD compliance, and recommendations:\n\n${JSON.stringify(families, null, 2)}`,
+            content: `Analyze these Revit families and provide a brief summary of patterns, LOD compliance, and recommendations:\n\n${JSON.stringify(
+              families,
+              null,
+              2
+            )}`,
           },
         ],
         max_tokens: 800,
@@ -150,7 +398,6 @@ export const lodRouter = router({
       return { analysis: res.choices[0].message.content ?? "" };
     }),
 
-  // ── Pipeline Upload (Admin only) ──
   uploadResults: adminProcedure
     .input(
       z.object({
@@ -182,33 +429,73 @@ export const lodRouter = router({
 
       for (const item of input.families) {
         const { embedding, graphX, graphY, graphNeighbors, ...familyData } = item;
+        const validEmbedding = isValidEmbedding(embedding) ? embedding : undefined;
 
-        const family = await ctx.db.lodFamily.upsert({
-          where: { nameOfFile: familyData.nameOfFile },
-          create: familyData,
-          update: familyData,
+        await ctx.db.$transaction(async (tx) => {
+          const family = await tx.lodFamily.upsert({
+            where: { nameOfFile: familyData.nameOfFile },
+            create: familyData,
+            update: familyData,
+          });
+
+          if (validEmbedding) {
+            await tx.lodEmbedding.upsert({
+              where: { familyId: family.id },
+              create: { familyId: family.id, vector: validEmbedding },
+              update: { vector: validEmbedding },
+            });
+
+            await tx.$executeRawUnsafe(
+              `UPDATE "LodEmbedding"
+               SET "pgvector" = $1::vector
+               WHERE "familyId" = $2`,
+              toVectorLiteral(validEmbedding),
+              family.id
+            );
+          }
+
+          if (graphX !== undefined && graphY !== undefined) {
+            await tx.lodGraphNode.upsert({
+              where: { familyId: family.id },
+              create: {
+                familyId: family.id,
+                x: graphX,
+                y: graphY,
+                neighbors: graphNeighbors,
+              },
+              update: {
+                x: graphX,
+                y: graphY,
+                neighbors: graphNeighbors,
+              },
+            });
+          }
         });
-
-        if (embedding && embedding.length > 0) {
-          await ctx.db.lodEmbedding.upsert({
-            where: { familyId: family.id },
-            create: { familyId: family.id, vector: embedding },
-            update: { vector: embedding },
-          });
-        }
-
-        if (graphX !== undefined && graphY !== undefined) {
-          await ctx.db.lodGraphNode.upsert({
-            where: { familyId: family.id },
-            create: { familyId: family.id, x: graphX, y: graphY, neighbors: graphNeighbors },
-            update: { x: graphX, y: graphY, neighbors: graphNeighbors },
-          });
-        }
 
         upserted++;
       }
 
+      await ctx.db.lodSearchCache.deleteMany();
       logger.info("LOD pipeline upload complete", { upserted });
       return { upserted };
     }),
+
+  startBatchTraining: adminProcedure
+    .input(
+      z.object({
+        inputDir: z.string(),
+        outputDir: z.string(),
+        provider: z.string().optional(),
+        limit: z.number().optional(),
+      })
+    )
+    .mutation(async ({ input }) => {
+      const { startBatchTraining } = await import("@/lib/server/lod-query-encoder");
+      return startBatchTraining(input);
+    }),
+
+  getTrainingStatus: protectedProcedure.query(async () => {
+    const { getBatchStatus } = await import("@/lib/server/lod-query-encoder");
+    return getBatchStatus();
+  }),
 });

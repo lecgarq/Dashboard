@@ -13,7 +13,7 @@ import {
   isWeekend,
   format,
 } from "date-fns";
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 
 interface CheckItem {
   id: string;

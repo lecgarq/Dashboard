@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/utils";
+import { cn } from "@/lib/core/utils";
 import { Calendar, LayoutGrid, GanttChart } from "lucide-react";
 
 export type CalendarView = "month" | "semester" | "year";

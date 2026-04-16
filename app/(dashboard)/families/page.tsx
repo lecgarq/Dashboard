@@ -22,7 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { trpc } from "@/lib/trpc";
+import { trpc } from "@/lib/core/trpc";
 import { CATEGORY_GROUPS, CATEGORY_GROUP_NAMES } from "@/lib/categories";
 import {
   Plus,

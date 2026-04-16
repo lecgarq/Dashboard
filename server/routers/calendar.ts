@@ -7,8 +7,8 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
   listCalendarRooms,
-} from "@/lib/google-calendar";
-import { listCalendarGuestDirectory } from "@/lib/google-directory";
+} from "@/lib/google/calendar";
+import { listCalendarGuestDirectory } from "@/lib/google/directory";
 import { IntegrationError } from "@/lib/server/integration-errors";
 
 function toCalendarRouterError(error: unknown) {

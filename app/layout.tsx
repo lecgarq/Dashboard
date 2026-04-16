@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
-import { TRPCProvider } from "@/lib/providers";
+import { TRPCProvider } from "@/lib/core/providers";
 
 const manrope = Manrope({
   subsets: ["latin"],
