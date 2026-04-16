@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Header } from "@/components/layout/Header";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,11 +43,159 @@ interface Question {
   required: boolean;
 }
 
+function ExamListSkeleton() {
+  return (
+    <div className="max-w-4xl space-y-3">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="glass-card p-5 animate-pulse">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 space-y-2">
+              <div className="flex items-center gap-3">
+                <div className="h-4 w-48 bg-muted/40 rounded" />
+                <div className="h-4 w-16 bg-muted/30 rounded-md" />
+              </div>
+              <div className="flex items-center gap-4">
+                <div className="h-3 w-14 bg-muted/30 rounded" />
+                <div className="h-3 w-14 bg-muted/30 rounded" />
+                <div className="h-3 w-24 bg-muted/30 rounded" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function ExamList({
+  onBuildForm,
+}: {
+  onBuildForm: (examId: string) => void;
+}) {
+  const [copied, setCopied] = useState<string | null>(null);
+  const [exams] = trpc.exam.getExams.useSuspenseQuery(undefined, { staleTime: 5 * 60 * 1000 });
+
+  function copyLink(url: string, examId: string) {
+    navigator.clipboard.writeText(url);
+    setCopied(examId);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  if (exams.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-4 animate-fadeIn">
+        <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center">
+          <FileText size={28} className="text-muted-foreground/30" />
+        </div>
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground">No exams yet</p>
+          <p className="text-xs text-muted-foreground/50 mt-1">
+            Create your first exam to get started
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-4xl space-y-3 stagger-children">
+      {exams.map((exam) => (
+        <div key={exam.id} className="glass-card p-5 transition-smooth group">
+          <div className="flex items-start justify-between gap-4">
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-3 mb-1">
+                <h3 className="text-sm font-semibold text-foreground truncate">
+                  {exam.title}
+                </h3>
+                <span
+                  className={cn(
+                    "text-[10px] font-semibold px-2 py-0.5 rounded-md",
+                    exam.status === "DONE"
+                      ? "bg-chart-2/10 text-chart-2"
+                      : exam.status === "IN_PROGRESS"
+                      ? "bg-chart-1/10 text-chart-1"
+                      : exam.status === "REVIEW"
+                      ? "bg-chart-5/10 text-chart-5"
+                      : "bg-muted/50 text-muted-foreground"
+                  )}
+                >
+                  {exam.status.replace("_", " ")}
+                </span>
+              </div>
+              {exam.description && (
+                <p className="text-xs text-muted-foreground/70 mb-2">
+                  {exam.description}
+                </p>
+              )}
+              <div className="flex items-center gap-4 text-[10px] text-muted-foreground/60">
+                <span className="flex items-center gap-1">
+                  <ClipboardList size={10} />
+                  {exam._count.tasks} tasks
+                </span>
+                <span className="flex items-center gap-1">
+                  <BarChart3 size={10} />
+                  {exam._count.results} results
+                </span>
+                <span>Created {new Date(exam.createdAt).toLocaleDateString()}</span>
+              </div>
+              {(exam as any).formUrl && (
+                <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-primary/5 border border-primary/10">
+                  <Link2 size={14} className="text-primary shrink-0" />
+                  <a
+                    href={(exam as any).formUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs text-primary hover:underline truncate flex-1"
+                  >
+                    {(exam as any).formUrl}
+                  </a>
+                  <button
+                    onClick={() => copyLink((exam as any).formUrl!, exam.id)}
+                    className="p-1 rounded text-muted-foreground hover:text-primary transition-smooth"
+                    title="Copy link"
+                  >
+                    {copied === exam.id ? (
+                      <CheckCircle2 size={14} className="text-chart-2" />
+                    ) : (
+                      <Copy size={14} />
+                    )}
+                  </button>
+                  <a
+                    href={(exam as any).formUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="p-1 rounded text-muted-foreground hover:text-primary transition-smooth"
+                    title="Open form"
+                  >
+                    <ExternalLink size={14} />
+                  </a>
+                </div>
+              )}
+            </div>
+            <div className="flex items-center gap-1.5">
+              {!(exam as any).formUrl && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-xs gap-1.5 border-border/50 text-foreground hover:bg-accent"
+                  onClick={() => onBuildForm(exam.id)}
+                >
+                  <FileText size={12} />
+                  Build Form
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default function ExamPage() {
   const { isEditor } = useRole();
   const utils = trpc.useUtils();
 
-  const { data: exams = [], isLoading } = trpc.exam.getExams.useQuery(undefined, { staleTime: 5 * 60 * 1000 });
   const createExam = trpc.exam.createExam.useMutation({
     onSuccess: (created) => {
       utils.exam.getExams.setData(undefined, (current = []) => [
@@ -78,17 +226,12 @@ export default function ExamPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [newTitle, setNewTitle] = useState("");
-  const [selectedExamId, setSelectedExamId] = useState<string | null>(null);
   const [formBuilderOpen, setFormBuilderOpen] = useState(false);
   const [formBuilderExamId, setFormBuilderExamId] = useState<string | null>(null);
-  const [copied, setCopied] = useState<string | null>(null);
 
-  // Question builder state
   const [questions, setQuestions] = useState<Question[]>([
     { text: "", type: "MULTIPLE_CHOICE", options: ["", ""], required: true },
   ]);
-
-  const selectedExam = exams.find((e) => e.id === selectedExamId) ?? exams[0] ?? null;
 
   function addQuestion() {
     setQuestions([
@@ -138,12 +281,6 @@ export default function ExamPage() {
     });
   }
 
-  function copyLink(url: string, examId: string) {
-    navigator.clipboard.writeText(url);
-    setCopied(examId);
-    setTimeout(() => setCopied(null), 2000);
-  }
-
   return (
     <div className="flex flex-col h-full">
       <Header title="Examen Revit" />
@@ -152,9 +289,7 @@ export default function ExamPage() {
         {/* Toolbar */}
         <div className="border-b border-border/50 bg-card/30 backdrop-blur-sm px-6 py-3 flex items-center gap-3 shrink-0">
           <ClipboardList size={16} className="text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">
-            {isLoading ? "Loading…" : `${exams.length} ${exams.length === 1 ? "exam" : "exams"}`}
-          </span>
+          <span className="text-xs text-muted-foreground">Exams</span>
 
           {isEditor && (
             <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -191,148 +326,16 @@ export default function ExamPage() {
           )}
         </div>
 
-        {/* Content */}
+        {/* Content — streams in independently via Suspense */}
         <div className="flex-1 overflow-auto p-6">
-          {isLoading ? (
-            <div className="max-w-4xl space-y-3">
-              {[1, 2, 3].map((i) => (
-                <div key={i} className="glass-card p-5 animate-pulse">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className="h-4 w-48 bg-muted/40 rounded" />
-                        <div className="h-4 w-16 bg-muted/30 rounded-md" />
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <div className="h-3 w-14 bg-muted/30 rounded" />
-                        <div className="h-3 w-14 bg-muted/30 rounded" />
-                        <div className="h-3 w-24 bg-muted/30 rounded" />
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : exams.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full gap-4 animate-fadeIn">
-              <div className="w-16 h-16 rounded-2xl glass-card flex items-center justify-center">
-                <FileText size={28} className="text-muted-foreground/30" />
-              </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">No exams yet</p>
-                <p className="text-xs text-muted-foreground/50 mt-1">
-                  Create your first exam to get started
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-4xl space-y-3 stagger-children">
-              {exams.map((exam) => (
-                <div
-                  key={exam.id}
-                  className="glass-card p-5 transition-smooth group"
-                >
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-3 mb-1">
-                        <h3 className="text-sm font-semibold text-foreground truncate">
-                          {exam.title}
-                        </h3>
-                        <span
-                          className={cn(
-                            "text-[10px] font-semibold px-2 py-0.5 rounded-md",
-                            exam.status === "DONE"
-                              ? "bg-chart-2/10 text-chart-2"
-                              : exam.status === "IN_PROGRESS"
-                              ? "bg-chart-1/10 text-chart-1"
-                              : exam.status === "REVIEW"
-                              ? "bg-chart-5/10 text-chart-5"
-                              : "bg-muted/50 text-muted-foreground"
-                          )}
-                        >
-                          {exam.status.replace("_", " ")}
-                        </span>
-                      </div>
-                      {exam.description && (
-                        <p className="text-xs text-muted-foreground/70 mb-2">
-                          {exam.description}
-                        </p>
-                      )}
-
-                      {/* Stats */}
-                      <div className="flex items-center gap-4 text-[10px] text-muted-foreground/60">
-                        <span className="flex items-center gap-1">
-                          <ClipboardList size={10} />
-                          {exam._count.tasks} tasks
-                        </span>
-                        <span className="flex items-center gap-1">
-                          <BarChart3 size={10} />
-                          {exam._count.results} results
-                        </span>
-                        <span>
-                          Created{" "}
-                          {new Date(exam.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-
-                      {/* Google Form link */}
-                      {(exam as any).formUrl && (
-                        <div className="flex items-center gap-2 mt-3 p-2 rounded-lg bg-primary/5 border border-primary/10">
-                          <Link2 size={14} className="text-primary shrink-0" />
-                          <a
-                            href={(exam as any).formUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-xs text-primary hover:underline truncate flex-1"
-                          >
-                            {(exam as any).formUrl}
-                          </a>
-                          <button
-                            onClick={() => copyLink((exam as any).formUrl!, exam.id)}
-                            className="p-1 rounded text-muted-foreground hover:text-primary transition-smooth"
-                            title="Copy link"
-                          >
-                            {copied === exam.id ? (
-                              <CheckCircle2 size={14} className="text-chart-2" />
-                            ) : (
-                              <Copy size={14} />
-                            )}
-                          </button>
-                          <a
-                            href={(exam as any).formUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="p-1 rounded text-muted-foreground hover:text-primary transition-smooth"
-                            title="Open form"
-                          >
-                            <ExternalLink size={14} />
-                          </a>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center gap-1.5">
-                      {isEditor && !(exam as any).formUrl && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs gap-1.5 border-border/50 text-foreground hover:bg-accent"
-                          onClick={() => {
-                            setFormBuilderExamId(exam.id);
-                            setFormBuilderOpen(true);
-                          }}
-                        >
-                          <FileText size={12} />
-                          Build Form
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
+          <Suspense fallback={<ExamListSkeleton />}>
+            <ExamList
+              onBuildForm={(examId) => {
+                setFormBuilderExamId(examId);
+                setFormBuilderOpen(true);
+              }}
+            />
+          </Suspense>
         </div>
       </div>
 

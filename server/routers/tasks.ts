@@ -1,5 +1,10 @@
 import { z } from "zod";
+import { UTApi } from "uploadthing/server";
 import { router, protectedProcedure } from "../trpc";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("tasks-router");
+const utapi = new UTApi();
 
 export const tasksRouter = router({
   getMyTasks: protectedProcedure
@@ -95,9 +100,29 @@ export const tasksRouter = router({
         throw new Error("Task not found");
       }
 
-      return ctx.db.userTask.delete({
+      const attachments = await ctx.db.taskAttachment.findMany({
+        where: { taskId: input.id },
+        select: { url: true },
+      });
+
+      const result = await ctx.db.userTask.delete({
         where: { id: input.id },
       });
+
+      if (attachments.length > 0) {
+        const fileKeys = attachments
+          .map((a) => a.url.split("/f/")[1])
+          .filter((k): k is string => !!k);
+        if (fileKeys.length > 0) {
+          try {
+            await utapi.deleteFiles(fileKeys);
+          } catch (err) {
+            logger.warn("Failed to delete UploadThing files after task deletion", { fileKeys, err: String(err) });
+          }
+        }
+      }
+
+      return result;
     }),
 
   addAttachment: protectedProcedure
