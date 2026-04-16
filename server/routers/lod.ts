@@ -10,7 +10,7 @@ import {
   encodeLodQuery,
 } from "@/lib/server/lod-query-encoder";
 import { createLogger } from "@/lib/server/logger";
-import { redis } from "@/lib/redis";
+import { getRedis } from "@/lib/redis";
 
 import {
   adminProcedure,
@@ -189,21 +189,24 @@ export const lodRouter = router({
         .update(normalizedQuery)
         .digest("hex");
 
-      const cached = await redis.hgetall<CacheEntry>(`lod:search:${queryHash}`);
-      if (cached && cached.encoderVersion === LOD_QUERY_ENCODER_VERSION) {
-        const resultIds: string[] = JSON.parse(cached.resultIds);
-        const families = await ctx.db.lodFamily.findMany({
-          where: { id: { in: resultIds } },
-        });
-        const familyMap = new Map(families.map((family) => [family.id, family]));
+      const redis = getRedis();
+      if (redis) {
+        const cached = await redis.hgetall<CacheEntry>(`lod:search:${queryHash}`);
+        if (cached && cached.encoderVersion === LOD_QUERY_ENCODER_VERSION) {
+          const resultIds: string[] = JSON.parse(cached.resultIds);
+          const families = await ctx.db.lodFamily.findMany({
+            where: { id: { in: resultIds } },
+          });
+          const familyMap = new Map(families.map((family) => [family.id, family]));
 
-        return {
-          results: resultIds
-            .map((id) => familyMap.get(id))
-            .filter((family): family is NonNullable<typeof family> => Boolean(family)),
-          fromCache: true,
-          expandedQuery: cached.expandedQuery,
-        };
+          return {
+            results: resultIds
+              .map((id) => familyMap.get(id))
+              .filter((family): family is NonNullable<typeof family> => Boolean(family)),
+            fromCache: true,
+            expandedQuery: cached.expandedQuery,
+          };
+        }
       }
 
       try {
@@ -260,12 +263,14 @@ export const lodRouter = router({
 
         const resultIds = ranked.map((candidate) => candidate.id);
 
-        await redis.hset(`lod:search:${queryHash}`, {
-          expandedQuery,
-          encoderVersion: LOD_QUERY_ENCODER_VERSION,
-          resultIds: JSON.stringify(resultIds),
-        });
-        await redis.expire(`lod:search:${queryHash}`, SEARCH_CACHE_TTL_S);
+        if (redis) {
+          await redis.hset(`lod:search:${queryHash}`, {
+            expandedQuery,
+            encoderVersion: LOD_QUERY_ENCODER_VERSION,
+            resultIds: JSON.stringify(resultIds),
+          });
+          await redis.expire(`lod:search:${queryHash}`, SEARCH_CACHE_TTL_S);
+        }
 
         return {
           results: ranked,
@@ -445,14 +450,17 @@ export const lodRouter = router({
       }
 
       // Flush all LOD search cache entries from Redis after a full re-upload
-      let scanCursor = 0;
-      do {
-        const [nextCursor, keys] = await redis.scan(scanCursor, { match: "lod:search:*", count: 100 });
-        scanCursor = Number(nextCursor);
-        if (keys.length > 0) {
-          await redis.del(...(keys as [string, ...string[]]));
-        }
-      } while (scanCursor !== 0);
+      const redis = getRedis();
+      if (redis) {
+        let scanCursor = 0;
+        do {
+          const [nextCursor, keys] = await redis.scan(scanCursor, { match: "lod:search:*", count: 100 });
+          scanCursor = Number(nextCursor);
+          if (keys.length > 0) {
+            await redis.del(...(keys as [string, ...string[]]));
+          }
+        } while (scanCursor !== 0);
+      }
       logger.info("LOD pipeline upload complete", { upserted });
       return { upserted };
     }),
