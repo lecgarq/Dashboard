@@ -130,22 +130,92 @@ A one-time Node.js script that:
 5. Updates pgvector column via raw SQL: `UPDATE "LodEmbedding" SET pgvector = vector FROM (SELECT ...) ...`
 6. Creates `LodCategory` rows
 
-### Image Migration (Free Tier)
+### Image Migration (Free Tier — Google Drive)
 
-> **Reality check**: 24,623 images totaling **37 GB** — no free tier can hold the originals.
+> **Solution**: User has **unlimited Google Drive storage**. Dashboard already has `google-drive.ts` + OAuth wired up.
 
-**Strategy: Compressed WebP Thumbnails → Supabase Storage (1 GB free)**
+#### Architecture: Drive Storage + API Proxy + Browser Cache
 
-```bash
-# Local batch conversion (one-time)
-# Requires: npm install sharp-cli -g
-find ./00_data/img -name "*.png" | parallel -j8 sharp -i {} -o ./thumbs/{/.}.webp resize 200 200 --fit inside --format webp --quality 80
+```
+Browser → /api/lod-img/[fileId] → Google Drive API → image bytes
+                ↓ (Cache-Control: max-age=86400)
+         Browser cache (24h)
 ```
 
-1. Convert all PNGs → 200×200 WebP (~10 KB each, ~250 MB total)
-2. Upload to Supabase Storage public bucket (`lod-thumbs`)
-3. Store URLs as `https://<project>.supabase.co/storage/v1/object/public/lod-thumbs/<filename>.webp`
-4. Full-res images stay local, never uploaded
+#### Upload Script: `scripts/upload-lod-images.ts`
+
+```typescript
+import { google } from "googleapis";
+import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
+import fs from "fs";
+import path from "path";
+
+const FOLDER_ID = process.env.LOD_IMAGES_DRIVE_FOLDER_ID!;
+const IMG_DIR = "C:/LECG/LOD Checker/00_data/img";
+
+async function uploadAll() {
+  const auth = buildGoogleDriveOAuthClient();
+  const drive = google.drive({ version: "v3", auth });
+  const files = fs.readdirSync(IMG_DIR).filter(f => f.endsWith(".png"));
+
+  for (const [i, file] of files.entries()) {
+    const res = await drive.files.create({
+      requestBody: {
+        name: file,
+        parents: [FOLDER_ID],
+      },
+      media: {
+        mimeType: "image/png",
+        body: fs.createReadStream(path.join(IMG_DIR, file)),
+      },
+      fields: "id",
+    });
+    // Store res.data.id as LodFamily.imagePath
+    console.log(`[${i+1}/${files.length}] ${file} → ${res.data.id}`);
+  }
+}
+```
+
+#### Proxy Route: `app/api/lod-img/[fileId]/route.ts`
+
+```typescript
+import { google } from "googleapis";
+import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
+import { NextResponse } from "next/server";
+
+export async function GET(req: Request, { params }: { params: { fileId: string } }) {
+  const auth = buildGoogleDriveOAuthClient();
+  const drive = google.drive({ version: "v3", auth });
+
+  const res = await drive.files.get(
+    { fileId: params.fileId, alt: "media" },
+    { responseType: "arraybuffer" }
+  );
+
+  return new NextResponse(res.data as ArrayBuffer, {
+    headers: {
+      "Content-Type": "image/png",
+      "Cache-Control": "public, max-age=86400, immutable", // 24h browser cache
+    },
+  });
+}
+```
+
+#### Why This Works
+
+| Concern | Answer |
+| --- | --- |
+| Storage | **Unlimited** (Google Workspace) |
+| Cost | **$0** — existing OAuth, existing Drive |
+| Rate limits | 12,000 req/60s — with 24h browser cache, realistic load is ~50 req/page × 1 user = trivial |
+| Image quality | **Full resolution PNGs** — no compression needed |
+| Already integrated | `lib/google-drive.ts` and `lib/server/google-service-auth.ts` exist |
+
+#### Env Vars Needed
+
+```env
+LOD_IMAGES_DRIVE_FOLDER_ID=1xYz...  # Create a folder in Google Drive
+```
 
 ---
 
@@ -476,8 +546,8 @@ This is the most complex component to port. It renders thousands of nodes on a `
 | --- | --- |
 | `GET /api/search` | `trpc.lod.search.useQuery()` |
 | `GET /vectors/graph_data.json` | `trpc.lod.getGraphData.useQuery()` |
-| `GET /img/<path>` | Supabase Storage URL in `LodFamily.imagePath` |
-| `GET /img/thumb/<path>` | Supabase Storage URL in `LodFamily.thumbPath` |
+| `GET /img/<path>` | `/api/lod-img/[fileId]` proxy → Google Drive |
+| `GET /img/thumb/<path>` | `/api/lod-img/[fileId]` proxy → Google Drive |
 | `POST /api/analyze_batch` | `trpc.lod.analyzeBatch.useMutation()` |
 | `DELETE /api/delete/image` | `trpc.lod.deleteFamily.useMutation()` |
 | `GET /api/aps/token` | Already exists (`trpc.search.getApsToken`) |
@@ -519,54 +589,25 @@ The ML pipeline (CUDA-required) stays local but outputs to the Dashboard databas
 
 | Service | Free Tier Limit | LOD Checker Needs | ✅/❌ | Notes |
 | --- | --- | --- | --- | --- |
-| **Supabase (DB)** | 500 MB database | ~51 MB (families + embeddings + graph) | ✅ Fits | pgvector included. ~449 MB headroom for Dashboard data. |
-| **Supabase (Storage)** | 1 GB file storage | **37 GB images** (24,623 files) | ❌ **WAY OVER** | Must compress or subset. See Image Strategy below. |
-| **Supabase (Egress)** | 5 GB/month | Search results + images | ⚠️ Tight | Must serve images from CDN or static. |
-| **UploadThing** | 2 GB storage | **37 GB images** | ❌ **WAY OVER** | Cannot use for full image library. |
-| **Railway** | $1/month free credit | Next.js app | ⚠️ Tight | Fine for light usage. Will pause on idle. |
+| **Supabase (DB)** | 500 MB database | ~74 MB total | ✅ Fits | pgvector included. 85% headroom remaining. |
+| **Google Drive** | **Unlimited** (Workspace) | 37 GB images (24,623 files) | ✅ **SOLVED** | Already integrated via `lib/google-drive.ts` |
+| **Railway** | $1/month free credit | Next.js app | ⚠️ Tight | Fine for internal tool. Will pause on idle. |
 | **OpenAI** | Paid (user approved) | Query expansion + embeddings | ✅ Allowed | User explicitly approved this cost. |
 | **Vercel** (alternative) | 100 GB bandwidth | App hosting | ✅ Fits | Free hobby tier if migrating from Railway. |
 
-### The Image Problem: 37 GB → Free Tier
+### Image Solution: Google Drive (Unlimited, $0)
 
-24,623 images totaling **37 GB** is the biggest free-tier challenge. Here are the options:
+| Before | After |
+| --- | --- |
+| 37 GB PNGs loaded locally by Flask | 37 GB PNGs in Google Drive, served via API proxy |
+| No CDN, no caching | 24h browser cache, Drive API rate limit = 12K req/min |
+| Images only work on localhost | Images work from any deployed environment |
 
-#### Option A: Compressed Thumbnails Only (RECOMMENDED)
-
-Generate small WebP thumbnails (200×200px) from the full images. Estimated size reduction:
-
-```
-Original:    37 GB (24,623 files × ~1.5 MB avg PNG)
-WebP 200px:  ~250 MB (24,623 files × ~10 KB avg WebP)
-```
-
-**250 MB fits in Supabase Storage (1 GB free)** with room to spare.
-
-Implementation:
-1. Run a local batch script to convert all PNGs → WebP thumbnails
-2. Upload thumbnails to Supabase Storage (public bucket)
-3. Store CDN URLs in `LodFamily.thumbPath`
-4. Full-res images stay local (never uploaded)
-
-#### Option B: Static Hosting in Next.js `public/`
-
-Copy compressed thumbnails into `public/lod-thumbs/` in the repo.
-
-- Pro: No external storage needed, served by Railway/Vercel
-- Con: Bloats the repo by ~250 MB, slow git operations
-- Verdict: **Acceptable if Supabase Storage egress is a concern**
-
-#### Option C: GitHub Releases as CDN (Hacky but free)
-
-Upload a `.tar.gz` of thumbnails as a GitHub Release asset. Serve via `raw.githubusercontent.com`.
-
-- Pro: Unlimited free bandwidth
-- Con: Not a real CDN, 2 GB release limit per file
-- Verdict: **Last resort**
+See **Phase 2 → Image Migration** section above for full implementation details.
 
 ### Database Size Budget
 
-```
+```text
 Current Dashboard DB usage:    ~20 MB (estimated)
 LOD Family records:            ~5 MB
 LOD Embeddings (pgvector):     ~30 MB
@@ -589,7 +630,7 @@ Headroom:                      ~426 MB (85% free)
 | **Auto-pause after 7 days idle** | Dashboard goes offline on weekends | Add a cron job or UptimeRobot ping to keep it alive |
 | **2 project limit** | Can't create a separate DB for LOD | Use same project — all models in one DB |
 | **500 MB RAM shared CPU** | pgvector IVFFlat search may be slow | Fine for <10K records; HNSW is faster but uses more RAM |
-| **5 GB egress/month** | Heavy search traffic could hit limit | Cache aggressively; serve images from storage CDN |
+| **5 GB egress/month** | Heavy search traffic could hit limit | Cache aggressively; images come from Drive, not Supabase |
 
 ---
 
@@ -598,10 +639,9 @@ Headroom:                      ~426 MB (85% free)
 | # | Phase | Effort | Dependencies |
 | --- | --- | --- | --- |
 | 1 | Database Schema + pgvector Migration | 1 day | pgvector enabled on Supabase |
-| 2 | Data Migration Script (JSON → PostgreSQL) | 1 day | Phase 1 |
-| 3 | Image Compression + Supabase Storage Upload | 0.5 day | Local imagemagick/sharp |
-| 3.5 | Port Addin APS Patterns → `aps-search.ts` | 1.5 days | Phase 1 (cache model) |
-| 4 | tRPC Router + Search | 2 days | Phase 2 |
+| 2 | Data Migration Script (JSON → PostgreSQL) + Image Upload to Drive | 1.5 days | Phase 1 + Drive folder |
+| 3 | Port Addin APS Patterns → `aps-search.ts` | 1.5 days | Phase 1 (cache model) |
+| 4 | tRPC Router + Search + Image Proxy Route | 2 days | Phase 2 |
 | 5 | Frontend Components | 3-4 days | Phase 4 |
 | 6 | Kill iframe + Integration | 0.5 day | Phase 5 |
 | 7 | Pipeline Adapter (local → DB upload) | 0.5 day | Phase 4 |
@@ -616,11 +656,10 @@ Headroom:                      ~426 MB (85% free)
 | --- | --- |
 | **Supabase 500 MB limit exceeded** | Current estimate is ~74 MB. Monitor with `SELECT pg_database_size(current_database())` |
 | **Supabase auto-pause** | UptimeRobot free plan pings every 5 min to keep project active |
-| **37 GB images can't fit free tier** | Compress to WebP thumbnails (~250 MB) → Supabase Storage 1 GB |
-| **5 GB egress exceeded** | Cache search results aggressively, use browser `Cache-Control` headers |
+| **Google Drive API rate limits** | 12K req/60s. With `Cache-Control: max-age=86400` browser cache, realistic load is trivial |
+| **Drive upload time (37 GB)** | Batch upload script with resumable uploads. Budget ~2-4 hours on fast connection |
 | **pgvector not on free Supabase** | Confirmed: pgvector IS included on free tier |
-| **831 MB migration OOM** | Use streaming JSON parser (`json-stream-stringify` or `stream-json`) |
+| **831 MB migration OOM** | Use streaming JSON parser (`stream-json`) |
 | **Graph canvas port complexity** | Port rendering code as-is; it's vanilla Canvas 2D, framework-agnostic |
-| **SigLIP vs OpenAI embeddings** | If using OpenAI text-embedding-3-small instead of SigLIP, must re-embed. Budget 1 day + API cost. |
-| **Railway $1/month budget** | Monitor usage. Next.js with SSR may exceed. Consider Vercel free tier as alternative. |
-
+| **SigLIP vs OpenAI embeddings** | If using OpenAI text-embedding-3-small instead of SigLIP, must re-embed. Budget 1 day + API cost |
+| **Railway $1/month budget** | Monitor usage. Next.js with SSR may exceed. Consider Vercel free tier as alternative |
