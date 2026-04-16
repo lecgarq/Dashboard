@@ -60,13 +60,14 @@ export const lodRouter = router({
       const expandedQuery = await expandQuery(input.query);
       const embedding = await computeEmbedding(expandedQuery);
 
-      // pgvector cosine similarity search
+      // pgvector cosine similarity search using the dedicated vector(768) column
       const vectorLiteral = `[${embedding.join(",")}]`;
       const results = await ctx.db.$queryRawUnsafe<Array<{ id: string; distance: number }>>(
-        `SELECT f.id, (e.vector::vector(768) <=> $1::vector) AS distance
+        `SELECT f.id, (e.pgvector <=> $1::vector) AS distance
          FROM "LodEmbedding" e
          JOIN "LodFamily" f ON f.id = e."familyId"
-         ORDER BY e.vector::vector(768) <=> $1::vector
+         WHERE e.pgvector IS NOT NULL
+         ORDER BY e.pgvector <=> $1::vector
          LIMIT 200`,
         vectorLiteral
       );
