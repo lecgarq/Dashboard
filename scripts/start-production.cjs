@@ -8,7 +8,8 @@ const { spawn } = require("child_process");
 const ngrok = require("@ngrok/ngrok");
 
 // Start Next.js
-const nextApp = spawn("node_modules/.bin/next", ["start", "-H", "0.0.0.0", "--port", "3000"], {
+const port = process.env.PORT || "3000";
+const nextApp = spawn("node_modules/.bin/next", ["start", "-H", "0.0.0.0", "--port", port], {
   stdio: "inherit",
   env: process.env,
 });
