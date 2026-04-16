@@ -23,3 +23,10 @@ Codebase mapping complete (Nuclear Deep Phase - 2026-04-15).
 - **Wiki Real-Time Modernization**: Upgraded the media pipeline to support parallel ingestion (Promise.all) and optimistic UI rendering using local blob:URLs, reducing perceived latency by ~90% for multi-file pastes.
 - **Mapping Extension**: Produced high-fidelity feature-specific documentation in the `.gsd/` directory for Wiki and Gmail subsystems, following the `/map` standard.
 - **Media Stability Fix**: Resolved jitter and panning bottlenecks in the `MediaPreviewModal` by switching to `translate3d` hardware acceleration and touch-none orchestration.
+
+## Super Deep Map Summary (2026-04-16 - Post-Deployment)
+
+- **System Architecture Consolidation**: Synthesized dozens of disjointed `.gsd/implementationplan*.md` and `.gsd/technicaldebt*.md` files into a pristine, unified `ARCHITECTURE.md` and `STACK.md`.
+- **LOD Pipeline Integration**: Mapped the newly active `lod-engine` inference architecture, PostgreSQL `pgvector` HNSW semantic embeddings, and the Google Drive asset proxy logic.
+- **Deployment Resilience**: Validated Railway infrastructure routing overrides (`PORT` binding logic, NexAuth `middleware.ts` healthcheck intercepts bypass via explicit `PUBLIC_PATHS`).
+- **Debt Clarity**: Filtered down the technical debt backlog to actionable items (Redis cache implementation, Webhook migration, TensorRT affinity, etc.) following the massive Spring cleaning sprint.
