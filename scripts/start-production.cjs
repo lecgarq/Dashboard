@@ -42,8 +42,7 @@ async function startTunnel() {
     });
     console.log(`[ngrok] Tunnel active: ${listener.url()}`);
   } catch (err) {
-    console.error("[ngrok] Failed to start tunnel:", err);
-    process.exit(1);
+    console.error("[ngrok] Failed to start tunnel (app continues without tunnel):", err.message ?? err);
   }
 }
 
