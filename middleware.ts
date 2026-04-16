@@ -18,7 +18,7 @@ const configuredAuthOrigins = new Set(
     .filter((value): value is string => Boolean(value))
 );
 
-const PUBLIC_PATHS = ["/login", "/register", "/unauthorized", "/forgot-password", "/reset-password"];
+const PUBLIC_PATHS = ["/login", "/register", "/unauthorized", "/forgot-password", "/reset-password", "/api/health"];
 
 const MODULE_ROUTES: Record<string, string> = {
   "/families": "families",
