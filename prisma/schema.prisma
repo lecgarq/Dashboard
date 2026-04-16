@@ -142,6 +142,10 @@ model Family {
   apsStatus      String?             @default("NONE") // NONE | PROCESSING | SUCCESS | FAILED
   createdAt      DateTime            @default(now())
   updatedAt      DateTime            @updatedAt
+
+  @@index([phase])
+  @@index([dueDate])
+  @@index([updatedAt])
 }
 
 model FamilyChangelog {
@@ -204,6 +208,10 @@ model ClashTask {
   isBlocked   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
+  @@index([updatedAt])
 }
 
 model ClashToolRelease {
@@ -245,6 +253,9 @@ model SimTask {
   isBlocked   Boolean   @default(false)
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([dueDate])
 }
 
 model SimToolRelease {
@@ -323,4 +334,85 @@ model TaskAttachment {
   name      String
   type      String // IMAGE | PDF
   createdAt DateTime @default(now())
+}
+
+// ============ MODULE: LOD CHECKER ============
+
+model LodFamily {
+  id                 String   @id @default(cuid())
+  nameOfFile         String   @unique
+  familyName         String?
+  finalCategory      String?
+  lodLabel           String?
+  provider           String?
+  caption            String?
+  fullDescription    String?
+  confidenceLevel    String?
+  fileSizeKb         Float?
+  possibleCategories String[]
+  originalFile       String?
+  imagePath          String?
+  thumbPath          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  embedding  LodEmbedding?
+  graphNode  LodGraphNode?
+
+  @@index([finalCategory])
+  @@index([lodLabel])
+  @@index([provider])
+  @@index([familyName])
+}
+
+model LodEmbedding {
+  id       String    @id @default(cuid())
+  familyId String    @unique
+  family   LodFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  vector   Float[]
+
+  @@index([familyId])
+}
+
+model LodGraphNode {
+  id        String    @id @default(cuid())
+  familyId  String    @unique
+  family    LodFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  x         Float
+  y         Float
+  neighbors Int[]
+
+  @@index([familyId])
+}
+
+model LodCategory {
+  id            String  @id @default(cuid())
+  name          String  @unique
+  group         String?
+  description   String?
+  subcategories Json?
+
+  @@index([group])
+}
+
+model LodSearchCache {
+  id            String   @id @default(cuid())
+  queryHash     String   @unique
+  expandedQuery String
+  resultIds     String[]
+  createdAt     DateTime @default(now())
+
+  @@index([queryHash])
+}
+
+model ApsProjectSearchCache {
+  id          String   @id @default(cuid())
+  hubId       String
+  projectId   String
+  projectName String?
+  fetchedAt   DateTime @default(now())
+  models      Json
+
+  @@unique([hubId, projectId])
+  @@index([fetchedAt])
 }

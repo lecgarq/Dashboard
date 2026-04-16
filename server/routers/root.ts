@@ -11,6 +11,7 @@ import { trelloRouter } from "./trello";
 import { simRouter } from "./sim";
 import { calendarRouter } from "./calendar";
 import { chatRouter } from "./chat";
+import { lodRouter } from "./lod";
 
 export const appRouter = router({
   project: projectRouter,
@@ -25,6 +26,7 @@ export const appRouter = router({
   sim: simRouter,
   calendar: calendarRouter,
   chat: chatRouter,
+  lod: lodRouter,
 });
 
 export type AppRouter = typeof appRouter;
