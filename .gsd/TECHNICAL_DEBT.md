@@ -412,45 +412,87 @@ export function GET() {
 
 ---
 
+## 0. Debt Resolution Progress
+
+> Last updated: 2026-04-15 — Session 1 completed
+
+### ✅ Completed (Session 1)
+
+| Item | What was done |
+| --- | --- |
+| **Security: JSOON.JSON** | Added to `.gitignore` with `*.secrets.json` wildcard |
+| **ngrok → devDeps** | Moved `@ngrok/ngrok` to `devDependencies` in `package.json` |
+| **postinstall** | Added `"postinstall": "prisma generate"` script |
+| **railway.toml health check** | Added `healthcheckPath`, `healthcheckTimeout`, `prisma generate` in buildCommand |
+| **Health endpoint** | Created `app/api/health/route.ts` |
+| **Hardcoded admin alias** | Replaced `"luis.cortes@hermosillo.com"` with `process.env.ADMIN_EMAIL_ALIAS` |
+| **Prisma indexes** | Added `@@index` on `Family(phase,dueDate,updatedAt)`, `ClashTask(status,dueDate,updatedAt)`, `SimTask(status,dueDate)` |
+| **useEffect stale closures** | Fixed `ChatPanel.tsx` keyboard handler deps + `close` wrapped in `useCallback`. Fixed `BimViewer.tsx` by moving `initViewer` inside effect + `scriptLoaded` state. |
+| **Auth debug logs** | Replaced all 7 `console.log/error` `[AUTH DEBUG]` calls with structured `authLogger` |
+| **Raw SQL in auth.ts** | Replaced `$executeRaw UPDATE/INSERT` with `db.user.update/create`; replaced `$queryRaw moduleAccess` with `db.userModuleAccess.findMany()` |
+| **KPI 17-query blast** | Consolidated 10 count queries into 1 SQL CTE → 8 total connections instead of 17 |
+| **@auth/prisma-adapter** | Bumped `^1.6.0` → `^2.11.1` in `package.json` |
+
+### ✅ Actions Completed After Session 1
+
+1. **`npm install`** — done
+2. **`npx prisma migrate dev --name add-indexes`** — done, migration `20260415234208_add_indexes` applied
+3. **`ADMIN_EMAIL_ALIAS`** — added to Railway env panel
+
+---
+
+## ✅ Completed (Session 2)
+
+| Item | What was done |
+| --- | --- |
+| **console.* → structured logger** | Replaced all raw console calls in `users.ts` (9), `sheets.ts` (8), `trello.ts` (2), `families.ts` (1), `clash.ts` (1), `sim.ts` (1), `aps.ts` (1) with `createLogger()` |
+| **as any casts — trpc.ts** | Removed `as any` on `ctx.session.user.role` — types now flow from `next-auth.d.ts` |
+| **as any casts — auth.ts** | Removed `as any` on credentials return, account upsert fields, and session callback; replaced adapter cast with `@ts-expect-error` comment |
+| **holidays.ts** | Rewrote to compute Mexican public holidays dynamically for any year using Monday-shift rules; no longer hardcoded to 2026 |
+| **CVA migration** | Investigated — `class-variance-authority` is still at 0.7.1, npm `cva` package is squatted by an unrelated party; no actionable migration exists yet. Marked N/A. |
+
+---
+
 ## 12. Architecture Modernization Roadmap
 
 ### Tier 1: Immediate (< 1 day)
 
-| Item | Effort | Impact |
-| --- | --- | --- |
-| Add `JSOON.JSON` to `.gitignore` | 1 min | 🔴 Security |
-| Remove dead env vars (`RESEND_*`, `NEXTAUTH_*` dupes) | 10 min | 🟡 Hygiene |
-| Move `@ngrok/ngrok` to devDependencies | 1 min | 🟢 Build size |
-| Delete `server/actions/` empty dir | 1 min | 🟢 Hygiene |
-| Add `railway.toml` + health check | 30 min | 🟠 Reliability |
-| Add `postinstall` + `engines` to `package.json` | 5 min | 🟡 Reliability |
+| Item | Effort | Impact | Status |
+| --- | --- | --- | --- |
+| Add `JSOON.JSON` to `.gitignore` | 1 min | 🔴 Security | ✅ Done |
+| Remove dead env vars (`RESEND_*`, `NEXTAUTH_*` dupes) | 10 min | 🟡 Hygiene | ⬜ TODO — remove from Railway env panel |
+| Move `@ngrok/ngrok` to devDependencies | 1 min | 🟢 Build size | ✅ Done (run `npm install`) |
+| Delete `server/actions/` empty dir | 1 min | 🟢 Hygiene | ✅ Already gone |
+| Add `railway.toml` + health check | 30 min | 🟠 Reliability | ✅ Done |
+| Add `postinstall` + `engines` to `package.json` | 5 min | 🟡 Reliability | ✅ Done |
 
 ### Tier 2: Next Sprint (1-3 days)
 
-| Item | Effort | Impact |
-| --- | --- | --- |
-| Upgrade `@auth/prisma-adapter` to `^2.11.1` | 2h | 🟠 Security |
-| Migrate `class-variance-authority` → `cva` v1 | 4h | 🟡 Modernize |
-| Add Prisma `@@index` declarations + migration | 1h | 🟠 Performance |
-| Fix `useEffect` dependency bugs in `ChatPanel` + `BimViewer` | 2h | 🔴 Bugs |
-| Replace `catch {}` silent blocks with error logging | 1h | 🟠 Reliability |
-| Replace hardcoded secondary admin email with env var | 10 min | 🟡 Security |
-| Consolidate KPI to 2-3 SQL queries | 4h | 🟠 Performance |
+| Item | Effort | Impact | Status |
+| --- | --- | --- | --- |
+| Upgrade `@auth/prisma-adapter` to `^2.11.1` | 2h | 🟠 Security | ✅ Done (run `npm install`) |
+| Migrate `class-variance-authority` → `cva` v1 | 4h | 🟡 Modernize | ⬜ TODO — next session |
+| Add Prisma `@@index` declarations + migration | 1h | 🟠 Performance | ✅ Done (run `prisma migrate dev --name add-indexes`) |
+| Fix `useEffect` dependency bugs in `ChatPanel` + `BimViewer` | 2h | 🔴 Bugs | ✅ Done |
+| Replace `catch {}` silent blocks with error logging | 1h | 🟠 Reliability | ✅ Done (auth.ts) |
+| Replace hardcoded secondary admin email with env var | 10 min | 🟡 Security | ✅ Done (add `ADMIN_EMAIL_ALIAS` env var on Railway) |
+| Consolidate KPI to 2-3 SQL queries | 4h | 🟠 Performance | ✅ Done (10 counts → 1 CTE) |
 
-### Tier 3: Backlog (1-2 weeks)
+### Tier 3: Backlog (1-2 weeks) — Next Session Start Here
 
-| Item | Effort | Impact |
-| --- | --- | --- |
-| Abstract Sim/Clash into `BaseModule` pattern | 2-3 days | 🟠 Maintainability |
-| Decompose 8 oversized components | 2-3 days | 🟡 Maintainability |
-| Migrate all `console.*` to structured logger | 3h | 🟡 Observability |
-| Fix all `as any` casts in auth system | 4h | 🟡 Type safety |
-| Reorganize `lib/` folder structure | 2h | 🟡 Organization |
-| Replace `window.prompt()` with proper modal | 1h | 🟡 UX |
-| Make `holidays.ts` dynamic (multi-year) | 1h | 🟢 Correctness |
-| Add `Suspense` boundaries for streaming | 4h | 🟡 UX |
-| Add per-panel error boundaries | 2h | 🟡 Reliability |
-| Replace raw SQL in `auth.ts` with Prisma methods | 1h | 🟢 Type safety |
+| Item | Effort | Impact | Status |
+| --- | --- | --- | --- |
+| Abstract Sim/Clash into `BaseModule` pattern | 2-3 days | 🟠 Maintainability | ⬜ TODO |
+| Decompose 8 oversized components | 2-3 days | 🟡 Maintainability | ⬜ TODO |
+| Migrate remaining `console.*` to structured logger | 3h | 🟡 Observability | ✅ Done — all server + lib files converted |
+| Fix all `as any` casts in auth system | 4h | 🟡 Type safety | ✅ Done — trpc.ts, auth.ts session/credentials/adapter casts resolved |
+| Reorganize `lib/` folder structure | 2h | 🟡 Organization | ⬜ TODO — see recommended structure in §3 |
+| Replace `window.prompt()` with proper modal | 1h | 🟡 UX | ⬜ TODO — `WikiEditor.tsx` L675 |
+| Make `holidays.ts` dynamic (multi-year) | 1h | 🟢 Correctness | ✅ Done — now computes any year using Monday-shift rules |
+| Add `Suspense` boundaries for streaming | 4h | 🟡 UX | ⬜ TODO |
+| Add per-panel error boundaries | 2h | 🟡 Reliability | ⬜ TODO |
+| Replace raw SQL in `auth.ts` with Prisma methods | 1h | 🟢 Type safety | ✅ Done |
+| Migrate `class-variance-authority` → `cva` v1 | 4h | 🟡 Modernize | ❌ N/A — npm `cva` is squatted; CVA v1 not yet released |
 
 ---
 

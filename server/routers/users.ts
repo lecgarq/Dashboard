@@ -7,6 +7,9 @@ import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/email";
 import { randomUUID } from "crypto";
 import userEvents from "@/lib/user-events";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("users");
 
 // Raw-SQL row types (avoids needing prisma generate for new models)
 interface PendingRow { id: string; email: string; name: string | null; provider: string; requestedAt: Date; status: string; userId: string | null }
@@ -101,7 +104,7 @@ export const usersRouter = router({
         accounts: u.accounts ?? [],
       }));
     } catch (error) {
-      console.error("[users.getAll] Fatal Error:", error);
+      logger.error("Fatal error fetching users", { error });
       throw new TRPCError({
         code: "INTERNAL_SERVER_ERROR",
         message: "Failed to fetch users from database",
@@ -153,7 +156,7 @@ export const usersRouter = router({
           updated.role
         );
       } catch (error) {
-        console.error(`[updateRole] Sheets sync failed for ${updated.email}:`, error);
+        logger.error("Sheets sync failed after role update", { email: updated.email, error });
       }
 
       // Emit real-time event
@@ -203,7 +206,7 @@ export const usersRouter = router({
             `;
           }
         } catch (err) { 
-          console.error("[register] Failed to enqueue/upsert pending request:", err);
+          logger.error("Failed to enqueue/upsert pending request", { err });
         }
         
         throw new TRPCError({
@@ -232,12 +235,12 @@ export const usersRouter = router({
       try {
         await sendWelcomeEmail(email, input.name);
       } catch (error) {
-        console.error(`[users.register] Welcome email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+        logger.error("Welcome email failed", { email, error });
       }
       try {
         await sendAdminNotificationEmail(email, input.name);
       } catch (error) {
-        console.error(`[users.register] Admin notification email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+        logger.error("Admin notification email failed", { email, error });
       }
 
       // Default role for new users
@@ -312,7 +315,7 @@ export const usersRouter = router({
       try {
         await sendPasswordResetEmail(email, resetUrl);
       } catch (err) {
-        console.error("[requestPasswordReset] Failed to send email:", err);
+        logger.error("Failed to send password reset email", { email, err });
         await ctx.db.$executeRaw`DELETE FROM "PasswordResetToken" WHERE email = ${email}`;
         throw new TRPCError({
           code: "INTERNAL_SERVER_ERROR",
@@ -419,7 +422,7 @@ export const usersRouter = router({
       try {
         await sendApprovedEmail(email, pending?.name ?? undefined);
       } catch (error) {
-        console.error(`[users.approvePendingRequest] Approval email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+        logger.error("Approval email failed", { email, error });
       }
 
       return { success: true };
@@ -439,7 +442,7 @@ export const usersRouter = router({
       try {
         await sendDeclinedEmail(email, pending?.name ?? undefined);
       } catch (error) {
-        console.error(`[users.declinePendingRequest] Decline email failed for ${email}: ${error instanceof Error ? error.message : error}`);
+        logger.error("Decline email failed", { email, error });
       }
 
       return { success: true };
@@ -560,7 +563,7 @@ export const usersRouter = router({
           );
         }
       } catch (error) {
-        console.error(`[setUserModuleAccess] Sheets sync failed for user ${input.userId}:`, error);
+        logger.error("Sheets sync failed after module access update", { userId: input.userId, error });
       }
 
       // Emit real-time event

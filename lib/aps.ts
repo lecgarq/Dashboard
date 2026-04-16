@@ -1,6 +1,9 @@
 import { AuthenticationClient, Scopes } from "@aps_sdk/authentication";
 import { OssClient, Region } from "@aps_sdk/oss";
 import { ModelDerivativeClient, View } from "@aps_sdk/model-derivative";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("aps");
 
 const APS_CLIENT_ID = process.env.APS_CLIENT_ID!;
 const APS_CLIENT_SECRET = process.env.APS_CLIENT_SECRET!;
@@ -54,7 +57,7 @@ export async function translateToSvf2(urn: string) {
     }, { accessToken: token });
     return true;
   } catch (err) {
-    console.error("APS Translation Error:", err);
+    logger.error("APS translation failed", { urn, err });
     return false;
   }
 }

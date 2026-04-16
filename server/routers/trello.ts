@@ -3,6 +3,9 @@ import { TRPCError } from "@trpc/server";
 import { router, protectedProcedure, editorProcedure } from "../trpc";
 import * as trelloLib from "@/lib/trello";
 import trelloEvents from "@/lib/trello-events";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("trello");
 
 function requireToken() {
   if (!process.env.TRELLO_TOKEN || process.env.TRELLO_TOKEN.startsWith("<")) {
@@ -349,7 +352,7 @@ export const trelloRouter = router({
             await trelloLib.updateCard(input.cardId, { due: input.due });
           }
         } catch (e) { 
-          console.error("Failed to update parent card due date:", e);
+          logger.error("Failed to update parent card due date", { cardId: input.cardId, e });
         }
       }
 
@@ -363,7 +366,7 @@ export const trelloRouter = router({
             await trelloLib.addMemberToCard(input.cardId, me);
           }
         } catch (e) {
-          console.error("Failed to auto-assign member to card:", e);
+          logger.error("Failed to auto-assign member to card", { cardId: input.cardId, e });
         }
       }
 

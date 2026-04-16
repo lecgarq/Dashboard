@@ -44,6 +44,10 @@ next-env.d.ts
 # credentials - service account JSON files
 gen-lang-client-*.json
 
+# local secrets file — NEVER commit this
+JSOON.JSON
+*.secrets.json
+
 # temp / dump files
 /tmp/
 /prisma/dev.db

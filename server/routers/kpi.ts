@@ -1,45 +1,59 @@
 import { router, protectedProcedure } from "../trpc";
+import { Prisma } from "@prisma/client";
+
+type CountRow = {
+  family_total: bigint;
+  family_done: bigint;
+  family_review: bigint;
+  clash_total: bigint;
+  clash_done: bigint;
+  clash_review: bigint;
+  exam_task_total: bigint;
+  user_count: bigint;
+  deliverables_total: bigint;
+  deliverables_done: bigint;
+};
 
 export const kpiRouter = router({
   getHomeDashboard: protectedProcedure.query(async ({ ctx }) => {
     const now = new Date();
-    const [
-      familyTotal,
-      familyDone,
-      examResults,
-      clashTotal,
-      clashDone,
-      examTaskTotal,
-      familyDeadlines,
-      clashDeadlines,
-      recentFamilies,
-      recentChangelogs,
-      recentClashTasks,
-      recentExamResults,
-      userCount,
-      familyReview,
-      deliverablesTotal,
-      deliverablesDone,
-      clashReview,
-    ] = await Promise.all([
-      ctx.db.family.count(),
-      ctx.db.family.count({ where: { phase: "DONE" } }),
-      ctx.db.examResult.findMany({ select: { score: true, maxScore: true }, take: 500 }),
-      ctx.db.clashTask.count(),
-      ctx.db.clashTask.count({ where: { status: "DONE" } }),
-      ctx.db.examBuildTask.count(),
-      ctx.db.family.findMany({ where: { dueDate: { gt: now } }, select: { dueDate: true, name: true }, orderBy: { dueDate: "asc" }, take: 5 }),
-      ctx.db.clashTask.findMany({ where: { dueDate: { gt: now } }, select: { dueDate: true, title: true }, orderBy: { dueDate: "asc" }, take: 5 }),
-      ctx.db.family.findMany({ orderBy: { updatedAt: "desc" }, take: 5, select: { id: true, name: true, phase: true, updatedAt: true, owner: true } }),
-      ctx.db.familyChangelog.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { family: { select: { name: true } } } }),
-      ctx.db.clashTask.findMany({ orderBy: { updatedAt: "desc" }, take: 3, select: { id: true, title: true, status: true, updatedAt: true, owner: true } }),
-      ctx.db.examResult.findMany({ orderBy: { completedAt: "desc" }, take: 3, select: { id: true, candidateName: true, score: true, maxScore: true, completedAt: true } }),
-      ctx.db.user.count(),
-      ctx.db.family.count({ where: { phase: { in: ["REVIEW", "DONE"] } } }),
-      ctx.db.familyDeliverable.count(),
-      ctx.db.familyDeliverable.count({ where: { done: true } }),
-      ctx.db.clashTask.count({ where: { status: { in: ["REVIEW", "DONE"] } } }),
-    ]);
+
+    // Single CTE replaces 10 separate count queries → 8 total connections instead of 17
+    const [countsResult, examResults, familyDeadlines, clashDeadlines, recentFamilies, recentChangelogs, recentClashTasks, recentExamResults] =
+      await Promise.all([
+        ctx.db.$queryRaw<CountRow[]>(Prisma.sql`
+          SELECT
+            (SELECT COUNT(*) FROM "Family")::bigint                                            AS family_total,
+            (SELECT COUNT(*) FROM "Family" WHERE phase = 'DONE')::bigint                      AS family_done,
+            (SELECT COUNT(*) FROM "Family" WHERE phase IN ('REVIEW','DONE'))::bigint          AS family_review,
+            (SELECT COUNT(*) FROM "ClashTask")::bigint                                         AS clash_total,
+            (SELECT COUNT(*) FROM "ClashTask" WHERE status = 'DONE')::bigint                  AS clash_done,
+            (SELECT COUNT(*) FROM "ClashTask" WHERE status IN ('REVIEW','DONE'))::bigint      AS clash_review,
+            (SELECT COUNT(*) FROM "ExamBuildTask")::bigint                                     AS exam_task_total,
+            (SELECT COUNT(*) FROM "User")::bigint                                              AS user_count,
+            (SELECT COUNT(*) FROM "FamilyDeliverable")::bigint                                AS deliverables_total,
+            (SELECT COUNT(*) FROM "FamilyDeliverable" WHERE done = true)::bigint              AS deliverables_done
+        `),
+        ctx.db.examResult.findMany({ select: { score: true, maxScore: true }, take: 500 }),
+        ctx.db.family.findMany({ where: { dueDate: { gt: now } }, select: { dueDate: true, name: true }, orderBy: { dueDate: "asc" }, take: 5 }),
+        ctx.db.clashTask.findMany({ where: { dueDate: { gt: now } }, select: { dueDate: true, title: true }, orderBy: { dueDate: "asc" }, take: 5 }),
+        ctx.db.family.findMany({ orderBy: { updatedAt: "desc" }, take: 5, select: { id: true, name: true, phase: true, updatedAt: true, owner: true } }),
+        ctx.db.familyChangelog.findMany({ orderBy: { createdAt: "desc" }, take: 5, include: { family: { select: { name: true } } } }),
+        ctx.db.clashTask.findMany({ orderBy: { updatedAt: "desc" }, take: 3, select: { id: true, title: true, status: true, updatedAt: true, owner: true } }),
+        ctx.db.examResult.findMany({ orderBy: { completedAt: "desc" }, take: 3, select: { id: true, candidateName: true, score: true, maxScore: true, completedAt: true } }),
+      ]);
+
+    const counts = countsResult[0];
+    const familyTotal   = Number(counts.family_total);
+    const familyDone    = Number(counts.family_done);
+    const familyReview  = Number(counts.family_review);
+    const clashTotal    = Number(counts.clash_total);
+    const clashDone     = Number(counts.clash_done);
+    const clashReview   = Number(counts.clash_review);
+    const examTaskTotal = Number(counts.exam_task_total);
+    const userCount     = Number(counts.user_count);
+    const deliverablesTotal = Number(counts.deliverables_total);
+    const deliverablesDone  = Number(counts.deliverables_done);
 
     const activeTasks = (familyTotal - familyDone) + (clashTotal - clashDone) + examTaskTotal;
     const capacity = userCount > 0 ? Math.min(100, Math.round((activeTasks / (userCount * 8)) * 100)) : 0;

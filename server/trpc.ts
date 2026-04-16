@@ -43,13 +43,13 @@ export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
 
 export const adminProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
-  if ((ctx.session.user as any).role !== "ADMIN") throw new TRPCError({ code: "FORBIDDEN" });
+  if (ctx.session.user.role !== "ADMIN") throw new TRPCError({ code: "FORBIDDEN" });
   return next({ ctx: { ...ctx, session: ctx.session } });
 });
 
 export const editorProcedure = t.procedure.use(({ ctx, next }) => {
   if (!ctx.session?.user) throw new TRPCError({ code: "UNAUTHORIZED" });
-  const role = (ctx.session.user as any).role;
+  const { role } = ctx.session.user;
   if (!["EDITOR", "ADMIN"].includes(role)) throw new TRPCError({ code: "FORBIDDEN" });
   return next({ ctx: { ...ctx, session: ctx.session } });
 });

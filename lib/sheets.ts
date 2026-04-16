@@ -3,6 +3,9 @@ import fs from "node:fs";
 import path from "node:path";
 import { google } from "googleapis";
 import { db } from "@/server/db";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("sheets");
 
 type SheetsConfig = {
   spreadsheetId?: string;
@@ -59,7 +62,7 @@ async function ensureSheetExists(sheets: any, spreadsheetId: string, title: stri
       }
     });
     const newId = res.data.replies?.[0]?.addSheet?.properties?.sheetId;
-    console.log(`[ensureSheetExists] Created missing '${title}' tab.`);
+    logger.info("Created missing sheet tab", { title });
     return newId;
   } catch (err) {
     return undefined;
@@ -187,7 +190,7 @@ async function getApprovedEmails(): Promise<string[]> {
     const sheets = await getSheetsClient();
     const { spreadsheetId, approvedRange } = getSheetsConfig();
     if (!spreadsheetId) {
-      console.warn("GOOGLE_SHEETS_ID not set - approval checks disabled");
+      logger.warn("GOOGLE_SHEETS_ID not set — approval checks disabled");
       return [];
     }
 
@@ -210,7 +213,7 @@ async function getApprovedEmails(): Promise<string[]> {
     cacheTime = now;
     return emails;
   } catch (err) {
-    console.error("Failed to fetch approved emails from Google Sheets:", err);
+    logger.error("Failed to fetch approved emails from Google Sheets", { err });
     return cachedApprovedEmails ?? [];
   }
 }
@@ -225,7 +228,7 @@ async function getBlacklistedEmails(): Promise<string[]> {
     const sheets = await getSheetsClient();
     const { spreadsheetId, blacklistRange } = getSheetsConfig();
     if (!spreadsheetId) {
-      console.warn("GOOGLE_SHEETS_ID not set - blacklist checks disabled");
+      logger.warn("GOOGLE_SHEETS_ID not set — blacklist checks disabled");
       return [];
     }
 
@@ -275,7 +278,7 @@ async function getPendingEmails(): Promise<string[]> {
 
     return Array.from(new Set(emails));
   } catch (err) {
-    console.error("Failed to fetch pending emails from Google Sheets:", err);
+    logger.error("Failed to fetch pending emails from Google Sheets", { err });
     return [];
   }
 }
@@ -289,7 +292,7 @@ export async function isEmailApproved(email: string): Promise<boolean> {
   try {
     const blacklisted = await getBlacklistedEmails();
     if (blacklisted.includes(normalized)) {
-      console.warn(`[isEmailApproved] Denied: ${normalized} is blacklisted.`);
+      logger.warn("Sign-in denied — email is blacklisted", { email: normalized });
       return false;
     }
   } catch { /* if sheet doesn't exist, nobody is blacklisted yet */ }
@@ -302,7 +305,7 @@ export async function isEmailApproved(email: string): Promise<boolean> {
   if (localApproval) return true;
 
   // 2. SLOW PATH: If not in DB, trigger a sync in the background (fire and forget)
-  syncWhitelist().catch(err => console.error("Background whitelist sync failed:", err));
+  syncWhitelist().catch(err => logger.error("Background whitelist sync failed", { err }));
 
   const approved = await getApprovedEmails();
   return approved.includes(normalized);
@@ -416,9 +419,9 @@ export async function writeUserPermissionsToSheets(
   if (rows.length > 0) {
     const firstRow = rows[0];
     const isHeaderCorrect = firstRow?.[1] === "Role" && !firstRow.some(h => h?.toString().toLowerCase().includes("task"));
-    console.log(`[writeUserPermissionsToSheets] Header check: ${isHeaderCorrect ? 'OK' : 'INVALID'} (Current Col B: ${firstRow?.[1]})`);
+    logger.debug("Permissions sheet header check", { ok: isHeaderCorrect, colB: firstRow?.[1] });
     if (!isHeaderCorrect) {
-      console.log(`[writeUserPermissionsToSheets] Updating headers to: ${headers.join(", ")}`);
+      logger.info("Updating Permissions sheet headers", { headers: headers.join(", ") });
       await sheets.spreadsheets.values.update({
         spreadsheetId,
         range: "Permissions!A1:G1",
@@ -427,7 +430,7 @@ export async function writeUserPermissionsToSheets(
       });
     }
   } else {
-    console.log(`[writeUserPermissionsToSheets] Sheet empty, writing headers.`);
+    logger.info("Permissions sheet empty — writing headers");
     await sheets.spreadsheets.values.update({
       spreadsheetId,
       range: "Permissions!A1:G1",
@@ -437,10 +440,10 @@ export async function writeUserPermissionsToSheets(
   }
   
   const rowIndex = rows.findIndex((row) => row?.[0]?.toString().trim().toLowerCase() === normalized);
-  console.log(`[writeUserPermissionsToSheets] Found ${normalized} at index ${rowIndex}`);
+  logger.debug("Located user row in Permissions sheet", { email: normalized, rowIndex });
   const moduleChecklist = MODULES_LIST.map(m => userModules.includes(m));
   const newRow = [normalized, role, ...moduleChecklist, new Date().toISOString()];
-  console.log(`[writeUserPermissionsToSheets] Writing row:`, JSON.stringify(newRow));
+  logger.debug("Writing permissions row", { email: normalized });
 
   if (rowIndex !== -1) {
     const sheetRowNumber = rowIndex + 1;

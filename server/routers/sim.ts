@@ -2,6 +2,9 @@ import { z } from "zod";
 import type { PrismaClient } from "@prisma/client";
 import { router, protectedProcedure, editorProcedure } from "../trpc";
 import simEvents from "@/lib/sim-events";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("sim");
 import { upsertDriveJsonFile } from "@/lib/google-drive";
 import { DEFAULT_WIKI_SECTIONS, normalizeWikiSectionKey } from "@/lib/wiki-sections";
 import { ensureUniqueSection } from "@/lib/wiki-utils";
@@ -163,7 +166,7 @@ export const simRouter = router({
 
       // Non-blocking Drive backup
       backupWikiToDrive(ctx.db, ctx.projectId)
-        .catch((err) => console.error("[Drive backup]", err));
+        .catch((err) => logger.error("Drive backup failed", { err }));
 
       return result;
     }),

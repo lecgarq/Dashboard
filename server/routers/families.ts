@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure, editorProcedure } from "../trpc";
+import { createLogger } from "@/lib/server/logger";
+
+const logger = createLogger("families");
 
 const FamilyPhaseEnum = z.enum([
   "TODO",
@@ -228,7 +231,7 @@ export const familiesRouter = router({
 
         return { success: true, urn };
       } catch (err) {
-        console.error("APS Error:", err);
+        logger.error("APS translation failed", { familyId: input.familyId, err });
         await ctx.db.family.update({
           where: { id: input.familyId },
           data: { apsStatus: "FAILED" }

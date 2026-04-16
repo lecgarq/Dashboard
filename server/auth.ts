@@ -16,6 +16,9 @@ import {
   googleAuthScopeString,
   googleChatAuthScopeString,
 } from "@/lib/google-oauth";
+import { createLogger } from "@/lib/server/logger";
+
+const authLogger = createLogger("auth");
 
 const isProduction = process.env.NODE_ENV === "production";
 const googleChatClientId = getGoogleChatClientId();
@@ -74,10 +77,10 @@ const providers: any[] = [
       token_endpoint_auth_method: "client_secret_post",
     },
     profile(profile: Record<string, unknown>) {
-      console.log(`[AUTH DEBUG] Autodesk Raw Profile:`, JSON.stringify(profile));
+      authLogger.debug("Autodesk profile received", { profile });
       const email = ((profile.email as string) || "").toLowerCase().trim();
       if (!email) {
-        console.error("[AUTH DEBUG] Autodesk profile missing email!");
+        authLogger.warn("Autodesk profile missing email");
       }
       return {
         id: (profile.sub as string) || (profile.userId as string) || (profile.id as string) || "",
@@ -117,8 +120,8 @@ const providers: any[] = [
         name: user.name,
         email: user.email,
         image: user.image,
-        role: user.role, // Added role to satisfy lint
-      } as any;
+        role: user.role,
+      };
     },
   }),
 ];
@@ -126,7 +129,8 @@ const providers: any[] = [
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  adapter: PrismaAdapter(db) as any,
+  // @ts-expect-error — NextAuth v5 beta adapter type mismatch; safe at runtime
+  adapter: PrismaAdapter(db),
   providers,
   callbacks: {
     ...authConfig.callbacks,
@@ -135,12 +139,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
       const profileEmail = ((profile?.email as string) ?? user.email)?.trim().toLowerCase();
       const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase()?.trim() || "luis.ecorteg@gmail.com";
-      const secondaryAdminEmail = "luis.cortes@hermosillo.com";
+      const secondaryAdminEmail = process.env.ADMIN_EMAIL_ALIAS?.toLowerCase()?.trim() ?? "";
       
-      console.log(`[AUTH DEBUG] Provider: ${account?.provider}, Profile Email: "${profileEmail}"`);
+      authLogger.debug("Sign-in attempt", { provider: account?.provider, profileEmail });
 
       if (!account || !profileEmail) {
-        console.error(`[AUTH DEBUG] REJECTED - Missing account or email`);
+        authLogger.warn("Sign-in rejected — missing account or email");
         return false;
       }
 
@@ -152,7 +156,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // we map EVERYTHING to the primary admin user ID.
         let targetEmail = profileEmail;
         if (profileEmail === adminEmail || profileEmail === secondaryAdminEmail) {
-          console.log(`[AUTH DEBUG] ADMIN ALIAS DETECTED - Mapping to ${adminEmail}`);
+          authLogger.info("Admin alias detected", { from: profileEmail, to: adminEmail });
           targetEmail = adminEmail;
         }
 
@@ -164,11 +168,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (existingUser) {
           userId = existingUser.id;
-          // Ensure role is ADMIN if it matches our admin set
           const role = (targetEmail === adminEmail) ? "ADMIN" : existingUser.role;
-          // Sync profile picture from OAuth provider on every login
           const freshImage = (user.image || profile?.picture as string || profile?.image as string || existingUser.image || null) as string | null;
-          await db.$executeRaw`UPDATE "User" SET role = ${role}, image = ${freshImage}, "lastLoginAt" = ${now} WHERE id = ${userId}`;
+          await db.user.update({
+            where: { id: userId },
+            data: { role, image: freshImage, lastLoginAt: now },
+          });
         } else {
           // Brand new user
           const role = (targetEmail === adminEmail) ? "ADMIN" : "VIEWER";
@@ -177,14 +182,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             if (!approved) return false;
           }
           userId = randomUUID();
-          await db.$executeRaw`
-            INSERT INTO "User" (id, email, name, image, role, "lastLoginAt", "createdAt")
-            VALUES (${userId}, ${targetEmail}, ${user.name || ""}, ${user.image || null}, ${role}, ${now}, ${now})
-          `;
+          await db.user.create({
+            data: {
+              id: userId,
+              email: targetEmail,
+              name: user.name || "",
+              image: user.image || null,
+              role,
+              lastLoginAt: now,
+            },
+          });
         }
 
         // 2. Force link the OAuth identity to this specific User ID
-        const authAccount = account as any;
         await db.account.upsert({
           where: {
             provider_providerAccountId: {
@@ -194,35 +204,35 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           },
           update: {
             userId,
-            access_token: authAccount.access_token ?? null,
+            access_token: account.access_token ?? null,
             // Only overwrite refresh_token if a new one was issued (Google only returns it on first consent)
-            ...(authAccount.refresh_token ? { refresh_token: authAccount.refresh_token } : {}),
-            expires_at: authAccount.expires_at ?? null,
-            token_type: authAccount.token_type ?? null,
-            scope: authAccount.scope ?? null,
-            id_token: authAccount.id_token ?? null,
+            ...(account.refresh_token ? { refresh_token: account.refresh_token } : {}),
+            expires_at: account.expires_at ?? null,
+            token_type: account.token_type ?? null,
+            scope: account.scope ?? null,
+            id_token: account.id_token ?? null,
           },
           create: {
             userId,
             type: account.type,
             provider: account.provider,
             providerAccountId: account.providerAccountId,
-            access_token: authAccount.access_token ?? null,
-            refresh_token: authAccount.refresh_token ?? null,
-            expires_at: authAccount.expires_at ?? null,
-            token_type: authAccount.token_type ?? null,
-            scope: authAccount.scope ?? null,
-            id_token: authAccount.id_token ?? null,
-            session_state: (typeof authAccount.session_state === "string") ? authAccount.session_state : null,
+            access_token: account.access_token ?? null,
+            refresh_token: account.refresh_token ?? null,
+            expires_at: account.expires_at ?? null,
+            token_type: account.token_type ?? null,
+            scope: account.scope ?? null,
+            id_token: account.id_token ?? null,
+            session_state: (typeof account.session_state === "string") ? account.session_state : null,
           },
         });
 
-        console.log(`[AUTH DEBUG] SUCCESS - Account linked for ${targetEmail}`);
+        authLogger.info("Account linked", { email: targetEmail, provider: account?.provider });
         userEvents.emit("user-linked", { userId, provider: account.provider });
         return true;
 
       } catch (err) {
-        console.error(`[AUTH DEBUG] FATAL ERROR: ${err instanceof Error ? err.message : err}`);
+        authLogger.error("Fatal sign-in error", { err });
         return false;
       }
     },
@@ -249,9 +259,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         });
         token.providers = accounts.map((a) => a.provider);
 
-        const moduleRows = await db.$queryRaw<Array<{ module: string }>>`
-          SELECT module FROM "UserModuleAccess" WHERE "userId" = ${userId}
-        `;
+        const moduleRows = await db.userModuleAccess.findMany({
+          where: { userId },
+          select: { module: true },
+        });
         token.moduleAccess = moduleRows.map((m) => m.module);
       }
 
@@ -261,10 +272,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (token && session.user) {
         session.user.id = token.sub as string;
         session.user.image = (token.picture as string) ?? null;
-        (session.user as any).role = token.role ?? "VIEWER";
-        (session.user as any).providers = (token as any).providers ?? [];
-        (session.user as any).hasCredentials = (token as any).hasCredentials ?? false;
-        (session.user as any).moduleAccess = (token as any).moduleAccess ?? [];
+        session.user.role = token.role ?? "VIEWER";
+        session.user.providers = token.providers ?? [];
+        session.user.hasCredentials = token.hasCredentials ?? false;
+        session.user.moduleAccess = token.moduleAccess ?? [];
       }
       return session;
     },

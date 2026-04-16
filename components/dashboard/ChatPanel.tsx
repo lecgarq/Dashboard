@@ -331,7 +331,7 @@ function MediaPreviewModal({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [attachment.name, hasPrev, hasNext]);
+  }, [attachment.name, hasPrev, hasNext, onClose, onNavigate, currentIndex, allPreviewable]);
 
   // Scroll-wheel zoom (images)
   const handleWheel = useCallback((e: React.WheelEvent) => {
@@ -482,10 +482,10 @@ export function ChatPanel({
   const { open, setOpen, view, setView } = useChatPanel();
   const { hasGoogleChat } = useDashboardAuth();
 
-  const close = () => {
+  const close = useCallback(() => {
     setOpen(false);
     setTimeout(() => setView({ type: "spaces" }), 300);
-  };
+  }, [setOpen, setView]);
 
   useEffect(() => {
     if (!open) return;
@@ -494,7 +494,7 @@ export function ChatPanel({
     };
     document.addEventListener("keydown", handler);
     return () => document.removeEventListener("keydown", handler);
-  }, [open]);
+  }, [open, close]);
 
   return (
     <>
