@@ -88,11 +88,11 @@
 
 ## Phase 11: Redis Vector Cache Abstraction
 
-**Status**: 🚧 Blocked — awaiting env vars
+**Status**: ✅ Complete (2026-04-16)
 
-**Objective**: Migrate `LodSearchCache` out of `PostgreSQL` natively into `ioredis`/Upstash environments offloading `pgvector` KNN calculation locks from relational connection pools.
+**Objective**: Migrate `LodSearchCache` out of `PostgreSQL` natively into `@upstash/redis` environments offloading `pgvector` KNN calculation locks from relational connection pools.
 
-**Blocked by**: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` must be set on Railway before this phase can execute.
+**Note**: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` must be added to Railway env vars and local `.env` to activate the cache in production.
 
 **Depends on**: Phase 8
 

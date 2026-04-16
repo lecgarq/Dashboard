@@ -10,6 +10,7 @@ import {
   encodeLodQuery,
 } from "@/lib/server/lod-query-encoder";
 import { createLogger } from "@/lib/server/logger";
+import { redis } from "@/lib/redis";
 
 import {
   adminProcedure,
@@ -20,8 +21,15 @@ import {
 
 const logger = createLogger("lod");
 const SEARCH_CACHE_TTL_MS = 1000 * 60 * 60 * 24;
+const SEARCH_CACHE_TTL_S = SEARCH_CACHE_TTL_MS / 1000;
 const SEARCH_RESULT_LIMIT = 200;
 const SEARCH_CANDIDATE_LIMIT = 400;
+
+type CacheEntry = {
+  expandedQuery: string;
+  encoderVersion: string;
+  resultIds: string; // JSON-stringified array
+};
 
 type LodSearchCandidate = {
   id: string;
@@ -180,43 +188,17 @@ export const lodRouter = router({
         .createHash("sha256")
         .update(normalizedQuery)
         .digest("hex");
-      const now = new Date();
 
-      await ctx.db.$executeRawUnsafe(
-        `DELETE FROM "LodSearchCache"
-         WHERE "expiresAt" <= $1
-            OR "encoderVersion" <> $2`,
-        now,
-        LOD_QUERY_ENCODER_VERSION
-      );
-
-      const cachedRows = await ctx.db.$queryRawUnsafe<
-        Array<{
-          expandedQuery: string;
-          encoderVersion: string;
-          resultIds: string[];
-          expiresAt: Date | string;
-        }>
-      >(
-        `SELECT "expandedQuery", "encoderVersion", "resultIds", "expiresAt"
-         FROM "LodSearchCache"
-         WHERE "queryHash" = $1
-         LIMIT 1`,
-        queryHash
-      );
-      const cached = cachedRows[0];
-      if (
-        cached &&
-        cached.encoderVersion === LOD_QUERY_ENCODER_VERSION &&
-        new Date(cached.expiresAt) > now
-      ) {
+      const cached = await redis.hgetall<CacheEntry>(`lod:search:${queryHash}`);
+      if (cached && cached.encoderVersion === LOD_QUERY_ENCODER_VERSION) {
+        const resultIds: string[] = JSON.parse(cached.resultIds);
         const families = await ctx.db.lodFamily.findMany({
-          where: { id: { in: cached.resultIds } },
+          where: { id: { in: resultIds } },
         });
         const familyMap = new Map(families.map((family) => [family.id, family]));
 
         return {
-          results: cached.resultIds
+          results: resultIds
             .map((id) => familyMap.get(id))
             .filter((family): family is NonNullable<typeof family> => Boolean(family)),
           fromCache: true,
@@ -278,24 +260,12 @@ export const lodRouter = router({
 
         const resultIds = ranked.map((candidate) => candidate.id);
 
-        await ctx.db.$executeRawUnsafe(
-          `INSERT INTO "LodSearchCache"
-             ("id", "queryHash", "expandedQuery", "encoderVersion", "resultIds", "expiresAt", "createdAt")
-           VALUES ($1, $2, $3, $4, $5, $6, $7)
-           ON CONFLICT ("queryHash")
-           DO UPDATE SET
-             "expandedQuery" = EXCLUDED."expandedQuery",
-             "encoderVersion" = EXCLUDED."encoderVersion",
-             "resultIds" = EXCLUDED."resultIds",
-             "expiresAt" = EXCLUDED."expiresAt"`,
-          crypto.randomUUID(),
-          queryHash,
+        await redis.hset(`lod:search:${queryHash}`, {
           expandedQuery,
-          LOD_QUERY_ENCODER_VERSION,
-          resultIds,
-          new Date(now.getTime() + SEARCH_CACHE_TTL_MS),
-          now
-        );
+          encoderVersion: LOD_QUERY_ENCODER_VERSION,
+          resultIds: JSON.stringify(resultIds),
+        });
+        await redis.expire(`lod:search:${queryHash}`, SEARCH_CACHE_TTL_S);
 
         return {
           results: ranked,
@@ -332,9 +302,8 @@ export const lodRouter = router({
     .input(z.object({ id: z.string() }))
     .mutation(async ({ input, ctx }) => {
       await ctx.db.lodFamily.delete({ where: { id: input.id } });
-      await ctx.db.lodSearchCache.deleteMany({
-        where: { resultIds: { has: input.id } },
-      });
+      // Cache entries are keyed by queryHash; stale resultIds are filtered out at read time.
+      // TTL-based expiry in Redis handles cleanup automatically.
       return { success: true };
     }),
 
@@ -475,7 +444,15 @@ export const lodRouter = router({
         upserted++;
       }
 
-      await ctx.db.lodSearchCache.deleteMany();
+      // Flush all LOD search cache entries from Redis after a full re-upload
+      let scanCursor = 0;
+      do {
+        const [nextCursor, keys] = await redis.scan(scanCursor, { match: "lod:search:*", count: 100 });
+        scanCursor = Number(nextCursor);
+        if (keys.length > 0) {
+          await redis.del(...(keys as [string, ...string[]]));
+        }
+      } while (scanCursor !== 0);
       logger.info("LOD pipeline upload complete", { upserted });
       return { upserted };
     }),

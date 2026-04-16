@@ -395,19 +395,6 @@ model LodCategory {
   @@index([group])
 }
 
-model LodSearchCache {
-  id             String   @id @default(cuid())
-  queryHash      String   @unique
-  expandedQuery  String
-  encoderVersion String   @default("siglip-query-v1")
-  resultIds      String[] @default([])
-  expiresAt      DateTime
-  createdAt      DateTime @default(now())
-
-  @@index([queryHash])
-  @@index([expiresAt])
-}
-
 model ApsProjectSearchCache {
   id          String   @id @default(cuid())
   hubId       String

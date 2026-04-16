@@ -7,9 +7,11 @@ This artifact highlights structural shortcomings, unresolved performance bottlen
 
 ## 1. Architectural Friction
 
-### 1a. Cache Infrastructure (Redis vs Postgres)
-Currently, intensive search derivations (e.g., K-Nearest-Neighbor lookups spanning `pgvector`) are cached locally within regular `PostgreSQL` relational clusters via `LodSearchCache` and `ApsProjectSearchCache`. 
-**The Debt:** Because of how Prisma spins its connection pools, large concurrent caching operations saturate database query pipelines. Extracting cache structures natively to `Redis` (such as via Upstash) would decouple volatile computational results from persistent object durability, yielding roughly ~50ms of network TTFB savings per lookup.
+### 1a. Cache Infrastructure (Redis vs Postgres) — ✅ Partially Resolved (2026-04-16)
+`LodSearchCache` has been migrated from PostgreSQL to Upstash Redis (Phase 11). Search cache now uses HTTP-based Redis with automatic TTL expiry, eliminating pgvector connection lock contention on cache reads/writes.
+`ApsProjectSearchCache` remains in PostgreSQL — still subject to the same connection-pool saturation described below. A future phase should migrate it similarly.
+~~Currently, intensive search derivations (e.g., K-Nearest-Neighbor lookups spanning `pgvector`) are cached locally within regular `PostgreSQL` relational clusters via `LodSearchCache` and `ApsProjectSearchCache`.~~
+**Remaining Debt:** `ApsProjectSearchCache` still saturates database query pipelines. Extracting it to Upstash Redis would fully resolve this class of debt.
 
 ### 1b. The `tRPC` Zod Type Duplication
 Throughout `routers/`, input `z.object({})` definitions are completely severed from client-side component generation schemas.
@@ -35,14 +37,24 @@ Following are the directly extracted annotations embedded in the active applicat
 - `[TODO]` **in `app/(dashboard)/families/page.tsx`:**
   - The parametric families table executes `findMany` fetching massive attachment URLs synchronously rendering them entirely in the Virtual DOM pipeline ahead-of-time. Needs pagination and dynamic intersection-observer fetching (e.g. `useInfiniteQuery`) so memory consumption remains flat relative to row growth.
 
-- `[FIXME]` **in `server/routers/families.ts` & `tasks.ts`:**
-  - `tasks.ts` explicitly creates orphaned attachments inside the `taskAttachment` relation. When `ctx.db.userTask.delete()` natively cascades, it destroys the `taskAttachment` DB record, **but** crucially misses cleaning up the `UploadThing` physical S3 payload. We must inject a cleanup listener deleting the `.url` key.
+- ✅ `[FIXME resolved 2026-04-16]` **in `server/routers/tasks.ts`:**
+  - `deleteTask` now fetches attachment URLs before cascade, extracts UploadThing file keys, and calls `utapi.deleteFiles` in a `try/catch`. S3 orphans are eliminated on every task deletion.
 
 ## 4. Documentation Drift
 
 - The `ARCHITECTURE.pdf` artifact sitting inside the `.gsd` repository is currently completely out of sync with the new Next 15 `App Router` migration, continuing to incorrectly reference deprecated Flask iframes. *(Action: Discard the old `.pdf` and point the developers directly back to `ARCHITECTURE.md` as the unified source of truth.)*
 
 ---
+
+## ✅ Completed — Session 2026-04-16 (Phases 9/10/12)
+
+> Build: `npm run build` → 0 errors. TypeScript: `npx tsc --noEmit` → 0 errors.
+
+| Item | What was done |
+| --- | --- |
+| **Kanban virtualization (Phase 9)** | Installed `@tanstack/react-virtual@3.13.23`. `DroppableColumn` in `components/families/KanbanBoard.tsx` now uses `useVirtualizer` with absolute positioning and 5-node overscan — DOM nodes per column capped at ~15 regardless of family count. Added the missing `KanbanBoard` export function (was absent from the file) with full DndContext + DragOverlay. |
+| **UploadThing S3 orphan cleanup (Phase 10)** | `deleteTask` in `server/routers/tasks.ts` now fetches `taskAttachment` URLs before the Prisma cascade, extracts UploadThing file keys via `/f/` URL split, and calls `utapi.deleteFiles` inside a `try/catch` — S3 blobs are deleted without risking a Prisma rollback on UploadThing API failures. |
+| **Suspense boundaries (Phase 12)** | `ExamPage` refactored: `ExamList` extracted as a Suspense-compatible child component using `trpc.exam.getExams.useSuspenseQuery()`. Page shell renders immediately; list streams in behind `ExamListSkeleton` fallback. Removed the `isLoading` branch from the parent. |
 
 ## ✅ Completed — Session 2026-04-16 (Debt Pass)
 
@@ -67,6 +79,6 @@ Following are the directly extracted annotations embedded in the active applicat
 | 5 | Yjs WebSocket authentication (accept only valid session tokens) | 1 day | HIGH (security) |
 | 6 | Wiki dual-persistence reconciliation (HTML vs Yjs binary) | 1 day | HIGH |
 | 7 | Remove `RESEND_*` + `NEXTAUTH_*` duplicate env vars from Railway panel | 10 min | LOW (user action) |
-| 8 | Redis/Upstash for LOD + APS search caches (replace `LodSearchCache` DB table) | 4h | LOW |
+| ~~8~~ | ~~Redis/Upstash for LOD search cache (replace `LodSearchCache` DB table)~~ | ~~4h~~ | ✅ Done 2026-04-16 — `ApsProjectSearchCache` still pending |
 | 9 | LOD Python engine: force CUDA affinity / TensorRT FP16 | 2h | LOW |
-| 10 | `taskAttachment` S3 cleanup on cascade delete | 1h | MEDIUM |
+| ~~10~~ | ~~`taskAttachment` S3 cleanup on cascade delete~~ | ~~1h~~ | ✅ Done 2026-04-16 |
