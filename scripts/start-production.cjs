@@ -36,7 +36,7 @@ async function startTunnel() {
 
   try {
     const listener = await ngrok.forward({
-      addr: 3000,
+      addr: parseInt(process.env.PORT || "3000"),
       authtoken,
       domain,
     });
