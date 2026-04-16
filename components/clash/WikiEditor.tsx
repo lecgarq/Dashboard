@@ -848,25 +848,27 @@ export function WikiEditor({
 
             <div className="w-[1px] h-4 bg-border/30 mx-1" />
 
-            <input 
+            <input
                id="wiki-image-upload"
                type="file"
                accept="image/*"
                multiple
                className="hidden"
                title="Upload Image"
+               aria-label="Upload image"
                onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length > 0) handleMediaUpload(files);
                }}
             />
-            <input 
+            <input
                id="wiki-video-upload"
                type="file"
                accept="video/*"
                multiple
                className="hidden"
                title="Upload Video"
+               aria-label="Upload video"
                onChange={(e) => {
                   const files = Array.from(e.target.files || []);
                   if (files.length > 0) handleMediaUpload(files);
@@ -881,6 +883,7 @@ export function WikiEditor({
                   onClick={btn.action}
                   disabled={isUploading || !editorCanWrite}
                   title={btn.label}
+                  aria-label={btn.label}
                   className={cn(
                     "p-1.5 rounded-md transition-smooth",
                     btn.active
@@ -943,6 +946,7 @@ export function WikiEditor({
               onClick={() => window.print()}
               className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-smooth"
               title="Print"
+              aria-label="Print"
             >
               <Printer size={14} />
             </button>
@@ -952,10 +956,11 @@ export function WikiEditor({
 
       <div className="flex-1 overflow-y-auto">
         <div className="px-8 pt-8 pb-4">
-           <input 
+           <input
               className="w-full bg-transparent text-3xl font-bold text-foreground outline-none border-none placeholder:opacity-20"
               value={localTitle}
               disabled={!editorCanWrite}
+              aria-label="Module title"
               onChange={(e) => {
                 setLocalTitle(e.target.value);
                 setIsDirty(true);

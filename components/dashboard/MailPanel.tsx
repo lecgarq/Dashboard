@@ -445,10 +445,11 @@ function ComposeView({
 
       <div className="flex flex-1 flex-col gap-5 overflow-y-auto p-6">
         <div className="space-y-1.5">
-          <label className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <label htmlFor="mail-recipient" className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Recipient
           </label>
           <input
+            id="mail-recipient"
             type="email"
             placeholder="email@example.com"
             value={to}
@@ -457,10 +458,11 @@ function ComposeView({
           />
         </div>
         <div className="space-y-1.5">
-          <label className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <label htmlFor="mail-subject" className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Subject
           </label>
           <input
+            id="mail-subject"
             type="text"
             placeholder="How can we help?"
             value={subject}
@@ -469,10 +471,11 @@ function ComposeView({
           />
         </div>
         <div className="flex flex-1 flex-col space-y-1.5">
-          <label className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+          <label htmlFor="mail-content" className="px-1 text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
             Content
           </label>
           <textarea
+            id="mail-content"
             placeholder="Write your message here..."
             value={html}
             onChange={(e) => setHtml(e.target.value)}

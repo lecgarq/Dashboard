@@ -72,13 +72,15 @@ export function GlobalSearch() {
           )}
           <input
             autoFocus
+            aria-label="Search"
             className="flex-1 bg-transparent border-none outline-none px-4 text-base text-foreground placeholder:text-muted-foreground/50"
             placeholder="Search families, tasks, clash... (Ctrl+K)"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <button 
+          <button
             onClick={() => setIsOpen(false)}
+            aria-label="Close search"
             className="p-1.5 hover:bg-white/5 rounded-lg text-muted-foreground transition-smooth"
           >
             <X size={18} />
