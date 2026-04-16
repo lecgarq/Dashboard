@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { db } from "./db";
 import { enqueuePendingUser, isEmailApproved } from "@/lib/google/sheets";
-import { sendPendingRequestEmail, sendAdminNotificationEmail } from "@/lib/email";
+import { sendPendingRequestEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { authConfig } from "@/auth.config";
 import userEvents from "@/lib/events/user";
 import {

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
-import { listRecentMessages, getMessage, sendGmailMessage } from "@/lib/email";
+import { listRecentMessages, getMessage, sendGmailMessage } from "@/lib/server/email";
 import { TRPCError } from "@trpc/server";
 
 export const gmailRouter = router({

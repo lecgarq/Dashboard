@@ -1,7 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { auth } from "@/server/auth";
-import { generateFamilyDescription } from "@/lib/ai";
+import { generateFamilyDescription } from "@/lib/server/integrations/ai";
 
 export async function POST(req: Request) {
   let session = await auth();

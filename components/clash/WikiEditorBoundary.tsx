@@ -3,7 +3,7 @@
 import React from "react";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { isChunkLoadError } from "@/lib/chunk-load-error";
+import { isChunkLoadError } from "@/lib/core/chunk-load-error";
 import { clientLogger } from "@/lib/core/logger";
 
 interface State {

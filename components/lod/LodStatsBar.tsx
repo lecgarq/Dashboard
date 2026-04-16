@@ -5,9 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { LayoutGrid, Tag, Building2, Library } from "lucide-react";
 
 export function LodStatsBar() {
-  const { data } = trpc.lod.getStats.useQuery();
-
-  if (!data) return null;
+  const [data] = trpc.lod.getStats.useSuspenseQuery();
 
   const topCategories = [...data.byCategory]
     .sort((a, b) => b._count.id - a._count.id)

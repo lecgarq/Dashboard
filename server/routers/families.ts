@@ -215,7 +215,7 @@ export const familiesRouter = router({
       });
 
       // Background the APS work (node-style backgrounding)
-      const { uploadToAps, translateToSvf2 } = await import("@/lib/aps");
+      const { uploadToAps, translateToSvf2 } = await import("@/lib/server/integrations/aps");
       
       try {
         const response = await fetch(attachment.url);
@@ -243,7 +243,7 @@ export const familiesRouter = router({
   getApsStatus: protectedProcedure
     .input(z.object({ familyId: z.string(), urn: z.string() }))
     .query(async ({ ctx, input }) => {
-      const { getManifest } = await import("@/lib/aps");
+      const { getManifest } = await import("@/lib/server/integrations/aps");
       const manifest = await getManifest(input.urn);
       if (!manifest) return { status: "FAILED" };
 
@@ -262,7 +262,7 @@ export const familiesRouter = router({
   getApsManifestStatus: protectedProcedure
     .input(z.object({ urn: z.string() }))
     .query(async ({ input }) => {
-      const { getManifest } = await import("@/lib/aps");
+      const { getManifest } = await import("@/lib/server/integrations/aps");
       const manifest = await getManifest(input.urn);
       if (!manifest) return { status: "failed" as const };
       return { status: manifest.status as string, progress: manifest.progress as string | undefined };
@@ -271,7 +271,7 @@ export const familiesRouter = router({
   // ── APS Project Browser ────────────────────────────────────────────────────
 
   listApsProjectFolders: protectedProcedure.query(async () => {
-    const { getFirstHub, getProjectTopFolders } = await import("@/lib/aps");
+    const { getFirstHub, getProjectTopFolders } = await import("@/lib/server/integrations/aps");
     const projectId = process.env["APS_PROJECT-ID"];
     if (!projectId) return [];
     const hub = await getFirstHub();
@@ -282,7 +282,7 @@ export const familiesRouter = router({
   listApsFolder: protectedProcedure
     .input(z.object({ folderId: z.string() }))
     .query(async ({ input }) => {
-      const { getFolderContents } = await import("@/lib/aps");
+      const { getFolderContents } = await import("@/lib/server/integrations/aps");
       const projectId = process.env["APS_PROJECT-ID"];
       if (!projectId) return { folders: [], items: [] };
       const result = await getFolderContents(projectId, input.folderId);
@@ -295,7 +295,7 @@ export const familiesRouter = router({
   translateApsItem: editorProcedure
     .input(z.object({ itemId: z.string(), itemName: z.string() }))
     .mutation(async ({ input }) => {
-      const { getItemDerivativeUrn, translateToSvf2 } = await import("@/lib/aps");
+      const { getItemDerivativeUrn, translateToSvf2 } = await import("@/lib/server/integrations/aps");
       const projectId = process.env["APS_PROJECT-ID"];
       if (!projectId) throw new Error("APS_PROJECT-ID not configured");
       const urn = await getItemDerivativeUrn(projectId, input.itemId);

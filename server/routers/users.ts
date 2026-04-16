@@ -4,7 +4,7 @@ import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } fro
 import { listCalendarGuestDirectory } from "@/lib/google/directory";
 import bcrypt from "bcryptjs";
 import { TRPCError } from "@trpc/server";
-import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/email";
+import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { randomUUID } from "crypto";
 import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";

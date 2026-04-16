@@ -191,6 +191,9 @@ export const clashRouter = router({
         },
       });
 
+      backupWikiToDrive(ctx.db, ctx.projectId)
+        .catch((err) => logger.error("Drive backup failed", { err }));
+
       return updated;
     }),
 
@@ -207,6 +210,9 @@ export const clashRouter = router({
         projectId: ctx.projectId,
         section: input.section,
       });
+
+      backupWikiToDrive(ctx.db, ctx.projectId)
+        .catch((err) => logger.error("Drive backup failed", { err }));
 
       return deleted;
     }),
@@ -228,6 +234,9 @@ export const clashRouter = router({
         type: "wiki-list-reordered",
         projectId: ctx.projectId,
       });
+
+      backupWikiToDrive(ctx.db, ctx.projectId)
+        .catch((err) => logger.error("Drive backup failed", { err }));
 
       return { success: true };
     }),

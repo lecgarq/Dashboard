@@ -9,7 +9,7 @@ import {
   queueNotificationSound,
   requestBrowserNotificationPermission,
   warmSoundEngine,
-} from "@/lib/sound-engine";
+} from "@/lib/client/sound-engine";
 import { trpc } from "@/lib/core/trpc";
 
 type NewMessageEvent = {

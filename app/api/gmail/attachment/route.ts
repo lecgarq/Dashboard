@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getGmailAttachmentContent } from "@/lib/email";
+import { getGmailAttachmentContent } from "@/lib/server/email";
 import { createLogger } from "@/lib/server/logger";
 import { auth } from "@/server/auth";
 

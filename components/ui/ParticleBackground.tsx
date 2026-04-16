@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useParticleZones } from "@/lib/particle-zones";
+import { useParticleZones } from "@/lib/client/particle-zones";
 
 const CFG = {
   density: 22000,

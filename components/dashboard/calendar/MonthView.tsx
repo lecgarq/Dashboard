@@ -16,7 +16,7 @@ import { CheckSquare, Square, Plus, Trash2, Pencil, Shuffle, ChevronRight, X, Ca
 import { cn } from "@/lib/core/utils";
 import { useState, useRef, useCallback, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { isHoliday } from "@/lib/holidays";
+import { isHoliday } from "@/lib/shared/holidays";
 import { trpc } from "@/lib/core/trpc";
 
 interface CheckItem {

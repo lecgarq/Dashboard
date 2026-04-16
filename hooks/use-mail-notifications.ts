@@ -7,7 +7,7 @@ import {
   queueNotificationSound,
   requestBrowserNotificationPermission,
   warmSoundEngine,
-} from "@/lib/sound-engine";
+} from "@/lib/client/sound-engine";
 import { trpc } from "@/lib/core/trpc";
 
 export function useMailNotifications(enabled: boolean) {

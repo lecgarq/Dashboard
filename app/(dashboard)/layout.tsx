@@ -9,7 +9,7 @@ import { HydrationBoundary } from "@tanstack/react-query";
 import { appRouter } from "@/server/routers/root";
 import { createTRPCContext } from "@/server/trpc";
 import superjson from "superjson";
-import { ParticleZoneProvider } from "@/lib/particle-zones";
+import { ParticleZoneProvider } from "@/lib/client/particle-zones";
 import ParticleBackground from "@/components/ui/ParticleBackground";
 import { PageTransition } from "@/components/ui/PageTransition";
 import { NavigationProvider } from "@/components/providers/navigation-provider";
