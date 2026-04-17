@@ -377,9 +377,8 @@ export default function UsersPage() {
     },
   });
 
-  const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
   const { data: session } = useSession();
-  const isMe = session?.user?.email?.toLowerCase() === PRIMARY_ADMIN.toLowerCase();
+  const isPrimaryAdmin = Boolean(session?.user?.isPrimaryAdmin);
 
   const filteredUsers = users?.filter(
     (u) =>
@@ -539,13 +538,13 @@ export default function UsersPage() {
                                 <DropdownMenuLabel>Change Role</DropdownMenuLabel>
                                 <DropdownMenuSeparator className="bg-white/5" />
                                 {(Object.keys(ROLE_CONFIG) as Role[])
-                                  .filter(r => r !== "ADMIN" || isMe)
+                                  .filter(r => r !== "ADMIN" || isPrimaryAdmin)
                                   .map((r) => (
                                     <DropdownMenuItem
                                       key={r}
                                       className="gap-2"
                                       onClick={() => updateRole.mutate({ userId: user.id, role: r })}
-                                      disabled={updateRole.isPending || user.email.toLowerCase() === PRIMARY_ADMIN.toLowerCase()}
+                                      disabled={updateRole.isPending || user.isPrimaryAdmin}
                                     >
                                       {r === user.role && <Check className="w-3 h-3 text-primary ml-auto order-last" />}
                                       {ROLE_CONFIG[r].label}
@@ -555,7 +554,7 @@ export default function UsersPage() {
                                 <DropdownMenuSeparator className="bg-white/5" />
                                 <DropdownMenuItem
                                   className="gap-2 text-amber-500 focus:text-amber-400 focus:bg-amber-500/10"
-                                  disabled={blacklistMember.isPending || user.email.toLowerCase() === PRIMARY_ADMIN.toLowerCase()}
+                                  disabled={blacklistMember.isPending || user.isPrimaryAdmin}
                                   onClick={() => {
                                     if (confirm(`Blacklist ${user.email}? They will be removed and blocked from requesting access.`)) {
                                       blacklistMember.mutate({ userId: user.id });
@@ -567,7 +566,7 @@ export default function UsersPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuItem
                                   className="gap-2 text-red-500 focus:text-red-400 focus:bg-red-500/10"
-                                  disabled={removeAccount.isPending || user.email.toLowerCase() === PRIMARY_ADMIN.toLowerCase()}
+                                  disabled={removeAccount.isPending || user.isPrimaryAdmin}
                                   onClick={() => {
                                     if (confirm(`Completely remove ${user.email}? All records will be deleted.`)) {
                                       removeAccount.mutate({ userId: user.id });
@@ -693,7 +692,7 @@ export default function UsersPage() {
                 <Button 
                   variant="outline" 
                   className="w-full border-red-500/20 text-red-500 hover:bg-red-500 hover:text-white group gap-2 h-11"
-                  disabled={blacklistMember.isPending || (selectedUser.email?.toLowerCase() === PRIMARY_ADMIN.toLowerCase())}
+                  disabled={blacklistMember.isPending || selectedUser.isPrimaryAdmin}
                   onClick={() => {
                     if (confirm(`Blacklist ${selectedUser.email}? They will be banned permanently.`)) {
                       blacklistMember.mutate({ userId: selectedUser.id });
@@ -706,7 +705,7 @@ export default function UsersPage() {
                 <Button 
                   variant="ghost" 
                   className="w-full text-muted-foreground/50 hover:text-red-400 hover:bg-red-500/10 gap-2 h-11"
-                  disabled={removeAccount.isPending || (selectedUser.email?.toLowerCase() === PRIMARY_ADMIN.toLowerCase())}
+                  disabled={removeAccount.isPending || selectedUser.isPrimaryAdmin}
                   onClick={() => {
                     if (confirm(`Completely delete ${selectedUser.email}? This action cannot be undone.`)) {
                       removeAccount.mutate({ userId: selectedUser.id });

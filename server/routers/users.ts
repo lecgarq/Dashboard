@@ -4,6 +4,7 @@ import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } fro
 import { listCalendarGuestDirectory } from "@/lib/google/directory";
 import bcrypt from "bcryptjs";
 import { getAuthUrl } from "@/lib/auth-env";
+import { getPrimaryAdminEmail, isPrimaryAdminEmail } from "@/lib/auth-env";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { randomUUID } from "crypto";
@@ -60,7 +61,7 @@ export const usersRouter = router({
 
   getAll: adminProcedure.query(async ({ ctx }) => {
     try {
-      return await ctx.db.user.findMany({
+      const users = await ctx.db.user.findMany({
         select: {
           id: true,
           name: true,
@@ -79,6 +80,11 @@ export const usersRouter = router({
         },
         orderBy: { createdAt: "desc" },
       });
+
+      return users.map((user) => ({
+        ...user,
+        isPrimaryAdmin: isPrimaryAdminEmail(user.email),
+      }));
     } catch (error) {
       logger.error("Fatal error fetching users", { error });
       throw new TRPCError({
@@ -97,23 +103,21 @@ export const usersRouter = router({
     )
     .mutation(async ({ ctx, input }) => {
       const targetUser = await ctx.db.user.findUnique({ where: { id: input.userId } });
-
-      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
+      const primaryAdminEmail = getPrimaryAdminEmail();
 
       // 1. Prevent demoting the primary admin
       if (
-        targetUser?.email?.toLowerCase() === PRIMARY_ADMIN.toLowerCase() &&
+        isPrimaryAdminEmail(targetUser?.email) &&
         input.role !== "ADMIN"
       ) {
         throw new Error("Cannot demote the primary administrator.");
       }
 
       // 2. Only the master admin can change any role
-      const currentAdminEmail = ctx.session.user.email?.toLowerCase();
-      if (currentAdminEmail !== PRIMARY_ADMIN.toLowerCase()) {
+      if (!ctx.session.user.isPrimaryAdmin) {
         throw new TRPCError({
           code: "FORBIDDEN",
-          message: "Only the master administrator (luis.ecorteg@gmail.com) can manage user roles.",
+          message: `Only the master administrator (${primaryAdminEmail}) can manage user roles.`,
         });
       }
 
@@ -222,8 +226,7 @@ export const usersRouter = router({
       }
 
       // Default role for new users
-      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
-      if (email === PRIMARY_ADMIN.toLowerCase()) {
+      if (isPrimaryAdminEmail(email)) {
         await ctx.db.user.update({ where: { id: newUser.id }, data: { role: "ADMIN" } });
       }
 
@@ -236,8 +239,7 @@ export const usersRouter = router({
       const user = await ctx.db.user.findUnique({ where: { id: input.userId } });
       if (!user || !user.email) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
 
-      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
-      if (user.email.toLowerCase() === PRIMARY_ADMIN.toLowerCase()) {
+      if (isPrimaryAdminEmail(user.email)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
       }
 
@@ -506,8 +508,7 @@ export const usersRouter = router({
       if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
       const email = user.email.toLowerCase().trim();
 
-      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
-      if (email === PRIMARY_ADMIN.toLowerCase()) {
+      if (isPrimaryAdminEmail(email)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
       }
 
@@ -526,8 +527,7 @@ export const usersRouter = router({
       if (!user) throw new TRPCError({ code: "NOT_FOUND", message: "User not found." });
       const email = user.email.toLowerCase().trim();
 
-      const PRIMARY_ADMIN = "luis.ecorteg@gmail.com";
-      if (email === PRIMARY_ADMIN.toLowerCase()) {
+      if (isPrimaryAdminEmail(email)) {
         throw new TRPCError({ code: "FORBIDDEN", message: "Cannot remove the primary administrator." });
       }
 

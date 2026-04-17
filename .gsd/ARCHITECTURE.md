@@ -18,21 +18,21 @@ flowchart TB
     
     subgraph Frontend [🖥️ Client Presentation]
         direction LR
-        UI(["⚛️ Next.js 16 UI"])::ui
-        State(["⚡ TanStack Caching"])::ui
-        Sync(["🤝 Yjs Engine"])::ui
+        UI(["⚛️ Next.js 16 UI"]):::ui
+        State(["⚡ TanStack Caching"]):::ui
+        Sync(["🤝 Yjs Engine"]):::ui
     end
     
     subgraph Backend [⚙️ Application Gateway]
         direction TB
-        RPC(["🔌 tRPC API (root.ts)"])::api
-        Auth(["🔒 NextAuth 5.0"])::api
-        Sockets(["📡 WebSockets"])::api
+        RPC(["🔌 tRPC API (root.ts)"]):::api
+        Auth(["🔒 NextAuth 5.0"]):::api
+        Sockets(["📡 WebSockets"]):::api
     end
     
     subgraph DataSpace [🗄️ Persistence Layer]
         direction LR
-        ORM(["🪢 Prisma 7.7.0"])::db
+        ORM(["🪢 Prisma 7.7.0"]):::db
         PG[(🐘 PostgreSQL)]:::db
         Vector[(📊 pgvector Indices)]:::db
     end
@@ -45,9 +45,9 @@ flowchart TB
     
     subgraph Cloud [🌐 External Cloud Web]
         direction LR
-        APS(["🏗️ Autodesk Cloud"])::external
-        GCP(["📨 Google Workspace"])::external
-        Trello(["📋 Trello API"])::external
+        APS(["🏗️ Autodesk Cloud"]):::external
+        GCP(["📨 Google Workspace"]):::external
+        Trello(["📋 Trello API"]):::external
     end
 
     %% Interactions

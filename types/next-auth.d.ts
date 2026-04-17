@@ -7,6 +7,7 @@ declare module "next-auth" {
       id: string;
       role: string;
       providers: string[];
+      isPrimaryAdmin?: boolean;
       hasCredentials?: boolean;
       moduleAccess?: string[];
     } & DefaultSession["user"];
@@ -22,6 +23,7 @@ declare module "next-auth/jwt" {
     id: string;
     role: string;
     providers: string[];
+    isPrimaryAdmin?: boolean;
     hasCredentials: boolean;
     moduleAccess?: string[];
   }

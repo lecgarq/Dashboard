@@ -10,6 +10,7 @@ import { enqueuePendingUser, isEmailApproved } from "@/lib/google/sheets";
 import { sendPendingRequestEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { authConfig } from "@/auth.config";
 import userEvents from "@/lib/events/user";
+import { getCanonicalAdminEmail, getPrimaryAdminEmail, isPrimaryAdminEmail } from "@/lib/auth-env";
 import {
   getGoogleChatClientId,
   getGoogleChatClientSecret,
@@ -100,11 +101,14 @@ const providers: any[] = [
     async authorize(credentials) {
       if (!credentials?.userIdentifier || !credentials?.password) return null;
 
+      const rawIdentifier = String(credentials.userIdentifier).trim().toLowerCase();
+      const emailIdentifier = getCanonicalAdminEmail(rawIdentifier) ?? rawIdentifier;
+
       const user = await db.user.findFirst({
         where: {
           OR: [
-            { email: credentials.userIdentifier as string },
-            { username: credentials.userIdentifier as string },
+            { email: emailIdentifier },
+            { username: rawIdentifier },
           ],
         },
       });
@@ -138,8 +142,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "credentials") return true;
 
       const profileEmail = ((profile?.email as string) ?? user.email)?.trim().toLowerCase();
-      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase()?.trim() || "luis.cortes@hermosillo.com";
-      const secondaryAdminEmail = process.env.ADMIN_EMAIL_ALIAS?.toLowerCase()?.trim() ?? "";
+      const adminEmail = getPrimaryAdminEmail();
       
       authLogger.debug("Sign-in attempt", { provider: account?.provider, profileEmail });
 
@@ -152,12 +155,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const now = new Date();
         
         // 1. Identify the Target User record
-        // If the email is either the primary admin OR the known secondary admin email,
-        // we map EVERYTHING to the primary admin user ID.
-        let targetEmail = profileEmail;
-        if (profileEmail === adminEmail || profileEmail === secondaryAdminEmail) {
+        // Any configured admin alias maps to the canonical primary admin record.
+        const targetEmail = getCanonicalAdminEmail(profileEmail) ?? profileEmail;
+        if (targetEmail === adminEmail && profileEmail !== adminEmail) {
           authLogger.info("Admin alias detected", { from: profileEmail, to: adminEmail });
-          targetEmail = adminEmail;
         }
 
         const existingUser = await db.user.findUnique({
@@ -263,11 +264,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (userId) {
         const dbUser = await db.user.findUnique({
           where: { id: userId },
-          select: { role: true, password: true, username: true, image: true },
+          select: { email: true, role: true, password: true, username: true, image: true },
         });
 
         if (dbUser) {
           token.role = dbUser.role;
+          token.isPrimaryAdmin = isPrimaryAdminEmail(dbUser.email);
           token.hasCredentials = !!(dbUser.password && dbUser.username);
           token.picture = dbUser.image ?? null;
         }
@@ -293,6 +295,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         session.user.image = (token.picture as string) ?? null;
         session.user.role = token.role ?? "VIEWER";
         session.user.providers = token.providers ?? [];
+        session.user.isPrimaryAdmin = token.isPrimaryAdmin ?? false;
         session.user.hasCredentials = token.hasCredentials ?? false;
         session.user.moduleAccess = token.moduleAccess ?? [];
       }
