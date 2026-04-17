@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useEffect, useCallback, useState } from "react";
+import { useRef, useEffect, useCallback, useState, useMemo, memo } from "react";
 import { trpc } from "@/lib/core/trpc";
 import { Loader2 } from "lucide-react";
 
@@ -22,238 +22,539 @@ interface LodGraphCanvasProps {
   onSelectFamily: (familyId: string) => void;
 }
 
-// Stable hue from a string (category → color)
-function categoryColor(category: string | null): string {
-  if (!category) return "hsl(220,8%,55%)";
-  let hash = 0;
-  for (let i = 0; i < category.length; i++) {
-    hash = (hash * 31 + category.charCodeAt(i)) & 0xffff;
+// ─── Color palette (matches the original LOD Checker) ────────────────────────
+const VIBRANT_COLORS: string[] = [
+  "#E63946", "#F4A261", "#2A9D8F", "#264653", "#A8DADC",
+  "#D62828", "#F77F00", "#FCBF49", "#003049", "#FF9F1C",
+  "#2EC4B6", "#FFBF69", "#FF99C8", "#9B5DE5", "#F15BB5",
+  "#FEE440", "#00BBF9", "#00F5D4", "#4361EE", "#3A0CA3",
+  "#7209B7", "#560BAD", "#480CA8", "#B5179E", "#F72585",
+  "#4CC9F0", "#8338EC", "#FF006E", "#FB5607", "#3D5A40",
+];
+const colorCache = new Map<string, string>();
+function getCategoryColor(category?: string | null): string {
+  if (!category) return "#E9E7E2";
+  if (!colorCache.has(category)) {
+    let hash = 0;
+    for (let i = 0; i < category.length; i++) {
+      hash = category.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    colorCache.set(category, VIBRANT_COLORS[Math.abs(hash) % VIBRANT_COLORS.length]);
   }
-  return `hsl(${(hash % 360)},55%,58%)`;
+  return colorCache.get(category)!;
 }
 
-type Transform = { offsetX: number; offsetY: number; scale: number };
+// ─── Safety guards ────────────────────────────────────────────────────────────
+function isValidNodeIndex(index: number, total: number) {
+  return Number.isInteger(index) && index >= 0 && index < total;
+}
+function getSafeNeighbors(node: GraphNode, total: number, limit = 10): number[] {
+  const nb = Array.isArray(node.neighbors) ? node.neighbors : [];
+  const out: number[] = [];
+  for (let i = 0; i < Math.min(nb.length, limit); i++) {
+    if (isValidNodeIndex(nb[i], total)) out.push(nb[i]);
+  }
+  return out;
+}
 
-export function LodGraphCanvas({ onSelectFamily }: LodGraphCanvasProps) {
+// Pre-compute flat Uint32Array of [from, to, from, to, ...] edge pairs
+function buildLinks(nodes: GraphNode[]): Uint32Array {
+  const pairs: number[] = [];
+  for (let i = 0; i < nodes.length; i++) {
+    for (const t of getSafeNeighbors(nodes[i], nodes.length, 10)) {
+      if (t > i) pairs.push(i, t);
+    }
+  }
+  return new Uint32Array(pairs);
+}
+
+function createCircleSprite(color: string, size: number): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  const d = size * 2;
+  canvas.width = d; canvas.height = d;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = color;
+  ctx.beginPath(); ctx.arc(size, size, size, 0, Math.PI * 2); ctx.fill();
+  return canvas;
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
+function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const nodesRef = useRef<GraphNode[]>([]);
-  const transformRef = useRef<Transform>({ offsetX: 0, offsetY: 0, scale: 1 });
-  const rafRef = useRef<number>(0);
-  const dragRef = useRef<{ active: boolean; startX: number; startY: number } | null>(null);
-  const [tooltip, setTooltip] = useState<{ x: number; y: number; label: string } | null>(null);
+  const [isReady, setIsReady] = useState(false);
+
+  const currentPos = useRef(new Float32Array(0));
+  const targetPos = useRef(new Float32Array(0));
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const links = useRef<any>(new Uint32Array(0));
+
+  const view = useRef({ x: 0, y: 0, scale: 1 });
+  const targetView = useRef({ x: 0, y: 0, scale: 1 });
+
+  const rafId = useRef<number>(0);
+  const isAnimating = useRef(false);
+  const isDragging = useRef(false);
+  const [isDraggingState, setIsDraggingState] = useState(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
+  const clickStart = useRef({ x: 0, y: 0 });
+  const middleDragging = useRef(false);
+  const middleStart = useRef({ x: 0, y: 0 });
+  const middleLast = useRef({ x: 0, y: 0 });
+
+  const selectedFamilyRef = useRef<string | null>(null);
+  const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
+
+  const sprites = useRef(new Map<string, HTMLCanvasElement>());
+
+  // Spatial grid for fast hit testing
+  const grid = useRef({ size: 0.05, cells: new Map<string, number[]>() });
+
+  const nodeIndexMap = useMemo(() => new Map<string, number>(), []);
 
   const { data, isLoading } = trpc.lod.getGraphData.useQuery(undefined, {
     staleTime: Infinity,
   });
 
-  // Normalize nodes to [0,1] once after load
-  const normalizedRef = useRef<{ nx: number; ny: number }[]>([]);
-
+  // ── Initialize once data loads ────────────────────────────────────────────
   useEffect(() => {
     if (!data?.length) return;
     const nodes = data as GraphNode[];
     nodesRef.current = nodes;
 
+    // Sprites per category
+    const cats = new Set(nodes.map((n) => n.family.finalCategory));
+    cats.forEach((cat) => {
+      const color = getCategoryColor(cat);
+      if (!sprites.current.has(color)) {
+        sprites.current.set(color, createCircleSprite(color, 8));
+      }
+    });
+    if (!sprites.current.has("grey")) {
+      sprites.current.set("grey", createCircleSprite("#E9E7E2", 8));
+    }
+
+    // Normalize positions to world-space [0, 1]
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const n of nodes) {
-      if (n.x < minX) minX = n.x;
-      if (n.x > maxX) maxX = n.x;
-      if (n.y < minY) minY = n.y;
-      if (n.y > maxY) maxY = n.y;
+      if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+      if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
     }
-    const rangeX = maxX - minX || 1;
-    const rangeY = maxY - minY || 1;
-
-    normalizedRef.current = nodes.map((n) => ({
-      nx: (n.x - minX) / rangeX,
-      ny: (n.y - minY) / rangeY,
-    }));
-
-    // Reset transform to fit canvas
-    const canvas = canvasRef.current;
-    if (canvas) {
-      transformRef.current = { offsetX: 0, offsetY: 0, scale: 1 };
-      scheduleDraw();
+    const rx = maxX - minX || 1, ry = maxY - minY || 1;
+    const count = nodes.length;
+    const pos = new Float32Array(count * 2);
+    for (let i = 0; i < count; i++) {
+      pos[i * 2] = (nodes[i].x - minX) / rx;
+      pos[i * 2 + 1] = (nodes[i].y - minY) / ry;
     }
+    currentPos.current = pos;
+    targetPos.current = new Float32Array(pos);
+
+    nodeIndexMap.clear();
+    nodes.forEach((n, i) => nodeIndexMap.set(n.id, i));
+
+    links.current = buildLinks(nodes);
+
+    updateGrid();
+    requestAnimationFrame(() => {
+      setIsReady(true);
+      zoomToFit(null);
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data]);
 
-  const toCanvas = useCallback((nx: number, ny: number, canvas: HTMLCanvasElement, t: Transform) => {
-    const padding = 40;
-    const w = canvas.width - padding * 2;
-    const h = canvas.height - padding * 2;
-    return {
-      cx: padding + nx * w * t.scale + t.offsetX,
-      cy: padding + ny * h * t.scale + t.offsetY,
-    };
+  // ── Grid ──────────────────────────────────────────────────────────────────
+  const updateGrid = useCallback(() => {
+    const g = grid.current;
+    g.cells.clear();
+    const pos = currentPos.current;
+    const nodes = nodesRef.current;
+    const v = view.current;
+    g.size = Math.max(0.01, 60 / v.scale);
+    for (let i = 0; i < nodes.length; i++) {
+      const nx = pos[i * 2], ny = pos[i * 2 + 1];
+      const key = `${Math.floor(nx / g.size)},${Math.floor(ny / g.size)}`;
+      if (!g.cells.has(key)) g.cells.set(key, []);
+      g.cells.get(key)!.push(i);
+    }
   }, []);
 
-  const draw = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-
+  // ── Zoom to fit — offsets camera left when detail panel is open ───────────
+  const zoomToFit = useCallback((focusId: string | null) => {
     const nodes = nodesRef.current;
-    const norm = normalizedRef.current;
-    const t = transformRef.current;
+    const pos = currentPos.current;
+    if (!nodes.length || !canvasRef.current) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    const fitIdxs: number[] = [];
 
-    if (!nodes.length) return;
-
-    const padding = 40;
-    const DOT_RADIUS = Math.max(1.5, Math.min(3.5, t.scale * 2.5));
-
-    // Viewport bounds for culling
-    const margin = DOT_RADIUS * 2;
-    const minX = -margin;
-    const maxX = canvas.width + margin;
-    const minY = -margin;
-    const maxY = canvas.height + margin;
-
-    for (let i = 0; i < nodes.length; i++) {
-      const node = nodes[i];
-      const { cx, cy } = toCanvas(norm[i].nx, norm[i].ny, canvas, t);
-
-      // Viewport culling (skip nodes outside canvas)
-      if (cx < minX || cx > maxX || cy < minY || cy > maxY) continue;
-
-      ctx.beginPath();
-      ctx.arc(cx, cy, DOT_RADIUS, 0, Math.PI * 2);
-      ctx.fillStyle = categoryColor(node.family.finalCategory);
-      ctx.fill();
+    if (focusId) {
+      const idx = nodeIndexMap.get(focusId) ?? -1;
+      if (isValidNodeIndex(idx, nodes.length)) {
+        fitIdxs.push(idx);
+        for (const nb of getSafeNeighbors(nodes[idx], nodes.length, 10)) fitIdxs.push(nb);
+      }
     }
-  }, [toCanvas]);
+    if (!fitIdxs.length) {
+      for (let i = 0; i < nodes.length; i++) fitIdxs.push(i);
+    }
 
-  const scheduleDraw = useCallback(() => {
-    cancelAnimationFrame(rafRef.current);
-    rafRef.current = requestAnimationFrame(draw);
-  }, [draw]);
+    for (const i of fitIdxs) {
+      const x = pos[i * 2], y = pos[i * 2 + 1];
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+    }
+    if (minX === Infinity) return;
 
-  // Resize observer
+    const dw = maxX - minX || 0.01, dh = maxY - minY || 0.01;
+    const cw = canvasRef.current.clientWidth || 1000;
+    const ch = canvasRef.current.clientHeight || 800;
+
+    // Offset left when detail panel is open (panel is ~420px wide)
+    const sidebarWidth = selectedFamilyRef.current ? 440 : 0;
+    const effectiveCW = cw - sidebarWidth;
+    const fitScale = Math.min(effectiveCW / dw, ch / dh) * 0.75;
+    const centerX = (minX + maxX) / 2;
+    const offsetX = (sidebarWidth / 2) / Math.max(fitScale, 50);
+
+    targetView.current = {
+      x: centerX + offsetX,
+      y: (minY + maxY) / 2,
+      scale: Math.max(50, Math.min(500000, fitScale)),
+    };
+  }, [nodeIndexMap]);
+
+  // ── Main render loop ──────────────────────────────────────────────────────
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const observer = new ResizeObserver(() => {
-      canvas.width = canvas.offsetWidth;
-      canvas.height = canvas.offsetHeight;
-      scheduleDraw();
-    });
-    observer.observe(canvas);
-    return () => observer.disconnect();
-  }, [scheduleDraw]);
+    const ctx = canvas.getContext("2d")!;
 
-  // Wheel zoom
+    const render = () => {
+      rafId.current = requestAnimationFrame(render);
+
+      // Lerp camera
+      const v = view.current, tv = targetView.current;
+      v.x += (tv.x - v.x) * 0.2;
+      v.y += (tv.y - v.y) * 0.2;
+      v.scale += (tv.scale - v.scale) * 0.2;
+
+      // Lerp node positions
+      if (isAnimating.current) {
+        const cp = currentPos.current, tp = targetPos.current;
+        let maxDiff = 0;
+        for (let i = 0; i < cp.length; i++) {
+          const diff = tp[i] - cp[i];
+          if (Math.abs(diff) > 0.001) {
+            cp[i] += diff * 0.2;
+            maxDiff = Math.max(maxDiff, Math.abs(diff));
+          } else {
+            cp[i] = tp[i];
+          }
+        }
+        if (maxDiff < 0.0005) {
+          isAnimating.current = false;
+          updateGrid();
+        }
+      }
+
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      const wantW = Math.floor(w * dpr), wantH = Math.floor(h * dpr);
+      if (canvas.width !== wantW || canvas.height !== wantH) {
+        canvas.width = wantW; canvas.height = wantH;
+      }
+
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+      ctx.fillStyle = "#F8F7F4";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(v.scale, v.scale);
+      ctx.translate(-v.x, -v.y);
+
+      const nodes = nodesRef.current;
+      const pos = currentPos.current;
+      if (!nodes.length) return;
+
+      // Skip expensive edge drawing while interacting for smooth 60fps
+      const isInteracting = isDragging.current || middleDragging.current || isAnimating.current
+        || Math.abs(tv.x - v.x) > 0.5 || Math.abs(tv.scale - v.scale) > 0.5;
+
+      const pad = 50 / v.scale;
+      const minWX = v.x - (w / 2) / v.scale - pad, maxWX = v.x + (w / 2) / v.scale + pad;
+      const minWY = v.y - (h / 2) / v.scale - pad, maxWY = v.y + (h / 2) / v.scale + pad;
+
+      const selId = selectedFamilyRef.current;
+      const selIdx = selId ? (nodeIndexMap.get(selId) ?? -1) : -1;
+      const hasSelection = isValidNodeIndex(selIdx, nodes.length);
+      const highlightSet = new Set<number>();
+      if (hasSelection) {
+        highlightSet.add(selIdx);
+        for (const nb of getSafeNeighbors(nodes[selIdx], nodes.length, 10)) highlightSet.add(nb);
+      }
+
+      // ── Edges ──────────────────────────────────────────────────────────
+      ctx.lineWidth = 0.5 / v.scale;
+
+      if (hasSelection) {
+        ctx.globalAlpha = 0.8;
+        ctx.strokeStyle = getCategoryColor(nodes[selIdx].family.finalCategory);
+        ctx.beginPath();
+        for (const t of getSafeNeighbors(nodes[selIdx], nodes.length, 10)) {
+          ctx.moveTo(pos[selIdx * 2], pos[selIdx * 2 + 1]);
+          ctx.lineTo(pos[t * 2], pos[t * 2 + 1]);
+        }
+        ctx.stroke();
+      } else if (!isInteracting) {
+        const lk = links.current;
+        // Skip edge pass entirely if there are too many (perf guard)
+        if (lk.length < 100000) {
+          const stride = lk.length > 40000 ? 4 : 2;
+          ctx.globalAlpha = 0.07;
+          const batches = new Map<string, number[]>();
+          for (let i = 0; i < lk.length; i += stride) {
+            const s = lk[i], t = lk[i + 1];
+            if (pos[s * 2] < minWX && pos[t * 2] < minWX) continue;
+            const color = getCategoryColor(nodes[s].family.finalCategory);
+            if (!batches.has(color)) batches.set(color, []);
+            batches.get(color)!.push(s, t);
+          }
+          for (const [color, pairs] of batches) {
+            ctx.strokeStyle = color; ctx.beginPath();
+            for (let i = 0; i < pairs.length; i += 2) {
+              ctx.moveTo(pos[pairs[i] * 2], pos[pairs[i] * 2 + 1]);
+              ctx.lineTo(pos[pairs[i + 1] * 2], pos[pairs[i + 1] * 2 + 1]);
+            }
+            ctx.stroke();
+          }
+        }
+      }
+
+      // ── Nodes ──────────────────────────────────────────────────────────
+      const dimBatches = new Map<string, number[]>(), brightBatches = new Map<string, number[]>();
+      for (let i = 0; i < nodes.length; i++) {
+        const nx = pos[i * 2], ny = pos[i * 2 + 1];
+        if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+        const color = getCategoryColor(nodes[i].family.finalCategory);
+        const target = (!hasSelection || highlightSet.has(i)) ? brightBatches : dimBatches;
+        if (!target.has(color)) target.set(color, []);
+        target.get(color)!.push(nx, ny);
+      }
+
+      if (hasSelection) {
+        // Dim non-highlighted
+        ctx.globalAlpha = 0.15;
+        const grey = sprites.current.get("grey");
+        if (grey) {
+          const r = 0.8 / v.scale, d = r * 2;
+          for (const [, coords] of dimBatches) {
+            for (let i = 0; i < coords.length; i += 2)
+              ctx.drawImage(grey, coords[i] - r, coords[i + 1] - r, d, d);
+          }
+        }
+        // Bright highlighted (larger)
+        ctx.globalAlpha = 1.0;
+        const rG = 3.5 / v.scale, dG = rG * 2;
+        for (const [color, coords] of brightBatches) {
+          const sprite = sprites.current.get(color);
+          if (!sprite) continue;
+          for (let i = 0; i < coords.length; i += 2)
+            ctx.drawImage(sprite, coords[i] - rG, coords[i + 1] - rG, dG, dG);
+        }
+      } else {
+        ctx.globalAlpha = 0.6;
+        const r = 0.8 / v.scale, d = r * 2;
+        for (const [color, coords] of brightBatches) {
+          const sprite = sprites.current.get(color);
+          if (!sprite) continue;
+          for (let i = 0; i < coords.length; i += 2)
+            ctx.drawImage(sprite, coords[i] - r, coords[i + 1] - r, d, d);
+        }
+      }
+
+      // ── Selected node ring ─────────────────────────────────────────────
+      if (hasSelection) {
+        const sx = pos[selIdx * 2], sy = pos[selIdx * 2 + 1];
+        const color = getCategoryColor(nodes[selIdx].family.finalCategory);
+        ctx.globalAlpha = 0.2; ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(sx, sy, 14 / v.scale, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1.0; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5 / v.scale;
+        ctx.beginPath(); ctx.arc(sx, sy, 8 / v.scale, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(sx, sy, 4 / v.scale, 0, Math.PI * 2); ctx.fill();
+      }
+
+      ctx.globalAlpha = 1.0;
+    };
+
+    rafId.current = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(rafId.current);
+  }, [nodeIndexMap, updateGrid]);
+
+  // ── Resize observer ───────────────────────────────────────────────────────
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ro = new ResizeObserver(() => {
+      if (nodesRef.current.length) zoomToFit(selectedFamilyRef.current);
+    });
+    ro.observe(canvas.parentElement!);
+    return () => ro.disconnect();
+  }, [zoomToFit]);
+
+  // Auto-zoom when selection changes
+  useEffect(() => {
+    if (!isReady || !selectedFamily) return;
+    const timer = setTimeout(() => zoomToFit(selectedFamily), 250);
+    return () => clearTimeout(timer);
+  }, [selectedFamily, isReady, zoomToFit]);
+
+  // ── Wheel zoom ─────────────────────────────────────────────────────────────
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const rect = canvas.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
-    const t = transformRef.current;
-    const factor = e.deltaY < 0 ? 1.12 : 1 / 1.12;
-    const newScale = Math.max(0.2, Math.min(40, t.scale * factor));
-    // Zoom toward mouse position
-    const dx = (mouseX - t.offsetX) * (newScale / t.scale - 1);
-    const dy = (mouseY - t.offsetY) * (newScale / t.scale - 1);
-    transformRef.current = {
-      scale: newScale,
-      offsetX: t.offsetX - dx,
-      offsetY: t.offsetY - dy,
-    };
-    scheduleDraw();
-  }, [scheduleDraw]);
+    if (!canvasRef.current) return;
+    const rect = canvasRef.current.getBoundingClientRect();
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const cx = rect.width / 2, cy = rect.height / 2;
+    const v = view.current;
+    const wx = v.x + (mx - cx) / v.scale, wy = v.y + (my - cy) / v.scale;
+    const newS = Math.max(10, Math.min(500000, v.scale * Math.pow(1.002, -e.deltaY)));
+    view.current = { scale: newS, x: wx - (mx - cx) / newS, y: wy - (my - cy) / newS };
+    targetView.current = { ...view.current };
+  }, []);
+
+  // ── Middle mouse pan ──────────────────────────────────────────────────────
+  const handleMiddleDown = useCallback((e: MouseEvent) => {
+    if (e.button !== 1) return;
+    e.preventDefault();
+    middleDragging.current = true;
+    middleStart.current = { x: e.clientX, y: e.clientY };
+    middleLast.current = { x: e.clientX, y: e.clientY };
+    setIsDraggingState(true);
+  }, []);
+
+  const handleMiddleMove = useCallback((e: MouseEvent) => {
+    if (!middleDragging.current) return;
+    const dx = e.clientX - middleLast.current.x, dy = e.clientY - middleLast.current.y;
+    view.current.x -= dx / view.current.scale;
+    view.current.y -= dy / view.current.scale;
+    targetView.current = { ...view.current };
+    middleLast.current = { x: e.clientX, y: e.clientY };
+  }, []);
+
+  const handleMiddleUp = useCallback((e: MouseEvent) => {
+    if (e.button !== 1 || !middleDragging.current) return;
+    middleDragging.current = false;
+    setIsDraggingState(false);
+    if (Math.hypot(e.clientX - middleStart.current.x, e.clientY - middleStart.current.y) < 5) {
+      zoomToFit(selectedFamilyRef.current);
+    }
+  }, [zoomToFit]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const hideMenu = () => setContextMenu({ visible: false, x: 0, y: 0 });
+    const handleKeyDown = (e: KeyboardEvent) => { if (e.key === "Escape") hideMenu(); };
+
     canvas.addEventListener("wheel", handleWheel, { passive: false });
-    return () => canvas.removeEventListener("wheel", handleWheel);
-  }, [handleWheel]);
+    canvas.addEventListener("mousedown", handleMiddleDown);
+    canvas.addEventListener("mousemove", handleMiddleMove);
+    canvas.addEventListener("mouseup", handleMiddleUp);
+    window.addEventListener("click", hideMenu);
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel);
+      canvas.removeEventListener("mousedown", handleMiddleDown);
+      canvas.removeEventListener("mousemove", handleMiddleMove);
+      canvas.removeEventListener("mouseup", handleMiddleUp);
+      window.removeEventListener("click", hideMenu);
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [handleWheel, handleMiddleDown, handleMiddleMove, handleMiddleUp]);
 
-  // Pan
-  const handleMouseDown = useCallback((e: React.MouseEvent) => {
-    dragRef.current = { active: true, startX: e.clientX - transformRef.current.offsetX, startY: e.clientY - transformRef.current.offsetY };
-  }, []);
+  // ── Hit test via spatial grid ─────────────────────────────────────────────
+  const hitTest = useCallback((sx: number, sy: number): GraphNode | null => {
+    if (!canvasRef.current) return null;
+    const v = view.current;
+    const w = canvasRef.current.clientWidth, h = canvasRef.current.clientHeight;
+    const wx = v.x + (sx - w / 2) / v.scale, wy = v.y + (sy - h / 2) / v.scale;
+    const g = grid.current;
+    if (!g.cells.size) return null;
 
-  const handleMouseMove = useCallback((e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-
-    if (dragRef.current?.active) {
-      transformRef.current = {
-        ...transformRef.current,
-        offsetX: e.clientX - dragRef.current.startX,
-        offsetY: e.clientY - dragRef.current.startY,
-      };
-      scheduleDraw();
-      return;
-    }
-
-    // Hover tooltip: find nearest node within 12px
     const nodes = nodesRef.current;
-    const norm = normalizedRef.current;
-    const t = transformRef.current;
-    if (!nodes.length) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const THRESHOLD = 12;
-
-    let closest: { dist: number; index: number } | null = null;
-    for (let i = 0; i < nodes.length; i++) {
-      const { cx, cy } = toCanvas(norm[i].nx, norm[i].ny, canvas, t);
-      const dist = Math.hypot(mx - cx, my - cy);
-      if (dist < THRESHOLD && (!closest || dist < closest.dist)) {
-        closest = { dist, index: i };
+    const pos = currentPos.current;
+    const gx = Math.floor(wx / g.size), gy = Math.floor(wy / g.size);
+    let bestDist = 15 / v.scale, bestIdx = -1;
+    for (let ox = -2; ox <= 2; ox++) {
+      for (let oy = -2; oy <= 2; oy++) {
+        const cell = g.cells.get(`${gx + ox},${gy + oy}`);
+        if (!cell) continue;
+        for (const idx of cell) {
+          const dx = pos[idx * 2] - wx, dy = pos[idx * 2 + 1] - wy;
+          const d = Math.hypot(dx, dy);
+          if (d < bestDist) { bestDist = d; bestIdx = idx; }
+        }
       }
     }
+    return bestIdx >= 0 ? nodes[bestIdx] : null;
+  }, []);
 
-    if (closest) {
-      const node = nodes[closest.index];
-      setTooltip({
-        x: e.clientX - rect.left,
-        y: e.clientY - rect.top,
-        label: node.family.familyName ?? node.family.finalCategory ?? "Unknown",
-      });
+  // ── Pointer handlers ──────────────────────────────────────────────────────
+  const handlePointerDown = useCallback((e: React.PointerEvent) => {
+    if (contextMenu.visible) setContextMenu({ visible: false, x: 0, y: 0 });
+    if (e.button !== 0) return;
+    isDragging.current = true; setIsDraggingState(true);
+    clickStart.current = { x: e.clientX, y: e.clientY };
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, [contextMenu.visible]);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const lx = e.clientX - rect.left, ly = e.clientY - rect.top;
+    if (isDragging.current) {
+      const dx = e.clientX - lastMouse.current.x, dy = e.clientY - lastMouse.current.y;
+      view.current.x -= dx / view.current.scale;
+      view.current.y -= dy / view.current.scale;
+      targetView.current = { ...view.current };
+      lastMouse.current = { x: e.clientX, y: e.clientY };
     } else {
-      setTooltip(null);
-    }
-  }, [toCanvas, scheduleDraw]);
-
-  const handleMouseUp = useCallback(() => {
-    dragRef.current = null;
-  }, []);
-
-  const handleClick = useCallback((e: React.MouseEvent) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const nodes = nodesRef.current;
-    const norm = normalizedRef.current;
-    const t = transformRef.current;
-    if (!nodes.length) return;
-
-    const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const THRESHOLD = 14;
-
-    let closest: { dist: number; index: number } | null = null;
-    for (let i = 0; i < nodes.length; i++) {
-      const { cx, cy } = toCanvas(norm[i].nx, norm[i].ny, canvas, t);
-      const dist = Math.hypot(mx - cx, my - cy);
-      if (dist < THRESHOLD && (!closest || dist < closest.dist)) {
-        closest = { dist, index: i };
+      const node = hitTest(lx, ly);
+      if (node !== hoveredNode) setHoveredNode(node);
+      if (tooltipRef.current) {
+        tooltipRef.current.style.transform = `translate(${lx + 12}px, ${ly + 12}px)`;
+        tooltipRef.current.style.opacity = node ? "1" : "0";
       }
     }
+  }, [hitTest, hoveredNode]);
 
-    if (closest) {
-      onSelectFamily(nodes[closest.index].family.id);
+  const handlePointerUp = useCallback((e: React.PointerEvent) => {
+    if (e.button !== 0) return;
+    isDragging.current = false; setIsDraggingState(false);
+    const moved = Math.hypot(e.clientX - clickStart.current.x, e.clientY - clickStart.current.y);
+    if (moved < 5 && hoveredNode) {
+      const familyId = hoveredNode.family.id;
+      selectedFamilyRef.current = familyId;
+      setSelectedFamily(familyId);
+      onSelectFamily(familyId);
+      zoomToFit(familyId);
     }
-  }, [toCanvas, onSelectFamily]);
+  }, [hoveredNode, onSelectFamily, zoomToFit]);
 
+  const handleContextMenu = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    setContextMenu({ visible: true, x: e.clientX - rect.left, y: e.clientY - rect.top });
+  }, []);
+
+  // ── Loading state ─────────────────────────────────────────────────────────
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground gap-2">
@@ -264,27 +565,66 @@ export function LodGraphCanvas({ onSelectFamily }: LodGraphCanvasProps) {
   }
 
   return (
-    <div className="relative w-full h-full select-none">
+    <div
+      className={`w-full h-full relative select-none bg-[#F8F7F4] transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
+    >
       <canvas
         ref={canvasRef}
-        className="w-full h-full cursor-crosshair"
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
-        onClick={handleClick}
+        className={`w-full h-full block ${isDraggingState ? "cursor-grabbing" : hoveredNode ? "cursor-pointer" : "cursor-crosshair"}`}
+        onPointerDown={handlePointerDown}
+        onPointerMove={handlePointerMove}
+        onPointerUp={handlePointerUp}
+        onPointerLeave={() => {
+          isDragging.current = false;
+          setIsDraggingState(false);
+          setHoveredNode(null);
+          if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+        }}
+        onContextMenu={handleContextMenu}
       />
-      {tooltip && (
+
+      {/* Context menu */}
+      {contextMenu.visible && (
         <div
-          className="pointer-events-none absolute z-10 rounded bg-popover border text-popover-foreground text-xs px-2 py-1 shadow-md max-w-[180px] truncate"
-          style={{ left: tooltip.x + 12, top: tooltip.y - 8 }}
+          className="absolute bg-white border border-border shadow-md rounded-lg p-[3px] z-[2000] min-w-[120px] animate-in zoom-in-95 duration-100"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+          onClick={(e) => e.stopPropagation()}
         >
-          {tooltip.label}
+          <button
+            onClick={() => { zoomToFit(selectedFamilyRef.current); setContextMenu({ visible: false, x: 0, y: 0 }); }}
+            className="w-full px-2.5 py-[7px] bg-transparent text-foreground text-xs font-medium text-left cursor-pointer rounded-md hover:bg-muted transition-colors"
+          >
+            Zoom to Fit
+          </button>
         </div>
       )}
-      <p className="absolute bottom-2 right-3 text-[10px] text-muted-foreground opacity-50">
-        scroll to zoom · drag to pan · click to inspect
+
+      {/* Tooltip */}
+      <div
+        ref={tooltipRef}
+        className="absolute top-0 left-0 bg-white border border-border rounded-lg px-3 py-2 shadow-lg pointer-events-none z-30 opacity-0 transition-opacity duration-75 will-change-transform"
+        style={{ transform: "translate(0,0)" }}
+      >
+        {hoveredNode && (
+          <>
+            <p className="text-xs font-semibold text-foreground leading-tight">
+              {hoveredNode.family.familyName ?? "Unknown"}
+            </p>
+            <p
+              className="text-[10px] font-bold uppercase tracking-wider"
+              style={{ color: getCategoryColor(hoveredNode.family.finalCategory) }}
+            >
+              {hoveredNode.family.finalCategory ?? ""}
+            </p>
+          </>
+        )}
+      </div>
+
+      <p className="absolute bottom-2 right-3 text-[10px] text-muted-foreground opacity-40 pointer-events-none">
+        scroll to zoom · drag to pan · right-click to reset
       </p>
     </div>
   );
 }
+
+export const LodGraphCanvas = memo(LodGraphCanvasInner);
