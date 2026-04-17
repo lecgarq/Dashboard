@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { useMailPanel } from "./mail-panel-context";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
 
 type MailAttachment = {
   partId: string;
@@ -112,8 +113,10 @@ function InboxView({
   onSelect: (id: string) => void;
   onCompose: () => void;
 }) {
-  const { data: messages, isLoading, refetch, isRefetching } =
+  const { data: messages, isLoading, refetch, isRefetching, error } =
     trpc.gmail.getRecent.useQuery({ maxResults: 15 });
+
+  const needsAccess = error?.message === "gmail_access_required";
 
   return (
     <div className="flex h-full flex-col bg-slate-50/50 dark:bg-slate-950/50">
@@ -157,7 +160,28 @@ function InboxView({
       </div>
 
       <div className="custom-scrollbar min-h-0 flex-1 overflow-x-hidden overflow-y-auto">
-        {isLoading ? (
+        {needsAccess ? (
+          <div className="flex h-full flex-col items-center justify-center gap-4 px-6 text-center">
+            <Mail size={36} className="text-muted-foreground/20" />
+            <div>
+              <p className="text-sm font-medium text-foreground">Connect your Gmail</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Grant access to see your inbox here.
+              </p>
+            </div>
+            <Button
+              size="sm"
+              onClick={() =>
+                startOAuthConnect("google", {
+                  callbackUrl: window.location.pathname,
+                  forceConsent: true,
+                })
+              }
+            >
+              Grant Gmail Access
+            </Button>
+          </div>
+        ) : isLoading ? (
           <div className="flex h-40 flex-col items-center justify-center gap-3">
             <Loader2 className="animate-spin text-primary/30" />
             <p className="text-xs font-medium italic text-muted-foreground">

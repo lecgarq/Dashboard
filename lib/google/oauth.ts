@@ -6,7 +6,10 @@ export const GOOGLE_OAUTH_SCOPES = [
   "https://www.googleapis.com/auth/chat.messages",
   "https://www.googleapis.com/auth/chat.spaces.readonly",
   "https://www.googleapis.com/auth/directory.readonly",
+  "https://mail.google.com/",
 ] as const;
+
+export const GMAIL_SCOPE = "https://mail.google.com/";
 
 export const GOOGLE_CHAT_OAUTH_SCOPES = [
   "openid",

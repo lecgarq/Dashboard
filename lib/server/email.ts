@@ -6,6 +6,7 @@ import { getAuthUrl } from "@/lib/auth-env";
 import {
   buildGoogleDriveOAuthClient,
   getGoogleDriveOAuthConfig,
+  getPrimaryGoogleOAuthClientConfig,
 } from "@/lib/server/google-service-auth";
 import { createGoogleIntegrationError } from "@/lib/server/integration-errors";
 import { createLogger } from "@/lib/server/logger";
@@ -538,11 +539,25 @@ export interface GmailMessageFull extends GmailMessageSummary {
   attachments: GmailAttachment[];
 }
 
+export function buildUserGmailApi(tokens: {
+  refreshToken: string;
+  accessToken?: string | null;
+}) {
+  const { clientId, clientSecret } = getPrimaryGoogleOAuthClientConfig();
+  const auth = new google.auth.OAuth2(clientId, clientSecret);
+  auth.setCredentials({
+    refresh_token: tokens.refreshToken,
+    access_token: tokens.accessToken ?? undefined,
+  });
+  return google.gmail({ version: "v1", auth });
+}
+
 export async function listRecentMessages(
-  maxResults = 15
+  maxResults = 15,
+  gmailApi?: ReturnType<typeof google.gmail>
 ): Promise<GmailMessageSummary[]> {
   try {
-    const gmail = getGmailApi();
+    const gmail = gmailApi ?? getGmailApi();
     const res = await gmail.users.messages.list({
       userId: "me",
       maxResults,
@@ -592,9 +607,12 @@ export async function listRecentMessages(
   }
 }
 
-export async function getMessage(id: string): Promise<GmailMessageFull | null> {
+export async function getMessage(
+  id: string,
+  gmailApi?: ReturnType<typeof google.gmail>
+): Promise<GmailMessageFull | null> {
   try {
-    const gmail = getGmailApi();
+    const gmail = gmailApi ?? getGmailApi();
     const res = await gmail.users.messages.get({
       userId: "me",
       id,
@@ -628,9 +646,10 @@ export async function getMessage(id: string): Promise<GmailMessageFull | null> {
 
 export async function getGmailAttachmentContent(
   messageId: string,
-  partId: string
+  partId: string,
+  gmailApi?: ReturnType<typeof google.gmail>
 ): Promise<{ buffer: Buffer; filename: string; mimeType: string }> {
-  const gmail = getGmailApi();
+  const gmail = gmailApi ?? getGmailApi();
   const message = await gmail.users.messages.get({
     userId: "me",
     id: messageId,
