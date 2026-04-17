@@ -8,6 +8,8 @@ RUN apt-get update \
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV DATABASE_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
+ENV DIRECT_URL=postgresql://postgres:postgres@127.0.0.1:5432/postgres
 
 COPY package*.json ./
 COPY prisma ./prisma
