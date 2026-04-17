@@ -1,185 +1,149 @@
 # Architecture - LECG Dashboard
 
-> Auto-generated entirely as Mermaid representations on 2026-04-17
+> A high-fidelity, completely visual map of the LECG Dashboard topology, built purely with structural flowcharts.
 
-## 1. Global Topology & Integrations
+## 1. Global Platform Topology
+*A C4-style architectural view showing how the React client, Node.js backend, Python ML inference, and external clouds physically interconnect.*
 
 ```mermaid
-graph TD
-    classDef framework fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc
-    classDef realtime fill:#ea580c,stroke:#9a3412,stroke-width:2px,color:#fff
-    classDef api fill:#2563eb,stroke:#1e3a8a,stroke-width:2px,color:#fff
-    classDef data fill:#059669,stroke:#064e3b,stroke-width:2px,color:#fff
-    classDef cloud fill:#7c3aed,stroke:#4c1d95,stroke-width:2px,color:#fff
+flowchart TB
+    %% Thematic Colors & Astonishing Shapes
+    classDef ui fill:#0284c7,stroke:#bae6fd,stroke-width:3px,color:#fff,rx:20,ry:20
+    classDef api fill:#4f46e5,stroke:#c7d2fe,stroke-width:3px,color:#fff,rx:20,ry:20
+    classDef db fill:#059669,stroke:#a7f3d0,stroke-width:3px,color:#fff,rx:20,ry:20
+    classDef external fill:#7c3aed,stroke:#e9d5ff,stroke-width:3px,color:#fff,rx:20,ry:20
+    classDef ai fill:#ca8a04,stroke:#fef08a,stroke-width:3px,color:#fff,rx:20,ry:20
+
+    User((👤 Users))
     
-    subgraph Core ["LECG Dashboard (Next.js 16.2)"]
-        UI["React 19 Server/Client Components"]:::framework
-        Pages["11 Active Domain Layouts"]:::framework
-        
-        subgraph Realtime ["Real-time Sync"]
-            YJS["Yjs WS Server (Port 4444)"]:::realtime
-            SSE["Server-Sent Events"]:::realtime
-        end
-        
-        subgraph Backend ["tRPC API Layer"]
-            TRPC["16 Domain Sub-routers"]:::api
-            Zod["Zod Payload Validation"]:::api
-            Auth["NextAuth 5.0 Middleware"]:::api
-        end
-        
-        subgraph DataLayer ["Persistence Engine"]
-            Prisma["Prisma ORM 7.7.0"]:::data
-            DB[("PostgreSQL")]:::data
-            PGV[("pgvector HNSW")]:::data
-            LOD["Python lod-engine"]:::data
-        end
+    subgraph Frontend["🖥️ Client Presentation (Browser)"]
+        direction LR
+        UI(["⚛️ Next.js 16 UI Components"]):::ui
+        State(["⚡ TanStack Query Caching"]):::ui
+        Sync(["🤝 Yjs Real-time Engine"]):::ui
     end
     
-    subgraph ThirdParty ["External Cloud Infrastructure"]
-        Trello["Trello Kanban Sync"]:::cloud
-        Google["Google Workspace (Mail/Cal)"]:::cloud
-        Drive["Google Drive Asset Proxy"]:::cloud
-        APS["Autodesk Platform Services"]:::cloud
-        UT["UploadThing S3 Bucket"]:::cloud
+    subgraph Backend["⚙️ Application Gateway (Node.js)"]
+        direction TB
+        RPC(["🔌 tRPC API (root.ts)"]):::api
+        Auth(["🔒 NextAuth 5.0 Router"]):::api
+        Sockets(["📡 WebSockets (Port 4444)"]):::api
+    end
+    
+    subgraph DataSpace["🗄️ Persistence Layer"]
+        direction LR
+        ORM(["🪢 Prisma 7.7.0 ORM"]):::db
+        PG[(🐘 PostgreSQL Database)]:::db
+        Vector[(📊 pgvector HNSW Indices)]:::db
+    end
+    
+    subgraph Inference["🧠 ML Semantic Engine"]
+        direction LR
+        Python{{"🐍 Python Flask/Engine"}}:::ai
+        Model(["👁️ Siglip Vision Model"]):::ai
+    end
+    
+    subgraph Cloud["🌐 External Cloud Web"]
+        direction LR
+        APS(["🏗️ Autodesk Cloud (APS)"]):::external
+        GCP(["📨 Google Workspace"]):::external
+        Trello(["📋 Trello API"]):::external
     end
 
-    UI <-->|"WebSockets"| YJS
-    UI <-->|"EventSource"| SSE
-    Pages -->|"RSC Render"| UI
-    UI <-->|"tRPC/React Query"| TRPC
-    TRPC -->|"Input Guarantees"| Zod
-    Auth -->|"Route Protection"| TRPC
+    %% Interactions
+    User == "Interacts" ===> Frontend
     
-    TRPC <-->|"CRUD"| Prisma
-    TRPC <-->|"Semantic API"| LOD
-    Prisma <-->|"Binary Driver"| DB
-    Prisma <-->|"Vector Lookups"| PGV
+    UI -. "Mutates & Queries" .-> RPC
+    Sync == "CRDT Sync" ===> Sockets
     
-    TRPC <-->|"REST"| Trello
-    TRPC <-->|"OAuth2 SDK"| Google
-    TRPC <-->|"Bypasses Egress"| Drive
-    TRPC <-->|"Forge API"| APS
-    UI <-->|"Direct Upload"| UT
+    RPC ==> Auth
+    Auth ==> ORM
+    ORM ==> PG
+    ORM ==> Vector
+    
+    RPC == "HTTP Offload" ===> Python
+    Python ==> Model
+    
+    RPC -. "Proxy OAuth" .-> Cloud
 ```
 
-## 2. Frontend Routing Topology
+## 2. Next.js Routing Map
+*A highly organized breakdown of the App Router, showing exactly how the 11 specific dashboard systems branch out from the structural root layout.*
 
 ```mermaid
-graph LR
-    classDef route fill:#0284c7,stroke:#0369a1,stroke-width:2px,color:#fff
-    classDef component fill:#475569,stroke:#334155,stroke-width:2px,color:#fff
-    classDef boundary fill:#b91c1c,stroke:#991b1b,stroke-width:2px,color:#fff
-    
-    %% Root Layouts
-    Layout["app/(dashboard)/layout.tsx"]:::route
-    
-    subgraph "Identity & Analytics"
-        Account["/account"]:::route
-        Users["/users"]:::route
-        Home["/home (KPI Widget)"]:::route
-    end
-    
-    subgraph "BIM & Visual Subsystems"
-        Clash["/clash-detection"]:::route
-        LOD["/lod-checker"]:::route
-        Families["/families"]:::route
-    end
-    
-    subgraph "Workflow Automation"
-        Tasks["/tasks"]:::route
-        TrelloRoute["/trello"]:::route
-        Exam["/exam"]:::route
-        Sim["/sim-automation"]:::route
-    end
-    
-    Settings["/settings (Admin)"]:::route
+flowchart LR
+    %% Modern Branch Styling
+    classDef root fill:#0f172a,stroke:#475569,stroke-width:4px,color:#fff
+    classDef page fill:#0369a1,stroke:#bae6fd,stroke-width:2px,color:#fff,rx:8,ry:8
+    classDef feature fill:#1d4ed8,stroke:#93c5fd,stroke-width:3px,color:#fff,rx:8,ry:8
 
-    %% Resilience Wrappers
-    ErrorBoundary["PanelErrorBoundary"]:::boundary
-    Skeleton["PageSkeleton Suspense"]:::boundary
+    Root{"🏠 Base Hub Layout\napp/(dashboard)"}:::root
 
-    Layout --> Account & Users & Home
-    Layout --> Clash & LOD & Families
-    Layout --> Tasks & TrelloRoute & Exam & Sim
-    Layout --> Settings
-    
-    Tasks & Clash & LOD & Families -.->|"Wrapped securely by"| ErrorBoundary
-    Tasks & Clash & LOD & Families -.->|"Suspense fallback"| Skeleton
-    
-    %% Key Components
-    Clash --> WikiEditor["WikiEditor.tsx (tiptap)"]:::component
-    LOD --> Canvas["LodGraphCanvas.tsx (framer-motion)"]:::component
+    %% Primary Branches
+    Root ===> B1["👤 Identity & Ops"]:::feature
+    Root ===> B2["🏗️ BIM Engineering"]:::feature
+    Root ===> B3["📋 Workflow Automation"]:::feature
+
+    %% Identity
+    B1 --> P_Home(["/home\nKPI Statistics Dash"]):::page
+    B1 --> P_Account(["/account\nClient Configuration"]):::page
+    B1 --> P_Settings(["/settings\nAdmin Enclave"]):::page
+    B1 --> P_Users(["/users\nAccess Roles"]):::page
+
+    %% BIM
+    B2 --> P_Families(["/families\nPostgres Component DB"]):::page
+    B2 --> P_Clash(["/clash-detection\nCollaboration Editor"]):::page
+    B2 --> P_LOD(["/lod-checker\nVisual Vector Search"]):::page
+
+    %% Workflow
+    B3 --> P_Tasks(["/tasks\nInternal Kanban"]):::page
+    B3 --> P_Trello(["/trello\nExternal Webhooks"]):::page
+    B3 --> P_Exam(["/exam\nTraining Simulation"]):::page
 ```
 
-## 3. Backend & Utility Domain Map
+## 3. The Backend Router Matrix
+*A visualization of exactly how the core `tRPC` api branches into domain-isolated subsystems to handle specific logic without circular dependencies.*
 
 ```mermaid
-graph TD
-    classDef router fill:#0d9488,stroke:#0f766e,stroke-width:2px,color:#fff
-    classDef lib fill:#334155,stroke:#1e293b,stroke-width:2px,color:#fff
+flowchart TD
+    %% Specialized Hub Look
+    classDef base fill:#1e293b,stroke:#f8fafc,stroke-width:4px,color:#fff
+    classDef core fill:#4f46e5,stroke:#c7d2fe,stroke-width:2px,color:#fff
+    classDef logic fill:#059669,stroke:#a7f3d0,stroke-width:2px,color:#fff
     
-    RootRouter{{"root.ts (tRPC Base)"}}
+    TRPC{{"🌐 tRPC Gateway Interface\n(server/routers/root.ts)"}}:::base
     
-    subgraph "Identity & Authorization"
-        Auth["users.ts"]:::router
-        Settings["settings.ts"]:::router
-        AuthGuard["lib/server/google-service-auth.ts"]:::lib
-    end
-
-    subgraph "Workspace Proxies"
-        Gmail["gmail.ts"]:::router
-        Cal["calendar.ts"]:::router
-        Chat["chat.ts"]:::router
-        EvtGoogle["lib/google/*"]:::lib
-    end
-
-    subgraph "Engineering Domains"
-        APS["aps-search.ts"]:::router
-        LODR["lod.ts"]:::router
-        Clash["clash.ts"]:::router
-        EvtEvents["lib/events/*"]:::lib
-    end
-
-    subgraph "Operations"
-        Trello["trello.ts"]:::router
-        Tasks["tasks.ts"]:::router
-        KPI["kpi.ts"]:::router
-        EvtTrello["lib/trello/*"]:::lib
+    subgraph "🔐 Core System Module"
+        direction LR
+        U([users.ts]):::core
+        S([settings.ts]):::core
+        K([kpi.ts]):::core
     end
     
-    RootRouter --> Auth & Gmail & APS & Trello
-    RootRouter --> Settings & Cal & LODR & Tasks
-    RootRouter --> Chat & Clash & KPI
+    subgraph "📧 Google Proxies"
+        direction LR
+        GM([gmail.ts]):::logic
+        Ca([calendar.ts]):::logic
+        Ch([chat.ts]):::logic
+    end
     
-    Gmail & Cal & Chat -.->|"Leverages"| EvtGoogle
-    APS & LODR & Clash -.->|"Dispatches"| EvtEvents
-    Trello & Tasks -.->|"Interacts"| EvtTrello
-```
+    subgraph "🏗️ AEC Engineering logic"
+        direction LR
+        AP([aps-search.ts]):::logic
+        FA([families.ts]):::logic
+        LD([lod.ts]):::logic
+        CL([clash.ts]):::logic
+    end
 
-## 4. Structural Paradigms & Conventions
+    subgraph "📋 Process Handlers"
+        direction LR
+        TR([trello.ts]):::logic
+        TS([tasks.ts]):::logic
+        EX([exam.ts]):::logic
+    end
 
-```mermaid
-mindmap
-  root((LECG Dashboard
-  Post-Sprint State))
-    Security & Routing
-      Explicit PUBLIC_PATHS
-      Zero-trust Webhooks
-      Bypassed Healthchecks
-    Performance Optimization
-      Proxy Google Drive Images
-      pgvector PostgreSQL Lookups
-      framer-motion physics
-    Reliability
-      Strict Zod Type Enforcement
-      Panel Error Boundaries
-      Skeleton CLS Prevention
-    Real-Time Architecture
-      Yjs WebSocket CRDTs
-      React Query Hydration
-      Server-Sent Event Tick
-    Repository Hygiene
-      Domain-isolated lib/ structures
-      Zero TODO/FIXME markers
-      AST-validated strict exports
+    TRPC ===> |"Admin Or Client"| U & S & K
+    TRPC ===> |"G-Workspace OAuth"| GM & Ca & Ch
+    TRPC ===> |"Heuristic Data"| AP & FA & LD & CL
+    TRPC ===> |"Mutation Webhooks"| TR & TS & EX
 ```
