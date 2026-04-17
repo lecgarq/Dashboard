@@ -2,10 +2,15 @@
 
 import { trpc } from "@/lib/core/trpc";
 import { Badge } from "@/components/ui/badge";
-import { LayoutGrid, Tag, Building2, Library } from "lucide-react";
+import { LayoutGrid, Tag, Library } from "lucide-react";
 
 export function LodStatsBar() {
-  const [data] = trpc.lod.getStats.useSuspenseQuery();
+  const { data, isError } = trpc.lod.getStats.useQuery(undefined, {
+    retry: false,
+    staleTime: 60_000,
+  });
+
+  if (isError || !data) return null;
 
   const topCategories = [...data.byCategory]
     .sort((a, b) => b._count.id - a._count.id)

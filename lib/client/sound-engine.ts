@@ -1,6 +1,6 @@
 "use client";
 
-type SoundKind = "chat" | "mail";
+type SoundKind = "chat" | "mail" | "lod";
 
 type SoundPreset = {
   type: OscillatorType;
@@ -33,6 +33,17 @@ const SOUND_PRESETS: Record<SoundKind, SoundPreset> = {
     rampOutSeconds: 0.3,
     durationSeconds: 0.4,
     settleDelayMs: 150,
+  },
+  lod: {
+    // Whistle: rises from 900→1400 Hz then the gain cut simulates the drop
+    type: "sine",
+    startFrequency: 900,
+    endFrequency: 1400,
+    peakGain: 0.5,
+    rampInSeconds: 0.02,
+    rampOutSeconds: 0.35,
+    durationSeconds: 0.5,
+    settleDelayMs: 80,
   },
 };
 
@@ -110,6 +121,14 @@ async function playSound(kind: SoundKind): Promise<void> {
   }
 
   if (ctx.state !== "running") return;
+
+  if (kind === "lod") {
+    // Two-chirp whistle: short rising chirp, then longer sustained tone
+    await playPreset(ctx, { ...SOUND_PRESETS.lod, durationSeconds: 0.18, settleDelayMs: 60 });
+    await playPreset(ctx, { ...SOUND_PRESETS.lod, startFrequency: 1350, endFrequency: 1380, durationSeconds: 0.45, settleDelayMs: 100 });
+    return;
+  }
+
   await playPreset(ctx, SOUND_PRESETS[kind]);
 }
 

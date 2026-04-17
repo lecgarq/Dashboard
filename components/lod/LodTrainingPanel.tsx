@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { trpc } from "@/lib/core/trpc";
+import { queueNotificationSound } from "@/lib/client/sound-engine";
 import { 
   Cloud, 
   FlaskConical, 
@@ -29,9 +30,11 @@ export function LodTrainingPanel() {
   const [isTraining, setIsTraining] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentMessage, setCurrentMessage] = useState("Idle");
+  const notifiedRef = useRef(false);
   
   const startMutation = trpc.lod.startBatchTraining.useMutation({
     onSuccess: () => {
+      notifiedRef.current = false;
       setIsTraining(true);
     }
   });
@@ -47,6 +50,16 @@ export function LodTrainingPanel() {
       setCurrentMessage(status.message || "Processing...");
       if (status.progress === 100) {
         setIsTraining(false);
+        if (!notifiedRef.current) {
+          notifiedRef.current = true;
+          queueNotificationSound("lod");
+          if (typeof Notification !== "undefined" && Notification.permission === "granted") {
+            new Notification("LOD Training Complete", {
+              body: "Batch integration finished. All families embedded.",
+              icon: "/favicon.ico",
+            });
+          }
+        }
       }
     }
   }, [status]);

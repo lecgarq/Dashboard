@@ -115,15 +115,10 @@ function MessageAttachments({
               className="block rounded-lg overflow-hidden max-w-[260px] border border-black/5 cursor-pointer hover:opacity-90 transition-opacity text-left"
             >
               <img
-                src={att.thumbnailUri || url}
+                src={url}
                 alt={att.contentName}
                 className="w-full h-auto object-cover"
                 loading="lazy"
-                onError={(e) => {
-                  if (e.currentTarget.src !== url) {
-                    e.currentTarget.src = url;
-                  }
-                }}
               />
             </button>
           );

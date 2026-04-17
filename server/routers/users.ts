@@ -428,6 +428,8 @@ export const usersRouter = router({
         logger.error("Approval email failed", { email, error });
       }
 
+      userEvents.emit("user-update", { type: "user-approved", email });
+
       return { success: true };
     }),
 

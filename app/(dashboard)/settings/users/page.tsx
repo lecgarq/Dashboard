@@ -20,7 +20,8 @@ import {
   Cpu,
   MessageCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useEventSource } from "@/hooks/use-event-source";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -321,11 +322,19 @@ export default function UsersPage() {
   const [tab, setTab] = useState<"users" | "pending" | "blacklist">("users");
   const [selectedUser, setSelectedUser] = useState<any>(null);
 
-  const { data: users = [] as any[], isLoading } = trpc.users.getAll.useQuery();
-  const { data: pendingList = [] } = trpc.users.getPendingRequests.useQuery();
-  const { data: blacklistList = [] } = trpc.users.getBlacklistedRequests.useQuery();
+  const { data: users = [] as any[], isLoading } = trpc.users.getAll.useQuery(undefined, { staleTime: Infinity });
+  const { data: pendingList = [] } = trpc.users.getPendingRequests.useQuery(undefined, { staleTime: Infinity });
+  const { data: blacklistList = [] } = trpc.users.getBlacklistedRequests.useQuery(undefined, { staleTime: Infinity });
   
   const utils = trpc.useUtils();
+
+  const handleUserEvent = useCallback(() => {
+    utils.users.getAll.invalidate();
+    utils.users.getPendingRequests.invalidate();
+    utils.users.getBlacklistedRequests.invalidate();
+  }, [utils]);
+  useEventSource("/api/events/users", handleUserEvent);
+
   const updateRole = trpc.users.updateRole.useMutation({
     onMutate: async ({ userId, role }) => {
       await utils.users.getAll.cancel();

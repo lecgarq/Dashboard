@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { Header } from "@/components/layout/Header";
 import { trpc } from "@/lib/core/trpc";
 import { LodSearchBar } from "@/components/lod/LodSearchBar";
@@ -49,9 +49,7 @@ export default function LODCheckerPage() {
       <Header title="LOD Checker" />
 
       <div className="flex flex-col gap-4 p-4 flex-1 overflow-hidden">
-        <Suspense fallback={<div className="h-8 w-full rounded-md bg-muted animate-pulse" />}>
-          <LodStatsBar />
-        </Suspense>
+        <LodStatsBar />
 
         {/* View toggle */}
         <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">

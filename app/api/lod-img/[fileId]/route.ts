@@ -3,8 +3,6 @@ import path from "path";
 
 import { NextResponse } from "next/server";
 
-import { auth } from "@/server/auth";
-
 export const runtime = "nodejs";
 
 function getLocalImageRoot() {
@@ -62,11 +60,6 @@ export async function GET(
   _req: Request,
   { params }: { params: Promise<{ fileId: string }> }
 ) {
-  const session = await auth();
-  if (!session?.user) {
-    return new NextResponse("Unauthorized", { status: 401 });
-  }
-
   const { fileId } = await params;
   const decoded = decodeURIComponent(fileId);
   const basename = path.basename(decoded);
