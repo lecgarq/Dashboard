@@ -21,9 +21,25 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   const searchParams = useSearchParams();
   const scrollRootRef = useRef<HTMLDivElement>(null);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const previousScrollRestoration = window.history.scrollRestoration;
+    window.history.scrollRestoration = "manual";
+
+    return () => {
+      window.history.scrollRestoration = previousScrollRestoration;
+    };
+  }, []);
+
   // End navigation and normalize the shared dashboard scroll position on route changes.
   useEffect(() => {
     setIsNavigating(false);
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+    }
     scrollRootRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname, searchParams]);
 

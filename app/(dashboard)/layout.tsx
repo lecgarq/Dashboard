@@ -44,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <ProjectProvider>
           <HydrationBoundary state={helpers.dehydrate()}>
             <ParticleZoneProvider>
-              <div className="relative h-[100dvh] overflow-hidden">
+              <div className="fixed inset-0 overflow-hidden">
                 <div className="absolute inset-0 overflow-hidden">
                   <ParticleBackground />
                   <div className="pointer-events-none absolute inset-0">
