@@ -5,20 +5,65 @@
 ## Overview
 The LECG Dashboard is an enterprise-grade BIM Project infrastructure hub built on Next.js 16.2 App Router. It features real-time task sync, semantic visualization, and an adaptive layout integrating 11 active domains across frontend, backend, and external cloud services. All legacy tech debt trackers have been cleared; this map represents the live, verified structure currently executing in production.
 
-```text
-┌───────────────────────────────────────────────┐
-│              Next.js 16.2 App Router          │
-│   (11 Root Layouts, React 19, Tailwind v4)    │
-├────────┬──────────────────────────────────────┤
-│        │        tRPC API Backbone             │
-│ Yjs WS │         (16 Sub-routers)             │
-│ (4444) ├──────────────────────────────────────┤
-│        │  Prisma 7.7.0 ORM (PostgreSQL + pgv) │
-└────────┴───────────────┬──────────────────────┘
-          ┌──────────────▼──────────────┐
-          │      Third-Party Clouds     │
-          │(Drive, Gmail, Trello, APS)  │
-          └─────────────────────────────┘
+```mermaid
+graph TD
+    %% High-contrast styling for astonishing presentation
+    classDef framework fill:#0f172a,stroke:#3b82f6,stroke-width:2px,color:#f8fafc
+    classDef realtime fill:#ea580c,stroke:#9a3412,stroke-width:2px,color:#fff
+    classDef api fill:#2563eb,stroke:#1e3a8a,stroke-width:2px,color:#fff
+    classDef data fill:#059669,stroke:#064e3b,stroke-width:2px,color:#fff
+    classDef cloud fill:#7c3aed,stroke:#4c1d95,stroke-width:2px,color:#fff
+    
+    subgraph Core ["LECG Dashboard (Next.js 16.2)"]
+        UI["React 19 Server/Client Components"]:::framework
+        Pages["11 Active Domain Layouts"]:::framework
+        
+        subgraph Realtime ["Real-time Sync"]
+            YJS["Yjs WS Server (Port 4444)"]:::realtime
+            SSE["Server-Sent Events"]:::realtime
+        end
+        
+        subgraph Backend ["tRPC API Layer"]
+            TRPC["16 Domain Sub-routers"]:::api
+            Zod["Zod Payload Validation"]:::api
+            Auth["NextAuth 5.0 Middleware"]:::api
+        end
+        
+        subgraph DataLayer ["Persistence Engine"]
+            Prisma["Prisma ORM 7.7.0"]:::data
+            DB[("PostgreSQL")]:::data
+            PGV[("pgvector HNSW")]:::data
+            LOD["Python lod-engine"]:::data
+        end
+    end
+    
+    subgraph ThirdParty ["External Cloud Infrastructure"]
+        Trello["Trello Kanban Sync"]:::cloud
+        Google["Google Workspace (Mail/Cal)"]:::cloud
+        Drive["Google Drive Asset Proxy"]:::cloud
+        APS["Autodesk Platform Services"]:::cloud
+        UT["UploadThing S3 Bucket"]:::cloud
+    end
+
+    %% Internal Data Flow Links
+    UI <-->|"WebSockets"| YJS
+    UI <-->|"EventSource"| SSE
+    Pages -->|"RSC Render"| UI
+    UI <-->|"tRPC/React Query"| TRPC
+    TRPC -->|"Input Guarantees"| Zod
+    Auth -->|"Route Protection"| TRPC
+    
+    TRPC <-->|"CRUD"| Prisma
+    TRPC <-->|"Semantic Embedding HTTP"| LOD
+    Prisma <-->|"Binary Driver"| DB
+    Prisma <-->|"Vector Lookups"| PGV
+    
+    %% External Tunnels
+    TRPC <-->|"REST API"| Trello
+    TRPC <-->|"OAuth2 SDK"| Google
+    TRPC <-->|"Bypasses Egress Fees"| Drive
+    TRPC <-->|"Forge Derivations"| APS
+    UI <-->|"Direct File Upload"| UT
 ```
 
 ## Frontend Components & Pages
