@@ -85,7 +85,7 @@ const oauth2Client = new google.auth.OAuth2(
 const authUrl = oauth2Client.generateAuthUrl({
   access_type: "offline",
   scope: ["https://mail.google.com/"],
-  prompt: "consent",
+  prompt: "select_account consent",
 });
 
 console.log("\n─────────────────────────────────────────────");

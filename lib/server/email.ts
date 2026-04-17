@@ -296,31 +296,61 @@ function findMessagePartById(
   return null;
 }
 
-async function sendEmail(to: string, subject: string, html: string): Promise<void> {
-  try {
-    const cfg = getMailConfig();
-    const gmail = getGmailApi();
-    logger.info("Sending email", { to, subject });
+async function sendEmailViaResend(to: string, subject: string, html: string): Promise<void> {
+  const apiKey = process.env.RESEND_API_KEY?.trim();
+  const from = process.env.RESEND_EMAIL?.trim() || "onboarding@resend.dev";
 
-    const raw = Buffer.from(
-      buildRawHtmlEmailMessage({
-        fromEmail: cfg.gmailUser,
-        to,
-        subject,
-        html,
-      })
-    ).toString("base64url");
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ from, to, subject, html }),
+  });
 
-    const result = await gmail.users.messages.send({
-      userId: "me",
-      requestBody: { raw },
-    });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Resend API error ${res.status}: ${body}`);
+  }
 
-    logger.info("Email sent", {
+  const data = await res.json() as { id?: string };
+  logger.info("Email sent via Resend", { to, subject, messageId: data.id ?? "unknown" });
+}
+
+async function sendEmailViaGmail(to: string, subject: string, html: string): Promise<void> {
+  const cfg = getMailConfig();
+  const gmail = getGmailApi();
+
+  const raw = Buffer.from(
+    buildRawHtmlEmailMessage({
+      fromEmail: cfg.gmailUser,
       to,
       subject,
-      messageId: result.data.id ?? "unknown",
-    });
+      html,
+    })
+  ).toString("base64url");
+
+  const result = await gmail.users.messages.send({
+    userId: "me",
+    requestBody: { raw },
+  });
+
+  logger.info("Email sent via Gmail", {
+    to,
+    subject,
+    messageId: result.data.id ?? "unknown",
+  });
+}
+
+async function sendEmail(to: string, subject: string, html: string): Promise<void> {
+  logger.info("Sending email", { to, subject });
+  try {
+    if (process.env.RESEND_API_KEY?.trim()) {
+      await sendEmailViaResend(to, subject, html);
+      return;
+    }
+    await sendEmailViaGmail(to, subject, html);
   } catch (error) {
     const normalizedError = createGoogleIntegrationError("Gmail", error, {
       action: "send transactional email",
