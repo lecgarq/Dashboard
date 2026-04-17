@@ -1,32 +1,14 @@
 import type { NextConfig } from "next";
-
-type ParsedOrigin = {
-  host: string;
-  hostname: string;
-};
-
-function parseConfiguredOrigin(value: string): ParsedOrigin | null {
-  try {
-    const parsed = new URL(value);
-    return {
-      host: parsed.host.toLowerCase(),
-      hostname: parsed.hostname.toLowerCase(),
-    };
-  } catch {
-    return null;
-  }
-}
-
-const configuredAuthOrigins = [process.env.NEXTAUTH_URL, process.env.AUTH_URL]
-  .filter((value): value is string => Boolean(value))
-  .map(parseConfiguredOrigin)
-  .filter((value): value is ParsedOrigin => Boolean(value));
+import {
+  getConfiguredAuthHosts,
+  getConfiguredAuthHostnames,
+} from "./lib/auth-env";
 
 const allowedServerActionOrigins = Array.from(
   new Set([
     "localhost:3000",
     "127.0.0.1:3000",
-    ...configuredAuthOrigins.map((origin) => origin.host),
+    ...getConfiguredAuthHosts(),
   ])
 );
 
@@ -34,7 +16,7 @@ const allowedDevOrigins = Array.from(
   new Set([
     "localhost",
     "127.0.0.1",
-    ...configuredAuthOrigins.map((origin) => origin.hostname),
+    ...getConfiguredAuthHostnames(),
   ])
 );
 

@@ -99,7 +99,24 @@
       "Bash(xargs -I{} du -sh {})",
       "Read(//tmp/**)",
       "Bash(2>&1)",
-      "Skill(gsd:resume-work)"
+      "Skill(gsd:resume-work)",
+      "Bash(rg -rn \"from ['\\\\\"]@/lib/[a-z]\" lib/ --type ts)",
+      "Bash(rg *)",
+      "Bash(git mv *)",
+      "Bash(sed -i 's|from \"@/lib/ai\"|from \"@/lib/server/integrations/ai\"|g' app/api/ai/generate-description/route.ts)",
+      "Bash(sed -i 's|from \"@/lib/email\"|from \"@/lib/server/email\"|g' app/api/gmail/attachment/route.ts server/auth.ts server/routers/gmail.ts server/routers/users.ts)",
+      "Bash(sed -i 's|from \"@/lib/chunk-load-error\"|from \"@/lib/core/chunk-load-error\"|g' \"app/\\(dashboard\\)/error.tsx\" components/clash/WikiEditorBoundary.tsx)",
+      "Bash(sed -i 's|from \"@/lib/categories\"|from \"@/lib/shared/categories\"|g' \"app/\\(dashboard\\)/families/page.tsx\")",
+      "Bash(sed -i 's|from \"@/lib/holidays\"|from \"@/lib/shared/holidays\"|g' components/dashboard/calendar/MonthView.tsx)",
+      "Skill(gsd:execute-phase)",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__navigate_page",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__take_screenshot",
+      "mcp__plugin_chrome-devtools-mcp_chrome-devtools__list_pages",
+      "Bash(ngrok config *)",
+      "Skill(gsd:pause-work)",
+      "mcp__plugin_context7_context7__resolve-library-id",
+      "mcp__plugin_context7_context7__query-docs",
+      "Read(//c/LECG/LOD Checker//**)"
     ]
   }
 }

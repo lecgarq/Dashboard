@@ -2,6 +2,7 @@ import "server-only";
 
 import { randomUUID } from "node:crypto";
 import { google } from "googleapis";
+import { getAuthUrl } from "@/lib/auth-env";
 import {
   buildGoogleDriveOAuthClient,
   getGoogleDriveOAuthConfig,
@@ -412,7 +413,7 @@ export async function sendApprovedEmail(
   name: string | null | undefined
 ): Promise<void> {
   const displayName = name || to;
-  const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+  const baseUrl = getAuthUrl() ?? "http://localhost:3000";
   await sendEmail(
     to,
     "Your BIM Dashboard access has been approved",

@@ -3,9 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
 }
 
 // ============ AUTH MODELS ============
@@ -393,16 +391,4 @@ model LodCategory {
   subcategories Json?
 
   @@index([group])
-}
-
-model ApsProjectSearchCache {
-  id          String   @id @default(cuid())
-  hubId       String
-  projectId   String
-  projectName String?
-  fetchedAt   DateTime @default(now())
-  models      Json
-
-  @@unique([hubId, projectId])
-  @@index([fetchedAt])
 }

@@ -16,9 +16,9 @@ import {
 import { SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
 import { FamilyCard } from "./FamilyCard";
 import { useRole } from "@/hooks/use-role";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
+import type { FamilyPhase } from "@/lib/shared/module-schemas";
 import type { Family, FamilyAttachment, FamilyChangelog, FamilyDeliverable } from "@prisma/client";
 
 export type FamilyWithRelations = Family & {
@@ -34,7 +34,7 @@ const PHASES = [
   { id: "DONE", label: "Done", color: "bg-green-100 text-green-700" },
 ] as const;
 
-export type Phase = (typeof PHASES)[number]["id"];
+export type Phase = FamilyPhase;
 
 interface KanbanBoardProps {
   families: Family[];

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { encode } from "@auth/core/jwt";
+import { getAuthSecret } from "@/lib/auth-env";
 import { auth } from "@/server/auth";
 import { db } from "@/server/db";
 import { canEditWikiModule } from "@/lib/server/wiki-access";
@@ -47,7 +48,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Wiki section not found" }, { status: 404 });
   }
 
-  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const secret = getAuthSecret();
   if (!secret) {
     return NextResponse.json({ error: "Auth secret not configured" }, { status: 500 });
   }

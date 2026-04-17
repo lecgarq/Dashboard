@@ -9,139 +9,16 @@ import { Link } from "@tiptap/extension-link";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { TextStyle } from "@tiptap/extension-text-style";
 import { ImageResize } from "tiptap-extension-resize-image";
-import { Node, mergeAttributes } from "@tiptap/core";
-import type { ClashWiki } from "@prisma/client";
-
-import { NodeViewWrapper, ReactNodeViewRenderer } from "@tiptap/react";
-import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import { useSession } from "next-auth/react";
-
-const VideoNodeView = (props: any) => {
-  const { node, updateAttributes, selected } = props;
-  
-  // Custom resize handler using basic localized state mapped back to tiptap attributes
-  const handleDrag = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    const startX = e.pageX;
-    const startWidth = node.attrs.width || 400;
-
-    const onMouseMove = (moveEvent: MouseEvent) => {
-      const currentX = moveEvent.pageX;
-      const newWidth = Math.max(150, startWidth + (currentX - startX));
-      updateAttributes({ width: newWidth });
-    };
-
-    const onMouseUp = () => {
-      document.removeEventListener("mousemove", onMouseMove);
-      document.removeEventListener("mouseup", onMouseUp);
-    };
-
-    document.addEventListener("mousemove", onMouseMove);
-    document.addEventListener("mouseup", onMouseUp);
-  }, [node.attrs.width, updateAttributes]);
-
-  return (
-    <NodeViewWrapper 
-       className={cn("relative inline-block overflow-hidden transition-all duration-200 group my-4", selected ? "ring-2 ring-primary" : "")} 
-       style={{ width: node.attrs.width ? `${node.attrs.width}px` : '100%', maxWidth: '100%' }}
-    >
-      <video
-        src={node.attrs.src}
-        controls={node.attrs.controls}
-        preload="metadata"
-        className="w-full h-auto rounded-xl shadow-lg border border-border/50 block"
-      />
-      {/* Handle for resizing */}
-      <div
-        className="absolute bottom-0 right-0 w-4 h-4 cursor-nwse-resize opacity-0 group-hover:opacity-100 bg-primary/80 backdrop-blur-sm rounded-tl-md flex items-center justify-center pointer-events-auto"
-        onMouseDown={handleDrag}
-      >
-        <div className="w-1.5 h-1.5 rounded-full bg-white shadow-sm" />
-      </div>
-    </NodeViewWrapper>
-  );
-};
-
-const Video = Node.create({
-  name: 'video',
-  group: 'block',
-  selectable: true,
-  draggable: true,
-  atom: true,
-
-  addAttributes() {
-    return {
-      src: { default: null },
-      controls: { default: true },
-      width: { default: null },
-    }
-  },
-
-  parseHTML() {
-    return [ { tag: 'video' } ]
-  },
-
-  renderHTML({ HTMLAttributes }) {
-    // When rendered outside the editor (e.g. read-only display), just render a raw video tag with the saved width
-    return ['video', mergeAttributes(HTMLAttributes, { 
-      class: 'max-w-full rounded-xl shadow-lg border border-border/50 my-4 block',
-      controls: true,
-      preload: 'metadata',
-      style: HTMLAttributes.width ? `width: ${HTMLAttributes.width}px` : undefined
-    })]
-  },
-
-  addNodeView() {
-    return ReactNodeViewRenderer(VideoNodeView);
-  },
-});
-
-/**
- * Compress an image file using Canvas API before upload.
- * Skips non-images, SVGs, and small files (<200KB).
- * Converts to JPEG at 0.82 quality, max 1920px on either dimension.
- */
-async function compressImage(file: File): Promise<File> {
-  try {
-    if (!file.type.startsWith('image/') || file.type === 'image/svg+xml' || file.type === 'image/gif') return file;
-    if (file.size < 200 * 1024) return file;
-
-    const bitmap = await createImageBitmap(file);
-    const { width, height } = bitmap;
-
-    const MAX = 1920;
-    let targetW = width;
-    let targetH = height;
-    if (width > MAX || height > MAX) {
-      const ratio = Math.min(MAX / width, MAX / height);
-      targetW = Math.round(width * ratio);
-      targetH = Math.round(height * ratio);
-    }
-
-    const canvas = new OffscreenCanvas(targetW, targetH);
-    const ctx = canvas.getContext('2d');
-    if (!ctx) { bitmap.close(); return file; }
-
-    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
-    bitmap.close();
-
-    const blob = await canvas.convertToBlob({ type: 'image/jpeg', quality: 0.82 });
-
-    // If compression made it larger, return original
-    if (blob.size >= file.size) return file;
-
-    const name = file.name.replace(/\.[^.]+$/, '.jpg');
-    return new File([blob], name, { type: 'image/jpeg' });
-  } catch {
-    return file;
-  }
-}
+import { compressImage } from "./wiki-editor/media";
+import { WikiLinkDialog } from "./wiki-editor/WikiLinkDialog";
+import { VideoNode } from "./wiki-editor/video-node";
+import { getOrCreateYjsProvider, releaseYjsProvider } from "./wiki-editor/yjs-provider";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -173,17 +50,6 @@ import {
   Underline as UnderlineIcon,
 } from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
-import { createClientLogger } from "@/lib/core/logger";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 
 type WikiStatus = "DRAFT" | "REVIEW" | "APPROVED";
 type AutoSaveState = "idle" | "pending" | "saving" | "saved";
@@ -204,15 +70,27 @@ interface WikiEditorProps {
   onDirtyChange?: (dirty: boolean) => void;
 }
 
+type CachedWikiSection = {
+  id: string;
+  projectId: string;
+  section: string;
+  title: string;
+  content: string;
+  status: string;
+  order: number;
+  updatedAt: Date;
+  yjsState?: Uint8Array | Buffer | null;
+};
+
 function toSectionKey(section: string) {
   const candidate = section.split("-").slice(1).join("-");
   return candidate || section;
 }
 
-function upsertSectionInCache(
-  current: ClashWiki[] | undefined,
-  incoming: ClashWiki
-): ClashWiki[] | undefined {
+function upsertSectionInCache<T extends CachedWikiSection>(
+  current: T[] | undefined,
+  incoming: T
+): T[] | undefined {
   if (!current) return current;
 
   const incomingKey = toSectionKey(incoming.section);
@@ -230,48 +108,6 @@ function upsertSectionInCache(
 
   next.sort((a, b) => a.order - b.order);
   return next;
-}
-
-function getYjsWsUrl(): string {
-  const envUrl = process.env.NEXT_PUBLIC_YJS_WS_URL || "ws://localhost:4444";
-  // If page is served over HTTPS, upgrade ws:// to wss:// to avoid SecurityError
-  if (typeof window !== "undefined" && window.location.protocol === "https:" && envUrl.startsWith("ws://")) {
-    return "wss://" + envUrl.slice(5);
-  }
-  return envUrl;
-}
-
-const yjsCache = new Map<string, { ydoc: Y.Doc; provider: WebsocketProvider; refCount: number; authToken: string }>();
-
-const wikiLogger = createClientLogger("WikiEditor");
-
-function getOrCreateYjsProvider(roomName: string, authToken: string) {
-  let cached = yjsCache.get(roomName);
-  if (cached && cached.authToken !== authToken) {
-    cached.provider.destroy();
-    cached.ydoc.destroy();
-    yjsCache.delete(roomName);
-    cached = undefined;
-  }
-  if (!cached) {
-    const baseUrl = getYjsWsUrl();
-    const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(baseUrl, roomName, ydoc, {
-      connect: false,
-      params: { token: authToken },
-      // Reduce reconnect spam when WS server is unavailable
-      maxBackoffTime: 10000,
-    });
-    // Connect asynchronously to avoid throwing SecurityError during render
-    try {
-      provider.connect();
-    } catch {
-      wikiLogger.warn(`Failed to connect WebSocket for room "${roomName}"`);
-    }
-    cached = { ydoc, provider, refCount: 0, authToken };
-    yjsCache.set(roomName, cached);
-  }
-  return cached;
 }
 
 export function WikiEditor({
@@ -362,19 +198,7 @@ export function WikiEditor({
     const cached = collabSession;
     cached.refCount++;
 
-    return () => {
-      cached.refCount--;
-      if (cached.refCount <= 0) {
-        // Small timeout allows React StrictMode to remount synchronously without killing the websocket connection
-        setTimeout(() => {
-          if (cached.refCount <= 0) {
-            cached.provider.destroy();
-            cached.ydoc.destroy();
-            yjsCache.delete(roomName);
-          }
-        }, 100);
-      }
-    };
+    return () => releaseYjsProvider(roomName, cached);
   }, [collabSession, roomName]);
 
   // Refs for stable closures in useEditor paste/drop handlers
@@ -404,7 +228,7 @@ export function WikiEditor({
         inline: false,
         minWidth: 100,
       }),
-      Video,
+      VideoNode,
       Link.configure({
         openOnClick: false,
         HTMLAttributes: {
@@ -654,9 +478,12 @@ export function WikiEditor({
     };
   }, [onDirtyChange, section.section]);
 
-  const upsert = (trpc as any)[module].upsertWikiSection.useMutation({
-    onSuccess: (saved: any) => {
-      (utils as any)[module].getWikiSections.setData(undefined, (current: any) =>
+  const moduleApi = module === "clash" ? trpc.clash : trpc.sim;
+  const moduleUtils = module === "clash" ? utils.clash : utils.sim;
+
+  const upsert = moduleApi.upsertWikiSection.useMutation({
+    onSuccess: (saved) => {
+      moduleUtils.getWikiSections.setData(undefined, (current) =>
         upsertSectionInCache(current, saved)
       );
       onSave?.();
@@ -989,56 +816,5 @@ export function WikiEditor({
         }}
       />
     </div>
-  );
-}
-
-function WikiLinkDialog({
-  isOpen,
-  onOpenChange,
-  url,
-  setUrl,
-  onApply,
-}: {
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
-  url: string;
-  setUrl: (url: string) => void;
-  onApply: (url: string) => void;
-}) {
-  return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Insert Link</DialogTitle>
-        </DialogHeader>
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="link-url">Destination URL</Label>
-            <Input
-              id="link-url"
-              placeholder="https://example.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  onApply(url);
-                }
-              }}
-            />
-          </div>
-        </div>
-        <DialogFooter>
-          <DialogClose asChild>
-            <Button variant="ghost">Cancel</Button>
-          </DialogClose>
-          <Button
-            onClick={() => onApply(url)}
-            disabled={!url.trim()}
-          >
-            Apply Link
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }

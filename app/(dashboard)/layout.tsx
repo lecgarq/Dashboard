@@ -44,26 +44,28 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <ProjectProvider>
           <HydrationBoundary state={helpers.dehydrate()}>
             <ParticleZoneProvider>
-              <div className="relative min-h-screen overflow-hidden">
-                <ParticleBackground />
-                <div className="pointer-events-none absolute inset-0">
-                  <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl" />
-                  <div className="absolute right-[-6rem] top-[-3rem] h-96 w-96 rounded-full bg-amber-200/35 blur-3xl" />
-                  <div className="absolute bottom-[-6rem] right-[18%] h-80 w-80 rounded-full bg-teal-200/25 blur-3xl" />
+              <div className="relative h-screen overflow-hidden">
+                <div className="absolute inset-0 overflow-hidden">
+                  <ParticleBackground />
+                  <div className="pointer-events-none absolute inset-0">
+                    <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl" />
+                    <div className="absolute right-[-6rem] top-[-3rem] h-96 w-96 rounded-full bg-amber-200/35 blur-3xl" />
+                    <div className="absolute bottom-[-6rem] right-[18%] h-80 w-80 rounded-full bg-teal-200/25 blur-3xl" />
+                  </div>
                 </div>
-              </div>
-              <div className="relative z-10 flex h-screen overflow-hidden">
-                <Sidebar />
-                <main className="relative flex flex-1 flex-col overflow-y-auto">
-                  <CredentialsBanner />
-                  <NavigationProvider>
-                    <PageTransition>
-                      <DualAuthGuard>{children}</DualAuthGuard>
-                    </PageTransition>
-                  </NavigationProvider>
-                </main>
-                <ChatPanelWrapper />
-                <MailPanelWrapper />
+                <div className="relative z-10 flex h-full overflow-hidden">
+                  <Sidebar />
+                  <main className="relative flex flex-1 flex-col overflow-y-auto">
+                    <CredentialsBanner />
+                    <NavigationProvider>
+                      <PageTransition>
+                        <DualAuthGuard>{children}</DualAuthGuard>
+                      </PageTransition>
+                    </NavigationProvider>
+                  </main>
+                  <ChatPanelWrapper />
+                  <MailPanelWrapper />
+                </div>
               </div>
             </ParticleZoneProvider>
           </HydrationBoundary>

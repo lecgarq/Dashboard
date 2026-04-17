@@ -138,7 +138,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (account?.provider === "credentials") return true;
 
       const profileEmail = ((profile?.email as string) ?? user.email)?.trim().toLowerCase();
-      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase()?.trim() || "luis.ecorteg@gmail.com";
+      const adminEmail = process.env.ADMIN_EMAIL?.toLowerCase()?.trim() || "luis.cortes@hermosillo.com";
       const secondaryAdminEmail = process.env.ADMIN_EMAIL_ALIAS?.toLowerCase()?.trim() ?? "";
       
       authLogger.debug("Sign-in attempt", { provider: account?.provider, profileEmail });
@@ -194,7 +194,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
         }
 
-        // 2. Force link the OAuth identity to this specific User ID
+        // 2. Prevent the same OAuth identity from being stolen by a second user
+        const existingAccount = await db.account.findUnique({
+          where: {
+            provider_providerAccountId: {
+              provider: account.provider,
+              providerAccountId: account.providerAccountId,
+            },
+          },
+          select: { userId: true },
+        });
+
+        if (existingAccount && existingAccount.userId !== userId) {
+          authLogger.warn("OAuth identity already linked to another user — sign-in rejected", {
+            provider: account.provider,
+            targetUserId: userId,
+          });
+          return "/login?error=OAuthAccountAlreadyLinked";
+        }
+
+        // 3. Force link the OAuth identity to this specific User ID
         await db.account.upsert({
           where: {
             provider_providerAccountId: {

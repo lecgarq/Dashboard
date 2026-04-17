@@ -43,6 +43,8 @@ LOD_QUERY_ENCODER_API_KEY=
 LOD_QUERY_ENCODER_TIMEOUT_MS=15000
 LOD_QUERY_ENCODER_VERSION=siglip-query-v1
 LOD_QUERY_ENCODER_DEVICE=cpu
+LOD_QUERY_ENCODER_CUDA_DEVICE_INDEX=0
+LOD_PIPELINE_CUDA_DEVICE_INDEX=0
 ```
 
 ## Local runner
@@ -54,3 +56,5 @@ python services/lod-query-encoder/server.py
 The dashboard dev stack also starts this service automatically.
 
 Use `LOD_QUERY_ENCODER_DEVICE=cpu` on workstations where the installed PyTorch CUDA build does not support the local GPU yet. The service can fall back automatically, but pinning CPU avoids the first-request demotion cost.
+
+Use `LOD_QUERY_ENCODER_CUDA_DEVICE_INDEX` to pin the embedding server to a specific GPU when the host has multiple CUDA devices. `LOD_PIPELINE_CUDA_DEVICE_INDEX` applies the same pinning to the batch pipeline subprocess; if omitted, the pipeline inherits the query encoder's CUDA index.

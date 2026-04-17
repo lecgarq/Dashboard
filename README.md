@@ -38,14 +38,14 @@ Treat the public auth host in `.env` as the source of truth. Startup scripts pre
 Required `.env` alignment:
 
 ```text
-NEXTAUTH_URL=https://your-existing-subdomain.loca.lt
 AUTH_URL=https://your-existing-subdomain.loca.lt
 APS_CALLBACK_URL=https://your-existing-subdomain.loca.lt/api/auth/callback/autodesk
 ```
 
 Important:
 
-- `NEXTAUTH_URL` and `AUTH_URL` must share the same origin.
+- `AUTH_URL` is the canonical public auth origin.
+- `NEXTAUTH_URL` is optional legacy compatibility only. If present, it must match `AUTH_URL`.
 - `APS_CALLBACK_URL` must use the same origin and the Autodesk callback path shown above.
 - `node scripts/patch-env.js` updates only `NEXT_PUBLIC_LOD_CHECKER_URL` and `NEXT_PUBLIC_YJS_WS_URL`.
 - Do not mix `localhost` with the public host in the same auth session.

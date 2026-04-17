@@ -21,6 +21,7 @@ import { Loader2, Box, Info } from "lucide-react";
 import { clientLogger } from "@/lib/core/logger";
 import { cn } from "@/lib/core/utils";
 import { PanelErrorBoundary } from "@/components/ui/panel-error-boundary";
+import type { FamilyPhase } from "@/lib/shared/module-schemas";
 
 const PHASES = [
   { value: "TODO", label: "To Do" },
@@ -84,7 +85,7 @@ export function FamilyDetailPanel({
   const { isEditor, isAdmin } = useRole();
   const [name, setName] = useState(family?.name ?? "");
   const [category, setCategory] = useState(family?.category ?? "");
-  const [phase, setPhase] = useState(family?.phase ?? "TODO");
+  const [phase, setPhase] = useState<FamilyPhase>((family?.phase as FamilyPhase) ?? "TODO");
   const [owner, setOwner] = useState(family?.owner ?? "");
   const [nextSteps, setNextSteps] = useState(family?.nextSteps ?? "");
   const [description, setDescription] = useState(family?.description ?? "");
@@ -137,12 +138,12 @@ export function FamilyDetailPanel({
   });
   
   const { data: apsStatus } = trpc.families.getApsStatus.useQuery(
-    { familyId, urn: (family as any)?.apsUrn ?? "" },
+    { familyId, urn: family?.apsUrn ?? "" },
     { 
-      enabled: !!family && (family as any).apsStatus === "PROCESSING" && !!(family as any).apsUrn,
+      enabled: !!family && family.apsStatus === "PROCESSING" && !!family.apsUrn,
       refetchInterval: (query) => {
-        const data = query.state.data as any;
-        return (data?.status === "success" || data?.status === "failed") ? false : 5000;
+        const status = query.state.data?.status;
+        return status === "success" || status === "failed" ? false : 5000;
       },
     }
   );
@@ -226,7 +227,7 @@ export function FamilyDetailPanel({
       id: family.id,
       name,
       category,
-      phase: phase as "TODO" | "IN_PROGRESS" | "REVIEW" | "DONE",
+      phase,
       owner,
       nextSteps,
       description,
@@ -313,15 +314,15 @@ export function FamilyDetailPanel({
 
             {/* 3D VIEW TAB */}
             <TabsContent value="3d" className="px-6 py-4 space-y-4">
-              {(family as any).apsUrn ? (
+              {family.apsUrn ? (
                 <div className="space-y-4">
-                  <BimViewer urn={(family as any).apsUrn} />
+                  <BimViewer urn={family.apsUrn} />
                   <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 flex items-start gap-3">
                     <Info className="w-4 h-4 text-blue-500 mt-0.5" />
                     <div className="space-y-1">
                       <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">3D Model Status</p>
                       <p className="text-xs text-blue-700">
-                        {(family as any).apsStatus === "SUCCESS" 
+                        {family.apsStatus === "SUCCESS" 
                           ? "Model is fully synchronized with Autodesk APS." 
                           : "Model is currently being processed. It may take a few minutes."}
                       </p>
@@ -375,7 +376,7 @@ export function FamilyDetailPanel({
                 </div>
                 <div className="space-y-1">
                   <label className="text-xs font-medium text-gray-500">Phase</label>
-                  <Select value={phase} onValueChange={(v) => setPhase(v as typeof phase)} disabled={!isEditor}>
+                  <Select value={phase} onValueChange={(value) => setPhase(value as FamilyPhase)} disabled={!isEditor}>
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
                     </SelectTrigger>

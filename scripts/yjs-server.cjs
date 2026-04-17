@@ -157,7 +157,7 @@ function extractAwarenessClientIds(update) {
 }
 
 async function decodeCollaborationToken(token) {
-  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET;
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
   if (!secret || !token) return null;
 
   try {

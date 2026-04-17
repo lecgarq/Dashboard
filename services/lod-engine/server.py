@@ -35,6 +35,19 @@ def load_model_id() -> str:
         return data.get("models", {}).get("siglip", DEFAULT_MODEL_ID)
     return DEFAULT_MODEL_ID
 
+def load_cuda_device_index(env_key: str) -> Optional[int]:
+    raw = os.getenv(env_key, "").strip()
+    if not raw:
+        return None
+    try:
+        return max(0, int(raw))
+    except ValueError:
+        print(
+            f"[lod-engine] Invalid {env_key}={raw!r}. Ignoring CUDA affinity override.",
+            flush=True,
+        )
+        return None
+
 class SiglipTextEncoder:
     def __init__(self, model_id: str) -> None:
         self.model_id = model_id
@@ -42,6 +55,7 @@ class SiglipTextEncoder:
             os.getenv("LOD_QUERY_ENCODER_DEVICE", DEFAULT_DEVICE).strip().lower()
             or DEFAULT_DEVICE
         )
+        self.cuda_device_index = load_cuda_device_index("LOD_QUERY_ENCODER_CUDA_DEVICE_INDEX")
         self.device = "cpu"
         self.fallback_count = 0
         self._lock = threading.Lock()
@@ -49,22 +63,33 @@ class SiglipTextEncoder:
         self.model = self._load_model(self._resolve_initial_device())
 
     def _resolve_initial_device(self) -> str:
-        if self.preferred_device in {"cpu", "cuda"}:
+        if self.preferred_device == "cpu":
+            return self.preferred_device
+        if self.preferred_device == "cuda":
+            return self._resolve_cuda_device()
+        if self.preferred_device.startswith("cuda:"):
             return self.preferred_device
         return "cuda" if torch.cuda.is_available() else "cpu"
 
+    def _resolve_cuda_device(self) -> str:
+        if self.cuda_device_index is None:
+            return "cuda"
+        return f"cuda:{self.cuda_device_index}"
+
     def _load_model(self, target_device: str) -> SiglipModel:
         device = target_device
-        if device == "cuda" and not torch.cuda.is_available():
+        if device.startswith("cuda") and not torch.cuda.is_available():
             print("[lod-engine] CUDA requested but not available. Falling back to CPU.", flush=True)
             device = "cpu"
 
         try:
             print(f"[lod-engine] Loading model on {device}...", flush=True)
             model = SiglipModel.from_pretrained(self.model_id)
+            if device.startswith("cuda"):
+                torch.cuda.set_device(device)
             model = model.to(device)
             
-            if device == "cuda":
+            if device.startswith("cuda"):
                 try:
                     print(f"[lod-engine] Enabling FP16 half-precision for {device}", flush=True)
                     model = model.half()
@@ -75,7 +100,7 @@ class SiglipTextEncoder:
             self.device = device
             return model
         except Exception as e:
-            if device == "cuda":
+            if device.startswith("cuda"):
                 print(f"[lod-engine] CUDA model load failed ({e}). Forcing CPU fallback.", flush=True)
                 return self._load_model("cpu")
             raise
@@ -135,6 +160,7 @@ async def health():
         "status": "ok",
         "model": MODEL_ID,
         "device": ENCODER.device,
+        "cudaDeviceIndex": ENCODER.cuda_device_index,
         "fallbackCount": ENCODER.fallback_count
     }
 
@@ -203,13 +229,22 @@ def run_pipeline_task(payload: BatchRequest):
     print(f"[lod-engine] Launching batch pipeline: {' '.join(cmd)}", flush=True)
     
     try:
+        process_env = os.environ.copy()
+        pipeline_cuda_device_index = (
+            os.getenv("LOD_PIPELINE_CUDA_DEVICE_INDEX", "").strip()
+            or os.getenv("LOD_QUERY_ENCODER_CUDA_DEVICE_INDEX", "").strip()
+        )
+        if pipeline_cuda_device_index:
+            process_env["CUDA_VISIBLE_DEVICES"] = pipeline_cuda_device_index
+
         # We use a subprocess so the main FastAPI thread stays responsive for health checks/embeddings
         process = subprocess.Popen(
             cmd,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,
-            cwd=os.getcwd()
+            cwd=os.getcwd(),
+            env=process_env,
         )
         stdout, stderr = process.communicate()
         if process.returncode != 0:

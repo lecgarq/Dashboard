@@ -3,6 +3,7 @@ import { router, adminProcedure, publicProcedure, protectedProcedure } from "../
 import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } from "@/lib/google/sheets";
 import { listCalendarGuestDirectory } from "@/lib/google/directory";
 import bcrypt from "bcryptjs";
+import { getAuthUrl } from "@/lib/auth-env";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { randomUUID } from "crypto";
@@ -297,7 +298,7 @@ export const usersRouter = router({
         data: { email, token, expires, createdAt: now },
       });
 
-      const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
+      const baseUrl = getAuthUrl() ?? "http://localhost:3000";
       const resetUrl = `${baseUrl}/reset-password?token=${token}`;
 
       try {

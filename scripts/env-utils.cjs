@@ -81,11 +81,13 @@ function parseRequiredUrl(values, key) {
 }
 
 function validatePublicEnv(values) {
-  const nextAuthUrl = parseRequiredUrl(values, "NEXTAUTH_URL");
   const authUrl = parseRequiredUrl(values, "AUTH_URL");
   const apsCallbackUrl = parseRequiredUrl(values, "APS_CALLBACK_URL");
+  const nextAuthUrl = values.NEXTAUTH_URL
+    ? parseRequiredUrl(values, "NEXTAUTH_URL")
+    : authUrl;
 
-  if (nextAuthUrl.origin !== authUrl.origin) {
+  if (values.NEXTAUTH_URL && nextAuthUrl.origin !== authUrl.origin) {
     throw new Error(
       `NEXTAUTH_URL and AUTH_URL must share the same origin. Received "${nextAuthUrl.origin}" and "${authUrl.origin}".`
     );

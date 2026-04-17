@@ -1,7 +1,10 @@
+import crypto from "crypto";
+
 import { TRPCError } from "@trpc/server";
 import pLimit from "p-limit";
 import { z } from "zod";
 
+import { getRedis } from "@/lib/redis";
 import { getValidAutodeskAccessToken } from "@/lib/server/aps-user-token";
 import { IntegrationError } from "@/lib/server/integration-errors";
 import { createLogger } from "@/lib/server/logger";
@@ -12,6 +15,7 @@ const logger = createLogger("aps-search");
 
 const APS_BASE_URL = "https://developer.api.autodesk.com";
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_S = CACHE_TTL_MS / 1000;
 const SEARCH_TIMEOUT_MS = 60_000;
 const CONCURRENCY = 3;
 const FOLDER_SEARCH_PAGE_LIMIT = 100;
@@ -150,6 +154,46 @@ function isRichApsModel(value: unknown): value is ApsRevitModel {
     typeof candidate.folderPath === "string" &&
     typeof candidate.displayName === "string"
   );
+}
+
+type ApsProjectSearchCacheEntry = {
+  fetchedAt: string;
+  models: string;
+  projectName?: string;
+};
+
+function normalizeSearchText(searchText?: string) {
+  return searchText?.trim().replace(/\s+/g, " ").toLowerCase() ?? "";
+}
+
+function getApsProjectCacheKey(
+  hubId: string,
+  projectId: string,
+  searchText?: string
+) {
+  const normalizedSearchText = normalizeSearchText(searchText);
+  const searchKey = normalizedSearchText
+    ? crypto.createHash("sha1").update(normalizedSearchText).digest("hex")
+    : "all";
+
+  return `aps:project-search:${hubId}:${projectId}:${searchKey}`;
+}
+
+function getApsProjectCacheIndexKey(hubId: string, projectId: string) {
+  return `aps:project-search:index:${hubId}:${projectId}`;
+}
+
+function parseCachedModels(value: string | undefined) {
+  if (!value) return null;
+
+  try {
+    const parsed = JSON.parse(value) as unknown;
+    return Array.isArray(parsed) && parsed.every(isRichApsModel)
+      ? (parsed as ApsRevitModel[])
+      : null;
+  } catch {
+    return null;
+  }
 }
 
 async function fetchApsJson(
@@ -547,22 +591,29 @@ export const apsSearchRouter = router({
 
       try {
         const now = new Date();
-        const cached = await ctx.db.apsProjectSearchCache.findUnique({
-          where: { hubId_projectId: { hubId, projectId } },
-        });
+        const redis = getRedis();
+        const cacheKey = getApsProjectCacheKey(hubId, projectId, searchText);
 
-        if (
-          cached &&
-          now.getTime() - cached.fetchedAt.getTime() < CACHE_TTL_MS &&
-          Array.isArray(cached.models) &&
-          cached.models.every(isRichApsModel)
-        ) {
-          logger.info("APS search cache hit", { projectId });
-          return {
-            models: cached.models as ApsRevitModel[],
-            fromCache: true,
-            fetchedAt: cached.fetchedAt,
-          };
+        if (redis) {
+          const cached = await redis.hgetall<ApsProjectSearchCacheEntry>(cacheKey);
+          const fetchedAt = cached?.fetchedAt ? new Date(cached.fetchedAt) : null;
+          const models = parseCachedModels(cached?.models);
+
+          if (
+            fetchedAt &&
+            models &&
+            now.getTime() - fetchedAt.getTime() < CACHE_TTL_MS
+          ) {
+            logger.info("APS search cache hit", {
+              projectId,
+              searchText: normalizeSearchText(searchText) || null,
+            });
+            return {
+              models,
+              fromCache: true,
+              fetchedAt,
+            };
+          }
         }
 
         logger.info("APS folder search starting", {
@@ -585,21 +636,16 @@ export const apsSearchRouter = router({
           count: models.length,
         });
 
-        await ctx.db.apsProjectSearchCache.upsert({
-          where: { hubId_projectId: { hubId, projectId } },
-          create: {
-            hubId,
-            projectId,
-            projectName: projectName ?? null,
-            models,
-            fetchedAt: now,
-          },
-          update: {
-            projectName: projectName ?? null,
-            models,
-            fetchedAt: now,
-          },
-        });
+        if (redis) {
+          await redis.hset(cacheKey, {
+            fetchedAt: now.toISOString(),
+            models: JSON.stringify(models),
+            projectName: projectName ?? "",
+          });
+          await redis.expire(cacheKey, CACHE_TTL_S);
+          await redis.sadd(getApsProjectCacheIndexKey(hubId, projectId), cacheKey);
+          await redis.expire(getApsProjectCacheIndexKey(hubId, projectId), CACHE_TTL_S);
+        }
 
         return { models, fromCache: false, fetchedAt: now };
       } catch (error) {
@@ -609,17 +655,16 @@ export const apsSearchRouter = router({
 
   clearCache: protectedProcedure
     .input(z.object({ hubId: z.string(), projectId: z.string() }))
-    .mutation(async ({ input, ctx }) => {
-      await ctx.db.apsProjectSearchCache
-        .delete({
-          where: {
-            hubId_projectId: {
-              hubId: input.hubId,
-              projectId: input.projectId,
-            },
-          },
-        })
-        .catch(() => null);
+    .mutation(async ({ input }) => {
+      const redis = getRedis();
+      if (redis) {
+        const indexKey = getApsProjectCacheIndexKey(input.hubId, input.projectId);
+        const cacheKeys = (await redis.smembers(indexKey)) as string[];
+        if (cacheKeys.length > 0) {
+          await redis.del(...(cacheKeys as [string, ...string[]]));
+        }
+        await redis.del(indexKey);
+      }
       return { success: true };
     }),
 });

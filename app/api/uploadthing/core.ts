@@ -1,8 +1,22 @@
 import { createUploadthing, type FileRouter } from "uploadthing/next";
 import { createLogger } from "@/lib/server/logger";
+import { auth } from "@/server/auth";
 
 const f = createUploadthing();
 const logger = createLogger("uploadthing-core");
+
+async function requireEditorSession() {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("Unauthorized");
+  }
+
+  if (session.user.role !== "ADMIN" && session.user.role !== "EDITOR") {
+    throw new Error("Forbidden");
+  }
+
+  return { userId: session.user.id };
+}
 
 export const ourFileRouter = {
   familyMedia: f({
@@ -10,9 +24,7 @@ export const ourFileRouter = {
     video: { maxFileSize: "256MB", maxFileCount: 2 },
     "application/pdf": { maxFileSize: "32MB", maxFileCount: 5 },
   })
-    .middleware(async () => {
-      return { userId: "user" };
-    })
+    .middleware(requireEditorSession)
     .onUploadComplete(async ({ metadata, file }) => {
       logger.info("Family media upload complete", {
         userId: metadata.userId,
@@ -28,9 +40,7 @@ export const ourFileRouter = {
     "application/pdf": { maxFileSize: "32MB", maxFileCount: 5 },
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { maxFileSize: "32MB", maxFileCount: 5 },
   })
-    .middleware(async () => {
-      return { userId: "user" };
-    })
+    .middleware(requireEditorSession)
     .onUploadComplete(async ({ metadata, file }) => {
       return { uploadedBy: metadata.userId, url: file.url, name: file.name, type: file.type };
     }),
@@ -39,11 +49,9 @@ export const ourFileRouter = {
     image: { maxFileSize: "32MB" },
     video: { maxFileSize: "1GB" },
   })
-    .middleware(async () => {
-      return { userId: "user" };
-    })
+    .middleware(requireEditorSession)
     .onUploadComplete(async ({ metadata, file }) => {
-      return { url: file.url };
+      return { uploadedBy: metadata.userId, url: file.url };
     }),
 } satisfies FileRouter;
 

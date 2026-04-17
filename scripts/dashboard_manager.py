@@ -17,11 +17,15 @@ from tkinter import scrolledtext
 BASE_DIR = Path(__file__).resolve().parent.parent   # C:\LECG\Dashboard
 KILL_PORTS = [3000, 4444, 5173, 8080]
 
-# Read NEXTAUTH_URL from .env so the URL stays in sync automatically
+# Read AUTH_URL from .env so the public URL stays in sync automatically
 def _read_tunnel_url() -> str:
     env = BASE_DIR / ".env"
     if env.exists():
-        for line in env.read_text(encoding="utf-8", errors="ignore").splitlines():
+        lines = env.read_text(encoding="utf-8", errors="ignore").splitlines()
+        for line in lines:
+            if line.startswith("AUTH_URL="):
+                return line.split("=", 1)[1].strip()
+        for line in lines:
             if line.startswith("NEXTAUTH_URL="):
                 return line.split("=", 1)[1].strip()
     return "https://divertible-dudishly-kina.ngrok-free.dev"

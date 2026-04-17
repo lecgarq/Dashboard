@@ -190,7 +190,7 @@ def resolve_next_command(project_root: Path, *args: str) -> list[str]:
 
 
 def run_next_build(project_root: Path) -> int:
-    cmd = resolve_next_command(project_root, "build")
+    cmd = resolve_next_command(project_root, "build", "--webpack")
     print(f"[runner] Building Next.js app: {' '.join(cmd)}")
 
     proc = subprocess.Popen(
@@ -216,7 +216,7 @@ def run_next_dev(project_root: Path, port: int) -> int:
     env = os.environ.copy()
     env["PORT"] = str(port)
 
-    cmd = resolve_next_command(project_root, "dev", "-H", "0.0.0.0", "--port", str(port))
+    cmd = resolve_next_command(project_root, "dev", "--webpack", "-H", "0.0.0.0", "--port", str(port))
     print(f"[runner] Starting Next.js dev server: {' '.join(cmd)}")
     print(f"[runner] Dashboard: http://localhost:{port}")
 

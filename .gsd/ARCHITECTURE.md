@@ -51,17 +51,17 @@ flowchart TB
     end
 
     %% Interactions
-    User == "Interacts" ===> Frontend
+    User == "Interacts" ==> Frontend
     
     UI -. "Mutates & Queries" .-> RPC
-    Sync == "CRDT Sync" ===> Sockets
+    Sync == "CRDT Sync" ==> Sockets
     
     RPC ==> Auth
     Auth ==> ORM
     ORM ==> PG
     ORM ==> Vector
     
-    RPC == "HTTP Offload" ===> Python
+    RPC == "HTTP Offload" ==> Python
     Python ==> Model
     
     RPC -. "Proxy OAuth" .-> Cloud
@@ -80,9 +80,9 @@ flowchart LR
     Root{"🏠 Base Hub Layout\napp/(dashboard)"}:::root
 
     %% Primary Branches
-    Root ===> B1["👤 Identity & Ops"]:::feature
-    Root ===> B2["🏗️ BIM Engineering"]:::feature
-    Root ===> B3["📋 Workflow Automation"]:::feature
+    Root ==> B1["👤 Identity & Ops"]:::feature
+    Root ==> B2["🏗️ BIM Engineering"]:::feature
+    Root ==> B3["📋 Workflow Automation"]:::feature
 
     %% Identity
     B1 --> P_Home(["/home\nKPI Statistics Dash"]):::page
@@ -142,8 +142,8 @@ flowchart TD
         EX([exam.ts]):::logic
     end
 
-    TRPC ===> |"Admin Or Client"| U & S & K
-    TRPC ===> |"G-Workspace OAuth"| GM & Ca & Ch
-    TRPC ===> |"Heuristic Data"| AP & FA & LD & CL
-    TRPC ===> |"Mutation Webhooks"| TR & TS & EX
+    TRPC == "Admin Or Client" ==> U & S & K
+    TRPC == "G-Workspace OAuth" ==> GM & Ca & Ch
+    TRPC == "Heuristic Data" ==> AP & FA & LD & CL
+    TRPC == "Mutation Webhooks" ==> TR & TS & EX
 ```

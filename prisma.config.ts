@@ -1,2 +1,17 @@
-// Prisma v5 uses DATABASE_URL in .env — no config file needed
-export {};
+import "dotenv/config";
+import { defineConfig, env } from "prisma/config";
+
+type Env = {
+  DATABASE_URL: string;
+  DIRECT_URL: string;
+};
+
+export default defineConfig({
+  schema: "prisma/schema.prisma",
+  migrations: {
+    path: "prisma/migrations",
+  },
+  datasource: {
+    url: env<Env>("DATABASE_URL"),
+  },
+});
