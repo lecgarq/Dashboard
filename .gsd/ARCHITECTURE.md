@@ -16,55 +16,55 @@ flowchart TB
 
     User((👤 Users))
     
-    subgraph Frontend["🖥️ Client Presentation (Browser)"]
+    subgraph Frontend [🖥️ Client Presentation]
         direction LR
-        UI(["⚛️ Next.js 16 UI Components"]):::ui
-        State(["⚡ TanStack Query Caching"]):::ui
-        Sync(["🤝 Yjs Real-time Engine"]):::ui
+        UI(["⚛️ Next.js 16 UI"])::ui
+        State(["⚡ TanStack Caching"])::ui
+        Sync(["🤝 Yjs Engine"])::ui
     end
     
-    subgraph Backend["⚙️ Application Gateway (Node.js)"]
+    subgraph Backend [⚙️ Application Gateway]
         direction TB
-        RPC(["🔌 tRPC API (root.ts)"]):::api
-        Auth(["🔒 NextAuth 5.0 Router"]):::api
-        Sockets(["📡 WebSockets (Port 4444)"]):::api
+        RPC(["🔌 tRPC API (root.ts)"])::api
+        Auth(["🔒 NextAuth 5.0"])::api
+        Sockets(["📡 WebSockets"])::api
     end
     
-    subgraph DataSpace["🗄️ Persistence Layer"]
+    subgraph DataSpace [🗄️ Persistence Layer]
         direction LR
-        ORM(["🪢 Prisma 7.7.0 ORM"]):::db
-        PG[(🐘 PostgreSQL Database)]:::db
-        Vector[(📊 pgvector HNSW Indices)]:::db
+        ORM(["🪢 Prisma 7.7.0"])::db
+        PG[(🐘 PostgreSQL)]:::db
+        Vector[(📊 pgvector Indices)]:::db
     end
     
-    subgraph Inference["🧠 ML Semantic Engine"]
+    subgraph Inference [🧠 ML Semantic Engine]
         direction LR
-        Python{{"🐍 Python Flask/Engine"}}:::ai
+        Python{{"🐍 Python Engine"}}:::ai
         Model(["👁️ Siglip Vision Model"]):::ai
     end
     
-    subgraph Cloud["🌐 External Cloud Web"]
+    subgraph Cloud [🌐 External Cloud Web]
         direction LR
-        APS(["🏗️ Autodesk Cloud (APS)"]):::external
-        GCP(["📨 Google Workspace"]):::external
-        Trello(["📋 Trello API"]):::external
+        APS(["🏗️ Autodesk Cloud"])::external
+        GCP(["📨 Google Workspace"])::external
+        Trello(["📋 Trello API"])::external
     end
 
     %% Interactions
-    User == "Interacts" ==> Frontend
+    User -->|"Interacts"| Frontend
     
-    UI -. "Mutates & Queries" .-> RPC
-    Sync == "CRDT Sync" ==> Sockets
+    UI -.->|"Mutates & Queries"| RPC
+    Sync -->|"CRDT Sync"| Sockets
     
     RPC ==> Auth
     Auth ==> ORM
     ORM ==> PG
     ORM ==> Vector
     
-    RPC == "HTTP Offload" ==> Python
+    RPC -->|"HTTP Offload"| Python
     Python ==> Model
     
-    RPC -. "Proxy OAuth" .-> Cloud
+    RPC -.->|"Proxy OAuth"| Cloud
 ```
 
 ## 2. Next.js Routing Map
@@ -77,12 +77,12 @@ flowchart LR
     classDef page fill:#0369a1,stroke:#bae6fd,stroke-width:2px,color:#fff,rx:8,ry:8
     classDef feature fill:#1d4ed8,stroke:#93c5fd,stroke-width:3px,color:#fff,rx:8,ry:8
 
-    Root{"🏠 Base Hub Layout\napp/(dashboard)"}:::root
+    Root{"🏠 Base Hub Layout"}:::root
 
     %% Primary Branches
-    Root ==> B1["👤 Identity & Ops"]:::feature
-    Root ==> B2["🏗️ BIM Engineering"]:::feature
-    Root ==> B3["📋 Workflow Automation"]:::feature
+    Root ==> B1["👤 Identity Branches"]:::feature
+    Root ==> B2["🏗️ BIM Branches"]:::feature
+    Root ==> B3["📋 Workflow Branches"]:::feature
 
     %% Identity
     B1 --> P_Home(["/home\nKPI Statistics Dash"]):::page
@@ -111,23 +111,23 @@ flowchart TD
     classDef core fill:#4f46e5,stroke:#c7d2fe,stroke-width:2px,color:#fff
     classDef logic fill:#059669,stroke:#a7f3d0,stroke-width:2px,color:#fff
     
-    TRPC{{"🌐 tRPC Gateway Interface\n(server/routers/root.ts)"}}:::base
+    TRPC{{"🌐 tRPC Gateway Interface"}}:::base
     
-    subgraph "🔐 Core System Module"
+    subgraph CoreSystem [🔐 Core System Module]
         direction LR
         U([users.ts]):::core
         S([settings.ts]):::core
         K([kpi.ts]):::core
     end
     
-    subgraph "📧 Google Proxies"
+    subgraph GoogleProxies [📧 Google Proxies]
         direction LR
         GM([gmail.ts]):::logic
         Ca([calendar.ts]):::logic
         Ch([chat.ts]):::logic
     end
     
-    subgraph "🏗️ AEC Engineering logic"
+    subgraph AECL[🏗️ AEC Engineering logic]
         direction LR
         AP([aps-search.ts]):::logic
         FA([families.ts]):::logic
@@ -135,15 +135,15 @@ flowchart TD
         CL([clash.ts]):::logic
     end
 
-    subgraph "📋 Process Handlers"
+    subgraph ProcessHandlers [📋 Process Handlers]
         direction LR
         TR([trello.ts]):::logic
         TS([tasks.ts]):::logic
         EX([exam.ts]):::logic
     end
 
-    TRPC == "Admin Or Client" ==> U & S & K
-    TRPC == "G-Workspace OAuth" ==> GM & Ca & Ch
-    TRPC == "Heuristic Data" ==> AP & FA & LD & CL
-    TRPC == "Mutation Webhooks" ==> TR & TS & EX
+    TRPC -->|"Admin Or Client"| CoreSystem
+    TRPC -->|"G-Workspace OAuth"| GoogleProxies
+    TRPC -->|"Heuristic Data"| AECL
+    TRPC -->|"Mutation Webhooks"| ProcessHandlers
 ```
