@@ -8,9 +8,10 @@ RUN apt-get update \
 
 ENV NODE_ENV=production
 ENV NEXT_TELEMETRY_DISABLED=1
-ENV PRISMA_SKIP_POSTINSTALL_GENERATE=1
 
 COPY package*.json ./
+COPY prisma ./prisma
+COPY prisma.config.ts ./
 
 RUN npm ci
 
