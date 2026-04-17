@@ -84,10 +84,9 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
   const nodesRef = useRef<GraphNode[]>([]);
   const [isReady, setIsReady] = useState(false);
 
-  const currentPos = useRef(new Float32Array(0));
-  const targetPos = useRef(new Float32Array(0));
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const links = useRef<any>(new Uint32Array(0));
+  const currentPos = useRef<Float32Array>(new Float32Array(0));
+  const targetPos = useRef<Float32Array>(new Float32Array(0));
+  const links = useRef<Uint32Array>(new Uint32Array(0));
 
   const view = useRef({ x: 0, y: 0, scale: 1 });
   const targetView = useRef({ x: 0, y: 0, scale: 1 });
