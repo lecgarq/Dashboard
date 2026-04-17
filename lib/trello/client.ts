@@ -1,9 +1,17 @@
 "server-only";
 
+import { AsyncLocalStorage } from "node:async_hooks";
+
 const BASE = "https://api.trello.com/1";
+const tokenStorage = new AsyncLocalStorage<string>();
+
+export async function withTrelloToken<T>(token: string, fn: () => Promise<T>): Promise<T> {
+  return tokenStorage.run(token, fn);
+}
 
 function auth() {
-  return `key=${process.env.TRELLO_API_KEY}&token=${process.env.TRELLO_TOKEN}`;
+  const token = tokenStorage.getStore() ?? process.env.TRELLO_TOKEN ?? "";
+  return `key=${process.env.TRELLO_API_KEY}&token=${token}`;
 }
 
 async function trelloFetch(path: string, options?: RequestInit) {
@@ -402,24 +410,25 @@ export interface TrelloCard {
   idBoard: string;
 }
 
-// Module-level cache for token-owner member ID
-let cachedMeId: string | null | undefined = undefined;
+// Per-token cache for member ID (token → memberId)
+const meIdByToken = new Map<string, string | null>();
 
 /**
- * Returns the Trello member ID for whoever owns TRELLO_TOKEN.
- * Trello's board-members API does not expose email addresses (privacy),
- * so we resolve via /members/me instead of matching by email.
+ * Returns the Trello member ID for whoever owns the current token.
  * The email param is kept for API compatibility but is unused.
  */
 export async function findMemberIdByEmail(_email: string): Promise<string | null> {
-  if (cachedMeId !== undefined) return cachedMeId;
+  const token = tokenStorage.getStore() ?? process.env.TRELLO_TOKEN ?? "";
+  const cached = meIdByToken.get(token);
+  if (cached !== undefined) return cached;
   try {
     const me: { id: string } = await trelloFetch("/members/me?fields=id");
-    cachedMeId = me.id ?? null;
+    meIdByToken.set(token, me.id ?? null);
+    return me.id ?? null;
   } catch {
-    cachedMeId = null;
+    meIdByToken.set(token, null);
+    return null;
   }
-  return cachedMeId;
 }
 
 /**

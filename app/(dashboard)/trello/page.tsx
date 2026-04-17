@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, Trello } from "lucide-react";
 
 import { TrelloBoardView } from "@/components/trello/TrelloBoardView";
 import { trpc } from "@/lib/core/trpc";
+import { Button } from "@/components/ui/button";
 
 import type { TrelloBoard } from "@/components/trello/types";
 
@@ -54,13 +55,28 @@ export default function TrelloPage() {
 
       {boardsLoading ? (
         <BoardSkeleton />
+      ) : boardsError?.message === "trello_access_required" ? (
+        <div className="flex flex-col items-center gap-4 py-16 text-center">
+          <Trello className="text-muted-foreground/20" size={40} />
+          <div>
+            <p className="text-sm font-medium text-foreground">Connect your Trello account</p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Grant access to see your boards here.
+            </p>
+          </div>
+          <Button
+            size="sm"
+            onClick={() => { window.location.href = "/api/connect/trello?callbackUrl=/trello"; }}
+          >
+            Connect Trello
+          </Button>
+        </div>
       ) : boardsError ? (
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <AlertCircle className="text-destructive/50" size={32} />
           <p className="text-sm font-medium text-foreground">Trello connection failed</p>
           <p className="max-w-sm text-xs text-muted-foreground">
-            Check that <code className="rounded bg-muted px-1">TRELLO_TOKEN</code> is set
-            in your <code className="rounded bg-muted px-1">.env</code> file.
+            Something went wrong loading your boards.
           </p>
         </div>
       ) : boards.length === 0 ? (
