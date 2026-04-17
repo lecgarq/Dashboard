@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { BrandLoading } from "@/components/ui/BrandLoading";
 import { cn } from "@/lib/core/utils";
@@ -19,10 +19,12 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
   const [isNavigating, setIsNavigating] = useState(false);
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const scrollRootRef = useRef<HTMLDivElement>(null);
 
-  // End navigation when the route actually changes
+  // End navigation and normalize the shared dashboard scroll position on route changes.
   useEffect(() => {
     setIsNavigating(false);
+    scrollRootRef.current?.scrollTo({ top: 0, left: 0, behavior: "auto" });
   }, [pathname, searchParams]);
 
   // Global click listener to intercept internal link clicks
@@ -76,7 +78,12 @@ export function NavigationProvider({ children }: { children: React.ReactNode }) 
         <BrandLoading message="Initializing module..." />
       </div>
 
-      {children}
+      <div
+        ref={scrollRootRef}
+        className="relative flex min-h-0 flex-1 flex-col overflow-y-auto"
+      >
+        {children}
+      </div>
     </NavigationContext.Provider>
   );
 }

@@ -44,7 +44,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
         <ProjectProvider>
           <HydrationBoundary state={helpers.dehydrate()}>
             <ParticleZoneProvider>
-              <div className="relative h-screen overflow-hidden">
+              <div className="relative h-[100dvh] overflow-hidden">
                 <div className="absolute inset-0 overflow-hidden">
                   <ParticleBackground />
                   <div className="pointer-events-none absolute inset-0">
@@ -53,9 +53,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                     <div className="absolute bottom-[-6rem] right-[18%] h-80 w-80 rounded-full bg-teal-200/25 blur-3xl" />
                   </div>
                 </div>
-                <div className="relative z-10 flex h-full overflow-hidden">
+                <div className="relative z-10 flex h-full min-h-0 overflow-hidden">
                   <Sidebar />
-                  <main className="relative flex flex-1 flex-col overflow-y-auto">
+                  <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <CredentialsBanner />
                     <NavigationProvider>
                       <PageTransition>

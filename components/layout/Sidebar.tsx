@@ -281,7 +281,7 @@ export function Sidebar() {
       <aside
         ref={sidebarRef}
         className={cn(
-          "surface-panel relative h-screen flex flex-col border-r border-white/60 transition-[width] duration-300 ease-in-out",
+          "surface-panel relative h-full min-h-0 flex flex-col border-r border-white/60 transition-[width] duration-300 ease-in-out",
           "shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]",
           collapsed ? "w-[68px]" : "w-[240px]"
         )}
