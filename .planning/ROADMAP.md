@@ -36,10 +36,15 @@ Plans:
   2. PDF files can be embedded and scrolled inline within documents
   3. Image, video, and GIF blocks render correctly with improved UX
   4. All new blocks sync via Yjs in real-time across connected users
-**Plans**: TBD
+**Plans**: 6 plans
 
 Plans:
-- [ ] 02-01: TBD
+- [ ] 02-01-PLAN.md — Install Phase 2 deps and scaffold Tiptap CLI components
+- [ ] 02-02-PLAN.md — Table extension (CustomTableCell, sort/filter, xlsx export)
+- [ ] 02-03-PLAN.md — PDF node (PdfNode + PdfNodeView with react-pdf)
+- [ ] 02-04-PLAN.md — Enhanced ImageNode (alignment, lightbox, caption, GIF)
+- [ ] 02-05-PLAN.md — Wire all extensions into WikiEditor + slash menu + drag handle
+- [ ] 02-06-PLAN.md — Human verification of all Phase 2 content blocks
 
 ### Phase 3: Spatial Canvas
 **Goal**: Integrate a whiteboarding canvas as an embedded Tiptap block, synced via Yjs with real-time cursor support.
@@ -84,7 +89,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation & Bug Fix | 1/1 | Complete | 2026-04-20 |
-| 2. Content Blocks | 0/TBD | Not started | - |
+| 2. Content Blocks | 0/6 | Planned | - |
 | 3. Spatial Canvas | 0/TBD | Not started | - |
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
