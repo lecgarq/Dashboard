@@ -3,7 +3,5 @@ builder = "DOCKERFILE"
 
 [deploy]
 startCommand = "node scripts/yjs-server.cjs"
-healthcheckPath = "/api/health"
-healthcheckTimeout = 30
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
