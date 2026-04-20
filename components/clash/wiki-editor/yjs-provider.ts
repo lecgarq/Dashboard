@@ -14,7 +14,7 @@ const yjsCache = new Map<string, YjsProviderEntry>();
 const wikiLogger = createClientLogger("WikiEditor");
 
 function getYjsWsUrl() {
-  const envUrl = process.env.NEXT_PUBLIC_YJS_WS_URL || "ws://localhost:4444";
+  const envUrl = process.env.NEXT_PUBLIC_YJS_WS_URL || "wss://prolific-flow-production.up.railway.app";
   if (
     typeof window !== "undefined" &&
     window.location.protocol === "https:" &&
