@@ -241,6 +241,10 @@ export function WikiEditor({
         bulletList: false,
         orderedList: false,
         listItem: false,
+        // Disable built-ins that we register explicitly below to avoid
+        // "[tiptap warn]: Duplicate extension names found: ['link', 'underline']"
+        link: false,
+        underline: false,
       } as any),
       BulletList,
       OrderedList,
@@ -260,7 +264,10 @@ export function WikiEditor({
       }),
 
       // Phase 2: Table (registered BEFORE Collaboration)
-      TableKit.configure({ table: { resizable: true } } as any),
+      // tableCell: false prevents TableKit from registering the built-in TableCell —
+      // CustomTableCell below is the sole 'tableCell' extension, avoiding the
+      // "[tiptap warn]: Duplicate extension names found: ['tableCell']" warning.
+      TableKit.configure({ table: { resizable: true }, tableCell: false } as any),
       CustomTableCell,
 
       // Phase 2: PDF node with dynamic NodeView (avoids SSR crash)
