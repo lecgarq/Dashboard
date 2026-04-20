@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 2 of 5 (Content Blocks)
-Plan: 3 of 6 in current phase
+Plan: 4 of 6 in current phase
 Status: In progress
-Last activity: 2026-04-20 — 02-03 complete (PDF viewer Tiptap node: PdfNode extension + PdfNodeView component)
+Last activity: 2026-04-20 — 02-04 complete (Enhanced ImageNode + VideoNode with alignment, caption, lightbox, Replace media)
 
-Progress: [███░░░░░░░] 23%
+Progress: [████░░░░░░] 30%
 
 ## Accumulated Context
 
@@ -26,6 +26,9 @@ Progress: [███░░░░░░░] 23%
 - [Phase 2, Plan 03]: PdfNode addNodeView() deferred to WikiEditor.tsx via PdfNode.extend() + dynamic import — keeps pdf-node.ts SSR-safe with zero browser-only imports.
 - [Phase 2, Plan 03]: pdfjs.GlobalWorkerOptions.workerSrc must be set inline in pdf-node-view.tsx (not a utility file) to guarantee module execution order.
 - [Phase 2, Plan 03]: PdfNodeView is default export so dynamic(() => import('./pdf-node-view')) resolves correctly in WikiEditor.tsx.
+- [Phase 2, Plan 04]: ImageNode name must be "image" (not a custom name) to parse existing img[src] tags already stored in the database — backward compatibility critical.
+- [Phase 2, Plan 04]: GIF detection via src.includes('.gif') renders img element for native browser autoplay — no special JS handling needed.
+- [Phase 2, Plan 04]: Replace media uses hidden file input with ref + programmatic click — avoids custom file picker complexity.
 
 ### Blockers/Concerns
 
@@ -34,5 +37,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Completed 02-02-PLAN.md (Table node: CustomTableCell, xlsx export, sort/filter, sticky header CSS)
+Stopped at: Completed 02-04-PLAN.md (Enhanced ImageNode with alignment/lightbox/caption/alt-text/Replace-media; VideoNode extended with matching features)
 Resume file: None
