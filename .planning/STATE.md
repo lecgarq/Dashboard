@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 2 of 5 (Content Blocks)
-Plan: 4 of 6 in current phase
+Plan: 5 of 6 in current phase
 Status: In progress
-Last activity: 2026-04-20 — 02-04 complete (Enhanced ImageNode + VideoNode with alignment, caption, lightbox, Replace media)
+Last activity: 2026-04-20 — 02-05 complete (WikiEditor.tsx wired with all Phase 2 extensions: ImageNode, TableKit, PdfNode, DragHandle, SlashMenu, upload progress bar)
 
-Progress: [████░░░░░░] 30%
+Progress: [█████░░░░░] 40%
 
 ## Accumulated Context
 
@@ -29,6 +29,9 @@ Progress: [████░░░░░░] 30%
 - [Phase 2, Plan 04]: ImageNode name must be "image" (not a custom name) to parse existing img[src] tags already stored in the database — backward compatibility critical.
 - [Phase 2, Plan 04]: GIF detection via src.includes('.gif') renders img element for native browser autoplay — no special JS handling needed.
 - [Phase 2, Plan 04]: Replace media uses hidden file input with ref + programmatic click — avoids custom file picker complexity.
+- [Phase 2, Plan 05]: TableKit sort/filter deferred — TableKit uses ProseMirror native node view; useSortFilter is standalone utility; full sort requires custom React NodeView for table node (future plan).
+- [Phase 2, Plan 05]: SlashDropdownMenu is scaffold (renders null); WIKI_SLASH_ITEMS is fully defined and passed as items prop — slash menu activates when scaffold is replaced with real implementation.
+- [Phase 2, Plan 05]: XHR replaces fetch() in media upload handler to enable upload progress events; namedUploadProgress state shows {fileName, progress} in UI progress bar.
 
 ### Blockers/Concerns
 
@@ -37,5 +40,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-20
-Stopped at: Completed 02-04-PLAN.md (Enhanced ImageNode with alignment/lightbox/caption/alt-text/Replace-media; VideoNode extended with matching features)
+Stopped at: Completed 02-05-PLAN.md (WikiEditor.tsx wired: ImageNode, TableKit, CustomTableCell, PdfNode+DynamicPdfNodeView, DragHandle, NodeRange, SlashDropdownMenu, upload progress bar)
 Resume file: None
