@@ -1,0 +1,41 @@
+/* table-overrides.css
+ *
+ * Sticky header row and border enforcement for Tiptap tables in the WikiEditor.
+ *
+ * Imported into app/globals.css so these styles apply globally wherever .tiptap
+ * renders. Scoped to .tiptap to avoid leaking into other table elements.
+ *
+ * Requirements satisfied:
+ *   - "The header row stays visually fixed (sticky) while scrolling through long tables"
+ *   - "Tables render with visible borders on all cells and a bold/distinct header row"
+ *
+ * TableKit adds a .tiptap-table-wrapper div with overflow-x: auto automatically,
+ * which is required for position: sticky to work on th elements.
+ */
+
+/* Sticky header row — freezes first row when scrolling long tables.
+   The .tiptap-table-wrapper div (rendered by TableKit) must have overflow-x: auto
+   for sticky to work. TableKit adds this wrapper automatically. */
+.tiptap table th {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  /* Ensure header is visually distinct and opaque so content scrolls behind it */
+  background-color: hsl(var(--muted));
+  font-weight: 600;
+}
+
+/* Enforce visible borders on all cells (override any TableKit resets) */
+.tiptap table td,
+.tiptap table th {
+  border: 1px solid hsl(var(--border));
+  padding: 0.5rem 0.75rem;
+  min-width: 80px;
+}
+
+/* First column header sticky left edge — prevents column label overlap
+   when both horizontal scroll and sticky rows are active */
+.tiptap table th:first-child {
+  left: 0;
+  z-index: 3;
+}
