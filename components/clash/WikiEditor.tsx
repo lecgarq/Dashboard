@@ -1,24 +1,47 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useEditor, EditorContent } from "@tiptap/react";
+import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
 import { StarterKit } from "@tiptap/starter-kit";
 import { Placeholder } from "@tiptap/extension-placeholder";
 import { Underline } from "@tiptap/extension-underline";
 import { Link } from "@tiptap/extension-link";
 import { FontFamily } from "@tiptap/extension-font-family";
 import { TextStyle } from "@tiptap/extension-text-style";
-import { ImageResize } from "tiptap-extension-resize-image";
 import Collaboration from "@tiptap/extension-collaboration";
 import CollaborationCaret from "@tiptap/extension-collaboration-caret";
 import BulletList from "@tiptap/extension-bullet-list";
 import OrderedList from "@tiptap/extension-ordered-list";
 import ListItem from "@tiptap/extension-list-item";
 import { useSession } from "next-auth/react";
+import dynamic from "next/dynamic";
 import { compressImage } from "./wiki-editor/media";
 import { WikiLinkDialog } from "./wiki-editor/WikiLinkDialog";
 import { VideoNode } from "./wiki-editor/video-node";
 import { getOrCreateYjsProvider, releaseYjsProvider } from "./wiki-editor/yjs-provider";
+
+// Phase 2: Image (replaces tiptap-extension-resize-image)
+import { ImageNode } from "./wiki-editor/image-node";
+
+// Phase 2: PDF node (schema only — NodeView wired below via dynamic import)
+import { PdfNode } from "./wiki-editor/pdf-node";
+
+// Phase 2: Table extensions
+import { TableKit } from "./wiki-editor/table-node/extensions/table-node-extension";
+import { CustomTableCell } from "./wiki-editor/table-node/extensions/custom-table-cell";
+
+// Phase 2: Drag handle + NodeRange
+import { WikiDragHandle, DragHandleExtension, NodeRange } from "./wiki-editor/drag-handle";
+
+// Phase 2: Slash menu
+import { SlashDropdownMenu } from "./wiki-editor/slash-menu";
+import { WIKI_SLASH_ITEMS } from "./wiki-editor/slash-menu/wiki-slash-items";
+
+// Dynamic import for PdfNodeView — keeps this file SSR-safe (pdf.js uses browser APIs)
+const DynamicPdfNodeView = dynamic(
+  () => import("./wiki-editor/pdf-node-view"),
+  { ssr: false }
+);
 
 import { Button } from "@/components/ui/button";
 import {
@@ -224,10 +247,8 @@ export function WikiEditor({
       Underline,
       TextStyle,
       FontFamily,
-      ImageResize.configure({
-        inline: false,
-        minWidth: 100,
-      }),
+      // Phase 2: ImageNode replaces ImageResize — same node name "image" preserves backward compat
+      ImageNode,
       VideoNode,
       Link.configure({
         openOnClick: false,
@@ -235,6 +256,22 @@ export function WikiEditor({
           class: 'text-primary underline cursor-pointer',
         },
       }),
+
+      // Phase 2: Table (registered BEFORE Collaboration)
+      TableKit.configure({ table: { resizable: true } } as any),
+      CustomTableCell,
+
+      // Phase 2: PDF node with dynamic NodeView (avoids SSR crash)
+      PdfNode.extend({
+        addNodeView() {
+          return ReactNodeViewRenderer(DynamicPdfNodeView as any);
+        },
+      }),
+
+      // Phase 2: Drag Handle + NodeRange
+      DragHandleExtension,
+      NodeRange,
+
       ...(ydoc && provider
         ? [
             Collaboration.configure({
@@ -255,6 +292,8 @@ export function WikiEditor({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  // Phase 2: named upload progress for progress bar UI (shows filename + %)
+  const [namedUploadProgress, setNamedUploadProgress] = useState<{ fileName: string; progress: number } | null>(null);
 
   const handleMediaUpload = useCallback(async (files: File[]) => {
     const ed = editorRef.current;
@@ -294,22 +333,44 @@ export function WikiEditor({
           const formData = new FormData();
           formData.append("file", processedFile);
 
-          const res = await fetch("/api/wiki-media", {
-            method: "POST",
-            headers: {
-              "x-wiki-module": module,
-            },
-            body: formData,
+          // Phase 2: Use XHR for upload progress tracking
+          const { url } = await new Promise<{ url: string }>((resolve, reject) => {
+            const xhr = new XMLHttpRequest();
+            xhr.open("POST", "/api/wiki-media");
+            xhr.setRequestHeader("x-wiki-module", module);
+
+            xhr.upload.addEventListener("progress", (e) => {
+              if (e.lengthComputable) {
+                const pct = Math.round((e.loaded / e.total) * 100);
+                setNamedUploadProgress({ fileName: file.name, progress: pct });
+              }
+            });
+
+            xhr.addEventListener("load", () => {
+              setNamedUploadProgress(null);
+              if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                  resolve(JSON.parse(xhr.responseText));
+                } catch {
+                  reject(new Error("Invalid server response"));
+                }
+              } else {
+                let errMsg = "Upload failed";
+                try {
+                  const payload = JSON.parse(xhr.responseText);
+                  if (typeof payload?.error === "string") errMsg = payload.error;
+                } catch { /* ignore */ }
+                reject(new Error(errMsg));
+              }
+            });
+
+            xhr.addEventListener("error", () => {
+              setNamedUploadProgress(null);
+              reject(new Error("Upload network error"));
+            });
+
+            xhr.send(formData);
           });
-
-          if (!res.ok) {
-            const payload = await res.json().catch(() => null);
-            throw new Error(
-              typeof payload?.error === "string" ? payload.error : "Upload failed"
-            );
-          }
-
-          const { url } = await res.json();
           
           // 3. Finalize: Replace placeholder with real URL
           // We find the node with the temp ID and update its src
@@ -704,6 +765,50 @@ export function WikiEditor({
                   if (files.length > 0) handleMediaUpload(files);
                }}
             />
+            {/* Phase 2: PDF upload — triggered by slash menu PDF item */}
+            <input
+               id="wiki-pdf-upload"
+               type="file"
+               accept="application/pdf"
+               className="hidden"
+               title="Upload PDF"
+               aria-label="Upload PDF"
+               onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !editor) return;
+                  const fileName = file.name;
+                  const formData = new FormData();
+                  formData.append("file", file);
+                  const xhr = new XMLHttpRequest();
+                  xhr.open("POST", "/api/wiki-media");
+                  xhr.setRequestHeader("x-wiki-module", module);
+                  xhr.upload.addEventListener("progress", (ev) => {
+                    if (ev.lengthComputable) {
+                      setNamedUploadProgress({ fileName, progress: Math.round((ev.loaded / ev.total) * 100) });
+                    }
+                  });
+                  xhr.addEventListener("load", () => {
+                    setNamedUploadProgress(null);
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                      const { url } = JSON.parse(xhr.responseText) as { url: string };
+                      // Extract fileId from returned URL or use the URL directly
+                      const fileIdMatch = url.match(/[?&]id=([^&]+)/) ?? url.match(/\/d\/([^/]+)/);
+                      const fileId = fileIdMatch ? fileIdMatch[1] : url;
+                      editor.chain().focus().insertContent({
+                        type: "pdf",
+                        attrs: { fileId, fileName, caption: null, height: 500 },
+                      }).run();
+                    }
+                    // Reset input so the same file can be re-selected
+                    e.target.value = "";
+                  });
+                  xhr.addEventListener("error", () => {
+                    setNamedUploadProgress(null);
+                    e.target.value = "";
+                  });
+                  xhr.send(formData);
+               }}
+            />
 
             {toolbarButtons.map((btn) => {
               const Icon = btn.icon;
@@ -800,7 +905,27 @@ export function WikiEditor({
               placeholder="Module Title..."
            />
         </div>
-        <EditorContent editor={editor} />
+        {/* Phase 2: upload progress bar (named, shows filename + %) */}
+        {namedUploadProgress && (
+          <div className="mx-8 mb-2 rounded-lg border border-border bg-muted/30 px-3 py-2">
+            <div className="mb-1 flex items-center justify-between text-xs text-muted-foreground">
+              <span className="truncate max-w-[200px]">{namedUploadProgress.fileName}</span>
+              <span>{namedUploadProgress.progress}%</span>
+            </div>
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted">
+              <div
+                className="h-full rounded-full bg-primary transition-all duration-200"
+                style={{ width: `${namedUploadProgress.progress}%` }}
+              />
+            </div>
+          </div>
+        )}
+        {/* Phase 2: drag handle + editor content + slash menu */}
+        <div className="group relative">
+          {editor && editorCanWrite && <WikiDragHandle editor={editor} />}
+          <EditorContent editor={editor} />
+          {editor && <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />}
+        </div>
       </div>
       <WikiLinkDialog
         isOpen={linkDialogOpen}
