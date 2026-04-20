@@ -8,7 +8,9 @@ type WikiSessionUser = {
 };
 
 function hasModuleAccess(user: WikiSessionUser, module: WikiModule) {
-  if (user.role === "ADMIN") return true;
+  // ADMIN and EDITOR roles have implicit access to all modules.
+  // Explicit moduleAccess entries are only required for VIEWER-role users.
+  if (user.role === "ADMIN" || user.role === "EDITOR") return true;
   return (user.moduleAccess ?? []).includes(module);
 }
 
