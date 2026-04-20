@@ -1,107 +1,53 @@
-# Project Roadmap
+# Project Roadmap — Wiki Superpowers
 
-## Phase 1: Codebase Mapping & Planning
+> **Current Phase**: Phase 1: Foundation & Bug Fix
+> **Milestone**: v2.0 (Super Wiki)
 
-**Status**: ✅ Complete
+## Must-Haves (from SPEC)
+- [ ] Fix for the "Read-Only" editing bug.
+- [ ] Collaborative Miro-style diagram blocks.
+- [ ] Interactive APS 3D Viewer blocks with ACC integration.
+- [ ] Notion-style Tables and PDF previews.
+- [ ] Cursor-synced multi-user collaboration across all blocks.
 
-**Objective**: Analyze the existing dashboard codebase to identify technical debt, unused files, and redundant logic. Establish a baseline for cleanup.
+## Phases
 
----
+### Phase 1: Foundation & Bug Fix
+**Status**: 🟡 In Progress (Plan 1/1 complete)
+**Objective**: Restore editing capabilities and ensure the Yjs infrastructure is stable for extensions.
+**Tasks**:
+- [x] Debug role-based permissions in `useRole` and `WikiEditor`. — Fixed: EDITOR role now bypasses moduleAccess check in `hasModuleAccess`; collab token endpoint unblocked.
+- [x] Fix Yjs session connection if failing. — Confirmed working; provider singleton pattern is correct.
+- [x] Clean up existing Tiptap extension configurations. — Verified: extensions correct; editable prop now uses explicit `editorCanWrite` flag.
 
-## Phase 2: Dependency Purge
+### Phase 2: Content Blocks (Notion Era)
+**Status**: ⬜ Not Started
+**Objective**: Enrich the editor with standard "Notion" features.
+**Tasks**:
+- [ ] Implement collaborative Tables.
+- [ ] Add PDF embedding with scrollable previews.
+- [ ] Improve Media (Image/Video/GIF) UX.
 
-**Status**: ✅ Complete
+### Phase 3: Spatial Canvas (Miro Era)
+**Status**: ⬜ Not Started
+**Objective**: Integrate a whiteboarding canvas as an embedded block.
+**Tasks**:
+- [ ] Integrate `tldraw` or `Excalidraw` as a custom Tiptap Node.
+- [ ] Sync canvas state via Yjs to the global document state.
+- [ ] Implement real-time cursor sync for drawing.
 
-**Objective**: Systematically remove unused production and development dependencies identified by the analyzer.
+### Phase 4: AEC Intelligence (APS Integration)
+**Status**: ⬜ Not Started
+**Objective**: Connect the wiki to real BIM data via ACC.
+**Tasks**:
+- [ ] Build ACC File Picker dialog.
+- [ ] Create APS Viewer Tiptap Node.
+- [ ] Implement interaction between Wiki text and 3D Model views.
 
----
-
-## Phase 3: Dead File Elimination
-
-**Status**: ✅ Complete
-
-**Objective**: Delete orphaned and unused files across directories and ensure application integrity.
-
----
-
-## Phase 4: Inner-File Dead Code & Final Polish
-
-**Status**: ✅ Complete
-
-**Objective**: Remove unused internal exports, types, and functions from actively imported files. Perform final validation metrics and build.
-
----
-
-## Phase 5: Environment Automation
-
-**Status**: ✅ Complete
-
-**Objective**: Automate `.env` synchronization with the local network IP and establish a stable tunnel URL for consistent authentication redirects.
-
----
-
-## Phase 6: Quality & Accessibility Polish
-
-**Status**: ✅ Complete (2026-04-16)
-
-**Objective**: Resolve pervasive accessibility (A11y) warnings and clean up project documentation to meet strict Markdown linting standards.
-
----
-
-## Phase 7: Comprehensive Architectural Deep-Dive
-
-**Status**: ✅ Complete (Verified)
-
-**Objective**: Super-extend the codebase mapping with deep analysis of every component, API endpoint, data model, and integration point to provide a "super full" architectural state.
-
----
-
-## Phase 8: Deep Stack & Debt Matrix
-
-**Status**: ✅ Complete
-
-**Objective**: Continue the "10X Super Deep" analysis explicitly targeting the Technology Stack matrix and extracting all lingering Technical Debt blockages file-by-file.
-
-**Depends on**: Phase 7
-
----
-
-## Phase 9: Kanban Virtualization Refactor
-
-**Status**: 🚀 Staged (Ready for Execution)
-
-**Objective**: Refactor the Drag-and-Drop `FamilyDetailPanel` and `KanbanBoard` replacing array mapping loops with `@tanstack/react-virtual` preventing memory leaks when nodes scale past `n>200`.
-
-**Depends on**: Phase 8
-
----
-
-## Phase 10: UploadThing Orphan S3 Cleanup Hooks
-
-**Status**: 🚀 Staged (Ready for Execution)
-
-**Objective**: Intercept Prisma `UserTask` cascades executing asynchronous webhooks to trigger `utapi.deleteFiles` across legacy AWS endpoints wiping localized binary bloat.
-
-**Depends on**: Phase 8
-
----
-
-## Phase 11: Redis Vector Cache Abstraction
-
-**Status**: 🚀 Staged (Ready for Execution)
-
-**Objective**: Migrate `LodSearchCache` out of `PostgreSQL` natively into `@upstash/redis` environments offloading `pgvector` KNN calculation locks from relational connection pools.
-
-**Note**: `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` must be added to Railway env vars and local `.env` to activate the cache in production.
-
-**Depends on**: Phase 8
-
----
-
-## Phase 12: Suspense Boundary Granularity
-
-**Status**: 🚀 Staged (Ready for Execution)
-
-**Objective**: Decompose monolithic data fetching across analytical layouts resolving localized `<React.Suspense>` boundaries.
-
-**Depends on**: Phase 8
+### Phase 5: Polish & Excellence
+**Status**: ⬜ Not Started
+**Objective**: Final aesthetic and performance tuning.
+**Tasks**:
+- [ ] Glassmorphism UI enhancements.
+- [ ] Final performance audit for 3D/Diagram blocks.
+- [ ] "Super Full" architectural update for GSD.
