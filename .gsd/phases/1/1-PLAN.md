@@ -4,52 +4,46 @@ plan: 1
 wave: 1
 ---
 
-# Plan 1.1: Tooling Setup & Knip Configuration
+# Plan 1.1: Fix Edit Permissions & Restore Wiki Access
 
 ## Objective
-Establish the automated mechanism (`knip`) that will detect unused files, exports, and dependencies across the workspace. We need to install it, bind it to package.json, and configure it thoughtfully to ignore intentionally dormant UI components and framework files.
+Normalize the permission logic between TRPC and the Yjs collaboration endpoint to ensure users with the "EDITOR" role can always edit the wiki sections.
 
 ## Context
-- .gsd/SPEC.md
-- .gsd/ARCHITECTURE.md
-- package.json
+- `lib/server/wiki-access.ts` (Permission logic)
+- `server/trpc.ts` (TRPC middleware)
+- `app/api/wiki-collab-token/route.ts` (Collab endpoint)
 
 ## Tasks
 
 <task type="auto">
-  <name>Install Knip and add NPM Script</name>
-  <files>package.json</files>
+  <name>Align Wiki Permissions</name>
+  <files>
+    <file>c:\LECG\Dashboard\lib\server\wiki-access.ts</file>
+  </files>
   <action>
-    - Install `knip` as a dev dependency via npm.
-    - Add a `"knip": "knip"` script to the package.json scripts block so it can be easily run.
+    Modify `canEditWikiModule` to allow "EDITOR" role access even if the specific module is missing from `moduleAccess`, or ensure `hasModuleAccess` is consistent with the product vision.
+    
+    The current inconsistency is that TRPC allows the edit but the Yjs token endpoint rejects it.
   </action>
-  <verify>npm list knip</verify>
-  <done>Knip version is visible in devDependencies and the script exists in package.json.</done>
+  <verify>Check that `canEditWikiModule` returns true for an EDITOR role.</verify>
+  <done>Permission logic is unified.</done>
 </task>
 
 <task type="auto">
-  <name>Create Configuration File (knip.ts)</name>
-  <files>knip.ts</files>
+  <name>Optimize Tiptap Extension Foundation</name>
+  <files>
+    <file>c:\LECG\Dashboard\components\clash\WikiEditor.tsx</file>
+  </files>
   <action>
-    - Create a `knip.ts` configuration file in the project root.
-    - Export a configuration object that applies to Next.js projects.
-    - MUST ignore `components/ui/**` (Shadcn components), `.gsd/**`, `scripts/**`, and standard configuration scripts to prevent them from being flagged as dead code.
+    Review the current `extensions` array. Ensure `Collaboration` and `CollaborationCaret` are correctly initialized and that the `editable` prop strictly follows the new permission logic.
+    Check for any CSS `z-index` or `pointer-events` issues that might be blocking input in the `prose` container.
   </action>
-  <verify>cat knip.ts</verify>
-  <done>The config exports exclusions and project roots aligned with a Next.js App Router codebase.</done>
-</task>
-
-<task type="auto">
-  <name>Establish Baseline Analytics</name>
-  <files>package.json</files>
-  <action>
-    - Execute a dry run of knip across the codebase using `npx knip --no-exit-code`. This command will output all current issues but will naturally exit without breaking CI, thus proving configuration is functional.
-  </action>
-  <verify>npx knip --version</verify>
-  <done>Knip natively resolves dependencies and traverses without exception errors.</done>
+  <verify>Visual inspection of the editor state.</verify>
+  <done>Editor is responsive and ready for new blocks.</done>
 </task>
 
 ## Success Criteria
-- [ ] Knip is installed and executable.
-- [ ] The `knip.ts` accurately maps Next.js entries and explicitly ignores `components/ui`.
-- [ ] A baseline run successfully reveals existing unused targets and versions match.
+- [ ] Users with the EDITOR role can successfully obtain a collab token.
+- [ ] The Tiptap editor body becomes editable (flashing cursor appears).
+- [ ] Changes made to the body are persisted to the database.
