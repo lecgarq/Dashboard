@@ -29,9 +29,10 @@ import { PdfNode } from "./wiki-editor/pdf-node";
 // Phase 2: Table extensions
 import { TableKit } from "./wiki-editor/table-node/extensions/table-node-extension";
 import { CustomTableCell } from "./wiki-editor/table-node/extensions/custom-table-cell";
+import { TableCellHandleMenu, TableHandle } from "./wiki-editor/table-node/ui/table-handle";
 
 // Phase 2: Drag handle + NodeRange
-import { WikiDragHandle, DragHandleExtension, NodeRange } from "./wiki-editor/drag-handle";
+import { WikiDragHandle, NodeRange } from "./wiki-editor/drag-handle";
 
 // Phase 2: Slash menu
 import { SlashDropdownMenu } from "./wiki-editor/slash-menu";
@@ -57,6 +58,7 @@ import {
   Video as VideoIcon,
   Loader2,
   Link as LinkIcon,
+  FileText,
 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import { cn } from "@/lib/core/utils";
@@ -268,8 +270,7 @@ export function WikiEditor({
         },
       }),
 
-      // Phase 2: Drag Handle + NodeRange
-      DragHandleExtension,
+      // Phase 2: NodeRange (DragHandle plugin is mounted by the React wrapper)
       NodeRange,
 
       ...(ydoc && provider
@@ -638,6 +639,19 @@ export function WikiEditor({
     );
   };
 
+  const focusEditorSurface = () => {
+    if (!editor) return;
+
+    if (editor.state.doc.childCount === 0) {
+      editor.commands.setContent("<p></p>", { emitUpdate: false });
+    }
+
+    editor.chain().focus("end").run();
+  };
+
+  const showEditorInitializing = canEdit && (!editor || !editorCanWrite) && !collabError;
+  const showEmptyCanvasHint = !!editor && editorCanWrite && editor.isEmpty;
+
   const toolbarButtons = editor
     ? [
         {
@@ -921,10 +935,58 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="group relative">
-          {editor && editorCanWrite && <WikiDragHandle editor={editor} />}
-          <EditorContent editor={editor} />
-          {editor && <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />}
+        <div className="mx-8 mb-8 overflow-hidden rounded-[28px] border border-border/50 bg-white/46 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+          {showEditorInitializing ? (
+            <div className="flex min-h-[420px] flex-col items-center justify-center gap-4 px-8 py-12 text-center">
+              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
+                <Loader2 size={22} className="animate-spin" />
+              </div>
+              <div className="space-y-1.5">
+                <p className="text-sm font-semibold text-foreground">
+                  Preparing collaborative editor
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  The writing canvas will appear as soon as the document session is ready.
+                </p>
+              </div>
+            </div>
+          ) : null}
+
+          {collabError ? (
+            <div className="mx-6 my-6 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+              {collabError}
+            </div>
+          ) : null}
+
+          {editor ? (
+            <div className="group relative">
+              {showEmptyCanvasHint ? (
+                <button
+                  type="button"
+                  className="mx-6 mt-6 flex w-[calc(100%-3rem)] items-start gap-3 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.06] px-4 py-4 text-left transition-colors hover:bg-primary/[0.09]"
+                  onClick={focusEditorSurface}
+                >
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-white/70 text-primary">
+                    <FileText size={16} />
+                  </span>
+                  <span>
+                    <span className="block text-sm font-semibold text-foreground">
+                      Start writing here
+                    </span>
+                    <span className="mt-1 block text-xs text-muted-foreground">
+                      Click anywhere in the canvas below, or type <span className="font-semibold text-foreground">/</span> to insert a table, image, video, or PDF.
+                    </span>
+                  </span>
+                </button>
+              ) : null}
+
+              {editorCanWrite && !showEmptyCanvasHint && <WikiDragHandle editor={editor} />}
+              <EditorContent editor={editor} />
+              {editorCanWrite && !showEmptyCanvasHint && <TableHandle editor={editor} />}
+              {editorCanWrite && !showEmptyCanvasHint && <TableCellHandleMenu editor={editor} />}
+              <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
+            </div>
+          ) : null}
         </div>
       </div>
       <WikiLinkDialog

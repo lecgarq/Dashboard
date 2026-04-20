@@ -21,8 +21,18 @@ export interface WikiDragHandleProps {
  */
 export function WikiDragHandle({ editor }: WikiDragHandleProps) {
   const handleAddBlock = () => {
-    // Move cursor to end of current node and insert "/" to trigger slash menu
-    editor.chain().focus().insertContent("/").run();
+    const { selection } = editor.state;
+    const insertPos =
+      selection.$from.depth > 0 ? selection.$from.after(1) : selection.to;
+
+    editor
+      .chain()
+      .focus()
+      .insertContentAt(insertPos, {
+        type: "paragraph",
+        content: [{ type: "text", text: "/" }],
+      })
+      .run();
   };
 
   return (

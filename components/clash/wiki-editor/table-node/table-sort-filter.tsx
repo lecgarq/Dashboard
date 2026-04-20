@@ -28,6 +28,25 @@ export interface FilterState {
   active: boolean;
 }
 
+export const DEFAULT_SORT_STATE: SortState = {
+  columnIndex: null,
+  direction: "asc",
+};
+
+export const DEFAULT_FILTER_STATE: FilterState = {
+  query: "",
+  active: false,
+};
+
+export function getNextSortState(current: SortState, colIndex: number): SortState {
+  return current.columnIndex === colIndex
+    ? {
+        columnIndex: colIndex,
+        direction: current.direction === "asc" ? "desc" : "asc",
+      }
+    : { columnIndex: colIndex, direction: "asc" };
+}
+
 /**
  * Manages sort and filter state for a table node view.
  *
@@ -38,24 +57,16 @@ export interface FilterState {
  * @returns sort/filter state + toggleSort/setFilter + displayRows
  */
 export function useSortFilter(rawRows: string[][]) {
-  const [sort, setSort] = useState<SortState>({
-    columnIndex: null,
-    direction: "asc",
-  });
-  const [filter, setFilter] = useState<FilterState>({
-    query: "",
-    active: false,
-  });
+  const [sort, setSort] = useState<SortState>(DEFAULT_SORT_STATE);
+  const [filter, setFilter] = useState<FilterState>(DEFAULT_FILTER_STATE);
 
   const toggleSort = useCallback((colIndex: number) => {
-    setSort((prev) =>
-      prev.columnIndex === colIndex
-        ? {
-            columnIndex: colIndex,
-            direction: prev.direction === "asc" ? "desc" : "asc",
-          }
-        : { columnIndex: colIndex, direction: "asc" }
-    );
+    setSort((prev) => getNextSortState(prev, colIndex));
+  }, []);
+
+  const reset = useCallback(() => {
+    setSort(DEFAULT_SORT_STATE);
+    setFilter(DEFAULT_FILTER_STATE);
   }, []);
 
   // Separate header from data rows before applying sort/filter
@@ -84,6 +95,7 @@ export function useSortFilter(rawRows: string[][]) {
     filter,
     toggleSort,
     setFilter,
+    reset,
     displayRows: [headerRow, ...dataRows],
   };
 }

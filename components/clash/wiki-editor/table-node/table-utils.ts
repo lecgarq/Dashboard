@@ -10,6 +10,7 @@
  */
 
 import type { Editor } from "@tiptap/core";
+import type { Node as ProseMirrorNode } from "@tiptap/pm/model";
 import * as XLSX from "xlsx";
 
 /**
@@ -21,24 +22,22 @@ import * as XLSX from "xlsx";
  */
 export function extractTableRows(editor: Editor): string[][] {
   const rows: string[][] = [];
-  const { doc } = editor.state;
+  const { $from } = editor.state.selection;
 
-  // Find the nearest table node in the document
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let tableNode: any = null;
-  doc.nodesBetween(0, doc.content.size, (node) => {
+  let tableNode: ProseMirrorNode | null = null;
+  for (let depth = $from.depth; depth >= 0; depth -= 1) {
+    const node = $from.node(depth);
     if (node.type.name === "table") {
       tableNode = node;
+      break;
     }
-  });
+  }
 
   if (!tableNode) return rows;
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tableNode.forEach((rowNode: any) => {
+  tableNode.forEach((rowNode) => {
     const row: string[] = [];
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    rowNode.forEach((cellNode: any) => {
+    rowNode.forEach((cellNode) => {
       row.push(cellNode.textContent);
     });
     rows.push(row);

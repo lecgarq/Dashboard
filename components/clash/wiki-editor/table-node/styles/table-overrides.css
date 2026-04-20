@@ -23,6 +23,22 @@
   /* Ensure header is visually distinct and opaque so content scrolls behind it */
   background-color: hsl(var(--muted));
   font-weight: 600;
+  cursor: pointer;
+}
+
+.tiptap table th[data-sort-direction="asc"]::after,
+.tiptap table th[data-sort-direction="desc"]::after {
+  margin-left: 0.4rem;
+  font-size: 0.75rem;
+  opacity: 0.8;
+}
+
+.tiptap table th[data-sort-direction="asc"]::after {
+  content: "↑";
+}
+
+.tiptap table th[data-sort-direction="desc"]::after {
+  content: "↓";
 }
 
 /* Enforce visible borders on all cells (override any TableKit resets) */
