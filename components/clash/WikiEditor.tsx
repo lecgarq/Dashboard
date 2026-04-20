@@ -413,7 +413,10 @@ export function WikiEditor({
 
   const editor = useEditor({
     extensions,
-    editable: canEdit && !!collabSession,
+    // editorCanWrite is true only once canEdit is granted AND the Yjs collab session is
+    // established. Passing `editorCanWrite` here (vs. `canEdit`) prevents a brief window
+    // where the editor is interactive but has no CRDT document backing it.
+    editable: editorCanWrite,
     content: !canEdit ? section.content : "",
     immediatelyRender: false,
     onUpdate: ({ editor }) => {
