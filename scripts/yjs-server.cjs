@@ -352,6 +352,16 @@ wss.on("connection", async (conn, req) => {
   });
 });
 
+// Ping all connected clients every 25s to prevent Railway's proxy from
+// closing idle WebSocket connections.
+setInterval(() => {
+  wss.clients.forEach((client) => {
+    if (client.readyState === 1) {
+      client.ping();
+    }
+  });
+}, 25000);
+
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`[yjs] Yjs WebSocket server + Prisma Persistence listening on 0.0.0.0:${PORT}`);
 });

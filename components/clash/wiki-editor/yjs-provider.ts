@@ -67,6 +67,9 @@ export function releaseYjsProvider(roomName: string, cached: YjsProviderEntry) {
 
   setTimeout(() => {
     if (cached.refCount > 0) return;
+    // Guard: a new provider may have been created for the same room before
+    // this timer fired. Only destroy/delete the exact entry we released.
+    if (yjsCache.get(roomName) !== cached) return;
     cached.provider.destroy();
     cached.ydoc.destroy();
     yjsCache.delete(roomName);
