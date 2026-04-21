@@ -298,6 +298,7 @@ export function WikiEditor({
     ];
   }, [provider, session, ydoc]);
 
+  const [editorViewReady, setEditorViewReady] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -486,6 +487,8 @@ export function WikiEditor({
     editable: editorCanWrite,
     content: !canEdit ? section.content : "",
     immediatelyRender: false,
+    onCreate: () => setEditorViewReady(true),
+    onDestroy: () => setEditorViewReady(false),
     onUpdate: ({ editor }) => {
       currentHtmlRef.current = editor.getHTML();
       setIsDirty(true);
@@ -494,6 +497,11 @@ export function WikiEditor({
     },
     editorProps,
   }, [ydoc]);
+
+  // Reset view-ready flag whenever the editor instance is replaced (ydoc change).
+  useEffect(() => {
+    setEditorViewReady(false);
+  }, [editor]);
 
   // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty!
   useEffect(() => {
@@ -993,10 +1001,10 @@ export function WikiEditor({
                 </button>
               ) : null}
 
-              {editorCanWrite && <WikiDragHandle editor={editor} />}
+              {editorCanWrite && editorViewReady && <WikiDragHandle editor={editor} />}
               <EditorContent editor={editor} />
-              {editorCanWrite && <TableHandle editor={editor} />}
-              {editorCanWrite && <TableCellHandleMenu editor={editor} />}
+              {editorCanWrite && editorViewReady && <TableHandle editor={editor} />}
+              {editorCanWrite && editorViewReady && <TableCellHandleMenu editor={editor} />}
               <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
             </div>
           ) : null}
