@@ -10,7 +10,18 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const token = searchParams.get("token");
 
-  if (!token) return redirect("/trello?error=no_token");
+  if (!token) {
+    // Trello returns the token as a URL hash fragment (#token=...) which browsers
+    // never send to the server. This HTML reads the fragment and re-redirects with
+    // the token as a proper query param so the server can process it.
+    return new Response(
+      `<!DOCTYPE html><html><script>
+var h=new URLSearchParams(location.hash.slice(1)),t=h.get('token');
+location.replace(t?location.pathname+'?token='+encodeURIComponent(t):'/trello?error=no_token');
+</script></html>`,
+      { headers: { "Content-Type": "text/html" } }
+    );
+  }
 
   const apiKey = process.env.TRELLO_API_KEY ?? "";
   const meRes = await fetch(
