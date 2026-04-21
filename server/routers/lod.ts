@@ -289,6 +289,7 @@ export const lodRouter = router({
           select: {
             id: true,
             familyName: true,
+            nameOfFile: true,
             finalCategory: true,
             lodLabel: true,
           },

@@ -85,6 +85,20 @@ function imageFilename(outputPath, nameOfFile) {
   return undefined;
 }
 
+function displayName(...values) {
+  for (const value of values) {
+    if (typeof value !== "string") continue;
+    const trimmed = value.trim();
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (lower === "generic family" || lower === "unknown" || lower === "untitled") {
+      continue;
+    }
+    return trimmed;
+  }
+  return null;
+}
+
 function isValidEmbedding(vector) {
   return (
     Array.isArray(vector) &&
@@ -199,10 +213,18 @@ async function processBatch(db, batch, graphMap) {
     const familyRows = batch.map((item) => {
       const graphNode = graphMap.get(item.id);
       const imagePath = imageFilename(item.output_path, item.name_of_file) ?? null;
+      const fileStem = item.name_of_file ? path.parse(item.name_of_file).name : null;
 
       return {
         nameOfFile: item.name_of_file,
-        familyName: graphNode?.family_name ?? item.name_of_image ?? null,
+        familyName: displayName(
+          graphNode?.family_name,
+          item.family_name,
+          item.name_of_image,
+          item.simplified_description,
+          fileStem,
+          item.name_of_file
+        ),
         finalCategory: item.final_category ?? null,
         lodLabel: item.lod_label ?? null,
         provider: item.provider ?? null,

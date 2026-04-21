@@ -51,6 +51,20 @@ UMAP_MIN_DIST = 0.1
 KNN_K = 30
 
 
+def display_name(*values):
+    placeholders = {"generic family", "unknown", "untitled"}
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        if not text:
+            continue
+        if text.lower() in placeholders:
+            continue
+        return text
+    return "Generic Family"
+
+
 def generate_semantic_graph():
     print(f"Loading data from {VECTORS_FILE}...")
     
@@ -167,7 +181,13 @@ def generate_semantic_graph():
             "neighbors": neighbors[idx],
             # Display properties
             "name": rec.get("name_of_image", "Unknown"), # Changed from simplified_description
-            "family_name": rec.get("family_name", "Generic Family"), # New field
+            "family_name": display_name(
+                rec.get("family_name"),
+                rec.get("familyName"),
+                rec.get("name_of_image"),
+                Path(filename).stem if filename else None,
+                rec.get("name_of_file")
+            ), # New field
             "final_category": rec.get("final_category") or "Uncategorized", # Changed fallback
             "lod_label": lod_val, # Using the robustly determined value
             "provider": rec.get("provider", "Unknown"),

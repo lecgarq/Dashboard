@@ -8,6 +8,7 @@ import { useRole } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";
 import { Trash2, ExternalLink } from "lucide-react";
 import Image from "next/image";
+import { getFamilyDisplayName } from "./lodDisplay";
 
 interface LodDetailPanelProps {
   familyId: string | null;
@@ -21,6 +22,9 @@ export function LodDetailPanel({ familyId, onClose, onDeleted }: LodDetailPanelP
     { id: familyId! },
     { enabled: !!familyId }
   );
+  const displayName = family
+    ? getFamilyDisplayName(family.familyName, family.nameOfFile)
+    : "Loading...";
   const utils = trpc.useUtils();
   const deleteMutation = trpc.lod.deleteFamily.useMutation({
     onSuccess: () => {
@@ -35,7 +39,7 @@ export function LodDetailPanel({ familyId, onClose, onDeleted }: LodDetailPanelP
       <SheetContent className="w-[400px] sm:w-[480px] overflow-y-auto">
         <SheetHeader className="mb-4">
           <SheetTitle className="text-base leading-snug">
-            {family?.familyName ?? family?.nameOfFile ?? "Loading…"}
+            {displayName}
           </SheetTitle>
         </SheetHeader>
 
@@ -45,7 +49,7 @@ export function LodDetailPanel({ familyId, onClose, onDeleted }: LodDetailPanelP
               <div className="relative w-full h-48 rounded-md overflow-hidden bg-muted">
                 <Image
                   src={`/api/lod-img/${encodeURIComponent(family.imagePath)}`}
-                  alt={family.familyName ?? ""}
+                  alt={displayName}
                   fill
                   className="object-contain"
                 />

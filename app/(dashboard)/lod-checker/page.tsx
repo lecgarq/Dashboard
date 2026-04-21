@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Database, Sparkles, Network, FlaskConical } from "lucide-react";
 import { LodTrainingPanel } from "@/components/lod/LodTrainingPanel";
+import { getFamilyDisplayName } from "@/components/lod/lodDisplay";
 
 type LodFamily = {
   id: string;
@@ -132,57 +133,63 @@ export default function LODCheckerPage() {
                   </p>
 
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {results.map((family) => (
-                      <button
-                        key={family.id}
-                        onClick={() => setSelectedId(family.id)}
-                        className="group text-left rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 p-3 flex gap-3 items-start"
-                      >
-                        {/* Thumbnail */}
-                        <div className="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-muted border border-border/50 relative">
-                          {family.imagePath ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={`/api/lod-img/${encodeURIComponent(family.imagePath)}`}
-                              alt={family.familyName ?? family.nameOfFile}
-                              className="w-full h-full object-cover grayscale-[0.15] group-hover:grayscale-0 transition-all duration-300"
-                              onError={(e) => {
-                                (e.currentTarget as HTMLImageElement).style.display = "none";
-                              }}
-                            />
-                          ) : null}
-                        </div>
+                    {results.map((family) => {
+                      const displayName = getFamilyDisplayName(
+                        family.familyName,
+                        family.nameOfFile
+                      );
+                      return (
+                        <button
+                          key={family.id}
+                          onClick={() => setSelectedId(family.id)}
+                          className="group text-left rounded-xl border bg-card hover:border-primary/50 hover:shadow-md transition-all duration-200 p-3 flex gap-3 items-start"
+                        >
+                          {/* Thumbnail */}
+                          <div className="w-16 h-16 shrink-0 rounded-lg overflow-hidden bg-muted border border-border/50 relative">
+                            {family.imagePath ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={`/api/lod-img/${encodeURIComponent(family.imagePath)}`}
+                                alt={displayName}
+                                className="w-full h-full object-cover grayscale-[0.15] group-hover:grayscale-0 transition-all duration-300"
+                                onError={(e) => {
+                                  (e.currentTarget as HTMLImageElement).style.display = "none";
+                                }}
+                              />
+                            ) : null}
+                          </div>
 
-                        {/* Info */}
-                        <div className="flex-1 min-w-0">
-                          <p className="font-semibold text-xs truncate text-foreground">
-                            {family.familyName ?? family.nameOfFile}
-                          </p>
-                          {family.finalCategory && (
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate mt-0.5">
-                              {family.finalCategory}
+                          {/* Info */}
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-xs truncate text-foreground">
+                              {displayName}
                             </p>
-                          )}
-                          <div className="flex flex-wrap gap-1 mt-1.5">
-                            {family.lodLabel && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                                {family.lodLabel}
-                              </Badge>
+                            {family.finalCategory && (
+                              <p className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground truncate mt-0.5">
+                                {family.finalCategory}
+                              </p>
                             )}
-                            {family.provider && (
-                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-                                {family.provider}
-                              </Badge>
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {family.lodLabel && (
+                                <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                                  {family.lodLabel}
+                                </Badge>
+                              )}
+                              {family.provider && (
+                                <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+                                  {family.provider}
+                                </Badge>
+                              )}
+                            </div>
+                            {family.caption && (
+                              <p className="text-[10px] text-muted-foreground/70 line-clamp-2 mt-1">
+                                {family.caption}
+                              </p>
                             )}
                           </div>
-                          {family.caption && (
-                            <p className="text-[10px] text-muted-foreground/70 line-clamp-2 mt-1">
-                              {family.caption}
-                            </p>
-                          )}
-                        </div>
-                      </button>
-                    ))}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}

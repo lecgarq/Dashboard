@@ -3,6 +3,7 @@
 import { useRef, useEffect, useCallback, useState, useMemo, memo } from "react";
 import { trpc } from "@/lib/core/trpc";
 import { Loader2 } from "lucide-react";
+import { getFamilyDisplayName } from "./lodDisplay";
 
 type GraphNode = {
   id: string;
@@ -13,6 +14,7 @@ type GraphNode = {
   family: {
     id: string;
     familyName: string | null;
+    nameOfFile: string | null;
     finalCategory: string | null;
     lodLabel: string | null;
   };
@@ -312,20 +314,25 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
         ctx.stroke();
       } else if (!isInteracting) {
         const lk = links.current;
-        // Skip edge pass entirely if there are too many (perf guard)
-        if (lk.length < 100000) {
-          const stride = lk.length > 40000 ? 4 : 2;
-          ctx.globalAlpha = 0.07;
+        if (lk.length > 0) {
+          const pairCount = lk.length / 2;
+          const pairStride = Math.max(1, Math.ceil(pairCount / 20000));
+          const indexStride = pairStride * 2;
+          ctx.globalAlpha = pairCount > 20000 ? 0.05 : 0.07;
           const batches = new Map<string, number[]>();
-          for (let i = 0; i < lk.length; i += stride) {
+          for (let i = 0; i < lk.length; i += indexStride) {
             const s = lk[i], t = lk[i + 1];
             if (pos[s * 2] < minWX && pos[t * 2] < minWX) continue;
+            if (pos[s * 2] > maxWX && pos[t * 2] > maxWX) continue;
+            if (pos[s * 2 + 1] < minWY && pos[t * 2 + 1] < minWY) continue;
+            if (pos[s * 2 + 1] > maxWY && pos[t * 2 + 1] > maxWY) continue;
             const color = getCategoryColor(nodes[s].family.finalCategory);
             if (!batches.has(color)) batches.set(color, []);
             batches.get(color)!.push(s, t);
           }
           for (const [color, pairs] of batches) {
-            ctx.strokeStyle = color; ctx.beginPath();
+            ctx.strokeStyle = color;
+            ctx.beginPath();
             for (let i = 0; i < pairs.length; i += 2) {
               ctx.moveTo(pos[pairs[i] * 2], pos[pairs[i] * 2 + 1]);
               ctx.lineTo(pos[pairs[i + 1] * 2], pos[pairs[i + 1] * 2 + 1]);
@@ -607,7 +614,10 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
         {hoveredNode && (
           <>
             <p className="text-xs font-semibold text-foreground leading-tight">
-              {hoveredNode.family.familyName ?? "Unknown"}
+              {getFamilyDisplayName(
+                hoveredNode.family.familyName,
+                hoveredNode.family.nameOfFile
+              )}
             </p>
             <p
               className="text-[10px] font-bold uppercase tracking-wider"
