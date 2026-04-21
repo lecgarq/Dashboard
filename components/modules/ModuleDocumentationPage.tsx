@@ -336,6 +336,15 @@ export function ModuleDocumentationPage({
                         onClick={(event) => {
                           event.stopPropagation();
                           if (confirm(`Delete section "${section.title}"?`)) {
+                            // Switch away first so the editor unmounts cleanly before the
+                            // section is removed from the cache, preventing the
+                            // "Node.insertBefore" ProseMirror DOM sync error.
+                            if (activeWiki === section.section) {
+                              const next = displaySections.find(
+                                (s) => s.section !== section.section
+                              );
+                              setActiveWiki(next?.section ?? "");
+                            }
                             deleteWikiSection.mutate({ section: section.section });
                           }
                         }}

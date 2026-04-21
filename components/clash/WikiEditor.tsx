@@ -31,8 +31,8 @@ import { TableKit } from "./wiki-editor/table-node/extensions/table-node-extensi
 import { CustomTableCell } from "./wiki-editor/table-node/extensions/custom-table-cell";
 import { TableCellHandleMenu, TableHandle } from "./wiki-editor/table-node/ui/table-handle";
 
-// Phase 2: Drag handle + NodeRange
-import { WikiDragHandle, NodeRange } from "./wiki-editor/drag-handle";
+// Phase 2: Drag handle
+import { WikiDragHandle } from "./wiki-editor/drag-handle";
 
 // Phase 2: Slash menu
 import { SlashDropdownMenu } from "./wiki-editor/slash-menu";
@@ -278,9 +278,6 @@ export function WikiEditor({
         },
       }),
 
-      // Phase 2: NodeRange (DragHandle plugin is mounted by the React wrapper)
-      NodeRange,
-
       ...(ydoc && provider
         ? [
             Collaboration.configure({
@@ -478,7 +475,7 @@ export function WikiEditor({
       return false;
     },
     attributes: {
-      class: "prose prose-invert prose-sm max-w-none min-h-[400px] px-8 py-6 text-sm text-foreground outline-none focus:outline-none [&_h2]:text-foreground [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-foreground [&_h3]:text-base [&_h3]:font-medium [&_p]:text-foreground/80 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-foreground/80 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-foreground/80 [&_li]:text-foreground/80 [&_strong]:text-foreground [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground [&_code]:text-primary [&_code]:bg-primary/10 [&_code]:px-1 [&_code]:rounded [&_.is-editor-empty:first-child::before]:text-muted-foreground/30",
+      class: "prose prose-invert prose-sm max-w-none flex-1 min-h-[500px] px-8 py-6 text-sm text-foreground outline-none focus:outline-none [&_h2]:text-foreground [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-foreground [&_h3]:text-base [&_h3]:font-medium [&_p]:text-foreground/80 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-foreground/80 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-foreground/80 [&_li]:text-foreground/80 [&_strong]:text-foreground [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground [&_code]:text-primary [&_code]:bg-primary/10 [&_code]:px-1 [&_code]:rounded [&_.is-editor-empty:first-child::before]:text-muted-foreground/30",
     },
   }), []);
 
@@ -924,7 +921,7 @@ export function WikiEditor({
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
         <div className="px-8 pt-8 pb-4">
            <input
               className="w-full bg-transparent text-3xl font-bold text-foreground outline-none border-none placeholder:opacity-20"
@@ -956,9 +953,9 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="mx-8 mb-8 overflow-hidden rounded-[28px] border border-border/50 bg-white/46 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+        <div className="flex flex-col flex-1 mx-8 mb-8 overflow-hidden rounded-[28px] border border-border/50 bg-white/46 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
           {showEditorInitializing ? (
-            <div className="flex min-h-[420px] flex-col items-center justify-center gap-4 px-8 py-12 text-center">
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-12 text-center">
               <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
                 <Loader2 size={22} className="animate-spin" />
               </div>
@@ -980,7 +977,7 @@ export function WikiEditor({
           ) : null}
 
           {editor ? (
-            <div className="group relative">
+            <div className="group relative flex flex-col flex-1">
               {showEmptyCanvasHint ? (
                 <button
                   type="button"

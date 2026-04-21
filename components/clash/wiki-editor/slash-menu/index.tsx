@@ -7,6 +7,7 @@ import React, {
   useRef,
   useState,
 } from "react";
+import { createPortal } from "react-dom";
 import type { Editor } from "@tiptap/react";
 
 import { cn } from "@/lib/core/utils";
@@ -295,17 +296,19 @@ export function SlashDropdownMenu({
     };
   }, [closeMenu, editor, executeItem, filteredItems, menuState, selectedIndex]);
 
-  if (!menuState) {
+  if (!menuState || typeof document === "undefined") {
     return null;
   }
 
   let linearIndex = -1;
   let previousGroup: string | undefined;
 
-  return (
+  // Render via portal so position:fixed resolves against the viewport,
+  // not any ancestor with backdrop-filter / transform / will-change.
+  return createPortal(
     <div
       ref={menuRef}
-      className="fixed z-50 w-80 overflow-hidden rounded-xl border border-border bg-background/95 shadow-2xl backdrop-blur"
+      className="fixed z-[9999] w-80 overflow-hidden rounded-xl border border-border bg-background/95 shadow-2xl backdrop-blur"
       style={{
         left: `${menuState.position.left}px`,
         top: `${menuState.position.top}px`,
@@ -376,7 +379,8 @@ export function SlashDropdownMenu({
           })
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

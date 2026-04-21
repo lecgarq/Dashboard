@@ -9,6 +9,7 @@ import { clientLogger } from "@/lib/core/logger";
 interface State {
   hasError: boolean;
   isChunkError: boolean;
+  isDomSyncError: boolean;
   retryKey: number;
   errorMessage: string;
 }
@@ -17,21 +18,29 @@ export class WikiEditorBoundary extends React.Component<
   { children: React.ReactNode },
   State
 > {
-  state: State = { hasError: false, isChunkError: false, retryKey: 0, errorMessage: "" };
+  state: State = { hasError: false, isChunkError: false, isDomSyncError: false, retryKey: 0, errorMessage: "" };
 
   static getDerivedStateFromError(error: unknown): Partial<State> {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    return { hasError: true, isChunkError: isChunkLoadError(error), errorMessage };
+    const isDomSyncError =
+      errorMessage.includes("insertBefore") || errorMessage.includes("is not a child");
+    return { hasError: true, isChunkError: isChunkLoadError(error), isDomSyncError, errorMessage };
   }
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
     clientLogger.error("[WikiEditorBoundary]", error, info);
+    // DOM sync errors (ProseMirror decoration race) are transient — auto-recover silently.
+    const msg = error instanceof Error ? error.message : String(error);
+    if (msg.includes("insertBefore") || msg.includes("is not a child")) {
+      setTimeout(() => this.handleRetry(), 150);
+    }
   }
 
   handleRetry = () => {
     this.setState((s) => ({
       hasError: false,
       isChunkError: false,
+      isDomSyncError: false,
       retryKey: s.retryKey + 1,
       errorMessage: "",
     }));
