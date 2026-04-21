@@ -25,7 +25,7 @@ nextApp.on("exit", (code) => {
 });
 
 // Start ngrok tunnel (connects to localhost:3000)
-async function startTunnel() {
+async function startTunnel(retries = 5, delayMs = 8000) {
   const authtoken = process.env.NGROK_AUTHTOKEN;
   const domain = process.env.NGROK_DOMAIN;
 
@@ -34,15 +34,25 @@ async function startTunnel() {
     return;
   }
 
-  try {
-    const listener = await ngrok.forward({
-      addr: parseInt(process.env.PORT || "3000"),
-      authtoken,
-      domain,
-    });
-    console.log(`[ngrok] Tunnel active: ${listener.url()}`);
-  } catch (err) {
-    console.error("[ngrok] Failed to start tunnel (app continues without tunnel):", err.message ?? err);
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      const listener = await ngrok.forward({
+        addr: parseInt(process.env.PORT || "3000"),
+        authtoken,
+        domain,
+      });
+      console.log(`[ngrok] Tunnel active: ${listener.url()}`);
+      return;
+    } catch (err) {
+      const msg = err.message ?? String(err);
+      if (attempt < retries && msg.includes("already online")) {
+        console.warn(`[ngrok] Endpoint busy, retrying in ${delayMs / 1000}s (attempt ${attempt}/${retries})...`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      } else {
+        console.error("[ngrok] Failed to start tunnel (app continues without tunnel):", msg);
+        return;
+      }
+    }
   }
 }
 
