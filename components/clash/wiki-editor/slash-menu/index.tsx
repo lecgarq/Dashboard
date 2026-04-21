@@ -278,10 +278,8 @@ export function SlashDropdownMenu({
         return;
       }
 
-      if (
-        menuRef.current?.contains(target) ||
-        editor.view.dom.contains(target)
-      ) {
+      const viewDom = editor.view?.dom;
+      if (menuRef.current?.contains(target) || viewDom?.contains(target)) {
         return;
       }
 
@@ -295,7 +293,7 @@ export function SlashDropdownMenu({
       document.removeEventListener("keydown", handleKeyDown, true);
       document.removeEventListener("pointerdown", handlePointerDown, true);
     };
-  }, [closeMenu, editor.view.dom, executeItem, filteredItems, menuState, selectedIndex]);
+  }, [closeMenu, editor, executeItem, filteredItems, menuState, selectedIndex]);
 
   if (!menuState) {
     return null;

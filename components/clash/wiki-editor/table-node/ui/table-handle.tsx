@@ -388,9 +388,11 @@ function TableOverlayLayer({ editor }: TableHandleProps) {
       setSortMessage(null);
     };
 
-    editor.view.dom.addEventListener("click", handleHeaderClick, true);
+    const viewDom = editor.view?.dom;
+    if (!viewDom) return;
+    viewDom.addEventListener("click", handleHeaderClick, true);
     return () => {
-      editor.view.dom.removeEventListener("click", handleHeaderClick, true);
+      viewDom.removeEventListener("click", handleHeaderClick, true);
     };
   }, [activeTable, editor, sort, toggleSort]);
 
@@ -642,9 +644,11 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
       });
     };
 
-    editor.view.dom.addEventListener("contextmenu", handleContextMenu);
+    const viewDom = editor.view?.dom;
+    if (!viewDom) return;
+    viewDom.addEventListener("contextmenu", handleContextMenu);
     return () => {
-      editor.view.dom.removeEventListener("contextmenu", handleContextMenu);
+      viewDom.removeEventListener("contextmenu", handleContextMenu);
     };
   }, [editor]);
 
