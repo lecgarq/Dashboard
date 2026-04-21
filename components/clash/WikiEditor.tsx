@@ -482,9 +482,6 @@ export function WikiEditor({
 
   const editor = useEditor({
     extensions,
-    // editorCanWrite is true only once canEdit is granted AND the Yjs collab session is
-    // established. Passing `editorCanWrite` here (vs. `canEdit`) prevents a brief window
-    // where the editor is interactive but has no CRDT document backing it.
     editable: editorCanWrite,
     content: !canEdit ? section.content : "",
     immediatelyRender: false,
@@ -495,7 +492,7 @@ export function WikiEditor({
       setContentVersion((value) => value + 1);
     },
     editorProps,
-  });
+  }, [ydoc]);
 
   // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty!
   useEffect(() => {
