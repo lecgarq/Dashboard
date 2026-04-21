@@ -17,7 +17,10 @@ const decoding = require("lib0/dist/decoding.cjs");
 
 // Import Prisma
 const { PrismaClient } = require("@prisma/client");
-const prisma = new PrismaClient();
+const { PrismaPg } = require("@prisma/adapter-pg");
+const prisma = new PrismaClient({
+  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
+});
 
 const messageSync = 0;
 const messageAwareness = 1;
