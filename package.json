@@ -23,7 +23,7 @@
     "db:studio": "prisma studio",
     "lint": "eslint",
     "yjs:server": "node scripts/yjs-server.cjs",
-    "start:prod": "node scripts/start-production.cjs",
+    "start:prod": "node scripts/start-router.cjs",
     "knip": "knip",
     "postinstall": "prisma generate"
   },
