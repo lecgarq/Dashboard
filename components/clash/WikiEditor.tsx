@@ -1005,7 +1005,9 @@ export function WikiEditor({
               <EditorContent editor={editor} />
               {editorCanWrite && editorViewReady && <TableHandle editor={editor} />}
               {editorCanWrite && editorViewReady && <TableCellHandleMenu editor={editor} />}
-              <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
+              {editorCanWrite && editorViewReady && (
+                <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
+              )}
             </div>
           ) : null}
         </div>

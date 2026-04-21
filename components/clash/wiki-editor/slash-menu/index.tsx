@@ -60,41 +60,45 @@ function clampMenuPosition(left: number, top: number) {
 }
 
 function getSlashMenuState(editor: Editor): SlashMenuState | null {
-  if (!editor.isEditable || !editor.isFocused) {
+  try {
+    if (!editor.isEditable || !editor.isFocused) {
+      return null;
+    }
+
+    const { selection } = editor.state;
+    if (!selection.empty) {
+      return null;
+    }
+
+    const { $from, from } = selection;
+    const parent = $from.parent;
+
+    if (!parent.isTextblock) {
+      return null;
+    }
+
+    const textBefore = parent.textBetween(0, $from.parentOffset, "\0", "\0");
+    const match = textBefore.match(SLASH_TRIGGER);
+    if (!match) {
+      return null;
+    }
+
+    const slashQuery = match[1] ?? "";
+    const slashFrom = from - slashQuery.length - 1;
+    const coords = editor.view.coordsAtPos(from);
+    const position = clampMenuPosition(coords.left, coords.bottom + MENU_OFFSET);
+
+    return {
+      query: slashQuery,
+      range: {
+        from: slashFrom,
+        to: from,
+      },
+      position,
+    };
+  } catch {
     return null;
   }
-
-  const { selection } = editor.state;
-  if (!selection.empty) {
-    return null;
-  }
-
-  const { $from, from } = selection;
-  const parent = $from.parent;
-
-  if (!parent.isTextblock) {
-    return null;
-  }
-
-  const textBefore = parent.textBetween(0, $from.parentOffset, "\0", "\0");
-  const match = textBefore.match(SLASH_TRIGGER);
-  if (!match) {
-    return null;
-  }
-
-  const slashQuery = match[1] ?? "";
-  const slashFrom = from - slashQuery.length - 1;
-  const coords = editor.view.coordsAtPos(from);
-  const position = clampMenuPosition(coords.left, coords.bottom + MENU_OFFSET);
-
-  return {
-    query: slashQuery,
-    range: {
-      from: slashFrom,
-      to: from,
-    },
-    position,
-  };
 }
 
 function scoreItem(item: SlashMenuItem, query: string) {
