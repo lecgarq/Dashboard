@@ -52,13 +52,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { 
+import {
   Type,
   Image as ImageIcon,
   Video as VideoIcon,
   Loader2,
   Link as LinkIcon,
   FileText,
+  Table2,
 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import { cn } from "@/lib/core/utils";
@@ -728,6 +729,14 @@ export function WikiEditor({
           active: false,
           label: "Video",
         },
+        {
+          icon: Table2,
+          action: () => {
+            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+          },
+          active: false,
+          label: "Table",
+        },
       ]
     : [];
 
@@ -984,10 +993,10 @@ export function WikiEditor({
                 </button>
               ) : null}
 
-              {editorCanWrite && !showEmptyCanvasHint && <WikiDragHandle editor={editor} />}
+              {editorCanWrite && <WikiDragHandle editor={editor} />}
               <EditorContent editor={editor} />
-              {editorCanWrite && !showEmptyCanvasHint && <TableHandle editor={editor} />}
-              {editorCanWrite && !showEmptyCanvasHint && <TableCellHandleMenu editor={editor} />}
+              {editorCanWrite && <TableHandle editor={editor} />}
+              {editorCanWrite && <TableCellHandleMenu editor={editor} />}
               <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
             </div>
           ) : null}
