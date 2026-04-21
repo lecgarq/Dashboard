@@ -10,16 +10,18 @@ interface State {
   hasError: boolean;
   isChunkError: boolean;
   retryKey: number;
+  errorMessage: string;
 }
 
 export class WikiEditorBoundary extends React.Component<
   { children: React.ReactNode },
   State
 > {
-  state: State = { hasError: false, isChunkError: false, retryKey: 0 };
+  state: State = { hasError: false, isChunkError: false, retryKey: 0, errorMessage: "" };
 
   static getDerivedStateFromError(error: unknown): Partial<State> {
-    return { hasError: true, isChunkError: isChunkLoadError(error) };
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    return { hasError: true, isChunkError: isChunkLoadError(error), errorMessage };
   }
 
   componentDidCatch(error: unknown, info: React.ErrorInfo) {
@@ -31,6 +33,7 @@ export class WikiEditorBoundary extends React.Component<
       hasError: false,
       isChunkError: false,
       retryKey: s.retryKey + 1,
+      errorMessage: "",
     }));
   };
 
@@ -50,6 +53,11 @@ export class WikiEditorBoundary extends React.Component<
                 ? "The editor bundle could not be downloaded. Click retry — the tunnel connection may have recovered."
                 : "An unexpected error occurred in the editor."}
             </p>
+            {!this.state.isChunkError && this.state.errorMessage ? (
+              <p className="mt-1 rounded bg-muted px-2 py-1 font-mono text-[10px] text-muted-foreground">
+                {this.state.errorMessage}
+              </p>
+            ) : null}
           </div>
           <Button size="sm" onClick={this.handleRetry} className="gap-2">
             <RefreshCw size={13} />

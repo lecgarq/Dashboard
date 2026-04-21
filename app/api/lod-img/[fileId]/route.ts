@@ -24,15 +24,34 @@ async function readLocalImage(fileId: string) {
   }
 }
 
+async function buildDriveAuth() {
+  const { google } = await import("googleapis");
+  const rawKey = process.env.GOOGLE_SERVICE_ACCOUNT_KEY?.trim();
+  if (rawKey) {
+    try {
+      const json = JSON.parse(rawKey);
+      if (json.client_email && json.private_key) {
+        return new google.auth.GoogleAuth({
+          credentials: json,
+          scopes: ["https://www.googleapis.com/auth/drive.readonly"],
+        });
+      }
+    } catch {
+      // fall through to OAuth
+    }
+  }
+
+  const { buildGoogleDriveOAuthClient } = await import("@/lib/server/google-service-auth");
+  return buildGoogleDriveOAuthClient();
+}
+
 async function readDriveImageByName(filename: string): Promise<Buffer | null> {
   const folderId = process.env.LOD_IMAGES_DRIVE_FOLDER_ID?.trim();
   if (!folderId) return null;
 
   try {
     const { google } = await import("googleapis");
-    const { buildGoogleDriveOAuthClient } = await import("@/lib/server/google-service-auth");
-
-    const auth = buildGoogleDriveOAuthClient();
+    const auth = await buildDriveAuth();
     const drive = google.drive({ version: "v3", auth });
 
     // Search by filename within the folder
