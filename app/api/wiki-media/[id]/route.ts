@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { google } from "googleapis";
 import { auth } from "@/server/auth";
 import { createGoogleIntegrationError, getIntegrationErrorResponse } from "@/lib/server/integration-errors";
-import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
 import { createLogger } from "@/lib/server/logger";
+import { buildWikiMediaDriveOAuthClient } from "@/lib/server/wiki-media-auth";
 import { getWikiMediaFolderId } from "@/lib/server/wiki-media-drive";
 
 export const runtime = "nodejs";
@@ -24,7 +24,7 @@ export async function GET(
       return NextResponse.json({ error: "Missing file ID" }, { status: 400 });
     }
 
-    const driveAuth = buildGoogleDriveOAuthClient();
+    const driveAuth = await buildWikiMediaDriveOAuthClient(session.user.id);
     const drive = google.drive({ version: "v3", auth: driveAuth });
 
     // Stream the file metadata to get the original mime type

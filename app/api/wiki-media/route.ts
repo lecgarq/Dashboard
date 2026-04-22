@@ -3,9 +3,9 @@ import { google } from "googleapis";
 import { Readable } from "stream";
 import { auth } from "@/server/auth";
 import { createGoogleIntegrationError, getIntegrationErrorResponse } from "@/lib/server/integration-errors";
-import { buildGoogleDriveOAuthClient } from "@/lib/server/google-service-auth";
 import { createLogger } from "@/lib/server/logger";
 import { canEditWikiModule } from "@/lib/server/wiki-access";
+import { buildWikiMediaDriveOAuthClient } from "@/lib/server/wiki-media-auth";
 import { getWikiMediaFolderId } from "@/lib/server/wiki-media-drive";
 
 export const runtime = "nodejs";
@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const driveAuth = buildGoogleDriveOAuthClient();
+    const driveAuth = await buildWikiMediaDriveOAuthClient(session.user.id);
     const drive = google.drive({ version: "v3", auth: driveAuth });
 
     const mediaFolderId = await getWikiMediaFolderId(drive, { createIfMissing: true });

@@ -4,8 +4,8 @@ import { randomUUID } from "node:crypto";
 import { google } from "googleapis";
 import { getAuthUrl } from "@/lib/auth-env";
 import {
-  buildGoogleDriveOAuthClient,
-  getGoogleDriveOAuthConfig,
+  buildGmailOAuthClient,
+  getGmailOAuthConfig,
   getPrimaryGoogleOAuthClientConfig,
 } from "@/lib/server/google-service-auth";
 import { createGoogleIntegrationError } from "@/lib/server/integration-errors";
@@ -48,7 +48,7 @@ const logger = createLogger("email");
 
 function getMailConfig(): MailConfig {
   const gmailUser = process.env.GMAIL_USER?.trim();
-  const driveConfig = getGoogleDriveOAuthConfig();
+  const gmailConfig = getGmailOAuthConfig();
 
   const missing: string[] = [];
   if (!gmailUser) missing.push("GMAIL_USER");
@@ -60,20 +60,20 @@ function getMailConfig(): MailConfig {
 
   logger.debug("Resolved Gmail OAuth config", {
     gmailUser,
-    clientIdPrefix: driveConfig.clientId.slice(0, 12),
+    clientIdPrefix: gmailConfig.clientId.slice(0, 12),
   });
 
   return {
     gmailUser: gmailUser!,
-    gmailOauthClientId: driveConfig.clientId,
-    gmailRefreshToken: driveConfig.refreshToken,
-    oauthRedirectUri: driveConfig.redirectUri,
+    gmailOauthClientId: gmailConfig.clientId,
+    gmailRefreshToken: gmailConfig.refreshToken,
+    oauthRedirectUri: gmailConfig.redirectUri,
   };
 }
 
 function getGmailApi() {
   const cfg = getMailConfig();
-  const auth = buildGoogleDriveOAuthClient();
+  const auth = buildGmailOAuthClient();
   const nextApiKey = [
     cfg.gmailUser,
     cfg.gmailOauthClientId,

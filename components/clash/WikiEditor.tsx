@@ -63,6 +63,7 @@ import {
 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import { cn } from "@/lib/core/utils";
+import { startOAuthConnect } from "@/lib/google/oauth-connect";
 import {
   Save,
   Printer,
@@ -79,6 +80,10 @@ import { useDebounce } from "@/hooks/use-debounce";
 
 type WikiStatus = "DRAFT" | "REVIEW" | "APPROVED";
 type AutoSaveState = "idle" | "pending" | "saving" | "saved";
+
+type WikiMediaUploadError = Error & {
+  code?: string;
+};
 
 type WikiEditorSection = {
   id: string;
@@ -124,6 +129,21 @@ type HocuspocusDisconnectPayload = {
     reason?: string;
   };
 };
+
+function createWikiMediaUploadError(message: string, code?: string): WikiMediaUploadError {
+  const error = new Error(message) as WikiMediaUploadError;
+  error.code = code;
+  return error;
+}
+
+function isReconnectRequiredUploadError(error: unknown) {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "code" in error &&
+    (error as { code?: unknown }).code === "reconnect_required"
+  );
+}
 
 function toSectionKey(section: string) {
   const candidate = section.split("-").slice(1).join("-");
@@ -324,6 +344,14 @@ export function WikiEditor({
     setIsSynced(!canEdit);
   }, [canEdit, roomName]);
 
+  const reconnectGoogleDrive = useCallback(() => {
+    setUploadError("Google Drive access needs to be refreshed. Redirecting to Google...");
+    startOAuthConnect("google", {
+      callbackUrl: window.location.href,
+      forceConsent: true,
+    });
+  }, []);
+
   const handleMediaUpload = useCallback(async (files: File[]) => {
     const ed = editorRef.current;
     if (!ed || !editorCanWrite) return;
@@ -388,11 +416,13 @@ export function WikiEditor({
                 }
               } else {
                 let errMsg = "Upload failed";
+                let errCode: string | undefined;
                 try {
                   const payload = JSON.parse(xhr.responseText);
                   if (typeof payload?.error === "string") errMsg = payload.error;
+                  if (typeof payload?.code === "string") errCode = payload.code;
                 } catch { /* ignore */ }
-                reject(new Error(errMsg));
+                reject(createWikiMediaUploadError(errMsg, errCode));
               }
             });
 
@@ -440,6 +470,10 @@ export function WikiEditor({
       const failed = results.filter((result) => result.status === "rejected");
       if (failed.length > 0) {
         const firstReason = (failed[0] as PromiseRejectedResult).reason;
+        if (failed.some((result) => result.status === "rejected" && isReconnectRequiredUploadError(result.reason))) {
+          reconnectGoogleDrive();
+          return;
+        }
         const serverMsg = firstReason instanceof Error ? firstReason.message : "Media upload failed";
         setUploadError(
           failed.length === files.length
@@ -453,7 +487,7 @@ export function WikiEditor({
       setIsUploading(false);
       setUploadProgress(100);
     }
-  }, [editorCanWrite, module]);
+  }, [editorCanWrite, module, reconnectGoogleDrive]);
 
   const uploadRef = useRef(handleMediaUpload);
   uploadRef.current = handleMediaUpload;
@@ -927,6 +961,19 @@ export function WikiEditor({
                         type: "pdf",
                         attrs: { fileId, fileName, caption: null, height: 500 },
                       }).run();
+                    } else {
+                      try {
+                        const payload = JSON.parse(xhr.responseText);
+                        if (payload?.code === "reconnect_required") {
+                          reconnectGoogleDrive();
+                        } else if (typeof payload?.error === "string") {
+                          setUploadError(payload.error);
+                        } else {
+                          setUploadError("PDF upload failed");
+                        }
+                      } catch {
+                        setUploadError("PDF upload failed");
+                      }
                     }
                     // Reset input so the same file can be re-selected
                     e.target.value = "";
