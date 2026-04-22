@@ -24,16 +24,15 @@ const logger = createLogger("users");
 
 function toAccRouterError(error: unknown, fallbackMessage: string) {
   if (error instanceof IntegrationError) {
-    return new TRPCError({
-      code:
-        error.code === "config_missing" ||
-        error.code === "reconnect_required" ||
-        error.code === "forbidden"
-          ? "PRECONDITION_FAILED"
-          : "INTERNAL_SERVER_ERROR",
-      message: error.message,
-      cause: error,
-    });
+    // UNAUTHORIZED = token expired/missing/not linked (user must reconnect)
+    // FORBIDDEN    = valid token but no Account Admin privilege in the hub
+    const code =
+      error.code === "reconnect_required" || error.code === "config_missing"
+        ? "UNAUTHORIZED"
+        : error.code === "forbidden"
+          ? "FORBIDDEN"
+          : "INTERNAL_SERVER_ERROR";
+    return new TRPCError({ code, message: error.message, cause: error });
   }
   return new TRPCError({
     code: "INTERNAL_SERVER_ERROR",
