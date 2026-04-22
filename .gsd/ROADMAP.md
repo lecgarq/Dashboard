@@ -21,12 +21,13 @@
 - [x] Clean up existing Tiptap extension configurations.
 
 ### Phase 2: Content Blocks (Notion Era)
-**Status**: ✅ Complete
+**Status**: ✅ Complete (Verified 2026-04-22)
 **Objective**: Enrich the editor with standard "Notion" features.
 **Tasks**:
-- [ ] Implement collaborative Tables.
-- [ ] Add PDF embedding with scrollable previews.
-- [ ] Improve Media (Image/Video/GIF) UX.
+- [x] Implement collaborative Tables.
+- [x] Add PDF embedding with scrollable previews.
+- [x] Improve Media (Image/Video/GIF) UX.
+- [x] Stabilize Sync & Layout (Gap Closure 2.5).
 
 ### Phase 3: Spatial Canvas (Miro Era)
 **Status**: ⬜ Not Started
