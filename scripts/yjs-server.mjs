@@ -56,9 +56,15 @@ const server = new Server({
   /**
    * Handle Authentication using Auth.js JWTs
    */
-  async onAuthenticate({ token, documentName }) {
+  async onAuthenticate({ token: hookToken, documentName, request }) {
     const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+    
+    // Fallback: y-websocket puts the token in the query string
+    const url = new URL(request.url || "", `http://${request.headers.host || "localhost"}`);
+    const token = hookToken || url.searchParams.get("token");
+
     if (!secret || !token) {
+      console.warn(`[hocuspocus] Auth failed: Missing ${!secret ? "secret" : "token"} for room ${documentName}`);
       throw new Error("Unauthorized: Missing secret or token");
     }
 
