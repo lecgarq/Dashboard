@@ -36,6 +36,22 @@ const server = Server.configure({
   name: "WikiCollab",
   port: parseInt(process.env.PORT || "4444", 10),
 
+  // Memory Management: Unload documents after 10 minutes of inactivity
+  unloadIdleDocuments: true,
+  timeout: 600000, // 10 minutes
+
+  /**
+   * Periodic Memory Monitoring
+   */
+  async onListen() {
+    setInterval(() => {
+      const memory = process.memoryUsage();
+      const heapUsed = (memory.heapUsed / 1024 / 1024).toFixed(2);
+      const heapTotal = (memory.heapTotal / 1024 / 1024).toFixed(2);
+      console.log(`[hocuspocus] Memory Monitor: ${heapUsed}MB / ${heapTotal}MB heap used.`);
+    }, 60000); // Log every minute
+  },
+
   /**
    * Handle Authentication using Auth.js JWTs
    */
