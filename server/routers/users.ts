@@ -751,9 +751,17 @@ export const usersRouter = router({
       }
 
       // 2. Get admin's Autodesk access token
+      // Always use the primary admin's token — the ACC Admin API requires admin credentials
+      // regardless of which account the current session belongs to.
       let accessToken: string;
       try {
-        ({ accessToken } = await getValidAutodeskAccessToken(ctx.session.user.id));
+        const adminEmail = getPrimaryAdminEmail();
+        const adminUser = await ctx.db.user.findUnique({
+          where: { email: adminEmail },
+          select: { id: true },
+        });
+        const tokenUserId = adminUser?.id ?? ctx.session.user.id;
+        ({ accessToken } = await getValidAutodeskAccessToken(tokenUserId));
       } catch (error) {
         throw toAccRouterError(
           error,
