@@ -12,10 +12,23 @@ import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import pg from "pg";
 import { decode } from "@auth/core/jwt";
+import { existsSync } from "node:fs";
+
+// Load .env file if it exists and we're in a supported Node version
+if (typeof process.loadEnvFile === "function" && existsSync(".env")) {
+  process.loadEnvFile(".env");
+}
 
 const WIKI_COLLAB_TOKEN_SALT = "wiki-collab-token";
 
 // Initialize Prisma with a proper pool for the adapter
+if (!process.env.DATABASE_URL) {
+  console.error("[hocuspocus] ERROR: DATABASE_URL is not defined in environment.");
+}
+if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
+  console.error("[hocuspocus] ERROR: AUTH_SECRET / NEXTAUTH_SECRET is not defined in environment.");
+}
+
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
@@ -42,9 +55,17 @@ const server = new Server({
   timeout: 600000, // 10 minutes
 
   /**
-   * Periodic Memory Monitoring
+   * Periodic Memory Monitoring and Startup Check
    */
   async onListen() {
+    console.log(`[hocuspocus] Server is listening. Testing database connection...`);
+    try {
+      await prisma.$queryRaw`SELECT 1`;
+      console.log(`[hocuspocus] Database connection successful.`);
+    } catch (err) {
+      console.error(`[hocuspocus] Database connection FAILED:`, err.message);
+    }
+
     setInterval(() => {
       const memory = process.memoryUsage();
       const heapUsed = (memory.heapUsed / 1024 / 1024).toFixed(2);
@@ -63,10 +84,12 @@ const server = new Server({
     const url = new URL(request.url || "", `http://${request.headers.host || "localhost"}`);
     const token = hookToken || url.searchParams.get("token");
 
+    console.log(`[hocuspocus] Attempting auth for room: ${documentName}`);
     if (!secret || !token) {
       console.warn(`[hocuspocus] Auth failed: Missing ${!secret ? "secret" : "token"} for room ${documentName}`);
       throw new Error("Unauthorized: Missing secret or token");
     }
+    console.log(`[hocuspocus] Token found, decoding...`);
 
     try {
       const payload = await decode({
@@ -75,21 +98,30 @@ const server = new Server({
         salt: WIKI_COLLAB_TOKEN_SALT,
       });
 
-      if (!payload) throw new Error("Unauthorized: Invalid token");
+      if (!payload) {
+        console.warn(`[hocuspocus] Decode returned null for room: ${documentName}`);
+        throw new Error("Unauthorized: Invalid token");
+      }
 
       const { type, id } = parseRoomDetails(documentName);
       if (type === "unknown" || !id) {
+        console.warn(`[hocuspocus] Room parsing failed: ${documentName}`);
         throw new Error("Forbidden: Unknown wiki room");
       }
 
+      console.log(`[hocuspocus] Payload details: room=${payload.room}, module=${payload.module}, sectionId=${payload.sectionId}`);
+
       if (payload.room !== documentName || payload.module !== type || payload.sectionId !== id) {
+        console.warn(`[hocuspocus] Token payload mismatch for ${documentName}`);
         throw new Error("Forbidden: Token mismatch");
       }
 
       if (payload.role !== "ADMIN" && payload.role !== "EDITOR") {
+        console.warn(`[hocuspocus] Insufficient role: ${payload.role}`);
         throw new Error("Forbidden: Insufficient permissions");
       }
 
+      console.log(`[hocuspocus] Auth successful for ${documentName} (User: ${payload.email})`);
       // Return context for other hooks
       return {
         user: payload,
@@ -97,7 +129,7 @@ const server = new Server({
         wikiId: id,
       };
     } catch (error) {
-      console.error(`[hocuspocus] Auth failed for room ${documentName}:`, error.message);
+      console.error(`[hocuspocus] Auth failed for room ${documentName}:`, error.message, error.stack);
       throw error;
     }
   },
@@ -109,15 +141,22 @@ const server = new Server({
        * Fetch document state from Prisma on first room load
        */
       fetch: async ({ documentName }) => {
+        console.log(`[hocuspocus] Database fetch requested for: ${documentName}`);
         const { type, id } = parseRoomDetails(documentName);
-        if (type === "unknown" || !id) return null;
+        if (type === "unknown" || !id) {
+          console.warn(`[hocuspocus] Database fetch skipped: unknown room ${documentName}`);
+          return null;
+        }
 
         try {
+          console.log(`[hocuspocus] Querying Prisma for ${type}-${id}...`);
           if (type === "clash") {
             const record = await prisma.clashWiki.findUnique({ where: { id } });
+            console.log(`[hocuspocus] Prisma returned ${record ? "data" : "null"} for ${type}-${id}`);
             return record?.yjsState ? new Uint8Array(record.yjsState) : null;
           } else if (type === "sim") {
             const record = await prisma.simWiki.findUnique({ where: { id } });
+            console.log(`[hocuspocus] Prisma returned ${record ? "data" : "null"} for ${type}-${id}`);
             return record?.yjsState ? new Uint8Array(record.yjsState) : null;
           }
         } catch (err) {
