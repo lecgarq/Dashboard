@@ -99,22 +99,32 @@ export function buildGoogleDriveOAuthClient() {
     config.redirectUri,
   ].join("::");
 
-  if (cachedDriveOAuthClient?.key === key) {
-    cachedDriveOAuthClient.client.setCredentials({
-      refresh_token: config.refreshToken,
+  // If the config changed, or we don't have a cached client, create a new one
+  if (cachedDriveOAuthClient?.key !== key) {
+    const oauth2 = new google.auth.OAuth2(
+      config.clientId,
+      config.clientSecret,
+      config.redirectUri
+    );
+
+    // Hardened Token Management: Listen for refresh events
+    // This allows us to track when Google issues a new access token
+    oauth2.on("tokens", (tokens) => {
+      console.log(`[GoogleDriveAuth] Tokens refreshed for client ${config.clientId.slice(0, 8)}...`);
+      if (tokens.refresh_token) {
+        // Warning: This usually shouldn't happen unless "prompt=consent" was used,
+        // but if it does, we should log it so the admin knows to update their .env
+        console.warn("[GoogleDriveAuth] A new REFRESH_TOKEN was issued. Please update your environment variables if persistence fails.");
+      }
     });
-    return cachedDriveOAuthClient.client;
+
+    oauth2.setCredentials({ refresh_token: config.refreshToken });
+    
+    cachedDriveOAuthClient = {
+      key,
+      client: oauth2,
+    };
   }
 
-  const oauth2 = new google.auth.OAuth2(
-    config.clientId,
-    config.clientSecret,
-    config.redirectUri
-  );
-  oauth2.setCredentials({ refresh_token: config.refreshToken });
-  cachedDriveOAuthClient = {
-    key,
-    client: oauth2,
-  };
-  return oauth2;
+  return cachedDriveOAuthClient.client;
 }
