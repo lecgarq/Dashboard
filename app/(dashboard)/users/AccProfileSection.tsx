@@ -332,7 +332,7 @@ export function AccProfileSection({ email }: { email: string }) {
   // 5. Full profile
   if (data?.found === true) {
     return (
-      <AccProfileFull data={data} onRefresh={handleRefresh} />
+      <AccProfileFull data={data as AccProfileData} onRefresh={handleRefresh} />
     );
   }
 
