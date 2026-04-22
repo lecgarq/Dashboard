@@ -392,3 +392,16 @@ model LodCategory {
 
   @@index([group])
 }
+
+// ============ MODULE: ACC MEMBER CACHE ============
+
+model AccMemberCache {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  data      Json
+  syncedAt  DateTime
+  createdAt DateTime @default(now())
+
+  @@index([email])
+  @@index([syncedAt])
+}
