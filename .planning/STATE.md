@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 6 of 6 (ACC Project Intelligence)
-Plan: 3 of 4 in current phase
-Status: In progress
-Last activity: 2026-04-22 — 06-03 complete (getAccProfile tRPC procedure added to usersRouter: 24h Prisma cache, forceRefresh support, b. prefix strip, PRECONDITION_FAILED error mapping)
+Plan: 4 of 4 in current phase
+Status: Phase complete
+Last activity: 2026-04-22 — 06-04 complete (AccProfileSection client component + PersonDetailModal wired: 5 render states, forceRefresh toggle pattern, PRODUCT_NAMES mapping, deployed to Railway)
 
-Progress: [█████░░░░░] 43% (Phase 2 at 5/6; Phase 6 at 3/4 plans complete)
+Progress: [██████░░░░] 50% (Phase 2 at 5/6; Phase 6 at 4/4 plans complete)
 
 ## Accumulated Context
 
@@ -39,6 +39,8 @@ Progress: [█████░░░░░] 43% (Phase 2 at 5/6; Phase 6 at 3/4 p
 - [Phase 6, Plan 02]: fetchApsJson copied from aps-search.ts pattern into acc-admin.ts (not imported) — the function is not exported from aps-search.ts.
 - [Phase 6, Plan 03]: getAccProfile placed in usersRouter (not a new router) — it is a user data query aligned with existing user profile procedures.
 - [Phase 6, Plan 03]: toAccRouterError defined locally in users.ts (not imported from aps-search.ts) — avoids importing from sibling router files.
+- [Phase 6, Plan 04]: forceRefresh implemented via useState toggle (not refetch()) — tRPC useQuery does not support passing new input on refetch; changing query input via state triggers a fresh network request.
+- [Phase 6, Plan 04]: PRECONDITION_FAILED detection via error?.data?.code === "PRECONDITION_FAILED" used to distinguish 403 Account Admin gate from other errors in AccProfileSection.
 
 ### Blockers/Concerns
 
@@ -47,5 +49,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Completed 06-03-PLAN.md (getAccProfile tRPC procedure in usersRouter: cache-first ACC profile fetching with 24h TTL, forceRefresh, b. prefix strip, and PRECONDITION_FAILED error mapping)
+Stopped at: Completed 06-04-PLAN.md (AccProfileSection client component + PersonDetailModal wired — full ACC UI with 5 render states, forceRefresh toggle, PRODUCT_NAMES mapping, deployed to Railway production)
 Resume file: None

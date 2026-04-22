@@ -100,8 +100,8 @@ Plans:
 Plans:
 - [x] 06-01-PLAN.md — Add AccMemberCache Prisma model and run migration
 - [x] 06-02-PLAN.md — Create lib/server/acc-admin.ts ACC Admin API helper library
-- [ ] 06-03-PLAN.md — Add users.getAccProfile tRPC procedure with cache-first logic
-- [ ] 06-04-PLAN.md — Build AccProfileSection component and wire into PersonDetailModal
+- [x] 06-03-PLAN.md — Add users.getAccProfile tRPC procedure with cache-first logic
+- [x] 06-04-PLAN.md — Build AccProfileSection component and wire into PersonDetailModal
 
 ## Progress
 
@@ -112,4 +112,4 @@ Plans:
 | 3. Spatial Canvas | 0/TBD | Not started | - |
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
-| 6. ACC Project Intelligence | 3/4 | In Progress|  |
+| 6. ACC Project Intelligence | 4/4 | Complete | 2026-04-22 |
