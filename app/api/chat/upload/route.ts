@@ -20,7 +20,7 @@ const MAX_FILE_SIZE = 200 * 1024 * 1024;
 
 type UploadedAttachment = {
   attachmentDataRef: {
-    resourceName: string;
+    resourceName?: string;
     attachmentUploadToken?: string;
   };
 };
@@ -32,6 +32,27 @@ class ChatUploadError extends Error {
   ) {
     super(message);
   }
+}
+
+function getUploadResponseShape(uploadResult: unknown, file: File) {
+  const result =
+    uploadResult && typeof uploadResult === "object"
+      ? (uploadResult as Record<string, unknown>)
+      : null;
+  const attachmentDataRef =
+    result?.attachmentDataRef && typeof result.attachmentDataRef === "object"
+      ? (result.attachmentDataRef as Record<string, unknown>)
+      : null;
+
+  return {
+    fileName: file.name,
+    mimeType: file.type || "application/octet-stream",
+    size: file.size,
+    responseKeys: result ? Object.keys(result) : [],
+    attachmentDataRefKeys: attachmentDataRef
+      ? Object.keys(attachmentDataRef)
+      : [],
+  };
 }
 
 async function getChatAuth(userId: string) {
@@ -102,11 +123,16 @@ async function uploadAttachment(
   }
 
   const uploadResult = (await uploadResponse.json()) as UploadedAttachment;
-  if (!uploadResult.attachmentDataRef?.resourceName) {
-    logger.error("Upload response missing attachmentDataRef", {
-      fileName: file.name,
-      uploadResult,
-    });
+  const attachmentDataRef = uploadResult.attachmentDataRef;
+  if (
+    !attachmentDataRef ||
+    (!attachmentDataRef.resourceName &&
+      !attachmentDataRef.attachmentUploadToken)
+  ) {
+    logger.error(
+      "Upload response missing attachment resource reference",
+      getUploadResponseShape(uploadResult, file)
+    );
     throw new ChatUploadError(
       "Upload succeeded but no attachment reference was returned.",
       502
