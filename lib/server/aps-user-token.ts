@@ -204,6 +204,30 @@ async function refreshAutodeskAccessToken(
   };
 }
 
+export async function get2LeggedAutodeskToken(): Promise<string> {
+  const clientId = process.env.APS_CLIENT_ID?.trim();
+  const clientSecret = process.env.APS_CLIENT_SECRET?.trim();
+  if (!clientId || !clientSecret) {
+    throw configMissing("Autodesk APS credentials are not configured.");
+  }
+  const body = new URLSearchParams({
+    grant_type: "client_credentials",
+    client_id: clientId,
+    client_secret: clientSecret,
+    scope: "account:read data:read",
+  });
+  const res = await fetch(APS_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body,
+  });
+  const json = await res.json() as { access_token?: string; error?: string };
+  if (!res.ok || !json.access_token) {
+    throw unavailable("Failed to get Autodesk app token.", { error: json.error });
+  }
+  return json.access_token;
+}
+
 export async function getValidAutodeskAccessToken(
   userId: string
 ): Promise<AutodeskAccessToken> {

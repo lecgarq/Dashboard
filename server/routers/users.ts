@@ -11,11 +11,9 @@ import { randomUUID } from "crypto";
 import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 import { IntegrationError } from "@/lib/server/integration-errors";
-import { getValidAutodeskAccessToken } from "@/lib/server/aps-user-token";
+import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
 import {
   fetchAccUserByEmail,
-  fetchAccUserProjects,
-  fetchAccUserProducts,
   type AccProject,
   type AccProduct,
 } from "@/lib/server/acc-admin";
@@ -750,22 +748,14 @@ export const usersRouter = router({
         }
       }
 
-      // 2. Get admin's Autodesk access token
-      // Always use the primary admin's token — the ACC Admin API requires admin credentials
-      // regardless of which account the current session belongs to.
+      // 2. Get 2-legged app token for HQ Admin API
       let accessToken: string;
       try {
-        const adminEmail = getPrimaryAdminEmail();
-        const adminUser = await ctx.db.user.findUnique({
-          where: { email: adminEmail },
-          select: { id: true },
-        });
-        const tokenUserId = adminUser?.id ?? ctx.session.user.id;
-        ({ accessToken } = await getValidAutodeskAccessToken(tokenUserId));
+        accessToken = await get2LeggedAutodeskToken();
       } catch (error) {
         throw toAccRouterError(
           error,
-          "ACC Admin API: Autodesk token unavailable. Link your Autodesk account in Settings."
+          "ACC Admin API: APS app credentials are not configured."
         );
       }
 
@@ -806,24 +796,14 @@ export const usersRouter = router({
         return result;
       }
 
-      // 6. Fetch projects + products in parallel for matched user
-      const [projects, products] = await Promise.all([
-        fetchAccUserProjects(accountId, accUser.autodeskId, accessToken),
-        fetchAccUserProducts(accountId, accUser.autodeskId, accessToken),
-      ]).catch((error) => {
-        throw toAccRouterError(
-          error,
-          "ACC Admin API: Failed to fetch project or product data."
-        );
-      });
-
       const result = {
         found: true as const,
-        autodeskId: accUser.autodeskId,
+        autodeskId: accUser.id,
         name: accUser.name,
         status: accUser.status,
-        projects,
-        products,
+        role: accUser.role,
+        projects: [] as AccProject[],
+        products: [] as AccProduct[],
         syncedAt: new Date().toISOString(),
       };
 

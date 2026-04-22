@@ -125,9 +125,9 @@ export function AccProfileSection({ email }: { email: string }) {
   if (data?.found === true) {
     return (
       <div className="pt-4 border-t border-border space-y-3">
-        {/* Header: label + status badge + refresh */}
+        {/* Header: label + status badge + role + refresh */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
               Autodesk ACC
             </h3>
@@ -142,6 +142,14 @@ export function AccProfileSection({ email }: { email: string }) {
             >
               {data.status}
             </Badge>
+            {(data as { role?: string }).role && (
+              <Badge
+                variant="outline"
+                className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 capitalize"
+              >
+                {String((data as { role?: string }).role).replace(/_/g, " ")}
+              </Badge>
+            )}
           </div>
           <button
             onClick={handleRefresh}
