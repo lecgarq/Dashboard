@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: 2 of 5 (Content Blocks)
-Plan: 5 of 6 in current phase
+Phase: 6 of 6 (ACC Project Intelligence)
+Plan: 2 of 4 in current phase
 Status: In progress
-Last activity: 2026-04-20 — 02-05 complete (WikiEditor.tsx wired with all Phase 2 extensions: ImageNode, TableKit, PdfNode, DragHandle, SlashMenu, upload progress bar)
+Last activity: 2026-04-22 — 06-02 complete (lib/server/acc-admin.ts created: typed ACC Admin API wrappers for fetchAccUserByEmail, fetchAccUserProjects, fetchAccUserProducts)
 
-Progress: [█████░░░░░] 40%
+Progress: [█████░░░░░] 40% (Phase 2 at 5/6; Phase 6 at 2/4 plans complete)
 
 ## Accumulated Context
 
@@ -32,6 +32,9 @@ Progress: [█████░░░░░] 40%
 - [Phase 2, Plan 05]: TableKit sort/filter deferred — TableKit uses ProseMirror native node view; useSortFilter is standalone utility; full sort requires custom React NodeView for table node (future plan).
 - [Phase 2, Plan 05]: SlashDropdownMenu is scaffold (renders null); WIKI_SLASH_ITEMS is fully defined and passed as items prop — slash menu activates when scaffold is replaced with real implementation.
 - [Phase 2, Plan 05]: XHR replaces fetch() in media upload handler to enable upload progress events; namedUploadProgress state shows {fileName, progress} in UI progress bar.
+- [Phase 6, Plan 02]: fetchAccUserByEmail returns null (not throw) for empty results — ACC Admin API returns 200 with empty results array when email not found (not a 404).
+- [Phase 6, Plan 02]: accountId b. prefix stripping is caller responsibility — acc-admin.ts helpers receive pre-stripped bare UUID.
+- [Phase 6, Plan 02]: fetchApsJson copied from aps-search.ts pattern into acc-admin.ts (not imported) — the function is not exported from aps-search.ts.
 
 ### Blockers/Concerns
 
@@ -39,6 +42,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-04-20
-Stopped at: Completed 02-05-PLAN.md (WikiEditor.tsx wired: ImageNode, TableKit, CustomTableCell, PdfNode+DynamicPdfNodeView, DragHandle, NodeRange, SlashDropdownMenu, upload progress bar)
+Last session: 2026-04-22
+Stopped at: Completed 06-02-PLAN.md (lib/server/acc-admin.ts: typed ACC Admin API wrappers, fetchAccUserByEmail/fetchAccUserProjects/fetchAccUserProducts, server-only guard, pagination, (Removed) role filtering)
 Resume file: None
