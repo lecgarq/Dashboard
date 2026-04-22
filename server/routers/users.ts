@@ -769,8 +769,8 @@ export const usersRouter = router({
       const accountId = project?.apsHubId?.replace(/^b\./, "");
       if (!accountId) {
         throw new TRPCError({
-          code: "PRECONDITION_FAILED",
-          message: "APS Hub ID is not configured. Contact your administrator.",
+          code: "UNAUTHORIZED",
+          message: "APS Hub ID is not configured. Set APS_HUB-ID in Railway environment variables.",
         });
       }
 
