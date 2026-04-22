@@ -1,10 +1,92 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { AlertCircle, RefreshCw, Building2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
+
+// ---------------------------------------------------------------------------
+// AccLoadingProgress
+// ---------------------------------------------------------------------------
+
+const LOAD_STEPS = [
+  { label: "Connecting to Autodesk", until: 20 },
+  { label: "Verifying account access", until: 40 },
+  { label: "Fetching projects", until: 65 },
+  { label: "Loading modules", until: 88 },
+  { label: "Almost done", until: 95 },
+];
+
+function AccLoadingProgress() {
+  const [progress, setProgress] = useState(0);
+  const rafRef = useRef<number | null>(null);
+  const startRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    // Eases toward 95% over ~4s, slowing as it approaches the cap
+    function tick(ts: number) {
+      if (!startRef.current) startRef.current = ts;
+      const elapsed = ts - startRef.current;
+      // Exponential ease: approaches 95 asymptotically over ~5s
+      const target = 95 * (1 - Math.exp(-elapsed / 3500));
+      setProgress(Math.min(target, 95));
+      rafRef.current = requestAnimationFrame(tick);
+    }
+    rafRef.current = requestAnimationFrame(tick);
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
+  }, []);
+
+  const activeStep = LOAD_STEPS.find((s) => progress < s.until) ?? LOAD_STEPS[LOAD_STEPS.length - 1];
+
+  return (
+    <div className="pt-4 border-t border-border space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+          Autodesk ACC
+        </h3>
+        <span className="text-[10px] font-mono text-primary/60 tabular-nums">
+          {Math.round(progress)}%
+        </span>
+      </div>
+
+      {/* Progress bar */}
+      <div className="relative h-1 rounded-full bg-muted/30 overflow-hidden">
+        <div
+          className="absolute inset-y-0 left-0 rounded-full bg-primary/60 transition-none"
+          style={{ width: `${progress}%` }}
+        />
+        {/* shimmer */}
+        <div
+          className="absolute inset-y-0 w-16 rounded-full bg-gradient-to-r from-transparent via-primary/30 to-transparent animate-shimmer"
+          style={{ left: `calc(${progress}% - 2rem)` }}
+        />
+      </div>
+
+      {/* Current step label */}
+      <p className="text-[10px] text-muted-foreground/50 animate-pulse">
+        {activeStep.label}…
+      </p>
+
+      {/* Step dots */}
+      <div className="flex items-center gap-1.5">
+        {LOAD_STEPS.map((s) => (
+          <div
+            key={s.label}
+            className={cn(
+              "h-1 rounded-full transition-all duration-500",
+              progress >= s.until
+                ? "bg-primary/60 w-4"
+                : progress >= s.until - 20
+                  ? "bg-primary/30 w-2"
+                  : "bg-muted/30 w-1"
+            )}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Product name mapping
@@ -175,15 +257,9 @@ export function AccProfileSection({ email }: { email: string }) {
     setTimeout(() => setForceRefresh(false), 200);
   }
 
-  // 1. Loading skeleton
+  // 1. Loading
   if (isLoading || isFetching) {
-    return (
-      <div className="space-y-2 pt-4 border-t border-border animate-pulse">
-        <div className="h-3 bg-muted/40 rounded w-1/3" />
-        <div className="h-2.5 bg-muted/30 rounded w-2/3" />
-        <div className="h-2.5 bg-muted/30 rounded w-1/2" />
-      </div>
-    );
+    return <AccLoadingProgress />;
   }
 
   // 2. UNAUTHORIZED — token expired, missing, or Autodesk not linked
