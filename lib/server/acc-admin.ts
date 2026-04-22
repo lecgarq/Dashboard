@@ -2,7 +2,10 @@ import "server-only";
 
 import { IntegrationError } from "@/lib/server/integration-errors";
 
+// HQ v1: user lookup (search by email via pagination)
 const HQ_ADMIN_BASE = "https://developer.api.autodesk.com/hq/v1";
+// ACC Admin v1: projects + products per user
+const ACC_ADMIN_V1_BASE = "https://developer.api.autodesk.com/construction/admin/v1";
 
 export type AccUser = {
   id: string;
@@ -12,30 +15,68 @@ export type AccUser = {
   role: string;
 };
 
-export type AccRole = {
-  id: string;
-  name: string;
-  roleGroupId?: string;
-};
-
 export type AccProject = {
   id: string;
   name: string;
   status: string;
-  roles: AccRole[];
+  isAdmin: boolean;
 };
 
 export type AccProduct = {
-  id: string;
+  key: string;
   name: string;
-  status: string;
-  projectIds: string[];
+  projectCount: number;
 };
 
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+function throwApsError(response: Response, raw: string): never {
+  let payload: Record<string, unknown> = {};
+  try { payload = JSON.parse(raw) as Record<string, unknown>; } catch { /* ignore */ }
+
+  const errorText =
+    getString(payload.developerMessage) ||
+    getString(payload.detail) ||
+    raw ||
+    `${response.status} ${response.statusText}`;
+
+  if (response.status === 401) {
+    throw new IntegrationError(
+      "Autodesk connection expired. Reconnect Autodesk and try again.",
+      response.status, "reconnect_required", "Autodesk", { error: errorText }
+    );
+  }
+  if (response.status === 403) {
+    throw new IntegrationError(
+      "Account Admin privileges required. Ensure the APS app is provisioned in your ACC account.",
+      response.status, "forbidden", "Autodesk", { error: errorText }
+    );
+  }
+  throw new IntegrationError(
+    `APS request failed: ${errorText}`,
+    response.status, "unavailable", "Autodesk", { error: errorText }
+  );
+}
+
+// Fetches a paginated ACC Admin v1 endpoint → { pagination, results }
+async function fetchAccPaged(
+  url: string,
+  accessToken: string,
+  signal?: AbortSignal
+): Promise<{ pagination: { totalResults: number; limit: number }; results: Record<string, unknown>[] }> {
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+    signal,
+  });
+  const raw = await response.text();
+  if (!response.ok) throwApsError(response, raw);
+  return JSON.parse(raw) as { pagination: { totalResults: number; limit: number }; results: Record<string, unknown>[] };
+}
+
+// Fetches a HQ v1 user list endpoint → plain array
 async function fetchHqUsers(
   url: string,
   accessToken: string,
@@ -46,46 +87,8 @@ async function fetchHqUsers(
     cache: "no-store",
     signal,
   });
-
   const raw = await response.text();
-
-  if (!response.ok) {
-    let payload: Record<string, unknown> = {};
-    try { payload = JSON.parse(raw) as Record<string, unknown>; } catch { /* ignore */ }
-
-    const errorText =
-      getString(payload.developerMessage) ||
-      getString(payload.detail) ||
-      raw ||
-      `${response.status} ${response.statusText}`;
-
-    if (response.status === 401) {
-      throw new IntegrationError(
-        "Autodesk connection expired. Reconnect Autodesk and try again.",
-        response.status,
-        "reconnect_required",
-        "Autodesk",
-        { url, error: errorText }
-      );
-    }
-    if (response.status === 403) {
-      throw new IntegrationError(
-        "Account Admin privileges required. Ensure the APS app is provisioned in your ACC account.",
-        response.status,
-        "forbidden",
-        "Autodesk",
-        { url, error: errorText }
-      );
-    }
-    throw new IntegrationError(
-      `APS request failed: ${errorText}`,
-      response.status,
-      "unavailable",
-      "Autodesk",
-      { url, error: errorText }
-    );
-  }
-
+  if (!response.ok) throwApsError(response, raw);
   try {
     const data = JSON.parse(raw) as unknown;
     return Array.isArray(data) ? (data as Record<string, unknown>[]) : [];
@@ -94,6 +97,14 @@ async function fetchHqUsers(
   }
 }
 
+// ---------------------------------------------------------------------------
+// Public API
+// ---------------------------------------------------------------------------
+
+/**
+ * Find an ACC/BIM360 user by email address.
+ * HQ v1 has no server-side email filter — we paginate and match client-side.
+ */
 export async function fetchAccUserByEmail(
   accountId: string,
   email: string,
@@ -106,8 +117,11 @@ export async function fetchAccUserByEmail(
   const maxUsers = 5000;
 
   while (offset < maxUsers) {
-    const url = `${baseUrl}?limit=${limit}&offset=${offset}`;
-    const users = await fetchHqUsers(url, accessToken, signal);
+    const users = await fetchHqUsers(
+      `${baseUrl}?limit=${limit}&offset=${offset}`,
+      accessToken,
+      signal
+    );
 
     const match = users.find((u) => u.email === email);
     if (match) {
@@ -127,21 +141,81 @@ export async function fetchAccUserByEmail(
   return null;
 }
 
-// HQ v1 does not expose per-user project or product listings.
+/**
+ * Fetch all projects the user is a member of.
+ * Uses ACC Admin v1 which works with the HQ v1 user ID.
+ */
 export async function fetchAccUserProjects(
-  _accountId: string,
-  _userId: string,
-  _accessToken: string,
-  _signal?: AbortSignal
+  accountId: string,
+  userId: string,
+  accessToken: string,
+  signal?: AbortSignal
 ): Promise<AccProject[]> {
-  return [];
+  const baseUrl = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/users/${userId}/projects`;
+  const allResults: AccProject[] = [];
+  let offset = 0;
+
+  do {
+    const { pagination, results } = await fetchAccPaged(
+      `${baseUrl}?limit=200&offset=${offset}`,
+      accessToken,
+      signal
+    );
+
+    for (const p of results) {
+      const levels = p.accessLevels as { projectAdmin?: boolean } | undefined;
+      allResults.push({
+        id: getString(p.id),
+        name: getString(p.name),
+        status: getString(p.status),
+        isAdmin: levels?.projectAdmin === true,
+      });
+    }
+
+    const total = pagination?.totalResults ?? 0;
+    const limit = pagination?.limit ?? 200;
+    offset += limit;
+    if (offset >= total || results.length === 0) break;
+  } while (true);
+
+  return allResults;
 }
 
+/**
+ * Fetch all products/modules assigned to the user.
+ * Uses ACC Admin v1 which works with the HQ v1 user ID.
+ */
 export async function fetchAccUserProducts(
-  _accountId: string,
-  _userId: string,
-  _accessToken: string,
-  _signal?: AbortSignal
+  accountId: string,
+  userId: string,
+  accessToken: string,
+  signal?: AbortSignal
 ): Promise<AccProduct[]> {
-  return [];
+  const baseUrl = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/users/${userId}/products`;
+  const allResults: AccProduct[] = [];
+  let offset = 0;
+
+  do {
+    const { pagination, results } = await fetchAccPaged(
+      `${baseUrl}?limit=100&offset=${offset}`,
+      accessToken,
+      signal
+    );
+
+    for (const p of results) {
+      const projectIds = Array.isArray(p.projectIds) ? p.projectIds : [];
+      allResults.push({
+        key: getString(p.key),
+        name: getString(p.name),
+        projectCount: projectIds.length,
+      });
+    }
+
+    const total = pagination?.totalResults ?? 0;
+    const limit = pagination?.limit ?? 100;
+    offset += limit;
+    if (offset >= total || results.length === 0) break;
+  } while (true);
+
+  return allResults;
 }

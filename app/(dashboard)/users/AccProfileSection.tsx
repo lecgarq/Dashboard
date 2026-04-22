@@ -169,46 +169,35 @@ export function AccProfileSection({ email }: { email: string }) {
             {(data.projects ?? []).map((proj) => (
               <div
                 key={proj.id}
-                className="rounded-lg border border-border/50 bg-muted/10 px-3 py-2 space-y-1"
+                className="rounded-lg border border-border/50 bg-muted/10 px-3 py-2"
               >
-                <div className="flex items-center gap-1.5">
-                  <Building2 size={10} className="text-primary/50 shrink-0" />
-                  <p className="text-[11px] font-medium text-foreground truncate">{proj.name}</p>
-                </div>
-                {proj.roles.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {proj.roles.map((role) => (
-                      <Badge
-                        key={role.id}
-                        variant="outline"
-                        className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70"
-                      >
-                        {role.name}
-                      </Badge>
-                    ))}
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Building2 size={10} className="text-primary/50 shrink-0" />
+                    <p className="text-[11px] font-medium text-foreground truncate">{proj.name}</p>
                   </div>
-                )}
+                  {(proj as { isAdmin?: boolean }).isAdmin && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 shrink-0">
+                      Admin
+                    </Badge>
+                  )}
+                </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Products */}
+        {/* Products / Modules */}
         {(data.products ?? []).length > 0 && (
           <div className="space-y-1.5">
             <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-              Products / Modules
+              Modules
             </p>
             <div className="flex flex-wrap gap-1.5">
               {(data.products ?? []).map((product) => (
                 <span
-                  key={product.id}
-                  className={cn(
-                    "inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border",
-                    product.status === "active"
-                      ? "border-green-400/20 bg-green-400/5 text-green-400"
-                      : "border-border text-muted-foreground/50"
-                  )}
+                  key={(product as { key?: string }).key ?? product.name}
+                  className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border border-green-400/20 bg-green-400/5 text-green-400"
                 >
                   {getProductDisplayName(product.name)}
                 </span>

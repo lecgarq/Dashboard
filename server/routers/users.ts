@@ -14,6 +14,8 @@ import { IntegrationError } from "@/lib/server/integration-errors";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
 import {
   fetchAccUserByEmail,
+  fetchAccUserProjects,
+  fetchAccUserProducts,
   type AccProject,
   type AccProduct,
 } from "@/lib/server/acc-admin";
@@ -796,14 +798,25 @@ export const usersRouter = router({
         return result;
       }
 
+      // 6. Fetch projects + products in parallel using ACC Admin v1
+      const [projects, products] = await Promise.all([
+        fetchAccUserProjects(accountId, accUser.id, accessToken),
+        fetchAccUserProducts(accountId, accUser.id, accessToken),
+      ]).catch((error) => {
+        throw toAccRouterError(
+          error,
+          "ACC Admin API: Failed to fetch project or product data."
+        );
+      });
+
       const result = {
         found: true as const,
         autodeskId: accUser.id,
         name: accUser.name,
         status: accUser.status,
         role: accUser.role,
-        projects: [] as AccProject[],
-        products: [] as AccProduct[],
+        projects,
+        products,
         syncedAt: new Date().toISOString(),
       };
 
