@@ -173,6 +173,7 @@ function AccProfileFull({
           <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
             Projects ({projects.length})
           </p>
+          <div className="max-h-64 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
           {projects.map((proj) => {
             const mods = (proj.modules ?? []).map(getProductDisplayName);
             return (
@@ -218,6 +219,7 @@ function AccProfileFull({
               </div>
             );
           })}
+          </div>
         </div>
       )}
 
