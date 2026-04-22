@@ -201,8 +201,10 @@ export async function fetchAccProjectUserDetail(
     signal,
   });
 
-  // 404 = user not in this project (stale list), 403 = app lacks project access — both safe to skip
-  if (response.status === 404 || response.status === 403) return null;
+  if (response.status === 404 || response.status === 403) {
+    console.warn(`[acc-admin] fetchAccProjectUserDetail ${response.status} for project=${projectId} user=${userId}`);
+    return null;
+  }
 
   const raw = await response.text();
   if (!response.ok) throwApsError(response, raw);
@@ -211,8 +213,15 @@ export async function fetchAccProjectUserDetail(
   try { body = JSON.parse(raw) as Record<string, unknown>; }
   catch { return { roles: [], modules: [] }; }
 
-  // roles: string[] or { id, name }[]
-  const rawRoles = Array.isArray(body.roles) ? body.roles : [];
+  // Diagnostic: log top-level keys on first call to detect API field name changes
+  console.info(`[acc-admin] project detail keys for project=${projectId}:`, Object.keys(body));
+
+  // roles: string[] or { id, name }[] — API may also use "roleIds" (UUID strings)
+  const rawRoles = Array.isArray(body.roles)
+    ? body.roles
+    : Array.isArray(body.roleIds)
+      ? body.roleIds
+      : [];
   const roles = (rawRoles as unknown[])
     .map((r) => typeof r === "string" ? r : getString((r as Record<string, unknown>).name))
     .filter(Boolean);
@@ -230,6 +239,8 @@ export async function fetchAccProjectUserDetail(
         : getString((p as Record<string, unknown>).key) || getString((p as Record<string, unknown>).name)
     )
     .filter(Boolean);
+
+  console.info(`[acc-admin] project=${projectId} → roles=${JSON.stringify(roles)} modules=${JSON.stringify(modules)}`);
 
   return { roles, modules };
 }
