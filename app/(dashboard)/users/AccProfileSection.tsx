@@ -118,8 +118,7 @@ type AccProfileData = {
   autodeskId?: string;
   syncedAt: string;
   role?: string;
-  projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles: string[] }>;
-  products?: Array<{ key: string; name: string; projectIds?: string[] }>;
+  projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles: string[]; modules: string[] }>;
 };
 
 function AccProfileFull({
@@ -129,17 +128,7 @@ function AccProfileFull({
   data: AccProfileData;
   onRefresh: () => void;
 }) {
-  const products = data.products ?? [];
   const projects = data.projects ?? [];
-
-  // Build a map: projectId → module names active on that project
-  const modulesByProject = new Map<string, string[]>();
-  for (const product of products) {
-    for (const pid of (product.projectIds ?? [])) {
-      if (!modulesByProject.has(pid)) modulesByProject.set(pid, []);
-      modulesByProject.get(pid)!.push(getProductDisplayName(product.name));
-    }
-  }
 
   return (
     <div className="pt-4 border-t border-border space-y-3">
@@ -185,7 +174,7 @@ function AccProfileFull({
             Projects ({projects.length})
           </p>
           {projects.map((proj) => {
-            const mods = modulesByProject.get(proj.id) ?? [];
+            const mods = (proj.modules ?? []).map(getProductDisplayName);
             return (
               <div
                 key={proj.id}

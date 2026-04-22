@@ -12,12 +12,12 @@ import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 import { IntegrationError } from "@/lib/server/integration-errors";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
+import pLimit from "p-limit";
 import {
   fetchAccUserByEmail,
   fetchAccUserProjects,
-  fetchAccUserProducts,
+  fetchAccProjectUserDetail,
   type AccProject,
-  type AccProduct,
 } from "@/lib/server/acc-admin";
 
 const logger = createLogger("users");
@@ -745,7 +745,6 @@ export const usersRouter = router({
             name?: string;
             status?: string;
             projects?: AccProject[];
-            products?: AccProduct[];
           };
         }
       }
@@ -798,16 +797,29 @@ export const usersRouter = router({
         return result;
       }
 
-      // 6. Fetch projects + products in parallel using ACC Admin v1
-      const [projects, products] = await Promise.all([
-        fetchAccUserProjects(accountId, accUser.id, accessToken),
-        fetchAccUserProducts(accountId, accUser.id, accessToken),
-      ]).catch((error) => {
-        throw toAccRouterError(
-          error,
-          "ACC Admin API: Failed to fetch project or product data."
-        );
-      });
+      // 6. Phase 1: fetch project list
+      const projects = await fetchAccUserProjects(accountId, accUser.id, accessToken)
+        .catch((error) => {
+          throw toAccRouterError(error, "ACC Admin API: Failed to fetch project list.");
+        });
+
+      // 6b. Phase 2: per-project detail calls to get exact roles + modules
+      const limit = pLimit(5);
+      const enrichedProjects: AccProject[] = await Promise.all(
+        projects.map((proj) =>
+          limit(async () => {
+            const detail = await fetchAccProjectUserDetail(
+              accountId, proj.id, accUser.id, accessToken
+            ).catch(() => null);
+
+            return {
+              ...proj,
+              roles: detail?.roles.length ? detail.roles : proj.roles,
+              modules: detail?.modules ?? [],
+            };
+          })
+        )
+      );
 
       const result = {
         found: true as const,
@@ -815,8 +827,7 @@ export const usersRouter = router({
         name: accUser.name,
         status: accUser.status,
         role: accUser.role,
-        projects,
-        products,
+        projects: enrichedProjects,
         syncedAt: new Date().toISOString(),
       };
 

@@ -21,12 +21,7 @@ export type AccProject = {
   status: string;
   isAdmin: boolean;
   roles: string[];
-};
-
-export type AccProduct = {
-  key: string;
-  name: string;
-  projectIds: string[];
+  modules: string[];
 };
 
 function getString(v: unknown): string {
@@ -144,7 +139,7 @@ export async function fetchAccUserByEmail(
 
 /**
  * Fetch all projects the user is a member of.
- * Uses ACC Admin v1 which works with the HQ v1 user ID.
+ * Returns base project list with empty modules[] — caller enriches via fetchAccProjectUserDetail.
  */
 export async function fetchAccUserProjects(
   accountId: string,
@@ -165,7 +160,6 @@ export async function fetchAccUserProjects(
 
     for (const p of results) {
       const levels = p.accessLevels as { projectAdmin?: boolean } | undefined;
-      // roles can be an array of strings or objects with a `name` field
       const rawRoles = Array.isArray(p.roles) ? p.roles : [];
       const roles = rawRoles.map((r) =>
         typeof r === "string" ? r : getString((r as Record<string, unknown>).name)
@@ -176,6 +170,7 @@ export async function fetchAccUserProjects(
         status: getString(p.status),
         isAdmin: levels?.projectAdmin === true,
         roles,
+        modules: [],
       });
     }
 
@@ -189,41 +184,52 @@ export async function fetchAccUserProjects(
 }
 
 /**
- * Fetch all products/modules assigned to the user.
- * Uses ACC Admin v1 which works with the HQ v1 user ID.
+ * Fetch a user's membership record for a specific project.
+ * Returns per-project roles and modules, or null on 404/403 (not a member / no app access).
  */
-export async function fetchAccUserProducts(
+export async function fetchAccProjectUserDetail(
   accountId: string,
+  projectId: string,
   userId: string,
   accessToken: string,
   signal?: AbortSignal
-): Promise<AccProduct[]> {
-  const baseUrl = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/users/${userId}/products`;
-  const allResults: AccProduct[] = [];
-  let offset = 0;
+): Promise<{ roles: string[]; modules: string[] } | null> {
+  const url = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/projects/${projectId}/users/${userId}`;
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${accessToken}` },
+    cache: "no-store",
+    signal,
+  });
 
-  do {
-    const { pagination, results } = await fetchAccPaged(
-      `${baseUrl}?limit=100&offset=${offset}`,
-      accessToken,
-      signal
-    );
+  // 404 = user not in this project (stale list), 403 = app lacks project access — both safe to skip
+  if (response.status === 404 || response.status === 403) return null;
 
-    for (const p of results) {
-      const rawPids = p.projectIds ?? p.projects ?? p.projectsIds ?? [];
-      const projectIds = Array.isArray(rawPids) ? (rawPids as string[]) : [];
-      allResults.push({
-        key: getString(p.key),
-        name: getString(p.name),
-        projectIds,
-      });
-    }
+  const raw = await response.text();
+  if (!response.ok) throwApsError(response, raw);
 
-    const total = pagination?.totalResults ?? 0;
-    const limit = pagination?.limit ?? 100;
-    offset += limit;
-    if (offset >= total || results.length === 0) break;
-  } while (true);
+  let body: Record<string, unknown>;
+  try { body = JSON.parse(raw) as Record<string, unknown>; }
+  catch { return { roles: [], modules: [] }; }
 
-  return allResults;
+  // roles: string[] or { id, name }[]
+  const rawRoles = Array.isArray(body.roles) ? body.roles : [];
+  const roles = (rawRoles as unknown[])
+    .map((r) => typeof r === "string" ? r : getString((r as Record<string, unknown>).name))
+    .filter(Boolean);
+
+  // modules: ACC API uses "products" or "services" depending on version
+  const rawMods: unknown[] = Array.isArray(body.products)
+    ? (body.products as unknown[])
+    : Array.isArray(body.services)
+      ? (body.services as unknown[])
+      : [];
+  const modules = rawMods
+    .map((p) =>
+      typeof p === "string"
+        ? p
+        : getString((p as Record<string, unknown>).key) || getString((p as Record<string, unknown>).name)
+    )
+    .filter(Boolean);
+
+  return { roles, modules };
 }
