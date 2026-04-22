@@ -159,9 +159,9 @@ def run_lod_query_encoder(project_root: Path) -> None:
 
 def run_yjs_server(project_root: Path) -> None:
     """Spawn Yjs WebSocket server as a background process."""
-    script = project_root / "scripts" / "yjs-server.cjs"
+    script = project_root / "scripts" / "yjs-server.mjs"
     if not script.exists():
-        print("[runner] yjs-server.cjs not found, skipping")
+        print("[runner] yjs-server.mjs not found, skipping")
         return
 
     print("[runner] Starting Yjs WebSocket server on port 4444")

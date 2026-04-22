@@ -92,11 +92,17 @@ const server = new Server({
     console.log(`[hocuspocus] Token found, decoding...`);
 
     try {
-      const payload = await decode({
-        token,
-        secret,
-        salt: WIKI_COLLAB_TOKEN_SALT,
-      });
+      console.log(`[hocuspocus] Token found, decoding (with 5s timeout)...`);
+      
+      // Use a Promise race to prevent decode from hanging the connection
+      const payload = await Promise.race([
+        decode({
+          token,
+          secret,
+          salt: WIKI_COLLAB_TOKEN_SALT,
+        }),
+        new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout: JWT decode took too long")), 5000))
+      ]);
 
       if (!payload) {
         console.warn(`[hocuspocus] Decode returned null for room: ${documentName}`);
