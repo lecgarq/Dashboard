@@ -38,6 +38,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
+import { AccProfileSection } from "./AccProfileSection";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -327,6 +328,9 @@ function PersonDetailModal({
               </InfoRow>
             )}
           </div>
+
+          {/* Autodesk ACC profile section */}
+          <AccProfileSection email={person.email} />
 
           {/* Quick actions */}
           <div className="flex gap-2 mt-5 pt-4 border-t border-border">
