@@ -118,7 +118,7 @@ type AccProfileData = {
   autodeskId?: string;
   syncedAt: string;
   role?: string;
-  projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles: string[]; modules: string[] }>;
+  projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles?: string[]; modules?: string[] }>;
 };
 
 function AccProfileFull({
@@ -191,9 +191,9 @@ function AccProfileFull({
                     </Badge>
                   )}
                 </div>
-                {proj.roles.length > 0 && (
+                {(proj.roles ?? []).length > 0 && (
                   <div className="flex flex-wrap gap-1">
-                    {proj.roles.map((role) => (
+                    {(proj.roles ?? []).map((role) => (
                       <span
                         key={role}
                         className="inline-flex items-center text-[10px] px-1.5 py-0 rounded-full border border-primary/15 bg-primary/5 text-primary/60"
