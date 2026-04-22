@@ -2,6 +2,6 @@
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "node scripts/yjs-server.cjs"
+startCommand = "node scripts/yjs-server.mjs"
 restartPolicyType = "on_failure"
 restartPolicyMaxRetries = 3
