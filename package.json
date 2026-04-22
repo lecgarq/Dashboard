@@ -37,6 +37,7 @@
     "@dnd-kit/utilities": "^3.2.2",
     "@hocuspocus/extension-database": "^3.4.4",
     "@hocuspocus/extension-logger": "^3.4.4",
+    "@hocuspocus/provider": "^3.4.4",
     "@hocuspocus/server": "^3.4.4",
     "@prisma/adapter-pg": "^7.7.0",
     "@prisma/client": "^7.7.0",
@@ -91,7 +92,6 @@
     "uploadthing": "^7.7.4",
     "ws": "^8.20.0",
     "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
-    "y-websocket": "^3.0.0",
     "yjs": "^13.6.29",
     "zod": "^4.3.6"
   },

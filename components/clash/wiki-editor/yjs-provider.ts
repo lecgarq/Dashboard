@@ -1,11 +1,11 @@
 import * as Y from "yjs";
-import { WebsocketProvider } from "y-websocket";
+import { HocuspocusProvider } from "@hocuspocus/provider";
 
 import { createClientLogger } from "@/lib/core/logger";
 
 type YjsProviderEntry = {
   ydoc: Y.Doc;
-  provider: WebsocketProvider;
+  provider: HocuspocusProvider;
   refCount: number;
   authToken: string;
 };
@@ -53,17 +53,20 @@ export function getOrCreateYjsProvider(roomName: string, authToken: string) {
 
   if (!cached) {
     const ydoc = new Y.Doc();
-    const provider = new WebsocketProvider(getYjsWsUrl(), roomName, ydoc, {
-      connect: false,
-      params: { token: authToken },
-      maxBackoffTime: 10000,
+    const provider = new HocuspocusProvider({
+      url: getYjsWsUrl(),
+      name: roomName,
+      document: ydoc,
+      token: authToken,
+      onAuthenticationFailed: ({ reason }) => {
+        wikiLogger.warn(`Authentication failed for collaboration room "${roomName}": ${reason}`);
+      },
+      onDisconnect: ({ event }) => {
+        wikiLogger.warn(
+          `Disconnected from collaboration room "${roomName}" with code ${event.code}`
+        );
+      },
     });
-
-    try {
-      provider.connect();
-    } catch {
-      wikiLogger.warn(`Failed to connect WebSocket for room "${roomName}"`);
-    }
 
     cached = {
       ydoc,

@@ -49,6 +49,7 @@ Important:
 - `APS_CALLBACK_URL` must use the same origin and the Autodesk callback path shown above.
 - `node scripts/patch-env.js` updates only `NEXT_PUBLIC_LOD_CHECKER_URL` and `NEXT_PUBLIC_YJS_WS_URL`.
 - Do not mix `localhost` with the public host in the same auth session.
+- Wiki collaboration falls back to the Railway Hocuspocus server when `NEXT_PUBLIC_YJS_WS_URL` is unset. For manual local collaboration testing with `npm run yjs:server`, set `NEXT_PUBLIC_YJS_WS_URL=ws://localhost:4444`.
 
 ## Tunnel Workflow
 

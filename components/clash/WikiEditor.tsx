@@ -108,6 +108,23 @@ type CachedWikiSection = {
   yjsState?: Uint8Array | Buffer | null;
 };
 
+const COLLAB_SYNC_TIMEOUT_MS = 15000;
+
+type HocuspocusSyncedPayload = {
+  state: boolean;
+};
+
+type HocuspocusAuthenticationFailedPayload = {
+  reason?: string;
+};
+
+type HocuspocusDisconnectPayload = {
+  event?: {
+    code?: number;
+    reason?: string;
+  };
+};
+
 function toSectionKey(section: string) {
   const candidate = section.split("-").slice(1).join("-");
   return candidate || section;
@@ -156,7 +173,7 @@ export function WikiEditor({
   const [collabError, setCollabError] = useState<string | null>(null);
   const debouncedVersion = useDebounce(contentVersion, 1500);
   const currentHtmlRef = useRef(section.content);
-  const [roomName] = useState(() => `wiki-room-${module}-${section.id}`);
+  const roomName = useMemo(() => `wiki-room-${module}-${section.id}`, [module, section.id]);
   
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
@@ -302,6 +319,10 @@ export function WikiEditor({
   const [uploadError, setUploadError] = useState<string | null>(null);
   // Phase 2: named upload progress for progress bar UI (shows filename + %)
   const [namedUploadProgress, setNamedUploadProgress] = useState<{ fileName: string; progress: number } | null>(null);
+
+  useEffect(() => {
+    setIsSynced(!canEdit);
+  }, [canEdit, roomName]);
 
   const handleMediaUpload = useCallback(async (files: File[]) => {
     const ed = editorRef.current;
@@ -518,41 +539,85 @@ export function WikiEditor({
     setEditorViewReady(false);
   }, [editor]);
 
-  // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty!
+  // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty.
   useEffect(() => {
-    if (!editor || !provider || !section.content) return;
+    if (!editor || !provider) return;
     
     let initialized = false;
+    let hasCompletedInitialSync = provider.synced;
+    let disposed = false;
+    const syncTimeout = window.setTimeout(() => {
+      if (disposed || hasCompletedInitialSync) return;
+      setIsSynced(false);
+      setCollabError(
+        "The collaboration server did not finish syncing. Check the Yjs WebSocket URL and try again."
+      );
+    }, COLLAB_SYNC_TIMEOUT_MS);
+
+    const clearSyncTimeout = () => window.clearTimeout(syncTimeout);
     
-    const handleSync = (synced: boolean) => {
-      setIsSynced(synced);
+    const handleSynced = ({ state }: HocuspocusSyncedPayload) => {
+      if (disposed) return;
+      hasCompletedInitialSync = state;
+      setIsSynced(state);
       
-      if (synced && !initialized && ydoc && editor) {
-        initialized = true;
-        // If the Yjs document is still totally empty after syncing, we drop the DB payload into it.
-        const fragment = ydoc.getXmlFragment("default");
-        if (fragment.length === 0 && editor.isEmpty) {
-          editor.commands.setContent(section.content, { emitUpdate: true });
-          currentHtmlRef.current = section.content;
-        } else {
-          currentHtmlRef.current = editor.getHTML();
-        }
+      if (!state) return;
+
+      clearSyncTimeout();
+      setCollabError(null);
+
+      if (initialized || !ydoc) return;
+      initialized = true;
+      // If the Yjs document is still totally empty after syncing, drop the DB payload into it.
+      const fragment = ydoc.getXmlFragment("default");
+      if (section.content && fragment.length === 0 && editor.isEmpty) {
+        editor.commands.setContent(section.content, { emitUpdate: true });
+        currentHtmlRef.current = section.content;
+      } else {
+        currentHtmlRef.current = editor.getHTML();
       }
     };
+
+    const handleAuthenticationFailed = ({ reason }: HocuspocusAuthenticationFailedPayload) => {
+      if (disposed) return;
+      clearSyncTimeout();
+      setIsSynced(false);
+      setCollabError(
+        reason
+          ? `Collaboration authentication failed: ${reason}`
+          : "Collaboration authentication failed."
+      );
+    };
+
+    const handleDisconnect = ({ event }: HocuspocusDisconnectPayload) => {
+      if (disposed || hasCompletedInitialSync) return;
+      clearSyncTimeout();
+      setIsSynced(false);
+      const details = event?.reason || (event?.code ? `code ${event.code}` : null);
+      setCollabError(
+        details
+          ? `Collaboration server disconnected before sync completed (${details}).`
+          : "Collaboration server disconnected before sync completed."
+      );
+    };
     
-    // @ts-ignore
-    provider.on('sync', handleSync);
+    provider.on("synced", handleSynced);
+    provider.on("authenticationFailed", handleAuthenticationFailed);
+    provider.on("disconnect", handleDisconnect);
     
     // Check initial state if already synced
     if (provider.synced) {
-      handleSync(true);
+      handleSynced({ state: true });
     }
     
     return () => {
-      // @ts-ignore
-      provider.off('sync', handleSync);
+      disposed = true;
+      clearSyncTimeout();
+      provider.off("synced", handleSynced);
+      provider.off("authenticationFailed", handleAuthenticationFailed);
+      provider.off("disconnect", handleDisconnect);
     };
-  }, [editor, provider, section.content]);
+  }, [editor, provider, section.content, ydoc]);
 
   // Sync editorRef as an effect to avoid render-phase re-assignment issues
   useEffect(() => {
