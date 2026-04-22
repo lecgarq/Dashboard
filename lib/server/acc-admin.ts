@@ -72,11 +72,21 @@ async function fetchApsJson(
       raw ||
       `${response.status} ${response.statusText}`;
 
-    if (response.status === 401 || response.status === 403) {
+    if (response.status === 401) {
       throw new IntegrationError(
         "Autodesk connection expired. Reconnect Autodesk and try again.",
         response.status,
         "reconnect_required",
+        "Autodesk",
+        { url, error: errorText }
+      );
+    }
+
+    if (response.status === 403) {
+      throw new IntegrationError(
+        "Account Admin privileges required. Ensure your Autodesk account is an Account Admin in the hub.",
+        response.status,
+        "forbidden",
         "Autodesk",
         { url, error: errorText }
       );

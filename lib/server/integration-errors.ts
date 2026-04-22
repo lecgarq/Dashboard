@@ -9,7 +9,8 @@ import {
 export type IntegrationErrorCode =
   | "reconnect_required"
   | "config_missing"
-  | "unavailable";
+  | "unavailable"
+  | "forbidden";
 
 export class IntegrationError extends Error {
   constructor(

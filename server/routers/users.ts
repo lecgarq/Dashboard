@@ -26,7 +26,9 @@ function toAccRouterError(error: unknown, fallbackMessage: string) {
   if (error instanceof IntegrationError) {
     return new TRPCError({
       code:
-        error.code === "config_missing" || error.code === "reconnect_required"
+        error.code === "config_missing" ||
+        error.code === "reconnect_required" ||
+        error.code === "forbidden"
           ? "PRECONDITION_FAILED"
           : "INTERNAL_SERVER_ERROR",
       message: error.message,

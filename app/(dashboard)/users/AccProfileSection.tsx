@@ -54,16 +54,26 @@ export function AccProfileSection({ email }: { email: string }) {
     );
   }
 
-  // 2. 403 / PRECONDITION_FAILED — no Account Admin privilege
+  // 2. PRECONDITION_FAILED — either expired token or missing admin privilege
   if (error?.data?.code === "PRECONDITION_FAILED") {
+    const isExpired =
+      error.message?.toLowerCase().includes("expired") ||
+      error.message?.toLowerCase().includes("reconnect");
+
     return (
       <div className="pt-4 border-t border-border">
         <div className="flex items-start gap-2 p-3 rounded-lg border border-amber-500/20 bg-amber-500/5 text-amber-400 text-xs">
           <AlertCircle size={13} className="shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium">Account Admin privileges required</p>
+            <p className="font-medium">
+              {isExpired
+                ? "Autodesk connection expired"
+                : "Account Admin privileges required"}
+            </p>
             <p className="text-[10px] text-amber-400/70 mt-0.5">
-              Ensure your Autodesk account is an Account Admin in the hub to view ACC data.
+              {isExpired
+                ? "Reconnect your Autodesk account in Settings to view ACC data."
+                : "Ensure your Autodesk account is an Account Admin in the hub to view ACC data."}
             </p>
           </div>
         </div>
