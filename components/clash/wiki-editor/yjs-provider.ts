@@ -14,12 +14,28 @@ const yjsCache = new Map<string, YjsProviderEntry>();
 const wikiLogger = createClientLogger("WikiEditor");
 
 function getYjsWsUrl() {
-  const envUrl = process.env.NEXT_PUBLIC_YJS_WS_URL || "wss://prolific-flow-production.up.railway.app";
-  if (
-    typeof window !== "undefined" &&
-    window.location.protocol === "https:" &&
-    envUrl.startsWith("ws://")
-  ) {
+  const envUrl = process.env.NEXT_PUBLIC_YJS_WS_URL;
+  const isBrowser = typeof window !== "undefined";
+  const isSecure = isBrowser && window.location.protocol === "https:";
+  const defaultFallback = "wss://prolific-flow-production.up.railway.app";
+
+  // 1. Use the production fallback if no environment variable is defined
+  if (!envUrl) {
+    return defaultFallback;
+  }
+
+  // 2. Detect "Private IP" configurations in a "Public" (HTTPS) environment.
+  // Browsers block mixed content (ws:// on https://) and private IPs are unreachable from the web.
+  const isPrivateIp = /ws:\/\/192\.168\.|ws:\/\/10\.|ws:\/\/172\./.test(envUrl);
+  if (isSecure && isPrivateIp) {
+    wikiLogger.warn(
+      `Redirecting: WebSocket IP "${envUrl}" is unreachable from public HTTPS. Using fallback: ${defaultFallback}`
+    );
+    return defaultFallback;
+  }
+
+  // 3. Automatically upgrade ws:// to wss:// if on an HTTPS site (unless it's localhost)
+  if (isSecure && envUrl.startsWith("ws://") && !envUrl.includes("localhost") && !envUrl.includes("127.0.0.1")) {
     return `wss://${envUrl.slice(5)}`;
   }
 

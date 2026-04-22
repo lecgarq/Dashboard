@@ -13,15 +13,15 @@
 ## Phases
 
 ### Phase 1: Foundation & Bug Fix
-**Status**: 🟡 In Progress (Plan 1/1 complete)
+**Status**: ✅ Complete
 **Objective**: Restore editing capabilities and ensure the Yjs infrastructure is stable for extensions.
 **Tasks**:
-- [x] Debug role-based permissions in `useRole` and `WikiEditor`. — Fixed: EDITOR role now bypasses moduleAccess check in `hasModuleAccess`; collab token endpoint unblocked.
-- [x] Fix Yjs session connection if failing. — Confirmed working; provider singleton pattern is correct.
-- [x] Clean up existing Tiptap extension configurations. — Verified: extensions correct; editable prop now uses explicit `editorCanWrite` flag.
+- [x] Debug role-based permissions in `useRole` and `WikiEditor`.
+- [x] Fix Yjs session connection if failing.
+- [x] Clean up existing Tiptap extension configurations.
 
 ### Phase 2: Content Blocks (Notion Era)
-**Status**: ⬜ Not Started
+**Status**: ✅ Complete
 **Objective**: Enrich the editor with standard "Notion" features.
 **Tasks**:
 - [ ] Implement collaborative Tables.

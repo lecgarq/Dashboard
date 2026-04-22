@@ -61,9 +61,23 @@ function clampPosition(x: number, y: number, width = MENU_WIDTH, height = 320) {
     return { x, y };
   }
 
+  // Adjust for scroll offset if not using fixed? Wait, we are using fixed.
+  // But clientX/Y are viewport relative. 
+  // We should ensure we don't overflow the viewport.
+  const padding = 10;
+  let finalX = x;
+  let finalY = y;
+
+  if (finalX + width > window.innerWidth) {
+    finalX = window.innerWidth - width - padding;
+  }
+  if (finalY + height > window.innerHeight) {
+    finalY = window.innerHeight - height - padding;
+  }
+
   return {
-    x: Math.max(MENU_MARGIN, Math.min(x, window.innerWidth - width - MENU_MARGIN)),
-    y: Math.max(MENU_MARGIN, Math.min(y, window.innerHeight - height - MENU_MARGIN)),
+    x: Math.max(padding, finalX),
+    y: Math.max(padding, finalY),
   };
 }
 

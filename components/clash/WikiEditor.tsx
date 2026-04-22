@@ -296,6 +296,7 @@ export function WikiEditor({
   }, [provider, session, ydoc]);
 
   const [editorViewReady, setEditorViewReady] = useState(false);
+  const [isSynced, setIsSynced] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState<string | null>(null);
@@ -414,9 +415,11 @@ export function WikiEditor({
 
       const failed = results.filter((result) => result.status === "rejected");
       if (failed.length > 0) {
+        const firstReason = (failed[0] as PromiseRejectedResult).reason;
+        const serverMsg = firstReason instanceof Error ? firstReason.message : "Media upload failed";
         setUploadError(
           failed.length === files.length
-            ? "Media upload failed"
+            ? serverMsg
             : `${failed.length} file${failed.length === 1 ? "" : "s"} failed to upload`
         );
       }
@@ -446,18 +449,33 @@ export function WikiEditor({
         return true;
       }
 
-      // 2. Try items fallback
+      // 2. Try items fallback (image/video binary data)
       const items = Array.from(clipboardData.items || []);
       const itemFiles = items
+        .filter(item => item.kind === 'file' && (item.type.startsWith('image/') || item.type.startsWith('video/')))
         .map(item => item.getAsFile())
-        .filter((file): file is File => !!file && (file.type.startsWith('image/') || file.type.startsWith('video/')));
-      
+        .filter((file): file is File => !!file);
+
       if (itemFiles.length > 0) {
         event.preventDefault();
         uploadRef.current(itemFiles);
         return true;
       }
-      
+
+      // 3. Detect pasted text that is a direct image URL — insert as image node
+      const pastedText = clipboardData.getData('text/plain')?.trim();
+      if (pastedText) {
+        const imageUrlPattern = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp|svg|bmp|avif|tiff)(\?.*)?$/i;
+        if (imageUrlPattern.test(pastedText)) {
+          event.preventDefault();
+          const ed = editorRef.current;
+          if (ed) {
+            (ed.chain().focus() as any).setImage({ src: pastedText }).run();
+          }
+          return true;
+        }
+      }
+
       return false;
     },
     handleDrop: (view: any, event: DragEvent) => {
@@ -506,11 +524,14 @@ export function WikiEditor({
     
     let initialized = false;
     
-    const handleSync = (isSynced: boolean) => {
-      if (isSynced && !initialized) {
+    const handleSync = (synced: boolean) => {
+      setIsSynced(synced);
+      
+      if (synced && !initialized && ydoc && editor) {
         initialized = true;
-        // If the Yjs document is still totally empty after syncing, we drop the DB payload into it
-        if (editor.isEmpty) {
+        // If the Yjs document is still totally empty after syncing, we drop the DB payload into it.
+        const fragment = ydoc.getXmlFragment("default");
+        if (fragment.length === 0 && editor.isEmpty) {
           editor.commands.setContent(section.content, { emitUpdate: true });
           currentHtmlRef.current = section.content;
         } else {
@@ -521,6 +542,11 @@ export function WikiEditor({
     
     // @ts-ignore
     provider.on('sync', handleSync);
+    
+    // Check initial state if already synced
+    if (provider.synced) {
+      handleSync(true);
+    }
     
     return () => {
       // @ts-ignore
@@ -659,8 +685,8 @@ export function WikiEditor({
     editor.chain().focus("end").run();
   };
 
-  const showEditorInitializing = canEdit && (!editor || !editorCanWrite) && !collabError;
-  const showEmptyCanvasHint = !!editor && editorCanWrite && editor.isEmpty;
+  const showEditorInitializing = canEdit && (!editor || !editorCanWrite || !isSynced) && !collabError;
+  const showEmptyCanvasHint = !!editor && editorCanWrite && isSynced && editor.isEmpty;
 
   const toolbarButtons = editor
     ? [
@@ -953,18 +979,18 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="flex flex-col flex-1 mx-8 mb-8 overflow-hidden rounded-[28px] border border-border/50 bg-white/46 shadow-[0_24px_60px_-38px_rgba(15,23,42,0.45)] backdrop-blur-sm">
+        <div className="flex flex-col flex-1 mx-auto w-full max-w-4xl mb-12 min-h-[600px] rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm overflow-visible">
           {showEditorInitializing ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-12 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
-                <Loader2 size={22} className="animate-spin" />
+            <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-24 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
+                <Loader2 size={28} className="animate-spin" />
               </div>
-              <div className="space-y-1.5">
-                <p className="text-sm font-semibold text-foreground">
-                  Preparing collaborative editor
+              <div className="space-y-2">
+                <p className="text-base font-semibold text-foreground">
+                  Connecting to collaboration session
                 </p>
-                <p className="text-xs text-muted-foreground">
-                  The writing canvas will appear as soon as the document session is ready.
+                <p className="text-sm text-muted-foreground max-w-[280px]">
+                  Please wait while we sync your document with the latest version from the cloud.
                 </p>
               </div>
             </div>
@@ -976,15 +1002,15 @@ export function WikiEditor({
             </div>
           ) : null}
 
-          {editor ? (
+          {editor && isSynced ? (
             <div className="group relative flex flex-col flex-1">
               {showEmptyCanvasHint ? (
                 <button
                   type="button"
-                  className="mx-6 mt-6 flex w-[calc(100%-3rem)] items-start gap-3 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.06] px-4 py-4 text-left transition-colors hover:bg-primary/[0.09]"
+                  className="mx-8 mt-8 flex w-[calc(100%-4rem)] items-start gap-3 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.04] px-4 py-4 text-left transition-colors hover:bg-primary/[0.08]"
                   onClick={focusEditorSurface}
                 >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-white/70 text-primary">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-white text-primary">
                     <FileText size={16} />
                   </span>
                   <span>
@@ -999,9 +1025,9 @@ export function WikiEditor({
               ) : null}
 
               {editorCanWrite && editorViewReady && <WikiDragHandle editor={editor} />}
-              <EditorContent editor={editor} />
-              {editorCanWrite && editorViewReady && <TableHandle editor={editor} />}
-              {editorCanWrite && editorViewReady && <TableCellHandleMenu editor={editor} />}
+              <div className="px-12 py-10">
+                <EditorContent editor={editor} />
+              </div>
               {editorCanWrite && editorViewReady && (
                 <SlashDropdownMenu editor={editor} items={WIKI_SLASH_ITEMS} />
               )}
@@ -1009,6 +1035,14 @@ export function WikiEditor({
           ) : null}
         </div>
       </div>
+      {/* Table overlays rendered outside backdrop-blur-sm to avoid Chrome's
+          backdrop-filter containing-block bug that shifts position:fixed coordinates */}
+      {editor && editorCanWrite && editorViewReady && (
+        <>
+          <TableHandle editor={editor} />
+          <TableCellHandleMenu editor={editor} />
+        </>
+      )}
       <WikiLinkDialog
         isOpen={linkDialogOpen}
         onOpenChange={setLinkDialogOpen}
