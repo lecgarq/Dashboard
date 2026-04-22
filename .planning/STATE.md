@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 6 of 6 (ACC Project Intelligence)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In progress
-Last activity: 2026-04-22 — 06-02 complete (lib/server/acc-admin.ts created: typed ACC Admin API wrappers for fetchAccUserByEmail, fetchAccUserProjects, fetchAccUserProducts)
+Last activity: 2026-04-22 — 06-03 complete (getAccProfile tRPC procedure added to usersRouter: 24h Prisma cache, forceRefresh support, b. prefix strip, PRECONDITION_FAILED error mapping)
 
-Progress: [█████░░░░░] 40% (Phase 2 at 5/6; Phase 6 at 2/4 plans complete)
+Progress: [█████░░░░░] 43% (Phase 2 at 5/6; Phase 6 at 3/4 plans complete)
 
 ## Accumulated Context
 
@@ -37,6 +37,8 @@ Progress: [█████░░░░░] 40% (Phase 2 at 5/6; Phase 6 at 2/4 p
 - [Phase 6, Plan 02]: fetchAccUserByEmail returns null (not throw) for empty results — ACC Admin API returns 200 with empty results array when email not found (not a 404).
 - [Phase 6, Plan 02]: accountId b. prefix stripping is caller responsibility — acc-admin.ts helpers receive pre-stripped bare UUID.
 - [Phase 6, Plan 02]: fetchApsJson copied from aps-search.ts pattern into acc-admin.ts (not imported) — the function is not exported from aps-search.ts.
+- [Phase 6, Plan 03]: getAccProfile placed in usersRouter (not a new router) — it is a user data query aligned with existing user profile procedures.
+- [Phase 6, Plan 03]: toAccRouterError defined locally in users.ts (not imported from aps-search.ts) — avoids importing from sibling router files.
 
 ### Blockers/Concerns
 
@@ -45,5 +47,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Completed 06-01-PLAN.md (AccMemberCache Prisma model + migration: email unique, jsonb data, syncedAt for TTL, applied via migrate deploy with direct URL)
+Stopped at: Completed 06-03-PLAN.md (getAccProfile tRPC procedure in usersRouter: cache-first ACC profile fetching with 24h TTL, forceRefresh, b. prefix strip, and PRECONDITION_FAILED error mapping)
 Resume file: None

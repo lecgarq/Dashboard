@@ -112,4 +112,4 @@ Plans:
 | 3. Spatial Canvas | 0/TBD | Not started | - |
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
-| 6. ACC Project Intelligence | 2/4 | In Progress | - |
+| 6. ACC Project Intelligence | 3/4 | In Progress|  |
