@@ -10,14 +10,15 @@ import { Database } from "@hocuspocus/extension-database";
 import { Logger } from "@hocuspocus/extension-logger";
 import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import pg from "pg";
 import { decode } from "@auth/core/jwt";
 
 const WIKI_COLLAB_TOKEN_SALT = "wiki-collab-token";
 
-// Initialize Prisma
-const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }),
-});
+// Initialize Prisma with a proper pool for the adapter
+const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const adapter = new PrismaPg(pool);
+const prisma = new PrismaClient({ adapter });
 
 /**
  * Extracts table type and record ID from the room name.
@@ -32,7 +33,7 @@ function parseRoomDetails(name) {
   return { type: "unknown", id: null };
 }
 
-const server = Server.configure({
+const server = new Server({
   name: "WikiCollab",
   port: parseInt(process.env.PORT || "4444", 10),
 
