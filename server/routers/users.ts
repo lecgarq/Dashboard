@@ -814,7 +814,7 @@ export const usersRouter = router({
 
             return {
               ...proj,
-              roles: detail?.roles.length ? detail.roles : proj.roles,
+              roles: detail?.roles?.length ? detail.roles : proj.roles,
               modules: detail?.modules ?? [],
             };
           })
