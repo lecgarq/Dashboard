@@ -25,6 +25,8 @@ function ImageNodeView({
   updateAttributes,
 }: ReactNodeViewProps) {
   const attrs = node.attrs as {
+    id: string | null;
+    isOptimistic: boolean;
     src: string | null;
     alt: string | null;
     width: number | null;
@@ -286,6 +288,17 @@ export const ImageNode = Node.create({
 
   addAttributes() {
     return {
+      id: {
+        default: null,
+        parseHTML: (el) => el.getAttribute("data-id"),
+        renderHTML: (attrs) => (attrs.id ? { "data-id": attrs.id } : {}),
+      },
+      isOptimistic: {
+        default: false,
+        parseHTML: (el) => el.getAttribute("data-is-optimistic") === "true",
+        renderHTML: (attrs) =>
+          attrs.isOptimistic ? { "data-is-optimistic": "true" } : {},
+      },
       src: { default: null },
       alt: {
         default: null,

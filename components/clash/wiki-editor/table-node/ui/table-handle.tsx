@@ -10,10 +10,13 @@ import {
   AlignCenter,
   AlignLeft,
   AlignRight,
+  Columns3,
   Download,
   Filter,
   Merge,
   Plus,
+  Rows3,
+  Trash2,
 } from "lucide-react";
 
 import { cn } from "@/lib/core/utils";
@@ -199,6 +202,9 @@ function TableMenuButton({
         className
       )}
       disabled={disabled}
+      onMouseDown={(event) => {
+        event.preventDefault();
+      }}
       onClick={onClick}
     >
       {children}
@@ -650,9 +656,15 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
         }
       }
 
-      const { x, y } = clampPosition(event.clientX, event.clientY);
+      const kind = target.closest("td, th") ? "cell" : "table";
+      const { x, y } = clampPosition(
+        event.clientX,
+        event.clientY,
+        MENU_WIDTH,
+        kind === "cell" ? 640 : 240
+      );
       setMenuState({
-        kind: target.closest("td, th") ? "cell" : "table",
+        kind,
         x,
         y,
       });
@@ -684,9 +696,26 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
   }, [menuState]);
 
   const commandState = useMemo(() => {
-    const canCommands = editor.can();
+    const canCommands = editor.can() as {
+      addColumnAfter?: () => boolean;
+      addColumnBefore?: () => boolean;
+      addRowAfter?: () => boolean;
+      addRowBefore?: () => boolean;
+      deleteColumn?: () => boolean;
+      deleteRow?: () => boolean;
+      deleteTable?: () => boolean;
+      mergeCells?: () => boolean;
+      splitCell?: () => boolean;
+    };
 
     return {
+      canAddColumnAfter: typeof canCommands.addColumnAfter === "function" ? canCommands.addColumnAfter() : false,
+      canAddColumnBefore: typeof canCommands.addColumnBefore === "function" ? canCommands.addColumnBefore() : false,
+      canAddRowAfter: typeof canCommands.addRowAfter === "function" ? canCommands.addRowAfter() : false,
+      canAddRowBefore: typeof canCommands.addRowBefore === "function" ? canCommands.addRowBefore() : false,
+      canDeleteColumn: typeof canCommands.deleteColumn === "function" ? canCommands.deleteColumn() : false,
+      canDeleteRow: typeof canCommands.deleteRow === "function" ? canCommands.deleteRow() : false,
+      canDeleteTable: typeof canCommands.deleteTable === "function" ? canCommands.deleteTable() : false,
       canMerge: typeof canCommands.mergeCells === "function" ? canCommands.mergeCells() : false,
       canSplit: typeof canCommands.splitCell === "function" ? canCommands.splitCell() : false,
     };
@@ -711,6 +740,14 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
     closeMenu();
   };
 
+  const deleteCurrentTable = () => {
+    if (!window.confirm("Delete this table?")) {
+      return;
+    }
+
+    runCommand(() => editor.chain().focus().deleteTable().run());
+  };
+
   if (!menuState) {
     return null;
   }
@@ -719,7 +756,7 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
     <>
       <div className="fixed inset-0 z-40" onClick={closeMenu} />
       <div
-        className="fixed z-50 w-64 rounded-xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur"
+        className="fixed z-50 max-h-[calc(100vh-1.5rem)] w-64 overflow-y-auto rounded-xl border border-border bg-background/95 p-2 shadow-2xl backdrop-blur"
         style={{
           left: `${menuState.x}px`,
           top: `${menuState.y}px`,
@@ -794,17 +831,75 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
             <div className="px-1 pb-2">
               <TableMenuButton
                 disabled={!commandState.canMerge}
-                onClick={() => runCommand(() => editor.commands.mergeCells())}
+                onClick={() => runCommand(() => editor.chain().focus().mergeCells().run())}
               >
                 <Merge size={14} />
                 Merge cells
               </TableMenuButton>
               <TableMenuButton
                 disabled={!commandState.canSplit}
-                onClick={() => runCommand(() => editor.commands.splitCell())}
+                onClick={() => runCommand(() => editor.chain().focus().splitCell().run())}
               >
                 <Merge size={14} className="rotate-180" />
                 Split cell
+              </TableMenuButton>
+            </div>
+
+            <div className="mx-1 my-1 h-px bg-border" />
+
+            <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Rows
+            </div>
+            <div className="px-1 pb-2">
+              <TableMenuButton
+                disabled={!commandState.canAddRowBefore}
+                onClick={() => runCommand(() => editor.chain().focus().addRowBefore().run())}
+              >
+                <Rows3 size={14} />
+                Add row above
+              </TableMenuButton>
+              <TableMenuButton
+                disabled={!commandState.canAddRowAfter}
+                onClick={() => runCommand(() => editor.chain().focus().addRowAfter().run())}
+              >
+                <Rows3 size={14} />
+                Add row below
+              </TableMenuButton>
+              <TableMenuButton
+                disabled={!commandState.canDeleteRow}
+                onClick={() => runCommand(() => editor.chain().focus().deleteRow().run())}
+              >
+                <Trash2 size={14} />
+                Delete row
+              </TableMenuButton>
+            </div>
+
+            <div className="mx-1 my-1 h-px bg-border" />
+
+            <div className="px-2 pb-1 pt-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+              Columns
+            </div>
+            <div className="px-1 pb-2">
+              <TableMenuButton
+                disabled={!commandState.canAddColumnBefore}
+                onClick={() => runCommand(() => editor.chain().focus().addColumnBefore().run())}
+              >
+                <Columns3 size={14} />
+                Add column before
+              </TableMenuButton>
+              <TableMenuButton
+                disabled={!commandState.canAddColumnAfter}
+                onClick={() => runCommand(() => editor.chain().focus().addColumnAfter().run())}
+              >
+                <Columns3 size={14} />
+                Add column after
+              </TableMenuButton>
+              <TableMenuButton
+                disabled={!commandState.canDeleteColumn}
+                onClick={() => runCommand(() => editor.chain().focus().deleteColumn().run())}
+              >
+                <Trash2 size={14} />
+                Delete column
               </TableMenuButton>
             </div>
 
@@ -824,6 +919,18 @@ export function TableCellHandleMenu({ editor }: TableHandleProps) {
           >
             <Download size={14} />
             Export as .xlsx
+          </TableMenuButton>
+          <TableMenuButton
+            className={
+              commandState.canDeleteTable
+                ? "text-destructive hover:bg-destructive/10 hover:text-destructive"
+                : undefined
+            }
+            disabled={!commandState.canDeleteTable}
+            onClick={deleteCurrentTable}
+          >
+            <Trash2 size={14} />
+            Delete table
           </TableMenuButton>
         </div>
       </div>

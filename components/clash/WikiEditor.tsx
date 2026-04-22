@@ -342,14 +342,17 @@ export function WikiEditor({
         try {
           if (file.type.startsWith("video/")) {
             ed.chain().focus().insertContent({
-              type: 'video',
+              type: "video",
               attrs: { src: localUrl, id: tempId, isOptimistic: true }
             }).run();
           } else {
-            (ed.chain().focus() as any).setImage({ 
-              src: localUrl, 
-              id: tempId,
-              isOptimistic: true 
+            ed.chain().focus().insertContent({
+              type: "image",
+              attrs: {
+                src: localUrl,
+                id: tempId,
+                isOptimistic: true
+              }
             }).run();
           }
 
@@ -491,7 +494,10 @@ export function WikiEditor({
           event.preventDefault();
           const ed = editorRef.current;
           if (ed) {
-            (ed.chain().focus() as any).setImage({ src: pastedText }).run();
+            ed.chain().focus().insertContent({
+              type: "image",
+              attrs: { src: pastedText }
+            }).run();
           }
           return true;
         }
@@ -514,7 +520,7 @@ export function WikiEditor({
       return false;
     },
     attributes: {
-      class: "prose prose-invert prose-sm max-w-none flex-1 min-h-[500px] px-8 py-6 text-sm text-foreground outline-none focus:outline-none [&_h2]:text-foreground [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-foreground [&_h3]:text-base [&_h3]:font-medium [&_p]:text-foreground/80 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-foreground/80 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-foreground/80 [&_li]:text-foreground/80 [&_strong]:text-foreground [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground [&_code]:text-primary [&_code]:bg-primary/10 [&_code]:px-1 [&_code]:rounded [&_.is-editor-empty:first-child::before]:text-muted-foreground/30",
+      class: "prose prose-invert prose-sm max-w-none flex-1 min-h-[720px] px-8 pt-6 pb-72 text-sm text-foreground outline-none focus:outline-none [&_h2]:text-foreground [&_h2]:text-lg [&_h2]:font-semibold [&_h3]:text-foreground [&_h3]:text-base [&_h3]:font-medium [&_p]:text-foreground/80 [&_p]:leading-relaxed [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:text-foreground/80 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:text-foreground/80 [&_li]:text-foreground/80 [&_strong]:text-foreground [&_blockquote]:border-primary/30 [&_blockquote]:text-muted-foreground [&_code]:text-primary [&_code]:bg-primary/10 [&_code]:px-1 [&_code]:rounded [&_.is-editor-empty:first-child::before]:text-muted-foreground/30",
     },
   }), []);
 
@@ -1044,7 +1050,7 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="flex flex-col flex-1 mx-auto w-full max-w-4xl mb-12 min-h-[600px] rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm overflow-visible">
+        <div className="flex flex-col flex-1 mx-auto w-full max-w-4xl mb-24 min-h-[760px] rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm overflow-visible">
           {showEditorInitializing ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-24 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
