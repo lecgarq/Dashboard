@@ -119,7 +119,7 @@ type AccProfileData = {
   syncedAt: string;
   role?: string;
   projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles: string[] }>;
-  products?: Array<{ key: string; name: string; projectIds: string[] }>;
+  products?: Array<{ key: string; name: string; projectIds?: string[] }>;
 };
 
 function AccProfileFull({
@@ -135,7 +135,7 @@ function AccProfileFull({
   // Build a map: projectId → module names active on that project
   const modulesByProject = new Map<string, string[]>();
   for (const product of products) {
-    for (const pid of product.projectIds) {
+    for (const pid of (product.projectIds ?? [])) {
       if (!modulesByProject.has(pid)) modulesByProject.set(pid, []);
       modulesByProject.get(pid)!.push(getProductDisplayName(product.name));
     }

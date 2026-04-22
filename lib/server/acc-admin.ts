@@ -210,7 +210,8 @@ export async function fetchAccUserProducts(
     );
 
     for (const p of results) {
-      const projectIds = Array.isArray(p.projectIds) ? (p.projectIds as string[]) : [];
+      const rawPids = p.projectIds ?? p.projects ?? p.projectsIds ?? [];
+      const projectIds = Array.isArray(rawPids) ? (rawPids as string[]) : [];
       allResults.push({
         key: getString(p.key),
         name: getString(p.name),
