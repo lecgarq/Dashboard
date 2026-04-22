@@ -32,6 +32,8 @@ Progress: [█████░░░░░] 40% (Phase 2 at 5/6; Phase 6 at 2/4 p
 - [Phase 2, Plan 05]: TableKit sort/filter deferred — TableKit uses ProseMirror native node view; useSortFilter is standalone utility; full sort requires custom React NodeView for table node (future plan).
 - [Phase 2, Plan 05]: SlashDropdownMenu is scaffold (renders null); WIKI_SLASH_ITEMS is fully defined and passed as items prop — slash menu activates when scaffold is replaced with real implementation.
 - [Phase 2, Plan 05]: XHR replaces fetch() in media upload handler to enable upload progress events; namedUploadProgress state shows {fileName, progress} in UI progress bar.
+- [Phase 6, Plan 01]: Used prisma migrate deploy (not migrate dev) for non-interactive migration — migrate dev requires interactive TTY, deploy does not.
+- [Phase 6, Plan 01]: Direct Supabase URL (port 5432) required for DDL migrations — pgbouncer pooler (port 6543) rejects prepared statements used by Prisma schema engine.
 - [Phase 6, Plan 02]: fetchAccUserByEmail returns null (not throw) for empty results — ACC Admin API returns 200 with empty results array when email not found (not a 404).
 - [Phase 6, Plan 02]: accountId b. prefix stripping is caller responsibility — acc-admin.ts helpers receive pre-stripped bare UUID.
 - [Phase 6, Plan 02]: fetchApsJson copied from aps-search.ts pattern into acc-admin.ts (not imported) — the function is not exported from aps-search.ts.
@@ -43,5 +45,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-22
-Stopped at: Completed 06-02-PLAN.md (lib/server/acc-admin.ts: typed ACC Admin API wrappers, fetchAccUserByEmail/fetchAccUserProjects/fetchAccUserProducts, server-only guard, pagination, (Removed) role filtering)
+Stopped at: Completed 06-01-PLAN.md (AccMemberCache Prisma model + migration: email unique, jsonb data, syncedAt for TTL, applied via migrate deploy with direct URL)
 Resume file: None
