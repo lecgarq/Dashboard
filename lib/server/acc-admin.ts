@@ -20,12 +20,13 @@ export type AccProject = {
   name: string;
   status: string;
   isAdmin: boolean;
+  roles: string[];
 };
 
 export type AccProduct = {
   key: string;
   name: string;
-  projectCount: number;
+  projectIds: string[];
 };
 
 function getString(v: unknown): string {
@@ -164,11 +165,17 @@ export async function fetchAccUserProjects(
 
     for (const p of results) {
       const levels = p.accessLevels as { projectAdmin?: boolean } | undefined;
+      // roles can be an array of strings or objects with a `name` field
+      const rawRoles = Array.isArray(p.roles) ? p.roles : [];
+      const roles = rawRoles.map((r) =>
+        typeof r === "string" ? r : getString((r as Record<string, unknown>).name)
+      ).filter(Boolean);
       allResults.push({
         id: getString(p.id),
         name: getString(p.name),
         status: getString(p.status),
         isAdmin: levels?.projectAdmin === true,
+        roles,
       });
     }
 
@@ -203,11 +210,11 @@ export async function fetchAccUserProducts(
     );
 
     for (const p of results) {
-      const projectIds = Array.isArray(p.projectIds) ? p.projectIds : [];
+      const projectIds = Array.isArray(p.projectIds) ? (p.projectIds as string[]) : [];
       allResults.push({
         key: getString(p.key),
         name: getString(p.name),
-        projectCount: projectIds.length,
+        projectIds,
       });
     }
 

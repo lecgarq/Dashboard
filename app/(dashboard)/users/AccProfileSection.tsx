@@ -26,6 +26,138 @@ function getProductDisplayName(rawName: string) {
 }
 
 // ---------------------------------------------------------------------------
+// AccProfileFull — extracted so hooks run unconditionally
+// ---------------------------------------------------------------------------
+
+type AccProfileData = {
+  found: true;
+  status: string;
+  name?: string;
+  autodeskId?: string;
+  syncedAt: string;
+  role?: string;
+  projects?: Array<{ id: string; name: string; status: string; isAdmin: boolean; roles: string[] }>;
+  products?: Array<{ key: string; name: string; projectIds: string[] }>;
+};
+
+function AccProfileFull({
+  data,
+  onRefresh,
+}: {
+  data: AccProfileData;
+  onRefresh: () => void;
+}) {
+  const products = data.products ?? [];
+  const projects = data.projects ?? [];
+
+  // Build a map: projectId → module names active on that project
+  const modulesByProject = new Map<string, string[]>();
+  for (const product of products) {
+    for (const pid of product.projectIds) {
+      if (!modulesByProject.has(pid)) modulesByProject.set(pid, []);
+      modulesByProject.get(pid)!.push(getProductDisplayName(product.name));
+    }
+  }
+
+  return (
+    <div className="pt-4 border-t border-border space-y-3">
+      {/* Header: label + status badge + role + refresh */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 flex-wrap">
+          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+            Autodesk ACC
+          </h3>
+          <Badge
+            variant="secondary"
+            className={cn(
+              "text-[10px] px-1.5 py-0",
+              data.status === "active"
+                ? "text-green-400 border-green-400/20"
+                : "text-muted-foreground"
+            )}
+          >
+            {data.status}
+          </Badge>
+          {data.role && (
+            <Badge
+              variant="outline"
+              className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 capitalize"
+            >
+              {data.role.replace(/_/g, " ")}
+            </Badge>
+          )}
+        </div>
+        <button
+          onClick={onRefresh}
+          className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
+        >
+          <RefreshCw size={10} />
+          Refresh
+        </button>
+      </div>
+
+      {/* Projects with per-project modules */}
+      {projects.length > 0 && (
+        <div className="space-y-1.5">
+          <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
+            Projects ({projects.length})
+          </p>
+          {projects.map((proj) => {
+            const mods = modulesByProject.get(proj.id) ?? [];
+            return (
+              <div
+                key={proj.id}
+                className="rounded-lg border border-border/50 bg-muted/10 px-3 py-2 space-y-1.5"
+              >
+                <div className="flex items-center justify-between gap-1.5">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <Building2 size={10} className="text-primary/50 shrink-0" />
+                    <p className="text-[11px] font-medium text-foreground truncate">{proj.name}</p>
+                  </div>
+                  {proj.isAdmin && (
+                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 shrink-0">
+                      Admin
+                    </Badge>
+                  )}
+                </div>
+                {proj.roles.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {proj.roles.map((role) => (
+                      <span
+                        key={role}
+                        className="inline-flex items-center text-[10px] px-1.5 py-0 rounded-full border border-primary/15 bg-primary/5 text-primary/60"
+                      >
+                        {role}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                {mods.length > 0 && (
+                  <div className="flex flex-wrap gap-1">
+                    {mods.map((mod) => (
+                      <span
+                        key={mod}
+                        className="inline-flex items-center text-[10px] px-1.5 py-0 rounded-full border border-green-400/20 bg-green-400/5 text-green-400/80"
+                      >
+                        {mod}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      <p className="text-[10px] text-muted-foreground/30">
+        Synced {new Date(data.syncedAt).toLocaleDateString()}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // AccProfileSection component
 // ---------------------------------------------------------------------------
 
@@ -124,92 +256,7 @@ export function AccProfileSection({ email }: { email: string }) {
   // 5. Full profile
   if (data?.found === true) {
     return (
-      <div className="pt-4 border-t border-border space-y-3">
-        {/* Header: label + status badge + role + refresh */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2 flex-wrap">
-            <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-              Autodesk ACC
-            </h3>
-            <Badge
-              variant="secondary"
-              className={cn(
-                "text-[10px] px-1.5 py-0",
-                data.status === "active"
-                  ? "text-green-400 border-green-400/20"
-                  : "text-muted-foreground"
-              )}
-            >
-              {data.status}
-            </Badge>
-            {(data as { role?: string }).role && (
-              <Badge
-                variant="outline"
-                className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 capitalize"
-              >
-                {String((data as { role?: string }).role).replace(/_/g, " ")}
-              </Badge>
-            )}
-          </div>
-          <button
-            onClick={handleRefresh}
-            className="text-[10px] text-primary/60 hover:text-primary flex items-center gap-1 transition-colors"
-          >
-            <RefreshCw size={10} />
-            Refresh
-          </button>
-        </div>
-
-        {/* Projects */}
-        {(data.projects ?? []).length > 0 && (
-          <div className="space-y-2">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-              Projects ({(data.projects ?? []).length})
-            </p>
-            {(data.projects ?? []).map((proj) => (
-              <div
-                key={proj.id}
-                className="rounded-lg border border-border/50 bg-muted/10 px-3 py-2"
-              >
-                <div className="flex items-center justify-between gap-1.5">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <Building2 size={10} className="text-primary/50 shrink-0" />
-                    <p className="text-[11px] font-medium text-foreground truncate">{proj.name}</p>
-                  </div>
-                  {(proj as { isAdmin?: boolean }).isAdmin && (
-                    <Badge variant="outline" className="text-[10px] px-1.5 py-0 border-primary/20 text-primary/70 shrink-0">
-                      Admin
-                    </Badge>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Products / Modules */}
-        {(data.products ?? []).length > 0 && (
-          <div className="space-y-1.5">
-            <p className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-medium">
-              Modules
-            </p>
-            <div className="flex flex-wrap gap-1.5">
-              {(data.products ?? []).map((product) => (
-                <span
-                  key={(product as { key?: string }).key ?? product.name}
-                  className="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border border-green-400/20 bg-green-400/5 text-green-400"
-                >
-                  {getProductDisplayName(product.name)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <p className="text-[10px] text-muted-foreground/30">
-          Synced {new Date(data.syncedAt).toLocaleDateString()}
-        </p>
-      </div>
+      <AccProfileFull data={data} onRefresh={handleRefresh} />
     );
   }
 

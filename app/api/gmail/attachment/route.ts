@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getGmailAttachmentContent } from "@/lib/server/email";
+import {
+  getUserGmailApi,
+  isGmailAccessRequiredError,
+} from "@/lib/server/user-gmail";
 import { createLogger } from "@/lib/server/logger";
 import { auth } from "@/server/auth";
+import { db } from "@/server/db";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +34,8 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const attachment = await getGmailAttachmentContent(messageId, partId);
+    const gmailApi = await getUserGmailApi(session.user.id, db);
+    const attachment = await getGmailAttachmentContent(messageId, partId, gmailApi);
     return new Response(Uint8Array.from(attachment.buffer), {
       headers: {
         "Content-Type": attachment.mimeType,
@@ -40,6 +46,13 @@ export async function GET(req: NextRequest) {
       },
     });
   } catch (error) {
+    if (isGmailAccessRequiredError(error)) {
+      return NextResponse.json(
+        { error: "gmail_access_required" },
+        { status: 403 }
+      );
+    }
+
     logger.error("Failed to proxy Gmail attachment", {
       messageId,
       partId,

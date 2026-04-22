@@ -1097,7 +1097,7 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="flex flex-col flex-1 mx-auto w-full max-w-4xl mb-24 min-h-[760px] rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm overflow-visible">
+        <div className="flex min-h-[760px] w-full max-w-4xl flex-col overflow-visible rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm mx-auto mb-24">
           {showEditorInitializing ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-24 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
@@ -1121,7 +1121,7 @@ export function WikiEditor({
           ) : null}
 
           {editor && isSynced ? (
-            <div className="group relative flex flex-col flex-1">
+            <div className="group relative flex min-h-[760px] flex-col">
               {showEmptyCanvasHint ? (
                 <button
                   type="button"

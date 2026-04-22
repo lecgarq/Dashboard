@@ -169,7 +169,11 @@ export function SlashDropdownMenu({
       return;
     }
 
-    const handleViewportChange = () => {
+    const handleViewportChange = (event?: Event) => {
+      const target = event?.target;
+      if (target instanceof Node && menuRef.current?.contains(target)) {
+        return;
+      }
       refreshMenu();
     };
 
@@ -233,6 +237,13 @@ export function SlashDropdownMenu({
       setSelectedIndex(0);
     },
     [editor, menuState]
+  );
+
+  const stopMenuScrollPropagation = useCallback(
+    (event: React.WheelEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+      event.stopPropagation();
+    },
+    []
   );
 
   useEffect(() => {
@@ -313,6 +324,8 @@ export function SlashDropdownMenu({
         left: `${menuState.position.left}px`,
         top: `${menuState.position.top}px`,
       }}
+      onWheel={stopMenuScrollPropagation}
+      onTouchMove={stopMenuScrollPropagation}
     >
       <div className="border-b border-border/60 px-3 py-2">
         <p className="text-xs font-medium text-foreground">Insert block</p>
@@ -323,7 +336,7 @@ export function SlashDropdownMenu({
         </p>
       </div>
 
-      <div className="max-h-80 overflow-y-auto p-1.5">
+      <div className="custom-scrollbar max-h-80 overscroll-contain overflow-y-auto p-1.5">
         {filteredItems.length === 0 ? (
           <div className="rounded-lg px-3 py-8 text-center text-sm text-muted-foreground">
             No matching blocks

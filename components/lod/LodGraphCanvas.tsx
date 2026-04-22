@@ -105,6 +105,8 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
 
   const selectedFamilyRef = useRef<string | null>(null);
   const [selectedFamily, setSelectedFamily] = useState<string | null>(null);
+  const [isolateMode, setIsolateMode] = useState(false);
+  const isolateModeRef = useRef(false);
   const [hoveredNode, setHoveredNode] = useState<GraphNode | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0 });
@@ -299,6 +301,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
         highlightSet.add(selIdx);
         for (const nb of getSafeNeighbors(nodes[selIdx], nodes.length, 10)) highlightSet.add(nb);
       }
+      const isIsolated = isolateModeRef.current && hasSelection;
 
       // ── Edges ──────────────────────────────────────────────────────────
       ctx.lineWidth = 0.5 / v.scale;
@@ -312,7 +315,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
           ctx.lineTo(pos[t * 2], pos[t * 2 + 1]);
         }
         ctx.stroke();
-      } else if (!isInteracting) {
+      } else if (!isInteracting && !isIsolated) {
         const lk = links.current;
         if (lk.length > 0) {
           const pairCount = lk.length / 2;
@@ -354,14 +357,16 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
       }
 
       if (hasSelection) {
-        // Dim non-highlighted
-        ctx.globalAlpha = 0.15;
-        const grey = sprites.current.get("grey");
-        if (grey) {
-          const r = 0.8 / v.scale, d = r * 2;
-          for (const [, coords] of dimBatches) {
-            for (let i = 0; i < coords.length; i += 2)
-              ctx.drawImage(grey, coords[i] - r, coords[i + 1] - r, d, d);
+        // In isolate mode skip dim nodes entirely; otherwise draw them faded
+        if (!isIsolated) {
+          ctx.globalAlpha = 0.15;
+          const grey = sprites.current.get("grey");
+          if (grey) {
+            const r = 0.8 / v.scale, d = r * 2;
+            for (const [, coords] of dimBatches) {
+              for (let i = 0; i < coords.length; i += 2)
+                ctx.drawImage(grey, coords[i] - r, coords[i + 1] - r, d, d);
+            }
           }
         }
         // Bright highlighted (larger)
@@ -414,9 +419,14 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
     return () => ro.disconnect();
   }, [zoomToFit]);
 
-  // Auto-zoom when selection changes
+  // Auto-zoom when selection changes; reset isolate when deselecting
   useEffect(() => {
-    if (!isReady || !selectedFamily) return;
+    if (!isReady) return;
+    if (!selectedFamily) {
+      isolateModeRef.current = false;
+      setIsolateMode(false);
+      return;
+    }
     const timer = setTimeout(() => zoomToFit(selectedFamily), 250);
     return () => clearTimeout(timer);
   }, [selectedFamily, isReady, zoomToFit]);
@@ -554,6 +564,13 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
     }
   }, [hoveredNode, onSelectFamily, zoomToFit]);
 
+  const toggleIsolate = useCallback(() => {
+    setIsolateMode((prev) => {
+      isolateModeRef.current = !prev;
+      return !prev;
+    });
+  }, []);
+
   const handleContextMenu = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     const rect = (e.target as HTMLElement).getBoundingClientRect();
@@ -589,6 +606,21 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
         onContextMenu={handleContextMenu}
       />
 
+      {/* Isolate toggle — only visible when a node is selected */}
+      {selectedFamily && (
+        <button
+          onClick={toggleIsolate}
+          className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border shadow-sm transition-colors z-20 ${
+            isolateMode
+              ? "bg-primary text-primary-foreground border-primary"
+              : "bg-white/90 text-foreground border-border hover:bg-muted"
+          }`}
+        >
+          <span className={`w-2 h-2 rounded-full ${isolateMode ? "bg-primary-foreground" : "bg-primary"}`} />
+          {isolateMode ? "Exit Isolate" : "Isolate"}
+        </button>
+      )}
+
       {/* Context menu */}
       {contextMenu.visible && (
         <div
@@ -601,6 +633,12 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
             className="w-full px-2.5 py-[7px] bg-transparent text-foreground text-xs font-medium text-left cursor-pointer rounded-md hover:bg-muted transition-colors"
           >
             Zoom to Fit
+          </button>
+          <button
+            onClick={() => { toggleIsolate(); setContextMenu({ visible: false, x: 0, y: 0 }); }}
+            className="w-full px-2.5 py-[7px] bg-transparent text-foreground text-xs font-medium text-left cursor-pointer rounded-md hover:bg-muted transition-colors"
+          >
+            {isolateMode ? "Exit Isolate" : "Isolate Neighborhood"}
           </button>
         </div>
       )}

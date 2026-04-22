@@ -114,6 +114,10 @@ function formatHeaderAddress(name: string, email: string): string {
   return `${formattedName} <${safeEmail}>`;
 }
 
+function normalizeHeaderAddressList(values: string[]): string {
+  return values.map(normalizeHeaderValue).filter(Boolean).join(", ");
+}
+
 function wrapBase64(value: string): string {
   return value.match(/.{1,76}/g)?.join("\r\n") ?? "";
 }
@@ -183,21 +187,43 @@ function createPlainTextFallback(html: string): string {
 }
 
 function buildRawHtmlEmailMessage(input: {
-  fromEmail: string;
-  to: string;
+  fromEmail?: string;
+  fromName?: string;
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
   subject: string;
   html: string;
+  inReplyTo?: string | null;
+  references?: string | null;
 }): string {
   const normalizedHtml = normalizeEmailHtml(input.html);
   const plainText = createPlainTextFallback(normalizedHtml);
   const boundary = `bim-dashboard-${randomUUID()}`;
-
-  return [
-    `From: ${formatHeaderAddress("BIM Dashboard", input.fromEmail)}`,
-    `To: ${normalizeHeaderValue(input.to)}`,
+  const headers = [
+    input.fromEmail
+      ? `From: ${
+          input.fromName
+            ? formatHeaderAddress(input.fromName, input.fromEmail)
+            : normalizeHeaderValue(input.fromEmail)
+        }`
+      : null,
+    `To: ${normalizeHeaderAddressList(input.to)}`,
+    input.cc?.length ? `Cc: ${normalizeHeaderAddressList(input.cc)}` : null,
+    input.bcc?.length ? `Bcc: ${normalizeHeaderAddressList(input.bcc)}` : null,
     `Subject: ${encodeHeaderValue(input.subject)}`,
+    input.inReplyTo
+      ? `In-Reply-To: ${normalizeHeaderValue(input.inReplyTo)}`
+      : null,
+    input.references
+      ? `References: ${normalizeHeaderValue(input.references)}`
+      : null,
     "MIME-Version: 1.0",
     `Content-Type: multipart/alternative; boundary="${boundary}"`,
+  ].filter(Boolean);
+
+  return [
+    ...headers,
     "",
     `--${boundary}`,
     'Content-Type: text/plain; charset="UTF-8"',
@@ -297,6 +323,12 @@ function findMessagePartById(
   return null;
 }
 
+function messageHasAttachments(part: GmailMessagePart | null | undefined): boolean {
+  if (!part) return false;
+  if (isAttachmentPart(part)) return true;
+  return (part.parts ?? []).some((child) => messageHasAttachments(child));
+}
+
 async function sendEmailViaResend(to: string, subject: string, html: string): Promise<void> {
   const apiKey = process.env.RESEND_API_KEY?.trim();
   const from = process.env.RESEND_EMAIL?.trim() || "onboarding@resend.dev";
@@ -326,7 +358,8 @@ async function sendEmailViaGmail(to: string, subject: string, html: string): Pro
   const raw = Buffer.from(
     buildRawHtmlEmailMessage({
       fromEmail: cfg.gmailUser,
-      to,
+      fromName: "BIM Dashboard",
+      to: [to],
       subject,
       html,
     })
@@ -522,6 +555,7 @@ export interface GmailMessageSummary {
   date: string;
   snippet: string;
   isUnread: boolean;
+  hasAttachments: boolean;
 }
 
 export interface GmailAttachment {
@@ -534,10 +568,25 @@ export interface GmailAttachment {
 }
 
 export interface GmailMessageFull extends GmailMessageSummary {
+  to: string;
+  cc?: string;
+  messageIdHeader?: string;
+  references?: string;
   bodyHtml?: string;
   bodyText?: string;
   attachments: GmailAttachment[];
 }
+
+export type SendGmailMessageInput = {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  html: string;
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
+};
 
 export function buildUserGmailApi(tokens: {
   refreshToken: string;
@@ -554,14 +603,16 @@ export function buildUserGmailApi(tokens: {
 
 export async function listRecentMessages(
   maxResults = 15,
-  gmailApi?: ReturnType<typeof google.gmail>
+  gmailApi?: ReturnType<typeof google.gmail>,
+  query?: string
 ): Promise<GmailMessageSummary[]> {
   try {
     const gmail = gmailApi ?? getGmailApi();
+    const searchQuery = ["in:inbox", query?.trim()].filter(Boolean).join(" ");
     const res = await gmail.users.messages.list({
       userId: "me",
       maxResults,
-      q: "label:INBOX",
+      q: searchQuery,
     });
 
     const messages = res.data.messages || [];
@@ -574,22 +625,21 @@ export async function listRecentMessages(
           const detail = await gmail.users.messages.get({
             userId: "me",
             id: msg.id,
-            format: "metadata",
-            metadataHeaders: ["From", "Subject", "Date"],
+            format: "full",
           });
 
           const headers = detail.data.payload?.headers || [];
           summaries.push({
             id: msg.id,
             threadId: msg.threadId || "",
-            from:
-              headers.find((header) => header.name === "From")?.value || "Unknown",
-            subject:
-              headers.find((header) => header.name === "Subject")?.value ||
-              "(No Subject)",
-            date: headers.find((header) => header.name === "Date")?.value || "",
+            from: getHeaderValue(headers, "From") || "Unknown",
+            subject: getHeaderValue(headers, "Subject") || "(No Subject)",
+            date: getHeaderValue(headers, "Date"),
             snippet: detail.data.snippet || "",
             isUnread: (detail.data.labelIds || []).includes("UNREAD"),
+            hasAttachments: messageHasAttachments(
+              detail.data.payload as GmailMessagePart | undefined
+            ),
           });
         } catch (err) {
           logger.warn(`Failed to fetch detail for message ${msg.id}`, { err });
@@ -603,7 +653,7 @@ export async function listRecentMessages(
     );
   } catch (error) {
     logger.error("Failed to list Gmail messages", { error });
-    return [];
+    throw error;
   }
 }
 
@@ -626,14 +676,16 @@ export async function getMessage(
     return {
       id: data.id!,
       threadId: data.threadId!,
-      from:
-        headers.find((header) => header.name === "From")?.value || "Unknown",
-      subject:
-        headers.find((header) => header.name === "Subject")?.value ||
-        "(No Subject)",
-      date: headers.find((header) => header.name === "Date")?.value || "",
+      from: getHeaderValue(headers, "From") || "Unknown",
+      to: getHeaderValue(headers, "To"),
+      cc: getHeaderValue(headers, "Cc") || undefined,
+      subject: getHeaderValue(headers, "Subject") || "(No Subject)",
+      date: getHeaderValue(headers, "Date"),
       snippet: data.snippet || "",
       isUnread: (data.labelIds || []).includes("UNREAD"),
+      hasAttachments: extracted.attachments.length > 0,
+      messageIdHeader: getHeaderValue(headers, "Message-ID") || undefined,
+      references: getHeaderValue(headers, "References") || undefined,
       bodyHtml: extracted.bodyHtml,
       bodyText: extracted.bodyText,
       attachments: extracted.attachments,
@@ -703,9 +755,92 @@ export async function getGmailAttachmentContent(
 }
 
 export async function sendGmailMessage(
-  to: string,
-  subject: string,
-  html: string
-): Promise<void> {
-  return sendEmail(to, subject, html);
+  input: SendGmailMessageInput,
+  gmailApi?: ReturnType<typeof google.gmail>
+): Promise<{ id: string | null | undefined; threadId: string | null | undefined }> {
+  const gmail = gmailApi ?? getGmailApi();
+  let fromEmail: string | undefined;
+  try {
+    const profile = await gmail.users.getProfile({ userId: "me" });
+    fromEmail = profile.data.emailAddress ?? undefined;
+  } catch (error) {
+    logger.warn("Failed to resolve Gmail profile for From header", { error });
+  }
+
+  const raw = Buffer.from(
+    buildRawHtmlEmailMessage({
+      fromEmail,
+      to: input.to,
+      cc: input.cc,
+      bcc: input.bcc,
+      subject: input.subject,
+      html: input.html,
+      inReplyTo: input.inReplyTo,
+      references: input.references,
+    })
+  ).toString("base64url");
+
+  const result = await gmail.users.messages.send({
+    userId: "me",
+    requestBody: {
+      raw,
+      ...(input.threadId ? { threadId: input.threadId } : {}),
+    },
+  });
+
+  logger.info("User Gmail message sent", {
+    to: input.to,
+    cc: input.cc,
+    bcc: input.bcc,
+    subject: input.subject,
+    messageId: result.data.id ?? "unknown",
+    threadId: result.data.threadId ?? input.threadId ?? "unknown",
+  });
+
+  return { id: result.data.id, threadId: result.data.threadId };
+}
+
+async function modifyGmailMessageLabels(
+  id: string,
+  labels: { addLabelIds?: string[]; removeLabelIds?: string[] },
+  gmailApi?: ReturnType<typeof google.gmail>
+) {
+  const gmail = gmailApi ?? getGmailApi();
+  await gmail.users.messages.modify({
+    userId: "me",
+    id,
+    requestBody: labels,
+  });
+}
+
+export async function markGmailMessageRead(
+  id: string,
+  gmailApi?: ReturnType<typeof google.gmail>
+) {
+  await modifyGmailMessageLabels(id, { removeLabelIds: ["UNREAD"] }, gmailApi);
+}
+
+export async function markGmailMessageUnread(
+  id: string,
+  gmailApi?: ReturnType<typeof google.gmail>
+) {
+  await modifyGmailMessageLabels(id, { addLabelIds: ["UNREAD"] }, gmailApi);
+}
+
+export async function archiveGmailMessage(
+  id: string,
+  gmailApi?: ReturnType<typeof google.gmail>
+) {
+  await modifyGmailMessageLabels(id, { removeLabelIds: ["INBOX"] }, gmailApi);
+}
+
+export async function trashGmailMessage(
+  id: string,
+  gmailApi?: ReturnType<typeof google.gmail>
+) {
+  const gmail = gmailApi ?? getGmailApi();
+  await gmail.users.messages.trash({
+    userId: "me",
+    id,
+  });
 }

@@ -3,7 +3,22 @@
 
 import { createContext, useContext, useState, useMemo, type ReactNode } from "react";
 
-type View = { type: "inbox" } | { type: "message"; id: string } | { type: "compose" };
+type ComposeSeed = {
+  mode: "new" | "reply" | "forward";
+  to?: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject?: string;
+  body?: string;
+  threadId?: string;
+  inReplyTo?: string;
+  references?: string;
+};
+
+type View =
+  | { type: "inbox" }
+  | { type: "message"; id: string }
+  | { type: "compose"; seed?: ComposeSeed };
 
 type MailPanelContextValue = {
   open: boolean;
@@ -34,4 +49,4 @@ export function useMailPanel() {
   return context;
 }
 
-export type { View as MailPanelView };
+export type { ComposeSeed, View as MailPanelView };

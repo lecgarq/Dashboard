@@ -298,6 +298,44 @@ export const lodRouter = router({
     });
   }),
 
+  getSimilarFamilies: protectedProcedure
+    .input(z.object({ familyId: z.string(), limit: z.number().min(1).max(30).default(10) }))
+    .query(async ({ input, ctx }) => {
+      // 1. Find the graph node for this family
+      const node = await ctx.db.lodGraphNode.findUnique({
+        where: { familyId: input.familyId },
+      });
+      if (!node || node.neighbors.length === 0) return [];
+
+      // 2. Get all nodes ordered by DB insertion (same ordering as graph indices)
+      const allNodes = await ctx.db.lodGraphNode.findMany({
+        select: { familyId: true },
+        orderBy: { id: "asc" },
+      });
+
+      // 3. Map neighbor indices → familyIds
+      const neighborFamilyIds = node.neighbors
+        .slice(0, input.limit)
+        .map((idx) => allNodes[idx]?.familyId)
+        .filter((id): id is string => !!id);
+
+      if (neighborFamilyIds.length === 0) return [];
+
+      // 4. Fetch those families
+      return ctx.db.lodFamily.findMany({
+        where: { id: { in: neighborFamilyIds } },
+        select: {
+          id: true,
+          familyName: true,
+          nameOfFile: true,
+          finalCategory: true,
+          lodLabel: true,
+          imagePath: true,
+          provider: true,
+        },
+      });
+    }),
+
   getFamily: protectedProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ input, ctx }) => {

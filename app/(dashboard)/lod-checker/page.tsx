@@ -213,6 +213,7 @@ export default function LODCheckerPage() {
       <LodDetailPanel
         familyId={selectedId}
         onClose={() => setSelectedId(null)}
+        onSelectFamily={setSelectedId}
       />
     </div>
   );
