@@ -10,9 +10,37 @@ import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclin
 import { randomUUID } from "crypto";
 import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
+import { IntegrationError } from "@/lib/server/integration-errors";
+import { getValidAutodeskAccessToken } from "@/lib/server/aps-user-token";
+import {
+  fetchAccUserByEmail,
+  fetchAccUserProjects,
+  fetchAccUserProducts,
+  type AccProject,
+  type AccProduct,
+} from "@/lib/server/acc-admin";
 
 const logger = createLogger("users");
 
+function toAccRouterError(error: unknown, fallbackMessage: string) {
+  if (error instanceof IntegrationError) {
+    return new TRPCError({
+      code:
+        error.code === "config_missing" || error.code === "reconnect_required"
+          ? "PRECONDITION_FAILED"
+          : "INTERNAL_SERVER_ERROR",
+      message: error.message,
+      cause: error,
+    });
+  }
+  return new TRPCError({
+    code: "INTERNAL_SERVER_ERROR",
+    message: fallbackMessage,
+    cause: error instanceof Error ? error : undefined,
+  });
+}
+
+const ACC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 export const usersRouter = router({
   // Org directory: fetches all users from Google Workspace via People API
@@ -687,4 +715,116 @@ export const usersRouter = router({
     });
     return { success: true };
   }),
+
+  // ── ACC Project Intelligence ──────────────────────────────────────────────
+
+  getAccProfile: protectedProcedure
+    .input(
+      z.object({
+        email: z.string().email(),
+        forceRefresh: z.boolean().optional().default(false),
+      })
+    )
+    .query(async ({ input, ctx }) => {
+      const { email, forceRefresh } = input;
+
+      // 1. Cache check — skip if forceRefresh requested
+      if (!forceRefresh) {
+        const cached = await ctx.db.accMemberCache.findUnique({
+          where: { email },
+        });
+        if (
+          cached &&
+          Date.now() - cached.syncedAt.getTime() < ACC_CACHE_TTL_MS
+        ) {
+          return JSON.parse(cached.data as string) as {
+            found: boolean;
+            syncedAt: string;
+            autodeskId?: string;
+            name?: string;
+            status?: string;
+            projects?: AccProject[];
+            products?: AccProduct[];
+          };
+        }
+      }
+
+      // 2. Get admin's Autodesk access token
+      let accessToken: string;
+      try {
+        ({ accessToken } = await getValidAutodeskAccessToken(ctx.session.user.id));
+      } catch (error) {
+        throw toAccRouterError(
+          error,
+          "ACC Admin API: Autodesk token unavailable. Link your Autodesk account in Settings."
+        );
+      }
+
+      // 3. Get accountId from Project table
+      // CRITICAL: Strip "b." prefix — ACC Admin API uses bare UUID, not Data Management hub format
+      const project = await ctx.db.project.findFirst({
+        select: { apsHubId: true },
+      });
+      const accountId = project?.apsHubId?.replace(/^b\./, "");
+      if (!accountId) {
+        throw new TRPCError({
+          code: "PRECONDITION_FAILED",
+          message: "APS Hub ID is not configured. Contact your administrator.",
+        });
+      }
+
+      // 4. Search ACC for the person by email
+      // Returns null if not found (empty results) — NOT a 404 error per ACC API design
+      let accUser;
+      try {
+        accUser = await fetchAccUserByEmail(accountId, email, accessToken);
+      } catch (error) {
+        // 403 here means admin's Autodesk account lacks Account Admin privilege in the hub
+        throw toAccRouterError(
+          error,
+          "ACC Admin API request failed. Ensure your Autodesk account has Account Admin privileges."
+        );
+      }
+
+      // 5. Person not found in ACC — cache the negative result and return
+      if (!accUser) {
+        const result = { found: false as const, syncedAt: new Date().toISOString() };
+        await ctx.db.accMemberCache.upsert({
+          where: { email },
+          create: { email, data: JSON.stringify(result), syncedAt: new Date() },
+          update: { data: JSON.stringify(result), syncedAt: new Date() },
+        });
+        return result;
+      }
+
+      // 6. Fetch projects + products in parallel for matched user
+      const [projects, products] = await Promise.all([
+        fetchAccUserProjects(accountId, accUser.autodeskId, accessToken),
+        fetchAccUserProducts(accountId, accUser.autodeskId, accessToken),
+      ]).catch((error) => {
+        throw toAccRouterError(
+          error,
+          "ACC Admin API: Failed to fetch project or product data."
+        );
+      });
+
+      const result = {
+        found: true as const,
+        autodeskId: accUser.autodeskId,
+        name: accUser.name,
+        status: accUser.status,
+        projects,
+        products,
+        syncedAt: new Date().toISOString(),
+      };
+
+      // 7. Upsert cache
+      await ctx.db.accMemberCache.upsert({
+        where: { email },
+        create: { email, data: JSON.stringify(result), syncedAt: new Date() },
+        update: { data: JSON.stringify(result), syncedAt: new Date() },
+      });
+
+      return result;
+    }),
 });
