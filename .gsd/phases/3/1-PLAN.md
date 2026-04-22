@@ -4,38 +4,45 @@ plan: 1
 wave: 1
 ---
 
-# Plan 3.1: Dead Utility Scripts Cleanup
+# Plan 3.1: Spatial Canvas Foundation
 
 ## Objective
-Remove one-off debugging files and disconnected back-end scripts that possess no exports to the primary application logic.
+Install the `tldraw` SDK and create the initial Tiptap node extension to allow embedding a whiteboard block into the wiki.
 
 ## Context
 - .gsd/SPEC.md
-- dead-files.json
+- .gsd/phases/3/RESEARCH.md
+- components/clash/WikiEditor.tsx
 
 ## Tasks
 
 <task type="auto">
-  <name>Delete Root Diagnostic Scripts</name>
-  <files>check-all.js, debug-env.js, diagnose-sync.ts, fix-headers.js, force-sync.ts, full-sync.ts, test-sync.js, verify-blacklist.ts, verify-boolean-sync.ts, verify-pending-sync.ts</files>
+  <name>Install tldraw and peer dependencies</name>
+  <files>package.json</files>
   <action>
-    - Execute `rm` natively via disk deletion for these root diagnostic files natively.
+    Install `tldraw` and its necessary peer dependencies for React 19 compatibility.
+    Note: Ensure version compatibility with Next.js 15/16.
   </action>
-  <verify>ls check-all.js 2>/dev/null || echo "Deleted"</verify>
-  <done>Root directories no longer contain the diagnostic traces.</done>
+  <verify>npm list tldraw</verify>
+  <done>tldraw is present in package.json.</done>
 </task>
 
 <task type="auto">
-  <name>Delete Tmp and Dormant Library Bridges</name>
-  <files>tmp/check_user.js, tmp/whitelist_user.ts, lib/uploadthing.ts</files>
+  <name>Create SpatialCanvas Tiptap Node</name>
+  <files>
+    components/clash/wiki-editor/canvas-node/canvas-extension.ts
+    components/clash/wiki-editor/canvas-node/canvas-view.tsx
+  </files>
   <action>
-    - Delete `check_user.js` and `whitelist_user.ts` from `/tmp`.
-    - Delete `uploadthing.ts` from `/lib`, finalizing integration purge.
+    1. Implement a `Node` extension named `spatialCanvas`.
+    2. Use `ReactNodeViewRenderer` to render the canvas.
+    3. The node should store an `id` attribute to link with its specific Yjs state.
+    4. Implement a placeholder "Loading Canvas..." UI in `canvas-view.tsx`.
   </action>
-  <verify>ls lib/uploadthing.ts 2>/dev/null || echo "Deleted"</verify>
-  <done>Sub-directory isolated scripts deleted entirely.</done>
+  <verify>Check for file existence and basic TypeScript compilation.</verify>
+  <done>Extension is registered in WikiEditor and renders a placeholder block.</done>
 </task>
 
 ## Success Criteria
-- [ ] Root workspace size decreased efficiently.
-- [ ] Orphaned scripts eliminated.
+- [ ] `tldraw` library is installed.
+- [ ] A new block type can be manually inserted (via code) into the editor and renders its view component.
