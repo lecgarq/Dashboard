@@ -84,6 +84,25 @@ Plans:
 Plans:
 - [ ] 05-01: TBD
 
+### Phase 6: ACC Project Intelligence
+**Goal**: In the Users tab, when a user card is clicked, surface that person's full Autodesk Construction Cloud (ACC/BIM 360) presence — whether they have an ACC account in the hub, which projects they belong to, their role per project, and which modules/products they have access to — matched by email address using hub admin API privileges.
+**Depends on**: Nothing (independent feature)
+**Requirements**: REQ-06
+**Success Criteria** (what must be TRUE):
+  1. Clicking any user in the Users tab shows an "Autodesk" section in the detail modal
+  2. Section accurately reports whether that email exists as an ACC hub member
+  3. For matched users, lists every hub project they belong to with their role
+  4. For each project, shows which ACC modules/products they have access to
+  5. Data is sourced from hub admin API (not the user's own Autodesk link account)
+  6. Results are cached in the database and can be refreshed on demand
+**Plans**: 4 plans
+
+Plans:
+- [ ] 06-01-PLAN.md — Add AccMemberCache Prisma model and run migration
+- [ ] 06-02-PLAN.md — Create lib/server/acc-admin.ts ACC Admin API helper library
+- [ ] 06-03-PLAN.md — Add users.getAccProfile tRPC procedure with cache-first logic
+- [ ] 06-04-PLAN.md — Build AccProfileSection component and wire into PersonDetailModal
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -93,3 +112,4 @@ Plans:
 | 3. Spatial Canvas | 0/TBD | Not started | - |
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
+| 6. ACC Project Intelligence | 0/4 | Not started | - |
