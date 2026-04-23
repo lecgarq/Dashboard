@@ -729,17 +729,18 @@ export const usersRouter = router({
    * Plan 7.2 hub-wide permission analysis. Fields are strictly additive.
    */
   bulkAccSummary: adminProcedure.query(async ({ ctx }) => {
-    // 1. All registered users (source of truth for who is in the hub)
-    const users = await ctx.db.user.findMany({
-      select: { email: true, name: true },
-      orderBy: { name: "asc" },
-    });
+    const [users, caches] = await Promise.all([
+      ctx.db.user.findMany({ select: { email: true, name: true } }),
+      ctx.db.accMemberCache.findMany(),
+    ]);
 
-    // 2. All cached ACC data in one query
-    const caches = await ctx.db.accMemberCache.findMany({
-      where: { email: { in: users.map((u) => u.email) } },
-    });
-    const cacheMap = new Map(caches.map((c) => [c.email, c]));
+    const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u.name]));
+    const cacheMap = new Map(caches.map((c) => [c.email.toLowerCase(), c]));
+
+    const allEmails = new Set([
+      ...users.map((u) => u.email.toLowerCase()),
+      ...caches.map((c) => c.email.toLowerCase()),
+    ]);
 
     type CachedProject = {
       id: string;
@@ -757,14 +758,15 @@ export const usersRouter = router({
       projects?: CachedProject[];
     };
 
-    // 3. Shape per-user result
-    return users.map((user) => {
-      const cached = cacheMap.get(user.email);
+    return Array.from(allEmails).map((emailLower) => {
+      const cached = cacheMap.get(emailLower);
+      const registeredName = userMap.get(emailLower);
+      const email = cached?.email || users.find(u => u.email.toLowerCase() === emailLower)?.email || emailLower;
 
       if (!cached) {
         return {
-          email: user.email,
-          name: user.name ?? "",
+          email,
+          name: registeredName ?? "",
           found: false,
           projectCount: 0,
           activeCount: 0,
@@ -777,21 +779,18 @@ export const usersRouter = router({
         };
       }
 
-      // AccMemberCache.data may be either a JSON-encoded string (legacy rows written with
-      // JSON.stringify) or a structured object (new rows). Handle both until legacy rows
-      // get overwritten by the next sync.
       let data: CachedData = { found: false };
       const raw = cached.data as unknown;
       if (typeof raw === "string") {
-        try { data = JSON.parse(raw) as CachedData; } catch { /* treat as not-found */ }
+        try { data = JSON.parse(raw) as CachedData; } catch { /* ignore */ }
       } else if (raw && typeof raw === "object") {
         data = raw as CachedData;
       }
 
       if (!data.found) {
         return {
-          email: user.email,
-          name: user.name ?? data.name ?? "",
+          email,
+          name: registeredName ?? data.name ?? "",
           found: false,
           projectCount: 0,
           activeCount: 0,
@@ -813,8 +812,8 @@ export const usersRouter = router({
       const allModules = [...new Set(projects.flatMap((p) => p.modules ?? []))];
 
       return {
-        email: user.email,
-        name: user.name ?? data.name ?? "",
+        email,
+        name: registeredName ?? data.name ?? "",
         found: true,
         projectCount: projects.length,
         activeCount,

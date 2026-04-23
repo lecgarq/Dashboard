@@ -633,8 +633,8 @@ export function UsersDirectoryClient() {
   // All 1197 directory people merged with ACC cache data — unregistered people get found:false stubs
   const mergedAccUsers = useMemo<BulkAccUser[]>(() => {
     const byEmail = new Map<string, BulkAccUser>();
-    for (const u of accSummary) byEmail.set(u.email, u);
-    return people.map((p) => byEmail.get(p.email) ?? {
+    for (const u of accSummary) byEmail.set(u.email.toLowerCase(), u);
+    return people.map((p) => byEmail.get(p.email.toLowerCase()) ?? {
       email: p.email,
       name: p.displayName,
       found: false,

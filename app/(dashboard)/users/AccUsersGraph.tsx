@@ -84,6 +84,15 @@ interface Edge {
   weight: number; // 1.0 = role edge, 0.45 = module edge
 }
 
+interface Particle {
+  si: number;
+  ti: number;
+  t: number;
+  speed: number;
+  color: string;
+  isRole: boolean;
+}
+
 interface SidePanelState {
   node: SimNode;
   roleUsers?: string[];
@@ -389,6 +398,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // Separated by target kind so Hide Roles / Hide Modules can skip entire buffers.
   const edgeIdxRoleRef = useRef(new Map<string, Uint32Array>());
   const edgeIdxModuleRef = useRef(new Map<string, Uint32Array>());
+  const particlesRef = useRef<Particle[]>([]);
 
   // Node indices pre-split by kind so the render loop iterates only the relevant set
   // per pass instead of scanning all ~1400 nodes four times per frame.
@@ -480,6 +490,29 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     moduleGroups.forEach((arr, color) => moduleMap.set(color, new Uint32Array(arr)));
     edgeIdxRoleRef.current = roleMap;
     edgeIdxModuleRef.current = moduleMap;
+
+    const particles: Particle[] = [];
+    const maxParticles = 1000;
+    const pPerEdge = edges.length > 500 ? 1 : 2;
+    for (const e of edges) {
+      if (particles.length >= maxParticles) break;
+      const si = nim.get(e.source);
+      const ti = nim.get(e.target);
+      if (si == null || ti == null) continue;
+      const isRole = e.target.startsWith("role:");
+      const count = Math.random() > 0.5 ? pPerEdge : Math.max(0, pPerEdge - 1);
+      for (let p = 0; p < count; p++) {
+        particles.push({
+          si,
+          ti,
+          t: Math.random(),
+          speed: 0.002 + Math.random() * 0.004,
+          color: isRole ? ROLE_HUB_COLOR : MODULE_HUB_COLOR,
+          isRole
+        });
+      }
+    }
+    particlesRef.current = particles;
 
     const inst: number[] = [], roles: number[] = [], mods: number[] = [];
     for (let i = 0; i < nodes.length; i++) {
@@ -632,7 +665,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     targetView.current = {
       x: (minX + maxX) / 2,
       y: (minY + maxY) / 2,
-      scale: Math.max(50, Math.min(500000, fitScale)),
+      scale: Math.max(0.01, Math.min(500000, fitScale)),
     };
     needsRenderRef.current = true;
   }, []);
@@ -784,6 +817,37 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (showM) drawBuffers(edgeIdxModuleRef.current);
         }
         ctx.globalAlpha = 1.0;
+
+        // -- Particles --
+        if (particlesRef.current.length > 0) {
+          ctx.globalAlpha = 0.6;
+          const pSize = 1.5 / v.scale;
+          for (const p of particlesRef.current) {
+            if (p.isRole && !showR) continue;
+            if (!p.isRole && !showM) continue;
+            
+            p.t += p.speed;
+            if (p.t > 1) p.t -= 1;
+            
+            const sx = pos[p.si * 2], sy = pos[p.si * 2 + 1];
+            const tx = pos[p.ti * 2], ty = pos[p.ti * 2 + 1];
+            
+            if (sx < minWX && tx < minWX) continue;
+            if (sx > maxWX && tx > maxWX) continue;
+            if (sy < minWY && ty < minWY) continue;
+            if (sy > maxWY && ty > maxWY) continue;
+            
+            const px = sx + (tx - sx) * p.t;
+            const py = sy + (ty - sy) * p.t;
+            
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(px, py, pSize, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.globalAlpha = 1.0;
+          needsRenderRef.current = true; // force continuous render for animation
+        }
       }
 
       // -- Instance / user nodes --
@@ -893,28 +957,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(sx, sy, rSelected * 0.5, 0, Math.PI * 2); ctx.fill();
       }
-
-      // -- Labels when zoomed in -- iterate pre-split instance/user indices only
-      if (showLabels) {
-        ctx.globalAlpha = 0.72;
-        ctx.fillStyle = "#111";
-        ctx.font = `bold ${Math.max(3, 5 / v.scale)}px sans-serif`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        const labelIdxs = instIdxRef.current;
-        for (let k = 0; k < labelIdxs.length; k++) {
-          const i = labelIdxs[k];
-          if (hasSelection && !highlightSet.has(i)) continue;
-          const nx = pos[i * 2], ny = pos[i * 2 + 1];
-          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-          const n = nodes[i];
-          const label = n.kind === "instance"
-            ? getFirstName((n as InstanceNode).name, (n as InstanceNode).email).slice(0, 3)
-            : ((n as UserNode).found ? getFirstName((n as UserNode).name, (n as UserNode).email) : "?");
-          ctx.fillText(label, nx, ny + 0.5 / v.scale);
-        }
-      }
-
-      ctx.globalAlpha = 1.0;
 
       // If the camera has settled, mark the canvas clean — next frame can bail early
       // until something marks it dirty again (interaction, toggle, selection, layout load).
