@@ -630,6 +630,25 @@ export function UsersDirectoryClient() {
     return map;
   }, [accSummaryRaw]);
 
+  // All 1197 directory people merged with ACC cache data — unregistered people get found:false stubs
+  const mergedAccUsers = useMemo<BulkAccUser[]>(() => {
+    const byEmail = new Map<string, BulkAccUser>();
+    for (const u of accSummary) byEmail.set(u.email, u);
+    return people.map((p) => byEmail.get(p.email) ?? {
+      email: p.email,
+      name: p.displayName,
+      found: false,
+      projectCount: 0,
+      activeCount: 0,
+      adminCount: 0,
+      hasNoProjects: true,
+      syncedAt: "",
+      allRoles: [],
+      allModules: [],
+      projects: [],
+    });
+  }, [people, accSummary]);
+
   // Count of people in the directory who have hasNoProjects === true
   const noProjectsCount = useMemo(
     () => people.filter((p) => accSummaryMap.get(p.email)?.hasNoProjects === true).length,
@@ -906,14 +925,14 @@ export function UsersDirectoryClient() {
 
       {/* ACC Analysis tab */}
       {activeTab === "analysis" && (
-        <AccAnalysisPanel users={accSummary} refetch={refetchAccSummary} />
+        <AccAnalysisPanel users={mergedAccUsers} refetch={refetchAccSummary} />
       )}
 
       {/* ACC Users Graph tab */}
       {activeTab === "graph" && (
         <div className="w-full" style={{ height: "calc(100vh - 200px)" }}>
           <AccUsersGraph
-            users={accSummary}
+            users={mergedAccUsers}
             onSelectUser={(email) => {
               setSelectedPersonEmail(email);
               setActiveTab("general");
