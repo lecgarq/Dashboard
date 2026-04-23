@@ -12,11 +12,10 @@ import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 import { IntegrationError } from "@/lib/server/integration-errors";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
-import pLimit from "p-limit";
 import {
   fetchAccUserByEmail,
   fetchAccUserProjects,
-  fetchAccProjectUserDetail,
+  fetchAccUserRoles,
   type AccProject,
 } from "@/lib/server/acc-admin";
 
@@ -797,29 +796,18 @@ export const usersRouter = router({
         return result;
       }
 
-      // 6. Phase 1: fetch project list
-      const projects = await fetchAccUserProjects(accountId, accUser.id, accessToken)
-        .catch((error) => {
+      // 6. Fetch project list and roles in parallel
+      const [projects, rolesByProject] = await Promise.all([
+        fetchAccUserProjects(accountId, accUser.id, accessToken).catch((error) => {
           throw toAccRouterError(error, "ACC Admin API: Failed to fetch project list.");
-        });
+        }),
+        fetchAccUserRoles(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
+      ]);
 
-      // 6b. Phase 2: per-project detail calls to get exact roles + modules
-      const limit = pLimit(5);
-      const enrichedProjects: AccProject[] = await Promise.all(
-        projects.map((proj) =>
-          limit(async () => {
-            const detail = await fetchAccProjectUserDetail(
-              accountId, proj.id, accUser.id, accessToken
-            ).catch(() => null);
-
-            return {
-              ...proj,
-              roles: detail?.roles?.length ? detail.roles : proj.roles,
-              modules: detail?.modules ?? [],
-            };
-          })
-        )
-      );
+      const enrichedProjects: AccProject[] = projects.map((proj) => ({
+        ...proj,
+        roles: rolesByProject.get(proj.id) ?? proj.roles,
+      }));
 
       const result = {
         found: true as const,

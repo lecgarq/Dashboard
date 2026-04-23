@@ -184,63 +184,42 @@ export async function fetchAccUserProjects(
 }
 
 /**
- * Fetch a user's membership record for a specific project.
- * Returns per-project roles and modules, or null on 404/403 (not a member / no app access).
+ * Fetch all roles assigned to a user across all their projects.
+ * Uses the documented endpoint: GET /accounts/{accountId}/users/{userId}/roles
+ * Returns a map of projectId → role names[].
  */
-export async function fetchAccProjectUserDetail(
+export async function fetchAccUserRoles(
   accountId: string,
-  projectId: string,
   userId: string,
   accessToken: string,
   signal?: AbortSignal
-): Promise<{ roles: string[]; modules: string[] } | null> {
-  const url = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/projects/${projectId}/users/${userId}`;
-  const response = await fetch(url, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-    cache: "no-store",
-    signal,
-  });
+): Promise<Map<string, string[]>> {
+  const baseUrl = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/users/${userId}/roles`;
+  const rolesByProject = new Map<string, string[]>();
+  let offset = 0;
 
-  if (response.status === 404 || response.status === 403) {
-    console.warn(`[acc-admin] fetchAccProjectUserDetail ${response.status} for project=${projectId} user=${userId}`);
-    return null;
-  }
+  do {
+    const { pagination, results } = await fetchAccPaged(
+      `${baseUrl}?limit=200&offset=${offset}&filter[status]=active`,
+      accessToken,
+      signal
+    );
 
-  const raw = await response.text();
-  if (!response.ok) throwApsError(response, raw);
+    for (const r of results) {
+      const name = getString(r.name);
+      const projectIds = Array.isArray(r.projectIds) ? (r.projectIds as string[]) : [];
+      for (const pid of projectIds) {
+        const existing = rolesByProject.get(pid) ?? [];
+        if (name) existing.push(name);
+        rolesByProject.set(pid, existing);
+      }
+    }
 
-  let body: Record<string, unknown>;
-  try { body = JSON.parse(raw) as Record<string, unknown>; }
-  catch { return { roles: [], modules: [] }; }
+    const total = pagination?.totalResults ?? 0;
+    const limit = pagination?.limit ?? 200;
+    offset += limit;
+    if (offset >= total || results.length === 0) break;
+  } while (true);
 
-  // Diagnostic: log top-level keys on first call to detect API field name changes
-  console.info(`[acc-admin] project detail keys for project=${projectId}:`, Object.keys(body));
-
-  // roles: string[] or { id, name }[] — API may also use "roleIds" (UUID strings)
-  const rawRoles = Array.isArray(body.roles)
-    ? body.roles
-    : Array.isArray(body.roleIds)
-      ? body.roleIds
-      : [];
-  const roles = (rawRoles as unknown[])
-    .map((r) => typeof r === "string" ? r : getString((r as Record<string, unknown>).name))
-    .filter(Boolean);
-
-  // modules: ACC API uses "products" or "services" depending on version
-  const rawMods: unknown[] = Array.isArray(body.products)
-    ? (body.products as unknown[])
-    : Array.isArray(body.services)
-      ? (body.services as unknown[])
-      : [];
-  const modules = rawMods
-    .map((p) =>
-      typeof p === "string"
-        ? p
-        : getString((p as Record<string, unknown>).key) || getString((p as Record<string, unknown>).name)
-    )
-    .filter(Boolean);
-
-  console.info(`[acc-admin] project=${projectId} → roles=${JSON.stringify(roles)} modules=${JSON.stringify(modules)}`);
-
-  return { roles, modules };
+  return rolesByProject;
 }
