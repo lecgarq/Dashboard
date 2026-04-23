@@ -17,6 +17,7 @@ import pLimit from "p-limit";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
 import {
   fetchAccUserByEmail,
+  fetchAllAccUsers,
   fetchAccUserProjects,
   fetchAccUserRoles,
   fetchAccUserProducts,
@@ -986,20 +987,32 @@ export const usersRouter = router({
           ? input.emails
           : (await ctx.db.user.findMany({ select: { email: true } })).map((u) => u.email);
 
+      // 3. Prefetch the entire ACC user list ONCE and build an email→user map. Previously
+      // fetchAccUserByEmail paginated the full hub per call (O(emails × hub_size) API calls),
+      // which blew past ACC rate limits on 1197 emails. Now it's one sweep up-front.
+      let accUserByEmail: Map<string, { id: string; email: string; name: string; status: string; role: string; company?: string; addedOn?: string }>;
+      try {
+        const allAccUsers = await fetchAllAccUsers(accountId, accessToken);
+        accUserByEmail = new Map(allAccUsers.map((u) => [u.email.toLowerCase(), u]));
+        logger.info("[bulkAccSync] prefetched ACC hub users", { count: allAccUsers.length });
+      } catch (error) {
+        throw toAccRouterError(error, "Failed to prefetch ACC user list for bulk sync.");
+      }
+
       let found = 0;
       let notFound = 0;
       let errors = 0;
 
-      // 3. Sync with concurrency 8 — ACC tolerates ~300 req/min for HQ Admin APIs; each user
-      // uses ~4 requests (user lookup + projects + roles + products), so 8 concurrent pipelines
-      // ≈ 32 in-flight which is within safe limits. Full 1197-email sync drops from ~13min to ~4min.
-      const limit = pLimit(8);
+      // 4. Per-email work: in-memory lookup, then only call per-user APIs for the handful
+      // actually in ACC. Concurrency 6 keeps the per-found-user fan-out (3 parallel calls each)
+      // under ~18 in-flight requests.
+      const limit = pLimit(6);
 
       await Promise.all(
         emails.map((email) =>
           limit(async () => {
             try {
-              const accUser = await fetchAccUserByEmail(accountId, email, accessToken);
+              const accUser = accUserByEmail.get(email.toLowerCase());
 
               if (!accUser) {
                 const result = { found: false as const, syncedAt: new Date().toISOString() };
@@ -1042,8 +1055,11 @@ export const usersRouter = router({
                 update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
               });
               found++;
-            } catch {
-              logger.error("[bulkAccSync] failed for user", { email });
+            } catch (err) {
+              logger.error("[bulkAccSync] failed for user", {
+                email,
+                error: err instanceof Error ? err.message : String(err),
+              });
               errors++;
             }
           })

@@ -142,6 +142,42 @@ export async function fetchAccUserByEmail(
 }
 
 /**
+ * Fetch all users in an ACC account in one paginated sweep.
+ * Use this before bulk-matching many emails — avoids the N+1 pattern where each
+ * fetchAccUserByEmail call paginates the full user list independently.
+ */
+export async function fetchAllAccUsers(
+  accountId: string,
+  accessToken: string,
+  signal?: AbortSignal
+): Promise<AccUser[]> {
+  const baseUrl = `${HQ_ADMIN_BASE}/accounts/${accountId}/users`;
+  const limit = 100;
+  const maxUsers = 10000;
+  const all: AccUser[] = [];
+  let offset = 0;
+
+  while (offset < maxUsers) {
+    const users = await fetchHqUsers(`${baseUrl}?limit=${limit}&offset=${offset}`, accessToken, signal);
+    for (const u of users) {
+      all.push({
+        id: getString(u.id),
+        email: getString(u.email),
+        name: getString(u.name),
+        status: getString(u.status),
+        role: getString(u.role) || getString(u.access_level) || "user",
+        company: getString(u.company_name || u.company) || undefined,
+        addedOn: getString(u.created_at || u.addedOn) || undefined,
+      });
+    }
+    if (users.length < limit) break;
+    offset += limit;
+  }
+
+  return all;
+}
+
+/**
  * Fetch all projects the user is a member of.
  * Returns base project list with empty modules[] — caller enriches via fetchAccProjectUserDetail.
  */
