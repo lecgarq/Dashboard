@@ -28,19 +28,19 @@ import { trpc } from "@/lib/core/trpc";
 // ---------------------------------------------------------------------------
 
 /**
- * Master list of ACC/Forma products (9 modules as of 2025 rename).
- * Old name → New Forma name kept as display label.
+ * Master list of ACC/Forma products — 9 modules in display order.
+ * "Forma Data Management" is the renamed Autodesk Docs (not a separate entry).
  */
 const ALL_MODULES = [
-  { key: "documentManagement", name: "Forma Data Management" },
-  { key: "designCollaboration", name: "Forma Design Collaboration" },
-  { key: "modelCoordination", name: "Model Coordination" },
-  { key: "preconstruction", name: "Preconstruction" },
-  { key: "autoSpecs", name: "AutoSpecs" },
-  { key: "build", name: "Forma Build" },
-  { key: "insight", name: "Insight" },
-  { key: "design", name: "Design" },
-  { key: "takeoff", name: "Forma Takeoff" },
+  { key: "datum",                name: "Datum" },
+  { key: "documentManagement",   name: "Forma Data Management" },
+  { key: "designCollaboration",  name: "Forma Design Collaboration" },
+  { key: "modelCoordination",    name: "Model Coordination" },
+  { key: "preconstruction",      name: "Preconstruction" },
+  { key: "autoSpecs",            name: "AutoSpecs" },
+  { key: "build",                name: "Build" },
+  { key: "insight",              name: "Insight" },
+  { key: "design",               name: "Design" },
 ] as const;
 
 type SortField = "name" | "status" | "modules" | "admin";
