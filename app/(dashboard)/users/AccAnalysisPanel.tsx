@@ -48,15 +48,16 @@ function countBy<T>(arr: T[]): Record<string, number> {
 
 function abbreviateModuleKey(key: string): string {
   const SHORT: Record<string, string> = {
-    datum: "Datum",
     documentManagement: "Forma Data Management",
     designCollaboration: "Forma Design Collaboration",
-    modelCoordination: "Model Coord",
+    modelCoordination: "Model Coordination",
     preconstruction: "Preconstruction",
     autoSpecs: "AutoSpecs",
-    build: "Build",
+    build: "Forma Build",
     insight: "Insight",
     design: "Design",
+    takeoff: "Forma Takeoff",
+    estimate: "Forma Estimate",
   };
   return SHORT[key] ?? key;
 }
@@ -139,12 +140,17 @@ export function AccAnalysisPanel({
   const [expandDuplicateRoles, setExpandDuplicateRoles] = useState(false);
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<{ found: number; notFound: number; errors: number } | null>(null);
+  const [syncError, setSyncError] = useState<string | null>(null);
 
   const bulkSync = trpc.users.bulkAccSync.useMutation({
     onSuccess: (data) => {
       setSyncResult({ found: data.found, notFound: data.notFound, errors: data.errors });
+      setSyncError(null);
       utils.users.bulkAccSummary.invalidate();
       refetch();
+    },
+    onError: (err) => {
+      setSyncError(err.message);
     },
   });
 
@@ -202,7 +208,7 @@ export function AccAnalysisPanel({
     // Hub projects
     const allProjectIds = new Set(cachedUsers.flatMap((u) => u.projects.map((p) => p.id)));
 
-    const noProjectUsers = users.filter((u) => u.hasNoProjects);
+    const noProjectUsers = users.filter((u) => u.hasNoProjects && !!u.syncedAt);
 
     return {
       totalCachedUsers: cachedUsers.length,
@@ -240,13 +246,18 @@ export function AccAnalysisPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {syncResult && !bulkSync.isPending && (
+          {syncError && !bulkSync.isPending && (
+            <span className="text-xs text-red-400 max-w-[300px] truncate" title={syncError}>
+              Error: {syncError}
+            </span>
+          )}
+          {syncResult && !bulkSync.isPending && !syncError && (
             <span className="text-xs text-muted-foreground">
               Sync: {syncResult.found} found · {syncResult.notFound} not in ACC{syncResult.errors > 0 ? ` · ${syncResult.errors} errors` : ""}
             </span>
           )}
           <button
-            onClick={() => { setSyncResult(null); bulkSync.mutate(); }}
+            onClick={() => { setSyncResult(null); setSyncError(null); bulkSync.mutate(); }}
             disabled={bulkSync.isPending}
             className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 rounded-lg px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
