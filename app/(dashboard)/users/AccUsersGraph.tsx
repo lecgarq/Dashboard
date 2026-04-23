@@ -390,6 +390,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const edgeIdxRoleRef = useRef(new Map<string, Uint32Array>());
   const edgeIdxModuleRef = useRef(new Map<string, Uint32Array>());
 
+  // Node indices pre-split by kind so the render loop iterates only the relevant set
+  // per pass instead of scanning all ~1400 nodes four times per frame.
+  const instIdxRef = useRef<Uint32Array>(new Uint32Array(0));
+  const roleIdxRef = useRef<Uint32Array>(new Uint32Array(0));
+  const moduleIdxRef = useRef<Uint32Array>(new Uint32Array(0));
+
+  // Dirty flag: render loop skips the full draw when the camera is settled AND nothing
+  // has changed since the last paint. Anything that changes what should be on canvas
+  // (drag, wheel, toggle, selection, layout load) flips this to true.
+  const needsRenderRef = useRef(true);
+
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
   const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
 
@@ -448,8 +459,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const saveLayout = trpc.users.saveGraphLayout.useMutation();
   const invalidateLayout = trpc.users.invalidateGraphLayout.useMutation();
 
-  // Pre-build per-color Uint32Array edge buffers — split by target kind so toggles can skip whole buffers
-  const buildEdgeBuffers = useCallback((edges: Edge[], nim: Map<string, number>) => {
+  // Pre-build per-color Uint32Array edge buffers + per-kind node index arrays.
+  // Split by target kind so toggles can skip whole buffers; split nodes so draws iterate
+  // only the relevant set per pass.
+  const buildLayoutBuffers = useCallback((nodes: SimNode[], edges: Edge[], nim: Map<string, number>) => {
     const roleGroups = new Map<string, number[]>();
     const moduleGroups = new Map<string, number[]>();
     for (const e of edges) {
@@ -458,10 +471,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (si == null || ti == null) continue;
       const target = e.target.startsWith("role:") ? roleGroups : moduleGroups;
       let arr = target.get(e.color);
-      if (!arr) {
-        arr = [];
-        target.set(e.color, arr);
-      }
+      if (!arr) { arr = []; target.set(e.color, arr); }
       arr.push(si, ti);
     }
     const roleMap = new Map<string, Uint32Array>();
@@ -470,6 +480,19 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     moduleGroups.forEach((arr, color) => moduleMap.set(color, new Uint32Array(arr)));
     edgeIdxRoleRef.current = roleMap;
     edgeIdxModuleRef.current = moduleMap;
+
+    const inst: number[] = [], roles: number[] = [], mods: number[] = [];
+    for (let i = 0; i < nodes.length; i++) {
+      const k = nodes[i].kind;
+      if (k === "instance" || k === "user") inst.push(i);
+      else if (k === "role") roles.push(i);
+      else if (k === "module") mods.push(i);
+    }
+    instIdxRef.current = new Uint32Array(inst);
+    roleIdxRef.current = new Uint32Array(roles);
+    moduleIdxRef.current = new Uint32Array(mods);
+
+    needsRenderRef.current = true;
   }, []);
 
   // Build + run simulation (with cache integration)
@@ -503,7 +526,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         rawNodes.forEach((n, i) => nim.set(n.id, i));
         nodeIndexMapRef.current = nim;
 
-        buildEdgeBuffers(rawEdges, nim);
+        buildLayoutBuffers(rawNodes, rawEdges, nim);
 
         const cellSize = Math.max(0.01, 60 / view.current.scale);
         gridRef.current = buildGrid(posRef.current, rawNodes.length, cellSize);
@@ -542,7 +565,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       settled.forEach((n, i) => nim.set(n.id, i));
       nodeIndexMapRef.current = nim;
 
-      buildEdgeBuffers(rawEdges, nim);
+      buildLayoutBuffers(settled, rawEdges, nim);
 
       const cellSize = Math.max(0.01, 60 / view.current.scale);
       gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
@@ -582,7 +605,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       clearTimeout(timeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, layoutQuery.data, refreshKey, buildEdgeBuffers]);
+  }, [users, layoutQuery.data, refreshKey, buildLayoutBuffers]);
 
   const zoomToFit = useCallback(() => {
     const canvas = canvasRef.current;
@@ -611,6 +634,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       y: (minY + maxY) / 2,
       scale: Math.max(50, Math.min(500000, fitScale)),
     };
+    needsRenderRef.current = true;
   }, []);
 
   const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
@@ -654,6 +678,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       rafId.current = requestAnimationFrame(render);
 
       const v = view.current, tv = targetView.current;
+      const dxCam = Math.abs(tv.x - v.x), dyCam = Math.abs(tv.y - v.y), dsCam = Math.abs(tv.scale - v.scale);
+      const camLerping = dxCam > 0.00001 || dyCam > 0.00001 || dsCam > 0.01;
+
+      // Skip the entire draw when the camera is settled AND nothing changed since last paint.
+      if (!camLerping && !needsRenderRef.current) return;
+
       v.x += (tv.x - v.x) * 0.2;
       v.y += (tv.y - v.y) * 0.2;
       v.scale += (tv.scale - v.scale) * 0.2;
@@ -765,9 +795,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const dimBatches = new Map<string, [number, number][]>();
       const brightBatches = new Map<string, [number, number][]>();
 
-      for (let i = 0; i < nodes.length; i++) {
+      // Iterate pre-split instance/user indices — skips scanning hub nodes entirely
+      const instIdxs = instIdxRef.current;
+      for (let k = 0; k < instIdxs.length; k++) {
+        const i = instIdxs[k];
         const n = nodes[i];
-        if (n.kind === "role" || n.kind === "module") continue; // drawn separately
         const nx = pos[i * 2], ny = pos[i * 2 + 1];
         if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
         if (n.id === selId) continue;
@@ -798,11 +830,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - r, ny - r, d, d);
       }
 
-      // -- Role hub diamonds --
+      // -- Role hub diamonds -- iterate pre-split role indices only
       if (showR) {
-        for (let i = 0; i < nodes.length; i++) {
+        const roleIdxs = roleIdxRef.current;
+        // Hoist font out of loop — same scale ⇒ same font, setting ctx.font per node is expensive
+        const roleFont = `${Math.max(4, 7 / v.scale)}px sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        for (let k = 0; k < roleIdxs.length; k++) {
+          const i = roleIdxs[k];
           const n = nodes[i];
-          if (n.kind !== "role") continue;
           const nx = pos[i * 2], ny = pos[i * 2 + 1];
           if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
           const rr = (n as RoleNode).radius / v.scale;
@@ -816,18 +852,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (!dimmed && showLabels && rr > 5 / v.scale) {
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111";
-            ctx.font = `${Math.max(4, 7 / v.scale)}px sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = roleFont;
             ctx.fillText((n as RoleNode).label, nx, ny + 0.5 / v.scale);
           }
         }
       }
 
-      // -- Module hub squares --
+      // -- Module hub squares -- iterate pre-split module indices only
       if (showM) {
-        for (let i = 0; i < nodes.length; i++) {
+        const modIdxs = moduleIdxRef.current;
+        const modFont = `${Math.max(3, 6 / v.scale)}px sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        for (let k = 0; k < modIdxs.length; k++) {
+          const i = modIdxs[k];
           const n = nodes[i];
-          if (n.kind !== "module") continue;
           const nx = pos[i * 2], ny = pos[i * 2 + 1];
           if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
           const rs = 7 / v.scale;
@@ -838,8 +876,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (!dimmed && showLabels && rs > 5 / v.scale) {
             ctx.globalAlpha = 0.8;
             ctx.fillStyle = "#111";
-            ctx.font = `${Math.max(3, 6 / v.scale)}px sans-serif`;
-            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.font = modFont;
             ctx.fillText((n as ModuleNode).label, nx, ny + rs + 5 / v.scale);
           }
         }
@@ -857,26 +894,31 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ctx.beginPath(); ctx.arc(sx, sy, rSelected * 0.5, 0, Math.PI * 2); ctx.fill();
       }
 
-      // -- Labels when zoomed in --
+      // -- Labels when zoomed in -- iterate pre-split instance/user indices only
       if (showLabels) {
         ctx.globalAlpha = 0.72;
         ctx.fillStyle = "#111";
-        for (let i = 0; i < nodes.length; i++) {
-          const n = nodes[i];
-          if (n.kind !== "instance" && n.kind !== "user") continue;
+        ctx.font = `bold ${Math.max(3, 5 / v.scale)}px sans-serif`;
+        ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        const labelIdxs = instIdxRef.current;
+        for (let k = 0; k < labelIdxs.length; k++) {
+          const i = labelIdxs[k];
           if (hasSelection && !highlightSet.has(i)) continue;
           const nx = pos[i * 2], ny = pos[i * 2 + 1];
           if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+          const n = nodes[i];
           const label = n.kind === "instance"
             ? getFirstName((n as InstanceNode).name, (n as InstanceNode).email).slice(0, 3)
             : ((n as UserNode).found ? getFirstName((n as UserNode).name, (n as UserNode).email) : "?");
-          ctx.font = `bold ${Math.max(3, 5 / v.scale)}px sans-serif`;
-          ctx.textAlign = "center"; ctx.textBaseline = "middle";
           ctx.fillText(label, nx, ny + 0.5 / v.scale);
         }
       }
 
       ctx.globalAlpha = 1.0;
+
+      // If the camera has settled, mark the canvas clean — next frame can bail early
+      // until something marks it dirty again (interaction, toggle, selection, layout load).
+      if (!camLerping) needsRenderRef.current = false;
     };
 
     rafId.current = requestAnimationFrame(render);
@@ -907,6 +949,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       view.current.y -= dy / view.current.scale;
       targetView.current = { ...view.current };
       lastMouse.current = { x: e.clientX, y: e.clientY };
+      needsRenderRef.current = true;
     } else {
       const node = hitTest(lx, ly);
       setHoveredNode(node);
@@ -921,6 +964,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     if (e.button !== 0) return;
     isDragging.current = false; setIsDraggingState(false);
     rebuildGrid();
+    needsRenderRef.current = true;
     const moved = Math.hypot(e.clientX - clickStart.current.x, e.clientY - clickStart.current.y);
     if (moved < 5) {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
@@ -975,6 +1019,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     view.current = { scale: newS, x: wx - (mx - cx) / newS, y: wy - (my - cy) / newS };
     targetView.current = { ...view.current };
     rebuildGrid();
+    needsRenderRef.current = true;
   }, [rebuildGrid]);
 
   const handleMouseDown = useCallback((e: MouseEvent) => {
@@ -1136,7 +1181,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       {selectedNode && (
         <SidePanel
           state={selectedNode}
-          onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; }}
+          onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; needsRenderRef.current = true; }}
           onViewProfile={
             (selectedNode.node.kind === "instance" || selectedNode.node.kind === "user")
               ? () => {
