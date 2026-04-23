@@ -104,3 +104,30 @@
 - ACC Analysis tab loads instantly from cached data
 - Graph renders with user/role nodes, correct color coding
 - Clicking graph node opens user profile modal
+
+---
+
+### Phase 8: ACC Users Graph v2 — Canvas Particle Engine
+**Status**: ⬜ Not Started
+**Objective**: Rewrite AccUsersGraph using the same high-performance canvas rendering engine as LodGraphCanvas — with animated flowing particles along edges, proper viewport/camera system (no clipping), and guaranteed display of ALL users from the hub. The graph must feel alive and match the LOD Checker's visual quality.
+**Depends on**: Phase 7
+
+**Tasks**:
+- [ ] Port LodGraphCanvas rendering engine to AccUsersGraph (canvas + requestAnimationFrame, not SVG)
+- [ ] Implement flowing particle animation along edges (user→role and user→project connections)
+- [ ] Fix viewport clipping — use proper world-space coordinates with camera lerp (same pattern as LOD)
+- [ ] Guarantee ALL users render (currently some are missing — force-layout must include every cached user)
+- [ ] Sprite-based node rendering with category-based color sprites (same createCircleSprite pattern)
+- [ ] Spatial grid for fast hit testing (same grid-based approach as LOD)
+- [ ] Edge color batching for performance (same batch-draw pattern as LOD)
+- [ ] Zoom-to-fit that accounts for all nodes, not just visible ones
+- [ ] Smooth camera lerp on pan/zoom (lerp factor 0.2 like LOD)
+- [ ] User info tooltip on hover (name, email, roles, project count, admin status)
+- [ ] Node click → opens user profile modal in General tab
+
+**Verification**:
+- ALL cached users appear as nodes in the graph (count matches bulkAccSummary total)
+- Particles flow along edges continuously
+- No clipping/cropping at viewport edges
+- Zoom to fit shows entire graph without loss
+- Performance: 60fps with 500+ nodes
