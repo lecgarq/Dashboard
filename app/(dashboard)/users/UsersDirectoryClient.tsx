@@ -273,83 +273,85 @@ function PersonDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-md bg-card border-border text-foreground p-0 overflow-hidden">
+      <DialogContent className="max-w-xl bg-card border-border/50 text-foreground p-0 overflow-hidden shadow-2xl shadow-black/20">
         <VisuallyHidden>
           <DialogTitle>{person.displayName}</DialogTitle>
         </VisuallyHidden>
 
         {/* Header banner */}
-        <div className="h-20 bg-gradient-to-br from-primary/30 via-chart-4/20 to-primary/10 relative">
+        <div className="h-20 bg-gradient-to-br from-primary/25 via-chart-4/15 to-primary/8 relative">
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
             <PersonAvatar person={person} size="lg" />
           </div>
         </div>
 
-        <div className="pt-12 pb-6 px-6">
-          <div className="text-center mb-5">
-            <h2 className="text-lg font-bold">{person.displayName}</h2>
-            {person.jobTitle && (
-              <p className="text-sm text-muted-foreground mt-0.5">{person.jobTitle}</p>
-            )}
-          </div>
+        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+          <div className="pt-12 pb-6 px-6">
+            <div className="text-center mb-5">
+              <h2 className="text-lg font-bold">{person.displayName}</h2>
+              {person.jobTitle && (
+                <p className="text-sm text-muted-foreground mt-0.5">{person.jobTitle}</p>
+              )}
+            </div>
 
-          {/* Tags */}
-          <div className="flex flex-wrap justify-center gap-1.5 mb-5">
-            {person.department && (
-              <Badge variant="secondary" className="text-[11px] gap-1">
-                <Building2 size={10} />
-                {person.department}
-              </Badge>
-            )}
-            {person.costCenter && (
-              <Badge variant="secondary" className="text-[11px] gap-1">
-                <DollarSign size={10} />
-                {person.costCenter}
-              </Badge>
-            )}
-          </div>
+            {/* Tags */}
+            <div className="flex flex-wrap justify-center gap-1.5 mb-5">
+              {person.department && (
+                <Badge variant="secondary" className="text-[11px] gap-1">
+                  <Building2 size={10} />
+                  {person.department}
+                </Badge>
+              )}
+              {person.costCenter && (
+                <Badge variant="secondary" className="text-[11px] gap-1">
+                  <DollarSign size={10} />
+                  {person.costCenter}
+                </Badge>
+              )}
+            </div>
 
-          <div className="space-y-3 pt-4 border-t border-border">
-            <InfoRow icon={Mail} href={`mailto:${person.email}`} copyText={person.email}>
-              {person.email}
-            </InfoRow>
-            {person.department && (
-              <InfoRow icon={Building2}>{person.department}</InfoRow>
-            )}
-            {person.jobTitle && (
-              <InfoRow icon={Briefcase}>{person.jobTitle}</InfoRow>
-            )}
-            {person.costCenter && (
-              <InfoRow icon={DollarSign}>{person.costCenter}</InfoRow>
-            )}
-            {person.phoneNumber && (
-              <InfoRow icon={Phone} href={`tel:${person.phoneNumber}`} copyText={person.phoneNumber}>
-                {person.phoneNumber}
+            <div className="space-y-3 pt-4 border-t border-border/30">
+              <InfoRow icon={Mail} href={`mailto:${person.email}`} copyText={person.email}>
+                {person.email}
               </InfoRow>
-            )}
-          </div>
+              {person.department && (
+                <InfoRow icon={Building2}>{person.department}</InfoRow>
+              )}
+              {person.jobTitle && (
+                <InfoRow icon={Briefcase}>{person.jobTitle}</InfoRow>
+              )}
+              {person.costCenter && (
+                <InfoRow icon={DollarSign}>{person.costCenter}</InfoRow>
+              )}
+              {person.phoneNumber && (
+                <InfoRow icon={Phone} href={`tel:${person.phoneNumber}`} copyText={person.phoneNumber}>
+                  {person.phoneNumber}
+                </InfoRow>
+              )}
+            </div>
 
-          {/* Autodesk ACC profile section */}
-          <AccProfileSection email={person.email} />
+            {/* Autodesk ACC profile section */}
+            <AccProfileSection email={person.email} />
 
-          {/* Quick actions */}
-          <div className="flex gap-2 mt-5 pt-4 border-t border-border">
-            <a
-              href={`mailto:${person.email}`}
-              className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
-            >
-              <Mail size={13} />
-              Email
-            </a>
-            {person.phoneNumber && (
+            {/* Quick actions */}
+            <div className="flex gap-2 mt-5 pt-4 border-t border-border/30">
               <a
-                href={`tel:${person.phoneNumber}`}
-                className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2 rounded-lg bg-primary/10 text-primary hover:bg-primary/20 transition-colors"
+                href={`mailto:${person.email}`}
+                className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2.5 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/10 transition-all"
               >
-                <Phone size={13} />
-                Call
+                <Mail size={13} />
+                Email
               </a>
-            )}
+              {person.phoneNumber && (
+                <a
+                  href={`tel:${person.phoneNumber}`}
+                  className="flex-1 flex items-center justify-center gap-2 text-xs font-medium py-2.5 rounded-xl bg-primary/8 text-primary hover:bg-primary/15 border border-primary/10 transition-all"
+                >
+                  <Phone size={13} />
+                  Call
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>
