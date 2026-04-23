@@ -273,19 +273,22 @@ function PersonDetailModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-xl bg-card border-border/50 text-foreground p-0 overflow-hidden shadow-2xl shadow-black/20">
+      <DialogContent
+        className="flex flex-col max-w-3xl w-[90vw] bg-card border-border/50 text-foreground p-0 overflow-hidden shadow-2xl shadow-black/20"
+        style={{ resize: "both", minWidth: 380, minHeight: 400, maxHeight: "90vh" }}
+      >
         <VisuallyHidden>
           <DialogTitle>{person.displayName}</DialogTitle>
         </VisuallyHidden>
 
         {/* Header banner */}
-        <div className="h-20 bg-gradient-to-br from-primary/25 via-chart-4/15 to-primary/8 relative">
+        <div className="h-20 bg-gradient-to-br from-primary/25 via-chart-4/15 to-primary/8 relative shrink-0">
           <div className="absolute -bottom-10 left-1/2 -translate-x-1/2">
             <PersonAvatar person={person} size="lg" />
           </div>
         </div>
 
-        <div className="max-h-[70vh] overflow-y-auto custom-scrollbar">
+        <div className="flex-1 overflow-y-auto custom-scrollbar">
           <div className="pt-12 pb-6 px-6">
             <div className="text-center mb-5">
               <h2 className="text-lg font-bold">{person.displayName}</h2>
@@ -353,6 +356,11 @@ function PersonDetailModal({
               )}
             </div>
           </div>
+        </div>
+
+        {/* Resize handle hint */}
+        <div className="absolute bottom-1 right-1 pointer-events-none opacity-20">
+          <svg width="12" height="12" viewBox="0 0 12 12"><path d="M11 1v10H1" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M11 5v6H5" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/><path d="M11 9v2H9" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>
         </div>
       </DialogContent>
     </Dialog>
