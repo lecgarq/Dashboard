@@ -48,15 +48,15 @@ function countBy<T>(arr: T[]): Record<string, number> {
 
 function abbreviateModuleKey(key: string): string {
   const SHORT: Record<string, string> = {
-    documentManagement: "Docs",
-    designCollaboration: "Design Collab",
+    datum: "Datum",
+    documentManagement: "Forma Data Management",
+    designCollaboration: "Forma Design Collaboration",
     modelCoordination: "Model Coord",
-    preconstruction: "Precon",
+    preconstruction: "Preconstruction",
     autoSpecs: "AutoSpecs",
     build: "Build",
     insight: "Insight",
     design: "Design",
-    datum: "Datum",
   };
   return SHORT[key] ?? key;
 }
