@@ -16,9 +16,9 @@ progress:
 ## Current Position
 
 Phase: 8 (Canvas Rendering Engine)
-Plan: 1 of 2 complete
+Plan: 2 of 2 — at checkpoint (human-verify)
 Status: In progress
-Last activity: 2026-04-23 — 08-01 complete (AccUsersGraph canvas rewrite — world-space camera, all users rendered, no bounds clamping)
+Last activity: 2026-04-23 — 08-02 auto task complete (particle flow animation + dot grid + pulse rings + selection glow + fade-in); awaiting visual verification
 
 Progress: [████████░░] 65% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 1/2 plans complete)
 
@@ -67,6 +67,9 @@ Progress: [████████░░] 65% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 8, Plan 01]: 4000x4000 virtual simulation space, normalized to [0,1] after — camera system handles all layout, no pixel-bound clamping.
 - [Phase 8, Plan 01]: ALL users rendered including found===false — grey "?" nodes prevent missing-user bug from SVG filter.
 - [Phase 8, Plan 01]: Controls backed by useRef — render loop reads refs, useState only for button highlight to avoid per-frame re-renders.
+- [Phase 8, Plan 02]: performance.now() used for pulse ring animation in RAF loop — no setInterval, no pulseTick state.
+- [Phase 8, Plan 02]: Particle color fixed at rgba(139,92,246,0.6) — violet matching edge color, consistently visible without per-edge color computation.
+- [Phase 8, Plan 02]: nodeIndexMapRef built from post-simulation settled nodes so indices align with posRef exactly.
 
 ### Blockers/Concerns
 
@@ -75,5 +78,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Completed 08-01-PLAN.md (AccUsersGraph canvas rewrite — world-space camera + all users rendered)
+Stopped at: 08-02 checkpoint:human-verify — particle animation + visual polish complete, awaiting user visual confirmation
 Resume file: None
