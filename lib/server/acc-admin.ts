@@ -30,6 +30,23 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
+// Retry on 429 (quota/rate limit) with either the server-provided Retry-After or
+// exponential backoff. Up to 4 attempts. Everything else returns the first response.
+async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 4): Promise<Response> {
+  let attempt = 0;
+  while (true) {
+    const res = await fetch(url, init);
+    if (res.status !== 429 || attempt >= maxAttempts - 1) return res;
+    const retryAfterHeader = res.headers.get("retry-after");
+    const retryAfterSec = retryAfterHeader ? Number(retryAfterHeader) : NaN;
+    const waitMs = Number.isFinite(retryAfterSec) && retryAfterSec > 0
+      ? Math.min(60_000, retryAfterSec * 1000)
+      : Math.min(30_000, 1000 * Math.pow(2, attempt));
+    await new Promise((resolve) => setTimeout(resolve, waitMs));
+    attempt++;
+  }
+}
+
 function throwApsError(response: Response, raw: string): never {
   let payload: Record<string, unknown> = {};
   try { payload = JSON.parse(raw) as Record<string, unknown>; } catch { /* ignore */ }
@@ -64,7 +81,7 @@ async function fetchAccPaged(
   accessToken: string,
   signal?: AbortSignal
 ): Promise<{ pagination: { totalResults: number; limit: number }; results: Record<string, unknown>[] }> {
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
     signal,
@@ -80,7 +97,7 @@ async function fetchHqUsers(
   accessToken: string,
   signal?: AbortSignal
 ): Promise<Record<string, unknown>[]> {
-  const response = await fetch(url, {
+  const response = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
     signal,

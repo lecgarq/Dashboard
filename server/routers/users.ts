@@ -1004,9 +1004,11 @@ export const usersRouter = router({
       let errors = 0;
 
       // 4. Per-email work: in-memory lookup, then only call per-user APIs for the handful
-      // actually in ACC. Concurrency 6 keeps the per-found-user fan-out (3 parallel calls each)
-      // under ~18 in-flight requests.
-      const limit = pLimit(6);
+      // actually in ACC. Concurrency 3 — each found user fans out to projects+roles+products
+      // which each paginate internally (~75 requests per user with many projects). A burst of
+      // 6 found users × 3 API × pagination blew past ACC's quota. Retry-on-429 in the core
+      // fetcher handles transient spikes; concurrency keeps the steady-state request rate low.
+      const limit = pLimit(3);
 
       await Promise.all(
         emails.map((email) =>
