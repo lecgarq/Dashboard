@@ -15,12 +15,12 @@ progress:
 
 ## Current Position
 
-Phase: 7 of 7 (ACC Analysis Graph)
-Plan: 3 of 3 in current phase
-Status: Phase complete
-Last activity: 2026-04-23 — 07-03 complete (AccUsersGraph force-directed SVG spatial permission visualizer + ACC Users Graph v1 tab in Users section)
+Phase: 8 (Canvas Rendering Engine)
+Plan: 1 of 2 complete
+Status: In progress
+Last activity: 2026-04-23 — 08-01 complete (AccUsersGraph canvas rewrite — world-space camera, all users rendered, no bounds clamping)
 
-Progress: [████████░░] 62% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3 plans complete)
+Progress: [████████░░] 65% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 1/2 plans complete)
 
 ## Accumulated Context
 
@@ -63,6 +63,10 @@ Progress: [████████░░] 62% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 7, Plan 03]: No d3 installed — custom Hooke-law spring simulation (200 iterations, frozen) used for force-directed layout.
 - [Phase 7, Plan 03]: SVG chosen over canvas for ACC graph — ~50 users + ~10 roles is well within SVG performance range.
 - [Phase 7, Plan 03]: selectedPersonEmail + useEffect for cross-tab navigation — consistent with Phase 6 forceRefresh pattern.
+- [Phase 8, Plan 01]: Canvas chosen over SVG for graph rewrite — eliminates viewport clipping, enables requestAnimationFrame animation loop.
+- [Phase 8, Plan 01]: 4000x4000 virtual simulation space, normalized to [0,1] after — camera system handles all layout, no pixel-bound clamping.
+- [Phase 8, Plan 01]: ALL users rendered including found===false — grey "?" nodes prevent missing-user bug from SVG filter.
+- [Phase 8, Plan 01]: Controls backed by useRef — render loop reads refs, useState only for button highlight to avoid per-frame re-renders.
 
 ### Blockers/Concerns
 
@@ -71,5 +75,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Completed 07-03-PLAN.md (AccUsersGraph force-directed SVG graph + ACC Users Graph v1 tab)
+Stopped at: Completed 08-01-PLAN.md (AccUsersGraph canvas rewrite — world-space camera + all users rendered)
 Resume file: None
