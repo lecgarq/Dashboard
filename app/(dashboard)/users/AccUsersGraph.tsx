@@ -317,29 +317,45 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
 // the original SimNodes (preserves color, roles, projectName, etc. — never crosses postMessage).
 function runSimulationInWorker(nodes: SimNode[], edges: Edge[]): Promise<SimNode[]> {
   return new Promise((resolve, reject) => {
-    const worker = new Worker(new URL("./layoutWorker.ts", import.meta.url), { type: "module" });
-    worker.onmessage = (e: MessageEvent<PhysicsNode[]>) => {
-      const settled = nodes.map((n, i) => ({
-        ...n,
-        x: e.data[i].x,
-        y: e.data[i].y,
-        vx: e.data[i].vx,
-        vy: e.data[i].vy,
-      })) as SimNode[];
-      resolve(settled);
-      worker.terminate();
-    };
-    worker.onerror = (e) => {
-      reject(new Error(e.message || "layoutWorker error"));
-      worker.terminate();
-    };
-    const physNodes: PhysicsNode[] = nodes.map((n) => ({
-      id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
-    }));
-    const physEdges: PhysicsEdge[] = edges.map((e) => ({
-      source: e.source, target: e.target, weight: e.weight,
-    }));
-    worker.postMessage({ nodes: physNodes, edges: physEdges });
+    let timer: NodeJS.Timeout | undefined;
+    try {
+      const worker = new Worker(new URL("./layoutWorker.ts", import.meta.url), { type: "module" });
+      
+      timer = setTimeout(() => {
+        worker.terminate();
+        reject(new Error("Worker timed out after 2000ms"));
+      }, 2000);
+
+      worker.onmessage = (e: MessageEvent<PhysicsNode[]>) => {
+        if (timer) clearTimeout(timer);
+        const settled = nodes.map((n, i) => ({
+          ...n,
+          x: e.data[i].x,
+          y: e.data[i].y,
+          vx: e.data[i].vx,
+          vy: e.data[i].vy,
+        })) as SimNode[];
+        resolve(settled);
+        worker.terminate();
+      };
+
+      worker.onerror = (e) => {
+        if (timer) clearTimeout(timer);
+        reject(new Error(e.message || "layoutWorker error"));
+        worker.terminate();
+      };
+
+      const physNodes: PhysicsNode[] = nodes.map((n) => ({
+        id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
+      }));
+      const physEdges: PhysicsEdge[] = edges.map((e) => ({
+        source: e.source, target: e.target, weight: e.weight,
+      }));
+      worker.postMessage({ nodes: physNodes, edges: physEdges });
+    } catch (e) {
+      if (timer) clearTimeout(timer);
+      reject(e);
+    }
   });
 }
 
@@ -579,19 +595,21 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         return;
       }
 
-      // --- Cache miss path — run simulation in a Web Worker so the main thread stays responsive ---
+      // --- Cache miss path — run simulation on main thread ---
       if (cancelled) return;
       let settled: SimNode[];
       try {
-        settled = await runSimulationInWorker(rawNodes, rawEdges);
-      } catch (err) {
-        console.warn("Web Worker failed, running simulation on main thread:", err);
         const physNodes: PhysicsNode[] = rawNodes.map((n) => ({
           id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
         }));
         const physEdges: PhysicsEdge[] = rawEdges.map((e) => ({
           source: e.source, target: e.target, weight: e.weight,
         }));
+        
+        // Wait a tick so React can render the "Calculating..." spinner
+        await new Promise(r => setTimeout(r, 50));
+        if (cancelled) return;
+
         const physSettled = runSimulation(physNodes, physEdges);
         settled = rawNodes.map((n, i) => ({
           ...n,
@@ -600,6 +618,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           vx: physSettled[i].vx,
           vy: physSettled[i].vy,
         })) as SimNode[];
+      } catch (err) {
+        console.error("Simulation failed:", err);
+        return;
       }
       if (cancelled) return;
 
@@ -1130,9 +1151,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     <div className="flex h-full gap-0 relative">
       <div
         ref={containerRef}
-        className={`flex-1 relative rounded-xl border border-border/30 overflow-hidden transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
+        className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
         style={{ background: "#F8F7F4" }}
       >
+        {/* Loading Overlay */}
+        {!isReady && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
+            <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin mb-4" />
+            <span className="text-sm font-medium text-emerald-700">Calculating graph layout...</span>
+          </div>
+        )}
         {/* Controls */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
