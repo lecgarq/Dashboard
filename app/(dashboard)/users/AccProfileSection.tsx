@@ -236,6 +236,7 @@ function AccProfileFull({
 
 export function AccProfileSection({ email }: { email: string }) {
   const [forceRefresh, setForceRefresh] = useState(false);
+  const utils = trpc.useUtils();
 
   const { data, isLoading, error, isFetching } = trpc.users.getAccProfile.useQuery(
     { email, forceRefresh },
@@ -244,8 +245,15 @@ export function AccProfileSection({ email }: { email: string }) {
 
   function handleRefresh() {
     setForceRefresh(true);
-    // Reset after a tick so subsequent opens don't always force-refresh
-    setTimeout(() => setForceRefresh(false), 200);
+    // Fetch fresh data, write it into the forceRefresh:false cache slot,
+    // then switch back so the component reads the updated data.
+    utils.users.getAccProfile
+      .fetch({ email, forceRefresh: true })
+      .then((fresh) => {
+        utils.users.getAccProfile.setData({ email, forceRefresh: false }, fresh);
+        setForceRefresh(false);
+      })
+      .catch(() => setForceRefresh(false));
   }
 
   // 1. Loading
