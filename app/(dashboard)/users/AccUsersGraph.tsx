@@ -8,6 +8,14 @@ import { type BulkAccUser } from "./AccAnalysisPanel";
 // Types
 // ---------------------------------------------------------------------------
 
+interface Particle {
+  edgeIdx: number;   // which edge this particle travels along
+  t: number;         // position along edge [0, 1]
+  speed: number;     // how fast it moves per frame (0.002 - 0.008)
+  size: number;      // radius in world space (0.001 - 0.003)
+  alpha: number;     // opacity (0.3 - 0.7)
+}
+
 interface UserNode {
   kind: "user";
   id: string;         // email
@@ -361,6 +369,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const posRef = useRef<Float32Array>(new Float32Array(0));
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
   const spritesRef = useRef(new Map<string, HTMLCanvasElement>());
+  const nodeIndexMapRef = useRef(new Map<string, number>());
+  const particles = useRef<Particle[]>([]);
 
   // Camera (world-space lerped)
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
@@ -385,6 +395,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
   const selectedNodeRef = useRef<SidePanelState | null>(null);
   const [simulationDone, setSimulationDone] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Role user lookup map
   const roleUserMap = useMemo(() => {
@@ -404,6 +415,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   useEffect(() => {
     if (!users.length) return;
     setSimulationDone(false);
+    setIsReady(false);
 
     const { nodes: rawNodes, edges: rawEdges } = buildGraph(users);
     edgesRef.current = rawEdges;
@@ -412,6 +424,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const settled = runSimulation(rawNodes, rawEdges);
       nodesRef.current = settled;
       posRef.current = normalizePositions(settled);
+
+      // Build node index map for O(1) lookups in render loop
+      const nim = new Map<string, number>();
+      settled.forEach((n, i) => nim.set(n.id, i));
+      nodeIndexMapRef.current = nim;
 
       // Build spatial grid
       const cellSize = Math.max(0.01, 60 / view.current.scale);
@@ -429,9 +446,29 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         spritesRef.current.set(ROLE_COLOR + "_role", createCircleSprite(ROLE_COLOR, ROLE_MAX_RADIUS));
       }
 
+      // Initialize particle system — 2-3 particles per edge, capped at 1000 total
+      const newParticles: Particle[] = [];
+      const maxParticles = 1000;
+      for (let ei = 0; ei < rawEdges.length && newParticles.length < maxParticles; ei++) {
+        const count = Math.floor(Math.random() * 2) + 2; // 2 or 3
+        for (let p = 0; p < count && newParticles.length < maxParticles; p++) {
+          newParticles.push({
+            edgeIdx: ei,
+            t: Math.random(),
+            speed: 0.002 + Math.random() * 0.006,
+            size: 0.001 + Math.random() * 0.002,
+            alpha: 0.3 + Math.random() * 0.4,
+          });
+        }
+      }
+      particles.current = newParticles;
+
       setSimulationDone(true);
-      // Auto zoom-to-fit after simulation
-      requestAnimationFrame(() => zoomToFit());
+      // Auto zoom-to-fit after simulation, then fade in
+      requestAnimationFrame(() => {
+        zoomToFit();
+        requestAnimationFrame(() => setIsReady(true));
+      });
     }, 0);
 
     return () => clearTimeout(timeoutId);
@@ -577,6 +614,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const minWY = v.y - (h / 2) / v.scale - pad;
       const maxWY = v.y + (h / 2) / v.scale + pad;
 
+      // -- Dot grid background --
+      const gridSpacing = 0.05;
+      const dotRadius = 0.5 / v.scale;
+      ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
+      const startX = Math.floor(minWX / gridSpacing) * gridSpacing;
+      const startY = Math.floor(minWY / gridSpacing) * gridSpacing;
+      for (let gx = startX; gx < maxWX; gx += gridSpacing) {
+        for (let gy = startY; gy < maxWY; gy += gridSpacing) {
+          ctx.beginPath();
+          ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+
       // -- Edges --
       if (showRolesRef.current && !isInteracting) {
         ctx.lineWidth = 0.5 / v.scale;
@@ -616,6 +667,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const nodeScreenRadius = USER_RADIUS / v.scale;
       const showLabels = nodeScreenRadius > 10;
 
+      // Pulse animation driven by performance.now() — no setInterval
+      const now = performance.now();
+      const pulsePhase = (Math.sin(now * 0.004) + 1) * 0.5; // oscillates 0..1
+
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
         if (n.kind === "role" && !showRolesRef.current) continue;
@@ -629,15 +684,31 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         if (n.kind === "user") {
           const un = n as UserNode;
 
-          // Pulse ring for highlighted nodes
+          // Selection glow (drawn behind node)
+          if (selectedNodeRef.current?.node.id === n.id) {
+            ctx.globalAlpha = 0.15;
+            ctx.fillStyle = n.color;
+            ctx.beginPath();
+            ctx.arc(nx, ny, 20 / v.scale, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1.0;
+            ctx.strokeStyle = "#fff";
+            ctx.lineWidth = 2 / v.scale;
+            ctx.beginPath();
+            ctx.arc(nx, ny, USER_RADIUS / v.scale, 0, Math.PI * 2);
+            ctx.stroke();
+          }
+
+          // Animated pulse ring for highlighted nodes using performance.now()
           const pulseOutlier = highlightOutliersRef.current && isOutlierNode(un, roleUserMap);
           const pulseNP = highlightNoProjectsRef.current && un.hasNoProjects;
           if (pulseOutlier || pulseNP) {
-            ctx.globalAlpha = 0.5;
+            const pulseR = (USER_RADIUS + 3 + pulsePhase * 5) / v.scale;
             ctx.strokeStyle = "#f59e0b";
             ctx.lineWidth = 1.5 / v.scale;
+            ctx.globalAlpha = 0.3 + pulsePhase * 0.4;
             ctx.beginPath();
-            ctx.arc(nx, ny, (USER_RADIUS + 6) / v.scale, 0, Math.PI * 2);
+            ctx.arc(nx, ny, pulseR, 0, Math.PI * 2);
             ctx.stroke();
             ctx.globalAlpha = 1.0;
           }
@@ -689,6 +760,37 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             ctx.textBaseline = "middle";
             ctx.fillText(rn.label, nx, ny + 0.5 / v.scale);
           }
+        }
+      }
+
+      // -- Particles --
+      if (showRolesRef.current && particles.current.length > 0) {
+        const nim = nodeIndexMapRef.current;
+        const edges = edgesRef.current;
+
+        for (const p of particles.current) {
+          // Advance position
+          p.t += p.speed;
+          if (p.t > 1) p.t -= 1;
+
+          const edge = edges[p.edgeIdx];
+          if (!edge) continue;
+
+          const srcIdx = nim.get(edge.source);
+          const tgtIdx = nim.get(edge.target);
+          if (srcIdx == null || tgtIdx == null) continue;
+
+          const px = pos[srcIdx * 2] + (pos[tgtIdx * 2] - pos[srcIdx * 2]) * p.t;
+          const py = pos[srcIdx * 2 + 1] + (pos[tgtIdx * 2 + 1] - pos[srcIdx * 2 + 1]) * p.t;
+
+          // Viewport cull
+          if (px < minWX || px > maxWX || py < minWY || py > maxWY) continue;
+
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = "rgba(139, 92, 246, 0.6)";
+          ctx.beginPath();
+          ctx.arc(px, py, p.size, 0, Math.PI * 2);
+          ctx.fill();
         }
       }
 
@@ -847,6 +949,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   function resetLayout() {
     if (!users.length) return;
     setSimulationDone(false);
+    setIsReady(false);
     setSelectedNode(null);
     selectedNodeRef.current = null;
 
@@ -857,10 +960,36 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const settled = runSimulation(rawNodes, rawEdges);
       nodesRef.current = settled;
       posRef.current = normalizePositions(settled);
+
+      const nim = new Map<string, number>();
+      settled.forEach((n, i) => nim.set(n.id, i));
+      nodeIndexMapRef.current = nim;
+
       const cellSize = Math.max(0.005, 60 / view.current.scale);
       gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
+
+      // Re-initialize particles
+      const newParticles: Particle[] = [];
+      const maxParticles = 1000;
+      for (let ei = 0; ei < rawEdges.length && newParticles.length < maxParticles; ei++) {
+        const count = Math.floor(Math.random() * 2) + 2;
+        for (let p = 0; p < count && newParticles.length < maxParticles; p++) {
+          newParticles.push({
+            edgeIdx: ei,
+            t: Math.random(),
+            speed: 0.002 + Math.random() * 0.006,
+            size: 0.001 + Math.random() * 0.002,
+            alpha: 0.3 + Math.random() * 0.4,
+          });
+        }
+      }
+      particles.current = newParticles;
+
       setSimulationDone(true);
-      requestAnimationFrame(() => zoomToFit());
+      requestAnimationFrame(() => {
+        zoomToFit();
+        requestAnimationFrame(() => setIsReady(true));
+      });
     }, 0);
   }
 
@@ -879,7 +1008,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   return (
     <div className="flex h-full gap-0 relative">
       {/* Main graph area */}
-      <div ref={containerRef} className="flex-1 relative bg-[hsl(var(--card))] rounded-xl border border-border/30 overflow-hidden">
+      <div ref={containerRef} className={`flex-1 relative bg-[hsl(var(--card))] rounded-xl border border-border/30 overflow-hidden transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}>
 
         {/* Controls overlay */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
