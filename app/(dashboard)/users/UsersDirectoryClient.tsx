@@ -40,6 +40,7 @@ import {
 import { cn } from "@/lib/core/utils";
 import { AccProfileSection } from "./AccProfileSection";
 import { AccAnalysisPanel, type BulkAccUser } from "./AccAnalysisPanel";
+import { AccUsersGraph } from "./AccUsersGraph";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -563,7 +564,8 @@ function ActiveFilterPill({
 // ---------------------------------------------------------------------------
 
 export function UsersDirectoryClient() {
-  const [activeTab, setActiveTab] = useState<"general" | "analysis">("general");
+  const [activeTab, setActiveTab] = useState<"general" | "analysis" | "graph">("general");
+  const [selectedPersonEmail, setSelectedPersonEmail] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<OrgPerson | null>(null);
@@ -675,6 +677,16 @@ export function UsersDirectoryClient() {
 
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
+
+  // Auto-open modal for user navigated from Graph tab
+  useEffect(() => {
+    if (!selectedPersonEmail || activeTab !== "general") return;
+    const person = people.find((p) => p.email === selectedPersonEmail);
+    if (person) {
+      setSelectedPerson(person);
+      setSelectedPersonEmail(null);
+    }
+  }, [selectedPersonEmail, activeTab, people]);
 
   // Derived data
   const departments = useMemo(() => uniqueSorted(people.map((p) => p.department)), [people]);
@@ -876,11 +888,38 @@ export function UsersDirectoryClient() {
         >
           ACC Analysis
         </button>
+        <button
+          onClick={() => setActiveTab("graph")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px flex items-center gap-1.5",
+            activeTab === "graph"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          ACC Users Graph
+          <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/15 text-primary leading-none">
+            v1
+          </span>
+        </button>
       </div>
 
       {/* ACC Analysis tab */}
       {activeTab === "analysis" && (
         <AccAnalysisPanel users={accSummary} refetch={refetchAccSummary} />
+      )}
+
+      {/* ACC Users Graph tab */}
+      {activeTab === "graph" && (
+        <div className="w-full" style={{ height: "calc(100vh - 200px)" }}>
+          <AccUsersGraph
+            users={accSummary}
+            onSelectUser={(email) => {
+              setSelectedPersonEmail(email);
+              setActiveTab("general");
+            }}
+          />
+        </div>
       )}
 
       {/* General tab content: search bar, filters, directory listing */}
