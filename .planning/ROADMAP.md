@@ -131,4 +131,4 @@ Plans:
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
 | 6. ACC Project Intelligence | 4/4 | Complete | 2026-04-22 |
-| 7. ACC Analysis & Graph | 1/3 | In Progress|  |
+| 7. ACC Analysis & Graph | 2/3 | In Progress|  |

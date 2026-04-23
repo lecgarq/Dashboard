@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 7 of 7 (ACC Analysis Graph)
-Plan: 1 of 1 in current phase
+Plan: 2 of 2 in current phase
 Status: Phase complete
-Last activity: 2026-04-23 — 07-01 complete (bulkAccSummary tRPC procedure + No ACC Projects filter chip + per-card ACC badges in UsersDirectoryClient)
+Last activity: 2026-04-23 — 07-02 complete (AccAnalysisPanel + bulkAccSummary extended with allRoles/allModules/projects[] + ACC Analysis tab in Users section)
 
-Progress: [███████░░░] 57% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 1/1 plans complete)
+Progress: [████████░░] 60% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 2/2 plans complete)
 
 ## Accumulated Context
 
@@ -44,6 +44,9 @@ Progress: [███████░░░] 57% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 7, Plan 01]: bulkAccSummary is adminProcedure (not protectedProcedure) — consistent with other admin-only data queries in usersRouter.
 - [Phase 7, Plan 01]: AccBadge extracted as standalone component to avoid duplicating badge logic across PersonCard and PersonRow.
 - [Phase 7, Plan 01]: accSummaryMap built with useMemo keyed by email for O(1) per-card lookup without re-renders.
+- [Phase 7, Plan 02]: bulkAccSummary extended in-place (replaced Plan 7.1 lightweight version) — additive fields (allRoles, allModules, projects[]) with backward-compatible existing fields preserved.
+- [Phase 7, Plan 02]: AccAnalysisPanel receives BulkAccUser[] as prop — no separate tRPC call, reuses existing query from Plan 7.1.
+- [Phase 7, Plan 02]: CSS-width bar chart used for module patterns — no chart library dependency added.
 
 ### Blockers/Concerns
 
@@ -52,5 +55,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Completed 07-01-PLAN.md (bulkAccSummary procedure + No ACC Projects filter chip + per-card ACC badges in UsersDirectoryClient)
+Stopped at: Completed 07-02-PLAN.md (AccAnalysisPanel + bulkAccSummary extended with roles/modules + ACC Analysis tab in Users section)
 Resume file: None
