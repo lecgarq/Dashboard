@@ -4,7 +4,7 @@ import { useRef, useEffect, useState, useMemo, useCallback, useLayoutEffect } fr
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
-import { SIM_WIDTH, SIM_HEIGHT, type PhysicsNode, type PhysicsEdge } from "@/lib/acc/graphSimulation";
+import { SIM_WIDTH, SIM_HEIGHT, type PhysicsNode, type PhysicsEdge, runSimulation } from "@/lib/acc/graphSimulation";
 import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
 
 // ---------------------------------------------------------------------------
@@ -584,10 +584,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       let settled: SimNode[];
       try {
         settled = await runSimulationInWorker(rawNodes, rawEdges);
-      } catch {
-        // If the worker fails to load (e.g. during dev HMR), fall through without positions —
-        // the cached layout will pick up on next mount once saved.
-        return;
+      } catch (err) {
+        console.warn("Web Worker failed, running simulation on main thread:", err);
+        const physNodes: PhysicsNode[] = rawNodes.map((n) => ({
+          id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
+        }));
+        const physEdges: PhysicsEdge[] = rawEdges.map((e) => ({
+          source: e.source, target: e.target, weight: e.weight,
+        }));
+        const physSettled = runSimulation(physNodes, physEdges);
+        settled = rawNodes.map((n, i) => ({
+          ...n,
+          x: physSettled[i].x,
+          y: physSettled[i].y,
+          vx: physSettled[i].vx,
+          vy: physSettled[i].vy,
+        })) as SimNode[];
       }
       if (cancelled) return;
 
