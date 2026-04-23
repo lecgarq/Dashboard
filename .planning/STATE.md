@@ -15,12 +15,12 @@ progress:
 
 ## Current Position
 
-Phase: 8 (Canvas Rendering Engine)
-Plan: 2 of 2 — at checkpoint (human-verify)
+Phase: 8 (Graph Layout Cache)
+Plan: 2 of 3 — ready to execute
 Status: In progress
-Last activity: 2026-04-23 — 08-02 auto task complete (particle flow animation + dot grid + pulse rings + selection glow + fade-in); awaiting visual verification
+Last activity: 2026-04-23 — 08-01 complete (AccGraphLayoutCache Prisma model + migration deployed to Supabase; ctx.db.accGraphLayoutCache available)
 
-Progress: [████████░░] 65% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 1/2 plans complete)
+Progress: [████████░░] 68% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 1/3 plans complete)
 
 ## Accumulated Context
 
@@ -70,6 +70,13 @@ Progress: [████████░░] 65% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 8, Plan 02]: performance.now() used for pulse ring animation in RAF loop — no setInterval, no pulseTick state.
 - [Phase 8, Plan 02]: Particle color fixed at rgba(139,92,246,0.6) — violet matching edge color, consistently visible without per-edge color computation.
 - [Phase 8, Plan 02]: nodeIndexMapRef built from post-simulation settled nodes so indices align with posRef exactly.
+- [Phase 8, Plan 01]: Used migrate deploy (not migrate dev) for non-interactive migration — consistent with Phase 6 Plan 01 pattern.
+- [Phase 8, Plan 01]: AccGraphLayoutCache uses @id @default("singleton") — fixed primary key enforces exactly one row; upsert pattern is safe.
+- [Phase 8, Plan 01]: positions Float[] maps to PostgreSQL float8[] — mirrors LodEmbedding.vector Float[] precedent, no pgvector extension needed.
+
+### Roadmap Evolution
+
+- Phase 8 added: Graph Layout Cache — pre-computed force positions with dataHash invalidation
 
 ### Blockers/Concerns
 
@@ -78,5 +85,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: 08-02 checkpoint:human-verify — particle animation + visual polish complete, awaiting user visual confirmation
+Stopped at: Completed 08-01-PLAN.md — AccGraphLayoutCache model + migration deployed, ctx.db.accGraphLayoutCache available
 Resume file: None
