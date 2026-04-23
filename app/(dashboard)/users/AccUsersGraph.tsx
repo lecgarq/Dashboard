@@ -2,54 +2,91 @@
 
 import { useRef, useEffect, useState, useMemo, useCallback, useLayoutEffect } from "react";
 import { cn } from "@/lib/core/utils";
-import { type BulkAccUser } from "./AccAnalysisPanel";
+import { trpc } from "@/lib/core/trpc";
+import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
 
 // ---------------------------------------------------------------------------
 // Types
 // ---------------------------------------------------------------------------
 
-interface UserNode {
-  kind: "user";
-  id: string;
-  label: string;
+/** One dot per user × project. Positions cluster by role + module similarity. */
+interface InstanceNode {
+  kind: "instance";
+  id: string; // `${email}::${projectId}`
   email: string;
   name: string;
-  projectCount: number;
-  hasNoProjects: boolean;
-  isHubAdmin: boolean;
-  allRoles: string[];
-  found: boolean;
+  projectId: string;
+  projectName: string;
+  projectStatus: string;
+  isAdmin: boolean;
+  roles: string[];
+  modules: string[];
+  color: string;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  color: string;
 }
 
+/** Single dot for found-but-no-project or unfound users. */
+interface UserNode {
+  kind: "user";
+  id: string;
+  email: string;
+  name: string;
+  found: boolean;
+  hasNoProjects: boolean;
+  allRoles: string[];
+  color: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
+/** Diamond hub attracting instances that share a role. */
 interface RoleNode {
   kind: "role";
   id: string;
   label: string;
   roleName: string;
-  userCount: number;
+  instanceCount: number;
+  radius: number;
+  color: string;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  color: string;
 }
 
-type SimNode = UserNode | RoleNode;
+/** Square hub attracting instances that share a module. */
+interface ModuleNode {
+  kind: "module";
+  id: string;
+  label: string;
+  moduleName: string;
+  instanceCount: number;
+  color: string;
+  x: number;
+  y: number;
+  vx: number;
+  vy: number;
+}
+
+type SimNode = InstanceNode | UserNode | RoleNode | ModuleNode;
 
 interface Edge {
   source: string;
   target: string;
   color: string;
+  weight: number; // 1.0 = role edge, 0.45 = module edge
 }
 
 interface SidePanelState {
   node: SimNode;
   roleUsers?: string[];
+  moduleInstances?: string[];
+  userProjectCount?: number;
 }
 
 export interface AccUsersGraphProps {
@@ -58,7 +95,7 @@ export interface AccUsersGraphProps {
 }
 
 // ---------------------------------------------------------------------------
-// Color palette — same vibrant set as LOD Checker
+// Colors
 // ---------------------------------------------------------------------------
 
 const VIBRANT_COLORS: string[] = [
@@ -73,8 +110,8 @@ const VIBRANT_COLORS: string[] = [
 const colorCache = new Map<string, string>();
 function getCategoryColor(key: string | null | undefined): string {
   if (!key) return "#9CA3AF";
-  const cached = colorCache.get(key);
-  if (cached) return cached;
+  const c = colorCache.get(key);
+  if (c) return c;
   let hash = 0;
   for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
   const color = VIBRANT_COLORS[Math.abs(hash) % VIBRANT_COLORS.length];
@@ -82,33 +119,48 @@ function getCategoryColor(key: string | null | undefined): string {
   return color;
 }
 
-function getUserColor(u: BulkAccUser): string {
-  if (!u.found) return "#9CA3AF";
-  if (u.allRoles.some((r) => r.toLowerCase().includes("hub admin") || r.toLowerCase().includes("account admin") || r.toLowerCase().includes("administrator"))) {
-    return "#10B981";
-  }
-  if (u.hasNoProjects) return "#F59E0B";
-  const primaryRole = [...u.allRoles].sort()[0] ?? null;
+function getInstanceColor(proj: BulkAccProject): string {
+  if (proj.isAdmin) return "#10B981"; // emerald — admin in this project
+  const primaryRole = [...proj.roles].sort()[0] ?? null;
   return getCategoryColor(primaryRole);
 }
+
+const ROLE_HUB_COLOR = "#7C3AED";
+const MODULE_HUB_COLOR = "#0EA5E9";
+const EDGE_ALPHA = 0.10;
 
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const ROLE_COLOR = "#7C3AED";
-const EDGE_ALPHA = 0.12;
-const SIM_ITERATIONS = 200;
-const REPULSION = 3500;
-const ATTRACTION = 0.08;
-const DAMPING = 0.7;
-const CENTER_GRAVITY = 0.04;
-const SIM_WIDTH = 4000;
-const SIM_HEIGHT = 4000;
+const SIM_ITERATIONS = 130;
+const REPULSION = 2200;
+const ATTRACTION = 0.07;
+const DAMPING = 0.72;
+const CENTER_GRAVITY = 0.022;
+const SIM_WIDTH = 6000;
+const SIM_HEIGHT = 6000;
+const REPULSION_GRID = 450; // spatial grid cell size for repulsion
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+const MODULE_LABELS: Record<string, string> = {
+  documentManagement: "Data Mgmt",
+  designCollaboration: "Design Collab",
+  modelCoordination: "Model Coord",
+  preconstruction: "Preconstruction",
+  autoSpecs: "AutoSpecs",
+  build: "Forma Build",
+  insight: "Insight",
+  design: "Design",
+  takeoff: "Forma Takeoff",
+  estimate: "Forma Estimate",
+};
+function moduleLabel(key: string): string {
+  return MODULE_LABELS[key] ?? key;
+}
 
 function getFirstName(name: string, email: string): string {
   if (name?.trim()) return name.split(" ")[0].slice(0, 10);
@@ -122,16 +174,8 @@ function truncate(str: string, n: number): string {
   return str.length > n ? str.slice(0, n - 1) + "…" : str;
 }
 
-function isHubAdmin(u: BulkAccUser): boolean {
-  return u.allRoles.some((r) =>
-    r.toLowerCase().includes("hub admin") ||
-    r.toLowerCase().includes("account admin") ||
-    r.toLowerCase().includes("administrator")
-  );
-}
-
 // ---------------------------------------------------------------------------
-// Sprite (pre-rendered circle)
+// Sprite
 // ---------------------------------------------------------------------------
 
 function createCircleSprite(color: string, size: number): HTMLCanvasElement {
@@ -147,74 +191,133 @@ function createCircleSprite(color: string, size: number): HTMLCanvasElement {
 }
 
 // ---------------------------------------------------------------------------
-// Build nodes + edges
+// Build graph — one InstanceNode per found user × project
 // ---------------------------------------------------------------------------
 
 function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
-  const foundUsers = users.filter((u) => u.found);
   const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
 
   const roleFreq = new Map<string, number>();
-  for (const u of foundUsers) {
-    for (const r of u.allRoles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
+  const moduleFreq = new Map<string, number>();
+
+  const instanceNodes: InstanceNode[] = [];
+  const unfoundNodes: UserNode[] = [];
+
+  // Pass 1: collect all found users with projects
+  for (const u of users) {
+    if (!u.found || u.projects.length === 0) {
+      unfoundNodes.push({
+        kind: "user",
+        id: u.email,
+        email: u.email,
+        name: u.name,
+        found: u.found,
+        hasNoProjects: u.hasNoProjects,
+        allRoles: u.allRoles,
+        color: u.found ? "#F59E0B" : "#9CA3AF",
+        x: cx + (Math.random() - 0.5) * SIM_WIDTH * 0.55,
+        y: cy + (Math.random() - 0.5) * SIM_HEIGHT * 0.55,
+        vx: 0, vy: 0,
+      });
+      continue;
+    }
+    for (const proj of u.projects) {
+      for (const r of proj.roles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
+      for (const m of proj.modules) moduleFreq.set(m, (moduleFreq.get(m) ?? 0) + 1);
+    }
   }
 
-  const ROLE_BASE = 9, ROLE_MAX = 16;
-  const maxFreq = Math.max(1, ...roleFreq.values());
+  // Pass 2: build instance nodes with initial positions
+  const totalInstances = users.reduce((s, u) => s + u.projects.length, 0);
+  let instanceIdx = 0;
+  for (const u of users) {
+    if (!u.found || u.projects.length === 0) continue;
+    for (const proj of u.projects) {
+      // Spread instances around an inner ring, with jitter
+      const angle = (instanceIdx / Math.max(1, totalInstances)) * Math.PI * 2;
+      const r = SIM_WIDTH * 0.12 + (Math.random() * 500 - 250);
+      // Admin instances seeded in top half so they separate naturally
+      const yBias = proj.isAdmin ? -SIM_HEIGHT * 0.06 : 0;
+      instanceNodes.push({
+        kind: "instance",
+        id: `${u.email}::${proj.id}`,
+        email: u.email,
+        name: u.name,
+        projectId: proj.id,
+        projectName: proj.name,
+        projectStatus: proj.status,
+        isAdmin: proj.isAdmin,
+        roles: proj.roles,
+        modules: proj.modules,
+        color: getInstanceColor(proj),
+        x: cx + Math.cos(angle) * r,
+        y: cy + Math.sin(angle) * r + yBias,
+        vx: (Math.random() - 0.5) * 3,
+        vy: (Math.random() - 0.5) * 3,
+      });
+      instanceIdx++;
+    }
+  }
 
+  // Role hub nodes — outer ring
+  const maxRoleFreq = Math.max(1, ...roleFreq.values());
   const roleNodes = new Map<string, RoleNode>();
   const roleList = [...roleFreq.keys()];
   roleList.forEach((role, ri) => {
     const count = roleFreq.get(role)!;
     const angle = (ri / roleList.length) * Math.PI * 2;
-    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.28;
+    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.34;
     roleNodes.set(role, {
       kind: "role",
       id: `role:${role}`,
       label: truncate(role, 12),
       roleName: role,
-      userCount: count,
+      instanceCount: count,
+      radius: 9 + (count / maxRoleFreq) * 7,
+      color: ROLE_HUB_COLOR,
       x: cx + Math.cos(angle) * spread,
       y: cy + Math.sin(angle) * spread,
       vx: 0, vy: 0,
-      color: ROLE_COLOR,
-      // store radius on the object for rendering
-      ...({}),
-    } as RoleNode & { radius: number });
-    (roleNodes.get(role) as any).radius = ROLE_BASE + (count / maxFreq) * (ROLE_MAX - ROLE_BASE);
+    });
   });
 
-  const userNodes: UserNode[] = users.map((u, i) => {
-    const angle = (i / users.length) * Math.PI * 2;
-    const r = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.15 + (Math.random() * 300 - 150);
-    return {
-      kind: "user",
-      id: u.email,
-      label: u.found ? getFirstName(u.name, u.email) : "?",
-      email: u.email,
-      name: u.name,
-      projectCount: u.projectCount,
-      hasNoProjects: u.hasNoProjects,
-      isHubAdmin: u.found ? isHubAdmin(u) : false,
-      allRoles: u.allRoles,
-      found: u.found,
-      x: cx + Math.cos(angle) * r,
-      y: cy + Math.sin(angle) * r,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-      color: getUserColor(u),
-    };
+  // Module hub nodes — middle ring, offset by half step
+  const maxModFreq = Math.max(1, ...moduleFreq.values());
+  const moduleNodes = new Map<string, ModuleNode>();
+  const modList = [...moduleFreq.keys()];
+  modList.forEach((mod, mi) => {
+    const angle = (mi / modList.length) * Math.PI * 2 + Math.PI / modList.length;
+    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.20;
+    moduleNodes.set(mod, {
+      kind: "module",
+      id: `module:${mod}`,
+      label: truncate(moduleLabel(mod), 10),
+      moduleName: mod,
+      instanceCount: moduleFreq.get(mod)!,
+      color: MODULE_HUB_COLOR,
+      x: cx + Math.cos(angle) * spread,
+      y: cy + Math.sin(angle) * spread,
+      vx: 0, vy: 0,
+    });
   });
 
-  const nodes: SimNode[] = [...userNodes, ...roleNodes.values()];
+  const nodes: SimNode[] = [
+    ...instanceNodes,
+    ...unfoundNodes,
+    ...roleNodes.values(),
+    ...moduleNodes.values(),
+  ];
 
+  // Edges: instances → role hubs (weight 1.0) + module hubs (weight 0.45)
   const edges: Edge[] = [];
-  for (const u of userNodes) {
-    if (!u.found) continue;
-    for (const role of u.allRoles) {
+  for (const inst of instanceNodes) {
+    for (const role of inst.roles) {
       const rn = roleNodes.get(role);
-      if (!rn) continue;
-      edges.push({ source: u.id, target: rn.id, color: u.color });
+      if (rn) edges.push({ source: inst.id, target: rn.id, color: inst.color, weight: 1.0 });
+    }
+    for (const mod of inst.modules) {
+      const mn = moduleNodes.get(mod);
+      if (mn) edges.push({ source: inst.id, target: mn.id, color: mn.color, weight: 0.45 });
     }
   }
 
@@ -222,47 +325,75 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
 }
 
 // ---------------------------------------------------------------------------
-// Spring simulation
+// Simulation — grid-based O(n×k) repulsion, weighted edges
 // ---------------------------------------------------------------------------
 
 function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
   const ns: SimNode[] = nodes.map((n) => ({ ...n }));
   const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
+  const idxMap = new Map(ns.map((n, i) => [n.id, i]));
+
+  // Hub nodes barely move — they anchor the clusters
+  const isHub = (n: SimNode) => n.kind === "role" || n.kind === "module";
 
   for (let iter = 0; iter < SIM_ITERATIONS; iter++) {
     const fx = new Float64Array(ns.length);
     const fy = new Float64Array(ns.length);
 
+    // Grid-based repulsion: only between nodes in nearby cells
+    const grid = new Map<string, number[]>();
     for (let i = 0; i < ns.length; i++) {
-      for (let j = i + 1; j < ns.length; j++) {
-        const dx = ns[j].x - ns[i].x || 0.01;
-        const dy = ns[j].y - ns[i].y || 0.01;
-        const dist2 = dx * dx + dy * dy;
-        const dist = Math.sqrt(dist2) || 0.01;
-        const force = REPULSION / dist2;
-        const fx_ = (dx / dist) * force, fy_ = (dy / dist) * force;
-        fx[i] -= fx_; fy[i] -= fy_;
-        fx[j] += fx_; fy[j] += fy_;
+      const gx = Math.floor(ns[i].x / REPULSION_GRID);
+      const gy = Math.floor(ns[i].y / REPULSION_GRID);
+      const key = `${gx},${gy}`;
+      if (!grid.has(key)) grid.set(key, []);
+      grid.get(key)!.push(i);
+    }
+
+    for (let i = 0; i < ns.length; i++) {
+      const gx = Math.floor(ns[i].x / REPULSION_GRID);
+      const gy = Math.floor(ns[i].y / REPULSION_GRID);
+      for (let ox = -2; ox <= 2; ox++) {
+        for (let oy = -2; oy <= 2; oy++) {
+          const cell = grid.get(`${gx + ox},${gy + oy}`);
+          if (!cell) continue;
+          for (const j of cell) {
+            if (j <= i) continue;
+            const dx = ns[j].x - ns[i].x || 0.01;
+            const dy = ns[j].y - ns[i].y || 0.01;
+            const dist2 = dx * dx + dy * dy;
+            const dist = Math.sqrt(dist2) || 0.01;
+            const force = REPULSION / dist2;
+            const fx_ = (dx / dist) * force, fy_ = (dy / dist) * force;
+            fx[i] -= fx_; fy[i] -= fy_;
+            fx[j] += fx_; fy[j] += fy_;
+          }
+        }
       }
     }
 
-    const idxMap = new Map(ns.map((n, i) => [n.id, i]));
+    // Attraction along edges with per-edge weight
     for (const e of edges) {
-      const si = idxMap.get(e.source), ti = idxMap.get(e.target);
-      if (si == null || ti == null) continue;
+      const si = idxMap.get(e.source) ?? -1;
+      const ti = idxMap.get(e.target) ?? -1;
+      if (si < 0 || ti < 0) continue;
       const dx = ns[ti].x - ns[si].x, dy = ns[ti].y - ns[si].y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const f = dist * ATTRACTION;
+      const f = dist * ATTRACTION * e.weight;
       const fx_ = (dx / dist) * f, fy_ = (dy / dist) * f;
       fx[si] += fx_; fy[si] += fy_;
-      fx[ti] -= fx_; fy[ti] -= fy_;
+      // Hubs receive minimal force so they stay roughly anchored
+      if (!isHub(ns[ti])) { fx[ti] -= fx_; fy[ti] -= fy_; }
+      else { fx[ti] -= fx_ * 0.04; fy[ti] -= fy_ * 0.04; }
     }
 
+    // Weak center gravity
     for (let i = 0; i < ns.length; i++) {
       fx[i] += (cx - ns[i].x) * CENTER_GRAVITY;
       fy[i] += (cy - ns[i].y) * CENTER_GRAVITY;
     }
 
+    // Integrate
     for (let i = 0; i < ns.length; i++) {
       ns[i].vx = (ns[i].vx + fx[i]) * DAMPING;
       ns[i].vy = (ns[i].vy + fy[i]) * DAMPING;
@@ -334,8 +465,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const clickStart = useRef({ x: 0, y: 0 });
 
   const showRolesRef = useRef(true);
+  const showModulesRef = useRef(true);
 
   const [showRoles, setShowRoles] = useState(true);
+  const [showModules, setShowModules] = useState(true);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
@@ -343,30 +476,99 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [simulationDone, setSimulationDone] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
+  // Cache integration state
+  const [refreshKey, setRefreshKey] = useState(0);
+  const isRefreshingRef = useRef(false);
+
+  // Map: role name → list of user display names (for role side panel)
   const roleUserMap = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const u of users) {
       if (!u.found) continue;
-      for (const role of u.allRoles) {
-        const list = m.get(role) ?? [];
-        list.push(u.name || u.email);
-        m.set(role, list);
+      for (const proj of u.projects) {
+        for (const role of proj.roles) {
+          const list = m.get(role) ?? [];
+          list.push(u.name || u.email);
+          m.set(role, list);
+        }
       }
     }
     return m;
   }, [users]);
 
-  // Build + run simulation
+  // Map: email → number of project instances
+  const emailInstanceCount = useMemo(() => {
+    const m = new Map<string, number>();
+    for (const u of users) {
+      if (u.found && u.projects.length > 0) m.set(u.email, u.projects.length);
+    }
+    return m;
+  }, [users]);
+
+  // Cache tRPC hooks
+  const layoutQuery = trpc.users.getGraphLayout.useQuery(undefined, {
+    enabled: users.length > 0,
+    staleTime: Infinity, // never auto-refetch — invalidation is explicit via refreshKey
+    retry: false, // if it fails, fall through to simulation
+  });
+
+  const saveLayout = trpc.users.saveGraphLayout.useMutation();
+  const invalidateLayout = trpc.users.invalidateGraphLayout.useMutation();
+
+  // Build + run simulation (with cache integration)
   useEffect(() => {
     if (!users.length) return;
+    // Don't start a new run while a refresh is already in progress
+    if (isRefreshingRef.current) return;
+
     setSimulationDone(false);
     setIsReady(false);
 
     const { nodes: rawNodes, edges: rawEdges } = buildGraph(users);
     edgesRef.current = rawEdges;
 
-    const timeoutId = setTimeout(() => {
+    let cancelled = false;
+
+    const timeoutId = setTimeout(async () => {
+      // --- Cache hit path ---
+      const layout = layoutQuery.data;
+      if (
+        !cancelled &&
+        layout?.hit &&
+        layout.positions &&
+        layout.nodeCount === rawNodes.length
+      ) {
+        // Apply cached positions directly — skip simulation entirely
+        posRef.current = new Float32Array(layout.positions as number[]);
+        nodesRef.current = rawNodes; // rawNodes already have correct order (same users input)
+
+        const nim = new Map<string, number>();
+        rawNodes.forEach((n, i) => nim.set(n.id, i));
+        nodeIndexMapRef.current = nim;
+
+        const cellSize = Math.max(0.01, 60 / view.current.scale);
+        gridRef.current = buildGrid(posRef.current, rawNodes.length, cellSize);
+
+        const colorSet = new Set(rawNodes.map((n) => n.color));
+        colorSet.forEach((color) => {
+          if (!spritesRef.current.has(color)) {
+            spritesRef.current.set(color, createCircleSprite(color, 8));
+          }
+        });
+
+        setSimulationDone(true);
+        requestAnimationFrame(() => {
+          zoomToFit();
+          requestAnimationFrame(() => setIsReady(true));
+        });
+        return;
+      }
+
+      // --- Cache miss path — run simulation ---
+      if (cancelled) return;
       const settled = runSimulation(rawNodes, rawEdges);
+      if (cancelled) return;
+
       nodesRef.current = settled;
       posRef.current = normalizePositions(settled);
 
@@ -377,7 +579,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const cellSize = Math.max(0.01, 60 / view.current.scale);
       gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
 
-      // Pre-render sprites for each unique color at small size (LOD-style)
       const colorSet = new Set(settled.map((n) => n.color));
       colorSet.forEach((color) => {
         if (!spritesRef.current.has(color)) {
@@ -388,13 +589,32 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       setSimulationDone(true);
       requestAnimationFrame(() => {
         zoomToFit();
-        requestAnimationFrame(() => setIsReady(true));
+        requestAnimationFrame(() => {
+          if (!cancelled) setIsReady(true);
+        });
       });
+
+      // Silent background save — fire and forget
+      if (!cancelled && layout?.dataHash) {
+        saveLayout.mutate(
+          {
+            positions: Array.from(posRef.current),
+            dataHash: layout.dataHash,
+            nodeCount: settled.length,
+          },
+          { onError: () => { /* silent failure — next load re-runs simulation */ } }
+        );
+      }
+
+      isRefreshingRef.current = false;
     }, 0);
 
-    return () => clearTimeout(timeoutId);
+    return () => {
+      cancelled = true;
+      clearTimeout(timeoutId);
+    };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users]);
+  }, [users, layoutQuery.data, refreshKey]);
 
   const zoomToFit = useCallback(() => {
     const canvas = canvasRef.current;
@@ -405,7 +625,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].kind === "role" && !showRolesRef.current) continue;
+      const n = nodes[i];
+      if (n.kind === "role" && !showRolesRef.current) continue;
+      if (n.kind === "module" && !showModulesRef.current) continue;
       const nx = pos[i * 2], ny = pos[i * 2 + 1];
       if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
       if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
@@ -432,8 +654,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const wy = v.y + (sy - h / 2) / v.scale;
     const g = gridRef.current;
     if (!g.cells.size) return null;
-    const nodes = nodesRef.current;
-    const pos = posRef.current;
+    const nodes = nodesRef.current, pos = posRef.current;
     const gx = Math.floor(wx / g.size), gy = Math.floor(wy / g.size);
     let bestDist = 15 / v.scale, bestIdx = -1;
     for (let ox = -2; ox <= 2; ox++) {
@@ -441,7 +662,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         const cell = g.cells.get(`${gx + ox},${gy + oy}`);
         if (!cell) continue;
         for (const idx of cell) {
-          if (nodes[idx].kind === "role" && !showRolesRef.current) continue;
+          const n = nodes[idx];
+          if (n.kind === "role" && !showRolesRef.current) continue;
+          if (n.kind === "module" && !showModulesRef.current) continue;
           const dx = pos[idx * 2] - wx, dy = pos[idx * 2 + 1] - wy;
           const d = Math.hypot(dx, dy);
           if (d < bestDist) { bestDist = d; bestIdx = idx; }
@@ -452,7 +675,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // Render loop — LOD-style: light background, tiny dots, category-colored edges
+  // Render loop
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -477,8 +700,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
-
-      // Light cream background — LOD style
       ctx.fillStyle = "#F8F7F4";
       ctx.fillRect(0, 0, w, h);
 
@@ -498,26 +719,38 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const nim = nodeIndexMapRef.current;
       const selIdx = selId ? (nim.get(selId) ?? -1) : -1;
       const hasSelection = selIdx >= 0;
+
+      // Build highlight set: selected + its direct neighbors
       const highlightSet = new Set<number>();
       if (hasSelection) {
         highlightSet.add(selIdx);
-        // Highlight connected nodes
         for (const e of edgesRef.current) {
           if (e.source === selId) { const ti = nim.get(e.target); if (ti != null) highlightSet.add(ti); }
           if (e.target === selId) { const si = nim.get(e.source); if (si != null) highlightSet.add(si); }
+        }
+        // Also highlight sibling instances (same email as selected instance)
+        const selNode = nodes[selIdx];
+        if (selNode.kind === "instance") {
+          const email = (selNode as InstanceNode).email;
+          for (let i = 0; i < nodes.length; i++) {
+            if (nodes[i].kind === "instance" && (nodes[i] as InstanceNode).email === email) highlightSet.add(i);
+          }
         }
       }
 
       // -- Edges --
       ctx.lineWidth = 0.5 / v.scale;
-      if (showRolesRef.current && !isInteracting) {
+      const showR = showRolesRef.current, showM = showModulesRef.current;
+
+      if (!isInteracting) {
         if (hasSelection) {
-          // Only draw edges connected to selection, colored
-          ctx.globalAlpha = 0.6;
+          ctx.globalAlpha = 0.55;
           for (const e of edgesRef.current) {
+            if (e.source !== selId && e.target !== selId) continue;
+            if (!showR && e.target.startsWith("role:")) continue;
+            if (!showM && e.target.startsWith("module:")) continue;
             const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
             if (si < 0 || ti < 0) continue;
-            if (e.source !== selId && e.target !== selId) continue;
             ctx.strokeStyle = e.color;
             ctx.beginPath();
             ctx.moveTo(pos[si * 2], pos[si * 2 + 1]);
@@ -525,9 +758,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             ctx.stroke();
           }
         } else {
-          // All edges, batched by color, low alpha
           const batches = new Map<string, Array<[number, number, number, number]>>();
           for (const e of edgesRef.current) {
+            if (!showR && e.target.startsWith("role:")) continue;
+            if (!showM && e.target.startsWith("module:")) continue;
             const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
             if (si < 0 || ti < 0) continue;
             const sx = pos[si * 2], sy = pos[si * 2 + 1];
@@ -549,43 +783,40 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ctx.globalAlpha = 1.0;
       }
 
-      // -- Nodes --
-      const showLabels = v.scale > 250;
-      // LOD-style: tiny radius scaled by camera
+      // -- Instance / user nodes --
+      const showLabels = v.scale > 280;
       const rNormal = 3 / v.scale;
       const rBright = 4.5 / v.scale;
-      const rSelected = 8 / v.scale;
+      const rSelected = 9 / v.scale;
 
-      // Batch draws by color, dim vs bright
       const dimBatches = new Map<string, [number, number][]>();
       const brightBatches = new Map<string, [number, number][]>();
 
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
-        if (n.kind === "role" && !showRolesRef.current) continue;
+        if (n.kind === "role" || n.kind === "module") continue; // drawn separately
         const nx = pos[i * 2], ny = pos[i * 2 + 1];
         if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-        if (n.id === selId) continue; // drawn separately
-        const target = (!hasSelection || highlightSet.has(i)) ? brightBatches : dimBatches;
+        if (n.id === selId) continue;
+        const isDim = hasSelection && !highlightSet.has(i);
+        const target = isDim ? dimBatches : brightBatches;
         const list = target.get(n.color) ?? [];
         list.push([nx, ny]);
         target.set(n.color, list);
       }
 
-      // Draw dim nodes (grey, faded)
       if (hasSelection) {
-        ctx.globalAlpha = 0.12;
-        const sprite = spritesRef.current.get("#9CA3AF") ?? spritesRef.current.values().next().value;
+        ctx.globalAlpha = 0.10;
+        const sprite = spritesRef.current.get("#9CA3AF") ?? [...spritesRef.current.values()][0];
         if (sprite) {
           const d = rNormal * 2;
-          for (const [, coords] of dimBatches) {
+          for (const coords of dimBatches.values()) {
             for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - rNormal, ny - rNormal, d, d);
           }
         }
       }
 
-      // Draw bright nodes
-      ctx.globalAlpha = hasSelection ? 1.0 : 0.75;
+      ctx.globalAlpha = hasSelection ? 1.0 : 0.78;
       const r = hasSelection ? rBright : rNormal;
       const d = r * 2;
       for (const [color, coords] of brightBatches) {
@@ -594,22 +825,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - r, ny - r, d, d);
       }
 
-      // Draw role nodes as diamonds (bright batch may include them)
-      if (showRolesRef.current) {
+      // -- Role hub diamonds --
+      if (showR) {
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i];
           if (n.kind !== "role") continue;
           const nx = pos[i * 2], ny = pos[i * 2 + 1];
           if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-          const rr = (n as any).radius / v.scale || rBright;
+          const rr = (n as RoleNode).radius / v.scale;
           const dimmed = hasSelection && !highlightSet.has(i);
-          ctx.globalAlpha = dimmed ? 0.1 : 0.9;
+          ctx.globalAlpha = dimmed ? 0.08 : 0.9;
           ctx.fillStyle = n.color;
           ctx.beginPath();
           ctx.moveTo(nx, ny - rr); ctx.lineTo(nx + rr, ny);
           ctx.lineTo(nx, ny + rr); ctx.lineTo(nx - rr, ny);
           ctx.closePath(); ctx.fill();
-          if (!dimmed && showLabels && rr > 6 / v.scale) {
+          if (!dimmed && showLabels && rr > 5 / v.scale) {
             ctx.globalAlpha = 0.85;
             ctx.fillStyle = "#111";
             ctx.font = `${Math.max(4, 7 / v.scale)}px sans-serif`;
@@ -619,7 +850,29 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         }
       }
 
-      // Draw selected node — large ring + filled dot
+      // -- Module hub squares --
+      if (showM) {
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (n.kind !== "module") continue;
+          const nx = pos[i * 2], ny = pos[i * 2 + 1];
+          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+          const rs = 7 / v.scale;
+          const dimmed = hasSelection && !highlightSet.has(i);
+          ctx.globalAlpha = dimmed ? 0.07 : 0.85;
+          ctx.fillStyle = n.color;
+          ctx.fillRect(nx - rs, ny - rs, rs * 2, rs * 2);
+          if (!dimmed && showLabels && rs > 5 / v.scale) {
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "#111";
+            ctx.font = `${Math.max(3, 6 / v.scale)}px sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText((n as ModuleNode).label, nx, ny + rs + 5 / v.scale);
+          }
+        }
+      }
+
+      // -- Selected node ring --
       if (hasSelection && selIdx >= 0) {
         const sx = pos[selIdx * 2], sy = pos[selIdx * 2 + 1];
         const color = nodes[selIdx].color;
@@ -631,19 +884,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ctx.beginPath(); ctx.arc(sx, sy, rSelected * 0.5, 0, Math.PI * 2); ctx.fill();
       }
 
-      // Labels — only when zoomed in enough
+      // -- Labels when zoomed in --
       if (showLabels) {
+        ctx.globalAlpha = 0.72;
         ctx.fillStyle = "#111";
-        ctx.globalAlpha = 0.7;
         for (let i = 0; i < nodes.length; i++) {
           const n = nodes[i];
-          if (n.kind !== "user") continue;
+          if (n.kind !== "instance" && n.kind !== "user") continue;
           if (hasSelection && !highlightSet.has(i)) continue;
           const nx = pos[i * 2], ny = pos[i * 2 + 1];
           if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+          const label = n.kind === "instance"
+            ? getFirstName((n as InstanceNode).name, (n as InstanceNode).email).slice(0, 3)
+            : ((n as UserNode).found ? getFirstName((n as UserNode).name, (n as UserNode).email) : "?");
           ctx.font = `bold ${Math.max(3, 5 / v.scale)}px sans-serif`;
           ctx.textAlign = "center"; ctx.textBaseline = "middle";
-          ctx.fillText((n as UserNode).label.slice(0, 4), nx, ny + 0.5 / v.scale);
+          ctx.fillText(label, nx, ny + 0.5 / v.scale);
         }
       }
 
@@ -697,19 +953,41 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const node = hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (node) {
-        if (node.kind === "user") {
-          const sp = { node };
+        if (node.kind === "instance") {
+          const inst = node as InstanceNode;
+          const sp: SidePanelState = {
+            node,
+            userProjectCount: emailInstanceCount.get(inst.email) ?? 1,
+          };
           setSelectedNode(sp); selectedNodeRef.current = sp;
-        } else {
+        } else if (node.kind === "user") {
+          const sp: SidePanelState = { node };
+          setSelectedNode(sp); selectedNodeRef.current = sp;
+        } else if (node.kind === "role") {
           const rn = node as RoleNode;
-          const sp = { node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] };
+          const sp: SidePanelState = { node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] };
+          setSelectedNode(sp); selectedNodeRef.current = sp;
+        } else if (node.kind === "module") {
+          const mn = node as ModuleNode;
+          // Collect unique user names from instances that have this module
+          const names: string[] = [];
+          const seen = new Set<string>();
+          for (const n of nodesRef.current) {
+            if (n.kind !== "instance") continue;
+            const inst = n as InstanceNode;
+            if (inst.modules.includes(mn.moduleName) && !seen.has(inst.email)) {
+              seen.add(inst.email);
+              names.push(inst.name || inst.email);
+            }
+          }
+          const sp: SidePanelState = { node: mn, moduleInstances: names };
           setSelectedNode(sp); selectedNodeRef.current = sp;
         }
       } else {
         setSelectedNode(null); selectedNodeRef.current = null;
       }
     }
-  }, [hitTest, rebuildGrid, roleUserMap]);
+  }, [hitTest, rebuildGrid, roleUserMap, emailInstanceCount]);
 
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
@@ -756,6 +1034,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     zoomToFit();
   }
 
+  function toggleShowModules() {
+    const next = !showModulesRef.current;
+    showModulesRef.current = next;
+    setShowModules(next);
+    zoomToFit();
+  }
+
+  const totalInstances = useMemo(
+    () => users.reduce((s, u) => s + (u.found ? u.projects.length : 0), 0),
+    [users]
+  );
+
   if (!users.length) {
     return (
       <div className="flex items-center justify-center h-full text-muted-foreground text-sm">
@@ -777,22 +1067,55 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <ControlButton active={showRoles} onClick={toggleShowRoles}>
               {showRoles ? "Hide Roles" : "Show Roles"}
             </ControlButton>
-            <ControlButton active={false} onClick={zoomToFit}>
-              Fit
+            <ControlButton active={showModules} onClick={toggleShowModules}>
+              {showModules ? "Hide Modules" : "Show Modules"}
             </ControlButton>
+            <ControlButton active={false} onClick={zoomToFit}>Fit</ControlButton>
+            <button
+              onClick={() => {
+                if (isRefreshingRef.current) return;
+                isRefreshingRef.current = true;
+                invalidateLayout.mutate(undefined, {
+                  onSettled: () => {
+                    setRefreshKey((k) => k + 1);
+                    // layoutQuery refetch will be triggered by the dependency change
+                    layoutQuery.refetch();
+                  },
+                  onError: () => {
+                    isRefreshingRef.current = false;
+                  },
+                });
+              }}
+              disabled={invalidateLayout.isPending}
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
+                "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
+                invalidateLayout.isPending && "opacity-50 cursor-not-allowed"
+              )}
+            >
+              {invalidateLayout.isPending ? (
+                <>
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-300 border-t-gray-600" />
+                  {" "}Refreshing…
+                </>
+              ) : (
+                "Refresh Layout"
+              )}
+            </button>
           </div>
           <div className="text-[10px] text-gray-400 pr-1">
-            Scroll to zoom · drag to pan · click node for details · middle-click to fit
+            {totalInstances.toLocaleString()} instances · scroll to zoom · drag to pan · middle-click to fit
           </div>
         </div>
 
         {/* Legend */}
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
-          <LegendDot color="#10B981" label="Hub Admin" />
+          <LegendDot color="#10B981" label="Project Admin" />
           <LegendDot color="#F59E0B" label="No Projects" />
           <LegendDot color="#9CA3AF" label="Not Cached" />
           <span className="text-[10px] text-gray-400">· colored by primary role</span>
-          {showRoles && <LegendDiamond color={ROLE_COLOR} label="Role" />}
+          {showRoles && <LegendDiamond color={ROLE_HUB_COLOR} label="Role" />}
+          {showModules && <LegendSquare color={MODULE_HUB_COLOR} label="Module" />}
         </div>
 
         {/* Loading */}
@@ -800,7 +1123,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           <div className="absolute inset-0 flex items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm z-20">
             <div className="flex flex-col items-center gap-2 text-gray-500">
               <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-              <span className="text-xs">Running layout simulation…</span>
+              <span className="text-xs">Running layout for {users.length.toLocaleString()} users…</span>
             </div>
           </div>
         )}
@@ -821,16 +1144,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           }}
         />
 
-        {/* Tooltip — white, like LOD */}
+        {/* Tooltip */}
         <div
           ref={tooltipRef}
-          className="absolute top-0 left-0 z-30 pointer-events-none bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg max-w-[220px] opacity-0 transition-opacity duration-75 will-change-transform"
+          className="absolute top-0 left-0 z-30 pointer-events-none bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg max-w-[240px] opacity-0 transition-opacity duration-75 will-change-transform"
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            hoveredNode.kind === "user"
-              ? <UserTooltip node={hoveredNode as UserNode} />
-              : <RoleTooltip node={hoveredNode as RoleNode} />
+            hoveredNode.kind === "instance" ? <InstanceTooltip node={hoveredNode as InstanceNode} /> :
+            hoveredNode.kind === "user" ? <UserTooltip node={hoveredNode as UserNode} /> :
+            hoveredNode.kind === "role" ? <RoleTooltip node={hoveredNode as RoleNode} /> :
+            <ModuleTooltip node={hoveredNode as ModuleNode} />
           )}
         </div>
       </div>
@@ -841,9 +1165,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           state={selectedNode}
           onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; }}
           onViewProfile={
-            selectedNode.node.kind === "user"
+            (selectedNode.node.kind === "instance" || selectedNode.node.kind === "user")
               ? () => {
-                  onSelectUser?.((selectedNode.node as UserNode).email);
+                  const email = selectedNode.node.kind === "instance"
+                    ? (selectedNode.node as InstanceNode).email
+                    : (selectedNode.node as UserNode).email;
+                  onSelectUser?.(email);
                   setSelectedNode(null); selectedNodeRef.current = null;
                 }
               : undefined
@@ -886,10 +1213,35 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 function LegendDiamond({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-      <svg width="10" height="10" viewBox="0 0 10 10">
-        <path d="M5 0 L10 5 L5 10 L0 5 Z" fill={color} />
-      </svg>
+      <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L0 5 Z" fill={color} /></svg>
       {label}
+    </div>
+  );
+}
+
+function LegendSquare({ color, label }: { color: string; label: string }) {
+  return (
+    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
+      <span className="w-2.5 h-2.5 shrink-0 rounded-sm" style={{ backgroundColor: color }} />
+      {label}
+    </div>
+  );
+}
+
+function InstanceTooltip({ node }: { node: InstanceNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
+      <p className="text-[10px] text-gray-500 truncate">{node.projectName}</p>
+      {node.isAdmin && <p className="text-[10px] font-medium text-emerald-600">Project Admin</p>}
+      {node.roles.length > 0 && (
+        <p className="text-[10px] text-gray-400">
+          {node.roles.slice(0, 2).join(", ")}{node.roles.length > 2 ? ` +${node.roles.length - 2}` : ""}
+        </p>
+      )}
+      {node.modules.length > 0 && (
+        <p className="text-[10px] text-sky-500">{node.modules.length} module{node.modules.length !== 1 ? "s" : ""}</p>
+      )}
     </div>
   );
 }
@@ -900,20 +1252,7 @@ function UserTooltip({ node }: { node: UserNode }) {
       <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
       <p className="text-[10px] text-gray-500">{node.email}</p>
       {!node.found && <p className="text-[10px] text-gray-400 italic">Not cached in ACC</p>}
-      {node.found && (
-        <>
-          <p className="text-[10px] text-gray-500">
-            {node.projectCount} project{node.projectCount !== 1 ? "s" : ""}
-            {node.isHubAdmin && " · Hub Admin"}
-            {node.hasNoProjects && " · No projects"}
-          </p>
-          {node.allRoles.length > 0 && (
-            <p className="text-[10px] text-gray-400">
-              {node.allRoles.slice(0, 3).join(", ")}{node.allRoles.length > 3 ? ` +${node.allRoles.length - 3}` : ""}
-            </p>
-          )}
-        </>
-      )}
+      {node.found && node.hasNoProjects && <p className="text-[10px] text-amber-500">No projects assigned</p>}
     </div>
   );
 }
@@ -922,7 +1261,16 @@ function RoleTooltip({ node }: { node: RoleNode }) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold text-gray-900">{node.roleName}</p>
-      <p className="text-[10px] text-gray-500">{node.userCount} user{node.userCount !== 1 ? "s" : ""}</p>
+      <p className="text-[10px] text-gray-500">{node.instanceCount} instance{node.instanceCount !== 1 ? "s" : ""}</p>
+    </div>
+  );
+}
+
+function ModuleTooltip({ node }: { node: ModuleNode }) {
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-semibold text-gray-900">{moduleLabel(node.moduleName)}</p>
+      <p className="text-[10px] text-gray-500">{node.instanceCount} instance{node.instanceCount !== 1 ? "s" : ""}</p>
     </div>
   );
 }
@@ -933,14 +1281,65 @@ function SidePanel({ state, onClose, onViewProfile }: {
   onViewProfile?: () => void;
 }) {
   const n = state.node;
+
+  const title = n.kind === "instance" ? ((n as InstanceNode).name || (n as InstanceNode).email) :
+                n.kind === "user" ? ((n as UserNode).name || (n as UserNode).email) :
+                n.kind === "role" ? (n as RoleNode).roleName :
+                moduleLabel((n as ModuleNode).moduleName);
+
   return (
     <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 truncate">
-          {n.kind === "user" ? (n as UserNode).name || (n as UserNode).email : (n as RoleNode).roleName}
-        </h3>
+        <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
+
+      {n.kind === "instance" && (() => {
+        const inst = n as InstanceNode;
+        return (
+          <div className="space-y-3">
+            <p className="text-[11px] text-gray-500 break-all">{inst.email}</p>
+            {state.userProjectCount != null && state.userProjectCount > 1 && (
+              <p className="text-[10px] text-gray-400 italic">{state.userProjectCount} project instances in ACC</p>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {inst.isAdmin && <Tag color="emerald">Project Admin</Tag>}
+              <Tag color="gray">{inst.projectName}</Tag>
+              {inst.projectStatus && inst.projectStatus !== "active" && (
+                <Tag color="amber">{inst.projectStatus}</Tag>
+              )}
+            </div>
+            {inst.roles.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
+                <div className="flex flex-wrap gap-1">
+                  {inst.roles.map((r) => (
+                    <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {inst.modules.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
+                <div className="flex flex-wrap gap-1">
+                  {inst.modules.map((m) => (
+                    <span key={m} className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">{moduleLabel(m)}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {onViewProfile && (
+              <button
+                onClick={onViewProfile}
+                className="w-full text-xs font-medium py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 transition-all"
+              >
+                View Profile
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {n.kind === "user" && (() => {
         const u = n as UserNode;
@@ -949,29 +1348,20 @@ function SidePanel({ state, onClose, onViewProfile }: {
             <p className="text-[11px] text-gray-500 break-all">{u.email}</p>
             {!u.found && (
               <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
-                Not yet synced to ACC. No role or project data available.
+                Not yet synced to ACC.
               </p>
             )}
-            {u.found && (
-              <>
-                <div className="flex flex-wrap gap-1.5">
-                  {u.isHubAdmin && <Tag color="emerald">Hub Admin</Tag>}
-                  {u.hasNoProjects && <Tag color="amber">No Projects</Tag>}
-                  <Tag color="gray">{u.projectCount} project{u.projectCount !== 1 ? "s" : ""}</Tag>
-                </div>
-                {u.allRoles.length > 0 && (
-                  <div>
-                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
-                    <div className="flex flex-wrap gap-1">
-                      {u.allRoles.map((r) => (
-                        <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
-                          {r}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </>
+            {u.found && u.hasNoProjects && (
+              <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
+                Synced but no projects assigned.
+              </p>
+            )}
+            {u.allRoles.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {u.allRoles.map((r) => (
+                  <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
+                ))}
+              </div>
             )}
             {onViewProfile && (
               <button
@@ -990,12 +1380,32 @@ function SidePanel({ state, onClose, onViewProfile }: {
         const roleUsers = state.roleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500">{r.userCount} user{r.userCount !== 1 ? "s" : ""} with this role</p>
+            <p className="text-[11px] text-gray-500">{r.instanceCount} assignment{r.instanceCount !== 1 ? "s" : ""} across all projects</p>
             {roleUsers.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users</p>
                 <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                  {roleUsers.map((name) => (
+                  {[...new Set(roleUsers)].map((name) => (
+                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">{name}</div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      })()}
+
+      {n.kind === "module" && (() => {
+        const m = n as ModuleNode;
+        const users = state.moduleInstances ?? [];
+        return (
+          <div className="space-y-3">
+            <p className="text-[11px] text-gray-500">{m.instanceCount} project assignment{m.instanceCount !== 1 ? "s" : ""}</p>
+            {users.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users with access</p>
+                <div className="space-y-1 max-h-[300px] overflow-y-auto">
+                  {users.map((name) => (
                     <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">{name}</div>
                   ))}
                 </div>
