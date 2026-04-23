@@ -15,6 +15,9 @@ import {
   X,
   Crown,
   Layers,
+  Activity,
+  CheckCircle2,
+  XCircle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
@@ -26,42 +29,42 @@ import { trpc } from "@/lib/core/trpc";
 
 /** Master list of all ACC products/modules */
 const ALL_MODULES = [
-  { key: "documentManagement", name: "Document Management" },
-  { key: "designCollaboration", name: "Design Collaboration" },
-  { key: "modelCoordination", name: "Model Coordination" },
+  { key: "documentManagement", name: "Document Mgmt" },
+  { key: "designCollaboration", name: "Design Collab" },
+  { key: "modelCoordination", name: "Model Coord" },
   { key: "build", name: "Build" },
-  { key: "cost", name: "Cost Management" },
-  { key: "fieldManagement", name: "Field Management" },
+  { key: "cost", name: "Cost Mgmt" },
+  { key: "fieldManagement", name: "Field Mgmt" },
   { key: "insight", name: "Insight" },
   { key: "quantification", name: "Quantification" },
   { key: "docs", name: "Docs" },
   { key: "assets", name: "Assets" },
   { key: "takeoff", name: "Takeoff" },
-  { key: "projectManagement", name: "Project Management" },
+  { key: "projectManagement", name: "Project Mgmt" },
 ] as const;
 
 type SortField = "name" | "status" | "modules" | "admin";
 
 // ---------------------------------------------------------------------------
-// Apple-style Toggle Indicator (read-only)
+// Apple-style Toggle Switch (read-only)
 // ---------------------------------------------------------------------------
 
-function ToggleIndicator({ active }: { active: boolean }) {
+function ToggleSwitch({ active }: { active: boolean }) {
   return (
     <div
       className={cn(
-        "relative inline-flex h-[14px] w-[26px] shrink-0 rounded-full transition-all duration-300",
+        "relative inline-flex h-5 w-9 shrink-0 rounded-full transition-all duration-300 cursor-default",
         active
-          ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.3)]"
-          : "bg-[hsl(var(--muted-foreground)/0.12)]"
+          ? "bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.35)]"
+          : "bg-gray-600/30"
       )}
     >
       <span
         className={cn(
-          "absolute top-[2px] h-[10px] w-[10px] rounded-full shadow-sm transition-all duration-300",
+          "absolute top-[3px] h-[14px] w-[14px] rounded-full shadow transition-all duration-300",
           active
-            ? "translate-x-[14px] bg-white"
-            : "translate-x-[2px] bg-[hsl(var(--muted-foreground)/0.4)]"
+            ? "translate-x-[17px] bg-white"
+            : "translate-x-[3px] bg-gray-400"
         )}
       />
     </div>
@@ -104,69 +107,46 @@ function AccLoadingProgress() {
     LOAD_STEPS[LOAD_STEPS.length - 1];
 
   return (
-    <div className="pt-4 border-t border-border/30 space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
-          Autodesk ACC
-        </h3>
-        <span className="text-[10px] font-mono text-primary/60 tabular-nums">
-          {Math.round(progress)}%
-        </span>
-      </div>
-      <div className="relative h-1 rounded-full bg-muted/20 overflow-hidden">
+    <div className="mt-6 pt-5 border-t-2 border-border/50 space-y-4">
+      <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
+        <Activity size={16} className="text-primary" />
+        Autodesk ACC
+      </h3>
+      <div className="relative h-2 rounded-full bg-muted/30 overflow-hidden">
         <div
-          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary/70 to-primary/40 transition-none"
+          className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-primary to-primary/70 transition-none"
           style={{ width: `${progress}%` }}
         />
-        <div
-          className="absolute inset-y-0 w-16 rounded-full bg-gradient-to-r from-transparent via-white/20 to-transparent animate-shimmer"
-          style={{ left: `calc(${progress}% - 2rem)` }}
-        />
       </div>
-      <p className="text-[10px] text-muted-foreground/40 animate-pulse">
-        {activeStep.label}…
+      <p className="text-xs text-muted-foreground animate-pulse">
+        {activeStep.label}… {Math.round(progress)}%
       </p>
-      <div className="flex items-center gap-1.5">
-        {LOAD_STEPS.map((s) => (
-          <div
-            key={s.label}
-            className={cn(
-              "h-0.5 rounded-full transition-all duration-500",
-              progress >= s.until
-                ? "bg-primary/50 w-4"
-                : progress >= s.until - 20
-                  ? "bg-primary/20 w-2"
-                  : "bg-muted/20 w-1"
-            )}
-          />
-        ))}
-      </div>
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Stat pill
+// Stat Card — bold, clear, color-coded
 // ---------------------------------------------------------------------------
 
-function StatPill({
+function StatCard({
   icon: Icon,
   value,
   label,
-  accent,
+  color,
 }: {
   icon: React.ElementType;
   value: number | string;
   label: string;
-  accent?: string;
+  color: string;
 }) {
   return (
-    <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-muted/8 border border-border/15">
-      <Icon size={11} className={accent ?? "text-muted-foreground/40"} />
-      <span className="text-[11px] font-bold tabular-nums text-foreground">
+    <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-card border border-border/40">
+      <Icon size={16} className={color} />
+      <span className="text-xl font-extrabold tabular-nums text-foreground leading-none">
         {value}
       </span>
-      <span className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">
+      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
         {label}
       </span>
     </div>
@@ -174,27 +154,34 @@ function StatPill({
 }
 
 // ---------------------------------------------------------------------------
-// Module toggle row
+// Module toggle row — larger, clearer
 // ---------------------------------------------------------------------------
 
 function ModuleToggleRow({ name, active }: { name: string; active: boolean }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-[3px]">
-      <span
-        className={cn(
-          "text-[10px] truncate transition-colors",
-          active ? "text-foreground/80" : "text-muted-foreground/30 line-through decoration-muted-foreground/10"
+    <div className="flex items-center justify-between gap-3 py-1.5 px-2 rounded-lg hover:bg-muted/10 transition-colors">
+      <div className="flex items-center gap-2 min-w-0">
+        {active ? (
+          <CheckCircle2 size={13} className="text-green-500 shrink-0" />
+        ) : (
+          <XCircle size={13} className="text-gray-500/40 shrink-0" />
         )}
-      >
-        {name}
-      </span>
-      <ToggleIndicator active={active} />
+        <span
+          className={cn(
+            "text-xs font-medium truncate",
+            active ? "text-foreground" : "text-muted-foreground/40 line-through"
+          )}
+        >
+          {name}
+        </span>
+      </div>
+      <ToggleSwitch active={active} />
     </div>
   );
 }
 
 // ---------------------------------------------------------------------------
-// Collapsible Project Card
+// Collapsible Project Card — much more visible
 // ---------------------------------------------------------------------------
 
 type ProjectData = {
@@ -221,7 +208,6 @@ function AccProjectCard({
   const roles = project.roles ?? [];
   const moduleCount = activeModuleSet.size;
 
-  // Include any modules from API not in our master list
   const extraModules = useMemo(
     () =>
       (project.modules ?? []).filter(
@@ -230,72 +216,95 @@ function AccProjectCard({
     [project.modules]
   );
 
+  const isActive = project.status === "active";
+
   return (
     <div
       className={cn(
-        "rounded-xl border transition-all duration-200 overflow-hidden",
+        "rounded-xl border-2 transition-all duration-200 overflow-hidden",
         expanded
-          ? "border-border/40 bg-card/60 shadow-[0_2px_8px_rgba(0,0,0,0.06)]"
-          : "border-border/15 bg-muted/5 hover:border-border/25 hover:bg-muted/8"
+          ? "border-primary/30 bg-card shadow-lg shadow-primary/5"
+          : "border-border/30 bg-card/80 hover:border-primary/20 hover:shadow-md"
       )}
     >
       {/* Header — always visible */}
       <button
         onClick={() => setExpanded(!expanded)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 text-left group"
+        className="w-full flex items-center gap-3 px-4 py-3 text-left group"
+        title={`${expanded ? "Collapse" : "Expand"} ${project.name}`}
       >
-        {/* Status dot */}
+        {/* Status indicator */}
         <div
           className={cn(
-            "w-1.5 h-1.5 rounded-full shrink-0",
-            project.status === "active"
-              ? "bg-green-500 shadow-[0_0_4px_rgba(34,197,94,0.4)]"
-              : "bg-muted-foreground/20"
+            "w-2.5 h-2.5 rounded-full shrink-0",
+            isActive
+              ? "bg-green-500 shadow-[0_0_6px_rgba(34,197,94,0.5)]"
+              : "bg-gray-500/30"
           )}
         />
 
         {/* Name */}
-        <span className="text-[11px] font-medium text-foreground truncate flex-1 min-w-0">
+        <span className="text-sm font-semibold text-foreground truncate flex-1 min-w-0">
           {project.name}
         </span>
 
         {/* Admin badge */}
         {project.isAdmin && (
-          <span className="flex items-center gap-0.5 text-[9px] px-1.5 py-0 rounded-full bg-amber-500/10 text-amber-500/90 border border-amber-500/15 shrink-0 font-medium">
-            <Crown size={8} />
+          <span className="flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-500 border border-amber-500/20 shrink-0 font-bold">
+            <Crown size={10} />
             Admin
           </span>
         )}
 
-        {/* Module count */}
-        <span className="text-[9px] text-muted-foreground/35 shrink-0 tabular-nums">
-          {moduleCount}/{ALL_MODULES.length}
+        {/* Status */}
+        <span
+          className={cn(
+            "text-[11px] px-2 py-0.5 rounded-full font-semibold shrink-0 capitalize",
+            isActive
+              ? "bg-green-500/10 text-green-500 border border-green-500/20"
+              : "bg-gray-500/10 text-gray-400 border border-gray-500/20"
+          )}
+        >
+          {project.status}
         </span>
+
+        {/* Module count bar */}
+        <div className="flex items-center gap-1.5 shrink-0">
+          <div className="w-12 h-1.5 rounded-full bg-muted/30 overflow-hidden">
+            <div
+              className="h-full rounded-full bg-green-500 transition-all"
+              style={{ width: `${(moduleCount / ALL_MODULES.length) * 100}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground font-mono tabular-nums">
+            {moduleCount}/{ALL_MODULES.length}
+          </span>
+        </div>
 
         {/* Chevron */}
         {expanded ? (
-          <ChevronDown size={12} className="text-muted-foreground/30 shrink-0" />
+          <ChevronDown size={16} className="text-primary shrink-0" />
         ) : (
-          <ChevronRight size={12} className="text-muted-foreground/20 shrink-0 group-hover:text-muted-foreground/40 transition-colors" />
+          <ChevronRight size={16} className="text-muted-foreground/40 shrink-0 group-hover:text-primary transition-colors" />
         )}
       </button>
 
       {/* Expanded content */}
       {expanded && (
-        <div className="px-3 pb-3 space-y-2.5 border-t border-border/10 pt-2.5 animate-in fade-in slide-in-from-top-1 duration-200">
+        <div className="px-4 pb-4 space-y-4 border-t border-border/30 pt-4">
           {/* Roles */}
           {roles.length > 0 && (
-            <div className="space-y-1">
-              <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-medium">
-                Roles
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide flex items-center gap-1.5">
+                <Shield size={12} className="text-violet-500" />
+                Roles ({roles.length})
               </p>
-              <div className="flex flex-wrap gap-1">
+              <div className="flex flex-wrap gap-1.5">
                 {roles.map((role) => (
                   <span
                     key={role}
-                    className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-md border border-primary/10 bg-primary/5 text-primary/70 font-medium"
+                    className="inline-flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border border-violet-500/20 bg-violet-500/8 text-violet-400 font-semibold"
                   >
-                    <Shield size={8} className="text-primary/40" />
                     {role}
                   </span>
                 ))}
@@ -303,15 +312,13 @@ function AccProjectCard({
             </div>
           )}
 
-          {/* Modules — all listed with toggles */}
-          <div className="space-y-1">
-            <p className="text-[9px] text-muted-foreground/40 uppercase tracking-wider font-medium">
-              Modules
-              <span className="ml-1.5 text-muted-foreground/25">
-                ({moduleCount} active)
-              </span>
+          {/* Modules — all listed with Apple toggles */}
+          <div className="space-y-2">
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide flex items-center gap-1.5">
+              <Package size={12} className="text-cyan-500" />
+              Modules ({moduleCount} of {ALL_MODULES.length} active)
             </p>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-0">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-0 p-2 rounded-lg bg-muted/5 border border-border/20">
               {ALL_MODULES.map((mod) => (
                 <ModuleToggleRow
                   key={mod.key}
@@ -324,20 +331,6 @@ function AccProjectCard({
               ))}
             </div>
           </div>
-
-          {/* Status line */}
-          <div className="flex items-center gap-1.5 pt-1">
-            <div
-              className={cn(
-                "text-[9px] px-1.5 py-0.5 rounded-md capitalize",
-                project.status === "active"
-                  ? "bg-green-500/8 text-green-500/70 border border-green-500/10"
-                  : "bg-muted/10 text-muted-foreground/40 border border-border/10"
-              )}
-            >
-              {project.status}
-            </div>
-          </div>
         </div>
       )}
     </div>
@@ -345,7 +338,7 @@ function AccProjectCard({
 }
 
 // ---------------------------------------------------------------------------
-// AccProfileFull
+// AccProfileFull — the full ACC section
 // ---------------------------------------------------------------------------
 
 type AccProfileData = {
@@ -370,7 +363,6 @@ function AccProfileFull({
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortAsc, setSortAsc] = useState(true);
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
-  const [showFilters, setShowFilters] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const [debouncedSearch, setDebouncedSearch] = useState("");
 
@@ -401,11 +393,9 @@ function AccProfileFull({
   const filteredProjects = useMemo(() => {
     let result = [...projects];
 
-    // Status filter
     if (statusFilter === "active") result = result.filter((p) => p.status === "active");
     if (statusFilter === "inactive") result = result.filter((p) => p.status !== "active");
 
-    // Search
     if (debouncedSearch) {
       const q = debouncedSearch.toLowerCase();
       result = result.filter(
@@ -416,7 +406,6 @@ function AccProfileFull({
       );
     }
 
-    // Sort
     result.sort((a, b) => {
       let cmp = 0;
       switch (sortField) {
@@ -449,20 +438,21 @@ function AccProfileFull({
   }
 
   return (
-    <div className="pt-4 border-t border-border/30 space-y-3">
-      {/* Header */}
+    <div className="mt-6 pt-5 border-t-2 border-border/50 space-y-5">
+      {/* ── Header ── */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2 flex-wrap">
-          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
+            <Building2 size={16} className="text-primary" />
             Autodesk ACC
           </h3>
           <Badge
             variant="secondary"
             className={cn(
-              "text-[10px] px-1.5 py-0 border",
+              "text-xs px-2.5 py-0.5 font-bold border",
               data.status === "active"
-                ? "text-green-400 border-green-500/15 bg-green-500/5"
-                : "text-muted-foreground border-border/20"
+                ? "text-green-400 border-green-500/30 bg-green-500/10"
+                : "text-muted-foreground border-border/30"
             )}
           >
             {data.status}
@@ -470,7 +460,7 @@ function AccProfileFull({
           {data.role && (
             <Badge
               variant="outline"
-              className="text-[10px] px-1.5 py-0 border-primary/15 text-primary/60 capitalize"
+              className="text-xs px-2.5 py-0.5 font-bold border-primary/25 text-primary capitalize"
             >
               {data.role.replace(/_/g, " ")}
             </Badge>
@@ -478,53 +468,55 @@ function AccProfileFull({
         </div>
         <button
           onClick={onRefresh}
-          className="text-[10px] text-muted-foreground/40 hover:text-primary flex items-center gap-1 transition-colors"
+          title="Refresh ACC data"
+          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all font-medium"
         >
-          <RefreshCw size={10} />
+          <RefreshCw size={12} />
           Refresh
         </button>
       </div>
 
-      {/* Aggregate Stats */}
+      {/* ── Aggregate Stats ── */}
       {projects.length > 0 && (
-        <div className="flex flex-wrap gap-1.5">
-          <StatPill icon={FolderOpen} value={stats.total} label="Projects" accent="text-primary/50" />
-          <StatPill icon={Layers} value={stats.active} label="Active" accent="text-green-500/60" />
-          <StatPill icon={Crown} value={stats.admin} label="Admin" accent="text-amber-500/60" />
-          <StatPill icon={Shield} value={stats.roles} label="Roles" accent="text-violet-500/60" />
-          <StatPill icon={Package} value={stats.modules} label="Modules" accent="text-cyan-500/60" />
+        <div className="grid grid-cols-5 gap-2">
+          <StatCard icon={FolderOpen} value={stats.total} label="Projects" color="text-blue-500" />
+          <StatCard icon={Layers} value={stats.active} label="Active" color="text-green-500" />
+          <StatCard icon={Crown} value={stats.admin} label="Admin" color="text-amber-500" />
+          <StatCard icon={Shield} value={stats.roles} label="Roles" color="text-violet-500" />
+          <StatCard icon={Package} value={stats.modules} label="Modules" color="text-cyan-500" />
         </div>
       )}
 
-      {/* Search + Filter + Sort */}
+      {/* ── Search + Filter + Sort ── */}
       {projects.length > 3 && (
-        <div className="space-y-2">
+        <div className="space-y-3 p-4 rounded-xl bg-muted/5 border border-border/20">
           {/* Search bar */}
           <div className="relative">
             <Search
-              size={11}
-              className="absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/30"
+              size={14}
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground/50"
             />
             <input
               type="text"
-              placeholder="Search projects, roles, modules..."
+              placeholder="Search projects, roles, or modules..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="w-full h-7 pl-7 pr-8 text-[10px] rounded-lg border border-border/15 bg-muted/5 text-foreground placeholder:text-muted-foreground/25 focus:outline-none focus:border-primary/30 focus:bg-card/50 transition-all"
+              className="w-full h-9 pl-9 pr-9 text-sm rounded-lg border border-border/30 bg-card text-foreground placeholder:text-muted-foreground/40 focus:outline-none focus:border-primary/50 focus:ring-2 focus:ring-primary/10 transition-all"
             />
             {searchQuery && (
               <button
                 onClick={() => handleSearch("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground/30 hover:text-foreground transition-colors"
+                title="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground/40 hover:text-foreground transition-colors"
               >
-                <X size={10} />
+                <X size={14} />
               </button>
             )}
           </div>
 
           {/* Sort + Filter controls */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            {/* Sort buttons */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-bold">Sort:</span>
             {(
               [
                 ["name", "Name"],
@@ -536,35 +528,35 @@ function AccProfileFull({
               <button
                 key={field}
                 onClick={() => cycleSort(field)}
+                title={`Sort by ${label}`}
                 className={cn(
-                  "flex items-center gap-0.5 text-[9px] px-2 py-1 rounded-md border transition-all",
+                  "flex items-center gap-1 text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all",
                   sortField === field
-                    ? "border-primary/20 bg-primary/5 text-primary/80"
-                    : "border-border/10 bg-transparent text-muted-foreground/30 hover:text-muted-foreground/60 hover:border-border/20"
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border/20 text-muted-foreground/50 hover:text-foreground hover:border-border/40"
                 )}
               >
-                <ArrowUpDown size={8} />
+                <ArrowUpDown size={10} />
                 {label}
                 {sortField === field && (
-                  <span className="text-[8px] opacity-50">
-                    {sortAsc ? "↑" : "↓"}
-                  </span>
+                  <span className="text-[10px]">{sortAsc ? "↑" : "↓"}</span>
                 )}
               </button>
             ))}
 
-            <div className="w-px h-3 bg-border/15 mx-0.5" />
+            <div className="w-px h-5 bg-border/30 mx-1" />
 
-            {/* Status filter */}
+            <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider font-bold">Filter:</span>
             {(["all", "active", "inactive"] as const).map((s) => (
               <button
                 key={s}
                 onClick={() => setStatusFilter(s)}
+                title={`Show ${s} projects`}
                 className={cn(
-                  "text-[9px] px-2 py-1 rounded-md border transition-all capitalize",
+                  "text-xs px-2.5 py-1 rounded-lg border font-semibold transition-all capitalize",
                   statusFilter === s
-                    ? "border-primary/20 bg-primary/5 text-primary/80"
-                    : "border-border/10 bg-transparent text-muted-foreground/30 hover:text-muted-foreground/60"
+                    ? "border-primary/30 bg-primary/10 text-primary"
+                    : "border-border/20 text-muted-foreground/50 hover:text-foreground hover:border-border/40"
                 )}
               >
                 {s}
@@ -574,18 +566,20 @@ function AccProfileFull({
         </div>
       )}
 
-      {/* Projects list */}
+      {/* ── Projects list ── */}
       {filteredProjects.length > 0 && (
-        <div className="space-y-1.5">
-          <p className="text-[9px] text-muted-foreground/35 uppercase tracking-wider font-medium">
-            Projects
+        <div className="space-y-2">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide">
+              Projects
+            </p>
             {filteredProjects.length !== projects.length && (
-              <span className="ml-1 text-primary/50">
-                ({filteredProjects.length} of {projects.length})
-              </span>
+              <p className="text-xs text-primary font-semibold">
+                {filteredProjects.length} of {projects.length} shown
+              </p>
             )}
-          </p>
-          <div className="max-h-80 overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+          </div>
+          <div className="max-h-[50vh] overflow-y-auto space-y-2 pr-1 custom-scrollbar">
             {filteredProjects.map((proj, i) => (
               <AccProjectCard
                 key={proj.id}
@@ -598,13 +592,13 @@ function AccProfileFull({
       )}
 
       {filteredProjects.length === 0 && projects.length > 0 && (
-        <p className="text-[10px] text-muted-foreground/30 text-center py-4">
+        <p className="text-sm text-muted-foreground text-center py-6">
           No projects match your search
         </p>
       )}
 
       {/* Synced timestamp */}
-      <p className="text-[9px] text-muted-foreground/20">
+      <p className="text-[10px] text-muted-foreground/40">
         Last synced {new Date(data.syncedAt).toLocaleString()}
       </p>
     </div>
@@ -639,21 +633,19 @@ export function AccProfileSection({ email }: { email: string }) {
       .catch(() => setForceRefresh(false));
   }
 
-  // 1. Loading
   if (isLoading || isFetching) {
     return <AccLoadingProgress />;
   }
 
-  // 2. UNAUTHORIZED
   if (error?.data?.code === "UNAUTHORIZED") {
     return (
-      <div className="pt-4 border-t border-border/30">
-        <div className="flex items-start gap-2 p-3 rounded-xl border border-amber-500/15 bg-amber-500/5 text-amber-400 text-xs">
-          <AlertCircle size={13} className="shrink-0 mt-0.5" />
+      <div className="mt-6 pt-5 border-t-2 border-border/50">
+        <div className="flex items-start gap-3 p-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5">
+          <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium">Autodesk not connected</p>
-            <p className="text-[10px] text-amber-400/60 mt-0.5">
-              Link your Autodesk account in Settings to view ACC data.
+            <p className="text-sm font-bold text-amber-400">Autodesk not connected</p>
+            <p className="text-xs text-amber-400/70 mt-1">
+              Link your Autodesk account in Settings to view ACC project data.
             </p>
           </div>
         </div>
@@ -661,15 +653,14 @@ export function AccProfileSection({ email }: { email: string }) {
     );
   }
 
-  // 3. FORBIDDEN
   if (error?.data?.code === "FORBIDDEN") {
     return (
-      <div className="pt-4 border-t border-border/30">
-        <div className="flex items-start gap-2 p-3 rounded-xl border border-amber-500/15 bg-amber-500/5 text-amber-400 text-xs">
-          <AlertCircle size={13} className="shrink-0 mt-0.5" />
+      <div className="mt-6 pt-5 border-t-2 border-border/50">
+        <div className="flex items-start gap-3 p-4 rounded-xl border-2 border-amber-500/20 bg-amber-500/5">
+          <AlertCircle size={18} className="text-amber-500 shrink-0 mt-0.5" />
           <div>
-            <p className="font-medium">Account Admin privileges required</p>
-            <p className="text-[10px] text-amber-400/60 mt-0.5">
+            <p className="text-sm font-bold text-amber-400">Account Admin privileges required</p>
+            <p className="text-xs text-amber-400/70 mt-1">
               Ensure your Autodesk account is an Account Admin in the hub.
             </p>
           </div>
@@ -678,44 +669,39 @@ export function AccProfileSection({ email }: { email: string }) {
     );
   }
 
-  // 4. Other error
   if (error) {
     return (
-      <div className="pt-4 border-t border-border/30">
-        <p className="text-xs text-muted-foreground/50">
-          Failed to load ACC data.
-        </p>
+      <div className="mt-6 pt-5 border-t-2 border-border/50">
+        <p className="text-sm text-muted-foreground">Failed to load ACC data.</p>
       </div>
     );
   }
 
-  // 5. Not found
   if (data && !data.found) {
     return (
-      <div className="pt-4 border-t border-border/30">
-        <div className="flex items-center justify-between mb-2">
-          <h3 className="text-[10px] font-semibold text-muted-foreground uppercase tracking-wider">
+      <div className="mt-6 pt-5 border-t-2 border-border/50">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="text-sm font-bold text-foreground uppercase tracking-wide flex items-center gap-2">
+            <Building2 size={16} className="text-primary" />
             Autodesk ACC
           </h3>
           <button
             onClick={handleRefresh}
-            className="text-[10px] text-muted-foreground/40 hover:text-primary flex items-center gap-1 transition-colors"
+            title="Refresh ACC data"
+            className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 transition-colors"
           >
-            <RefreshCw size={10} />
+            <RefreshCw size={12} />
             Refresh
           </button>
         </div>
-        <p className="text-xs text-muted-foreground/50">
-          Not found in ACC hub
-        </p>
-        <p className="text-[9px] text-muted-foreground/25 mt-0.5">
+        <p className="text-sm text-muted-foreground">Not found in ACC hub</p>
+        <p className="text-[10px] text-muted-foreground/40 mt-1">
           Last checked: {new Date(data.syncedAt).toLocaleString()}
         </p>
       </div>
     );
   }
 
-  // 6. Full profile
   if (data?.found === true) {
     return (
       <AccProfileFull
