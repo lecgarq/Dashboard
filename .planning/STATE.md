@@ -3,11 +3,11 @@
 ## Current Position
 
 Phase: 7 of 7 (ACC Analysis Graph)
-Plan: 2 of 2 in current phase
+Plan: 3 of 3 in current phase
 Status: Phase complete
-Last activity: 2026-04-23 — 07-02 complete (AccAnalysisPanel + bulkAccSummary extended with allRoles/allModules/projects[] + ACC Analysis tab in Users section)
+Last activity: 2026-04-23 — 07-03 complete (AccUsersGraph force-directed SVG spatial permission visualizer + ACC Users Graph v1 tab in Users section)
 
-Progress: [████████░░] 60% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 2/2 plans complete)
+Progress: [████████░░] 62% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3 plans complete)
 
 ## Accumulated Context
 
@@ -47,6 +47,9 @@ Progress: [████████░░] 60% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 7, Plan 02]: bulkAccSummary extended in-place (replaced Plan 7.1 lightweight version) — additive fields (allRoles, allModules, projects[]) with backward-compatible existing fields preserved.
 - [Phase 7, Plan 02]: AccAnalysisPanel receives BulkAccUser[] as prop — no separate tRPC call, reuses existing query from Plan 7.1.
 - [Phase 7, Plan 02]: CSS-width bar chart used for module patterns — no chart library dependency added.
+- [Phase 7, Plan 03]: No d3 installed — custom Hooke-law spring simulation (200 iterations, frozen) used for force-directed layout.
+- [Phase 7, Plan 03]: SVG chosen over canvas for ACC graph — ~50 users + ~10 roles is well within SVG performance range.
+- [Phase 7, Plan 03]: selectedPersonEmail + useEffect for cross-tab navigation — consistent with Phase 6 forceRefresh pattern.
 
 ### Blockers/Concerns
 
@@ -55,5 +58,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Completed 07-02-PLAN.md (AccAnalysisPanel + bulkAccSummary extended with roles/modules + ACC Analysis tab in Users section)
+Stopped at: Completed 07-03-PLAN.md (AccUsersGraph force-directed SVG graph + ACC Users Graph v1 tab)
 Resume file: None
