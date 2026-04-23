@@ -39,6 +39,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import { AccProfileSection } from "./AccProfileSection";
+import { AccAnalysisPanel, type BulkAccUser } from "./AccAnalysisPanel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -562,6 +563,7 @@ function ActiveFilterPill({
 // ---------------------------------------------------------------------------
 
 export function UsersDirectoryClient() {
+  const [activeTab, setActiveTab] = useState<"general" | "analysis">("general");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<OrgPerson | null>(null);
@@ -573,11 +575,13 @@ export function UsersDirectoryClient() {
   const [filterNoProjects, setFilterNoProjects] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges
-  const { data: accSummaryRaw = [] } = trpc.users.bulkAccSummary.useQuery(undefined, {
+  // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges (Plan 7.1)
+  // and for the ACC Analysis panel (Plan 7.2). Extended fields: allRoles, allModules, projects[].
+  const { data: accSummaryRaw = [], refetch: refetchAccSummary } = trpc.users.bulkAccSummary.useQuery(undefined, {
     staleTime: 300_000,
     retry: false,
   });
+  const accSummary = accSummaryRaw as BulkAccUser[];
 
   const {
     data: directoryData,
@@ -848,7 +852,40 @@ export function UsersDirectoryClient() {
         </div>
       </div>
 
-      {/* Search bar */}
+      {/* Tab switcher */}
+      <div className="flex items-center gap-1 border-b border-border/40 pb-0">
+        <button
+          onClick={() => setActiveTab("general")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
+            activeTab === "general"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          General
+        </button>
+        <button
+          onClick={() => setActiveTab("analysis")}
+          className={cn(
+            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
+            activeTab === "analysis"
+              ? "border-primary text-primary"
+              : "border-transparent text-muted-foreground hover:text-foreground"
+          )}
+        >
+          ACC Analysis
+        </button>
+      </div>
+
+      {/* ACC Analysis tab */}
+      {activeTab === "analysis" && (
+        <AccAnalysisPanel users={accSummary} refetch={refetchAccSummary} />
+      )}
+
+      {/* General tab content: search bar, filters, directory listing */}
+      {activeTab === "general" && (
+      <>
       <div className="flex flex-col gap-2">
         <div className="relative">
           <Search
@@ -1092,6 +1129,8 @@ export function UsersDirectoryClient() {
           if (!v) setSelectedPerson(null);
         }}
       />
+      </>
+      )}
     </div>
   );
 }
