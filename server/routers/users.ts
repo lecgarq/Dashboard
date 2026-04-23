@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { router, adminProcedure, publicProcedure, protectedProcedure } from "../trpc";
 import { isEmailApproved, enqueuePendingUser, writeUserPermissionsToSheets } from "@/lib/google/sheets";
 import { listCalendarGuestDirectory } from "@/lib/google/directory";
@@ -775,11 +776,15 @@ export const usersRouter = router({
         };
       }
 
+      // AccMemberCache.data may be either a JSON-encoded string (legacy rows written with
+      // JSON.stringify) or a structured object (new rows). Handle both until legacy rows
+      // get overwritten by the next sync.
       let data: CachedData = { found: false };
-      try {
-        data = JSON.parse(cached.data as string) as CachedData;
-      } catch {
-        // malformed JSON — treat as not-found
+      const raw = cached.data as unknown;
+      if (typeof raw === "string") {
+        try { data = JSON.parse(raw) as CachedData; } catch { /* treat as not-found */ }
+      } else if (raw && typeof raw === "object") {
+        data = raw as CachedData;
       }
 
       if (!data.found) {
@@ -841,7 +846,7 @@ export const usersRouter = router({
           cached &&
           Date.now() - cached.syncedAt.getTime() < ACC_CACHE_TTL_MS
         ) {
-          return JSON.parse(cached.data as string) as {
+          type CachedAccUser = {
             found: boolean;
             syncedAt: string;
             autodeskId?: string;
@@ -849,6 +854,11 @@ export const usersRouter = router({
             status?: string;
             projects?: AccProject[];
           };
+          const raw = cached.data as unknown;
+          if (typeof raw === "string") {
+            return JSON.parse(raw) as CachedAccUser;
+          }
+          return raw as CachedAccUser;
         }
       }
 
@@ -894,8 +904,8 @@ export const usersRouter = router({
         const result = { found: false as const, syncedAt: new Date().toISOString() };
         await ctx.db.accMemberCache.upsert({
           where: { email },
-          create: { email, data: JSON.stringify(result), syncedAt: new Date() },
-          update: { data: JSON.stringify(result), syncedAt: new Date() },
+          create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
+          update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
         });
         return result;
       }
@@ -933,8 +943,8 @@ export const usersRouter = router({
       // 7. Upsert cache
       await ctx.db.accMemberCache.upsert({
         where: { email },
-        create: { email, data: JSON.stringify(result), syncedAt: new Date() },
-        update: { data: JSON.stringify(result), syncedAt: new Date() },
+        create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
+        update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
       });
 
       return result;
@@ -980,8 +990,10 @@ export const usersRouter = router({
       let notFound = 0;
       let errors = 0;
 
-      // 3. Sync with concurrency 3 — fast but safe for ACC rate limits
-      const limit = pLimit(3);
+      // 3. Sync with concurrency 8 — ACC tolerates ~300 req/min for HQ Admin APIs; each user
+      // uses ~4 requests (user lookup + projects + roles + products), so 8 concurrent pipelines
+      // ≈ 32 in-flight which is within safe limits. Full 1197-email sync drops from ~13min to ~4min.
+      const limit = pLimit(8);
 
       await Promise.all(
         emails.map((email) =>
@@ -993,8 +1005,8 @@ export const usersRouter = router({
                 const result = { found: false as const, syncedAt: new Date().toISOString() };
                 await ctx.db.accMemberCache.upsert({
                   where: { email },
-                  create: { email, data: JSON.stringify(result), syncedAt: new Date() },
-                  update: { data: JSON.stringify(result), syncedAt: new Date() },
+                  create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
+                  update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
                 });
                 notFound++;
                 return;
@@ -1026,8 +1038,8 @@ export const usersRouter = router({
 
               await ctx.db.accMemberCache.upsert({
                 where: { email },
-                create: { email, data: JSON.stringify(result), syncedAt: new Date() },
-                update: { data: JSON.stringify(result), syncedAt: new Date() },
+                create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
+                update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
               });
               found++;
             } catch {

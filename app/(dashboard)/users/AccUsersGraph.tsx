@@ -4,6 +4,7 @@ import { useRef, useEffect, useState, useMemo, useCallback, useLayoutEffect } fr
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
+import { SIM_WIDTH, SIM_HEIGHT, type PhysicsNode, type PhysicsEdge } from "@/lib/acc/graphSimulation";
 import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
 
 // ---------------------------------------------------------------------------
@@ -134,14 +135,7 @@ const EDGE_ALPHA = 0.10;
 // Constants
 // ---------------------------------------------------------------------------
 
-const SIM_ITERATIONS = 130;
-const REPULSION = 2200;
-const ATTRACTION = 0.07;
-const DAMPING = 0.72;
-const CENTER_GRAVITY = 0.022;
-const SIM_WIDTH = 6000;
-const SIM_HEIGHT = 6000;
-const REPULSION_GRID = 450; // spatial grid cell size for repulsion
+// Simulation runs in a Web Worker — see ./layoutWorker.ts and @/lib/acc/graphSimulation
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -309,85 +303,35 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
   return { nodes, edges };
 }
 
-// ---------------------------------------------------------------------------
-// Simulation — grid-based O(n×k) repulsion, weighted edges
-// ---------------------------------------------------------------------------
-
-function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
-  const ns: SimNode[] = nodes.map((n) => ({ ...n }));
-  const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
-  const idxMap = new Map(ns.map((n, i) => [n.id, i]));
-
-  // Hub nodes barely move — they anchor the clusters
-  const isHub = (n: SimNode) => n.kind === "role" || n.kind === "module";
-
-  for (let iter = 0; iter < SIM_ITERATIONS; iter++) {
-    const fx = new Float64Array(ns.length);
-    const fy = new Float64Array(ns.length);
-
-    // Grid-based repulsion: only between nodes in nearby cells
-    const grid = new Map<string, number[]>();
-    for (let i = 0; i < ns.length; i++) {
-      const gx = Math.floor(ns[i].x / REPULSION_GRID);
-      const gy = Math.floor(ns[i].y / REPULSION_GRID);
-      const key = `${gx},${gy}`;
-      if (!grid.has(key)) grid.set(key, []);
-      grid.get(key)!.push(i);
-    }
-
-    for (let i = 0; i < ns.length; i++) {
-      const gx = Math.floor(ns[i].x / REPULSION_GRID);
-      const gy = Math.floor(ns[i].y / REPULSION_GRID);
-      for (let ox = -2; ox <= 2; ox++) {
-        for (let oy = -2; oy <= 2; oy++) {
-          const cell = grid.get(`${gx + ox},${gy + oy}`);
-          if (!cell) continue;
-          for (const j of cell) {
-            if (j <= i) continue;
-            const dx = ns[j].x - ns[i].x || 0.01;
-            const dy = ns[j].y - ns[i].y || 0.01;
-            const dist2 = dx * dx + dy * dy;
-            const dist = Math.sqrt(dist2) || 0.01;
-            const force = REPULSION / dist2;
-            const fx_ = (dx / dist) * force, fy_ = (dy / dist) * force;
-            fx[i] -= fx_; fy[i] -= fy_;
-            fx[j] += fx_; fy[j] += fy_;
-          }
-        }
-      }
-    }
-
-    // Attraction along edges with per-edge weight
-    for (const e of edges) {
-      const si = idxMap.get(e.source) ?? -1;
-      const ti = idxMap.get(e.target) ?? -1;
-      if (si < 0 || ti < 0) continue;
-      const dx = ns[ti].x - ns[si].x, dy = ns[ti].y - ns[si].y;
-      const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const f = dist * ATTRACTION * e.weight;
-      const fx_ = (dx / dist) * f, fy_ = (dy / dist) * f;
-      fx[si] += fx_; fy[si] += fy_;
-      // Hubs receive minimal force so they stay roughly anchored
-      if (!isHub(ns[ti])) { fx[ti] -= fx_; fy[ti] -= fy_; }
-      else { fx[ti] -= fx_ * 0.04; fy[ti] -= fy_ * 0.04; }
-    }
-
-    // Weak center gravity
-    for (let i = 0; i < ns.length; i++) {
-      fx[i] += (cx - ns[i].x) * CENTER_GRAVITY;
-      fy[i] += (cy - ns[i].y) * CENTER_GRAVITY;
-    }
-
-    // Integrate
-    for (let i = 0; i < ns.length; i++) {
-      ns[i].vx = (ns[i].vx + fx[i]) * DAMPING;
-      ns[i].vy = (ns[i].vy + fy[i]) * DAMPING;
-      ns[i].x += ns[i].vx;
-      ns[i].y += ns[i].vy;
-    }
-  }
-
-  return ns;
+// Run simulation in a short-lived Web Worker so the main thread stays responsive.
+// Sends only the physics-relevant fields; on return, merges settled x/y/vx/vy back into
+// the original SimNodes (preserves color, roles, projectName, etc. — never crosses postMessage).
+function runSimulationInWorker(nodes: SimNode[], edges: Edge[]): Promise<SimNode[]> {
+  return new Promise((resolve, reject) => {
+    const worker = new Worker(new URL("./layoutWorker.ts", import.meta.url), { type: "module" });
+    worker.onmessage = (e: MessageEvent<PhysicsNode[]>) => {
+      const settled = nodes.map((n, i) => ({
+        ...n,
+        x: e.data[i].x,
+        y: e.data[i].y,
+        vx: e.data[i].vx,
+        vy: e.data[i].vy,
+      })) as SimNode[];
+      resolve(settled);
+      worker.terminate();
+    };
+    worker.onerror = (e) => {
+      reject(new Error(e.message || "layoutWorker error"));
+      worker.terminate();
+    };
+    const physNodes: PhysicsNode[] = nodes.map((n) => ({
+      id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
+    }));
+    const physEdges: PhysicsEdge[] = edges.map((e) => ({
+      source: e.source, target: e.target, weight: e.weight,
+    }));
+    worker.postMessage({ nodes: physNodes, edges: physEdges });
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -579,9 +523,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         return;
       }
 
-      // --- Cache miss path — run simulation ---
+      // --- Cache miss path — run simulation in a Web Worker so the main thread stays responsive ---
       if (cancelled) return;
-      const settled = runSimulation(rawNodes, rawEdges);
+      let settled: SimNode[];
+      try {
+        settled = await runSimulationInWorker(rawNodes, rawEdges);
+      } catch {
+        // If the worker fails to load (e.g. during dev HMR), fall through without positions —
+        // the cached layout will pick up on next mount once saved.
+        return;
+      }
       if (cancelled) return;
 
       nodesRef.current = settled;
