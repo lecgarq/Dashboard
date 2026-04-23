@@ -8,56 +8,43 @@ import { type BulkAccUser } from "./AccAnalysisPanel";
 // Types
 // ---------------------------------------------------------------------------
 
-interface Particle {
-  edgeIdx: number;   // which edge this particle travels along
-  t: number;         // position along edge [0, 1]
-  speed: number;     // how fast it moves per frame (0.002 - 0.008)
-  size: number;      // radius in world space (0.001 - 0.003)
-  alpha: number;     // opacity (0.3 - 0.7)
-}
-
 interface UserNode {
   kind: "user";
-  id: string;         // email
-  label: string;      // first name or initials
+  id: string;
+  label: string;
   email: string;
   name: string;
   projectCount: number;
   hasNoProjects: boolean;
   isHubAdmin: boolean;
-  roles: string[];
   allRoles: string[];
   found: boolean;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  radius: number;
   color: string;
 }
 
 interface RoleNode {
   kind: "role";
-  id: string;         // "role:" + roleName
-  label: string;      // role name (truncated)
+  id: string;
+  label: string;
   roleName: string;
   userCount: number;
   x: number;
   y: number;
   vx: number;
   vy: number;
-  radius: number;
   color: string;
 }
 
 type SimNode = UserNode | RoleNode;
 
 interface Edge {
-  source: string;     // node id
-  target: string;     // node id
+  source: string;
+  target: string;
   color: string;
-  dashed: boolean;
-  weight: number;
 }
 
 interface SidePanelState {
@@ -71,24 +58,51 @@ export interface AccUsersGraphProps {
 }
 
 // ---------------------------------------------------------------------------
+// Color palette — same vibrant set as LOD Checker
+// ---------------------------------------------------------------------------
+
+const VIBRANT_COLORS: string[] = [
+  "#E63946", "#F4A261", "#2A9D8F", "#264653", "#A8DADC",
+  "#D62828", "#F77F00", "#FCBF49", "#003049", "#FF9F1C",
+  "#2EC4B6", "#FFBF69", "#FF99C8", "#9B5DE5", "#F15BB5",
+  "#FEE440", "#00BBF9", "#00F5D4", "#4361EE", "#3A0CA3",
+  "#7209B7", "#560BAD", "#480CA8", "#B5179E", "#F72585",
+  "#4CC9F0", "#8338EC", "#FF006E", "#FB5607", "#3D5A40",
+];
+
+const colorCache = new Map<string, string>();
+function getCategoryColor(key: string | null | undefined): string {
+  if (!key) return "#9CA3AF";
+  const cached = colorCache.get(key);
+  if (cached) return cached;
+  let hash = 0;
+  for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  const color = VIBRANT_COLORS[Math.abs(hash) % VIBRANT_COLORS.length];
+  colorCache.set(key, color);
+  return color;
+}
+
+function getUserColor(u: BulkAccUser): string {
+  if (!u.found) return "#9CA3AF";
+  if (u.allRoles.some((r) => r.toLowerCase().includes("hub admin") || r.toLowerCase().includes("account admin") || r.toLowerCase().includes("administrator"))) {
+    return "#10B981";
+  }
+  if (u.hasNoProjects) return "#F59E0B";
+  const primaryRole = [...u.allRoles].sort()[0] ?? null;
+  return getCategoryColor(primaryRole);
+}
+
+// ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
 
-const USER_RADIUS = 7;
-const ROLE_BASE_RADIUS = 9;
-const ROLE_MAX_RADIUS = 16;
-const USER_COLOR_NORMAL = "#6366f1";
-const USER_COLOR_NO_PROJECTS = "#d97706";
-const USER_COLOR_HUB_ADMIN = "#059669";
-const USER_COLOR_NOT_FOUND = "#4b5563";
-const ROLE_COLOR = "#7c3aed";
-const EDGE_COLOR = "rgba(139, 92, 246, 0.18)";
+const ROLE_COLOR = "#7C3AED";
+const EDGE_ALPHA = 0.12;
 const SIM_ITERATIONS = 200;
 const REPULSION = 3500;
 const ATTRACTION = 0.08;
 const DAMPING = 0.7;
 const CENTER_GRAVITY = 0.04;
-// Virtual simulation space — large so nodes spread out freely before normalization
 const SIM_WIDTH = 4000;
 const SIM_HEIGHT = 4000;
 
@@ -97,64 +111,128 @@ const SIM_HEIGHT = 4000;
 // ---------------------------------------------------------------------------
 
 function getFirstName(name: string, email: string): string {
-  if (name && name.trim()) {
-    return name.split(" ")[0].slice(0, 10);
-  }
+  if (name?.trim()) return name.split(" ")[0].slice(0, 10);
   const local = email.split("@")[0];
   const parts = local.split(/[._-]/);
-  if (parts.length >= 2) {
-    return (parts[0][0] + parts[1][0]).toUpperCase();
-  }
+  if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
   return local.slice(0, 2).toUpperCase();
-}
-
-function isHubAdmin(user: BulkAccUser): boolean {
-  return user.allRoles.some((r) =>
-    r.toLowerCase().includes("hub admin") ||
-    r.toLowerCase().includes("account admin") ||
-    r.toLowerCase().includes("administrator")
-  );
 }
 
 function truncate(str: string, n: number): string {
   return str.length > n ? str.slice(0, n - 1) + "…" : str;
 }
 
+function isHubAdmin(u: BulkAccUser): boolean {
+  return u.allRoles.some((r) =>
+    r.toLowerCase().includes("hub admin") ||
+    r.toLowerCase().includes("account admin") ||
+    r.toLowerCase().includes("administrator")
+  );
+}
+
 // ---------------------------------------------------------------------------
-// Pre-rendered sprite (circle)
+// Sprite (pre-rendered circle)
 // ---------------------------------------------------------------------------
 
-function createCircleSprite(color: string, radius: number): HTMLCanvasElement {
+function createCircleSprite(color: string, size: number): HTMLCanvasElement {
   const canvas = document.createElement("canvas");
-  const d = radius * 2;
-  canvas.width = d;
-  canvas.height = d;
+  const d = size * 2;
+  canvas.width = d; canvas.height = d;
   const ctx = canvas.getContext("2d")!;
   ctx.fillStyle = color;
   ctx.beginPath();
-  ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
+  ctx.arc(size, size, size, 0, Math.PI * 2);
   ctx.fill();
-  // Subtle white rim
-  ctx.strokeStyle = "rgba(255,255,255,0.2)";
-  ctx.lineWidth = 1.2;
-  ctx.stroke();
   return canvas;
 }
 
 // ---------------------------------------------------------------------------
-// Spring simulation (no d3) — runs in 4000×4000 virtual space, NO bounds clamping
+// Build nodes + edges
+// ---------------------------------------------------------------------------
+
+function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
+  const foundUsers = users.filter((u) => u.found);
+  const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
+
+  const roleFreq = new Map<string, number>();
+  for (const u of foundUsers) {
+    for (const r of u.allRoles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
+  }
+
+  const ROLE_BASE = 9, ROLE_MAX = 16;
+  const maxFreq = Math.max(1, ...roleFreq.values());
+
+  const roleNodes = new Map<string, RoleNode>();
+  const roleList = [...roleFreq.keys()];
+  roleList.forEach((role, ri) => {
+    const count = roleFreq.get(role)!;
+    const angle = (ri / roleList.length) * Math.PI * 2;
+    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.28;
+    roleNodes.set(role, {
+      kind: "role",
+      id: `role:${role}`,
+      label: truncate(role, 12),
+      roleName: role,
+      userCount: count,
+      x: cx + Math.cos(angle) * spread,
+      y: cy + Math.sin(angle) * spread,
+      vx: 0, vy: 0,
+      color: ROLE_COLOR,
+      // store radius on the object for rendering
+      ...({}),
+    } as RoleNode & { radius: number });
+    (roleNodes.get(role) as any).radius = ROLE_BASE + (count / maxFreq) * (ROLE_MAX - ROLE_BASE);
+  });
+
+  const userNodes: UserNode[] = users.map((u, i) => {
+    const angle = (i / users.length) * Math.PI * 2;
+    const r = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.15 + (Math.random() * 300 - 150);
+    return {
+      kind: "user",
+      id: u.email,
+      label: u.found ? getFirstName(u.name, u.email) : "?",
+      email: u.email,
+      name: u.name,
+      projectCount: u.projectCount,
+      hasNoProjects: u.hasNoProjects,
+      isHubAdmin: u.found ? isHubAdmin(u) : false,
+      allRoles: u.allRoles,
+      found: u.found,
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r,
+      vx: (Math.random() - 0.5) * 2,
+      vy: (Math.random() - 0.5) * 2,
+      color: getUserColor(u),
+    };
+  });
+
+  const nodes: SimNode[] = [...userNodes, ...roleNodes.values()];
+
+  const edges: Edge[] = [];
+  for (const u of userNodes) {
+    if (!u.found) continue;
+    for (const role of u.allRoles) {
+      const rn = roleNodes.get(role);
+      if (!rn) continue;
+      edges.push({ source: u.id, target: rn.id, color: u.color });
+    }
+  }
+
+  return { nodes, edges };
+}
+
+// ---------------------------------------------------------------------------
+// Spring simulation
 // ---------------------------------------------------------------------------
 
 function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
   const ns: SimNode[] = nodes.map((n) => ({ ...n }));
-  const cx = SIM_WIDTH / 2;
-  const cy = SIM_HEIGHT / 2;
+  const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
 
   for (let iter = 0; iter < SIM_ITERATIONS; iter++) {
     const fx = new Float64Array(ns.length);
     const fy = new Float64Array(ns.length);
 
-    // 1. Repulsion
     for (let i = 0; i < ns.length; i++) {
       for (let j = i + 1; j < ns.length; j++) {
         const dx = ns[j].x - ns[i].x || 0.01;
@@ -162,40 +240,29 @@ function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
         const dist2 = dx * dx + dy * dy;
         const dist = Math.sqrt(dist2) || 0.01;
         const force = REPULSION / dist2;
-        const fx_ = (dx / dist) * force;
-        const fy_ = (dy / dist) * force;
-        fx[i] -= fx_;
-        fy[i] -= fy_;
-        fx[j] += fx_;
-        fy[j] += fy_;
+        const fx_ = (dx / dist) * force, fy_ = (dy / dist) * force;
+        fx[i] -= fx_; fy[i] -= fy_;
+        fx[j] += fx_; fy[j] += fy_;
       }
     }
 
-    // 2. Attraction along edges
     const idxMap = new Map(ns.map((n, i) => [n.id, i]));
     for (const e of edges) {
-      const si = idxMap.get(e.source);
-      const ti = idxMap.get(e.target);
+      const si = idxMap.get(e.source), ti = idxMap.get(e.target);
       if (si == null || ti == null) continue;
-      const dx = ns[ti].x - ns[si].x;
-      const dy = ns[ti].y - ns[si].y;
+      const dx = ns[ti].x - ns[si].x, dy = ns[ti].y - ns[si].y;
       const dist = Math.sqrt(dx * dx + dy * dy) || 0.01;
-      const f = dist * ATTRACTION * e.weight;
-      const fx_ = (dx / dist) * f;
-      const fy_ = (dy / dist) * f;
-      fx[si] += fx_;
-      fy[si] += fy_;
-      fx[ti] -= fx_;
-      fy[ti] -= fy_;
+      const f = dist * ATTRACTION;
+      const fx_ = (dx / dist) * f, fy_ = (dy / dist) * f;
+      fx[si] += fx_; fy[si] += fy_;
+      fx[ti] -= fx_; fy[ti] -= fy_;
     }
 
-    // 3. Gravity toward center
     for (let i = 0; i < ns.length; i++) {
       fx[i] += (cx - ns[i].x) * CENTER_GRAVITY;
       fy[i] += (cy - ns[i].y) * CENTER_GRAVITY;
     }
 
-    // 4. Integrate — NO bounds clamping
     for (let i = 0; i < ns.length; i++) {
       ns[i].vx = (ns[i].vx + fx[i]) * DAMPING;
       ns[i].vy = (ns[i].vy + fy[i]) * DAMPING;
@@ -208,124 +275,16 @@ function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
 }
 
 // ---------------------------------------------------------------------------
-// Build nodes + edges — includes ALL users (found or not)
-// ---------------------------------------------------------------------------
-
-function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
-  // ALL users — including found===false
-  const allUsers = users;
-  const foundUsers = users.filter((u) => u.found);
-
-  const cx = SIM_WIDTH / 2;
-  const cy = SIM_HEIGHT / 2;
-
-  // Role frequency only from found users (unfound have no roles)
-  const roleFreq = new Map<string, number>();
-  for (const u of foundUsers) {
-    for (const r of u.allRoles) {
-      roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
-    }
-  }
-  const maxRoleFreq = Math.max(1, ...roleFreq.values());
-
-  // Role nodes
-  const roleNodes = new Map<string, RoleNode>();
-  let ri = 0;
-  const roleList = [...roleFreq.keys()];
-  for (const role of roleList) {
-    const count = roleFreq.get(role)!;
-    const angle = (ri / roleList.length) * Math.PI * 2;
-    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.28;
-    const radius = ROLE_BASE_RADIUS + ((count / maxRoleFreq) * (ROLE_MAX_RADIUS - ROLE_BASE_RADIUS));
-    roleNodes.set(role, {
-      kind: "role",
-      id: `role:${role}`,
-      label: truncate(role, 12),
-      roleName: role,
-      userCount: count,
-      x: cx + Math.cos(angle) * spread,
-      y: cy + Math.sin(angle) * spread,
-      vx: 0,
-      vy: 0,
-      radius,
-      color: ROLE_COLOR,
-    });
-    ri++;
-  }
-
-  // User nodes — ALL users, not-found ones get grey "?" nodes
-  const userNodes: UserNode[] = allUsers.map((u, i) => {
-    const angle = (i / allUsers.length) * Math.PI * 2;
-    const r = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.15 + (Math.random() * 300 - 150);
-
-    let color: string;
-    if (!u.found) {
-      color = USER_COLOR_NOT_FOUND;
-    } else if (isHubAdmin(u)) {
-      color = USER_COLOR_HUB_ADMIN;
-    } else if (u.hasNoProjects) {
-      color = USER_COLOR_NO_PROJECTS;
-    } else {
-      color = USER_COLOR_NORMAL;
-    }
-
-    return {
-      kind: "user",
-      id: u.email,
-      label: u.found ? getFirstName(u.name, u.email) : "?",
-      email: u.email,
-      name: u.name,
-      projectCount: u.projectCount,
-      hasNoProjects: u.hasNoProjects,
-      isHubAdmin: u.found ? isHubAdmin(u) : false,
-      roles: u.allRoles,
-      allRoles: u.allRoles,
-      found: u.found,
-      x: cx + Math.cos(angle) * r,
-      y: cy + Math.sin(angle) * r,
-      vx: (Math.random() - 0.5) * 2,
-      vy: (Math.random() - 0.5) * 2,
-      radius: USER_RADIUS,
-      color,
-    };
-  });
-
-  const nodes: SimNode[] = [...userNodes, ...roleNodes.values()];
-
-  // Edges: user -> role (only for found users with roles)
-  const edges: Edge[] = [];
-  for (const u of userNodes) {
-    if (!u.found) continue;
-    for (const role of u.allRoles) {
-      const rn = roleNodes.get(role);
-      if (!rn) continue;
-      edges.push({
-        source: u.id,
-        target: rn.id,
-        color: EDGE_COLOR,
-        dashed: false,
-        weight: 1,
-      });
-    }
-  }
-
-  return { nodes, edges };
-}
-
-// ---------------------------------------------------------------------------
-// Normalize positions to [0,1] world space
+// Normalize positions
 // ---------------------------------------------------------------------------
 
 function normalizePositions(settled: SimNode[]): Float32Array {
   let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
   for (const n of settled) {
-    if (n.x < minX) minX = n.x;
-    if (n.x > maxX) maxX = n.x;
-    if (n.y < minY) minY = n.y;
-    if (n.y > maxY) maxY = n.y;
+    if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
   }
-  const rx = maxX - minX || 1;
-  const ry = maxY - minY || 1;
+  const rx = maxX - minX || 1, ry = maxY - minY || 1;
   const pos = new Float32Array(settled.length * 2);
   for (let i = 0; i < settled.length; i++) {
     pos[i * 2] = (settled[i].x - minX) / rx;
@@ -338,10 +297,7 @@ function normalizePositions(settled: SimNode[]): Float32Array {
 // Spatial grid for O(1) hit testing
 // ---------------------------------------------------------------------------
 
-interface SpatialGrid {
-  size: number;
-  cells: Map<string, number[]>;
-}
+interface SpatialGrid { size: number; cells: Map<string, number[]>; }
 
 function buildGrid(pos: Float32Array, count: number, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -363,33 +319,23 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const tooltipRef = useRef<HTMLDivElement>(null);
   const rafId = useRef<number>(0);
 
-  // Simulation output stored in refs (no React re-renders per frame)
   const nodesRef = useRef<SimNode[]>([]);
   const edgesRef = useRef<Edge[]>([]);
   const posRef = useRef<Float32Array>(new Float32Array(0));
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
   const spritesRef = useRef(new Map<string, HTMLCanvasElement>());
   const nodeIndexMapRef = useRef(new Map<string, number>());
-  const particles = useRef<Particle[]>([]);
 
-  // Camera (world-space lerped)
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
   const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
 
-  // Interaction refs
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
   const clickStart = useRef({ x: 0, y: 0 });
 
-  // Controls stored in refs so render loop can read without re-render
   const showRolesRef = useRef(true);
-  const highlightOutliersRef = useRef(false);
-  const highlightNoProjectsRef = useRef(false);
 
-  // React state just for button highlights
   const [showRoles, setShowRoles] = useState(true);
-  const [highlightOutliers, setHighlightOutliers] = useState(false);
-  const [highlightNoProjects, setHighlightNoProjects] = useState(false);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
@@ -397,7 +343,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [simulationDone, setSimulationDone] = useState(false);
   const [isReady, setIsReady] = useState(false);
 
-  // Role user lookup map
   const roleUserMap = useMemo(() => {
     const m = new Map<string, string[]>();
     for (const u of users) {
@@ -411,7 +356,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return m;
   }, [users]);
 
-  // Build + run simulation when users change
+  // Build + run simulation
   useEffect(() => {
     if (!users.length) return;
     setSimulationDone(false);
@@ -425,46 +370,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       nodesRef.current = settled;
       posRef.current = normalizePositions(settled);
 
-      // Build node index map for O(1) lookups in render loop
       const nim = new Map<string, number>();
       settled.forEach((n, i) => nim.set(n.id, i));
       nodeIndexMapRef.current = nim;
 
-      // Build spatial grid
       const cellSize = Math.max(0.01, 60 / view.current.scale);
       gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
 
-      // Pre-render sprites for each unique color
+      // Pre-render sprites for each unique color at small size (LOD-style)
       const colorSet = new Set(settled.map((n) => n.color));
       colorSet.forEach((color) => {
         if (!spritesRef.current.has(color)) {
-          spritesRef.current.set(color, createCircleSprite(color, USER_RADIUS));
+          spritesRef.current.set(color, createCircleSprite(color, 8));
         }
       });
-      // Sprite for role nodes (slightly larger)
-      if (!spritesRef.current.has(ROLE_COLOR + "_role")) {
-        spritesRef.current.set(ROLE_COLOR + "_role", createCircleSprite(ROLE_COLOR, ROLE_MAX_RADIUS));
-      }
-
-      // Initialize particle system — 2-3 particles per edge, capped at 1000 total
-      const newParticles: Particle[] = [];
-      const maxParticles = 1000;
-      for (let ei = 0; ei < rawEdges.length && newParticles.length < maxParticles; ei++) {
-        const count = Math.floor(Math.random() * 2) + 2; // 2 or 3
-        for (let p = 0; p < count && newParticles.length < maxParticles; p++) {
-          newParticles.push({
-            edgeIdx: ei,
-            t: Math.random(),
-            speed: 0.002 + Math.random() * 0.006,
-            size: 0.001 + Math.random() * 0.002,
-            alpha: 0.3 + Math.random() * 0.4,
-          });
-        }
-      }
-      particles.current = newParticles;
 
       setSimulationDone(true);
-      // Auto zoom-to-fit after simulation, then fade in
       requestAnimationFrame(() => {
         zoomToFit();
         requestAnimationFrame(() => setIsReady(true));
@@ -475,91 +396,63 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [users]);
 
-  // ---------------------------------------------------------------------------
-  // zoomToFit — fits all nodes in viewport with padding
-  // ---------------------------------------------------------------------------
   const zoomToFit = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !posRef.current.length) return;
-
     const pos = posRef.current;
     const nodes = nodesRef.current;
     if (!nodes.length) return;
 
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-
-    // Include only visible node types
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i].kind === "role" && !showRolesRef.current) continue;
       const nx = pos[i * 2], ny = pos[i * 2 + 1];
-      if (nx < minX) minX = nx;
-      if (nx > maxX) maxX = nx;
-      if (ny < minY) minY = ny;
-      if (ny > maxY) maxY = ny;
+      if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
+      if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
     }
-
     if (minX === Infinity) return;
 
-    const dw = maxX - minX || 0.01;
-    const dh = maxY - minY || 0.01;
-    const cw = canvas.clientWidth || 900;
-    const ch = canvas.clientHeight || 600;
-
-    const fitScale = Math.min(cw / dw, ch / dh) * 0.75;
+    const dw = maxX - minX || 0.01, dh = maxY - minY || 0.01;
+    const cw = canvas.clientWidth || 900, ch = canvas.clientHeight || 600;
+    const fitScale = Math.min(cw / dw, ch / dh) * 0.80;
 
     targetView.current = {
       x: (minX + maxX) / 2,
       y: (minY + maxY) / 2,
-      scale: Math.max(50, Math.min(50000, fitScale)),
+      scale: Math.max(50, Math.min(500000, fitScale)),
     };
   }, []);
 
-  // ---------------------------------------------------------------------------
-  // Hit test via spatial grid
-  // ---------------------------------------------------------------------------
   const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
     const canvas = canvasRef.current;
     if (!canvas || !posRef.current.length) return null;
-
     const v = view.current;
-    const w = canvas.clientWidth;
-    const h = canvas.clientHeight;
-    // Convert screen coords to world coords
+    const w = canvas.clientWidth, h = canvas.clientHeight;
     const wx = v.x + (sx - w / 2) / v.scale;
     const wy = v.y + (sy - h / 2) / v.scale;
-
     const g = gridRef.current;
     if (!g.cells.size) return null;
-
     const nodes = nodesRef.current;
     const pos = posRef.current;
-    const gx = Math.floor(wx / g.size);
-    const gy = Math.floor(wy / g.size);
-    let bestDist = 20 / v.scale;
-    let bestIdx = -1;
-
+    const gx = Math.floor(wx / g.size), gy = Math.floor(wy / g.size);
+    let bestDist = 15 / v.scale, bestIdx = -1;
     for (let ox = -2; ox <= 2; ox++) {
       for (let oy = -2; oy <= 2; oy++) {
         const cell = g.cells.get(`${gx + ox},${gy + oy}`);
         if (!cell) continue;
         for (const idx of cell) {
           if (nodes[idx].kind === "role" && !showRolesRef.current) continue;
-          const dx = pos[idx * 2] - wx;
-          const dy = pos[idx * 2 + 1] - wy;
+          const dx = pos[idx * 2] - wx, dy = pos[idx * 2 + 1] - wy;
           const d = Math.hypot(dx, dy);
-          if (d < bestDist) {
-            bestDist = d;
-            bestIdx = idx;
-          }
+          if (d < bestDist) { bestDist = d; bestIdx = idx; }
         }
       }
     }
-
     return bestIdx >= 0 ? nodes[bestIdx] : null;
   }, []);
 
   // ---------------------------------------------------------------------------
-  // requestAnimationFrame render loop
+  // Render loop — LOD-style: light background, tiny dots, category-colored edges
   // ---------------------------------------------------------------------------
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -569,229 +462,188 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const render = () => {
       rafId.current = requestAnimationFrame(render);
 
-      // Lerp camera
-      const v = view.current;
-      const tv = targetView.current;
+      const v = view.current, tv = targetView.current;
       v.x += (tv.x - v.x) * 0.2;
       v.y += (tv.y - v.y) * 0.2;
       v.scale += (tv.scale - v.scale) * 0.2;
 
-      // Handle DPR + resize
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
       const rect = canvas.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
-      const wantW = Math.floor(w * dpr);
-      const wantH = Math.floor(h * dpr);
+      const w = rect.width, h = rect.height;
+      const wantW = Math.floor(w * dpr), wantH = Math.floor(h * dpr);
       if (canvas.width !== wantW || canvas.height !== wantH) {
-        canvas.width = wantW;
-        canvas.height = wantH;
+        canvas.width = wantW; canvas.height = wantH;
       }
 
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
 
-      // Background — use CSS variable if available
-      const bg = getComputedStyle(canvas).getPropertyValue("--card").trim();
-      ctx.fillStyle = bg ? `hsl(${bg})` : "#1a1a2e";
+      // Light cream background — LOD style
+      ctx.fillStyle = "#F8F7F4";
       ctx.fillRect(0, 0, w, h);
 
-      const nodes = nodesRef.current;
-      const pos = posRef.current;
+      const nodes = nodesRef.current, pos = posRef.current;
       if (!nodes.length || !pos.length) return;
 
-      // Set up world-space transform
       ctx.translate(w / 2, h / 2);
       ctx.scale(v.scale, v.scale);
       ctx.translate(-v.x, -v.y);
 
       const isInteracting = isDragging.current;
+      const pad = 50 / v.scale;
+      const minWX = v.x - (w / 2) / v.scale - pad, maxWX = v.x + (w / 2) / v.scale + pad;
+      const minWY = v.y - (h / 2) / v.scale - pad, maxWY = v.y + (h / 2) / v.scale + pad;
 
-      // Viewport culling bounds in world space
-      const pad = 40 / v.scale;
-      const minWX = v.x - (w / 2) / v.scale - pad;
-      const maxWX = v.x + (w / 2) / v.scale + pad;
-      const minWY = v.y - (h / 2) / v.scale - pad;
-      const maxWY = v.y + (h / 2) / v.scale + pad;
-
-      // -- Dot grid background --
-      const gridSpacing = 0.05;
-      const dotRadius = 0.5 / v.scale;
-      ctx.fillStyle = "rgba(255, 255, 255, 0.03)";
-      const startX = Math.floor(minWX / gridSpacing) * gridSpacing;
-      const startY = Math.floor(minWY / gridSpacing) * gridSpacing;
-      for (let gx = startX; gx < maxWX; gx += gridSpacing) {
-        for (let gy = startY; gy < maxWY; gy += gridSpacing) {
-          ctx.beginPath();
-          ctx.arc(gx, gy, dotRadius, 0, Math.PI * 2);
-          ctx.fill();
+      const selId = selectedNodeRef.current?.node.id ?? null;
+      const nim = nodeIndexMapRef.current;
+      const selIdx = selId ? (nim.get(selId) ?? -1) : -1;
+      const hasSelection = selIdx >= 0;
+      const highlightSet = new Set<number>();
+      if (hasSelection) {
+        highlightSet.add(selIdx);
+        // Highlight connected nodes
+        for (const e of edgesRef.current) {
+          if (e.source === selId) { const ti = nim.get(e.target); if (ti != null) highlightSet.add(ti); }
+          if (e.target === selId) { const si = nim.get(e.source); if (si != null) highlightSet.add(si); }
         }
       }
 
       // -- Edges --
+      ctx.lineWidth = 0.5 / v.scale;
       if (showRolesRef.current && !isInteracting) {
-        ctx.lineWidth = 0.5 / v.scale;
-        ctx.globalAlpha = 0.3;
-        ctx.strokeStyle = EDGE_COLOR;
-
-        // Batch by color — O(1) index lookup via nodeIndexMapRef
-        const nim = nodeIndexMapRef.current;
-        const batches = new Map<string, Array<[number, number, number, number]>>();
-        for (const e of edgesRef.current) {
-          const si = nim.get(e.source) ?? -1;
-          const ti = nim.get(e.target) ?? -1;
-          if (si < 0 || ti < 0) continue;
-          const sx = pos[si * 2], sy = pos[si * 2 + 1];
-          const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
-          // Viewport cull — skip if both endpoints off screen
-          if (sx < minWX && tx < minWX) continue;
-          if (sx > maxWX && tx > maxWX) continue;
-          if (sy < minWY && ty < minWY) continue;
-          if (sy > maxWY && ty > maxWY) continue;
-          const list = batches.get(e.color) ?? [];
-          list.push([sx, sy, tx, ty]);
-          batches.set(e.color, list);
-        }
-        for (const [color, lines] of batches) {
-          ctx.strokeStyle = color;
-          ctx.beginPath();
-          for (const [sx, sy, tx, ty] of lines) {
-            ctx.moveTo(sx, sy);
-            ctx.lineTo(tx, ty);
+        if (hasSelection) {
+          // Only draw edges connected to selection, colored
+          ctx.globalAlpha = 0.6;
+          for (const e of edgesRef.current) {
+            const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
+            if (si < 0 || ti < 0) continue;
+            if (e.source !== selId && e.target !== selId) continue;
+            ctx.strokeStyle = e.color;
+            ctx.beginPath();
+            ctx.moveTo(pos[si * 2], pos[si * 2 + 1]);
+            ctx.lineTo(pos[ti * 2], pos[ti * 2 + 1]);
+            ctx.stroke();
           }
-          ctx.stroke();
+        } else {
+          // All edges, batched by color, low alpha
+          const batches = new Map<string, Array<[number, number, number, number]>>();
+          for (const e of edgesRef.current) {
+            const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
+            if (si < 0 || ti < 0) continue;
+            const sx = pos[si * 2], sy = pos[si * 2 + 1];
+            const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
+            if (sx < minWX && tx < minWX) continue; if (sx > maxWX && tx > maxWX) continue;
+            if (sy < minWY && ty < minWY) continue; if (sy > maxWY && ty > maxWY) continue;
+            const list = batches.get(e.color) ?? [];
+            list.push([sx, sy, tx, ty]);
+            batches.set(e.color, list);
+          }
+          ctx.globalAlpha = EDGE_ALPHA;
+          for (const [color, lines] of batches) {
+            ctx.strokeStyle = color;
+            ctx.beginPath();
+            for (const [sx, sy, tx, ty] of lines) { ctx.moveTo(sx, sy); ctx.lineTo(tx, ty); }
+            ctx.stroke();
+          }
         }
         ctx.globalAlpha = 1.0;
       }
 
       // -- Nodes --
-      // Labels only appear when zoomed in enough to read them
-      const showLabels = v.scale > 80;
+      const showLabels = v.scale > 250;
+      // LOD-style: tiny radius scaled by camera
+      const rNormal = 3 / v.scale;
+      const rBright = 4.5 / v.scale;
+      const rSelected = 8 / v.scale;
 
-      // Pulse animation driven by performance.now() — no setInterval
-      const now = performance.now();
-      const pulsePhase = (Math.sin(now * 0.004) + 1) * 0.5; // oscillates 0..1
+      // Batch draws by color, dim vs bright
+      const dimBatches = new Map<string, [number, number][]>();
+      const brightBatches = new Map<string, [number, number][]>();
 
       for (let i = 0; i < nodes.length; i++) {
         const n = nodes[i];
         if (n.kind === "role" && !showRolesRef.current) continue;
-
-        const nx = pos[i * 2];
-        const ny = pos[i * 2 + 1];
-
-        // Viewport cull
+        const nx = pos[i * 2], ny = pos[i * 2 + 1];
         if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+        if (n.id === selId) continue; // drawn separately
+        const target = (!hasSelection || highlightSet.has(i)) ? brightBatches : dimBatches;
+        const list = target.get(n.color) ?? [];
+        list.push([nx, ny]);
+        target.set(n.color, list);
+      }
 
-        if (n.kind === "user") {
-          const un = n as UserNode;
-
-          // Selection glow (drawn behind node)
-          if (selectedNodeRef.current?.node.id === n.id) {
-            ctx.globalAlpha = 0.12;
-            ctx.fillStyle = n.color;
-            ctx.beginPath();
-            ctx.arc(nx, ny, 12 / v.scale, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = "rgba(255,255,255,0.8)";
-            ctx.lineWidth = 1 / v.scale;
-            ctx.beginPath();
-            ctx.arc(nx, ny, USER_RADIUS / v.scale, 0, Math.PI * 2);
-            ctx.stroke();
-          }
-
-          // Animated pulse ring for highlighted nodes using performance.now()
-          const pulseOutlier = highlightOutliersRef.current && isOutlierNode(un, roleUserMap);
-          const pulseNP = highlightNoProjectsRef.current && un.hasNoProjects;
-          if (pulseOutlier || pulseNP) {
-            const pulseR = (USER_RADIUS + 2 + pulsePhase * 3) / v.scale;
-            ctx.strokeStyle = "#f59e0b";
-            ctx.lineWidth = 1.5 / v.scale;
-            ctx.globalAlpha = 0.3 + pulsePhase * 0.4;
-            ctx.beginPath();
-            ctx.arc(nx, ny, pulseR, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.globalAlpha = 1.0;
-          }
-
-          // Draw circle sprite
-          const sprite = spritesRef.current.get(n.color);
-          if (sprite) {
-            const r = USER_RADIUS / v.scale;
-            const d = r * 2;
-            ctx.drawImage(sprite, nx - r, ny - r, d, d);
-          } else {
-            ctx.fillStyle = n.color;
-            ctx.beginPath();
-            ctx.arc(nx, ny, USER_RADIUS / v.scale, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Label
-          if (showLabels) {
-            ctx.fillStyle = "rgba(255,255,255,0.9)";
-            ctx.font = `bold ${Math.max(5, 7 / v.scale)}px sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(un.label.slice(0, 4), nx, ny + 0.5 / v.scale);
-          }
-        } else {
-          // Role node — draw as diamond
-          const rn = n as RoleNode;
-          const r = rn.radius / v.scale;
-          ctx.fillStyle = rn.color;
-          ctx.globalAlpha = 0.85;
-          ctx.beginPath();
-          ctx.moveTo(nx, ny - r);
-          ctx.lineTo(nx + r, ny);
-          ctx.lineTo(nx, ny + r);
-          ctx.lineTo(nx - r, ny);
-          ctx.closePath();
-          ctx.fill();
-          ctx.globalAlpha = 0.2;
-          ctx.strokeStyle = "rgba(255,255,255,0.4)";
-          ctx.lineWidth = 1 / v.scale;
-          ctx.stroke();
-          ctx.globalAlpha = 1.0;
-
-          if (showLabels && r > 8) {
-            ctx.fillStyle = "rgba(255,255,255,0.85)";
-            ctx.font = `${Math.max(4, 8 / v.scale)}px sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(rn.label, nx, ny + 0.5 / v.scale);
+      // Draw dim nodes (grey, faded)
+      if (hasSelection) {
+        ctx.globalAlpha = 0.12;
+        const sprite = spritesRef.current.get("#9CA3AF") ?? spritesRef.current.values().next().value;
+        if (sprite) {
+          const d = rNormal * 2;
+          for (const [, coords] of dimBatches) {
+            for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - rNormal, ny - rNormal, d, d);
           }
         }
       }
 
-      // -- Particles --
-      if (showRolesRef.current && particles.current.length > 0) {
-        const nim = nodeIndexMapRef.current;
-        const edges = edgesRef.current;
+      // Draw bright nodes
+      ctx.globalAlpha = hasSelection ? 1.0 : 0.75;
+      const r = hasSelection ? rBright : rNormal;
+      const d = r * 2;
+      for (const [color, coords] of brightBatches) {
+        const sprite = spritesRef.current.get(color);
+        if (!sprite) continue;
+        for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - r, ny - r, d, d);
+      }
 
-        for (const p of particles.current) {
-          // Advance position
-          p.t += p.speed;
-          if (p.t > 1) p.t -= 1;
-
-          const edge = edges[p.edgeIdx];
-          if (!edge) continue;
-
-          const srcIdx = nim.get(edge.source);
-          const tgtIdx = nim.get(edge.target);
-          if (srcIdx == null || tgtIdx == null) continue;
-
-          const px = pos[srcIdx * 2] + (pos[tgtIdx * 2] - pos[srcIdx * 2]) * p.t;
-          const py = pos[srcIdx * 2 + 1] + (pos[tgtIdx * 2 + 1] - pos[srcIdx * 2 + 1]) * p.t;
-
-          // Viewport cull
-          if (px < minWX || px > maxWX || py < minWY || py > maxWY) continue;
-
-          ctx.globalAlpha = p.alpha * 0.5;
-          ctx.fillStyle = "rgba(167, 139, 250, 1)";
+      // Draw role nodes as diamonds (bright batch may include them)
+      if (showRolesRef.current) {
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (n.kind !== "role") continue;
+          const nx = pos[i * 2], ny = pos[i * 2 + 1];
+          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+          const rr = (n as any).radius / v.scale || rBright;
+          const dimmed = hasSelection && !highlightSet.has(i);
+          ctx.globalAlpha = dimmed ? 0.1 : 0.9;
+          ctx.fillStyle = n.color;
           ctx.beginPath();
-          ctx.arc(px, py, p.size * 0.6, 0, Math.PI * 2);
-          ctx.fill();
+          ctx.moveTo(nx, ny - rr); ctx.lineTo(nx + rr, ny);
+          ctx.lineTo(nx, ny + rr); ctx.lineTo(nx - rr, ny);
+          ctx.closePath(); ctx.fill();
+          if (!dimmed && showLabels && rr > 6 / v.scale) {
+            ctx.globalAlpha = 0.85;
+            ctx.fillStyle = "#111";
+            ctx.font = `${Math.max(4, 7 / v.scale)}px sans-serif`;
+            ctx.textAlign = "center"; ctx.textBaseline = "middle";
+            ctx.fillText((n as RoleNode).label, nx, ny + 0.5 / v.scale);
+          }
+        }
+      }
+
+      // Draw selected node — large ring + filled dot
+      if (hasSelection && selIdx >= 0) {
+        const sx = pos[selIdx * 2], sy = pos[selIdx * 2 + 1];
+        const color = nodes[selIdx].color;
+        ctx.globalAlpha = 0.2; ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(sx, sy, rSelected * 1.8, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1.0; ctx.strokeStyle = "#222"; ctx.lineWidth = 2 / v.scale;
+        ctx.beginPath(); ctx.arc(sx, sy, rSelected, 0, Math.PI * 2); ctx.stroke();
+        ctx.fillStyle = color;
+        ctx.beginPath(); ctx.arc(sx, sy, rSelected * 0.5, 0, Math.PI * 2); ctx.fill();
+      }
+
+      // Labels — only when zoomed in enough
+      if (showLabels) {
+        ctx.fillStyle = "#111";
+        ctx.globalAlpha = 0.7;
+        for (let i = 0; i < nodes.length; i++) {
+          const n = nodes[i];
+          if (n.kind !== "user") continue;
+          if (hasSelection && !highlightSet.has(i)) continue;
+          const nx = pos[i * 2], ny = pos[i * 2 + 1];
+          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+          ctx.font = `bold ${Math.max(3, 5 / v.scale)}px sans-serif`;
+          ctx.textAlign = "center"; ctx.textBaseline = "middle";
+          ctx.fillText((n as UserNode).label.slice(0, 4), nx, ny + 0.5 / v.scale);
         }
       }
 
@@ -803,20 +655,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Rebuild spatial grid when zoom changes significantly
   const rebuildGrid = useCallback(() => {
     const cellSize = Math.max(0.005, 60 / view.current.scale);
     gridRef.current = buildGrid(posRef.current, nodesRef.current.length, cellSize);
   }, []);
 
-  // ---------------------------------------------------------------------------
   // Pointer handlers
-  // ---------------------------------------------------------------------------
-
   const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.button !== 0) return;
-    isDragging.current = true;
-    setIsDraggingState(true);
+    isDragging.current = true; setIsDraggingState(true);
     clickStart.current = { x: e.clientX, y: e.clientY };
     lastMouse.current = { x: e.clientX, y: e.clientY };
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
@@ -824,12 +671,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const lx = e.clientX - rect.left;
-    const ly = e.clientY - rect.top;
-
+    const lx = e.clientX - rect.left, ly = e.clientY - rect.top;
     if (isDragging.current) {
-      const dx = e.clientX - lastMouse.current.x;
-      const dy = e.clientY - lastMouse.current.y;
+      const dx = e.clientX - lastMouse.current.x, dy = e.clientY - lastMouse.current.y;
       view.current.x -= dx / view.current.scale;
       view.current.y -= dy / view.current.scale;
       targetView.current = { ...view.current };
@@ -838,7 +682,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const node = hitTest(lx, ly);
       setHoveredNode(node);
       if (tooltipRef.current) {
-        tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly - 10}px)`;
+        tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
         tooltipRef.current.style.opacity = node ? "1" : "0";
       }
     }
@@ -846,62 +690,46 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
     if (e.button !== 0) return;
-    isDragging.current = false;
-    setIsDraggingState(false);
+    isDragging.current = false; setIsDraggingState(false);
     rebuildGrid();
-
     const moved = Math.hypot(e.clientX - clickStart.current.x, e.clientY - clickStart.current.y);
     if (moved < 5) {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
-      const lx = e.clientX - rect.left;
-      const ly = e.clientY - rect.top;
-      const node = hitTest(lx, ly);
+      const node = hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (node) {
         if (node.kind === "user") {
           const sp = { node };
-          setSelectedNode(sp);
-          selectedNodeRef.current = sp;
+          setSelectedNode(sp); selectedNodeRef.current = sp;
         } else {
           const rn = node as RoleNode;
           const sp = { node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] };
-          setSelectedNode(sp);
-          selectedNodeRef.current = sp;
+          setSelectedNode(sp); selectedNodeRef.current = sp;
         }
       } else {
-        setSelectedNode(null);
-        selectedNodeRef.current = null;
+        setSelectedNode(null); selectedNodeRef.current = null;
       }
     }
   }, [hitTest, rebuildGrid, roleUserMap]);
 
-  // Wheel zoom toward cursor
   const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left;
-    const my = e.clientY - rect.top;
-    const cx = rect.width / 2;
-    const cy = rect.height / 2;
+    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    const cx = rect.width / 2, cy = rect.height / 2;
     const v = view.current;
-    const wx = v.x + (mx - cx) / v.scale;
-    const wy = v.y + (my - cy) / v.scale;
-    const newS = Math.max(10, Math.min(50000, v.scale * Math.pow(1.002, -e.deltaY)));
+    const wx = v.x + (mx - cx) / v.scale, wy = v.y + (my - cy) / v.scale;
+    const newS = Math.max(10, Math.min(500000, v.scale * Math.pow(1.002, -e.deltaY)));
     view.current = { scale: newS, x: wx - (mx - cx) / newS, y: wy - (my - cy) / newS };
     targetView.current = { ...view.current };
     rebuildGrid();
   }, [rebuildGrid]);
 
-  // Middle click = zoom to fit
   const handleMouseDown = useCallback((e: MouseEvent) => {
-    if (e.button === 1) {
-      e.preventDefault();
-      zoomToFit();
-    }
+    if (e.button === 1) { e.preventDefault(); zoomToFit(); }
   }, [zoomToFit]);
 
-  // Attach native wheel + middle-click handlers
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -913,20 +741,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     };
   }, [handleWheel, handleMouseDown]);
 
-  // Resize observer — re-zoom when container resizes
   useLayoutEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ro = new ResizeObserver(() => {
-      if (nodesRef.current.length) zoomToFit();
-    });
+    const ro = new ResizeObserver(() => { if (nodesRef.current.length) zoomToFit(); });
     ro.observe(canvas.parentElement ?? canvas);
     return () => ro.disconnect();
   }, [zoomToFit]);
-
-  // ---------------------------------------------------------------------------
-  // Controls
-  // ---------------------------------------------------------------------------
 
   function toggleShowRoles() {
     const next = !showRolesRef.current;
@@ -934,69 +755,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     setShowRoles(next);
     zoomToFit();
   }
-
-  function toggleOutliers() {
-    const next = !highlightOutliersRef.current;
-    highlightOutliersRef.current = next;
-    setHighlightOutliers(next);
-  }
-
-  function toggleNoProjects() {
-    const next = !highlightNoProjectsRef.current;
-    highlightNoProjectsRef.current = next;
-    setHighlightNoProjects(next);
-  }
-
-  function resetLayout() {
-    if (!users.length) return;
-    setSimulationDone(false);
-    setIsReady(false);
-    setSelectedNode(null);
-    selectedNodeRef.current = null;
-
-    const { nodes: rawNodes, edges: rawEdges } = buildGraph(users);
-    edgesRef.current = rawEdges;
-
-    setTimeout(() => {
-      const settled = runSimulation(rawNodes, rawEdges);
-      nodesRef.current = settled;
-      posRef.current = normalizePositions(settled);
-
-      const nim = new Map<string, number>();
-      settled.forEach((n, i) => nim.set(n.id, i));
-      nodeIndexMapRef.current = nim;
-
-      const cellSize = Math.max(0.005, 60 / view.current.scale);
-      gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
-
-      // Re-initialize particles
-      const newParticles: Particle[] = [];
-      const maxParticles = 1000;
-      for (let ei = 0; ei < rawEdges.length && newParticles.length < maxParticles; ei++) {
-        const count = Math.floor(Math.random() * 2) + 2;
-        for (let p = 0; p < count && newParticles.length < maxParticles; p++) {
-          newParticles.push({
-            edgeIdx: ei,
-            t: Math.random(),
-            speed: 0.002 + Math.random() * 0.006,
-            size: 0.001 + Math.random() * 0.002,
-            alpha: 0.3 + Math.random() * 0.4,
-          });
-        }
-      }
-      particles.current = newParticles;
-
-      setSimulationDone(true);
-      requestAnimationFrame(() => {
-        zoomToFit();
-        requestAnimationFrame(() => setIsReady(true));
-      });
-    }, 0);
-  }
-
-  // ---------------------------------------------------------------------------
-  // Empty state
-  // ---------------------------------------------------------------------------
 
   if (!users.length) {
     return (
@@ -1008,50 +766,45 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   return (
     <div className="flex h-full gap-0 relative">
-      {/* Main graph area */}
-      <div ref={containerRef} className={`flex-1 relative bg-[hsl(var(--card))] rounded-xl border border-border/30 overflow-hidden transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}>
-
-        {/* Controls overlay */}
+      <div
+        ref={containerRef}
+        className={`flex-1 relative rounded-xl border border-border/30 overflow-hidden transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
+        style={{ background: "#F8F7F4" }}
+      >
+        {/* Controls */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
             <ControlButton active={showRoles} onClick={toggleShowRoles}>
               {showRoles ? "Hide Roles" : "Show Roles"}
             </ControlButton>
-            <ControlButton active={highlightOutliers} onClick={toggleOutliers}>
-              Outliers
-            </ControlButton>
-            <ControlButton active={highlightNoProjects} onClick={toggleNoProjects}>
-              No Projects
-            </ControlButton>
-            <ControlButton active={false} onClick={resetLayout}>
-              Reset
+            <ControlButton active={false} onClick={zoomToFit}>
+              Fit
             </ControlButton>
           </div>
-          <div className="text-[10px] text-muted-foreground/60 pr-1">
-            Scroll to zoom &bull; drag to pan &bull; click node for details &bull; middle-click to fit
+          <div className="text-[10px] text-gray-400 pr-1">
+            Scroll to zoom · drag to pan · click node for details · middle-click to fit
           </div>
         </div>
 
         {/* Legend */}
-        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-card/80 backdrop-blur-sm border border-border/30 rounded-xl px-3 py-2">
-          <LegendDot color={USER_COLOR_NORMAL} label="User" />
-          <LegendDot color={USER_COLOR_HUB_ADMIN} label="Hub Admin" />
-          <LegendDot color={USER_COLOR_NO_PROJECTS} label="No Projects" />
-          <LegendDot color={USER_COLOR_NOT_FOUND} label="Not Cached" />
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
+          <LegendDot color="#10B981" label="Hub Admin" />
+          <LegendDot color="#F59E0B" label="No Projects" />
+          <LegendDot color="#9CA3AF" label="Not Cached" />
+          <span className="text-[10px] text-gray-400">· colored by primary role</span>
           {showRoles && <LegendDiamond color={ROLE_COLOR} label="Role" />}
         </div>
 
-        {/* Loading state */}
+        {/* Loading */}
         {!simulationDone && (
-          <div className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-20">
-            <div className="flex flex-col items-center gap-2 text-muted-foreground">
-              <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-              <span className="text-xs">Running layout simulation...</span>
+          <div className="absolute inset-0 flex items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm z-20">
+            <div className="flex flex-col items-center gap-2 text-gray-500">
+              <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
+              <span className="text-xs">Running layout simulation…</span>
             </div>
           </div>
         )}
 
-        {/* Canvas */}
         <canvas
           ref={canvasRef}
           className={cn(
@@ -1062,25 +815,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={() => {
-            isDragging.current = false;
-            setIsDraggingState(false);
+            isDragging.current = false; setIsDraggingState(false);
             setHoveredNode(null);
             if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
           }}
         />
 
-        {/* Tooltip div overlay */}
+        {/* Tooltip — white, like LOD */}
         <div
           ref={tooltipRef}
-          className="absolute top-0 left-0 z-30 pointer-events-none bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl px-3 py-2 shadow-xl max-w-[220px] opacity-0 transition-opacity duration-75 will-change-transform"
+          className="absolute top-0 left-0 z-30 pointer-events-none bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg max-w-[220px] opacity-0 transition-opacity duration-75 will-change-transform"
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            hoveredNode.kind === "user" ? (
-              <UserTooltip node={hoveredNode as UserNode} />
-            ) : (
-              <RoleTooltip node={hoveredNode as RoleNode} />
-            )
+            hoveredNode.kind === "user"
+              ? <UserTooltip node={hoveredNode as UserNode} />
+              : <RoleTooltip node={hoveredNode as RoleNode} />
           )}
         </div>
       </div>
@@ -1089,16 +839,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       {selectedNode && (
         <SidePanel
           state={selectedNode}
-          onClose={() => {
-            setSelectedNode(null);
-            selectedNodeRef.current = null;
-          }}
+          onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; }}
           onViewProfile={
             selectedNode.node.kind === "user"
               ? () => {
                   onSelectUser?.((selectedNode.node as UserNode).email);
-                  setSelectedNode(null);
-                  selectedNodeRef.current = null;
+                  setSelectedNode(null); selectedNodeRef.current = null;
                 }
               : undefined
           }
@@ -1109,38 +855,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 }
 
 // ---------------------------------------------------------------------------
-// Outlier detection helper
-// ---------------------------------------------------------------------------
-
-function isOutlierNode(n: UserNode, roleUserMap: Map<string, string[]>): boolean {
-  if (n.allRoles.length === 0) return true;
-  return n.allRoles.every((r) => {
-    const freq = roleUserMap.get(r)?.length ?? 0;
-    return freq <= 1;
-  });
-}
-
-// ---------------------------------------------------------------------------
 // Sub-components
 // ---------------------------------------------------------------------------
 
-function ControlButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
+function ControlButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
   return (
     <button
       onClick={onClick}
       className={cn(
         "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
         active
-          ? "bg-primary/20 text-primary border-primary/30"
-          : "bg-card/80 backdrop-blur-sm text-muted-foreground border-border/40 hover:text-foreground hover:border-border"
+          ? "bg-gray-900/10 text-gray-900 border-gray-400/40"
+          : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400"
       )}
     >
       {children}
@@ -1150,7 +876,7 @@ function ControlButton({
 
 function LegendDot({ color, label }: { color: string; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
       <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
       {label}
     </div>
@@ -1159,7 +885,7 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 function LegendDiamond({ color, label }: { color: string; label: string }) {
   return (
-    <div className="flex items-center gap-1.5 text-[10px] text-muted-foreground">
+    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
       <svg width="10" height="10" viewBox="0 0 10 10">
         <path d="M5 0 L10 5 L5 10 L0 5 Z" fill={color} />
       </svg>
@@ -1171,28 +897,22 @@ function LegendDiamond({ color, label }: { color: string; label: string }) {
 function UserTooltip({ node }: { node: UserNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold text-foreground">{node.name || node.email}</p>
-      <p className="text-[10px] text-muted-foreground">{node.email}</p>
-      {!node.found && (
-        <p className="text-[10px] text-muted-foreground italic">Not cached in ACC</p>
-      )}
+      <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
+      <p className="text-[10px] text-gray-500">{node.email}</p>
+      {!node.found && <p className="text-[10px] text-gray-400 italic">Not cached in ACC</p>}
       {node.found && (
-        <div className="flex flex-wrap gap-1 pt-0.5">
-          <span className="text-[10px] text-muted-foreground">
+        <>
+          <p className="text-[10px] text-gray-500">
             {node.projectCount} project{node.projectCount !== 1 ? "s" : ""}
-          </span>
-          {node.isHubAdmin && (
-            <span className="text-[10px] text-emerald-400">Hub Admin</span>
+            {node.isHubAdmin && " · Hub Admin"}
+            {node.hasNoProjects && " · No projects"}
+          </p>
+          {node.allRoles.length > 0 && (
+            <p className="text-[10px] text-gray-400">
+              {node.allRoles.slice(0, 3).join(", ")}{node.allRoles.length > 3 ? ` +${node.allRoles.length - 3}` : ""}
+            </p>
           )}
-          {node.hasNoProjects && (
-            <span className="text-[10px] text-amber-400">No projects</span>
-          )}
-        </div>
-      )}
-      {node.allRoles.length > 0 && (
-        <p className="text-[10px] text-muted-foreground">
-          Roles: {node.allRoles.slice(0, 3).join(", ")}{node.allRoles.length > 3 ? ` +${node.allRoles.length - 3}` : ""}
-        </p>
+        </>
       )}
     </div>
   );
@@ -1201,73 +921,50 @@ function UserTooltip({ node }: { node: UserNode }) {
 function RoleTooltip({ node }: { node: RoleNode }) {
   return (
     <div className="space-y-1">
-      <p className="text-xs font-semibold text-foreground">{node.roleName}</p>
-      <p className="text-[10px] text-muted-foreground">{node.userCount} user{node.userCount !== 1 ? "s" : ""}</p>
+      <p className="text-xs font-semibold text-gray-900">{node.roleName}</p>
+      <p className="text-[10px] text-gray-500">{node.userCount} user{node.userCount !== 1 ? "s" : ""}</p>
     </div>
   );
 }
 
-function SidePanel({
-  state,
-  onClose,
-  onViewProfile,
-}: {
+function SidePanel({ state, onClose, onViewProfile }: {
   state: SidePanelState;
   onClose: () => void;
   onViewProfile?: () => void;
 }) {
   const n = state.node;
-
   return (
-    <div className="w-64 shrink-0 ml-3 bg-card rounded-xl border border-border/30 p-4 flex flex-col gap-3 overflow-y-auto">
+    <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-foreground truncate">
+        <h3 className="text-sm font-semibold text-gray-900 truncate">
           {n.kind === "user" ? (n as UserNode).name || (n as UserNode).email : (n as RoleNode).roleName}
         </h3>
-        <button
-          onClick={onClose}
-          className="text-muted-foreground hover:text-foreground transition-colors text-lg leading-none"
-        >
-          &times;
-        </button>
+        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
 
       {n.kind === "user" && (() => {
         const u = n as UserNode;
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-muted-foreground break-all">{u.email}</p>
-
+            <p className="text-[11px] text-gray-500 break-all">{u.email}</p>
             {!u.found && (
-              <p className="text-[11px] text-muted-foreground italic bg-muted/20 rounded-lg px-2 py-1.5">
-                This user is not yet cached in ACC. No role or project data available.
+              <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
+                Not yet synced to ACC. No role or project data available.
               </p>
             )}
-
             {u.found && (
               <>
                 <div className="flex flex-wrap gap-1.5">
-                  {u.isHubAdmin && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                      Hub Admin
-                    </span>
-                  )}
-                  {u.hasNoProjects && (
-                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                      No Projects
-                    </span>
-                  )}
-                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                    {u.projectCount} project{u.projectCount !== 1 ? "s" : ""}
-                  </span>
+                  {u.isHubAdmin && <Tag color="emerald">Hub Admin</Tag>}
+                  {u.hasNoProjects && <Tag color="amber">No Projects</Tag>}
+                  <Tag color="gray">{u.projectCount} project{u.projectCount !== 1 ? "s" : ""}</Tag>
                 </div>
-
                 {u.allRoles.length > 0 && (
                   <div>
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Roles</p>
+                    <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
                     <div className="flex flex-wrap gap-1">
                       {u.allRoles.map((r) => (
-                        <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                        <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">
                           {r}
                         </span>
                       ))}
@@ -1276,11 +973,10 @@ function SidePanel({
                 )}
               </>
             )}
-
             {onViewProfile && (
               <button
                 onClick={onViewProfile}
-                className="w-full text-xs font-medium py-2 rounded-xl bg-primary/10 text-primary hover:bg-primary/20 border border-primary/20 transition-all"
+                className="w-full text-xs font-medium py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 transition-all"
               >
                 View Profile
               </button>
@@ -1294,17 +990,13 @@ function SidePanel({
         const roleUsers = state.roleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-muted-foreground">
-              {r.userCount} user{r.userCount !== 1 ? "s" : ""} with this role
-            </p>
+            <p className="text-[11px] text-gray-500">{r.userCount} user{r.userCount !== 1 ? "s" : ""} with this role</p>
             {roleUsers.length > 0 && (
               <div>
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Users</p>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users</p>
                 <div className="space-y-1 max-h-[300px] overflow-y-auto">
                   {roleUsers.map((name) => (
-                    <div key={name} className="text-[11px] text-foreground px-2 py-1 rounded-lg bg-background/40">
-                      {name}
-                    </div>
+                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">{name}</div>
                   ))}
                 </div>
               </div>
@@ -1313,5 +1005,18 @@ function SidePanel({
         );
       })()}
     </div>
+  );
+}
+
+function Tag({ color, children }: { color: "emerald" | "amber" | "gray"; children: React.ReactNode }) {
+  const styles = {
+    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
+    amber: "bg-amber-50 text-amber-700 border-amber-200",
+    gray: "bg-gray-100 text-gray-600 border-gray-200",
+  };
+  return (
+    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${styles[color]}`}>
+      {children}
+    </span>
   );
 }
