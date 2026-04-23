@@ -940,95 +940,106 @@ export const usersRouter = router({
       return result;
     }),
 
-  bulkAccSync: adminProcedure.mutation(async ({ ctx }) => {
-    // 1. Token + accountId — fetch once for all users
-    let accessToken: string;
-    try {
-      accessToken = await get2LeggedAutodeskToken();
-    } catch (error) {
-      throw new TRPCError({
-        code: "INTERNAL_SERVER_ERROR",
-        message: "ACC credentials not configured. Check APS_CLIENT_ID and APS_CLIENT_SECRET.",
-        cause: error instanceof Error ? error : undefined,
-      });
-    }
+  bulkAccSync: adminProcedure
+    .input(
+      z
+        .object({
+          emails: z.array(z.string().email()).optional(),
+        })
+        .optional()
+    )
+    .mutation(async ({ ctx, input }) => {
+      // 1. Token + accountId — fetch once for all users
+      let accessToken: string;
+      try {
+        accessToken = await get2LeggedAutodeskToken();
+      } catch (error) {
+        throw new TRPCError({
+          code: "INTERNAL_SERVER_ERROR",
+          message: "ACC credentials not configured. Check APS_CLIENT_ID and APS_CLIENT_SECRET.",
+          cause: error instanceof Error ? error : undefined,
+        });
+      }
 
-    const project = await ctx.db.project.findFirst({ select: { apsHubId: true } });
-    const accountId = project?.apsHubId?.replace(/^b\./, "");
-    if (!accountId) {
-      throw new TRPCError({
-        code: "UNAUTHORIZED",
-        message: "APS Hub ID not configured.",
-      });
-    }
+      const project = await ctx.db.project.findFirst({ select: { apsHubId: true } });
+      const accountId = project?.apsHubId?.replace(/^b\./, "");
+      if (!accountId) {
+        throw new TRPCError({
+          code: "UNAUTHORIZED",
+          message: "APS Hub ID not configured.",
+        });
+      }
 
-    // 2. All registered users
-    const users = await ctx.db.user.findMany({ select: { email: true, name: true } });
+      // 2. Emails to sync — use client-provided list (full directory) or fall back to registered users
+      const emails =
+        input?.emails && input.emails.length > 0
+          ? input.emails
+          : (await ctx.db.user.findMany({ select: { email: true } })).map((u) => u.email);
 
-    let found = 0;
-    let notFound = 0;
-    let errors = 0;
+      let found = 0;
+      let notFound = 0;
+      let errors = 0;
 
-    // 3. Sync with concurrency 3 — fast but safe for ACC rate limits
-    const limit = pLimit(3);
+      // 3. Sync with concurrency 3 — fast but safe for ACC rate limits
+      const limit = pLimit(3);
 
-    await Promise.all(
-      users.map((user) =>
-        limit(async () => {
-          try {
-            const accUser = await fetchAccUserByEmail(accountId, user.email, accessToken);
+      await Promise.all(
+        emails.map((email) =>
+          limit(async () => {
+            try {
+              const accUser = await fetchAccUserByEmail(accountId, email, accessToken);
 
-            if (!accUser) {
-              const result = { found: false as const, syncedAt: new Date().toISOString() };
+              if (!accUser) {
+                const result = { found: false as const, syncedAt: new Date().toISOString() };
+                await ctx.db.accMemberCache.upsert({
+                  where: { email },
+                  create: { email, data: JSON.stringify(result), syncedAt: new Date() },
+                  update: { data: JSON.stringify(result), syncedAt: new Date() },
+                });
+                notFound++;
+                return;
+              }
+
+              const [projects, rolesByProject, productsByProject] = await Promise.all([
+                fetchAccUserProjects(accountId, accUser.id, accessToken).catch(() => [] as AccProject[]),
+                fetchAccUserRoles(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
+                fetchAccUserProducts(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
+              ]);
+
+              const enrichedProjects: AccProject[] = projects.map((proj) => ({
+                ...proj,
+                roles: rolesByProject.get(proj.id) ?? proj.roles,
+                modules: productsByProject.get(proj.id) ?? [],
+              }));
+
+              const result = {
+                found: true as const,
+                autodeskId: accUser.id,
+                name: accUser.name,
+                status: accUser.status,
+                role: accUser.role,
+                company: accUser.company,
+                addedOn: accUser.addedOn,
+                projects: enrichedProjects,
+                syncedAt: new Date().toISOString(),
+              };
+
               await ctx.db.accMemberCache.upsert({
-                where: { email: user.email },
-                create: { email: user.email, data: JSON.stringify(result), syncedAt: new Date() },
+                where: { email },
+                create: { email, data: JSON.stringify(result), syncedAt: new Date() },
                 update: { data: JSON.stringify(result), syncedAt: new Date() },
               });
-              notFound++;
-              return;
+              found++;
+            } catch {
+              logger.error("[bulkAccSync] failed for user", { email });
+              errors++;
             }
+          })
+        )
+      );
 
-            const [projects, rolesByProject, productsByProject] = await Promise.all([
-              fetchAccUserProjects(accountId, accUser.id, accessToken).catch(() => [] as AccProject[]),
-              fetchAccUserRoles(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
-              fetchAccUserProducts(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
-            ]);
-
-            const enrichedProjects: AccProject[] = projects.map((proj) => ({
-              ...proj,
-              roles: rolesByProject.get(proj.id) ?? proj.roles,
-              modules: productsByProject.get(proj.id) ?? [],
-            }));
-
-            const result = {
-              found: true as const,
-              autodeskId: accUser.id,
-              name: accUser.name,
-              status: accUser.status,
-              role: accUser.role,
-              company: accUser.company,
-              addedOn: accUser.addedOn,
-              projects: enrichedProjects,
-              syncedAt: new Date().toISOString(),
-            };
-
-            await ctx.db.accMemberCache.upsert({
-              where: { email: user.email },
-              create: { email: user.email, data: JSON.stringify(result), syncedAt: new Date() },
-              update: { data: JSON.stringify(result), syncedAt: new Date() },
-            });
-            found++;
-          } catch {
-            logger.error("[bulkAccSync] failed for user", { email: user.email });
-            errors++;
-          }
-        })
-      )
-    );
-
-    return { total: users.length, found, notFound, errors };
-  }),
+      return { total: emails.length, found, notFound, errors };
+    }),
 
   getGraphLayout: adminProcedure.query(async ({ ctx }) => {
     // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only

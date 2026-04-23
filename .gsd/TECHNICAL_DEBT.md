@@ -26,3 +26,11 @@ All tracked debt items `D1` through `D10` are now addressed in the repo and veri
 - `npm run build` passes on Next.js `16.2.4`.
 - `python -m py_compile services/lod-engine/server.py` passes.
 - `npx prisma generate` is currently blocked on this workstation by a locked Windows Prisma engine DLL (`query_engine-windows.dll.node`), so schema regeneration was not re-run in this pass.
+
+## Open Items (2026-04-23)
+
+| ID | Item | Why it matters | Suggested path |
+| --- | --- | --- | --- |
+| D11 | ACC Users Graph force simulation on client | With ~1400 nodes, first-time layout freezes the main thread for seconds. Phase 8 cache helps subsequent loads, not the first one. | Move `runSimulation` into a Web Worker, or compute positions once in a server/tRPC procedure that writes straight to `AccGraphLayoutCache`. |
+| D12 | Bulk ACC sync throughput | Full directory sync (~1200 emails) runs at `pLimit(3)` over multiple 50-email chunks. A single full sync takes minutes and can fail mid-way. | Background job queue or server-side resume, higher concurrency within ACC rate limits, or persistent progress tracking in DB. |
+| D13 | `AccMemberCache.data` stored as JSON string | `data` is a Prisma `Json` column but code stores `JSON.stringify(result)`, so readers must `JSON.parse`. Any writer that forgets produces silent "unfound" users. | Switch to structured Prisma `Json` (drop the `JSON.stringify`) and let Prisma handle serialization; migrate existing rows. |
