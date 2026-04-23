@@ -16,11 +16,11 @@ progress:
 ## Current Position
 
 Phase: 8 (Graph Layout Cache)
-Plan: 2 of 3 — ready to execute
+Plan: 3 of 3 — ready to execute
 Status: In progress
-Last activity: 2026-04-23 — 08-01 complete (AccGraphLayoutCache Prisma model + migration deployed to Supabase; ctx.db.accGraphLayoutCache available)
+Last activity: 2026-04-23 — 08-02 complete (tRPC getGraphLayout/saveGraphLayout/invalidateGraphLayout + AccUsersGraph cache integration + Refresh Layout button)
 
-Progress: [████████░░] 68% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 1/3 plans complete)
+Progress: [█████████░] 75% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 2/3 plans complete)
 
 ## Accumulated Context
 
@@ -73,6 +73,10 @@ Progress: [████████░░] 68% (Phase 2 at 5/6; Phase 6 at 4/4; 
 - [Phase 8, Plan 01]: Used migrate deploy (not migrate dev) for non-interactive migration — consistent with Phase 6 Plan 01 pattern.
 - [Phase 8, Plan 01]: AccGraphLayoutCache uses @id @default("singleton") — fixed primary key enforces exactly one row; upsert pattern is safe.
 - [Phase 8, Plan 01]: positions Float[] maps to PostgreSQL float8[] — mirrors LodEmbedding.vector Float[] precedent, no pgvector extension needed.
+- [Phase 8, Plan 02]: Three adminProcedure entries for graph layout cache — consistent with bulkAccSummary and bulkAccSync (graph is admin-only).
+- [Phase 8, Plan 02]: positions returned as number[] from server; client reconstructs Float32Array — avoids server-side Float32Array serialization.
+- [Phase 8, Plan 02]: deleteMany({}) for invalidateGraphLayout — safe on empty table; deleteUnique throws if row absent.
+- [Phase 8, Plan 02]: layoutQuery.data in useEffect dependency array — cache hit applied when query resolves, not just on mount.
 
 ### Roadmap Evolution
 
@@ -85,5 +89,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-04-23
-Stopped at: Completed 08-01-PLAN.md — AccGraphLayoutCache model + migration deployed, ctx.db.accGraphLayoutCache available
+Stopped at: Completed 08-02-PLAN.md — tRPC cache procedures + AccUsersGraph cache integration + Refresh Layout button
 Resume file: None

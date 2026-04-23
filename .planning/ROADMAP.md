@@ -132,14 +132,14 @@ Plans:
 | 5. Polish & Excellence | 0/TBD | Not started | - |
 | 6. ACC Project Intelligence | 4/4 | Complete | 2026-04-22 |
 | 7. ACC Analysis & Graph | 3/3 | Complete   | 2026-04-23 |
-| 8. Graph Layout Cache | 1/2 | In Progress|  |
+| 8. Graph Layout Cache | 2/2 | Complete   | 2026-04-23 |
 
 ### Phase 8: Graph Layout Cache — pre-computed force positions with dataHash invalidation
 
 **Goal:** ACC Users Graph loads instantly on repeat visits — node positions are pre-computed, persisted in the DB with a dataHash fingerprint, and reused across all users and devices until any AccMemberCache row changes.
 **Requirements**: GRAPH-CACHE-01, GRAPH-CACHE-02, GRAPH-CACHE-03
 **Depends on:** Phase 7
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 08-01-PLAN.md — Add AccGraphLayoutCache Prisma model and run migration
