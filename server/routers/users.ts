@@ -16,6 +16,7 @@ import {
   fetchAccUserByEmail,
   fetchAccUserProjects,
   fetchAccUserRoles,
+  fetchAccUserProducts,
   type AccProject,
 } from "@/lib/server/acc-admin";
 
@@ -797,11 +798,12 @@ export const usersRouter = router({
       }
 
       // 6. Fetch project list and roles in parallel
-      const [projects, rolesByProject] = await Promise.all([
+      const [projects, rolesByProject, productsByProject] = await Promise.all([
         fetchAccUserProjects(accountId, accUser.id, accessToken).catch((error) => {
           throw toAccRouterError(error, "ACC Admin API: Failed to fetch project list.");
         }),
         fetchAccUserRoles(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
+        fetchAccUserProducts(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
       ]);
 
       console.info(`[acc] roles map keys (${rolesByProject.size}):`, [...rolesByProject.keys()].slice(0, 5));
@@ -810,6 +812,7 @@ export const usersRouter = router({
       const enrichedProjects: AccProject[] = projects.map((proj) => ({
         ...proj,
         roles: rolesByProject.get(proj.id) ?? proj.roles,
+        modules: productsByProject.get(proj.id) ?? [],
       }));
 
       const result = {

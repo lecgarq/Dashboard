@@ -223,3 +223,44 @@ export async function fetchAccUserRoles(
 
   return rolesByProject;
 }
+
+/**
+ * Fetch all products a user has access to across their projects.
+ * Uses the documented endpoint: GET /accounts/{accountId}/users/{userId}/products
+ * Returns a map of projectId → product keys[] (e.g. ["documentManagement", "build"]).
+ */
+export async function fetchAccUserProducts(
+  accountId: string,
+  userId: string,
+  accessToken: string,
+  signal?: AbortSignal
+): Promise<Map<string, string[]>> {
+  const baseUrl = `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/users/${userId}/products`;
+  const productsByProject = new Map<string, string[]>();
+  let offset = 0;
+
+  do {
+    const { pagination, results } = await fetchAccPaged(
+      `${baseUrl}?limit=200&offset=${offset}`,
+      accessToken,
+      signal
+    );
+
+    for (const r of results) {
+      const key = getString(r.key);
+      const projectIds = Array.isArray(r.projectIds) ? (r.projectIds as string[]) : [];
+      for (const pid of projectIds) {
+        const existing = productsByProject.get(pid) ?? [];
+        if (key) existing.push(key);
+        productsByProject.set(pid, existing);
+      }
+    }
+
+    const total = pagination?.totalResults ?? 0;
+    const limit = pagination?.limit ?? 200;
+    offset += limit;
+    if (offset >= total || results.length === 0) break;
+  } while (true);
+
+  return productsByProject;
+}
