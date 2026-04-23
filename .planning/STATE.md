@@ -2,12 +2,12 @@
 
 ## Current Position
 
-Phase: 6 of 6 (ACC Project Intelligence)
-Plan: 4 of 4 in current phase
+Phase: 7 of 7 (ACC Analysis Graph)
+Plan: 1 of 1 in current phase
 Status: Phase complete
-Last activity: 2026-04-22 — 06-04 complete (AccProfileSection client component + PersonDetailModal wired: 5 render states, forceRefresh toggle pattern, PRODUCT_NAMES mapping, deployed to Railway)
+Last activity: 2026-04-23 — 07-01 complete (bulkAccSummary tRPC procedure + No ACC Projects filter chip + per-card ACC badges in UsersDirectoryClient)
 
-Progress: [██████░░░░] 50% (Phase 2 at 5/6; Phase 6 at 4/4 plans complete)
+Progress: [███████░░░] 57% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 1/1 plans complete)
 
 ## Accumulated Context
 
@@ -41,6 +41,9 @@ Progress: [██████░░░░] 50% (Phase 2 at 5/6; Phase 6 at 4/4 p
 - [Phase 6, Plan 03]: toAccRouterError defined locally in users.ts (not imported from aps-search.ts) — avoids importing from sibling router files.
 - [Phase 6, Plan 04]: forceRefresh implemented via useState toggle (not refetch()) — tRPC useQuery does not support passing new input on refetch; changing query input via state triggers a fresh network request.
 - [Phase 6, Plan 04]: PRECONDITION_FAILED detection via error?.data?.code === "PRECONDITION_FAILED" used to distinguish 403 Account Admin gate from other errors in AccProfileSection.
+- [Phase 7, Plan 01]: bulkAccSummary is adminProcedure (not protectedProcedure) — consistent with other admin-only data queries in usersRouter.
+- [Phase 7, Plan 01]: AccBadge extracted as standalone component to avoid duplicating badge logic across PersonCard and PersonRow.
+- [Phase 7, Plan 01]: accSummaryMap built with useMemo keyed by email for O(1) per-card lookup without re-renders.
 
 ### Blockers/Concerns
 
@@ -48,6 +51,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-04-22
-Stopped at: Completed 06-04-PLAN.md (AccProfileSection client component + PersonDetailModal wired — full ACC UI with 5 render states, forceRefresh toggle, PRODUCT_NAMES mapping, deployed to Railway production)
+Last session: 2026-04-23
+Stopped at: Completed 07-01-PLAN.md (bulkAccSummary procedure + No ACC Projects filter chip + per-card ACC badges in UsersDirectoryClient)
 Resume file: None

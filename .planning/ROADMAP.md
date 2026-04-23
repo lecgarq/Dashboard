@@ -11,6 +11,7 @@ Transform the LECG Dashboard's Clash Detection and Sim Automation wikis into a h
 - [ ] **Phase 3: Spatial Canvas** - Miro-style whiteboard blocks
 - [ ] **Phase 4: AEC Intelligence** - APS 3D viewer and ACC integration
 - [ ] **Phase 5: Polish & Excellence** - Performance, glassmorphism, audit
+- [ ] **Phase 7: ACC Analysis & Graph** - Bulk cache analysis, permission intelligence dashboard, users graph
 
 ## Phase Details
 
@@ -103,6 +104,23 @@ Plans:
 - [x] 06-03-PLAN.md — Add users.getAccProfile tRPC procedure with cache-first logic
 - [x] 06-04-PLAN.md — Build AccProfileSection component and wire into PersonDetailModal
 
+### Phase 7: ACC Analysis & Graph
+**Goal**: Transform the Users section into a permission intelligence hub — bulk-read all cached ACC data in one DB query, expose filter chips and project-count badges in the General tab, add a dedicated ACC Analysis tab with 5 KPI cards and role/module breakdowns, and a force-directed graph tab visualizing user-role-project relationships.
+**Depends on**: Phase 6 (AccMemberCache populated)
+**Requirements**: REQ-07
+**Success Criteria** (what must be TRUE):
+  1. General tab shows amber "No Projects" filter chip and project-count badges with no Autodesk API calls
+  2. bulkAccSummary tRPC procedure reads all AccMemberCache rows in one query
+  3. ACC Analysis tab shows 5 KPI cards, role frequency table, module fingerprints, and outlier list
+  4. ACC Users Graph tab shows force-directed SVG graph with user/role/project nodes
+  5. Graph click-through opens user profile modal
+**Plans**: 3 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Bulk ACC cache prefetch + "No Projects" filter chip + project-count badges
+- [ ] 07-02-PLAN.md — ACC Analysis tab (AccAnalysisPanel with KPIs, role table, module fingerprints)
+- [ ] 07-03-PLAN.md — ACC Users Graph v1 (force-directed SVG, third tab, LOD-style visuals)
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -113,3 +131,4 @@ Plans:
 | 4. AEC Intelligence | 0/TBD | Not started | - |
 | 5. Polish & Excellence | 0/TBD | Not started | - |
 | 6. ACC Project Intelligence | 4/4 | Complete | 2026-04-22 |
+| 7. ACC Analysis & Graph | 1/3 | In Progress|  |
