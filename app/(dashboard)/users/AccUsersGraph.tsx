@@ -3,6 +3,7 @@
 import { useRef, useEffect, useState, useMemo, useCallback, useLayoutEffect } from "react";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
+import { moduleLabel } from "@/lib/acc/modules";
 import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
 
 // ---------------------------------------------------------------------------
@@ -145,22 +146,6 @@ const REPULSION_GRID = 450; // spatial grid cell size for repulsion
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-const MODULE_LABELS: Record<string, string> = {
-  documentManagement: "Data Mgmt",
-  designCollaboration: "Design Collab",
-  modelCoordination: "Model Coord",
-  preconstruction: "Preconstruction",
-  autoSpecs: "AutoSpecs",
-  build: "Forma Build",
-  insight: "Insight",
-  design: "Design",
-  takeoff: "Forma Takeoff",
-  estimate: "Forma Estimate",
-};
-function moduleLabel(key: string): string {
-  return MODULE_LABELS[key] ?? key;
-}
 
 function getFirstName(name: string, email: string): string {
   if (name?.trim()) return name.split(" ")[0].slice(0, 10);
@@ -456,6 +441,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
   const spritesRef = useRef(new Map<string, HTMLCanvasElement>());
   const nodeIndexMapRef = useRef(new Map<string, number>());
+  // Pre-built per-color edge index buffers — [sourceIdx, targetIdx, sourceIdx, targetIdx, ...]
+  // Separated by target kind so Hide Roles / Hide Modules can skip entire buffers.
+  const edgeIdxRoleRef = useRef(new Map<string, Uint32Array>());
+  const edgeIdxModuleRef = useRef(new Map<string, Uint32Array>());
 
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
   const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
@@ -515,6 +504,30 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const saveLayout = trpc.users.saveGraphLayout.useMutation();
   const invalidateLayout = trpc.users.invalidateGraphLayout.useMutation();
 
+  // Pre-build per-color Uint32Array edge buffers — split by target kind so toggles can skip whole buffers
+  const buildEdgeBuffers = useCallback((edges: Edge[], nim: Map<string, number>) => {
+    const roleGroups = new Map<string, number[]>();
+    const moduleGroups = new Map<string, number[]>();
+    for (const e of edges) {
+      const si = nim.get(e.source);
+      const ti = nim.get(e.target);
+      if (si == null || ti == null) continue;
+      const target = e.target.startsWith("role:") ? roleGroups : moduleGroups;
+      let arr = target.get(e.color);
+      if (!arr) {
+        arr = [];
+        target.set(e.color, arr);
+      }
+      arr.push(si, ti);
+    }
+    const roleMap = new Map<string, Uint32Array>();
+    roleGroups.forEach((arr, color) => roleMap.set(color, new Uint32Array(arr)));
+    const moduleMap = new Map<string, Uint32Array>();
+    moduleGroups.forEach((arr, color) => moduleMap.set(color, new Uint32Array(arr)));
+    edgeIdxRoleRef.current = roleMap;
+    edgeIdxModuleRef.current = moduleMap;
+  }, []);
+
   // Build + run simulation (with cache integration)
   useEffect(() => {
     if (!users.length) return;
@@ -546,6 +559,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         rawNodes.forEach((n, i) => nim.set(n.id, i));
         nodeIndexMapRef.current = nim;
 
+        buildEdgeBuffers(rawEdges, nim);
+
         const cellSize = Math.max(0.01, 60 / view.current.scale);
         gridRef.current = buildGrid(posRef.current, rawNodes.length, cellSize);
 
@@ -575,6 +590,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const nim = new Map<string, number>();
       settled.forEach((n, i) => nim.set(n.id, i));
       nodeIndexMapRef.current = nim;
+
+      buildEdgeBuffers(rawEdges, nim);
 
       const cellSize = Math.max(0.01, 60 / view.current.scale);
       gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
@@ -614,7 +631,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       clearTimeout(timeoutId);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, layoutQuery.data, refreshKey]);
+  }, [users, layoutQuery.data, refreshKey, buildEdgeBuffers]);
 
   const zoomToFit = useCallback(() => {
     const canvas = canvasRef.current;
@@ -710,7 +727,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       ctx.scale(v.scale, v.scale);
       ctx.translate(-v.x, -v.y);
 
-      const isInteracting = isDragging.current;
+      // Skip edge drawing during any camera motion — edges are expensive and blur together when moving
+      const isInteracting =
+        isDragging.current ||
+        Math.abs(tv.x - v.x) > 0.0005 ||
+        Math.abs(tv.y - v.y) > 0.0005 ||
+        Math.abs(tv.scale - v.scale) > v.scale * 0.002;
       const pad = 50 / v.scale;
       const minWX = v.x - (w / 2) / v.scale - pad, maxWX = v.x + (w / 2) / v.scale + pad;
       const minWY = v.y - (h / 2) / v.scale - pad, maxWY = v.y + (h / 2) / v.scale + pad;
@@ -758,27 +780,27 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             ctx.stroke();
           }
         } else {
-          const batches = new Map<string, Array<[number, number, number, number]>>();
-          for (const e of edgesRef.current) {
-            if (!showR && e.target.startsWith("role:")) continue;
-            if (!showM && e.target.startsWith("module:")) continue;
-            const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
-            if (si < 0 || ti < 0) continue;
-            const sx = pos[si * 2], sy = pos[si * 2 + 1];
-            const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
-            if (sx < minWX && tx < minWX) continue; if (sx > maxWX && tx > maxWX) continue;
-            if (sy < minWY && ty < minWY) continue; if (sy > maxWY && ty > maxWY) continue;
-            const list = batches.get(e.color) ?? [];
-            list.push([sx, sy, tx, ty]);
-            batches.set(e.color, list);
-          }
+          // Use pre-built Uint32Array buffers per color — no per-frame allocation
           ctx.globalAlpha = EDGE_ALPHA;
-          for (const [color, lines] of batches) {
-            ctx.strokeStyle = color;
-            ctx.beginPath();
-            for (const [sx, sy, tx, ty] of lines) { ctx.moveTo(sx, sy); ctx.lineTo(tx, ty); }
-            ctx.stroke();
-          }
+          const drawBuffers = (buffers: Map<string, Uint32Array>) => {
+            for (const [color, idxArr] of buffers) {
+              ctx.strokeStyle = color;
+              ctx.beginPath();
+              for (let i = 0; i < idxArr.length; i += 2) {
+                const si = idxArr[i], ti = idxArr[i + 1];
+                const sx = pos[si * 2], sy = pos[si * 2 + 1];
+                const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
+                if (sx < minWX && tx < minWX) continue;
+                if (sx > maxWX && tx > maxWX) continue;
+                if (sy < minWY && ty < minWY) continue;
+                if (sy > maxWY && ty > maxWY) continue;
+                ctx.moveTo(sx, sy); ctx.lineTo(tx, ty);
+              }
+              ctx.stroke();
+            }
+          };
+          if (showR) drawBuffers(edgeIdxRoleRef.current);
+          if (showM) drawBuffers(edgeIdxModuleRef.current);
         }
         ctx.globalAlpha = 1.0;
       }

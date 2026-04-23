@@ -5,6 +5,7 @@ import { RefreshCw, Users, Shield, AlertTriangle, FolderOpen, Layers, ChevronDow
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
+import { moduleLabel } from "@/lib/acc/modules";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -46,21 +47,6 @@ function countBy<T>(arr: T[]): Record<string, number> {
   return out;
 }
 
-function abbreviateModuleKey(key: string): string {
-  const SHORT: Record<string, string> = {
-    documentManagement: "Forma Data Management",
-    designCollaboration: "Forma Design Collaboration",
-    modelCoordination: "Model Coordination",
-    preconstruction: "Preconstruction",
-    autoSpecs: "AutoSpecs",
-    build: "Forma Build",
-    insight: "Insight",
-    design: "Design",
-    takeoff: "Forma Takeoff",
-    estimate: "Forma Estimate",
-  };
-  return SHORT[key] ?? key;
-}
 
 // ---------------------------------------------------------------------------
 // Sub-components
@@ -141,18 +127,42 @@ export function AccAnalysisPanel({
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
   const [syncResult, setSyncResult] = useState<{ found: number; notFound: number; errors: number } | null>(null);
   const [syncError, setSyncError] = useState<string | null>(null);
+  const [syncProgress, setSyncProgress] = useState<{ done: number; total: number } | null>(null);
 
-  const bulkSync = trpc.users.bulkAccSync.useMutation({
-    onSuccess: (data) => {
-      setSyncResult({ found: data.found, notFound: data.notFound, errors: data.errors });
-      setSyncError(null);
+  const bulkSyncMutation = trpc.users.bulkAccSync.useMutation();
+
+  async function runBulkSync() {
+    setSyncResult(null);
+    setSyncError(null);
+    const emails = users.map((u) => u.email).filter(Boolean);
+    if (emails.length === 0) return;
+
+    const CHUNK_SIZE = 50;
+    let found = 0;
+    let notFound = 0;
+    let errors = 0;
+    setSyncProgress({ done: 0, total: emails.length });
+
+    try {
+      for (let i = 0; i < emails.length; i += CHUNK_SIZE) {
+        const chunk = emails.slice(i, i + CHUNK_SIZE);
+        const result = await bulkSyncMutation.mutateAsync({ emails: chunk });
+        found += result.found;
+        notFound += result.notFound;
+        errors += result.errors;
+        setSyncProgress({ done: Math.min(i + CHUNK_SIZE, emails.length), total: emails.length });
+      }
+      setSyncResult({ found, notFound, errors });
       utils.users.bulkAccSummary.invalidate();
       refetch();
-    },
-    onError: (err) => {
-      setSyncError(err.message);
-    },
-  });
+    } catch (err) {
+      setSyncError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setSyncProgress(null);
+    }
+  }
+
+  const isSyncing = syncProgress !== null;
 
   const metrics = useMemo(() => {
     const cachedUsers = users.filter((u) => u.found);
@@ -246,27 +256,32 @@ export function AccAnalysisPanel({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          {syncError && !bulkSync.isPending && (
+          {syncError && !isSyncing && (
             <span className="text-xs text-red-400 max-w-[300px] truncate" title={syncError}>
               Error: {syncError}
             </span>
           )}
-          {syncResult && !bulkSync.isPending && !syncError && (
+          {syncResult && !isSyncing && !syncError && (
             <span className="text-xs text-muted-foreground">
               Sync: {syncResult.found} found · {syncResult.notFound} not in ACC{syncResult.errors > 0 ? ` · ${syncResult.errors} errors` : ""}
             </span>
           )}
+          {isSyncing && syncProgress && (
+            <span className="text-xs text-muted-foreground">
+              Syncing {syncProgress.done}/{syncProgress.total}…
+            </span>
+          )}
           <button
-            onClick={() => { setSyncResult(null); setSyncError(null); bulkSync.mutate(); }}
-            disabled={bulkSync.isPending}
+            onClick={runBulkSync}
+            disabled={isSyncing}
             className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 rounded-lg px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {bulkSync.isPending ? (
+            {isSyncing ? (
               <RefreshCw size={12} className="animate-spin" />
             ) : (
               <CloudDownload size={12} />
             )}
-            {bulkSync.isPending ? `Syncing ${users.length} users…` : "Sync All to ACC"}
+            {isSyncing ? `Syncing ${users.length} users…` : "Sync All to ACC"}
           </button>
           <button
             onClick={refetch}
@@ -437,7 +452,7 @@ export function AccAnalysisPanel({
               const pct = Math.round((count / metrics.maxFpCount) * 100);
               const label = fp
                 .split("|")
-                .map(abbreviateModuleKey)
+                .map(moduleLabel)
                 .join(" + ");
               const totalProjPct = metrics.totalProjects > 0
                 ? Math.round((count / metrics.totalProjects) * 100)
@@ -476,7 +491,7 @@ export function AccAnalysisPanel({
                     <AlertTriangle size={10} />
                   </span>
                   <span className="text-muted-foreground">
-                    <span className="text-foreground">{fp.split("|").map(abbreviateModuleKey).join(" + ")}</span>
+                    <span className="text-foreground">{fp.split("|").map(moduleLabel).join(" + ")}</span>
                     {" "}&mdash; {example}
                   </span>
                 </div>
