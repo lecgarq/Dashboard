@@ -19,6 +19,7 @@ interface UserNode {
   isHubAdmin: boolean;
   roles: string[];
   allRoles: string[];
+  found: boolean;
   x: number;
   y: number;
   vx: number;
@@ -51,15 +52,9 @@ interface Edge {
   weight: number;
 }
 
-interface TooltipState {
-  x: number;
-  y: number;
-  node: SimNode;
-}
-
 interface SidePanelState {
   node: SimNode;
-  roleUsers?: string[];    // for role nodes
+  roleUsers?: string[];
 }
 
 export interface AccUsersGraphProps {
@@ -77,6 +72,7 @@ const ROLE_MAX_RADIUS = 28;
 const USER_COLOR_NORMAL = "#6366f1";
 const USER_COLOR_NO_PROJECTS = "#f59e0b";
 const USER_COLOR_HUB_ADMIN = "#10b981";
+const USER_COLOR_NOT_FOUND = "#6b7280";
 const ROLE_COLOR = "#8b5cf6";
 const EDGE_COLOR = "rgba(139, 92, 246, 0.25)";
 const SIM_ITERATIONS = 200;
@@ -84,6 +80,9 @@ const REPULSION = 3500;
 const ATTRACTION = 0.08;
 const DAMPING = 0.7;
 const CENTER_GRAVITY = 0.04;
+// Virtual simulation space — large so nodes spread out freely before normalization
+const SIM_WIDTH = 4000;
+const SIM_HEIGHT = 4000;
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -93,7 +92,6 @@ function getFirstName(name: string, email: string): string {
   if (name && name.trim()) {
     return name.split(" ")[0].slice(0, 10);
   }
-  // initials from email
   const local = email.split("@")[0];
   const parts = local.split(/[._-]/);
   if (parts.length >= 2) {
@@ -115,29 +113,40 @@ function truncate(str: string, n: number): string {
 }
 
 // ---------------------------------------------------------------------------
-// Spring simulation (no d3)
+// Pre-rendered sprite (circle)
 // ---------------------------------------------------------------------------
 
-function runSimulation(
-  nodes: SimNode[],
-  edges: Edge[],
-  width: number,
-  height: number
-): SimNode[] {
-  const nodeMap = new Map<string, SimNode>();
-  // Work on copies so we don't mutate React state mid-render
-  const ns: SimNode[] = nodes.map((n) => ({ ...n }));
-  for (const n of ns) nodeMap.set(n.id, n);
+function createCircleSprite(color: string, radius: number): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  const d = radius * 2;
+  canvas.width = d;
+  canvas.height = d;
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(radius, radius, radius - 1, 0, Math.PI * 2);
+  ctx.fill();
+  // Subtle white rim
+  ctx.strokeStyle = "rgba(255,255,255,0.2)";
+  ctx.lineWidth = 1.2;
+  ctx.stroke();
+  return canvas;
+}
 
-  const cx = width / 2;
-  const cy = height / 2;
+// ---------------------------------------------------------------------------
+// Spring simulation (no d3) — runs in 4000×4000 virtual space, NO bounds clamping
+// ---------------------------------------------------------------------------
+
+function runSimulation(nodes: SimNode[], edges: Edge[]): SimNode[] {
+  const ns: SimNode[] = nodes.map((n) => ({ ...n }));
+  const cx = SIM_WIDTH / 2;
+  const cy = SIM_HEIGHT / 2;
 
   for (let iter = 0; iter < SIM_ITERATIONS; iter++) {
-    // Reset forces
     const fx = new Float64Array(ns.length);
     const fy = new Float64Array(ns.length);
 
-    // 1. Repulsion between all node pairs
+    // 1. Repulsion
     for (let i = 0; i < ns.length; i++) {
       for (let j = i + 1; j < ns.length; j++) {
         const dx = ns[j].x - ns[i].x || 0.01;
@@ -172,23 +181,18 @@ function runSimulation(
       fy[ti] -= fy_;
     }
 
-    // 3. Gravity toward center (prevents nodes flying off)
+    // 3. Gravity toward center
     for (let i = 0; i < ns.length; i++) {
       fx[i] += (cx - ns[i].x) * CENTER_GRAVITY;
       fy[i] += (cy - ns[i].y) * CENTER_GRAVITY;
     }
 
-    // 4. Integrate
+    // 4. Integrate — NO bounds clamping
     for (let i = 0; i < ns.length; i++) {
       ns[i].vx = (ns[i].vx + fx[i]) * DAMPING;
       ns[i].vy = (ns[i].vy + fy[i]) * DAMPING;
       ns[i].x += ns[i].vx;
       ns[i].y += ns[i].vy;
-
-      // Clamp to canvas bounds
-      const r = ns[i].radius;
-      ns[i].x = Math.max(r + 4, Math.min(width - r - 4, ns[i].x));
-      ns[i].y = Math.max(r + 4, Math.min(height - r - 4, ns[i].y));
     }
   }
 
@@ -196,35 +200,34 @@ function runSimulation(
 }
 
 // ---------------------------------------------------------------------------
-// Build nodes + edges from BulkAccUser[]
+// Build nodes + edges — includes ALL users (found or not)
 // ---------------------------------------------------------------------------
 
-function buildGraph(
-  users: BulkAccUser[],
-  width: number,
-  height: number
-): { nodes: SimNode[]; edges: Edge[] } {
-  const cachedUsers = users.filter((u) => u.found);
-  const cx = width / 2;
-  const cy = height / 2;
+function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
+  // ALL users — including found===false
+  const allUsers = users;
+  const foundUsers = users.filter((u) => u.found);
 
-  // Role frequency for radius scaling
+  const cx = SIM_WIDTH / 2;
+  const cy = SIM_HEIGHT / 2;
+
+  // Role frequency only from found users (unfound have no roles)
   const roleFreq = new Map<string, number>();
-  for (const u of cachedUsers) {
+  for (const u of foundUsers) {
     for (const r of u.allRoles) {
       roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
     }
   }
   const maxRoleFreq = Math.max(1, ...roleFreq.values());
 
-  // Create role nodes
+  // Role nodes
   const roleNodes = new Map<string, RoleNode>();
   let ri = 0;
   const roleList = [...roleFreq.keys()];
   for (const role of roleList) {
     const count = roleFreq.get(role)!;
     const angle = (ri / roleList.length) * Math.PI * 2;
-    const spread = Math.min(width, height) * 0.28;
+    const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.28;
     const radius = ROLE_BASE_RADIUS + ((count / maxRoleFreq) * (ROLE_MAX_RADIUS - ROLE_BASE_RADIUS));
     roleNodes.set(role, {
       kind: "role",
@@ -242,27 +245,34 @@ function buildGraph(
     ri++;
   }
 
-  // Create user nodes — random initial position
-  const userNodes: UserNode[] = cachedUsers.map((u, i) => {
-    const angle = (i / cachedUsers.length) * Math.PI * 2;
-    const r = Math.min(width, height) * 0.15 + (Math.random() * 60 - 30);
-    const color = isHubAdmin(u)
-      ? USER_COLOR_HUB_ADMIN
-      : u.hasNoProjects
-        ? USER_COLOR_NO_PROJECTS
-        : USER_COLOR_NORMAL;
+  // User nodes — ALL users, not-found ones get grey "?" nodes
+  const userNodes: UserNode[] = allUsers.map((u, i) => {
+    const angle = (i / allUsers.length) * Math.PI * 2;
+    const r = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.15 + (Math.random() * 300 - 150);
+
+    let color: string;
+    if (!u.found) {
+      color = USER_COLOR_NOT_FOUND;
+    } else if (isHubAdmin(u)) {
+      color = USER_COLOR_HUB_ADMIN;
+    } else if (u.hasNoProjects) {
+      color = USER_COLOR_NO_PROJECTS;
+    } else {
+      color = USER_COLOR_NORMAL;
+    }
 
     return {
       kind: "user",
       id: u.email,
-      label: getFirstName(u.name, u.email),
+      label: u.found ? getFirstName(u.name, u.email) : "?",
       email: u.email,
       name: u.name,
       projectCount: u.projectCount,
       hasNoProjects: u.hasNoProjects,
-      isHubAdmin: isHubAdmin(u),
+      isHubAdmin: u.found ? isHubAdmin(u) : false,
       roles: u.allRoles,
       allRoles: u.allRoles,
+      found: u.found,
       x: cx + Math.cos(angle) * r,
       y: cy + Math.sin(angle) * r,
       vx: (Math.random() - 0.5) * 2,
@@ -274,9 +284,10 @@ function buildGraph(
 
   const nodes: SimNode[] = [...userNodes, ...roleNodes.values()];
 
-  // Build edges: user -> role
+  // Edges: user -> role (only for found users with roles)
   const edges: Edge[] = [];
   for (const u of userNodes) {
+    if (!u.found) continue;
     for (const role of u.allRoles) {
       const rn = roleNodes.get(role);
       if (!rn) continue;
@@ -294,11 +305,44 @@ function buildGraph(
 }
 
 // ---------------------------------------------------------------------------
-// Diamond path helper for role nodes
+// Normalize positions to [0,1] world space
 // ---------------------------------------------------------------------------
 
-function diamondPath(x: number, y: number, r: number): string {
-  return `M ${x} ${y - r} L ${x + r} ${y} L ${x} ${y + r} L ${x - r} ${y} Z`;
+function normalizePositions(settled: SimNode[]): Float32Array {
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (const n of settled) {
+    if (n.x < minX) minX = n.x;
+    if (n.x > maxX) maxX = n.x;
+    if (n.y < minY) minY = n.y;
+    if (n.y > maxY) maxY = n.y;
+  }
+  const rx = maxX - minX || 1;
+  const ry = maxY - minY || 1;
+  const pos = new Float32Array(settled.length * 2);
+  for (let i = 0; i < settled.length; i++) {
+    pos[i * 2] = (settled[i].x - minX) / rx;
+    pos[i * 2 + 1] = (settled[i].y - minY) / ry;
+  }
+  return pos;
+}
+
+// ---------------------------------------------------------------------------
+// Spatial grid for O(1) hit testing
+// ---------------------------------------------------------------------------
+
+interface SpatialGrid {
+  size: number;
+  cells: Map<string, number[]>;
+}
+
+function buildGrid(pos: Float32Array, count: number, cellSize: number): SpatialGrid {
+  const cells = new Map<string, number[]>();
+  for (let i = 0; i < count; i++) {
+    const key = `${Math.floor(pos[i * 2] / cellSize)},${Math.floor(pos[i * 2 + 1] / cellSize)}`;
+    if (!cells.has(key)) cells.set(key, []);
+    cells.get(key)!.push(i);
+  }
+  return { size: cellSize, cells };
 }
 
 // ---------------------------------------------------------------------------
@@ -307,65 +351,40 @@ function diamondPath(x: number, y: number, r: number): string {
 
 export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 900, height: 600 });
-  const [nodes, setNodes] = useState<SimNode[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-  const [simulationDone, setSimulationDone] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const tooltipRef = useRef<HTMLDivElement>(null);
+  const rafId = useRef<number>(0);
 
-  // Controls
+  // Simulation output stored in refs (no React re-renders per frame)
+  const nodesRef = useRef<SimNode[]>([]);
+  const edgesRef = useRef<Edge[]>([]);
+  const posRef = useRef<Float32Array>(new Float32Array(0));
+  const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
+  const spritesRef = useRef(new Map<string, HTMLCanvasElement>());
+
+  // Camera (world-space lerped)
+  const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
+  const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
+
+  // Interaction refs
+  const isDragging = useRef(false);
+  const lastMouse = useRef({ x: 0, y: 0 });
+  const clickStart = useRef({ x: 0, y: 0 });
+
+  // Controls stored in refs so render loop can read without re-render
+  const showRolesRef = useRef(true);
+  const highlightOutliersRef = useRef(false);
+  const highlightNoProjectsRef = useRef(false);
+
+  // React state just for button highlights
   const [showRoles, setShowRoles] = useState(true);
   const [highlightOutliers, setHighlightOutliers] = useState(false);
   const [highlightNoProjects, setHighlightNoProjects] = useState(false);
-
-  // Interaction
-  const [zoom, setZoom] = useState(1);
-  const [pan, setPan] = useState({ x: 0, y: 0 });
-  const [isPanning, setIsPanning] = useState(false);
-  const panStart = useRef({ x: 0, y: 0, panX: 0, panY: 0 });
-
-  // Tooltip + side panel
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [isDraggingState, setIsDraggingState] = useState(false);
+  const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
-
-  // Pulse animation tick
-  const [pulseTick, setPulseTick] = useState(0);
-  useEffect(() => {
-    if (!highlightOutliers && !highlightNoProjects) return;
-    const id = setInterval(() => setPulseTick((t) => t + 1), 600);
-    return () => clearInterval(id);
-  }, [highlightOutliers, highlightNoProjects]);
-
-  // Resize observer
-  useLayoutEffect(() => {
-    const el = containerRef.current;
-    if (!el) return;
-    const obs = new ResizeObserver((entries) => {
-      const { width, height } = entries[0].contentRect;
-      if (width > 50 && height > 50) {
-        setDimensions({ width, height });
-      }
-    });
-    obs.observe(el);
-    return () => obs.disconnect();
-  }, []);
-
-  // Build + run simulation when users or dimensions change
-  useEffect(() => {
-    if (!users.length || dimensions.width < 100) return;
-    setSimulationDone(false);
-
-    const { nodes: rawNodes, edges: rawEdges } = buildGraph(users, dimensions.width, dimensions.height);
-    setEdges(rawEdges);
-
-    // Run simulation in a microtask to avoid blocking render
-    const timeoutId = setTimeout(() => {
-      const settled = runSimulation(rawNodes, rawEdges, dimensions.width, dimensions.height);
-      setNodes(settled);
-      setSimulationDone(true);
-    }, 0);
-
-    return () => clearTimeout(timeoutId);
-  }, [users, dimensions]);
+  const selectedNodeRef = useRef<SidePanelState | null>(null);
+  const [simulationDone, setSimulationDone] = useState(false);
 
   // Role user lookup map
   const roleUserMap = useMemo(() => {
@@ -381,124 +400,473 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return m;
   }, [users]);
 
-  // Visible nodes (filter roles if showRoles is off)
-  const visibleNodes = useMemo(() => {
-    if (showRoles) return nodes;
-    return nodes.filter((n) => n.kind !== "role");
-  }, [nodes, showRoles]);
+  // Build + run simulation when users change
+  useEffect(() => {
+    if (!users.length) return;
+    setSimulationDone(false);
 
-  const visibleEdges = useMemo(() => {
-    if (showRoles) return edges;
-    return [];
-  }, [edges, showRoles]);
+    const { nodes: rawNodes, edges: rawEdges } = buildGraph(users);
+    edgesRef.current = rawEdges;
 
-  // SVG transform string
-  const transform = `translate(${pan.x}, ${pan.y}) scale(${zoom})`;
+    const timeoutId = setTimeout(() => {
+      const settled = runSimulation(rawNodes, rawEdges);
+      nodesRef.current = settled;
+      posRef.current = normalizePositions(settled);
 
-  // Hit test: find which node is at (svgX, svgY)
-  function hitTest(svgX: number, svgY: number): SimNode | null {
-    // Inverse transform: from viewport coords to graph coords
-    const gx = (svgX - pan.x) / zoom;
-    const gy = (svgY - pan.y) / zoom;
+      // Build spatial grid
+      const cellSize = Math.max(0.01, 60 / view.current.scale);
+      gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
 
-    for (const n of visibleNodes) {
-      const dx = gx - n.x;
-      const dy = gy - n.y;
-      if (dx * dx + dy * dy <= n.radius * n.radius * 1.5) {
-        return n;
+      // Pre-render sprites for each unique color
+      const colorSet = new Set(settled.map((n) => n.color));
+      colorSet.forEach((color) => {
+        if (!spritesRef.current.has(color)) {
+          spritesRef.current.set(color, createCircleSprite(color, USER_RADIUS));
+        }
+      });
+      // Sprite for role nodes (slightly larger)
+      if (!spritesRef.current.has(ROLE_COLOR + "_role")) {
+        spritesRef.current.set(ROLE_COLOR + "_role", createCircleSprite(ROLE_COLOR, ROLE_MAX_RADIUS));
+      }
+
+      setSimulationDone(true);
+      // Auto zoom-to-fit after simulation
+      requestAnimationFrame(() => zoomToFit());
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [users]);
+
+  // ---------------------------------------------------------------------------
+  // zoomToFit — fits all nodes in viewport with padding
+  // ---------------------------------------------------------------------------
+  const zoomToFit = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !posRef.current.length) return;
+
+    const pos = posRef.current;
+    const nodes = nodesRef.current;
+    if (!nodes.length) return;
+
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+
+    // Include only visible node types
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].kind === "role" && !showRolesRef.current) continue;
+      const nx = pos[i * 2], ny = pos[i * 2 + 1];
+      if (nx < minX) minX = nx;
+      if (nx > maxX) maxX = nx;
+      if (ny < minY) minY = ny;
+      if (ny > maxY) maxY = ny;
+    }
+
+    if (minX === Infinity) return;
+
+    const dw = maxX - minX || 0.01;
+    const dh = maxY - minY || 0.01;
+    const cw = canvas.clientWidth || 900;
+    const ch = canvas.clientHeight || 600;
+
+    const fitScale = Math.min(cw / dw, ch / dh) * 0.75;
+
+    targetView.current = {
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+      scale: Math.max(50, Math.min(50000, fitScale)),
+    };
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Hit test via spatial grid
+  // ---------------------------------------------------------------------------
+  const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
+    const canvas = canvasRef.current;
+    if (!canvas || !posRef.current.length) return null;
+
+    const v = view.current;
+    const w = canvas.clientWidth;
+    const h = canvas.clientHeight;
+    // Convert screen coords to world coords
+    const wx = v.x + (sx - w / 2) / v.scale;
+    const wy = v.y + (sy - h / 2) / v.scale;
+
+    const g = gridRef.current;
+    if (!g.cells.size) return null;
+
+    const nodes = nodesRef.current;
+    const pos = posRef.current;
+    const gx = Math.floor(wx / g.size);
+    const gy = Math.floor(wy / g.size);
+    let bestDist = 20 / v.scale;
+    let bestIdx = -1;
+
+    for (let ox = -2; ox <= 2; ox++) {
+      for (let oy = -2; oy <= 2; oy++) {
+        const cell = g.cells.get(`${gx + ox},${gy + oy}`);
+        if (!cell) continue;
+        for (const idx of cell) {
+          if (nodes[idx].kind === "role" && !showRolesRef.current) continue;
+          const dx = pos[idx * 2] - wx;
+          const dy = pos[idx * 2 + 1] - wy;
+          const d = Math.hypot(dx, dy);
+          if (d < bestDist) {
+            bestDist = d;
+            bestIdx = idx;
+          }
+        }
       }
     }
-    return null;
-  }
 
-  function getSvgCoords(e: React.MouseEvent<SVGSVGElement>): { x: number; y: number } {
-    const rect = e.currentTarget.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  }
+    return bestIdx >= 0 ? nodes[bestIdx] : null;
+  }, []);
 
-  function handleMouseMove(e: React.MouseEvent<SVGSVGElement>) {
-    const { x, y } = getSvgCoords(e);
+  // ---------------------------------------------------------------------------
+  // requestAnimationFrame render loop
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d")!;
 
-    if (isPanning) {
-      const dx = x - panStart.current.x;
-      const dy = y - panStart.current.y;
-      setPan({ x: panStart.current.panX + dx, y: panStart.current.panY + dy });
-      return;
-    }
+    const render = () => {
+      rafId.current = requestAnimationFrame(render);
 
-    const hit = hitTest(x, y);
-    if (hit) {
-      setTooltip({ x, y, node: hit });
+      // Lerp camera
+      const v = view.current;
+      const tv = targetView.current;
+      v.x += (tv.x - v.x) * 0.2;
+      v.y += (tv.y - v.y) * 0.2;
+      v.scale += (tv.scale - v.scale) * 0.2;
+
+      // Handle DPR + resize
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const wantW = Math.floor(w * dpr);
+      const wantH = Math.floor(h * dpr);
+      if (canvas.width !== wantW || canvas.height !== wantH) {
+        canvas.width = wantW;
+        canvas.height = wantH;
+      }
+
+      ctx.resetTransform();
+      ctx.scale(dpr, dpr);
+
+      // Background — use CSS variable if available
+      const bg = getComputedStyle(canvas).getPropertyValue("--card").trim();
+      ctx.fillStyle = bg ? `hsl(${bg})` : "#1a1a2e";
+      ctx.fillRect(0, 0, w, h);
+
+      const nodes = nodesRef.current;
+      const pos = posRef.current;
+      if (!nodes.length || !pos.length) return;
+
+      // Set up world-space transform
+      ctx.translate(w / 2, h / 2);
+      ctx.scale(v.scale, v.scale);
+      ctx.translate(-v.x, -v.y);
+
+      const isInteracting = isDragging.current;
+
+      // Viewport culling bounds in world space
+      const pad = 40 / v.scale;
+      const minWX = v.x - (w / 2) / v.scale - pad;
+      const maxWX = v.x + (w / 2) / v.scale + pad;
+      const minWY = v.y - (h / 2) / v.scale - pad;
+      const maxWY = v.y + (h / 2) / v.scale + pad;
+
+      // -- Edges --
+      if (showRolesRef.current && !isInteracting) {
+        ctx.lineWidth = 0.5 / v.scale;
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = EDGE_COLOR;
+
+        // Batch by color
+        const batches = new Map<string, Array<[number, number, number, number]>>();
+        for (const e of edgesRef.current) {
+          const si = nodes.findIndex((n) => n.id === e.source);
+          const ti = nodes.findIndex((n) => n.id === e.target);
+          if (si < 0 || ti < 0) continue;
+          const sx = pos[si * 2], sy = pos[si * 2 + 1];
+          const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
+          // Viewport cull — skip if both endpoints off screen
+          if (sx < minWX && tx < minWX) continue;
+          if (sx > maxWX && tx > maxWX) continue;
+          if (sy < minWY && ty < minWY) continue;
+          if (sy > maxWY && ty > maxWY) continue;
+          const list = batches.get(e.color) ?? [];
+          list.push([sx, sy, tx, ty]);
+          batches.set(e.color, list);
+        }
+        for (const [color, lines] of batches) {
+          ctx.strokeStyle = color;
+          ctx.beginPath();
+          for (const [sx, sy, tx, ty] of lines) {
+            ctx.moveTo(sx, sy);
+            ctx.lineTo(tx, ty);
+          }
+          ctx.stroke();
+        }
+        ctx.globalAlpha = 1.0;
+      }
+
+      // -- Nodes --
+      const nodeScreenRadius = USER_RADIUS / v.scale;
+      const showLabels = nodeScreenRadius > 10;
+
+      for (let i = 0; i < nodes.length; i++) {
+        const n = nodes[i];
+        if (n.kind === "role" && !showRolesRef.current) continue;
+
+        const nx = pos[i * 2];
+        const ny = pos[i * 2 + 1];
+
+        // Viewport cull
+        if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
+
+        if (n.kind === "user") {
+          const un = n as UserNode;
+
+          // Pulse ring for highlighted nodes
+          const pulseOutlier = highlightOutliersRef.current && isOutlierNode(un, roleUserMap);
+          const pulseNP = highlightNoProjectsRef.current && un.hasNoProjects;
+          if (pulseOutlier || pulseNP) {
+            ctx.globalAlpha = 0.5;
+            ctx.strokeStyle = "#f59e0b";
+            ctx.lineWidth = 1.5 / v.scale;
+            ctx.beginPath();
+            ctx.arc(nx, ny, (USER_RADIUS + 6) / v.scale, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.globalAlpha = 1.0;
+          }
+
+          // Draw circle sprite
+          const sprite = spritesRef.current.get(n.color);
+          if (sprite) {
+            const r = USER_RADIUS / v.scale;
+            const d = r * 2;
+            ctx.drawImage(sprite, nx - r, ny - r, d, d);
+          } else {
+            ctx.fillStyle = n.color;
+            ctx.beginPath();
+            ctx.arc(nx, ny, USER_RADIUS / v.scale, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          // Label
+          if (showLabels) {
+            ctx.fillStyle = "rgba(255,255,255,0.9)";
+            ctx.font = `bold ${Math.max(5, 7 / v.scale)}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(un.label.slice(0, 4), nx, ny + 0.5 / v.scale);
+          }
+        } else {
+          // Role node — draw as diamond
+          const rn = n as RoleNode;
+          const r = rn.radius / v.scale;
+          ctx.fillStyle = rn.color;
+          ctx.globalAlpha = 0.85;
+          ctx.beginPath();
+          ctx.moveTo(nx, ny - r);
+          ctx.lineTo(nx + r, ny);
+          ctx.lineTo(nx, ny + r);
+          ctx.lineTo(nx - r, ny);
+          ctx.closePath();
+          ctx.fill();
+          ctx.globalAlpha = 0.2;
+          ctx.strokeStyle = "rgba(255,255,255,0.4)";
+          ctx.lineWidth = 1 / v.scale;
+          ctx.stroke();
+          ctx.globalAlpha = 1.0;
+
+          if (showLabels && r > 8) {
+            ctx.fillStyle = "rgba(255,255,255,0.85)";
+            ctx.font = `${Math.max(4, 8 / v.scale)}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(rn.label, nx, ny + 0.5 / v.scale);
+          }
+        }
+      }
+
+      ctx.globalAlpha = 1.0;
+    };
+
+    rafId.current = requestAnimationFrame(render);
+    return () => cancelAnimationFrame(rafId.current);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Rebuild spatial grid when zoom changes significantly
+  const rebuildGrid = useCallback(() => {
+    const cellSize = Math.max(0.005, 60 / view.current.scale);
+    gridRef.current = buildGrid(posRef.current, nodesRef.current.length, cellSize);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // Pointer handlers
+  // ---------------------------------------------------------------------------
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0) return;
+    isDragging.current = true;
+    setIsDraggingState(true);
+    clickStart.current = { x: e.clientX, y: e.clientY };
+    lastMouse.current = { x: e.clientX, y: e.clientY };
+    (e.target as HTMLElement).setPointerCapture(e.pointerId);
+  }, []);
+
+  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = (e.target as HTMLElement).getBoundingClientRect();
+    const lx = e.clientX - rect.left;
+    const ly = e.clientY - rect.top;
+
+    if (isDragging.current) {
+      const dx = e.clientX - lastMouse.current.x;
+      const dy = e.clientY - lastMouse.current.y;
+      view.current.x -= dx / view.current.scale;
+      view.current.y -= dy / view.current.scale;
+      targetView.current = { ...view.current };
+      lastMouse.current = { x: e.clientX, y: e.clientY };
     } else {
-      setTooltip(null);
+      const node = hitTest(lx, ly);
+      setHoveredNode(node);
+      if (tooltipRef.current) {
+        tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly - 10}px)`;
+        tooltipRef.current.style.opacity = node ? "1" : "0";
+      }
     }
-  }
+  }, [hitTest]);
 
-  function handleMouseDown(e: React.MouseEvent<SVGSVGElement>) {
-    const { x, y } = getSvgCoords(e);
-    const hit = hitTest(x, y);
-    if (!hit) {
-      setIsPanning(true);
-      panStart.current = { x, y, panX: pan.x, panY: pan.y };
-    }
-  }
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (e.button !== 0) return;
+    isDragging.current = false;
+    setIsDraggingState(false);
+    rebuildGrid();
 
-  function handleMouseUp(e: React.MouseEvent<SVGSVGElement>) {
-    if (isPanning) {
-      setIsPanning(false);
-      return;
-    }
-    const { x, y } = getSvgCoords(e);
-    const hit = hitTest(x, y);
-    if (hit) {
-      if (hit.kind === "user") {
-        setSelectedNode({ node: hit });
+    const moved = Math.hypot(e.clientX - clickStart.current.x, e.clientY - clickStart.current.y);
+    if (moved < 5) {
+      const rect = (e.target as HTMLElement).getBoundingClientRect();
+      const lx = e.clientX - rect.left;
+      const ly = e.clientY - rect.top;
+      const node = hitTest(lx, ly);
+      if (node) {
+        if (node.kind === "user") {
+          const sp = { node };
+          setSelectedNode(sp);
+          selectedNodeRef.current = sp;
+        } else {
+          const rn = node as RoleNode;
+          const sp = { node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] };
+          setSelectedNode(sp);
+          selectedNodeRef.current = sp;
+        }
       } else {
-        const rn = hit as RoleNode;
-        setSelectedNode({ node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] });
+        setSelectedNode(null);
+        selectedNodeRef.current = null;
       }
-    } else {
-      setSelectedNode(null);
     }
-  }
+  }, [hitTest, rebuildGrid, roleUserMap]);
 
-  function handleMouseLeave() {
-    setTooltip(null);
-    if (isPanning) setIsPanning(false);
-  }
-
-  function handleWheel(e: React.WheelEvent<SVGSVGElement>) {
+  // Wheel zoom toward cursor
+  const handleWheel = useCallback((e: WheelEvent) => {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.9 : 1.1;
-    setZoom((z) => Math.max(0.2, Math.min(5, z * delta)));
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const v = view.current;
+    const wx = v.x + (mx - cx) / v.scale;
+    const wy = v.y + (my - cy) / v.scale;
+    const newS = Math.max(10, Math.min(50000, v.scale * Math.pow(1.002, -e.deltaY)));
+    view.current = { scale: newS, x: wx - (mx - cx) / newS, y: wy - (my - cy) / newS };
+    targetView.current = { ...view.current };
+    rebuildGrid();
+  }, [rebuildGrid]);
+
+  // Middle click = zoom to fit
+  const handleMouseDown = useCallback((e: MouseEvent) => {
+    if (e.button === 1) {
+      e.preventDefault();
+      zoomToFit();
+    }
+  }, [zoomToFit]);
+
+  // Attach native wheel + middle-click handlers
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    canvas.addEventListener("wheel", handleWheel, { passive: false });
+    canvas.addEventListener("mousedown", handleMouseDown);
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel);
+      canvas.removeEventListener("mousedown", handleMouseDown);
+    };
+  }, [handleWheel, handleMouseDown]);
+
+  // Resize observer — re-zoom when container resizes
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ro = new ResizeObserver(() => {
+      if (nodesRef.current.length) zoomToFit();
+    });
+    ro.observe(canvas.parentElement ?? canvas);
+    return () => ro.disconnect();
+  }, [zoomToFit]);
+
+  // ---------------------------------------------------------------------------
+  // Controls
+  // ---------------------------------------------------------------------------
+
+  function toggleShowRoles() {
+    const next = !showRolesRef.current;
+    showRolesRef.current = next;
+    setShowRoles(next);
+    zoomToFit();
+  }
+
+  function toggleOutliers() {
+    const next = !highlightOutliersRef.current;
+    highlightOutliersRef.current = next;
+    setHighlightOutliers(next);
+  }
+
+  function toggleNoProjects() {
+    const next = !highlightNoProjectsRef.current;
+    highlightNoProjectsRef.current = next;
+    setHighlightNoProjects(next);
   }
 
   function resetLayout() {
-    setZoom(1);
-    setPan({ x: 0, y: 0 });
-    // Re-run simulation
-    if (!users.length || dimensions.width < 100) return;
+    if (!users.length) return;
     setSimulationDone(false);
-    const { nodes: rawNodes, edges: rawEdges } = buildGraph(users, dimensions.width, dimensions.height);
-    setEdges(rawEdges);
+    setSelectedNode(null);
+    selectedNodeRef.current = null;
+
+    const { nodes: rawNodes, edges: rawEdges } = buildGraph(users);
+    edgesRef.current = rawEdges;
+
     setTimeout(() => {
-      const settled = runSimulation(rawNodes, rawEdges, dimensions.width, dimensions.height);
-      setNodes(settled);
+      const settled = runSimulation(rawNodes, rawEdges);
+      nodesRef.current = settled;
+      posRef.current = normalizePositions(settled);
+      const cellSize = Math.max(0.005, 60 / view.current.scale);
+      gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
       setSimulationDone(true);
+      requestAnimationFrame(() => zoomToFit());
     }, 0);
   }
 
-  // Determine if a user node is an "outlier" for highlighting
-  function isOutlier(n: UserNode): boolean {
-    // Outlier: has roles that only appear once globally, or zero roles
-    if (n.allRoles.length === 0) return true;
-    return n.allRoles.every((r) => {
-      const freq = roleUserMap.get(r)?.length ?? 0;
-      return freq <= 1;
-    });
-  }
-
-  const pulseOn = pulseTick % 2 === 0;
+  // ---------------------------------------------------------------------------
+  // Empty state
+  // ---------------------------------------------------------------------------
 
   if (!users.length) {
     return (
@@ -512,16 +880,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     <div className="flex h-full gap-0 relative">
       {/* Main graph area */}
       <div ref={containerRef} className="flex-1 relative bg-[hsl(var(--card))] rounded-xl border border-border/30 overflow-hidden">
+
         {/* Controls overlay */}
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
-            <ControlButton active={showRoles} onClick={() => setShowRoles((v) => !v)}>
+            <ControlButton active={showRoles} onClick={toggleShowRoles}>
               {showRoles ? "Hide Roles" : "Show Roles"}
             </ControlButton>
-            <ControlButton active={highlightOutliers} onClick={() => setHighlightOutliers((v) => !v)}>
+            <ControlButton active={highlightOutliers} onClick={toggleOutliers}>
               Outliers
             </ControlButton>
-            <ControlButton active={highlightNoProjects} onClick={() => setHighlightNoProjects((v) => !v)}>
+            <ControlButton active={highlightNoProjects} onClick={toggleNoProjects}>
               No Projects
             </ControlButton>
             <ControlButton active={false} onClick={resetLayout}>
@@ -529,7 +898,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             </ControlButton>
           </div>
           <div className="text-[10px] text-muted-foreground/60 pr-1">
-            Scroll to zoom &bull; drag to pan &bull; click node for details
+            Scroll to zoom &bull; drag to pan &bull; click node for details &bull; middle-click to fit
           </div>
         </div>
 
@@ -538,6 +907,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           <LegendDot color={USER_COLOR_NORMAL} label="User" />
           <LegendDot color={USER_COLOR_HUB_ADMIN} label="Hub Admin" />
           <LegendDot color={USER_COLOR_NO_PROJECTS} label="No Projects" />
+          <LegendDot color={USER_COLOR_NOT_FOUND} label="Not Cached" />
           {showRoles && <LegendDiamond color={ROLE_COLOR} label="Role" />}
         </div>
 
@@ -551,151 +921,54 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        {/* SVG Graph */}
-        <svg
-          className={cn("w-full h-full", isPanning ? "cursor-grabbing" : "cursor-default")}
-          onMouseMove={handleMouseMove}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseLeave}
-          onWheel={handleWheel}
+        {/* Canvas */}
+        <canvas
+          ref={canvasRef}
+          className={cn(
+            "w-full h-full block",
+            isDraggingState ? "cursor-grabbing" : hoveredNode ? "cursor-pointer" : "cursor-crosshair"
+          )}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={() => {
+            isDragging.current = false;
+            setIsDraggingState(false);
+            setHoveredNode(null);
+            if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+          }}
+        />
+
+        {/* Tooltip div overlay */}
+        <div
+          ref={tooltipRef}
+          className="absolute top-0 left-0 z-30 pointer-events-none bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl px-3 py-2 shadow-xl max-w-[220px] opacity-0 transition-opacity duration-75 will-change-transform"
+          style={{ transform: "translate(0,0)" }}
         >
-          {/* Grid lines */}
-          <defs>
-            <pattern id="acc-grid" width="40" height="40" patternUnits="userSpaceOnUse">
-              <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(255,255,255,0.03)" strokeWidth="1" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#acc-grid)" />
-
-          <g transform={transform}>
-            {/* Edges */}
-            {visibleEdges.map((e, i) => {
-              const src = nodes.find((n) => n.id === e.source);
-              const tgt = nodes.find((n) => n.id === e.target);
-              if (!src || !tgt) return null;
-              return (
-                <line
-                  key={i}
-                  x1={src.x}
-                  y1={src.y}
-                  x2={tgt.x}
-                  y2={tgt.y}
-                  stroke={e.color}
-                  strokeWidth={0.8}
-                  strokeDasharray={e.dashed ? "4 3" : undefined}
-                />
-              );
-            })}
-
-            {/* Role nodes (diamonds) */}
-            {visibleNodes
-              .filter((n): n is RoleNode => n.kind === "role")
-              .map((n) => (
-                <g key={n.id}>
-                  <path
-                    d={diamondPath(n.x, n.y, n.radius)}
-                    fill={n.color}
-                    fillOpacity={0.85}
-                    stroke="rgba(255,255,255,0.2)"
-                    strokeWidth={1}
-                    className="transition-opacity"
-                  />
-                  {n.radius > 16 && (
-                    <text
-                      x={n.x}
-                      y={n.y + 1}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={8}
-                      fill="rgba(255,255,255,0.85)"
-                      style={{ pointerEvents: "none", userSelect: "none" }}
-                    >
-                      {n.label}
-                    </text>
-                  )}
-                </g>
-              ))}
-
-            {/* User nodes (circles) */}
-            {visibleNodes
-              .filter((n): n is UserNode => n.kind === "user")
-              .map((n) => {
-                const pulseOutlier = highlightOutliers && isOutlier(n);
-                const pulseNP = highlightNoProjects && n.hasNoProjects;
-                const shouldPulse = pulseOutlier || pulseNP;
-
-                return (
-                  <g key={n.id}>
-                    {/* Pulse ring */}
-                    {shouldPulse && (
-                      <circle
-                        cx={n.x}
-                        cy={n.y}
-                        r={n.radius + (pulseOn ? 6 : 3)}
-                        fill="none"
-                        stroke="#f59e0b"
-                        strokeWidth={1.5}
-                        strokeOpacity={pulseOn ? 0.7 : 0.3}
-                        style={{ transition: "r 0.5s ease, stroke-opacity 0.5s ease" }}
-                      />
-                    )}
-                    <circle
-                      cx={n.x}
-                      cy={n.y}
-                      r={n.radius}
-                      fill={n.color}
-                      fillOpacity={0.9}
-                      stroke="rgba(255,255,255,0.2)"
-                      strokeWidth={1.2}
-                    />
-                    <text
-                      x={n.x}
-                      y={n.y + 1}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fontSize={7}
-                      fontWeight="600"
-                      fill="rgba(255,255,255,0.92)"
-                      style={{ pointerEvents: "none", userSelect: "none" }}
-                    >
-                      {n.label.slice(0, 4)}
-                    </text>
-                  </g>
-                );
-              })}
-          </g>
-        </svg>
-
-        {/* Tooltip */}
-        {tooltip && (
-          <div
-            className="absolute z-30 pointer-events-none bg-card/95 backdrop-blur-sm border border-border/50 rounded-xl px-3 py-2 shadow-xl max-w-[220px]"
-            style={{
-              left: tooltip.x + 14,
-              top: tooltip.y - 10,
-              transform: tooltip.x > dimensions.width * 0.7 ? "translateX(-110%)" : undefined,
-            }}
-          >
-            {tooltip.node.kind === "user" ? (
-              <UserTooltip node={tooltip.node as UserNode} />
+          {hoveredNode && (
+            hoveredNode.kind === "user" ? (
+              <UserTooltip node={hoveredNode as UserNode} />
             ) : (
-              <RoleTooltip node={tooltip.node as RoleNode} />
-            )}
-          </div>
-        )}
+              <RoleTooltip node={hoveredNode as RoleNode} />
+            )
+          )}
+        </div>
       </div>
 
       {/* Side panel */}
       {selectedNode && (
         <SidePanel
           state={selectedNode}
-          onClose={() => setSelectedNode(null)}
+          onClose={() => {
+            setSelectedNode(null);
+            selectedNodeRef.current = null;
+          }}
           onViewProfile={
             selectedNode.node.kind === "user"
               ? () => {
                   onSelectUser?.((selectedNode.node as UserNode).email);
                   setSelectedNode(null);
+                  selectedNodeRef.current = null;
                 }
               : undefined
           }
@@ -703,6 +976,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       )}
     </div>
   );
+}
+
+// ---------------------------------------------------------------------------
+// Outlier detection helper
+// ---------------------------------------------------------------------------
+
+function isOutlierNode(n: UserNode, roleUserMap: Map<string, string[]>): boolean {
+  if (n.allRoles.length === 0) return true;
+  return n.allRoles.every((r) => {
+    const freq = roleUserMap.get(r)?.length ?? 0;
+    return freq <= 1;
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -758,17 +1043,22 @@ function UserTooltip({ node }: { node: UserNode }) {
     <div className="space-y-1">
       <p className="text-xs font-semibold text-foreground">{node.name || node.email}</p>
       <p className="text-[10px] text-muted-foreground">{node.email}</p>
-      <div className="flex flex-wrap gap-1 pt-0.5">
-        <span className="text-[10px] text-muted-foreground">
-          {node.projectCount} project{node.projectCount !== 1 ? "s" : ""}
-        </span>
-        {node.isHubAdmin && (
-          <span className="text-[10px] text-emerald-400">Hub Admin</span>
-        )}
-        {node.hasNoProjects && (
-          <span className="text-[10px] text-amber-400">No projects</span>
-        )}
-      </div>
+      {!node.found && (
+        <p className="text-[10px] text-muted-foreground italic">Not cached in ACC</p>
+      )}
+      {node.found && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          <span className="text-[10px] text-muted-foreground">
+            {node.projectCount} project{node.projectCount !== 1 ? "s" : ""}
+          </span>
+          {node.isHubAdmin && (
+            <span className="text-[10px] text-emerald-400">Hub Admin</span>
+          )}
+          {node.hasNoProjects && (
+            <span className="text-[10px] text-amber-400">No projects</span>
+          )}
+        </div>
+      )}
       {node.allRoles.length > 0 && (
         <p className="text-[10px] text-muted-foreground">
           Roles: {node.allRoles.slice(0, 3).join(", ")}{node.allRoles.length > 3 ? ` +${node.allRoles.length - 3}` : ""}
@@ -818,35 +1108,43 @@ function SidePanel({
           <div className="space-y-3">
             <p className="text-[11px] text-muted-foreground break-all">{u.email}</p>
 
-            {/* Status badges */}
-            <div className="flex flex-wrap gap-1.5">
-              {u.isHubAdmin && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
-                  Hub Admin
-                </span>
-              )}
-              {u.hasNoProjects && (
-                <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
-                  No Projects
-                </span>
-              )}
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
-                {u.projectCount} project{u.projectCount !== 1 ? "s" : ""}
-              </span>
-            </div>
+            {!u.found && (
+              <p className="text-[11px] text-muted-foreground italic bg-muted/20 rounded-lg px-2 py-1.5">
+                This user is not yet cached in ACC. No role or project data available.
+              </p>
+            )}
 
-            {/* Roles */}
-            {u.allRoles.length > 0 && (
-              <div>
-                <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Roles</p>
-                <div className="flex flex-wrap gap-1">
-                  {u.allRoles.map((r) => (
-                    <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
-                      {r}
+            {u.found && (
+              <>
+                <div className="flex flex-wrap gap-1.5">
+                  {u.isHubAdmin && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/25">
+                      Hub Admin
                     </span>
-                  ))}
+                  )}
+                  {u.hasNoProjects && (
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25">
+                      No Projects
+                    </span>
+                  )}
+                  <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20">
+                    {u.projectCount} project{u.projectCount !== 1 ? "s" : ""}
+                  </span>
                 </div>
-              </div>
+
+                {u.allRoles.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider mb-1.5">Roles</p>
+                    <div className="flex flex-wrap gap-1">
+                      {u.allRoles.map((r) => (
+                        <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-500/10 text-violet-400 border border-violet-500/20">
+                          {r}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </>
             )}
 
             {onViewProfile && (
