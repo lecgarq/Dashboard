@@ -40,7 +40,7 @@ function toAccRouterError(error: unknown, fallbackMessage: string) {
   });
 }
 
-const ACC_CACHE_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+const ACC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
 export const usersRouter = router({
   // Org directory: fetches all users from Google Workspace via People API
@@ -803,6 +803,9 @@ export const usersRouter = router({
         }),
         fetchAccUserRoles(accountId, accUser.id, accessToken).catch(() => new Map<string, string[]>()),
       ]);
+
+      console.info(`[acc] roles map keys (${rolesByProject.size}):`, [...rolesByProject.keys()].slice(0, 5));
+      console.info(`[acc] project ids (${projects.length}):`, projects.map((p) => p.id).slice(0, 5));
 
       const enrichedProjects: AccProject[] = projects.map((proj) => ({
         ...proj,
