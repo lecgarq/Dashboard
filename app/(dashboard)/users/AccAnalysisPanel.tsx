@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RefreshCw, Users, Shield, AlertTriangle, FolderOpen, Layers, ChevronDown, ChevronRight } from "lucide-react";
+import { RefreshCw, Users, Shield, AlertTriangle, FolderOpen, Layers, ChevronDown, ChevronRight, CloudDownload } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
@@ -138,6 +138,15 @@ export function AccAnalysisPanel({
 
   const [expandDuplicateRoles, setExpandDuplicateRoles] = useState(false);
   const [expandedRole, setExpandedRole] = useState<string | null>(null);
+  const [syncResult, setSyncResult] = useState<{ found: number; notFound: number; errors: number } | null>(null);
+
+  const bulkSync = trpc.users.bulkAccSync.useMutation({
+    onSuccess: (data) => {
+      setSyncResult({ found: data.found, notFound: data.notFound, errors: data.errors });
+      utils.users.bulkAccSummary.invalidate();
+      refetch();
+    },
+  });
 
   const metrics = useMemo(() => {
     const cachedUsers = users.filter((u) => u.found);
@@ -223,20 +232,39 @@ export function AccAnalysisPanel({
   return (
     <div className="space-y-5">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
         <div>
           <h2 className="text-base font-semibold text-foreground">ACC Hub Analysis</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
             Computed from {users.length} registered users &middot; {metrics.totalCachedUsers} with ACC data
           </p>
         </div>
-        <button
-          onClick={refetch}
-          className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/20 rounded-lg px-3 py-1.5 bg-primary/5 hover:bg-primary/10 transition-all"
-        >
-          <RefreshCw size={12} />
-          Refresh Analysis
-        </button>
+        <div className="flex items-center gap-2">
+          {syncResult && !bulkSync.isPending && (
+            <span className="text-xs text-muted-foreground">
+              Sync: {syncResult.found} found · {syncResult.notFound} not in ACC{syncResult.errors > 0 ? ` · ${syncResult.errors} errors` : ""}
+            </span>
+          )}
+          <button
+            onClick={() => { setSyncResult(null); bulkSync.mutate(); }}
+            disabled={bulkSync.isPending}
+            className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 rounded-lg px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {bulkSync.isPending ? (
+              <RefreshCw size={12} className="animate-spin" />
+            ) : (
+              <CloudDownload size={12} />
+            )}
+            {bulkSync.isPending ? `Syncing ${users.length} users…` : "Sync All to ACC"}
+          </button>
+          <button
+            onClick={refetch}
+            className="flex items-center gap-1.5 text-xs text-primary hover:text-primary/80 border border-primary/20 rounded-lg px-3 py-1.5 bg-primary/5 hover:bg-primary/10 transition-all"
+          >
+            <RefreshCw size={12} />
+            Refresh
+          </button>
+        </div>
       </div>
 
       {/* Row 1: KPI Cards */}
