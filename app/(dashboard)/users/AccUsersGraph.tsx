@@ -74,15 +74,15 @@ export interface AccUsersGraphProps {
 // Constants
 // ---------------------------------------------------------------------------
 
-const USER_RADIUS = 14;
-const ROLE_BASE_RADIUS = 14;
-const ROLE_MAX_RADIUS = 28;
+const USER_RADIUS = 7;
+const ROLE_BASE_RADIUS = 9;
+const ROLE_MAX_RADIUS = 16;
 const USER_COLOR_NORMAL = "#6366f1";
-const USER_COLOR_NO_PROJECTS = "#f59e0b";
-const USER_COLOR_HUB_ADMIN = "#10b981";
-const USER_COLOR_NOT_FOUND = "#6b7280";
-const ROLE_COLOR = "#8b5cf6";
-const EDGE_COLOR = "rgba(139, 92, 246, 0.25)";
+const USER_COLOR_NO_PROJECTS = "#d97706";
+const USER_COLOR_HUB_ADMIN = "#059669";
+const USER_COLOR_NOT_FOUND = "#4b5563";
+const ROLE_COLOR = "#7c3aed";
+const EDGE_COLOR = "rgba(139, 92, 246, 0.18)";
 const SIM_ITERATIONS = 200;
 const REPULSION = 3500;
 const ATTRACTION = 0.08;
@@ -634,11 +634,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ctx.globalAlpha = 0.3;
         ctx.strokeStyle = EDGE_COLOR;
 
-        // Batch by color
+        // Batch by color — O(1) index lookup via nodeIndexMapRef
+        const nim = nodeIndexMapRef.current;
         const batches = new Map<string, Array<[number, number, number, number]>>();
         for (const e of edgesRef.current) {
-          const si = nodes.findIndex((n) => n.id === e.source);
-          const ti = nodes.findIndex((n) => n.id === e.target);
+          const si = nim.get(e.source) ?? -1;
+          const ti = nim.get(e.target) ?? -1;
           if (si < 0 || ti < 0) continue;
           const sx = pos[si * 2], sy = pos[si * 2 + 1];
           const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
@@ -664,8 +665,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       }
 
       // -- Nodes --
-      const nodeScreenRadius = USER_RADIUS / v.scale;
-      const showLabels = nodeScreenRadius > 10;
+      // Labels only appear when zoomed in enough to read them
+      const showLabels = v.scale > 80;
 
       // Pulse animation driven by performance.now() — no setInterval
       const now = performance.now();
@@ -686,14 +687,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
           // Selection glow (drawn behind node)
           if (selectedNodeRef.current?.node.id === n.id) {
-            ctx.globalAlpha = 0.15;
+            ctx.globalAlpha = 0.12;
             ctx.fillStyle = n.color;
             ctx.beginPath();
-            ctx.arc(nx, ny, 20 / v.scale, 0, Math.PI * 2);
+            ctx.arc(nx, ny, 12 / v.scale, 0, Math.PI * 2);
             ctx.fill();
             ctx.globalAlpha = 1.0;
-            ctx.strokeStyle = "#fff";
-            ctx.lineWidth = 2 / v.scale;
+            ctx.strokeStyle = "rgba(255,255,255,0.8)";
+            ctx.lineWidth = 1 / v.scale;
             ctx.beginPath();
             ctx.arc(nx, ny, USER_RADIUS / v.scale, 0, Math.PI * 2);
             ctx.stroke();
@@ -703,7 +704,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           const pulseOutlier = highlightOutliersRef.current && isOutlierNode(un, roleUserMap);
           const pulseNP = highlightNoProjectsRef.current && un.hasNoProjects;
           if (pulseOutlier || pulseNP) {
-            const pulseR = (USER_RADIUS + 3 + pulsePhase * 5) / v.scale;
+            const pulseR = (USER_RADIUS + 2 + pulsePhase * 3) / v.scale;
             ctx.strokeStyle = "#f59e0b";
             ctx.lineWidth = 1.5 / v.scale;
             ctx.globalAlpha = 0.3 + pulsePhase * 0.4;
@@ -786,10 +787,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // Viewport cull
           if (px < minWX || px > maxWX || py < minWY || py > maxWY) continue;
 
-          ctx.globalAlpha = p.alpha;
-          ctx.fillStyle = "rgba(139, 92, 246, 0.6)";
+          ctx.globalAlpha = p.alpha * 0.5;
+          ctx.fillStyle = "rgba(167, 139, 250, 1)";
           ctx.beginPath();
-          ctx.arc(px, py, p.size, 0, Math.PI * 2);
+          ctx.arc(px, py, p.size * 0.6, 0, Math.PI * 2);
           ctx.fill();
         }
       }
