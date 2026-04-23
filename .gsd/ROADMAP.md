@@ -80,3 +80,27 @@
 - Module toggles reflect exactly 9 Forma modules
 - Search/filter/sort works across 440 projects
 
+---
+
+### Phase 7: ACC Users Intelligence Suite
+**Status**: ⬜ Not Started
+**Objective**: Transform the Users section from a list into a full analysis and decision-support space — with instant no-project filtering, a cross-user permission analysis dashboard, and a spatial graph for visual pattern detection.
+**Depends on**: Phase 6
+
+**Tasks**:
+- [ ] `bulkAccSummary` tRPC procedure — reads all AccMemberCache in one DB query
+- [ ] "No ACC Projects" filter chip in General tab (instant, no API calls)
+- [ ] Project count badge on user cards from cache
+- [ ] `AccAnalysisPanel.tsx` — ACC Analysis tab with KPI cards, role frequency, module fingerprints
+- [ ] `AccUsersGraph.tsx` — force-directed graph of users, roles, projects (ACC Users Graph v1)
+- [ ] Three-tab navigation: General / ACC Analysis / ACC Users Graph v1
+- [ ] Cross-user duplicate role detection
+- [ ] Multi-role-per-project detection
+- [ ] Module access combination fingerprinting + outlier detection
+- [ ] Click-through from graph node → user profile in General tab
+
+**Verification**:
+- Filter chip shows correct count of users with 0 ACC projects
+- ACC Analysis tab loads instantly from cached data
+- Graph renders with user/role nodes, correct color coding
+- Clicking graph node opens user profile modal
