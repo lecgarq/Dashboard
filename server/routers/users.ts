@@ -8,6 +8,7 @@ import { getPrimaryAdminEmail, isPrimaryAdminEmail } from "@/lib/auth-env";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { randomUUID } from "crypto";
+import crypto from "crypto";
 import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 import { IntegrationError } from "@/lib/server/integration-errors";
@@ -1027,6 +1028,75 @@ export const usersRouter = router({
     );
 
     return { total: users.length, found, notFound, errors };
+  }),
+
+  getGraphLayout: adminProcedure.query(async ({ ctx }) => {
+    // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only
+    //    Sort by email for determinism. Hash all fields that affect graph shape.
+    const allRows = await ctx.db.accMemberCache.findMany({
+      orderBy: { email: "asc" },
+    });
+    const dataHash = crypto
+      .createHash("sha256")
+      .update(
+        JSON.stringify(
+          allRows.map((r) => ({
+            email: r.email,
+            data: r.data,
+            syncedAt: r.syncedAt.toISOString(),
+          }))
+        )
+      )
+      .digest("hex");
+
+    // 2. Fetch stored layout
+    const cached = await ctx.db.accGraphLayoutCache.findUnique({
+      where: { id: "singleton" },
+    });
+
+    if (!cached || cached.dataHash !== dataHash) {
+      // Cache miss or stale — client must run simulation
+      return { hit: false as const, positions: null, dataHash, nodeCount: 0 };
+    }
+    return {
+      hit: true as const,
+      positions: cached.positions,
+      dataHash,
+      nodeCount: cached.nodeCount,
+    };
+  }),
+
+  saveGraphLayout: adminProcedure
+    .input(
+      z.object({
+        positions: z.array(z.number()),
+        dataHash: z.string(),
+        nodeCount: z.number().int().positive(),
+      })
+    )
+    .mutation(async ({ ctx, input }) => {
+      await ctx.db.accGraphLayoutCache.upsert({
+        where: { id: "singleton" },
+        create: {
+          id: "singleton",
+          positions: input.positions,
+          dataHash: input.dataHash,
+          nodeCount: input.nodeCount,
+        },
+        update: {
+          positions: input.positions,
+          dataHash: input.dataHash,
+          nodeCount: input.nodeCount,
+        },
+      });
+      return { ok: true };
+    }),
+
+  invalidateGraphLayout: adminProcedure.mutation(async ({ ctx }) => {
+    // Delete the singleton row — next getGraphLayout call will return hit: false
+    // deleteMany is used because deleteUnique throws if row doesn't exist yet
+    await ctx.db.accGraphLayoutCache.deleteMany({});
+    return { ok: true };
   }),
 
 });
