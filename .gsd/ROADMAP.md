@@ -52,3 +52,31 @@
 - [ ] Glassmorphism UI enhancements.
 - [ ] Final performance audit for 3D/Diagram blocks.
 - [ ] "Super Full" architectural update for GSD.
+
+---
+
+### Phase 6: ACC Users Profile Intelligence
+**Status**: 🟡 In Progress
+**Objective**: Enrich the user directory with accurate Autodesk ACC/Forma member data — company, join date, correct Forma module names, and a polished toggle-based access UI.
+**Depends on**: Phase 1
+
+**Tasks**:
+- [x] Fix roles endpoint (GET /users/{userId}/roles)
+- [x] Fix modules endpoint (GET /users/{userId}/products)
+- [x] Fix React Query cache key mismatch on refresh
+- [x] Resizable user detail modal (CSS resize:both)
+- [x] Apple-style module toggle indicators per project
+- [x] Aggregate stats bar (projects / active / admin / roles / modules)
+- [x] Search, filter, sort on project list
+- [x] Collapsible project cards with full module grid
+- [x] Update module list to 9 Forma-renamed modules (Forma Data Management, Forma Build, etc.)
+- [x] Add Company field from ACC member record
+- [x] Add Added On date from ACC member record
+- [ ] Verify company_name / created_at field names against live API response
+- [ ] Handle cache invalidation when ACC data updates
+
+**Verification**:
+- User modal shows Company + Added On for ACC members
+- Module toggles reflect exactly 9 Forma modules
+- Search/filter/sort works across 440 projects
+

@@ -27,20 +27,20 @@ import { trpc } from "@/lib/core/trpc";
 // Constants
 // ---------------------------------------------------------------------------
 
-/** Master list of all ACC products/modules */
+/**
+ * Master list of ACC/Forma products (9 modules as of 2025 rename).
+ * Old name → New Forma name kept as display label.
+ */
 const ALL_MODULES = [
-  { key: "documentManagement", name: "Document Mgmt" },
-  { key: "designCollaboration", name: "Design Collab" },
-  { key: "modelCoordination", name: "Model Coord" },
-  { key: "build", name: "Build" },
-  { key: "cost", name: "Cost Mgmt" },
-  { key: "fieldManagement", name: "Field Mgmt" },
+  { key: "documentManagement", name: "Forma Data Management" },
+  { key: "designCollaboration", name: "Forma Design Collaboration" },
+  { key: "modelCoordination", name: "Model Coordination" },
+  { key: "preconstruction", name: "Preconstruction" },
+  { key: "autoSpecs", name: "AutoSpecs" },
+  { key: "build", name: "Forma Build" },
   { key: "insight", name: "Insight" },
-  { key: "quantification", name: "Quantification" },
-  { key: "docs", name: "Docs" },
-  { key: "assets", name: "Assets" },
-  { key: "takeoff", name: "Takeoff" },
-  { key: "projectManagement", name: "Project Mgmt" },
+  { key: "design", name: "Design" },
+  { key: "takeoff", name: "Forma Takeoff" },
 ] as const;
 
 type SortField = "name" | "status" | "modules" | "admin";
@@ -348,6 +348,8 @@ type AccProfileData = {
   autodeskId?: string;
   syncedAt: string;
   role?: string;
+  company?: string;
+  addedOn?: string;
   projects?: ProjectData[];
 };
 
@@ -469,12 +471,33 @@ function AccProfileFull({
         <button
           onClick={onRefresh}
           title="Refresh ACC data"
-          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all font-medium"
+          className="text-xs text-muted-foreground hover:text-primary flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border/30 hover:border-primary/30 hover:bg-primary/5 transition-all font-medium shrink-0"
         >
           <RefreshCw size={12} />
           Refresh
         </button>
       </div>
+
+      {/* ── Company & Added On ── */}
+      {(data.company || data.addedOn) && (
+        <div className="flex flex-wrap gap-x-6 gap-y-1 px-1">
+          {data.company && (
+            <div className="flex items-center gap-2 text-sm">
+              <Building2 size={13} className="text-muted-foreground/50 shrink-0" />
+              <span className="text-muted-foreground/60 font-medium">Company:</span>
+              <span className="text-foreground font-semibold">{data.company}</span>
+            </div>
+          )}
+          {data.addedOn && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground/60 font-medium">Added on:</span>
+              <span className="text-foreground font-semibold">
+                {new Date(data.addedOn).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </span>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* ── Aggregate Stats ── */}
       {projects.length > 0 && (

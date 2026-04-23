@@ -13,6 +13,8 @@ export type AccUser = {
   name: string;
   status: string;
   role: string;
+  company?: string;
+  addedOn?: string;
 };
 
 export type AccProject = {
@@ -127,6 +129,8 @@ export async function fetchAccUserByEmail(
         name: getString(match.name),
         status: getString(match.status),
         role: getString(match.role) || getString(match.access_level) || "user",
+        company: getString(match.company_name || match.company) || undefined,
+        addedOn: getString(match.created_at || match.addedOn) || undefined,
       };
     }
 

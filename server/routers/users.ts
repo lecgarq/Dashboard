@@ -821,6 +821,8 @@ export const usersRouter = router({
         name: accUser.name,
         status: accUser.status,
         role: accUser.role,
+        company: accUser.company,
+        addedOn: accUser.addedOn,
         projects: enrichedProjects,
         syncedAt: new Date().toISOString(),
       };
