@@ -405,3 +405,13 @@ model AccMemberCache {
   @@index([email])
   @@index([syncedAt])
 }
+
+// ============ MODULE: ACC GRAPH LAYOUT CACHE ============
+
+model AccGraphLayoutCache {
+  id        String   @id @default("singleton")
+  positions Float[]
+  dataHash  String
+  nodeCount Int
+  updatedAt DateTime @updatedAt
+}
