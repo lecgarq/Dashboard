@@ -719,6 +719,50 @@ export const usersRouter = router({
 
   // ── ACC Project Intelligence ──────────────────────────────────────────────
 
+  /**
+   * Reads ALL AccMemberCache rows in one query and returns a lightweight
+   * summary per cached user. Used by the General tab to power instant filters
+   * (e.g. "No ACC Projects") with zero per-user API calls.
+   */
+  bulkAccSummary: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.accMemberCache.findMany({
+      select: { email: true, data: true, syncedAt: true },
+    });
+
+    if (rows.length === 0) return [];
+
+    return rows.map((row) => {
+      type CacheData = {
+        found: boolean;
+        projects?: Array<{ status: string; isAdmin: boolean }>;
+        syncedAt?: string;
+      };
+
+      let parsed: CacheData = { found: false };
+      try {
+        parsed = row.data as CacheData;
+      } catch {
+        // malformed JSON — treat as not-found
+      }
+
+      const projects = parsed.projects ?? [];
+      const projectCount = projects.length;
+      const activeCount = projects.filter((p) => p.status === "active").length;
+      const adminCount = projects.filter((p) => p.isAdmin).length;
+      const hasNoProjects = parsed.found === true && projectCount === 0;
+
+      return {
+        email: row.email,
+        found: parsed.found,
+        projectCount,
+        activeCount,
+        adminCount,
+        hasNoProjects,
+        syncedAt: row.syncedAt.toISOString(),
+      };
+    });
+  }),
+
   getAccProfile: protectedProcedure
     .input(
       z.object({
@@ -836,4 +880,102 @@ export const usersRouter = router({
 
       return result;
     }),
+
+  // ── ACC Bulk Summary — cross-user hub analysis ────────────────────────────
+  // Returns cached ACC data for all registered users in one query.
+  // Fields are additive: Plan 7.1 filter/badge fields + Plan 7.2 analysis fields.
+
+  bulkAccSummary: adminProcedure.query(async ({ ctx }) => {
+    // 1. Fetch all registered user emails
+    const users = await ctx.db.user.findMany({
+      select: { email: true, name: true },
+      orderBy: { name: "asc" },
+    });
+
+    // 2. Fetch all cached ACC data in one query
+    const caches = await ctx.db.accMemberCache.findMany({
+      where: { email: { in: users.map((u) => u.email) } },
+    });
+
+    const cacheMap = new Map(caches.map((c) => [c.email, c]));
+
+    // 3. Shape each user's ACC data
+    type CachedProject = {
+      id: string;
+      name: string;
+      status: string;
+      isAdmin: boolean;
+      roles: string[];
+      modules: string[];
+    };
+
+    type CachedData = {
+      found: boolean;
+      name?: string;
+      syncedAt?: string;
+      projects?: CachedProject[];
+    };
+
+    return users.map((user) => {
+      const cached = cacheMap.get(user.email);
+
+      if (!cached) {
+        return {
+          email: user.email,
+          name: user.name ?? "",
+          found: false,
+          projectCount: 0,
+          activeCount: 0,
+          adminCount: 0,
+          hasNoProjects: true,
+          syncedAt: "",
+          allRoles: [] as string[],
+          allModules: [] as string[],
+          projects: [] as CachedProject[],
+        };
+      }
+
+      const data = JSON.parse(cached.data as string) as CachedData;
+
+      if (!data.found) {
+        return {
+          email: user.email,
+          name: user.name ?? data.name ?? "",
+          found: false,
+          projectCount: 0,
+          activeCount: 0,
+          adminCount: 0,
+          hasNoProjects: true,
+          syncedAt: data.syncedAt ?? cached.syncedAt.toISOString(),
+          allRoles: [] as string[],
+          allModules: [] as string[],
+          projects: [] as CachedProject[],
+        };
+      }
+
+      const projects: CachedProject[] = data.projects ?? [];
+      const activeCount = projects.filter(
+        (p) => p.status?.toLowerCase() === "active"
+      ).length;
+      const adminCount = projects.filter((p) => p.isAdmin).length;
+
+      // Deduplicated flat lists across all projects
+      const allRoles = [...new Set(projects.flatMap((p) => p.roles ?? []))];
+      const allModules = [...new Set(projects.flatMap((p) => p.modules ?? []))];
+
+      return {
+        email: user.email,
+        name: user.name ?? data.name ?? "",
+        found: true,
+        projectCount: projects.length,
+        activeCount,
+        adminCount,
+        hasNoProjects: projects.length === 0,
+        syncedAt: data.syncedAt ?? cached.syncedAt.toISOString(),
+        allRoles,
+        allModules,
+        projects,
+      };
+    });
+  }),
 });
