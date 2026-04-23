@@ -67,6 +67,16 @@ interface LocalDirectoryUser {
 type GroupByField = "none" | "department" | "jobTitle" | "costCenter";
 type ViewMode = "grid" | "list";
 
+interface AccSummaryItem {
+  email: string;
+  found: boolean;
+  projectCount: number;
+  activeCount: number;
+  adminCount: number;
+  hasNoProjects: boolean;
+  syncedAt: string;
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -367,11 +377,35 @@ function PersonDetailModal({
   );
 }
 
+/** Small ACC project count badge shown on person cards/rows */
+function AccBadge({ summary }: { summary: AccSummaryItem | undefined }) {
+  if (!summary) return null;
+  if (summary.hasNoProjects) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5 shrink-0">
+        <AlertCircle size={9} className="shrink-0" />
+        No projects
+      </span>
+    );
+  }
+  if (summary.projectCount > 0) {
+    return (
+      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-1.5 py-0.5 shrink-0">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
+        {summary.projectCount} {summary.projectCount === 1 ? "project" : "projects"}
+      </span>
+    );
+  }
+  return null;
+}
+
 function PersonCard({
   person,
+  accSummary,
   onClick,
 }: {
   person: OrgPerson;
+  accSummary?: AccSummaryItem;
   onClick: () => void;
 }) {
   return (
@@ -417,15 +451,22 @@ function PersonCard({
           </div>
         )}
       </div>
+
+      {/* ACC badge */}
+      <div className="mt-2.5">
+        <AccBadge summary={accSummary} />
+      </div>
     </button>
   );
 }
 
 function PersonRow({
   person,
+  accSummary,
   onClick,
 }: {
   person: OrgPerson;
+  accSummary?: AccSummaryItem;
   onClick: () => void;
 }) {
   return (
@@ -434,7 +475,7 @@ function PersonRow({
       className="group/row w-full text-left flex items-center gap-4 px-4 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150"
     >
       <PersonAvatar person={person} size="sm" />
-      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr] gap-3 items-center">
+      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_auto] gap-3 items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{person.displayName}</p>
           <p className="text-[11px] text-muted-foreground truncate">{person.email}</p>
@@ -450,6 +491,9 @@ function PersonRow({
         </div>
         <div className="min-w-0 text-xs text-muted-foreground truncate">
           {person.phoneNumber || <span className="text-muted-foreground/30">--</span>}
+        </div>
+        <div className="shrink-0">
+          <AccBadge summary={accSummary} />
         </div>
       </div>
     </button>
@@ -526,7 +570,14 @@ export function UsersDirectoryClient() {
   const [filterDept, setFilterDept] = useState<string | null>(null);
   const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
   const [filterCostCenter, setFilterCostCenter] = useState<string | null>(null);
+  const [filterNoProjects, setFilterNoProjects] = useState(false);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges
+  const { data: accSummaryRaw = [] } = trpc.users.bulkAccSummary.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
 
   const {
     data: directoryData,
@@ -563,6 +614,21 @@ export function UsersDirectoryClient() {
   }, [directoryData, fallbackDirectory]);
 
   const isLoading = !people.length && isDirectoryLoading && isFallbackLoading;
+
+  // Map of email -> AccSummaryItem for O(1) lookup in render
+  const accSummaryMap = useMemo<Map<string, AccSummaryItem>>(() => {
+    const map = new Map<string, AccSummaryItem>();
+    for (const item of accSummaryRaw as AccSummaryItem[]) {
+      map.set(item.email, item);
+    }
+    return map;
+  }, [accSummaryRaw]);
+
+  // Count of people in the directory who have hasNoProjects === true
+  const noProjectsCount = useMemo(
+    () => people.filter((p) => accSummaryMap.get(p.email)?.hasNoProjects === true).length,
+    [people, accSummaryMap]
+  );
 
   const usingFallbackDirectory =
     !error && (directoryData?.status !== "ok" || (isDirectoryLoading && fallbackDirectory.length > 0));
@@ -611,7 +677,7 @@ export function UsersDirectoryClient() {
   const jobTitles = useMemo(() => uniqueSorted(people.map((p) => p.jobTitle)), [people]);
   const costCenters = useMemo(() => uniqueSorted(people.map((p) => p.costCenter)), [people]);
 
-  const hasActiveFilters = !!(filterDept || filterJobTitle || filterCostCenter);
+  const hasActiveFilters = !!(filterDept || filterJobTitle || filterCostCenter || filterNoProjects);
 
   // Filter + search
   const filtered = useMemo(() => {
@@ -622,10 +688,15 @@ export function UsersDirectoryClient() {
       if (filterDept && p.department !== filterDept) return false;
       if (filterJobTitle && p.jobTitle !== filterJobTitle) return false;
       if (filterCostCenter && p.costCenter !== filterCostCenter) return false;
+      // ACC "No Projects" filter — only show users with cache entry AND hasNoProjects true
+      if (filterNoProjects) {
+        const summary = accSummaryMap.get(p.email);
+        if (!summary || !summary.hasNoProjects) return false;
+      }
       // Search bar (free text + field scoped)
       return matchesPerson(p, freeText, fieldFilters);
     });
-  }, [people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter]);
+  }, [people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, filterNoProjects, accSummaryMap]);
 
   // Grouped data
   const groups = useMemo(() => {
@@ -658,6 +729,7 @@ export function UsersDirectoryClient() {
     setFilterDept(null);
     setFilterJobTitle(null);
     setFilterCostCenter(null);
+    setFilterNoProjects(false);
     handleSearchChange("");
   }
 
@@ -666,17 +738,19 @@ export function UsersDirectoryClient() {
       return (
         <div className="space-y-1.5">
           {/* List header */}
-          <div className="hidden lg:grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr] gap-3 px-4 py-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+          <div className="hidden lg:grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_auto] gap-3 px-4 py-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
             <span>Name</span>
             <span>Department</span>
             <span>Job Title</span>
             <span>Cost Center</span>
             <span>Phone</span>
+            <span>ACC</span>
           </div>
           {list.map((person) => (
             <PersonRow
               key={person.resourceName}
               person={person}
+              accSummary={accSummaryMap.get(person.email)}
               onClick={() => setSelectedPerson(person)}
             />
           ))}
@@ -690,6 +764,7 @@ export function UsersDirectoryClient() {
           <PersonCard
             key={person.resourceName}
             person={person}
+            accSummary={accSummaryMap.get(person.email)}
             onClick={() => setSelectedPerson(person)}
           />
         ))}
@@ -858,6 +933,22 @@ export function UsersDirectoryClient() {
                 ))}
               </SelectContent>
             </Select>
+          )}
+
+          {/* ACC "No Projects" filter chip — only visible when there is cache data */}
+          {noProjectsCount > 0 && (
+            <button
+              onClick={() => setFilterNoProjects((prev) => !prev)}
+              className={cn(
+                "inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all",
+                filterNoProjects
+                  ? "border-amber-500/60 bg-amber-500/15 text-amber-400"
+                  : "border-amber-500/25 bg-transparent text-amber-500/70 hover:border-amber-500/50 hover:text-amber-400"
+              )}
+            >
+              <AlertCircle size={11} className="shrink-0" />
+              No ACC Projects ({noProjectsCount})
+            </button>
           )}
 
           {hasActiveFilters && (
