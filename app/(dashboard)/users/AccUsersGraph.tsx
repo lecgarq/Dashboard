@@ -329,6 +329,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
   const nodeIndexMapRef = useRef(new Map<string, number>());
   const instIdxRef = useRef<Uint32Array>(new Uint32Array(0));
+  const visibleNodeIdxRef = useRef<Uint32Array>(new Uint32Array(0));
   const visibleIndexSetRef = useRef<Set<number>>(new Set());
   const centroidRef = useRef({ x: 0.5, y: 0.5 });
   const needsRenderRef = useRef(true);
@@ -389,22 +390,28 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const rebuildGrid = useCallback(() => {
     const cellSize = Math.max(0.005, 60 / view.current.scale);
-    gridRef.current = buildGrid(posRef.current, instIdxRef.current, cellSize);
+    gridRef.current = buildGrid(posRef.current, visibleNodeIdxRef.current, cellSize);
   }, []);
 
   const rebuildVisibleIndices = useCallback(() => {
     const nodes = nodesRef.current;
     const filters = filtersRef.current;
     const userIndices: number[] = [];
+    const visibleIndices: number[] = [];
     const visibleSet = new Set<number>();
     for (let i = 0; i < nodes.length; i++) {
       if (nodes[i].kind === "user" && nodeMatchesFilters(nodes[i], filters)) {
         userIndices.push(i);
+        visibleIndices.push(i);
+        visibleSet.add(i);
+      } else if (nodes[i].kind !== "user") {
+        visibleIndices.push(i);
         visibleSet.add(i);
       }
     }
 
     instIdxRef.current = new Uint32Array(userIndices);
+    visibleNodeIdxRef.current = new Uint32Array(visibleIndices);
     visibleIndexSetRef.current = visibleSet;
     setVisibleCount(userIndices.length);
 
@@ -458,7 +465,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
     if (!posRef.current.length) return;
 
-    const visibleIndices = instIdxRef.current;
+    const visibleIndices = visibleNodeIdxRef.current;
     const positions = posRef.current;
     if (!visibleIndices.length) return;
 
@@ -604,6 +611,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       posRef.current = new Float32Array(0);
       nodeIndexMapRef.current = new Map();
       instIdxRef.current = new Uint32Array(0);
+      visibleNodeIdxRef.current = new Uint32Array(0);
       visibleIndexSetRef.current = new Set();
       setVisibleCount(0);
       setIsReady(false);
@@ -622,6 +630,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       posRef.current = new Float32Array(0);
       nodeIndexMapRef.current = new Map();
       instIdxRef.current = new Uint32Array(0);
+      visibleNodeIdxRef.current = new Uint32Array(0);
       visibleIndexSetRef.current = new Set();
       setVisibleCount(0);
       setIsReady(false);
