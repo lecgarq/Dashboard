@@ -44,12 +44,8 @@ interface SpatialGrid {
   cells: Map<string, number[]>;
 }
 
-type AccessFilter = "all" | "admin" | "member";
-
 interface GraphFilters {
   roles: string[];
-  access: AccessFilter;
-  projects: string[];
   modules: string[];
 }
 
@@ -72,7 +68,7 @@ export interface AccUsersGraphProps {
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
-const DEFAULT_FILTERS: GraphFilters = { roles: [], access: "all", projects: [], modules: [] };
+const DEFAULT_FILTERS: GraphFilters = { roles: [], modules: [] };
 const DEFAULT_SPACING = 50;
 const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = { role: 72, access: 38, module: 58, project: 68 };
 
@@ -154,14 +150,6 @@ function computeCentroid(positions: Float32Array): { x: number; y: number } {
 
 function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
   if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
-  if (filters.access === "admin" && !node.isAdmin) return false;
-  if (filters.access === "member" && node.isAdmin) return false;
-  if (
-    filters.projects.length > 0 &&
-    !filters.projects.some((project) => project === node.projectId || project === node.projectName)
-  ) {
-    return false;
-  }
   if (filters.modules.length > 0 && !node.modules.some((moduleName) => filters.modules.includes(moduleName))) {
     return false;
   }
@@ -844,10 +832,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       option.label.toLowerCase().includes(query) || option.value.toLowerCase().includes(query)
     ));
   }, [filterOptions.modules, moduleQuery]);
-  const hasActiveFilters = filters.roles.length > 0 ||
-    filters.access !== "all" ||
-    filters.projects.length > 0 ||
-    filters.modules.length > 0;
+  const hasActiveFilters = filters.roles.length > 0 || filters.modules.length > 0;
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -960,20 +945,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 value={spacing}
                 onChange={scheduleSpacingUpdate}
               />
-              <div className="flex items-center rounded-lg border border-gray-200 bg-gray-50 p-0.5">
-                {(["all", "admin", "member"] as const).map((access) => (
-                  <button
-                    key={access}
-                    onClick={() => setFilters((current) => ({ ...current, access }))}
-                    className={cn(
-                      "px-2 py-0.5 text-[10px] font-medium rounded-md capitalize transition-colors",
-                      filters.access === access ? "bg-gray-900 text-white" : "text-gray-500 hover:text-gray-900",
-                    )}
-                  >
-                    {access}
-                  </button>
-                ))}
-              </div>
+
               <span className="ml-auto text-[10px] font-medium text-gray-500">
                 {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances
               </span>
@@ -1012,23 +984,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 onChange={(value) => scheduleLayoutWeightUpdate("project", value)}
               />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
               <FilterMenu
                 label="Roles"
                 options={filterOptions.roles}
                 selected={filters.roles}
                 onToggle={(value) => setFilters((current) => ({ ...current, roles: toggleValue(current.roles, value) }))}
                 maxVisible={8}
-              />
-              <FilterMenu
-                label="Projects"
-                options={filteredProjectOptions}
-                selected={filters.projects}
-                onToggle={(value) => setFilters((current) => ({ ...current, projects: toggleValue(current.projects, value) }))}
-                query={projectQuery}
-                onQueryChange={setProjectQuery}
-                placeholder="Search projects"
-                maxVisible={6}
               />
               <FilterMenu
                 label="Modules"
@@ -1086,8 +1048,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         */}
 
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
-          <LegendDot color="#10B981" label="Project Admin" />
-          <span className="text-[10px] text-gray-400">- colored by primary role</span>
+          <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
         </div>
 
         <canvas

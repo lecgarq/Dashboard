@@ -41,6 +41,7 @@ import { cn } from "@/lib/core/utils";
 import { AccProfileSection } from "./AccProfileSection";
 import { AccAnalysisPanel, type BulkAccUser } from "./AccAnalysisPanel";
 import { AccUsersGraph } from "./AccUsersGraph";
+import { moduleLabel } from "@/lib/acc/modules";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -69,15 +70,7 @@ interface LocalDirectoryUser {
 type GroupByField = "none" | "department" | "jobTitle" | "costCenter";
 type ViewMode = "grid" | "list";
 
-interface AccSummaryItem {
-  email: string;
-  found: boolean;
-  projectCount: number;
-  activeCount: number;
-  adminCount: number;
-  hasNoProjects: boolean;
-  syncedAt: string;
-}
+
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -380,7 +373,7 @@ function PersonDetailModal({
 }
 
 /** Small ACC project count badge shown on person cards/rows */
-function AccBadge({ summary }: { summary: AccSummaryItem | undefined }) {
+function AccBadge({ summary }: { summary: BulkAccUser | undefined }) {
   if (!summary) return null;
   if (summary.hasNoProjects) {
     return (
@@ -407,7 +400,7 @@ function PersonCard({
   onClick,
 }: {
   person: OrgPerson;
-  accSummary?: AccSummaryItem;
+  accSummary?: BulkAccUser;
   onClick: () => void;
 }) {
   return (
@@ -468,7 +461,7 @@ function PersonRow({
   onClick,
 }: {
   person: OrgPerson;
-  accSummary?: AccSummaryItem;
+  accSummary?: BulkAccUser;
   onClick: () => void;
 }) {
   return (
@@ -575,6 +568,9 @@ export function UsersDirectoryClient() {
   const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
   const [filterCostCenter, setFilterCostCenter] = useState<string | null>(null);
   const [filterNoProjects, setFilterNoProjects] = useState(false);
+  const [filterAccProject, setFilterAccProject] = useState<string | null>(null);
+  const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
+  const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges (Plan 7.1)
@@ -621,14 +617,14 @@ export function UsersDirectoryClient() {
 
   const isLoading = !people.length && isDirectoryLoading && isFallbackLoading;
 
-  // Map of email -> AccSummaryItem for O(1) lookup in render
-  const accSummaryMap = useMemo<Map<string, AccSummaryItem>>(() => {
-    const map = new Map<string, AccSummaryItem>();
-    for (const item of accSummaryRaw as AccSummaryItem[]) {
+  // Map of email -> BulkAccUser for O(1) lookup in render
+  const accSummaryMap = useMemo<Map<string, BulkAccUser>>(() => {
+    const map = new Map<string, BulkAccUser>();
+    for (const item of accSummary) {
       map.set(item.email, item);
     }
     return map;
-  }, [accSummaryRaw]);
+  }, [accSummary]);
 
   // All 1197 directory people merged with ACC cache data — unregistered people get found:false stubs
   const mergedAccUsers = useMemo<BulkAccUser[]>(() => {
@@ -712,7 +708,34 @@ export function UsersDirectoryClient() {
   const jobTitles = useMemo(() => uniqueSorted(people.map((p) => p.jobTitle)), [people]);
   const costCenters = useMemo(() => uniqueSorted(people.map((p) => p.costCenter)), [people]);
 
-  const hasActiveFilters = !!(filterDept || filterJobTitle || filterCostCenter || filterNoProjects);
+  const accProjects = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of accSummary) {
+      for (const p of u.projects) set.add(p.name);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [accSummary]);
+
+  const accRoles = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of accSummary) {
+      for (const r of u.allRoles) set.add(r);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [accSummary]);
+
+  const accModules = useMemo(() => {
+    const set = new Set<string>();
+    for (const u of accSummary) {
+      for (const m of u.allModules) set.add(m);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [accSummary]);
+
+  const hasActiveFilters = !!(
+    filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
+    filterAccProject || filterAccRole || filterAccModule
+  );
 
   // Filter + search
   const filtered = useMemo(() => {
@@ -728,10 +751,22 @@ export function UsersDirectoryClient() {
         const summary = accSummaryMap.get(p.email);
         if (!summary || !summary.hasNoProjects) return false;
       }
+      // ACC filters
+      if (filterAccProject || filterAccRole || filterAccModule) {
+        const summary = accSummaryMap.get(p.email);
+        if (!summary) return false;
+        if (filterAccProject && !summary.projects?.some((proj) => proj.name === filterAccProject)) return false;
+        if (filterAccRole && !summary.allRoles?.includes(filterAccRole)) return false;
+        if (filterAccModule && !summary.allModules?.includes(filterAccModule)) return false;
+      }
+      
       // Search bar (free text + field scoped)
       return matchesPerson(p, freeText, fieldFilters);
     });
-  }, [people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, filterNoProjects, accSummaryMap]);
+  }, [
+    people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, 
+    filterNoProjects, filterAccProject, filterAccRole, filterAccModule, accSummaryMap
+  ]);
 
   // Grouped data
   const groups = useMemo(() => {
@@ -765,6 +800,9 @@ export function UsersDirectoryClient() {
     setFilterJobTitle(null);
     setFilterCostCenter(null);
     setFilterNoProjects(false);
+    setFilterAccProject(null);
+    setFilterAccRole(null);
+    setFilterAccModule(null);
     handleSearchChange("");
   }
 
@@ -808,9 +846,14 @@ export function UsersDirectoryClient() {
   }
 
   return (
-    <div className="p-6 max-w-[1600px] mx-auto space-y-4 animate-fade-up">
+    <div className={cn(
+      "max-w-[1600px] mx-auto",
+      activeTab === "graph"
+        ? "flex flex-col h-full"
+        : "p-6 space-y-4 animate-fade-up",
+    )}>
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className={cn("flex items-center justify-between shrink-0", activeTab === "graph" && "px-6 pt-6")}>
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
             <Users size={16} className="text-primary" />
@@ -884,7 +927,7 @@ export function UsersDirectoryClient() {
       </div>
 
       {/* Tab switcher */}
-      <div className="flex items-center gap-1 border-b border-border/40 pb-0">
+      <div className={cn("flex items-center gap-1 border-b border-border/40 pb-0 shrink-0", activeTab === "graph" && "px-6")}>
         <button
           onClick={() => setActiveTab("general")}
           className={cn(
@@ -930,7 +973,7 @@ export function UsersDirectoryClient() {
 
       {/* ACC Users Graph tab */}
       {activeTab === "graph" && (
-        <div className="w-full" style={{ height: "calc(100vh - 200px)" }}>
+        <div className="flex-1 min-h-0 px-6 pb-6 pt-4">
           <AccUsersGraph
             users={mergedAccUsers}
             onSelectUser={(email) => {
@@ -1030,6 +1073,66 @@ export function UsersDirectoryClient() {
             </Select>
           )}
 
+          {accProjects.length > 0 && (
+            <Select
+              value={filterAccProject ?? "__all__"}
+              onValueChange={(v) => setFilterAccProject(v === "__all__" ? null : v)}
+            >
+              <SelectTrigger className="h-7 w-auto min-w-[130px] text-[11px] bg-card border-border gap-1">
+                <Building2 size={11} className="shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="ACC Project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All ACC Projects</SelectItem>
+                {accProjects.map((p) => (
+                  <SelectItem key={p} value={p}>
+                    {p}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {accRoles.length > 0 && (
+            <Select
+              value={filterAccRole ?? "__all__"}
+              onValueChange={(v) => setFilterAccRole(v === "__all__" ? null : v)}
+            >
+              <SelectTrigger className="h-7 w-auto min-w-[130px] text-[11px] bg-card border-border gap-1">
+                <UserCircle size={11} className="shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="ACC Role" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All ACC Roles</SelectItem>
+                {accRoles.map((r) => (
+                  <SelectItem key={r} value={r}>
+                    {r}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
+          {accModules.length > 0 && (
+            <Select
+              value={filterAccModule ?? "__all__"}
+              onValueChange={(v) => setFilterAccModule(v === "__all__" ? null : v)}
+            >
+              <SelectTrigger className="h-7 w-auto min-w-[130px] text-[11px] bg-card border-border gap-1">
+                <LayoutGrid size={11} className="shrink-0 text-muted-foreground" />
+                <SelectValue placeholder="ACC Module" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__all__">All ACC Modules</SelectItem>
+                {accModules.map((m) => (
+                  <SelectItem key={m} value={m}>
+                    {moduleLabel(m)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
+
           {/* ACC "No Projects" filter chip — only visible when there is cache data */}
           {noProjectsCount > 0 && (
             <button
@@ -1079,6 +1182,27 @@ export function UsersDirectoryClient() {
                 label="CC"
                 value={filterCostCenter}
                 onClear={() => setFilterCostCenter(null)}
+              />
+            )}
+            {filterAccProject && (
+              <ActiveFilterPill
+                label="Project"
+                value={filterAccProject}
+                onClear={() => setFilterAccProject(null)}
+              />
+            )}
+            {filterAccRole && (
+              <ActiveFilterPill
+                label="Role"
+                value={filterAccRole}
+                onClear={() => setFilterAccRole(null)}
+              />
+            )}
+            {filterAccModule && (
+              <ActiveFilterPill
+                label="Module"
+                value={moduleLabel(filterAccModule)}
+                onClear={() => setFilterAccModule(null)}
               />
             )}
           </div>

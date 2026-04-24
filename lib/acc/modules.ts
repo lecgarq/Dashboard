@@ -6,7 +6,7 @@
 
 export const ACC_MODULE_LABELS: Record<string, string> = {
   // ACC HQ Admin API product keys (snake_case / lowercase) - what the API actually returns
-  docs: "Data Management",
+  docs: "Forma Data Management",
   design_collaboration: "Design Collaboration",
   model_coordination: "Model Coordination",
   preconstruction: "Preconstruction",
@@ -16,7 +16,7 @@ export const ACC_MODULE_LABELS: Record<string, string> = {
   design: "Design",
 
   // camelCase variants - legacy data or alternate API shapes
-  documentManagement: "Data Management",
+  documentManagement: "Forma Data Management",
   designCollaboration: "Design Collaboration",
   modelCoordination: "Model Coordination",
   autoSpecs: "AutoSpecs",

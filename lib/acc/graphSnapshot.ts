@@ -266,7 +266,7 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
       const roles = toStringSet(project.roles);
       const modules = toStringSet(project.modules);
       const primaryRole = roles[0] ?? null;
-      const color = project.isAdmin ? "#10B981" : getCategoryColor(primaryRole);
+      const color = getCategoryColor(primaryRole);
       const nodeId = `instance:${user.email}:${project.id}`;
 
       nodes.push({
@@ -320,9 +320,13 @@ export function normalizeAccGraphPositions(nodes: readonly Pick<AccGraphNode, "x
 
   const rangeX = maxX - minX || 1;
   const rangeY = maxY - minY || 1;
+  const maxRange = Math.max(rangeX, rangeY);
+  const offsetX = (maxRange - rangeX) / 2;
+  const offsetY = (maxRange - rangeY) / 2;
+
   const positions: number[] = [];
   for (const node of nodes) {
-    positions.push((node.x - minX) / rangeX, (node.y - minY) / rangeY);
+    positions.push((node.x - minX + offsetX) / maxRange, (node.y - minY + offsetY) / maxRange);
   }
   return positions;
 }
