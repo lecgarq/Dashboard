@@ -301,6 +301,17 @@ function normalizePositions(positions: Float32Array): Float32Array {
   return positions;
 }
 
+function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32Array | null {
+  if (!Array.isArray(raw) || raw.length !== expectedLength) return null;
+  const positions = new Float32Array(expectedLength);
+  for (let i = 0; i < expectedLength; i++) {
+    const value = raw[i];
+    if (typeof value !== "number" || !Number.isFinite(value)) return null;
+    positions[i] = value;
+  }
+  return positions;
+}
+
 export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
@@ -619,7 +630,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     nodesRef.current = rawNodes;
-    basePosRef.current = computeSemanticPositions(rawNodes, layoutWeightsRef.current);
+    basePosRef.current =
+      readPrecomputedPositions(graph.positions, rawNodes.length * 2) ??
+      computeSemanticPositions(rawNodes, layoutWeightsRef.current);
     posRef.current = new Float32Array(basePosRef.current.length);
     centroidRef.current = computeCentroid(basePosRef.current);
     applySpacing();
