@@ -15,7 +15,12 @@ import { IntegrationError } from "@/lib/server/integration-errors";
 import pLimit from "p-limit";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
 import { runSimulation, type PhysicsEdge, type PhysicsNode } from "@/lib/acc/graphSimulation";
-import { buildAccGraphSnapshot, normalizeAccGraphPositions } from "@/lib/acc/graphSnapshot";
+import {
+  buildAccGraphSnapshot,
+  normalizeAccGraphPositions,
+  type AccGraphNode,
+  type AccGraphStats,
+} from "@/lib/acc/graphSnapshot";
 import {
   fetchAccUserByEmail,
   fetchAllAccUsers,
@@ -27,6 +32,48 @@ import {
 
 const logger = createLogger("users");
 const ACC_GRAPH_CACHE_ID = "singleton";
+const EMPTY_ACC_GRAPH_STATS: AccGraphStats = {
+  uniqueFoundUsers: 0,
+  uniqueProjects: 0,
+  totalProjectInstances: 0,
+  roleCount: 0,
+  moduleCount: 0,
+  nodeCount: 0,
+  edgeCount: 0,
+};
+
+function isFiniteNumber(value: unknown): value is number {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function sanitizeGraphNodes(nodes: AccGraphNode[], fallbackNodes: readonly AccGraphNode[]) {
+  let usedFallback = false;
+  const safeNodes = nodes.map((node, index) => {
+    const fallback = fallbackNodes[index] ?? node;
+    const x = isFiniteNumber(node.x) ? node.x : fallback.x;
+    const y = isFiniteNumber(node.y) ? node.y : fallback.y;
+    const vx = isFiniteNumber(node.vx) ? node.vx : fallback.vx;
+    const vy = isFiniteNumber(node.vy) ? node.vy : fallback.vy;
+    usedFallback ||= x !== node.x || y !== node.y || vx !== node.vx || vy !== node.vy;
+    return { ...node, x, y, vx, vy };
+  });
+  return { safeNodes, usedFallback };
+}
+
+function sanitizeGraphPositions(rawPositions: unknown, fallbackPositions: number[]) {
+  if (!Array.isArray(rawPositions) || rawPositions.length !== fallbackPositions.length) {
+    return { safePositions: fallbackPositions, usedFallback: true };
+  }
+
+  let usedFallback = false;
+  const safePositions = rawPositions.map((value, index) => {
+    if (isFiniteNumber(value)) return value;
+    usedFallback = true;
+    return fallbackPositions[index];
+  });
+
+  return { safePositions, usedFallback };
+}
 
 function toAccRouterError(error: unknown, fallbackMessage: string) {
   if (error instanceof IntegrationError) {
@@ -73,13 +120,26 @@ async function rebuildAccGraphCache(db: any) {
       ? { ...node, x: settledNode.x, y: settledNode.y, vx: settledNode.vx, vy: settledNode.vy }
       : node;
   });
-  const positions = normalizeAccGraphPositions(nodes);
+  const fallbackPositions = normalizeAccGraphPositions(snapshot.nodes);
+  const { safeNodes, usedFallback: usedNodeFallback } = sanitizeGraphNodes(nodes, snapshot.nodes);
+  const { safePositions: positions, usedFallback: usedPositionFallback } = sanitizeGraphPositions(
+    normalizeAccGraphPositions(safeNodes),
+    fallbackPositions,
+  );
+
+  if (usedNodeFallback || usedPositionFallback) {
+    logger.warn("ACC graph cache rebuild produced invalid numeric values; falling back to semantic seed positions", {
+      usedNodeFallback,
+      usedPositionFallback,
+      nodeCount: snapshot.stats.nodeCount,
+    });
+  }
 
   await db.accGraphLayoutCache.upsert({
     where: { id: ACC_GRAPH_CACHE_ID },
     create: {
       id: ACC_GRAPH_CACHE_ID,
-      nodes: nodes as unknown as Prisma.InputJsonValue,
+      nodes: safeNodes as unknown as Prisma.InputJsonValue,
       edges: snapshot.edges as unknown as Prisma.InputJsonValue,
       positions,
       dataHash: snapshot.dataHash,
@@ -90,7 +150,7 @@ async function rebuildAccGraphCache(db: any) {
       nodeIds: snapshot.nodeIds,
     },
     update: {
-      nodes: nodes as unknown as Prisma.InputJsonValue,
+      nodes: safeNodes as unknown as Prisma.InputJsonValue,
       edges: snapshot.edges as unknown as Prisma.InputJsonValue,
       positions,
       dataHash: snapshot.dataHash,
@@ -102,7 +162,7 @@ async function rebuildAccGraphCache(db: any) {
     },
   });
 
-  return { ...snapshot, nodes, positions };
+  return { ...snapshot, nodes: safeNodes, positions };
 }
 
 function toStringSet(value: unknown): string[] {
@@ -1197,64 +1257,104 @@ export const usersRouter = router({
     }),
 
   getPrecomputedGraph: adminProcedure.query(async ({ ctx }) => {
-    // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only
-    //    Sort by email for determinism. Hash only fields that affect graph topology.
-    const allRows = await ctx.db.accMemberCache.findMany({ orderBy: { email: "asc" } });
-    const current = buildAccGraphSnapshot(allRows);
+    let currentStats = EMPTY_ACC_GRAPH_STATS;
+    let currentDataHash = "";
 
-    // 2. Fetch stored layout
-    const cached = await ctx.db.accGraphLayoutCache.findUnique({
-      where: { id: ACC_GRAPH_CACHE_ID },
-    });
+    try {
+      // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only
+      //    Sort by email for determinism. Hash only fields that affect graph topology.
+      const allRows = await ctx.db.accMemberCache.findMany({ orderBy: { email: "asc" } });
+      const current = buildAccGraphSnapshot(allRows);
+      currentStats = current.stats;
+      currentDataHash = current.dataHash;
 
-    const cacheValid =
-      cached &&
-      cached.dataHash === current.dataHash &&
-      cached.nodeCount === current.stats.nodeCount &&
-      cached.edgeCount === current.stats.edgeCount &&
-      cached.instanceCount === current.stats.totalProjectInstances &&
-      cached.projectCount === current.stats.uniqueProjects &&
-      cached.nodeIds.length === current.nodeIds.length &&
-      cached.positions.length === current.stats.nodeCount * 2;
+      // 2. Fetch stored layout
+      const cached = await ctx.db.accGraphLayoutCache.findUnique({
+        where: { id: ACC_GRAPH_CACHE_ID },
+      });
 
-    if (!cacheValid) {
-      // Cache miss or stale — client must run simulation
+      const cacheValid =
+        cached &&
+        cached.dataHash === current.dataHash &&
+        cached.nodeCount === current.stats.nodeCount &&
+        cached.edgeCount === current.stats.edgeCount &&
+        cached.instanceCount === current.stats.totalProjectInstances &&
+        cached.projectCount === current.stats.uniqueProjects &&
+        cached.nodeIds.length === current.nodeIds.length &&
+        cached.positions.length === current.stats.nodeCount * 2;
+
+      if (!cacheValid) {
+        return {
+          hit: false as const,
+          stale: !!cached,
+          dataHash: current.dataHash,
+          nodes: [] as unknown[],
+          edges: [] as unknown[],
+          positions: null,
+          nodeIds: [] as string[],
+          stats: current.stats,
+        };
+      }
+
+      const fallbackPositions = normalizeAccGraphPositions(current.nodes);
+      const { safePositions, usedFallback } = sanitizeGraphPositions(cached.positions, fallbackPositions);
+      if (usedFallback) {
+        logger.warn("ACC graph cache returned invalid positions; using semantic fallback positions", {
+          nodeCount: current.stats.nodeCount,
+        });
+      }
+
+      return {
+        hit: true as const,
+        stale: false,
+        nodes: current.nodes as unknown[],
+        edges: current.edges as unknown[],
+        positions: safePositions,
+        dataHash: current.dataHash,
+        nodeIds: current.nodeIds,
+        stats: current.stats,
+      };
+    } catch (error) {
+      logger.error("Failed to load ACC graph cache", {
+        error: error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : String(error),
+      });
       return {
         hit: false as const,
-        stale: !!cached,
-        dataHash: current.dataHash,
+        stale: false,
+        dataHash: currentDataHash,
         nodes: [] as unknown[],
         edges: [] as unknown[],
         positions: null,
         nodeIds: [] as string[],
-        stats: current.stats,
+        stats: currentStats,
       };
     }
-    return {
-      hit: true as const,
-      stale: false,
-      nodes: cached.nodes as unknown[],
-      edges: cached.edges as unknown[],
-      positions: cached.positions,
-      dataHash: current.dataHash,
-      nodeIds: cached.nodeIds,
-      stats: current.stats,
-    };
   }),
 
   rebuildAccGraphCache: adminProcedure.mutation(async ({ ctx }) => {
-    const graph = await rebuildAccGraphCache(ctx.db);
-    return {
-      ok: true,
-      dataHash: graph.dataHash,
-      nodeCount: graph.stats.nodeCount,
-      edgeCount: graph.stats.edgeCount,
-      instanceCount: graph.stats.totalProjectInstances,
-      projectCount: graph.stats.uniqueProjects,
-      positionsLength: graph.positions.length,
-      nodeIdsLength: graph.nodeIds.length,
-      stats: graph.stats,
-    };
+    try {
+      const graph = await rebuildAccGraphCache(ctx.db);
+      return {
+        ok: true,
+        dataHash: graph.dataHash,
+        nodeCount: graph.stats.nodeCount,
+        edgeCount: graph.stats.edgeCount,
+        instanceCount: graph.stats.totalProjectInstances,
+        projectCount: graph.stats.uniqueProjects,
+        positionsLength: graph.positions.length,
+        nodeIdsLength: graph.nodeIds.length,
+        stats: graph.stats,
+      };
+    } catch (error) {
+      logger.error("Failed to rebuild ACC graph cache", {
+        error: error instanceof Error
+          ? { message: error.message, stack: error.stack }
+          : String(error),
+      });
+      throw toAccRouterError(error, "Failed to rebuild ACC graph cache.");
+    }
   }),
 
   saveGraphLayout: adminProcedure
