@@ -101,7 +101,7 @@ async function rebuildAccGraphCache(db: any) {
   const snapshot = buildAccGraphSnapshot(rows);
   const physicsNodes: PhysicsNode[] = snapshot.nodes.map((node) => ({
     id: node.id,
-    kind: node.kind,
+    kind: node.kind === "hub" ? node.hubType : node.kind,
     x: node.x,
     y: node.y,
     vx: node.vx,
