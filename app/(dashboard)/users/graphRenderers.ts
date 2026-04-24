@@ -382,7 +382,7 @@ export class CanvasGraphRenderer implements GraphRenderer {
       }
     }
 
-    if (hasSelection) {
+    if (frame.selectedNodeIndex >= 0) {
       const sx = frame.positions[frame.selectedNodeIndex * 2];
       const sy = frame.positions[frame.selectedNodeIndex * 2 + 1];
       const color = frame.nodes[frame.selectedNodeIndex].color;
@@ -820,6 +820,7 @@ export class WebGpuGraphRenderer implements GraphRenderer {
       this.scene.edgesRef === frame.edges &&
       this.scene.particlesRef === frame.particles
     ) {
+      this.scene.nodePositions.set(frame.positions);
       return;
     }
 

@@ -141,6 +141,71 @@ function getCategoryColor(key: string | null | undefined): string {
   return VIBRANT_COLORS[Math.abs(hash) % VIBRANT_COLORS.length];
 }
 
+function hash01(value: string, salt = ""): number {
+  let hash = 2166136261;
+  const input = `${salt}:${value}`;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return ((hash >>> 0) % 100000) / 100000;
+}
+
+function featureAnchor(value: string, salt: string): { x: number; y: number } {
+  const angle = hash01(value, `${salt}:angle`) * Math.PI * 2;
+  const radius = 0.24 + hash01(value, `${salt}:radius`) * 0.24;
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
+
+function averageFeatureAnchor(values: readonly string[], salt: string): { x: number; y: number; weight: number } {
+  if (!values.length) return { x: 0, y: 0, weight: 0 };
+  let x = 0;
+  let y = 0;
+  for (const value of values) {
+    const anchor = featureAnchor(value, salt);
+    x += anchor.x;
+    y += anchor.y;
+  }
+  return { x: x / values.length, y: y / values.length, weight: 1 };
+}
+
+function applySemanticNodePositions(nodes: AccGraphNode[]): void {
+  const weights = { role: 72, access: 38, module: 58, project: 68 };
+  const maxWeight = weights.role + weights.access + weights.module + weights.project;
+
+  for (const node of nodes) {
+    const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
+    const roles = averageFeatureAnchor(node.roles, "role");
+    const modules = averageFeatureAnchor(node.modules, "module");
+    const access = node.isAdmin
+      ? { x: -0.42, y: -0.28 }
+      : { x: 0.32, y: 0.22 };
+    const jitter = featureAnchor(node.id, "instance");
+
+    let x = project.x * weights.project + access.x * weights.access;
+    let y = project.y * weights.project + access.y * weights.access;
+    let usedWeight = weights.project + weights.access;
+
+    if (roles.weight > 0) {
+      x += roles.x * weights.role;
+      y += roles.y * weights.role;
+      usedWeight += weights.role;
+    }
+    if (modules.weight > 0) {
+      x += modules.x * weights.module;
+      y += modules.y * weights.module;
+      usedWeight += weights.module;
+    }
+
+    const normalizer = Math.max(1, Math.min(maxWeight, usedWeight));
+    node.x = SIM_WIDTH * (0.5 + x / normalizer + jitter.x * 0.08);
+    node.y = SIM_HEIGHT * (0.5 + y / normalizer + jitter.y * 0.08);
+  }
+}
+
 function hashTopology(rows: AccMemberCacheRow[]): string {
   const shape = {
     version: GRAPH_TOPOLOGY_VERSION,
@@ -166,8 +231,6 @@ function hashTopology(rows: AccMemberCacheRow[]): string {
 export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapshot {
   const sortedRows = [...rows].sort((a, b) => a.email.localeCompare(b.email));
   const dataHash = hashTopology(sortedRows);
-  const cx = SIM_WIDTH / 2;
-  const cy = SIM_HEIGHT / 2;
 
   const projectCounts = new Map<string, { name: string; count: number }>();
   const roleCounts = new Map<string, number>();
@@ -197,7 +260,6 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
   const nodes: AccGraphNode[] = [];
   const edges: AccGraphEdge[] = [];
 
-  let instanceIndex = 0;
   const totalInstances = parsed.reduce((sum, row) => sum + row.projects.length, 0);
   for (const user of parsed) {
     for (const project of user.projects) {
@@ -205,8 +267,6 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
       const modules = toStringSet(project.modules);
       const primaryRole = roles[0] ?? null;
       const color = project.isAdmin ? "#10B981" : getCategoryColor(primaryRole);
-      const angle = (instanceIndex / Math.max(1, totalInstances)) * Math.PI * 2;
-      const radius = SIM_WIDTH * 0.11 + ((instanceIndex % 17) - 8) * 18;
       const nodeId = `instance:${user.email}:${project.id}`;
 
       nodes.push({
@@ -221,15 +281,15 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
         roles,
         modules,
         color,
-        x: cx + Math.cos(angle) * radius,
-        y: cy + Math.sin(angle) * radius + (project.isAdmin ? -SIM_HEIGHT * 0.04 : 0),
+        x: 0,
+        y: 0,
         vx: 0,
         vy: 0,
       });
-
-      instanceIndex++;
     }
   }
+
+  applySemanticNodePositions(nodes);
 
   const nodeIds = nodes.map((node) => node.id);
   const stats = {
