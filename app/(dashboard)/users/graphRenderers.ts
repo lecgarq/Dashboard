@@ -10,13 +10,14 @@ const SHAPE_RING = 3;
 
 const EDGE_TARGET_ROLE = 1;
 const EDGE_TARGET_MODULE = 2;
+const EDGE_TARGET_PROJECT = 3;
 
 const LINE_VERTEX_FLOATS = 6;
 const SHAPE_INSTANCE_FLOATS = 9;
 
 const EMPTY_INDICES = new Uint32Array(0);
 
-type GraphNodeKind = "user" | "role" | "module";
+type GraphNodeKind = "user" | "project" | "role" | "module";
 
 export interface GraphRenderNode {
   kind: GraphNodeKind;
@@ -60,8 +61,10 @@ export interface GraphRenderFrame {
   particles: readonly GraphRenderParticle[];
   nodeIndexMap: ReadonlyMap<string, number>;
   edgeGroupsRole?: ReadonlyMap<string, Uint32Array>;
+  edgeGroupsProject?: ReadonlyMap<string, Uint32Array>;
   edgeGroupsModule?: ReadonlyMap<string, Uint32Array>;
   userIndices?: Uint32Array;
+  projectIndices?: Uint32Array;
   roleIndices?: Uint32Array;
   moduleIndices?: Uint32Array;
   selectedNodeId: string | null;
@@ -250,6 +253,7 @@ export class CanvasGraphRenderer implements GraphRenderer {
           }
         };
 
+        drawEdges(frame.edgeGroupsProject);
         if (frame.showRoles) drawEdges(frame.edgeGroupsRole);
         if (frame.showModules) drawEdges(frame.edgeGroupsModule);
       }
@@ -347,6 +351,19 @@ export class CanvasGraphRenderer implements GraphRenderer {
         ctx.closePath();
         ctx.fill();
       }
+    }
+
+    const projectIndices = ensureIndicesByKind(frame.nodes, frame.projectIndices, "project");
+    for (let offset = 0; offset < projectIndices.length; offset++) {
+      const index = projectIndices[offset];
+      const node = frame.nodes[index];
+      const nx = frame.positions[index * 2];
+      const ny = frame.positions[index * 2 + 1];
+      if (nx < bounds.minWX || nx > bounds.maxWX || ny < bounds.minWY || ny > bounds.maxWY) continue;
+      const radius = Math.max(1, (node.radius ?? 8) / view.scale);
+      ctx.globalAlpha = hasSelection && !frame.highlightSet.has(index) ? 0.08 : 0.9;
+      ctx.fillStyle = node.color;
+      ctx.fillRect(nx - radius, ny - radius, radius * 2, radius * 2);
     }
 
     if (frame.showModules) {
@@ -825,7 +842,11 @@ export class WebGpuGraphRenderer implements GraphRenderer {
       const edge = frame.edges[i];
       edgeEndpoints[i * 3] = frame.nodeIndexMap.get(edge.source) ?? 0;
       edgeEndpoints[i * 3 + 1] = frame.nodeIndexMap.get(edge.target) ?? 0;
-      edgeEndpoints[i * 3 + 2] = edge.target.startsWith("role:") ? EDGE_TARGET_ROLE : EDGE_TARGET_MODULE;
+      edgeEndpoints[i * 3 + 2] = edge.target.startsWith("role:")
+        ? EDGE_TARGET_ROLE
+        : edge.target.startsWith("project:")
+          ? EDGE_TARGET_PROJECT
+          : EDGE_TARGET_MODULE;
       const [r, g, b] = hexToRgb01(edge.color);
       edgeColors[i * 3] = r;
       edgeColors[i * 3 + 1] = g;
@@ -874,8 +895,9 @@ export class WebGpuGraphRenderer implements GraphRenderer {
       const targetIndex = scene.edgeEndpoints[i * 3 + 1];
       const targetKind = scene.edgeEndpoints[i * 3 + 2];
       const isRole = targetKind === EDGE_TARGET_ROLE;
+      const isProject = targetKind === EDGE_TARGET_PROJECT;
       if (isRole && !frame.showRoles) continue;
-      if (!isRole && !frame.showModules) continue;
+      if (!isRole && !isProject && !frame.showModules) continue;
       if (hasSelection && sourceIndex !== frame.selectedNodeIndex && targetIndex !== frame.selectedNodeIndex) continue;
 
       const alpha = hasSelection ? 0.55 : EDGE_ALPHA;
@@ -996,6 +1018,24 @@ export class WebGpuGraphRenderer implements GraphRenderer {
           hasSelection && !frame.highlightSet.has(index) ? 0.08 : 0.9,
         );
       }
+    }
+
+    const projectIndices = ensureIndicesByKind(frame.nodes, frame.projectIndices, "project");
+    for (let offset = 0; offset < projectIndices.length; offset++) {
+      const index = projectIndices[offset];
+      cursor = this.pushShapeInstance(
+        out,
+        cursor,
+        scene.nodePositions[index * 2],
+        scene.nodePositions[index * 2 + 1],
+        Math.max(1, scene.nodeRadii[index] || 8),
+        SHAPE_SQUARE,
+        0,
+        scene.nodeColors[index * 3],
+        scene.nodeColors[index * 3 + 1],
+        scene.nodeColors[index * 3 + 2],
+        hasSelection && !frame.highlightSet.has(index) ? 0.08 : 0.9,
+      );
     }
 
     if (frame.showModules) {

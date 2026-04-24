@@ -3,7 +3,7 @@
 
 export interface PhysicsNode {
   id: string;
-  kind: "instance" | "user" | "role" | "module";
+  kind: "instance" | "user" | "project" | "role" | "module";
   x: number;
   y: number;
   vx: number;
@@ -33,7 +33,7 @@ export function runSimulation<T extends PhysicsNode>(nodes: T[], edges: PhysicsE
   const cy = SIM_HEIGHT / 2;
   const indexMap = new Map(simNodes.map((node, index) => [node.id, index]));
 
-  const isHub = (node: PhysicsNode) => node.kind === "role" || node.kind === "module";
+  const isHub = (node: PhysicsNode) => node.kind === "project" || node.kind === "role" || node.kind === "module";
 
   for (let iter = 0; iter < SIM_ITERATIONS; iter++) {
     const fx = new Float64Array(simNodes.length);

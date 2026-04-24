@@ -5,7 +5,7 @@
 // don't recognize (e.g. `cost`, `takeoff`) so it's still visible rather than silently dropped.
 
 export const ACC_MODULE_LABELS: Record<string, string> = {
-  // ACC HQ Admin API product keys (snake_case / lowercase) — what the API actually returns
+  // ACC HQ Admin API product keys (snake_case / lowercase) - what the API actually returns
   docs: "Data Management",
   design_collaboration: "Design Collaboration",
   model_coordination: "Model Coordination",
@@ -15,7 +15,7 @@ export const ACC_MODULE_LABELS: Record<string, string> = {
   insight: "Insight",
   design: "Design",
 
-  // camelCase variants — legacy data or alternate API shapes
+  // camelCase variants - legacy data or alternate API shapes
   documentManagement: "Data Management",
   designCollaboration: "Design Collaboration",
   modelCoordination: "Model Coordination",

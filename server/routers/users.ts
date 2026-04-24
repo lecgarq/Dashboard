@@ -9,12 +9,13 @@ import { getPrimaryAdminEmail, isPrimaryAdminEmail } from "@/lib/auth-env";
 import { TRPCError } from "@trpc/server";
 import { sendPasswordResetEmail, sendWelcomeEmail, sendApprovedEmail, sendDeclinedEmail, sendAdminNotificationEmail } from "@/lib/server/email";
 import { randomUUID } from "crypto";
-import crypto from "crypto";
 import userEvents from "@/lib/events/user";
 import { createLogger } from "@/lib/server/logger";
 import { IntegrationError } from "@/lib/server/integration-errors";
 import pLimit from "p-limit";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
+import { runSimulation, type PhysicsEdge, type PhysicsNode } from "@/lib/acc/graphSimulation";
+import { buildAccGraphSnapshot, normalizeAccGraphPositions } from "@/lib/acc/graphSnapshot";
 import {
   fetchAccUserByEmail,
   fetchAllAccUsers,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/server/acc-admin";
 
 const logger = createLogger("users");
+const ACC_GRAPH_CACHE_ID = "singleton";
 
 function toAccRouterError(error: unknown, fallbackMessage: string) {
   if (error instanceof IntegrationError) {
@@ -46,6 +48,62 @@ function toAccRouterError(error: unknown, fallbackMessage: string) {
 }
 
 const ACC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+
+async function rebuildAccGraphCache(db: any) {
+  const rows = await db.accMemberCache.findMany({ orderBy: { email: "asc" } });
+  const snapshot = buildAccGraphSnapshot(rows);
+  const physicsNodes: PhysicsNode[] = snapshot.nodes.map((node) => ({
+    id: node.id,
+    kind: node.kind,
+    x: node.x,
+    y: node.y,
+    vx: node.vx,
+    vy: node.vy,
+  }));
+  const physicsEdges: PhysicsEdge[] = snapshot.edges.map((edge) => ({
+    source: edge.source,
+    target: edge.target,
+    weight: edge.weight,
+  }));
+  const settled = runSimulation(physicsNodes, physicsEdges);
+  const settledById = new Map(settled.map((node) => [node.id, node]));
+  const nodes = snapshot.nodes.map((node) => {
+    const settledNode = settledById.get(node.id);
+    return settledNode
+      ? { ...node, x: settledNode.x, y: settledNode.y, vx: settledNode.vx, vy: settledNode.vy }
+      : node;
+  });
+  const positions = normalizeAccGraphPositions(nodes);
+
+  await db.accGraphLayoutCache.upsert({
+    where: { id: ACC_GRAPH_CACHE_ID },
+    create: {
+      id: ACC_GRAPH_CACHE_ID,
+      nodes: nodes as unknown as Prisma.InputJsonValue,
+      edges: snapshot.edges as unknown as Prisma.InputJsonValue,
+      positions,
+      dataHash: snapshot.dataHash,
+      nodeCount: snapshot.stats.nodeCount,
+      edgeCount: snapshot.stats.edgeCount,
+      instanceCount: snapshot.stats.totalProjectInstances,
+      projectCount: snapshot.stats.uniqueProjects,
+      nodeIds: snapshot.nodeIds,
+    },
+    update: {
+      nodes: nodes as unknown as Prisma.InputJsonValue,
+      edges: snapshot.edges as unknown as Prisma.InputJsonValue,
+      positions,
+      dataHash: snapshot.dataHash,
+      nodeCount: snapshot.stats.nodeCount,
+      edgeCount: snapshot.stats.edgeCount,
+      instanceCount: snapshot.stats.totalProjectInstances,
+      projectCount: snapshot.stats.uniqueProjects,
+      nodeIds: snapshot.nodeIds,
+    },
+  });
+
+  return { ...snapshot, nodes, positions };
+}
 
 function toStringSet(value: unknown): string[] {
   if (!Array.isArray(value)) return [];
@@ -998,6 +1056,7 @@ export const usersRouter = router({
       z
         .object({
           emails: z.array(z.string().email()).optional(),
+          rebuildGraphCache: z.boolean().optional().default(true),
         })
         .optional()
     )
@@ -1110,42 +1169,91 @@ export const usersRouter = router({
         )
       );
 
-      return { total: emails.length, found, notFound, errors };
+      let graphCache: { rebuilt: boolean; nodeCount?: number; edgeCount?: number; instanceCount?: number; projectCount?: number; error?: string } = {
+        rebuilt: false,
+      };
+      if (input?.rebuildGraphCache ?? true) {
+        try {
+          const graph = await rebuildAccGraphCache(ctx.db);
+          graphCache = {
+            rebuilt: true,
+            nodeCount: graph.stats.nodeCount,
+            edgeCount: graph.stats.edgeCount,
+            instanceCount: graph.stats.totalProjectInstances,
+            projectCount: graph.stats.uniqueProjects,
+          };
+        } catch (error) {
+          logger.error("[bulkAccSync] ACC graph cache rebuild failed", {
+            error: error instanceof Error ? error.message : String(error),
+          });
+          graphCache = {
+            rebuilt: false,
+            error: error instanceof Error ? error.message : String(error),
+          };
+        }
+      }
+
+      return { total: emails.length, found, notFound, errors, graphCache };
     }),
 
-  getGraphLayout: adminProcedure.query(async ({ ctx }) => {
+  getPrecomputedGraph: adminProcedure.query(async ({ ctx }) => {
     // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only
     //    Sort by email for determinism. Hash only fields that affect graph topology.
-    const allRows = await ctx.db.accMemberCache.findMany({
-      orderBy: { email: "asc" },
-    });
-    const dataHash = crypto
-      .createHash("sha256")
-      .update(
-        JSON.stringify(
-          allRows.map((row) => ({
-            email: row.email.toLowerCase(),
-            ...readAccGraphShape(row.data),
-          }))
-        )
-      )
-      .digest("hex");
+    const allRows = await ctx.db.accMemberCache.findMany({ orderBy: { email: "asc" } });
+    const current = buildAccGraphSnapshot(allRows);
 
     // 2. Fetch stored layout
     const cached = await ctx.db.accGraphLayoutCache.findUnique({
-      where: { id: "singleton" },
+      where: { id: ACC_GRAPH_CACHE_ID },
     });
 
-    if (!cached || cached.dataHash !== dataHash) {
+    const cacheValid =
+      cached &&
+      cached.dataHash === current.dataHash &&
+      cached.nodeCount === current.stats.nodeCount &&
+      cached.edgeCount === current.stats.edgeCount &&
+      cached.instanceCount === current.stats.totalProjectInstances &&
+      cached.projectCount === current.stats.uniqueProjects &&
+      cached.nodeIds.length === current.nodeIds.length &&
+      cached.positions.length === current.stats.nodeCount * 2;
+
+    if (!cacheValid) {
       // Cache miss or stale — client must run simulation
-      return { hit: false as const, positions: null, dataHash, nodeCount: 0, nodeIds: [] as string[] };
+      return {
+        hit: false as const,
+        stale: !!cached,
+        dataHash: current.dataHash,
+        nodes: [] as unknown[],
+        edges: [] as unknown[],
+        positions: null,
+        nodeIds: [] as string[],
+        stats: current.stats,
+      };
     }
     return {
       hit: true as const,
+      stale: false,
+      nodes: cached.nodes as unknown[],
+      edges: cached.edges as unknown[],
       positions: cached.positions,
-      dataHash,
-      nodeCount: cached.nodeCount,
+      dataHash: current.dataHash,
       nodeIds: cached.nodeIds,
+      stats: current.stats,
+    };
+  }),
+
+  rebuildAccGraphCache: adminProcedure.mutation(async ({ ctx }) => {
+    const graph = await rebuildAccGraphCache(ctx.db);
+    return {
+      ok: true,
+      dataHash: graph.dataHash,
+      nodeCount: graph.stats.nodeCount,
+      edgeCount: graph.stats.edgeCount,
+      instanceCount: graph.stats.totalProjectInstances,
+      projectCount: graph.stats.uniqueProjects,
+      positionsLength: graph.positions.length,
+      nodeIdsLength: graph.nodeIds.length,
+      stats: graph.stats,
     };
   }),
 
@@ -1158,31 +1266,11 @@ export const usersRouter = router({
         nodeIds: z.array(z.string()),
       })
     )
-    .mutation(async ({ ctx, input }) => {
-      if (input.positions.length !== input.nodeCount * 2 || input.nodeIds.length !== input.nodeCount) {
-        throw new TRPCError({
-          code: "BAD_REQUEST",
-          message: "Graph layout cache payload does not match node count.",
-        });
-      }
-
-      await ctx.db.accGraphLayoutCache.upsert({
-        where: { id: "singleton" },
-        create: {
-          id: "singleton",
-          positions: input.positions,
-          dataHash: input.dataHash,
-          nodeCount: input.nodeCount,
-          nodeIds: input.nodeIds,
-        },
-        update: {
-          positions: input.positions,
-          dataHash: input.dataHash,
-          nodeCount: input.nodeCount,
-          nodeIds: input.nodeIds,
-        },
+    .mutation(async () => {
+      throw new TRPCError({
+        code: "BAD_REQUEST",
+        message: "Client-side ACC graph layout writes are disabled. Use rebuildAccGraphCache.",
       });
-      return { ok: true };
     }),
 
   invalidateGraphLayout: adminProcedure.mutation(async ({ ctx }) => {

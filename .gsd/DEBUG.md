@@ -1,37 +1,19 @@
-# Debug Session: Wiki Sync Hang & Security Hardening
+# Debug Session: Dedicated GPU Rendering
 
 ## Symptom
-Clients were stuck on "Please wait while we sync..." when opening a wiki. Supabase reported critical security vulnerabilities (RLS disabled).
+The user is concerned about the rendering engine for `AccUsersGraph.tsx`. They noticed that the graph relies on standard CPU/Integrated GPU processing rather than explicitly leveraging a dedicated GPU (e.g., via CUDA, WebGPU, or Vulkan), which is limiting performance for high-node-count visualizations.
 
-**When:** Every attempt to open a collaborative wiki room.
-**Expected:** Instant sync and secure data access.
-**Actual:** Handshake hung indefinitely; tables were publicly exposed.
-
-## Evidence
-- Server logs showed `Upgrading connection …` but never reached authentication.
-- Local tests revealed `DATABASE_URL` was undefined because `.env` was not being loaded.
-- Supabase Advisor flagged 28 tables for lack of Row Level Security.
+**When:** Observing the interactive user graph (ACC Users Graph) in the browser.
+**Expected:** The graph uses low-level hardware acceleration (WebGPU/WebGL) to handle thousands of nodes efficiently.
+**Actual:** The graph uses HTML5 Canvas 2D API (`canvas.getContext("2d")`), which is accelerated by the browser but lacks low-level control, often falling back to integrated graphics or experiencing CPU-bound frame drops, especially coupled with main-thread force simulation.
 
 ## Hypotheses
-- H1: Missing environment variables in standalone script. (CONFIRMED)
-- H2: Hocuspocus v3 API mismatch. (CONFIRMED)
-- H3: Prisma adapter missing for Supabase pooler. (CONFIRMED)
 
-## Resolution
+| # | Hypothesis | Likelihood | Status |
+|---|------------|------------|--------|
+| 1 | The current HTML5 Canvas API does not invoke the dedicated GPU on the user's system due to lack of WebGL/WebGPU context. | 90% | UNTESTED |
+| 2 | The force simulation running on the main thread is causing high CPU usage, making the user think the GPU is not being utilized. | 80% | UNTESTED |
 
-**Root Cause:**
-1. **Environment Isolation**: `yjs-server.mjs` was not loading `.env`, so it had no database credentials.
-2. **API Mismatch**: Hocuspocus v3 hooks behave differently than v2.
-3. **Token Routing**: Auth tokens from the client (URL params) were not being extracted.
-4. **Security Gaps**: RLS was disabled on all tables.
+## Attempts
 
-**Fix:**
-1. Added `process.loadEnvFile(".env")` and environment validation.
-2. Implemented `PrismaPg` adapter with a `pg.Pool`.
-3. Added manual query parameter parsing in `onAuthenticate`.
-4. Created and ran `fix-supabase-security.js` to enable RLS on 28 tables.
-
-**Verified:**
-- Local DB connection test: PASS.
-- RLS Hardening: PASS (28 tables secured).
-- Production: Pushed to `deploy` branch.
+*(Pending User Feedback)*

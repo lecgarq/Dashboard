@@ -409,10 +409,15 @@ model AccMemberCache {
 // ============ MODULE: ACC GRAPH LAYOUT CACHE ============
 
 model AccGraphLayoutCache {
-  id        String   @id @default("singleton")
-  positions Float[]
-  dataHash  String
-  nodeCount Int
-  nodeIds   String[] @default([])
-  updatedAt DateTime @updatedAt
+  id            String   @id @default("singleton")
+  nodes         Json
+  edges         Json
+  positions     Float[]
+  dataHash      String
+  nodeCount     Int
+  edgeCount     Int      @default(0)
+  instanceCount Int      @default(0)
+  projectCount  Int      @default(0)
+  nodeIds       String[] @default([])
+  updatedAt     DateTime @updatedAt
 }
