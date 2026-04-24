@@ -47,6 +47,49 @@ function toAccRouterError(error: unknown, fallbackMessage: string) {
 
 const ACC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
+function toStringSet(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((item): item is string => typeof item === "string" && item.length > 0))].sort((a, b) =>
+    a.localeCompare(b)
+  );
+}
+
+function readAccGraphShape(raw: unknown): { found: boolean; roles: string[]; modules: string[] } {
+  let data = raw;
+  if (typeof data === "string") {
+    try {
+      data = JSON.parse(data) as unknown;
+    } catch {
+      data = null;
+    }
+  }
+
+  if (!data || typeof data !== "object") {
+    return { found: false, roles: [], modules: [] };
+  }
+
+  const record = data as { found?: unknown; projects?: unknown };
+  const found = record.found === true;
+  if (!found || !Array.isArray(record.projects)) {
+    return { found, roles: [], modules: [] };
+  }
+
+  const roleSet = new Set<string>();
+  const moduleSet = new Set<string>();
+  for (const project of record.projects) {
+    if (!project || typeof project !== "object") continue;
+    const projectRecord = project as { roles?: unknown; modules?: unknown };
+    for (const role of toStringSet(projectRecord.roles)) roleSet.add(role);
+    for (const moduleName of toStringSet(projectRecord.modules)) moduleSet.add(moduleName);
+  }
+
+  return {
+    found,
+    roles: [...roleSet].sort((a, b) => a.localeCompare(b)),
+    modules: [...moduleSet].sort((a, b) => a.localeCompare(b)),
+  };
+}
+
 export const usersRouter = router({
   // Org directory: fetches all users from Google Workspace via People API
   getOrgDirectory: protectedProcedure.query(async ({ ctx }) => {
@@ -1072,7 +1115,7 @@ export const usersRouter = router({
 
   getGraphLayout: adminProcedure.query(async ({ ctx }) => {
     // 1. Compute current dataHash from ALL AccMemberCache rows — server-side only
-    //    Sort by email for determinism. Hash all fields that affect graph shape.
+    //    Sort by email for determinism. Hash only fields that affect graph topology.
     const allRows = await ctx.db.accMemberCache.findMany({
       orderBy: { email: "asc" },
     });
@@ -1080,10 +1123,9 @@ export const usersRouter = router({
       .createHash("sha256")
       .update(
         JSON.stringify(
-          allRows.map((r) => ({
-            email: r.email,
-            data: r.data,
-            syncedAt: r.syncedAt.toISOString(),
+          allRows.map((row) => ({
+            email: row.email.toLowerCase(),
+            ...readAccGraphShape(row.data),
           }))
         )
       )
@@ -1096,13 +1138,14 @@ export const usersRouter = router({
 
     if (!cached || cached.dataHash !== dataHash) {
       // Cache miss or stale — client must run simulation
-      return { hit: false as const, positions: null, dataHash, nodeCount: 0 };
+      return { hit: false as const, positions: null, dataHash, nodeCount: 0, nodeIds: [] as string[] };
     }
     return {
       hit: true as const,
       positions: cached.positions,
       dataHash,
       nodeCount: cached.nodeCount,
+      nodeIds: cached.nodeIds,
     };
   }),
 
@@ -1112,9 +1155,17 @@ export const usersRouter = router({
         positions: z.array(z.number()),
         dataHash: z.string(),
         nodeCount: z.number().int().positive(),
+        nodeIds: z.array(z.string()),
       })
     )
     .mutation(async ({ ctx, input }) => {
+      if (input.positions.length !== input.nodeCount * 2 || input.nodeIds.length !== input.nodeCount) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message: "Graph layout cache payload does not match node count.",
+        });
+      }
+
       await ctx.db.accGraphLayoutCache.upsert({
         where: { id: "singleton" },
         create: {
@@ -1122,11 +1173,13 @@ export const usersRouter = router({
           positions: input.positions,
           dataHash: input.dataHash,
           nodeCount: input.nodeCount,
+          nodeIds: input.nodeIds,
         },
         update: {
           positions: input.positions,
           dataHash: input.dataHash,
           nodeCount: input.nodeCount,
+          nodeIds: input.nodeIds,
         },
       });
       return { ok: true };

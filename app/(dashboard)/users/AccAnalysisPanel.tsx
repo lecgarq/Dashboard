@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { RefreshCw, Users, Shield, AlertTriangle, FolderOpen, Layers, ChevronDown, ChevronRight, CloudDownload } from "lucide-react";
+import { RefreshCw, AlertTriangle, CloudDownload, ChevronDown, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
@@ -47,51 +47,109 @@ function countBy<T>(arr: T[]): Record<string, number> {
   return out;
 }
 
-
 // ---------------------------------------------------------------------------
-// Sub-components
+// DonutRing — pure SVG, no dependencies
 // ---------------------------------------------------------------------------
 
-function StatCard({
-  label,
+const DONUT_R = 26;
+const DONUT_CIRC = 2 * Math.PI * DONUT_R;
+
+function DonutRing({
   value,
+  total,
   color,
-  onClick,
-  clickable,
+  label,
+  sublabel,
 }: {
+  value: number;
+  total: number;
+  color: string;
   label: string;
-  value: number | string;
-  color: "blue" | "violet" | "amber" | "green" | "cyan";
-  onClick?: () => void;
-  clickable?: boolean;
+  sublabel: string;
 }) {
-  const colorMap = {
-    blue: "from-blue-500/20 to-blue-500/5 border-blue-500/20 text-blue-400",
-    violet: "from-violet-500/20 to-violet-500/5 border-violet-500/20 text-violet-400",
-    amber: "from-amber-500/20 to-amber-500/5 border-amber-500/20 text-amber-400",
-    green: "from-green-500/20 to-green-500/5 border-green-500/20 text-green-400",
-    cyan: "from-cyan-500/20 to-cyan-500/5 border-cyan-500/20 text-cyan-400",
-  };
+  const pct = total > 0 ? value / total : 0;
+  const dash = pct * DONUT_CIRC;
 
   return (
-    <button
-      onClick={onClick}
-      disabled={!clickable}
-      className={cn(
-        "flex-1 min-w-0 p-4 rounded-2xl border bg-gradient-to-br text-left transition-all",
-        colorMap[color],
-        clickable && "hover:scale-[1.02] cursor-pointer",
-        !clickable && "cursor-default"
-      )}
-    >
-      <div className="text-2xl font-bold text-foreground">{value}</div>
-      <div className="text-xs mt-1 text-muted-foreground">{label}</div>
-      {clickable && (
-        <div className="text-[10px] mt-1 opacity-60">click to expand</div>
-      )}
-    </button>
+    <div className="flex flex-col items-center gap-2">
+      <svg width="72" height="72" viewBox="0 0 72 72">
+        {/* Track */}
+        <circle cx="36" cy="36" r={DONUT_R} fill="none" stroke="currentColor"
+          strokeWidth="8" className="text-muted/20" />
+        {/* Arc */}
+        <circle
+          cx="36" cy="36" r={DONUT_R} fill="none" stroke="currentColor"
+          strokeWidth="8"
+          className={color}
+          strokeDasharray={`${dash} ${DONUT_CIRC - dash}`}
+          strokeLinecap="round"
+          transform="rotate(-90 36 36)"
+        />
+        {/* Percent */}
+        <text x="36" y="33" textAnchor="middle" fontSize="13" fontWeight="700"
+          fill="currentColor" className="text-foreground">
+          {Math.round(pct * 100)}%
+        </text>
+        <text x="36" y="46" textAnchor="middle" fontSize="8"
+          fill="currentColor" className="text-muted-foreground">
+          {value}/{total}
+        </text>
+      </svg>
+      <div className="text-center">
+        <p className="text-xs font-semibold text-foreground">{label}</p>
+        <p className="text-[10px] text-muted-foreground">{sublabel}</p>
+      </div>
+    </div>
   );
 }
+
+// ---------------------------------------------------------------------------
+// HBar — horizontal bar with label, value, and % text
+// ---------------------------------------------------------------------------
+
+function HBar({
+  label,
+  value,
+  max,
+  pct,
+  color,
+  secondaryText,
+  dimmed,
+}: {
+  label: string;
+  value: number;
+  max: number;
+  pct: number;
+  color: string;
+  secondaryText?: string;
+  dimmed?: boolean;
+}) {
+  const widthPct = max > 0 ? (value / max) * 100 : 0;
+  return (
+    <div className={cn("group space-y-1", dimmed && "opacity-50")}>
+      <div className="flex items-center justify-between text-xs gap-2">
+        <span className="truncate text-foreground font-medium max-w-[60%]" title={label}>
+          {label}
+        </span>
+        <div className="flex items-center gap-2 shrink-0 text-muted-foreground">
+          {secondaryText && <span className="text-[10px]">{secondaryText}</span>}
+          <span className="tabular-nums font-bold text-foreground">{value}</span>
+          <span className="text-[11px] w-8 text-right">{pct}%</span>
+        </div>
+      </div>
+      <div className="h-3 rounded-full bg-muted/20 overflow-hidden">
+        <div
+          className={cn("h-full rounded-full transition-all duration-500", color)}
+          style={{ width: `${widthPct}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// SectionCard
+// ---------------------------------------------------------------------------
 
 function SectionCard({
   title,
@@ -104,7 +162,7 @@ function SectionCard({
 }) {
   return (
     <div className={cn("rounded-2xl border border-border/30 bg-card p-5", className)}>
-      <h3 className="text-sm font-semibold text-foreground mb-3">{title}</h3>
+      <h3 className="text-sm font-semibold text-foreground mb-4">{title}</h3>
       {children}
     </div>
   );
@@ -138,9 +196,7 @@ export function AccAnalysisPanel({
     if (emails.length === 0) return;
 
     const CHUNK_SIZE = 50;
-    let found = 0;
-    let notFound = 0;
-    let errors = 0;
+    let found = 0, notFound = 0, errors = 0;
     setSyncProgress({ done: 0, total: emails.length });
 
     try {
@@ -166,6 +222,7 @@ export function AccAnalysisPanel({
 
   const metrics = useMemo(() => {
     const cachedUsers = users.filter((u) => u.found);
+    const notFoundUsers = users.filter((u) => !u.found);
 
     // Role inventory
     const roleSet = new Set(cachedUsers.flatMap((u) => u.allRoles));
@@ -190,7 +247,29 @@ export function AccAnalysisPanel({
       u.projects.some((p) => p.roles.length > 1)
     );
 
-    // Module fingerprints
+    // All unique projects
+    const allProjectIds = new Set(cachedUsers.flatMap((u) => u.projects.map((p) => p.id)));
+    const totalProjects = allProjectIds.size;
+
+    // Per-module adoption (how many project-slots use each module)
+    const moduleAdoptionMap = new Map<string, number>();
+    let totalProjectSlots = 0;
+    for (const u of cachedUsers) {
+      for (const p of u.projects) {
+        totalProjectSlots++;
+        for (const mod of p.modules) {
+          moduleAdoptionMap.set(mod, (moduleAdoptionMap.get(mod) ?? 0) + 1);
+        }
+      }
+    }
+
+    // Admin users count
+    const adminUsers = cachedUsers.filter((u) => u.adminCount > 0);
+
+    // Active users (has at least one active project)
+    const activeUsers = cachedUsers.filter((u) => u.activeCount > 0);
+
+    // Module fingerprints (kept for outlier detection)
     const moduleFingerprints = new Map<string, { count: number; example: string }>();
     for (const u of cachedUsers) {
       for (const p of u.projects) {
@@ -209,28 +288,22 @@ export function AccAnalysisPanel({
       .filter(([, v]) => v.count === 1)
       .map(([fp, v]) => ({ fp, example: v.example }));
 
-    const topFingerprints = [...moduleFingerprints.entries()]
-      .sort((a, b) => b[1].count - a[1].count)
-      .slice(0, 10);
-
-    const maxFpCount = topFingerprints[0]?.[1]?.count ?? 1;
-
-    // Hub projects
-    const allProjectIds = new Set(cachedUsers.flatMap((u) => u.projects.map((p) => p.id)));
-
     const noProjectUsers = users.filter((u) => u.hasNoProjects && !!u.syncedAt);
 
     return {
+      totalUsers: users.length,
       totalCachedUsers: cachedUsers.length,
+      notFoundUsers,
+      adminUsers,
+      activeUsers,
       totalRoles: roleSet.size,
       roleFrequencyMap,
       usersWithDuplicateRoles,
       usersWithMultiRoleProjects,
-      totalProjects: allProjectIds.size,
-      moduleCombinations: moduleFingerprints.size,
+      totalProjects,
+      totalProjectSlots,
+      moduleAdoptionMap,
       outlierFingerprints,
-      topFingerprints,
-      maxFpCount,
       noProjectUsers,
     };
   }, [users]);
@@ -239,6 +312,14 @@ export function AccAnalysisPanel({
     return [...metrics.roleFrequencyMap.entries()]
       .sort((a, b) => b[1].length - a[1].length);
   }, [metrics.roleFrequencyMap]);
+
+  const sortedModules = useMemo(() => {
+    return [...metrics.moduleAdoptionMap.entries()]
+      .sort((a, b) => b[1] - a[1]);
+  }, [metrics.moduleAdoptionMap]);
+
+  const maxRoleCount = sortedRoles[0]?.[1]?.length ?? 1;
+  const maxModuleCount = sortedModules[0]?.[1] ?? 1;
 
   function handleForceRefresh() {
     utils.users.bulkAccSummary.invalidate();
@@ -252,18 +333,19 @@ export function AccAnalysisPanel({
         <div>
           <h2 className="text-base font-semibold text-foreground">ACC Hub Analysis</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Computed from {users.length} registered users &middot; {metrics.totalCachedUsers} with ACC data
+            {users.length} registered users &middot; {metrics.totalCachedUsers} synced &middot; {metrics.totalProjects} unique projects
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           {syncError && !isSyncing && (
-            <span className="text-xs text-red-400 max-w-[300px] truncate" title={syncError}>
+            <span className="text-xs text-red-400 max-w-[260px] truncate" title={syncError}>
               Error: {syncError}
             </span>
           )}
           {syncResult && !isSyncing && !syncError && (
             <span className="text-xs text-muted-foreground">
-              Sync: {syncResult.found} found · {syncResult.notFound} not in ACC{syncResult.errors > 0 ? ` · ${syncResult.errors} errors` : ""}
+              Sync: {syncResult.found} found · {syncResult.notFound} not in ACC
+              {syncResult.errors > 0 ? ` · ${syncResult.errors} errors` : ""}
             </span>
           )}
           {isSyncing && syncProgress && (
@@ -276,11 +358,7 @@ export function AccAnalysisPanel({
             disabled={isSyncing}
             className="flex items-center gap-1.5 text-xs text-emerald-400 hover:text-emerald-300 border border-emerald-500/20 rounded-lg px-3 py-1.5 bg-emerald-500/5 hover:bg-emerald-500/10 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSyncing ? (
-              <RefreshCw size={12} className="animate-spin" />
-            ) : (
-              <CloudDownload size={12} />
-            )}
+            {isSyncing ? <RefreshCw size={12} className="animate-spin" /> : <CloudDownload size={12} />}
             {isSyncing ? `Syncing ${users.length} users…` : "Sync All to ACC"}
           </button>
           <button
@@ -293,78 +371,97 @@ export function AccAnalysisPanel({
         </div>
       </div>
 
-      {/* Row 1: KPI Cards */}
-      <div className="flex flex-wrap gap-3">
-        <StatCard
-          label="ACC Users (cached)"
-          value={metrics.totalCachedUsers}
-          color="blue"
-        />
-        <StatCard
-          label="Unique Roles"
-          value={metrics.totalRoles}
-          color="violet"
-        />
-        <StatCard
-          label="Duplicate-Role Users"
-          value={metrics.usersWithDuplicateRoles.length}
-          color="amber"
-          clickable={metrics.usersWithDuplicateRoles.length > 0}
-          onClick={() => setExpandDuplicateRoles((v) => !v)}
-        />
-        <StatCard
-          label="Hub Projects"
-          value={metrics.totalProjects}
-          color="green"
-        />
-        <StatCard
-          label="Module Combinations"
-          value={metrics.moduleCombinations}
-          color="cyan"
-        />
-      </div>
-
-      {/* Duplicate Roles expandable list */}
-      {expandDuplicateRoles && metrics.usersWithDuplicateRoles.length > 0 && (
-        <SectionCard title="Users with Duplicate Roles (same role in multiple projects)">
-          <div className="space-y-2">
-            {metrics.usersWithDuplicateRoles.map((u) => {
-              const dupes = Object.entries(countBy(u.projects.flatMap((p) => p.roles)))
-                .filter(([, c]) => c > 1);
-              return (
-                <div key={u.email} className="rounded-xl border border-border/30 p-3 bg-background/40">
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-foreground">{u.name || u.email}</span>
-                    <Badge variant="secondary" className="text-[10px]">{u.email}</Badge>
-                  </div>
-                  <div className="flex flex-wrap gap-1.5 mt-1.5">
-                    {dupes.map(([role, count]) => (
-                      <Badge key={role} variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
-                        {role} &times;{count}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+      {/* ── Row 1: Coverage Overview (Donuts) ── */}
+      <SectionCard title="Organization Coverage">
+        <div className="flex flex-wrap justify-around gap-6 py-2">
+          <DonutRing
+            value={metrics.totalCachedUsers}
+            total={metrics.totalUsers}
+            color="text-blue-500"
+            label="ACC Coverage"
+            sublabel="users synced"
+          />
+          <DonutRing
+            value={metrics.activeUsers.length}
+            total={metrics.totalCachedUsers}
+            color="text-green-500"
+            label="Active Users"
+            sublabel="have active projects"
+          />
+          <DonutRing
+            value={metrics.adminUsers.length}
+            total={metrics.totalCachedUsers}
+            color="text-amber-500"
+            label="Admin Users"
+            sublabel="admin on ≥1 project"
+          />
+          <DonutRing
+            value={metrics.usersWithDuplicateRoles.length}
+            total={metrics.totalCachedUsers}
+            color="text-rose-500"
+            label="Duplicate Roles"
+            sublabel="same role, multi-project"
+          />
+        </div>
+        {/* Not-found users quick list */}
+        {metrics.notFoundUsers.length > 0 && (
+          <div className="mt-4 pt-4 border-t border-border/30">
+            <p className="text-[11px] text-muted-foreground font-semibold uppercase tracking-wide mb-2">
+              Not found in ACC ({metrics.notFoundUsers.length})
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {metrics.notFoundUsers.slice(0, 12).map((u) => (
+                <Badge key={u.email} variant="secondary" className="text-[10px]">
+                  {u.name || u.email}
+                </Badge>
+              ))}
+              {metrics.notFoundUsers.length > 12 && (
+                <Badge variant="secondary" className="text-[10px] text-muted-foreground">
+                  +{metrics.notFoundUsers.length - 12} more
+                </Badge>
+              )}
+            </div>
           </div>
-        </SectionCard>
-      )}
+        )}
+      </SectionCard>
 
-      {/* Row 2: Role Frequency + Multi-Role Projects */}
+      {/* ── Row 2: Module Adoption + Role Distribution ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-        {/* Left: Role Frequency Table */}
-        <SectionCard title="Role Frequency">
+        {/* Module Adoption */}
+        <SectionCard title="Module Adoption Across Projects">
+          {sortedModules.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No module data in cached records.</p>
+          ) : (
+            <div className="space-y-3">
+              {sortedModules.map(([mod, count]) => {
+                const pct = metrics.totalProjectSlots > 0
+                  ? Math.round((count / metrics.totalProjectSlots) * 100)
+                  : 0;
+                return (
+                  <HBar
+                    key={mod}
+                    label={moduleLabel(mod)}
+                    value={count}
+                    max={maxModuleCount}
+                    pct={pct}
+                    color="bg-gradient-to-r from-cyan-500 to-cyan-400"
+                    secondaryText={`${count} project${count !== 1 ? "s" : ""}`}
+                  />
+                );
+              })}
+              <p className="text-[10px] text-muted-foreground/50 pt-1">
+                % = share of all project-module slots ({metrics.totalProjectSlots} total)
+              </p>
+            </div>
+          )}
+        </SectionCard>
+
+        {/* Role Distribution */}
+        <SectionCard title="Role Distribution">
           {sortedRoles.length === 0 ? (
             <p className="text-xs text-muted-foreground">No roles found in cached data.</p>
           ) : (
-            <div className="space-y-1">
-              {/* Header */}
-              <div className="grid grid-cols-[1fr_60px_50px] gap-2 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
-                <span>Role</span>
-                <span className="text-right">Users</span>
-                <span className="text-right">%</span>
-              </div>
+            <div className="space-y-2">
               {sortedRoles.map(([role, userList]) => {
                 const pct = metrics.totalCachedUsers > 0
                   ? Math.round((userList.length / metrics.totalCachedUsers) * 100)
@@ -376,26 +473,23 @@ export function AccAnalysisPanel({
                   <div key={role}>
                     <button
                       onClick={() => setExpandedRole(isExpanded ? null : role)}
-                      className={cn(
-                        "w-full grid grid-cols-[1fr_60px_50px] gap-2 px-2 py-1.5 rounded-lg text-left hover:bg-primary/5 transition-colors text-xs",
-                        isOrphan && "text-amber-400",
-                        !isOrphan && "text-foreground"
-                      )}
+                      className="w-full group"
                     >
-                      <span className="flex items-center gap-1.5 truncate">
-                        {isExpanded ? <ChevronDown size={10} /> : <ChevronRight size={10} />}
-                        <span className="truncate">{role}</span>
-                        {isOrphan && (
-                          <Badge variant="secondary" className="text-[9px] bg-amber-500/10 text-amber-400 border-amber-500/20 shrink-0">
-                            orphan
-                          </Badge>
-                        )}
-                      </span>
-                      <span className="text-right font-medium">{userList.length}</span>
-                      <span className="text-right text-muted-foreground">{pct}%</span>
+                      <HBar
+                        label={role}
+                        value={userList.length}
+                        max={maxRoleCount}
+                        pct={pct}
+                        color={isOrphan
+                          ? "bg-gradient-to-r from-amber-500 to-amber-400"
+                          : "bg-gradient-to-r from-violet-500 to-violet-400"
+                        }
+                        dimmed={isOrphan}
+                        secondaryText={isOrphan ? "orphan" : undefined}
+                      />
                     </button>
                     {isExpanded && (
-                      <div className="px-4 pb-2 flex flex-wrap gap-1">
+                      <div className="px-1 pt-1 pb-2 flex flex-wrap gap-1">
                         {userList.map((name) => (
                           <Badge key={name} variant="secondary" className="text-[10px]">
                             {name}
@@ -406,32 +500,46 @@ export function AccAnalysisPanel({
                   </div>
                 );
               })}
+              <p className="text-[10px] text-muted-foreground/50 pt-1">
+                Click any role to see which users hold it. Amber = only 1 user.
+              </p>
             </div>
           )}
         </SectionCard>
+      </div>
 
-        {/* Right: Multi-Role Projects */}
-        <SectionCard title="Multi-Role in Same Project">
-          {metrics.usersWithMultiRoleProjects.length === 0 ? (
-            <p className="text-xs text-muted-foreground">No users have multiple roles in the same project.</p>
-          ) : (
-            <div className="space-y-3">
-              {metrics.usersWithMultiRoleProjects.map((u) => {
-                const multiRoleProjects = u.projects.filter((p) => p.roles.length > 1);
+      {/* ── Row 3: Duplicate Roles (expandable) ── */}
+      {metrics.usersWithDuplicateRoles.length > 0 && (
+        <SectionCard title="">
+          <button
+            onClick={() => setExpandDuplicateRoles((v) => !v)}
+            className="w-full flex items-center justify-between text-sm font-semibold text-foreground -mt-1 mb-0"
+          >
+            <span className="flex items-center gap-2">
+              {expandDuplicateRoles ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              Users with Duplicate Roles
+              <Badge variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
+                {metrics.usersWithDuplicateRoles.length}
+              </Badge>
+            </span>
+            <span className="text-[10px] text-muted-foreground font-normal">same role across multiple projects</span>
+          </button>
+          {expandDuplicateRoles && (
+            <div className="space-y-2 mt-4">
+              {metrics.usersWithDuplicateRoles.map((u) => {
+                const dupes = Object.entries(countBy(u.projects.flatMap((p) => p.roles)))
+                  .filter(([, c]) => c > 1);
                 return (
                   <div key={u.email} className="rounded-xl border border-border/30 p-3 bg-background/40">
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-medium text-foreground">{u.name || u.email}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {multiRoleProjects.length} project{multiRoleProjects.length !== 1 ? "s" : ""} affected
-                      </Badge>
+                      <Badge variant="secondary" className="text-[10px]">{u.email}</Badge>
                     </div>
-                    <div className="space-y-1.5">
-                      {multiRoleProjects.map((p) => (
-                        <div key={p.id} className="text-xs">
-                          <span className="text-muted-foreground">{p.name}: </span>
-                          <span className="text-foreground">{p.roles.join(", ")}</span>
-                        </div>
+                    <div className="flex flex-wrap gap-1.5 mt-1.5">
+                      {dupes.map(([role, count]) => (
+                        <Badge key={role} variant="secondary" className="text-[10px] bg-amber-500/10 text-amber-400 border-amber-500/20">
+                          {role} &times;{count}
+                        </Badge>
                       ))}
                     </div>
                   </div>
@@ -440,72 +548,60 @@ export function AccAnalysisPanel({
             </div>
           )}
         </SectionCard>
-      </div>
+      )}
 
-      {/* Row 3: Module Access Patterns */}
-      <SectionCard title="Module Access Patterns — Top 10 Combinations">
-        {metrics.topFingerprints.length === 0 ? (
-          <p className="text-xs text-muted-foreground">No module data found in cached ACC records.</p>
-        ) : (
-          <div className="space-y-2">
-            {metrics.topFingerprints.map(([fp, { count }]) => {
-              const pct = Math.round((count / metrics.maxFpCount) * 100);
-              const label = fp
-                .split("|")
-                .map(moduleLabel)
-                .join(" + ");
-              const totalProjPct = metrics.totalProjects > 0
-                ? Math.round((count / metrics.totalProjects) * 100)
-                : 0;
-
+      {/* ── Row 4: Multi-Role Projects ── */}
+      {metrics.usersWithMultiRoleProjects.length > 0 && (
+        <SectionCard title={`Multi-Role in Same Project (${metrics.usersWithMultiRoleProjects.length} users)`}>
+          <div className="space-y-3">
+            {metrics.usersWithMultiRoleProjects.map((u) => {
+              const multiRoleProjects = u.projects.filter((p) => p.roles.length > 1);
               return (
-                <div key={fp} className="space-y-0.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-muted-foreground truncate max-w-[70%]" title={label}>{label}</span>
-                    <span className="text-foreground font-medium ml-2 shrink-0">
-                      {count} <span className="text-muted-foreground font-normal">({totalProjPct}%)</span>
-                    </span>
+                <div key={u.email} className="rounded-xl border border-border/30 p-3 bg-background/40">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-sm font-medium text-foreground">{u.name || u.email}</span>
+                    <Badge variant="secondary" className="text-[10px]">
+                      {multiRoleProjects.length} project{multiRoleProjects.length !== 1 ? "s" : ""}
+                    </Badge>
                   </div>
-                  <div className="h-1.5 rounded-full bg-muted/20 overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-cyan-400 transition-all"
-                      style={{ width: `${pct}%` }}
-                    />
+                  <div className="space-y-1">
+                    {multiRoleProjects.map((p) => (
+                      <div key={p.id} className="text-xs">
+                        <span className="text-muted-foreground">{p.name}: </span>
+                        <span className="text-foreground">{p.roles.join(", ")}</span>
+                      </div>
+                    ))}
                   </div>
                 </div>
               );
             })}
           </div>
-        )}
+        </SectionCard>
+      )}
 
-        {/* Outliers */}
-        {metrics.outlierFingerprints.length > 0 && (
-          <div className="mt-4 pt-4 border-t border-border/30">
-            <p className="text-xs font-medium text-foreground mb-2">
-              Outlier Combinations (appear only once)
-            </p>
-            <div className="space-y-1">
-              {metrics.outlierFingerprints.map(({ fp, example }) => (
-                <div key={fp} className="flex items-start gap-2 text-[11px]">
-                  <span className="text-amber-400 shrink-0 mt-0.5">
-                    <AlertTriangle size={10} />
+      {/* ── Row 5: Outlier Module Combos ── */}
+      {metrics.outlierFingerprints.length > 0 && (
+        <SectionCard title="Unusual Module Combinations (appear only once)">
+          <div className="space-y-1.5">
+            {metrics.outlierFingerprints.map(({ fp, example }) => (
+              <div key={fp} className="flex items-start gap-2 text-[11px] p-2 rounded-lg bg-amber-500/5 border border-amber-500/10">
+                <AlertTriangle size={11} className="text-amber-400 shrink-0 mt-0.5" />
+                <div>
+                  <span className="text-foreground font-medium">
+                    {fp.split("|").map(moduleLabel).join(" + ")}
                   </span>
-                  <span className="text-muted-foreground">
-                    <span className="text-foreground">{fp.split("|").map(moduleLabel).join(" + ")}</span>
-                    {" "}&mdash; {example}
-                  </span>
+                  <span className="text-muted-foreground"> — {example}</span>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
-        )}
-      </SectionCard>
+        </SectionCard>
+      )}
 
-      {/* Row 4: Users Without Projects */}
+      {/* ── Row 6: Users Without Projects ── */}
       {metrics.noProjectUsers.length > 0 && (
         <SectionCard title="Users Without ACC Projects">
           <div className="space-y-1 mb-3">
-            {/* Table header */}
             <div className="grid grid-cols-[1fr_1fr_1fr] gap-3 px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
               <span>Name</span>
               <span>Email</span>

@@ -1,0 +1,2 @@
+ALTER TABLE "AccGraphLayoutCache"
+ADD COLUMN "nodeIds" TEXT[] NOT NULL DEFAULT ARRAY[]::TEXT[];

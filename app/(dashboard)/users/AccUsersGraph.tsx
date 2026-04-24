@@ -5,24 +5,26 @@ import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
 import { SIM_WIDTH, SIM_HEIGHT, type PhysicsNode, type PhysicsEdge, runSimulation } from "@/lib/acc/graphSimulation";
-import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
+import {
+  CanvasGraphRenderer,
+  WebGpuGraphRenderer,
+  getVisibleWorldBounds,
+  type GraphRenderFrame,
+  type GraphRenderer,
+} from "./graphRenderers";
+import { type BulkAccUser } from "./AccAnalysisPanel";
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-/** One dot per user (aggregated across all their projects). */
 interface UserNode {
   kind: "user";
-  id: string; // email
+  id: string;
   email: string;
   name: string;
   found: boolean;
   hasNoProjects: boolean;
   isAdmin: boolean;
   projectCount: number;
-  roles: string[]; // Aggregated roles across all projects
-  modules: string[]; // Aggregated modules across all projects
+  roles: string[];
+  modules: string[];
   color: string;
   x: number;
   y: number;
@@ -30,7 +32,6 @@ interface UserNode {
   vy: number;
 }
 
-/** Diamond hub attracting users that share a role. */
 interface RoleNode {
   kind: "role";
   id: string;
@@ -45,7 +46,6 @@ interface RoleNode {
   vy: number;
 }
 
-/** Square hub attracting users that share a module. */
 interface ModuleNode {
   kind: "module";
   id: string;
@@ -65,7 +65,7 @@ interface Edge {
   source: string;
   target: string;
   color: string;
-  weight: number; // 1.0 = role edge, 0.45 = module edge
+  weight: number;
 }
 
 interface Particle {
@@ -83,14 +83,15 @@ interface SidePanelState {
   moduleUsers?: string[];
 }
 
+interface SpatialGrid {
+  size: number;
+  cells: Map<string, number[]>;
+}
+
 export interface AccUsersGraphProps {
   users: BulkAccUser[];
   onSelectUser?: (email: string) => void;
 }
-
-// ---------------------------------------------------------------------------
-// Colors
-// ---------------------------------------------------------------------------
 
 const VIBRANT_COLORS: string[] = [
   "#E63946", "#F4A261", "#2A9D8F", "#264653", "#A8DADC",
@@ -102,36 +103,24 @@ const VIBRANT_COLORS: string[] = [
 ];
 
 const colorCache = new Map<string, string>();
+const ROLE_HUB_COLOR = "#7C3AED";
+const MODULE_HUB_COLOR = "#0EA5E9";
+const GRAPH_BACKGROUND = "#F8F7F4";
+
 function getCategoryColor(key: string | null | undefined): string {
   if (!key) return "#9CA3AF";
-  const c = colorCache.get(key);
-  if (c) return c;
+  const cached = colorCache.get(key);
+  if (cached) return cached;
+
   let hash = 0;
-  for (let i = 0; i < key.length; i++) hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  for (let i = 0; i < key.length; i++) {
+    hash = key.charCodeAt(i) + ((hash << 5) - hash);
+  }
+
   const color = VIBRANT_COLORS[Math.abs(hash) % VIBRANT_COLORS.length];
   colorCache.set(key, color);
   return color;
 }
-
-function getInstanceColor(proj: BulkAccProject): string {
-  if (proj.isAdmin) return "#10B981"; // emerald — admin in this project
-  const primaryRole = [...proj.roles].sort()[0] ?? null;
-  return getCategoryColor(primaryRole);
-}
-
-const ROLE_HUB_COLOR = "#7C3AED";
-const MODULE_HUB_COLOR = "#0EA5E9";
-const EDGE_ALPHA = 0.10;
-
-// ---------------------------------------------------------------------------
-// Constants
-// ---------------------------------------------------------------------------
-
-// Simulation runs in a Web Worker — see ./layoutWorker.ts and @/lib/acc/graphSimulation
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
 
 function getFirstName(name: string, email: string): string {
   if (name?.trim()) return name.split(" ")[0].slice(0, 10);
@@ -142,70 +131,49 @@ function getFirstName(name: string, email: string): string {
 }
 
 function truncate(str: string, n: number): string {
-  return str.length > n ? str.slice(0, n - 1) + "…" : str;
+  return str.length > n ? `${str.slice(0, n - 3)}...` : str;
 }
-
-// ---------------------------------------------------------------------------
-// Sprite
-// ---------------------------------------------------------------------------
-
-function createCircleSprite(color: string, size: number): HTMLCanvasElement {
-  const canvas = document.createElement("canvas");
-  const d = size * 2;
-  canvas.width = d; canvas.height = d;
-  const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  ctx.arc(size, size, size, 0, Math.PI * 2);
-  ctx.fill();
-  return canvas;
-}
-
-// ---------------------------------------------------------------------------
-// Build graph — one UserNode per found user
-// ---------------------------------------------------------------------------
 
 function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
-  const cx = SIM_WIDTH / 2, cy = SIM_HEIGHT / 2;
+  const cx = SIM_WIDTH / 2;
+  const cy = SIM_HEIGHT / 2;
 
   const roleFreq = new Map<string, number>();
   const moduleFreq = new Map<string, number>();
-
   const userNodes: UserNode[] = [];
 
-  // Pass 1: aggregate roles/modules and count frequencies per user
-  for (const u of users) {
-    if (!u.found || u.projects.length === 0) continue;
+  for (const user of users) {
+    if (!user.found || user.projects.length === 0) continue;
     const uniqueRoles = new Set<string>();
     const uniqueModules = new Set<string>();
-    for (const proj of u.projects) {
-      for (const r of proj.roles) uniqueRoles.add(r);
-      for (const m of proj.modules) uniqueModules.add(m);
+    for (const project of user.projects) {
+      for (const role of project.roles) uniqueRoles.add(role);
+      for (const moduleName of project.modules) uniqueModules.add(moduleName);
     }
-    for (const r of uniqueRoles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
-    for (const m of uniqueModules) moduleFreq.set(m, (moduleFreq.get(m) ?? 0) + 1);
+    for (const role of uniqueRoles) roleFreq.set(role, (roleFreq.get(role) ?? 0) + 1);
+    for (const moduleName of uniqueModules) moduleFreq.set(moduleName, (moduleFreq.get(moduleName) ?? 0) + 1);
   }
 
-  // Pass 2: build user nodes with initial positions
-  let userIdx = 0;
-  const foundUsersCount = users.filter(u => u.found && u.projects.length > 0).length;
-  for (const u of users) {
-    if (!u.found || u.projects.length === 0) {
+  let userIndex = 0;
+  const foundUsersCount = users.filter((user) => user.found && user.projects.length > 0).length;
+  for (const user of users) {
+    if (!user.found || user.projects.length === 0) {
       userNodes.push({
         kind: "user",
-        id: u.email,
-        email: u.email,
-        name: getFirstName(u.name, u.email),
-        found: u.found,
-        hasNoProjects: u.hasNoProjects,
+        id: user.email,
+        email: user.email,
+        name: getFirstName(user.name, user.email),
+        found: user.found,
+        hasNoProjects: user.hasNoProjects,
         isAdmin: false,
         projectCount: 0,
-        roles: u.allRoles || [],
+        roles: user.allRoles || [],
         modules: [],
-        color: u.found ? "#F59E0B" : "#9CA3AF",
+        color: user.found ? "#F59E0B" : "#9CA3AF",
         x: cx + (Math.random() - 0.5) * SIM_WIDTH * 0.55,
         y: cy + (Math.random() - 0.5) * SIM_HEIGHT * 0.55,
-        vx: 0, vy: 0,
+        vx: 0,
+        vy: 0,
       });
       continue;
     }
@@ -213,48 +181,46 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
     const uniqueRoles = new Set<string>();
     const uniqueModules = new Set<string>();
     let isAdmin = false;
-    for (const proj of u.projects) {
-      if (proj.isAdmin) isAdmin = true;
-      for (const r of proj.roles) uniqueRoles.add(r);
-      for (const m of proj.modules) uniqueModules.add(m);
+    for (const project of user.projects) {
+      if (project.isAdmin) isAdmin = true;
+      for (const role of project.roles) uniqueRoles.add(role);
+      for (const moduleName of project.modules) uniqueModules.add(moduleName);
     }
-    
+
     const roles = Array.from(uniqueRoles);
     const modules = Array.from(uniqueModules);
     const primaryRole = roles.sort()[0] ?? null;
     const color = isAdmin ? "#10B981" : getCategoryColor(primaryRole);
-    
-    const angle = (userIdx / Math.max(1, foundUsersCount)) * Math.PI * 2;
-    const r = SIM_WIDTH * 0.12 + (Math.random() * 500 - 250);
+    const angle = (userIndex / Math.max(1, foundUsersCount)) * Math.PI * 2;
+    const radius = SIM_WIDTH * 0.12 + (Math.random() * 500 - 250);
     const yBias = isAdmin ? -SIM_HEIGHT * 0.06 : 0;
 
     userNodes.push({
       kind: "user",
-      id: u.email,
-      email: u.email,
-      name: getFirstName(u.name, u.email),
+      id: user.email,
+      email: user.email,
+      name: getFirstName(user.name, user.email),
       found: true,
       hasNoProjects: false,
       isAdmin,
-      projectCount: u.projects.length,
+      projectCount: user.projects.length,
       roles,
       modules,
       color,
-      x: cx + Math.cos(angle) * r,
-      y: cy + Math.sin(angle) * r + yBias,
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius + yBias,
       vx: (Math.random() - 0.5) * 3,
       vy: (Math.random() - 0.5) * 3,
     });
-    userIdx++;
+    userIndex++;
   }
 
-  // Role hub nodes — outer ring
-  const maxRoleFreq = Math.max(1, ...roleFreq.values());
   const roleNodes = new Map<string, RoleNode>();
+  const maxRoleFreq = Math.max(1, ...roleFreq.values());
   const roleList = [...roleFreq.keys()];
-  roleList.forEach((role, ri) => {
+  roleList.forEach((role, roleIndex) => {
     const count = roleFreq.get(role)!;
-    const angle = (ri / roleList.length) * Math.PI * 2;
+    const angle = (roleIndex / Math.max(1, roleList.length)) * Math.PI * 2;
     const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.34;
     roleNodes.set(role, {
       kind: "role",
@@ -266,124 +232,70 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
       color: ROLE_HUB_COLOR,
       x: cx + Math.cos(angle) * spread,
       y: cy + Math.sin(angle) * spread,
-      vx: 0, vy: 0,
+      vx: 0,
+      vy: 0,
     });
   });
 
-  // Module hub nodes — middle ring, offset by half step
-  const maxModFreq = Math.max(1, ...moduleFreq.values());
   const moduleNodes = new Map<string, ModuleNode>();
-  const modList = [...moduleFreq.keys()];
-  modList.forEach((mod, mi) => {
-    const angle = (mi / modList.length) * Math.PI * 2 + Math.PI / modList.length;
+  const maxModuleFreq = Math.max(1, ...moduleFreq.values());
+  const moduleList = [...moduleFreq.keys()];
+  moduleList.forEach((moduleName, moduleIndex) => {
+    const angle = (moduleIndex / Math.max(1, moduleList.length)) * Math.PI * 2 + Math.PI / Math.max(1, moduleList.length);
     const spread = Math.min(SIM_WIDTH, SIM_HEIGHT) * 0.20;
-    moduleNodes.set(mod, {
+    moduleNodes.set(moduleName, {
       kind: "module",
-      id: `module:${mod}`,
-      label: truncate(moduleLabel(mod), 10),
-      moduleName: mod,
-      userCount: moduleFreq.get(mod)!,
+      id: `module:${moduleName}`,
+      label: truncate(moduleLabel(moduleName), 10),
+      moduleName,
+      userCount: moduleFreq.get(moduleName) ?? maxModuleFreq,
       color: MODULE_HUB_COLOR,
       x: cx + Math.cos(angle) * spread,
       y: cy + Math.sin(angle) * spread,
-      vx: 0, vy: 0,
+      vx: 0,
+      vy: 0,
     });
   });
 
-  const nodes: SimNode[] = [
-    ...userNodes,
-    ...roleNodes.values(),
-    ...moduleNodes.values(),
-  ];
-
-  // Edges: users → role hubs (weight 1.0) + module hubs (weight 0.45)
+  const nodes: SimNode[] = [...userNodes, ...roleNodes.values(), ...moduleNodes.values()];
   const edges: Edge[] = [];
   for (const user of userNodes) {
     if (!user.found || user.hasNoProjects) continue;
     for (const role of user.roles) {
-      const rn = roleNodes.get(role);
-      if (rn) edges.push({ source: user.id, target: rn.id, color: user.color, weight: 1.0 });
+      const roleNode = roleNodes.get(role);
+      if (roleNode) edges.push({ source: user.id, target: roleNode.id, color: user.color, weight: 1.0 });
     }
-    for (const mod of user.modules) {
-      const mn = moduleNodes.get(mod);
-      if (mn) edges.push({ source: user.id, target: mn.id, color: mn.color, weight: 0.45 });
+    for (const moduleName of user.modules) {
+      const moduleNode = moduleNodes.get(moduleName);
+      if (moduleNode) edges.push({ source: user.id, target: moduleNode.id, color: moduleNode.color, weight: 0.45 });
     }
   }
 
   return { nodes, edges };
 }
 
-// Run simulation in a short-lived Web Worker so the main thread stays responsive.
-// Sends only the physics-relevant fields; on return, merges settled x/y/vx/vy back into
-// the original SimNodes (preserves color, roles, projectName, etc. — never crosses postMessage).
-function runSimulationInWorker(nodes: SimNode[], edges: Edge[]): Promise<SimNode[]> {
-  return new Promise((resolve, reject) => {
-    let timer: NodeJS.Timeout | undefined;
-    try {
-      const worker = new Worker(new URL("./layoutWorker.ts", import.meta.url), { type: "module" });
-      
-      timer = setTimeout(() => {
-        worker.terminate();
-        reject(new Error("Worker timed out after 2000ms"));
-      }, 2000);
-
-      worker.onmessage = (e: MessageEvent<PhysicsNode[]>) => {
-        if (timer) clearTimeout(timer);
-        const settled = nodes.map((n, i) => ({
-          ...n,
-          x: e.data[i].x,
-          y: e.data[i].y,
-          vx: e.data[i].vx,
-          vy: e.data[i].vy,
-        })) as SimNode[];
-        resolve(settled);
-        worker.terminate();
-      };
-
-      worker.onerror = (e) => {
-        if (timer) clearTimeout(timer);
-        reject(new Error(e.message || "layoutWorker error"));
-        worker.terminate();
-      };
-
-      const physNodes: PhysicsNode[] = nodes.map((n) => ({
-        id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
-      }));
-      const physEdges: PhysicsEdge[] = edges.map((e) => ({
-        source: e.source, target: e.target, weight: e.weight,
-      }));
-      worker.postMessage({ nodes: physNodes, edges: physEdges });
-    } catch (e) {
-      if (timer) clearTimeout(timer);
-      reject(e);
-    }
-  });
-}
-
-// ---------------------------------------------------------------------------
-// Normalize positions
-// ---------------------------------------------------------------------------
-
 function normalizePositions(settled: SimNode[]): Float32Array {
-  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-  for (const n of settled) {
-    if (n.x < minX) minX = n.x; if (n.x > maxX) maxX = n.x;
-    if (n.y < minY) minY = n.y; if (n.y > maxY) maxY = n.y;
+  let minX = Infinity;
+  let maxX = -Infinity;
+  let minY = Infinity;
+  let maxY = -Infinity;
+
+  for (const node of settled) {
+    if (node.x < minX) minX = node.x;
+    if (node.x > maxX) maxX = node.x;
+    if (node.y < minY) minY = node.y;
+    if (node.y > maxY) maxY = node.y;
   }
-  const rx = maxX - minX || 1, ry = maxY - minY || 1;
-  const pos = new Float32Array(settled.length * 2);
+
+  const rangeX = maxX - minX || 1;
+  const rangeY = maxY - minY || 1;
+  const positions = new Float32Array(settled.length * 2);
   for (let i = 0; i < settled.length; i++) {
-    pos[i * 2] = (settled[i].x - minX) / rx;
-    pos[i * 2 + 1] = (settled[i].y - minY) / ry;
+    positions[i * 2] = (settled[i].x - minX) / rangeX;
+    positions[i * 2 + 1] = (settled[i].y - minY) / rangeY;
   }
-  return pos;
+  return positions;
 }
-
-// ---------------------------------------------------------------------------
-// Spatial grid for O(1) hit testing
-// ---------------------------------------------------------------------------
-
-interface SpatialGrid { size: number; cells: Map<string, number[]>; }
 
 function buildGrid(pos: Float32Array, count: number, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -395,160 +307,426 @@ function buildGrid(pos: Float32Array, count: number, cellSize: number): SpatialG
   return { size: cellSize, cells };
 }
 
-// ---------------------------------------------------------------------------
-// Main Component
-// ---------------------------------------------------------------------------
+function getOrderedNodeIds(nodes: readonly SimNode[]): string[] {
+  return nodes.map((node) => node.id);
+}
+
+function orderedNodeIdsMatch(cachedIds: readonly string[] | null | undefined, nodes: readonly SimNode[]): boolean {
+  if (!cachedIds || cachedIds.length !== nodes.length) return false;
+  for (let i = 0; i < nodes.length; i++) {
+    if (cachedIds[i] !== nodes[i].id) return false;
+  }
+  return true;
+}
+
+function getViewportSize(container: HTMLDivElement | null): { width: number; height: number } {
+  return {
+    width: container?.clientWidth || 900,
+    height: container?.clientHeight || 600,
+  };
+}
+
+function buildHighlightSet(
+  edges: readonly Edge[],
+  nodeIndexMap: ReadonlyMap<string, number>,
+  selectedId: string | null,
+  selectedIndex: number,
+): Set<number> {
+  const highlightSet = new Set<number>();
+  if (!selectedId || selectedIndex < 0) return highlightSet;
+
+  highlightSet.add(selectedIndex);
+  for (const edge of edges) {
+    if (edge.source === selectedId) {
+      const targetIndex = nodeIndexMap.get(edge.target);
+      if (targetIndex != null) highlightSet.add(targetIndex);
+    }
+    if (edge.target === selectedId) {
+      const sourceIndex = nodeIndexMap.get(edge.source);
+      if (sourceIndex != null) highlightSet.add(sourceIndex);
+    }
+  }
+  return highlightSet;
+}
+
+interface LabelOverlayFrame {
+  canvas: HTMLCanvasElement | null;
+  nodes: readonly SimNode[];
+  positions: Float32Array;
+  roleIndices: Uint32Array;
+  moduleIndices: Uint32Array;
+  view: { x: number; y: number; scale: number };
+  cssWidth: number;
+  cssHeight: number;
+  devicePixelRatio: number;
+  showRoles: boolean;
+  showModules: boolean;
+  hasSelection: boolean;
+  highlightSet: ReadonlySet<number>;
+}
+
+function drawLabelOverlay(frame: LabelOverlayFrame): void {
+  const canvas = frame.canvas;
+  if (!canvas) return;
+
+  const dpr = Math.min(frame.devicePixelRatio || 1, 2);
+  const wantWidth = Math.max(1, Math.floor(frame.cssWidth * dpr));
+  const wantHeight = Math.max(1, Math.floor(frame.cssHeight * dpr));
+  if (canvas.width !== wantWidth || canvas.height !== wantHeight) {
+    canvas.width = wantWidth;
+    canvas.height = wantHeight;
+  }
+
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return;
+
+  ctx.resetTransform();
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  if (!frame.nodes.length || !frame.positions.length || frame.view.scale <= 420) return;
+
+  ctx.scale(dpr, dpr);
+  const bounds = getVisibleWorldBounds(frame.view, frame.cssWidth, frame.cssHeight, 50 / frame.view.scale);
+  const toScreenX = (worldX: number) => frame.cssWidth / 2 + (worldX - frame.view.x) * frame.view.scale;
+  const toScreenY = (worldY: number) => frame.cssHeight / 2 + (worldY - frame.view.y) * frame.view.scale;
+  const isOnScreen = (screenX: number, screenY: number, margin = 80) =>
+    screenX >= -margin &&
+    screenX <= frame.cssWidth + margin &&
+    screenY >= -margin &&
+    screenY <= frame.cssHeight + margin;
+
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+
+  if (frame.showRoles) {
+    for (let i = 0; i < frame.roleIndices.length; i++) {
+      const index = frame.roleIndices[i];
+      const node = frame.nodes[index] as RoleNode;
+      const nx = frame.positions[index * 2];
+      const ny = frame.positions[index * 2 + 1];
+      if (nx < bounds.minWX || nx > bounds.maxWX || ny < bounds.minWY || ny > bounds.maxWY) continue;
+      if (frame.hasSelection && !frame.highlightSet.has(index)) continue;
+
+      const radiusPx = node.radius;
+      if (radiusPx < 9) continue;
+      const sx = toScreenX(nx);
+      const sy = toScreenY(ny);
+      if (!isOnScreen(sx, sy)) continue;
+
+      ctx.globalAlpha = 0.85;
+      ctx.fillStyle = "#111";
+      ctx.font = `${Math.min(12, Math.max(10, radiusPx * 0.85))}px sans-serif`;
+      ctx.fillText(node.label, sx, sy + 1);
+    }
+  }
+
+  if (frame.showModules) {
+    const moduleFont = "9px sans-serif";
+    for (let i = 0; i < frame.moduleIndices.length; i++) {
+      const index = frame.moduleIndices[i];
+      const node = frame.nodes[index] as ModuleNode;
+      const nx = frame.positions[index * 2];
+      const ny = frame.positions[index * 2 + 1];
+      if (nx < bounds.minWX || nx > bounds.maxWX || ny < bounds.minWY || ny > bounds.maxWY) continue;
+      if (frame.hasSelection && !frame.highlightSet.has(index)) continue;
+      if (!frame.hasSelection && frame.view.scale < 650) continue;
+
+      const radiusPx = 7;
+      const sx = toScreenX(nx);
+      const sy = toScreenY(ny);
+      if (!isOnScreen(sx, sy)) continue;
+
+      ctx.globalAlpha = 0.8;
+      ctx.fillStyle = "#111";
+      ctx.font = moduleFont;
+      ctx.fillText(node.label, sx, sy + radiusPx + 9);
+    }
+  }
+
+  ctx.globalAlpha = 1;
+}
 
 export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvas2dRef = useRef<HTMLCanvasElement>(null);
+  const webgpuCanvasRef = useRef<HTMLCanvasElement>(null);
+  const labelCanvasRef = useRef<HTMLCanvasElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const rafId = useRef<number>(0);
+
+  const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
+  const webgpuRendererRef = useRef<WebGpuGraphRenderer | null>(null);
+  const activeRendererRef = useRef<GraphRenderer | null>(null);
 
   const nodesRef = useRef<SimNode[]>([]);
   const edgesRef = useRef<Edge[]>([]);
   const posRef = useRef<Float32Array>(new Float32Array(0));
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
-  const spritesRef = useRef(new Map<string, HTMLCanvasElement>());
   const nodeIndexMapRef = useRef(new Map<string, number>());
-  // Pre-built per-color edge index buffers — [sourceIdx, targetIdx, sourceIdx, targetIdx, ...]
-  // Separated by target kind so Hide Roles / Hide Modules can skip entire buffers.
   const edgeIdxRoleRef = useRef(new Map<string, Uint32Array>());
   const edgeIdxModuleRef = useRef(new Map<string, Uint32Array>());
   const particlesRef = useRef<Particle[]>([]);
-
-  // Node indices pre-split by kind so the render loop iterates only the relevant set
-  // per pass instead of scanning all ~1400 nodes four times per frame.
   const instIdxRef = useRef<Uint32Array>(new Uint32Array(0));
   const roleIdxRef = useRef<Uint32Array>(new Uint32Array(0));
   const moduleIdxRef = useRef<Uint32Array>(new Uint32Array(0));
-
-  // Dirty flag: render loop skips the full draw when the camera is settled AND nothing
-  // has changed since the last paint. Anything that changes what should be on canvas
-  // (drag, wheel, toggle, selection, layout load) flips this to true.
   const needsRenderRef = useRef(true);
 
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
   const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
-
   const isDragging = useRef(false);
   const lastMouse = useRef({ x: 0, y: 0 });
   const clickStart = useRef({ x: 0, y: 0 });
-
   const showRolesRef = useRef(true);
   const showModulesRef = useRef(true);
+  const selectedNodeRef = useRef<SidePanelState | null>(null);
+  const isRefreshingRef = useRef(false);
 
   const [showRoles, setShowRoles] = useState(true);
   const [showModules, setShowModules] = useState(true);
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
-  const selectedNodeRef = useRef<SidePanelState | null>(null);
   const [simulationDone, setSimulationDone] = useState(false);
   const [isReady, setIsReady] = useState(false);
-
-  // Cache integration state
   const [refreshKey, setRefreshKey] = useState(0);
-  const isRefreshingRef = useRef(false);
+  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
+  const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
 
-  // Map: role name → list of user display names (for role side panel)
   const roleUserMap = useMemo(() => {
-    const m = new Map<string, string[]>();
-    for (const u of users) {
-      if (!u.found) continue;
-      for (const proj of u.projects) {
-        for (const role of proj.roles) {
-          const list = m.get(role) ?? [];
-          list.push(u.name || u.email);
-          m.set(role, list);
+    const map = new Map<string, string[]>();
+    for (const user of users) {
+      if (!user.found) continue;
+      for (const project of user.projects) {
+        for (const role of project.roles) {
+          const list = map.get(role) ?? [];
+          list.push(user.name || user.email);
+          map.set(role, list);
         }
       }
     }
-    return m;
+    return map;
   }, [users]);
 
-  // Map: email → number of project instances
-  const emailInstanceCount = useMemo(() => {
-    const m = new Map<string, number>();
-    for (const u of users) {
-      if (u.found && u.projects.length > 0) m.set(u.email, u.projects.length);
-    }
-    return m;
-  }, [users]);
-
-  // Cache tRPC hooks
   const layoutQuery = trpc.users.getGraphLayout.useQuery(undefined, {
     enabled: users.length > 0,
-    staleTime: Infinity, // never auto-refetch — invalidation is explicit via refreshKey
-    retry: false, // if it fails, fall through to simulation
+    staleTime: Infinity,
+    retry: false,
   });
 
   const saveLayout = trpc.users.saveGraphLayout.useMutation();
   const invalidateLayout = trpc.users.invalidateGraphLayout.useMutation();
 
-  // Pre-build per-color Uint32Array edge buffers + per-kind node index arrays.
-  // Split by target kind so toggles can skip whole buffers; split nodes so draws iterate
-  // only the relevant set per pass.
-  const buildLayoutBuffers = useCallback((nodes: SimNode[], edges: Edge[], nim: Map<string, number>) => {
+  const markGraphDirty = useCallback(() => {
+    needsRenderRef.current = true;
+  }, []);
+
+  const buildLayoutBuffers = useCallback((nodes: SimNode[], edges: Edge[], nodeIndexMap: Map<string, number>) => {
     const roleGroups = new Map<string, number[]>();
     const moduleGroups = new Map<string, number[]>();
-    for (const e of edges) {
-      const si = nim.get(e.source);
-      const ti = nim.get(e.target);
-      if (si == null || ti == null) continue;
-      const target = e.target.startsWith("role:") ? roleGroups : moduleGroups;
-      let arr = target.get(e.color);
-      if (!arr) { arr = []; target.set(e.color, arr); }
-      arr.push(si, ti);
+    for (const edge of edges) {
+      const sourceIndex = nodeIndexMap.get(edge.source);
+      const targetIndex = nodeIndexMap.get(edge.target);
+      if (sourceIndex == null || targetIndex == null) continue;
+      const targetGroups = edge.target.startsWith("role:") ? roleGroups : moduleGroups;
+      const list = targetGroups.get(edge.color) ?? [];
+      list.push(sourceIndex, targetIndex);
+      targetGroups.set(edge.color, list);
     }
-    const roleMap = new Map<string, Uint32Array>();
-    roleGroups.forEach((arr, color) => roleMap.set(color, new Uint32Array(arr)));
-    const moduleMap = new Map<string, Uint32Array>();
-    moduleGroups.forEach((arr, color) => moduleMap.set(color, new Uint32Array(arr)));
-    edgeIdxRoleRef.current = roleMap;
-    edgeIdxModuleRef.current = moduleMap;
+
+    edgeIdxRoleRef.current = new Map(
+      Array.from(roleGroups.entries(), ([color, indices]) => [color, new Uint32Array(indices)]),
+    );
+    edgeIdxModuleRef.current = new Map(
+      Array.from(moduleGroups.entries(), ([color, indices]) => [color, new Uint32Array(indices)]),
+    );
 
     const particles: Particle[] = [];
     const maxParticles = 1000;
-    const pPerEdge = edges.length > 500 ? 1 : 2;
-    for (const e of edges) {
+    const particlesPerEdge = edges.length > 500 ? 1 : 2;
+    for (const edge of edges) {
       if (particles.length >= maxParticles) break;
-      const si = nim.get(e.source);
-      const ti = nim.get(e.target);
-      if (si == null || ti == null) continue;
-      const isRole = e.target.startsWith("role:");
-      const count = Math.random() > 0.5 ? pPerEdge : Math.max(0, pPerEdge - 1);
+      const sourceIndex = nodeIndexMap.get(edge.source);
+      const targetIndex = nodeIndexMap.get(edge.target);
+      if (sourceIndex == null || targetIndex == null) continue;
+
+      const isRole = edge.target.startsWith("role:");
+      const count = Math.random() > 0.5 ? particlesPerEdge : Math.max(0, particlesPerEdge - 1);
       for (let p = 0; p < count; p++) {
         particles.push({
-          si,
-          ti,
+          si: sourceIndex,
+          ti: targetIndex,
           t: Math.random(),
           speed: 0.002 + Math.random() * 0.004,
           color: isRole ? ROLE_HUB_COLOR : MODULE_HUB_COLOR,
-          isRole
+          isRole,
         });
       }
     }
     particlesRef.current = particles;
 
-    const inst: number[] = [], roles: number[] = [], mods: number[] = [];
+    const userIndices: number[] = [];
+    const roleIndices: number[] = [];
+    const moduleIndices: number[] = [];
     for (let i = 0; i < nodes.length; i++) {
-      const k = nodes[i].kind;
-      if (k === "user") inst.push(i);
-      else if (k === "role") roles.push(i);
-      else if (k === "module") mods.push(i);
+      if (nodes[i].kind === "user") userIndices.push(i);
+      else if (nodes[i].kind === "role") roleIndices.push(i);
+      else moduleIndices.push(i);
     }
-    instIdxRef.current = new Uint32Array(inst);
-    roleIdxRef.current = new Uint32Array(roles);
-    moduleIdxRef.current = new Uint32Array(mods);
 
-    needsRenderRef.current = true;
+    instIdxRef.current = new Uint32Array(userIndices);
+    roleIdxRef.current = new Uint32Array(roleIndices);
+    moduleIdxRef.current = new Uint32Array(moduleIndices);
+    markGraphDirty();
+  }, [markGraphDirty]);
+
+  const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
+    if (!posRef.current.length) return;
+
+    const nodes = nodesRef.current;
+    const positions = posRef.current;
+    if (!nodes.length) return;
+
+    let minX = Infinity;
+    let maxX = -Infinity;
+    let minY = Infinity;
+    let maxY = -Infinity;
+
+    for (let i = 0; i < nodes.length; i++) {
+      const node = nodes[i];
+      if (node.kind === "role" && !showRolesRef.current) continue;
+      if (node.kind === "module" && !showModulesRef.current) continue;
+      const nx = positions[i * 2];
+      const ny = positions[i * 2 + 1];
+      if (nx < minX) minX = nx;
+      if (nx > maxX) maxX = nx;
+      if (ny < minY) minY = ny;
+      if (ny > maxY) maxY = ny;
+    }
+
+    if (minX === Infinity) return;
+
+    const { width, height } = getViewportSize(containerRef.current);
+    const graphWidth = maxX - minX || 0.01;
+    const graphHeight = maxY - minY || 0.01;
+    const fitScale = Math.min(width / graphWidth, height / graphHeight) * 0.80;
+    const nextView = {
+      x: (minX + maxX) / 2,
+      y: (minY + maxY) / 2,
+      scale: Math.max(0.01, Math.min(500000, fitScale)),
+    };
+    targetView.current = nextView;
+    if (options?.immediate) {
+      view.current = { ...nextView };
+    }
+    markGraphDirty();
+  }, [markGraphDirty]);
+
+  const rebuildGrid = useCallback(() => {
+    const cellSize = Math.max(0.005, 60 / view.current.scale);
+    gridRef.current = buildGrid(posRef.current, nodesRef.current.length, cellSize);
   }, []);
 
-  // Build + run simulation (with cache integration)
+  const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
+    if (!posRef.current.length) return null;
+
+    const { width, height } = getViewportSize(containerRef.current);
+    const v = view.current;
+    const wx = v.x + (sx - width / 2) / v.scale;
+    const wy = v.y + (sy - height / 2) / v.scale;
+    const grid = gridRef.current;
+    if (!grid.cells.size) return null;
+
+    const nodes = nodesRef.current;
+    const positions = posRef.current;
+    const gx = Math.floor(wx / grid.size);
+    const gy = Math.floor(wy / grid.size);
+    let bestDist = 15 / v.scale;
+    let bestIndex = -1;
+
+    for (let ox = -2; ox <= 2; ox++) {
+      for (let oy = -2; oy <= 2; oy++) {
+        const cell = grid.cells.get(`${gx + ox},${gy + oy}`);
+        if (!cell) continue;
+        for (const index of cell) {
+          const node = nodes[index];
+          if (node.kind === "role" && !showRolesRef.current) continue;
+          if (node.kind === "module" && !showModulesRef.current) continue;
+          const dx = positions[index * 2] - wx;
+          const dy = positions[index * 2 + 1] - wy;
+          const dist = Math.hypot(dx, dy);
+          if (dist < bestDist) {
+            bestDist = dist;
+            bestIndex = index;
+          }
+        }
+      }
+    }
+
+    return bestIndex >= 0 ? nodes[bestIndex] : null;
+  }, []);
+
+  useEffect(() => {
+    const canvas2d = canvas2dRef.current;
+    const webgpuCanvas = webgpuCanvasRef.current;
+    if (!canvas2d || !webgpuCanvas) return;
+
+    let disposed = false;
+    const canvasRenderer = new CanvasGraphRenderer(canvas2d);
+    canvasRendererRef.current = canvasRenderer;
+    activeRendererRef.current = canvasRenderer;
+    setRenderBackend("canvas2d");
+    setRendererFailureReason(null);
+    markGraphDirty();
+
+    const fallBackToCanvas = (reason: string) => {
+      if (disposed) return;
+      webgpuRendererRef.current?.destroy();
+      webgpuRendererRef.current = null;
+      activeRendererRef.current = canvasRendererRef.current;
+      setRenderBackend("canvas2d");
+      setRendererFailureReason(reason);
+      markGraphDirty();
+    };
+
+    void (async () => {
+      const { renderer, failureReason } = await WebGpuGraphRenderer.create(webgpuCanvas, fallBackToCanvas);
+      if (disposed) {
+        renderer?.destroy();
+        return;
+      }
+      if (!renderer) {
+        setRenderBackend("canvas2d");
+        setRendererFailureReason(failureReason ?? "WebGPU initialization failed");
+        markGraphDirty();
+        return;
+      }
+
+      webgpuRendererRef.current = renderer;
+      activeRendererRef.current = renderer;
+      setRenderBackend("webgpu");
+      setRendererFailureReason(null);
+      markGraphDirty();
+    })();
+
+    return () => {
+      disposed = true;
+      activeRendererRef.current = null;
+      canvasRendererRef.current?.destroy();
+      canvasRendererRef.current = null;
+      webgpuRendererRef.current?.destroy();
+      webgpuRendererRef.current = null;
+    };
+  }, [markGraphDirty]);
+
+  useEffect(() => {
+    if (rendererFailureReason) {
+      console.debug(`[AccUsersGraph] renderer backend=${renderBackend}; fallback=${rendererFailureReason}`);
+      return;
+    }
+    console.debug(`[AccUsersGraph] renderer backend=${renderBackend}`);
+  }, [renderBackend, rendererFailureReason]);
+
   useEffect(() => {
     if (!users.length) return;
-    // Don't start a new run while a refresh is already in progress
     if (isRefreshingRef.current) return;
 
     setSimulationDone(false);
@@ -558,552 +736,327 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     edgesRef.current = rawEdges;
 
     let cancelled = false;
-
     const timeoutId = setTimeout(async () => {
-      // --- Cache hit path ---
       const layout = layoutQuery.data;
+
       if (
         !cancelled &&
         layout?.hit &&
         layout.positions &&
-        layout.nodeCount === rawNodes.length
+        layout.positions.length === rawNodes.length * 2 &&
+        layout.nodeCount === rawNodes.length &&
+        orderedNodeIdsMatch(layout.nodeIds, rawNodes)
       ) {
-        // Apply cached positions directly — skip simulation entirely
         posRef.current = new Float32Array(layout.positions as number[]);
-        nodesRef.current = rawNodes; // rawNodes already have correct order (same users input)
+        nodesRef.current = rawNodes;
 
-        const nim = new Map<string, number>();
-        rawNodes.forEach((n, i) => nim.set(n.id, i));
-        nodeIndexMapRef.current = nim;
+        const nodeIndexMap = new Map<string, number>();
+        rawNodes.forEach((node, index) => nodeIndexMap.set(node.id, index));
+        nodeIndexMapRef.current = nodeIndexMap;
 
-        buildLayoutBuffers(rawNodes, rawEdges, nim);
-
-        const cellSize = Math.max(0.01, 60 / view.current.scale);
-        gridRef.current = buildGrid(posRef.current, rawNodes.length, cellSize);
-
-        const colorSet = new Set(rawNodes.map((n) => n.color));
-        colorSet.forEach((color) => {
-          if (!spritesRef.current.has(color)) {
-            spritesRef.current.set(color, createCircleSprite(color, 8));
-          }
-        });
-
+        buildLayoutBuffers(rawNodes, rawEdges, nodeIndexMap);
+        zoomToFit({ immediate: true });
+        gridRef.current = buildGrid(posRef.current, rawNodes.length, Math.max(0.01, 60 / view.current.scale));
         setSimulationDone(true);
-        requestAnimationFrame(() => {
-          zoomToFit();
-          requestAnimationFrame(() => setIsReady(true));
-        });
+        isRefreshingRef.current = false;
+        if (!cancelled) setIsReady(true);
         return;
       }
 
-      // --- Cache miss path — run simulation on main thread ---
       if (cancelled) return;
+
       let settled: SimNode[];
       try {
-        const physNodes: PhysicsNode[] = rawNodes.map((n) => ({
-          id: n.id, kind: n.kind, x: n.x, y: n.y, vx: n.vx, vy: n.vy,
+        const physNodes: PhysicsNode[] = rawNodes.map((node) => ({
+          id: node.id,
+          kind: node.kind,
+          x: node.x,
+          y: node.y,
+          vx: node.vx,
+          vy: node.vy,
         }));
-        const physEdges: PhysicsEdge[] = rawEdges.map((e) => ({
-          source: e.source, target: e.target, weight: e.weight,
+        const physEdges: PhysicsEdge[] = rawEdges.map((edge) => ({
+          source: edge.source,
+          target: edge.target,
+          weight: edge.weight,
         }));
-        
-        // Wait a tick so React can render the "Calculating..." spinner
-        await new Promise(r => setTimeout(r, 50));
+
+        await new Promise((resolve) => setTimeout(resolve, 50));
         if (cancelled) return;
 
         const physSettled = runSimulation(physNodes, physEdges);
-        settled = rawNodes.map((n, i) => ({
-          ...n,
-          x: physSettled[i].x,
-          y: physSettled[i].y,
-          vx: physSettled[i].vx,
-          vy: physSettled[i].vy,
+        settled = rawNodes.map((node, index) => ({
+          ...node,
+          x: physSettled[index].x,
+          y: physSettled[index].y,
+          vx: physSettled[index].vx,
+          vy: physSettled[index].vy,
         })) as SimNode[];
-      } catch (err) {
-        console.error("Simulation failed:", err);
+      } catch (error) {
+        console.error("Simulation failed:", error);
+        isRefreshingRef.current = false;
         return;
       }
+
       if (cancelled) return;
 
       nodesRef.current = settled;
       posRef.current = normalizePositions(settled);
 
-      const nim = new Map<string, number>();
-      settled.forEach((n, i) => nim.set(n.id, i));
-      nodeIndexMapRef.current = nim;
+      const nodeIndexMap = new Map<string, number>();
+      settled.forEach((node, index) => nodeIndexMap.set(node.id, index));
+      nodeIndexMapRef.current = nodeIndexMap;
 
-      buildLayoutBuffers(settled, rawEdges, nim);
-
-      const cellSize = Math.max(0.01, 60 / view.current.scale);
-      gridRef.current = buildGrid(posRef.current, settled.length, cellSize);
-
-      const colorSet = new Set(settled.map((n) => n.color));
-      colorSet.forEach((color) => {
-        if (!spritesRef.current.has(color)) {
-          spritesRef.current.set(color, createCircleSprite(color, 8));
-        }
-      });
-
+      buildLayoutBuffers(settled, rawEdges, nodeIndexMap);
+      zoomToFit({ immediate: true });
+      gridRef.current = buildGrid(posRef.current, settled.length, Math.max(0.01, 60 / view.current.scale));
       setSimulationDone(true);
-      requestAnimationFrame(() => {
-        zoomToFit();
-        requestAnimationFrame(() => {
-          if (!cancelled) setIsReady(true);
-        });
-      });
+      isRefreshingRef.current = false;
+      if (!cancelled) setIsReady(true);
 
-      // Silent background save — fire and forget
       if (!cancelled && layout?.dataHash) {
         saveLayout.mutate(
           {
             positions: Array.from(posRef.current),
             dataHash: layout.dataHash,
             nodeCount: settled.length,
+            nodeIds: getOrderedNodeIds(settled),
           },
-          { onError: () => { /* silent failure — next load re-runs simulation */ } }
+          {
+            onError: () => {
+              // Silent fallback: a later load will recompute the layout.
+            },
+          },
         );
       }
-
-      isRefreshingRef.current = false;
     }, 0);
 
     return () => {
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [users, layoutQuery.data, refreshKey, buildLayoutBuffers]);
+  }, [users, layoutQuery.data, refreshKey, buildLayoutBuffers, saveLayout, zoomToFit]);
 
-  const zoomToFit = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas || !posRef.current.length) return;
-    const pos = posRef.current;
-    const nodes = nodesRef.current;
-    if (!nodes.length) return;
-
-    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-    for (let i = 0; i < nodes.length; i++) {
-      const n = nodes[i];
-      if (n.kind === "role" && !showRolesRef.current) continue;
-      if (n.kind === "module" && !showModulesRef.current) continue;
-      const nx = pos[i * 2], ny = pos[i * 2 + 1];
-      if (nx < minX) minX = nx; if (nx > maxX) maxX = nx;
-      if (ny < minY) minY = ny; if (ny > maxY) maxY = ny;
-    }
-    if (minX === Infinity) return;
-
-    const dw = maxX - minX || 0.01, dh = maxY - minY || 0.01;
-    const cw = canvas.clientWidth || 900, ch = canvas.clientHeight || 600;
-    const fitScale = Math.min(cw / dw, ch / dh) * 0.80;
-
-    targetView.current = {
-      x: (minX + maxX) / 2,
-      y: (minY + maxY) / 2,
-      scale: Math.max(0.01, Math.min(500000, fitScale)),
-    };
-    needsRenderRef.current = true;
-  }, []);
-
-  const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
-    const canvas = canvasRef.current;
-    if (!canvas || !posRef.current.length) return null;
-    const v = view.current;
-    const w = canvas.clientWidth, h = canvas.clientHeight;
-    const wx = v.x + (sx - w / 2) / v.scale;
-    const wy = v.y + (sy - h / 2) / v.scale;
-    const g = gridRef.current;
-    if (!g.cells.size) return null;
-    const nodes = nodesRef.current, pos = posRef.current;
-    const gx = Math.floor(wx / g.size), gy = Math.floor(wy / g.size);
-    let bestDist = 15 / v.scale, bestIdx = -1;
-    for (let ox = -2; ox <= 2; ox++) {
-      for (let oy = -2; oy <= 2; oy++) {
-        const cell = g.cells.get(`${gx + ox},${gy + oy}`);
-        if (!cell) continue;
-        for (const idx of cell) {
-          const n = nodes[idx];
-          if (n.kind === "role" && !showRolesRef.current) continue;
-          if (n.kind === "module" && !showModulesRef.current) continue;
-          const dx = pos[idx * 2] - wx, dy = pos[idx * 2 + 1] - wy;
-          const d = Math.hypot(dx, dy);
-          if (d < bestDist) { bestDist = d; bestIdx = idx; }
-        }
-      }
-    }
-    return bestIdx >= 0 ? nodes[bestIdx] : null;
-  }, []);
-
-  // ---------------------------------------------------------------------------
-  // Render loop
-  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext("2d")!;
-
     const render = () => {
       rafId.current = requestAnimationFrame(render);
 
-      const v = view.current, tv = targetView.current;
-      const dxCam = Math.abs(tv.x - v.x), dyCam = Math.abs(tv.y - v.y), dsCam = Math.abs(tv.scale - v.scale);
-      const camLerping = dxCam > 0.00001 || dyCam > 0.00001 || dsCam > 0.01;
+      const renderer = activeRendererRef.current;
+      if (!renderer) return;
 
-      // Skip the entire draw when the camera is settled AND nothing changed since last paint.
+      const v = view.current;
+      const tv = targetView.current;
+      const dxCam = Math.abs(tv.x - v.x);
+      const dyCam = Math.abs(tv.y - v.y);
+      const dsCam = Math.abs(tv.scale - v.scale);
+      const camLerping = dxCam > 0.00001 || dyCam > 0.00001 || dsCam > 0.01;
       if (!camLerping && !needsRenderRef.current) return;
 
       v.x += (tv.x - v.x) * 0.2;
       v.y += (tv.y - v.y) * 0.2;
       v.scale += (tv.scale - v.scale) * 0.2;
 
-      const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const rect = canvas.getBoundingClientRect();
-      const w = rect.width, h = rect.height;
-      const wantW = Math.floor(w * dpr), wantH = Math.floor(h * dpr);
-      if (canvas.width !== wantW || canvas.height !== wantH) {
-        canvas.width = wantW; canvas.height = wantH;
-      }
-
-      ctx.resetTransform();
-      ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#F8F7F4";
-      ctx.fillRect(0, 0, w, h);
-
-      const nodes = nodesRef.current, pos = posRef.current;
-      if (!nodes.length || !pos.length) return;
-
-      ctx.translate(w / 2, h / 2);
-      ctx.scale(v.scale, v.scale);
-      ctx.translate(-v.x, -v.y);
-
-      // Skip edge drawing during any camera motion — edges are expensive and blur together when moving
+      const { width, height } = getViewportSize(containerRef.current);
+      const nodes = nodesRef.current;
+      const positions = posRef.current;
+      const selectedId = selectedNodeRef.current?.node.id ?? null;
+      const selectedIndex = selectedId ? (nodeIndexMapRef.current.get(selectedId) ?? -1) : -1;
+      const highlightSet = buildHighlightSet(edgesRef.current, nodeIndexMapRef.current, selectedId, selectedIndex);
       const isInteracting =
         isDragging.current ||
         Math.abs(tv.x - v.x) > 0.0005 ||
         Math.abs(tv.y - v.y) > 0.0005 ||
         Math.abs(tv.scale - v.scale) > v.scale * 0.002;
-      const pad = 50 / v.scale;
-      const minWX = v.x - (w / 2) / v.scale - pad, maxWX = v.x + (w / 2) / v.scale + pad;
-      const minWY = v.y - (h / 2) / v.scale - pad, maxWY = v.y + (h / 2) / v.scale + pad;
 
-      const selId = selectedNodeRef.current?.node.id ?? null;
-      const nim = nodeIndexMapRef.current;
-      const selIdx = selId ? (nim.get(selId) ?? -1) : -1;
-      const hasSelection = selIdx >= 0;
+      const frame: GraphRenderFrame = {
+        nodes,
+        positions,
+        edges: edgesRef.current,
+        particles: particlesRef.current,
+        nodeIndexMap: nodeIndexMapRef.current,
+        edgeGroupsRole: edgeIdxRoleRef.current,
+        edgeGroupsModule: edgeIdxModuleRef.current,
+        userIndices: instIdxRef.current,
+        roleIndices: roleIdxRef.current,
+        moduleIndices: moduleIdxRef.current,
+        selectedNodeId: selectedId,
+        selectedNodeIndex: selectedIndex,
+        highlightSet,
+        showRoles: showRolesRef.current,
+        showModules: showModulesRef.current,
+        isInteracting,
+        view: v,
+        cssWidth: width,
+        cssHeight: height,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        backgroundColor: GRAPH_BACKGROUND,
+      };
 
-      // Build highlight set: selected + its direct neighbors
-      const highlightSet = new Set<number>();
-      if (hasSelection) {
-        highlightSet.add(selIdx);
-        for (const e of edgesRef.current) {
-          if (e.source === selId) { const ti = nim.get(e.target); if (ti != null) highlightSet.add(ti); }
-          if (e.target === selId) { const si = nim.get(e.source); if (si != null) highlightSet.add(si); }
-        }
-      }
+      const drawResult = renderer.draw(frame);
+      drawLabelOverlay({
+        canvas: labelCanvasRef.current,
+        nodes,
+        positions,
+        roleIndices: roleIdxRef.current,
+        moduleIndices: moduleIdxRef.current,
+        view: v,
+        cssWidth: width,
+        cssHeight: height,
+        devicePixelRatio: window.devicePixelRatio || 1,
+        showRoles: showRolesRef.current,
+        showModules: showModulesRef.current,
+        hasSelection: selectedIndex >= 0,
+        highlightSet,
+      });
 
-      // -- Edges --
-      ctx.lineWidth = 0.5 / v.scale;
-      const showR = showRolesRef.current, showM = showModulesRef.current;
-
-      if (!isInteracting) {
-        if (hasSelection) {
-          ctx.globalAlpha = 0.55;
-          for (const e of edgesRef.current) {
-            if (e.source !== selId && e.target !== selId) continue;
-            if (!showR && e.target.startsWith("role:")) continue;
-            if (!showM && e.target.startsWith("module:")) continue;
-            const si = nim.get(e.source) ?? -1, ti = nim.get(e.target) ?? -1;
-            if (si < 0 || ti < 0) continue;
-            ctx.strokeStyle = e.color;
-            ctx.beginPath();
-            ctx.moveTo(pos[si * 2], pos[si * 2 + 1]);
-            ctx.lineTo(pos[ti * 2], pos[ti * 2 + 1]);
-            ctx.stroke();
-          }
-        } else {
-          // Use pre-built Uint32Array buffers per color — no per-frame allocation
-          ctx.globalAlpha = EDGE_ALPHA;
-          const drawBuffers = (buffers: Map<string, Uint32Array>) => {
-            for (const [color, idxArr] of buffers) {
-              ctx.strokeStyle = color;
-              ctx.beginPath();
-              for (let i = 0; i < idxArr.length; i += 2) {
-                const si = idxArr[i], ti = idxArr[i + 1];
-                const sx = pos[si * 2], sy = pos[si * 2 + 1];
-                const tx = pos[ti * 2], ty = pos[ti * 2 + 1];
-                if (sx < minWX && tx < minWX) continue;
-                if (sx > maxWX && tx > maxWX) continue;
-                if (sy < minWY && ty < minWY) continue;
-                if (sy > maxWY && ty > maxWY) continue;
-                ctx.moveTo(sx, sy); ctx.lineTo(tx, ty);
-              }
-              ctx.stroke();
-            }
-          };
-          if (showR) drawBuffers(edgeIdxRoleRef.current);
-          if (showM) drawBuffers(edgeIdxModuleRef.current);
-        }
-        ctx.globalAlpha = 1.0;
-
-        // -- Particles --
-        if (particlesRef.current.length > 0) {
-          ctx.globalAlpha = 0.6;
-          const pSize = 1.5 / v.scale;
-          for (const p of particlesRef.current) {
-            if (p.isRole && !showR) continue;
-            if (!p.isRole && !showM) continue;
-            
-            p.t += p.speed;
-            if (p.t > 1) p.t -= 1;
-            
-            const sx = pos[p.si * 2], sy = pos[p.si * 2 + 1];
-            const tx = pos[p.ti * 2], ty = pos[p.ti * 2 + 1];
-            
-            if (sx < minWX && tx < minWX) continue;
-            if (sx > maxWX && tx > maxWX) continue;
-            if (sy < minWY && ty < minWY) continue;
-            if (sy > maxWY && ty > maxWY) continue;
-            
-            const px = sx + (tx - sx) * p.t;
-            const py = sy + (ty - sy) * p.t;
-            
-            ctx.fillStyle = p.color;
-            ctx.beginPath();
-            ctx.arc(px, py, pSize, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.globalAlpha = 1.0;
-          needsRenderRef.current = true; // force continuous render for animation
-        }
-      }
-
-      // -- Instance / user nodes --
-      const showLabels = v.scale > 280;
-      const rNormal = 3 / v.scale;
-      const rBright = 4.5 / v.scale;
-      const rSelected = 9 / v.scale;
-
-      const dimBatches = new Map<string, [number, number][]>();
-      const brightBatches = new Map<string, [number, number][]>();
-
-      // Iterate pre-split instance/user indices — skips scanning hub nodes entirely
-      const instIdxs = instIdxRef.current;
-      for (let k = 0; k < instIdxs.length; k++) {
-        const i = instIdxs[k];
-        const n = nodes[i];
-        const nx = pos[i * 2], ny = pos[i * 2 + 1];
-        if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-        if (n.id === selId) continue;
-        const isDim = hasSelection && !highlightSet.has(i);
-        const target = isDim ? dimBatches : brightBatches;
-        const list = target.get(n.color) ?? [];
-        list.push([nx, ny]);
-        target.set(n.color, list);
-      }
-
-      if (hasSelection) {
-        ctx.globalAlpha = 0.10;
-        const sprite = spritesRef.current.get("#9CA3AF") ?? [...spritesRef.current.values()][0];
-        if (sprite) {
-          const d = rNormal * 2;
-          for (const coords of dimBatches.values()) {
-            for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - rNormal, ny - rNormal, d, d);
-          }
-        }
-      }
-
-      ctx.globalAlpha = hasSelection ? 1.0 : 0.78;
-      const r = hasSelection ? rBright : rNormal;
-      const d = r * 2;
-      for (const [color, coords] of brightBatches) {
-        const sprite = spritesRef.current.get(color);
-        if (!sprite) continue;
-        for (const [nx, ny] of coords) ctx.drawImage(sprite, nx - r, ny - r, d, d);
-      }
-
-      // -- Role hub diamonds -- iterate pre-split role indices only
-      if (showR) {
-        const roleIdxs = roleIdxRef.current;
-        // Hoist font out of loop — same scale ⇒ same font, setting ctx.font per node is expensive
-        const roleFont = `${Math.max(4, 7 / v.scale)}px sans-serif`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        for (let k = 0; k < roleIdxs.length; k++) {
-          const i = roleIdxs[k];
-          const n = nodes[i];
-          const nx = pos[i * 2], ny = pos[i * 2 + 1];
-          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-          const rr = (n as RoleNode).radius / v.scale;
-          const dimmed = hasSelection && !highlightSet.has(i);
-          ctx.globalAlpha = dimmed ? 0.08 : 0.9;
-          ctx.fillStyle = n.color;
-          ctx.beginPath();
-          ctx.moveTo(nx, ny - rr); ctx.lineTo(nx + rr, ny);
-          ctx.lineTo(nx, ny + rr); ctx.lineTo(nx - rr, ny);
-          ctx.closePath(); ctx.fill();
-          if (!dimmed && showLabels && rr > 5 / v.scale) {
-            ctx.globalAlpha = 0.85;
-            ctx.fillStyle = "#111";
-            ctx.font = roleFont;
-            ctx.fillText((n as RoleNode).label, nx, ny + 0.5 / v.scale);
-          }
-        }
-      }
-
-      // -- Module hub squares -- iterate pre-split module indices only
-      if (showM) {
-        const modIdxs = moduleIdxRef.current;
-        const modFont = `${Math.max(3, 6 / v.scale)}px sans-serif`;
-        ctx.textAlign = "center"; ctx.textBaseline = "middle";
-        for (let k = 0; k < modIdxs.length; k++) {
-          const i = modIdxs[k];
-          const n = nodes[i];
-          const nx = pos[i * 2], ny = pos[i * 2 + 1];
-          if (nx < minWX || nx > maxWX || ny < minWY || ny > maxWY) continue;
-          const rs = 7 / v.scale;
-          const dimmed = hasSelection && !highlightSet.has(i);
-          ctx.globalAlpha = dimmed ? 0.07 : 0.85;
-          ctx.fillStyle = n.color;
-          ctx.fillRect(nx - rs, ny - rs, rs * 2, rs * 2);
-          if (!dimmed && showLabels && rs > 5 / v.scale) {
-            ctx.globalAlpha = 0.8;
-            ctx.fillStyle = "#111";
-            ctx.font = modFont;
-            ctx.fillText((n as ModuleNode).label, nx, ny + rs + 5 / v.scale);
-          }
-        }
-      }
-
-      // -- Selected node ring --
-      if (hasSelection && selIdx >= 0) {
-        const sx = pos[selIdx * 2], sy = pos[selIdx * 2 + 1];
-        const color = nodes[selIdx].color;
-        ctx.globalAlpha = 0.2; ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(sx, sy, rSelected * 1.8, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1.0; ctx.strokeStyle = "#222"; ctx.lineWidth = 2 / v.scale;
-        ctx.beginPath(); ctx.arc(sx, sy, rSelected, 0, Math.PI * 2); ctx.stroke();
-        ctx.fillStyle = color;
-        ctx.beginPath(); ctx.arc(sx, sy, rSelected * 0.5, 0, Math.PI * 2); ctx.fill();
-      }
-
-      // If the camera has settled, mark the canvas clean — next frame can bail early
-      // until something marks it dirty again (interaction, toggle, selection, layout load).
-      if (!camLerping) needsRenderRef.current = false;
+      needsRenderRef.current = camLerping || drawResult.needsContinuousRedraw;
     };
 
     rafId.current = requestAnimationFrame(render);
     return () => cancelAnimationFrame(rafId.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const rebuildGrid = useCallback(() => {
-    const cellSize = Math.max(0.005, 60 / view.current.scale);
-    gridRef.current = buildGrid(posRef.current, nodesRef.current.length, cellSize);
+  const handlePointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
+    isDragging.current = true;
+    setIsDraggingState(true);
+    clickStart.current = { x: event.clientX, y: event.clientY };
+    lastMouse.current = { x: event.clientX, y: event.clientY };
+    event.currentTarget.setPointerCapture(event.pointerId);
   }, []);
 
-  // Pointer handlers
-  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (e.button !== 0) return;
-    isDragging.current = true; setIsDraggingState(true);
-    clickStart.current = { x: e.clientX, y: e.clientY };
-    lastMouse.current = { x: e.clientX, y: e.clientY };
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-  }, []);
+  const handlePointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const lx = event.clientX - rect.left;
+    const ly = event.clientY - rect.top;
 
-  const handlePointerMove = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    const rect = (e.target as HTMLElement).getBoundingClientRect();
-    const lx = e.clientX - rect.left, ly = e.clientY - rect.top;
     if (isDragging.current) {
-      const dx = e.clientX - lastMouse.current.x, dy = e.clientY - lastMouse.current.y;
+      const dx = event.clientX - lastMouse.current.x;
+      const dy = event.clientY - lastMouse.current.y;
       view.current.x -= dx / view.current.scale;
       view.current.y -= dy / view.current.scale;
       targetView.current = { ...view.current };
-      lastMouse.current = { x: e.clientX, y: e.clientY };
-      needsRenderRef.current = true;
-    } else {
-      const node = hitTest(lx, ly);
-      setHoveredNode(node);
-      if (tooltipRef.current) {
-        tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
-        tooltipRef.current.style.opacity = node ? "1" : "0";
-      }
+      lastMouse.current = { x: event.clientX, y: event.clientY };
+      markGraphDirty();
+      return;
     }
-  }, [hitTest]);
 
-  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (e.button !== 0) return;
-    isDragging.current = false; setIsDraggingState(false);
+    const node = hitTest(lx, ly);
+    setHoveredNode(node);
+    if (tooltipRef.current) {
+      tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
+      tooltipRef.current.style.opacity = node ? "1" : "0";
+    }
+  }, [hitTest, markGraphDirty]);
+
+  const handlePointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
+    if (event.button !== 0) return;
+    isDragging.current = false;
+    setIsDraggingState(false);
     rebuildGrid();
-    needsRenderRef.current = true;
-    const moved = Math.hypot(e.clientX - clickStart.current.x, e.clientY - clickStart.current.y);
-    if (moved < 5) {
-      const rect = (e.target as HTMLElement).getBoundingClientRect();
-      const node = hitTest(e.clientX - rect.left, e.clientY - rect.top);
-      if (node) {
-        if (node.kind === "user") {
-          const sp: SidePanelState = { node };
-          setSelectedNode(sp); selectedNodeRef.current = sp;
-        } else if (node.kind === "role") {
-          const rn = node as RoleNode;
-          const sp: SidePanelState = { node: rn, roleUsers: roleUserMap.get(rn.roleName) ?? [] };
-          setSelectedNode(sp); selectedNodeRef.current = sp;
-        } else if (node.kind === "module") {
-          const mn = node as ModuleNode;
-          // Collect unique user names from users that have this module
-          const names: string[] = [];
-          const seen = new Set<string>();
-          for (const n of nodesRef.current) {
-            if (n.kind !== "user") continue;
-            const user = n as UserNode;
-            if (user.modules.includes(mn.moduleName) && !seen.has(user.email)) {
-              seen.add(user.email);
-              names.push(user.name || user.email);
-            }
-          }
-          const sp: SidePanelState = { node: mn, moduleUsers: names };
-          setSelectedNode(sp); selectedNodeRef.current = sp;
-        }
-      } else {
-        setSelectedNode(null); selectedNodeRef.current = null;
+    markGraphDirty();
+
+    const moved = Math.hypot(event.clientX - clickStart.current.x, event.clientY - clickStart.current.y);
+    if (moved >= 5) return;
+
+    const rect = event.currentTarget.getBoundingClientRect();
+    const node = hitTest(event.clientX - rect.left, event.clientY - rect.top);
+    if (!node) {
+      setSelectedNode(null);
+      selectedNodeRef.current = null;
+      markGraphDirty();
+      return;
+    }
+
+    if (node.kind === "user") {
+      const state: SidePanelState = { node };
+      setSelectedNode(state);
+      selectedNodeRef.current = state;
+      markGraphDirty();
+      return;
+    }
+
+    if (node.kind === "role") {
+      const roleNode = node as RoleNode;
+      const state: SidePanelState = {
+        node: roleNode,
+        roleUsers: roleUserMap.get(roleNode.roleName) ?? [],
+      };
+      setSelectedNode(state);
+      selectedNodeRef.current = state;
+      markGraphDirty();
+      return;
+    }
+
+    const moduleNode = node as ModuleNode;
+    const names: string[] = [];
+    const seen = new Set<string>();
+    for (const graphNode of nodesRef.current) {
+      if (graphNode.kind !== "user") continue;
+      const userNode = graphNode as UserNode;
+      if (userNode.modules.includes(moduleNode.moduleName) && !seen.has(userNode.email)) {
+        seen.add(userNode.email);
+        names.push(userNode.name || userNode.email);
       }
     }
-  }, [hitTest, rebuildGrid, roleUserMap, emailInstanceCount]);
+    const state: SidePanelState = { node: moduleNode, moduleUsers: names };
+    setSelectedNode(state);
+    selectedNodeRef.current = state;
+    markGraphDirty();
+  }, [hitTest, rebuildGrid, roleUserMap, markGraphDirty]);
 
-  const handleWheel = useCallback((e: WheelEvent) => {
-    e.preventDefault();
-    const canvas = canvasRef.current;
+  const handleWheel = useCallback((event: WheelEvent) => {
+    event.preventDefault();
+    const canvas = event.currentTarget as HTMLCanvasElement | null;
     if (!canvas) return;
+
     const rect = canvas.getBoundingClientRect();
-    const mx = e.clientX - rect.left, my = e.clientY - rect.top;
-    const cx = rect.width / 2, cy = rect.height / 2;
+    const mx = event.clientX - rect.left;
+    const my = event.clientY - rect.top;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
     const v = view.current;
-    const wx = v.x + (mx - cx) / v.scale, wy = v.y + (my - cy) / v.scale;
-    const newS = Math.max(10, Math.min(500000, v.scale * Math.pow(1.002, -e.deltaY)));
-    view.current = { scale: newS, x: wx - (mx - cx) / newS, y: wy - (my - cy) / newS };
+    const wx = v.x + (mx - cx) / v.scale;
+    const wy = v.y + (my - cy) / v.scale;
+    const nextScale = Math.max(10, Math.min(500000, v.scale * Math.pow(1.002, -event.deltaY)));
+    view.current = {
+      scale: nextScale,
+      x: wx - (mx - cx) / nextScale,
+      y: wy - (my - cy) / nextScale,
+    };
     targetView.current = { ...view.current };
     rebuildGrid();
-    needsRenderRef.current = true;
-  }, [rebuildGrid]);
+    markGraphDirty();
+  }, [rebuildGrid, markGraphDirty]);
 
-  const handleMouseDown = useCallback((e: MouseEvent) => {
-    if (e.button === 1) { e.preventDefault(); zoomToFit(); }
+  const handleMouseDown = useCallback((event: MouseEvent) => {
+    if (event.button !== 1) return;
+    event.preventDefault();
+    zoomToFit();
   }, [zoomToFit]);
 
   useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    canvas.addEventListener("wheel", handleWheel, { passive: false });
-    canvas.addEventListener("mousedown", handleMouseDown);
+    const canvases = [canvas2dRef.current, webgpuCanvasRef.current].filter(Boolean) as HTMLCanvasElement[];
+    for (const canvas of canvases) {
+      canvas.addEventListener("wheel", handleWheel, { passive: false });
+      canvas.addEventListener("mousedown", handleMouseDown);
+    }
     return () => {
-      canvas.removeEventListener("wheel", handleWheel);
-      canvas.removeEventListener("mousedown", handleMouseDown);
+      for (const canvas of canvases) {
+        canvas.removeEventListener("wheel", handleWheel);
+        canvas.removeEventListener("mousedown", handleMouseDown);
+      }
     };
   }, [handleWheel, handleMouseDown]);
 
   useLayoutEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ro = new ResizeObserver(() => { if (nodesRef.current.length) zoomToFit(); });
-    ro.observe(canvas.parentElement ?? canvas);
-    return () => ro.disconnect();
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(() => {
+      if (nodesRef.current.length) zoomToFit();
+    });
+    observer.observe(container);
+    return () => observer.disconnect();
   }, [zoomToFit]);
 
   function toggleShowRoles() {
@@ -1121,8 +1074,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }
 
   const totalInstances = useMemo(
-    () => users.reduce((s, u) => s + (u.found ? u.projects.length : 0), 0),
-    [users]
+    () => users.reduce((sum, user) => sum + (user.found ? user.projects.length : 0), 0),
+    [users],
+  );
+
+  const renderCanvasClass = cn(
+    "absolute inset-0 block w-full h-full",
+    isDraggingState ? "cursor-grabbing" : hoveredNode ? "cursor-pointer" : "cursor-crosshair",
   );
 
   if (!users.length) {
@@ -1137,17 +1095,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     <div className="flex h-full gap-0 relative">
       <div
         ref={containerRef}
+        data-render-backend={renderBackend}
+        data-renderer-failure-reason={rendererFailureReason ?? undefined}
         className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
-        style={{ background: "#F8F7F4" }}
+        style={{ background: GRAPH_BACKGROUND }}
       >
-        {/* Loading Overlay */}
         {!isReady && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
             <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin mb-4" />
             <span className="text-sm font-medium text-emerald-700">Calculating graph layout...</span>
           </div>
         )}
-        {/* Controls */}
+
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
             <ControlButton active={showRoles} onClick={toggleShowRoles}>
@@ -1156,15 +1115,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <ControlButton active={showModules} onClick={toggleShowModules}>
               {showModules ? "Hide Modules" : "Show Modules"}
             </ControlButton>
-            <ControlButton active={false} onClick={zoomToFit}>Fit</ControlButton>
+            <ControlButton active={false} onClick={() => zoomToFit()}>Fit</ControlButton>
             <button
               onClick={() => {
                 if (isRefreshingRef.current) return;
                 isRefreshingRef.current = true;
                 invalidateLayout.mutate(undefined, {
                   onSettled: () => {
-                    setRefreshKey((k) => k + 1);
-                    // layoutQuery refetch will be triggered by the dependency change
+                    setRefreshKey((value) => value + 1);
                     layoutQuery.refetch();
                   },
                   onError: () => {
@@ -1176,13 +1134,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               className={cn(
                 "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
                 "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-                invalidateLayout.isPending && "opacity-50 cursor-not-allowed"
+                invalidateLayout.isPending && "opacity-50 cursor-not-allowed",
               )}
             >
               {invalidateLayout.isPending ? (
                 <>
                   <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-300 border-t-gray-600" />
-                  {" "}Refreshing…
+                  {" "}Refreshing...
                 </>
               ) : (
                 "Refresh Layout"
@@ -1190,47 +1148,61 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             </button>
           </div>
           <div className="text-[10px] text-gray-400 pr-1">
-            {totalInstances.toLocaleString()} instances · scroll to zoom · drag to pan · middle-click to fit
+            {totalInstances.toLocaleString()} instances - scroll to zoom - drag to pan - middle-click to fit
           </div>
         </div>
 
-        {/* Legend */}
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <LegendDot color="#10B981" label="Project Admin" />
           <LegendDot color="#F59E0B" label="No Projects" />
           <LegendDot color="#9CA3AF" label="Not Cached" />
-          <span className="text-[10px] text-gray-400">· colored by primary role</span>
+          <span className="text-[10px] text-gray-400">- colored by primary role</span>
           {showRoles && <LegendDiamond color={ROLE_HUB_COLOR} label="Role" />}
           {showModules && <LegendSquare color={MODULE_HUB_COLOR} label="Module" />}
         </div>
 
-        {/* Loading */}
         {!simulationDone && (
           <div className="absolute inset-0 flex items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm z-20">
             <div className="flex flex-col items-center gap-2 text-gray-500">
               <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin" />
-              <span className="text-xs">Running layout for {users.length.toLocaleString()} users…</span>
+              <span className="text-xs">Running layout for {users.length.toLocaleString()} users...</span>
             </div>
           </div>
         )}
 
         <canvas
-          ref={canvasRef}
-          className={cn(
-            "w-full h-full block",
-            isDraggingState ? "cursor-grabbing" : hoveredNode ? "cursor-pointer" : "cursor-crosshair"
-          )}
+          ref={canvas2dRef}
+          className={cn(renderCanvasClass, renderBackend === "canvas2d" ? "opacity-100" : "opacity-0 pointer-events-none")}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={() => {
-            isDragging.current = false; setIsDraggingState(false);
+            isDragging.current = false;
+            setIsDraggingState(false);
             setHoveredNode(null);
             if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+            markGraphDirty();
           }}
         />
+        <canvas
+          ref={webgpuCanvasRef}
+          className={cn(renderCanvasClass, renderBackend === "webgpu" ? "opacity-100" : "opacity-0 pointer-events-none")}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerLeave={() => {
+            isDragging.current = false;
+            setIsDraggingState(false);
+            setHoveredNode(null);
+            if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+            markGraphDirty();
+          }}
+        />
+        <canvas
+          ref={labelCanvasRef}
+          className="absolute inset-0 block w-full h-full pointer-events-none"
+        />
 
-        {/* Tooltip */}
         <div
           ref={tooltipRef}
           className="absolute top-0 left-0 z-30 pointer-events-none bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg max-w-[240px] opacity-0 transition-opacity duration-75 will-change-transform"
@@ -1244,17 +1216,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         </div>
       </div>
 
-      {/* Side panel */}
       {selectedNode && (
         <SidePanel
           state={selectedNode}
-          onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; needsRenderRef.current = true; }}
+          onClose={() => {
+            setSelectedNode(null);
+            selectedNodeRef.current = null;
+            markGraphDirty();
+          }}
           onViewProfile={
             selectedNode.node.kind === "user"
               ? () => {
                   const email = (selectedNode.node as UserNode).email;
                   onSelectUser?.(email);
-                  setSelectedNode(null); selectedNodeRef.current = null;
+                  setSelectedNode(null);
+                  selectedNodeRef.current = null;
+                  markGraphDirty();
                 }
               : undefined
           }
@@ -1264,11 +1241,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   );
 }
 
-// ---------------------------------------------------------------------------
-// Sub-components
-// ---------------------------------------------------------------------------
-
-function ControlButton({ active, onClick, children }: { active: boolean; onClick: () => void; children: React.ReactNode }) {
+function ControlButton({
+  active,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
   return (
     <button
       onClick={onClick}
@@ -1276,7 +1257,7 @@ function ControlButton({ active, onClick, children }: { active: boolean; onClick
         "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
         active
           ? "bg-gray-900/10 text-gray-900 border-gray-400/40"
-          : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400"
+          : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
       )}
     >
       {children}
@@ -1296,7 +1277,9 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 function LegendDiamond({ color, label }: { color: string; label: string }) {
   return (
     <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-      <svg width="10" height="10" viewBox="0 0 10 10"><path d="M5 0 L10 5 L5 10 L0 5 Z" fill={color} /></svg>
+      <svg width="10" height="10" viewBox="0 0 10 10">
+        <path d="M5 0 L10 5 L5 10 L0 5 Z" fill={color} />
+      </svg>
       {label}
     </div>
   );
@@ -1340,16 +1323,21 @@ function ModuleTooltip({ node }: { node: ModuleNode }) {
   );
 }
 
-function SidePanel({ state, onClose, onViewProfile }: {
+function SidePanel({
+  state,
+  onClose,
+  onViewProfile,
+}: {
   state: SidePanelState;
   onClose: () => void;
   onViewProfile?: () => void;
 }) {
-  const n = state.node;
-
-  const title = n.kind === "user" ? ((n as UserNode).name || (n as UserNode).email) :
-                n.kind === "role" ? (n as RoleNode).roleName :
-                moduleLabel((n as ModuleNode).moduleName);
+  const node = state.node;
+  const title = node.kind === "user"
+    ? ((node as UserNode).name || (node as UserNode).email)
+    : node.kind === "role"
+      ? (node as RoleNode).roleName
+      : moduleLabel((node as ModuleNode).moduleName);
 
   return (
     <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
@@ -1358,43 +1346,55 @@ function SidePanel({ state, onClose, onViewProfile }: {
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
 
-      {n.kind === "user" && (() => {
-        const u = n as UserNode;
+      {node.kind === "user" && (() => {
+        const user = node as UserNode;
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500 break-all">{u.email}</p>
-            {!u.found && (
+            <p className="text-[11px] text-gray-500 break-all">{user.email}</p>
+            {!user.found && (
               <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
                 Not yet synced to ACC.
               </p>
             )}
-            {u.found && u.hasNoProjects && (
+            {user.found && user.hasNoProjects && (
               <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
                 Synced but no projects assigned.
               </p>
             )}
-            {u.projectCount > 0 && (
-              <p className="text-[10px] text-gray-400 italic">In {u.projectCount} project{u.projectCount > 1 ? "s" : ""}</p>
+            {user.projectCount > 0 && (
+              <p className="text-[10px] text-gray-400 italic">
+                In {user.projectCount} project{user.projectCount > 1 ? "s" : ""}
+              </p>
             )}
             <div className="flex flex-wrap gap-1.5">
-              {u.isAdmin && <Tag color="emerald">Admin Access</Tag>}
+              {user.isAdmin && <Tag color="emerald">Admin Access</Tag>}
             </div>
-            {u.roles.length > 0 && (
+            {user.roles.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
                 <div className="flex flex-wrap gap-1">
-                  {u.roles.map((r) => (
-                    <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
+                  {user.roles.map((role) => (
+                    <span
+                      key={role}
+                      className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
+                    >
+                      {role}
+                    </span>
                   ))}
                 </div>
               </div>
             )}
-            {u.modules.length > 0 && (
+            {user.modules.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
                 <div className="flex flex-wrap gap-1">
-                  {u.modules.map((m) => (
-                    <span key={m} className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">{moduleLabel(m)}</span>
+                  {user.modules.map((moduleName) => (
+                    <span
+                      key={moduleName}
+                      className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
+                    >
+                      {moduleLabel(moduleName)}
+                    </span>
                   ))}
                 </div>
               </div>
@@ -1410,18 +1410,23 @@ function SidePanel({ state, onClose, onViewProfile }: {
           </div>
         );
       })()}
-      {n.kind === "role" && (() => {
-        const r = n as RoleNode;
+
+      {node.kind === "role" && (() => {
+        const roleNode = node as RoleNode;
         const roleUsers = state.roleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500">{r.userCount} assignment{r.userCount !== 1 ? "s" : ""} across all projects</p>
+            <p className="text-[11px] text-gray-500">
+              {roleNode.userCount} assignment{roleNode.userCount !== 1 ? "s" : ""} across all projects
+            </p>
             {roleUsers.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users</p>
                 <div className="space-y-1 max-h-[300px] overflow-y-auto">
                   {[...new Set(roleUsers)].map((name) => (
-                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">{name}</div>
+                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">
+                      {name}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1430,18 +1435,22 @@ function SidePanel({ state, onClose, onViewProfile }: {
         );
       })()}
 
-      {n.kind === "module" && (() => {
-        const m = n as ModuleNode;
-        const users = state.moduleUsers ?? [];
+      {node.kind === "module" && (() => {
+        const moduleNode = node as ModuleNode;
+        const moduleUsers = state.moduleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500">{m.userCount} project assignment{m.userCount !== 1 ? "s" : ""}</p>
-            {users.length > 0 && (
+            <p className="text-[11px] text-gray-500">
+              {moduleNode.userCount} project assignment{moduleNode.userCount !== 1 ? "s" : ""}
+            </p>
+            {moduleUsers.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users with access</p>
                 <div className="space-y-1 max-h-[300px] overflow-y-auto">
-                  {users.map((name) => (
-                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">{name}</div>
+                  {moduleUsers.map((name) => (
+                    <div key={name} className="text-[11px] text-gray-700 px-2 py-1 rounded-lg bg-gray-50">
+                      {name}
+                    </div>
                   ))}
                 </div>
               </div>
@@ -1459,6 +1468,7 @@ function Tag({ color, children }: { color: "emerald" | "amber" | "gray"; childre
     amber: "bg-amber-50 text-amber-700 border-amber-200",
     gray: "bg-gray-100 text-gray-600 border-gray-200",
   };
+
   return (
     <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${styles[color]}`}>
       {children}

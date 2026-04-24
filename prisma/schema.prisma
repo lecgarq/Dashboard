@@ -413,5 +413,6 @@ model AccGraphLayoutCache {
   positions Float[]
   dataHash  String
   nodeCount Int
+  nodeIds   String[] @default([])
   updatedAt DateTime @updatedAt
 }
