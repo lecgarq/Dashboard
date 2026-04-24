@@ -321,3 +321,28 @@ export async function fetchAccUserProducts(
 
   return productsByProject;
 }
+
+export type AccHubRole = {
+  id: string;
+  name: string;
+  memberCount: number;
+};
+
+/**
+ * Fetch all role definitions in the ACC hub account.
+ * Uses HQ v1: GET /accounts/{accountId}/roles
+ * Returns every role defined in the hub, whether or not any users have it.
+ */
+export async function fetchAccHubRoles(
+  accountId: string,
+  accessToken: string,
+  signal?: AbortSignal
+): Promise<AccHubRole[]> {
+  const url = `${HQ_ADMIN_BASE}/accounts/${accountId}/roles`;
+  const items = await fetchHqUsers(url, accessToken, signal);
+  return items.map((r) => ({
+    id: getString(r.id),
+    name: getString(r.name),
+    memberCount: typeof r.member_count === "number" ? r.member_count : 0,
+  })).filter((r) => r.id && r.name);
+}

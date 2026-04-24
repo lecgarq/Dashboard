@@ -406,6 +406,14 @@ model AccMemberCache {
   @@index([syncedAt])
 }
 
+// ============ MODULE: ACC HUB ROLE CACHE ============
+
+model AccHubRoleCache {
+  id       String   @id @default("singleton")
+  roles    Json     // AccHubRole[]
+  syncedAt DateTime @updatedAt
+}
+
 // ============ MODULE: ACC GRAPH LAYOUT CACHE ============
 
 model AccGraphLayoutCache {

@@ -1280,4 +1280,39 @@ export const usersRouter = router({
     return { ok: true };
   }),
 
+  // -------------------------------------------------------------------------
+  // Hub role definitions — roles that exist in ACC regardless of assignment
+  // -------------------------------------------------------------------------
+
+  getHubRoles: adminProcedure.query(async ({ ctx }) => {
+    const cached = await ctx.db.accHubRoleCache.findUnique({ where: { id: "singleton" } });
+    if (!cached) return { roles: [] as { id: string; name: string; memberCount: number }[], syncedAt: null };
+    return {
+      roles: cached.roles as { id: string; name: string; memberCount: number }[],
+      syncedAt: cached.syncedAt,
+    };
+  }),
+
+  syncHubRoles: adminProcedure.mutation(async ({ ctx }) => {
+    let accessToken: string;
+    try {
+      accessToken = await get2LeggedAutodeskToken();
+    } catch (error) {
+      throw toAccRouterError(error, "ACC Admin API: APS app credentials are not configured.");
+    }
+    const project = await ctx.db.project.findFirst({ select: { apsHubId: true } });
+    const accountId = project?.apsHubId?.replace(/^b\./, "");
+    if (!accountId) {
+      throw new TRPCError({ code: "UNAUTHORIZED", message: "APS Hub ID is not configured." });
+    }
+    const { fetchAccHubRoles } = await import("@/lib/server/acc-admin");
+    const roles = await fetchAccHubRoles(accountId, accessToken);
+    await ctx.db.accHubRoleCache.upsert({
+      where: { id: "singleton" },
+      create: { id: "singleton", roles },
+      update: { roles },
+    });
+    return { count: roles.length, roles };
+  }),
+
 });

@@ -1,8 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, ChevronRight, Users, ShieldCheck, Briefcase } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Users, ShieldCheck, Briefcase, RefreshCw, AlertTriangle, Ghost } from "lucide-react";
 import { cn } from "@/lib/core/utils";
+import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
 interface RoleEntry {
@@ -85,6 +86,21 @@ export function AccRolesTab({
     [roleIndex],
   );
 
+  const hubRolesQuery = trpc.users.getHubRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
+  const syncHubRoles = trpc.users.syncHubRoles.useMutation({
+    onSuccess: () => hubRolesQuery.refetch(),
+  });
+
+  const { unassignedRoles, deletedRoles } = useMemo(() => {
+    const hubRoles = hubRolesQuery.data?.roles ?? [];
+    const assignedNames = new Set(roleIndex.map((r) => r.role));
+    const hubNames = new Set(hubRoles.map((r) => r.name));
+    return {
+      unassignedRoles: hubRoles.filter((r) => !assignedNames.has(r.name)),
+      deletedRoles: roleIndex.filter((r) => hubNames.size > 0 && !hubNames.has(r.role)),
+    };
+  }, [hubRolesQuery.data, roleIndex]);
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     let result = q ? roleIndex.filter((r) => r.role.toLowerCase().includes(q)) : [...roleIndex];
@@ -106,11 +122,68 @@ export function AccRolesTab({
     <div className="space-y-5">
 
       {/* Stats row */}
-      <div className="flex flex-wrap gap-3">
-        <StatPill icon={<Briefcase size={15} />} label="Unique Roles" value={roleIndex.length} color="#8b5cf6" />
+      <div className="flex flex-wrap items-center gap-3">
+        <StatPill icon={<Briefcase size={15} />} label="Assigned Roles" value={roleIndex.length} color="#8b5cf6" />
         <StatPill icon={<Users size={15} />} label="Synced Users" value={syncedUsers.length} color="#3b82f6" />
         <StatPill icon={<ShieldCheck size={15} />} label="Role Assignments" value={totalProjectSlots} color="#22c55e" />
+        {hubRolesQuery.data?.roles.length ? (
+          <StatPill icon={<Briefcase size={15} />} label="Hub Roles Total" value={hubRolesQuery.data.roles.length} color="#f59e0b" />
+        ) : null}
+        <button
+          onClick={() => syncHubRoles.mutate()}
+          disabled={syncHubRoles.isPending}
+          className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/20 rounded-lg px-3 py-1.5 bg-amber-500/5 hover:bg-amber-500/10 transition-all disabled:opacity-50 ml-auto"
+        >
+          <RefreshCw size={12} className={syncHubRoles.isPending ? "animate-spin" : ""} />
+          {syncHubRoles.isPending ? "Syncing..." : "Sync Hub Roles"}
+        </button>
       </div>
+
+      {/* Deleted roles warning */}
+      {deletedRoles.length > 0 && (
+        <div className="rounded-xl border border-red-500/25 bg-red-500/5 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Ghost size={14} className="text-red-400 shrink-0" />
+            <p className="text-sm font-semibold text-red-400">
+              {deletedRoles.length} Deleted / Ghost Role{deletedRoles.length !== 1 ? "s" : ""}
+            </p>
+            <span className="text-[10px] text-red-400/60 font-normal">These roles exist in your cached data but are no longer defined in the hub</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {deletedRoles.map((r) => (
+              <button
+                key={r.role}
+                onClick={() => setExpandedRole(expandedRole === r.role ? null : r.role)}
+                className="flex items-center gap-1.5 text-[11px] px-2.5 py-1 rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/15 transition-colors"
+              >
+                <AlertTriangle size={10} />
+                {r.role}
+                <span className="opacity-60">{r.userCount} user{r.userCount !== 1 ? "s" : ""}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Unassigned hub roles */}
+      {unassignedRoles.length > 0 && (
+        <div className="rounded-xl border border-border/30 bg-card/40 p-4 space-y-2">
+          <div className="flex items-center gap-2">
+            <Briefcase size={14} className="text-muted-foreground shrink-0" />
+            <p className="text-sm font-semibold text-muted-foreground">
+              {unassignedRoles.length} Unassigned Role{unassignedRoles.length !== 1 ? "s" : ""}
+            </p>
+            <span className="text-[10px] text-muted-foreground/60 font-normal">Defined in hub but no synced users currently have them</span>
+          </div>
+          <div className="flex flex-wrap gap-1.5">
+            {unassignedRoles.map((r) => (
+              <span key={r.id} className="text-[11px] px-2.5 py-1 rounded-lg border border-border/30 text-muted-foreground/60 bg-muted/10">
+                {r.name}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Filter + Sort toolbar */}
       <div className="flex flex-wrap items-center gap-2 justify-between">
