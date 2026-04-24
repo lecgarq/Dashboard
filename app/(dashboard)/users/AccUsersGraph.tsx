@@ -142,6 +142,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
+  const [filterRole, setFilterRole] = useState<string | null>(null);
+  const filterRoleRef = useRef<string | null>(null);
+
+  const uniqueRoles = useMemo(() => {
+    const roleCount = new Map<string, number>();
+    for (const u of users) {
+      for (const r of u.allRoles) roleCount.set(r, (roleCount.get(r) ?? 0) + 1);
+    }
+    return [...roleCount.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]));
+  }, [users]);
 
   const graphQuery = trpc.users.getPrecomputedGraph.useQuery(undefined, {
     enabled: users.length > 0,
@@ -152,6 +162,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const rebuildGraph = trpc.users.rebuildAccGraphCache.useMutation();
 
   const markGraphDirty = useCallback(() => {
+    needsRenderRef.current = true;
+  }, []);
+
+  const setFilterRoleAndDirty = useCallback((role: string | null) => {
+    filterRoleRef.current = role;
+    setFilterRole(role);
     needsRenderRef.current = true;
   }, []);
 
@@ -380,7 +396,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const positions = posRef.current;
       const selectedId = selectedNodeRef.current?.node.id ?? null;
       const selectedIndex = selectedId ? (nodeIndexMapRef.current.get(selectedId) ?? -1) : -1;
-      const highlightSet = buildHighlightSet(selectedIndex);
+      const activeFilterRole = filterRoleRef.current;
+      const highlightSet = new Set<number>();
+      if (selectedIndex >= 0) highlightSet.add(selectedIndex);
+      if (activeFilterRole) {
+        for (let i = 0; i < nodes.length; i++) {
+          if ((nodes[i] as UserNode).roles.includes(activeFilterRole)) highlightSet.add(i);
+        }
+      }
+      const filterActive = activeFilterRole !== null;
       const isInteracting =
         isDragging.current ||
         Math.abs(tv.x - v.x) > 0.0005 ||
@@ -397,6 +421,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         selectedNodeId: selectedId,
         selectedNodeIndex: selectedIndex,
         highlightSet,
+        filterActive,
         showRoles: false,
         showModules: false,
         isInteracting,
@@ -616,6 +641,45 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         </div>
 
+        {/* Role filter bar */}
+        {uniqueRoles.length > 0 && (
+          <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-200px)]">
+            <div className="flex flex-wrap gap-1 items-center bg-white/85 backdrop-blur-sm border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-sm">
+              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mr-0.5 shrink-0">Role:</span>
+              {filterRole && (
+                <button
+                  onClick={() => setFilterRoleAndDirty(null)}
+                  className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 transition-colors shrink-0"
+                >
+                  All ✕
+                </button>
+              )}
+              {uniqueRoles.slice(0, 8).map(([role, count]) => (
+                <button
+                  key={role}
+                  onClick={() => setFilterRoleAndDirty(filterRole === role ? null : role)}
+                  className={cn(
+                    "text-[10px] px-2 py-0.5 rounded-full border transition-colors shrink-0",
+                    filterRole === role
+                      ? "bg-violet-600 text-white border-violet-600 shadow-sm"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900",
+                  )}
+                >
+                  {role} <span className={filterRole === role ? "opacity-70" : "text-gray-400"}>{count}</span>
+                </button>
+              ))}
+              {uniqueRoles.length > 8 && !filterRole && (
+                <span className="text-[10px] text-gray-400 shrink-0">+{uniqueRoles.length - 8} more</span>
+              )}
+              {filterRole && (
+                <span className="text-[10px] text-violet-600 font-semibold shrink-0 ml-1">
+                  {nodesRef.current.filter((n) => (n as UserNode).roles.includes(filterRole)).length} nodes
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <LegendDot color="#10B981" label="Project Admin" />
           <span className="text-[10px] text-gray-400">- colored by primary role</span>
@@ -715,10 +779,21 @@ function LegendDot({ color, label }: { color: string; label: string }) {
 
 function UserTooltip({ node }: { node: UserNode }) {
   return (
-    <div className="space-y-1">
+    <div className="space-y-1.5">
       <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
       <p className="text-[10px] text-gray-500">{node.email}</p>
-      {node.projectName && <p className="text-[10px] text-gray-600">{node.projectName}</p>}
+      {node.projectName && <p className="text-[10px] text-gray-600 font-medium">{node.projectName}</p>}
+      {node.roles.length > 0 && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {node.roles.slice(0, 4).map((r) => (
+            <span key={r} className="text-[9px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 font-medium">
+              {r}
+            </span>
+          ))}
+          {node.roles.length > 4 && <span className="text-[9px] text-gray-400">+{node.roles.length - 4}</span>}
+        </div>
+      )}
+      {node.isAdmin && <p className="text-[9px] text-emerald-600 font-semibold">Admin Access</p>}
     </div>
   );
 }

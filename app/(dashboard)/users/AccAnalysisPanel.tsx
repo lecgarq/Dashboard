@@ -7,13 +7,14 @@ import { trpc } from "@/lib/core/trpc";
 import { analyzeCompactionCandidates } from "@/lib/acc/compactionAnalysis";
 import { AccOverviewTab } from "./AccOverviewTab";
 import { AccCompactionTab } from "./AccCompactionTab";
+import { AccRolesTab } from "./AccRolesTab";
 import { AccUserSidePanel } from "./AccUserSidePanel";
 
 // Re-export types for backwards compatibility with existing importers
 export type { BulkAccUser, BulkAccProject } from "@/lib/acc/acc-types";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
-type SubTab = "overview" | "compaction";
+type SubTab = "overview" | "roles" | "compaction";
 
 export function AccAnalysisPanel({
   users,
@@ -127,7 +128,7 @@ export function AccAnalysisPanel({
 
       {/* Sub-tab switcher */}
       <div className="flex items-center gap-1 border-b border-border/40 pb-0">
-        {(["overview", "compaction"] as const).map((tab) => (
+        {(["overview", "roles", "compaction"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setSubTab(tab)}
@@ -136,7 +137,7 @@ export function AccAnalysisPanel({
               subTab === tab ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground",
             )}
           >
-            {tab === "overview" ? "Overview" : "Compaction Analysis"}
+            {tab === "overview" ? "Overview" : tab === "roles" ? "Roles & Access" : "Compaction Analysis"}
             {tab === "compaction" && compactionResult.totalCandidates > 0 && (
               <span className="text-[10px] font-bold tabular-nums px-1.5 py-0.5 rounded-full bg-red-500/15 text-red-400 border border-red-500/20">
                 {compactionResult.totalCandidates}
@@ -149,6 +150,9 @@ export function AccAnalysisPanel({
       {/* Sub-tab content */}
       {subTab === "overview" && (
         <AccOverviewTab users={users} onSelectUser={openSidePanel} />
+      )}
+      {subTab === "roles" && (
+        <AccRolesTab users={users} onSelectUser={openSidePanel} />
       )}
       {subTab === "compaction" && (
         <AccCompactionTab result={compactionResult} onSelectUser={openSidePanel} />

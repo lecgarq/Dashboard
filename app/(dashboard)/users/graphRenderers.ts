@@ -70,6 +70,7 @@ export interface GraphRenderFrame {
   selectedNodeId: string | null;
   selectedNodeIndex: number;
   highlightSet: ReadonlySet<number>;
+  filterActive: boolean;
   showRoles: boolean;
   showModules: boolean;
   isInteracting: boolean;
@@ -209,7 +210,7 @@ export class CanvasGraphRenderer implements GraphRenderer {
     ctx.translate(-view.x, -view.y);
 
     const bounds = getVisibleWorldBounds(view, frame.cssWidth, frame.cssHeight, 50 / view.scale);
-    const hasSelection = frame.selectedNodeIndex >= 0;
+    const hasSelection = frame.selectedNodeIndex >= 0 || frame.filterActive;
 
     ctx.lineWidth = 0.5 / view.scale;
     if (!frame.isInteracting) {
@@ -970,7 +971,7 @@ export class WebGpuGraphRenderer implements GraphRenderer {
   private buildShapeInstances(frame: GraphRenderFrame, scene: PackedGraphScene): Float32Array {
     const out = new Float32Array(frame.nodes.length * SHAPE_INSTANCE_FLOATS);
     const dimmedUserRgb = hexToRgb01(DIMMED_USER_COLOR);
-    const hasSelection = frame.selectedNodeIndex >= 0;
+    const hasSelection = frame.selectedNodeIndex >= 0 || frame.filterActive;
     let cursor = 0;
 
     const userIndices = ensureIndicesByKind(frame.nodes, frame.userIndices, "user");
