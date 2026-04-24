@@ -47,6 +47,7 @@ gen-lang-client-*.json
 # local secrets file — NEVER commit this
 JSOON.JSON
 *.secrets.json
+texti.env
 
 # temp / dump files
 /tmp/

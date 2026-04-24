@@ -20,16 +20,38 @@ if (typeof process.loadEnvFile === "function" && existsSync(".env")) {
 }
 
 const WIKI_COLLAB_TOKEN_SALT = "wiki-collab-token";
+const isProduction = process.env.NODE_ENV === "production";
+
+function readPoolNumber(name, fallback) {
+  const raw = process.env[name];
+  if (!raw) return fallback;
+  const parsed = Number(raw);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+function getRuntimeDatabaseUrl() {
+  const pooledUrl = process.env.DATABASE_URL?.trim();
+  const directUrl = process.env.DIRECT_URL?.trim();
+
+  // Railway keeps this process alive, so prefer the session/direct URL when available.
+  return isProduction ? directUrl || pooledUrl : pooledUrl || directUrl;
+}
 
 // Initialize Prisma with a proper pool for the adapter
-if (!process.env.DATABASE_URL) {
-  console.error("[hocuspocus] ERROR: DATABASE_URL is not defined in environment.");
+const runtimeDatabaseUrl = getRuntimeDatabaseUrl();
+if (!runtimeDatabaseUrl) {
+  console.error("[hocuspocus] ERROR: DATABASE_URL / DIRECT_URL is not defined in environment.");
 }
 if (!process.env.AUTH_SECRET && !process.env.NEXTAUTH_SECRET) {
   console.error("[hocuspocus] ERROR: AUTH_SECRET / NEXTAUTH_SECRET is not defined in environment.");
 }
 
-const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const pool = new pg.Pool({
+  connectionString: runtimeDatabaseUrl,
+  max: readPoolNumber("PG_POOL_MAX", isProduction ? 3 : 10),
+  idleTimeoutMillis: readPoolNumber("PG_IDLE_TIMEOUT_MS", isProduction ? 30_000 : 10_000),
+  connectionTimeoutMillis: readPoolNumber("PG_CONNECTION_TIMEOUT_MS", 5_000),
+});
 const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 

@@ -264,7 +264,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (userId) {
         const dbUser = await db.user.findUnique({
           where: { id: userId },
-          select: { email: true, role: true, password: true, username: true, image: true },
+          select: {
+            email: true,
+            role: true,
+            password: true,
+            username: true,
+            image: true,
+            accounts: {
+              select: { provider: true },
+            },
+            moduleAccess: {
+              select: { module: true },
+            },
+          },
         });
 
         if (dbUser) {
@@ -272,19 +284,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           token.isPrimaryAdmin = isPrimaryAdminEmail(dbUser.email);
           token.hasCredentials = !!(dbUser.password && dbUser.username);
           token.picture = dbUser.image ?? null;
+          token.providers = dbUser.accounts.map((account) => account.provider);
+          token.moduleAccess = dbUser.moduleAccess.map((entry) => entry.module);
+        } else {
+          token.providers = [];
+          token.moduleAccess = [];
         }
-
-        const accounts = await db.account.findMany({
-          where: { userId },
-          select: { provider: true },
-        });
-        token.providers = accounts.map((a) => a.provider);
-
-        const moduleRows = await db.userModuleAccess.findMany({
-          where: { userId },
-          select: { module: true },
-        });
-        token.moduleAccess = moduleRows.map((m) => m.module);
       }
 
       return token;
