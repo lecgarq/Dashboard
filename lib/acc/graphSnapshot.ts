@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export type AccGraphNodeKind = "instance";
+export type AccGraphNodeKind = "instance" | "hub";
 
 export interface AccGraphBaseNode {
   kind: AccGraphNodeKind;
@@ -24,7 +24,13 @@ export interface AccGraphInstanceNode extends AccGraphBaseNode {
   modules: string[];
 }
 
-export type AccGraphNode = AccGraphInstanceNode;
+export interface AccGraphHubNode extends AccGraphBaseNode {
+  kind: "hub";
+  hubType: "project" | "role" | "module";
+  dataId: string;
+}
+
+export type AccGraphNode = AccGraphInstanceNode | AccGraphHubNode;
 
 export interface AccGraphEdge {
   source: string;
@@ -177,6 +183,14 @@ function applySemanticNodePositions(nodes: AccGraphNode[]): void {
   const maxWeight = weights.role + weights.access + weights.module + weights.project;
 
   for (const node of nodes) {
+    if (node.kind === "hub") {
+      // Hubs can start at random positions or based on their hash
+      const anchor = featureAnchor(node.id, node.hubType);
+      node.x = SIM_WIDTH * (0.5 + anchor.x * 0.4);
+      node.y = SIM_HEIGHT * (0.5 + anchor.y * 0.4);
+      continue;
+    }
+
     const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
     const modules = averageFeatureAnchor(node.modules, "module");
@@ -286,7 +300,51 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
         vx: 0,
         vy: 0,
       });
+
+      // Edges to hubs
+      edges.push({ source: nodeId, target: `hub:project:${project.id}`, kind: "project", weight: 1, color: "#9CA3AF" });
+      for (const role of roles) {
+        edges.push({ source: nodeId, target: `hub:role:${role}`, kind: "role", weight: 0.8, color: "#9CA3AF" });
+      }
+      for (const mod of modules) {
+        edges.push({ source: nodeId, target: `hub:module:${mod}`, kind: "module", weight: 0.6, color: "#9CA3AF" });
+      }
     }
+  }
+
+  // Generate Hub Nodes
+  for (const [id, entry] of projectCounts.entries()) {
+    nodes.push({
+      kind: "hub",
+      hubType: "project",
+      dataId: id,
+      id: `hub:project:${id}`,
+      label: entry.name,
+      color: "#3B82F6",
+      x: 0, y: 0, vx: 0, vy: 0,
+    });
+  }
+  for (const role of roleCounts.keys()) {
+    nodes.push({
+      kind: "hub",
+      hubType: "role",
+      dataId: role,
+      id: `hub:role:${role}`,
+      label: role,
+      color: "#EC4899",
+      x: 0, y: 0, vx: 0, vy: 0,
+    });
+  }
+  for (const mod of moduleCounts.keys()) {
+    nodes.push({
+      kind: "hub",
+      hubType: "module",
+      dataId: mod,
+      id: `hub:module:${mod}`,
+      label: mod,
+      color: "#10B981",
+      x: 0, y: 0, vx: 0, vy: 0,
+    });
   }
 
   applySemanticNodePositions(nodes);
@@ -298,8 +356,8 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
     totalProjectInstances: totalInstances,
     roleCount: roleCounts.size,
     moduleCount: moduleCounts.size,
-    nodeCount: totalInstances,
-    edgeCount: 0,
+    nodeCount: nodes.length,
+    edgeCount: edges.length,
   };
 
   return { nodes, edges, nodeIds, dataHash, stats };

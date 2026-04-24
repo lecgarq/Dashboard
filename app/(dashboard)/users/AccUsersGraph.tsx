@@ -10,12 +10,12 @@ import {
   WebGpuGraphRenderer,
   type GraphRenderFrame,
   type GraphRenderer,
+  type GraphRenderEdge,
 } from "./graphRenderers";
 import { type BulkAccUser } from "./AccAnalysisPanel";
 
-interface UserNode {
+interface UserNode extends PhysicsNode {
   kind: "user";
-  id: string;
   email: string;
   name: string;
   projectId?: string;
@@ -27,13 +27,24 @@ interface UserNode {
   roles: string[];
   modules: string[];
   color: string;
+}
+
+interface HubNode extends PhysicsNode {
+  kind: "project" | "role" | "module";
+  dataId: string;
+  label: string;
+  color: string;
+}
+
+type SimNode = UserNode | HubNode;
+
+interface PhysicsNode {
+  id: string;
   x: number;
   y: number;
   vx: number;
   vy: number;
 }
-
-type SimNode = UserNode;
 
 interface SidePanelState {
   node: SimNode;
@@ -96,6 +107,19 @@ function orderedNodeIdsMatch(cachedIds: readonly string[] | null | undefined, no
 }
 
 function graphNodeToSimNode(node: AccGraphNode): SimNode {
+  if (node.kind === "hub") {
+    return {
+      kind: node.hubType,
+      id: node.id,
+      dataId: node.dataId,
+      label: node.label,
+      color: node.color,
+      x: node.x,
+      y: node.y,
+      vx: node.vx,
+      vy: node.vy,
+    };
+  }
   return {
     kind: "user",
     id: node.id,
@@ -149,6 +173,7 @@ function computeCentroid(positions: Float32Array): { x: number; y: number } {
 }
 
 function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
+  if (node.kind !== "user") return true; // Hubs always visible for now
   if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
   if (filters.modules.length > 0 && !node.modules.some((moduleName) => filters.modules.includes(moduleName))) {
     return false;
@@ -197,6 +222,12 @@ function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeig
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
+    if (node.kind !== "user") {
+      const anchor = featureAnchor(node.id, node.kind);
+      positions[i * 2] = 0.5 + anchor.x * 0.4;
+      positions[i * 2 + 1] = 0.5 + anchor.y * 0.4;
+      continue;
+    }
     const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
     const modules = averageFeatureAnchor(node.modules, "module");
@@ -259,9 +290,13 @@ function normalizePositions(positions: Float32Array): Float32Array {
 
   const rangeX = maxX - minX || 1;
   const rangeY = maxY - minY || 1;
+  const maxRange = Math.max(rangeX, rangeY);
+  const offsetX = (maxRange - rangeX) / 2;
+  const offsetY = (maxRange - rangeY) / 2;
+
   for (let i = 0; i < positions.length / 2; i++) {
-    positions[i * 2] = 0.08 + ((positions[i * 2] - minX) / rangeX) * 0.84;
-    positions[i * 2 + 1] = 0.08 + ((positions[i * 2 + 1] - minY) / rangeY) * 0.84;
+    positions[i * 2] = 0.05 + ((positions[i * 2] - minX + offsetX) / maxRange) * 0.9;
+    positions[i * 2 + 1] = 0.05 + ((positions[i * 2 + 1] - minY + offsetY) / maxRange) * 0.9;
   }
   return positions;
 }
@@ -566,7 +601,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     const rawNodes = (graph.nodes as AccGraphNode[])
-      .filter((node) => node.kind === "instance")
       .map(graphNodeToSimNode);
     if (
       graph.nodeIds.length !== rawNodes.length ||
@@ -593,6 +627,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const nodeIndexMap = new Map<string, number>();
     rawNodes.forEach((node, index) => nodeIndexMap.set(node.id, index));
     nodeIndexMapRef.current = nodeIndexMap;
+
+    // Build kind-specific indices
+    const uIdx: number[] = [];
+    const pIdx: number[] = [];
+    const rIdx: number[] = [];
+    const mIdx: number[] = [];
+    rawNodes.forEach((node, index) => {
+      if (node.kind === "user") uIdx.push(index);
+      else if (node.kind === "project") pIdx.push(index);
+      else if (node.kind === "role") rIdx.push(index);
+      else if (node.kind === "module") mIdx.push(index);
+    });
+    instIdxRef.current = new Uint32Array(uIdx);
+    (nodesRef as any).projectIndices = new Uint32Array(pIdx);
+    (nodesRef as any).roleIndices = new Uint32Array(rIdx);
+    (nodesRef as any).moduleIndices = new Uint32Array(mIdx);
 
     rebuildVisibleIndices();
     if (lastAutoFitHashRef.current !== graph.dataHash) {
@@ -653,16 +703,19 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const frame: GraphRenderFrame = {
         nodes,
         positions,
-        edges: [],
+        edges: (graphQuery.data?.edges as any as GraphRenderEdge[]) ?? [],
         particles: [],
         nodeIndexMap: nodeIndexMapRef.current,
         userIndices: instIdxRef.current,
+        projectIndices: (nodesRef as any).projectIndices,
+        roleIndices: (nodesRef as any).roleIndices,
+        moduleIndices: (nodesRef as any).moduleIndices,
         selectedNodeId: selectedIndex >= 0 ? selectedId : null,
         selectedNodeIndex: selectedIndex,
         highlightSet,
-        filterActive: false,
-        showRoles: false,
-        showModules: false,
+        filterActive: hasActiveFilters,
+        showRoles: true,
+        showModules: true,
         isInteracting,
         view: v,
         cssWidth: width,
@@ -1085,7 +1138,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            <UserTooltip node={hoveredNode as UserNode} />
+            hoveredNode.kind === "user" 
+              ? <UserTooltip node={hoveredNode as UserNode} />
+              : <HubTooltip node={hoveredNode as HubNode} />
           )}
         </div>
       </div>
@@ -1098,12 +1153,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             selectedNodeRef.current = null;
             markGraphDirty();
           }}
-          onViewProfile={() => {
-            onSelectUser?.(selectedNode.node.email);
+          onViewProfile={selectedNode.node.kind === "user" ? () => {
+            onSelectUser?.((selectedNode.node as UserNode).email);
             setSelectedNode(null);
             selectedNodeRef.current = null;
             markGraphDirty();
-          }}
+          } : undefined}
         />
       )}
     </div>
@@ -1263,6 +1318,15 @@ function UserTooltip({ node }: { node: UserNode }) {
   );
 }
 
+function HubTooltip({ node }: { node: HubNode }) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-xs font-bold text-gray-900 leading-tight">{node.label}</p>
+      <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">{node.kind}</p>
+    </div>
+  );
+}
+
 function SidePanel({
   state,
   onClose,
@@ -1273,79 +1337,92 @@ function SidePanel({
   onViewProfile?: () => void;
 }) {
   const node = state.node;
-  const title = node.name || node.email;
+  const title = node.kind === "user" ? (node.name || node.email) : node.label;
 
   return (
     <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
+        <div className="min-w-0">
+          <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
+          {node.kind !== "user" && (
+            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{node.kind}</p>
+          )}
+        </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
 
-      {(() => {
-        const user = node;
-        return (
-          <div className="space-y-3">
-            <p className="text-[11px] text-gray-500 break-all">{user.email}</p>
-            {!user.found && (
-              <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
-                Not yet synced to ACC.
-              </p>
-            )}
-            {user.found && user.hasNoProjects && (
-              <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
-                Synced but no projects assigned.
-              </p>
-            )}
-            {user.projectCount > 0 && (
-              <p className="text-[10px] text-gray-400 italic">
-                {user.projectName ?? `In ${user.projectCount} project${user.projectCount > 1 ? "s" : ""}`}
-              </p>
-            )}
-            <div className="flex flex-wrap gap-1.5">
-              {user.isAdmin && <Tag color="emerald">Admin Access</Tag>}
-            </div>
-            {user.roles.length > 0 && (
-              <div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
-                <div className="flex flex-wrap gap-1">
-                  {user.roles.map((role) => (
-                    <span
-                      key={role}
-                      className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
-                    >
-                      {role}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {user.modules.length > 0 && (
-              <div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
-                <div className="flex flex-wrap gap-1">
-                  {user.modules.map((moduleName) => (
-                    <span
-                      key={moduleName}
-                      className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
-                    >
-                      {moduleLabel(moduleName)}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {onViewProfile && (
-              <button
-                onClick={onViewProfile}
-                className="w-full text-xs font-medium py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 transition-all"
-              >
-                View Profile
-              </button>
-            )}
+      {node.kind === "user" ? (
+        <div className="space-y-3">
+          <p className="text-[11px] text-gray-500 break-all">{node.email}</p>
+          {!node.found && (
+            <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
+              Not yet synced to ACC.
+            </p>
+          )}
+          {node.found && node.hasNoProjects && (
+            <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
+              Synced but no projects assigned.
+            </p>
+          )}
+          {node.projectCount > 0 && (
+            <p className="text-[10px] text-gray-400 italic">
+              {node.projectName ?? `In ${node.projectCount} project${node.projectCount > 1 ? "s" : ""}`}
+            </p>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            {node.isAdmin && <Tag color="emerald">Admin Access</Tag>}
           </div>
-        );
-      })()}
+          {node.roles.length > 0 && (
+            <div>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
+              <div className="flex flex-wrap gap-1">
+                {node.roles.map((role) => (
+                  <span
+                    key={role}
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
+                  >
+                    {role}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          {node.modules.length > 0 && (
+            <div>
+              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
+              <div className="flex flex-wrap gap-1">
+                {node.modules.map((moduleName) => (
+                  <span
+                    key={moduleName}
+                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
+                  >
+                    {moduleLabel(moduleName)}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          {onViewProfile && (
+            <button
+              onClick={onViewProfile}
+              className="mt-2 w-full py-2 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
+            >
+              View Full Profile
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <p className="text-[11px] text-gray-500 italic">Connection Hub</p>
+          <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+            <p className="text-[11px] text-gray-600 leading-relaxed">
+              This node represents the <strong>{node.label}</strong> {node.kind}. 
+              All connected users share this {node.kind}.
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

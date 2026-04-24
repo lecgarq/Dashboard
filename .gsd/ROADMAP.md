@@ -151,3 +151,21 @@
 - Graph simulation spreads out users neatly with distinct role-based coloring.
 - Filter dropdowns exist in both the Graph and the Overview tabs for Roles and Modules.
 - "Docs" is successfully renamed to "Forma Data Management" globally.
+
+---
+
+### Phase 10: ACC Graph Topology & Canvas Expansion
+**Status**: ✅ Completed
+**Objective**: Introduce Hub nodes (Projects, Roles, Modules) into the physical simulation to create clear clusters. Fix canvas aspect ratio to stop vertical stretching. Broaden node separation for clarity.
+**Depends on**: Phase 8
+
+**Tasks**:
+- [x] Implement Hub Node Generation: Add explicit nodes for Projects, Roles, and Modules in `graphSnapshot.ts` and create edges from User Instances to these hubs.
+- [x] Fix Canvas Aspect Ratio: Refactor `normalizePositions` in `AccUsersGraph.tsx` to maintain a 1:1 aspect ratio during normalization, preventing vertical stretching.
+- [x] Tune Force Simulation: Increase global repulsion and link distance to broaden node separation while ensuring Hub attraction creates distinct clusters.
+
+**Verification**:
+- Hub nodes are visible in the graph.
+- Clusters of users are clearly grouped around Projects/Roles/Modules.
+- The graph no longer looks vertically stretched.
+- Nodes are broadly separated with significant whitespace between clusters.

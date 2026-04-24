@@ -20,11 +20,11 @@ export const SIM_WIDTH = 6000;
 export const SIM_HEIGHT = 6000;
 
 const SIM_ITERATIONS = 150;
-const REPULSION = 8000;
-const ATTRACTION = 0.03;
-const DAMPING = 0.65;
-const CENTER_GRAVITY = 0.015;
-const REPULSION_GRID = 600;
+const REPULSION = 28000;
+const ATTRACTION = 0.05;
+const DAMPING = 0.6;
+const CENTER_GRAVITY = 0.005;
+const REPULSION_GRID = 800;
 
 // Grid-based O(n x k) repulsion, weighted edges. Hubs barely move so they anchor clusters.
 export function runSimulation<T extends PhysicsNode>(nodes: T[], edges: PhysicsEdge[]): T[] {
