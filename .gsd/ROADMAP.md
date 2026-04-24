@@ -131,3 +131,23 @@
 - No clipping/cropping at viewport edges
 - Zoom to fit shows entire graph without loss
 - Performance: 60fps with 500+ nodes
+
+---
+
+### Phase 9: ACC Graph Physics & Filter Optimization
+**Status**: ⬜ Not Started
+**Objective**: Fix graph repulsion math, correct vertical scaling, recolor nodes by Role instead of access level, add exact Role/Module filters, and globally rename 'Docs' to 'Forma Data Management' across both Graph and Overview tables.
+**Depends on**: Phase 8
+
+**Tasks**:
+- [ ] Fix d3-force simulation parameters (charge strength, link distance) to achieve proper repulsion and avoid node compaction.
+- [ ] Fix vertical graph scaling/cropping so nodes spread out uniformly in space.
+- [ ] Refactor graph coloring logic: Assign distinct colors to every unique Role (instead of Admin vs Member colors).
+- [ ] Update Module names globally: Replace "Docs" with "Forma Data Management".
+- [ ] Graph Filters: Add exact filtering by Role Name (list all roles) and Module Access. Remove filtering by Project or Admin/Member in the graph.
+- [ ] Overview Users Table Filters: Add dropdown/select filters for "Project on ACC", "Role Name on ACC", and "Module Access on ACC".
+
+**Verification**:
+- Graph simulation spreads out users neatly with distinct role-based coloring.
+- Filter dropdowns exist in both the Graph and the Overview tabs for Roles and Modules.
+- "Docs" is successfully renamed to "Forma Data Management" globally.
