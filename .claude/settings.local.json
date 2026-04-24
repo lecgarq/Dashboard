@@ -116,7 +116,32 @@
       "Skill(gsd:pause-work)",
       "mcp__plugin_context7_context7__resolve-library-id",
       "mcp__plugin_context7_context7__query-docs",
-      "Read(//c/LECG/LOD Checker//**)"
+      "Read(//c/LECG/LOD Checker//**)",
+      "Bash(railway logs *)",
+      "Skill(commit-commands:commit-push-pr)",
+      "Bash(gh repo *)",
+      "Bash(git rm *)",
+      "Skill(gsd:debug)",
+      "Bash(railway link *)",
+      "Bash(railway status *)",
+      "Bash(railway service *)",
+      "Bash(railway up *)",
+      "Bash(xargs head *)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(git -C /c/LECG/Dashboard log --oneline)",
+      "Skill(commit-commands:commit)",
+      "Bash(cat .railway/config.json)",
+      "Bash(ls -la .railway/)",
+      "Bash(railway environment *)",
+      "Bash(railway env *)",
+      "Bash(railway ps *)",
+      "Bash(railway --help)",
+      "Bash(railway variable *)",
+      "Bash(railway run *)",
+      "Bash(railway deployment *)",
+      "Bash(Get-Content \"C:\\\\Users\\\\luis.cortes\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--LECG-Dashboard\\\\ec2d3243-0263-4630-92c4-48d831b8e3dd\\\\tasks\\\\bloqt3z1o.output\" -Wait -Tail 20)",
+      "Bash(Select-Object -First 10)",
+      "WebFetch(domain:aps.autodesk.com)"
     ]
   }
 }

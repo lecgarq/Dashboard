@@ -11,34 +11,18 @@ import { type BulkAccUser, type BulkAccProject } from "./AccAnalysisPanel";
 // Types
 // ---------------------------------------------------------------------------
 
-/** One dot per user × project. Positions cluster by role + module similarity. */
-interface InstanceNode {
-  kind: "instance";
-  id: string; // `${email}::${projectId}`
-  email: string;
-  name: string;
-  projectId: string;
-  projectName: string;
-  projectStatus: string;
-  isAdmin: boolean;
-  roles: string[];
-  modules: string[];
-  color: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-}
-
-/** Single dot for found-but-no-project or unfound users. */
+/** One dot per user (aggregated across all their projects). */
 interface UserNode {
   kind: "user";
-  id: string;
+  id: string; // email
   email: string;
   name: string;
   found: boolean;
   hasNoProjects: boolean;
-  allRoles: string[];
+  isAdmin: boolean;
+  projectCount: number;
+  roles: string[]; // Aggregated roles across all projects
+  modules: string[]; // Aggregated modules across all projects
   color: string;
   x: number;
   y: number;
@@ -46,13 +30,13 @@ interface UserNode {
   vy: number;
 }
 
-/** Diamond hub attracting instances that share a role. */
+/** Diamond hub attracting users that share a role. */
 interface RoleNode {
   kind: "role";
   id: string;
   label: string;
   roleName: string;
-  instanceCount: number;
+  userCount: number;
   radius: number;
   color: string;
   x: number;
@@ -61,13 +45,13 @@ interface RoleNode {
   vy: number;
 }
 
-/** Square hub attracting instances that share a module. */
+/** Square hub attracting users that share a module. */
 interface ModuleNode {
   kind: "module";
   id: string;
   label: string;
   moduleName: string;
-  instanceCount: number;
+  userCount: number;
   color: string;
   x: number;
   y: number;
@@ -75,7 +59,7 @@ interface ModuleNode {
   vy: number;
 }
 
-type SimNode = InstanceNode | UserNode | RoleNode | ModuleNode;
+type SimNode = UserNode | RoleNode | ModuleNode;
 
 interface Edge {
   source: string;
@@ -96,8 +80,7 @@ interface Particle {
 interface SidePanelState {
   node: SimNode;
   roleUsers?: string[];
-  moduleInstances?: string[];
-  userProjectCount?: number;
+  moduleUsers?: string[];
 }
 
 export interface AccUsersGraphProps {
@@ -179,7 +162,7 @@ function createCircleSprite(color: string, size: number): HTMLCanvasElement {
 }
 
 // ---------------------------------------------------------------------------
-// Build graph — one InstanceNode per found user × project
+// Build graph — one UserNode per found user
 // ---------------------------------------------------------------------------
 
 function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
@@ -188,20 +171,37 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
   const roleFreq = new Map<string, number>();
   const moduleFreq = new Map<string, number>();
 
-  const instanceNodes: InstanceNode[] = [];
-  const unfoundNodes: UserNode[] = [];
+  const userNodes: UserNode[] = [];
 
-  // Pass 1: collect all found users with projects
+  // Pass 1: aggregate roles/modules and count frequencies per user
+  for (const u of users) {
+    if (!u.found || u.projects.length === 0) continue;
+    const uniqueRoles = new Set<string>();
+    const uniqueModules = new Set<string>();
+    for (const proj of u.projects) {
+      for (const r of proj.roles) uniqueRoles.add(r);
+      for (const m of proj.modules) uniqueModules.add(m);
+    }
+    for (const r of uniqueRoles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
+    for (const m of uniqueModules) moduleFreq.set(m, (moduleFreq.get(m) ?? 0) + 1);
+  }
+
+  // Pass 2: build user nodes with initial positions
+  let userIdx = 0;
+  const foundUsersCount = users.filter(u => u.found && u.projects.length > 0).length;
   for (const u of users) {
     if (!u.found || u.projects.length === 0) {
-      unfoundNodes.push({
+      userNodes.push({
         kind: "user",
         id: u.email,
         email: u.email,
-        name: u.name,
+        name: getFirstName(u.name, u.email),
         found: u.found,
         hasNoProjects: u.hasNoProjects,
-        allRoles: u.allRoles,
+        isAdmin: false,
+        projectCount: 0,
+        roles: u.allRoles || [],
+        modules: [],
         color: u.found ? "#F59E0B" : "#9CA3AF",
         x: cx + (Math.random() - 0.5) * SIM_WIDTH * 0.55,
         y: cy + (Math.random() - 0.5) * SIM_HEIGHT * 0.55,
@@ -209,42 +209,43 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
       });
       continue;
     }
-    for (const proj of u.projects) {
-      for (const r of proj.roles) roleFreq.set(r, (roleFreq.get(r) ?? 0) + 1);
-      for (const m of proj.modules) moduleFreq.set(m, (moduleFreq.get(m) ?? 0) + 1);
-    }
-  }
 
-  // Pass 2: build instance nodes with initial positions
-  const totalInstances = users.reduce((s, u) => s + u.projects.length, 0);
-  let instanceIdx = 0;
-  for (const u of users) {
-    if (!u.found || u.projects.length === 0) continue;
+    const uniqueRoles = new Set<string>();
+    const uniqueModules = new Set<string>();
+    let isAdmin = false;
     for (const proj of u.projects) {
-      // Spread instances around an inner ring, with jitter
-      const angle = (instanceIdx / Math.max(1, totalInstances)) * Math.PI * 2;
-      const r = SIM_WIDTH * 0.12 + (Math.random() * 500 - 250);
-      // Admin instances seeded in top half so they separate naturally
-      const yBias = proj.isAdmin ? -SIM_HEIGHT * 0.06 : 0;
-      instanceNodes.push({
-        kind: "instance",
-        id: `${u.email}::${proj.id}`,
-        email: u.email,
-        name: u.name,
-        projectId: proj.id,
-        projectName: proj.name,
-        projectStatus: proj.status,
-        isAdmin: proj.isAdmin,
-        roles: proj.roles,
-        modules: proj.modules,
-        color: getInstanceColor(proj),
-        x: cx + Math.cos(angle) * r,
-        y: cy + Math.sin(angle) * r + yBias,
-        vx: (Math.random() - 0.5) * 3,
-        vy: (Math.random() - 0.5) * 3,
-      });
-      instanceIdx++;
+      if (proj.isAdmin) isAdmin = true;
+      for (const r of proj.roles) uniqueRoles.add(r);
+      for (const m of proj.modules) uniqueModules.add(m);
     }
+    
+    const roles = Array.from(uniqueRoles);
+    const modules = Array.from(uniqueModules);
+    const primaryRole = roles.sort()[0] ?? null;
+    const color = isAdmin ? "#10B981" : getCategoryColor(primaryRole);
+    
+    const angle = (userIdx / Math.max(1, foundUsersCount)) * Math.PI * 2;
+    const r = SIM_WIDTH * 0.12 + (Math.random() * 500 - 250);
+    const yBias = isAdmin ? -SIM_HEIGHT * 0.06 : 0;
+
+    userNodes.push({
+      kind: "user",
+      id: u.email,
+      email: u.email,
+      name: getFirstName(u.name, u.email),
+      found: true,
+      hasNoProjects: false,
+      isAdmin,
+      projectCount: u.projects.length,
+      roles,
+      modules,
+      color,
+      x: cx + Math.cos(angle) * r,
+      y: cy + Math.sin(angle) * r + yBias,
+      vx: (Math.random() - 0.5) * 3,
+      vy: (Math.random() - 0.5) * 3,
+    });
+    userIdx++;
   }
 
   // Role hub nodes — outer ring
@@ -260,7 +261,7 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
       id: `role:${role}`,
       label: truncate(role, 12),
       roleName: role,
-      instanceCount: count,
+      userCount: count,
       radius: 9 + (count / maxRoleFreq) * 7,
       color: ROLE_HUB_COLOR,
       x: cx + Math.cos(angle) * spread,
@@ -281,7 +282,7 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
       id: `module:${mod}`,
       label: truncate(moduleLabel(mod), 10),
       moduleName: mod,
-      instanceCount: moduleFreq.get(mod)!,
+      userCount: moduleFreq.get(mod)!,
       color: MODULE_HUB_COLOR,
       x: cx + Math.cos(angle) * spread,
       y: cy + Math.sin(angle) * spread,
@@ -290,22 +291,22 @@ function buildGraph(users: BulkAccUser[]): { nodes: SimNode[]; edges: Edge[] } {
   });
 
   const nodes: SimNode[] = [
-    ...instanceNodes,
-    ...unfoundNodes,
+    ...userNodes,
     ...roleNodes.values(),
     ...moduleNodes.values(),
   ];
 
-  // Edges: instances → role hubs (weight 1.0) + module hubs (weight 0.45)
+  // Edges: users → role hubs (weight 1.0) + module hubs (weight 0.45)
   const edges: Edge[] = [];
-  for (const inst of instanceNodes) {
-    for (const role of inst.roles) {
+  for (const user of userNodes) {
+    if (!user.found || user.hasNoProjects) continue;
+    for (const role of user.roles) {
       const rn = roleNodes.get(role);
-      if (rn) edges.push({ source: inst.id, target: rn.id, color: inst.color, weight: 1.0 });
+      if (rn) edges.push({ source: user.id, target: rn.id, color: user.color, weight: 1.0 });
     }
-    for (const mod of inst.modules) {
+    for (const mod of user.modules) {
       const mn = moduleNodes.get(mod);
-      if (mn) edges.push({ source: inst.id, target: mn.id, color: mn.color, weight: 0.45 });
+      if (mn) edges.push({ source: user.id, target: mn.id, color: mn.color, weight: 0.45 });
     }
   }
 
@@ -533,7 +534,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const inst: number[] = [], roles: number[] = [], mods: number[] = [];
     for (let i = 0; i < nodes.length; i++) {
       const k = nodes[i].kind;
-      if (k === "instance" || k === "user") inst.push(i);
+      if (k === "user") inst.push(i);
       else if (k === "role") roles.push(i);
       else if (k === "module") mods.push(i);
     }
@@ -797,14 +798,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (e.source === selId) { const ti = nim.get(e.target); if (ti != null) highlightSet.add(ti); }
           if (e.target === selId) { const si = nim.get(e.source); if (si != null) highlightSet.add(si); }
         }
-        // Also highlight sibling instances (same email as selected instance)
-        const selNode = nodes[selIdx];
-        if (selNode.kind === "instance") {
-          const email = (selNode as InstanceNode).email;
-          for (let i = 0; i < nodes.length; i++) {
-            if (nodes[i].kind === "instance" && (nodes[i] as InstanceNode).email === email) highlightSet.add(i);
-          }
-        }
       }
 
       // -- Edges --
@@ -1045,14 +1038,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const rect = (e.target as HTMLElement).getBoundingClientRect();
       const node = hitTest(e.clientX - rect.left, e.clientY - rect.top);
       if (node) {
-        if (node.kind === "instance") {
-          const inst = node as InstanceNode;
-          const sp: SidePanelState = {
-            node,
-            userProjectCount: emailInstanceCount.get(inst.email) ?? 1,
-          };
-          setSelectedNode(sp); selectedNodeRef.current = sp;
-        } else if (node.kind === "user") {
+        if (node.kind === "user") {
           const sp: SidePanelState = { node };
           setSelectedNode(sp); selectedNodeRef.current = sp;
         } else if (node.kind === "role") {
@@ -1061,18 +1047,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           setSelectedNode(sp); selectedNodeRef.current = sp;
         } else if (node.kind === "module") {
           const mn = node as ModuleNode;
-          // Collect unique user names from instances that have this module
+          // Collect unique user names from users that have this module
           const names: string[] = [];
           const seen = new Set<string>();
           for (const n of nodesRef.current) {
-            if (n.kind !== "instance") continue;
-            const inst = n as InstanceNode;
-            if (inst.modules.includes(mn.moduleName) && !seen.has(inst.email)) {
-              seen.add(inst.email);
-              names.push(inst.name || inst.email);
+            if (n.kind !== "user") continue;
+            const user = n as UserNode;
+            if (user.modules.includes(mn.moduleName) && !seen.has(user.email)) {
+              seen.add(user.email);
+              names.push(user.name || user.email);
             }
           }
-          const sp: SidePanelState = { node: mn, moduleInstances: names };
+          const sp: SidePanelState = { node: mn, moduleUsers: names };
           setSelectedNode(sp); selectedNodeRef.current = sp;
         }
       } else {
@@ -1251,7 +1237,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            hoveredNode.kind === "instance" ? <InstanceTooltip node={hoveredNode as InstanceNode} /> :
             hoveredNode.kind === "user" ? <UserTooltip node={hoveredNode as UserNode} /> :
             hoveredNode.kind === "role" ? <RoleTooltip node={hoveredNode as RoleNode} /> :
             <ModuleTooltip node={hoveredNode as ModuleNode} />
@@ -1265,11 +1250,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           state={selectedNode}
           onClose={() => { setSelectedNode(null); selectedNodeRef.current = null; needsRenderRef.current = true; }}
           onViewProfile={
-            (selectedNode.node.kind === "instance" || selectedNode.node.kind === "user")
+            selectedNode.node.kind === "user"
               ? () => {
-                  const email = selectedNode.node.kind === "instance"
-                    ? (selectedNode.node as InstanceNode).email
-                    : (selectedNode.node as UserNode).email;
+                  const email = (selectedNode.node as UserNode).email;
                   onSelectUser?.(email);
                   setSelectedNode(null); selectedNodeRef.current = null;
                 }
@@ -1328,24 +1311,6 @@ function LegendSquare({ color, label }: { color: string; label: string }) {
   );
 }
 
-function InstanceTooltip({ node }: { node: InstanceNode }) {
-  return (
-    <div className="space-y-1">
-      <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
-      <p className="text-[10px] text-gray-500 truncate">{node.projectName}</p>
-      {node.isAdmin && <p className="text-[10px] font-medium text-emerald-600">Project Admin</p>}
-      {node.roles.length > 0 && (
-        <p className="text-[10px] text-gray-400">
-          {node.roles.slice(0, 2).join(", ")}{node.roles.length > 2 ? ` +${node.roles.length - 2}` : ""}
-        </p>
-      )}
-      {node.modules.length > 0 && (
-        <p className="text-[10px] text-sky-500">{node.modules.length} module{node.modules.length !== 1 ? "s" : ""}</p>
-      )}
-    </div>
-  );
-}
-
 function UserTooltip({ node }: { node: UserNode }) {
   return (
     <div className="space-y-1">
@@ -1361,7 +1326,7 @@ function RoleTooltip({ node }: { node: RoleNode }) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold text-gray-900">{node.roleName}</p>
-      <p className="text-[10px] text-gray-500">{node.instanceCount} instance{node.instanceCount !== 1 ? "s" : ""}</p>
+      <p className="text-[10px] text-gray-500">{node.userCount} user{node.userCount !== 1 ? "s" : ""}</p>
     </div>
   );
 }
@@ -1370,7 +1335,7 @@ function ModuleTooltip({ node }: { node: ModuleNode }) {
   return (
     <div className="space-y-1">
       <p className="text-xs font-semibold text-gray-900">{moduleLabel(node.moduleName)}</p>
-      <p className="text-[10px] text-gray-500">{node.instanceCount} instance{node.instanceCount !== 1 ? "s" : ""}</p>
+      <p className="text-[10px] text-gray-500">{node.userCount} user{node.userCount !== 1 ? "s" : ""}</p>
     </div>
   );
 }
@@ -1382,8 +1347,7 @@ function SidePanel({ state, onClose, onViewProfile }: {
 }) {
   const n = state.node;
 
-  const title = n.kind === "instance" ? ((n as InstanceNode).name || (n as InstanceNode).email) :
-                n.kind === "user" ? ((n as UserNode).name || (n as UserNode).email) :
+  const title = n.kind === "user" ? ((n as UserNode).name || (n as UserNode).email) :
                 n.kind === "role" ? (n as RoleNode).roleName :
                 moduleLabel((n as ModuleNode).moduleName);
 
@@ -1393,53 +1357,6 @@ function SidePanel({ state, onClose, onViewProfile }: {
         <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
-
-      {n.kind === "instance" && (() => {
-        const inst = n as InstanceNode;
-        return (
-          <div className="space-y-3">
-            <p className="text-[11px] text-gray-500 break-all">{inst.email}</p>
-            {state.userProjectCount != null && state.userProjectCount > 1 && (
-              <p className="text-[10px] text-gray-400 italic">{state.userProjectCount} project instances in ACC</p>
-            )}
-            <div className="flex flex-wrap gap-1.5">
-              {inst.isAdmin && <Tag color="emerald">Project Admin</Tag>}
-              <Tag color="gray">{inst.projectName}</Tag>
-              {inst.projectStatus && inst.projectStatus !== "active" && (
-                <Tag color="amber">{inst.projectStatus}</Tag>
-              )}
-            </div>
-            {inst.roles.length > 0 && (
-              <div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
-                <div className="flex flex-wrap gap-1">
-                  {inst.roles.map((r) => (
-                    <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {inst.modules.length > 0 && (
-              <div>
-                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
-                <div className="flex flex-wrap gap-1">
-                  {inst.modules.map((m) => (
-                    <span key={m} className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">{moduleLabel(m)}</span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {onViewProfile && (
-              <button
-                onClick={onViewProfile}
-                className="w-full text-xs font-medium py-2 rounded-xl bg-gray-100 text-gray-700 hover:bg-gray-200 border border-gray-200 transition-all"
-              >
-                View Profile
-              </button>
-            )}
-          </div>
-        );
-      })()}
 
       {n.kind === "user" && (() => {
         const u = n as UserNode;
@@ -1456,11 +1373,30 @@ function SidePanel({ state, onClose, onViewProfile }: {
                 Synced but no projects assigned.
               </p>
             )}
-            {u.allRoles.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {u.allRoles.map((r) => (
-                  <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
-                ))}
+            {u.projectCount > 0 && (
+              <p className="text-[10px] text-gray-400 italic">In {u.projectCount} project{u.projectCount > 1 ? "s" : ""}</p>
+            )}
+            <div className="flex flex-wrap gap-1.5">
+              {u.isAdmin && <Tag color="emerald">Admin Access</Tag>}
+            </div>
+            {u.roles.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
+                <div className="flex flex-wrap gap-1">
+                  {u.roles.map((r) => (
+                    <span key={r} className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200">{r}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {u.modules.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
+                <div className="flex flex-wrap gap-1">
+                  {u.modules.map((m) => (
+                    <span key={m} className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200">{moduleLabel(m)}</span>
+                  ))}
+                </div>
               </div>
             )}
             {onViewProfile && (
@@ -1474,13 +1410,12 @@ function SidePanel({ state, onClose, onViewProfile }: {
           </div>
         );
       })()}
-
       {n.kind === "role" && (() => {
         const r = n as RoleNode;
         const roleUsers = state.roleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500">{r.instanceCount} assignment{r.instanceCount !== 1 ? "s" : ""} across all projects</p>
+            <p className="text-[11px] text-gray-500">{r.userCount} assignment{r.userCount !== 1 ? "s" : ""} across all projects</p>
             {roleUsers.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users</p>
@@ -1497,10 +1432,10 @@ function SidePanel({ state, onClose, onViewProfile }: {
 
       {n.kind === "module" && (() => {
         const m = n as ModuleNode;
-        const users = state.moduleInstances ?? [];
+        const users = state.moduleUsers ?? [];
         return (
           <div className="space-y-3">
-            <p className="text-[11px] text-gray-500">{m.instanceCount} project assignment{m.instanceCount !== 1 ? "s" : ""}</p>
+            <p className="text-[11px] text-gray-500">{m.userCount} project assignment{m.userCount !== 1 ? "s" : ""}</p>
             {users.length > 0 && (
               <div>
                 <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Users with access</p>
