@@ -26,8 +26,11 @@ function createPrismaClient() {
   const adapter = new PrismaPg({
     connectionString: getRuntimeDatabaseUrl(),
     max: readPoolNumber("PG_POOL_MAX", isProduction ? 5 : 10),
-    idleTimeoutMillis: readPoolNumber("PG_IDLE_TIMEOUT_MS", isProduction ? 30_000 : 10_000),
+    idleTimeoutMillis: readPoolNumber("PG_IDLE_TIMEOUT_MS", isProduction ? 120_000 : 10_000),
     connectionTimeoutMillis: readPoolNumber("PG_CONNECTION_TIMEOUT_MS", 5_000),
+    // Prevents Railway NAT / Supabase pooler from silently dropping idle connections
+    keepAlive: true,
+    keepAliveInitialDelayMillis: 30_000,
   });
   return new PrismaClient({
     adapter,
