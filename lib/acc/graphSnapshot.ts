@@ -1,6 +1,6 @@
 import crypto from "crypto";
 
-export type AccGraphNodeKind = "instance" | "hub";
+export type AccGraphNodeKind = "instance";
 
 export interface AccGraphBaseNode {
   kind: AccGraphNodeKind;
@@ -22,15 +22,11 @@ export interface AccGraphInstanceNode extends AccGraphBaseNode {
   isAdmin: boolean;
   roles: string[];
   modules: string[];
+  lastAddedBucket: string;    // year-month bucket, e.g. "2023-08" or "" if unknown
+  individualAccess: boolean;  // roles.length > 0 || modules.length > 0
 }
 
-export interface AccGraphHubNode extends AccGraphBaseNode {
-  kind: "hub";
-  hubType: "project" | "role" | "module";
-  dataId: string;
-}
-
-export type AccGraphNode = AccGraphInstanceNode | AccGraphHubNode;
+export type AccGraphNode = AccGraphInstanceNode;
 
 export interface AccGraphEdge {
   source: string;
@@ -76,12 +72,13 @@ interface CachedUser {
   found?: unknown;
   name?: unknown;
   projects?: unknown;
+  addedOn?: unknown;  // string ISO date from AccMemberCache.data.addedOn
 }
 
 const SIM_WIDTH = 6000;
 const SIM_HEIGHT = 6000;
 
-const GRAPH_TOPOLOGY_VERSION = 2;
+const GRAPH_TOPOLOGY_VERSION = 3;
 
 const VIBRANT_COLORS = [
   "#E63946", "#F4A261", "#2A9D8F", "#264653", "#A8DADC",
@@ -178,25 +175,32 @@ function averageFeatureAnchor(values: readonly string[], salt: string): { x: num
   return { x: x / values.length, y: y / values.length, weight: 1 };
 }
 
+function toDateBucket(raw: unknown): string {
+  if (typeof raw !== "string" || !raw) return "";
+  const match = raw.match(/^(\d{4}-\d{2})/);
+  return match ? match[1] : "";
+}
+
 function applySemanticNodePositions(nodes: AccGraphNode[]): void {
-  const weights = { role: 72, access: 38, module: 58, project: 68 };
-  const maxWeight = weights.role + weights.access + weights.module + weights.project;
+  const weights = { role: 72, access: 38, module: 58, project: 68, lastAdded: 45, individualAccess: 42 };
+  const maxWeight = weights.role + weights.access + weights.module + weights.project + weights.lastAdded + weights.individualAccess;
 
   for (const node of nodes) {
-    if (node.kind === "hub") {
-      // Hubs can start at random positions or based on their hash
-      const anchor = featureAnchor(node.id, node.hubType);
-      node.x = SIM_WIDTH * (0.5 + anchor.x * 0.4);
-      node.y = SIM_HEIGHT * (0.5 + anchor.y * 0.4);
-      continue;
-    }
-
+    // node.kind is always "instance" now — no hub branch needed
     const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
     const modules = averageFeatureAnchor(node.modules, "module");
     const access = node.isAdmin
       ? { x: -0.42, y: -0.28 }
       : { x: 0.32, y: 0.22 };
+    // lastAdded bucket as positional anchor
+    const lastAddedAnchor = node.lastAddedBucket
+      ? featureAnchor(node.lastAddedBucket, "lastAdded")
+      : { x: 0, y: 0 };
+    // individualAccess as a fixed directional bias
+    const individualAccessAnchor = node.individualAccess
+      ? { x: -0.18, y: 0.35 }
+      : { x: 0.18, y: -0.35 };
     const jitter = featureAnchor(node.id, "instance");
 
     let x = project.x * weights.project + access.x * weights.access;
@@ -213,6 +217,14 @@ function applySemanticNodePositions(nodes: AccGraphNode[]): void {
       y += modules.y * weights.module;
       usedWeight += weights.module;
     }
+    if (node.lastAddedBucket) {
+      x += lastAddedAnchor.x * weights.lastAdded;
+      y += lastAddedAnchor.y * weights.lastAdded;
+      usedWeight += weights.lastAdded;
+    }
+    x += individualAccessAnchor.x * weights.individualAccess;
+    y += individualAccessAnchor.y * weights.individualAccess;
+    usedWeight += weights.individualAccess;
 
     const normalizer = Math.max(1, Math.min(maxWeight, usedWeight));
     node.x = SIM_WIDTH * (0.5 + x / normalizer + jitter.x * 0.08);
@@ -256,6 +268,7 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
     const email = row.email.toLowerCase();
     const name = typeof data.name === "string" ? data.name : "";
     const projects = data.found === true ? readProjects(data.projects) : [];
+    const addedOn = typeof data.addedOn === "string" ? data.addedOn : "";
     if (data.found === true) foundUsers.add(email);
 
     for (const project of projects) {
@@ -268,7 +281,7 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
       }
     }
 
-    return { email, name, projects };
+    return { email, name, projects, addedOn };
   });
 
   const nodes: AccGraphNode[] = [];
@@ -294,57 +307,15 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
         isAdmin: project.isAdmin === true,
         roles,
         modules,
+        lastAddedBucket: toDateBucket(user.addedOn),
+        individualAccess: roles.length > 0 || modules.length > 0,
         color,
         x: 0,
         y: 0,
         vx: 0,
         vy: 0,
       });
-
-      // Edges to hubs
-      edges.push({ source: nodeId, target: `hub:project:${project.id}`, kind: "project", weight: 1, color: "#9CA3AF" });
-      for (const role of roles) {
-        edges.push({ source: nodeId, target: `hub:role:${role}`, kind: "role", weight: 0.8, color: "#9CA3AF" });
-      }
-      for (const mod of modules) {
-        edges.push({ source: nodeId, target: `hub:module:${mod}`, kind: "module", weight: 0.6, color: "#9CA3AF" });
-      }
     }
-  }
-
-  // Generate Hub Nodes
-  for (const [id, entry] of projectCounts.entries()) {
-    nodes.push({
-      kind: "hub",
-      hubType: "project",
-      dataId: id,
-      id: `hub:project:${id}`,
-      label: entry.name,
-      color: "#3B82F6",
-      x: 0, y: 0, vx: 0, vy: 0,
-    });
-  }
-  for (const role of roleCounts.keys()) {
-    nodes.push({
-      kind: "hub",
-      hubType: "role",
-      dataId: role,
-      id: `hub:role:${role}`,
-      label: role,
-      color: "#EC4899",
-      x: 0, y: 0, vx: 0, vy: 0,
-    });
-  }
-  for (const mod of moduleCounts.keys()) {
-    nodes.push({
-      kind: "hub",
-      hubType: "module",
-      dataId: mod,
-      id: `hub:module:${mod}`,
-      label: mod,
-      color: "#10B981",
-      x: 0, y: 0, vx: 0, vy: 0,
-    });
   }
 
   applySemanticNodePositions(nodes);
