@@ -24,6 +24,12 @@ type WorkerRequest =
       type: "retarget";
       session: number;
       anchors: FloatBuffer;
+      visibleIndices: UintBuffer;
+      changeId?: number;
+    }
+  | {
+      type: "semanticLinks";
+      session: number;
       vectors: FloatBuffer;
       vectorSize: number;
       visibleIndices: UintBuffer;
@@ -67,10 +73,10 @@ let simulationHeat = 0.15;
 let currentChangeId: number | undefined;
 let retargetCount = 0;
 let linkRebuildCount = 0;
-let pendingRetarget: Extract<WorkerRequest, { type: "retarget" }> | null = null;
-let retargetTimer: ReturnType<typeof setTimeout> | null = null;
 let linkRebuildTimer: ReturnType<typeof setTimeout> | null = null;
 let linkBuildGeneration = 0;
+let livePostUntil = 0;
+let changeIdPostUntil = 0;
 
 const workerSelf = self as unknown as WorkerGlobal;
 
@@ -200,6 +206,10 @@ function wakeSimulation(amount: number): void {
   }
 }
 
+function postEveryFrameFor(durationMs: number): void {
+  livePostUntil = Math.max(livePostUntil, Date.now() + durationMs);
+}
+
 function pullVisiblePositionsTowardAnchors(strength: number): void {
   if (!positions.length || positions.length !== anchors.length) return;
   for (let offset = 0; offset < visibleIndices.length; offset++) {
@@ -216,6 +226,7 @@ function pullVisiblePositionsTowardAnchors(strength: number): void {
 
 function postTickSnapshot(averageVelocity: number): void {
   const snapshot = new Float32Array(positions);
+  const activeChangeId = Date.now() < changeIdPostUntil ? currentChangeId : undefined;
   workerSelf.postMessage(
     {
       type: "tick",
@@ -223,7 +234,7 @@ function postTickSnapshot(averageVelocity: number): void {
       positions: snapshot,
       averageVelocity,
       linkCount: links.length,
-      changeId: currentChangeId,
+      changeId: activeChangeId,
       diagnostics: {
         retargetCount,
         linkRebuildCount,
@@ -236,28 +247,26 @@ function postTickSnapshot(averageVelocity: number): void {
 function applyRetarget(message: Extract<WorkerRequest, { type: "retarget" }>): void {
   if (message.session !== session) return;
   anchors = message.anchors;
-  vectors = message.vectors;
-  vectorSize = message.vectorSize;
   visibleIndices = message.visibleIndices;
   currentChangeId = message.changeId;
   retargetCount++;
   rebuildVisibleMask();
-  pullVisiblePositionsTowardAnchors(0.18 + clamp01(settings.attraction) * 0.12);
-  wakeSimulation(0.028 + clamp01(settings.motion) * 0.04);
+  pullVisiblePositionsTowardAnchors(0.36 + clamp01(settings.attraction) * 0.22);
+  wakeSimulation(0.04 + clamp01(settings.motion) * 0.055);
+  postEveryFrameFor(1800);
+  changeIdPostUntil = Math.max(changeIdPostUntil, Date.now() + 1800);
   postTickSnapshot(0);
-  scheduleLinkRebuild(90);
   ensureTimer();
 }
 
-function scheduleRetarget(message: Extract<WorkerRequest, { type: "retarget" }>): void {
-  pendingRetarget = message;
-  if (retargetTimer) return;
-  retargetTimer = setTimeout(() => {
-    retargetTimer = null;
-    const next = pendingRetarget;
-    pendingRetarget = null;
-    if (next) applyRetarget(next);
-  }, 0);
+function applySemanticLinks(message: Extract<WorkerRequest, { type: "semanticLinks" }>): void {
+  if (message.session !== session) return;
+  vectors = message.vectors;
+  vectorSize = message.vectorSize;
+  visibleIndices = message.visibleIndices;
+  currentChangeId = message.changeId;
+  rebuildVisibleMask();
+  scheduleLinkRebuild(0);
 }
 
 function ensureTimer(): void {
@@ -398,8 +407,8 @@ function step(): void {
 
     velocities[i * 2] = vx;
     velocities[i * 2 + 1] = vy;
-    positions[i * 2] = Math.max(-0.35, Math.min(1.35, positions[i * 2] + vx));
-    positions[i * 2 + 1] = Math.max(-0.35, Math.min(1.35, positions[i * 2 + 1] + vy));
+    positions[i * 2] += vx;
+    positions[i * 2 + 1] += vy;
     totalVelocity += Math.sqrt(vx * vx + vy * vy);
   }
 
@@ -412,9 +421,11 @@ function step(): void {
   }
 
   tickCounter++;
-  if (tickCounter % POST_EVERY_TICKS !== 0) return;
+  const averageVelocity = visibleIndices.length ? totalVelocity / visibleIndices.length : 0;
+  const isLive = Date.now() < livePostUntil || averageVelocity > 0.0015 || simulationHeat > 0.08 || draggedIndex >= 0;
+  if (!isLive && tickCounter % POST_EVERY_TICKS !== 0) return;
 
-  postTickSnapshot(visibleIndices.length ? totalVelocity / visibleIndices.length : 0);
+  postTickSnapshot(averageVelocity);
 }
 
 workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
@@ -423,9 +434,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   if (message.type === "stop") {
     stopTimer();
     linkBuildGeneration++;
-    if (retargetTimer) clearTimeout(retargetTimer);
     if (linkRebuildTimer) clearTimeout(linkRebuildTimer);
-    retargetTimer = null;
     linkRebuildTimer = null;
     return;
   }
@@ -433,6 +442,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   if (message.type === "settings") {
     settings = message.settings;
     wakeSimulation(0.02 + clamp01(settings.motion) * 0.04);
+    postEveryFrameFor(1200);
     postTickSnapshot(0);
     ensureTimer();
     return;
@@ -457,6 +467,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     tickCounter = 0;
     currentChangeId = undefined;
     simulationHeat = 0.18;
+    postEveryFrameFor(600);
     rebuildVisibleMask();
     scheduleLinkRebuild(0);
     postTickSnapshot(0);
@@ -468,6 +479,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     draggedIndex = message.nodeIndex;
     draggedX = message.x;
     draggedY = message.y;
+    postEveryFrameFor(600);
     return;
   }
 
@@ -475,6 +487,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     if (draggedIndex === message.nodeIndex) {
       draggedIndex = -1;
       wakeSimulation(0.025);
+      postEveryFrameFor(900);
     }
     return;
   }
@@ -482,7 +495,12 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   if (message.session !== session) return;
 
   if (message.type === "retarget") {
-    scheduleRetarget(message);
+    applyRetarget(message);
+    return;
+  }
+
+  if (message.type === "semanticLinks") {
+    applySemanticLinks(message);
     return;
   }
 
@@ -491,6 +509,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     rebuildVisibleMask();
     scheduleLinkRebuild(35);
     wakeSimulation(0.002);
+    postEveryFrameFor(600);
     ensureTimer();
     return;
   }

@@ -215,7 +215,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const lastAutoFitHashRef = useRef<string | null>(null);
   const lastMetricUpdateAtRef = useRef(0);
   const layoutRetargetChangeIdRef = useRef(0);
-  const pendingLayoutRetargetFrameRef = useRef<number | null>(null);
+  const pendingSemanticVectorTimerRef = useRef<number | null>(null);
   const forceRenderUntilRef = useRef(0);
 
   const [isDraggingState, setIsDraggingState] = useState(false);
@@ -280,7 +280,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     if (!worker || !nodes.length) return;
 
     const seeds = computeSemanticSeedPositions(nodes, layoutWeightsRef.current);
-    const semantic = computeSemanticVectors(nodes, layoutWeightsRef.current);
     seedPosRef.current = seeds;
     centroidRef.current = computeCentroid(seeds);
 
@@ -291,7 +290,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
     const anchorsForWorker = new Float32Array(seeds);
-    const vectorsForWorker = new Float32Array(semantic.vectors);
 
     if (mode === "retarget") {
       worker.postMessage(
@@ -299,14 +297,50 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           type: "retarget",
           session: layoutSessionRef.current,
           anchors: anchorsForWorker,
-          vectors: vectorsForWorker,
-          vectorSize: semantic.vectorSize,
           visibleIndices,
           changeId,
         },
-        [anchorsForWorker.buffer, vectorsForWorker.buffer, visibleIndices.buffer],
+        [anchorsForWorker.buffer, visibleIndices.buffer],
       );
+      if (pendingSemanticVectorTimerRef.current !== null) {
+        window.clearTimeout(pendingSemanticVectorTimerRef.current);
+      }
+      const retargetSession = layoutSessionRef.current;
+      const retargetChangeId = changeId;
+      const weightsForVectors = { ...layoutWeightsRef.current };
+      const nodesForVectors = nodes.slice();
+      pendingSemanticVectorTimerRef.current = window.setTimeout(() => {
+        pendingSemanticVectorTimerRef.current = null;
+        if (
+          organicWorkerRef.current !== worker ||
+          retargetSession !== layoutSessionRef.current ||
+          retargetChangeId !== layoutRetargetChangeIdRef.current
+        ) {
+          return;
+        }
+
+        const semantic = computeSemanticVectors(nodesForVectors, weightsForVectors);
+        const latestVisibleIndices = new Uint32Array(visibleNodeIdxRef.current);
+        const vectorsForWorker = new Float32Array(semantic.vectors);
+        worker.postMessage(
+          {
+            type: "semanticLinks",
+            session: retargetSession,
+            vectors: vectorsForWorker,
+            vectorSize: semantic.vectorSize,
+            visibleIndices: latestVisibleIndices,
+            changeId: retargetChangeId,
+          },
+          [vectorsForWorker.buffer, latestVisibleIndices.buffer],
+        );
+      }, 35);
     } else {
+      if (pendingSemanticVectorTimerRef.current !== null) {
+        window.clearTimeout(pendingSemanticVectorTimerRef.current);
+        pendingSemanticVectorTimerRef.current = null;
+      }
+      const semantic = computeSemanticVectors(nodes, layoutWeightsRef.current);
+      const vectorsForWorker = new Float32Array(semantic.vectors);
       const positionsForWorker = new Float32Array(posRef.current);
       worker.postMessage(
         {
@@ -369,13 +403,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const changeId = layoutRetargetChangeIdRef.current + 1;
     layoutRetargetChangeIdRef.current = changeId;
     forceRenderUntilRef.current = performance.now() + 1800;
-    if (pendingLayoutRetargetFrameRef.current !== null) {
-      cancelAnimationFrame(pendingLayoutRetargetFrameRef.current);
-    }
-    pendingLayoutRetargetFrameRef.current = requestAnimationFrame(() => {
-      pendingLayoutRetargetFrameRef.current = null;
-      restartOrganicLayout("retarget", changeId);
-    });
+    restartOrganicLayout("retarget", changeId);
     markGraphDirty();
   }, [markGraphDirty, restartOrganicLayout]);
 
@@ -723,9 +751,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     rafId.current = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(rafId.current);
-      if (pendingLayoutRetargetFrameRef.current !== null) {
-        cancelAnimationFrame(pendingLayoutRetargetFrameRef.current);
-        pendingLayoutRetargetFrameRef.current = null;
+      if (pendingSemanticVectorTimerRef.current !== null) {
+        window.clearTimeout(pendingSemanticVectorTimerRef.current);
+        pendingSemanticVectorTimerRef.current = null;
       }
     };
   }, []);
