@@ -22,8 +22,8 @@ export interface AccGraphInstanceNode extends AccGraphBaseNode {
   isAdmin: boolean;
   roles: string[];
   modules: string[];
-  lastAddedBucket: string;    // year-month bucket, e.g. "2023-08" or "" if unknown
-  individualAccess: boolean;  // roles.length > 0 || modules.length > 0
+  lastAddedBucket: string; // year-month bucket, e.g. "2023-08" or "" if unknown
+  individualAccess: boolean; // roles.length > 0 || modules.length > 0
 }
 
 export type AccGraphNode = AccGraphInstanceNode;
@@ -72,7 +72,7 @@ interface CachedUser {
   found?: unknown;
   name?: unknown;
   projects?: unknown;
-  addedOn?: unknown;  // string ISO date from AccMemberCache.data.addedOn
+  addedOn?: unknown; // string ISO date from AccMemberCache.data.addedOn
 }
 
 const SIM_WIDTH = 6000;
@@ -135,6 +135,11 @@ function getFirstName(name: string, email: string): string {
   return local.slice(0, 2).toUpperCase();
 }
 
+function getDisplayName(name: string, email: string): string {
+  const trimmedName = name.trim();
+  return trimmedName || email;
+}
+
 function getCategoryColor(key: string | null | undefined): string {
   if (!key) return "#9CA3AF";
   let hash = 0;
@@ -182,14 +187,13 @@ function toDateBucket(raw: unknown): string {
 }
 
 function applySemanticNodePositions(nodes: AccGraphNode[]): void {
-  const weights = { role: 72, access: 38, module: 58, project: 68, lastAdded: 45, individualAccess: 42 };
-  const maxWeight = weights.role + weights.access + weights.module + weights.project + weights.lastAdded + weights.individualAccess;
+  const weights = { role: 72, access: 38, project: 68, lastAdded: 45, individualAccess: 42, userName: 30 };
+  const maxWeight = weights.role + weights.access + weights.project + weights.lastAdded + weights.individualAccess + weights.userName;
 
   for (const node of nodes) {
     // node.kind is always "instance" now — no hub branch needed
-    const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
+    const project = featureAnchor(node.projectName || node.projectId || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
-    const modules = averageFeatureAnchor(node.modules, "module");
     const access = node.isAdmin
       ? { x: -0.42, y: -0.28 }
       : { x: 0.32, y: 0.22 };
@@ -201,6 +205,9 @@ function applySemanticNodePositions(nodes: AccGraphNode[]): void {
     const individualAccessAnchor = node.individualAccess
       ? { x: -0.18, y: 0.35 }
       : { x: 0.18, y: -0.35 };
+    const userNameAnchor = node.name
+      ? featureAnchor(node.name.toLowerCase(), "userName")
+      : { x: 0, y: 0 };
     const jitter = featureAnchor(node.id, "instance");
 
     let x = project.x * weights.project + access.x * weights.access;
@@ -212,11 +219,6 @@ function applySemanticNodePositions(nodes: AccGraphNode[]): void {
       y += roles.y * weights.role;
       usedWeight += weights.role;
     }
-    if (modules.weight > 0) {
-      x += modules.x * weights.module;
-      y += modules.y * weights.module;
-      usedWeight += weights.module;
-    }
     if (node.lastAddedBucket) {
       x += lastAddedAnchor.x * weights.lastAdded;
       y += lastAddedAnchor.y * weights.lastAdded;
@@ -225,6 +227,11 @@ function applySemanticNodePositions(nodes: AccGraphNode[]): void {
     x += individualAccessAnchor.x * weights.individualAccess;
     y += individualAccessAnchor.y * weights.individualAccess;
     usedWeight += weights.individualAccess;
+    if (node.name) {
+      x += userNameAnchor.x * weights.userName;
+      y += userNameAnchor.y * weights.userName;
+      usedWeight += weights.userName;
+    }
 
     const normalizer = Math.max(1, Math.min(maxWeight, usedWeight));
     node.x = SIM_WIDTH * (0.5 + x / normalizer + jitter.x * 0.08);
@@ -240,6 +247,8 @@ function hashTopology(rows: AccMemberCacheRow[]): string {
       const projects = data.found === true
         ? readProjects(data.projects).map((project) => ({
             id: project.id,
+            name: project.name,
+            isAdmin: project.isAdmin === true,
             roles: toStringSet(project.roles),
             modules: toStringSet(project.modules),
           }))
@@ -247,6 +256,8 @@ function hashTopology(rows: AccMemberCacheRow[]): string {
       return {
         email: row.email.toLowerCase(),
         found: data.found === true,
+        name: typeof data.name === "string" ? data.name : "",
+        addedOn: typeof data.addedOn === "string" ? data.addedOn : "",
         projects,
       };
     }),
@@ -300,7 +311,7 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
         kind: "instance",
         id: nodeId,
         email: user.email,
-        name: getFirstName(user.name, user.email),
+        name: getDisplayName(user.name, user.email),
         label: getFirstName(user.name, user.email),
         projectId: project.id,
         projectName: project.name,

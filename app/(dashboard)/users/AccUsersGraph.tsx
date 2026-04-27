@@ -27,16 +27,11 @@ interface UserNode extends PhysicsNode {
   roles: string[];
   modules: string[];
   color: string;
+  lastAddedBucket: string;
+  individualAccess: boolean;
 }
 
-interface HubNode extends PhysicsNode {
-  kind: "project" | "role" | "module";
-  dataId: string;
-  label: string;
-  color: string;
-}
-
-type SimNode = UserNode | HubNode;
+type SimNode = UserNode;
 
 interface PhysicsNode {
   id: string;
@@ -57,14 +52,18 @@ interface SpatialGrid {
 
 interface GraphFilters {
   roles: string[];
-  modules: string[];
+  lastAddedBuckets: string[];
+  adminAccess: "all" | "admin" | "non-admin";
+  individualAccess: "all" | "configured" | "bare";
 }
 
 interface LayoutWeights {
   role: number;
   access: number;
-  module: number;
+  lastAdded: number;
   project: number;
+  individualAccess: number;
+  userName: number;
 }
 
 interface FilterOption {
@@ -79,9 +78,9 @@ export interface AccUsersGraphProps {
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
-const DEFAULT_FILTERS: GraphFilters = { roles: [], modules: [] };
+const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", individualAccess: "all" };
 const DEFAULT_SPACING = 50;
-const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = { role: 72, access: 38, module: 58, project: 68 };
+const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = { role: 72, access: 38, lastAdded: 45, project: 68, individualAccess: 42, userName: 30 };
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -107,19 +106,6 @@ function orderedNodeIdsMatch(cachedIds: readonly string[] | null | undefined, no
 }
 
 function graphNodeToSimNode(node: AccGraphNode): SimNode {
-  if (node.kind === "hub") {
-    return {
-      kind: node.hubType,
-      id: node.id,
-      dataId: node.dataId,
-      label: node.label,
-      color: node.color,
-      x: node.x,
-      y: node.y,
-      vx: node.vx,
-      vy: node.vy,
-    };
-  }
   return {
     kind: "user",
     id: node.id,
@@ -133,6 +119,8 @@ function graphNodeToSimNode(node: AccGraphNode): SimNode {
     projectCount: 1,
     roles: node.roles,
     modules: node.modules,
+    lastAddedBucket: node.lastAddedBucket,
+    individualAccess: node.individualAccess,
     color: node.color,
     x: node.x,
     y: node.y,
@@ -173,11 +161,12 @@ function computeCentroid(positions: Float32Array): { x: number; y: number } {
 }
 
 function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
-  if (node.kind !== "user") return true; // Hubs always visible for now
   if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
-  if (filters.modules.length > 0 && !node.modules.some((moduleName) => filters.modules.includes(moduleName))) {
-    return false;
-  }
+  if (filters.lastAddedBuckets.length > 0 && !filters.lastAddedBuckets.includes(node.lastAddedBucket || "Unknown")) return false;
+  if (filters.adminAccess === "admin" && !node.isAdmin) return false;
+  if (filters.adminAccess === "non-admin" && node.isAdmin) return false;
+  if (filters.individualAccess === "configured" && !node.individualAccess) return false;
+  if (filters.individualAccess === "bare" && node.individualAccess) return false;
   return true;
 }
 
@@ -218,22 +207,28 @@ function averageFeatureAnchor(values: readonly string[], salt: string): { x: num
 
 function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeights): Float32Array {
   const positions = new Float32Array(nodes.length * 2);
-  const maxWeight = Math.max(1, weights.role + weights.access + weights.module + weights.project);
+  const maxWeight = Math.max(1,
+    weights.role + weights.access + weights.lastAdded + weights.project + weights.individualAccess + weights.userName
+  );
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    if (node.kind !== "user") {
-      const anchor = featureAnchor(node.id, node.kind);
-      positions[i * 2] = 0.5 + anchor.x * 0.4;
-      positions[i * 2 + 1] = 0.5 + anchor.y * 0.4;
-      continue;
-    }
-    const project = featureAnchor(node.projectId || node.projectName || "no-project", "project");
+    // All nodes are "user" kind now — no hub branch needed
+
+    const project = featureAnchor(node.projectName || node.projectId || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
-    const modules = averageFeatureAnchor(node.modules, "module");
     const access = node.isAdmin
       ? { x: -0.42, y: -0.28 }
       : { x: 0.32, y: 0.22 };
+    const lastAddedAnchor = node.lastAddedBucket
+      ? featureAnchor(node.lastAddedBucket, "lastAdded")
+      : { x: 0, y: 0 };
+    const individualAccessAnchor = node.individualAccess
+      ? { x: -0.18, y: 0.35 }
+      : { x: 0.18, y: -0.35 };
+    const userNameAnchor = node.name
+      ? featureAnchor(node.name.toLowerCase(), "userName")
+      : { x: 0, y: 0 };
     const jitter = featureAnchor(node.id, "instance");
 
     let x = 0;
@@ -250,15 +245,25 @@ function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeig
       y += roles.y * weights.role;
       usedWeight += weights.role;
     }
-    if (weights.module > 0 && modules.weight > 0) {
-      x += modules.x * weights.module;
-      y += modules.y * weights.module;
-      usedWeight += weights.module;
+    if (weights.lastAdded > 0 && node.lastAddedBucket) {
+      x += lastAddedAnchor.x * weights.lastAdded;
+      y += lastAddedAnchor.y * weights.lastAdded;
+      usedWeight += weights.lastAdded;
     }
     if (weights.access > 0) {
       x += access.x * weights.access;
       y += access.y * weights.access;
       usedWeight += weights.access;
+    }
+    if (weights.individualAccess > 0) {
+      x += individualAccessAnchor.x * weights.individualAccess;
+      y += individualAccessAnchor.y * weights.individualAccess;
+      usedWeight += weights.individualAccess;
+    }
+    if (weights.userName > 0 && node.name) {
+      x += userNameAnchor.x * weights.userName;
+      y += userNameAnchor.y * weights.userName;
+      usedWeight += weights.userName;
     }
 
     const normalizer = Math.max(1, Math.min(maxWeight, usedWeight));
@@ -359,8 +364,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [layoutWeights, setLayoutWeights] = useState<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
-  const [projectQuery, setProjectQuery] = useState("");
-  const [moduleQuery, setModuleQuery] = useState("");
 
   const graphQuery = trpc.users.getPrecomputedGraph.useQuery(undefined, {
     enabled: users.length > 0,
@@ -400,11 +403,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const visibleIndices: number[] = [];
     const visibleSet = new Set<number>();
     for (let i = 0; i < nodes.length; i++) {
-      if (nodes[i].kind === "user" && nodeMatchesFilters(nodes[i], filters)) {
+      if (nodeMatchesFilters(nodes[i], filters)) {
         userIndices.push(i);
-        visibleIndices.push(i);
-        visibleSet.add(i);
-      } else if (nodes[i].kind !== "user") {
         visibleIndices.push(i);
         visibleSet.add(i);
       }
@@ -650,21 +650,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     rawNodes.forEach((node, index) => nodeIndexMap.set(node.id, index));
     nodeIndexMapRef.current = nodeIndexMap;
 
-    // Build kind-specific indices
+    // Build kind-specific indices — all nodes are user kind
     const uIdx: number[] = [];
-    const pIdx: number[] = [];
-    const rIdx: number[] = [];
-    const mIdx: number[] = [];
     rawNodes.forEach((node, index) => {
-      if (node.kind === "user") uIdx.push(index);
-      else if (node.kind === "project") pIdx.push(index);
-      else if (node.kind === "role") rIdx.push(index);
-      else if (node.kind === "module") mIdx.push(index);
+      uIdx.push(index); // all nodes are user kind
     });
     instIdxRef.current = new Uint32Array(uIdx);
-    (nodesRef as any).projectIndices = new Uint32Array(pIdx);
-    (nodesRef as any).roleIndices = new Uint32Array(rIdx);
-    (nodesRef as any).moduleIndices = new Uint32Array(mIdx);
+    (nodesRef as any).projectIndices = new Uint32Array(0);
+    (nodesRef as any).roleIndices = new Uint32Array(0);
+    (nodesRef as any).moduleIndices = new Uint32Array(0);
 
     rebuildVisibleIndices();
     if (lastAutoFitHashRef.current !== graph.dataHash) {
@@ -848,14 +842,23 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     };
   }, [handleWheel]);
 
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const ro = new ResizeObserver(() => {
+      markGraphDirty();
+    });
+    ro.observe(container);
+    return () => ro.disconnect();
+  }, [markGraphDirty]);
+
   const totalInstances = useMemo(
     () => graphQuery.data?.stats.totalProjectInstances ?? users.reduce((sum, user) => sum + (user.found ? user.projects.length : 0), 0),
     [graphQuery.data?.stats.totalProjectInstances, users],
   );
   const filterOptions = useMemo(() => {
     const roleCount = new Map<string, number>();
-    const projectCount = new Map<string, FilterOption>();
-    const moduleCount = new Map<string, FilterOption>();
+    const lastAddedCount = new Map<string, number>();
 
     const nodes = graphQuery.data?.hit ? (graphQuery.data.nodes as AccGraphNode[]) : [];
     for (const node of nodes) {
@@ -865,49 +868,24 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         roleCount.set(role, (roleCount.get(role) ?? 0) + 1);
       }
 
-      const projectValue = node.projectId || node.projectName;
-      if (projectValue) {
-        const existing = projectCount.get(projectValue);
-        projectCount.set(projectValue, {
-          value: projectValue,
-          label: node.projectName || node.projectId || projectValue,
-          count: (existing?.count ?? 0) + 1,
-        });
-      }
-
-      for (const moduleName of node.modules ?? []) {
-        const existing = moduleCount.get(moduleName);
-        moduleCount.set(moduleName, {
-          value: moduleName,
-          label: moduleLabel(moduleName),
-          count: (existing?.count ?? 0) + 1,
-        });
-      }
+      const lastAddedBucket = node.lastAddedBucket || "Unknown";
+      lastAddedCount.set(lastAddedBucket, (lastAddedCount.get(lastAddedBucket) ?? 0) + 1);
     }
 
     const roles: FilterOption[] = [...roleCount.entries()]
       .map(([value, count]) => ({ value, label: value, count }))
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
-    const projects = [...projectCount.values()].sort((a, b) => a.label.localeCompare(b.label));
-    const modules = [...moduleCount.values()].sort((a, b) => a.label.localeCompare(b.label));
+    const lastAddedBuckets: FilterOption[] = [...lastAddedCount.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => (
+        a.value === "Unknown" ? 1 :
+        b.value === "Unknown" ? -1 :
+        b.value.localeCompare(a.value)
+      ));
 
-    return { roles, projects, modules };
+    return { roles, lastAddedBuckets };
   }, [graphQuery.data]);
-  const filteredProjectOptions = useMemo(() => {
-    const query = projectQuery.trim().toLowerCase();
-    if (!query) return filterOptions.projects;
-    return filterOptions.projects.filter((option) => (
-      option.label.toLowerCase().includes(query) || option.value.toLowerCase().includes(query)
-    ));
-  }, [filterOptions.projects, projectQuery]);
-  const filteredModuleOptions = useMemo(() => {
-    const query = moduleQuery.trim().toLowerCase();
-    if (!query) return filterOptions.modules;
-    return filterOptions.modules.filter((option) => (
-      option.label.toLowerCase().includes(query) || option.value.toLowerCase().includes(query)
-    ));
-  }, [filterOptions.modules, moduleQuery]);
-  const hasActiveFilters = filters.roles.length > 0 || filters.modules.length > 0;
+  const hasActiveFilters = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.individualAccess !== "all";
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -1028,8 +1006,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 <button
                   onClick={() => {
                     setFilters(DEFAULT_FILTERS);
-                    setProjectQuery("");
-                    setModuleQuery("");
                   }}
                   className="text-[10px] px-2 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
                 >
@@ -1037,90 +1013,52 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 </button>
               )}
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
-              <SliderControl
-                label="Role"
-                value={layoutWeights.role}
-                onChange={(value) => scheduleLayoutWeightUpdate("role", value)}
-              />
-              <SliderControl
-                label="Access"
-                value={layoutWeights.access}
-                onChange={(value) => scheduleLayoutWeightUpdate("access", value)}
-              />
-              <SliderControl
-                label="Modules"
-                value={layoutWeights.module}
-                onChange={(value) => scheduleLayoutWeightUpdate("module", value)}
-              />
-              <SliderControl
-                label="Project"
-                value={layoutWeights.project}
-                onChange={(value) => scheduleLayoutWeightUpdate("project", value)}
-              />
+            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+              <SliderControl label="Role" value={layoutWeights.role} onChange={(v) => scheduleLayoutWeightUpdate("role", v)} />
+              <SliderControl label="Access" value={layoutWeights.access} onChange={(v) => scheduleLayoutWeightUpdate("access", v)} />
+              <SliderControl label="Last Added" value={layoutWeights.lastAdded} onChange={(v) => scheduleLayoutWeightUpdate("lastAdded", v)} />
+              <SliderControl label="Project" value={layoutWeights.project} onChange={(v) => scheduleLayoutWeightUpdate("project", v)} />
+              <SliderControl label="Indiv. Access" value={layoutWeights.individualAccess} onChange={(v) => scheduleLayoutWeightUpdate("individualAccess", v)} />
+              <SliderControl label="User Name" value={layoutWeights.userName} onChange={(v) => scheduleLayoutWeightUpdate("userName", v)} />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
               <FilterMenu
                 label="Roles"
                 options={filterOptions.roles}
                 selected={filters.roles}
                 onToggle={(value) => setFilters((current) => ({ ...current, roles: toggleValue(current.roles, value) }))}
-                maxVisible={8}
+                maxVisible={Infinity}
               />
               <FilterMenu
-                label="Modules"
-                options={filteredModuleOptions}
-                selected={filters.modules}
-                onToggle={(value) => setFilters((current) => ({ ...current, modules: toggleValue(current.modules, value) }))}
-                query={moduleQuery}
-                onQueryChange={setModuleQuery}
-                placeholder="Search modules"
-                maxVisible={6}
+                label="Last Added"
+                options={filterOptions.lastAddedBuckets}
+                selected={filters.lastAddedBuckets}
+                onToggle={(value) => setFilters((current) => ({ ...current, lastAddedBuckets: toggleValue(current.lastAddedBuckets, value) }))}
+                maxVisible={Infinity}
+              />
+              <ToggleFilterControl
+                label="Admin Access"
+                value={filters.adminAccess}
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "admin", label: "Admin only" },
+                  { value: "non-admin", label: "Non-admin" },
+                ]}
+                onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
+              />
+              <ToggleFilterControl
+                label="Individual Access"
+                value={filters.individualAccess}
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "configured", label: "Has config" },
+                  { value: "bare", label: "Bare member" },
+                ]}
+                onChange={(value) => setFilters((current) => ({ ...current, individualAccess: value as GraphFilters["individualAccess"] }))}
               />
             </div>
           </div>
         </div>
-
-        {/*
-        {uniqueRoles.length > 0 && (
-          <div className="absolute top-3 left-3 z-10 max-w-[calc(100%-200px)]">
-            <div className="flex flex-wrap gap-1 items-center bg-white/85 backdrop-blur-sm border border-gray-200 rounded-xl px-2.5 py-1.5 shadow-sm">
-              <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide mr-0.5 shrink-0">Role:</span>
-              {filterRole && (
-                <button
-                  onClick={() => setFilterRoleAndDirty(null)}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 border border-gray-200 hover:bg-gray-200 transition-colors shrink-0"
-                >
-                  All ✕
-                </button>
-              )}
-              {uniqueRoles.slice(0, 8).map(([role, count]) => (
-                <button
-                  key={role}
-                  onClick={() => setFilterRoleAndDirty(filterRole === role ? null : role)}
-                  className={cn(
-                    "text-[10px] px-2 py-0.5 rounded-full border transition-colors shrink-0",
-                    filterRole === role
-                      ? "bg-violet-600 text-white border-violet-600 shadow-sm"
-                      : "bg-white text-gray-600 border-gray-200 hover:border-gray-400 hover:text-gray-900",
-                  )}
-                >
-                  {role} <span className={filterRole === role ? "opacity-70" : "text-gray-400"}>{count}</span>
-                </button>
-              ))}
-              {uniqueRoles.length > 8 && !filterRole && (
-                <span className="text-[10px] text-gray-400 shrink-0">+{uniqueRoles.length - 8} more</span>
-              )}
-              {filterRole && (
-                <span className="text-[10px] text-violet-600 font-semibold shrink-0 ml-1">
-                  {nodesRef.current.filter((n) => (n as UserNode).roles.includes(filterRole)).length} nodes
-                </span>
-              )}
-            </div>
-          </div>
-        )}
-
-        */}
 
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
@@ -1160,9 +1098,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            hoveredNode.kind === "user" 
-              ? <UserTooltip node={hoveredNode as UserNode} />
-              : <HubTooltip node={hoveredNode as HubNode} />
+            <UserTooltip node={hoveredNode} />
           )}
         </div>
       </div>
@@ -1175,12 +1111,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             selectedNodeRef.current = null;
             markGraphDirty();
           }}
-          onViewProfile={selectedNode.node.kind === "user" ? () => {
-            onSelectUser?.((selectedNode.node as UserNode).email);
+          onViewProfile={() => {
+            onSelectUser?.(selectedNode.node.email);
             setSelectedNode(null);
             selectedNodeRef.current = null;
             markGraphDirty();
-          } : undefined}
+          }}
         />
       )}
     </div>
@@ -1286,6 +1222,42 @@ function FilterMenu({
   );
 }
 
+function ToggleFilterControl({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: string;
+  options: { value: string; label: string }[];
+  onChange: (value: string) => void;
+}) {
+  return (
+    <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2">
+      <div className="mb-1.5">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+      </div>
+      <div className="flex gap-1">
+        {options.map((option) => (
+          <button
+            key={option.value}
+            onClick={() => onChange(option.value)}
+            className={cn(
+              "flex-1 rounded-md border px-1.5 py-1 text-[10px] font-medium transition-colors",
+              value === option.value
+                ? "border-gray-900 bg-gray-900 text-white"
+                : "border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
+            )}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function ControlButton({
   active,
   onClick,
@@ -1336,15 +1308,7 @@ function UserTooltip({ node }: { node: UserNode }) {
         </div>
       )}
       {node.isAdmin && <p className="text-[9px] text-emerald-600 font-semibold">Admin Access</p>}
-    </div>
-  );
-}
-
-function HubTooltip({ node }: { node: HubNode }) {
-  return (
-    <div className="space-y-1.5">
-      <p className="text-xs font-bold text-gray-900 leading-tight">{node.label}</p>
-      <p className="text-[9px] font-semibold uppercase tracking-wider text-gray-400">{node.kind}</p>
+      {node.individualAccess && <p className="text-[9px] text-sky-600 font-semibold">Individual Access Config</p>}
     </div>
   );
 }
@@ -1359,92 +1323,77 @@ function SidePanel({
   onViewProfile?: () => void;
 }) {
   const node = state.node;
-  const title = node.kind === "user" ? (node.name || node.email) : node.label;
+  const title = node.name || node.email;
 
   return (
     <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
       <div className="flex items-center justify-between">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
-          {node.kind !== "user" && (
-            <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">{node.kind}</p>
-          )}
         </div>
         <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
       </div>
 
-      {node.kind === "user" ? (
-        <div className="space-y-3">
-          <p className="text-[11px] text-gray-500 break-all">{node.email}</p>
-          {!node.found && (
-            <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
-              Not yet synced to ACC.
-            </p>
-          )}
-          {node.found && node.hasNoProjects && (
-            <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
-              Synced but no projects assigned.
-            </p>
-          )}
-          {node.projectCount > 0 && (
-            <p className="text-[10px] text-gray-400 italic">
-              {node.projectName ?? `In ${node.projectCount} project${node.projectCount > 1 ? "s" : ""}`}
-            </p>
-          )}
-          <div className="flex flex-wrap gap-1.5">
-            {node.isAdmin && <Tag color="emerald">Admin Access</Tag>}
-          </div>
-          {node.roles.length > 0 && (
-            <div>
-              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
-              <div className="flex flex-wrap gap-1">
-                {node.roles.map((role) => (
-                  <span
-                    key={role}
-                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
-                  >
-                    {role}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          {node.modules.length > 0 && (
-            <div>
-              <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
-              <div className="flex flex-wrap gap-1">
-                {node.modules.map((moduleName) => (
-                  <span
-                    key={moduleName}
-                    className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
-                  >
-                    {moduleLabel(moduleName)}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
-          
-          {onViewProfile && (
-            <button
-              onClick={onViewProfile}
-              className="mt-2 w-full py-2 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-            >
-              View Full Profile
-            </button>
-          )}
+      <div className="space-y-3">
+        <p className="text-[11px] text-gray-500 break-all">{node.email}</p>
+        {!node.found && (
+          <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
+            Not yet synced to ACC.
+          </p>
+        )}
+        {node.found && node.hasNoProjects && (
+          <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
+            Synced but no projects assigned.
+          </p>
+        )}
+        {node.projectCount > 0 && (
+          <p className="text-[10px] text-gray-400 italic">
+            {node.projectName ?? `In ${node.projectCount} project${node.projectCount > 1 ? "s" : ""}`}
+          </p>
+        )}
+        <div className="flex flex-wrap gap-1.5">
+          {node.isAdmin && <Tag color="emerald">Admin Access</Tag>}
         </div>
-      ) : (
-        <div className="space-y-3">
-          <p className="text-[11px] text-gray-500 italic">Connection Hub</p>
-          <div className="p-3 bg-gray-50 rounded-lg border border-gray-100">
-            <p className="text-[11px] text-gray-600 leading-relaxed">
-              This node represents the <strong>{node.label}</strong> {node.kind}. 
-              All connected users share this {node.kind}.
-            </p>
+        {node.roles.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
+            <div className="flex flex-wrap gap-1">
+              {node.roles.map((role) => (
+                <span
+                  key={role}
+                  className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
+                >
+                  {role}
+                </span>
+              ))}
+            </div>
           </div>
-        </div>
-      )}
+        )}
+        {node.modules.length > 0 && (
+          <div>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
+            <div className="flex flex-wrap gap-1">
+              {node.modules.map((moduleName) => (
+                <span
+                  key={moduleName}
+                  className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
+                >
+                  {moduleLabel(moduleName)}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {onViewProfile && (
+          <button
+            onClick={onViewProfile}
+            className="mt-2 w-full py-2 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
+          >
+            View Full Profile
+          </button>
+        )}
+      </div>
     </div>
   );
 }

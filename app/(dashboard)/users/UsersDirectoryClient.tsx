@@ -847,10 +847,9 @@ export function UsersDirectoryClient() {
 
   return (
     <div className={cn(
-      "max-w-[1600px] mx-auto",
       activeTab === "graph"
-        ? "flex flex-col h-full"
-        : "p-6 space-y-4 animate-fade-up",
+        ? "flex h-full w-full flex-col"
+        : "mx-auto max-w-[1600px] p-6 space-y-4 animate-fade-up",
     )}>
       {/* Header */}
       <div className={cn("flex items-center justify-between shrink-0", activeTab === "graph" && "px-6 pt-6")}>
@@ -973,7 +972,7 @@ export function UsersDirectoryClient() {
 
       {/* ACC Users Graph tab */}
       {activeTab === "graph" && (
-        <div className="flex-1 min-h-0 px-6 pb-6 pt-4">
+        <div className="flex-1 min-h-0 pt-4">
           <AccUsersGraph
             users={mergedAccUsers}
             onSelectUser={(email) => {

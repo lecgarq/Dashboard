@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-04-23T22:27:49.926Z"
+status: in_progress
+last_updated: "2026-04-27T17:53:24.998Z"
 progress:
   total_phases: 4
   completed_phases: 3
@@ -15,9 +15,11 @@ progress:
 
 ## Current Position
 
-Phase: 8 (Graph Layout Cache)
+Phase: 9 (ACC Users Graph v2)
 Plan: 3 of 3 — ready to execute
-Status: In progress
+Status: Implementation complete; manual graph UI verification remains
+Plan override: 1 of 1 complete
+Last activity override: 2026-04-27 - 09-01 complete (instance-only graph topology, six-property layout, ResizeObserver, role/admin/individual-access filters)
 Last activity: 2026-04-23 — 08-02 complete (tRPC getGraphLayout/saveGraphLayout/invalidateGraphLayout + AccUsersGraph cache integration + Refresh Layout button)
 
 Progress: [█████████░] 75% (Phase 2 at 5/6; Phase 6 at 4/4; Phase 7 at 3/3; Phase 8 at 2/3 plans complete)
