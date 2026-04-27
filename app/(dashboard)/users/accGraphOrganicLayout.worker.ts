@@ -174,13 +174,20 @@ function step(): void {
   const nodeCount = nodeIds.length;
   const fx = new Float32Array(nodeCount);
   const fy = new Float32Array(nodeCount);
-  const attraction = 0.0008 + clamp01(settings.attraction) * 0.022;
-  const anchorPull = 0.002 + clamp01(settings.attraction) * 0.022;
-  const repulsion = 0.00005 + clamp01(settings.repulsion) * 0.0014;
-  const collisionRadius = 0.010 + clamp01(settings.repulsion) * 0.048;
-  const damping = 0.93 - clamp01(settings.damping) * 0.50;
-  const maxVelocity = 0.003 + clamp01(settings.motion) * 0.048;
-  const restLength = 0.028 + (1 - clamp01(settings.attraction)) * 0.120;
+  // attraction=0 → free-floating nodes; attraction=100 → pinned to anchors
+  const anchorPull = 0.001 + clamp01(settings.attraction) * 0.032;
+  // repulsion slider drives collision radius — geometric, predictable separation
+  // repulsion=0: nodes nearly touch (r≈0.005); repulsion=100: nodes pushed far apart (r≈0.077)
+  const collisionRadius = 0.005 + clamp01(settings.repulsion) * 0.072;
+  // small inverse-square background repulsion to prevent long-range collapse
+  const repulsion = 0.000002 + clamp01(settings.repulsion) * 0.000040;
+  // damping=0 → perpetual motion; damping=100 → instant settle
+  const damping = 0.89 - clamp01(settings.damping) * 0.57;
+  // motion=0 → near-frozen; motion=100 → fast/energetic
+  const maxVelocity = 0.001 + clamp01(settings.motion) * 0.045;
+  // spring rest length: short at high attraction (tight clusters), long at low attraction (loose)
+  const attraction = 0.0003 + clamp01(settings.attraction) * 0.030;
+  const restLength = 0.018 + (1 - clamp01(settings.attraction)) * 0.155;
   const cellSize = Math.max(collisionRadius * 2.5, 0.035);
 
   const grid = buildSpatialGrid(cellSize);
@@ -208,7 +215,7 @@ function step(): void {
           }
           const dist = Math.sqrt(dist2);
           const repel = repulsion / Math.max(0.00001, dist2);
-          const collision = dist < collisionRadius ? (collisionRadius - dist) * 0.018 : 0;
+          const collision = dist < collisionRadius ? (collisionRadius - dist) * 0.07 : 0;
           const force = repel + collision;
           const nx = dx / dist;
           const ny = dy / dist;
@@ -289,7 +296,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "settings") {
     settings = message.settings;
-    wakeSimulation(0.002 + clamp01(settings.motion) * 0.006);
+    wakeSimulation(0.008 + clamp01(settings.motion) * 0.018);
     return;
   }
 
@@ -325,7 +332,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     visibleIndices = message.visibleIndices;
     rebuildVisibleMask();
     rebuildLinks();
-    wakeSimulation(0.004 + clamp01(settings.motion) * 0.006);
+    wakeSimulation(0.010 + clamp01(settings.motion) * 0.018);
     return;
   }
 

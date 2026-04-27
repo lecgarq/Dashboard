@@ -193,69 +193,33 @@ function averageFeatureAnchor(values: readonly string[], salt: string): { x: num
 
 function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeights): Float32Array {
   const positions = new Float32Array(nodes.length * 2);
-  const maxWeight = Math.max(1,
-    weights.role + weights.access + weights.lastAdded + weights.project + weights.modules + weights.userName
-  );
-
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    // All nodes are "user" kind now — no hub branch needed
+
+    const wp = weights.project / 100;
+    const wr = weights.role / 100;
+    const wa = weights.access / 100;
+    const wl = weights.lastAdded / 100;
+    const wm = weights.modules / 100;
+    const wu = weights.userName / 100;
 
     const project = featureAnchor(node.projectName || node.projectId || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
-    const access = node.isAdmin
-      ? { x: -0.42, y: -0.28 }
-      : { x: 0.32, y: 0.22 };
-    const lastAddedAnchor = node.lastAddedBucket
-      ? featureAnchor(node.lastAddedBucket, "lastAdded")
-      : { x: 0, y: 0 };
+    const access = node.isAdmin ? { x: -0.45, y: -0.30 } : { x: 0.40, y: 0.26 };
+    const lastAddedAnchor = node.lastAddedBucket ? featureAnchor(node.lastAddedBucket, "lastAdded") : { x: 0, y: 0 };
     const modulesAnchor = averageFeatureAnchor(node.modules ?? [], "module");
-    const userNameAnchor = node.name
-      ? featureAnchor(node.name.toLowerCase(), "userName")
-      : { x: 0, y: 0 };
+    const userNameAnchor = node.name ? featureAnchor(node.name.toLowerCase(), "userName") : { x: 0, y: 0 };
     const jitter = featureAnchor(node.id, "instance");
 
-    let x = 0;
-    let y = 0;
-    let usedWeight = 0;
+    let x = project.x * wp + access.x * wa;
+    let y = project.y * wp + access.y * wa;
+    if (roles.weight > 0) { x += roles.x * wr; y += roles.y * wr; }
+    if (node.lastAddedBucket) { x += lastAddedAnchor.x * wl; y += lastAddedAnchor.y * wl; }
+    if (modulesAnchor.weight > 0) { x += modulesAnchor.x * wm; y += modulesAnchor.y * wm; }
+    if (node.name) { x += userNameAnchor.x * wu; y += userNameAnchor.y * wu; }
 
-    if (weights.project > 0) {
-      x += project.x * weights.project;
-      y += project.y * weights.project;
-      usedWeight += weights.project;
-    }
-    if (weights.role > 0 && roles.weight > 0) {
-      x += roles.x * weights.role;
-      y += roles.y * weights.role;
-      usedWeight += weights.role;
-    }
-    if (weights.lastAdded > 0 && node.lastAddedBucket) {
-      x += lastAddedAnchor.x * weights.lastAdded;
-      y += lastAddedAnchor.y * weights.lastAdded;
-      usedWeight += weights.lastAdded;
-    }
-    if (weights.access > 0) {
-      x += access.x * weights.access;
-      y += access.y * weights.access;
-      usedWeight += weights.access;
-    }
-    if (weights.modules > 0 && modulesAnchor.weight > 0) {
-      x += modulesAnchor.x * weights.modules;
-      y += modulesAnchor.y * weights.modules;
-      usedWeight += weights.modules;
-    }
-    if (weights.userName > 0 && node.name) {
-      x += userNameAnchor.x * weights.userName;
-      y += userNameAnchor.y * weights.userName;
-      usedWeight += weights.userName;
-    }
-
-    const normalizer = Math.max(1, Math.min(maxWeight, usedWeight));
-    x = x / normalizer;
-    y = y / normalizer;
-
-    positions[i * 2] = 0.5 + x + jitter.x * 0.08;
-    positions[i * 2 + 1] = 0.5 + y + jitter.y * 0.08;
+    positions[i * 2] = 0.5 + x + jitter.x * 0.05;
+    positions[i * 2 + 1] = 0.5 + y + jitter.y * 0.05;
   }
 
   return normalizePositions(positions);
@@ -474,7 +438,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const nextWeights = { ...layoutWeightsRef.current, [key]: value };
     layoutWeightsRef.current = nextWeights;
     setLayoutWeights(nextWeights);
-    requestAnimationFrame(() => restartOrganicLayout("restart"));
+    requestAnimationFrame(() => restartOrganicLayout("retarget"));
   }, [restartOrganicLayout]);
 
   const schedulePhysicsSettingUpdate = useCallback((key: keyof PhysicsSettings, value: number) => {
