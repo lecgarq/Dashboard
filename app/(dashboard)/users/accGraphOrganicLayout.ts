@@ -81,6 +81,26 @@ function averageFeatureAnchor(values: readonly string[], salt: string): { x: num
   return { x: x / values.length, y: y / values.length, weight: 1 };
 }
 
+function clampUnit(value: number): number {
+  return Math.max(0.04, Math.min(0.96, value));
+}
+
+function weight01(value: number): number {
+  return Math.max(0, Math.min(100, value)) / 100;
+}
+
+function neutralPackAnchor(index: number, count: number): { x: number; y: number } {
+  if (count <= 1) return { x: 0, y: 0 };
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  const t = (index + 0.5) / count;
+  const radius = Math.sqrt(t) * 0.13;
+  const angle = index * goldenAngle;
+  return {
+    x: Math.cos(angle) * radius,
+    y: Math.sin(angle) * radius,
+  };
+}
+
 export function normalizePositions(positions: Float32Array): Float32Array {
   if (!positions.length) return positions;
 
@@ -124,19 +144,15 @@ export function computeCentroid(positions: Float32Array): { x: number; y: number
 
 export function computeSemanticSeedPositions(nodes: readonly OrganicLayoutNode[], weights: LayoutWeights): Float32Array {
   const positions = new Float32Array(nodes.length * 2);
+  const wp = weight01(weights.project);
+  const wr = weight01(weights.role);
+  const wa = weight01(weights.access);
+  const wl = weight01(weights.lastAdded);
+  const wm = weight01(weights.modules);
+  const wu = weight01(weights.userName);
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-
-    // Each slider is scaled to [0,1] and contributes independently — no normalizer divide.
-    // Slider 0 → zero contribution; slider 100 → full anchor contribution.
-    // normalizePositions() maps the result to [0.05,0.95] so absolute scale doesn't matter.
-    const wp = weights.project / 100;
-    const wr = weights.role / 100;
-    const wa = weights.access / 100;
-    const wl = weights.lastAdded / 100;
-    const wm = weights.modules / 100;
-    const wu = weights.userName / 100;
 
     const project = featureAnchor(node.projectName || node.projectId || "no-project", "project");
     const roles = averageFeatureAnchor(node.roles, "role");
@@ -144,21 +160,40 @@ export function computeSemanticSeedPositions(nodes: readonly OrganicLayoutNode[]
     const lastAddedAnchor = node.lastAddedBucket ? featureAnchor(node.lastAddedBucket, "lastAdded") : { x: 0, y: 0 };
     const modulesAnchor = averageFeatureAnchor(node.modules ?? [], "module");
     const userNameAnchor = node.name ? featureAnchor(node.name.toLowerCase(), "userName") : { x: 0, y: 0 };
+    const compact = neutralPackAnchor(i, nodes.length);
     const jitter = featureAnchor(node.id, "instance");
 
-    let x = project.x * wp + access.x * wa;
-    let y = project.y * wp + access.y * wa;
+    let x = 0;
+    let y = 0;
+    let semanticWeight = 0;
+    const addAnchor = (anchor: { x: number; y: number }, weight: number) => {
+      if (weight <= 0) return;
+      x += anchor.x * weight;
+      y += anchor.y * weight;
+      semanticWeight += weight;
+    };
 
-    if (roles.weight > 0) { x += roles.x * wr; y += roles.y * wr; }
-    if (node.lastAddedBucket) { x += lastAddedAnchor.x * wl; y += lastAddedAnchor.y * wl; }
-    if (modulesAnchor.weight > 0) { x += modulesAnchor.x * wm; y += modulesAnchor.y * wm; }
-    if (node.name) { x += userNameAnchor.x * wu; y += userNameAnchor.y * wu; }
+    addAnchor(project, wp);
+    addAnchor(access, wa);
+    if (roles.weight > 0) addAnchor(roles, wr);
+    if (node.lastAddedBucket) addAnchor(lastAddedAnchor, wl);
+    if (modulesAnchor.weight > 0) addAnchor(modulesAnchor, wm);
+    if (node.name) addAnchor(userNameAnchor, wu);
 
-    positions[i * 2] = 0.5 + x + jitter.x * 0.05;
-    positions[i * 2 + 1] = 0.5 + y + jitter.y * 0.05;
+    if (semanticWeight < 0.01) {
+      positions[i * 2] = clampUnit(0.5 + compact.x + jitter.x * 0.012);
+      positions[i * 2 + 1] = clampUnit(0.5 + compact.y + jitter.y * 0.012);
+      continue;
+    }
+
+    const influence = Math.min(1, semanticWeight);
+    const anchorX = (x / semanticWeight) * 0.86;
+    const anchorY = (y / semanticWeight) * 0.86;
+    positions[i * 2] = clampUnit(0.5 + compact.x * (1 - influence) + anchorX * influence + jitter.x * 0.014);
+    positions[i * 2 + 1] = clampUnit(0.5 + compact.y * (1 - influence) + anchorY * influence + jitter.y * 0.014);
   }
 
-  return normalizePositions(positions);
+  return positions;
 }
 
 function addHashedFeature(vector: Float32Array, offset: number, value: string, weight: number): void {
@@ -186,20 +221,37 @@ export function computeSemanticVectors(
   weights: LayoutWeights,
 ): { vectors: Float32Array; vectorSize: number } {
   const vectors = new Float32Array(nodes.length * SEMANTIC_VECTOR_SIZE);
+  const normalizedWeights = {
+    role: weight01(weights.role),
+    access: weight01(weights.access),
+    lastAdded: weight01(weights.lastAdded),
+    project: weight01(weights.project),
+    modules: weight01(weights.modules),
+    userName: weight01(weights.userName),
+  };
+  const vectorInfluence = Math.min(
+    1,
+    normalizedWeights.role +
+      normalizedWeights.access +
+      normalizedWeights.lastAdded +
+      normalizedWeights.project +
+      normalizedWeights.modules +
+      normalizedWeights.userName,
+  );
 
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
     const offset = i * SEMANTIC_VECTOR_SIZE;
 
-    addTextFeatures(vectors, offset, node.name, weights.userName, "name");
-    addTextFeatures(vectors, offset, node.projectName || node.projectId, weights.project, "project");
+    addTextFeatures(vectors, offset, node.name, normalizedWeights.userName, "name");
+    addTextFeatures(vectors, offset, node.projectName || node.projectId, normalizedWeights.project, "project");
     for (const role of node.roles) {
-      addTextFeatures(vectors, offset, role, weights.role, "role");
+      addTextFeatures(vectors, offset, role, normalizedWeights.role, "role");
     }
-    addHashedFeature(vectors, offset, node.isAdmin ? "access:admin" : "access:member", weights.access);
-    addHashedFeature(vectors, offset, `last-added:${node.lastAddedBucket || "unknown"}`, weights.lastAdded);
+    addHashedFeature(vectors, offset, node.isAdmin ? "access:admin" : "access:member", normalizedWeights.access);
+    addHashedFeature(vectors, offset, `last-added:${node.lastAddedBucket || "unknown"}`, normalizedWeights.lastAdded);
     for (const mod of node.modules ?? []) {
-      addTextFeatures(vectors, offset, mod, weights.modules, "module");
+      addTextFeatures(vectors, offset, mod, normalizedWeights.modules, "module");
     }
 
     let magnitude = 0;
@@ -209,7 +261,7 @@ export function computeSemanticVectors(
     }
     const scale = magnitude > 0 ? 1 / Math.sqrt(magnitude) : 0;
     for (let j = 0; j < SEMANTIC_VECTOR_SIZE; j++) {
-      vectors[offset + j] *= scale;
+      vectors[offset + j] *= scale * vectorInfluence;
     }
   }
 

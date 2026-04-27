@@ -27,6 +27,7 @@ type WorkerRequest =
       vectors: FloatBuffer;
       vectorSize: number;
       visibleIndices: UintBuffer;
+      changeId?: number;
     }
   | { type: "visibility"; session: number; visibleIndices: UintBuffer }
   | { type: "settings"; settings: PhysicsSettings }
@@ -62,6 +63,14 @@ let tickCounter = 0;
 let draggedIndex = -1;
 let draggedX = 0;
 let draggedY = 0;
+let simulationHeat = 0.15;
+let currentChangeId: number | undefined;
+let retargetCount = 0;
+let linkRebuildCount = 0;
+let pendingRetarget: Extract<WorkerRequest, { type: "retarget" }> | null = null;
+let retargetTimer: ReturnType<typeof setTimeout> | null = null;
+let linkRebuildTimer: ReturnType<typeof setTimeout> | null = null;
+let linkBuildGeneration = 0;
 
 const workerSelf = self as unknown as WorkerGlobal;
 
@@ -104,38 +113,7 @@ function insertTopNeighbor(
   topIndices[slot] = candidate;
 }
 
-function rebuildLinks(): void {
-  links = [];
-  const count = visibleIndices.length;
-  if (!count || !vectorSize || vectors.length !== nodeIds.length * vectorSize) return;
-
-  const seen = new Set<string>();
-  for (let aOffset = 0; aOffset < count; aOffset++) {
-    const a = visibleIndices[aOffset];
-    const topIndices = new Int32Array(NEIGHBOR_COUNT);
-    const topScores = new Float32Array(NEIGHBOR_COUNT);
-    topIndices.fill(-1);
-    topScores.fill(-Infinity);
-
-    for (let bOffset = 0; bOffset < count; bOffset++) {
-      if (aOffset === bOffset) continue;
-      const b = visibleIndices[bOffset];
-      const score = similarity(a, b);
-      insertTopNeighbor(topIndices, topScores, b, score);
-    }
-
-    for (let i = 0; i < NEIGHBOR_COUNT; i++) {
-      const b = topIndices[i];
-      if (b < 0) continue;
-      const source = Math.min(a, b);
-      const target = Math.max(a, b);
-      const key = `${source}:${target}`;
-      if (seen.has(key)) continue;
-      seen.add(key);
-      links.push({ source, target, weight: 0.12 + Math.max(0, topScores[i]) * 0.88 });
-    }
-  }
-
+function postLinks(): void {
   const linkSources = new Int32Array(links.map(l => l.source));
   const linkTargets = new Int32Array(links.map(l => l.target));
   workerSelf.postMessage(
@@ -144,7 +122,74 @@ function rebuildLinks(): void {
   );
 }
 
+function scheduleLinkRebuild(delayMs: number): void {
+  linkBuildGeneration++;
+  if (linkRebuildTimer) clearTimeout(linkRebuildTimer);
+  const generation = linkBuildGeneration;
+  linkRebuildTimer = setTimeout(() => {
+    linkRebuildTimer = null;
+    rebuildLinksChunked(generation);
+  }, delayMs);
+}
+
+function rebuildLinksChunked(generation: number): void {
+  const count = visibleIndices.length;
+  if (!count || !vectorSize || vectors.length !== nodeIds.length * vectorSize) {
+    links = [];
+    linkRebuildCount++;
+    postLinks();
+    return;
+  }
+
+  const nextLinks: SimilarityLink[] = [];
+  const seen = new Set<string>();
+  let aOffset = 0;
+  const batchSize = count > 900 ? 10 : count > 450 ? 18 : 32;
+
+  const processBatch = () => {
+    if (generation !== linkBuildGeneration) return;
+    const end = Math.min(count, aOffset + batchSize);
+    for (; aOffset < end; aOffset++) {
+      const a = visibleIndices[aOffset];
+      const topIndices = new Int32Array(NEIGHBOR_COUNT);
+      const topScores = new Float32Array(NEIGHBOR_COUNT);
+      topIndices.fill(-1);
+      topScores.fill(-Infinity);
+
+      for (let bOffset = 0; bOffset < count; bOffset++) {
+        if (aOffset === bOffset) continue;
+        const b = visibleIndices[bOffset];
+        const score = similarity(a, b);
+        insertTopNeighbor(topIndices, topScores, b, score);
+      }
+
+      for (let i = 0; i < NEIGHBOR_COUNT; i++) {
+        const b = topIndices[i];
+        if (b < 0) continue;
+        const source = Math.min(a, b);
+        const target = Math.max(a, b);
+        const key = `${source}:${target}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        nextLinks.push({ source, target, weight: 0.08 + Math.max(0, topScores[i]) * 0.92 });
+      }
+    }
+
+    if (aOffset < count) {
+      setTimeout(processBatch, 0);
+      return;
+    }
+
+    links = nextLinks;
+    linkRebuildCount++;
+    postLinks();
+  };
+
+  processBatch();
+}
+
 function wakeSimulation(amount: number): void {
+  simulationHeat = Math.max(simulationHeat, Math.min(1, amount * 12));
   if (!velocities.length) return;
   const clampedAmount = Math.max(0.001, Math.min(0.06, amount));
   for (let offset = 0; offset < visibleIndices.length; offset++) {
@@ -153,6 +198,66 @@ function wakeSimulation(amount: number): void {
     velocities[index * 2] += Math.cos(angle) * clampedAmount;
     velocities[index * 2 + 1] += Math.sin(angle) * clampedAmount;
   }
+}
+
+function pullVisiblePositionsTowardAnchors(strength: number): void {
+  if (!positions.length || positions.length !== anchors.length) return;
+  for (let offset = 0; offset < visibleIndices.length; offset++) {
+    const index = visibleIndices[offset];
+    if (index === draggedIndex) continue;
+    const dx = anchors[index * 2] - positions[index * 2];
+    const dy = anchors[index * 2 + 1] - positions[index * 2 + 1];
+    positions[index * 2] += dx * strength;
+    positions[index * 2 + 1] += dy * strength;
+    velocities[index * 2] += dx * strength * 0.7;
+    velocities[index * 2 + 1] += dy * strength * 0.7;
+  }
+}
+
+function postTickSnapshot(averageVelocity: number): void {
+  const snapshot = new Float32Array(positions);
+  workerSelf.postMessage(
+    {
+      type: "tick",
+      session,
+      positions: snapshot,
+      averageVelocity,
+      linkCount: links.length,
+      changeId: currentChangeId,
+      diagnostics: {
+        retargetCount,
+        linkRebuildCount,
+      },
+    },
+    [snapshot.buffer as ArrayBuffer],
+  );
+}
+
+function applyRetarget(message: Extract<WorkerRequest, { type: "retarget" }>): void {
+  if (message.session !== session) return;
+  anchors = message.anchors;
+  vectors = message.vectors;
+  vectorSize = message.vectorSize;
+  visibleIndices = message.visibleIndices;
+  currentChangeId = message.changeId;
+  retargetCount++;
+  rebuildVisibleMask();
+  pullVisiblePositionsTowardAnchors(0.18 + clamp01(settings.attraction) * 0.12);
+  wakeSimulation(0.028 + clamp01(settings.motion) * 0.04);
+  postTickSnapshot(0);
+  scheduleLinkRebuild(90);
+  ensureTimer();
+}
+
+function scheduleRetarget(message: Extract<WorkerRequest, { type: "retarget" }>): void {
+  pendingRetarget = message;
+  if (retargetTimer) return;
+  retargetTimer = setTimeout(() => {
+    retargetTimer = null;
+    const next = pendingRetarget;
+    pendingRetarget = null;
+    if (next) applyRetarget(next);
+  }, 0);
 }
 
 function ensureTimer(): void {
@@ -187,19 +292,24 @@ function step(): void {
   const fx = new Float32Array(nodeCount);
   const fy = new Float32Array(nodeCount);
   // attraction=0 → free-floating nodes; attraction=100 → pinned to anchors
-  const anchorPull = 0.001 + clamp01(settings.attraction) * 0.10;
+  const attraction01 = clamp01(settings.attraction);
+  const repulsion01 = clamp01(settings.repulsion);
+  const damping01 = clamp01(settings.damping);
+  const motion01 = clamp01(settings.motion);
+  simulationHeat = Math.max(simulationHeat * 0.985, motion01 * 0.015);
+  const anchorPull = 0.002 + attraction01 * 0.13;
   // repulsion slider drives collision radius — geometric, predictable separation
-  // repulsion=0: nodes nearly touch (r≈0.005); repulsion=100: nodes pushed far apart (r≈0.20)
-  const collisionRadius = 0.005 + clamp01(settings.repulsion) * 0.195;
+  // repulsion=0: nodes nearly touch; repulsion=100: nodes are pushed farther apart.
+  const collisionRadius = 0.012 + repulsion01 * 0.17;
   // inverse-square background repulsion to prevent long-range collapse
-  const repulsion = 0.000002 + clamp01(settings.repulsion) * 0.000150;
+  const repulsion = 0.000002 + repulsion01 * 0.000115;
   // damping=0 → perpetual motion; damping=100 → instant settle
-  const damping = 0.95 - clamp01(settings.damping) * 0.70;
+  const damping = 0.96 - damping01 * 0.72;
   // motion=0 → near-frozen; motion=100 → fast/energetic
-  const maxVelocity = 0.001 + clamp01(settings.motion) * 0.12;
+  const maxVelocity = 0.006 + motion01 * 0.074 + simulationHeat * 0.028;
   // spring rest length: short at high attraction (tight clusters), long at low attraction (loose)
-  const attraction = 0.0003 + clamp01(settings.attraction) * 0.08;
-  const restLength = 0.015 + (1 - clamp01(settings.attraction)) * 0.28;
+  const attraction = 0.001 + attraction01 * 0.075;
+  const restLength = 0.035 + (1 - attraction01) * 0.18;
   const cellSize = Math.max(collisionRadius * 2.5, 0.035);
 
   const grid = buildSpatialGrid(cellSize);
@@ -261,12 +371,13 @@ function step(): void {
   }
 
   // Ambient drift — keeps the graph organically alive at rest
+  const drift = (0.000012 + motion01 * 0.00016) * (0.35 + simulationHeat);
   const t = tickCounter * 0.0008;
   for (let offset = 0; offset < visibleIndices.length; offset++) {
     const i = visibleIndices[offset];
     const phase = (i * 7.391) % (Math.PI * 2);
-    fx[i] += Math.sin(t * 0.9 + phase) * 0.00015;
-    fy[i] += Math.cos(t * 0.65 + phase * 1.4) * 0.00015;
+    fx[i] += Math.sin(t * 0.9 + phase) * drift;
+    fy[i] += Math.cos(t * 0.65 + phase * 1.4) * drift;
   }
 
   let totalVelocity = 0;
@@ -303,17 +414,7 @@ function step(): void {
   tickCounter++;
   if (tickCounter % POST_EVERY_TICKS !== 0) return;
 
-  const snapshot = new Float32Array(positions);
-  workerSelf.postMessage(
-    {
-      type: "tick",
-      session,
-      positions: snapshot,
-      averageVelocity: visibleIndices.length ? totalVelocity / visibleIndices.length : 0,
-      linkCount: links.length,
-    },
-    [snapshot.buffer as ArrayBuffer],
-  );
+  postTickSnapshot(visibleIndices.length ? totalVelocity / visibleIndices.length : 0);
 }
 
 workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
@@ -321,12 +422,19 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "stop") {
     stopTimer();
+    linkBuildGeneration++;
+    if (retargetTimer) clearTimeout(retargetTimer);
+    if (linkRebuildTimer) clearTimeout(linkRebuildTimer);
+    retargetTimer = null;
+    linkRebuildTimer = null;
     return;
   }
 
   if (message.type === "settings") {
     settings = message.settings;
     wakeSimulation(0.02 + clamp01(settings.motion) * 0.04);
+    postTickSnapshot(0);
+    ensureTimer();
     return;
   }
 
@@ -347,8 +455,11 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     paused = message.paused;
     velocities = new Float32Array(positions.length);
     tickCounter = 0;
+    currentChangeId = undefined;
+    simulationHeat = 0.18;
     rebuildVisibleMask();
-    rebuildLinks();
+    scheduleLinkRebuild(0);
+    postTickSnapshot(0);
     ensureTimer();
     return;
   }
@@ -371,21 +482,16 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   if (message.session !== session) return;
 
   if (message.type === "retarget") {
-    anchors = message.anchors;
-    vectors = message.vectors;
-    vectorSize = message.vectorSize;
-    visibleIndices = message.visibleIndices;
-    rebuildVisibleMask();
-    rebuildLinks();
-    wakeSimulation(0.010 + clamp01(settings.motion) * 0.018);
+    scheduleRetarget(message);
     return;
   }
 
   if (message.type === "visibility") {
     visibleIndices = message.visibleIndices;
     rebuildVisibleMask();
-    rebuildLinks();
+    scheduleLinkRebuild(35);
     wakeSimulation(0.002);
+    ensureTimer();
     return;
   }
 };

@@ -72,7 +72,15 @@ interface FilterOption {
 }
 
 type OrganicWorkerMessage =
-  | { type: "tick"; session: number; positions: Float32Array; averageVelocity: number; linkCount: number }
+  | {
+      type: "tick";
+      session: number;
+      positions: Float32Array;
+      averageVelocity: number;
+      linkCount: number;
+      changeId?: number;
+      diagnostics?: { retargetCount: number; linkRebuildCount: number };
+    }
   | { type: "links"; session: number; sources: Int32Array; targets: Int32Array };
 
 export interface AccUsersGraphProps {
@@ -82,6 +90,7 @@ export interface AccUsersGraphProps {
 
 const GRAPH_BACKGROUND = "#F8F7F4";
 const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", modules: [] };
+const IS_DEV = process.env.NODE_ENV !== "production";
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -156,100 +165,6 @@ function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-function legacyHash01(value: string, salt = ""): number {
-  let hash = 2166136261;
-  const input = `${salt}:${value}`;
-  for (let i = 0; i < input.length; i++) {
-    hash ^= input.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return ((hash >>> 0) % 100000) / 100000;
-}
-
-function featureAnchor(value: string, salt: string): { x: number; y: number } {
-  const angle = legacyHash01(value, `${salt}:angle`) * Math.PI * 2;
-  const radius = 0.24 + legacyHash01(value, `${salt}:radius`) * 0.24;
-  return {
-    x: Math.cos(angle) * radius,
-    y: Math.sin(angle) * radius,
-  };
-}
-
-function averageFeatureAnchor(values: readonly string[], salt: string): { x: number; y: number; weight: number } {
-  if (!values.length) return { x: 0, y: 0, weight: 0 };
-  let x = 0;
-  let y = 0;
-  for (const value of values) {
-    const anchor = featureAnchor(value, salt);
-    x += anchor.x;
-    y += anchor.y;
-  }
-  return { x: x / values.length, y: y / values.length, weight: 1 };
-}
-
-function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeights): Float32Array {
-  const positions = new Float32Array(nodes.length * 2);
-  for (let i = 0; i < nodes.length; i++) {
-    const node = nodes[i];
-
-    const wp = weights.project / 100;
-    const wr = weights.role / 100;
-    const wa = weights.access / 100;
-    const wl = weights.lastAdded / 100;
-    const wm = weights.modules / 100;
-    const wu = weights.userName / 100;
-
-    const project = featureAnchor(node.projectName || node.projectId || "no-project", "project");
-    const roles = averageFeatureAnchor(node.roles, "role");
-    const access = node.isAdmin ? { x: -0.45, y: -0.30 } : { x: 0.40, y: 0.26 };
-    const lastAddedAnchor = node.lastAddedBucket ? featureAnchor(node.lastAddedBucket, "lastAdded") : { x: 0, y: 0 };
-    const modulesAnchor = averageFeatureAnchor(node.modules ?? [], "module");
-    const userNameAnchor = node.name ? featureAnchor(node.name.toLowerCase(), "userName") : { x: 0, y: 0 };
-    const jitter = featureAnchor(node.id, "instance");
-
-    let x = project.x * wp + access.x * wa;
-    let y = project.y * wp + access.y * wa;
-    if (roles.weight > 0) { x += roles.x * wr; y += roles.y * wr; }
-    if (node.lastAddedBucket) { x += lastAddedAnchor.x * wl; y += lastAddedAnchor.y * wl; }
-    if (modulesAnchor.weight > 0) { x += modulesAnchor.x * wm; y += modulesAnchor.y * wm; }
-    if (node.name) { x += userNameAnchor.x * wu; y += userNameAnchor.y * wu; }
-
-    positions[i * 2] = 0.5 + x + jitter.x * 0.05;
-    positions[i * 2 + 1] = 0.5 + y + jitter.y * 0.05;
-  }
-
-  return normalizePositions(positions);
-}
-
-function normalizePositions(positions: Float32Array): Float32Array {
-  if (!positions.length) return positions;
-
-  let minX = Infinity;
-  let maxX = -Infinity;
-  let minY = Infinity;
-  let maxY = -Infinity;
-  for (let i = 0; i < positions.length / 2; i++) {
-    const x = positions[i * 2];
-    const y = positions[i * 2 + 1];
-    if (x < minX) minX = x;
-    if (x > maxX) maxX = x;
-    if (y < minY) minY = y;
-    if (y > maxY) maxY = y;
-  }
-
-  const rangeX = maxX - minX || 1;
-  const rangeY = maxY - minY || 1;
-  const maxRange = Math.max(rangeX, rangeY);
-  const offsetX = (maxRange - rangeX) / 2;
-  const offsetY = (maxRange - rangeY) / 2;
-
-  for (let i = 0; i < positions.length / 2; i++) {
-    positions[i * 2] = 0.05 + ((positions[i * 2] - minX + offsetX) / maxRange) * 0.9;
-    positions[i * 2 + 1] = 0.05 + ((positions[i * 2 + 1] - minY + offsetY) / maxRange) * 0.9;
-  }
-  return positions;
-}
-
 function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32Array | null {
   if (!Array.isArray(raw) || raw.length !== expectedLength) return null;
   const positions = new Float32Array(expectedLength);
@@ -299,6 +214,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const isRefreshingRef = useRef(false);
   const lastAutoFitHashRef = useRef<string | null>(null);
   const lastMetricUpdateAtRef = useRef(0);
+  const layoutRetargetChangeIdRef = useRef(0);
+  const pendingLayoutRetargetFrameRef = useRef<number | null>(null);
+  const forceRenderUntilRef = useRef(0);
 
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
@@ -319,6 +237,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     targets: new Int32Array(0),
   });
   const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
+  const [layoutDiagnostics, setLayoutDiagnostics] = useState({
+    lastWorkerTick: 0,
+    retargetCount: 0,
+    linkRebuildCount: 0,
+    changeId: 0,
+  });
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
   const [showControls, setShowControls] = useState(false);
@@ -350,7 +274,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     );
   }, []);
 
-  const restartOrganicLayout = useCallback((mode: "restart" | "retarget" = "restart") => {
+  const restartOrganicLayout = useCallback((mode: "restart" | "retarget" = "restart", changeId?: number) => {
     const worker = organicWorkerRef.current;
     const nodes = nodesRef.current;
     if (!worker || !nodes.length) return;
@@ -378,6 +302,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           vectors: vectorsForWorker,
           vectorSize: semantic.vectorSize,
           visibleIndices,
+          changeId,
         },
         [anchorsForWorker.buffer, vectorsForWorker.buffer, visibleIndices.buffer],
       );
@@ -401,9 +326,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     rebuildGrid();
-    postVisibilityToWorker();
     markGraphDirty();
-  }, [markGraphDirty, rebuildGrid, postVisibilityToWorker]);
+  }, [markGraphDirty, rebuildGrid]);
 
   const rebuildVisibleIndices = useCallback(() => {
     const nodes = nodesRef.current;
@@ -442,14 +366,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const nextWeights = { ...layoutWeightsRef.current, [key]: value };
     layoutWeightsRef.current = nextWeights;
     setLayoutWeights(nextWeights);
-    requestAnimationFrame(() => restartOrganicLayout("retarget"));
-  }, [restartOrganicLayout]);
+    const changeId = layoutRetargetChangeIdRef.current + 1;
+    layoutRetargetChangeIdRef.current = changeId;
+    forceRenderUntilRef.current = performance.now() + 1800;
+    if (pendingLayoutRetargetFrameRef.current !== null) {
+      cancelAnimationFrame(pendingLayoutRetargetFrameRef.current);
+    }
+    pendingLayoutRetargetFrameRef.current = requestAnimationFrame(() => {
+      pendingLayoutRetargetFrameRef.current = null;
+      restartOrganicLayout("retarget", changeId);
+    });
+    markGraphDirty();
+  }, [markGraphDirty, restartOrganicLayout]);
 
   const schedulePhysicsSettingUpdate = useCallback((key: keyof PhysicsSettings, value: number) => {
     const nextSettings = { ...physicsSettingsRef.current, [key]: value };
     physicsSettingsRef.current = nextSettings;
     setPhysicsSettings(nextSettings);
     organicWorkerRef.current?.postMessage({ type: "settings", settings: nextSettings });
+    forceRenderUntilRef.current = performance.now() + 1200;
     markGraphDirty();
   }, [markGraphDirty]);
 
@@ -632,6 +567,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           averageVelocity: message.averageVelocity,
           linkCount: message.linkCount,
         });
+        if (IS_DEV) {
+          setLayoutDiagnostics({
+            lastWorkerTick: Math.round(now),
+            retargetCount: message.diagnostics?.retargetCount ?? 0,
+            linkRebuildCount: message.diagnostics?.linkRebuildCount ?? 0,
+            changeId: message.changeId ?? 0,
+          });
+        }
+      }
+      if (message.averageVelocity > 0.0005 || message.changeId) {
+        forceRenderUntilRef.current = Math.max(forceRenderUntilRef.current, now + 900);
       }
       rebuildGrid();
       markGraphDirty();
@@ -730,7 +676,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const dyCam = Math.abs(tv.y - v.y);
       const dsCam = Math.abs(tv.scale - v.scale);
       const camLerping = dxCam > 0.00001 || dyCam > 0.00001 || dsCam > 0.01;
-      if (!camLerping && !needsRenderRef.current) return;
+      const forceLiveLayoutRender = performance.now() < forceRenderUntilRef.current;
+      if (!camLerping && !needsRenderRef.current && !forceLiveLayoutRender) return;
 
       v.x += (tv.x - v.x) * 0.2;
       v.y += (tv.y - v.y) * 0.2;
@@ -770,11 +717,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       };
 
       const drawResult = renderer.draw(frame);
-      needsRenderRef.current = camLerping || drawResult.needsContinuousRedraw;
+      needsRenderRef.current = forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw;
     };
 
     rafId.current = requestAnimationFrame(render);
-    return () => cancelAnimationFrame(rafId.current);
+    return () => {
+      cancelAnimationFrame(rafId.current);
+      if (pendingLayoutRetargetFrameRef.current !== null) {
+        cancelAnimationFrame(pendingLayoutRetargetFrameRef.current);
+        pendingLayoutRetargetFrameRef.current = null;
+      }
+    };
   }, []);
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -994,6 +947,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         ref={containerRef}
         data-render-backend={renderBackend}
         data-renderer-failure-reason={rendererFailureReason ?? undefined}
+        data-acc-graph-last-worker-tick={IS_DEV ? layoutDiagnostics.lastWorkerTick : undefined}
+        data-acc-graph-retarget-count={IS_DEV ? layoutDiagnostics.retargetCount : undefined}
+        data-acc-graph-link-rebuild-count={IS_DEV ? layoutDiagnostics.linkRebuildCount : undefined}
+        data-acc-graph-change-id={IS_DEV ? layoutDiagnostics.changeId : undefined}
         className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
         style={{ background: GRAPH_BACKGROUND }}
       >
