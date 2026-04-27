@@ -1117,12 +1117,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             selectedNodeRef.current = null;
             markGraphDirty();
           }}
-          onViewProfile={() => {
-            onSelectUser?.(selectedNode.node.email);
-            setSelectedNode(null);
-            selectedNodeRef.current = null;
-            markGraphDirty();
-          }}
         />
       )}
     </div>
@@ -1322,26 +1316,24 @@ function UserTooltip({ node }: { node: UserNode }) {
 function SidePanel({
   state,
   onClose,
-  onViewProfile,
 }: {
   state: SidePanelState;
   onClose: () => void;
-  onViewProfile?: () => void;
 }) {
   const node = state.node;
   const title = node.name || node.email;
 
   return (
-    <div className="w-64 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
-      <div className="flex items-center justify-between">
+    <div className="w-72 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
+      <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900 truncate">{title}</h3>
+          <h3 className="text-sm font-semibold text-gray-900 leading-snug">{title}</h3>
+          <p className="text-[11px] text-gray-400 break-all mt-0.5">{node.email}</p>
         </div>
-        <button onClick={onClose} className="text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none">&times;</button>
+        <button onClick={onClose} className="shrink-0 text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none mt-0.5">&times;</button>
       </div>
 
       <div className="space-y-3">
-        <p className="text-[11px] text-gray-500 break-all">{node.email}</p>
         {!node.found && (
           <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
             Not yet synced to ACC.
@@ -1352,14 +1344,32 @@ function SidePanel({
             Synced but no projects assigned.
           </p>
         )}
-        {node.projectCount > 0 && (
-          <p className="text-[10px] text-gray-400 italic">
-            {node.projectName ?? `In ${node.projectCount} project${node.projectCount > 1 ? "s" : ""}`}
-          </p>
-        )}
+
         <div className="flex flex-wrap gap-1.5">
           {node.isAdmin && <Tag color="emerald">Admin Access</Tag>}
+          {node.individualAccess && <Tag color="gray">Individual Access</Tag>}
         </div>
+
+        {node.projectName && (
+          <div>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Project</p>
+            <p className="text-[11px] text-gray-700 font-medium">{node.projectName}</p>
+          </div>
+        )}
+        {!node.projectName && node.projectCount > 0 && (
+          <div>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Projects</p>
+            <p className="text-[11px] text-gray-700">{node.projectCount} project{node.projectCount > 1 ? "s" : ""}</p>
+          </div>
+        )}
+
+        {node.lastAddedBucket && (
+          <div>
+            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Added</p>
+            <p className="text-[11px] text-gray-700">{node.lastAddedBucket}</p>
+          </div>
+        )}
+
         {node.roles.length > 0 && (
           <div>
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
@@ -1375,6 +1385,7 @@ function SidePanel({
             </div>
           </div>
         )}
+
         {node.modules.length > 0 && (
           <div>
             <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
@@ -1389,15 +1400,6 @@ function SidePanel({
               ))}
             </div>
           </div>
-        )}
-
-        {onViewProfile && (
-          <button
-            onClick={onViewProfile}
-            className="mt-2 w-full py-2 bg-gray-900 text-white text-[11px] font-semibold rounded-lg hover:bg-gray-800 transition-colors shadow-sm"
-          >
-            View Full Profile
-          </button>
         )}
       </div>
     </div>

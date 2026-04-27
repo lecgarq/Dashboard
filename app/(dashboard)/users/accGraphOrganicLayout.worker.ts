@@ -134,7 +134,7 @@ function rebuildLinks(): void {
 
 function wakeSimulation(amount: number): void {
   if (!velocities.length) return;
-  const clampedAmount = Math.max(0.0005, Math.min(0.02, amount));
+  const clampedAmount = Math.max(0.001, Math.min(0.06, amount));
   for (let offset = 0; offset < visibleIndices.length; offset++) {
     const index = visibleIndices[offset];
     const angle = ((index * 9301 + session * 49297) % 233280) / 233280 * Math.PI * 2;
@@ -175,19 +175,19 @@ function step(): void {
   const fx = new Float32Array(nodeCount);
   const fy = new Float32Array(nodeCount);
   // attraction=0 → free-floating nodes; attraction=100 → pinned to anchors
-  const anchorPull = 0.001 + clamp01(settings.attraction) * 0.032;
+  const anchorPull = 0.001 + clamp01(settings.attraction) * 0.10;
   // repulsion slider drives collision radius — geometric, predictable separation
-  // repulsion=0: nodes nearly touch (r≈0.005); repulsion=100: nodes pushed far apart (r≈0.077)
-  const collisionRadius = 0.005 + clamp01(settings.repulsion) * 0.072;
-  // small inverse-square background repulsion to prevent long-range collapse
-  const repulsion = 0.000002 + clamp01(settings.repulsion) * 0.000040;
+  // repulsion=0: nodes nearly touch (r≈0.005); repulsion=100: nodes pushed far apart (r≈0.20)
+  const collisionRadius = 0.005 + clamp01(settings.repulsion) * 0.195;
+  // inverse-square background repulsion to prevent long-range collapse
+  const repulsion = 0.000002 + clamp01(settings.repulsion) * 0.000150;
   // damping=0 → perpetual motion; damping=100 → instant settle
-  const damping = 0.89 - clamp01(settings.damping) * 0.57;
+  const damping = 0.95 - clamp01(settings.damping) * 0.70;
   // motion=0 → near-frozen; motion=100 → fast/energetic
-  const maxVelocity = 0.001 + clamp01(settings.motion) * 0.045;
+  const maxVelocity = 0.001 + clamp01(settings.motion) * 0.12;
   // spring rest length: short at high attraction (tight clusters), long at low attraction (loose)
-  const attraction = 0.0003 + clamp01(settings.attraction) * 0.030;
-  const restLength = 0.018 + (1 - clamp01(settings.attraction)) * 0.155;
+  const attraction = 0.0003 + clamp01(settings.attraction) * 0.08;
+  const restLength = 0.015 + (1 - clamp01(settings.attraction)) * 0.28;
   const cellSize = Math.max(collisionRadius * 2.5, 0.035);
 
   const grid = buildSpatialGrid(cellSize);
@@ -215,7 +215,7 @@ function step(): void {
           }
           const dist = Math.sqrt(dist2);
           const repel = repulsion / Math.max(0.00001, dist2);
-          const collision = dist < collisionRadius ? (collisionRadius - dist) * 0.07 : 0;
+          const collision = dist < collisionRadius ? (collisionRadius - dist) * 0.15 : 0;
           const force = repel + collision;
           const nx = dx / dist;
           const ny = dy / dist;
@@ -296,7 +296,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "settings") {
     settings = message.settings;
-    wakeSimulation(0.008 + clamp01(settings.motion) * 0.018);
+    wakeSimulation(0.02 + clamp01(settings.motion) * 0.04);
     return;
   }
 

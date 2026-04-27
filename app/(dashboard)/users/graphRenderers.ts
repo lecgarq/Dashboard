@@ -125,7 +125,7 @@ export class CanvasGraphRenderer implements GraphRenderer {
     ctx.translate(-view.x, -view.y);
 
     const bounds = getVisibleWorldBounds(view, frame.cssWidth, frame.cssHeight, 50 / view.scale);
-    const hasSelection = frame.selectedNodeIndex >= 0 || frame.filterActive;
+    const hasSelection = frame.selectedNodeIndex >= 0;
     const dimBatches = new Map<string, [number, number][]>();
     const brightBatches = new Map<string, [number, number][]>();
     const userIndices = getUserIndices(frame.nodes, frame.userIndices);
