@@ -10,9 +10,17 @@ import {
   WebGpuGraphRenderer,
   type GraphRenderFrame,
   type GraphRenderer,
-  type GraphRenderEdge,
 } from "./graphRenderers";
 import { type BulkAccUser } from "./AccAnalysisPanel";
+import {
+  computeCentroid,
+  computeSemanticSeedPositions,
+  computeSemanticVectors,
+  DEFAULT_LAYOUT_WEIGHTS,
+  DEFAULT_PHYSICS_SETTINGS,
+  type LayoutWeights,
+  type PhysicsSettings,
+} from "./accGraphOrganicLayout";
 
 interface UserNode extends PhysicsNode {
   kind: "user";
@@ -57,19 +65,18 @@ interface GraphFilters {
   individualAccess: "all" | "configured" | "bare";
 }
 
-interface LayoutWeights {
-  role: number;
-  access: number;
-  lastAdded: number;
-  project: number;
-  individualAccess: number;
-  userName: number;
-}
-
 interface FilterOption {
   value: string;
   label: string;
   count: number;
+}
+
+interface OrganicWorkerTick {
+  type: "tick";
+  session: number;
+  positions: Float32Array;
+  averageVelocity: number;
+  linkCount: number;
 }
 
 export interface AccUsersGraphProps {
@@ -79,8 +86,6 @@ export interface AccUsersGraphProps {
 
 const GRAPH_BACKGROUND = "#F8F7F4";
 const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", individualAccess: "all" };
-const DEFAULT_SPACING = 50;
-const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = { role: 72, access: 38, lastAdded: 45, project: 68, individualAccess: 42, userName: 30 };
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -142,24 +147,6 @@ function buildHighlightSet(selectedIndex: number): Set<number> {
   return highlightSet;
 }
 
-function spacingToMultiplier(spacing: number): number {
-  const clamped = Math.max(0, Math.min(100, spacing));
-  if (clamped <= 50) return 0.55 + (clamped / 50) * 0.45;
-  return 1 + ((clamped - 50) / 50) * 1.25;
-}
-
-function computeCentroid(positions: Float32Array): { x: number; y: number } {
-  if (positions.length < 2) return { x: 0.5, y: 0.5 };
-  let x = 0;
-  let y = 0;
-  const count = positions.length / 2;
-  for (let i = 0; i < count; i++) {
-    x += positions[i * 2];
-    y += positions[i * 2 + 1];
-  }
-  return { x: x / count, y: y / count };
-}
-
 function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
   if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
   if (filters.lastAddedBuckets.length > 0 && !filters.lastAddedBuckets.includes(node.lastAddedBucket || "Unknown")) return false;
@@ -174,7 +161,7 @@ function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
-function hash01(value: string, salt = ""): number {
+function legacyHash01(value: string, salt = ""): number {
   let hash = 2166136261;
   const input = `${salt}:${value}`;
   for (let i = 0; i < input.length; i++) {
@@ -185,8 +172,8 @@ function hash01(value: string, salt = ""): number {
 }
 
 function featureAnchor(value: string, salt: string): { x: number; y: number } {
-  const angle = hash01(value, `${salt}:angle`) * Math.PI * 2;
-  const radius = 0.24 + hash01(value, `${salt}:radius`) * 0.24;
+  const angle = legacyHash01(value, `${salt}:angle`) * Math.PI * 2;
+  const radius = 0.24 + legacyHash01(value, `${salt}:radius`) * 0.24;
   return {
     x: Math.cos(angle) * radius,
     y: Math.sin(angle) * radius,
@@ -328,8 +315,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const webgpuRendererRef = useRef<WebGpuGraphRenderer | null>(null);
   const activeRendererRef = useRef<GraphRenderer | null>(null);
 
+  const organicWorkerRef = useRef<Worker | null>(null);
+  const layoutSessionRef = useRef(0);
   const nodesRef = useRef<SimNode[]>([]);
-  const basePosRef = useRef<Float32Array>(new Float32Array(0));
+  const seedPosRef = useRef<Float32Array>(new Float32Array(0));
   const posRef = useRef<Float32Array>(new Float32Array(0));
   const gridRef = useRef<SpatialGrid>({ size: 0.05, cells: new Map() });
   const nodeIndexMapRef = useRef(new Map<string, number>());
@@ -338,11 +327,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const visibleIndexSetRef = useRef<Set<number>>(new Set());
   const centroidRef = useRef({ x: 0.5, y: 0.5 });
   const needsRenderRef = useRef(true);
-  const spacingRafRef = useRef<number>(0);
-  const spacingRef = useRef(DEFAULT_SPACING);
   const filtersRef = useRef<GraphFilters>(DEFAULT_FILTERS);
+  const hasActiveFiltersRef = useRef(false);
   const layoutWeightsRef = useRef<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
-  const semanticLayoutDirtyRef = useRef(false);
+  const physicsSettingsRef = useRef<PhysicsSettings>(DEFAULT_PHYSICS_SETTINGS);
+  const isPausedRef = useRef(false);
 
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
   const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
@@ -352,6 +341,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const selectedNodeRef = useRef<SidePanelState | null>(null);
   const isRefreshingRef = useRef(false);
   const lastAutoFitHashRef = useRef<string | null>(null);
+  const lastMetricUpdateAtRef = useRef(0);
 
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
@@ -360,8 +350,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
-  const [spacing, setSpacing] = useState(DEFAULT_SPACING);
   const [layoutWeights, setLayoutWeights] = useState<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
+  const [physicsSettings, setPhysicsSettings] = useState<PhysicsSettings>(DEFAULT_PHYSICS_SETTINGS);
+  const [isPaused, setIsPaused] = useState(false);
+  const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
 
@@ -377,24 +369,75 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     needsRenderRef.current = true;
   }, []);
 
-  const applySpacing = useCallback(() => {
-    const base = basePosRef.current;
-    const positions = posRef.current;
-    if (!base.length || positions.length !== base.length) return;
-
-    const multiplier = spacingToMultiplier(spacingRef.current);
-    const centroid = centroidRef.current;
-    for (let i = 0; i < base.length / 2; i++) {
-      const offset = i * 2;
-      positions[offset] = centroid.x + (base[offset] - centroid.x) * multiplier;
-      positions[offset + 1] = centroid.y + (base[offset + 1] - centroid.y) * multiplier;
-    }
-  }, []);
-
   const rebuildGrid = useCallback(() => {
     const cellSize = Math.max(0.005, 60 / view.current.scale);
     gridRef.current = buildGrid(posRef.current, visibleNodeIdxRef.current, cellSize);
   }, []);
+
+  const postVisibilityToWorker = useCallback(() => {
+    const worker = organicWorkerRef.current;
+    if (!worker) return;
+    const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
+    worker.postMessage(
+      { type: "visibility", session: layoutSessionRef.current, visibleIndices },
+      [visibleIndices.buffer],
+    );
+  }, []);
+
+  const restartOrganicLayout = useCallback((mode: "restart" | "retarget" = "restart") => {
+    const worker = organicWorkerRef.current;
+    const nodes = nodesRef.current;
+    if (!worker || !nodes.length) return;
+
+    const seeds = computeSemanticSeedPositions(nodes, layoutWeightsRef.current);
+    const semantic = computeSemanticVectors(nodes, layoutWeightsRef.current);
+    seedPosRef.current = seeds;
+    centroidRef.current = computeCentroid(seeds);
+
+    if (mode === "restart" || posRef.current.length !== seeds.length) {
+      posRef.current = new Float32Array(seeds);
+      layoutSessionRef.current++;
+    }
+
+    const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
+    const anchorsForWorker = new Float32Array(seeds);
+    const vectorsForWorker = new Float32Array(semantic.vectors);
+
+    if (mode === "retarget") {
+      worker.postMessage(
+        {
+          type: "retarget",
+          session: layoutSessionRef.current,
+          anchors: anchorsForWorker,
+          vectors: vectorsForWorker,
+          vectorSize: semantic.vectorSize,
+          visibleIndices,
+        },
+        [anchorsForWorker.buffer, vectorsForWorker.buffer, visibleIndices.buffer],
+      );
+    } else {
+      const positionsForWorker = new Float32Array(posRef.current);
+      worker.postMessage(
+        {
+          type: "init",
+          session: layoutSessionRef.current,
+          nodeIds: getOrderedNodeIds(nodes),
+          positions: positionsForWorker,
+          anchors: anchorsForWorker,
+          vectors: vectorsForWorker,
+          vectorSize: semantic.vectorSize,
+          visibleIndices,
+          settings: physicsSettingsRef.current,
+          paused: isPausedRef.current,
+        },
+        [positionsForWorker.buffer, anchorsForWorker.buffer, vectorsForWorker.buffer, visibleIndices.buffer],
+      );
+    }
+
+    rebuildGrid();
+    postVisibilityToWorker();
+    markGraphDirty();
+  }, [markGraphDirty, rebuildGrid, postVisibilityToWorker]);
 
   const rebuildVisibleIndices = useCallback(() => {
     const nodes = nodesRef.current;
@@ -425,42 +468,32 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     rebuildGrid();
+    postVisibilityToWorker();
     markGraphDirty();
-  }, [markGraphDirty, rebuildGrid]);
-
-  const scheduleSpacingUpdate = useCallback((nextSpacing: number) => {
-    spacingRef.current = nextSpacing;
-    setSpacing(nextSpacing);
-    if (spacingRafRef.current) return;
-    spacingRafRef.current = requestAnimationFrame(() => {
-      spacingRafRef.current = 0;
-      if (semanticLayoutDirtyRef.current) {
-        semanticLayoutDirtyRef.current = false;
-        basePosRef.current = computeSemanticPositions(nodesRef.current, layoutWeightsRef.current);
-        centroidRef.current = computeCentroid(basePosRef.current);
-      }
-      applySpacing();
-      rebuildGrid();
-      markGraphDirty();
-    });
-  }, [applySpacing, rebuildGrid, markGraphDirty]);
+  }, [markGraphDirty, rebuildGrid, postVisibilityToWorker]);
 
   const scheduleLayoutWeightUpdate = useCallback((key: keyof LayoutWeights, value: number) => {
     const nextWeights = { ...layoutWeightsRef.current, [key]: value };
     layoutWeightsRef.current = nextWeights;
-    semanticLayoutDirtyRef.current = true;
     setLayoutWeights(nextWeights);
-    if (spacingRafRef.current) return;
-    spacingRafRef.current = requestAnimationFrame(() => {
-      spacingRafRef.current = 0;
-      semanticLayoutDirtyRef.current = false;
-      basePosRef.current = computeSemanticPositions(nodesRef.current, layoutWeightsRef.current);
-      centroidRef.current = computeCentroid(basePosRef.current);
-      applySpacing();
-      rebuildGrid();
-      markGraphDirty();
-    });
-  }, [applySpacing, rebuildGrid, markGraphDirty]);
+    requestAnimationFrame(() => restartOrganicLayout("retarget"));
+  }, [restartOrganicLayout]);
+
+  const schedulePhysicsSettingUpdate = useCallback((key: keyof PhysicsSettings, value: number) => {
+    const nextSettings = { ...physicsSettingsRef.current, [key]: value };
+    physicsSettingsRef.current = nextSettings;
+    setPhysicsSettings(nextSettings);
+    organicWorkerRef.current?.postMessage({ type: "settings", settings: nextSettings });
+    markGraphDirty();
+  }, [markGraphDirty]);
+
+  const togglePaused = useCallback(() => {
+    const nextPaused = !isPausedRef.current;
+    isPausedRef.current = nextPaused;
+    setIsPaused(nextPaused);
+    organicWorkerRef.current?.postMessage({ type: "pause", paused: nextPaused });
+    markGraphDirty();
+  }, [markGraphDirty]);
 
   const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
     if (!posRef.current.length) return;
@@ -600,6 +633,33 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, [renderBackend, rendererFailureReason]);
 
   useEffect(() => {
+    const worker = new Worker(new URL("./accGraphOrganicLayout.worker.ts", import.meta.url), { type: "module" });
+    organicWorkerRef.current = worker;
+
+    worker.onmessage = (event: MessageEvent<OrganicWorkerTick>) => {
+      const message = event.data;
+      if (message.type !== "tick" || message.session !== layoutSessionRef.current) return;
+      posRef.current = message.positions;
+      const now = performance.now();
+      if (now - lastMetricUpdateAtRef.current > 250) {
+        lastMetricUpdateAtRef.current = now;
+        setMotionMetric({
+          averageVelocity: message.averageVelocity,
+          linkCount: message.linkCount,
+        });
+      }
+      rebuildGrid();
+      markGraphDirty();
+    };
+
+    return () => {
+      worker.postMessage({ type: "stop" });
+      worker.terminate();
+      if (organicWorkerRef.current === worker) organicWorkerRef.current = null;
+    };
+  }, [markGraphDirty, rebuildGrid]);
+
+  useEffect(() => {
     if (!users.length) return;
 
     setIsReady(false);
@@ -607,7 +667,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const graph = graphQuery.data;
     if (!graph?.hit) {
       nodesRef.current = [];
-      basePosRef.current = new Float32Array(0);
+      seedPosRef.current = new Float32Array(0);
       posRef.current = new Float32Array(0);
       nodeIndexMapRef.current = new Map();
       instIdxRef.current = new Uint32Array(0);
@@ -626,7 +686,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       !orderedNodeIdsMatch(graph.nodeIds, rawNodes)
     ) {
       nodesRef.current = [];
-      basePosRef.current = new Float32Array(0);
+      seedPosRef.current = new Float32Array(0);
       posRef.current = new Float32Array(0);
       nodeIndexMapRef.current = new Map();
       instIdxRef.current = new Uint32Array(0);
@@ -639,12 +699,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     nodesRef.current = rawNodes;
-    basePosRef.current =
-      readPrecomputedPositions(graph.positions, rawNodes.length * 2) ??
-      computeSemanticPositions(rawNodes, layoutWeightsRef.current);
-    posRef.current = new Float32Array(basePosRef.current.length);
-    centroidRef.current = computeCentroid(basePosRef.current);
-    applySpacing();
+    seedPosRef.current = computeSemanticSeedPositions(rawNodes, layoutWeightsRef.current);
+    posRef.current = new Float32Array(seedPosRef.current);
+    centroidRef.current = computeCentroid(seedPosRef.current);
 
     const nodeIndexMap = new Map<string, number>();
     rawNodes.forEach((node, index) => nodeIndexMap.set(node.id, index));
@@ -656,11 +713,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       uIdx.push(index); // all nodes are user kind
     });
     instIdxRef.current = new Uint32Array(uIdx);
-    (nodesRef as any).projectIndices = new Uint32Array(0);
-    (nodesRef as any).roleIndices = new Uint32Array(0);
-    (nodesRef as any).moduleIndices = new Uint32Array(0);
 
     rebuildVisibleIndices();
+    restartOrganicLayout("restart");
     if (lastAutoFitHashRef.current !== graph.dataHash) {
       zoomToFit({ immediate: true });
       lastAutoFitHashRef.current = graph.dataHash;
@@ -669,18 +724,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     isRefreshingRef.current = false;
     setIsReady(true);
     markGraphDirty();
-  }, [users, graphQuery.data, refreshKey, applySpacing, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty]);
+  }, [users, graphQuery.data, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
 
   useEffect(() => {
     filtersRef.current = filters;
+    hasActiveFiltersRef.current = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.individualAccess !== "all";
     rebuildVisibleIndices();
   }, [filters, rebuildVisibleIndices]);
-
-  useEffect(() => {
-    return () => {
-      if (spacingRafRef.current) cancelAnimationFrame(spacingRafRef.current);
-    };
-  }, []);
 
   useEffect(() => {
     const render = () => {
@@ -719,19 +769,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const frame: GraphRenderFrame = {
         nodes,
         positions,
-        edges: (graphQuery.data?.edges as any as GraphRenderEdge[]) ?? [],
-        particles: [],
         nodeIndexMap: nodeIndexMapRef.current,
         userIndices: instIdxRef.current,
-        projectIndices: (nodesRef as any).projectIndices,
-        roleIndices: (nodesRef as any).roleIndices,
-        moduleIndices: (nodesRef as any).moduleIndices,
         selectedNodeId: selectedIndex >= 0 ? selectedId : null,
         selectedNodeIndex: selectedIndex,
         highlightSet,
-        filterActive: hasActiveFilters,
-        showRoles: true,
-        showModules: true,
+        filterActive: hasActiveFiltersRef.current,
         isInteracting,
         view: v,
         cssWidth: width,
@@ -919,7 +962,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   {graphQuery.data?.stale ? "ACC graph cache is stale" : "ACC graph cache has not been built"}
                 </span>
                 <span className="mt-1 text-xs text-gray-500">
-                  {graphQuery.data?.stats.totalProjectInstances.toLocaleString() ?? 0} project-slots need a backend layout.
+                  {graphQuery.data?.stats.totalProjectInstances.toLocaleString() ?? 0} project-slots need a graph data snapshot.
                 </span>
                 <button
                   onClick={() => {
@@ -943,7 +986,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             ) : (
               <>
                 <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin mb-4" />
-                <span className="text-sm font-medium text-emerald-700">Loading precomputed graph...</span>
+                <span className="text-sm font-medium text-emerald-700">Loading ACC graph data...</span>
               </>
             )}
           </div>
@@ -952,53 +995,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
             <ControlButton active={false} onClick={() => zoomToFit()}>Fit</ControlButton>
+            <ControlButton active={isPaused} onClick={togglePaused}>{isPaused ? "Resume" : "Pause"}</ControlButton>
             <button
-              onClick={() => {
-                if (isRefreshingRef.current) return;
-                isRefreshingRef.current = true;
-                rebuildGraph.mutate(undefined, {
-                  onSettled: () => {
-                    setRefreshKey((value) => value + 1);
-                    graphQuery.refetch().finally(() => {
-                      isRefreshingRef.current = false;
-                    });
-                  },
-                  onError: () => {
-                    isRefreshingRef.current = false;
-                  },
-                });
-              }}
-              disabled={rebuildGraph.isPending}
+              onClick={() => restartOrganicLayout("restart")}
               className={cn(
                 "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
                 "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-                rebuildGraph.isPending && "opacity-50 cursor-not-allowed",
               )}
             >
-              {rebuildGraph.isPending ? (
-                <>
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border border-gray-300 border-t-gray-600" />
-                  {" "}Rebuilding...
-                </>
-              ) : (
-                "Rebuild Layout"
-              )}
+              Reflow Layout
             </button>
           </div>
           <div className="text-[10px] text-gray-400 pr-1">
-            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - scroll to zoom - drag to pan
+            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
           </div>
         </div>
 
         <div className="absolute top-3 left-3 z-10 w-[min(760px,calc(100%-230px))]">
           <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 shadow-sm space-y-2">
             <div className="flex flex-wrap items-center gap-2">
-              <SliderControl
-                label="Node gap"
-                value={spacing}
-                onChange={scheduleSpacingUpdate}
-              />
-
               <span className="ml-auto text-[10px] font-medium text-gray-500">
                 {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances
               </span>
@@ -1020,6 +1035,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               <SliderControl label="Project" value={layoutWeights.project} onChange={(v) => scheduleLayoutWeightUpdate("project", v)} />
               <SliderControl label="Indiv. Access" value={layoutWeights.individualAccess} onChange={(v) => scheduleLayoutWeightUpdate("individualAccess", v)} />
               <SliderControl label="User Name" value={layoutWeights.userName} onChange={(v) => scheduleLayoutWeightUpdate("userName", v)} />
+            </div>
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+              <SliderControl label="Attract" value={physicsSettings.attraction} onChange={(v) => schedulePhysicsSettingUpdate("attraction", v)} />
+              <SliderControl label="Repel" value={physicsSettings.repulsion} onChange={(v) => schedulePhysicsSettingUpdate("repulsion", v)} />
+              <SliderControl label="Damping" value={physicsSettings.damping} onChange={(v) => schedulePhysicsSettingUpdate("damping", v)} />
+              <SliderControl label="Motion" value={physicsSettings.motion} onChange={(v) => schedulePhysicsSettingUpdate("motion", v)} />
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
               <FilterMenu
