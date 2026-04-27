@@ -174,13 +174,13 @@ function step(): void {
   const nodeCount = nodeIds.length;
   const fx = new Float32Array(nodeCount);
   const fy = new Float32Array(nodeCount);
-  const attraction = 0.0015 + clamp01(settings.attraction) * 0.010;
-  const anchorPull = 0.004 + clamp01(settings.attraction) * 0.010;
-  const repulsion = 0.00002 + clamp01(settings.repulsion) * 0.00018;
-  const collisionRadius = 0.010 + clamp01(settings.repulsion) * 0.010;
-  const damping = 0.94 - clamp01(settings.damping) * 0.42;
-  const maxVelocity = 0.002 + clamp01(settings.motion) * 0.015;
-  const restLength = 0.035 + (1 - clamp01(settings.attraction)) * 0.035;
+  const attraction = 0.0008 + clamp01(settings.attraction) * 0.022;
+  const anchorPull = 0.002 + clamp01(settings.attraction) * 0.022;
+  const repulsion = 0.00005 + clamp01(settings.repulsion) * 0.0014;
+  const collisionRadius = 0.010 + clamp01(settings.repulsion) * 0.048;
+  const damping = 0.93 - clamp01(settings.damping) * 0.50;
+  const maxVelocity = 0.003 + clamp01(settings.motion) * 0.048;
+  const restLength = 0.028 + (1 - clamp01(settings.attraction)) * 0.120;
   const cellSize = Math.max(collisionRadius * 2.5, 0.035);
 
   const grid = buildSpatialGrid(cellSize);

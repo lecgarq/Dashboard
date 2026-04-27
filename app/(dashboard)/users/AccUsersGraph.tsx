@@ -353,6 +353,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
+  const [showControls, setShowControls] = useState(false);
 
   const graphQuery = trpc.users.getPrecomputedGraph.useQuery(undefined, {
     enabled: users.length > 0,
@@ -1016,24 +1017,30 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         </div>
 
-        <div className="absolute top-3 left-3 z-10 w-[min(760px,calc(100%-230px))]">
-          <div className="bg-white/90 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 shadow-sm space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="ml-auto text-[10px] font-medium text-gray-500">
-                {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances
+        <div className="absolute top-3 left-3 z-20">
+          <button
+            onClick={() => setShowControls((v) => !v)}
+            className={cn(
+              "flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all shadow-sm",
+              showControls
+                ? "bg-gray-900 text-white border-gray-900"
+                : "bg-white/90 text-gray-600 border-gray-200 hover:text-gray-900 hover:border-gray-400",
+            )}
+          >
+            <span>⚙</span>
+            <span>Controls</span>
+            {hasActiveFilters && (
+              <span className="ml-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 leading-none">
+                {[filters.roles.length, filters.lastAddedBuckets.length, filters.adminAccess !== "all" ? 1 : 0, filters.modules.length].reduce((a, b) => a + b, 0)}
               </span>
-              {hasActiveFilters && (
-                <button
-                  onClick={() => {
-                    setFilters(DEFAULT_FILTERS);
-                  }}
-                  className="text-[10px] px-2 py-1 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
-                >
-                  Clear filters
-                </button>
-              )}
-            </div>
-            <div className="grid grid-cols-2 lg:grid-cols-3 gap-2">
+            )}
+          </button>
+        </div>
+
+        {showControls && (
+          <div className="absolute top-12 left-3 bottom-3 z-10 w-64 flex flex-col gap-2 overflow-y-auto">
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Semantic Weights</p>
               <SliderControl label="Role" value={layoutWeights.role} onChange={(v) => scheduleLayoutWeightUpdate("role", v)} />
               <SliderControl label="Access" value={layoutWeights.access} onChange={(v) => scheduleLayoutWeightUpdate("access", v)} />
               <SliderControl label="Last Added" value={layoutWeights.lastAdded} onChange={(v) => scheduleLayoutWeightUpdate("lastAdded", v)} />
@@ -1041,13 +1048,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               <SliderControl label="Modules" value={layoutWeights.modules} onChange={(v) => scheduleLayoutWeightUpdate("modules", v)} />
               <SliderControl label="User Name" value={layoutWeights.userName} onChange={(v) => scheduleLayoutWeightUpdate("userName", v)} />
             </div>
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Physics</p>
               <SliderControl label="Attract" value={physicsSettings.attraction} onChange={(v) => schedulePhysicsSettingUpdate("attraction", v)} />
               <SliderControl label="Repel" value={physicsSettings.repulsion} onChange={(v) => schedulePhysicsSettingUpdate("repulsion", v)} />
               <SliderControl label="Damping" value={physicsSettings.damping} onChange={(v) => schedulePhysicsSettingUpdate("damping", v)} />
               <SliderControl label="Motion" value={physicsSettings.motion} onChange={(v) => schedulePhysicsSettingUpdate("motion", v)} />
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-2">
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Filters</p>
+                {hasActiveFilters && (
+                  <button
+                    onClick={() => setFilters(DEFAULT_FILTERS)}
+                    className="text-[10px] px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
               <FilterMenu
                 label="Roles"
                 options={filterOptions.roles}
@@ -1081,7 +1100,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               />
             </div>
           </div>
-        </div>
+        )}
 
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
