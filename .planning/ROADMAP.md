@@ -121,6 +121,22 @@ Plans:
 - [ ] 07-02-PLAN.md — ACC Analysis tab (AccAnalysisPanel with KPIs, role table, module fingerprints)
 - [ ] 07-03-PLAN.md — ACC Users Graph v1 (force-directed SVG, third tab, LOD-style visuals)
 
+### Phase 9: ACC Users Graph v2 — User-Only Nodes, Similarity Layout & Advanced Filters
+
+**Goal:** Redesign the ACC Users Graph so it shows only user nodes (one per user×project instance, no hub nodes for project/role/module), positions nodes by 6-property similarity (user name, project name, role name, admin access, last added, individual access), fills the full available canvas width, and provides an advanced filter panel with role, admin access, individual access, and project name filters — no "+more" truncation.
+**Depends on:** Phase 8
+**Requirements:** GRAPH-V2-01, GRAPH-V2-02, GRAPH-V2-03, GRAPH-V2-04
+**Success Criteria** (what must be TRUE):
+  1. Zero hub nodes (project/role/module) in the rendered graph — only user×project instance nodes
+  2. Canvas fills the full width of the graph tab — no page background visible on left/right sides
+  3. Spatial positions are computed from all 6 properties: user name, project name, role, admin access, last added, individual access
+  4. Filter panel supports: role (multi-select, all options visible), admin access (toggle), individual access (toggle) — no "+more" truncation
+  5. Rebuilding the graph cache invalidates the old hub-node schema automatically
+**Plans**: 1 plan
+
+Plans:
+- [ ] 09-01-PLAN.md — Remove hubs, add 6-property layout, ResizeObserver, advanced filter panel
+
 ## Progress
 
 | Phase | Plans Complete | Status | Completed |
@@ -133,6 +149,7 @@ Plans:
 | 6. ACC Project Intelligence | 4/4 | Complete | 2026-04-22 |
 | 7. ACC Analysis & Graph | 3/3 | Complete   | 2026-04-23 |
 | 8. Graph Layout Cache | 2/2 | Complete   | 2026-04-23 |
+| 9. ACC Users Graph v2 | 0/1 | Not started | - |
 
 ### Phase 8: Graph Layout Cache — pre-computed force positions with dataHash invalidation
 
