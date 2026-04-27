@@ -476,7 +476,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const nextWeights = { ...layoutWeightsRef.current, [key]: value };
     layoutWeightsRef.current = nextWeights;
     setLayoutWeights(nextWeights);
-    requestAnimationFrame(() => restartOrganicLayout("retarget"));
+    requestAnimationFrame(() => restartOrganicLayout("restart"));
   }, [restartOrganicLayout]);
 
   const schedulePhysicsSettingUpdate = useCallback((key: keyof PhysicsSettings, value: number) => {

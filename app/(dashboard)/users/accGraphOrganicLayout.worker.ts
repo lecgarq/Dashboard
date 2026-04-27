@@ -42,7 +42,6 @@ interface SimilarityLink {
 const TICK_MS = 16;
 const POST_EVERY_TICKS = 2;
 const NEIGHBOR_COUNT = 5;
-const MIN_SIMILARITY = 0.12;
 
 let session = 0;
 let nodeIds: string[] = [];
@@ -117,7 +116,7 @@ function rebuildLinks(): void {
       if (aOffset === bOffset) continue;
       const b = visibleIndices[bOffset];
       const score = similarity(a, b);
-      if (score >= MIN_SIMILARITY) insertTopNeighbor(topIndices, topScores, b, score);
+      insertTopNeighbor(topIndices, topScores, b, score);
     }
 
     for (let i = 0; i < NEIGHBOR_COUNT; i++) {
@@ -128,8 +127,19 @@ function rebuildLinks(): void {
       const key = `${source}:${target}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      links.push({ source, target, weight: Math.max(0.05, topScores[i]) });
+      links.push({ source, target, weight: 0.12 + Math.max(0, topScores[i]) * 0.88 });
     }
+  }
+}
+
+function wakeSimulation(amount: number): void {
+  if (!velocities.length) return;
+  const clampedAmount = Math.max(0.0005, Math.min(0.02, amount));
+  for (let offset = 0; offset < visibleIndices.length; offset++) {
+    const index = visibleIndices[offset];
+    const angle = ((index * 9301 + session * 49297) % 233280) / 233280 * Math.PI * 2;
+    velocities[index * 2] += Math.cos(angle) * clampedAmount;
+    velocities[index * 2 + 1] += Math.sin(angle) * clampedAmount;
   }
 }
 
@@ -164,9 +174,9 @@ function step(): void {
   const nodeCount = nodeIds.length;
   const fx = new Float32Array(nodeCount);
   const fy = new Float32Array(nodeCount);
-  const attraction = 0.0009 + clamp01(settings.attraction) * 0.006;
-  const anchorPull = 0.0015 + clamp01(settings.attraction) * 0.003;
-  const repulsion = 0.000012 + clamp01(settings.repulsion) * 0.00011;
+  const attraction = 0.0015 + clamp01(settings.attraction) * 0.010;
+  const anchorPull = 0.004 + clamp01(settings.attraction) * 0.010;
+  const repulsion = 0.00002 + clamp01(settings.repulsion) * 0.00018;
   const collisionRadius = 0.010 + clamp01(settings.repulsion) * 0.010;
   const damping = 0.94 - clamp01(settings.damping) * 0.42;
   const maxVelocity = 0.002 + clamp01(settings.motion) * 0.015;
@@ -279,6 +289,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "settings") {
     settings = message.settings;
+    wakeSimulation(0.002 + clamp01(settings.motion) * 0.006);
     return;
   }
 
@@ -314,6 +325,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     visibleIndices = message.visibleIndices;
     rebuildVisibleMask();
     rebuildLinks();
+    wakeSimulation(0.004 + clamp01(settings.motion) * 0.006);
     return;
   }
 
@@ -321,5 +333,6 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     visibleIndices = message.visibleIndices;
     rebuildVisibleMask();
     rebuildLinks();
+    wakeSimulation(0.002);
   }
 };
