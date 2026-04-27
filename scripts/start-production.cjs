@@ -8,10 +8,16 @@ const { spawn } = require("child_process");
 const ngrok = require("@ngrok/ngrok");
 
 // Start Next.js
+// Cap heap at 460 MB so V8 gives a clean OOM error before the Railway container
+// (typically 512 MB) gets killed by the OS, making the crash easier to diagnose.
 const port = process.env.PORT || "3000";
+const existingNodeOptions = process.env.NODE_OPTIONS ?? "";
+const nodeOptions = existingNodeOptions.includes("--max-old-space-size")
+  ? existingNodeOptions
+  : `${existingNodeOptions} --max-old-space-size=460`.trim();
 const nextApp = spawn("node_modules/.bin/next", ["start", "-H", "0.0.0.0", "--port", port], {
   stdio: "inherit",
-  env: process.env,
+  env: { ...process.env, NODE_OPTIONS: nodeOptions },
 });
 
 nextApp.on("error", (err) => {

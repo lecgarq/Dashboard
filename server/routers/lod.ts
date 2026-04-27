@@ -196,6 +196,19 @@ export const lodRouter = router({
           const resultIds: string[] = JSON.parse(cached.resultIds);
           const families = await ctx.db.lodFamily.findMany({
             where: { id: { in: resultIds } },
+            select: {
+              id: true,
+              nameOfFile: true,
+              familyName: true,
+              finalCategory: true,
+              lodLabel: true,
+              provider: true,
+              caption: true,
+              fullDescription: true,
+              confidenceLevel: true,
+              imagePath: true,
+              possibleCategories: true,
+            },
           });
           const familyMap = new Map(families.map((family) => [family.id, family]));
 
@@ -283,8 +296,13 @@ export const lodRouter = router({
     }),
 
   getGraphData: protectedProcedure.query(async ({ ctx }) => {
-    return ctx.db.lodGraphNode.findMany({
-      include: {
+    const nodes = await ctx.db.lodGraphNode.findMany({
+      select: {
+        id: true,
+        familyId: true,
+        x: true,
+        y: true,
+        neighbors: true,
         family: {
           select: {
             id: true,
@@ -296,6 +314,9 @@ export const lodRouter = router({
         },
       },
     });
+    // Client uses at most 10 neighbors (getSafeNeighbors limit); trim here to avoid
+    // serializing the full HNSW graph on every page load.
+    return nodes.map((node) => ({ ...node, neighbors: node.neighbors.slice(0, 10) }));
   }),
 
   getSimilarFamilies: protectedProcedure
