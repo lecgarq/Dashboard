@@ -62,7 +62,7 @@ interface GraphFilters {
   roles: string[];
   lastAddedBuckets: string[];
   adminAccess: "all" | "admin" | "non-admin";
-  individualAccess: "all" | "configured" | "bare";
+  modules: string[];
 }
 
 interface FilterOption {
@@ -85,7 +85,7 @@ export interface AccUsersGraphProps {
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
-const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", individualAccess: "all" };
+const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", modules: [] };
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -152,8 +152,7 @@ function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
   if (filters.lastAddedBuckets.length > 0 && !filters.lastAddedBuckets.includes(node.lastAddedBucket || "Unknown")) return false;
   if (filters.adminAccess === "admin" && !node.isAdmin) return false;
   if (filters.adminAccess === "non-admin" && node.isAdmin) return false;
-  if (filters.individualAccess === "configured" && !node.individualAccess) return false;
-  if (filters.individualAccess === "bare" && node.individualAccess) return false;
+  if (filters.modules.length > 0 && !node.modules.some((m) => filters.modules.includes(m))) return false;
   return true;
 }
 
@@ -195,7 +194,7 @@ function averageFeatureAnchor(values: readonly string[], salt: string): { x: num
 function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeights): Float32Array {
   const positions = new Float32Array(nodes.length * 2);
   const maxWeight = Math.max(1,
-    weights.role + weights.access + weights.lastAdded + weights.project + weights.individualAccess + weights.userName
+    weights.role + weights.access + weights.lastAdded + weights.project + weights.modules + weights.userName
   );
 
   for (let i = 0; i < nodes.length; i++) {
@@ -210,9 +209,7 @@ function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeig
     const lastAddedAnchor = node.lastAddedBucket
       ? featureAnchor(node.lastAddedBucket, "lastAdded")
       : { x: 0, y: 0 };
-    const individualAccessAnchor = node.individualAccess
-      ? { x: -0.18, y: 0.35 }
-      : { x: 0.18, y: -0.35 };
+    const modulesAnchor = averageFeatureAnchor(node.modules ?? [], "module");
     const userNameAnchor = node.name
       ? featureAnchor(node.name.toLowerCase(), "userName")
       : { x: 0, y: 0 };
@@ -242,10 +239,10 @@ function computeSemanticPositions(nodes: readonly SimNode[], weights: LayoutWeig
       y += access.y * weights.access;
       usedWeight += weights.access;
     }
-    if (weights.individualAccess > 0) {
-      x += individualAccessAnchor.x * weights.individualAccess;
-      y += individualAccessAnchor.y * weights.individualAccess;
-      usedWeight += weights.individualAccess;
+    if (weights.modules > 0 && modulesAnchor.weight > 0) {
+      x += modulesAnchor.x * weights.modules;
+      y += modulesAnchor.y * weights.modules;
+      usedWeight += weights.modules;
     }
     if (weights.userName > 0 && node.name) {
       x += userNameAnchor.x * weights.userName;
@@ -728,7 +725,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   useEffect(() => {
     filtersRef.current = filters;
-    hasActiveFiltersRef.current = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.individualAccess !== "all";
+    hasActiveFiltersRef.current = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
     rebuildVisibleIndices();
   }, [filters, rebuildVisibleIndices]);
 
@@ -902,6 +899,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const filterOptions = useMemo(() => {
     const roleCount = new Map<string, number>();
     const lastAddedCount = new Map<string, number>();
+    const moduleCount = new Map<string, number>();
 
     const nodes = graphQuery.data?.hit ? (graphQuery.data.nodes as AccGraphNode[]) : [];
     for (const node of nodes) {
@@ -913,6 +911,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
       const lastAddedBucket = node.lastAddedBucket || "Unknown";
       lastAddedCount.set(lastAddedBucket, (lastAddedCount.get(lastAddedBucket) ?? 0) + 1);
+
+      for (const mod of node.modules ?? []) {
+        moduleCount.set(mod, (moduleCount.get(mod) ?? 0) + 1);
+      }
     }
 
     const roles: FilterOption[] = [...roleCount.entries()]
@@ -925,10 +927,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         b.value === "Unknown" ? -1 :
         b.value.localeCompare(a.value)
       ));
+    const modules: FilterOption[] = [...moduleCount.entries()]
+      .map(([value, count]) => ({ value, label: moduleLabel(value), count }))
+      .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
 
-    return { roles, lastAddedBuckets };
+    return { roles, lastAddedBuckets, modules };
   }, [graphQuery.data]);
-  const hasActiveFilters = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.individualAccess !== "all";
+  const hasActiveFilters = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -1033,7 +1038,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               <SliderControl label="Access" value={layoutWeights.access} onChange={(v) => scheduleLayoutWeightUpdate("access", v)} />
               <SliderControl label="Last Added" value={layoutWeights.lastAdded} onChange={(v) => scheduleLayoutWeightUpdate("lastAdded", v)} />
               <SliderControl label="Project" value={layoutWeights.project} onChange={(v) => scheduleLayoutWeightUpdate("project", v)} />
-              <SliderControl label="Indiv. Access" value={layoutWeights.individualAccess} onChange={(v) => scheduleLayoutWeightUpdate("individualAccess", v)} />
+              <SliderControl label="Modules" value={layoutWeights.modules} onChange={(v) => scheduleLayoutWeightUpdate("modules", v)} />
               <SliderControl label="User Name" value={layoutWeights.userName} onChange={(v) => scheduleLayoutWeightUpdate("userName", v)} />
             </div>
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
@@ -1067,15 +1072,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 ]}
                 onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
               />
-              <ToggleFilterControl
-                label="Individual Access"
-                value={filters.individualAccess}
-                options={[
-                  { value: "all", label: "All" },
-                  { value: "configured", label: "Has config" },
-                  { value: "bare", label: "Bare member" },
-                ]}
-                onChange={(value) => setFilters((current) => ({ ...current, individualAccess: value as GraphFilters["individualAccess"] }))}
+              <FilterMenu
+                label="Modules"
+                options={filterOptions.modules}
+                selected={filters.modules}
+                onToggle={(value) => setFilters((current) => ({ ...current, modules: toggleValue(current.modules, value) }))}
+                maxVisible={Infinity}
               />
             </div>
           </div>

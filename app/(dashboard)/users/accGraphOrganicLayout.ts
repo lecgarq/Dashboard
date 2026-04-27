@@ -9,7 +9,7 @@ export interface OrganicLayoutNode {
   isAdmin: boolean;
   roles: string[];
   lastAddedBucket: string;
-  individualAccess: boolean;
+  modules: string[];
 }
 
 export interface LayoutWeights {
@@ -17,7 +17,7 @@ export interface LayoutWeights {
   access: number;
   lastAdded: number;
   project: number;
-  individualAccess: number;
+  modules: number;
   userName: number;
 }
 
@@ -33,7 +33,7 @@ export const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = {
   access: 38,
   lastAdded: 45,
   project: 68,
-  individualAccess: 42,
+  modules: 42,
   userName: 30,
 };
 
@@ -126,7 +126,7 @@ export function computeSemanticSeedPositions(nodes: readonly OrganicLayoutNode[]
   const positions = new Float32Array(nodes.length * 2);
   const maxWeight = Math.max(
     1,
-    weights.role + weights.access + weights.lastAdded + weights.project + weights.individualAccess + weights.userName,
+    weights.role + weights.access + weights.lastAdded + weights.project + weights.modules + weights.userName,
   );
 
   for (let i = 0; i < nodes.length; i++) {
@@ -135,7 +135,7 @@ export function computeSemanticSeedPositions(nodes: readonly OrganicLayoutNode[]
     const roles = averageFeatureAnchor(node.roles, "role");
     const access = node.isAdmin ? { x: -0.42, y: -0.28 } : { x: 0.32, y: 0.22 };
     const lastAddedAnchor = node.lastAddedBucket ? featureAnchor(node.lastAddedBucket, "lastAdded") : { x: 0, y: 0 };
-    const individualAccessAnchor = node.individualAccess ? { x: -0.18, y: 0.35 } : { x: 0.18, y: -0.35 };
+    const modulesAnchor = averageFeatureAnchor(node.modules ?? [], "module");
     const userNameAnchor = node.name ? featureAnchor(node.name.toLowerCase(), "userName") : { x: 0, y: 0 };
     const jitter = featureAnchor(node.id, "instance");
 
@@ -163,10 +163,10 @@ export function computeSemanticSeedPositions(nodes: readonly OrganicLayoutNode[]
       y += access.y * weights.access;
       usedWeight += weights.access;
     }
-    if (weights.individualAccess > 0) {
-      x += individualAccessAnchor.x * weights.individualAccess;
-      y += individualAccessAnchor.y * weights.individualAccess;
-      usedWeight += weights.individualAccess;
+    if (weights.modules > 0 && modulesAnchor.weight > 0) {
+      x += modulesAnchor.x * weights.modules;
+      y += modulesAnchor.y * weights.modules;
+      usedWeight += weights.modules;
     }
     if (weights.userName > 0 && node.name) {
       x += userNameAnchor.x * weights.userName;
@@ -219,12 +219,9 @@ export function computeSemanticVectors(
     }
     addHashedFeature(vectors, offset, node.isAdmin ? "access:admin" : "access:member", weights.access);
     addHashedFeature(vectors, offset, `last-added:${node.lastAddedBucket || "unknown"}`, weights.lastAdded);
-    addHashedFeature(
-      vectors,
-      offset,
-      node.individualAccess ? "individual-access:configured" : "individual-access:bare",
-      weights.individualAccess,
-    );
+    for (const mod of node.modules ?? []) {
+      addTextFeatures(vectors, offset, mod, weights.modules, "module");
+    }
 
     let magnitude = 0;
     for (let j = 0; j < SEMANTIC_VECTOR_SIZE; j++) {
