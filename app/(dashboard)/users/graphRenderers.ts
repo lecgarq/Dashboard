@@ -27,6 +27,7 @@ export interface GraphRenderFrame {
   positions: Float32Array;
   nodeIndexMap: ReadonlyMap<string, number>;
   userIndices?: Uint32Array;
+  links?: { sources: Int32Array; targets: Int32Array };
   selectedNodeId: string | null;
   selectedNodeIndex: number;
   highlightSet: ReadonlySet<number>;
@@ -125,6 +126,34 @@ export class CanvasGraphRenderer implements GraphRenderer {
     ctx.translate(-view.x, -view.y);
 
     const bounds = getVisibleWorldBounds(view, frame.cssWidth, frame.cssHeight, 50 / view.scale);
+
+    // Draw connection edges — very subtle halftone style
+    if (frame.links && frame.links.sources.length > 0 && frame.positions.length > 0) {
+      const { sources, targets } = frame.links;
+      ctx.globalAlpha = frame.isInteracting ? 0.04 : 0.07;
+      ctx.strokeStyle = "#9CA3AF";
+      ctx.lineWidth = 0.7 / view.scale;
+      ctx.beginPath();
+      for (let i = 0; i < sources.length; i++) {
+        const s = sources[i];
+        const t = targets[i];
+        const sx = frame.positions[s * 2];
+        const sy = frame.positions[s * 2 + 1];
+        const tx = frame.positions[t * 2];
+        const ty = frame.positions[t * 2 + 1];
+        if (
+          sx < bounds.minWX && tx < bounds.minWX ||
+          sx > bounds.maxWX && tx > bounds.maxWX ||
+          sy < bounds.minWY && ty < bounds.minWY ||
+          sy > bounds.maxWY && ty > bounds.maxWY
+        ) continue;
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(tx, ty);
+      }
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    }
+
     const hasSelection = frame.selectedNodeIndex >= 0;
     const dimBatches = new Map<string, [number, number][]>();
     const brightBatches = new Map<string, [number, number][]>();

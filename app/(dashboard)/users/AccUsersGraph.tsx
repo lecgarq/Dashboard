@@ -71,13 +71,9 @@ interface FilterOption {
   count: number;
 }
 
-interface OrganicWorkerTick {
-  type: "tick";
-  session: number;
-  positions: Float32Array;
-  averageVelocity: number;
-  linkCount: number;
-}
+type OrganicWorkerMessage =
+  | { type: "tick"; session: number; positions: Float32Array; averageVelocity: number; linkCount: number }
+  | { type: "links"; session: number; sources: Int32Array; targets: Int32Array };
 
 export interface AccUsersGraphProps {
   users: BulkAccUser[];
@@ -314,6 +310,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [layoutWeights, setLayoutWeights] = useState<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
   const [physicsSettings, setPhysicsSettings] = useState<PhysicsSettings>(DEFAULT_PHYSICS_SETTINGS);
   const [isPaused, setIsPaused] = useState(false);
+  const [pickMode, setPickMode] = useState(false);
+  const pickModeRef = useRef(false);
+  const isDraggingNodeRef = useRef(false);
+  const draggedNodeIdxRef = useRef(-1);
+  const linksRef = useRef<{ sources: Int32Array; targets: Int32Array }>({
+    sources: new Int32Array(0),
+    targets: new Int32Array(0),
+  });
   const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
@@ -457,6 +461,19 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     markGraphDirty();
   }, [markGraphDirty]);
 
+  const togglePickMode = useCallback(() => {
+    const next = !pickModeRef.current;
+    pickModeRef.current = next;
+    setPickMode(next);
+    // Release any in-progress node drag when toggling off
+    if (!next && isDraggingNodeRef.current) {
+      const idx = draggedNodeIdxRef.current;
+      isDraggingNodeRef.current = false;
+      draggedNodeIdxRef.current = -1;
+      if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+    }
+  }, []);
+
   const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
     if (!posRef.current.length) return;
 
@@ -598,9 +615,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const worker = new Worker(new URL("./accGraphOrganicLayout.worker.ts", import.meta.url), { type: "module" });
     organicWorkerRef.current = worker;
 
-    worker.onmessage = (event: MessageEvent<OrganicWorkerTick>) => {
+    worker.onmessage = (event: MessageEvent<OrganicWorkerMessage>) => {
       const message = event.data;
-      if (message.type !== "tick" || message.session !== layoutSessionRef.current) return;
+      if (message.session !== layoutSessionRef.current) return;
+      if (message.type === "links") {
+        linksRef.current = { sources: message.sources, targets: message.targets };
+        markGraphDirty();
+        return;
+      }
+      if (message.type !== "tick") return;
       posRef.current = message.positions;
       const now = performance.now();
       if (now - lastMetricUpdateAtRef.current > 250) {
@@ -733,6 +756,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         positions,
         nodeIndexMap: nodeIndexMapRef.current,
         userIndices: instIdxRef.current,
+        links: linksRef.current,
         selectedNodeId: selectedIndex >= 0 ? selectedId : null,
         selectedNodeIndex: selectedIndex,
         highlightSet,
@@ -755,17 +779,48 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const handlePointerDown = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
-    isDragging.current = true;
-    setIsDraggingState(true);
     clickStart.current = { x: event.clientX, y: event.clientY };
     lastMouse.current = { x: event.clientX, y: event.clientY };
     event.currentTarget.setPointerCapture(event.pointerId);
-  }, []);
+
+    if (pickModeRef.current) {
+      const rect = event.currentTarget.getBoundingClientRect();
+      const lx = event.clientX - rect.left;
+      const ly = event.clientY - rect.top;
+      const node = hitTest(lx, ly);
+      if (node) {
+        const idx = nodeIndexMapRef.current.get(node.id) ?? -1;
+        if (idx >= 0) {
+          isDraggingNodeRef.current = true;
+          draggedNodeIdxRef.current = idx;
+          setIsDraggingState(true);
+          return;
+        }
+      }
+    }
+
+    isDragging.current = true;
+    setIsDraggingState(true);
+  }, [hitTest]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
     const lx = event.clientX - rect.left;
     const ly = event.clientY - rect.top;
+
+    if (isDraggingNodeRef.current && draggedNodeIdxRef.current >= 0) {
+      const { width, height } = getViewportSize(containerRef.current);
+      const v = view.current;
+      const wx = v.x + (lx - width / 2) / v.scale;
+      const wy = v.y + (ly - height / 2) / v.scale;
+      const idx = draggedNodeIdxRef.current;
+      posRef.current[idx * 2] = wx;
+      posRef.current[idx * 2 + 1] = wy;
+      organicWorkerRef.current?.postMessage({ type: "drag", nodeIndex: idx, x: wx, y: wy });
+      rebuildGrid();
+      markGraphDirty();
+      return;
+    }
 
     if (isDragging.current) {
       const dx = event.clientX - lastMouse.current.x;
@@ -784,10 +839,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
       tooltipRef.current.style.opacity = node ? "1" : "0";
     }
-  }, [hitTest, markGraphDirty]);
+  }, [hitTest, markGraphDirty, rebuildGrid]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
+
+    if (isDraggingNodeRef.current) {
+      const idx = draggedNodeIdxRef.current;
+      isDraggingNodeRef.current = false;
+      draggedNodeIdxRef.current = -1;
+      setIsDraggingState(false);
+      if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+      rebuildGrid();
+      markGraphDirty();
+      return;
+    }
+
     isDragging.current = false;
     setIsDraggingState(false);
     rebuildGrid();
@@ -904,7 +971,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const renderCanvasClass = cn(
     "absolute inset-0 block w-full h-full",
-    isDraggingState ? "cursor-grabbing" : hoveredNode ? "cursor-pointer" : "cursor-crosshair",
+    isDraggingState
+      ? "cursor-grabbing"
+      : pickMode && hoveredNode
+        ? "cursor-grab"
+        : hoveredNode
+          ? "cursor-pointer"
+          : "cursor-crosshair",
   );
 
   if (!users.length) {
@@ -916,7 +989,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }
 
   return (
-    <div className="flex h-full gap-0 relative">
+    <div className="flex h-full">
       <div
         ref={containerRef}
         data-render-backend={renderBackend}
@@ -1066,8 +1139,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-3 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
+        <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
+          <div className="w-px h-3 bg-gray-200 shrink-0" />
+          <button
+            onClick={togglePickMode}
+            className={cn(
+              "flex items-center gap-1.5 text-[10px] font-medium transition-colors rounded-md px-1.5 py-0.5",
+              pickMode
+                ? "bg-gray-900 text-white"
+                : "text-gray-500 hover:text-gray-800",
+            )}
+          >
+            <span>Pick {pickMode ? "On" : "Off"}</span>
+          </button>
         </div>
 
         <canvas
@@ -1107,18 +1192,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <UserTooltip node={hoveredNode} />
           )}
         </div>
-      </div>
 
-      {selectedNode && (
-        <SidePanel
-          state={selectedNode}
-          onClose={() => {
-            setSelectedNode(null);
-            selectedNodeRef.current = null;
-            markGraphDirty();
-          }}
-        />
-      )}
+        {selectedNode && (
+          <div className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none">
+            <div className="pointer-events-auto h-full">
+              <SidePanel
+                state={selectedNode}
+                onClose={() => {
+                  setSelectedNode(null);
+                  selectedNodeRef.current = null;
+                  markGraphDirty();
+                }}
+              />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
@@ -1324,7 +1413,7 @@ function SidePanel({
   const title = node.name || node.email;
 
   return (
-    <div className="w-72 shrink-0 ml-3 bg-white rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-sm">
+    <div className="w-full h-full bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-lg">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="text-sm font-semibold text-gray-900 leading-snug">{title}</h3>

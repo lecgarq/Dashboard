@@ -31,6 +31,8 @@ type WorkerRequest =
   | { type: "visibility"; session: number; visibleIndices: UintBuffer }
   | { type: "settings"; settings: PhysicsSettings }
   | { type: "pause"; paused: boolean }
+  | { type: "drag"; nodeIndex: number; x: number; y: number }
+  | { type: "release"; nodeIndex: number }
   | { type: "stop" };
 
 interface SimilarityLink {
@@ -57,6 +59,9 @@ let settings: PhysicsSettings = { attraction: 58, repulsion: 64, damping: 72, mo
 let paused = false;
 let timer: ReturnType<typeof setInterval> | null = null;
 let tickCounter = 0;
+let draggedIndex = -1;
+let draggedX = 0;
+let draggedY = 0;
 
 const workerSelf = self as unknown as WorkerGlobal;
 
@@ -130,6 +135,13 @@ function rebuildLinks(): void {
       links.push({ source, target, weight: 0.12 + Math.max(0, topScores[i]) * 0.88 });
     }
   }
+
+  const linkSources = new Int32Array(links.map(l => l.source));
+  const linkTargets = new Int32Array(links.map(l => l.target));
+  workerSelf.postMessage(
+    { type: "links", session, sources: linkSources, targets: linkTargets },
+    [linkSources.buffer as ArrayBuffer, linkTargets.buffer as ArrayBuffer],
+  );
 }
 
 function wakeSimulation(amount: number): void {
@@ -248,9 +260,19 @@ function step(): void {
     fy[link.target] -= ny * force;
   }
 
+  // Ambient drift — keeps the graph organically alive at rest
+  const t = tickCounter * 0.0008;
+  for (let offset = 0; offset < visibleIndices.length; offset++) {
+    const i = visibleIndices[offset];
+    const phase = (i * 7.391) % (Math.PI * 2);
+    fx[i] += Math.sin(t * 0.9 + phase) * 0.00015;
+    fy[i] += Math.cos(t * 0.65 + phase * 1.4) * 0.00015;
+  }
+
   let totalVelocity = 0;
   for (let offset = 0; offset < visibleIndices.length; offset++) {
     const i = visibleIndices[offset];
+    if (i === draggedIndex) continue;
     fx[i] += (anchors[i * 2] - positions[i * 2]) * anchorPull;
     fy[i] += (anchors[i * 2 + 1] - positions[i * 2 + 1]) * anchorPull;
 
@@ -268,6 +290,14 @@ function step(): void {
     positions[i * 2] = Math.max(-0.35, Math.min(1.35, positions[i * 2] + vx));
     positions[i * 2 + 1] = Math.max(-0.35, Math.min(1.35, positions[i * 2 + 1] + vy));
     totalVelocity += Math.sqrt(vx * vx + vy * vy);
+  }
+
+  // Pin dragged node to pointer position
+  if (draggedIndex >= 0 && draggedIndex < nodeIds.length) {
+    positions[draggedIndex * 2] = draggedX;
+    positions[draggedIndex * 2 + 1] = draggedY;
+    velocities[draggedIndex * 2] = 0;
+    velocities[draggedIndex * 2 + 1] = 0;
   }
 
   tickCounter++;
@@ -323,6 +353,21 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     return;
   }
 
+  if (message.type === "drag") {
+    draggedIndex = message.nodeIndex;
+    draggedX = message.x;
+    draggedY = message.y;
+    return;
+  }
+
+  if (message.type === "release") {
+    if (draggedIndex === message.nodeIndex) {
+      draggedIndex = -1;
+      wakeSimulation(0.025);
+    }
+    return;
+  }
+
   if (message.session !== session) return;
 
   if (message.type === "retarget") {
@@ -341,5 +386,6 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     rebuildVisibleMask();
     rebuildLinks();
     wakeSimulation(0.002);
+    return;
   }
 };
