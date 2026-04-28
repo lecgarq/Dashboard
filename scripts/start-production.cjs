@@ -30,6 +30,24 @@ nextApp.on("exit", (code) => {
   process.exit(code ?? 1);
 });
 
+// Start LOD Engine (Python) if enabled
+let lodEngine = null;
+if (process.env.ENABLE_LOD === "true") {
+  console.log("[prod] Starting LOD Engine (Python)...");
+  lodEngine = spawn("python", ["services/lod-engine/server.py"], {
+    stdio: "inherit",
+    env: process.env,
+  });
+
+  lodEngine.on("error", (err) => {
+    console.error("[lod] Failed to start:", err);
+  });
+
+  lodEngine.on("exit", (code) => {
+    console.warn([lod] Exited with code \);
+  });
+}
+
 // Start ngrok tunnel (connects to localhost:3000)
 async function startTunnel(retries = 5, delayMs = 8000) {
   const authtoken = process.env.NGROK_AUTHTOKEN;
@@ -65,11 +83,12 @@ async function startTunnel(retries = 5, delayMs = 8000) {
 startTunnel();
 
 process.on("SIGTERM", () => {
-  nextApp.kill("SIGTERM");
+  nextApp.kill("SIGTERM");`n  if (lodEngine) lodEngine.kill("SIGTERM");
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
-  nextApp.kill("SIGINT");
+  nextApp.kill("SIGINT");`n  if (lodEngine) lodEngine.kill("SIGINT");
   process.exit(0);
 });
+
