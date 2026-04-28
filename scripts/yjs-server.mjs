@@ -5,7 +5,7 @@
  * event-driven architecture using Hocuspocus.
  */
 
-import { Server } from "@hocuspocus/server";
+import { Server } from "@hocuspocus/server";`nimport * as Y from "yjs";
 import { Database } from "@hocuspocus/extension-database";
 import { Logger } from "@hocuspocus/extension-logger";
 import { PrismaClient } from "@prisma/client";
@@ -196,15 +196,42 @@ const server = new Server({
       /**
        * Store document state to Prisma when updates occur (debounced by Hocuspocus)
        */
-      store: async ({ documentName, state }) => {
+            store: async ({ documentName, state }) => {
         const { type, id } = parseRoomDetails(documentName);
         if (type === "unknown" || !id) return;
 
         try {
           const buffer = Buffer.from(state);
+          
+          // Extract human-readable content from Y.Doc
+          const ydoc = new Y.Doc();
+          Y.applyUpdate(ydoc, state);
+          // Tiptap uses an XmlFragment named 'default'
+          const xmlFragment = ydoc.getXmlFragment("default");
+          const content = xmlFragment.toString();
+
           if (type === "clash") {
             await prisma.clashWiki.update({
               where: { id },
+              data: { 
+                yjsState: buffer,
+                content: content 
+              },
+            });
+          } else if (type === "sim") {
+            await prisma.simWiki.update({
+              where: { id },
+              data: { 
+                yjsState: buffer,
+                content: content 
+              },
+            });
+          }
+          console.log([hocuspocus] Persisted dual state for \-\);
+        } catch (err) {
+          console.error([hocuspocus] Database store error (\-\):, err);
+        }
+      },
               data: { yjsState: buffer },
             });
           } else if (type === "sim") {
@@ -224,3 +251,4 @@ const server = new Server({
 
 server.listen();
 console.log(`[hocuspocus] Wiki Collaboration Server running on port ${process.env.PORT || 4444}`);
+
