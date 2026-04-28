@@ -341,6 +341,24 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
   }
 
+  // Scale factor: organic layout outputs [0,1] normalized; Cosmos space is 4096 centered at 0.
+  // Mapping: cosmosCoord = (normalizedCoord - 0.5) * COSMOS_SPACE_SCALE
+  private static readonly COSMOS_SPACE_SCALE = 2000;
+
+  /**
+   * Scale a [0,1]-normalized positions Float32Array to Cosmos simulation space.
+   * Cosmos default spaceSize is 4096 (centered at 0). Our organic layout outputs [0.05, 0.95].
+   * Without scaling, all nodes land within a 1×1 sub-pixel region near origin — blank white canvas.
+   */
+  private scalePositionsForCosmos(src: Float32Array): Float32Array {
+    const out = new Float32Array(src.length);
+    const scale = CosmosGraphRenderer.COSMOS_SPACE_SCALE;
+    for (let i = 0; i < src.length; i++) {
+      out[i] = (src[i] - 0.5) * scale;
+    }
+    return out;
+  }
+
   /**
    * Push data into Cosmos GPU buffers.
    * Only re-uploads when node count or link count changes — avoids VRAM churn at 60fps.
@@ -352,6 +370,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     const nodeCount = frame.nodes.length;
     const linkCount = frame.links?.sources.length ?? 0;
+    const isFirstLoad = this.lastNodeCount === 0 && nodeCount > 0;
 
     if (nodeCount !== this.lastNodeCount) {
       // Rebuild node connections for size scaling
@@ -366,7 +385,9 @@ export class CosmosGraphRenderer implements GraphRenderer {
       }
       this.nodeConnections = connections;
 
-      this.graph.setPointPositions(frame.positions);
+      // Positions come from the organic layout in [0,1] normalized space.
+      // Must be scaled to Cosmos simulation coordinates before upload.
+      this.graph.setPointPositions(this.scalePositionsForCosmos(frame.positions));
       this.graph.setPointColors(buildNodeColorBuffer(frame.nodes));
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(buildNodeSizeBuffer(nodeCount, this.nodeConnections));
@@ -378,6 +399,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
       this.graph.setLinks(buildLinkBuffer(frame.links));
       this.graph.setLinkColors(buildLinkColorBuffer(linkCount));
       this.lastLinkCount = linkCount;
+    }
+
+    // On first data load, fit the view so nodes are centered and visible.
+    // Without this, the default Cosmos camera zoom may not show the cluster.
+    if (isFirstLoad) {
+      this.graph.fitView(600);
     }
 
     // Cosmos owns its render loop — no continuous redraw needed from our RAF
