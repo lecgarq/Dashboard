@@ -26,7 +26,13 @@ This milestone completes and hardens an ACC Users Graph module that is already ~
   2. A user who navigates away from `/users` and returns five times sees a working graph every time — DevTools shows no accumulating WebGL contexts
   3. Any new ACC Admin API endpoint added to `users.ts` that uses `getAccountId(db)` receives a bare UUID — no developer has to remember to strip the `b.` prefix manually
   4. When the graph position cache contains NaN or Infinity values, the application shows a "Rebuild Cache" prompt rather than rendering all nodes at the top-left corner or crashing the physics worker
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Extract getAccountId hub ID helper (FOUND-03)
+- [ ] 01-02-PLAN.md — Renderer lifecycle fix + cache corruption banner (FOUND-02, FOUND-04)
+- [ ] 01-03-PLAN.md — Navigation state persistence + loading timeout + API error recovery
+- [ ] 01-04-PLAN.md — Production build verification + human checkpoint (FOUND-01)
 
 ### Phase 2: Cosmos.gl Renderer
 **Goal**: Users on 500+ node graphs can switch to a GPU-accelerated renderer and tune the physics simulation in real time; users on browsers without WebGL2 still get the Canvas 2D fallback
