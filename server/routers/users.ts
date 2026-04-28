@@ -208,6 +208,18 @@ function readAccGraphShape(raw: unknown): { found: boolean; roles: string[]; mod
   };
 }
 
+async function getAccountId(db: any): Promise<string> {
+  const project = await db.project.findFirst({ select: { apsHubId: true } });
+  const accountId = project?.apsHubId?.replace(/^b\./, "");
+  if (!accountId) {
+    throw new TRPCError({
+      code: "UNAUTHORIZED",
+      message: "APS Hub ID is not configured. Set APS_HUB-ID in Railway environment variables.",
+    });
+  }
+  return accountId;
+}
+
 export const usersRouter = router({
   // Org directory: fetches all users from Google Workspace via People API
   getOrgDirectory: protectedProcedure.query(async ({ ctx }) => {
@@ -1036,16 +1048,7 @@ export const usersRouter = router({
 
       // 3. Get accountId from Project table
       // CRITICAL: Strip "b." prefix — ACC Admin API uses bare UUID, not Data Management hub format
-      const project = await ctx.db.project.findFirst({
-        select: { apsHubId: true },
-      });
-      const accountId = project?.apsHubId?.replace(/^b\./, "");
-      if (!accountId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "APS Hub ID is not configured. Set APS_HUB-ID in Railway environment variables.",
-        });
-      }
+      const accountId = await getAccountId(ctx.db);
 
       // 4. Search ACC for the person by email
       // Returns null if not found (empty results) — NOT a 404 error per ACC API design
@@ -1133,14 +1136,7 @@ export const usersRouter = router({
         });
       }
 
-      const project = await ctx.db.project.findFirst({ select: { apsHubId: true } });
-      const accountId = project?.apsHubId?.replace(/^b\./, "");
-      if (!accountId) {
-        throw new TRPCError({
-          code: "UNAUTHORIZED",
-          message: "APS Hub ID not configured.",
-        });
-      }
+      const accountId = await getAccountId(ctx.db);
 
       // 2. Emails to sync — use client-provided list (full directory) or fall back to registered users
       const emails =
@@ -1400,11 +1396,7 @@ export const usersRouter = router({
     } catch (error) {
       throw toAccRouterError(error, "ACC Admin API: APS app credentials are not configured.");
     }
-    const project = await ctx.db.project.findFirst({ select: { apsHubId: true } });
-    const accountId = project?.apsHubId?.replace(/^b\./, "");
-    if (!accountId) {
-      throw new TRPCError({ code: "UNAUTHORIZED", message: "APS Hub ID is not configured." });
-    }
+    const accountId = await getAccountId(ctx.db);
     const { fetchAccHubRoles } = await import("@/lib/server/acc-admin");
     const roles = await fetchAccHubRoles(accountId, accessToken);
     await ctx.db.accHubRoleCache.upsert({
