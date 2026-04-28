@@ -264,7 +264,7 @@ def main() -> int:
     args = parse_args()
     project_root = Path(__file__).resolve().parent.parent
 
-    # Patch environment with current local IP before starting services
+    # Patch environment
     print("[runner] Patching environment...")
     try:
         subprocess.run(["node", "scripts/patch-env.js"], cwd=str(project_root), check=True)
@@ -272,67 +272,59 @@ def main() -> int:
         print(f"[runner] Failed to patch environment: exit code {err.returncode}")
         return err.returncode
 
-    # Ensure PostgreSQL is running before any service starts
-    print("[runner] Ensuring PostgreSQL is running...")
-    pg_result = subprocess.run(
-        ["node", "scripts/postgres-local.js", "start"],
-        cwd=str(project_root),
-        capture_output=True,
-        text=True,
-    )
-    for line in (pg_result.stdout or "").strip().splitlines():
-        print(f"[postgres] {line}")
-    if pg_result.returncode != 0:
-        for line in (pg_result.stderr or "").strip().splitlines():
-            print(f"[postgres] {line}")
-        print("[runner] WARNING: PostgreSQL may not be running — auth will fail")
+    # Ensure PostgreSQL
+    subprocess.run(["node", "scripts/postgres-local.js", "start"], cwd=str(project_root), capture_output=True)
 
-    # Free all ports
+    # Free ports
     if not args.no_kill:
-        free_port(args.port)
-        if not args.no_yjs:
-            free_port(4444)
-        if not args.no_lod_encoder:
-            free_port(8091)
-        if not args.no_lod:
-            free_port(5173)
-            free_port(8080)
+        for p in [args.port, 4444, 8091, 5173, 8080]:
+            free_port(p)
 
-    # Avoid stale _next/static references that can cause layout.css 404s in dev.
     if not args.no_clean:
         clean_next_cache(project_root)
 
-    # Start Yjs WebSocket server in background thread
+    managed_services: list[ManagedService] = []
+
     if not args.no_yjs:
-        yjs_thread = threading.Thread(target=run_yjs_server, args=(project_root,), daemon=True)
-        yjs_thread.start()
-
+        managed_services.append(get_yjs_service(project_root))
     if not args.no_lod_encoder:
-        encoder_thread = threading.Thread(
-            target=run_lod_query_encoder,
-            args=(project_root,),
-            daemon=True,
-        )
-        encoder_thread.start()
-
-    # Start LOD Checker in background thread
+        managed_services.append(get_lod_query_encoder_service(project_root))
     if not args.no_lod:
-        lod_thread = threading.Thread(target=run_lod_checker, daemon=True)
-        lod_thread.start()
+        managed_services.append(get_lod_checker_service(project_root))
+
+    for svc in managed_services:
+        svc.start()
 
     try:
         if args.mode == "public":
-            build_code = run_next_build(project_root)
-            if build_code != 0:
-                return build_code
+            run_next_build(project_root)
+            # For public mode, we just run start and don't monitor as much, but we could
             return run_next_start(project_root, args.port)
 
-        return run_next_dev(project_root, args.port)
+        # Dev mode monitoring loop
+        dashboard_cmd = resolve_next_command(project_root, "dev", "--webpack", "-H", "0.0.0.0", "--port", str(args.port))
+        dashboard = ManagedService("dashboard", dashboard_cmd, project_root, port=args.port)
+        dashboard.start()
+
+        print("[runner] Stack is running. Monitoring background services...")
+        while dashboard.is_alive():
+            time.sleep(5)
+            for svc in managed_services:
+                if not svc.check_health():
+                    print(f"[runner] Service {svc.name} is unhealthy or dead!")
+                    svc.restart()
+        
+        return dashboard.proc.wait() if dashboard.proc else 0
+    except KeyboardInterrupt:
+        return 0
     finally:
         print("\n[runner] Shutting down all processes...")
+        for svc in managed_services:
+            svc.stop()
         kill_children()
 
 
 if __name__ == "__main__":
     sys.exit(main())
+
 
