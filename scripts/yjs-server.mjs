@@ -103,6 +103,35 @@ const server = new Server({
   /**
    * Periodic Memory Monitoring and Startup Check
    */
+    /**
+   * Periodic Background Sync Monitoring
+   */
+  async runSyncMonitor() {
+    console.log("[hocuspocus] Running background sync drift monitor...");
+    const tables = ["clashWiki", "simWiki"];
+    let totalDrifts = 0;
+
+    for (const table of tables) {
+      try {
+        const records = await prisma[table].findMany({
+          select: { id: true, title: true, yjsState: true, content: true },
+        });
+
+        for (const record of records) {
+          const hasState = !!record.yjsState;
+          const hasContent = !!record.content && record.content.length > 5;
+          if (hasState && !hasContent) {
+            console.error([hocuspocus] [DRIFT] \ (\): Binary state exists but content is empty!);
+            totalDrifts++;
+          }
+        }
+      } catch (err) {
+        console.error([hocuspocus] Sync monitor failed for table \:, err.message);
+      }
+    }
+    console.log([hocuspocus] Sync monitor complete. Found \ critical drifts.);
+  }
+
   async onListen() {
     console.log(`[hocuspocus] Server is listening. Testing database connection...`);
     try {
@@ -275,5 +304,6 @@ const server = new Server({
 
 server.listen();
 console.log(`[hocuspocus] Wiki Collaboration Server running on port ${process.env.PORT || 4444}`);
+
 
 
