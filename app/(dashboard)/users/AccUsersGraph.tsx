@@ -485,6 +485,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     return () => {
       disposed = true;
+      // IMPORTANT: null activeRendererRef BEFORE calling destroy() so the RAF
+      // loop's null-guard fires if a frame renders between cancelAnimationFrame
+      // and destroy() completing.
       activeRendererRef.current = null;
       canvasRendererRef.current?.destroy();
       canvasRendererRef.current = null;
