@@ -228,7 +228,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const clickStart = useRef({ x: 0, y: 0 });
   const selectedNodeRef = useRef<SidePanelState | null>(null);
   const isRefreshingRef = useRef(false);
-  const lastAutoFitHashRef = useRef<string | null>(null);
+  const lastAutoFitHashRef = useRef<string | null>(
+    typeof window !== "undefined" ? localStorage.getItem("acc-graph-data-hash") : null
+  );
   const lastMetricUpdateAtRef = useRef(0);
   const forceRenderUntilRef = useRef(0);
 
@@ -667,6 +669,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     if (lastAutoFitHashRef.current !== graph.dataHash) {
       zoomToFit({ immediate: true });
       lastAutoFitHashRef.current = graph.dataHash;
+      localStorage.setItem("acc-graph-data-hash", graph.dataHash);
       // Data changed — discard saved view so user sees the new full graph
       localStorage.removeItem("acc-graph-view");
     }
