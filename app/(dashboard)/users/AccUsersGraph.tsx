@@ -236,6 +236,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [loadingTimedOut, setLoadingTimedOut] = useState(false);
   const [positionCacheCorrupt, setPositionCacheCorrupt] = useState<boolean>(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("acc-graph-cache-corrupt") === "true";
@@ -686,6 +687,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, [filters]);
 
   useEffect(() => {
+    if (isReady || !users.length) {
+      setLoadingTimedOut(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setLoadingTimedOut(true), 10_000);
+    return () => window.clearTimeout(timer);
+  }, [isReady, users.length]);
+
+  useEffect(() => {
     const render = () => {
       rafId.current = requestAnimationFrame(render);
 
@@ -1017,6 +1027,24 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {graphQuery.isError && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
+            <span className="text-sm font-semibold text-gray-900 text-center px-6">
+              Could not load graph data.
+            </span>
+            <span className="mt-1 text-xs text-gray-500 text-center px-6">
+              Check your connection and try again.
+            </span>
+            <button
+              className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors disabled:opacity-50"
+              disabled={graphQuery.isFetching}
+              onClick={() => void graphQuery.refetch()}
+            >
+              {graphQuery.isFetching ? "Retrying…" : "Try Again"}
+            </button>
+          </div>
+        )}
+
         {!isReady && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
             {graphCacheNeedsBuild ? (
@@ -1046,10 +1074,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   {rebuildGraph.isPending ? "Rebuilding..." : "Rebuild Graph Cache"}
                 </button>
               </>
+            ) : loadingTimedOut ? (
+              <>
+                <span className="text-sm font-semibold text-gray-900 text-center px-6">
+                  This is taking longer than expected.
+                </span>
+                <span className="mt-1 text-xs text-gray-500 text-center px-6">
+                  Try reloading the page.
+                </span>
+                <button
+                  className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+                  onClick={() => window.location.reload()}
+                >
+                  Reload
+                </button>
+              </>
             ) : (
               <>
                 <div className="w-8 h-8 rounded-full border-4 border-emerald-500 border-t-transparent animate-spin mb-4" />
-                <span className="text-sm font-medium text-emerald-700">Loading ACC graph data...</span>
+                <span className="text-sm font-medium text-emerald-700">Loading graph...</span>
               </>
             )}
           </div>
