@@ -4,46 +4,55 @@ plan: 1
 wave: 1
 ---
 
-# Plan 1.1: Fix Edit Permissions & Restore Wiki Access
+# Plan 1.1: Families Metadata Centralization
 
 ## Objective
-Normalize the permission logic between TRPC and the Yjs collaboration endpoint to ensure users with the "EDITOR" role can always edit the wiki sections.
+Eliminate hardcoded status logic in the Families module by centralizing phase metadata (IDs, labels, colors) into a shared configuration file. This ensures consistency across the Kanban board, individual cards, and detail panels.
 
 ## Context
-- `lib/server/wiki-access.ts` (Permission logic)
-- `server/trpc.ts` (TRPC middleware)
-- `app/api/wiki-collab-token/route.ts` (Collab endpoint)
+- .gsd/SPEC.md
+- .gsd/ARCHITECTURE.md
+- lib/shared/module-schemas.ts
+- components/families/KanbanBoard.tsx
+- components/families/FamilyCard.tsx
+- components/families/FamilyDetailPanel.tsx
 
 ## Tasks
 
 <task type="auto">
-  <name>Align Wiki Permissions</name>
+  <name>Centralize Family Phase Metadata</name>
   <files>
-    <file>c:\LECG\Dashboard\lib\server\wiki-access.ts</file>
+    <file>lib/shared/family-config.ts</file>
+    <file>lib/shared/module-schemas.ts</file>
   </files>
   <action>
-    Modify `canEditWikiModule` to allow "EDITOR" role access even if the specific module is missing from `moduleAccess`, or ensure `hasModuleAccess` is consistent with the product vision.
-    
-    The current inconsistency is that TRPC allows the edit but the Yjs token endpoint rejects it.
+    1. Create `lib/shared/family-config.ts` and move the `PHASES` array from `KanbanBoard.tsx` into it as `FAMILY_PHASE_METADATA`.
+    2. Define a `FamilyPhase` type based on the keys of this metadata.
+    3. Update `lib/shared/module-schemas.ts` to import `FamilyPhase` and `familyPhaseSchema` (using Zod) from the new config if possible, or keep them synced.
+    4. Ensure colors and labels are part of the metadata object.
   </action>
-  <verify>Check that `canEditWikiModule` returns true for an EDITOR role.</verify>
-  <done>Permission logic is unified.</done>
+  <verify>Check that `lib/shared/family-config.ts` exists and exports `FAMILY_PHASE_METADATA`.</verify>
+  <done>Metadata is centralized and type-safe.</done>
 </task>
 
 <task type="auto">
-  <name>Optimize Tiptap Extension Foundation</name>
+  <name>Refactor UI Components to use Shared Metadata</name>
   <files>
-    <file>c:\LECG\Dashboard\components\clash\WikiEditor.tsx</file>
+    <file>components/families/KanbanBoard.tsx</file>
+    <file>components/families/FamilyCard.tsx</file>
+    <file>components/families/FamilyDetailPanel.tsx</file>
   </files>
   <action>
-    Review the current `extensions` array. Ensure `Collaboration` and `CollaborationCaret` are correctly initialized and that the `editable` prop strictly follows the new permission logic.
-    Check for any CSS `z-index` or `pointer-events` issues that might be blocking input in the `prose` container.
+    1. Replace local `PHASES` constant in `KanbanBoard.tsx` with import from `family-config.ts`.
+    2. Update `FamilyCard.tsx` to use the shared metadata for rendering labels and badges.
+    3. Update `FamilyDetailPanel.tsx` to use the shared metadata for the phase selection dropdown.
+    4. Remove any hardcoded "TODO", "IN_PROGRESS", etc. strings used for styling.
   </action>
-  <verify>Visual inspection of the editor state.</verify>
-  <done>Editor is responsive and ready for new blocks.</done>
+  <verify>Run `npm run lint` or check for compilation errors in these components.</verify>
+  <done>All Families UI components use centralized metadata for phase-related logic.</done>
 </task>
 
 ## Success Criteria
-- [ ] Users with the EDITOR role can successfully obtain a collab token.
-- [ ] The Tiptap editor body becomes editable (flashing cursor appears).
-- [ ] Changes made to the body are persisted to the database.
+- [ ] No hardcoded phase arrays in `KanbanBoard.tsx` or `FamilyDetailPanel.tsx`.
+- [ ] Centralized `FAMILY_PHASE_METADATA` in `lib/shared/family-config.ts`.
+- [ ] UI remains functional and looks identical to the original implementation.
