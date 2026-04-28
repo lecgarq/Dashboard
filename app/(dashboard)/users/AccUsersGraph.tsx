@@ -162,6 +162,25 @@ function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
 }
 
+function loadSavedView(): { x: number; y: number; scale: number } {
+  if (typeof window === "undefined") return { x: 0.5, y: 0.5, scale: 600 };
+  try {
+    const raw = localStorage.getItem("acc-graph-view");
+    if (!raw) return { x: 0.5, y: 0.5, scale: 600 };
+    const parsed = JSON.parse(raw) as { x: number; y: number; scale: number };
+    if (
+      typeof parsed.x === "number" && isFinite(parsed.x) &&
+      typeof parsed.y === "number" && isFinite(parsed.y) &&
+      typeof parsed.scale === "number" && isFinite(parsed.scale) && parsed.scale > 0
+    ) {
+      return parsed;
+    }
+  } catch {
+    // ignore
+  }
+  return { x: 0.5, y: 0.5, scale: 600 };
+}
+
 function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32Array | null {
   if (!Array.isArray(raw) || raw.length !== expectedLength) return null;
   const positions = new Float32Array(expectedLength);
@@ -201,9 +220,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const graphControlsRef = useRef<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const isPausedRef = useRef(false);
 
-  const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
-  const targetView = useRef({ x: 0.5, y: 0.5, scale: 600 });
+  const view = useRef(loadSavedView());
+  const targetView = useRef(loadSavedView());
   const isDragging = useRef(false);
+  const saveViewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMouse = useRef({ x: 0, y: 0 });
   const clickStart = useRef({ x: 0, y: 0 });
   const selectedNodeRef = useRef<SidePanelState | null>(null);
@@ -239,7 +259,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     activeNodeCount: 0,
     hiddenNodeCount: 0,
   });
-  const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
+  const [filters, setFilters] = useState<GraphFilters>(() => {
+    if (typeof window === "undefined") return DEFAULT_FILTERS;
+    try {
+      const raw = localStorage.getItem("acc-graph-filters");
+      if (!raw) return DEFAULT_FILTERS;
+      const parsed = JSON.parse(raw) as GraphFilters;
+      if (
+        Array.isArray(parsed.roles) &&
+        Array.isArray(parsed.lastAddedBuckets) &&
+        Array.isArray(parsed.modules) &&
+        ["all", "admin", "non-admin"].includes(parsed.adminAccess)
+      ) {
+        return parsed;
+      }
+    } catch {
+      // ignore
+    }
+    return DEFAULT_FILTERS;
+  });
   const [visibleCount, setVisibleCount] = useState(0);
   const [showControls, setShowControls] = useState(false);
 
@@ -253,6 +291,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const markGraphDirty = useCallback(() => {
     needsRenderRef.current = true;
+  }, []);
+
+  const saveView = useCallback(() => {
+    if (saveViewTimer.current) clearTimeout(saveViewTimer.current);
+    saveViewTimer.current = setTimeout(() => {
+      localStorage.setItem("acc-graph-view", JSON.stringify(view.current));
+    }, 300);
   }, []);
 
   const rebuildGrid = useCallback(() => {
@@ -621,6 +666,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     if (lastAutoFitHashRef.current !== graph.dataHash) {
       zoomToFit({ immediate: true });
       lastAutoFitHashRef.current = graph.dataHash;
+      // Data changed — discard saved view so user sees the new full graph
+      localStorage.removeItem("acc-graph-view");
     }
     rebuildGrid();
     isRefreshingRef.current = false;
@@ -633,6 +680,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     hasActiveFiltersRef.current = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
     rebuildVisibleIndices();
   }, [filters, rebuildVisibleIndices]);
+
+  useEffect(() => {
+    localStorage.setItem("acc-graph-filters", JSON.stringify(filters));
+  }, [filters]);
 
   useEffect(() => {
     const render = () => {
@@ -749,6 +800,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       view.current.y -= dy / view.current.scale;
       targetView.current = { ...view.current };
       lastMouse.current = { x: event.clientX, y: event.clientY };
+      saveView();
       markGraphDirty();
       return;
     }
@@ -759,7 +811,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
       tooltipRef.current.style.opacity = node ? "1" : "0";
     }
-  }, [hitTest, markGraphDirty, rebuildGrid]);
+  }, [hitTest, markGraphDirty, rebuildGrid, saveView]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     if (event.button !== 0) return;
@@ -818,9 +870,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       y: wy - (my - cy) / nextScale,
     };
     targetView.current = { ...view.current };
+    saveView();
     rebuildGrid();
     markGraphDirty();
-  }, [rebuildGrid, markGraphDirty]);
+  }, [rebuildGrid, markGraphDirty, saveView]);
 
   useEffect(() => {
     const canvases = [canvas2dRef.current, webgpuCanvasRef.current].filter(Boolean) as HTMLCanvasElement[];
@@ -885,6 +938,27 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     return { roles, lastAddedBuckets, modules };
   }, [graphQuery.data]);
+
+  useEffect(() => {
+    if (!graphQuery.data) return;
+    setFilters(prev => {
+      const validRoles = new Set(filterOptions.roles.map(o => o.value));
+      const validModules = new Set(filterOptions.modules.map(o => o.value));
+      const validBuckets = new Set(filterOptions.lastAddedBuckets.map(o => o.value));
+      const nextRoles = prev.roles.filter(r => validRoles.has(r));
+      const nextModules = prev.modules.filter(m => validModules.has(m));
+      const nextBuckets = prev.lastAddedBuckets.filter(b => validBuckets.has(b));
+      if (
+        nextRoles.length === prev.roles.length &&
+        nextModules.length === prev.modules.length &&
+        nextBuckets.length === prev.lastAddedBuckets.length
+      ) {
+        return prev; // No change — avoid re-render
+      }
+      return { ...prev, roles: nextRoles, modules: nextModules, lastAddedBuckets: nextBuckets };
+    });
+  }, [graphQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const hasActiveFilters = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
