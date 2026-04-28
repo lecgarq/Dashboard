@@ -678,9 +678,21 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
       if (hoverLabelRef.current) hoverLabelRef.current.style.display = "none";
+      // Always dismiss spinner on cleanup — prevents stuck spinner if Fast Refresh
+      // fires while the dynamic import is in-flight (disposed=true makes .then() bail early)
+      setIsCosmosLoading(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderBackend, webgl2Available]); // Re-runs when user toggles backend
+
+  // Pre-warm the @cosmos.gl/graph chunk on mount so webpack compiles it during page load
+  // rather than on-demand when the user clicks the toggle (which causes the "compiling" cascade).
+  useEffect(() => {
+    if (webgl2Available) {
+      void import("@cosmos.gl/graph").catch(() => { /* ignore pre-warm errors */ });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (rendererFailureReason) {
