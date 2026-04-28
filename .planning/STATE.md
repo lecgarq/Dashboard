@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 1 of 4 (Foundation)
-Plan: 4 of 4 in current phase (COMPLETE)
-Status: Phase 1 Complete — Ready for Phase 2
-Last activity: 2026-04-28 — Completed 01-04-PLAN.md (production build verification, worker chunk 200 OK confirmed, all FOUND requirements human-verified)
+Phase: 2 of 4 (Cosmos.gl Renderer)
+Plan: 1 of 4 in current phase (COMPLETE)
+Status: In Progress — Phase 2 Plan 1 complete
+Last activity: 2026-04-28 — Completed 02-01-PLAN.md (CosmosGraphRenderer class + cosmosUtils.ts helpers + @cosmos.gl/graph@3.0.0-beta.8 installed)
 
-Progress: [████░░░░░░] 40%
+Progress: [████▌░░░░░] 45%
 
 ## Performance Metrics
 
@@ -69,6 +69,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation P03]: API error overlay rendered before loading overlay in JSX to establish correct z-50 stacking priority
 - [Phase 01-foundation P04]: next.config.ts left unchanged — Next.js 16 webpack 5 natively handles new Worker(new URL(..., import.meta.url)) without workerPublicPath or worker-loader
 - [Phase 01-foundation P04]: localStorage view key (acc-graph-view) discards saved view when dataHash mismatches — auto-fit runs for new data instead of restoring stale pan/zoom (fix 637a228)
+- [Phase 02-cosmos-gl P01]: @cosmos.gl/graph@3.0.0-beta.8 (beta) pinned exactly — plan specified this over v2.6.1 stable
+- [Phase 02-cosmos-gl P01]: selectNode() uses v3 selectPointByIndex/unselectPoints API — highlightedPointIndices does not exist in v3
+- [Phase 02-cosmos-gl P01]: GraphRenderNode.kind expanded to user|project|role|module for Phase 2 multi-type node support
 
 ### Pending Todos
 
@@ -82,5 +85,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-28
-Stopped at: Completed 01-04-PLAN.md — Phase 1 Foundation complete
+Stopped at: Completed 02-01-PLAN.md — CosmosGraphRenderer core implementation
 Resume file: None
