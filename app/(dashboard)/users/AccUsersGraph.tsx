@@ -13,13 +13,11 @@ import {
 } from "./graphRenderers";
 import { type BulkAccUser } from "./AccAnalysisPanel";
 import {
+  buildAccTopologyGraph,
   computeCentroid,
-  computeSemanticSeedPositions,
-  computeSemanticVectors,
-  DEFAULT_LAYOUT_WEIGHTS,
-  DEFAULT_PHYSICS_SETTINGS,
-  type LayoutWeights,
-  type PhysicsSettings,
+  computeTopologySeedPositions,
+  DEFAULT_GRAPH_CONTROLS,
+  type GraphControlSettings,
 } from "./accGraphOrganicLayout";
 
 interface UserNode extends PhysicsNode {
@@ -78,8 +76,7 @@ type OrganicWorkerMessage =
       positions: Float32Array;
       averageVelocity: number;
       linkCount: number;
-      changeId?: number;
-      diagnostics?: { retargetCount: number; linkRebuildCount: number };
+      diagnostics?: { activeNodeCount: number; hiddenNodeCount: number };
     }
   | { type: "links"; session: number; sources: Int32Array; targets: Int32Array };
 
@@ -201,8 +198,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const needsRenderRef = useRef(true);
   const filtersRef = useRef<GraphFilters>(DEFAULT_FILTERS);
   const hasActiveFiltersRef = useRef(false);
-  const layoutWeightsRef = useRef<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
-  const physicsSettingsRef = useRef<PhysicsSettings>(DEFAULT_PHYSICS_SETTINGS);
+  const graphControlsRef = useRef<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const isPausedRef = useRef(false);
 
   const view = useRef({ x: 0.5, y: 0.5, scale: 600 });
@@ -214,8 +210,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const isRefreshingRef = useRef(false);
   const lastAutoFitHashRef = useRef<string | null>(null);
   const lastMetricUpdateAtRef = useRef(0);
-  const layoutRetargetChangeIdRef = useRef(0);
-  const pendingSemanticVectorTimerRef = useRef<number | null>(null);
   const forceRenderUntilRef = useRef(0);
 
   const [isDraggingState, setIsDraggingState] = useState(false);
@@ -225,8 +219,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [refreshKey, setRefreshKey] = useState(0);
   const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
-  const [layoutWeights, setLayoutWeights] = useState<LayoutWeights>(DEFAULT_LAYOUT_WEIGHTS);
-  const [physicsSettings, setPhysicsSettings] = useState<PhysicsSettings>(DEFAULT_PHYSICS_SETTINGS);
+  const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [isPaused, setIsPaused] = useState(false);
   const [pickMode, setPickMode] = useState(false);
   const pickModeRef = useRef(false);
@@ -239,9 +232,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
   const [layoutDiagnostics, setLayoutDiagnostics] = useState({
     lastWorkerTick: 0,
-    retargetCount: 0,
-    linkRebuildCount: 0,
-    changeId: 0,
+    activeNodeCount: 0,
+    hiddenNodeCount: 0,
   });
   const [filters, setFilters] = useState<GraphFilters>(DEFAULT_FILTERS);
   const [visibleCount, setVisibleCount] = useState(0);
@@ -274,90 +266,36 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     );
   }, []);
 
-  const restartOrganicLayout = useCallback((mode: "restart" | "retarget" = "restart", changeId?: number) => {
+  const restartOrganicLayout = useCallback((mode: "restart" | "reflow" = "restart") => {
     const worker = organicWorkerRef.current;
     const nodes = nodesRef.current;
     if (!worker || !nodes.length) return;
 
-    const seeds = computeSemanticSeedPositions(nodes, layoutWeightsRef.current);
-    seedPosRef.current = seeds;
-    centroidRef.current = computeCentroid(seeds);
-
-    if (mode === "restart" || posRef.current.length !== seeds.length) {
+    const seeds = computeTopologySeedPositions(nodes);
+    if (mode === "reflow" || posRef.current.length !== seeds.length) {
       posRef.current = new Float32Array(seeds);
-      layoutSessionRef.current++;
     }
+    seedPosRef.current = new Float32Array(posRef.current);
+    centroidRef.current = computeCentroid(seedPosRef.current);
+    layoutSessionRef.current++;
 
     const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
-    const anchorsForWorker = new Float32Array(seeds);
-
-    if (mode === "retarget") {
-      worker.postMessage(
-        {
-          type: "retarget",
-          session: layoutSessionRef.current,
-          anchors: anchorsForWorker,
-          visibleIndices,
-          changeId,
-        },
-        [anchorsForWorker.buffer, visibleIndices.buffer],
-      );
-      if (pendingSemanticVectorTimerRef.current !== null) {
-        window.clearTimeout(pendingSemanticVectorTimerRef.current);
-      }
-      const retargetSession = layoutSessionRef.current;
-      const retargetChangeId = changeId;
-      const weightsForVectors = { ...layoutWeightsRef.current };
-      const nodesForVectors = nodes.slice();
-      pendingSemanticVectorTimerRef.current = window.setTimeout(() => {
-        pendingSemanticVectorTimerRef.current = null;
-        if (
-          organicWorkerRef.current !== worker ||
-          retargetSession !== layoutSessionRef.current ||
-          retargetChangeId !== layoutRetargetChangeIdRef.current
-        ) {
-          return;
-        }
-
-        const semantic = computeSemanticVectors(nodesForVectors, weightsForVectors);
-        const latestVisibleIndices = new Uint32Array(visibleNodeIdxRef.current);
-        const vectorsForWorker = new Float32Array(semantic.vectors);
-        worker.postMessage(
-          {
-            type: "semanticLinks",
-            session: retargetSession,
-            vectors: vectorsForWorker,
-            vectorSize: semantic.vectorSize,
-            visibleIndices: latestVisibleIndices,
-            changeId: retargetChangeId,
-          },
-          [vectorsForWorker.buffer, latestVisibleIndices.buffer],
-        );
-      }, 35);
-    } else {
-      if (pendingSemanticVectorTimerRef.current !== null) {
-        window.clearTimeout(pendingSemanticVectorTimerRef.current);
-        pendingSemanticVectorTimerRef.current = null;
-      }
-      const semantic = computeSemanticVectors(nodes, layoutWeightsRef.current);
-      const vectorsForWorker = new Float32Array(semantic.vectors);
-      const positionsForWorker = new Float32Array(posRef.current);
-      worker.postMessage(
-        {
-          type: "init",
-          session: layoutSessionRef.current,
-          nodeIds: getOrderedNodeIds(nodes),
-          positions: positionsForWorker,
-          anchors: anchorsForWorker,
-          vectors: vectorsForWorker,
-          vectorSize: semantic.vectorSize,
-          visibleIndices,
-          settings: physicsSettingsRef.current,
-          paused: isPausedRef.current,
-        },
-        [positionsForWorker.buffer, anchorsForWorker.buffer, vectorsForWorker.buffer, visibleIndices.buffer],
-      );
-    }
+    const topology = buildAccTopologyGraph(nodes);
+    const positionsForWorker = new Float32Array(posRef.current);
+    worker.postMessage(
+      {
+        type: "init",
+        session: layoutSessionRef.current,
+        nodeIds: getOrderedNodeIds(nodes),
+        positions: positionsForWorker,
+        hiddenNodes: topology.hiddenNodes,
+        topologyLinks: topology.links,
+        visibleIndices,
+        controls: graphControlsRef.current,
+        paused: isPausedRef.current,
+      },
+      [positionsForWorker.buffer, visibleIndices.buffer],
+    );
 
     rebuildGrid();
     markGraphDirty();
@@ -396,22 +334,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     markGraphDirty();
   }, [markGraphDirty, rebuildGrid, postVisibilityToWorker]);
 
-  const scheduleLayoutWeightUpdate = useCallback((key: keyof LayoutWeights, value: number) => {
-    const nextWeights = { ...layoutWeightsRef.current, [key]: value };
-    layoutWeightsRef.current = nextWeights;
-    setLayoutWeights(nextWeights);
-    const changeId = layoutRetargetChangeIdRef.current + 1;
-    layoutRetargetChangeIdRef.current = changeId;
-    forceRenderUntilRef.current = performance.now() + 1800;
-    restartOrganicLayout("retarget", changeId);
-    markGraphDirty();
-  }, [markGraphDirty, restartOrganicLayout]);
-
-  const schedulePhysicsSettingUpdate = useCallback((key: keyof PhysicsSettings, value: number) => {
-    const nextSettings = { ...physicsSettingsRef.current, [key]: value };
-    physicsSettingsRef.current = nextSettings;
-    setPhysicsSettings(nextSettings);
-    organicWorkerRef.current?.postMessage({ type: "settings", settings: nextSettings });
+  const scheduleGraphControlUpdate = useCallback((key: keyof GraphControlSettings, value: number) => {
+    const nextControls = { ...graphControlsRef.current, [key]: value };
+    graphControlsRef.current = nextControls;
+    setGraphControls(nextControls);
+    organicWorkerRef.current?.postMessage({ type: "controls", controls: nextControls });
     forceRenderUntilRef.current = performance.now() + 1200;
     markGraphDirty();
   }, [markGraphDirty]);
@@ -598,13 +525,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         if (IS_DEV) {
           setLayoutDiagnostics({
             lastWorkerTick: Math.round(now),
-            retargetCount: message.diagnostics?.retargetCount ?? 0,
-            linkRebuildCount: message.diagnostics?.linkRebuildCount ?? 0,
-            changeId: message.changeId ?? 0,
+            activeNodeCount: message.diagnostics?.activeNodeCount ?? 0,
+            hiddenNodeCount: message.diagnostics?.hiddenNodeCount ?? 0,
           });
         }
       }
-      if (message.averageVelocity > 0.0005 || message.changeId) {
+      if (message.averageVelocity > 0.0005) {
         forceRenderUntilRef.current = Math.max(forceRenderUntilRef.current, now + 900);
       }
       rebuildGrid();
@@ -658,7 +584,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     nodesRef.current = rawNodes;
-    seedPosRef.current = computeSemanticSeedPositions(rawNodes, layoutWeightsRef.current);
+    const cachedPositions = readPrecomputedPositions(graph.positions, rawNodes.length * 2);
+    seedPosRef.current = computeTopologySeedPositions(rawNodes, cachedPositions);
     posRef.current = new Float32Array(seedPosRef.current);
     centroidRef.current = computeCentroid(seedPosRef.current);
 
@@ -666,7 +593,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     rawNodes.forEach((node, index) => nodeIndexMap.set(node.id, index));
     nodeIndexMapRef.current = nodeIndexMap;
 
-    // Build kind-specific indices — all nodes are user kind
+    // Build kind-specific indices; all rendered nodes are user/project instances.
     const uIdx: number[] = [];
     rawNodes.forEach((node, index) => {
       uIdx.push(index); // all nodes are user kind
@@ -751,10 +678,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     rafId.current = requestAnimationFrame(render);
     return () => {
       cancelAnimationFrame(rafId.current);
-      if (pendingSemanticVectorTimerRef.current !== null) {
-        window.clearTimeout(pendingSemanticVectorTimerRef.current);
-        pendingSemanticVectorTimerRef.current = null;
-      }
     };
   }, []);
 
@@ -976,9 +899,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         data-render-backend={renderBackend}
         data-renderer-failure-reason={rendererFailureReason ?? undefined}
         data-acc-graph-last-worker-tick={IS_DEV ? layoutDiagnostics.lastWorkerTick : undefined}
-        data-acc-graph-retarget-count={IS_DEV ? layoutDiagnostics.retargetCount : undefined}
-        data-acc-graph-link-rebuild-count={IS_DEV ? layoutDiagnostics.linkRebuildCount : undefined}
-        data-acc-graph-change-id={IS_DEV ? layoutDiagnostics.changeId : undefined}
+        data-acc-graph-active-node-count={IS_DEV ? layoutDiagnostics.activeNodeCount : undefined}
+        data-acc-graph-hidden-node-count={IS_DEV ? layoutDiagnostics.hiddenNodeCount : undefined}
         className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
         style={{ background: GRAPH_BACKGROUND }}
       >
@@ -1025,7 +947,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <ControlButton active={false} onClick={() => zoomToFit()}>Fit</ControlButton>
             <ControlButton active={isPaused} onClick={togglePaused}>{isPaused ? "Resume" : "Pause"}</ControlButton>
             <button
-              onClick={() => restartOrganicLayout("restart")}
+              onClick={() => restartOrganicLayout("reflow")}
               className={cn(
                 "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
                 "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
@@ -1062,20 +984,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         {showControls && (
           <div className="absolute top-12 left-3 bottom-3 z-10 w-64 flex flex-col gap-2 overflow-y-auto">
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Semantic Weights</p>
-              <SliderControl label="Role" value={layoutWeights.role} onChange={(v) => scheduleLayoutWeightUpdate("role", v)} />
-              <SliderControl label="Access" value={layoutWeights.access} onChange={(v) => scheduleLayoutWeightUpdate("access", v)} />
-              <SliderControl label="Last Added" value={layoutWeights.lastAdded} onChange={(v) => scheduleLayoutWeightUpdate("lastAdded", v)} />
-              <SliderControl label="Project" value={layoutWeights.project} onChange={(v) => scheduleLayoutWeightUpdate("project", v)} />
-              <SliderControl label="Modules" value={layoutWeights.modules} onChange={(v) => scheduleLayoutWeightUpdate("modules", v)} />
-              <SliderControl label="User Name" value={layoutWeights.userName} onChange={(v) => scheduleLayoutWeightUpdate("userName", v)} />
-            </div>
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Physics</p>
-              <SliderControl label="Attract" value={physicsSettings.attraction} onChange={(v) => schedulePhysicsSettingUpdate("attraction", v)} />
-              <SliderControl label="Repel" value={physicsSettings.repulsion} onChange={(v) => schedulePhysicsSettingUpdate("repulsion", v)} />
-              <SliderControl label="Damping" value={physicsSettings.damping} onChange={(v) => schedulePhysicsSettingUpdate("damping", v)} />
-              <SliderControl label="Motion" value={physicsSettings.motion} onChange={(v) => schedulePhysicsSettingUpdate("motion", v)} />
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Graph Layout</p>
+              <SliderControl label="Spacing" value={graphControls.spacing} onChange={(v) => scheduleGraphControlUpdate("spacing", v)} />
+              <SliderControl label="Cluster Strength" value={graphControls.clusterStrength} onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)} />
+              <SliderControl label="Stability" value={graphControls.stability} onChange={(v) => scheduleGraphControlUpdate("stability", v)} />
+              <SliderControl label="Motion" value={graphControls.motion} onChange={(v) => scheduleGraphControlUpdate("motion", v)} />
             </div>
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
@@ -1147,6 +1060,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={() => {
+            if (isDraggingNodeRef.current) {
+              const idx = draggedNodeIdxRef.current;
+              isDraggingNodeRef.current = false;
+              draggedNodeIdxRef.current = -1;
+              if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+            }
             isDragging.current = false;
             setIsDraggingState(false);
             setHoveredNode(null);
@@ -1161,6 +1080,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}
           onPointerLeave={() => {
+            if (isDraggingNodeRef.current) {
+              const idx = draggedNodeIdxRef.current;
+              isDraggingNodeRef.current = false;
+              draggedNodeIdxRef.current = -1;
+              if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+            }
             isDragging.current = false;
             setIsDraggingState(false);
             setHoveredNode(null);
@@ -1208,7 +1133,7 @@ function SliderControl({
 }) {
   return (
     <label className="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white/80 px-2 py-1">
-      <span className="w-14 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
+      <span className="w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
       <input
         type="range"
         min={0}

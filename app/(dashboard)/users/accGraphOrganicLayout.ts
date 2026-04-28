@@ -28,6 +28,39 @@ export interface PhysicsSettings {
   motion: number;
 }
 
+export interface GraphControlSettings {
+  spacing: number;
+  clusterStrength: number;
+  stability: number;
+  motion: number;
+}
+
+export type AccTopologyHubKind = "project" | "role" | "module" | "access" | "user";
+export type AccTopologyLinkKind = AccTopologyHubKind;
+
+export interface AccTopologyVisibleNode {
+  id: string;
+  index: number;
+}
+
+export interface AccTopologyHiddenNode {
+  id: string;
+  kind: AccTopologyHubKind;
+  label: string;
+}
+
+export interface AccTopologyLink {
+  source: string;
+  target: string;
+  kind: AccTopologyLinkKind;
+}
+
+export interface AccTopologyGraph {
+  visibleNodes: AccTopologyVisibleNode[];
+  hiddenNodes: AccTopologyHiddenNode[];
+  links: AccTopologyLink[];
+}
+
 export const DEFAULT_LAYOUT_WEIGHTS: LayoutWeights = {
   role: 72,
   access: 38,
@@ -42,6 +75,13 @@ export const DEFAULT_PHYSICS_SETTINGS: PhysicsSettings = {
   repulsion: 50,
   damping: 20,
   motion: 45,
+};
+
+export const DEFAULT_GRAPH_CONTROLS: GraphControlSettings = {
+  spacing: 54,
+  clusterStrength: 62,
+  stability: 78,
+  motion: 34,
 };
 
 export const SEMANTIC_VECTOR_SIZE = 48;
@@ -99,6 +139,98 @@ function neutralPackAnchor(index: number, count: number): { x: number; y: number
     x: Math.cos(angle) * radius,
     y: Math.sin(angle) * radius,
   };
+}
+
+function normalizeHubValue(value: string): string {
+  return value.trim().toLowerCase();
+}
+
+function hubId(kind: AccTopologyHubKind, value: string): string {
+  return `hub:${kind}:${encodeURIComponent(normalizeHubValue(value))}`;
+}
+
+function addUniqueSortedValues(values: readonly string[], target: Set<string>): void {
+  for (const value of values) {
+    const normalized = normalizeHubValue(value);
+    if (normalized) target.add(normalized);
+  }
+}
+
+export function buildAccTopologyGraph(nodes: readonly OrganicLayoutNode[]): AccTopologyGraph {
+  const visibleNodes = nodes.map((node, index) => ({ id: node.id, index }));
+  const hiddenById = new Map<string, AccTopologyHiddenNode>();
+  const linkKeys = new Set<string>();
+  const links: AccTopologyLink[] = [];
+
+  const addHub = (kind: AccTopologyHubKind, value: string, label = value): string | null => {
+    const normalized = normalizeHubValue(value);
+    if (!normalized) return null;
+    const id = hubId(kind, normalized);
+    if (!hiddenById.has(id)) {
+      hiddenById.set(id, { id, kind, label: label.trim() || normalized });
+    }
+    return id;
+  };
+
+  const addLink = (source: string, target: string | null, kind: AccTopologyLinkKind): void => {
+    if (!target) return;
+    const key = `${source}->${target}:${kind}`;
+    if (linkKeys.has(key)) return;
+    linkKeys.add(key);
+    links.push({ source, target, kind });
+  };
+
+  for (const node of nodes) {
+    addLink(node.id, addHub("project", node.projectId || node.projectName || "No project", node.projectName || node.projectId || "No project"), "project");
+    addLink(node.id, addHub("access", node.isAdmin ? "admin" : "member", node.isAdmin ? "Admin" : "Member"), "access");
+    addLink(node.id, addHub("user", node.email, node.name || node.email), "user");
+
+    const roles = new Set<string>();
+    addUniqueSortedValues(node.roles ?? [], roles);
+    for (const role of [...roles].sort((a, b) => a.localeCompare(b))) {
+      addLink(node.id, addHub("role", role), "role");
+    }
+
+    const modules = new Set<string>();
+    addUniqueSortedValues(node.modules ?? [], modules);
+    for (const moduleName of [...modules].sort((a, b) => a.localeCompare(b))) {
+      addLink(node.id, addHub("module", moduleName), "module");
+    }
+  }
+
+  return {
+    visibleNodes,
+    hiddenNodes: [...hiddenById.values()].sort((a, b) => a.id.localeCompare(b.id)),
+    links,
+  };
+}
+
+export function computeTopologySeedPositions(
+  nodes: readonly OrganicLayoutNode[],
+  cachedPositions?: Float32Array | readonly number[] | null,
+): Float32Array {
+  const expectedLength = nodes.length * 2;
+  if (cachedPositions && cachedPositions.length === expectedLength) {
+    const positions = new Float32Array(expectedLength);
+    for (let i = 0; i < expectedLength; i++) {
+      const value = cachedPositions[i];
+      if (typeof value !== "number" || !Number.isFinite(value)) return computeTopologySeedPositions(nodes);
+      positions[i] = value;
+    }
+    return positions;
+  }
+
+  const positions = new Float32Array(expectedLength);
+  const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  for (let i = 0; i < nodes.length; i++) {
+    const jitter = featureAnchor(nodes[i].id, "topology-seed");
+    const t = nodes.length <= 1 ? 0 : (i + 0.5) / nodes.length;
+    const radius = Math.sqrt(t) * 0.36;
+    const angle = i * goldenAngle;
+    positions[i * 2] = clampUnit(0.5 + Math.cos(angle) * radius + jitter.x * 0.02);
+    positions[i * 2 + 1] = clampUnit(0.5 + Math.sin(angle) * radius + jitter.y * 0.02);
+  }
+  return positions;
 }
 
 export function normalizePositions(positions: Float32Array): Float32Array {

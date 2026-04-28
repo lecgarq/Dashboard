@@ -1,7 +1,26 @@
-import type { PhysicsSettings } from "./accGraphOrganicLayout";
+import {
+  forceCenter,
+  forceCollide,
+  forceLink,
+  forceManyBody,
+  forceSimulation,
+  forceX,
+  forceY,
+  type Simulation,
+  type SimulationLinkDatum,
+  type SimulationNodeDatum,
+} from "d3-force";
+
+import type {
+  AccTopologyHiddenNode,
+  AccTopologyLink,
+  AccTopologyLinkKind,
+  GraphControlSettings,
+} from "./accGraphOrganicLayout";
 
 type FloatBuffer = Float32Array<ArrayBufferLike>;
 type UintBuffer = Uint32Array<ArrayBufferLike>;
+
 type WorkerGlobal = {
   postMessage: (message: unknown, transfer?: Transferable[]) => void;
   onmessage: ((event: MessageEvent<WorkerRequest>) => void) | null;
@@ -13,75 +32,104 @@ type WorkerRequest =
       session: number;
       nodeIds: string[];
       positions: FloatBuffer;
-      anchors: FloatBuffer;
-      vectors: FloatBuffer;
-      vectorSize: number;
+      hiddenNodes: AccTopologyHiddenNode[];
+      topologyLinks: AccTopologyLink[];
       visibleIndices: UintBuffer;
-      settings: PhysicsSettings;
+      controls: GraphControlSettings;
       paused: boolean;
     }
-  | {
-      type: "retarget";
-      session: number;
-      anchors: FloatBuffer;
-      visibleIndices: UintBuffer;
-      changeId?: number;
-    }
-  | {
-      type: "semanticLinks";
-      session: number;
-      vectors: FloatBuffer;
-      vectorSize: number;
-      visibleIndices: UintBuffer;
-      changeId?: number;
-    }
   | { type: "visibility"; session: number; visibleIndices: UintBuffer }
-  | { type: "settings"; settings: PhysicsSettings }
+  | { type: "controls"; controls: GraphControlSettings }
   | { type: "pause"; paused: boolean }
   | { type: "drag"; nodeIndex: number; x: number; y: number }
   | { type: "release"; nodeIndex: number }
   | { type: "stop" };
 
-interface SimilarityLink {
+interface LayoutNode extends SimulationNodeDatum {
+  id: string;
+  kind: "visible" | AccTopologyHiddenNode["kind"];
+  hidden: boolean;
+  visibleIndex: number;
+  radius: number;
+}
+
+interface LayoutLink extends SimulationLinkDatum<LayoutNode> {
+  source: string | LayoutNode;
+  target: string | LayoutNode;
+  kind: AccTopologyLinkKind;
+}
+
+interface ProjectedLink {
   source: number;
   target: number;
-  weight: number;
 }
 
 const TICK_MS = 16;
-const POST_EVERY_TICKS = 2;
-const NEIGHBOR_COUNT = 5;
-
-let session = 0;
-let nodeIds: string[] = [];
-let positions: FloatBuffer = new Float32Array(0);
-let velocities: FloatBuffer = new Float32Array(0);
-let anchors: FloatBuffer = new Float32Array(0);
-let vectors: FloatBuffer = new Float32Array(0);
-let vectorSize = 0;
-let visibleIndices: UintBuffer = new Uint32Array(0);
-let visibleMask = new Uint8Array(0);
-let links: SimilarityLink[] = [];
-let settings: PhysicsSettings = { attraction: 58, repulsion: 64, damping: 72, motion: 58 };
-let paused = false;
-let timer: ReturnType<typeof setInterval> | null = null;
-let tickCounter = 0;
-let draggedIndex = -1;
-let draggedX = 0;
-let draggedY = 0;
-let simulationHeat = 0.15;
-let currentChangeId: number | undefined;
-let retargetCount = 0;
-let linkRebuildCount = 0;
-let linkRebuildTimer: ReturnType<typeof setTimeout> | null = null;
-let linkBuildGeneration = 0;
-let livePostUntil = 0;
-let changeIdPostUntil = 0;
+const POST_INTERVAL_MS = 33;
+const SETTLE_VELOCITY = 0.00008;
 
 const workerSelf = self as unknown as WorkerGlobal;
 
+let session = 0;
+let nodeIds: string[] = [];
+let nodeIndexById = new Map<string, number>();
+let positions: FloatBuffer = new Float32Array(0);
+let hiddenNodes: AccTopologyHiddenNode[] = [];
+let topologyLinks: AccTopologyLink[] = [];
+let visibleIndices: UintBuffer = new Uint32Array(0);
+let visibleMask = new Uint8Array(0);
+let controls: GraphControlSettings = { spacing: 54, clusterStrength: 62, stability: 78, motion: 34 };
+let paused = false;
+let simulation: Simulation<LayoutNode, LayoutLink> | null = null;
+let activeNodes: LayoutNode[] = [];
+let activeNodeById = new Map<string, LayoutNode>();
+let hiddenPositions = new Map<string, { x: number; y: number }>();
+let renderLinks: ProjectedLink[] = [];
+let timer: ReturnType<typeof setInterval> | null = null;
+let lastPostAt = 0;
+let lastAverageVelocity = 0;
+let draggedIndex = -1;
+let initialized = false;
+
 function clamp01(value: number): number {
   return Math.max(0, Math.min(100, value)) / 100;
+}
+
+function seededPoint(id: string): { x: number; y: number } {
+  let hash = 2166136261;
+  for (let i = 0; i < id.length; i++) {
+    hash ^= id.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  const angle = ((hash >>> 0) % 100000) / 100000 * Math.PI * 2;
+  const radius = 0.06 + (((hash >>> 8) % 100000) / 100000) * 0.22;
+  return {
+    x: 0.5 + Math.cos(angle) * radius,
+    y: 0.5 + Math.sin(angle) * radius,
+  };
+}
+
+function linkDistance(kind: AccTopologyLinkKind): number {
+  const spacing01 = clamp01(controls.spacing);
+  const base = 0.035 + spacing01 * 0.14;
+  if (kind === "user") return base * 0.62;
+  if (kind === "access") return base * 0.72;
+  if (kind === "project") return base * 0.9;
+  return base;
+}
+
+function linkStrength(kind: AccTopologyLinkKind): number {
+  const cluster01 = clamp01(controls.clusterStrength);
+  const base = 0.035 + cluster01 * 0.22;
+  if (kind === "user") return base * 1.4;
+  if (kind === "project") return base * 1.15;
+  if (kind === "access") return base * 0.72;
+  return base;
+}
+
+function collideRadius(node: LayoutNode): number {
+  const spacing01 = clamp01(controls.spacing);
+  return node.hidden ? 0.012 + spacing01 * 0.014 : 0.008 + spacing01 * 0.018;
 }
 
 function rebuildVisibleMask(): void {
@@ -92,185 +140,165 @@ function rebuildVisibleMask(): void {
   }
 }
 
-function similarity(a: number, b: number): number {
-  const ao = a * vectorSize;
-  const bo = b * vectorSize;
-  let dot = 0;
-  for (let i = 0; i < vectorSize; i++) {
-    dot += vectors[ao + i] * vectors[bo + i];
+function rememberHiddenPositions(): void {
+  for (const node of activeNodes) {
+    if (!node.hidden || typeof node.x !== "number" || typeof node.y !== "number") continue;
+    hiddenPositions.set(node.id, { x: node.x, y: node.y });
   }
-  return dot;
 }
 
-function insertTopNeighbor(
-  topIndices: Int32Array,
-  topScores: Float32Array,
-  candidate: number,
-  score: number,
-): void {
-  if (score <= topScores[topScores.length - 1]) return;
-  let slot = topScores.length - 1;
-  while (slot > 0 && score > topScores[slot - 1]) {
-    topScores[slot] = topScores[slot - 1];
-    topIndices[slot] = topIndices[slot - 1];
-    slot--;
+function buildProjectedLinks(activeTopologyLinks: AccTopologyLink[]): ProjectedLink[] {
+  const visibleSourcesByHub = new Map<string, number[]>();
+  for (const link of activeTopologyLinks) {
+    const index = nodeIndexById.get(link.source) ?? -1;
+    if (index < 0 || !visibleMask[index]) continue;
+    const entries = visibleSourcesByHub.get(link.target) ?? [];
+    entries.push(index);
+    visibleSourcesByHub.set(link.target, entries);
   }
-  topScores[slot] = score;
-  topIndices[slot] = candidate;
+
+  const projected: ProjectedLink[] = [];
+  const seen = new Set<string>();
+  for (const indices of visibleSourcesByHub.values()) {
+    const ordered = [...new Set(indices)].sort((a, b) => a - b);
+    for (let i = 1; i < ordered.length; i++) {
+      const source = ordered[i - 1];
+      const target = ordered[i];
+      const key = `${source}:${target}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      projected.push({ source, target });
+    }
+  }
+  return projected;
 }
 
 function postLinks(): void {
-  const linkSources = new Int32Array(links.map(l => l.source));
-  const linkTargets = new Int32Array(links.map(l => l.target));
+  const sources = new Int32Array(renderLinks.map((link) => link.source));
+  const targets = new Int32Array(renderLinks.map((link) => link.target));
   workerSelf.postMessage(
-    { type: "links", session, sources: linkSources, targets: linkTargets },
-    [linkSources.buffer as ArrayBuffer, linkTargets.buffer as ArrayBuffer],
+    { type: "links", session, sources, targets },
+    [sources.buffer as ArrayBuffer, targets.buffer as ArrayBuffer],
   );
 }
 
-function scheduleLinkRebuild(delayMs: number): void {
-  linkBuildGeneration++;
-  if (linkRebuildTimer) clearTimeout(linkRebuildTimer);
-  const generation = linkBuildGeneration;
-  linkRebuildTimer = setTimeout(() => {
-    linkRebuildTimer = null;
-    rebuildLinksChunked(generation);
-  }, delayMs);
-}
+function postTickSnapshot(force = false): void {
+  const now = Date.now();
+  if (!force && now - lastPostAt < POST_INTERVAL_MS) return;
+  lastPostAt = now;
 
-function rebuildLinksChunked(generation: number): void {
-  const count = visibleIndices.length;
-  if (!count || !vectorSize || vectors.length !== nodeIds.length * vectorSize) {
-    links = [];
-    linkRebuildCount++;
-    postLinks();
-    return;
-  }
-
-  const nextLinks: SimilarityLink[] = [];
-  const seen = new Set<string>();
-  let aOffset = 0;
-  const batchSize = count > 900 ? 10 : count > 450 ? 18 : 32;
-
-  const processBatch = () => {
-    if (generation !== linkBuildGeneration) return;
-    const end = Math.min(count, aOffset + batchSize);
-    for (; aOffset < end; aOffset++) {
-      const a = visibleIndices[aOffset];
-      const topIndices = new Int32Array(NEIGHBOR_COUNT);
-      const topScores = new Float32Array(NEIGHBOR_COUNT);
-      topIndices.fill(-1);
-      topScores.fill(-Infinity);
-
-      for (let bOffset = 0; bOffset < count; bOffset++) {
-        if (aOffset === bOffset) continue;
-        const b = visibleIndices[bOffset];
-        const score = similarity(a, b);
-        insertTopNeighbor(topIndices, topScores, b, score);
-      }
-
-      for (let i = 0; i < NEIGHBOR_COUNT; i++) {
-        const b = topIndices[i];
-        if (b < 0) continue;
-        const source = Math.min(a, b);
-        const target = Math.max(a, b);
-        const key = `${source}:${target}`;
-        if (seen.has(key)) continue;
-        seen.add(key);
-        nextLinks.push({ source, target, weight: 0.08 + Math.max(0, topScores[i]) * 0.92 });
-      }
-    }
-
-    if (aOffset < count) {
-      setTimeout(processBatch, 0);
-      return;
-    }
-
-    links = nextLinks;
-    linkRebuildCount++;
-    postLinks();
-  };
-
-  processBatch();
-}
-
-function wakeSimulation(amount: number): void {
-  simulationHeat = Math.max(simulationHeat, Math.min(1, amount * 12));
-  if (!velocities.length) return;
-  const clampedAmount = Math.max(0.001, Math.min(0.06, amount));
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const index = visibleIndices[offset];
-    const angle = ((index * 9301 + session * 49297) % 233280) / 233280 * Math.PI * 2;
-    velocities[index * 2] += Math.cos(angle) * clampedAmount;
-    velocities[index * 2 + 1] += Math.sin(angle) * clampedAmount;
-  }
-}
-
-function postEveryFrameFor(durationMs: number): void {
-  livePostUntil = Math.max(livePostUntil, Date.now() + durationMs);
-}
-
-function pullVisiblePositionsTowardAnchors(strength: number): void {
-  if (!positions.length || positions.length !== anchors.length) return;
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const index = visibleIndices[offset];
-    if (index === draggedIndex) continue;
-    const dx = anchors[index * 2] - positions[index * 2];
-    const dy = anchors[index * 2 + 1] - positions[index * 2 + 1];
-    positions[index * 2] += dx * strength;
-    positions[index * 2 + 1] += dy * strength;
-    velocities[index * 2] += dx * strength * 0.7;
-    velocities[index * 2 + 1] += dy * strength * 0.7;
-  }
-}
-
-function postTickSnapshot(averageVelocity: number): void {
   const snapshot = new Float32Array(positions);
-  const activeChangeId = Date.now() < changeIdPostUntil ? currentChangeId : undefined;
   workerSelf.postMessage(
     {
       type: "tick",
       session,
       positions: snapshot,
-      averageVelocity,
-      linkCount: links.length,
-      changeId: activeChangeId,
+      averageVelocity: lastAverageVelocity,
+      linkCount: renderLinks.length,
       diagnostics: {
-        retargetCount,
-        linkRebuildCount,
+        activeNodeCount: activeNodes.length,
+        hiddenNodeCount: activeNodes.filter((node) => node.hidden).length,
       },
     },
     [snapshot.buffer as ArrayBuffer],
   );
 }
 
-function applyRetarget(message: Extract<WorkerRequest, { type: "retarget" }>): void {
-  if (message.session !== session) return;
-  anchors = message.anchors;
-  visibleIndices = message.visibleIndices;
-  currentChangeId = message.changeId;
-  retargetCount++;
+function rebuildSimulation(alpha = 0.35): void {
+  rememberHiddenPositions();
+  simulation?.stop();
+
   rebuildVisibleMask();
-  pullVisiblePositionsTowardAnchors(0.36 + clamp01(settings.attraction) * 0.22);
-  wakeSimulation(0.04 + clamp01(settings.motion) * 0.055);
-  postEveryFrameFor(1800);
-  changeIdPostUntil = Math.max(changeIdPostUntil, Date.now() + 1800);
-  postTickSnapshot(0);
+  const visibleSet = new Set<string>();
+  const nextActiveNodes: LayoutNode[] = [];
+
+  for (let offset = 0; offset < visibleIndices.length; offset++) {
+    const index = visibleIndices[offset];
+    if (index >= nodeIds.length) continue;
+    const id = nodeIds[index];
+    visibleSet.add(id);
+    nextActiveNodes.push({
+      id,
+      kind: "visible",
+      hidden: false,
+      visibleIndex: index,
+      radius: 0.01,
+      x: positions[index * 2],
+      y: positions[index * 2 + 1],
+      vx: 0,
+      vy: 0,
+    });
+  }
+
+  const usedHiddenIds = new Set<string>();
+  const activeTopologyLinks = topologyLinks.filter((link) => {
+    if (!visibleSet.has(link.source)) return false;
+    usedHiddenIds.add(link.target);
+    return true;
+  });
+
+  for (const hidden of hiddenNodes) {
+    if (!usedHiddenIds.has(hidden.id)) continue;
+    const remembered = hiddenPositions.get(hidden.id);
+    const seed = remembered ?? seededPoint(hidden.id);
+    nextActiveNodes.push({
+      id: hidden.id,
+      kind: hidden.kind,
+      hidden: true,
+      visibleIndex: -1,
+      radius: 0.015,
+      x: seed.x,
+      y: seed.y,
+      vx: 0,
+      vy: 0,
+    });
+  }
+
+  activeNodes = nextActiveNodes;
+  activeNodeById = new Map(activeNodes.map((node) => [node.id, node]));
+  const activeLinks: LayoutLink[] = activeTopologyLinks.map((link) => ({
+    source: link.source,
+    target: link.target,
+    kind: link.kind,
+  }));
+  renderLinks = buildProjectedLinks(activeTopologyLinks);
+  postLinks();
+
+  const stability01 = clamp01(controls.stability);
+  const motion01 = clamp01(controls.motion);
+  const charge = -(0.0006 + clamp01(controls.spacing) * 0.0045);
+  const centerStrength = 0.003 + stability01 * 0.012;
+
+  simulation = forceSimulation<LayoutNode, LayoutLink>(activeNodes)
+    .stop()
+    .alpha(Math.max(0.03, alpha + motion01 * 0.16))
+    .alphaMin(0.002)
+    .alphaDecay(0.035 + stability01 * 0.085)
+    .velocityDecay(0.34 + stability01 * 0.48)
+    .force("link", forceLink<LayoutNode, LayoutLink>(activeLinks)
+      .id((node) => node.id)
+      .distance((link) => linkDistance(link.kind))
+      .strength((link) => linkStrength(link.kind)))
+    .force("charge", forceManyBody<LayoutNode>().strength((node) => node.hidden ? charge * 0.45 : charge))
+    .force("collide", forceCollide<LayoutNode>().radius(collideRadius).strength(0.72).iterations(2))
+    .force("x", forceX<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.28 : centerStrength))
+    .force("y", forceY<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.28 : centerStrength))
+    .force("center", forceCenter<LayoutNode>(0.5, 0.5));
+
+  if (draggedIndex >= 0) {
+    const draggedNode = activeNodeById.get(nodeIds[draggedIndex]);
+    if (draggedNode) {
+      draggedNode.fx = positions[draggedIndex * 2];
+      draggedNode.fy = positions[draggedIndex * 2 + 1];
+    }
+  }
+
+  postTickSnapshot(true);
   ensureTimer();
 }
 
-function applySemanticLinks(message: Extract<WorkerRequest, { type: "semanticLinks" }>): void {
-  if (message.session !== session) return;
-  vectors = message.vectors;
-  vectorSize = message.vectorSize;
-  visibleIndices = message.visibleIndices;
-  currentChangeId = message.changeId;
-  rebuildVisibleMask();
-  scheduleLinkRebuild(0);
-}
-
 function ensureTimer(): void {
-  if (timer) return;
+  if (timer || paused || !initialized) return;
   timer = setInterval(step, TICK_MS);
 }
 
@@ -280,237 +308,108 @@ function stopTimer(): void {
   timer = null;
 }
 
-function buildSpatialGrid(cellSize: number): Map<string, number[]> {
-  const grid = new Map<string, number[]>();
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const index = visibleIndices[offset];
-    const x = positions[index * 2];
-    const y = positions[index * 2 + 1];
-    const key = `${Math.floor(x / cellSize)},${Math.floor(y / cellSize)}`;
-    const cell = grid.get(key);
-    if (cell) cell.push(index);
-    else grid.set(key, [index]);
-  }
-  return grid;
-}
-
 function step(): void {
-  if (paused || positions.length === 0 || visibleIndices.length === 0) return;
+  if (paused || !simulation || activeNodes.length === 0) return;
 
-  const nodeCount = nodeIds.length;
-  const fx = new Float32Array(nodeCount);
-  const fy = new Float32Array(nodeCount);
-  // attraction=0 → free-floating nodes; attraction=100 → pinned to anchors
-  const attraction01 = clamp01(settings.attraction);
-  const repulsion01 = clamp01(settings.repulsion);
-  const damping01 = clamp01(settings.damping);
-  const motion01 = clamp01(settings.motion);
-  simulationHeat = Math.max(simulationHeat * 0.985, motion01 * 0.015);
-  const anchorPull = 0.002 + attraction01 * 0.13;
-  // repulsion slider drives collision radius — geometric, predictable separation
-  // repulsion=0: nodes nearly touch; repulsion=100: nodes are pushed farther apart.
-  const collisionRadius = 0.012 + repulsion01 * 0.17;
-  // inverse-square background repulsion to prevent long-range collapse
-  const repulsion = 0.000002 + repulsion01 * 0.000115;
-  // damping=0 → perpetual motion; damping=100 → instant settle
-  const damping = 0.96 - damping01 * 0.72;
-  // motion=0 → near-frozen; motion=100 → fast/energetic
-  const maxVelocity = 0.006 + motion01 * 0.074 + simulationHeat * 0.028;
-  // spring rest length: short at high attraction (tight clusters), long at low attraction (loose)
-  const attraction = 0.001 + attraction01 * 0.075;
-  const restLength = 0.035 + (1 - attraction01) * 0.18;
-  const cellSize = Math.max(collisionRadius * 2.5, 0.035);
-
-  const grid = buildSpatialGrid(cellSize);
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const i = visibleIndices[offset];
-    const ix = positions[i * 2];
-    const iy = positions[i * 2 + 1];
-    const gx = Math.floor(ix / cellSize);
-    const gy = Math.floor(iy / cellSize);
-
-    for (let ox = -1; ox <= 1; ox++) {
-      for (let oy = -1; oy <= 1; oy++) {
-        const cell = grid.get(`${gx + ox},${gy + oy}`);
-        if (!cell) continue;
-
-        for (const j of cell) {
-          if (j <= i) continue;
-          let dx = positions[j * 2] - ix;
-          let dy = positions[j * 2 + 1] - iy;
-          let dist2 = dx * dx + dy * dy;
-          if (dist2 < 0.000001) {
-            dx = ((i % 7) - 3) * 0.001 || 0.001;
-            dy = ((j % 11) - 5) * 0.001 || -0.001;
-            dist2 = dx * dx + dy * dy;
-          }
-          const dist = Math.sqrt(dist2);
-          const repel = repulsion / Math.max(0.00001, dist2);
-          const collision = dist < collisionRadius ? (collisionRadius - dist) * 0.15 : 0;
-          const force = repel + collision;
-          const nx = dx / dist;
-          const ny = dy / dist;
-
-          fx[i] -= nx * force;
-          fy[i] -= ny * force;
-          fx[j] += nx * force;
-          fy[j] += ny * force;
-        }
-      }
-    }
-  }
-
-  for (const link of links) {
-    if (!visibleMask[link.source] || !visibleMask[link.target]) continue;
-    const sx = positions[link.source * 2];
-    const sy = positions[link.source * 2 + 1];
-    const tx = positions[link.target * 2];
-    const ty = positions[link.target * 2 + 1];
-    const dx = tx - sx;
-    const dy = ty - sy;
-    const dist = Math.sqrt(dx * dx + dy * dy) || 0.0001;
-    const force = (dist - restLength) * attraction * link.weight;
-    const nx = dx / dist;
-    const ny = dy / dist;
-
-    fx[link.source] += nx * force;
-    fy[link.source] += ny * force;
-    fx[link.target] -= nx * force;
-    fy[link.target] -= ny * force;
-  }
-
-  // Ambient drift — keeps the graph organically alive at rest
-  const drift = (0.000012 + motion01 * 0.00016) * (0.35 + simulationHeat);
-  const t = tickCounter * 0.0008;
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const i = visibleIndices[offset];
-    const phase = (i * 7.391) % (Math.PI * 2);
-    fx[i] += Math.sin(t * 0.9 + phase) * drift;
-    fy[i] += Math.cos(t * 0.65 + phase * 1.4) * drift;
-  }
+  const motion01 = clamp01(controls.motion);
+  const ticksPerFrame = 1 + Math.round(motion01 * 3);
+  simulation.tick(ticksPerFrame);
 
   let totalVelocity = 0;
-  for (let offset = 0; offset < visibleIndices.length; offset++) {
-    const i = visibleIndices[offset];
-    if (i === draggedIndex) continue;
-    fx[i] += (anchors[i * 2] - positions[i * 2]) * anchorPull;
-    fy[i] += (anchors[i * 2 + 1] - positions[i * 2 + 1]) * anchorPull;
-
-    let vx = (velocities[i * 2] + fx[i]) * damping;
-    let vy = (velocities[i * 2 + 1] + fy[i]) * damping;
-    const speed = Math.sqrt(vx * vx + vy * vy);
-    if (speed > maxVelocity) {
-      const scale = maxVelocity / speed;
-      vx *= scale;
-      vy *= scale;
-    }
-
-    velocities[i * 2] = vx;
-    velocities[i * 2 + 1] = vy;
-    positions[i * 2] += vx;
-    positions[i * 2 + 1] += vy;
-    totalVelocity += Math.sqrt(vx * vx + vy * vy);
+  let visibleCount = 0;
+  for (const node of activeNodes) {
+    if (node.hidden) continue;
+    const index = node.visibleIndex;
+    if (index < 0) continue;
+    positions[index * 2] = typeof node.x === "number" ? node.x : positions[index * 2];
+    positions[index * 2 + 1] = typeof node.y === "number" ? node.y : positions[index * 2 + 1];
+    totalVelocity += Math.hypot(node.vx ?? 0, node.vy ?? 0);
+    visibleCount++;
   }
+  lastAverageVelocity = visibleCount ? totalVelocity / visibleCount : 0;
 
-  // Pin dragged node to pointer position
-  if (draggedIndex >= 0 && draggedIndex < nodeIds.length) {
-    positions[draggedIndex * 2] = draggedX;
-    positions[draggedIndex * 2 + 1] = draggedY;
-    velocities[draggedIndex * 2] = 0;
-    velocities[draggedIndex * 2 + 1] = 0;
+  const active = simulation.alpha() > simulation.alphaMin() || lastAverageVelocity > SETTLE_VELOCITY || draggedIndex >= 0;
+  postTickSnapshot(!active);
+  if (!active) {
+    stopTimer();
   }
-
-  tickCounter++;
-  const averageVelocity = visibleIndices.length ? totalVelocity / visibleIndices.length : 0;
-  const isLive = Date.now() < livePostUntil || averageVelocity > 0.0015 || simulationHeat > 0.08 || draggedIndex >= 0;
-  if (!isLive && tickCounter % POST_EVERY_TICKS !== 0) return;
-
-  postTickSnapshot(averageVelocity);
 }
 
 workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   const message = event.data;
 
   if (message.type === "stop") {
+    initialized = false;
+    simulation?.stop();
+    simulation = null;
     stopTimer();
-    linkBuildGeneration++;
-    if (linkRebuildTimer) clearTimeout(linkRebuildTimer);
-    linkRebuildTimer = null;
     return;
   }
 
-  if (message.type === "settings") {
-    settings = message.settings;
-    wakeSimulation(0.02 + clamp01(settings.motion) * 0.04);
-    postEveryFrameFor(1200);
-    postTickSnapshot(0);
-    ensureTimer();
+  if (message.type === "controls") {
+    controls = message.controls;
+    rebuildSimulation(0.18 + clamp01(controls.motion) * 0.3);
     return;
   }
 
   if (message.type === "pause") {
     paused = message.paused;
+    if (paused) stopTimer();
+    else ensureTimer();
+    return;
+  }
+
+  if (message.type === "drag") {
+    draggedIndex = message.nodeIndex;
+    const node = activeNodeById.get(nodeIds[message.nodeIndex]);
+    if (node) {
+      node.fx = message.x;
+      node.fy = message.y;
+      node.x = message.x;
+      node.y = message.y;
+      simulation?.alphaTarget(0.03 + clamp01(controls.motion) * 0.08);
+    }
+    if (message.nodeIndex >= 0 && message.nodeIndex < nodeIds.length) {
+      positions[message.nodeIndex * 2] = message.x;
+      positions[message.nodeIndex * 2 + 1] = message.y;
+    }
+    postTickSnapshot(true);
+    ensureTimer();
+    return;
+  }
+
+  if (message.type === "release") {
+    const node = activeNodeById.get(nodeIds[message.nodeIndex]);
+    if (node) {
+      node.fx = undefined;
+      node.fy = undefined;
+    }
+    if (draggedIndex === message.nodeIndex) draggedIndex = -1;
+    simulation?.alphaTarget(0).alpha(Math.max(simulation.alpha(), 0.12 + clamp01(controls.motion) * 0.12));
+    ensureTimer();
     return;
   }
 
   if (message.type === "init") {
     session = message.session;
     nodeIds = message.nodeIds;
+    nodeIndexById = new Map(nodeIds.map((id, index) => [id, index]));
     positions = message.positions;
-    anchors = message.anchors;
-    vectors = message.vectors;
-    vectorSize = message.vectorSize;
+    hiddenNodes = message.hiddenNodes;
+    topologyLinks = message.topologyLinks;
     visibleIndices = message.visibleIndices;
-    settings = message.settings;
+    controls = message.controls;
     paused = message.paused;
-    velocities = new Float32Array(positions.length);
-    tickCounter = 0;
-    currentChangeId = undefined;
-    simulationHeat = 0.18;
-    postEveryFrameFor(600);
-    rebuildVisibleMask();
-    scheduleLinkRebuild(0);
-    postTickSnapshot(0);
-    ensureTimer();
-    return;
-  }
-
-  if (message.type === "drag") {
-    draggedIndex = message.nodeIndex;
-    draggedX = message.x;
-    draggedY = message.y;
-    postEveryFrameFor(600);
-    return;
-  }
-
-  if (message.type === "release") {
-    if (draggedIndex === message.nodeIndex) {
-      draggedIndex = -1;
-      wakeSimulation(0.025);
-      postEveryFrameFor(900);
-    }
+    draggedIndex = -1;
+    initialized = true;
+    rebuildSimulation(0.36);
     return;
   }
 
   if (message.session !== session) return;
 
-  if (message.type === "retarget") {
-    applyRetarget(message);
-    return;
-  }
-
-  if (message.type === "semanticLinks") {
-    applySemanticLinks(message);
-    return;
-  }
-
   if (message.type === "visibility") {
     visibleIndices = message.visibleIndices;
-    rebuildVisibleMask();
-    scheduleLinkRebuild(35);
-    wakeSimulation(0.002);
-    postEveryFrameFor(600);
-    ensureTimer();
-    return;
+    rebuildSimulation(0.16);
   }
 };
