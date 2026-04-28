@@ -1,7 +1,0 @@
-   ▲ Next.js 15.5.12
-   - Local:        http://localhost:3000
-   - Network:      http://0.0.0.0:3000
-
- ✓ Starting...
- ✓ Ready in 922ms
-prisma:error Error in PostgreSQL connection: Error { kind: Io, cause: Some(Os { code: 10054, kind: ConnectionReset, message: "An existing connection was forcibly closed by the remote host." }) }

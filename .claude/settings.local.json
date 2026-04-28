@@ -141,7 +141,8 @@
       "Bash(railway deployment *)",
       "Bash(Get-Content \"C:\\\\Users\\\\luis.cortes\\\\AppData\\\\Local\\\\Temp\\\\claude\\\\C--LECG-Dashboard\\\\ec2d3243-0263-4630-92c4-48d831b8e3dd\\\\tasks\\\\bloqt3z1o.output\" -Wait -Tail 20)",
       "Bash(Select-Object -First 10)",
-      "WebFetch(domain:aps.autodesk.com)"
+      "WebFetch(domain:aps.autodesk.com)",
+      "Bash(npm test *)"
     ]
   }
 }
