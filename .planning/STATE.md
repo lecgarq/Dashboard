@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-28T17:42:43.870Z"
+last_updated: "2026-04-28T17:47:34Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 2 of 4 in current phase
+Plan: 3 of 4 in current phase
 Status: In Progress
-Last activity: 2026-04-28 — Completed 01-02-PLAN.md (renderer lifecycle + cache corruption banner)
+Last activity: 2026-04-28 — Completed 01-03-PLAN.md (localStorage persistence, loading timeout, API error recovery)
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███░░░░░░░] 30%
 
 ## Performance Metrics
 
@@ -64,6 +64,9 @@ Recent decisions affecting current work:
 - [Phase 01-foundation]: All ACC Admin API mutations must call await getAccountId(ctx.db) — pattern established in FOUND-03
 - [Phase 01-foundation P02]: positionCacheCorrupt state initialized from localStorage — banner persists across page reloads without server round-trip
 - [Phase 01-foundation P02]: Detection block placed in data useEffect after readPrecomputedPositions — re-detection runs automatically on refetch so clearing happens only when positions are confirmed valid
+- [Phase 01-foundation P03]: loadSavedView() placed at module scope (not inside component) because useRef does not support lazy initialization like useState
+- [Phase 01-foundation P03]: Saved view (acc-graph-view) discarded via localStorage.removeItem when dataHash changes — auto-fit runs for new data instead of restoring stale pan/zoom
+- [Phase 01-foundation P03]: API error overlay rendered before loading overlay in JSX to establish correct z-50 stacking priority
 
 ### Pending Todos
 
@@ -77,5 +80,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-28
-Stopped at: Completed 01-foundation-02-PLAN.md
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
