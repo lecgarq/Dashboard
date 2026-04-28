@@ -11,6 +11,8 @@ import {
   type GraphRenderFrame,
   type GraphRenderer,
 } from "./graphRenderers";
+import { isWebGL2Available } from "./cosmosUtils";
+import { toast } from "sonner";
 import { type BulkAccUser } from "./AccAnalysisPanel";
 import {
   buildAccTopologyGraph,
@@ -88,6 +90,10 @@ export interface AccUsersGraphProps {
 const GRAPH_BACKGROUND = "#F8F7F4";
 const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", modules: [] };
 const IS_DEV = process.env.NODE_ENV !== "production";
+
+const COSMOS_PHYSICS_DEFAULTS = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
+const COSMOS_RENDERER_KEY = "acc-graph-renderer";
+const COSMOS_PHYSICS_KEY = "acc-graph-physics";
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
   const cells = new Map<string, number[]>();
@@ -195,12 +201,13 @@ function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32
 export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
-  const webgpuCanvasRef = useRef<HTMLCanvasElement>(null);
+  const cosmosContainerRef = useRef<HTMLDivElement>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
+  const hoverLabelRef = useRef<HTMLDivElement>(null);
   const rafId = useRef<number>(0);
 
   const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
-  const webgpuRendererRef = useRef<CosmosGraphRenderer | null>(null);
+  const cosmosRendererRef = useRef<CosmosGraphRenderer | null>(null);
   const activeRendererRef = useRef<GraphRenderer | null>(null);
 
   const organicWorkerRef = useRef<Worker | null>(null);
@@ -244,8 +251,40 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return localStorage.getItem("acc-graph-cache-corrupt") === "true";
   });
   const [refreshKey, setRefreshKey] = useState(0);
-  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">("canvas2d");
+  // Detect WebGL2 at startup (not deferred to toggle click — per CONTEXT.md locked decision)
+  const [webgl2Available] = useState(() => isWebGL2Available());
+
+  // Load persisted renderer choice — only apply if WebGL2 is available
+  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">(() => {
+    if (!isWebGL2Available()) return "canvas2d"; // SSR-safe, runs in useState initializer
+    try {
+      const stored = localStorage.getItem(COSMOS_RENDERER_KEY);
+      if (stored === "cosmos") return "cosmos";
+    } catch { /* ignore */ }
+    return "canvas2d";
+  });
+
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
+
+  // Physics slider state — load from localStorage with defaults
+  const [cosmosPhysics, setCosmosPhysics] = useState<{ repulsion: number; linkSpring: number; gravity: number }>(() => {
+    try {
+      const raw = localStorage.getItem(COSMOS_PHYSICS_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { repulsion: number; linkSpring: number; gravity: number };
+        if (
+          typeof parsed.repulsion === "number" && isFinite(parsed.repulsion) &&
+          typeof parsed.linkSpring === "number" && isFinite(parsed.linkSpring) &&
+          typeof parsed.gravity === "number" && isFinite(parsed.gravity)
+        ) return parsed;
+      }
+    } catch { /* ignore */ }
+    return { ...COSMOS_PHYSICS_DEFAULTS };
+  });
+
+  // GPU renderer state
+  const [isCosmosLoading, setIsCosmosLoading] = useState(false);
+  const [showPhysicsPanel, setShowPhysicsPanel] = useState(false);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [isPaused, setIsPaused] = useState(false);
   const [pickMode, setPickMode] = useState(false);
@@ -416,6 +455,38 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
   }, []);
 
+  const toggleRenderer = useCallback(() => {
+    const next = renderBackend === "canvas2d" ? "cosmos" : "canvas2d";
+    if (next === "canvas2d") {
+      // Switching back to Canvas 2D: read Cosmos camera state and write back to view refs
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const cosmosGraph = (cosmosRendererRef.current as any)?.graph;
+      if (cosmosGraph) {
+        try {
+          // Read Cosmos transform — method name from installed types; fallback to no-op
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const transform = (cosmosGraph as any).getTransform?.() ?? (cosmosGraph as any).transform;
+          if (transform && typeof transform.k === "number") {
+            // luma.gl / d3-zoom compatible: { k: scale, x: translateX, y: translateY }
+            view.current = { x: transform.x, y: transform.y, scale: transform.k };
+            targetView.current = { ...view.current };
+          }
+        } catch { /* ignore — view restoration is best-effort */ }
+      }
+      // Unpause d3-force worker when switching back to Canvas 2D
+      organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
+    }
+    setRenderBackend(next);
+  }, [renderBackend]);
+
+  const handlePhysicsChange = useCallback((key: keyof typeof COSMOS_PHYSICS_DEFAULTS, value: number) => {
+    setCosmosPhysics(prev => {
+      const next = { ...prev, [key]: value };
+      cosmosRendererRef.current?.setPhysicsConfig(next);
+      return next;
+    });
+  }, []);
+
   const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
     if (!posRef.current.length) return;
 
@@ -494,46 +565,107 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   useEffect(() => {
     const canvas2d = canvas2dRef.current;
-    const webgpuCanvas = webgpuCanvasRef.current;
-    if (!canvas2d || !webgpuCanvas) return;
+    const cosmosContainer = cosmosContainerRef.current;
+    if (!canvas2d || !cosmosContainer) return;
 
     let disposed = false;
     const canvasRenderer = new CanvasGraphRenderer(canvas2d);
     canvasRendererRef.current = canvasRenderer;
-    activeRendererRef.current = canvasRenderer;
-    setRenderBackend("canvas2d");
-    setRendererFailureReason(null);
-    markGraphDirty();
 
-    const fallBackToCanvas = (reason: string) => {
+    const fallBackToCanvas = (_reason: string) => {
       if (disposed) return;
-      webgpuRendererRef.current?.destroy();
-      webgpuRendererRef.current = null;
+      cosmosRendererRef.current?.destroy();
+      cosmosRendererRef.current = null;
       activeRendererRef.current = canvasRendererRef.current;
       setRenderBackend("canvas2d");
-      setRendererFailureReason(reason);
+      setIsCosmosLoading(false);
+      // Unpause d3-force worker when falling back
+      organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
+      toast.error("GPU renderer lost — switched back to Canvas 2D", { duration: 4000 });
       markGraphDirty();
     };
 
-    void (async () => {
-      const { renderer, failureReason } = await CosmosGraphRenderer.create(webgpuCanvas, fallBackToCanvas);
-      if (disposed) {
-        renderer?.destroy();
-        return;
-      }
-      if (!renderer) {
-        setRenderBackend("canvas2d");
-        setRendererFailureReason(failureReason ?? "Cosmos renderer initialization failed");
-        markGraphDirty();
-        return;
-      }
+    if (renderBackend === "cosmos" && webgl2Available) {
+      // Capture current view-state before Cosmos takes over (RESEARCH.md Pitfall 6 / CONTEXT.md locked)
+      const savedView = view.current ? { ...view.current } : null;
 
-      webgpuRendererRef.current = renderer;
-      activeRendererRef.current = renderer;
-      setRenderBackend("cosmos");
-      setRendererFailureReason(null);
+      // Canvas 2D is active while Cosmos loads
+      activeRendererRef.current = canvasRenderer;
+      setIsCosmosLoading(true);
+      // Pause d3-force worker while Cosmos is active (per RESEARCH.md Pitfall 4)
+      organicWorkerRef.current?.postMessage({ type: "pause", paused: true });
+
+      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas).then(({ renderer }) => {
+        if (disposed) { renderer?.destroy(); return; }
+        if (!renderer) {
+          setRenderBackend("canvas2d");
+          setIsCosmosLoading(false);
+          // Unpause d3-force worker on init failure
+          organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
+          markGraphDirty();
+          return;
+        }
+        cosmosRendererRef.current = renderer;
+        activeRendererRef.current = renderer;
+
+        // Wire click selection to side panel
+        renderer.onNodeSelectCallback = (index: number | null) => {
+          if (index === null) {
+            setSelectedNode(null);
+            selectedNodeRef.current = null;
+          } else {
+            const node = nodesRef.current[index] ?? null;
+            if (node) {
+              const state: SidePanelState = { node };
+              setSelectedNode(state);
+              selectedNodeRef.current = state;
+            }
+          }
+          markGraphDirty();
+        };
+
+        // Wire hover labels via Cosmos onPointMouseOver / onPointMouseOut
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const cosmosGraph = (renderer as any).graph;
+        if (cosmosGraph) {
+          cosmosGraph.setConfigPartial({
+            onPointMouseOver: (index: number, position: [number, number], _event: MouseEvent) => {
+              const node = nodesRef.current[index];
+              if (node && hoverLabelRef.current) {
+                hoverLabelRef.current.textContent = node.name || node.email || node.id;
+                hoverLabelRef.current.style.left = `${position[0] + 12}px`;
+                hoverLabelRef.current.style.top = `${position[1] - 8}px`;
+                hoverLabelRef.current.style.display = "block";
+              }
+            },
+            onPointMouseOut: () => {
+              if (hoverLabelRef.current) {
+                hoverLabelRef.current.style.display = "none";
+              }
+            },
+          });
+        }
+
+        // Apply persisted physics config on init
+        renderer.setPhysicsConfig(cosmosPhysics);
+
+        // Restore view-state after Cosmos is ready
+        if (savedView && cosmosGraph) {
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            (cosmosGraph as any).zoom?.(savedView.scale, [savedView.x, savedView.y]);
+          } catch { /* ignore — view restoration is best-effort */ }
+        }
+
+        setIsCosmosLoading(false);
+        setRendererFailureReason(null);
+        markGraphDirty();
+      });
+    } else {
+      // Canvas 2D mode
+      activeRendererRef.current = canvasRenderer;
       markGraphDirty();
-    })();
+    }
 
     return () => {
       disposed = true;
@@ -543,14 +675,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       activeRendererRef.current = null;
       canvasRendererRef.current?.destroy();
       canvasRendererRef.current = null;
-      webgpuRendererRef.current?.destroy();
-      webgpuRendererRef.current = null;
+      cosmosRendererRef.current?.destroy();
+      cosmosRendererRef.current = null;
+      if (hoverLabelRef.current) hoverLabelRef.current.style.display = "none";
     };
-  }, [markGraphDirty]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [renderBackend, webgl2Available]); // Re-runs when user toggles backend
 
   useEffect(() => {
     if (rendererFailureReason) {
-      console.debug(`[AccUsersGraph] renderer backend=${renderBackend}; fallback=${rendererFailureReason}`);
+      console.debug(`[AccUsersGraph] renderer backend=${renderBackend}; failure=${rendererFailureReason}`);
       return;
     }
     console.debug(`[AccUsersGraph] renderer backend=${renderBackend}`);
@@ -688,6 +822,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   useEffect(() => {
     localStorage.setItem("acc-graph-filters", JSON.stringify(filters));
   }, [filters]);
+
+  // Persist physics config to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(COSMOS_PHYSICS_KEY, JSON.stringify(cosmosPhysics));
+    } catch { /* ignore */ }
+  }, [cosmosPhysics]);
+
+  // Persist renderer choice to localStorage when it changes
+  useEffect(() => {
+    try {
+      localStorage.setItem(COSMOS_RENDERER_KEY, renderBackend);
+    } catch { /* ignore */ }
+  }, [renderBackend]);
 
   useEffect(() => {
     if (isReady || !users.length) {
@@ -889,7 +1037,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, [rebuildGrid, markGraphDirty, saveView]);
 
   useEffect(() => {
-    const canvases = [canvas2dRef.current, webgpuCanvasRef.current].filter(Boolean) as HTMLCanvasElement[];
+    const canvases = [canvas2dRef.current].filter(Boolean) as HTMLCanvasElement[];
     for (const canvas of canvases) {
       canvas.addEventListener("wheel", handleWheel, { passive: false });
     }
@@ -1232,25 +1380,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             markGraphDirty();
           }}
         />
-        <canvas
-          ref={webgpuCanvasRef}
-          className={cn(renderCanvasClass, renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none")}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={() => {
-            if (isDraggingNodeRef.current) {
-              const idx = draggedNodeIdxRef.current;
-              isDraggingNodeRef.current = false;
-              draggedNodeIdxRef.current = -1;
-              if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
-            }
-            isDragging.current = false;
-            setIsDraggingState(false);
-            setHoveredNode(null);
-            if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
-            markGraphDirty();
-          }}
+        <div
+          ref={cosmosContainerRef}
+          className={cn(
+            "absolute inset-0 w-full h-full",
+            renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none"
+          )}
+          // Cosmos manages its own canvas and pointer events internally
         />
         <div
           ref={tooltipRef}

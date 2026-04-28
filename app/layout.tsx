@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/core/providers";
+import { Toaster } from "sonner";
 
 const manrope = Manrope({
   subsets: ["latin"],
@@ -38,6 +39,7 @@ export default function RootLayout({
       >
         <TRPCProvider>
           {children}
+          <Toaster position="bottom-right" richColors />
         </TRPCProvider>
       </body>
     </html>
