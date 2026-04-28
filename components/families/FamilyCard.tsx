@@ -1,6 +1,6 @@
 "use client";
 
-import { cn } from "@/lib/core/utils";
+import { cn } from "@/lib/core/utils";`nimport { getPhaseMetadata } from "@/lib/shared/family-config";
 import { type Phase } from "./KanbanBoard";
 import { useRole } from "@/hooks/use-role";
 import {
@@ -13,14 +13,9 @@ import {
   Loader2,
 } from "lucide-react";
 
-const PHASE_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  TODO: { label: "To Do", color: "text-muted-foreground", bg: "bg-muted/50" },
-  IN_PROGRESS: { label: "In Progress", color: "text-chart-1", bg: "bg-chart-1/10" },
-  REVIEW: { label: "Review", color: "text-chart-5", bg: "bg-chart-5/10" },
-  DONE: { label: "Done", color: "text-chart-2", bg: "bg-chart-2/10" },
-};
 
-const PHASES: Phase[] = ["TODO", "IN_PROGRESS", "REVIEW", "DONE"];
+
+
 
 interface FamilyCardProps {
   family: {
@@ -42,7 +37,7 @@ interface FamilyCardProps {
 
 export function FamilyCard({ family, onChangePhase, onClick, compact }: FamilyCardProps) {
   const { isEditor } = useRole();
-  const phaseConf = PHASE_CONFIG[family.phase] ?? PHASE_CONFIG.TODO;
+  const phaseMeta = getPhaseMetadata(family.phase);
 
   function formatDate(d: Date | string | null | undefined) {
     if (!d) return null;
@@ -95,8 +90,8 @@ export function FamilyCard({ family, onChangePhase, onClick, compact }: FamilyCa
 
       {/* Phase selector */}
       <div className="flex items-center justify-between">
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${phaseConf.bg} ${phaseConf.color}`}>
-          {phaseConf.label}
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-md ${phaseMeta.cardBg} ${phaseMeta.cardText}`}>
+          {phaseMeta.label}
         </span>
         {isEditor && (
           <div className="relative">
@@ -121,3 +116,4 @@ export function FamilyCard({ family, onChangePhase, onClick, compact }: FamilyCa
     </div>
   );
 }
+

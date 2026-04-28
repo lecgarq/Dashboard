@@ -21,14 +21,9 @@ import { Loader2, Box, Info } from "lucide-react";
 import { clientLogger } from "@/lib/core/logger";
 import { cn } from "@/lib/core/utils";
 import { PanelErrorBoundary } from "@/components/ui/panel-error-boundary";
-import type { FamilyPhase } from "@/lib/shared/module-schemas";
+import { FAMILY_PHASE_METADATA, FAMILY_PHASES } from "@/lib/shared/family-config";`nimport type { FamilyPhase } from "@/lib/shared/family-config";
 
-const PHASES = [
-  { value: "TODO", label: "To Do" },
-  { value: "IN_PROGRESS", label: "In Progress" },
-  { value: "REVIEW", label: "Review" },
-  { value: "DONE", label: "Done" },
-];
+const PHASES = FAMILY_PHASES.map(id => ({ value: id, label: FAMILY_PHASE_METADATA[id].label }));
 
 const ATTACHMENT_TYPE_LABELS: Record<string, string> = {
   IMAGE: "Image",
@@ -654,3 +649,4 @@ export function FamilyDetailPanel({
     </PanelErrorBoundary>
   );
 }
+
