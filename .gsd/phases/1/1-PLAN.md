@@ -2,29 +2,40 @@
 phase: 1
 plan: 1
 wave: 1
-gap_closure: true
 ---
 
-# Fix: HTML Content Extraction
+# Plan 1.1: Environment Preparation
 
-## Problem
-The Yjs server currently extracts raw XML from the collaborative state. This may lead to visual drift or formatting issues when viewing the content in non-collaborative parts of the application.
+## Objective
+Update the package manager (npm) to version 11.11.1 as requested to ensure the environment is ready for the core dependency updates.
 
-## Root Cause
-Simple xmlFragment.toString() call in the store hook.
+## Context
+- .gsd/ROADMAP.md
 
 ## Tasks
 
 <task type="auto">
-  <name>Implement HTML Extraction in Yjs Server</name>
-  <files>
-    <file>scripts/yjs-server.mjs</file>
-  </files>
+  <name>Update npm to v11.11.1</name>
+  <files></files>
   <action>
-    1. Integrate a basic ProseMirror/Tiptap schema-based serializer or a more robust XML-to-HTML mapping.
-    2. Since the full Tiptap environment is unavailable on the server, use a simplified approach to ensure common tags (paragraphs, headings, lists) are correctly serialized to HTML.
-    3. Update the store hook to use this serializer.
+    1. Run `npm install -g npm@11.11.1` to update the global npm installation.
+    2. Since this is on Windows, ensure the command completes and the new version is accessible.
   </action>
-  <verify>Check the database 'content' field after an edit to ensure it contains valid HTML instead of raw XML.</verify>
-  <done>Wiki content is stored as clean, compatible HTML.</done>
+  <verify>npm -v</verify>
+  <done>npm version is 11.11.1</done>
 </task>
+
+<task type="auto">
+  <name>Verify Environment Stability</name>
+  <files></files>
+  <action>
+    1. Run `npm install` to ensure that the new npm version handles the current `package-lock.json` correctly.
+    2. Run a quick smoke test of the dev stack using `python scripts/run_dev_stack.py` (optional check).
+  </action>
+  <verify>npm list --depth=0</verify>
+  <done>Packages are successfully resolved and environment is stable.</done>
+</task>
+
+## Success Criteria
+- [ ] npm version is 11.11.1.
+- [ ] `npm install` completes without critical errors.
