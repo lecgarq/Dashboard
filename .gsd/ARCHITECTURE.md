@@ -77,12 +77,13 @@ graph TD
 
 ## Technical Debt
 
-- [ ] **TODO markers in Families**: `FamilyCard.tsx` and `KanbanBoard.tsx` have hardcoded status logic.
-- [ ] **Python/JS Split**: Coordination between Node.js and LOD Engine (Python) requires manual stack management (`run_dev_stack.py`).
-- [ ] **Prisma/Hocuspocus Integration**: Synchronization between collaborative state and permanent DB needs hardening.
+- [x] **TODO markers in Families**: Centralized metadata in lib/shared/family-config.ts.
+- [x] **Python/JS Split**: Implemented self-healing ManagedService orchestration in un_dev_stack.py.
+- [x] **Prisma/Hocuspocus Integration**: Hardened dual-field sync (yjsState + content) and automated drift monitoring.
 
 ## Conventions
 
 - **Naming**: PascalCase for components, camelCase for variables/functions.
 - **Structure**: Feature-based directory structure under `components/`.
 - **Testing**: Playwright for E2E testing (indicated by `.playwright-mcp`).
+

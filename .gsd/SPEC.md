@@ -18,3 +18,4 @@ Harden the LECG Dashboard infrastructure by resolving critical technical debt in
 - [ ] Families Kanban board reflects DB state without hardcoded status arrays in UI components.
 - [ ] `npm run dev` starts all services and auto-restarts on failure.
 - [ ] Wiki edits in Hocuspocus are reliably persisted to the PostgreSQL `WikiSection` table.
+
