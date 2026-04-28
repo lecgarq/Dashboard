@@ -16,6 +16,7 @@ import type {
   AccTopologyLink,
   AccTopologyLinkKind,
   GraphControlSettings,
+  PhysicsConfig,
 } from "./accGraphOrganicLayout";
 
 type FloatBuffer = Float32Array<ArrayBufferLike>;
@@ -36,10 +37,12 @@ type WorkerRequest =
       topologyLinks: AccTopologyLink[];
       visibleIndices: UintBuffer;
       controls: GraphControlSettings;
+      physics: PhysicsConfig;
       paused: boolean;
     }
   | { type: "visibility"; session: number; visibleIndices: UintBuffer }
   | { type: "controls"; controls: GraphControlSettings }
+  | { type: "physics"; physics: PhysicsConfig }
   | { type: "pause"; paused: boolean }
   | { type: "drag"; nodeIndex: number; x: number; y: number }
   | { type: "release"; nodeIndex: number }
@@ -79,6 +82,7 @@ let topologyLinks: AccTopologyLink[] = [];
 let visibleIndices: UintBuffer = new Uint32Array(0);
 let visibleMask = new Uint8Array(0);
 let controls: GraphControlSettings = { spacing: 54, clusterStrength: 62, stability: 78, motion: 34 };
+let physicsConfig: PhysicsConfig = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
 let paused = false;
 let simulation: Simulation<LayoutNode, LayoutLink> | null = null;
 let activeNodes: LayoutNode[] = [];
@@ -101,35 +105,32 @@ function seededPoint(id: string): { x: number; y: number } {
     hash ^= id.charCodeAt(i);
     hash = Math.imul(hash, 16777619);
   }
-  const angle = ((hash >>> 0) % 100000) / 100000 * Math.PI * 2;
-  const radius = 0.06 + (((hash >>> 8) % 100000) / 100000) * 0.22;
-  return {
-    x: 0.5 + Math.cos(angle) * radius,
-    y: 0.5 + Math.sin(angle) * radius,
-  };
+  // Spread hub nodes across [0.08, 0.92] × [0.08, 0.92] — wide grid instead of tight ring
+  const u = ((hash >>> 0) % 100000) / 100000;
+  const v = ((hash >>> 8) % 100000) / 100000;
+  return { x: 0.08 + u * 0.84, y: 0.08 + v * 0.84 };
 }
 
 function linkDistance(kind: AccTopologyLinkKind): number {
-  const spacing01 = clamp01(controls.spacing);
-  const base = 0.035 + spacing01 * 0.14;
-  if (kind === "user") return base * 0.62;
-  if (kind === "access") return base * 0.72;
-  if (kind === "project") return base * 0.9;
+  // Base distance scales inversely with linkSpring — softer spring = more breathing room
+  const base = 0.06 + (2 - physicsConfig.linkSpring) * 0.05;
+  if (kind === "user") return base * 0.65;
+  if (kind === "access") return base * 0.80;
+  if (kind === "project") return base * 1.0;
   return base;
 }
 
 function linkStrength(kind: AccTopologyLinkKind): number {
-  const cluster01 = clamp01(controls.clusterStrength);
-  const base = 0.035 + cluster01 * 0.22;
+  const base = 0.03 + physicsConfig.linkSpring * 0.07;
   if (kind === "user") return base * 1.4;
-  if (kind === "project") return base * 1.15;
-  if (kind === "access") return base * 0.72;
+  if (kind === "project") return base * 1.1;
+  if (kind === "access") return base * 0.7;
   return base;
 }
 
 function collideRadius(node: LayoutNode): number {
-  const spacing01 = clamp01(controls.spacing);
-  return node.hidden ? 0.012 + spacing01 * 0.014 : 0.008 + spacing01 * 0.018;
+  // Larger collision radii give each node personal space — matches D3 collision example
+  return node.hidden ? 0.018 : 0.022 + physicsConfig.repulsion * 0.006;
 }
 
 function rebuildVisibleMask(): void {
@@ -264,26 +265,28 @@ function rebuildSimulation(alpha = 0.35): void {
   renderLinks = buildProjectedLinks(activeTopologyLinks);
   postLinks();
 
-  const stability01 = clamp01(controls.stability);
   const motion01 = clamp01(controls.motion);
-  const charge = -(0.0006 + clamp01(controls.spacing) * 0.0045);
-  const centerStrength = 0.003 + stability01 * 0.012;
+
+  // D3-equivalent charge: default charge=-0.05 ≈ -30px at zoom 600, matching D3's organic default.
+  // repulsion 0→2 maps charge from -0.015 to -0.085.
+  const charge = -(0.015 + physicsConfig.repulsion * 0.035);
+  const centerStrength = 0.001 + physicsConfig.gravity * 0.008;
 
   simulation = forceSimulation<LayoutNode, LayoutLink>(activeNodes)
     .stop()
     .alpha(Math.max(0.03, alpha + motion01 * 0.16))
     .alphaMin(0.002)
-    .alphaDecay(0.035 + stability01 * 0.085)
-    .velocityDecay(0.34 + stability01 * 0.48)
+    .alphaDecay(0.022)
+    .velocityDecay(0.36)
     .force("link", forceLink<LayoutNode, LayoutLink>(activeLinks)
       .id((node) => node.id)
       .distance((link) => linkDistance(link.kind))
       .strength((link) => linkStrength(link.kind)))
-    .force("charge", forceManyBody<LayoutNode>().strength((node) => node.hidden ? charge * 0.45 : charge))
-    .force("collide", forceCollide<LayoutNode>().radius(collideRadius).strength(0.72).iterations(2))
-    .force("x", forceX<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.28 : centerStrength))
-    .force("y", forceY<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.28 : centerStrength))
-    .force("center", forceCenter<LayoutNode>(0.5, 0.5));
+    .force("charge", forceManyBody<LayoutNode>().strength((node) => node.hidden ? charge * 0.5 : charge))
+    .force("collide", forceCollide<LayoutNode>().radius(collideRadius).strength(0.8).iterations(3))
+    .force("x", forceX<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.3 : centerStrength))
+    .force("y", forceY<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.3 : centerStrength));
+  // forceCenter omitted — forceX/Y alone gives gentle centering without the ring-collapse effect
 
   if (draggedIndex >= 0) {
     const draggedNode = activeNodeById.get(nodeIds[draggedIndex]);
@@ -352,6 +355,12 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     return;
   }
 
+  if (message.type === "physics") {
+    physicsConfig = message.physics;
+    rebuildSimulation(0.25);
+    return;
+  }
+
   if (message.type === "pause") {
     paused = message.paused;
     if (paused) stopTimer();
@@ -399,6 +408,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     topologyLinks = message.topologyLinks;
     visibleIndices = message.visibleIndices;
     controls = message.controls;
+    physicsConfig = message.physics;
     paused = message.paused;
     draggedIndex = -1;
     initialized = true;

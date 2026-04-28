@@ -287,17 +287,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
         enableSimulation: true,
         fitViewOnInit: false,        // AccUsersGraph controls zoom/pan externally
         backgroundColor: "#F8F7F4", // GRAPH_BACKGROUND — matches AccUsersGraph constant
-        // v3 config key names (pointDefaultColor replaces pointColor, etc.)
-        pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number], // gray fallback — overridden by setPointColors
+        spaceSize: 65536,            // large space prevents visible square border at zoom-out
+        pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number],
         pointDefaultSize: 4,
         linkDefaultColor: [0.612, 0.639, 0.686, 0.25] as [number, number, number, number],
         linkDefaultWidth: 1,
         linkDefaultArrows: false,
-        simulationRepulsion: 1.0,
-        simulationLinkSpring: 1.0,
-        simulationGravity: 0.25,
+        simulationRepulsion: 1.0,   // matches DEFAULT_PHYSICS_CONFIG — overridden in draw()
+        simulationLinkSpring: 0.6,
+        simulationGravity: 0.05,    // low gravity = organic spread, not ring
         simulationFriction: 0.85,
-        simulationDecay: 5000,
+        simulationDecay: 10000,     // slow decay = longer settling = more natural spread
         // v3 click callbacks — wire selection so clicks behave same as Canvas 2D
         onPointClick: (index: number, _pos: [number, number], _event: MouseEvent) => {
           renderer.selectNode(index);
@@ -401,9 +401,10 @@ export class CosmosGraphRenderer implements GraphRenderer {
       this.lastLinkCount = linkCount;
     }
 
-    // On first data load, fit the view so nodes are centered and visible.
-    // Without this, the default Cosmos camera zoom may not show the cluster.
     if (isFirstLoad) {
+      // Re-trigger Cosmos render loop after pushing data — the loop may have idled
+      // after initializing with an empty scene. render() acts as a wake-up call.
+      this.graph.render();
       this.graph.fitView(600);
     }
 
@@ -422,10 +423,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
     gravity?: number;
   }): void {
     if (!this.graph) return;
+    // Scale slider values to Cosmos simulation ranges for organic spread equivalent to Canvas 2D.
+    // repulsion 0–2 → simulationRepulsion 0–3 (Cosmos needs higher values for equivalent spread)
+    // linkSpring 0–2 → simulationLinkSpring 0–1 (softer than raw value for organic feel)
+    // gravity 0–0.5 → simulationGravity 0–0.15 (keep very low so nodes breathe freely)
     this.graph.setConfigPartial({
-      ...(partial.repulsion !== undefined && { simulationRepulsion: partial.repulsion }),
-      ...(partial.linkSpring !== undefined && { simulationLinkSpring: partial.linkSpring }),
-      ...(partial.gravity !== undefined && { simulationGravity: partial.gravity }),
+      ...(partial.repulsion !== undefined && { simulationRepulsion: partial.repulsion * 1.5 }),
+      ...(partial.linkSpring !== undefined && { simulationLinkSpring: partial.linkSpring * 0.5 }),
+      ...(partial.gravity !== undefined && { simulationGravity: partial.gravity * 0.3 }),
     });
   }
 

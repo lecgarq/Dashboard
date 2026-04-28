@@ -19,7 +19,9 @@ import {
   computeCentroid,
   computeTopologySeedPositions,
   DEFAULT_GRAPH_CONTROLS,
+  DEFAULT_PHYSICS_CONFIG,
   type GraphControlSettings,
+  type PhysicsConfig,
 } from "./accGraphOrganicLayout";
 
 interface UserNode extends PhysicsNode {
@@ -267,11 +269,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
 
   // Physics slider state — load from localStorage with defaults
-  const [cosmosPhysics, setCosmosPhysics] = useState<{ repulsion: number; linkSpring: number; gravity: number }>(() => {
+  const [cosmosPhysics, setCosmosPhysics] = useState<PhysicsConfig>(() => {
     try {
       const raw = localStorage.getItem(COSMOS_PHYSICS_KEY);
       if (raw) {
-        const parsed = JSON.parse(raw) as { repulsion: number; linkSpring: number; gravity: number };
+        const parsed = JSON.parse(raw) as PhysicsConfig;
         if (
           typeof parsed.repulsion === "number" && isFinite(parsed.repulsion) &&
           typeof parsed.linkSpring === "number" && isFinite(parsed.linkSpring) &&
@@ -281,6 +283,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     } catch { /* ignore */ }
     return { ...COSMOS_PHYSICS_DEFAULTS };
   });
+  // Stable ref so worker init message always sees the latest physics values
+  const cosmosPhysicsRef = useRef<PhysicsConfig>(cosmosPhysics);
 
   // GPU renderer state
   const [isCosmosLoading, setIsCosmosLoading] = useState(false);
@@ -383,6 +387,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         topologyLinks: topology.links,
         visibleIndices,
         controls: graphControlsRef.current,
+        physics: cosmosPhysicsRef.current,
         paused: isPausedRef.current,
       },
       [positionsForWorker.buffer, visibleIndices.buffer],
@@ -479,10 +484,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     setRenderBackend(next);
   }, [renderBackend]);
 
-  const handlePhysicsChange = useCallback((key: keyof typeof COSMOS_PHYSICS_DEFAULTS, value: number) => {
+  const handlePhysicsChange = useCallback((key: keyof PhysicsConfig, value: number) => {
     setCosmosPhysics(prev => {
       const next = { ...prev, [key]: value };
+      cosmosPhysicsRef.current = next;
+      // Apply to whichever renderer is active — both receive the same values
       cosmosRendererRef.current?.setPhysicsConfig(next);
+      organicWorkerRef.current?.postMessage({ type: "physics", physics: next });
       return next;
     });
   }, []);
@@ -835,8 +843,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     localStorage.setItem("acc-graph-filters", JSON.stringify(filters));
   }, [filters]);
 
-  // Persist physics config to localStorage when it changes
+  // Keep physics ref in sync with state and persist to localStorage
   useEffect(() => {
+    cosmosPhysicsRef.current = cosmosPhysics;
     try {
       localStorage.setItem(COSMOS_PHYSICS_KEY, JSON.stringify(cosmosPhysics));
     } catch { /* ignore */ }
@@ -1036,7 +1045,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const v = view.current;
     const wx = v.x + (mx - cx) / v.scale;
     const wy = v.y + (my - cy) / v.scale;
-    const nextScale = Math.max(10, Math.min(500000, v.scale * Math.pow(1.002, -event.deltaY)));
+    const nextScale = Math.max(0.01, Math.min(500000, v.scale * Math.pow(1.002, -event.deltaY)));
     view.current = {
       scale: nextScale,
       x: wx - (mx - cx) / nextScale,
@@ -1295,19 +1304,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 {renderBackend === "cosmos" ? "GPU" : "Canvas 2D / GPU"}
               </button>
             )}
-            {renderBackend === "cosmos" && (
-              <button
-                onClick={() => setShowPhysicsPanel(v => !v)}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
-                  showPhysicsPanel
-                    ? "bg-gray-900 text-white border-gray-900"
-                    : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-                )}
-              >
-                Physics
-              </button>
-            )}
+            <button
+              onClick={() => setShowPhysicsPanel(v => !v)}
+              className={cn(
+                "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
+                showPhysicsPanel
+                  ? "bg-gray-900 text-white border-gray-900"
+                  : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
+              )}
+            >
+              Physics
+            </button>
           </div>
           <div className="text-[10px] text-gray-400 pr-1">
             {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
@@ -1390,10 +1397,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        {showPhysicsPanel && renderBackend === "cosmos" && (
+        {showPhysicsPanel && (
           <div className="absolute top-12 right-3 z-10 w-56">
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">GPU Physics</p>
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Physics</p>
               <SliderControl
                 label="Repulsion"
                 value={Math.round(cosmosPhysics.repulsion * 50)}
@@ -1411,8 +1418,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               />
               <button
                 onClick={() => {
-                  setCosmosPhysics({ ...COSMOS_PHYSICS_DEFAULTS });
-                  cosmosRendererRef.current?.setPhysicsConfig(COSMOS_PHYSICS_DEFAULTS);
+                  const defaults = { ...COSMOS_PHYSICS_DEFAULTS };
+                  cosmosPhysicsRef.current = defaults;
+                  setCosmosPhysics(defaults);
+                  cosmosRendererRef.current?.setPhysicsConfig(defaults);
+                  organicWorkerRef.current?.postMessage({ type: "physics", physics: defaults });
                 }}
                 className="w-full mt-1 px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
               >

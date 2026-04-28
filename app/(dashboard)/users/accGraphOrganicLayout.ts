@@ -84,6 +84,18 @@ export const DEFAULT_GRAPH_CONTROLS: GraphControlSettings = {
   motion: 34,
 };
 
+export interface PhysicsConfig {
+  repulsion: number;  // 0–2: forceManyBody charge intensity
+  linkSpring: number; // 0–2: forceLink strength
+  gravity: number;    // 0–1: forceX/Y pull toward center
+}
+
+export const DEFAULT_PHYSICS_CONFIG: PhysicsConfig = {
+  repulsion: 1.0,
+  linkSpring: 1.0,
+  gravity: 0.25,
+};
+
 export const SEMANTIC_VECTOR_SIZE = 48;
 
 function hashU32(value: string, salt = ""): number {
