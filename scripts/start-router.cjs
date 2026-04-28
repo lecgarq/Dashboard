@@ -5,7 +5,12 @@
  */
 
 if (process.env.SERVICE_TYPE === "yjs") {
-  require("./yjs-server.cjs");
+  // Use dynamic import for the ESM Yjs server
+  import("./yjs-server.mjs").catch(err => {
+    console.error("[router] Failed to start Yjs server:", err);
+    process.exit(1);
+  });
 } else {
   require("./start-production.cjs");
 }
+
