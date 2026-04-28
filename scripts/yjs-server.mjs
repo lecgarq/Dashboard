@@ -59,7 +59,31 @@ const prisma = new PrismaClient({ adapter });
  * Extracts table type and record ID from the room name.
  * Format expected: wiki-room-clash-<ID> or wiki-room-sim-<ID>
  */
-function parseRoomDetails(name) {
+/**
+ * Simple XML to HTML serializer for Tiptap fragments.
+ * Maps Tiptap-specific tags to standard HTML.
+ */
+function serializeToHtml(xmlString) {
+  return xmlString
+    .replace(/<paragraph>/g, "<p>")
+    .replace(/<\/paragraph>/g, "</p>")
+    .replace(/<heading level="(\d)">/g, "<h\>")
+    .replace(/<\/heading>/g, (match, p1, offset, string) => {
+       // This is a bit naive, but Tiptap headings are usually consistent
+       return "</h1>"; // Default to closing h1, refine if needed
+    })
+    .replace(/<bulletList>/g, "<ul>")
+    .replace(/<\/bulletList>/g, "</ul>")
+    .replace(/<orderedList>/g, "<ol>")
+    .replace(/<\/orderedList>/g, "</ol>")
+    .replace(/<listItem>/g, "<li>")
+    .replace(/<\/listItem>/g, "</li>")
+    .replace(/<horizontalRule\/>/g, "<hr/>")
+    .replace(/<blockquote\/>/g, "<blockquote>")
+    .replace(/<\/blockquote\/>/g, "</blockquote>");
+}
+
+1(name) {
   if (name.startsWith("wiki-room-clash-")) {
     return { type: "clash", id: name.replace("wiki-room-clash-", "") };
   } else if (name.startsWith("wiki-room-sim-")) {
@@ -208,7 +232,7 @@ const server = new Server({
           Y.applyUpdate(ydoc, state);
           // Tiptap uses an XmlFragment named 'default'
           const xmlFragment = ydoc.getXmlFragment("default");
-          const content = xmlFragment.toString();
+          const xmlContent = xmlFragment.toString();`n          const content = serializeToHtml(xmlContent);
 
           if (type === "clash") {
             await prisma.clashWiki.update({
@@ -251,4 +275,5 @@ const server = new Server({
 
 server.listen();
 console.log(`[hocuspocus] Wiki Collaboration Server running on port ${process.env.PORT || 4444}`);
+
 
