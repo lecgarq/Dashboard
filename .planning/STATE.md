@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 1 of 4 in current phase (COMPLETE)
-Status: In Progress — Phase 2 Plan 1 complete
-Last activity: 2026-04-28 — Completed 02-01-PLAN.md (CosmosGraphRenderer class + cosmosUtils.ts helpers + @cosmos.gl/graph@3.0.0-beta.8 installed)
+Plan: 2 of 4 in current phase (AT CHECKPOINT)
+Status: In Progress — Phase 2 Plan 2 Tasks 1-3 complete, awaiting human-verify checkpoint
+Last activity: 2026-04-28 — 02-02 Tasks 1-3 done: Cosmos wired into AccUsersGraph (state/effects/toggle/spinner/physics panel/legend)
 
 Progress: [████▌░░░░░] 45%
 
@@ -85,5 +85,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-28
-Stopped at: Completed 02-01-PLAN.md — CosmosGraphRenderer core implementation
+Stopped at: 02-02 Task 3 complete — at checkpoint:human-verify (Task 4); awaiting browser verification
 Resume file: None
