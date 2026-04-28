@@ -10,9 +10,9 @@
 ### Foundation (FOUND)
 
 - [ ] **FOUND-01**: Graph module loads correctly when deployed to production (not just `npm run dev`) — production webpack worker bundling verified with `npm run build && npm start`
-- [ ] **FOUND-02**: User can navigate away from the graph page and return multiple times without the canvas going blank — renderer destroy lifecycle prevents WebGL context accumulation
+- [x] **FOUND-02**: User can navigate away from the graph page and return multiple times without the canvas going blank — renderer destroy lifecycle prevents WebGL context accumulation
 - [x] **FOUND-03**: New ACC Admin API endpoints work correctly without requiring developers to manually apply the hub ID prefix strip — `getAccountId(db)` helper centralizes `b.` stripping
-- [ ] **FOUND-04**: Application recovers gracefully when graph position cache contains invalid values — `readPrecomputedPositions` rejects NaN/Infinity and triggers cache rebuild prompt
+- [x] **FOUND-04**: Application recovers gracefully when graph position cache contains invalid values — `readPrecomputedPositions` rejects NaN/Infinity and triggers cache rebuild prompt
 
 ### Cosmos.gl Renderer (REND)
 
@@ -68,9 +68,9 @@
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FOUND-01 | Phase 1 | Pending |
-| FOUND-02 | Phase 1 | Pending |
+| FOUND-02 | Phase 1 | Complete |
 | FOUND-03 | Phase 1 | Complete |
-| FOUND-04 | Phase 1 | Pending |
+| FOUND-04 | Phase 1 | Complete |
 | REND-01 | Phase 2 | Pending |
 | REND-02 | Phase 2 | Pending |
 | REND-03 | Phase 2 | Pending |

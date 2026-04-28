@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 1 of 4 (Foundation)
-Plan: 1 of 4 in current phase
+Plan: 2 of 4 in current phase
 Status: In Progress
-Last activity: 2026-04-28 — Completed 01-01-PLAN.md (getAccountId helper extraction)
+Last activity: 2026-04-28 — Completed 01-02-PLAN.md (renderer lifecycle + cache corruption banner)
 
-Progress: [█░░░░░░░░░] 10%
+Progress: [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
@@ -62,6 +62,8 @@ Recent decisions affecting current work:
 - Stack context: Stack is stable post-Core-Dependency-Update (npm 11, tRPC 11, TypeScript 6, Vitest harness); APS SDK already integrated
 - [Phase 01-foundation]: Used db: any for getAccountId parameter (matches rebuildAccGraphCache pattern) — no PrismaClient import needed
 - [Phase 01-foundation]: All ACC Admin API mutations must call await getAccountId(ctx.db) — pattern established in FOUND-03
+- [Phase 01-foundation P02]: positionCacheCorrupt state initialized from localStorage — banner persists across page reloads without server round-trip
+- [Phase 01-foundation P02]: Detection block placed in data useEffect after readPrecomputedPositions — re-detection runs automatically on refetch so clearing happens only when positions are confirmed valid
 
 ### Pending Todos
 
@@ -75,5 +77,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-28
-Stopped at: Completed 01-foundation-01-PLAN.md
+Stopped at: Completed 01-foundation-02-PLAN.md
 Resume file: None
