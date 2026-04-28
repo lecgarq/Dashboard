@@ -69,3 +69,4 @@
 |---------|---------|--------|------|
 | next-auth | 5.0.0-beta.30 | - | Beta version risk |
 | @trpc/* | 11.0.0 | - | Major version migration |
+

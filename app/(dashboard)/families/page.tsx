@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { trpc } from "@/lib/core/trpc";
+import { FAMILY_PHASES, getPhaseMetadata } from "@/lib/shared/family-config";
 import { CATEGORY_GROUPS, CATEGORY_GROUP_NAMES } from "@/lib/shared/categories";
 import type { FamilyPhase } from "@/lib/shared/module-schemas";
 import { Box, Filter, Plus } from "lucide-react";
@@ -43,23 +44,13 @@ const ApsProjectBrowser = dynamic(
   { ssr: false }
 );
 
-const PHASES = [
-  { key: "TODO", label: "To Do" },
-  { key: "IN_PROGRESS", label: "In Progress" },
-  { key: "REVIEW", label: "Review" },
-  { key: "DONE", label: "Done" },
-] as const;
 
-const PHASE_INDEX: Record<FamilyPhase, number> = {
-  TODO: 0,
-  IN_PROGRESS: 1,
-  REVIEW: 2,
-  DONE: 3,
-};
+
+
 
 function sortFamilies(items: Family[]) {
   return [...items].sort((a, b) => {
-    const phaseDiff = (PHASE_INDEX[a.phase as FamilyPhase] ?? 99) - (PHASE_INDEX[b.phase as FamilyPhase] ?? 99);
+    const phaseDiff = (FAMILY_PHASES.indexOf(a.phase as FamilyPhase)) - (FAMILY_PHASES.indexOf(b.phase as FamilyPhase));
     if (phaseDiff !== 0) return phaseDiff;
     return a.phaseOrder - b.phaseOrder;
   });
@@ -139,7 +130,7 @@ export default function FamiliesPage() {
       await utils.families.getAll.cancel();
       const previous = utils.families.getAll.getData();
       utils.families.getAll.setData(undefined, (current = []) =>
-        applyFamilyPhaseMove(current, input.id, input.newPhase, input.newOrder)
+        applyFamilyPhaseMove(current, input.id, input.newPhase as FamilyPhase, input.newOrder)
       );
       return { previous };
     },
@@ -260,11 +251,11 @@ export default function FamiliesPage() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        {PHASES.map((phase) => (
+                        {FAMILY_PHASES.map((p) => { const phase = { key: p, label: getPhaseMetadata(p).label }; return (
                           <SelectItem key={phase.key} value={phase.key}>
                             {phase.label}
                           </SelectItem>
-                        ))}
+                        )})}
                       </SelectContent>
                     </Select>
                   </div>
@@ -376,3 +367,9 @@ export default function FamiliesPage() {
     </div>
   );
 }
+
+
+
+
+
+

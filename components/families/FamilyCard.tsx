@@ -1,7 +1,8 @@
 "use client";
 
-import { cn } from "@/lib/core/utils";`nimport { getPhaseMetadata } from "@/lib/shared/family-config";
-import { type Phase } from "./KanbanBoard";
+import { cn } from "@/lib/core/utils";
+
+import { type FamilyPhase as Phase, FAMILY_PHASES, getPhaseMetadata } from "@/lib/shared/family-config";
 import { useRole } from "@/hooks/use-role";
 import {
   CircleDot,
@@ -100,9 +101,9 @@ export function FamilyCard({ family, onChangePhase, onClick, compact }: FamilyCa
               onChange={(e) => onChangePhase(family.id, e.target.value as Phase)}
               className="appearance-none text-[10px] bg-transparent text-muted-foreground/50 hover:text-foreground transition-smooth cursor-pointer pr-4 opacity-0 group-hover:opacity-100 focus:opacity-100 outline-none"
             >
-              {PHASES.map((p) => (
+              {FAMILY_PHASES.map((p) => (
                 <option key={p} value={p} className="bg-card text-foreground">
-                  {PHASE_CONFIG[p]?.label ?? p}
+                  {getPhaseMetadata(p).label}
                 </option>
               ))}
             </select>
@@ -116,4 +117,5 @@ export function FamilyCard({ family, onChangePhase, onClick, compact }: FamilyCa
     </div>
   );
 }
+
 

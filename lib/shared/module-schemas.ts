@@ -14,7 +14,9 @@ export const moduleTaskStatusSchema = z.enum([
 ]);
 export type ModuleTaskStatus = z.infer<typeof moduleTaskStatusSchema>;
 
-import { FAMILY_PHASES } from "./family-config";`nexport const familyPhaseSchema = z.enum(FAMILY_PHASES as [string, ...string[]]);
+import { FAMILY_PHASES } from "./family-config";
+export const familyPhaseSchema = z.enum(FAMILY_PHASES as [string, ...string[]]);
 
 
 export type { FamilyPhase } from './family-config';
+

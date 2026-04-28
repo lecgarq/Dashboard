@@ -21,7 +21,8 @@ import { Loader2, Box, Info } from "lucide-react";
 import { clientLogger } from "@/lib/core/logger";
 import { cn } from "@/lib/core/utils";
 import { PanelErrorBoundary } from "@/components/ui/panel-error-boundary";
-import { FAMILY_PHASE_METADATA, FAMILY_PHASES } from "@/lib/shared/family-config";`nimport type { FamilyPhase } from "@/lib/shared/family-config";
+import { FAMILY_PHASE_METADATA, FAMILY_PHASES } from "@/lib/shared/family-config";
+import type { FamilyPhase } from "@/lib/shared/family-config";
 
 const PHASES = FAMILY_PHASES.map(id => ({ value: id, label: FAMILY_PHASE_METADATA[id].label }));
 
@@ -649,4 +650,5 @@ export function FamilyDetailPanel({
     </PanelErrorBoundary>
   );
 }
+
 

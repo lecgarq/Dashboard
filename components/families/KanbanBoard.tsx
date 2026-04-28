@@ -18,7 +18,8 @@ import { FamilyCard } from "./FamilyCard";
 import { useRole } from "@/hooks/use-role";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
-import { FAMILY_PHASES, getPhaseMetadata } from "@/lib/shared/family-config";`nimport type { FamilyPhase } from "@/lib/shared/family-config";
+import { FAMILY_PHASES, getPhaseMetadata } from "@/lib/shared/family-config";
+import type { FamilyPhase } from "@/lib/shared/family-config";
 import type { Family, FamilyAttachment, FamilyChangelog, FamilyDeliverable } from "@prisma/client";
 
 export type FamilyWithRelations = Family & {
@@ -27,8 +28,8 @@ export type FamilyWithRelations = Family & {
   changelog: FamilyChangelog[];
 };
 
-const PHASES = FAMILY_PHASES.map(id => ({ id, ...getPhaseMetadata(id) }));
 
+const PHASES = FAMILY_PHASES.map(id => ({ id, ...getPhaseMetadata(id) }));
 export type Phase = FamilyPhase;
 
 interface KanbanBoardProps {
@@ -215,4 +216,8 @@ export function KanbanBoard({ families, onMoveFamily, onCardClick }: KanbanBoard
     </DndContext>
   );
 }
+
+
+
+
 
