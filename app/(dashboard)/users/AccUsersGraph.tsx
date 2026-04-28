@@ -216,6 +216,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
   const [isReady, setIsReady] = useState(false);
+  const [positionCacheCorrupt, setPositionCacheCorrupt] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("acc-graph-cache-corrupt") === "true";
+  });
   const [refreshKey, setRefreshKey] = useState(0);
   const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
@@ -588,6 +592,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     nodesRef.current = rawNodes;
     const cachedPositions = readPrecomputedPositions(graph.positions, rawNodes.length * 2);
+    const hasCachedPositions = Array.isArray(graph.positions) && (graph.positions as unknown[]).length > 0;
+    const cacheIsCorrupt = hasCachedPositions && cachedPositions === null;
+    if (cacheIsCorrupt) {
+      localStorage.setItem("acc-graph-cache-corrupt", "true");
+      setPositionCacheCorrupt(true);
+    } else {
+      localStorage.removeItem("acc-graph-cache-corrupt");
+      setPositionCacheCorrupt(false);
+    }
     seedPosRef.current = computeTopologySeedPositions(rawNodes, cachedPositions);
     posRef.current = new Float32Array(seedPosRef.current);
     centroidRef.current = computeCentroid(seedPosRef.current);
@@ -907,6 +920,29 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
         style={{ background: GRAPH_BACKGROUND }}
       >
+        {positionCacheCorrupt && (
+          <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-2.5">
+            <span className="text-xs text-amber-800 font-medium">
+              Graph position cache contains invalid data — nodes may be mispositioned.
+            </span>
+            <button
+              className="shrink-0 text-xs font-semibold px-3 py-1 rounded-lg bg-amber-600 text-white hover:bg-amber-700 disabled:opacity-50 transition-colors"
+              disabled={rebuildGraph.isPending}
+              onClick={() => {
+                rebuildGraph.mutate(undefined, {
+                  onSuccess: () => {
+                    void graphQuery.refetch().then(() => {
+                      // Only clear after refetch resolves — re-detection runs in the data useEffect
+                    });
+                  },
+                });
+              }}
+            >
+              {rebuildGraph.isPending ? "Rebuilding…" : "Rebuild Cache"}
+            </button>
+          </div>
+        )}
+
         {!isReady && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
             {graphCacheNeedsBuild ? (
