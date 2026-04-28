@@ -43,7 +43,11 @@ Plans:
   2. A user can drag sliders for repulsion, link spring, and gravity and observe the graph layout shift in real time — changes take effect without restarting the simulation
   3. User nodes, Project nodes, Role nodes, and Module nodes are visually distinct in the Cosmos.gl renderer — four different colors, and edges have weight/color variation by relationship type
   4. A user on a browser that does not support WebGL2 still sees the Canvas 2D graph rendering correctly — no error screen, no empty canvas
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Install @cosmos.gl/graph, create cosmosUtils helpers, implement CosmosGraphRenderer class (REND-01, REND-03, REND-04)
+- [ ] 02-02-PLAN.md — Wire renderer toggle UI, physics controls panel, legend, and WebGL2 fallback into AccUsersGraph.tsx (REND-01, REND-02, REND-03, REND-04)
 
 ### Phase 3: Graph UI Completion
 **Goal**: The graph UI has no remaining polish gaps — labels appear at the right zoom level, the physics simulation signals when it has settled, and the filter and detail panels do not fight for screen space on smaller monitors
@@ -74,6 +78,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
-| 2. Cosmos.gl Renderer | 0/TBD | Not started | - |
+| 2. Cosmos.gl Renderer | 0/2 | Not started | - |
 | 3. Graph UI Completion | 0/TBD | Not started | - |
 | 4. Access Analysis | 0/TBD | Not started | - |
