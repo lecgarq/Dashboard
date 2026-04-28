@@ -1,15 +1,10 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure, editorProcedure } from "../trpc";
-import { createLogger } from "@/lib/server/logger";
+import { createLogger } from "@/lib/server/logger";`nimport { familyPhaseSchema } from "@/lib/shared/module-schemas";
 
 const logger = createLogger("families");
 
-const FamilyPhaseEnum = z.enum([
-  "TODO",
-  "IN_PROGRESS",
-  "REVIEW",
-  "DONE",
-]);
+
 
 export const familiesRouter = router({
   getAll: protectedProcedure
@@ -52,7 +47,7 @@ export const familiesRouter = router({
       z.object({
         name: z.string().min(1),
         category: z.string().optional(),
-        phase: FamilyPhaseEnum.optional(),
+        phase: familyPhaseSchema.optional(),
         description: z.string().optional(),
         nextSteps: z.string().optional(),
         dueDate: z.date().optional().nullable(),
@@ -75,7 +70,7 @@ export const familiesRouter = router({
         id: z.string(),
         name: z.string().min(1).optional(),
         category: z.string().optional(),
-        phase: FamilyPhaseEnum.optional(),
+        phase: familyPhaseSchema.optional(),
         description: z.string().optional(),
         nextSteps: z.string().optional(),
         dueDate: z.date().nullable().optional(),
@@ -95,7 +90,7 @@ export const familiesRouter = router({
     .input(
       z.object({
         id: z.string(),
-        newPhase: FamilyPhaseEnum,
+        newPhase: familyPhaseSchema,
         newOrder: z.number(),
       })
     )
@@ -111,7 +106,7 @@ export const familiesRouter = router({
     }),
 
   reorder: editorProcedure
-    .input(z.object({ id: z.string(), phase: FamilyPhaseEnum, order: z.number() }))
+    .input(z.object({ id: z.string(), phase: familyPhaseSchema, order: z.number() }))
     .mutation(async ({ ctx, input }) => {
       return ctx.db.family.update({
         where: { id: input.id },
@@ -304,3 +299,4 @@ export const familiesRouter = router({
       return { urn };
     }),
 });
+
