@@ -10,7 +10,7 @@ This milestone completes and hardens an ACC Users Graph module that is already ~
 - Integer phases (1, 2, 3, 4): Planned milestone work
 - Decimal phases: Created via `/gsd:insert-phase` if urgent work arises mid-milestone
 
-- [ ] **Phase 1: Foundation** - Harden production stability, renderer lifecycle, and data safety before adding new features
+- [x] **Phase 1: Foundation** - Harden production stability, renderer lifecycle, and data safety before adding new features
 - [ ] **Phase 2: Cosmos.gl Renderer** - Implement GPU-accelerated CosmosGraphRenderer for 500+ node performance with live physics controls
 - [ ] **Phase 3: Graph UI Completion** - Close the remaining UI gaps: zoom-level labels, physics auto-pause, and panel layout
 - [ ] **Phase 4: Access Analysis** - Deliver duplicate role detection, inconsistent access flagging, and PNG/CSV exports
@@ -29,10 +29,10 @@ This milestone completes and hardens an ACC Users Graph module that is already ~
 **Plans**: 4 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Extract getAccountId hub ID helper (FOUND-03)
-- [ ] 01-02-PLAN.md — Renderer lifecycle fix + cache corruption banner (FOUND-02, FOUND-04)
-- [ ] 01-03-PLAN.md — Navigation state persistence + loading timeout + API error recovery
-- [ ] 01-04-PLAN.md — Production build verification + human checkpoint (FOUND-01)
+- [x] 01-01-PLAN.md — Extract getAccountId hub ID helper (FOUND-03)
+- [x] 01-02-PLAN.md — Renderer lifecycle fix + cache corruption banner (FOUND-02, FOUND-04)
+- [x] 01-03-PLAN.md — Navigation state persistence + loading timeout + API error recovery
+- [x] 01-04-PLAN.md — Production build verification + human checkpoint (FOUND-01)
 
 ### Phase 2: Cosmos.gl Renderer
 **Goal**: Users on 500+ node graphs can switch to a GPU-accelerated renderer and tune the physics simulation in real time; users on browsers without WebGL2 still get the Canvas 2D fallback
@@ -73,7 +73,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation | 3/4 | In Progress|  |
+| 1. Foundation | 4/4 | Complete | 2026-04-28 |
 | 2. Cosmos.gl Renderer | 0/TBD | Not started | - |
 | 3. Graph UI Completion | 0/TBD | Not started | - |
 | 4. Access Analysis | 0/TBD | Not started | - |
