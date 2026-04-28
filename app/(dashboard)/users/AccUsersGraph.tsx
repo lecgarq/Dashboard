@@ -7,7 +7,7 @@ import { moduleLabel } from "@/lib/acc/modules";
 import type { AccGraphNode } from "@/lib/acc/graphSnapshot";
 import {
   CanvasGraphRenderer,
-  WebGpuGraphRenderer,
+  CosmosGraphRenderer,
   type GraphRenderFrame,
   type GraphRenderer,
 } from "./graphRenderers";
@@ -200,7 +200,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const rafId = useRef<number>(0);
 
   const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
-  const webgpuRendererRef = useRef<WebGpuGraphRenderer | null>(null);
+  const webgpuRendererRef = useRef<CosmosGraphRenderer | null>(null);
   const activeRendererRef = useRef<GraphRenderer | null>(null);
 
   const organicWorkerRef = useRef<Worker | null>(null);
@@ -244,7 +244,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return localStorage.getItem("acc-graph-cache-corrupt") === "true";
   });
   const [refreshKey, setRefreshKey] = useState(0);
-  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "webgpu">("canvas2d");
+  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">("canvas2d");
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [isPaused, setIsPaused] = useState(false);
@@ -516,21 +516,21 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     };
 
     void (async () => {
-      const { renderer, failureReason } = await WebGpuGraphRenderer.create(webgpuCanvas, fallBackToCanvas);
+      const { renderer, failureReason } = await CosmosGraphRenderer.create(webgpuCanvas, fallBackToCanvas);
       if (disposed) {
         renderer?.destroy();
         return;
       }
       if (!renderer) {
         setRenderBackend("canvas2d");
-        setRendererFailureReason(failureReason ?? "WebGPU initialization failed");
+        setRendererFailureReason(failureReason ?? "Cosmos renderer initialization failed");
         markGraphDirty();
         return;
       }
 
       webgpuRendererRef.current = renderer;
       activeRendererRef.current = renderer;
-      setRenderBackend("webgpu");
+      setRenderBackend("cosmos");
       setRendererFailureReason(null);
       markGraphDirty();
     })();
@@ -1234,7 +1234,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         />
         <canvas
           ref={webgpuCanvasRef}
-          className={cn(renderCanvasClass, renderBackend === "webgpu" ? "opacity-100" : "opacity-0 pointer-events-none")}
+          className={cn(renderCanvasClass, renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none")}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={handlePointerUp}

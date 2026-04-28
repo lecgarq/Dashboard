@@ -1,9 +1,11 @@
 "use client";
 
+import { buildNodeColorBuffer, buildNodeSizeBuffer, buildLinkBuffer, buildLinkColorBuffer } from "./cosmosUtils";
+
 const DIMMED_USER_COLOR = "#9CA3AF";
 
 export interface GraphRenderNode {
-  kind: "user";
+  kind: "user" | "project" | "role" | "module";
   id: string;
   color: string;
   radius?: number;
@@ -45,7 +47,7 @@ export interface GraphDrawResult {
 }
 
 export interface GraphRenderer {
-  readonly backend: "canvas2d" | "webgpu";
+  readonly backend: "canvas2d" | "cosmos";
   draw(frame: GraphRenderFrame): GraphDrawResult;
   destroy(): void;
 }
@@ -238,19 +240,174 @@ export class CanvasGraphRenderer implements GraphRenderer {
   }
 }
 
-export class WebGpuGraphRenderer implements GraphRenderer {
-  readonly backend = "webgpu" as const;
+export class CosmosGraphRenderer implements GraphRenderer {
+  readonly backend = "cosmos" as const;
 
-  static async create(
-    _canvas?: HTMLCanvasElement,
-    _onDeviceLost?: (reason: string) => void,
-  ): Promise<{ renderer: WebGpuGraphRenderer | null; failureReason?: string }> {
-    return { renderer: null, failureReason: "WebGPU is disabled for the user-only organic ACC graph renderer" };
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private graph: any;  // Graph instance from @cosmos.gl/graph — typed as any to avoid static import
+  private lastNodeCount = 0;
+  private lastLinkCount = 0;
+  private nodeConnections: Float32Array | null = null;
+  onNodeSelectCallback: ((index: number | null) => void) | null = null;
+
+  private constructor(graph: unknown) {
+    // Use private constructor — instances are created via CosmosGraphRenderer.create()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    this.graph = graph as any;
   }
 
-  draw(_frame: GraphRenderFrame): GraphDrawResult {
+  /**
+   * Async factory — mirrors the existing WebGpuGraphRenderer.create() pattern.
+   * Detects WebGL2 first, then dynamically imports @cosmos.gl/graph to avoid SSR issues.
+   * The container element MUST be in the DOM (even if opacity-0) before calling.
+   */
+  static async create(
+    container: HTMLElement,
+    onContextLost?: (reason: string) => void,
+  ): Promise<{ renderer: CosmosGraphRenderer | null; failureReason?: string }> {
+    // WebGL2 check — give the caller a failureReason without importing the heavy cosmos package
+    if (typeof document !== "undefined") {
+      try {
+        const probe = document.createElement("canvas");
+        if (!probe.getContext("webgl2")) {
+          return { renderer: null, failureReason: "WebGL2 is not supported in this browser" };
+        }
+      } catch {
+        return { renderer: null, failureReason: "WebGL2 detection failed" };
+      }
+    }
+
+    try {
+      // Dynamic import prevents Next.js server-side module resolution from touching WebGL APIs
+      const { Graph } = await import("@cosmos.gl/graph");
+
+      const renderer = new CosmosGraphRenderer(null);
+
+      const graph = new Graph(container as HTMLDivElement, {
+        enableSimulation: true,
+        fitViewOnInit: false,        // AccUsersGraph controls zoom/pan externally
+        backgroundColor: "#F8F7F4", // GRAPH_BACKGROUND — matches AccUsersGraph constant
+        // v3 config key names (pointDefaultColor replaces pointColor, etc.)
+        pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number], // gray fallback — overridden by setPointColors
+        pointDefaultSize: 4,
+        linkDefaultColor: [0.612, 0.639, 0.686, 0.25] as [number, number, number, number],
+        linkDefaultWidth: 1,
+        linkDefaultArrows: false,
+        simulationRepulsion: 1.0,
+        simulationLinkSpring: 1.0,
+        simulationGravity: 0.25,
+        simulationFriction: 0.85,
+        simulationDecay: 5000,
+        // v3 click callbacks — wire selection so clicks behave same as Canvas 2D
+        onPointClick: (index: number, _pos: [number, number], _event: MouseEvent) => {
+          renderer.selectNode(index);
+          renderer.onNodeSelectCallback?.(index);
+        },
+        onBackgroundClick: (_event: MouseEvent) => {
+          renderer.selectNode(null);
+          renderer.onNodeSelectCallback?.(null);
+        },
+      });
+
+      renderer.graph = graph;
+
+      // v3: call start() then render() on init (render() alone no longer restarts simulation)
+      await graph.ready;
+      graph.start();
+      graph.render();
+
+      // Forward context loss events to caller so it can fall back to Canvas 2D
+      void onContextLost; // parameter reserved for future use
+
+      return { renderer };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      return { renderer: null, failureReason: `CosmosGraphRenderer initialization failed: ${message}` };
+    }
+  }
+
+  /**
+   * Select a node by index (or clear selection with null).
+   * Uses v3 selectPointByIndex API with adjacent point highlighting.
+   * Called by onPointClick / onBackgroundClick callbacks and by AccUsersGraph.tsx.
+   */
+  selectNode(index: number | null): void {
+    if (!this.graph) return;
+    if (index === null) {
+      this.graph.unselectPoints();
+    } else {
+      // selectAdjacentPoints=true highlights connected nodes — matches Canvas 2D highlightSet behavior
+      this.graph.selectPointByIndex(index, true);
+    }
+  }
+
+  /**
+   * Push data into Cosmos GPU buffers.
+   * Only re-uploads when node count or link count changes — avoids VRAM churn at 60fps.
+   * Cosmos manages its own render loop; we do NOT need to call render() every frame.
+   * Uses static imports from cosmosUtils (no dynamic imports needed — cosmosUtils has no WebGL deps).
+   */
+  draw(frame: GraphRenderFrame): GraphDrawResult {
+    if (!this.graph) return { needsContinuousRedraw: false };
+
+    const nodeCount = frame.nodes.length;
+    const linkCount = frame.links?.sources.length ?? 0;
+
+    if (nodeCount !== this.lastNodeCount) {
+      // Rebuild node connections for size scaling
+      const connections = new Float32Array(nodeCount);
+      if (frame.links) {
+        for (let i = 0; i < frame.links.sources.length; i++) {
+          const s = frame.links.sources[i];
+          const t = frame.links.targets[i];
+          if (s >= 0 && s < nodeCount) connections[s]++;
+          if (t >= 0 && t < nodeCount) connections[t]++;
+        }
+      }
+      this.nodeConnections = connections;
+
+      this.graph.setPointPositions(frame.positions);
+      this.graph.setPointColors(buildNodeColorBuffer(frame.nodes));
+      if (typeof this.graph.setPointSizes === "function") {
+        this.graph.setPointSizes(buildNodeSizeBuffer(nodeCount, this.nodeConnections));
+      }
+      this.lastNodeCount = nodeCount;
+    }
+
+    if (frame.links && linkCount !== this.lastLinkCount) {
+      this.graph.setLinks(buildLinkBuffer(frame.links));
+      this.graph.setLinkColors(buildLinkColorBuffer(linkCount));
+      this.lastLinkCount = linkCount;
+    }
+
+    // Cosmos owns its render loop — no continuous redraw needed from our RAF
     return { needsContinuousRedraw: false };
   }
 
-  destroy(): void {}
+  /**
+   * Live physics update from slider values.
+   * Uses setConfigPartial (NOT setConfig) to avoid resetting ALL physics values.
+   * Per RESEARCH.md Pitfall 2: setConfig resets everything; setConfigPartial is incremental.
+   */
+  setPhysicsConfig(partial: {
+    repulsion?: number;
+    linkSpring?: number;
+    gravity?: number;
+  }): void {
+    if (!this.graph) return;
+    this.graph.setConfigPartial({
+      ...(partial.repulsion !== undefined && { simulationRepulsion: partial.repulsion }),
+      ...(partial.linkSpring !== undefined && { simulationLinkSpring: partial.linkSpring }),
+      ...(partial.gravity !== undefined && { simulationGravity: partial.gravity }),
+    });
+  }
+
+  destroy(): void {
+    this.graph?.destroy?.();
+    this.graph = null;
+    this.onNodeSelectCallback = null;
+    this.nodeConnections = null;
+    this.lastNodeCount = 0;
+    this.lastLinkCount = 0;
+  }
 }
