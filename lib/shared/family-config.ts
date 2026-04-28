@@ -1,3 +1,5 @@
+import { z } from "zod";
+
 export const FAMILY_PHASE_METADATA = {
   TODO: { 
     label: "To Do", 
@@ -36,3 +38,6 @@ export const FAMILY_PHASES = Object.keys(FAMILY_PHASE_METADATA) as FamilyPhase[]
 export const getPhaseMetadata = (phase: string) => {
   return FAMILY_PHASE_METADATA[phase as FamilyPhase] ?? FAMILY_PHASE_METADATA.TODO;
 };
+
+export const familyPhaseSchema = z.enum(FAMILY_PHASES as [string, ...string[]]);
+

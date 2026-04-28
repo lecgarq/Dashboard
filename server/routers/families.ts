@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { router, protectedProcedure, adminProcedure, editorProcedure } from "../trpc";
 import { createLogger } from "@/lib/server/logger";
-import { familyPhaseSchema } from "@/lib/shared/module-schemas";
+import { familyPhaseSchema } from "@/lib/shared/family-config";
 
 const logger = createLogger("families");
 

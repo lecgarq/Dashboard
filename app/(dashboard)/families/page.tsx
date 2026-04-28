@@ -25,7 +25,7 @@ import {
 import { trpc } from "@/lib/core/trpc";
 import { FAMILY_PHASES, getPhaseMetadata } from "@/lib/shared/family-config";
 import { CATEGORY_GROUPS, CATEGORY_GROUP_NAMES } from "@/lib/shared/categories";
-import type { FamilyPhase } from "@/lib/shared/module-schemas";
+import type { FamilyPhase } from "@/lib/shared/family-config";
 import { Box, Filter, Plus } from "lucide-react";
 
 const FamilyDetailPanel = dynamic(
