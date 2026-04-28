@@ -1378,6 +1378,38 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {showPhysicsPanel && renderBackend === "cosmos" && (
+          <div className="absolute top-12 right-3 z-10 w-56">
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">GPU Physics</p>
+              <SliderControl
+                label="Repulsion"
+                value={Math.round(cosmosPhysics.repulsion * 50)}
+                onChange={(v) => handlePhysicsChange("repulsion", v / 50)}
+              />
+              <SliderControl
+                label="Link Spring"
+                value={Math.round(cosmosPhysics.linkSpring * 50)}
+                onChange={(v) => handlePhysicsChange("linkSpring", v / 50)}
+              />
+              <SliderControl
+                label="Gravity"
+                value={Math.round(cosmosPhysics.gravity * 200)}
+                onChange={(v) => handlePhysicsChange("gravity", v / 200)}
+              />
+              <button
+                onClick={() => {
+                  setCosmosPhysics({ ...COSMOS_PHYSICS_DEFAULTS });
+                  cosmosRendererRef.current?.setPhysicsConfig(COSMOS_PHYSICS_DEFAULTS);
+                }}
+                className="w-full mt-1 px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
+              >
+                Reset to Defaults
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
           <div className="w-px h-3 bg-gray-200 shrink-0" />
@@ -1393,6 +1425,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <span>Pick {pickMode ? "On" : "Off"}</span>
           </button>
         </div>
+
+        {renderBackend === "cosmos" && (
+          <div className="absolute bottom-3 right-3 z-10 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 flex flex-col gap-1">
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Node Types</p>
+            <LegendDot color="#E63946" label="User" />
+            <LegendDot color="#2A9D8F" label="Project" />
+            <LegendDot color="#9B5DE5" label="Role" />
+            <LegendDot color="#F4A261" label="Module" />
+          </div>
+        )}
 
         <canvas
           ref={canvas2dRef}
