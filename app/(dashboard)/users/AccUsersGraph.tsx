@@ -1249,6 +1249,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {isCosmosLoading && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#F8F7F4]/70 backdrop-blur-sm">
+            <div className="w-8 h-8 rounded-full border-4 border-violet-500 border-t-transparent animate-spin mb-4" />
+            <span className="text-sm font-medium text-violet-700">Initializing GPU renderer…</span>
+          </div>
+        )}
+
         <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
           <div className="flex gap-1">
             <ControlButton active={false} onClick={() => zoomToFit()}>Fit</ControlButton>
@@ -1262,6 +1269,33 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             >
               Reflow Layout
             </button>
+            {webgl2Available && (
+              <button
+                onClick={toggleRenderer}
+                disabled={isCosmosLoading}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all disabled:opacity-40",
+                  renderBackend === "cosmos"
+                    ? "bg-violet-600 text-white border-violet-700"
+                    : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
+                )}
+              >
+                {renderBackend === "cosmos" ? "GPU" : "Canvas 2D / GPU"}
+              </button>
+            )}
+            {renderBackend === "cosmos" && (
+              <button
+                onClick={() => setShowPhysicsPanel(v => !v)}
+                className={cn(
+                  "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
+                  showPhysicsPanel
+                    ? "bg-gray-900 text-white border-gray-900"
+                    : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
+                )}
+              >
+                Physics
+              </button>
+            )}
           </div>
           <div className="text-[10px] text-gray-400 pr-1">
             {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
@@ -1397,6 +1431,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <UserTooltip node={hoveredNode} />
           )}
         </div>
+
+        {/* Cosmos hover label — shown on onPointMouseOver, hidden by default */}
+        <div
+          ref={hoverLabelRef}
+          style={{ display: "none", position: "absolute", pointerEvents: "none", zIndex: 50 }}
+          className="px-2 py-1 text-[11px] font-medium bg-gray-900/90 text-white rounded-lg shadow-md whitespace-nowrap"
+        />
 
         {selectedNode && (
           <div className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none">
