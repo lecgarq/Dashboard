@@ -11,3 +11,4 @@
 **Gaps to Close:**
 - [ ] Refine Yjs content extraction to use Tiptap-compatible HTML.
 - [ ] Automate sync drift monitoring (log critical drifts to a database table for observability).
+
