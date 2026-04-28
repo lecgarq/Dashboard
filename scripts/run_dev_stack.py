@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import argparse
 import os
+import socket
 import signal
 import subprocess
 import sys
@@ -99,85 +100,13 @@ def kill_children() -> None:
                     proc.terminate()
 
 
-def run_lod_checker() -> None:
-    """Spawn LOD Checker (Flask + Vite) as a background process."""
-    if not LOD_CHECKER_DIR.exists():
-        print("[runner] LOD Checker directory not found, skipping")
-        return
-
-    run_viz = LOD_CHECKER_DIR / "run_viz.py"
-    if not run_viz.exists():
-        print(f"[runner] {run_viz} not found, skipping LOD Checker")
-        return
-
-    print(f"[runner] Starting LOD Checker from {LOD_CHECKER_DIR}")
-    print("[runner] LOD Checker backend: http://localhost:8080")
-    print("[runner] LOD Checker frontend: http://localhost:5173")
-
-    proc = subprocess.Popen(
-        ["python", str(run_viz)],
-        cwd=str(LOD_CHECKER_DIR),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-    )
-
-    with _lock:
-        _children.append(proc)
-
-    stream_output(proc, "lod-checker")
+def get_lod_checker_service(project_root: Path) -> ManagedService:`n    return ManagedService("lod-checker", ["npx", "serve", "-s", "services/lod-engine/dist", "-l", "5173"], project_root, port=5173)
 
 
-def run_lod_query_encoder(project_root: Path) -> None:
-    """Spawn the local LOD query encoder service."""
-    if not LOD_QUERY_ENCODER_SCRIPT.exists():
-        print("[runner] LOD query encoder script not found, skipping")
-        return
-
-    env = os.environ.copy()
-    # Default to CPU in the shared dev runner unless the user has explicitly
-    # chosen a device in their current shell environment.
-    env.setdefault("LOD_QUERY_ENCODER_DEVICE", "cpu")
-
-    print("[runner] Starting LOD query encoder on port 8091")
-    proc = subprocess.Popen(
-        ["python", str(LOD_QUERY_ENCODER_SCRIPT)],
-        cwd=str(project_root),
-        env=env,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-    )
-
-    with _lock:
-        _children.append(proc)
-
-    stream_output(proc, "lod-encoder")
+def get_lod_query_encoder_service(project_root: Path) -> ManagedService:`n    script = project_root / "services" / "lod-engine" / "lod_query_encoder.py"`n    return ManagedService("lod-encoder", [sys.executable, str(script)], project_root, port=8091)
 
 
-def run_yjs_server(project_root: Path) -> None:
-    """Spawn Yjs WebSocket server as a background process."""
-    script = project_root / "scripts" / "yjs-server.mjs"
-    if not script.exists():
-        print("[runner] yjs-server.mjs not found, skipping")
-        return
-
-    print("[runner] Starting Yjs WebSocket server on port 4444")
-    proc = subprocess.Popen(
-        ["node", str(script)],
-        cwd=str(project_root),
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        text=True,
-        bufsize=1,
-    )
-
-    with _lock:
-        _children.append(proc)
-
-    stream_output(proc, "yjs")
+def get_yjs_service(project_root: Path) -> ManagedService:`n    script = project_root / "scripts" / "yjs-server.mjs"`n    return ManagedService("yjs", ["node", str(script)], project_root, port=4444)
 
 
 def resolve_next_command(project_root: Path, *args: str) -> list[str]:
@@ -406,3 +335,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
+
