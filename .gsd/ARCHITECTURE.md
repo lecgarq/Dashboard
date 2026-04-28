@@ -10,7 +10,7 @@ LECG Dashboard is a multi-module enterprise platform for AEC (Architecture, Engi
 graph TD
     User((User))
     Web[Next.js App Router]
-    TRPC[tRPC v11]
+    TRPC[tRPC v11.17.0]
     Prisma[Prisma ORM]
     DB[(PostgreSQL)]
     Hocuspocus[Hocuspocus/Yjs Server]
@@ -41,6 +41,14 @@ graph TD
     - `(dashboard)/families`: Component/Family library with Kanban tracking.
     - `(dashboard)/lod-checker`: BIM Level of Development validation.
     - `(auth)`: Login, Register, and Account Setup.
+
+### 2. Core Logic & Config (lib/)
+- **Purpose:** Centralized business rules, schemas, and configurations.
+- **Location:** `lib/`
+- **Key Modules:**
+    - `lib/shared/family-config.ts`: Unified source of truth for Family phases, metadata, and validation schemas.
+    - `lib/shared/module-schemas.ts`: Shared Zod schemas for Wiki and Task modules.
+
 
 ### 2. tRPC API (lib/trpc)
 - **Purpose:** Type-safe API communication between frontend and backend.
@@ -85,5 +93,8 @@ graph TD
 
 - **Naming**: PascalCase for components, camelCase for variables/functions.
 - **Structure**: Feature-based directory structure under `components/`.
-- **Testing**: Playwright for E2E testing (indicated by `.playwright-mcp`).
+- **Testing**:
+    - **Integration**: Vitest for server-side logic and tRPC routers (standardized in `vitest.setup.ts`).
+    - **E2E**: Playwright for full-stack user flow validation.
+
 

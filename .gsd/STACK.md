@@ -7,6 +7,7 @@
 | Technology | Version | Purpose |
 |------------|---------|---------|
 | Node.js | >=22 | Main application runtime |
+| npm | 11.11.1 | Package manager |
 | Python | 3.x | LOD Engine and orchestration scripts |
 | PostgreSQL | 18 | Primary relational database |
 
@@ -18,7 +19,7 @@
 | Next.js | 16.2.4 | React framework |
 | React | 19.2.3 | UI library |
 | Prisma | 7.7.0 | ORM |
-| tRPC | 11.0.0 | Type-safe API |
+| tRPC | 11.17.0 | Type-safe API |
 | Auth.js | 5.0.0-beta.30 | Authentication |
 | Tailwind CSS | 4.0.0 | Styling |
 | Framer Motion | 12.35.0 | Animations |
@@ -40,7 +41,8 @@
 |---------|---------|---------|
 | TypeScript | 6.0.3 | Type safety |
 | Knip | 6.3.0 | Unused code/dependency detection |
-| ESLint | 9.x | Linting |
+| ESRLint | 9.x | Linting |
+| Vitest | 4.1.5 | Integration and unit testing |
 | NGrok | 1.7.0 | Local development tunneling |
 
 ## Infrastructure
