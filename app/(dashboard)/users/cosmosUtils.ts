@@ -124,6 +124,41 @@ export function buildLinkBuffer(links: {
 }
 
 /**
+ * Map the existing 0..100 layout sliders (separation, clusterStrength) to the
+ * Cosmos simulation parameters. Pure for unit testing.
+ *
+ * - separation: 0 = nodes pack tight, 100 = nodes fan out wide.
+ *   - simulationRepulsion ∈ [0.1, 2.0]   (pow 1.4 — slight ease-in)
+ *   - simulationLinkDistance ∈ [4, 40]   (pow 1.6 — stronger ease-in)
+ *   - simulationLinkSpring ∈ [1.5, 0.5]  (loosens at high separation)
+ * - clusterStrength: 0 = organic, 100 = fully clustered (simulationCluster ∈ [0,1]).
+ */
+export interface SliderControls {
+  spacing: number;          // 0..100 (separation slider)
+  clusterStrength: number;  // 0..100
+}
+
+export interface SimulationConfigPartial {
+  simulationRepulsion: number;
+  simulationLinkDistance: number;
+  simulationLinkSpring: number;
+  simulationCluster: number;
+}
+
+export function controlsToSimulationConfig(
+  controls: SliderControls,
+): SimulationConfigPartial {
+  const sep = Math.max(0, Math.min(100, controls.spacing)) / 100;
+  const cluster = Math.max(0, Math.min(100, controls.clusterStrength)) / 100;
+  return {
+    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 1.9,        // 0.1..2.0
+    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 36,        // 4..40
+    simulationLinkSpring: 1.5 - Math.pow(sep, 1.3) * 1.0,       // 1.5..0.5
+    simulationCluster: cluster,                                  // 0..1
+  };
+}
+
+/**
  * Minimal node shape consumed by `buildClusterIdsFromNodes`. We avoid importing
  * the full `SimNode` type so this helper stays pure and unit-testable in Node.
  */

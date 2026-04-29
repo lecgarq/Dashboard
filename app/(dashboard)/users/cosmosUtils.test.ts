@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 
 import {
   buildClusterIdsFromNodes,
+  controlsToSimulationConfig,
   type ClusterableNode,
 } from "./cosmosUtils";
 
@@ -74,5 +75,47 @@ describe("buildClusterIdsFromNodes", () => {
 
   it("returns an empty array for empty input", () => {
     expect(buildClusterIdsFromNodes([], "role")).toEqual([]);
+  });
+});
+
+describe("controlsToSimulationConfig", () => {
+  it("at spacing=0, clusterStrength=0 returns minimum repulsion and zero cluster", () => {
+    const cfg = controlsToSimulationConfig({ spacing: 0, clusterStrength: 0 });
+    expect(cfg.simulationRepulsion).toBeCloseTo(0.1, 5);
+    expect(cfg.simulationLinkDistance).toBeCloseTo(4, 5);
+    expect(cfg.simulationLinkSpring).toBeCloseTo(1.5, 5);
+    expect(cfg.simulationCluster).toBe(0);
+  });
+
+  it("at spacing=100, clusterStrength=100 returns max repulsion and full cluster pull", () => {
+    const cfg = controlsToSimulationConfig({ spacing: 100, clusterStrength: 100 });
+    expect(cfg.simulationRepulsion).toBeCloseTo(2.0, 5);
+    expect(cfg.simulationLinkDistance).toBeCloseTo(40, 5);
+    expect(cfg.simulationLinkSpring).toBeCloseTo(0.5, 5);
+    expect(cfg.simulationCluster).toBe(1);
+  });
+
+  it("monotonicity across separation 0..100", () => {
+    let prevRepulsion = -Infinity;
+    let prevDistance = -Infinity;
+    let prevSpring = Infinity;
+    for (let s = 0; s <= 100; s += 10) {
+      const cfg = controlsToSimulationConfig({ spacing: s, clusterStrength: 0 });
+      expect(cfg.simulationRepulsion).toBeGreaterThanOrEqual(prevRepulsion);
+      expect(cfg.simulationLinkDistance).toBeGreaterThanOrEqual(prevDistance);
+      expect(cfg.simulationLinkSpring).toBeLessThanOrEqual(prevSpring);
+      prevRepulsion = cfg.simulationRepulsion;
+      prevDistance = cfg.simulationLinkDistance;
+      prevSpring = cfg.simulationLinkSpring;
+    }
+  });
+
+  it("clamps out-of-range slider values into [0,100]", () => {
+    const low = controlsToSimulationConfig({ spacing: -50, clusterStrength: -10 });
+    const high = controlsToSimulationConfig({ spacing: 200, clusterStrength: 250 });
+    expect(low.simulationRepulsion).toBeCloseTo(0.1, 5);
+    expect(low.simulationCluster).toBe(0);
+    expect(high.simulationRepulsion).toBeCloseTo(2.0, 5);
+    expect(high.simulationCluster).toBe(1);
   });
 });

@@ -11,7 +11,11 @@ import {
   type GraphRenderFrame,
   type GraphRenderer,
 } from "./graphRenderers";
-import { isWebGL2Available } from "./cosmosUtils";
+import {
+  isWebGL2Available,
+  buildClusterIdsFromNodes,
+  controlsToSimulationConfig,
+} from "./cosmosUtils";
 import { toast } from "sonner";
 import { type BulkAccUser } from "./AccAnalysisPanel";
 import {
@@ -236,6 +240,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
   const cosmosRendererRef = useRef<CosmosGraphRenderer | null>(null);
   const activeRendererRef = useRef<GraphRenderer | null>(null);
+  // True when the active Cosmos renderer owns physics on the GPU (TD-005).
+  // When false, slider/drag/cluster routes through the d3-force worker.
+  const usePhysicsRef = useRef<boolean>(false);
 
   const organicWorkerRef = useRef<Worker | null>(null);
   const layoutSessionRef = useRef(0);
@@ -476,7 +483,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const nextControls = { ...graphControlsRef.current, [key]: value };
     graphControlsRef.current = nextControls;
     setGraphControls(nextControls);
-    organicWorkerRef.current?.postMessage({ type: "controls", controls: nextControls });
+    if (usePhysicsRef.current) {
+      // GPU-physics path (TD-005): apply slider directly to Cosmos's GPU simulation.
+      // Worker stays paused — no postMessage round-trip.
+      cosmosRendererRef.current?.setSimulationConfig(controlsToSimulationConfig(nextControls));
+    } else {
+      organicWorkerRef.current?.postMessage({ type: "controls", controls: nextControls });
+    }
     forceRenderUntilRef.current = performance.now() + 1200;
     markGraphDirty();
   }, [markGraphDirty]);
@@ -595,6 +608,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
       activeRendererRef.current = canvasRendererRef.current;
+      usePhysicsRef.current = false;
       setRenderBackend("canvas2d");
       setPerfGpu(null);
       setIsCosmosLoading(false);
@@ -612,9 +626,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       activeRendererRef.current = canvasRenderer;
       setIsCosmosLoading(true);
 
-      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas).then(({ renderer }) => {
+      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: true }).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
+          usePhysicsRef.current = false;
           setRenderBackend("canvas2d");
           setIsCosmosLoading(false);
           organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
@@ -623,6 +638,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         }
         cosmosRendererRef.current = renderer;
         activeRendererRef.current = renderer;
+        usePhysicsRef.current = renderer.isUsingPhysics();
+        // GPU-physics path drives sliders directly — pause the worker so it
+        // doesn't fight Cosmos's simulation when it's already running.
+        if (usePhysicsRef.current) {
+          organicWorkerRef.current?.postMessage({ type: "pause", paused: true });
+          // Push the precomputed cache as the initial position seed so the very
+          // first frame is recognizable instead of random Cosmos noise.
+          if (posRef.current.length > 0) {
+            renderer.setInitialPositions(posRef.current);
+          }
+          // Cluster ids are stable for the dataset — strength is sliderized.
+          const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "role");
+          if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
+          // Apply the current slider values immediately so visit-after-reload picks up persisted state.
+          renderer.setSimulationConfig(controlsToSimulationConfig(graphControlsRef.current));
+        }
 
         // Wire click selection to side panel
         renderer.onNodeSelectCallback = (index: number | null) => {
@@ -692,6 +723,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       // loop's null-guard fires if a frame renders between cancelAnimationFrame
       // and destroy() completing.
       activeRendererRef.current = null;
+      usePhysicsRef.current = false;
       canvasRendererRef.current?.destroy();
       canvasRendererRef.current = null;
       cosmosRendererRef.current?.destroy();
