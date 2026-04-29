@@ -576,13 +576,82 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const handleLassoPointerUp = useCallback((_event: React.PointerEvent<HTMLDivElement>) => {
     if (!lassoActiveRef.current) return;
-    // Task 3 (next commit) wires polygon-close → selection here. For Task 2
-    // the lasso simply exits mode on release so the SVG overlay clears.
+    const path = lassoPathRef.current;
+    // Need at least a triangle (3 points = 6 floats) to define a polygon.
+    if (path.length >= 6) {
+      // Translate screen-space path → world-space (mirror inverse-view at line ~1121).
+      const { width, height } = getViewportSize(containerRef.current);
+      const v = view.current;
+      const polyWorld = new Float32Array(path.length);
+      for (let i = 0; i < path.length; i += 2) {
+        const lx = path[i];
+        const ly = path[i + 1];
+        polyWorld[i] = v.x + (lx - width / 2) / v.scale;
+        polyWorld[i + 1] = v.y + (ly - height / 2) / v.scale;
+      }
+      // Test each VISIBLE node (filtering hidden ones honours active filters).
+      const positions = posRef.current;
+      const visible = visibleNodeIdxRef.current;
+      const nodes = nodesRef.current;
+      const matchedIndices: number[] = [];
+      for (let i = 0; i < visible.length; i++) {
+        const idx = visible[i];
+        const nx = positions[idx * 2];
+        const ny = positions[idx * 2 + 1];
+        if (pointInPolygon(nx, ny, polyWorld)) {
+          matchedIndices.push(idx);
+        }
+      }
+      if (matchedIndices.length > 0) {
+        // Build summary: top 5 roles, top 10 modules, first 10 ids.
+        const roleCounts = new Map<string, number>();
+        const moduleCounts = new Map<string, number>();
+        const sampleIds: string[] = [];
+        for (const idx of matchedIndices) {
+          const node = nodes[idx];
+          if (!node) continue;
+          if (sampleIds.length < 10) sampleIds.push(node.id);
+          for (const r of node.roles ?? []) {
+            roleCounts.set(r, (roleCounts.get(r) ?? 0) + 1);
+          }
+          for (const m of node.modules ?? []) {
+            moduleCounts.set(m, (moduleCounts.get(m) ?? 0) + 1);
+          }
+        }
+        const byRole = [...roleCounts.entries()]
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+          .slice(0, 5);
+        const byModule = [...moduleCounts.entries()]
+          .map(([value, count]) => ({ value, count }))
+          .sort((a, b) => b.count - a.count || a.value.localeCompare(b.value))
+          .slice(0, 10);
+        const next = {
+          indices: matchedIndices,
+          summary: {
+            count: matchedIndices.length,
+            byRole,
+            byModule,
+            sampleIds,
+          },
+        };
+        polygonSelectionRef.current = next;
+        setPolygonSelection(next);
+        markGraphDirty();
+      }
+    }
+    // Exit lasso mode regardless of selection success — single-shot tool.
     lassoActiveRef.current = false;
     setLassoActive(false);
     lassoPathRef.current = [];
     setLassoPath([]);
-  }, []);
+  }, [markGraphDirty]);
+
+  const clearPolygonSelection = useCallback(() => {
+    polygonSelectionRef.current = null;
+    setPolygonSelection(null);
+    markGraphDirty();
+  }, [markGraphDirty]);
 
   const handlePhysicsChange = useCallback((key: keyof PhysicsConfig, value: number) => {
     setCosmosPhysics(prev => {
@@ -1109,10 +1178,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const selectedIndex = mappedSelectedIndex >= 0 && visibleIndexSetRef.current.has(mappedSelectedIndex)
         ? mappedSelectedIndex
         : -1;
-      const { adjacent: highlightSet, sameUser: sameUserHighlightSet } = buildHighlightSet(
+      const { adjacent: highlightSetBase, sameUser: sameUserHighlightSet } = buildHighlightSet(
         selectedIndex,
         nodes,
       );
+      // 02-04: When a polygon selection is active, override the per-node
+      // highlight set so the existing dim/bright pipeline (Canvas2D
+      // CanvasGraphRenderer + Cosmos same-user path) emphasizes the selected
+      // cluster identically across both renderers — no new render path needed.
+      const polygonSel = polygonSelectionRef.current;
+      const highlightSet = polygonSel
+        ? new Set<number>(polygonSel.indices)
+        : highlightSetBase;
       const isInteracting =
         isDragging.current ||
         Math.abs(tv.x - v.x) > 0.0005 ||
@@ -1733,7 +1810,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           className="px-2 py-1 text-[11px] font-medium bg-gray-900/90 text-white rounded-lg shadow-md whitespace-nowrap"
         />
 
-        {selectedNode && (
+        {selectedNode && !polygonSelection && (
           <div className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none">
             <div className="pointer-events-auto h-full">
               <SidePanel
@@ -1744,6 +1821,88 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   markGraphDirty();
                 }}
               />
+            </div>
+          </div>
+        )}
+
+        {polygonSelection && (
+          <div
+            data-testid="acc-graph-polygon-panel"
+            className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none"
+          >
+            <div className="pointer-events-auto h-full overflow-y-auto rounded-xl border border-gray-200 bg-white/95 backdrop-blur-sm shadow-lg p-4 flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex flex-col">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    Lasso Selection
+                  </span>
+                  <span className="text-base font-bold text-gray-900">
+                    {polygonSelection.summary.count} nodes
+                  </span>
+                </div>
+                <button
+                  onClick={clearPolygonSelection}
+                  data-testid="acc-graph-polygon-clear"
+                  className="text-[10px] font-medium px-2 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+                >
+                  Clear selection
+                </button>
+              </div>
+
+              {polygonSelection.summary.byRole.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    Top roles
+                  </span>
+                  <ul className="flex flex-col gap-0.5">
+                    {polygonSelection.summary.byRole.map((entry) => (
+                      <li
+                        key={entry.value}
+                        className="flex items-center justify-between gap-2 text-xs text-gray-800"
+                      >
+                        <span className="truncate">{entry.value}</span>
+                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
+                          {entry.count}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {polygonSelection.summary.byModule.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    Top modules
+                  </span>
+                  <ul className="flex flex-col gap-0.5">
+                    {polygonSelection.summary.byModule.map((entry) => (
+                      <li
+                        key={entry.value}
+                        className="flex items-center justify-between gap-2 text-xs text-gray-800"
+                      >
+                        <span className="truncate">{moduleLabel(entry.value)}</span>
+                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
+                          {entry.count}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {polygonSelection.summary.sampleIds.length > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                    Sample ids
+                  </span>
+                  <ul className="flex flex-col gap-0.5 font-mono text-[10px] text-gray-600">
+                    {polygonSelection.summary.sampleIds.map((id) => (
+                      <li key={id} className="truncate">{id}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </div>
         )}
