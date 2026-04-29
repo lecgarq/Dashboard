@@ -692,6 +692,41 @@ export class CosmosGraphRenderer implements GraphRenderer {
   }
 
   /**
+   * Project a Cosmos space-coordinate to screen pixels (relative to the canvas
+   * top-left). Returns null if Cosmos isn't ready or the call fails. Used by
+   * 02-04 lasso polygon-select to test nodes against a screen-space polygon
+   * without having to mirror Cosmos's internal camera math (the Canvas2D
+   * `view.current` does NOT track Cosmos's camera).
+   */
+  spaceToScreen(spaceX: number, spaceY: number): [number, number] | null {
+    if (!this.graph) return null;
+    try {
+      const out = (this.graph as { spaceToScreenPosition?: (p: [number, number]) => [number, number] })
+        .spaceToScreenPosition?.([spaceX, spaceY]);
+      if (!out || !Number.isFinite(out[0]) || !Number.isFinite(out[1])) return null;
+      return out;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Returns the current GPU-side point positions in Cosmos space (flat
+   * [x0,y0,x1,y1,...]). Returns null if Cosmos isn't ready. Used by 02-04
+   * lasso polygon-select — the React-side `posRef.current` is only the seed,
+   * the GPU has since moved the points.
+   */
+  getPointPositionsArray(): number[] | null {
+    if (!this.graph) return null;
+    try {
+      const arr = (this.graph as { getPointPositions?: () => number[] }).getPointPositions?.();
+      return arr ?? null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
    * Update one or more Cosmos simulation parameters and re-warm the simulation
    * so changes are visibly applied. No-op when not in GPU-physics mode.
    */

@@ -579,27 +579,53 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const path = lassoPathRef.current;
     // Need at least a triangle (3 points = 6 floats) to define a polygon.
     if (path.length >= 6) {
-      // Translate screen-space path → world-space (mirror inverse-view at line ~1121).
-      const { width, height } = getViewportSize(containerRef.current);
-      const v = view.current;
-      const polyWorld = new Float32Array(path.length);
-      for (let i = 0; i < path.length; i += 2) {
-        const lx = path[i];
-        const ly = path[i + 1];
-        polyWorld[i] = v.x + (lx - width / 2) / v.scale;
-        polyWorld[i + 1] = v.y + (ly - height / 2) / v.scale;
-      }
-      // Test each VISIBLE node (filtering hidden ones honours active filters).
-      const positions = posRef.current;
+      // Polygon stays in SCREEN space — we project each node forward to screen
+      // coordinates instead of the polygon backward to world. This is the only
+      // formulation that works in both renderers: the Canvas2D `view.current`
+      // does NOT track Cosmos's internal camera, and `posRef.current` holds
+      // only seed positions in Cosmos GPU-physics mode (Cosmos has since moved
+      // the points on the GPU). Original 02-04 used inverse-view + posRef and
+      // produced zero matches in Cosmos mode → the panel never opened.
+      const polyScreen = new Float32Array(path);
+
       const visible = visibleNodeIdxRef.current;
       const nodes = nodesRef.current;
       const matchedIndices: number[] = [];
-      for (let i = 0; i < visible.length; i++) {
-        const idx = visible[i];
-        const nx = positions[idx * 2];
-        const ny = positions[idx * 2 + 1];
-        if (pointInPolygon(nx, ny, polyWorld)) {
-          matchedIndices.push(idx);
+
+      const cosmosRenderer = cosmosRendererRef.current;
+      const usePhysics = usePhysicsRef.current === true && !!cosmosRenderer && cosmosRenderer.isUsingPhysics();
+
+      if (usePhysics && cosmosRenderer) {
+        // Cosmos GPU-physics path: project each visible node from Cosmos space
+        // to screen pixels using Cosmos's own camera.
+        const cosmosPositions = cosmosRenderer.getPointPositionsArray();
+        if (cosmosPositions && cosmosPositions.length >= 2) {
+          for (let i = 0; i < visible.length; i++) {
+            const idx = visible[i];
+            const cx = cosmosPositions[idx * 2];
+            const cy = cosmosPositions[idx * 2 + 1];
+            if (!Number.isFinite(cx) || !Number.isFinite(cy)) continue;
+            const screen = cosmosRenderer.spaceToScreen(cx, cy);
+            if (!screen) continue;
+            if (pointInPolygon(screen[0], screen[1], polyScreen)) {
+              matchedIndices.push(idx);
+            }
+          }
+        }
+      } else {
+        // Canvas2D path: forward-project posRef world coords using view.current.
+        const { width, height } = getViewportSize(containerRef.current);
+        const v = view.current;
+        const positions = posRef.current;
+        for (let i = 0; i < visible.length; i++) {
+          const idx = visible[i];
+          const wx = positions[idx * 2];
+          const wy = positions[idx * 2 + 1];
+          const sx = (wx - v.x) * v.scale + width / 2;
+          const sy = (wy - v.y) * v.scale + height / 2;
+          if (pointInPolygon(sx, sy, polyScreen)) {
+            matchedIndices.push(idx);
+          }
         }
       }
       if (matchedIndices.length > 0) {
