@@ -36,6 +36,7 @@ type WorkerRequest =
       hiddenNodes: AccTopologyHiddenNode[];
       topologyLinks: AccTopologyLink[];
       visibleIndices: UintBuffer;
+      clusterIds: Int32Array;       // one cluster index per nodeId (-1 = no cluster)
       controls: GraphControlSettings;
       physics: PhysicsConfig;
       paused: boolean;
@@ -68,7 +69,7 @@ interface ProjectedLink {
 }
 
 const TICK_MS = 16;
-const POST_INTERVAL_MS = 33;
+const POST_INTERVAL_MS = 16;     // 60fps — match GPU render rate for smooth motion
 const SETTLE_VELOCITY = 0.00008;
 
 const workerSelf = self as unknown as WorkerGlobal;
@@ -81,6 +82,7 @@ let hiddenNodes: AccTopologyHiddenNode[] = [];
 let topologyLinks: AccTopologyLink[] = [];
 let visibleIndices: UintBuffer = new Uint32Array(0);
 let visibleMask = new Uint8Array(0);
+let clusterIds: Int32Array = new Int32Array(0);
 let controls: GraphControlSettings = { spacing: 54, clusterStrength: 62, stability: 78, motion: 34 };
 let physicsConfig: PhysicsConfig = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
 let paused = false;
@@ -111,9 +113,23 @@ function seededPoint(id: string): { x: number; y: number } {
   return { x: 0.08 + u * 0.84, y: 0.08 + v * 0.84 };
 }
 
+// SEPARATION slider (controls.spacing, 0–100) is the single distance/repulsion lever.
+// Drives charge magnitude, collide radius, and link distance simultaneously so the user
+// gets a uniform "more / less personal space" knob.
+function separation01(): number {
+  return clamp01(controls.spacing);
+}
+
+// CLUSTER slider (controls.clusterStrength, 0–100):
+//   0   = pure organic d3-force layout (no cluster pull)
+//   100 = nodes pulled hard toward their role-cluster centroid (Cosmos clusters look)
+function clusterStrength01(): number {
+  return clamp01(controls.clusterStrength);
+}
+
 function linkDistance(kind: AccTopologyLinkKind): number {
-  // Base distance scales inversely with linkSpring — softer spring = more breathing room
-  const base = 0.06 + (2 - physicsConfig.linkSpring) * 0.05;
+  // Base scales 0.5×–2.0× with separation slider.
+  const base = 0.10 * (0.5 + separation01() * 1.5);
   if (kind === "user") return base * 0.65;
   if (kind === "access") return base * 0.80;
   if (kind === "project") return base * 1.0;
@@ -121,7 +137,8 @@ function linkDistance(kind: AccTopologyLinkKind): number {
 }
 
 function linkStrength(kind: AccTopologyLinkKind): number {
-  const base = 0.03 + physicsConfig.linkSpring * 0.07;
+  // Tighter springs when clustering is dialed up — links pull cluster members together.
+  const base = 0.04 + clusterStrength01() * 0.10;
   if (kind === "user") return base * 1.4;
   if (kind === "project") return base * 1.1;
   if (kind === "access") return base * 0.7;
@@ -129,8 +146,56 @@ function linkStrength(kind: AccTopologyLinkKind): number {
 }
 
 function collideRadius(node: LayoutNode): number {
-  // Larger collision radii give each node personal space — matches D3 collision example
-  return node.hidden ? 0.018 : 0.022 + physicsConfig.repulsion * 0.006;
+  // Personal-space bubble. Doubles from min→max of separation slider.
+  const base = node.hidden ? 0.025 : 0.040;
+  return base * (0.5 + separation01() * 1.5);
+}
+
+function chargeStrength(node: LayoutNode): number {
+  // D3-equivalent repulsion. Separation slider = 0 → -0.015, = 1 → -0.085.
+  // Hidden hub nodes repel half as hard so they don't blow visible nodes outward.
+  const mag = -(0.015 + separation01() * 0.070);
+  return node.hidden ? mag * 0.5 : mag;
+}
+
+/**
+ * Custom d3 force: pulls each visible node toward the centroid of its role-cluster.
+ * Behaves like Cosmos's per-cluster center force (https://cosmos.gl/?path=/story/examples-clusters--with-labels).
+ * Strength is 0 when slider is 0 (pure organic) → 0.6 at slider 100 (tight clusters).
+ */
+function applyClusterForce(alpha: number): void {
+  const k01 = clusterStrength01();
+  if (k01 <= 0 || clusterIds.length === 0) return;
+
+  const sums = new Map<number, { x: number; y: number; count: number }>();
+  for (const node of activeNodes) {
+    if (node.hidden) continue;
+    const idx = node.visibleIndex;
+    if (idx < 0 || idx >= clusterIds.length) continue;
+    const cid = clusterIds[idx];
+    if (cid < 0) continue;
+    let s = sums.get(cid);
+    if (!s) { s = { x: 0, y: 0, count: 0 }; sums.set(cid, s); }
+    s.x += node.x ?? 0;
+    s.y += node.y ?? 0;
+    s.count++;
+  }
+  for (const s of sums.values()) {
+    if (s.count > 0) { s.x /= s.count; s.y /= s.count; }
+  }
+
+  const k = k01 * 0.6 * alpha;  // alpha-scaled so force respects d3's cooling schedule
+  for (const node of activeNodes) {
+    if (node.hidden) continue;
+    const idx = node.visibleIndex;
+    if (idx < 0 || idx >= clusterIds.length) continue;
+    const cid = clusterIds[idx];
+    if (cid < 0) continue;
+    const s = sums.get(cid);
+    if (!s) continue;
+    node.vx = (node.vx ?? 0) + (s.x - (node.x ?? 0)) * k;
+    node.vy = (node.vy ?? 0) + (s.y - (node.y ?? 0)) * k;
+  }
 }
 
 function rebuildVisibleMask(): void {
@@ -265,16 +330,13 @@ function rebuildSimulation(alpha = 0.35): void {
   renderLinks = buildProjectedLinks(activeTopologyLinks);
   postLinks();
 
-  const motion01 = clamp01(controls.motion);
-
-  // D3-equivalent charge: default charge=-0.05 ≈ -30px at zoom 600, matching D3's organic default.
-  // repulsion 0→2 maps charge from -0.015 to -0.085.
-  const charge = -(0.015 + physicsConfig.repulsion * 0.035);
-  const centerStrength = 0.001 + physicsConfig.gravity * 0.008;
+  // Gentle constant pull toward 0.5,0.5 keeps the graph from drifting off-screen.
+  // Stability and Gravity sliders removed — no user-facing knob for these.
+  const centerStrength = 0.005;
 
   simulation = forceSimulation<LayoutNode, LayoutLink>(activeNodes)
     .stop()
-    .alpha(Math.max(0.03, alpha + motion01 * 0.16))
+    .alpha(Math.max(0.03, alpha))
     .alphaMin(0.002)
     .alphaDecay(0.022)
     .velocityDecay(0.36)
@@ -282,10 +344,11 @@ function rebuildSimulation(alpha = 0.35): void {
       .id((node) => node.id)
       .distance((link) => linkDistance(link.kind))
       .strength((link) => linkStrength(link.kind)))
-    .force("charge", forceManyBody<LayoutNode>().strength((node) => node.hidden ? charge * 0.5 : charge))
+    .force("charge", forceManyBody<LayoutNode>().strength(chargeStrength))
     .force("collide", forceCollide<LayoutNode>().radius(collideRadius).strength(0.8).iterations(3))
     .force("x", forceX<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.3 : centerStrength))
-    .force("y", forceY<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.3 : centerStrength));
+    .force("y", forceY<LayoutNode>(0.5).strength((node) => node.hidden ? centerStrength * 0.3 : centerStrength))
+    .force("cluster", applyClusterForce);
   // forceCenter omitted — forceX/Y alone gives gentle centering without the ring-collapse effect
 
   if (draggedIndex >= 0) {
@@ -314,9 +377,8 @@ function stopTimer(): void {
 function step(): void {
   if (paused || !simulation || activeNodes.length === 0) return;
 
-  const motion01 = clamp01(controls.motion);
-  const ticksPerFrame = 1 + Math.round(motion01 * 3);
-  simulation.tick(ticksPerFrame);
+  // Single tick per frame — d3-component example pace; smoother than batch ticking.
+  simulation.tick(1);
 
   let totalVelocity = 0;
   let visibleCount = 0;
@@ -351,7 +413,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "controls") {
     controls = message.controls;
-    rebuildSimulation(0.18 + clamp01(controls.motion) * 0.3);
+    rebuildSimulation(0.30);
     return;
   }
 
@@ -376,7 +438,10 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
       node.fy = message.y;
       node.x = message.x;
       node.y = message.y;
-      simulation?.alphaTarget(0.03 + clamp01(controls.motion) * 0.08);
+      // D3 force-directed component example: alphaTarget(0.3).restart() on drag-start
+      // keeps the simulation hot while the user moves the node.
+      simulation?.alphaTarget(0.3);
+      if (simulation && simulation.alpha() < 0.3) simulation.alpha(0.3);
     }
     if (message.nodeIndex >= 0 && message.nodeIndex < nodeIds.length) {
       positions[message.nodeIndex * 2] = message.x;
@@ -394,7 +459,8 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
       node.fy = undefined;
     }
     if (draggedIndex === message.nodeIndex) draggedIndex = -1;
-    simulation?.alphaTarget(0).alpha(Math.max(simulation.alpha(), 0.12 + clamp01(controls.motion) * 0.12));
+    // D3 component example: alphaTarget(0) on release — simulation cools to settled state.
+    simulation?.alphaTarget(0);
     ensureTimer();
     return;
   }
@@ -407,6 +473,7 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     hiddenNodes = message.hiddenNodes;
     topologyLinks = message.topologyLinks;
     visibleIndices = message.visibleIndices;
+    clusterIds = message.clusterIds;
     controls = message.controls;
     physicsConfig = message.physics;
     paused = message.paused;

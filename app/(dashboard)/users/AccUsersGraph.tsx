@@ -94,7 +94,6 @@ const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAc
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const COSMOS_PHYSICS_DEFAULTS = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
-const COSMOS_RENDERER_KEY = "acc-graph-renderer";
 const COSMOS_PHYSICS_KEY = "acc-graph-physics";
 
 function buildGrid(pos: Float32Array, indices: Uint32Array, cellSize: number): SpatialGrid {
@@ -227,7 +226,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const filtersRef = useRef<GraphFilters>(DEFAULT_FILTERS);
   const hasActiveFiltersRef = useRef(false);
   const graphControlsRef = useRef<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
-  const isPausedRef = useRef(false);
 
   const view = useRef(loadSavedView());
   const targetView = useRef(loadSavedView());
@@ -253,18 +251,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return localStorage.getItem("acc-graph-cache-corrupt") === "true";
   });
   const [refreshKey, setRefreshKey] = useState(0);
-  // Detect WebGL2 at startup (not deferred to toggle click — per CONTEXT.md locked decision)
-  const [webgl2Available] = useState(() => isWebGL2Available());
-
-  // Load persisted renderer choice — only apply if WebGL2 is available
-  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">(() => {
-    if (!isWebGL2Available()) return "canvas2d"; // SSR-safe, runs in useState initializer
-    try {
-      const stored = localStorage.getItem(COSMOS_RENDERER_KEY);
-      if (stored === "cosmos") return "cosmos";
-    } catch { /* ignore */ }
-    return "canvas2d";
-  });
+  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">(() =>
+    isWebGL2Available() ? "cosmos" : "canvas2d"
+  );
 
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
 
@@ -288,9 +277,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   // GPU renderer state
   const [isCosmosLoading, setIsCosmosLoading] = useState(false);
-  const [showPhysicsPanel, setShowPhysicsPanel] = useState(false);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
-  const [isPaused, setIsPaused] = useState(false);
   const [pickMode, setPickMode] = useState(false);
   const pickModeRef = useRef(false);
   const isDraggingNodeRef = useRef(false);
@@ -377,6 +364,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
     const topology = buildAccTopologyGraph(nodes);
     const positionsForWorker = new Float32Array(posRef.current);
+
+    // Build cluster IDs from each user's primary role.
+    // Cluster slider in worker pulls nodes with the same id toward a shared centroid.
+    const clusterIds = new Int32Array(nodes.length);
+    const roleToCluster = new Map<string, number>();
+    let nextCluster = 0;
+    for (let i = 0; i < nodes.length; i++) {
+      const role = nodes[i].roles?.[0] ?? "";
+      if (!role) { clusterIds[i] = -1; continue; }
+      let cid = roleToCluster.get(role);
+      if (cid === undefined) { cid = nextCluster++; roleToCluster.set(role, cid); }
+      clusterIds[i] = cid;
+    }
+
     worker.postMessage(
       {
         type: "init",
@@ -386,11 +387,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         hiddenNodes: topology.hiddenNodes,
         topologyLinks: topology.links,
         visibleIndices,
+        clusterIds,
         controls: graphControlsRef.current,
         physics: cosmosPhysicsRef.current,
-        paused: isPausedRef.current,
+        paused: false,
       },
-      [positionsForWorker.buffer, visibleIndices.buffer],
+      [positionsForWorker.buffer, visibleIndices.buffer, clusterIds.buffer],
     );
 
     rebuildGrid();
@@ -439,14 +441,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     markGraphDirty();
   }, [markGraphDirty]);
 
-  const togglePaused = useCallback(() => {
-    const nextPaused = !isPausedRef.current;
-    isPausedRef.current = nextPaused;
-    setIsPaused(nextPaused);
-    organicWorkerRef.current?.postMessage({ type: "pause", paused: nextPaused });
-    markGraphDirty();
-  }, [markGraphDirty]);
-
   const togglePickMode = useCallback(() => {
     const next = !pickModeRef.current;
     pickModeRef.current = next;
@@ -459,30 +453,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
     }
   }, []);
-
-  const toggleRenderer = useCallback(() => {
-    const next = renderBackend === "canvas2d" ? "cosmos" : "canvas2d";
-    if (next === "canvas2d") {
-      // Switching back to Canvas 2D: read Cosmos camera state and write back to view refs
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cosmosGraph = (cosmosRendererRef.current as any)?.graph;
-      if (cosmosGraph) {
-        try {
-          // Read Cosmos transform — method name from installed types; fallback to no-op
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          const transform = (cosmosGraph as any).getTransform?.() ?? (cosmosGraph as any).transform;
-          if (transform && typeof transform.k === "number") {
-            // luma.gl / d3-zoom compatible: { k: scale, x: translateX, y: translateY }
-            view.current = { x: transform.x, y: transform.y, scale: transform.k };
-            targetView.current = { ...view.current };
-          }
-        } catch { /* ignore — view restoration is best-effort */ }
-      }
-      // Unpause d3-force worker when switching back to Canvas 2D
-      organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
-    }
-    setRenderBackend(next);
-  }, [renderBackend]);
 
   const handlePhysicsChange = useCallback((key: keyof PhysicsConfig, value: number) => {
     setCosmosPhysics(prev => {
@@ -588,28 +558,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       setRenderBackend("canvas2d");
       setIsCosmosLoading(false);
       // Unpause d3-force worker when falling back
-      organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
+      organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
       toast.error("GPU renderer lost — switched back to Canvas 2D", { duration: 4000 });
       markGraphDirty();
     };
 
-    if (renderBackend === "cosmos" && webgl2Available) {
-      // Capture current view-state before Cosmos takes over (RESEARCH.md Pitfall 6 / CONTEXT.md locked)
+    if (renderBackend === "cosmos") {
+      // Capture current view-state before Cosmos takes over
       const savedView = view.current ? { ...view.current } : null;
 
       // Canvas 2D is active while Cosmos loads
       activeRendererRef.current = canvasRenderer;
       setIsCosmosLoading(true);
-      // Pause d3-force worker while Cosmos is active (per RESEARCH.md Pitfall 4)
-      organicWorkerRef.current?.postMessage({ type: "pause", paused: true });
 
       void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
           setRenderBackend("canvas2d");
           setIsCosmosLoading(false);
-          // Unpause d3-force worker on init failure
-          organicWorkerRef.current?.postMessage({ type: "pause", paused: isPausedRef.current });
+          organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
           markGraphDirty();
           return;
         }
@@ -691,14 +658,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       setIsCosmosLoading(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [renderBackend, webgl2Available]); // Re-runs when user toggles backend
+  }, [renderBackend]);
 
-  // Pre-warm the @cosmos.gl/graph chunk on mount so webpack compiles it during page load
-  // rather than on-demand when the user clicks the toggle (which causes the "compiling" cascade).
   useEffect(() => {
-    if (webgl2Available) {
-      void import("@cosmos.gl/graph").catch(() => { /* ignore pre-warm errors */ });
-    }
+    void import("@cosmos.gl/graph").catch(() => { /* ignore pre-warm errors */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -850,13 +813,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       localStorage.setItem(COSMOS_PHYSICS_KEY, JSON.stringify(cosmosPhysics));
     } catch { /* ignore */ }
   }, [cosmosPhysics]);
-
-  // Persist renderer choice to localStorage when it changes
-  useEffect(() => {
-    try {
-      localStorage.setItem(COSMOS_RENDERER_KEY, renderBackend);
-    } catch { /* ignore */ }
-  }, [renderBackend]);
 
   useEffect(() => {
     if (isReady || !users.length) {
@@ -1277,46 +1233,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        <div className="absolute top-3 right-3 z-10 flex flex-col gap-1.5 items-end">
-          <div className="flex gap-1">
-            <ControlButton active={false} onClick={() => zoomToFit()}>Fit</ControlButton>
-            <ControlButton active={isPaused} onClick={togglePaused}>{isPaused ? "Resume" : "Pause"}</ControlButton>
-            <button
-              onClick={() => restartOrganicLayout("reflow")}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
-                "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-              )}
-            >
-              Reflow Layout
-            </button>
-            {webgl2Available && (
-              <button
-                onClick={toggleRenderer}
-                disabled={isCosmosLoading}
-                className={cn(
-                  "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all disabled:opacity-40",
-                  renderBackend === "cosmos"
-                    ? "bg-violet-600 text-white border-violet-700"
-                    : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-                )}
-              >
-                {renderBackend === "cosmos" ? "GPU" : "Canvas 2D / GPU"}
-              </button>
-            )}
-            <button
-              onClick={() => setShowPhysicsPanel(v => !v)}
-              className={cn(
-                "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
-                showPhysicsPanel
-                  ? "bg-gray-900 text-white border-gray-900"
-                  : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-              )}
-            >
-              Physics
-            </button>
-          </div>
-          <div className="text-[10px] text-gray-400 pr-1">
+        <div className="absolute top-3 right-3 z-10">
+          <div className="text-[10px] text-gray-400 pr-1 text-right">
             {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
           </div>
         </div>
@@ -1344,11 +1262,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         {showControls && (
           <div className="absolute top-12 left-3 bottom-3 z-10 w-64 flex flex-col gap-2 overflow-y-auto">
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Graph Layout</p>
-              <SliderControl label="Spacing" value={graphControls.spacing} onChange={(v) => scheduleGraphControlUpdate("spacing", v)} />
-              <SliderControl label="Cluster Strength" value={graphControls.clusterStrength} onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)} />
-              <SliderControl label="Stability" value={graphControls.stability} onChange={(v) => scheduleGraphControlUpdate("stability", v)} />
-              <SliderControl label="Motion" value={graphControls.motion} onChange={(v) => scheduleGraphControlUpdate("motion", v)} />
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Layout</p>
+              <SliderControl
+                label="Separation"
+                value={graphControls.spacing}
+                onChange={(v) => scheduleGraphControlUpdate("spacing", v)}
+              />
+              <SliderControl
+                label="Cluster"
+                value={graphControls.clusterStrength}
+                onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)}
+              />
+              <p className="text-[10px] text-gray-400 leading-tight pt-1">
+                Separation = how far apart nodes sit. Cluster: 0 = organic, 100 = grouped by role.
+              </p>
             </div>
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
               <div className="flex items-center justify-between">
@@ -1397,41 +1324,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        {showPhysicsPanel && (
-          <div className="absolute top-12 right-3 z-10 w-56">
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Physics</p>
-              <SliderControl
-                label="Repulsion"
-                value={Math.round(cosmosPhysics.repulsion * 50)}
-                onChange={(v) => handlePhysicsChange("repulsion", v / 50)}
-              />
-              <SliderControl
-                label="Link Spring"
-                value={Math.round(cosmosPhysics.linkSpring * 50)}
-                onChange={(v) => handlePhysicsChange("linkSpring", v / 50)}
-              />
-              <SliderControl
-                label="Gravity"
-                value={Math.round(cosmosPhysics.gravity * 200)}
-                onChange={(v) => handlePhysicsChange("gravity", v / 200)}
-              />
-              <button
-                onClick={() => {
-                  const defaults = { ...COSMOS_PHYSICS_DEFAULTS };
-                  cosmosPhysicsRef.current = defaults;
-                  setCosmosPhysics(defaults);
-                  cosmosRendererRef.current?.setPhysicsConfig(defaults);
-                  organicWorkerRef.current?.postMessage({ type: "physics", physics: defaults });
-                }}
-                className="w-full mt-1 px-2 py-1 text-[10px] font-medium rounded-lg border border-gray-200 bg-gray-50 text-gray-600 hover:bg-gray-100 transition-colors"
-              >
-                Reset to Defaults
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
           <div className="w-px h-3 bg-gray-200 shrink-0" />
@@ -1448,15 +1340,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </button>
         </div>
 
-        {renderBackend === "cosmos" && (
-          <div className="absolute bottom-3 right-3 z-10 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 flex flex-col gap-1">
-            <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Node Types</p>
-            <LegendDot color="#E63946" label="User" />
-            <LegendDot color="#2A9D8F" label="Project" />
-            <LegendDot color="#9B5DE5" label="Role" />
-            <LegendDot color="#F4A261" label="Module" />
-          </div>
-        )}
+        <div className="absolute bottom-3 right-3 z-10 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 flex flex-col gap-1">
+          <p className="text-[9px] font-semibold uppercase tracking-wide text-gray-400 mb-0.5">Node Types</p>
+          <LegendDot color="#E63946" label="User" />
+          <LegendDot color="#2A9D8F" label="Project" />
+          <LegendDot color="#9B5DE5" label="Role" />
+          <LegendDot color="#F4A261" label="Module" />
+        </div>
 
         <canvas
           ref={canvas2dRef}
@@ -1654,30 +1544,6 @@ function ToggleFilterControl({
         ))}
       </div>
     </div>
-  );
-}
-
-function ControlButton({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: React.ReactNode;
-}) {
-  return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all",
-        active
-          ? "bg-gray-900/10 text-gray-900 border-gray-400/40"
-          : "bg-white/80 text-gray-500 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

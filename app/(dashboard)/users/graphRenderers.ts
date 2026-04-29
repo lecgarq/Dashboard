@@ -247,6 +247,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
   private graph: any;  // Graph instance from @cosmos.gl/graph — typed as any to avoid static import
   private lastNodeCount = 0;
   private lastLinkCount = 0;
+  private lastPositions: Float32Array | null = null;
   private nodeConnections: Float32Array | null = null;
   onNodeSelectCallback: ((index: number | null) => void) | null = null;
 
@@ -281,24 +282,37 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // Dynamic import prevents Next.js server-side module resolution from touching WebGL APIs
       const { Graph } = await import("@cosmos.gl/graph");
 
+      // Force the dedicated GPU on dual-GPU systems (laptops with Intel iGPU + NVIDIA dGPU).
+      // Cosmos hardcodes its luma.gl device creation and does not expose powerPreference,
+      // so we patch HTMLCanvasElement.prototype.getContext to inject the hint, then restore it.
+      // The hint is purely advisory — Windows graphics settings + Chrome's GPU policy still apply.
+      const originalGetContext = HTMLCanvasElement.prototype.getContext;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      HTMLCanvasElement.prototype.getContext = function patchedGetContext(this: HTMLCanvasElement, contextId: string, attrs?: any) {
+        if (contextId === "webgl2" || contextId === "webgl" || contextId === "experimental-webgl") {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          return (originalGetContext as any).call(this, contextId, { ...(attrs ?? {}), powerPreference: "high-performance" });
+        }
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        return (originalGetContext as any).call(this, contextId, attrs);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any;
+
       const renderer = new CosmosGraphRenderer(null);
 
       const graph = new Graph(container as HTMLDivElement, {
-        enableSimulation: true,
-        fitViewOnInit: false,        // AccUsersGraph controls zoom/pan externally
-        backgroundColor: "#F8F7F4", // GRAPH_BACKGROUND — matches AccUsersGraph constant
-        spaceSize: 65536,            // large space prevents visible square border at zoom-out
+        // Simulation disabled — d3-force worker drives all positions, Cosmos is a pure GPU renderer.
+        // This eliminates the visible square boundary caused by Cosmos simulation space physics.
+        enableSimulation: false,
+        rescalePositions: false,     // keep our coordinate space; don't auto-fit to screen
+        fitViewOnInit: false,
+        backgroundColor: "#F8F7F4",
+        spaceSize: 4096,             // default; simulation off so this only affects initial zoom extents
         pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number],
         pointDefaultSize: 4,
         linkDefaultColor: [0.612, 0.639, 0.686, 0.25] as [number, number, number, number],
         linkDefaultWidth: 1,
         linkDefaultArrows: false,
-        simulationRepulsion: 1.0,   // matches DEFAULT_PHYSICS_CONFIG — overridden in draw()
-        simulationLinkSpring: 0.6,
-        simulationGravity: 0.05,    // low gravity = organic spread, not ring
-        simulationFriction: 0.85,
-        simulationDecay: 10000,     // slow decay = longer settling = more natural spread
-        // v3 click callbacks — wire selection so clicks behave same as Canvas 2D
         onPointClick: (index: number, _pos: [number, number], _event: MouseEvent) => {
           renderer.selectNode(index);
           renderer.onNodeSelectCallback?.(index);
@@ -311,10 +325,16 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
       renderer.graph = graph;
 
-      // v3: call start() then render() on init (render() alone no longer restarts simulation)
-      await graph.ready;
-      graph.start();
-      graph.render();
+      try {
+        await graph.ready;
+        // Remove zoom-out floor — Cosmos hardcodes [1e-3, ∞]; override to near-zero for infinite zoom out
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (graph as any).zoomInstance?.behavior?.scaleExtent([1e-10, Infinity]);
+        graph.render();
+      } finally {
+        // Restore original getContext so the high-performance hint only applies to Cosmos canvases.
+        HTMLCanvasElement.prototype.getContext = originalGetContext;
+      }
 
       // Forward context loss events to caller so it can fall back to Canvas 2D
       void onContextLost; // parameter reserved for future use
@@ -361,9 +381,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
   /**
    * Push data into Cosmos GPU buffers.
-   * Only re-uploads when node count or link count changes — avoids VRAM churn at 60fps.
-   * Cosmos manages its own render loop; we do NOT need to call render() every frame.
-   * Uses static imports from cosmosUtils (no dynamic imports needed — cosmosUtils has no WebGL deps).
+   * Simulation is disabled — d3-force worker drives positions. We re-upload positions whenever
+   * the worker produces a new Float32Array (reference change), and re-upload buffers on count changes.
    */
   draw(frame: GraphRenderFrame): GraphDrawResult {
     if (!this.graph) return { needsContinuousRedraw: false };
@@ -371,9 +390,10 @@ export class CosmosGraphRenderer implements GraphRenderer {
     const nodeCount = frame.nodes.length;
     const linkCount = frame.links?.sources.length ?? 0;
     const isFirstLoad = this.lastNodeCount === 0 && nodeCount > 0;
+    const positionsChanged = frame.positions !== this.lastPositions;
+    let needsRender = false;
 
     if (nodeCount !== this.lastNodeCount) {
-      // Rebuild node connections for size scaling
       const connections = new Float32Array(nodeCount);
       if (frame.links) {
         for (let i = 0; i < frame.links.sources.length; i++) {
@@ -384,54 +404,43 @@ export class CosmosGraphRenderer implements GraphRenderer {
         }
       }
       this.nodeConnections = connections;
-
-      // Positions come from the organic layout in [0,1] normalized space.
-      // Must be scaled to Cosmos simulation coordinates before upload.
-      this.graph.setPointPositions(this.scalePositionsForCosmos(frame.positions));
       this.graph.setPointColors(buildNodeColorBuffer(frame.nodes));
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(buildNodeSizeBuffer(nodeCount, this.nodeConnections));
       }
       this.lastNodeCount = nodeCount;
+      needsRender = true;
+    }
+
+    if (positionsChanged && nodeCount > 0) {
+      this.graph.setPointPositions(this.scalePositionsForCosmos(frame.positions));
+      this.lastPositions = frame.positions;
+      needsRender = true;
     }
 
     if (frame.links && linkCount !== this.lastLinkCount) {
       this.graph.setLinks(buildLinkBuffer(frame.links));
       this.graph.setLinkColors(buildLinkColorBuffer(linkCount));
       this.lastLinkCount = linkCount;
+      needsRender = true;
+    }
+
+    // Cosmos has enableSimulation:false, so it does NOT auto-paint per frame.
+    // Every state change must be paired with an explicit render() to actually paint pixels.
+    if (needsRender) {
+      this.graph.render();
     }
 
     if (isFirstLoad) {
-      // Re-trigger Cosmos render loop after pushing data — the loop may have idled
-      // after initializing with an empty scene. render() acts as a wake-up call.
-      this.graph.render();
       this.graph.fitView(600);
     }
 
-    // Cosmos owns its render loop — no continuous redraw needed from our RAF
     return { needsContinuousRedraw: false };
   }
 
-  /**
-   * Live physics update from slider values.
-   * Uses setConfigPartial (NOT setConfig) to avoid resetting ALL physics values.
-   * Per RESEARCH.md Pitfall 2: setConfig resets everything; setConfigPartial is incremental.
-   */
-  setPhysicsConfig(partial: {
-    repulsion?: number;
-    linkSpring?: number;
-    gravity?: number;
-  }): void {
-    if (!this.graph) return;
-    // Scale slider values to Cosmos simulation ranges for organic spread equivalent to Canvas 2D.
-    // repulsion 0–2 → simulationRepulsion 0–3 (Cosmos needs higher values for equivalent spread)
-    // linkSpring 0–2 → simulationLinkSpring 0–1 (softer than raw value for organic feel)
-    // gravity 0–0.5 → simulationGravity 0–0.15 (keep very low so nodes breathe freely)
-    this.graph.setConfigPartial({
-      ...(partial.repulsion !== undefined && { simulationRepulsion: partial.repulsion * 1.5 }),
-      ...(partial.linkSpring !== undefined && { simulationLinkSpring: partial.linkSpring * 0.5 }),
-      ...(partial.gravity !== undefined && { simulationGravity: partial.gravity * 0.3 }),
-    });
+  // Simulation is disabled — physics are applied via the d3-force worker, not here.
+  setPhysicsConfig(_partial: { repulsion?: number; linkSpring?: number; gravity?: number }): void {
+    // no-op: Cosmos simulation is off; handlePhysicsChange routes values to the worker instead
   }
 
   destroy(): void {
@@ -439,6 +448,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.graph = null;
     this.onNodeSelectCallback = null;
     this.nodeConnections = null;
+    this.lastPositions = null;
     this.lastNodeCount = 0;
     this.lastLinkCount = 0;
   }

@@ -21,6 +21,13 @@
 - [x] **REND-03**: User can visually distinguish User, Project, Role, and Module nodes and their relationship types in the Cosmos.gl renderer — four node colors, three edge color/weight mappings
 - [x] **REND-04**: User receives a working Canvas 2D graph when the browser does not support WebGL2 — existing `CanvasGraphRenderer` remains as fallback; dual-canvas pattern preserved
 
+### ACC Data + Filter Refinement (DATA, FILT)
+
+- [ ] **DATA-01**: User sees `companyRole` for each ACC user — extracted from ACC Admin API user record, persisted alongside other user fields, surfaced in side panel and usable as a filter dimension
+- [ ] **FILT-01**: When a filter rule excludes a user, that user's node is removed from the visible graph — fully hidden, not greyed-out; edges to hidden nodes are also hidden
+- [ ] **FILT-02**: Date filter exposes `from` and `to` inputs and matches users whose relevant date falls inclusively within the range
+- [ ] **FILT-03**: Module filter renders one on/off toggle per module; with all toggles on every user is visible; toggling a module off filters out users whose access intersects only that module
+
 ### Graph UI Completion (UI)
 
 - [ ] **UI-01**: User can read node labels when zoomed in, with no labels cluttering the overview zoom level — zoom-threshold label rendering in `CanvasGraphRenderer.draw()` using existing `label` field
@@ -75,6 +82,10 @@
 | REND-02 | Phase 2 | Pending |
 | REND-03 | Phase 2 | Complete |
 | REND-04 | Phase 2 | Complete |
+| DATA-01 | Phase 2.5 | Pending |
+| FILT-01 | Phase 2.5 | Pending |
+| FILT-02 | Phase 2.5 | Pending |
+| FILT-03 | Phase 2.5 | Pending |
 | UI-01 | Phase 3 | Pending |
 | UI-02 | Phase 3 | Pending |
 | UI-03 | Phase 3 | Pending |
@@ -84,8 +95,8 @@
 | ANAL-04 | Phase 4 | Pending |
 
 **Coverage:**
-- v1.0 requirements: 15 total
-- Mapped to phases: 15
+- v1.0 requirements: 19 total
+- Mapped to phases: 19
 - Unmapped: 0 ✓
 
 ---
