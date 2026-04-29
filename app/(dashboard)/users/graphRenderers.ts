@@ -644,6 +644,34 @@ export class CosmosGraphRenderer implements GraphRenderer {
     return (this.graph as { isSimulationRunning?: boolean }).isSimulationRunning === true;
   }
 
+  /**
+   * Seed initial positions before the first start(). After this call, draw()
+   * leaves position management to Cosmos's simulation. No-op outside physics mode
+   * — the non-physics path already feeds positions through draw().
+   */
+  setInitialPositions(positions: Float32Array): void {
+    if (!this.graph || !this.usePhysics) return;
+    try {
+      this.graph.setPointPositions(this.scalePositionsForCosmos(positions));
+    } catch { /* ignore — Cosmos falls back to random initial layout */ }
+  }
+
+  /**
+   * Proxy for Cosmos's setPointClusters. Each entry is a cluster id (or undefined
+   * for unclustered nodes). Cluster pull strength is controlled separately via
+   * simulationCluster in setSimulationConfig.
+   */
+  setPointClusters(clusterIds: (number | undefined)[]): void {
+    if (!this.graph) return;
+    try { this.graph.setPointClusters?.(clusterIds); } catch { /* ignore */ }
+  }
+
+  /** Proxy for Cosmos's setClusterPositions ([x0,y0,x1,y1,...] with undefined slots allowed). */
+  setClusterPositions(positions: (number | undefined)[]): void {
+    if (!this.graph) return;
+    try { this.graph.setClusterPositions?.(positions); } catch { /* ignore */ }
+  }
+
   destroy(): void {
     this.graph?.destroy?.();
     this.graph = null;

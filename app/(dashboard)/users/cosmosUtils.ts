@@ -124,6 +124,51 @@ export function buildLinkBuffer(links: {
 }
 
 /**
+ * Minimal node shape consumed by `buildClusterIdsFromNodes`. We avoid importing
+ * the full `SimNode` type so this helper stays pure and unit-testable in Node.
+ */
+export interface ClusterableNode {
+  roles?: readonly string[];
+  modules?: readonly string[];
+}
+
+/**
+ * Build dense integer cluster ids (0..N-1) from a per-node attribute. Nodes that
+ * lack the chosen key map to `undefined` so Cosmos treats them as unclustered.
+ *
+ * - `clusterKey: "role"` uses the first entry of `node.roles` (matches the
+ *   primary-role coloring used in AccUsersGraph).
+ * - `clusterKey: "module"` uses the first entry of `node.modules`.
+ *
+ * Pure for unit testing — no DOM access, no module-level state, deterministic
+ * ordering (assignment order = first-seen).
+ */
+export function buildClusterIdsFromNodes(
+  nodes: readonly ClusterableNode[],
+  clusterKey: "role" | "module",
+): (number | undefined)[] {
+  const lookup = new Map<string, number>();
+  let nextId = 0;
+  const ids: (number | undefined)[] = new Array(nodes.length);
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const candidates = clusterKey === "role" ? node.roles : node.modules;
+    const key = candidates && candidates.length > 0 ? candidates[0] : undefined;
+    if (!key) {
+      ids[i] = undefined;
+      continue;
+    }
+    let id = lookup.get(key);
+    if (id === undefined) {
+      id = nextId++;
+      lookup.set(key, id);
+    }
+    ids[i] = id;
+  }
+  return ids;
+}
+
+/**
  * Build a Float32Array of per-link RGBA values for Cosmos setLinkColors().
  * Phase 2 scope: uniform gray for all edges (single edge type in current data).
  * Multi-type edge color variation per REND-03 is deferred to a future phase when
