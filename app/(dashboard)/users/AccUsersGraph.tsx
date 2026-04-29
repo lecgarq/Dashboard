@@ -636,6 +636,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: true }).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
+          if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create: renderer=null (init failed)");
           usePhysicsRef.current = false;
           setRenderBackend("canvas2d");
           setIsCosmosLoading(false);
@@ -646,6 +647,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         cosmosRendererRef.current = renderer;
         activeRendererRef.current = renderer;
         usePhysicsRef.current = renderer.isUsingPhysics();
+        if (perfHudEnabled) {
+          console.log("[02-05-DEBUG] cosmos-create.then: usePhysics=", usePhysicsRef.current,
+            "nodesRef.length=", nodesRef.current.length,
+            "nodeIndexMap.size=", nodeIndexMapRef.current.size,
+            "posRef.length=", posRef.current.length);
+        }
         // GPU-physics path drives sliders directly — pause the worker so it
         // doesn't fight Cosmos's simulation when it's already running.
         if (usePhysicsRef.current) {
@@ -654,6 +661,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // first frame is recognizable instead of random Cosmos noise.
           if (posRef.current.length > 0) {
             renderer.setInitialPositions(posRef.current);
+            if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create.then: setInitialPositions count=", posRef.current.length / 2);
+          } else if (perfHudEnabled) {
+            console.log("[02-05-DEBUG] cosmos-create.then: SKIPPED setInitialPositions — posRef empty");
           }
           // Cluster ids are stable for the dataset — strength is sliderized.
           const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "role");
@@ -668,6 +678,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               topology.links,
               nodeIndexMapRef.current,
             );
+            if (perfHudEnabled) {
+              console.log("[02-05-DEBUG] cosmos-create.then: PATH-A built links sources=", linksRef.current.sources.length,
+                "topology.links=", topology.links.length);
+            }
+          } else if (perfHudEnabled) {
+            console.log("[02-05-DEBUG] cosmos-create.then: PATH-A SKIPPED — nodesRef empty (data not loaded yet)");
           }
           // Apply the current slider values immediately so visit-after-reload picks up persisted state.
           renderer.setSimulationConfig(controlsToSimulationConfig(graphControlsRef.current));
@@ -921,6 +937,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     restartOrganicLayout("restart");
     // GPU-physics path: seed Cosmos with the precomputed positions and cluster ids.
     // restartOrganicLayout above is a no-op in this path (no worker spawned).
+    if (perfHudEnabled) {
+      console.log("[02-05-DEBUG] data-load: rawNodes=", rawNodes.length,
+        "usePhysicsRef=", usePhysicsRef.current,
+        "cosmosRenderer=", !!cosmosRendererRef.current,
+        "posRef.length=", posRef.current.length);
+    }
     if (usePhysicsRef.current && cosmosRendererRef.current) {
       if (posRef.current.length > 0) {
         cosmosRendererRef.current.setInitialPositions(posRef.current);
@@ -938,9 +960,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const topology = buildAccTopologyGraph(rawNodes);
       const projected = projectTopologyLinksToIndexPairs(topology.links, nodeIndexMap);
       linksRef.current = projected;
+      if (perfHudEnabled) {
+        console.log("[02-05-DEBUG] data-load: PATH-B built links topology=", topology.links.length,
+          "projected=", projected.sources.length);
+      }
       cosmosRendererRef.current.setSimulationConfig(
         controlsToSimulationConfig(graphControlsRef.current),
       );
+    } else if (perfHudEnabled) {
+      console.log("[02-05-DEBUG] data-load: PATH-B SKIPPED — usePhysicsRef=", usePhysicsRef.current,
+        "cosmosRenderer=", !!cosmosRendererRef.current);
     }
     if (lastAutoFitHashRef.current !== graph.dataHash) {
       zoomToFit({ immediate: true });

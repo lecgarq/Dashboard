@@ -409,6 +409,20 @@ export class CosmosGraphRenderer implements GraphRenderer {
         };
       }
 
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] Graph(): baseConfig=", JSON.parse(JSON.stringify({
+        enableSimulation: baseConfig.enableSimulation,
+        rescalePositions: baseConfig.rescalePositions,
+        enableDrag: baseConfig.enableDrag,
+        spaceSize: baseConfig.spaceSize,
+        simulationRepulsion: baseConfig.simulationRepulsion,
+        simulationLinkSpring: baseConfig.simulationLinkSpring,
+        simulationLinkDistance: baseConfig.simulationLinkDistance,
+        simulationCluster: baseConfig.simulationCluster,
+        simulationGravity: baseConfig.simulationGravity,
+        simulationFriction: baseConfig.simulationFriction,
+        simulationDecay: baseConfig.simulationDecay,
+      }))); } catch { /* ignore */ }
       const graph = new Graph(container as HTMLDivElement, baseConfig);
 
       renderer.graph = graph;
@@ -499,6 +513,19 @@ export class CosmosGraphRenderer implements GraphRenderer {
     const isFirstLoad = this.lastNodeCount === 0 && nodeCount > 0;
     const positionsChanged = frame.positions !== this.lastPositions;
     let needsRender = false;
+    // 02-05-DEBUG: report what draw() actually receives for the GPU-physics path,
+    // first-frame and on link-count transitions only (avoid 60Hz spam).
+    if (this.usePhysics && (isFirstLoad || linkCount !== this.lastLinkCount)) {
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const alpha = (this.graph as any)?.progress;
+        // eslint-disable-next-line no-console
+        console.log("[02-05-DEBUG] draw: usePhysics=true nodeCount=", nodeCount,
+          "linkCount=", linkCount, "lastLinkCount=", this.lastLinkCount,
+          "isFirstLoad=", isFirstLoad, "positionsChanged=", positionsChanged,
+          "α=", alpha);
+      } catch { /* ignore */ }
+    }
 
     if (nodeCount !== this.lastNodeCount) {
       const connections = new Float32Array(nodeCount);
@@ -547,6 +574,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // (or with zero springs the alpha already collapsed). Re-warm so the
       // force-directed layout actually has springs to act on this frame.
       if (this.usePhysics && linkCount > 0) {
+        // eslint-disable-next-line no-console
+        try { console.log("[02-05-DEBUG] draw: graph.start(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
         try { this.graph.start?.(1.0); } catch { /* ignore */ }
       }
     } else if (
@@ -640,7 +669,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
       }
       // Re-warm so neighbors visibly react to the slider scrub.
       this.graph.start?.(0.3);
-    } catch { /* defensive: never let a bad config crash the renderer */ }
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] setSimulationConfig: applied", partial); } catch { /* ignore */ }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] setSimulationConfig: THREW", err); } catch { /* ignore */ }
+    }
   }
 
   /** Current simulation alpha (1=hot, 0=cool). Returns 0 when not in physics mode. */
@@ -662,10 +696,19 @@ export class CosmosGraphRenderer implements GraphRenderer {
    * — the non-physics path already feeds positions through draw().
    */
   setInitialPositions(positions: Float32Array): void {
-    if (!this.graph || !this.usePhysics) return;
+    if (!this.graph || !this.usePhysics) {
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] setInitialPositions: SKIPPED graph=", !!this.graph, "usePhysics=", this.usePhysics); } catch { /* ignore */ }
+      return;
+    }
     try {
       this.graph.setPointPositions(this.scalePositionsForCosmos(positions));
-    } catch { /* ignore — Cosmos falls back to random initial layout */ }
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] setInitialPositions: uploaded count=", positions.length / 2); } catch { /* ignore */ }
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      try { console.log("[02-05-DEBUG] setInitialPositions: THREW", err); } catch { /* ignore */ }
+    }
   }
 
   /**
