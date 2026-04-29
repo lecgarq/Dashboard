@@ -15,6 +15,7 @@ import {
   isWebGL2Available,
   buildClusterIdsFromNodes,
   controlsToSimulationConfig,
+  pointInPolygon,
   projectTopologyLinksToIndexPairs,
 } from "./cosmosUtils";
 import { toast } from "sonner";
@@ -314,6 +315,24 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [pickMode, setPickMode] = useState(false);
   const pickModeRef = useRef(false);
+  // 02-04: Lasso multi-select. lassoActive guards pointer routing on the lasso
+  // overlay; lassoPathRef holds screen-space points for the rAF-cheap path,
+  // while lassoPath drives the SVG re-render on pointermove.
+  const [lassoActive, setLassoActive] = useState(false);
+  const lassoActiveRef = useRef(false);
+  const lassoPathRef = useRef<number[]>([]);
+  const [lassoPath, setLassoPath] = useState<number[]>([]);
+  // Selection summary set by Task 3 (Polygon-close → selection → side panel).
+  const [polygonSelection, setPolygonSelection] = useState<{
+    indices: number[];
+    summary: {
+      count: number;
+      byRole: { value: string; count: number }[];
+      byModule: { value: string; count: number }[];
+      sampleIds: string[];
+    };
+  } | null>(null);
+  const polygonSelectionRef = useRef<typeof polygonSelection>(null);
   const isDraggingNodeRef = useRef(false);
   const draggedNodeIdxRef = useRef(-1);
   const linksRef = useRef<{ sources: Int32Array; targets: Int32Array }>({
@@ -512,6 +531,57 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
       }
     }
+  }, []);
+
+  // 02-04: Toggle lasso mode. While active, the lasso overlay swallows pointer
+  // events so pan/zoom on the underlying canvas is suspended. Exiting lasso
+  // mode also clears any in-progress path so toggling off mid-draw doesn't
+  // leave a stale SVG trace.
+  const toggleLassoMode = useCallback(() => {
+    const next = !lassoActiveRef.current;
+    lassoActiveRef.current = next;
+    setLassoActive(next);
+    if (!next) {
+      lassoPathRef.current = [];
+      setLassoPath([]);
+    }
+  }, []);
+
+  const handleLassoPointerDown = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (event.button !== 0) return;
+    if (!lassoActiveRef.current) return;
+    event.currentTarget.setPointerCapture(event.pointerId);
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    lassoPathRef.current = [x, y];
+    setLassoPath([x, y]);
+  }, []);
+
+  const handleLassoPointerMove = useCallback((event: React.PointerEvent<HTMLDivElement>) => {
+    if (!lassoActiveRef.current) return;
+    const path = lassoPathRef.current;
+    if (path.length === 0) return;
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const lastX = path[path.length - 2];
+    const lastY = path[path.length - 1];
+    const dx = x - lastX;
+    const dy = y - lastY;
+    if (dx * dx + dy * dy < 16) return; // < 4px move
+    path.push(x, y);
+    setLassoPath([...path]);
+  }, []);
+
+  const handleLassoPointerUp = useCallback((_event: React.PointerEvent<HTMLDivElement>) => {
+    if (!lassoActiveRef.current) return;
+    // Task 3 (next commit) wires polygon-close → selection here. For Task 2
+    // the lasso simply exits mode on release so the SVG overlay clears.
+    lassoActiveRef.current = false;
+    setLassoActive(false);
+    lassoPathRef.current = [];
+    setLassoPath([]);
   }, []);
 
   const handlePhysicsChange = useCallback((key: keyof PhysicsConfig, value: number) => {
@@ -1557,6 +1627,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           >
             <span>Pick {pickMode ? "On" : "Off"}</span>
           </button>
+          <button
+            onClick={toggleLassoMode}
+            data-testid="acc-graph-lasso-toggle"
+            className={cn(
+              "flex items-center gap-1.5 text-[10px] font-medium transition-colors rounded-md px-1.5 py-0.5",
+              lassoActive
+                ? "bg-blue-600 text-white"
+                : "text-gray-500 hover:text-gray-800",
+            )}
+          >
+            <span>Lasso {lassoActive ? "On" : "Off"}</span>
+          </button>
         </div>
 
         <div className="absolute bottom-3 right-3 z-10 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 flex flex-col gap-1">
@@ -1597,6 +1679,43 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           )}
           // Cosmos manages its own canvas and pointer events internally
         />
+        {/* 02-04: Lasso overlay. When lassoActive it captures pointer events
+            (suspending pan/zoom on the underlying canvas) and renders the
+            in-progress polygon trace as an SVG polyline. The overlay stays
+            mounted (with pointer-events-none) while a lasso path is non-empty
+            so the polyline remains visible until pointerup. */}
+        <div
+          data-testid="acc-graph-lasso-overlay"
+          onPointerDown={handleLassoPointerDown}
+          onPointerMove={handleLassoPointerMove}
+          onPointerUp={handleLassoPointerUp}
+          onPointerCancel={handleLassoPointerUp}
+          className={cn(
+            "absolute inset-0 z-[15]",
+            lassoActive ? "cursor-crosshair" : "",
+            lassoActive ? "pointer-events-auto" : "pointer-events-none",
+            (lassoActive || lassoPath.length > 0) ? "block" : "hidden",
+          )}
+        >
+          {lassoPath.length >= 4 && (
+            <svg className="absolute inset-0 w-full h-full pointer-events-none">
+              <polyline
+                points={(() => {
+                  let s = "";
+                  for (let i = 0; i < lassoPath.length; i += 2) {
+                    s += `${lassoPath[i]},${lassoPath[i + 1]} `;
+                  }
+                  return s.trim();
+                })()}
+                fill="rgba(59, 130, 246, 0.10)"
+                stroke="rgb(59, 130, 246)"
+                strokeWidth={2}
+                strokeLinejoin="round"
+              />
+            </svg>
+          )}
+        </div>
+
         <div
           ref={tooltipRef}
           className="absolute top-0 left-0 z-30 pointer-events-none bg-white border border-gray-200 rounded-xl px-3 py-2 shadow-lg max-w-[240px] opacity-0 transition-opacity duration-75 will-change-transform"
