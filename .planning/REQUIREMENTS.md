@@ -17,9 +17,9 @@
 ### Cosmos.gl Renderer (REND)
 
 - [x] **REND-01**: User can switch to GPU-accelerated Cosmos.gl renderer for graphs with 500+ nodes — `CosmosGraphRenderer` class implementing the existing `GraphRenderer` interface
-- [ ] **REND-02**: User can adjust physics simulation parameters (repulsion, link spring, gravity) in real-time via sliders — bound to Cosmos.gl `setConfig()` live
+- [ ] **REND-02**: User can adjust physics simulation parameters in real-time via sliders — Phase 2 Plan 02-05 redesigned the sliders to Separation + Cluster (driving Cosmos's `simulationRepulsion` / `simulationLinkSpring` / `simulationLinkDistance` / `simulationCluster` via `setConfigPartial`). The original three-slider model (repulsion / link spring / gravity) and the precise feel-tuning are deferred to **TD-006**; this requirement remains open until TD-006 is closed.
 - [x] **REND-03**: User can visually distinguish User, Project, Role, and Module nodes and their relationship types in the Cosmos.gl renderer — four node colors, three edge color/weight mappings
-- [x] **REND-04**: User receives a working Canvas 2D graph when the browser does not support WebGL2 — existing `CanvasGraphRenderer` remains as fallback; dual-canvas pattern preserved
+- [x] **REND-04**: User receives a working Canvas 2D graph when the browser does not support WebGL2 — existing `CanvasGraphRenderer` remains as fallback; dual-canvas pattern preserved. **Note (2026-04-29):** User accepted the fallback as code-only without live-browser exercise — Firefox is WebGL2-compatible, so the fallback path is unlikely to be exercised in production. See also TD-007 (vestigial Canvas2D branch) for eventual removal.
 
 ### ACC Data + Filter Refinement (DATA, FILT)
 
@@ -79,7 +79,7 @@
 | FOUND-03 | Phase 1 | Complete |
 | FOUND-04 | Phase 1 | Complete |
 | REND-01 | Phase 2 | Complete |
-| REND-02 | Phase 2 | Pending |
+| REND-02 | Phase 2 | Deferred (TD-006) |
 | REND-03 | Phase 2 | Complete |
 | REND-04 | Phase 2 | Complete |
 | DATA-01 | Phase 2.5 | Pending |

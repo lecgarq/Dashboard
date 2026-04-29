@@ -38,7 +38,7 @@ Plans:
 ### Phase 2: Cosmos.gl Renderer
 **Goal**: Users on 500+ node graphs can switch to a GPU-accelerated renderer and tune the physics simulation in real time; users on browsers without WebGL2 still get the Canvas 2D fallback
 **Depends on**: Phase 1
-**Requirements**: REND-01, REND-02, REND-03, REND-04
+**Requirements**: REND-01, REND-02 (deferred to TD-006), REND-03, REND-04
 **Success Criteria** (what must be TRUE):
   1. A user with a large hub (500+ nodes) can click a renderer toggle and see the graph re-render via Cosmos.gl GPU instancing without a page reload
   2. A user can drag sliders for repulsion, link spring, and gravity and observe the graph layout shift in real time — changes take effect without restarting the simulation
