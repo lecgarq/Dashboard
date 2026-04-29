@@ -431,20 +431,6 @@ export class CosmosGraphRenderer implements GraphRenderer {
         };
       }
 
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] Graph(): baseConfig=", JSON.parse(JSON.stringify({
-        enableSimulation: baseConfig.enableSimulation,
-        rescalePositions: baseConfig.rescalePositions,
-        enableDrag: baseConfig.enableDrag,
-        spaceSize: baseConfig.spaceSize,
-        simulationRepulsion: baseConfig.simulationRepulsion,
-        simulationLinkSpring: baseConfig.simulationLinkSpring,
-        simulationLinkDistance: baseConfig.simulationLinkDistance,
-        simulationCluster: baseConfig.simulationCluster,
-        simulationGravity: baseConfig.simulationGravity,
-        simulationFriction: baseConfig.simulationFriction,
-        simulationDecay: baseConfig.simulationDecay,
-      }))); } catch { /* ignore */ }
       const graph = new Graph(container as HTMLDivElement, baseConfig);
 
       renderer.graph = graph;
@@ -538,19 +524,6 @@ export class CosmosGraphRenderer implements GraphRenderer {
     const isFirstLoad = this.lastNodeCount === 0 && nodeCount > 0;
     const positionsChanged = frame.positions !== this.lastPositions;
     let needsRender = false;
-    // 02-05-DEBUG: report what draw() actually receives for the GPU-physics path,
-    // first-frame and on link-count transitions only (avoid 60Hz spam).
-    if (this.usePhysics && (isFirstLoad || linkCount !== this.lastLinkCount)) {
-      try {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const alpha = (this.graph as any)?.progress;
-        // eslint-disable-next-line no-console
-        console.log("[02-05-DEBUG] draw: usePhysics=true nodeCount=", nodeCount,
-          "linkCount=", linkCount, "lastLinkCount=", this.lastLinkCount,
-          "isFirstLoad=", isFirstLoad, "positionsChanged=", positionsChanged,
-          "α=", alpha);
-      } catch { /* ignore */ }
-    }
 
     if (nodeCount !== this.lastNodeCount) {
       const connections = new Float32Array(nodeCount);
@@ -604,8 +577,6 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // (alpha=0 → end() → stopFrames). Only render(alpha) re-spins the loop.
       // Without this, the simulation has hot alpha but no frames execute → grey canvas.
       if (this.usePhysics && linkCount > 0) {
-        // eslint-disable-next-line no-console
-        try { console.log("[02-05-DEBUG] draw: graph.start(1.0)+render(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
         // CRITICAL: pair start(alpha) + render(alpha). render() alone won't
         // resume forces after a previous end() flipped isSimulationRunning
         // to false. See setSimulationConfig comment for the full rationale.
@@ -767,11 +738,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // so the running flag gets observed by per-frame force passes.
       this.graph.start?.(0.3);
       this.graph.render?.(0.3);
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] setSimulationConfig: applied", partial); } catch { /* ignore */ }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] setSimulationConfig: THREW", err); } catch { /* ignore */ }
+    } catch {
+      /* swallow — partial config rejected by graph; next applyer will retry */
     }
   }
 
@@ -795,17 +763,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
    */
   setInitialPositions(positions: Float32Array): void {
     if (!this.graph || !this.usePhysics) {
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] setInitialPositions: SKIPPED graph=", !!this.graph, "usePhysics=", this.usePhysics); } catch { /* ignore */ }
       return;
     }
     try {
       this.graph.setPointPositions(this.scalePositionsForCosmos(positions));
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] setInitialPositions: uploaded count=", positions.length / 2); } catch { /* ignore */ }
-    } catch (err) {
-      // eslint-disable-next-line no-console
-      try { console.log("[02-05-DEBUG] setInitialPositions: THREW", err); } catch { /* ignore */ }
+    } catch {
+      /* swallow — initial seed rejected by graph */
     }
   }
 
