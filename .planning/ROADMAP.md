@@ -44,12 +44,13 @@ Plans:
   2. A user can drag sliders for repulsion, link spring, and gravity and observe the graph layout shift in real time — changes take effect without restarting the simulation
   3. User nodes, Project nodes, Role nodes, and Module nodes are visually distinct in the Cosmos.gl renderer — four different colors, and edges have weight/color variation by relationship type
   4. A user on a browser that does not support WebGL2 still sees the Canvas 2D graph rendering correctly — no error screen, no empty canvas
-**Plans**: 3 plans
+**Plans**: 4 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Install @cosmos.gl/graph, create cosmosUtils helpers, implement CosmosGraphRenderer class (REND-01, REND-03, REND-04)
 - [x] 02-02-PLAN.md — D3-force worker + Cosmos GPU renderer + 2-slider UI + dedicated GPU hint (REND-01, REND-02, REND-03, REND-04)
-- [ ] 02-03-PLAN.md — Aggressive layout, animated cluster transition, lasso multi-select, edge-render-during-drag fix, same-username highlight, GPU perf hardening (planned)
+- [ ] 02-03-PLAN.md — Edge-render-during-drag fix, aggressive layout, animated cluster transition, same-username highlight, GPU perf HUD (planned)
+- [ ] 02-04-PLAN.md — Lasso/polygon multi-select with side panel summary (planned)
 
 ### Phase 2.5: ACC Data + Filter Refinement
 **Goal**: Filter UI hides non-matching nodes from the canvas; ACC `companyRole` is extracted and available for filtering and display; date-range filtering works as a from-to range; module filters behave as on/off toggles where all-on shows everything and toggling off filters out
@@ -91,7 +92,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
-| 2. Cosmos.gl Renderer | 2/3 | In Progress|  |
+| 2. Cosmos.gl Renderer | 2/4 | In Progress|  |
 | 2.5. ACC Data + Filter Refinement | 0/TBD | Not started | - |
 | 3. Graph UI Completion | 0/TBD | Not started | - |
 | 4. Access Analysis | 0/TBD | Not started | - |
