@@ -431,6 +431,10 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
   }
 
   if (message.type === "drag") {
+    // renderLinks is stable across drag — link topology does not change while a node
+    // is being dragged, only its position. The renderer is responsible for re-uploading
+    // the link buffer per interactive frame so Cosmos's link spatial structure references
+    // the current node positions (see CosmosGraphRenderer.draw()).
     draggedIndex = message.nodeIndex;
     const node = activeNodeById.get(nodeIds[message.nodeIndex]);
     if (node) {

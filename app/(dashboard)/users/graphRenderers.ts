@@ -249,6 +249,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
   private lastLinkCount = 0;
   private lastPositions: Float32Array | null = null;
   private nodeConnections: Float32Array | null = null;
+  private lastLinkUploadAt = 0;
+  private gpuRendererString: string | null = null;
   onNodeSelectCallback: ((index: number | null) => void) | null = null;
 
   private constructor(graph: unknown) {
@@ -422,6 +424,21 @@ export class CosmosGraphRenderer implements GraphRenderer {
       this.graph.setLinks(buildLinkBuffer(frame.links));
       this.graph.setLinkColors(buildLinkColorBuffer(linkCount));
       this.lastLinkCount = linkCount;
+      this.lastLinkUploadAt = Date.now();
+      needsRender = true;
+    } else if (
+      // Edge-render-during-drag fix: Cosmos retains stale link spatial structure
+      // when only node positions change. Re-upload the link buffer on every interactive
+      // frame so endpoints reference the current frame's positions. Throttled to ~30Hz
+      // to avoid GPU upload churn at 60fps.
+      frame.links &&
+      linkCount > 0 &&
+      positionsChanged &&
+      frame.isInteracting &&
+      Date.now() - this.lastLinkUploadAt >= 33
+    ) {
+      this.graph.setLinks(buildLinkBuffer(frame.links));
+      this.lastLinkUploadAt = Date.now();
       needsRender = true;
     }
 
@@ -451,5 +468,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.lastPositions = null;
     this.lastNodeCount = 0;
     this.lastLinkCount = 0;
+    this.lastLinkUploadAt = 0;
+    this.gpuRendererString = null;
   }
 }
