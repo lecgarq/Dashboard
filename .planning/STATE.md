@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-29T22:55:05.881Z"
+last_updated: "2026-04-29T23:17:36.515Z"
 progress:
   total_phases: 2
   completed_phases: 2
-  total_plans: 9
-  completed_plans: 9
+  total_plans: 10
+  completed_plans: 10
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2 of 4 (Cosmos.gl Renderer) — COMPLETE (5/5 plans)
-Plan: 02-04 COMPLETE (commits ea705da, b5f52b2, 830ad08, 1f47874). User approved lasso end-to-end after 6 manual checks. TD-007 logged for Canvas2D removal.
-Status: Phase 2 complete — ready for milestone sign-off / Phase 2.5 planning.
-Last activity: 2026-04-29 — 02-04 SUMMARY shipped; lasso multi-select live. User noted "no Canvas 2D anymore, only GPU" → TD-007 recorded in both 02-04-SUMMARY and .gsd/TECHNICAL_DEBT.md.
+Phase: 2 of 4 (Cosmos.gl Renderer) — COMPLETE + housekeeping (5/5 + 02-06 gap-closure)
+Plan: 02-06 COMPLETE (commits 3a1e182 fix, f22689f docs). Closes 02-VERIFICATION.md anti-patterns table + status-drift warning. graphRenderers.ts log-clean; REND-02 → Deferred (TD-006); REND-04 → user-accepted with Firefox-WebGL2 note.
+Status: Phase 2 fully closed — ready for milestone sign-off / Phase 2.5 planning.
+Last activity: 2026-04-29 — 02-06 SUMMARY shipped; debug-log hygiene + requirements reconciliation complete. TD-006 + TD-007 remain open per user decision.
 
 Progress: [██████████] 100%
 
@@ -48,6 +48,7 @@ Progress: [██████████] 100%
 
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 8 | 1 tasks | 1 files |
+| Phase 02-cosmos-gl-renderer P06 | 12min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,8 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl P05]: Slider feel refinement (TD-006) deferred per user — approved 02-05 with explicit note that further tuning is wanted but non-blocking
 - [Phase 02-cosmos-gl-renderer P04]: Lasso uses screen-space polygon + forward-project nodes (NOT inverse-view-transform on polygon) — robust across Canvas2D and Cosmos GPU-physics renderers; bug surfaced when Cosmos getPointPositions() became the source of truth post-02-05
 - [Phase 02-cosmos-gl-renderer P04]: TD-007 logged: Canvas2D rendering branch + dual-path forward-projection scaffolding now vestigial — Cosmos/GPU is the only production path; defer removal to standalone plan that also deprecates REND-04
+- [Phase 02-cosmos-gl-renderer]: [Phase 02-cosmos-gl P06] Removed all unconditional [02-05-DEBUG] logs from graphRenderers.ts; gated peers in AccUsersGraph.tsx preserved
+- [Phase 02-cosmos-gl-renderer]: [Phase 02-cosmos-gl P06] REND-02 reconciled to Deferred (TD-006); REND-04 carries Firefox-WebGL2 acceptance note; Phase 2 rollup stays [x] Complete
 
 ### Pending Todos
 
@@ -96,5 +99,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-29
-Stopped at: 02-04 complete (lasso shipped, user approved); Phase 2 5/5 done — ready for milestone sign-off / Phase 2.5 planning.
+Stopped at: 02-06 complete (gap-closure: debug-log hygiene + REND-02/04 reconcile); Phase 2 fully closed — ready for milestone sign-off / Phase 2.5 planning.
 Resume file: None

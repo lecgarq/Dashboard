@@ -52,6 +52,7 @@ Plans:
 - [x] 02-03-PLAN.md — Edge-render-during-drag fix, aggressive layout, animated cluster transition, same-username highlight, GPU perf HUD (deliverables per spec; production-scale capacity gap → 02-05)
 - [x] 02-04-PLAN.md — Lasso/polygon multi-select with side panel summary (TD-007 logged: Canvas2D removal)
 - [x] 02-05-PLAN.md — Cosmos native GPU physics swap — closes TD-005 (25k-node hub interactive)
+- [x] 02-06-PLAN.md — Gap-closure: remove always-on [02-05-DEBUG] logs from graphRenderers.ts; reconcile REND-02 → Deferred (TD-006) and REND-04 acceptance note across REQUIREMENTS.md + ROADMAP.md
 
 ### Phase 2.5: ACC Data + Filter Refinement
 **Goal**: Filter UI hides non-matching nodes from the canvas; ACC `companyRole` is extracted and available for filtering and display; date-range filtering works as a from-to range; module filters behave as on/off toggles where all-on shows everything and toggling off filters out
