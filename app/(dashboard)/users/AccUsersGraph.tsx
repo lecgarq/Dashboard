@@ -358,6 +358,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [perfTickMs, setPerfTickMs] = useState(0);
   const [perfLinkCount, setPerfLinkCount] = useState(0);
   const [perfGpu, setPerfGpu] = useState<string | null>(null);
+  // GPU-physics HUD: simulation alpha (1=hot, 0=cool) replaces worker tick ms when active.
+  const [perfSimAlpha, setPerfSimAlpha] = useState(0);
+  const [perfNodeCount, setPerfNodeCount] = useState(0);
+  const [perfUsePhysics, setPerfUsePhysics] = useState(false);
   const perfFrameTimesRef = useRef<number[]>([]);
   const perfLastTickMsRef = useRef(0);
 
@@ -756,8 +760,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (t - lastFlushAt > 250) {
         lastFlushAt = t;
         setPerfFps(arr.length);
-        setPerfTickMs(perfLastTickMsRef.current);
-        setPerfLinkCount(linksRef.current.sources.length);
+        const onPhysics = usePhysicsRef.current === true;
+        setPerfUsePhysics(onPhysics);
+        if (onPhysics) {
+          setPerfSimAlpha(cosmosRendererRef.current?.getSimulationAlpha() ?? 0);
+          setPerfNodeCount(nodesRef.current.length);
+        } else {
+          setPerfTickMs(perfLastTickMsRef.current);
+          setPerfLinkCount(linksRef.current.sources.length);
+        }
       }
       id = requestAnimationFrame(tick);
     };
@@ -774,6 +785,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, [renderBackend, rendererFailureReason]);
 
   useEffect(() => {
+    // GPU-physics path (TD-005): the d3-force worker is only needed for the
+    // Canvas2D fallback. Skipping the spawn avoids a 25k-node initial tick
+    // (~287ms) that would otherwise compete with Cosmos for the main thread
+    // before being told to pause.
+    if (renderBackend === "cosmos") {
+      organicWorkerRef.current = null;
+      return;
+    }
+
     const worker = new Worker(new URL("./accGraphOrganicLayout.worker.ts", import.meta.url), { type: "module" });
     organicWorkerRef.current = worker;
 
@@ -818,7 +838,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       worker.terminate();
       if (organicWorkerRef.current === worker) organicWorkerRef.current = null;
     };
-  }, [markGraphDirty, rebuildGrid]);
+  }, [markGraphDirty, rebuildGrid, renderBackend]);
 
   useEffect(() => {
     if (!users.length) return;
@@ -887,6 +907,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     rebuildVisibleIndices();
     restartOrganicLayout("restart");
+    // GPU-physics path: seed Cosmos with the precomputed positions and cluster ids.
+    // restartOrganicLayout above is a no-op in this path (no worker spawned).
+    if (usePhysicsRef.current && cosmosRendererRef.current) {
+      if (posRef.current.length > 0) {
+        cosmosRendererRef.current.setInitialPositions(posRef.current);
+      }
+      const clusterIds = buildClusterIdsFromNodes(rawNodes, "role");
+      if (clusterIds.length > 0) {
+        cosmosRendererRef.current.setPointClusters(clusterIds);
+      }
+      cosmosRendererRef.current.setSimulationConfig(
+        controlsToSimulationConfig(graphControlsRef.current),
+      );
+    }
     if (lastAutoFitHashRef.current !== graph.dataHash) {
       zoomToFit({ immediate: true });
       lastAutoFitHashRef.current = graph.dataHash;
@@ -1258,7 +1292,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <div style={{ color: perfFps >= 58 ? "#7ee787" : perfFps >= 50 ? "#f1e05a" : "#f85149" }}>
               FPS: {perfFps}
             </div>
-            <div>Tick: {perfTickMs.toFixed(1)}ms / {perfLinkCount} springs</div>
+            {perfUsePhysics ? (
+              <div>Sim α: {perfSimAlpha.toFixed(3)} / {perfNodeCount.toLocaleString()} nodes</div>
+            ) : (
+              <div>Tick: {perfTickMs.toFixed(1)}ms / {perfLinkCount} springs</div>
+            )}
             <div>GPU: {perfGpu ?? "n/a"}</div>
           </div>
         )}
