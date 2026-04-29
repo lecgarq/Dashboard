@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 2 of 4 in current phase (AT CHECKPOINT)
-Status: In Progress — Phase 2 Plan 2 Tasks 1-3 complete, awaiting human-verify checkpoint
-Last activity: 2026-04-28 — 02-02 Tasks 1-3 done: Cosmos wired into AccUsersGraph (state/effects/toggle/spinner/physics panel/legend)
+Plan: 3 of 4 in current phase (AT CHECKPOINT)
+Status: In Progress — Phase 2 Plan 3 Tasks 1-4 complete, awaiting human-verify checkpoint (Task 5)
+Last activity: 2026-04-29 — 02-03 Tasks 1-4 done: edge-render-during-drag fix, aggressive separation curve + animated cluster ease, same-username highlight, perf HUD + tick budget + powerPreference patch hardening
 
 Progress: [████▌░░░░░] 45%
 
@@ -84,6 +84,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-28
-Stopped at: 02-02 Task 3 complete — at checkpoint:human-verify (Task 4); awaiting browser verification
+Last session: 2026-04-29
+Stopped at: 02-03 Tasks 1-4 complete — at checkpoint:human-verify (Task 5); awaiting browser verification
 Resume file: None
