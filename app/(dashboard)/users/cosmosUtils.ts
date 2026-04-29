@@ -127,10 +127,19 @@ export function buildLinkBuffer(links: {
  * Map the existing 0..100 layout sliders (separation, clusterStrength) to the
  * Cosmos simulation parameters. Pure for unit testing.
  *
- * - separation: 0 = nodes pack tight, 100 = nodes fan out wide.
- *   - simulationRepulsion ∈ [0.1, 2.0]   (pow 1.4 — slight ease-in)
- *   - simulationLinkDistance ∈ [4, 40]   (pow 1.6 — stronger ease-in)
- *   - simulationLinkSpring ∈ [1.5, 0.5]  (loosens at high separation)
+ * Tuned for the 25k-node ACC hub against `spaceSize: 16384`:
+ *
+ * - separation: 0 = tight blob, 100 = wide organic spread (no boundary clamp).
+ *   - simulationRepulsion ∈ [0.1, 5.0]    — much higher ceiling so 25k nodes
+ *     visibly fan out into the larger space at sep=100.
+ *   - simulationLinkDistance ∈ [4, 80]    — chains relax wide enough to avoid
+ *     collapsing into a strand at the upper end.
+ *   - simulationLinkSpring ∈ [0.7, 0.1]   — always loose; high values force
+ *     connected nodes into linear chains ("worm strand"). Capping the ceiling
+ *     and dropping further at high sep keeps the layout an organic blob.
+ *   - simulationGravity ∈ [0.25, 0.05]    — strong centering at low sep keeps
+ *     the layout a tight ball. Decreases with sep so nodes can fan out without
+ *     gravity fighting repulsion.
  * - clusterStrength: 0 = organic, 100 = fully clustered (simulationCluster ∈ [0,1]).
  */
 export interface SliderControls {
@@ -143,6 +152,7 @@ export interface SimulationConfigPartial {
   simulationLinkDistance: number;
   simulationLinkSpring: number;
   simulationCluster: number;
+  simulationGravity: number;
 }
 
 export function controlsToSimulationConfig(
@@ -151,9 +161,10 @@ export function controlsToSimulationConfig(
   const sep = Math.max(0, Math.min(100, controls.spacing)) / 100;
   const cluster = Math.max(0, Math.min(100, controls.clusterStrength)) / 100;
   return {
-    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 1.9,        // 0.1..2.0
-    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 36,        // 4..40
-    simulationLinkSpring: 1.5 - Math.pow(sep, 1.3) * 1.0,       // 1.5..0.5
+    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 4.9,        // 0.1..5.0
+    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 76,        // 4..80
+    simulationLinkSpring: 0.7 - Math.pow(sep, 1.3) * 0.6,       // 0.7..0.1
+    simulationGravity: 0.25 - Math.pow(sep, 1.2) * 0.20,        // 0.25..0.05
     simulationCluster: cluster,                                  // 0..1
   };
 }

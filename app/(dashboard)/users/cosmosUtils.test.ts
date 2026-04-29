@@ -80,34 +80,50 @@ describe("buildClusterIdsFromNodes", () => {
 });
 
 describe("controlsToSimulationConfig", () => {
-  it("at spacing=0, clusterStrength=0 returns minimum repulsion and zero cluster", () => {
+  it("at spacing=0, clusterStrength=0 returns minimum repulsion, max gravity, zero cluster", () => {
     const cfg = controlsToSimulationConfig({ spacing: 0, clusterStrength: 0 });
     expect(cfg.simulationRepulsion).toBeCloseTo(0.1, 5);
     expect(cfg.simulationLinkDistance).toBeCloseTo(4, 5);
-    expect(cfg.simulationLinkSpring).toBeCloseTo(1.5, 5);
+    expect(cfg.simulationLinkSpring).toBeCloseTo(0.7, 5);
+    expect(cfg.simulationGravity).toBeCloseTo(0.25, 5);
     expect(cfg.simulationCluster).toBe(0);
   });
 
-  it("at spacing=100, clusterStrength=100 returns max repulsion and full cluster pull", () => {
+  it("at spacing=100, clusterStrength=100 returns max repulsion, low gravity, full cluster pull", () => {
     const cfg = controlsToSimulationConfig({ spacing: 100, clusterStrength: 100 });
-    expect(cfg.simulationRepulsion).toBeCloseTo(2.0, 5);
-    expect(cfg.simulationLinkDistance).toBeCloseTo(40, 5);
-    expect(cfg.simulationLinkSpring).toBeCloseTo(0.5, 5);
+    expect(cfg.simulationRepulsion).toBeCloseTo(5.0, 5);
+    expect(cfg.simulationLinkDistance).toBeCloseTo(80, 5);
+    expect(cfg.simulationLinkSpring).toBeCloseTo(0.1, 5);
+    expect(cfg.simulationGravity).toBeCloseTo(0.05, 5);
     expect(cfg.simulationCluster).toBe(1);
+  });
+
+  it("at spacing=50 produces midrange values (sanity check)", () => {
+    const cfg = controlsToSimulationConfig({ spacing: 50, clusterStrength: 50 });
+    expect(cfg.simulationRepulsion).toBeGreaterThan(0.1);
+    expect(cfg.simulationRepulsion).toBeLessThan(5.0);
+    expect(cfg.simulationLinkSpring).toBeGreaterThan(0.1);
+    expect(cfg.simulationLinkSpring).toBeLessThan(0.7);
+    expect(cfg.simulationGravity).toBeGreaterThan(0.05);
+    expect(cfg.simulationGravity).toBeLessThan(0.25);
+    expect(cfg.simulationCluster).toBe(0.5);
   });
 
   it("monotonicity across separation 0..100", () => {
     let prevRepulsion = -Infinity;
     let prevDistance = -Infinity;
     let prevSpring = Infinity;
+    let prevGravity = Infinity;
     for (let s = 0; s <= 100; s += 10) {
       const cfg = controlsToSimulationConfig({ spacing: s, clusterStrength: 0 });
       expect(cfg.simulationRepulsion).toBeGreaterThanOrEqual(prevRepulsion);
       expect(cfg.simulationLinkDistance).toBeGreaterThanOrEqual(prevDistance);
       expect(cfg.simulationLinkSpring).toBeLessThanOrEqual(prevSpring);
+      expect(cfg.simulationGravity).toBeLessThanOrEqual(prevGravity);
       prevRepulsion = cfg.simulationRepulsion;
       prevDistance = cfg.simulationLinkDistance;
       prevSpring = cfg.simulationLinkSpring;
+      prevGravity = cfg.simulationGravity;
     }
   });
 
@@ -115,8 +131,10 @@ describe("controlsToSimulationConfig", () => {
     const low = controlsToSimulationConfig({ spacing: -50, clusterStrength: -10 });
     const high = controlsToSimulationConfig({ spacing: 200, clusterStrength: 250 });
     expect(low.simulationRepulsion).toBeCloseTo(0.1, 5);
+    expect(low.simulationGravity).toBeCloseTo(0.25, 5);
     expect(low.simulationCluster).toBe(0);
-    expect(high.simulationRepulsion).toBeCloseTo(2.0, 5);
+    expect(high.simulationRepulsion).toBeCloseTo(5.0, 5);
+    expect(high.simulationGravity).toBeCloseTo(0.05, 5);
     expect(high.simulationCluster).toBe(1);
   });
 });

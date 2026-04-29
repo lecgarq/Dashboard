@@ -289,11 +289,14 @@ export interface CosmosCreateOptions {
 }
 
 const DEFAULT_SIMULATION_CONFIG: Required<SimulationConfig> = {
+  // Defaults applied on init only — controlsToSimulationConfig overrides
+  // repulsion/linkSpring/linkDistance/cluster/gravity from the live sliders
+  // immediately after Cosmos finishes init (see AccUsersGraph cosmos.then).
   simulationRepulsion: 0.5,
-  simulationLinkSpring: 1.0,
-  simulationLinkDistance: 8,
+  simulationLinkSpring: 0.4,
+  simulationLinkDistance: 12,
   simulationCluster: 0,
-  simulationGravity: 0.05,
+  simulationGravity: 0.15,
   simulationFriction: 0.85,
   simulationDecay: 1000,
   simulationCenter: 0,
@@ -378,7 +381,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
         rescalePositions: !usePhysics, // physics path lets Cosmos manage its space; non-physics keeps our coords
         fitViewOnInit: false,
         backgroundColor: "#F8F7F4",
-        spaceSize: 4096,
+        // 16384 is the typical WebGL2 MAX_TEXTURE_SIZE on modern GPUs; Cosmos
+        // auto-clamps to the device limit (see Store.adjustSpaceSize). At 25k+
+        // nodes the previous 4096 caused a visible boundary clamp — nodes
+        // bunched against the edges instead of fanning into the canvas. The
+        // larger space combined with the higher repulsion ceiling in
+        // controlsToSimulationConfig (sep=100 → repulsion 5.0, linkDistance 80)
+        // gives the separation slider room to actually spread the layout.
+        spaceSize: usePhysics ? 16384 : 4096,
         pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number],
         pointDefaultSize: 4,
         linkDefaultColor: [0.612, 0.639, 0.686, 0.25] as [number, number, number, number],
@@ -494,9 +504,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
   }
 
-  // Scale factor: organic layout outputs [0,1] normalized; Cosmos space is 4096 centered at 0.
+  // Scale factor: organic layout outputs [0,1] normalized; Cosmos space is now
+  // 16384 in physics mode (was 4096). Seed positions are scaled to span most of
+  // the available space so the simulation starts from a reasonable spread
+  // rather than crammed at origin.
   // Mapping: cosmosCoord = (normalizedCoord - 0.5) * COSMOS_SPACE_SCALE
-  private static readonly COSMOS_SPACE_SCALE = 2000;
+  private static readonly COSMOS_SPACE_SCALE = 8000;
 
   /**
    * Scale a [0,1]-normalized positions Float32Array to Cosmos simulation space.
