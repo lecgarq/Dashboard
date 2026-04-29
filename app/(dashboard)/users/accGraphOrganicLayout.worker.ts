@@ -72,6 +72,15 @@ const TICK_MS = 16;
 const POST_INTERVAL_MS = 16;     // 60fps — match GPU render rate for smooth motion
 const SETTLE_VELOCITY = 0.00008;
 
+// Separation slider gamma exponents: > 1 yields a much wider perceived range
+// (tight pack at low end, dramatic spread at high end). Tuned to match cosmos-radial feel.
+const SEP_LINK_GAMMA = 1.6;
+const SEP_COLLIDE_GAMMA = 1.4;
+const SEP_CHARGE_GAMMA = 1.3;
+
+// Cluster slider easing speed (~400ms full transition at 60fps).
+const CLUSTER_EASE_RATE = 0.08;
+
 const workerSelf = self as unknown as WorkerGlobal;
 
 let session = 0;
@@ -96,6 +105,11 @@ let lastPostAt = 0;
 let lastAverageVelocity = 0;
 let draggedIndex = -1;
 let initialized = false;
+
+// Cluster slider easing state — clusterStrengthCurrent eases toward target each tick
+// so cluster slider produces a smooth ~400ms morph instead of a hard re-heat snap.
+let clusterStrengthCurrent = 0;
+let clusterStrengthTarget = 0;
 
 function clamp01(value: number): number {
   return Math.max(0, Math.min(100, value)) / 100;
@@ -123,13 +137,15 @@ function separation01(): number {
 // CLUSTER slider (controls.clusterStrength, 0–100):
 //   0   = pure organic d3-force layout (no cluster pull)
 //   100 = nodes pulled hard toward their role-cluster centroid (Cosmos clusters look)
+// Single source of truth: returns the eased value, NOT the raw control input.
+// The eased value is updated each tick in step() before simulation.tick().
 function clusterStrength01(): number {
-  return clamp01(controls.clusterStrength);
+  return clusterStrengthCurrent;
 }
 
 function linkDistance(kind: AccTopologyLinkKind): number {
-  // Base scales 0.5×–2.0× with separation slider.
-  const base = 0.10 * (0.5 + separation01() * 1.5);
+  // Aggressive base curve: gamma 1.6 → 0.15× at slider 0, 5.0× at slider 100.
+  const base = 0.10 * (0.15 + Math.pow(separation01(), SEP_LINK_GAMMA) * 4.85);
   if (kind === "user") return base * 0.65;
   if (kind === "access") return base * 0.80;
   if (kind === "project") return base * 1.0;
@@ -146,15 +162,15 @@ function linkStrength(kind: AccTopologyLinkKind): number {
 }
 
 function collideRadius(node: LayoutNode): number {
-  // Personal-space bubble. Doubles from min→max of separation slider.
+  // Personal-space bubble. Gamma 1.4 → 0.25× tight at low end, 3.0× at high end.
   const base = node.hidden ? 0.025 : 0.040;
-  return base * (0.5 + separation01() * 1.5);
+  return base * (0.25 + Math.pow(separation01(), SEP_COLLIDE_GAMMA) * 2.75);
 }
 
 function chargeStrength(node: LayoutNode): number {
-  // D3-equivalent repulsion. Separation slider = 0 → -0.015, = 1 → -0.085.
+  // Repulsion magnitude. Gamma 1.3 → 0.005 at slider 0, 0.20 at slider 100.
   // Hidden hub nodes repel half as hard so they don't blow visible nodes outward.
-  const mag = -(0.015 + separation01() * 0.070);
+  const mag = -(0.005 + Math.pow(separation01(), SEP_CHARGE_GAMMA) * 0.195);
   return node.hidden ? mag * 0.5 : mag;
 }
 
@@ -377,6 +393,10 @@ function stopTimer(): void {
 function step(): void {
   if (paused || !simulation || activeNodes.length === 0) return;
 
+  // Ease cluster strength toward the slider target before the simulation tick so
+  // forces sample a smoothly-changing value. ~400ms full transition at 60fps.
+  clusterStrengthCurrent += (clusterStrengthTarget - clusterStrengthCurrent) * CLUSTER_EASE_RATE;
+
   // Single tick per frame — d3-component example pace; smoother than batch ticking.
   simulation.tick(1);
 
@@ -413,7 +433,11 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
 
   if (message.type === "controls") {
     controls = message.controls;
-    rebuildSimulation(0.30);
+    // Update cluster ease target — current eases toward this each tick.
+    clusterStrengthTarget = clamp01(message.controls.clusterStrength);
+    // Lower alpha keeps simulation warm without a hard re-heat — preserves
+    // smoothness so the eased cluster strength can morph the layout gradually.
+    rebuildSimulation(0.10);
     return;
   }
 
@@ -483,6 +507,10 @@ workerSelf.onmessage = (event: MessageEvent<WorkerRequest>) => {
     paused = message.paused;
     draggedIndex = -1;
     initialized = true;
+    // Seed cluster easing state from the initial control value — current jumps to target
+    // on first init so we don't visibly ramp up from 0 on page load.
+    clusterStrengthTarget = clamp01(message.controls.clusterStrength);
+    clusterStrengthCurrent = clusterStrengthTarget;
     rebuildSimulation(0.36);
     return;
   }
