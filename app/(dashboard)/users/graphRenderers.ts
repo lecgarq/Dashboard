@@ -1,6 +1,12 @@
 "use client";
 
-import { buildNodeColorBuffer, buildNodeSizeBuffer, buildLinkBuffer, buildLinkColorBuffer } from "./cosmosUtils";
+import {
+  buildNodeColorBuffer,
+  buildNodeHighlightColorBuffer,
+  buildNodeSizeBuffer,
+  buildLinkBuffer,
+  buildLinkColorBuffer,
+} from "./cosmosUtils";
 
 const DIMMED_USER_COLOR = "#9CA3AF";
 
@@ -33,6 +39,12 @@ export interface GraphRenderFrame {
   selectedNodeId: string | null;
   selectedNodeIndex: number;
   highlightSet: ReadonlySet<number>;
+  /**
+   * Indices of nodes that share the selected node's user identity (e.g. same email).
+   * Both renderers paint these with the selected node's color so duplicate-user
+   * instances are visually linked across projects/roles.
+   */
+  sameUserHighlightSet: ReadonlySet<number>;
   filterActive: boolean;
   isInteracting: boolean;
   view: GraphRenderView;
@@ -157,8 +169,10 @@ export class CanvasGraphRenderer implements GraphRenderer {
     }
 
     const hasSelection = frame.selectedNodeIndex >= 0;
+    const selectedColor = hasSelection ? frame.nodes[frame.selectedNodeIndex].color : null;
     const dimBatches = new Map<string, [number, number][]>();
     const brightBatches = new Map<string, [number, number][]>();
+    const sameUserCoords: [number, number][] = [];
     const userIndices = getUserIndices(frame.nodes, frame.userIndices);
 
     for (let offset = 0; offset < userIndices.length; offset++) {
@@ -168,6 +182,13 @@ export class CanvasGraphRenderer implements GraphRenderer {
       const ny = frame.positions[index * 2 + 1];
       if (nx < bounds.minWX || nx > bounds.maxWX || ny < bounds.minWY || ny > bounds.maxWY) continue;
       if (node.id === frame.selectedNodeId) continue;
+
+      // Same-user instances paint with the selected node's color, separately so they
+      // stay bright on top of the dim layer.
+      if (frame.sameUserHighlightSet.has(index)) {
+        sameUserCoords.push([nx, ny]);
+        continue;
+      }
 
       const target = hasSelection && !frame.highlightSet.has(index) ? dimBatches : brightBatches;
       const list = target.get(node.color) ?? [];
@@ -194,6 +215,14 @@ export class CanvasGraphRenderer implements GraphRenderer {
     for (const [color, coords] of brightBatches) {
       const sprite = this.getSprite(color);
       for (const [nx, ny] of coords) {
+        ctx.drawImage(sprite, nx - userRadius, ny - userRadius, userDiameter, userDiameter);
+      }
+    }
+
+    // Paint same-user peers last so they stay on top, all in the selected node's color.
+    if (hasSelection && selectedColor && sameUserCoords.length > 0) {
+      const sprite = this.getSprite(selectedColor);
+      for (const [nx, ny] of sameUserCoords) {
         ctx.drawImage(sprite, nx - userRadius, ny - userRadius, userDiameter, userDiameter);
       }
     }
@@ -251,6 +280,11 @@ export class CosmosGraphRenderer implements GraphRenderer {
   private nodeConnections: Float32Array | null = null;
   private lastLinkUploadAt = 0;
   private gpuRendererString: string | null = null;
+  // Cached base color buffer — rebuilt on node-count change, reused while only
+  // selection state changes so setPointColors during clicks does not re-hex-parse.
+  private baseColorBuffer: Float32Array | null = null;
+  private lastSameUserSet: ReadonlySet<number> | null = null;
+  private lastSelectedIndex = -1;
   onNodeSelectCallback: ((index: number | null) => void) | null = null;
 
   private constructor(graph: unknown) {
@@ -406,11 +440,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
         }
       }
       this.nodeConnections = connections;
-      this.graph.setPointColors(buildNodeColorBuffer(frame.nodes));
+      // Cache the base (per-node) color buffer once; selection-state highlights are
+      // applied as overlays without re-hex-parsing — see same-user highlight below.
+      this.baseColorBuffer = buildNodeColorBuffer(frame.nodes);
+      this.graph.setPointColors(this.baseColorBuffer);
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(buildNodeSizeBuffer(nodeCount, this.nodeConnections));
       }
       this.lastNodeCount = nodeCount;
+      // Force highlight recomputation against fresh base buffer.
+      this.lastSameUserSet = null;
+      this.lastSelectedIndex = -1;
       needsRender = true;
     }
 
@@ -442,6 +482,30 @@ export class CosmosGraphRenderer implements GraphRenderer {
       needsRender = true;
     }
 
+    // Same-user highlight: when selection or same-user set changes, rebuild the
+    // per-node color buffer from the cached baseColorBuffer and re-upload. When
+    // there is no selection, restore base colors.
+    const selectionChanged = frame.selectedNodeIndex !== this.lastSelectedIndex;
+    const sameUserSetChanged = frame.sameUserHighlightSet !== this.lastSameUserSet;
+    if ((selectionChanged || sameUserSetChanged) && this.baseColorBuffer && nodeCount > 0) {
+      if (frame.selectedNodeIndex < 0 || frame.sameUserHighlightSet.size === 0) {
+        // Restore base colors — pass a copy so Cosmos retains a stable buffer.
+        this.graph.setPointColors(new Float32Array(this.baseColorBuffer));
+      } else {
+        const selectedColor = frame.nodes[frame.selectedNodeIndex]?.color ?? null;
+        const buf = buildNodeHighlightColorBuffer(
+          frame.nodes,
+          this.baseColorBuffer,
+          frame.sameUserHighlightSet,
+          selectedColor,
+        );
+        this.graph.setPointColors(buf);
+      }
+      this.lastSelectedIndex = frame.selectedNodeIndex;
+      this.lastSameUserSet = frame.sameUserHighlightSet;
+      needsRender = true;
+    }
+
     // Cosmos has enableSimulation:false, so it does NOT auto-paint per frame.
     // Every state change must be paired with an explicit render() to actually paint pixels.
     if (needsRender) {
@@ -470,5 +534,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.lastLinkCount = 0;
     this.lastLinkUploadAt = 0;
     this.gpuRendererString = null;
+    this.baseColorBuffer = null;
+    this.lastSameUserSet = null;
+    this.lastSelectedIndex = -1;
   }
 }

@@ -57,6 +57,35 @@ export function buildNodeColorBuffer(nodes: readonly GraphRenderNode[]): Float32
 }
 
 /**
+ * Build a per-node RGBA buffer with same-username peers overwritten by the selected
+ * node's color. Returns a copy of `baseColors` when `sameUserSet` is empty or
+ * `selectedColor` is null — so callers can use the result unconditionally.
+ *
+ * Pure for unit testing — no DOM access, no module-level state.
+ */
+export function buildNodeHighlightColorBuffer(
+  nodes: readonly GraphRenderNode[],
+  baseColors: Float32Array,
+  sameUserSet: ReadonlySet<number>,
+  selectedColor: string | null,
+): Float32Array {
+  if (!selectedColor || sameUserSet.size === 0) {
+    return new Float32Array(baseColors);
+  }
+  const out = new Float32Array(baseColors);
+  const [r, g, b] = hexToRGBNorm(selectedColor);
+  for (const idx of sameUserSet) {
+    if (idx < 0 || idx >= nodes.length) continue;
+    const off = idx * 4;
+    out[off + 0] = r;
+    out[off + 1] = g;
+    out[off + 2] = b;
+    out[off + 3] = 1.0;
+  }
+  return out;
+}
+
+/**
  * Build a Float32Array of per-node sizes for Cosmos setPointSizes().
  * Scales node size by connection count (degree): base size 4, max 12.
  * connections parameter: sparse array indexed by node index → connection count.

@@ -150,10 +150,35 @@ function getViewportSize(container: HTMLDivElement | null): { width: number; hei
   };
 }
 
-function buildHighlightSet(selectedIndex: number): Set<number> {
-  const highlightSet = new Set<number>();
-  if (selectedIndex >= 0) highlightSet.add(selectedIndex);
-  return highlightSet;
+/**
+ * Build highlight sets relative to a selected node index.
+ *  - adjacent: indices that should remain "bright" (the selected node itself).
+ *  - sameUser: indices of OTHER nodes representing the same person (matched on email,
+ *    falling back to id when email is unavailable). Used by both renderers to repaint
+ *    duplicate-user instances with the selected node's color.
+ */
+function buildHighlightSet(
+  selectedIndex: number,
+  nodes: readonly SimNode[],
+): { adjacent: Set<number>; sameUser: Set<number> } {
+  const adjacent = new Set<number>();
+  const sameUser = new Set<number>();
+  if (selectedIndex < 0 || selectedIndex >= nodes.length) {
+    return { adjacent, sameUser };
+  }
+  adjacent.add(selectedIndex);
+  const selected = nodes[selectedIndex];
+  // Match on email when available (the canonical "same person" key in ACC data).
+  // Fall back to id-equality for nodes that lack an email field.
+  const key = selected.email || selected.id;
+  if (!key) return { adjacent, sameUser };
+  for (let i = 0; i < nodes.length; i++) {
+    if (i === selectedIndex) continue;
+    const candidate = nodes[i];
+    const candidateKey = candidate.email || candidate.id;
+    if (candidateKey === key) sameUser.add(i);
+  }
+  return { adjacent, sameUser };
 }
 
 function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
@@ -851,7 +876,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const selectedIndex = mappedSelectedIndex >= 0 && visibleIndexSetRef.current.has(mappedSelectedIndex)
         ? mappedSelectedIndex
         : -1;
-      const highlightSet = buildHighlightSet(selectedIndex);
+      const { adjacent: highlightSet, sameUser: sameUserHighlightSet } = buildHighlightSet(
+        selectedIndex,
+        nodes,
+      );
       const isInteracting =
         isDragging.current ||
         Math.abs(tv.x - v.x) > 0.0005 ||
@@ -867,6 +895,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         selectedNodeId: selectedIndex >= 0 ? selectedId : null,
         selectedNodeIndex: selectedIndex,
         highlightSet,
+        sameUserHighlightSet,
         filterActive: hasActiveFiltersRef.current,
         isInteracting,
         view: v,
