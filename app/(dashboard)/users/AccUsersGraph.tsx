@@ -80,6 +80,7 @@ type OrganicWorkerMessage =
       positions: Float32Array;
       averageVelocity: number;
       linkCount: number;
+      tickDurationMs?: number;
       diagnostics?: { activeNodeCount: number; hiddenNodeCount: number };
     }
   | { type: "links"; session: number; sources: Int32Array; targets: Int32Array };
@@ -339,6 +340,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const [visibleCount, setVisibleCount] = useState(0);
   const [showControls, setShowControls] = useState(false);
 
+  // Perf HUD — visible only in dev or when ?perf=1 is in the URL. Diagnostic-only.
+  const [perfHudEnabled] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    if (IS_DEV) return true;
+    try { return new URLSearchParams(window.location.search).has("perf"); }
+    catch { return false; }
+  });
+  const [perfFps, setPerfFps] = useState(0);
+  const [perfTickMs, setPerfTickMs] = useState(0);
+  const [perfLinkCount, setPerfLinkCount] = useState(0);
+  const [perfGpu, setPerfGpu] = useState<string | null>(null);
+  const perfFrameTimesRef = useRef<number[]>([]);
+  const perfLastTickMsRef = useRef(0);
+
   const graphQuery = trpc.users.getPrecomputedGraph.useQuery(undefined, {
     enabled: users.length > 0,
     staleTime: Infinity,
@@ -581,6 +596,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       cosmosRendererRef.current = null;
       activeRendererRef.current = canvasRendererRef.current;
       setRenderBackend("canvas2d");
+      setPerfGpu(null);
       setIsCosmosLoading(false);
       // Unpause d3-force worker when falling back
       organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
@@ -659,6 +675,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
         setIsCosmosLoading(false);
         setRendererFailureReason(null);
+        // Surface GPU vendor/renderer to the perf HUD. Captured during graph.ready
+        // so the patched powerPreference path has already executed.
+        setPerfGpu(renderer.getGpuRendererString());
         markGraphDirty();
       });
     } else {
@@ -690,6 +709,28 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Perf HUD FPS sampler — 1-second sliding window via rAF. Throttled state writes.
+  useEffect(() => {
+    if (!perfHudEnabled) return;
+    let id = 0;
+    let lastFlushAt = 0;
+    const tick = (t: number) => {
+      const arr = perfFrameTimesRef.current;
+      arr.push(t);
+      // Drop frames older than 1 second
+      while (arr.length > 0 && t - arr[0] > 1000) arr.shift();
+      if (t - lastFlushAt > 250) {
+        lastFlushAt = t;
+        setPerfFps(arr.length);
+        setPerfTickMs(perfLastTickMsRef.current);
+        setPerfLinkCount(linksRef.current.sources.length);
+      }
+      id = requestAnimationFrame(tick);
+    };
+    id = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(id);
+  }, [perfHudEnabled]);
+
   useEffect(() => {
     if (rendererFailureReason) {
       console.debug(`[AccUsersGraph] renderer backend=${renderBackend}; failure=${rendererFailureReason}`);
@@ -713,6 +754,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (message.type !== "tick") return;
       posRef.current = message.positions;
       const now = performance.now();
+      // Capture latest tick duration for the perf HUD (every tick, cheap).
+      if (typeof message.tickDurationMs === "number") {
+        perfLastTickMsRef.current = message.tickDurationMs;
+      }
       if (now - lastMetricUpdateAtRef.current > 250) {
         lastMetricUpdateAtRef.current = now;
         setMotionMetric({
@@ -1161,6 +1206,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
         style={{ background: GRAPH_BACKGROUND }}
       >
+        {perfHudEnabled && (
+          <div
+            className="absolute top-2 right-2 z-50 pointer-events-none rounded-md bg-black/55 text-white px-2 py-1.5 leading-tight font-mono"
+            style={{ fontSize: 11 }}
+            data-testid="acc-graph-perf-hud"
+          >
+            <div style={{ color: perfFps >= 58 ? "#7ee787" : perfFps >= 50 ? "#f1e05a" : "#f85149" }}>
+              FPS: {perfFps}
+            </div>
+            <div>Tick: {perfTickMs.toFixed(1)}ms / {perfLinkCount} springs</div>
+            <div>GPU: {perfGpu ?? "n/a"}</div>
+          </div>
+        )}
+
         {positionCacheCorrupt && (
           <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-2.5">
             <span className="text-xs text-amber-800 font-medium">

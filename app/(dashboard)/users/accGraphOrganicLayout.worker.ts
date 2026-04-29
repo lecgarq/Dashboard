@@ -103,6 +103,7 @@ let renderLinks: ProjectedLink[] = [];
 let timer: ReturnType<typeof setInterval> | null = null;
 let lastPostAt = 0;
 let lastAverageVelocity = 0;
+let lastTickDurationMs = 0;
 let draggedIndex = -1;
 let initialized = false;
 
@@ -269,6 +270,9 @@ function postTickSnapshot(force = false): void {
   if (!force && now - lastPostAt < POST_INTERVAL_MS) return;
   lastPostAt = now;
 
+  // TD-001 (TECHNICAL_DEBT.md): allocating a fresh Float32Array per post is HUD-monitored
+  // — at 500 nodes × 2 floats × 4 bytes × 60Hz this is ~240 KB/s, well within tolerance.
+  // Revisit (SharedArrayBuffer / double-buffering) only when node count exceeds ~5000.
   const snapshot = new Float32Array(positions);
   workerSelf.postMessage(
     {
@@ -277,6 +281,7 @@ function postTickSnapshot(force = false): void {
       positions: snapshot,
       averageVelocity: lastAverageVelocity,
       linkCount: renderLinks.length,
+      tickDurationMs: lastTickDurationMs,
       diagnostics: {
         activeNodeCount: activeNodes.length,
         hiddenNodeCount: activeNodes.filter((node) => node.hidden).length,
@@ -393,6 +398,9 @@ function stopTimer(): void {
 function step(): void {
   if (paused || !simulation || activeNodes.length === 0) return;
 
+  // Tick-budget instrumentation — measured per-step, surfaced via postMessage.tick.
+  const t0 = performance.now();
+
   // Ease cluster strength toward the slider target before the simulation tick so
   // forces sample a smoothly-changing value. ~400ms full transition at 60fps.
   clusterStrengthCurrent += (clusterStrengthTarget - clusterStrengthCurrent) * CLUSTER_EASE_RATE;
@@ -412,6 +420,8 @@ function step(): void {
     visibleCount++;
   }
   lastAverageVelocity = visibleCount ? totalVelocity / visibleCount : 0;
+
+  lastTickDurationMs = performance.now() - t0;
 
   const active = simulation.alpha() > simulation.alphaMin() || lastAverageVelocity > SETTLE_VELOCITY || draggedIndex >= 0;
   postTickSnapshot(!active);

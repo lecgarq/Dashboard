@@ -362,6 +362,10 @@ export class CosmosGraphRenderer implements GraphRenderer {
       renderer.graph = graph;
 
       try {
+        // TD-002 hardening: Cosmos's luma.gl device may be created lazily inside
+        // `await graph.ready` AND/OR on the first `graph.render()`. Keep the
+        // powerPreference patch active across the full init+ready+first-render path
+        // so any WebGL2 context creation hits our patched getContext.
         await graph.ready;
         // Remove zoom-out floor — Cosmos hardcodes [1e-3, ∞]; override to near-zero for infinite zoom out
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -371,6 +375,21 @@ export class CosmosGraphRenderer implements GraphRenderer {
         // Restore original getContext so the high-performance hint only applies to Cosmos canvases.
         HTMLCanvasElement.prototype.getContext = originalGetContext;
       }
+
+      // Capture GPU vendor/renderer strings via WEBGL_debug_renderer_info for the perf HUD.
+      try {
+        const canvasEl = container.querySelector("canvas");
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const gl = (canvasEl?.getContext("webgl2") ?? canvasEl?.getContext("webgl")) as any;
+        if (gl) {
+          const ext = gl.getExtension("WEBGL_debug_renderer_info");
+          if (ext) {
+            const vendor = String(gl.getParameter(ext.UNMASKED_VENDOR_WEBGL) ?? "");
+            const rendererStr = String(gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) ?? "");
+            renderer.gpuRendererString = `${vendor} / ${rendererStr}`.trim();
+          }
+        }
+      } catch { /* HUD-only; failure to read is non-fatal */ }
 
       // Forward context loss events to caller so it can fall back to Canvas 2D
       void onContextLost; // parameter reserved for future use
@@ -517,6 +536,11 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
 
     return { needsContinuousRedraw: false };
+  }
+
+  /** GPU renderer string captured via WEBGL_debug_renderer_info (or null on failure). */
+  getGpuRendererString(): string | null {
+    return this.gpuRendererString;
   }
 
   // Simulation is disabled — physics are applied via the d3-force worker, not here.
