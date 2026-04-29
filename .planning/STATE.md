@@ -7,8 +7,8 @@ last_updated: "2026-04-28T18:09:21.578Z"
 progress:
   total_phases: 1
   completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
+  total_plans: 5
+  completed_plans: 3
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 3 of 4 in current phase (AT CHECKPOINT)
-Status: In Progress — Phase 2 Plan 3 Tasks 1-4 complete, awaiting human-verify checkpoint (Task 5)
-Last activity: 2026-04-29 — 02-03 Tasks 1-4 done: edge-render-during-drag fix, aggressive separation curve + animated cluster ease, same-username highlight, perf HUD + tick budget + powerPreference patch hardening
+Plan: 02-03 COMPLETE (deliverables per spec) — next plan 02-05 (Cosmos GPU physics swap, gap-closure for TD-005)
+Status: In Progress — 02-03 closed with known capacity gap (TD-005). Plan 02-04 (lasso) on hold; 02-05 takes priority.
+Last activity: 2026-04-29 — 02-03 SUMMARY written, TD-002 closed (commit 68aa1c7), TD-005 logged (25,602-node hub → 287ms d3-force tick), ROADMAP reflects plan 02-05 ahead of 02-04
 
-Progress: [████▌░░░░░] 45%
+Progress: [█████▌░░░░] 55%
 
 ## Performance Metrics
 
@@ -72,6 +72,10 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl P01]: @cosmos.gl/graph@3.0.0-beta.8 (beta) pinned exactly — plan specified this over v2.6.1 stable
 - [Phase 02-cosmos-gl P01]: selectNode() uses v3 selectPointByIndex/unselectPoints API — highlightedPointIndices does not exist in v3
 - [Phase 02-cosmos-gl P01]: GraphRenderNode.kind expanded to user|project|role|module for Phase 2 multi-type node support
+- [Phase 02-cosmos-gl P03]: Closed TD-002 by extending powerPreference patch lifetime past graph.ready and first render (commit 68aa1c7)
+- [Phase 02-cosmos-gl P03]: Logged TD-005 — d3-force CPU physics caps ~2k nodes; production ACC hub has 25,602 nodes (287 ms tick); resolution path = plan 02-05 (Cosmos native GPU physics swap)
+- [Phase 02-cosmos-gl P03]: Same-username highlight uses GraphRenderNode.id equality — revisit if Phase 2.5 introduces separate identity vs instance ids
+- [Phase 02-cosmos-gl P03]: 02-03 deliverables verified per 500-node spec; 25k-node capacity gap is NOT a 02-03 regression — gap stems from physics engine choice in 02-02
 
 ### Pending Todos
 
@@ -79,11 +83,12 @@ None yet.
 
 ### Blockers/Concerns
 
+- **TD-005 (BLOCKING for Phase 2 sign-off):** d3-force CPU physics caps at ~2k nodes; production ACC hub has 25,602 nodes — produces 287 ms worker tick, slider/picker/filter feel frozen at production scale. Resolution = plan 02-05 (Cosmos native GPU physics swap). Plan 02-04 (lasso) on hold until 02-05 ships.
 - Phase 2 risk: Confirm `@cosmos.gl/graph` v2.6.4 package version and React 19 / Next.js 16 compatibility before installing
 - Phase 1 risk (HIGH): Worker production build failure (Pitfall 5) — must verify `npm run build && npm start` in CI before merging Phase 1 work
 
 ## Session Continuity
 
 Last session: 2026-04-29
-Stopped at: 02-03 Tasks 1-4 complete — at checkpoint:human-verify (Task 5); awaiting browser verification
+Stopped at: 02-03 closed — SUMMARY written, TD-002 closed, TD-005 logged. Next action: plan 02-05 (Cosmos GPU physics swap) — gap-closure for 25k-node regression.
 Resume file: None
