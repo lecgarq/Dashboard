@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 02-03 COMPLETE (deliverables per spec) — next plan 02-05 (Cosmos GPU physics swap, gap-closure for TD-005)
-Status: In Progress — 02-03 closed with known capacity gap (TD-005). Plan 02-04 (lasso) on hold; 02-05 takes priority.
-Last activity: 2026-04-29 — 02-03 SUMMARY written, TD-002 closed (commit 68aa1c7), TD-005 logged (25,602-node hub → 287ms d3-force tick), ROADMAP reflects plan 02-05 ahead of 02-04
+Plan: 02-05 COMPLETE — TD-005 closed (Cosmos GPU physics swap shipped, 25k-node hub interactive). Next plan: 02-04 (lasso multi-select), now unblocked.
+Status: In Progress — Phase 2 at 4/5 plans complete. 02-04 ready to start; TD-006 (slider feel refinement) deferred per user, non-blocking.
+Last activity: 2026-04-29 — 02-05 SUMMARY written, TD-005 closed (commit 2978186), TD-006 logged (deferred slider tuning), three Cosmos API traps documented as institutional knowledge.
 
-Progress: [█████▌░░░░] 55%
+Progress: [███████░░░] 70%
 
 ## Performance Metrics
 
@@ -76,6 +76,9 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl P03]: Logged TD-005 — d3-force CPU physics caps ~2k nodes; production ACC hub has 25,602 nodes (287 ms tick); resolution path = plan 02-05 (Cosmos native GPU physics swap)
 - [Phase 02-cosmos-gl P03]: Same-username highlight uses GraphRenderNode.id equality — revisit if Phase 2.5 introduces separate identity vs instance ids
 - [Phase 02-cosmos-gl P03]: 02-03 deliverables verified per 500-node spec; 25k-node capacity gap is NOT a 02-03 regression — gap stems from physics engine choice in 02-02
+- [Phase 02-cosmos-gl P05]: TD-005 closed by adopting Cosmos native GPU force layout; d3-force worker retained as Canvas2D fallback (engine swap, not loop optimization)
+- [Phase 02-cosmos-gl P05]: Cosmos.gl API traps documented (start vs render, setConfig vs setConfigPartial, sim run-flag re-arm) — see 02-05-SUMMARY.md "Three Cosmos.gl API Traps"
+- [Phase 02-cosmos-gl P05]: Slider feel refinement (TD-006) deferred per user — approved 02-05 with explicit note that further tuning is wanted but non-blocking
 
 ### Pending Todos
 
@@ -83,12 +86,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- **TD-005 (BLOCKING for Phase 2 sign-off):** d3-force CPU physics caps at ~2k nodes; production ACC hub has 25,602 nodes — produces 287 ms worker tick, slider/picker/filter feel frozen at production scale. Resolution = plan 02-05 (Cosmos native GPU physics swap). Plan 02-04 (lasso) on hold until 02-05 ships.
-- Phase 2 risk: Confirm `@cosmos.gl/graph` v2.6.4 package version and React 19 / Next.js 16 compatibility before installing
+- **TD-005:** CLOSED 2026-04-29 (commit 2978186) — Cosmos GPU physics swap ships; 25,559-node hub is interactive (sliders, drag, pick, same-user highlight, perf HUD all behave).
+- **TD-006 (non-blocking):** Cosmos slider feel refinement — separation range and organic-vs-cluster transition need additional tuning per user feedback during 02-05 verification. User explicitly deferred ("approved it needs refinement but we can see it later").
 - Phase 1 risk (HIGH): Worker production build failure (Pitfall 5) — must verify `npm run build && npm start` in CI before merging Phase 1 work
 
 ## Session Continuity
 
 Last session: 2026-04-29
-Stopped at: 02-03 closed — SUMMARY written, TD-002 closed, TD-005 logged. Next action: plan 02-05 (Cosmos GPU physics swap) — gap-closure for 25k-node regression.
+Stopped at: 02-05 closed — SUMMARY written, TD-005 closed, TD-006 logged. Three Cosmos API traps documented. Next action: plan 02-04 (lasso multi-select), now unblocked.
 Resume file: None
