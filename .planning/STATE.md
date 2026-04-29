@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 02-05 COMPLETE — TD-005 closed (Cosmos GPU physics swap shipped, 25k-node hub interactive). Next plan: 02-04 (lasso multi-select), now unblocked.
-Status: In Progress — Phase 2 at 4/5 plans complete. 02-04 ready to start; TD-006 (slider feel refinement) deferred per user, non-blocking.
-Last activity: 2026-04-29 — 02-05 SUMMARY written, TD-005 closed (commit 2978186), TD-006 logged (deferred slider tuning), three Cosmos API traps documented as institutional knowledge.
+Plan: 02-04 IN PROGRESS — Tasks 1-3 committed (ea705da, b5f52b2, 830ad08). At Task 4 (checkpoint:human-verify). Awaiting user sign-off on lasso end-to-end (6 manual checks).
+Status: In Progress — Phase 2 at 4/5 plans complete; 02-04 paused at human-verify gate.
+Last activity: 2026-04-29 — 02-04 Tasks 1-3 done: pointInPolygon + 7 unit tests, lasso toolbar/SVG overlay, polygon-close→selection→side-panel + highlightSet override (renderer-agnostic). tsc clean, 23/23 tests pass.
 
 Progress: [███████░░░] 70%
 
@@ -93,5 +93,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-29
-Stopped at: 02-05 closed — SUMMARY written, TD-005 closed, TD-006 logged. Three Cosmos API traps documented. Next action: plan 02-04 (lasso multi-select), now unblocked.
-Resume file: None
+Stopped at: 02-04 Task 4 checkpoint:human-verify — Tasks 1-3 committed, awaiting user sign-off after running 6 manual lasso checks against `npm run dev` on /users with a 500+ node hub.
+Resume file: .planning/phases/02-cosmos-gl-renderer/02-04-PLAN.md
