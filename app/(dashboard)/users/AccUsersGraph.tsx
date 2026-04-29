@@ -503,7 +503,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const idx = draggedNodeIdxRef.current;
       isDraggingNodeRef.current = false;
       draggedNodeIdxRef.current = -1;
-      if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+      if (idx >= 0 && !usePhysicsRef.current) {
+        organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+      }
     }
   }, []);
 
@@ -1024,6 +1026,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const ly = event.clientY - rect.top;
 
     if (isDraggingNodeRef.current && draggedNodeIdxRef.current >= 0) {
+      // GPU-physics path: Cosmos owns drag natively via onDragStart/End. The
+      // canvas2d handler is reachable only when the canvas2d backend is active,
+      // but guard explicitly so we never post to a paused worker.
+      if (usePhysicsRef.current) {
+        return;
+      }
       const { width, height } = getViewportSize(containerRef.current);
       const v = view.current;
       const wx = v.x + (lx - width / 2) / v.scale;
@@ -1065,7 +1073,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       isDraggingNodeRef.current = false;
       draggedNodeIdxRef.current = -1;
       setIsDraggingState(false);
-      if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+      // Skip worker release in GPU-physics path — Cosmos handles drag end via onDragEnd.
+      if (idx >= 0 && !usePhysicsRef.current) {
+        organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+      }
       rebuildGrid();
       markGraphDirty();
       return;
@@ -1479,7 +1490,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               const idx = draggedNodeIdxRef.current;
               isDraggingNodeRef.current = false;
               draggedNodeIdxRef.current = -1;
-              if (idx >= 0) organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+              if (idx >= 0 && !usePhysicsRef.current) {
+                organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+              }
             }
             isDragging.current = false;
             setIsDraggingState(false);
