@@ -401,11 +401,15 @@ export class CosmosGraphRenderer implements GraphRenderer {
         baseConfig.enableDrag = true;
         baseConfig.onDragStart = () => {
           // Re-heat so neighbors visibly react during the drag.
-          try { renderer.graph?.start?.(0.3); } catch { /* ignore */ }
+          // Use render(alpha) — start() only flips simulation state; render() also
+          // (re)spins the rAF frame loop. See cosmos.gl v3 API: start() "only controls
+          // the simulation state, not rendering"; render(alpha) sets alpha AND calls
+          // startFrames() (dist/index.js ~line 6038-6052).
+          try { renderer.graph?.render?.(0.3); } catch { /* ignore */ }
         };
         baseConfig.onDragEnd = () => {
           // Settle gently after release.
-          try { renderer.graph?.start?.(0.05); } catch { /* ignore */ }
+          try { renderer.graph?.render?.(0.05); } catch { /* ignore */ }
         };
       }
 
@@ -573,10 +577,15 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // GPU-physics path: links arrived after the simulation already started
       // (or with zero springs the alpha already collapsed). Re-warm so the
       // force-directed layout actually has springs to act on this frame.
+      // CRITICAL: use render(1.0), NOT start(1.0). cosmos.gl v3's start() only
+      // sets store.isSimulationRunning + store.alpha — it does NOT call
+      // startFrames(). The rAF loop dies after the initial empty-data render()
+      // (alpha=0 → end() → stopFrames). Only render(alpha) re-spins the loop.
+      // Without this, the simulation has hot alpha but no frames execute → grey canvas.
       if (this.usePhysics && linkCount > 0) {
         // eslint-disable-next-line no-console
-        try { console.log("[02-05-DEBUG] draw: graph.start(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
-        try { this.graph.start?.(1.0); } catch { /* ignore */ }
+        try { console.log("[02-05-DEBUG] draw: graph.render(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
+        try { this.graph.render?.(1.0); } catch { /* ignore */ }
       }
     } else if (
       // Edge-render-during-drag fix: Cosmos retains stale link spatial structure
@@ -618,9 +627,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
       needsRender = true;
     }
 
-    // Cosmos auto-paints per simulation tick when enableSimulation:true.
-    // When simulation is off, every state change must pair with an explicit render().
-    if (needsRender && !this.usePhysics) {
+    // Every data change must pair with render() — cosmos.gl v3's render() is
+    // what calls startFrames()/runs the rAF loop. start() alone does not.
+    // In physics mode we still want the loop running so the simulation can tick
+    // (this also covers the case where points/colors/sizes upload but no link
+    // arrival happens to trigger the render(1.0) re-warm above).
+    if (needsRender) {
       this.graph.render();
     }
 
@@ -668,7 +680,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
         this.graph.setConfigPartial(partial);
       }
       // Re-warm so neighbors visibly react to the slider scrub.
-      this.graph.start?.(0.3);
+      // Use render(alpha) — start(alpha) does not (re)start the rAF frame loop.
+      this.graph.render?.(0.3);
       // eslint-disable-next-line no-console
       try { console.log("[02-05-DEBUG] setSimulationConfig: applied", partial); } catch { /* ignore */ }
     } catch (err) {
