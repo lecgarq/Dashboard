@@ -2,28 +2,32 @@
 status: investigating
 trigger: "Re-test of 02-05 after commit 900f821 still shows Sim α: 0.000 / 25559 nodes / grey canvas / 0 springs at 25k-node ACC hub"
 created: 2026-04-29T00:00:00Z
-updated: 2026-04-29T13:30:00Z
+updated: 2026-04-29T16:30:00Z
 ---
 
 ## Current Focus
 
-hypothesis: SECOND ROOT CAUSE FOUND (drag/pick regression after a8cd0db).
-  CosmosGraphRenderer.setSimulationConfig() calls graph.setConfig(partial). Per
-  cosmos.gl v3 source (dist/index.js line 5780-5784), setConfig() RESETS the
-  config to defaults (ze(this.config)) before applying only the provided keys.
-  This wipes enableDrag, onDragStart/End, onPointClick, onBackgroundClick,
-  onPointMouseOver/Out — every callback we wired in baseConfig.
-  AccUsersGraph calls setSimulationConfig on init (line 689) AND on every
-  slider change. So as soon as Cosmos finishes initializing, our drag+pick
-  config is wiped. Render-loop fix (a8cd0db) made the sim alive enough to
-  notice the dead handlers.
-test: Switch setSimulationConfig to use setConfigPartial (which is a partial
-  merge per dist/index.js line 5793-5797). Verify that drag and click work.
-expecting: After fix, dragging a node yanks it (Cosmos D3 drag fires),
-  clicking a node fires onPointClick → onNodeSelectCallback → side panel
-  opens, clicking background fires onBackgroundClick → side panel closes.
-next_action: Apply targeted edit to setSimulationConfig in graphRenderers.ts,
-  run tsc, commit atomically, return checkpoint to user.
+hypothesis: THIRD ROOT CAUSE FOUND (slider + deselect regression after a6afd2e).
+  Cosmos's render(alpha) re-warms `store.alpha` and re-spins the rAF loop, but
+  it does NOT set `store.isSimulationRunning = true`. Only start(alpha) flips
+  that flag (dist/index.js:6398). After the initial 25k-node sim cools to
+  alpha < ALPHA_MIN, Cosmos's frame() calls end() (line 6573-6611) which sets
+  `isSimulationRunning = false`. From then on, runSimulationStep() (line 6553)
+  early-exits whenever isSimulationRunning is false → forces are not
+  recomputed. Calling render(0.3) after a slider change pumps the loop and
+  uploads new config, but `runSimulationStep` skips the force pass → no
+  visible motion. Same story for onDragEnd: render(0.05) doesn't reheat the
+  sim, so a dropped node just hangs.
+test: Add graph.start(alpha) BEFORE graph.render(alpha) at every re-warm
+  site (onDragStart, onDragEnd, link-arrival re-warm, setSimulationConfig).
+  start() sets isSimulationRunning=true + store.alpha=alpha; render() pumps
+  the rAF loop. Both are needed.
+expecting: After fix, slider scrub visibly perturbs the graph (alpha=0.3 →
+  forces re-evaluate against new repulsion/linkDistance/cluster); released
+  drags settle smoothly; click-on / click-off both reheat enough to let the
+  same-user highlight refresh and settle without visible drift.
+next_action: Edit graphRenderers.ts: pair start(alpha) with render(alpha) at
+  4 sites. tsc-clean, atomic commit, return human-verify checkpoint.
 
 ## Symptoms
 
@@ -79,23 +83,40 @@ started: Reported as "exactly the same" after re-test post-900f821 — was alrea
   found: setConfig(t) does `ze(this.config)` (Object.assign defaults) then `Y(this.config, t)` (apply provided keys). It RESETS the config and then merges. setConfigPartial(t) does only `Y(this.config, t, !0)` — partial merge that preserves untouched keys.
   implication: graphRenderers.ts:677 calls graph.setConfig(partial) inside setSimulationConfig. AccUsersGraph calls setSimulationConfig on Cosmos init (line 689) AND every slider change (line 494, 967). Each call resets enableDrag → false, onDragStart/End → undefined, onPointClick/onBackgroundClick → undefined, onPointMouseOver/Out → undefined. Drag and pick die immediately after the first slider apply on init. Render-loop fix (a8cd0db) made sim alive — exposed dead handlers.
 
+- timestamp: 2026-04-29T16:30:00Z
+  checked: cosmos.gl v3 start vs render vs runSimulationStep gating (dist/index.js 6033-6053, 6396-6398, 6537-6539, 6551-6562, 6571-6577, 6605-6612).
+  found:
+    1. start(alpha) sets `store.isSimulationRunning = true` and `store.alpha = alpha`. Does NOT touch the rAF loop.
+    2. render(alpha) calls update(alpha) (which sets store.alpha but NOT isSimulationRunning) and startFrames(). Does NOT call start(); does NOT set isSimulationRunning.
+    3. frame() (rAF body, line 6571-6577): when `alpha < K && isSimulationRunning`, calls end().
+    4. end() (line 6609-6611): sets `isSimulationRunning = false, simulationProgress = 1`. The rAF loop continues to schedule, but each tick early-exits the simulation step.
+    5. runSimulationStep(t) (line 6551-6562): with t=false (the default from renderFrame), the entire force pass is gated on `(t || n && !zoomBusy)` where n=isSimulationRunning. With n=false the force computations never run → no motion.
+  implication: After the initial 25k-node sim cools to ALPHA_MIN, end() flips isSimulationRunning to false. From then on, ANY render(alpha) call pumps the rAF loop and updates `store.alpha`, but the per-frame gate keeps forces dormant. Slider changes mutate this.config.simulation* (because setConfigPartial works), but the forces are never re-evaluated. Drag onDragEnd render(0.05) likewise doesn't restart the sim — drag drops have no settle. The fix is to pair start(alpha) + render(alpha) at every re-warm site so the flag is set AND the loop runs.
+
 ## Resolution
 
 root_cause: |
-  TWO root causes (compounding):
+  THREE root causes (compounding):
   (1) Render loop dead — fixed in a8cd0db (start→render swap).
-  (2) Drag/pick handlers wiped by setConfig destructive merge — addressed by
-      switching setSimulationConfig to setConfigPartial. cosmos.gl v3's
-      setConfig(t) resets the entire config object to defaults before applying
-      provided keys, blowing away enableDrag, onPointClick, onBackgroundClick,
-      onDragStart, onDragEnd, onPointMouseOver, onPointMouseOut on every call.
-      setSimulationConfig is invoked on Cosmos init and on every slider change.
+  (2) Drag/pick handlers wiped by setConfig destructive merge — fixed in
+      a6afd2e (setConfigPartial swap).
+  (3) Sim run-flag not re-armed on re-warm — addressed by THIS commit.
+      Cosmos's render(alpha) sets store.alpha and calls startFrames(), but
+      does NOT set store.isSimulationRunning. Once the initial sim cools
+      below ALPHA_MIN, frame() invokes end() which sets isSimulationRunning=false.
+      From then on, runSimulationStep early-exits the force pass — sliders
+      mutate config values that are never read by a force, drag drops never
+      settle, and the canvas appears static even though render(alpha) is
+      pumping the loop. Fix: pair start(alpha) (which DOES set the run flag)
+      with render(alpha) at every re-warm site.
 fix: |
   (1) a8cd0db: render(alpha) replaces start(alpha) at all GPU-physics sites.
-  (2) THIS COMMIT: setSimulationConfig prefers setConfigPartial (true partial
-      merge) over setConfig (destructive). Fallback to setConfig only when
-      setConfigPartial is not exposed (older builds).
-verification: TBD — awaiting human-verify after commit (drag a node, click a node, click background)
+  (2) a6afd2e: setSimulationConfig prefers setConfigPartial (true partial merge).
+  (3) THIS COMMIT: pair graph.start(alpha) + graph.render(alpha) at all four
+      re-warm sites — onDragStart, onDragEnd, link-arrival re-warm in draw(),
+      and setSimulationConfig. start() arms isSimulationRunning; render()
+      pumps the rAF loop. Both are required after a previous end() call.
+verification: TBD — awaiting human-verify after commit (slider scrub visibly perturbs layout; drag drop settles; click-off normalizes)
 files_changed:
-  - app/(dashboard)/users/graphRenderers.ts (a8cd0db: render swap; this commit: setConfigPartial)
+  - app/(dashboard)/users/graphRenderers.ts (a8cd0db: render swap; a6afd2e: setConfigPartial; this commit: start+render pairing)
   - app/(dashboard)/users/AccUsersGraph.tsx (instrumentation only — commit 0914b31)

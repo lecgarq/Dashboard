@@ -401,14 +401,22 @@ export class CosmosGraphRenderer implements GraphRenderer {
         baseConfig.enableDrag = true;
         baseConfig.onDragStart = () => {
           // Re-heat so neighbors visibly react during the drag.
-          // Use render(alpha) — start() only flips simulation state; render() also
-          // (re)spins the rAF frame loop. See cosmos.gl v3 API: start() "only controls
-          // the simulation state, not rendering"; render(alpha) sets alpha AND calls
-          // startFrames() (dist/index.js ~line 6038-6052).
+          // CRITICAL: pair start(alpha) + render(alpha). start() sets
+          // store.isSimulationRunning=true + alpha (dist/index.js:6396-6398);
+          // render() pumps the rAF loop (startFrames). Without start(), once
+          // the sim has previously cooled below ALPHA_MIN, frame() called
+          // end() (line 6609-6611) which set isSimulationRunning=false.
+          // From then on runSimulationStep early-exits the force pass even
+          // though render() spins the loop and bumps alpha. Both calls are
+          // required to re-evaluate forces.
+          try { renderer.graph?.start?.(0.3); } catch { /* ignore */ }
           try { renderer.graph?.render?.(0.3); } catch { /* ignore */ }
         };
         baseConfig.onDragEnd = () => {
-          // Settle gently after release.
+          // Settle gently after release. Same start+render pairing — without
+          // start(), the dropped node would not settle because the sim flag
+          // stays false after the previous cool-down.
+          try { renderer.graph?.start?.(0.05); } catch { /* ignore */ }
           try { renderer.graph?.render?.(0.05); } catch { /* ignore */ }
         };
       }
@@ -584,7 +592,11 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // Without this, the simulation has hot alpha but no frames execute → grey canvas.
       if (this.usePhysics && linkCount > 0) {
         // eslint-disable-next-line no-console
-        try { console.log("[02-05-DEBUG] draw: graph.render(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
+        try { console.log("[02-05-DEBUG] draw: graph.start(1.0)+render(1.0) re-warm with linkCount=", linkCount); } catch { /* ignore */ }
+        // CRITICAL: pair start(alpha) + render(alpha). render() alone won't
+        // resume forces after a previous end() flipped isSimulationRunning
+        // to false. See setSimulationConfig comment for the full rationale.
+        try { this.graph.start?.(1.0); } catch { /* ignore */ }
         try { this.graph.render?.(1.0); } catch { /* ignore */ }
       }
     } else if (
@@ -692,7 +704,20 @@ export class CosmosGraphRenderer implements GraphRenderer {
         this.graph.setConfig(partial);
       }
       // Re-warm so neighbors visibly react to the slider scrub.
-      // Use render(alpha) — start(alpha) does not (re)start the rAF frame loop.
+      // CRITICAL: pair start(alpha) + render(alpha).
+      //   - start(alpha): sets store.isSimulationRunning=true and store.alpha
+      //     (dist/index.js:6396-6398). Required because Cosmos's frame() loop
+      //     calls end() (line 6609-6611) once alpha decays below ALPHA_MIN,
+      //     which sets isSimulationRunning=false. After that, every
+      //     runSimulationStep call early-exits via the `(t || n && !zoom)`
+      //     gate at line 6557 — forces are never recomputed even if alpha is
+      //     bumped by a subsequent render(alpha).
+      //   - render(alpha): calls update(alpha) then startFrames(). update()
+      //     does NOT touch isSimulationRunning (line 6537-6539), so render()
+      //     alone is insufficient to re-arm the simulation after end().
+      // Both are required: start() flips the run flag, render() spins the loop
+      // so the running flag gets observed by per-frame force passes.
+      this.graph.start?.(0.3);
       this.graph.render?.(0.3);
       // eslint-disable-next-line no-console
       try { console.log("[02-05-DEBUG] setSimulationConfig: applied", partial); } catch { /* ignore */ }
