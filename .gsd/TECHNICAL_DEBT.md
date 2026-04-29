@@ -43,6 +43,20 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 - **Three Cosmos API traps surfaced and documented in 02-05-SUMMARY.md** (institutional knowledge): (1) `start(α)` arms run-flag; `render(α)` spins rAF loop — both required, neither aliases the other. (2) `setConfig` is destructive (resets defaults then merges); use `setConfigPartial` for true partial mutation. (3) After Cosmos's internal `end()` flips `isSimulationRunning=false` at ALPHA_MIN, must pair `start(α)+render(α)` at every re-warm site to revive the force pass.
 - **Followup (TD-006, non-blocking):** User approved with note that separation feel and organic-vs-cluster transition need additional tuning — deferred per user.
 
+### TD-007: Remove vestigial Canvas2D renderer branch
+- **Location:** `app/(dashboard)/users/AccUsersGraph.tsx` (Canvas2D rendering branch, `renderBackend` auto-detect, `view.current` Canvas2D camera, `posRef.current` seed-only fallback paths); `app/(dashboard)/users/graphRenderers.ts` (CanvasGraphRenderer class); the dual-path forward-projection scaffolding added in `1f47874`.
+- **Surfaced:** 02-04 Task 4 human-verify checkpoint (2026-04-29) — user explicitly noted "there's no Canvas 2D anymore, only GPU."
+- **What's vestigial:**
+  1. `CanvasGraphRenderer` class and its render loop
+  2. `renderBackend` auto-detect that picks Canvas2D when WebGL2 is unavailable (REND-04 fallback was a Phase 2 plan-level requirement, but production target is dedicated-GPU-only per user)
+  3. The Canvas2D branch of the forward-projection hit-test (`posRef.current` + `view.current` path) added in `1f47874` — once Canvas2D is gone, only the Cosmos `getPointPositions() + spaceToScreenPosition()` path remains
+  4. `view.current` Canvas2D camera state and its sync logic
+  5. Pointer/drag handlers' Canvas2D-specific code paths
+  6. Worker spawn gate (currently spawns d3-force worker only on Canvas2D path) becomes unconditional-skip — d3-force worker becomes dead code
+- **Why kept now:** Phase 2 success criteria #4 still references Canvas2D fallback (REND-04). Removal is a meaningful surface-area cut and warrants its own plan with explicit decision to deprecate REND-04. Recording as debt now so it's not forgotten.
+- **Resolution path:** Standalone phase or plan that (a) updates ROADMAP.md / REQUIREMENTS.md to deprecate REND-04, (b) deletes `CanvasGraphRenderer`, (c) collapses the dual forward-projection branch in AccUsersGraph.tsx to the Cosmos-only path, (d) rips `renderBackend` auto-detect and toolbar toggle, (e) removes worker spawn gate (d3-force worker becomes dead code unless retained for a different purpose).
+- **Tracking:** Non-blocking; does not gate Phase 2 sign-off.
+
 ### TD-006: Cosmos slider feel refinement — separation range and organic-vs-cluster transition
 - **Location:** `app/(dashboard)/users/cosmosUtils.ts` `controlsToSimulationConfig`, `app/(dashboard)/users/AccUsersGraph.tsx` slider wiring
 - **Surfaced:** 02-05 Task 6 human-verify checkpoint (2026-04-29)

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-28T18:09:21.578Z"
+last_updated: "2026-04-29T22:55:05.881Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 5
-  completed_plans: 3
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2 of 4 (Cosmos.gl Renderer)
-Plan: 02-04 IN PROGRESS — Tasks 1-3 committed (ea705da, b5f52b2, 830ad08). At Task 4 (checkpoint:human-verify). Awaiting user sign-off on lasso end-to-end (6 manual checks).
-Status: In Progress — Phase 2 at 4/5 plans complete; 02-04 paused at human-verify gate.
-Last activity: 2026-04-29 — 02-04 Tasks 1-3 done: pointInPolygon + 7 unit tests, lasso toolbar/SVG overlay, polygon-close→selection→side-panel + highlightSet override (renderer-agnostic). tsc clean, 23/23 tests pass.
+Phase: 2 of 4 (Cosmos.gl Renderer) — COMPLETE (5/5 plans)
+Plan: 02-04 COMPLETE (commits ea705da, b5f52b2, 830ad08, 1f47874). User approved lasso end-to-end after 6 manual checks. TD-007 logged for Canvas2D removal.
+Status: Phase 2 complete — ready for milestone sign-off / Phase 2.5 planning.
+Last activity: 2026-04-29 — 02-04 SUMMARY shipped; lasso multi-select live. User noted "no Canvas 2D anymore, only GPU" → TD-007 recorded in both 02-04-SUMMARY and .gsd/TECHNICAL_DEBT.md.
 
-Progress: [███████░░░] 70%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -79,6 +79,8 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl P05]: TD-005 closed by adopting Cosmos native GPU force layout; d3-force worker retained as Canvas2D fallback (engine swap, not loop optimization)
 - [Phase 02-cosmos-gl P05]: Cosmos.gl API traps documented (start vs render, setConfig vs setConfigPartial, sim run-flag re-arm) — see 02-05-SUMMARY.md "Three Cosmos.gl API Traps"
 - [Phase 02-cosmos-gl P05]: Slider feel refinement (TD-006) deferred per user — approved 02-05 with explicit note that further tuning is wanted but non-blocking
+- [Phase 02-cosmos-gl-renderer P04]: Lasso uses screen-space polygon + forward-project nodes (NOT inverse-view-transform on polygon) — robust across Canvas2D and Cosmos GPU-physics renderers; bug surfaced when Cosmos getPointPositions() became the source of truth post-02-05
+- [Phase 02-cosmos-gl-renderer P04]: TD-007 logged: Canvas2D rendering branch + dual-path forward-projection scaffolding now vestigial — Cosmos/GPU is the only production path; defer removal to standalone plan that also deprecates REND-04
 
 ### Pending Todos
 
@@ -88,10 +90,11 @@ None yet.
 
 - **TD-005:** CLOSED 2026-04-29 (commit 2978186) — Cosmos GPU physics swap ships; 25,559-node hub is interactive (sliders, drag, pick, same-user highlight, perf HUD all behave).
 - **TD-006 (non-blocking):** Cosmos slider feel refinement — separation range and organic-vs-cluster transition need additional tuning per user feedback during 02-05 verification. User explicitly deferred ("approved it needs refinement but we can see it later").
+- **TD-007 (non-blocking):** Canvas2D renderer branch + dual-path forward-projection scaffolding now vestigial — Cosmos/GPU is the only production path. Surfaced 2026-04-29 at 02-04 human-verify checkpoint. Removal deferred to standalone plan that also deprecates REND-04.
 - Phase 1 risk (HIGH): Worker production build failure (Pitfall 5) — must verify `npm run build && npm start` in CI before merging Phase 1 work
 
 ## Session Continuity
 
 Last session: 2026-04-29
-Stopped at: 02-04 Task 4 checkpoint:human-verify — Tasks 1-3 committed, awaiting user sign-off after running 6 manual lasso checks against `npm run dev` on /users with a 500+ node hub.
-Resume file: .planning/phases/02-cosmos-gl-renderer/02-04-PLAN.md
+Stopped at: 02-04 complete (lasso shipped, user approved); Phase 2 5/5 done — ready for milestone sign-off / Phase 2.5 planning.
+Resume file: None
