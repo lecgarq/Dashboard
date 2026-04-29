@@ -269,11 +269,42 @@ export class CanvasGraphRenderer implements GraphRenderer {
   }
 }
 
+export interface SimulationConfig {
+  simulationRepulsion?: number;
+  simulationLinkSpring?: number;
+  simulationLinkDistance?: number;
+  simulationCluster?: number;
+  simulationGravity?: number;
+  simulationFriction?: number;
+  simulationDecay?: number;
+  simulationCenter?: number;
+}
+
+export interface CosmosCreateOptions {
+  /**
+   * When true, Cosmos owns positions via its native GPU force-directed simulation.
+   * When false (default), positions are fed externally (d3-force worker → setPointPositions).
+   */
+  usePhysics?: boolean;
+}
+
+const DEFAULT_SIMULATION_CONFIG: Required<SimulationConfig> = {
+  simulationRepulsion: 0.5,
+  simulationLinkSpring: 1.0,
+  simulationLinkDistance: 8,
+  simulationCluster: 0,
+  simulationGravity: 0.05,
+  simulationFriction: 0.85,
+  simulationDecay: 1000,
+  simulationCenter: 0,
+};
+
 export class CosmosGraphRenderer implements GraphRenderer {
   readonly backend = "cosmos" as const;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private graph: any;  // Graph instance from @cosmos.gl/graph — typed as any to avoid static import
+  private usePhysics = false;
   private lastNodeCount = 0;
   private lastLinkCount = 0;
   private lastPositions: Float32Array | null = null;
@@ -301,7 +332,9 @@ export class CosmosGraphRenderer implements GraphRenderer {
   static async create(
     container: HTMLElement,
     onContextLost?: (reason: string) => void,
+    options?: CosmosCreateOptions,
   ): Promise<{ renderer: CosmosGraphRenderer | null; failureReason?: string }> {
+    const usePhysics = options?.usePhysics === true;
     // WebGL2 check — give the caller a failureReason without importing the heavy cosmos package
     if (typeof document !== "undefined") {
       try {
@@ -335,15 +368,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
       } as any;
 
       const renderer = new CosmosGraphRenderer(null);
+      renderer.usePhysics = usePhysics;
 
-      const graph = new Graph(container as HTMLDivElement, {
-        // Simulation disabled — d3-force worker drives all positions, Cosmos is a pure GPU renderer.
-        // This eliminates the visible square boundary caused by Cosmos simulation space physics.
-        enableSimulation: false,
-        rescalePositions: false,     // keep our coordinate space; don't auto-fit to screen
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const baseConfig: any = {
+        // GPU-physics path (TD-005): Cosmos owns positions via its native force-directed sim.
+        // Worker-physics path (default): d3-force worker drives positions, Cosmos is a pure GPU renderer.
+        enableSimulation: usePhysics,
+        rescalePositions: !usePhysics, // physics path lets Cosmos manage its space; non-physics keeps our coords
         fitViewOnInit: false,
         backgroundColor: "#F8F7F4",
-        spaceSize: 4096,             // default; simulation off so this only affects initial zoom extents
+        spaceSize: 4096,
         pointDefaultColor: [0.612, 0.639, 0.686, 1.0] as [number, number, number, number],
         pointDefaultSize: 4,
         linkDefaultColor: [0.612, 0.639, 0.686, 0.25] as [number, number, number, number],
@@ -357,7 +392,24 @@ export class CosmosGraphRenderer implements GraphRenderer {
           renderer.selectNode(null);
           renderer.onNodeSelectCallback?.(null);
         },
-      });
+      };
+
+      if (usePhysics) {
+        // Default simulation params — sliders override via setSimulationConfig().
+        Object.assign(baseConfig, DEFAULT_SIMULATION_CONFIG);
+        // Cosmos native drag — neighbors react to the simulation, no worker round-trip.
+        baseConfig.enableDrag = true;
+        baseConfig.onDragStart = () => {
+          // Re-heat so neighbors visibly react during the drag.
+          try { renderer.graph?.start?.(0.3); } catch { /* ignore */ }
+        };
+        baseConfig.onDragEnd = () => {
+          // Settle gently after release.
+          try { renderer.graph?.start?.(0.05); } catch { /* ignore */ }
+        };
+      }
+
+      const graph = new Graph(container as HTMLDivElement, baseConfig);
 
       renderer.graph = graph;
 
@@ -473,10 +525,16 @@ export class CosmosGraphRenderer implements GraphRenderer {
       needsRender = true;
     }
 
-    if (positionsChanged && nodeCount > 0) {
+    // GPU-physics path: Cosmos owns positions after the optional initial seed.
+    // Skip the per-frame position feed so we don't fight the simulation.
+    if (positionsChanged && nodeCount > 0 && !this.usePhysics) {
       this.graph.setPointPositions(this.scalePositionsForCosmos(frame.positions));
       this.lastPositions = frame.positions;
       needsRender = true;
+    } else if (positionsChanged) {
+      // Track latest reference even when we don't upload — avoids spurious re-uploads
+      // on the same frame and keeps lastPositions in sync for the link-edge throttle.
+      this.lastPositions = frame.positions;
     }
 
     if (frame.links && linkCount !== this.lastLinkCount) {
@@ -525,13 +583,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
       needsRender = true;
     }
 
-    // Cosmos has enableSimulation:false, so it does NOT auto-paint per frame.
-    // Every state change must be paired with an explicit render() to actually paint pixels.
-    if (needsRender) {
+    // Cosmos auto-paints per simulation tick when enableSimulation:true.
+    // When simulation is off, every state change must pair with an explicit render().
+    if (needsRender && !this.usePhysics) {
       this.graph.render();
     }
 
-    if (isFirstLoad) {
+    if (isFirstLoad && !this.usePhysics) {
+      // Physics mode: positions don't exist yet — defer fit until sim cools (handled by caller).
       this.graph.fitView(600);
     }
 
@@ -543,9 +602,46 @@ export class CosmosGraphRenderer implements GraphRenderer {
     return this.gpuRendererString;
   }
 
-  // Simulation is disabled — physics are applied via the d3-force worker, not here.
+  // Worker-physics path: no-op (handlePhysicsChange routes values to the worker).
+  // GPU-physics path: see setSimulationConfig below.
   setPhysicsConfig(_partial: { repulsion?: number; linkSpring?: number; gravity?: number }): void {
-    // no-op: Cosmos simulation is off; handlePhysicsChange routes values to the worker instead
+    // no-op
+  }
+
+  /** True when this renderer was created with usePhysics:true. */
+  isUsingPhysics(): boolean {
+    return this.usePhysics;
+  }
+
+  /**
+   * Update one or more Cosmos simulation parameters and re-warm the simulation
+   * so changes are visibly applied. No-op when not in GPU-physics mode.
+   */
+  setSimulationConfig(partial: Partial<SimulationConfig>): void {
+    if (!this.graph || !this.usePhysics) return;
+    try {
+      // Cosmos v3 prefers setConfig (full) over setConfigPartial; both accept partials in practice.
+      if (typeof this.graph.setConfig === "function") {
+        this.graph.setConfig(partial);
+      } else if (typeof this.graph.setConfigPartial === "function") {
+        this.graph.setConfigPartial(partial);
+      }
+      // Re-warm so neighbors visibly react to the slider scrub.
+      this.graph.start?.(0.3);
+    } catch { /* defensive: never let a bad config crash the renderer */ }
+  }
+
+  /** Current simulation alpha (1=hot, 0=cool). Returns 0 when not in physics mode. */
+  getSimulationAlpha(): number {
+    if (!this.graph || !this.usePhysics) return 0;
+    const value = (this.graph as { progress?: number }).progress;
+    return typeof value === "number" && Number.isFinite(value) ? value : 0;
+  }
+
+  /** True iff Cosmos is currently ticking the simulation. */
+  isSimulationRunning(): boolean {
+    if (!this.graph || !this.usePhysics) return false;
+    return (this.graph as { isSimulationRunning?: boolean }).isSimulationRunning === true;
   }
 
   destroy(): void {
@@ -561,5 +657,6 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.baseColorBuffer = null;
     this.lastSameUserSet = null;
     this.lastSelectedIndex = -1;
+    this.usePhysics = false;
   }
 }
