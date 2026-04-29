@@ -543,6 +543,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
       this.lastLinkCount = linkCount;
       this.lastLinkUploadAt = Date.now();
       needsRender = true;
+      // GPU-physics path: links arrived after the simulation already started
+      // (or with zero springs the alpha already collapsed). Re-warm so the
+      // force-directed layout actually has springs to act on this frame.
+      if (this.usePhysics && linkCount > 0) {
+        try { this.graph.start?.(1.0); } catch { /* ignore */ }
+      }
     } else if (
       // Edge-render-during-drag fix: Cosmos retains stale link spatial structure
       // when only node positions change. Re-upload the link buffer on every interactive
@@ -592,6 +598,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
     if (isFirstLoad && !this.usePhysics) {
       // Physics mode: positions don't exist yet — defer fit until sim cools (handled by caller).
       this.graph.fitView(600);
+    } else if (isFirstLoad && this.usePhysics) {
+      // Physics mode: nodes were just seeded but Cosmos's space is huge (4096).
+      // Schedule a fitView shortly after first frame so the user sees the graph
+      // even if the simulation is still cooling. Without this, ±1000-unit seed
+      // positions land outside the default camera frustum (grey canvas).
+      try { this.graph.fitView?.(800); } catch { /* ignore */ }
     }
 
     return { needsContinuousRedraw: false };

@@ -221,3 +221,52 @@ export function buildLinkColorBuffer(linkCount: number): Float32Array {
   }
   return buf;
 }
+
+/**
+ * Project ACC hub→spoke topology links into a renderer-friendly source/target
+ * spoke-to-spoke chain. Mirrors the worker's `buildProjectedLinks` logic so the
+ * GPU-physics path (which doesn't run the worker) still gets a non-empty link
+ * buffer. Without this projection Cosmos receives 0 springs, the simulation
+ * settles instantly, and the canvas renders empty (TD-005 follow-up bug).
+ *
+ * For each hub (`link.target`), gather the visible-node indices that point at
+ * it, sort them, and emit one source→next pair per consecutive pair so the
+ * spokes form a stable ring/chain. This matches the worker's projection so the
+ * Canvas2D fallback and GPU-physics paths produce visually consistent layouts.
+ *
+ * Pure for unit testing — no DOM access, deterministic ordering.
+ */
+export function projectTopologyLinksToIndexPairs(
+  topologyLinks: readonly { source: string; target: string }[],
+  nodeIndexById: ReadonlyMap<string, number>,
+): { sources: Int32Array; targets: Int32Array } {
+  const visibleSourcesByHub = new Map<string, number[]>();
+  for (const link of topologyLinks) {
+    const index = nodeIndexById.get(link.source) ?? -1;
+    if (index < 0) continue;
+    const entries = visibleSourcesByHub.get(link.target) ?? [];
+    entries.push(index);
+    visibleSourcesByHub.set(link.target, entries);
+  }
+
+  const seen = new Set<string>();
+  const sources: number[] = [];
+  const targets: number[] = [];
+  for (const indices of visibleSourcesByHub.values()) {
+    const ordered = [...new Set(indices)].sort((a, b) => a - b);
+    for (let i = 1; i < ordered.length; i++) {
+      const s = ordered[i - 1];
+      const t = ordered[i];
+      const key = `${s}:${t}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      sources.push(s);
+      targets.push(t);
+    }
+  }
+
+  return {
+    sources: new Int32Array(sources),
+    targets: new Int32Array(targets),
+  };
+}

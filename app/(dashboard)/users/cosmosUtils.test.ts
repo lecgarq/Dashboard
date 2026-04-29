@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildClusterIdsFromNodes,
   controlsToSimulationConfig,
+  projectTopologyLinksToIndexPairs,
   type ClusterableNode,
 } from "./cosmosUtils";
 
@@ -117,5 +118,65 @@ describe("controlsToSimulationConfig", () => {
     expect(low.simulationCluster).toBe(0);
     expect(high.simulationRepulsion).toBeCloseTo(2.0, 5);
     expect(high.simulationCluster).toBe(1);
+  });
+});
+
+describe("projectTopologyLinksToIndexPairs", () => {
+  it("chains visible spokes that share a hub into consecutive pairs", () => {
+    // Three users (a, b, c) all linked to hub "role:owner"
+    const idx = new Map([["a", 0], ["b", 1], ["c", 2]]);
+    const links = [
+      { source: "a", target: "role:owner" },
+      { source: "b", target: "role:owner" },
+      { source: "c", target: "role:owner" },
+    ];
+    const out = projectTopologyLinksToIndexPairs(links, idx);
+    // Sorted indices [0,1,2] → pairs (0,1) and (1,2)
+    expect(Array.from(out.sources)).toEqual([0, 1]);
+    expect(Array.from(out.targets)).toEqual([1, 2]);
+  });
+
+  it("emits zero springs when no spokes share a hub", () => {
+    const idx = new Map([["a", 0], ["b", 1]]);
+    const links = [
+      { source: "a", target: "role:owner" },
+      { source: "b", target: "role:editor" },
+    ];
+    const out = projectTopologyLinksToIndexPairs(links, idx);
+    expect(out.sources.length).toBe(0);
+    expect(out.targets.length).toBe(0);
+  });
+
+  it("skips topology links whose source is not in the index map", () => {
+    const idx = new Map([["a", 0]]);
+    const links = [
+      { source: "a", target: "role:owner" },
+      { source: "ghost", target: "role:owner" },
+    ];
+    const out = projectTopologyLinksToIndexPairs(links, idx);
+    // Only one mapped spoke → no chain
+    expect(out.sources.length).toBe(0);
+  });
+
+  it("dedupes identical pairs across multiple hubs", () => {
+    const idx = new Map([["a", 0], ["b", 1]]);
+    // Both links produce the same (0,1) pair from two different hubs
+    const links = [
+      { source: "a", target: "hub1" },
+      { source: "b", target: "hub1" },
+      { source: "a", target: "hub2" },
+      { source: "b", target: "hub2" },
+    ];
+    const out = projectTopologyLinksToIndexPairs(links, idx);
+    expect(out.sources.length).toBe(1);
+    expect(out.sources[0]).toBe(0);
+    expect(out.targets[0]).toBe(1);
+  });
+
+  it("returns empty Int32Arrays (not undefined) for an empty input", () => {
+    const out = projectTopologyLinksToIndexPairs([], new Map());
+    expect(out.sources).toBeInstanceOf(Int32Array);
+    expect(out.targets).toBeInstanceOf(Int32Array);
+    expect(out.sources.length).toBe(0);
   });
 });

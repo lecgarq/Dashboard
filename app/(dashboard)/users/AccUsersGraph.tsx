@@ -15,6 +15,7 @@ import {
   isWebGL2Available,
   buildClusterIdsFromNodes,
   controlsToSimulationConfig,
+  projectTopologyLinksToIndexPairs,
 } from "./cosmosUtils";
 import { toast } from "sonner";
 import { type BulkAccUser } from "./AccAnalysisPanel";
@@ -657,6 +658,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // Cluster ids are stable for the dataset — strength is sliderized.
           const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "role");
           if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
+          // CRITICAL: project topology links on the main thread because the
+          // worker (which normally posts to linksRef) is gated off here. Without
+          // this, Cosmos receives 0 springs and the simulation collapses
+          // (Sim α: 0.000, grey canvas — observed during 25k-node verification).
+          if (nodesRef.current.length > 0 && nodeIndexMapRef.current.size > 0) {
+            const topology = buildAccTopologyGraph(nodesRef.current);
+            linksRef.current = projectTopologyLinksToIndexPairs(
+              topology.links,
+              nodeIndexMapRef.current,
+            );
+          }
           // Apply the current slider values immediately so visit-after-reload picks up persisted state.
           renderer.setSimulationConfig(controlsToSimulationConfig(graphControlsRef.current));
         }
@@ -917,6 +929,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (clusterIds.length > 0) {
         cosmosRendererRef.current.setPointClusters(clusterIds);
       }
+      // CRITICAL: the d3-force worker (which posts links to linksRef) is gated off
+      // in the GPU-physics path. Build the spoke→spoke link projection directly
+      // on the main thread so Cosmos receives a non-empty link buffer — without
+      // this, simulationLinkSpring has nothing to act on, the simulation collapses
+      // to alpha=0 immediately, and the canvas renders empty (TD-005 follow-up bug
+      // surfaced during 25k-node verification).
+      const topology = buildAccTopologyGraph(rawNodes);
+      const projected = projectTopologyLinksToIndexPairs(topology.links, nodeIndexMap);
+      linksRef.current = projected;
       cosmosRendererRef.current.setSimulationConfig(
         controlsToSimulationConfig(graphControlsRef.current),
       );
