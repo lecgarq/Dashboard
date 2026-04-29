@@ -1,16 +1,29 @@
 ---
-status: fixing
+status: investigating
 trigger: "Re-test of 02-05 after commit 900f821 still shows Sim α: 0.000 / 25559 nodes / grey canvas / 0 springs at 25k-node ACC hub"
 created: 2026-04-29T00:00:00Z
-updated: 2026-04-29T00:00:00Z
+updated: 2026-04-29T13:30:00Z
 ---
 
 ## Current Focus
 
-hypothesis: ROOT CAUSE FOUND — In GPU-physics mode, CosmosGraphRenderer calls graph.start(alpha) to re-warm the simulation but never re-calls graph.render(). Per @cosmos.gl/graph v3 API contract (dist/index.d.ts), start() "only controls the simulation state, not rendering" — only render() spins up the rAF frame loop via startFrames(). Renderer calls render() exactly once during create() with zero data; that loop ends almost immediately (alpha=0 → end() → stopFrames). After that, every re-warm is a dead start() call: simulation state is set but no frames execute → grey canvas, HUD reads progress=0.
-test: Replace start(alpha) calls in GPU-physics paths with render(alpha) (link-upload re-warm, drag handlers, setSimulationConfig). Drop the !usePhysics guard on the needsRender→render() block in draw() so physics-mode data uploads also kick the loop.
-expecting: After fix, drawing the first frame with data will call render() which calls startFrames() → rAF loop runs → simulation steps fire → α decays from 1 → nodes settle → canvas renders. HUD will show non-zero α and decreasing progress.
-next_action: Apply the targeted edit to graphRenderers.ts, run tsc, commit atomically, return checkpoint to user.
+hypothesis: SECOND ROOT CAUSE FOUND (drag/pick regression after a8cd0db).
+  CosmosGraphRenderer.setSimulationConfig() calls graph.setConfig(partial). Per
+  cosmos.gl v3 source (dist/index.js line 5780-5784), setConfig() RESETS the
+  config to defaults (ze(this.config)) before applying only the provided keys.
+  This wipes enableDrag, onDragStart/End, onPointClick, onBackgroundClick,
+  onPointMouseOver/Out — every callback we wired in baseConfig.
+  AccUsersGraph calls setSimulationConfig on init (line 689) AND on every
+  slider change. So as soon as Cosmos finishes initializing, our drag+pick
+  config is wiped. Render-loop fix (a8cd0db) made the sim alive enough to
+  notice the dead handlers.
+test: Switch setSimulationConfig to use setConfigPartial (which is a partial
+  merge per dist/index.js line 5793-5797). Verify that drag and click work.
+expecting: After fix, dragging a node yanks it (Cosmos D3 drag fires),
+  clicking a node fires onPointClick → onNodeSelectCallback → side panel
+  opens, clicking background fires onBackgroundClick → side panel closes.
+next_action: Apply targeted edit to setSimulationConfig in graphRenderers.ts,
+  run tsc, commit atomically, return checkpoint to user.
 
 ## Symptoms
 
@@ -61,26 +74,28 @@ started: Reported as "exactly the same" after re-test post-900f821 — was alrea
   found: Triggers only when `isFirstLoad = lastNodeCount === 0 && nodeCount > 0` — i.e. exactly once on the frame where node count goes 0→N. After that, fitView never runs again from draw() — even when links arrive on a later frame and graph.start(1.0) re-warms.
   implication: If links arrive on a frame AFTER the first-node-count-frame, the camera was framed for the seeded positions — but if no positions were ever seeded (setInitialPositions wasn't called or posRef was empty), Cosmos uses random initial positions and fitView frames a wider range. Could explain "grey canvas" if initial Cosmos random positions land in [-spaceSize/2, spaceSize/2] = [-2048, 2048] and fitView is run too early relative to that.
 
+- timestamp: 2026-04-29T13:30:00Z
+  checked: cosmos.gl v3 setConfig vs setConfigPartial (dist/index.js line 5780-5797).
+  found: setConfig(t) does `ze(this.config)` (Object.assign defaults) then `Y(this.config, t)` (apply provided keys). It RESETS the config and then merges. setConfigPartial(t) does only `Y(this.config, t, !0)` — partial merge that preserves untouched keys.
+  implication: graphRenderers.ts:677 calls graph.setConfig(partial) inside setSimulationConfig. AccUsersGraph calls setSimulationConfig on Cosmos init (line 689) AND every slider change (line 494, 967). Each call resets enableDrag → false, onDragStart/End → undefined, onPointClick/onBackgroundClick → undefined, onPointMouseOver/Out → undefined. Drag and pick die immediately after the first slider apply on init. Render-loop fix (a8cd0db) made sim alive — exposed dead handlers.
+
 ## Resolution
 
 root_cause: |
-  GPU-physics mode never re-spins the @cosmos.gl/graph rAF render loop after the
-  initial empty-data render() call. CosmosGraphRenderer.create() calls graph.render()
-  once at line 439 with zero points; that triggers startFrames() but the simulation
-  immediately ends (alpha=0, no points) and the loop calls stopFrames(). After data
-  arrives, the renderer's re-warm path calls graph.start(alpha) — which per v3 API
-  docs (and confirmed in dist/index.js line 6398) only sets store.isSimulationRunning=true
-  and store.alpha=t. It does NOT call startFrames(). Without startFrames(), the rAF
-  loop is dead → no runSimulationStep, no renderFrame, no draw → grey canvas.
-  HUD reads graph.progress which the dead loop never updates → shows 0.
-  Sites: graphRenderers.ts:579 (link-upload re-warm), :404/:408 (drag handlers),
-  :671 (setSimulationConfig), and the !usePhysics guard at :623.
+  TWO root causes (compounding):
+  (1) Render loop dead — fixed in a8cd0db (start→render swap).
+  (2) Drag/pick handlers wiped by setConfig destructive merge — addressed by
+      switching setSimulationConfig to setConfigPartial. cosmos.gl v3's
+      setConfig(t) resets the entire config object to defaults before applying
+      provided keys, blowing away enableDrag, onPointClick, onBackgroundClick,
+      onDragStart, onDragEnd, onPointMouseOver, onPointMouseOut on every call.
+      setSimulationConfig is invoked on Cosmos init and on every slider change.
 fix: |
-  Replace start(alpha) with render(alpha) at all 4 sites in the GPU-physics path,
-  and drop the `!this.usePhysics` guard at line 623 so the first data upload in
-  physics mode also calls graph.render(). render(alpha) per docs sets alpha AND
-  calls startFrames() — single-call API the renderer should have used from the start.
-verification: TBD — awaiting human-verify after commit
+  (1) a8cd0db: render(alpha) replaces start(alpha) at all GPU-physics sites.
+  (2) THIS COMMIT: setSimulationConfig prefers setConfigPartial (true partial
+      merge) over setConfig (destructive). Fallback to setConfig only when
+      setConfigPartial is not exposed (older builds).
+verification: TBD — awaiting human-verify after commit (drag a node, click a node, click background)
 files_changed:
+  - app/(dashboard)/users/graphRenderers.ts (a8cd0db: render swap; this commit: setConfigPartial)
   - app/(dashboard)/users/AccUsersGraph.tsx (instrumentation only — commit 0914b31)
-  - app/(dashboard)/users/graphRenderers.ts (instrumentation only — commit 0914b31; fix pending)

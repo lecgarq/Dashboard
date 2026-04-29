@@ -673,11 +673,23 @@ export class CosmosGraphRenderer implements GraphRenderer {
   setSimulationConfig(partial: Partial<SimulationConfig>): void {
     if (!this.graph || !this.usePhysics) return;
     try {
-      // Cosmos v3 prefers setConfig (full) over setConfigPartial; both accept partials in practice.
-      if (typeof this.graph.setConfig === "function") {
-        this.graph.setConfig(partial);
-      } else if (typeof this.graph.setConfigPartial === "function") {
+      // CRITICAL: must use setConfigPartial, NOT setConfig.
+      // Per cosmos.gl v3 source (dist/index.js:5780): setConfig(t) calls
+      // `ze(this.config)` first which resets the FULL config object to defaults
+      // before merging the provided keys. That wipes our baseConfig values:
+      //   - enableDrag → false (drag stops working)
+      //   - onPointClick / onBackgroundClick → undefined (pick stops working)
+      //   - onDragStart / onDragEnd → undefined (drag re-warm stops)
+      //   - onPointMouseOver / onPointMouseOut → undefined (hover label stops)
+      // setConfigPartial (dist/index.js:5793) does a true partial merge that
+      // preserves all untouched keys. AccUsersGraph calls setSimulationConfig
+      // on init AND on every slider change, so a destructive setConfig wipes
+      // interaction wiring within milliseconds of Cosmos becoming usable.
+      if (typeof this.graph.setConfigPartial === "function") {
         this.graph.setConfigPartial(partial);
+      } else if (typeof this.graph.setConfig === "function") {
+        // Fallback only — older builds that don't expose setConfigPartial.
+        this.graph.setConfig(partial);
       }
       // Re-warm so neighbors visibly react to the slider scrub.
       // Use render(alpha) — start(alpha) does not (re)start the rAF frame loop.
