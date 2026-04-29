@@ -281,3 +281,49 @@ export function projectTopologyLinksToIndexPairs(
     targets: new Int32Array(targets),
   };
 }
+
+/**
+ * Test whether a 2D point (px, py) lies inside a polygon defined as a flat
+ * Float32Array `[x0, y0, x1, y1, ...]`. Closure is implied — the algorithm
+ * wraps the last vertex back to the first.
+ *
+ * Implementation: classic ray-casting (Jordan curve theorem). Cast a horizontal
+ * ray from the point to +∞ and count how many polygon edges it crosses; an odd
+ * count means the point is inside.
+ *
+ * Properties:
+ * - Pure (no DOM, no module state, deterministic).
+ * - Returns `false` for degenerate polygons (< 3 vertices, < 6 floats).
+ * - Winding-direction independent — clockwise and counter-clockwise polygons
+ *   yield the same containment result.
+ * - Edge/vertex behavior is consistent (the strict `<` comparison classifies
+ *   the upper endpoint of each edge as "outside") — used by 02-04 lasso so
+ *   borderline points just outside the trace are not selected.
+ *
+ * O(n) per test where n = vertex count. For >5k nodes a quadtree spatial
+ * index would be a future optimization; current ACC hub (~2k visible) is well
+ * within the acceptable budget for a one-shot per-pointerup polygon close.
+ */
+export function pointInPolygon(
+  px: number,
+  py: number,
+  poly: Float32Array,
+): boolean {
+  const len = poly.length;
+  if (len < 6) return false; // need at least 3 vertices (6 floats)
+  const n = len >> 1; // vertex count (integer divide by 2)
+  let inside = false;
+  for (let i = 0, j = n - 1; i < n; j = i++) {
+    const xi = poly[i * 2];
+    const yi = poly[i * 2 + 1];
+    const xj = poly[j * 2];
+    const yj = poly[j * 2 + 1];
+    // Edge straddles the horizontal ray from (px, py) →
+    const intersects =
+      yi > py !== yj > py &&
+      px < ((xj - xi) * (py - yi)) / (yj - yi) + xi;
+    if (intersects) inside = !inside;
+  }
+  return inside;
+}
+

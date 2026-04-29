@@ -3,6 +3,7 @@ import { describe, it, expect } from "vitest";
 import {
   buildClusterIdsFromNodes,
   controlsToSimulationConfig,
+  pointInPolygon,
   projectTopologyLinksToIndexPairs,
   type ClusterableNode,
 } from "./cosmosUtils";
@@ -196,5 +197,92 @@ describe("projectTopologyLinksToIndexPairs", () => {
     expect(out.sources).toBeInstanceOf(Int32Array);
     expect(out.targets).toBeInstanceOf(Int32Array);
     expect(out.sources.length).toBe(0);
+  });
+});
+
+describe("pointInPolygon", () => {
+  // Square covering [0,0]..[10,10], counter-clockwise winding
+  const squareCCW = new Float32Array([0, 0, 10, 0, 10, 10, 0, 10]);
+  // Same square, clockwise winding
+  const squareCW = new Float32Array([0, 0, 0, 10, 10, 10, 10, 0]);
+
+  it("returns true for points inside a square (CCW winding)", () => {
+    expect(pointInPolygon(5, 5, squareCCW)).toBe(true);
+    expect(pointInPolygon(1, 1, squareCCW)).toBe(true);
+    expect(pointInPolygon(9, 9, squareCCW)).toBe(true);
+  });
+
+  it("returns false for points outside a square", () => {
+    expect(pointInPolygon(-1, 5, squareCCW)).toBe(false);
+    expect(pointInPolygon(11, 5, squareCCW)).toBe(false);
+    expect(pointInPolygon(5, -1, squareCCW)).toBe(false);
+    expect(pointInPolygon(5, 11, squareCCW)).toBe(false);
+    expect(pointInPolygon(100, 100, squareCCW)).toBe(false);
+  });
+
+  it("is winding-direction independent (CW and CCW agree on containment)", () => {
+    for (const [x, y] of [
+      [5, 5],
+      [1, 1],
+      [9, 9],
+      [-1, 5],
+      [11, 5],
+      [5, -1],
+      [5, 11],
+    ]) {
+      expect(pointInPolygon(x, y, squareCCW)).toBe(
+        pointInPolygon(x, y, squareCW),
+      );
+    }
+  });
+
+  it("returns a consistent result for points on edges (deterministic, no NaN)", () => {
+    // The exact edge classification is implementation-defined for ray-casting,
+    // but the result must be a boolean (not NaN, not throwing).
+    const onEdge = pointInPolygon(0, 5, squareCCW);
+    const onVertex = pointInPolygon(0, 0, squareCCW);
+    expect(typeof onEdge).toBe("boolean");
+    expect(typeof onVertex).toBe("boolean");
+    // Calling twice is deterministic
+    expect(pointInPolygon(0, 5, squareCCW)).toBe(onEdge);
+  });
+
+  it("returns false for degenerate polygons (< 3 vertices)", () => {
+    expect(pointInPolygon(0, 0, new Float32Array([]))).toBe(false);
+    expect(pointInPolygon(0, 0, new Float32Array([1, 1]))).toBe(false);
+    expect(pointInPolygon(0, 0, new Float32Array([1, 1, 2, 2]))).toBe(false);
+  });
+
+  it("handles a non-convex (concave) polygon — C-shape", () => {
+    // C-shape opening to the right: outer rect [0,0]..[10,10] with a notch
+    // cut out from [4,3]..[10,7]. Counter-clockwise outer perimeter that
+    // dives into the notch.
+    const cShape = new Float32Array([
+      0, 0,
+      10, 0,
+      10, 3,
+      4, 3,
+      4, 7,
+      10, 7,
+      10, 10,
+      0, 10,
+    ]);
+    // Inside the solid left bar
+    expect(pointInPolygon(2, 5, cShape)).toBe(true);
+    // Inside the notch (open to the right) — should be OUTSIDE polygon
+    expect(pointInPolygon(7, 5, cShape)).toBe(false);
+    // Inside the bottom arm
+    expect(pointInPolygon(7, 1, cShape)).toBe(true);
+    // Inside the top arm
+    expect(pointInPolygon(7, 9, cShape)).toBe(true);
+  });
+
+  it("treats the polygon as closed (last vertex wraps to first)", () => {
+    // Triangle — three vertices, no explicit closing vertex required
+    const triangle = new Float32Array([0, 0, 10, 0, 5, 10]);
+    expect(pointInPolygon(5, 1, triangle)).toBe(true);
+    expect(pointInPolygon(5, 5, triangle)).toBe(true); // centroid
+    expect(pointInPolygon(0, 9, triangle)).toBe(false); // outside near tip
+    expect(pointInPolygon(5, 11, triangle)).toBe(false); // beyond apex
   });
 });
