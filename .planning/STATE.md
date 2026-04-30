@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (3/4 plans complete; plan 04 at checkpoint)
-Plan: 02.5-04 Task 1 COMPLETE (commit b1457e7). Filter UI overhaul: date range inputs, iOS-style module toggles, companyRole multi-select with search, count header, Clear-all button, empty-state overlay — all in AccUsersGraph.tsx. Task 2 is a human-verify checkpoint awaiting user sign-off.
-Status: Phase 2.5 — plans 01, 02, 03, 04-Task1 complete; plan 04 checkpoint:human-verify is next.
-Last activity: 2026-04-30 — 02.5-02 SUMMARY shipped; filter logic + URL persistence + Vitest suite delivered.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (gap-closure plan 05 at checkpoint)
+Plan: 02.5-05 Tasks 1+2 COMPLETE (commits 3112791 + 84e73ec). FILT-01 instrumented (5-suspect coverage), root cause identified (Suspect #2 draw-overwrite + Suspect #1 ref-null), minimal fix applied: draw() now preserves lastVisibleSet across nodeCount-change rebuilds; cosmos-create.then re-applies visibleIndexSetRef when renderer ref is populated; setVisibleIndices identity cache hardened to content-aware. Diagnostic logs fully removed (grep clean), TypeScript clean, npm run build succeeded. Task 3 is a human-verify checkpoint awaiting user sign-off.
+Status: Phase 2.5 — plans 01, 02, 03, 04 complete; plan 05 at checkpoint:human-verify (Task 3); plan 06 (UI polish) pending.
+Last activity: 2026-04-30 — 02.5-05 fix shipped to deploy branch; awaiting visual re-verify of FILT-01.
 
 Progress: [██████████] 100%
 
@@ -108,5 +108,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-30
-Stopped at: 02.5-04 Task 1 complete (filter UI: date range, module toggles, companyRole multi-select, count header, Clear-all, empty-state overlay — commit b1457e7); at checkpoint:human-verify (Task 2).
+Stopped at: 02.5-05 Tasks 1+2 complete (FILT-01 fix: draw-rebuild visibility preservation + cosmos-create renderer re-apply + identity-cache hardening — commits 3112791, 84e73ec). At checkpoint:human-verify (Task 3) awaiting visual confirmation that excluded user nodes disappear from canvas.
 Resume file: None
