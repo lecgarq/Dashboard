@@ -22,9 +22,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (3/4 plans complete)
-Plan: 02.5-02 COMPLETE (commits 32b3972 feat, c71e7da feat, 99a8f76 test). GraphFilters rewrite (disabledModules/companyRoles/dateFrom/dateTo), nodeMatchesFilters extracted to accGraphFilters.ts, URL persistence, drag-defer guard, 28 Vitest tests. (Note: 02.5-03 also complete — ran in parallel.)
-Status: Phase 2.5 — plans 01, 02, 03 complete; plan 04 (company role filter UI) is next.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (3/4 plans complete; plan 04 at checkpoint)
+Plan: 02.5-04 Task 1 COMPLETE (commit b1457e7). Filter UI overhaul: date range inputs, iOS-style module toggles, companyRole multi-select with search, count header, Clear-all button, empty-state overlay — all in AccUsersGraph.tsx. Task 2 is a human-verify checkpoint awaiting user sign-off.
+Status: Phase 2.5 — plans 01, 02, 03, 04-Task1 complete; plan 04 checkpoint:human-verify is next.
 Last activity: 2026-04-30 — 02.5-02 SUMMARY shipped; filter logic + URL persistence + Vitest suite delivered.
 
 Progress: [██████████] 100%
@@ -108,5 +108,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-30
-Stopped at: 02.5-01 complete (data backbone: companyRole + lastSignIn through AccUser → AccGraphInstanceNode → SimNode; diagnostic log in fetchAllAccUsers).
+Stopped at: 02.5-04 Task 1 complete (filter UI: date range, module toggles, companyRole multi-select, count header, Clear-all, empty-state overlay — commit b1457e7); at checkpoint:human-verify (Task 2).
 Resume file: None
