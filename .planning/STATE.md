@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2 of 4 (Cosmos.gl Renderer) — COMPLETE + housekeeping (5/5 + 02-06 gap-closure)
-Plan: 02-06 COMPLETE (commits 3a1e182 fix, f22689f docs). Closes 02-VERIFICATION.md anti-patterns table + status-drift warning. graphRenderers.ts log-clean; REND-02 → Deferred (TD-006); REND-04 → user-accepted with Firefox-WebGL2 note.
-Status: Phase 2 fully closed — ready for milestone sign-off / Phase 2.5 planning.
-Last activity: 2026-04-29 — 02-06 SUMMARY shipped; debug-log hygiene + requirements reconciliation complete. TD-006 + TD-007 remain open per user decision.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (1/? plans complete)
+Plan: 02.5-01 COMPLETE (commits 32333cd feat, 40dcae8 feat). Extended AccUser + AccGraphInstanceNode + CachedUser + SimNode with companyRole and lastSignIn; diagnostic log wired in fetchAllAccUsers.
+Status: Phase 2.5 underway — data backbone for DATA-01 delivered; filter logic (02.5-02) and renderer/side-panel (02.5-03) are next.
+Last activity: 2026-04-30 — 02.5-01 SUMMARY shipped; companyRole + lastSignIn flow through full pipeline to SimNode.
 
 Progress: [██████████] 100%
 
@@ -84,6 +84,8 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl-renderer P04]: TD-007 logged: Canvas2D rendering branch + dual-path forward-projection scaffolding now vestigial — Cosmos/GPU is the only production path; defer removal to standalone plan that also deprecates REND-04
 - [Phase 02-cosmos-gl-renderer]: [Phase 02-cosmos-gl P06] Removed all unconditional [02-05-DEBUG] logs from graphRenderers.ts; gated peers in AccUsersGraph.tsx preserved
 - [Phase 02-cosmos-gl-renderer]: [Phase 02-cosmos-gl P06] REND-02 reconciled to Deferred (TD-006); REND-04 carries Firefox-WebGL2 acceptance note; Phase 2 rollup stays [x] Complete
+- [Phase 02.5-acc-data-filter P01]: companyRole and lastSignIn use string|null (not optional) on AccGraphInstanceNode — every instance node always has the field, matches lastAddedBucket style
+- [Phase 02.5-acc-data-filter P01]: lastSignIn alias covers three variants: last_sign_in||last_activity||lastSignIn — field names unverified live; diagnostic log will confirm on next sync
 
 ### Pending Todos
 
@@ -98,6 +100,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-29
-Stopped at: 02-06 complete (gap-closure: debug-log hygiene + REND-02/04 reconcile); Phase 2 fully closed — ready for milestone sign-off / Phase 2.5 planning.
+Last session: 2026-04-30
+Stopped at: 02.5-01 complete (data backbone: companyRole + lastSignIn through AccUser → AccGraphInstanceNode → SimNode; diagnostic log in fetchAllAccUsers).
 Resume file: None

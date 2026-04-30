@@ -23,7 +23,7 @@
 
 ### ACC Data + Filter Refinement (DATA, FILT)
 
-- [ ] **DATA-01**: User sees `companyRole` for each ACC user — extracted from ACC Admin API user record, persisted alongside other user fields, surfaced in side panel and usable as a filter dimension
+- [x] **DATA-01**: User sees `companyRole` for each ACC user — extracted from ACC Admin API user record, persisted alongside other user fields, surfaced in side panel and usable as a filter dimension
 - [ ] **FILT-01**: When a filter rule excludes a user, that user's node is removed from the visible graph — fully hidden, not greyed-out; edges to hidden nodes are also hidden
 - [ ] **FILT-02**: Date filter exposes `from` and `to` inputs and matches users whose relevant date falls inclusively within the range
 - [ ] **FILT-03**: Module filter renders one on/off toggle per module; with all toggles on every user is visible; toggling a module off filters out users whose access intersects only that module
@@ -82,7 +82,7 @@
 | REND-02 | Phase 2 | Deferred (TD-006) |
 | REND-03 | Phase 2 | Complete |
 | REND-04 | Phase 2 | Complete |
-| DATA-01 | Phase 2.5 | Pending |
+| DATA-01 | Phase 2.5 | Complete |
 | FILT-01 | Phase 2.5 | Pending |
 | FILT-02 | Phase 2.5 | Pending |
 | FILT-03 | Phase 2.5 | Pending |
