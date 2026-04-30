@@ -24,6 +24,8 @@ export interface AccGraphInstanceNode extends AccGraphBaseNode {
   modules: string[];
   lastAddedBucket: string; // year-month bucket, e.g. "2023-08" or "" if unknown
   individualAccess: boolean; // roles.length > 0 || modules.length > 0
+  companyRole: string | null;
+  lastSignIn: string | null;
 }
 
 export type AccGraphNode = AccGraphInstanceNode;
@@ -73,6 +75,8 @@ interface CachedUser {
   name?: unknown;
   projects?: unknown;
   addedOn?: unknown; // string ISO date from AccMemberCache.data.addedOn
+  companyRole?: unknown;
+  lastSignIn?: unknown;
 }
 
 const SIM_WIDTH = 6000;
@@ -280,6 +284,8 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
     const name = typeof data.name === "string" ? data.name : "";
     const projects = data.found === true ? readProjects(data.projects) : [];
     const addedOn = typeof data.addedOn === "string" ? data.addedOn : "";
+    const companyRole = typeof data.companyRole === "string" && data.companyRole ? data.companyRole : null;
+    const lastSignIn = typeof data.lastSignIn === "string" && data.lastSignIn ? data.lastSignIn : null;
     if (data.found === true) foundUsers.add(email);
 
     for (const project of projects) {
@@ -292,7 +298,7 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
       }
     }
 
-    return { email, name, projects, addedOn };
+    return { email, name, projects, addedOn, companyRole, lastSignIn };
   });
 
   const nodes: AccGraphNode[] = [];
@@ -320,6 +326,8 @@ export function buildAccGraphSnapshot(rows: AccMemberCacheRow[]): AccGraphSnapsh
         modules,
         lastAddedBucket: toDateBucket(user.addedOn),
         individualAccess: roles.length > 0 || modules.length > 0,
+        companyRole: user.companyRole,
+        lastSignIn: user.lastSignIn,
         color,
         x: 0,
         y: 0,

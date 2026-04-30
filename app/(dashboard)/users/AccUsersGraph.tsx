@@ -45,6 +45,8 @@ interface UserNode extends PhysicsNode {
   color: string;
   lastAddedBucket: string;
   individualAccess: boolean;
+  companyRole: string | null;
+  lastSignIn: string | null;
 }
 
 type SimNode = UserNode;
@@ -142,6 +144,8 @@ function graphNodeToSimNode(node: AccGraphNode): SimNode {
     modules: node.modules,
     lastAddedBucket: node.lastAddedBucket,
     individualAccess: node.individualAccess,
+    companyRole: node.companyRole ?? null,
+    lastSignIn: node.lastSignIn ?? null,
     color: node.color,
     x: node.x,
     y: node.y,
