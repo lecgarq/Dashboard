@@ -3,6 +3,11 @@
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/core/utils";
+import {
+  nodeMatchesFilters,
+  type GraphFilters,
+  DEFAULT_FILTERS,
+} from "./accGraphFilters";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
 import type { AccGraphNode } from "@/lib/acc/graphSnapshot";
@@ -69,15 +74,7 @@ interface SpatialGrid {
   cells: Map<string, number[]>;
 }
 
-interface GraphFilters {
-  roles: string[];
-  lastAddedBuckets: string[];
-  adminAccess: "all" | "admin" | "non-admin";
-  disabledModules: string[];   // exclude-list: modules toggled OFF
-  companyRoles: string[];      // multi-select: empty = all
-  dateFrom: string;            // YYYY-MM-DD or ""
-  dateTo: string;              // YYYY-MM-DD or ""
-}
+// GraphFilters interface and nodeMatchesFilters are imported from ./accGraphFilters
 
 interface FilterOption {
   value: string;
@@ -103,15 +100,7 @@ export interface AccUsersGraphProps {
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
-export const DEFAULT_FILTERS: GraphFilters = {
-  roles: [],
-  lastAddedBuckets: [],
-  adminAccess: "all",
-  disabledModules: [],
-  companyRoles: [],
-  dateFrom: "",
-  dateTo: "",
-};
+// DEFAULT_FILTERS is imported from ./accGraphFilters
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const COSMOS_PHYSICS_DEFAULTS = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
@@ -204,38 +193,7 @@ function buildHighlightSet(
   return { adjacent, sameUser };
 }
 
-export function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
-  // Existing dimensions — keep unchanged
-  if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
-  if (filters.lastAddedBuckets.length > 0 && !filters.lastAddedBuckets.includes(node.lastAddedBucket || "Unknown")) return false;
-  if (filters.adminAccess === "admin" && !node.isAdmin) return false;
-  if (filters.adminAccess === "non-admin" && node.isAdmin) return false;
-
-  // FILT-03: Module exclude-list.
-  // Exclude only when ALL of the user's modules are disabled.
-  // Users with no modules always pass (no modules = no disabling possible).
-  if (filters.disabledModules.length > 0 && node.modules.length > 0) {
-    if (node.modules.every((m) => filters.disabledModules.includes(m))) return false;
-  }
-
-  // DATA-01: companyRole multi-select. Empty = all pass.
-  // null companyRole maps to "Unspecified" bucket.
-  if (filters.companyRoles.length > 0) {
-    const bucket = node.companyRole ?? "Unspecified";
-    if (!filters.companyRoles.includes(bucket)) return false;
-  }
-
-  // FILT-02: Date range — inclusive both ends (ISO YYYY-MM-DD lexicographic compare).
-  // When range is active, users with null lastSignIn are excluded.
-  if (filters.dateFrom || filters.dateTo) {
-    if (!node.lastSignIn) return false;
-    const d = node.lastSignIn.slice(0, 10);
-    if (filters.dateFrom && d < filters.dateFrom) return false;
-    if (filters.dateTo && d > filters.dateTo) return false;
-  }
-
-  return true;
-}
+// nodeMatchesFilters is imported from ./accGraphFilters
 
 function toggleValue(values: string[], value: string): string[] {
   return values.includes(value) ? values.filter((item) => item !== value) : [...values, value];
