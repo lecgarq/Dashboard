@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (gap-closure plan 05 at checkpoint)
-Plan: 02.5-05 Tasks 1+2 COMPLETE (commits 3112791 + 84e73ec). FILT-01 instrumented (5-suspect coverage), root cause identified (Suspect #2 draw-overwrite + Suspect #1 ref-null), minimal fix applied: draw() now preserves lastVisibleSet across nodeCount-change rebuilds; cosmos-create.then re-applies visibleIndexSetRef when renderer ref is populated; setVisibleIndices identity cache hardened to content-aware. Diagnostic logs fully removed (grep clean), TypeScript clean, npm run build succeeded. Task 3 is a human-verify checkpoint awaiting user sign-off.
-Status: Phase 2.5 — plans 01, 02, 03, 04 complete; plan 05 at checkpoint:human-verify (Task 3); plan 06 (UI polish) pending.
-Last activity: 2026-04-30 — 02.5-05 fix shipped to deploy branch; awaiting visual re-verify of FILT-01.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (gap-closure plan 05, Take 2)
+Plan: 02.5-05 — first fix attempt (commit 84e73ec) FAILED human-verify ("nodes don't appear or disappear"). Take-2 instrumentation shipped (commit 639a2d5) with `[FILT-01-debug-v2]` logs covering: filter-effect entry (renderer ref state, graph state, usePhysics, set sizes, filter count), setVisibleIndices entry/early-returns/identity-cache/upload, Cosmos internal state pre/post (inputPointSizes.length, pointsNumber, pointSizes[0..8], isPointSizeUpdateNeeded), draw() nodeCount-change branch. Static analysis exhausted — need browser-side log capture from user to identify which suspect is the real culprit. Suspects #2 and #1 (previously implicated) were apparently NOT the root cause, or there is an additional unconsidered cause.
+Status: Phase 2.5 — plans 01, 02, 03, 04 complete; plan 05 at checkpoint:human-action (need diagnostic console capture); plan 06 (UI polish) pending.
+Last activity: 2026-04-30 — 02.5-05 v2 instrumentation shipped; awaiting console-log capture from user to pin actual root cause before applying take-2 fix.
 
 Progress: [██████████] 100%
 
@@ -108,5 +108,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-04-30
-Stopped at: 02.5-05 Tasks 1+2 complete (FILT-01 fix: draw-rebuild visibility preservation + cosmos-create renderer re-apply + identity-cache hardening — commits 3112791, 84e73ec). At checkpoint:human-verify (Task 3) awaiting visual confirmation that excluded user nodes disappear from canvas.
+Stopped at: 02.5-05 Take-2 instrumentation committed (639a2d5). Previous fix (84e73ec) failed human-verify — user reports "NO THE NODES DONT APPEAR OR DISSAPEAR". Need diagnostic capture from running session before applying corrective fix. Awaiting user to open /users, open DevTools console, toggle a filter, and paste back the `[FILT-01-debug-v2]` lines.
 Resume file: None
