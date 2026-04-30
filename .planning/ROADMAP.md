@@ -63,7 +63,13 @@ Plans:
   2. When a filter rule excludes a user, that user's node is removed from the visible graph (not greyed-out — fully hidden); edges to hidden nodes are also hidden
   3. The date filter exposes two inputs (`from` and `to`) and matches users whose relevant date falls inside that inclusive range
   4. The module filter renders one on/off toggle per module; with all toggles on, every user is visible; toggling a module off filters out users whose access intersects only that module
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 02.5-01-PLAN.md — Extract companyRole + lastSignIn from ACC API; surface through snapshot pipeline + SimNode (DATA-01)
+- [ ] 02.5-02-PLAN.md — Rewrite GraphFilters/nodeMatchesFilters with new semantics, recursive cascade, URL persistence, drag-defer, Vitest coverage (FILT-01, FILT-02, FILT-03)
+- [ ] 02.5-03-PLAN.md — Cosmos zero-size hide + edge-skip in both renderers, 150ms CSS fade, Company Role side-panel row (FILT-01, DATA-01)
+- [ ] 02.5-04-PLAN.md — Filter UI overhaul: date inputs, module toggles, companyRole multi-select, count header, empty-state, Clear-all + human-verify (FILT-02, FILT-03, DATA-01)
 
 ### Phase 3: Graph UI Completion
 **Goal**: The graph UI has no remaining polish gaps — labels appear at the right zoom level, the physics simulation signals when it has settled, and the filter and detail panels do not fight for screen space on smaller monitors
@@ -95,6 +101,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
 | 2. Cosmos.gl Renderer | 5/5 | Complete | 2026-04-29 |
-| 2.5. ACC Data + Filter Refinement | 0/TBD | Not started | - |
+| 2.5. ACC Data + Filter Refinement | 0/4 | Not started | - |
 | 3. Graph UI Completion | 0/TBD | Not started | - |
 | 4. Access Analysis | 0/TBD | Not started | - |
