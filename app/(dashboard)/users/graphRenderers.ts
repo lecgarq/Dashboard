@@ -10,6 +10,11 @@ import {
 
 const DIMMED_USER_COLOR = "#9CA3AF";
 
+// FILT-01-debug-v2: gated diagnostics for the second debugging round.
+// All `[FILT-01-debug-v2]` logs are removed before the next commit.
+const DEBUG_FILT01_V2 = true;
+let FILT01_V2_NO_GRAPH_HITS = 0;
+
 export interface GraphRenderNode {
   kind: "user" | "project" | "role" | "module";
   id: string;
@@ -535,6 +540,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
     let needsRender = false;
 
     if (nodeCount !== this.lastNodeCount) {
+      if (DEBUG_FILT01_V2) {
+        console.log(
+          "[FILT-01-debug-v2] draw nodeCount-change",
+          "prev=", this.lastNodeCount,
+          "next=", nodeCount,
+          "lastVisibleSetSize=", this.lastVisibleSet?.size ?? "null",
+        );
+      }
       const connections = new Float32Array(nodeCount);
       if (frame.links) {
         for (let i = 0; i < frame.links.sources.length; i++) {
@@ -824,7 +837,23 @@ export class CosmosGraphRenderer implements GraphRenderer {
    * slider/HUD redraws.
    */
   setVisibleIndices(visibleSet: ReadonlySet<number>): void {
+    if (DEBUG_FILT01_V2) {
+      console.log(
+        "[FILT-01-debug-v2] setVisibleIndices entry",
+        "graphReady=", !!this.graph,
+        "lastNodeCount=", this.lastNodeCount,
+        "visibleSetSize=", visibleSet.size,
+        "lastVisibleSetSize=", this.lastVisibleSet?.size ?? "null",
+      );
+    }
     if (!this.graph) {
+      FILT01_V2_NO_GRAPH_HITS++;
+      if (DEBUG_FILT01_V2) {
+        console.log(
+          "[FILT-01-debug-v2] setVisibleIndices early-return: graph not ready",
+          "noGraphHits=", FILT01_V2_NO_GRAPH_HITS,
+        );
+      }
       // Renderer not ready yet — still record the latest set so that when the
       // next nodeCount-change branch runs in draw() it preserves the filter
       // (see FILT-01 fix in draw()). The graph instance check above gates the
@@ -841,18 +870,28 @@ export class CosmosGraphRenderer implements GraphRenderer {
       prev.size === visibleSet.size &&
       [...visibleSet].every((i) => prev.has(i))
     ) {
+      if (DEBUG_FILT01_V2) {
+        console.log("[FILT-01-debug-v2] setVisibleIndices identity-cache hit; skipping upload");
+      }
       return;
     }
     this.lastVisibleSet = visibleSet;
 
     const nodeCount = this.lastNodeCount;
-    if (nodeCount === 0) return;
+    if (nodeCount === 0) {
+      if (DEBUG_FILT01_V2) {
+        console.log("[FILT-01-debug-v2] setVisibleIndices nodeCount=0 — skipping upload");
+      }
+      return;
+    }
 
     const connections = this.nodeConnections;
     const sizes = new Float32Array(nodeCount);
+    let zeroedCount = 0;
     for (let i = 0; i < nodeCount; i++) {
       if (!visibleSet.has(i)) {
         sizes[i] = 0;
+        zeroedCount++;
         continue;
       }
       const degree = connections?.[i] ?? 0;
@@ -862,9 +901,64 @@ export class CosmosGraphRenderer implements GraphRenderer {
     try {
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(sizes);
+        if (DEBUG_FILT01_V2) {
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const g = this.graph as any;
+          // Inspect Cosmos's internal point buffer to confirm our zeros are stored
+          // and that pointsNumber matches our nodeCount. Pointed at fields confirmed
+          // via index.js source read: graph.inputPointSizes (raw user input),
+          // graph.pointSizes (post-update buffer), graph.pointsNumber (getter from inputPointPositions).
+          const innerGraph = g.graph;
+          let inputLen = "n/a";
+          let pointsNumber = "n/a";
+          let firstFewSizes = "n/a";
+          let firstFewInputSizes = "n/a";
+          try {
+            inputLen = String(innerGraph?.inputPointSizes?.length);
+            pointsNumber = String(innerGraph?.pointsNumber);
+            firstFewSizes = innerGraph?.pointSizes
+              ? Array.from(innerGraph.pointSizes.slice(0, 8)).join(",")
+              : "undefined";
+            firstFewInputSizes = innerGraph?.inputPointSizes
+              ? Array.from(innerGraph.inputPointSizes.slice(0, 8)).join(",")
+              : "undefined";
+          } catch { /* introspection best-effort */ }
+          console.log(
+            "[FILT-01-debug-v2] setVisibleIndices uploaded",
+            "nodeCount=", nodeCount,
+            "zeroed=", zeroedCount,
+            "visible=", nodeCount - zeroedCount,
+            "innerInputPointSizes.length=", inputLen,
+            "innerPointsNumber=", pointsNumber,
+            "innerPointSizes[0..8]=", firstFewSizes,
+            "innerInputPointSizes[0..8]=", firstFewInputSizes,
+            "isPointSizeUpdateNeeded=", innerGraph?.isPointSizeUpdateNeeded ?? "n/a",
+          );
+        }
         this.graph.render?.();
+        if (DEBUG_FILT01_V2) {
+          // After render(), Cosmos should have consumed inputPointSizes into pointSizes
+          // and uploaded to GPU. Verify by re-reading pointSizes.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          const innerGraph = (this.graph as any).graph;
+          try {
+            const firstFew = innerGraph?.pointSizes
+              ? Array.from(innerGraph.pointSizes.slice(0, 8)).join(",")
+              : "undefined";
+            console.log(
+              "[FILT-01-debug-v2] setVisibleIndices post-render",
+              "innerPointSizes[0..8]=", firstFew,
+              "isPointSizeUpdateNeeded=", innerGraph?.isPointSizeUpdateNeeded ?? "n/a",
+            );
+          } catch { /* introspection best-effort */ }
+        }
+      } else if (DEBUG_FILT01_V2) {
+        console.log("[FILT-01-debug-v2] setVisibleIndices: setPointSizes is NOT a function on graph");
       }
-    } catch { /* swallow — non-fatal if Cosmos rejects the upload */ }
+    } catch (err) {
+      if (DEBUG_FILT01_V2) console.log("[FILT-01-debug-v2] setVisibleIndices THREW", err);
+      /* swallow — non-fatal if Cosmos rejects the upload */
+    }
   }
 
   destroy(): void {
