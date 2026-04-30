@@ -1721,6 +1721,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {/* FILT-01 empty-state overlay: shown when filters are active but zero users match */}
+        {isReady && visibleCount === 0 && hasActiveFilters && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#F8F7F4]/90">
+            <p className="text-sm font-medium text-gray-700">No users match these filters</p>
+            <p className="text-xs text-gray-400 mt-1">Adjust filters to see results</p>
+            <button
+              onClick={() => setFilters(DEFAULT_FILTERS)}
+              className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
         <div className="absolute top-3 right-3 z-10">
           <div className="text-[10px] text-gray-400 pr-1 text-right">
             {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
@@ -1766,17 +1780,25 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               </p>
             </div>
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              {/* Filter panel header: count summary + clear-all */}
               <div className="flex items-center justify-between">
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Filters</p>
-                {hasActiveFilters && (
+                {activeFilterCount > 0 && (
                   <button
                     onClick={() => setFilters(DEFAULT_FILTERS)}
                     className="text-[10px] px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
                   >
-                    Clear
+                    Clear all
                   </button>
                 )}
               </div>
+              {activeFilterCount > 0 && (
+                <p className="text-[10px] text-emerald-700 font-medium">
+                  Showing {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} users
+                </p>
+              )}
+
+              {/* Existing controls */}
               <FilterMenu
                 label="Roles"
                 options={filterOptions.roles}
@@ -1801,13 +1823,63 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 ]}
                 onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
               />
-              <FilterMenu
-                label="Modules (disabled)"
-                options={filterOptions.moduleOptions}
-                selected={filters.disabledModules}
-                onToggle={(value) => setFilters((current) => ({ ...current, disabledModules: toggleValue(current.disabledModules, value) }))}
-                maxVisible={Infinity}
-              />
+
+              {/* FILT-02: Date range — uses lastSignIn field (label reflects field; falls back to addedOn if
+                  lastSignIn is unavailable from the ACC API — see 02.5-01 diagnostic log for confirmation) */}
+              <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Last Activity</span>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-500 w-7 shrink-0">From</span>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => setFilters((current) => ({ ...current, dateFrom: e.currentTarget.value }))}
+                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-500 w-7 shrink-0">To</span>
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) => setFilters((current) => ({ ...current, dateTo: e.currentTarget.value }))}
+                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </label>
+              </div>
+
+              {/* FILT-03: Module toggles — exclude-list semantics (all ON by default) */}
+              {filterOptions.moduleOptions.length > 0 && (
+                <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Modules</span>
+                  <p className="text-[9px] text-gray-400 leading-tight">Toggle off to filter users with access only to that module.</p>
+                  <div className="pt-0.5 space-y-0.5">
+                    {filterOptions.moduleOptions.map((option) => (
+                      <ModuleToggle
+                        key={option.value}
+                        label={option.label}
+                        enabled={!filters.disabledModules.includes(option.value)}
+                        onToggle={() => setFilters((current) => ({
+                          ...current,
+                          disabledModules: toggleValue(current.disabledModules, option.value),
+                        }))}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DATA-01: companyRole multi-select with search */}
+              {filterOptions.companyRoleOptions.length > 0 && (
+                <CompanyRoleFilter
+                  options={filterOptions.companyRoleOptions}
+                  selected={filters.companyRoles}
+                  onToggle={(value) => setFilters((current) => ({
+                    ...current,
+                    companyRoles: toggleValue(current.companyRoles, value),
+                  }))}
+                />
+              )}
             </div>
           </div>
         )}
@@ -2036,6 +2108,86 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               )}
             </div>
           </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// FILT-03: iOS-style module toggle — single toggle row
+function ModuleToggle({ label, enabled, onToggle }: { label: string; enabled: boolean; onToggle: () => void }) {
+  return (
+    <div className="flex items-center justify-between py-0.5">
+      <span className="text-[11px] text-gray-600 truncate max-w-[140px]">{label}</span>
+      <button
+        role="switch"
+        aria-checked={enabled}
+        onClick={onToggle}
+        className={cn(
+          "relative inline-flex h-4 w-7 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
+          enabled ? "bg-emerald-500" : "bg-gray-200"
+        )}
+      >
+        <span className={cn(
+          "pointer-events-none inline-block h-3 w-3 rounded-full bg-white shadow transform transition-transform duration-200",
+          enabled ? "translate-x-3" : "translate-x-0"
+        )} />
+      </button>
+    </div>
+  );
+}
+
+// DATA-01: companyRole multi-select with search box
+function CompanyRoleFilter({ options, selected, onToggle }: {
+  options: FilterOption[];
+  selected: string[];
+  onToggle: (value: string) => void;
+}) {
+  const [search, setSearch] = useState("");
+  const filtered = options.filter((o) =>
+    o.label.toLowerCase().includes(search.toLowerCase())
+  );
+  return (
+    <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Company Role</span>
+        {selected.length > 0 && (
+          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
+            {selected.length}
+          </span>
+        )}
+      </div>
+      <input
+        type="text"
+        placeholder="Search roles..."
+        value={search}
+        onChange={(e) => setSearch(e.currentTarget.value)}
+        className="h-6 w-full rounded-md border border-gray-200 bg-white px-2 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+      />
+      <div className="max-h-36 overflow-y-auto space-y-0.5 pr-0.5">
+        {filtered.length === 0 ? (
+          <span className="text-[10px] text-gray-400">No matching roles</span>
+        ) : (
+          filtered.map((option) => {
+            const active = selected.includes(option.value);
+            return (
+              <button
+                key={option.value}
+                onClick={() => onToggle(option.value)}
+                className={cn(
+                  "w-full flex items-center justify-between gap-1 px-2 py-0.5 rounded text-left text-[10px] transition-colors",
+                  active
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-600 hover:bg-gray-100",
+                )}
+              >
+                <span className="truncate">{option.label}</span>
+                <span className={cn("shrink-0 text-[9px] font-mono", active ? "opacity-70" : "text-gray-400")}>
+                  {option.count}
+                </span>
+              </button>
+            );
+          })
         )}
       </div>
     </div>
