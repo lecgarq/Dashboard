@@ -8,6 +8,10 @@ import {
   buildLinkColorBuffer,
 } from "./cosmosUtils";
 
+// FILT-01 diagnostic flag — temporary instrumentation for the filter-hide path.
+// All gated logs use the `[FILT-01-debug]` prefix so they can be grep-removed.
+const DEBUG_FILT01 = true;
+
 const DIMMED_USER_COLOR = "#9CA3AF";
 
 export interface GraphRenderNode {
@@ -535,6 +539,15 @@ export class CosmosGraphRenderer implements GraphRenderer {
     let needsRender = false;
 
     if (nodeCount !== this.lastNodeCount) {
+      if (DEBUG_FILT01) {
+        // Suspect #2 — does draw() rebuild the size buffer (and overwrite zeroed sizes)
+        // because the node count changed after setVisibleIndices uploaded zeroes?
+        // eslint-disable-next-line no-console
+        console.log("[FILT-01-debug] draw nodeCount-change",
+          "prev=", this.lastNodeCount,
+          "next=", nodeCount,
+          "lastVisibleSetSize=", this.lastVisibleSet?.size ?? "null");
+      }
       const connections = new Float32Array(nodeCount);
       if (frame.links) {
         for (let i = 0; i < frame.links.sources.length; i++) {
@@ -813,6 +826,16 @@ export class CosmosGraphRenderer implements GraphRenderer {
    * slider/HUD redraws.
    */
   setVisibleIndices(visibleSet: ReadonlySet<number>): void {
+    if (DEBUG_FILT01) {
+      // Suspect #4 — is lastVisibleSet stale across renderer re-init?
+      // eslint-disable-next-line no-console
+      console.log("[FILT-01-debug] setVisibleIndices called",
+        "sameRefAsLast=", visibleSet === this.lastVisibleSet,
+        "lastIsNull=", this.lastVisibleSet === null,
+        "graphReady=", !!this.graph,
+        "lastNodeCount=", this.lastNodeCount,
+        "incomingSize=", visibleSet.size);
+    }
     if (!this.graph) return;
     // Identity check — avoid rebuilding the size buffer on every draw() call.
     if (visibleSet === this.lastVisibleSet) return;
@@ -836,8 +859,26 @@ export class CosmosGraphRenderer implements GraphRenderer {
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(sizes);
         this.graph.render?.();
+        if (DEBUG_FILT01) {
+          // Suspect #3 — did setPointSizes actually upload? Cosmos GPU physics may ignore.
+          // eslint-disable-next-line no-console
+          console.log("[FILT-01-debug] setVisibleIndices applied",
+            "total=", nodeCount,
+            "visible=", visibleSet.size,
+            "zeroed=", nodeCount - visibleSet.size,
+            "usePhysics=", this.usePhysics);
+        }
+      } else if (DEBUG_FILT01) {
+        // eslint-disable-next-line no-console
+        console.log("[FILT-01-debug] setVisibleIndices SKIPPED — graph.setPointSizes is not a function");
       }
-    } catch { /* swallow — non-fatal if Cosmos rejects the upload */ }
+    } catch (err) {
+      if (DEBUG_FILT01) {
+        // eslint-disable-next-line no-console
+        console.log("[FILT-01-debug] setVisibleIndices threw", err);
+      }
+      /* swallow — non-fatal if Cosmos rejects the upload */
+    }
   }
 
   destroy(): void {
