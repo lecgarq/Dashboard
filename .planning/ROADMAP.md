@@ -101,6 +101,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
 | 2. Cosmos.gl Renderer | 5/5 | Complete | 2026-04-29 |
-| 2.5. ACC Data + Filter Refinement | 0/4 | Not started | - |
+| 2.5. ACC Data + Filter Refinement | 2/4 | In Progress|  |
 | 3. Graph UI Completion | 0/TBD | Not started | - |
 | 4. Access Analysis | 0/TBD | Not started | - |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-29T23:21:13.807Z"
+last_updated: "2026-04-30T15:48:47.766Z"
 progress:
-  total_phases: 2
+  total_phases: 3
   completed_phases: 2
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 14
+  completed_plans: 12
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (1/? plans complete)
-Plan: 02.5-01 COMPLETE (commits 32333cd feat, 40dcae8 feat). Extended AccUser + AccGraphInstanceNode + CachedUser + SimNode with companyRole and lastSignIn; diagnostic log wired in fetchAllAccUsers.
-Status: Phase 2.5 underway — data backbone for DATA-01 delivered; filter logic (02.5-02) and renderer/side-panel (02.5-03) are next.
-Last activity: 2026-04-30 — 02.5-01 SUMMARY shipped; companyRole + lastSignIn flow through full pipeline to SimNode.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (3/4 plans complete)
+Plan: 02.5-03 COMPLETE (commits 35db2c9 feat, 3e9347e feat). setVisibleIndices on CosmosGraphRenderer, Canvas2D edge-skip, CSS fade wrapper, Company Role row in AccUserSidePanel.
+Status: Phase 2.5 — plans 01, 02, 03 complete; plan 04 (company role filter UI) is next.
+Last activity: 2026-04-30 — 02.5-03 SUMMARY shipped; renderer-level hide + side-panel display delivered.
 
 Progress: [██████████] 100%
 
@@ -49,6 +49,7 @@ Progress: [██████████] 100%
 *Updated after each plan completion*
 | Phase 01-foundation P01 | 8 | 1 tasks | 1 files |
 | Phase 02-cosmos-gl-renderer P06 | 12min | 2 tasks | 3 files |
+| Phase 02.5-acc-data-filter-refinement P03 | 12min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -86,6 +87,8 @@ Recent decisions affecting current work:
 - [Phase 02-cosmos-gl-renderer]: [Phase 02-cosmos-gl P06] REND-02 reconciled to Deferred (TD-006); REND-04 carries Firefox-WebGL2 acceptance note; Phase 2 rollup stays [x] Complete
 - [Phase 02.5-acc-data-filter P01]: companyRole and lastSignIn use string|null (not optional) on AccGraphInstanceNode — every instance node always has the field, matches lastAddedBucket style
 - [Phase 02.5-acc-data-filter P01]: lastSignIn alias covers three variants: last_sign_in||last_activity||lastSignIn — field names unverified live; diagnostic log will confirm on next sync
+- [Phase 02.5-acc-data-filter-refinement]: setVisibleIndices identity-caches the last Set reference to skip redundant GPU uploads on steady-state redraws
+- [Phase 02.5-acc-data-filter-refinement]: BulkAccUser.companyRole added as optional field; AccUserSidePanel shows Unspecified when undefined or null — API population deferred
 
 ### Pending Todos
 
