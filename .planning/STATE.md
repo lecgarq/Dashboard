@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-30T15:48:47.766Z"
+last_updated: "2026-04-30T15:49:56.205Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 14
-  completed_plans: 12
+  completed_plans: 13
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (3/4 plans complete)
-Plan: 02.5-03 COMPLETE (commits 35db2c9 feat, 3e9347e feat). setVisibleIndices on CosmosGraphRenderer, Canvas2D edge-skip, CSS fade wrapper, Company Role row in AccUserSidePanel.
+Plan: 02.5-02 COMPLETE (commits 32b3972 feat, c71e7da feat, 99a8f76 test). GraphFilters rewrite (disabledModules/companyRoles/dateFrom/dateTo), nodeMatchesFilters extracted to accGraphFilters.ts, URL persistence, drag-defer guard, 28 Vitest tests. (Note: 02.5-03 also complete — ran in parallel.)
 Status: Phase 2.5 — plans 01, 02, 03 complete; plan 04 (company role filter UI) is next.
-Last activity: 2026-04-30 — 02.5-03 SUMMARY shipped; renderer-level hide + side-panel display delivered.
+Last activity: 2026-04-30 — 02.5-02 SUMMARY shipped; filter logic + URL persistence + Vitest suite delivered.
 
 Progress: [██████████] 100%
 
@@ -50,6 +50,7 @@ Progress: [██████████] 100%
 | Phase 01-foundation P01 | 8 | 1 tasks | 1 files |
 | Phase 02-cosmos-gl-renderer P06 | 12min | 2 tasks | 3 files |
 | Phase 02.5-acc-data-filter-refinement P03 | 12min | 2 tasks | 4 files |
+| Phase 02.5 P02 | 7m 37s | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -89,6 +90,9 @@ Recent decisions affecting current work:
 - [Phase 02.5-acc-data-filter P01]: lastSignIn alias covers three variants: last_sign_in||last_activity||lastSignIn — field names unverified live; diagnostic log will confirm on next sync
 - [Phase 02.5-acc-data-filter-refinement]: setVisibleIndices identity-caches the last Set reference to skip redundant GPU uploads on steady-state redraws
 - [Phase 02.5-acc-data-filter-refinement]: BulkAccUser.companyRole added as optional field; AccUserSidePanel shows Unspecified when undefined or null — API population deferred
+- [Phase 02.5]: nodeMatchesFilters extracted to accGraphFilters.ts (pure module) — AccUsersGraph.tsx use client prevents direct Vitest import
+- [Phase 02.5]: URL param keys: roles, moff (disabledModules), croles (companyRoles), from, to, admin — lastAddedBuckets excluded (volatile derived state)
+- [Phase 02.5]: page.tsx Suspense wrapper already present pre-02.5-02 — no change needed for useSearchParams
 
 ### Pending Todos
 
