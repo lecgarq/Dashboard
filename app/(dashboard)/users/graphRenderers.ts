@@ -148,9 +148,16 @@ export class CanvasGraphRenderer implements GraphRenderer {
       ctx.strokeStyle = "#9CA3AF";
       ctx.lineWidth = 0.7 / view.scale;
       ctx.beginPath();
+      // Build a set of visible indices so edge endpoints can be tested efficiently.
+      // frame.userIndices reflects the filtered visible set (set by rebuildVisibleIndices).
+      const visibleSet = frame.userIndices
+        ? new Set(frame.userIndices)
+        : null;
       for (let i = 0; i < sources.length; i++) {
         const s = sources[i];
         const t = targets[i];
+        // Skip edges where either endpoint has been filtered out (hidden by filter, not in visibleSet).
+        if (visibleSet && (!visibleSet.has(s) || !visibleSet.has(t))) continue;
         const sx = frame.positions[s * 2];
         const sy = frame.positions[s * 2 + 1];
         const tx = frame.positions[t * 2];
@@ -319,6 +326,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
   private baseColorBuffer: Float32Array | null = null;
   private lastSameUserSet: ReadonlySet<number> | null = null;
   private lastSelectedIndex = -1;
+  // Cached visible set: used by setVisibleIndices to avoid redundant size-buffer rebuilds.
+  private lastVisibleSet: ReadonlySet<number> | null = null;
   onNodeSelectCallback: ((index: number | null) => void) | null = null;
 
   private constructor(graph: unknown) {
@@ -788,6 +797,49 @@ export class CosmosGraphRenderer implements GraphRenderer {
     try { this.graph.setClusterPositions?.(positions); } catch { /* ignore */ }
   }
 
+  /**
+   * Hide nodes excluded by the active filter set via zero-size points.
+   *
+   * Cosmos.gl has no per-node visibility flag; the supported pattern is to set
+   * a node's point size to 0 (zero pixel → invisible, no hit-test). Included
+   * nodes get degree-based sizes matching the existing buildNodeSizeBuffer logic.
+   *
+   * Per RESEARCH.md Pitfall 5: zero-size points still participate in physics.
+   * This is accepted — the CONTEXT.md notes that "physics simulation reflows"
+   * on filter change so hidden-node physics residue is tolerable.
+   *
+   * Cache: when the same Set reference is passed again (filter unchanged) the
+   * method returns early to avoid redundant GPU uploads during steady-state
+   * slider/HUD redraws.
+   */
+  setVisibleIndices(visibleSet: ReadonlySet<number>): void {
+    if (!this.graph) return;
+    // Identity check — avoid rebuilding the size buffer on every draw() call.
+    if (visibleSet === this.lastVisibleSet) return;
+    this.lastVisibleSet = visibleSet;
+
+    const nodeCount = this.lastNodeCount;
+    if (nodeCount === 0) return;
+
+    const connections = this.nodeConnections;
+    const sizes = new Float32Array(nodeCount);
+    for (let i = 0; i < nodeCount; i++) {
+      if (!visibleSet.has(i)) {
+        sizes[i] = 0;
+        continue;
+      }
+      const degree = connections?.[i] ?? 0;
+      sizes[i] = degree > 3 ? 6 : degree > 0 ? 4 : 3;
+    }
+
+    try {
+      if (typeof this.graph.setPointSizes === "function") {
+        this.graph.setPointSizes(sizes);
+        this.graph.render?.();
+      }
+    } catch { /* swallow — non-fatal if Cosmos rejects the upload */ }
+  }
+
   destroy(): void {
     this.graph?.destroy?.();
     this.graph = null;
@@ -801,6 +853,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.baseColorBuffer = null;
     this.lastSameUserSet = null;
     this.lastSelectedIndex = -1;
+    this.lastVisibleSet = null;
     this.usePhysics = false;
   }
 }

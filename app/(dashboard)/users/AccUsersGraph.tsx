@@ -1890,36 +1890,45 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           <LegendDot color="#F4A261" label="Module" />
         </div>
 
-        <canvas
-          ref={canvas2dRef}
-          className={cn(renderCanvasClass, renderBackend === "canvas2d" ? "opacity-100" : "opacity-0 pointer-events-none")}
-          onPointerDown={handlePointerDown}
-          onPointerMove={handlePointerMove}
-          onPointerUp={handlePointerUp}
-          onPointerLeave={() => {
-            if (isDraggingNodeRef.current) {
-              const idx = draggedNodeIdxRef.current;
-              isDraggingNodeRef.current = false;
-              draggedNodeIdxRef.current = -1;
-              if (idx >= 0 && !usePhysicsRef.current) {
-                organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
-              }
-            }
-            isDragging.current = false;
-            setIsDraggingState(false);
-            setHoveredNode(null);
-            if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
-            markGraphDirty();
-          }}
-        />
+        {/* 02.5-03: CSS fade wrapper — plays a 150ms opacity dip when the visible
+            set shrinks on filter change. Zero shader cost; purely CSS transition. */}
         <div
-          ref={cosmosContainerRef}
           className={cn(
-            "absolute inset-0 w-full h-full",
-            renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none"
+            "absolute inset-0 transition-opacity duration-150 ease-out",
+            isFilterTransitioning ? "opacity-60" : "opacity-100"
           )}
-          // Cosmos manages its own canvas and pointer events internally
-        />
+        >
+          <canvas
+            ref={canvas2dRef}
+            className={cn(renderCanvasClass, renderBackend === "canvas2d" ? "opacity-100" : "opacity-0 pointer-events-none")}
+            onPointerDown={handlePointerDown}
+            onPointerMove={handlePointerMove}
+            onPointerUp={handlePointerUp}
+            onPointerLeave={() => {
+              if (isDraggingNodeRef.current) {
+                const idx = draggedNodeIdxRef.current;
+                isDraggingNodeRef.current = false;
+                draggedNodeIdxRef.current = -1;
+                if (idx >= 0 && !usePhysicsRef.current) {
+                  organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
+                }
+              }
+              isDragging.current = false;
+              setIsDraggingState(false);
+              setHoveredNode(null);
+              if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+              markGraphDirty();
+            }}
+          />
+          <div
+            ref={cosmosContainerRef}
+            className={cn(
+              "absolute inset-0 w-full h-full",
+              renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none"
+            )}
+            // Cosmos manages its own canvas and pointer events internally
+          />
+        </div>
         {/* 02-04: Lasso overlay. When lassoActive it captures pointer events
             (suspending pan/zoom on the underlying canvas) and renders the
             in-progress polygon trace as an SVG polyline. The overlay stays
