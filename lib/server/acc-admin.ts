@@ -15,6 +15,8 @@ export type AccUser = {
   role: string;
   company?: string;
   addedOn?: string;
+  companyRole?: string; // company-specific role (e.g. "Architect")
+  lastSignIn?: string;  // ISO date string of last activity (or fallback to addedOn)
 };
 
 export type AccProject = {
@@ -29,6 +31,9 @@ export type AccProject = {
 function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
+
+// TODO[02.5]: remove after first sync confirms field names
+let loggedRawShape = false;
 
 // Retry on 429 (quota/rate limit) with either the server-provided Retry-After or
 // exponential backoff. Up to 4 attempts. Everything else returns the first response.
@@ -148,6 +153,8 @@ export async function fetchAccUserByEmail(
         role: getString(match.role) || getString(match.access_level) || "user",
         company: getString(match.company_name || match.company) || undefined,
         addedOn: getString(match.created_at || match.addedOn) || undefined,
+        companyRole: getString(match.company_role || match.companyRole) || undefined,
+        lastSignIn: getString(match.last_sign_in || match.last_activity || match.lastSignIn) || undefined,
       };
     }
 
@@ -176,6 +183,11 @@ export async function fetchAllAccUsers(
 
   while (offset < maxUsers) {
     const users = await fetchHqUsers(`${baseUrl}?limit=${limit}&offset=${offset}`, accessToken, signal);
+    // TODO[02.5]: remove after first sync confirms field names
+    if (!loggedRawShape && Array.isArray(users) && users.length > 0) {
+      console.info("[02.5-DATA-01] sample ACC raw user keys:", Object.keys(users[0] as object));
+      loggedRawShape = true;
+    }
     for (const u of users) {
       all.push({
         id: getString(u.id),
@@ -185,6 +197,8 @@ export async function fetchAllAccUsers(
         role: getString(u.role) || getString(u.access_level) || "user",
         company: getString(u.company_name || u.company) || undefined,
         addedOn: getString(u.created_at || u.addedOn) || undefined,
+        companyRole: getString(u.company_role || u.companyRole) || undefined,
+        lastSignIn: getString(u.last_sign_in || u.last_activity || u.lastSignIn) || undefined,
       });
     }
     if (users.length < limit) break;
