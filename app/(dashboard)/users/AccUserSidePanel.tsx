@@ -84,6 +84,13 @@ export function AccUserSidePanel({ user, candidate, onClose, onViewProfile }: Ac
                 ))}
               </div>
 
+              <div className="flex items-baseline justify-between gap-2 py-1">
+                <span className="text-xs text-muted-foreground shrink-0">Company Role</span>
+                <span className="text-xs text-foreground text-right truncate">
+                  {user.companyRole ?? "Unspecified"}
+                </span>
+              </div>
+
               {candidate && (
                 <>
                   {candidate.junkRoles.length > 0 && (

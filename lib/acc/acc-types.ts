@@ -19,4 +19,6 @@ export interface BulkAccUser {
   allRoles: string[];
   allModules: string[];
   projects: BulkAccProject[];
+  /** Company role from the ACC HQ user record. Null when not set in ACC; undefined when not yet surfaced by the API. */
+  companyRole?: string | null;
 }
