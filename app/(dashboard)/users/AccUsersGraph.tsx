@@ -36,10 +36,6 @@ import {
   type PhysicsConfig,
 } from "./accGraphOrganicLayout";
 
-// FILT-01 diagnostic flag — temporary instrumentation for the filter-hide path.
-// All gated logs use the `[FILT-01-debug]` prefix so they can be grep-removed.
-const DEBUG_FILT01 = true;
-
 interface UserNode extends PhysicsNode {
   kind: "user";
   email: string;
@@ -518,14 +514,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     instIdxRef.current = new Uint32Array(userIndices);
     visibleNodeIdxRef.current = new Uint32Array(visibleIndices);
     visibleIndexSetRef.current = visibleSet;
-    if (DEBUG_FILT01) {
-      // Suspect #5 — does the worker / Canvas2D path see the same visible set?
-      // eslint-disable-next-line no-console
-      console.log("[FILT-01-debug] rebuildVisibleIndices",
-        "visibleSet.size=", visibleSet.size,
-        "instIdxRef.length=", instIdxRef.current.length,
-        "totalNodes=", nodes.length);
-    }
     setVisibleCount(userIndices.length);
 
     const selectedId = selectedNodeRef.current?.node.id;
@@ -851,6 +839,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         cosmosRendererRef.current = renderer;
         activeRendererRef.current = renderer;
         usePhysicsRef.current = renderer.isUsingPhysics();
+        // FILT-01: apply the current visibility filter the moment the renderer is
+        // available, so a filter that was already active (URL-seeded or set during
+        // Cosmos init) is honored on the first frame instead of waiting for the
+        // user to toggle a filter — at which point draw()'s nodeCount-change
+        // branch would otherwise have already overwritten any zeroed sizes.
+        if (visibleIndexSetRef.current.size > 0) {
+          renderer.setVisibleIndices(visibleIndexSetRef.current);
+        }
         if (perfHudEnabled) {
           console.log("[02-05-DEBUG] cosmos-create.then: usePhysics=", usePhysicsRef.current,
             "nodesRef.length=", nodesRef.current.length,
@@ -1210,16 +1206,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     // the visible set changes so the transition feels intentional rather than abrupt.
     setIsFilterTransitioning(true);
     rebuildVisibleIndices();
-    if (DEBUG_FILT01) {
-      // Suspect #1 — is cosmosRendererRef.current populated when filters change?
-      // The optional-chain below would silently drop the call if the ref is null.
-      // eslint-disable-next-line no-console
-      console.log("[FILT-01-debug] filter-effect cosmosRenderer=", !!cosmosRendererRef.current,
-        "usePhysics=", usePhysicsRef.current,
-        "visibleSize=", visibleIndexSetRef.current.size,
-        "totalInstances=", instIdxRef.current?.length,
-        "totalNodes=", nodesRef.current?.length);
-    }
     // Notify Cosmos renderer of the new visible set so it can zero-size excluded points.
     cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
     const fadeTimer = setTimeout(() => setIsFilterTransitioning(false), 150);
