@@ -1,8 +1,8 @@
 ---
-status: investigating
+status: awaiting_human_verify
 trigger: "Re-test of 02-05 after commit 900f821 still shows Sim α: 0.000 / 25559 nodes / grey canvas / 0 springs at 25k-node ACC hub"
 created: 2026-04-29T00:00:00Z
-updated: 2026-04-29T16:30:00Z
+updated: 2026-04-29T16:35:00Z
 ---
 
 ## Current Focus
