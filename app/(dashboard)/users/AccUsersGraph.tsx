@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
@@ -72,7 +73,10 @@ interface GraphFilters {
   roles: string[];
   lastAddedBuckets: string[];
   adminAccess: "all" | "admin" | "non-admin";
-  modules: string[];
+  disabledModules: string[];   // exclude-list: modules toggled OFF
+  companyRoles: string[];      // multi-select: empty = all
+  dateFrom: string;            // YYYY-MM-DD or ""
+  dateTo: string;              // YYYY-MM-DD or ""
 }
 
 interface FilterOption {
@@ -99,7 +103,15 @@ export interface AccUsersGraphProps {
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
-const DEFAULT_FILTERS: GraphFilters = { roles: [], lastAddedBuckets: [], adminAccess: "all", modules: [] };
+export const DEFAULT_FILTERS: GraphFilters = {
+  roles: [],
+  lastAddedBuckets: [],
+  adminAccess: "all",
+  disabledModules: [],
+  companyRoles: [],
+  dateFrom: "",
+  dateTo: "",
+};
 const IS_DEV = process.env.NODE_ENV !== "production";
 
 const COSMOS_PHYSICS_DEFAULTS = { repulsion: 1.0, linkSpring: 1.0, gravity: 0.25 };
@@ -192,12 +204,36 @@ function buildHighlightSet(
   return { adjacent, sameUser };
 }
 
-function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
+export function nodeMatchesFilters(node: SimNode, filters: GraphFilters): boolean {
+  // Existing dimensions — keep unchanged
   if (filters.roles.length > 0 && !node.roles.some((role) => filters.roles.includes(role))) return false;
   if (filters.lastAddedBuckets.length > 0 && !filters.lastAddedBuckets.includes(node.lastAddedBucket || "Unknown")) return false;
   if (filters.adminAccess === "admin" && !node.isAdmin) return false;
   if (filters.adminAccess === "non-admin" && node.isAdmin) return false;
-  if (filters.modules.length > 0 && !node.modules.some((m) => filters.modules.includes(m))) return false;
+
+  // FILT-03: Module exclude-list.
+  // Exclude only when ALL of the user's modules are disabled.
+  // Users with no modules always pass (no modules = no disabling possible).
+  if (filters.disabledModules.length > 0 && node.modules.length > 0) {
+    if (node.modules.every((m) => filters.disabledModules.includes(m))) return false;
+  }
+
+  // DATA-01: companyRole multi-select. Empty = all pass.
+  // null companyRole maps to "Unspecified" bucket.
+  if (filters.companyRoles.length > 0) {
+    const bucket = node.companyRole ?? "Unspecified";
+    if (!filters.companyRoles.includes(bucket)) return false;
+  }
+
+  // FILT-02: Date range — inclusive both ends (ISO YYYY-MM-DD lexicographic compare).
+  // When range is active, users with null lastSignIn are excluded.
+  if (filters.dateFrom || filters.dateTo) {
+    if (!node.lastSignIn) return false;
+    const d = node.lastSignIn.slice(0, 10);
+    if (filters.dateFrom && d < filters.dateFrom) return false;
+    if (filters.dateTo && d > filters.dateTo) return false;
+  }
+
   return true;
 }
 
@@ -224,6 +260,45 @@ function loadSavedView(): { x: number; y: number; scale: number } {
   return { x: 0.5, y: 0.5, scale: 600 };
 }
 
+function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
+  const adminRaw = params.get("admin") ?? "";
+  const adminAccess: GraphFilters["adminAccess"] = (["all", "admin", "non-admin"] as const).includes(
+    adminRaw as GraphFilters["adminAccess"]
+  )
+    ? (adminRaw as GraphFilters["adminAccess"])
+    : "all";
+
+  const rolesRaw = params.get("roles") ?? "";
+  const moffRaw = params.get("moff") ?? "";
+  const companyRolesRaw = params.get("croles") ?? "";
+
+  return {
+    roles: rolesRaw ? rolesRaw.split(",").filter(Boolean) : [],
+    lastAddedBuckets: [], // not persisted to URL — volatile derived state
+    adminAccess,
+    disabledModules: moffRaw ? moffRaw.split(",").filter(Boolean) : [],
+    companyRoles: companyRolesRaw ? companyRolesRaw.split(",").filter(Boolean) : [],
+    dateFrom: params.get("from") ?? "",
+    dateTo: params.get("to") ?? "",
+  };
+}
+
+function writeFiltersToUrl(
+  filters: GraphFilters,
+  pathname: string,
+  router: { replace: (url: string, opts?: { scroll?: boolean }) => void },
+): void {
+  const qs = new URLSearchParams();
+  if (filters.roles.length > 0) qs.set("roles", filters.roles.join(","));
+  if (filters.disabledModules.length > 0) qs.set("moff", filters.disabledModules.join(","));
+  if (filters.companyRoles.length > 0) qs.set("croles", filters.companyRoles.join(","));
+  if (filters.dateFrom) qs.set("from", filters.dateFrom);
+  if (filters.dateTo) qs.set("to", filters.dateTo);
+  if (filters.adminAccess !== "all") qs.set("admin", filters.adminAccess);
+  const qsStr = qs.toString();
+  router.replace(`${pathname}${qsStr ? `?${qsStr}` : ""}`, { scroll: false });
+}
+
 function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32Array | null {
   if (!Array.isArray(raw) || raw.length !== expectedLength) return null;
   const positions = new Float32Array(expectedLength);
@@ -236,6 +311,10 @@ function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32
 }
 
 export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
   const cosmosContainerRef = useRef<HTMLDivElement>(null);
@@ -339,6 +418,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const polygonSelectionRef = useRef<typeof polygonSelection>(null);
   const isDraggingNodeRef = useRef(false);
   const draggedNodeIdxRef = useRef(-1);
+  const pendingFiltersRef = useRef<GraphFilters | null>(null);
   const linksRef = useRef<{ sources: Int32Array; targets: Int32Array }>({
     sources: new Int32Array(0),
     targets: new Int32Array(0),
@@ -349,27 +429,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     activeNodeCount: 0,
     hiddenNodeCount: 0,
   });
-  const [filters, setFilters] = useState<GraphFilters>(() => {
-    if (typeof window === "undefined") return DEFAULT_FILTERS;
-    try {
-      const raw = localStorage.getItem("acc-graph-filters");
-      if (!raw) return DEFAULT_FILTERS;
-      const parsed = JSON.parse(raw) as GraphFilters;
-      if (
-        Array.isArray(parsed.roles) &&
-        Array.isArray(parsed.lastAddedBuckets) &&
-        Array.isArray(parsed.modules) &&
-        ["all", "admin", "non-admin"].includes(parsed.adminAccess)
-      ) {
-        return parsed;
-      }
-    } catch {
-      // ignore
-    }
-    return DEFAULT_FILTERS;
-  });
+  const [filters, setFilters] = useState<GraphFilters>(() => readFiltersFromUrl(searchParams));
   const [visibleCount, setVisibleCount] = useState(0);
   const [showControls, setShowControls] = useState(false);
+  // CSS fade-out: plays a 150ms opacity dip on the canvas wrapper when the
+  // visible set shrinks (filter change). Zero GPU/shader cost — purely CSS.
+  const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
 
   // Perf HUD — visible only in dev or when ?perf=1 is in the URL. Diagnostic-only.
   const [perfHudEnabled] = useState<boolean>(() => {
@@ -1155,13 +1220,45 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   useEffect(() => {
     filtersRef.current = filters;
-    hasActiveFiltersRef.current = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
+    hasActiveFiltersRef.current =
+      filters.roles.length > 0 ||
+      filters.lastAddedBuckets.length > 0 ||
+      filters.adminAccess !== "all" ||
+      filters.disabledModules.length > 0 ||
+      filters.companyRoles.length > 0 ||
+      !!filters.dateFrom ||
+      !!filters.dateTo;
+
+    // Drag-defer guard: if a node drag is in progress, store the pending filter
+    // change and apply it after pointerup clears isDraggingNodeRef.
+    if (isDraggingNodeRef.current) {
+      pendingFiltersRef.current = filters;
+      return;
+    }
+    pendingFiltersRef.current = null;
+    // CSS fade-out: trigger a brief opacity dip on the canvas wrapper before
+    // the visible set changes so the transition feels intentional rather than abrupt.
+    setIsFilterTransitioning(true);
     rebuildVisibleIndices();
+    // Notify Cosmos renderer of the new visible set so it can zero-size excluded points.
+    cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
+    const fadeTimer = setTimeout(() => setIsFilterTransitioning(false), 150);
+    return () => clearTimeout(fadeTimer);
   }, [filters, rebuildVisibleIndices]);
 
+  // URL persistence: write non-default filter values to query params (debounced).
+  // Skip the very first call so the initial mount seed doesn't echo back.
+  const isFirstUrlWriteRef = useRef(true);
   useEffect(() => {
-    localStorage.setItem("acc-graph-filters", JSON.stringify(filters));
-  }, [filters]);
+    if (isFirstUrlWriteRef.current) {
+      isFirstUrlWriteRef.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      writeFiltersToUrl(filters, pathname, router);
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [filters, pathname, router]);
 
   // Keep physics ref in sync with state and persist to localStorage
   useEffect(() => {
@@ -1338,6 +1435,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (idx >= 0 && !usePhysicsRef.current) {
         organicWorkerRef.current?.postMessage({ type: "release", nodeIndex: idx });
       }
+      // Apply any filter change that was deferred while dragging.
+      if (pendingFiltersRef.current !== null) {
+        filtersRef.current = pendingFiltersRef.current;
+        pendingFiltersRef.current = null;
+        rebuildVisibleIndices();
+      }
       rebuildGrid();
       markGraphDirty();
       return;
@@ -1421,6 +1524,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const roleCount = new Map<string, number>();
     const lastAddedCount = new Map<string, number>();
     const moduleCount = new Map<string, number>();
+    const companyRoleCount = new Map<string, number>();
 
     const nodes = graphQuery.data?.hit ? (graphQuery.data.nodes as AccGraphNode[]) : [];
     for (const node of nodes) {
@@ -1436,6 +1540,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       for (const mod of node.modules ?? []) {
         moduleCount.set(mod, (moduleCount.get(mod) ?? 0) + 1);
       }
+
+      // companyRole: null maps to "Unspecified" bucket
+      const crBucket = (node as { companyRole?: string | null }).companyRole ?? "Unspecified";
+      companyRoleCount.set(crBucket, (companyRoleCount.get(crBucket) ?? 0) + 1);
     }
 
     const roles: FilterOption[] = [...roleCount.entries()]
@@ -1448,34 +1556,60 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         b.value === "Unknown" ? -1 :
         b.value.localeCompare(a.value)
       ));
-    const modules: FilterOption[] = [...moduleCount.entries()]
+    // Renamed: moduleOptions (was modules) — every option starts ON (exclude-list semantics)
+    const moduleOptions: FilterOption[] = [...moduleCount.entries()]
       .map(([value, count]) => ({ value, label: moduleLabel(value), count }))
       .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label));
+    // companyRoleOptions — distinct companyRole buckets, sorted alphabetically
+    const companyRoleOptions: FilterOption[] = [...companyRoleCount.entries()]
+      .map(([value, count]) => ({ value, label: value, count }))
+      .sort((a, b) => a.label.localeCompare(b.label));
 
-    return { roles, lastAddedBuckets, modules };
+    return { roles, lastAddedBuckets, moduleOptions, companyRoleOptions };
   }, [graphQuery.data]);
 
   useEffect(() => {
     if (!graphQuery.data) return;
     setFilters(prev => {
       const validRoles = new Set(filterOptions.roles.map(o => o.value));
-      const validModules = new Set(filterOptions.modules.map(o => o.value));
+      const validModules = new Set(filterOptions.moduleOptions.map(o => o.value));
       const validBuckets = new Set(filterOptions.lastAddedBuckets.map(o => o.value));
+      const validCompanyRoles = new Set(filterOptions.companyRoleOptions.map(o => o.value));
       const nextRoles = prev.roles.filter(r => validRoles.has(r));
-      const nextModules = prev.modules.filter(m => validModules.has(m));
+      const nextDisabledModules = prev.disabledModules.filter(m => validModules.has(m));
       const nextBuckets = prev.lastAddedBuckets.filter(b => validBuckets.has(b));
+      const nextCompanyRoles = prev.companyRoles.filter(cr => validCompanyRoles.has(cr));
       if (
         nextRoles.length === prev.roles.length &&
-        nextModules.length === prev.modules.length &&
-        nextBuckets.length === prev.lastAddedBuckets.length
+        nextDisabledModules.length === prev.disabledModules.length &&
+        nextBuckets.length === prev.lastAddedBuckets.length &&
+        nextCompanyRoles.length === prev.companyRoles.length
       ) {
         return prev; // No change — avoid re-render
       }
-      return { ...prev, roles: nextRoles, modules: nextModules, lastAddedBuckets: nextBuckets };
+      return { ...prev, roles: nextRoles, disabledModules: nextDisabledModules, lastAddedBuckets: nextBuckets, companyRoles: nextCompanyRoles };
     });
   }, [graphQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const hasActiveFilters = filters.roles.length > 0 || filters.lastAddedBuckets.length > 0 || filters.adminAccess !== "all" || filters.modules.length > 0;
+  const hasActiveFilters =
+    filters.roles.length > 0 ||
+    filters.lastAddedBuckets.length > 0 ||
+    filters.adminAccess !== "all" ||
+    filters.disabledModules.length > 0 ||
+    filters.companyRoles.length > 0 ||
+    !!filters.dateFrom ||
+    !!filters.dateTo;
+
+  // activeFilterCount: number of filter dimensions that are non-default.
+  // Used by plan 04's "Showing X of Y" header and "Clear all" button.
+  const activeFilterCount =
+    (filters.roles.length > 0 ? 1 : 0) +
+    (filters.lastAddedBuckets.length > 0 ? 1 : 0) +
+    (filters.adminAccess !== "all" ? 1 : 0) +
+    (filters.disabledModules.length > 0 ? 1 : 0) +
+    (filters.companyRoles.length > 0 ? 1 : 0) +
+    (filters.dateFrom ? 1 : 0) +
+    (filters.dateTo ? 1 : 0);
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -1649,7 +1783,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <span>Controls</span>
             {hasActiveFilters && (
               <span className="ml-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 leading-none">
-                {[filters.roles.length, filters.lastAddedBuckets.length, filters.adminAccess !== "all" ? 1 : 0, filters.modules.length].reduce((a, b) => a + b, 0)}
+                {activeFilterCount}
               </span>
             )}
           </button>
@@ -1710,10 +1844,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
               />
               <FilterMenu
-                label="Modules"
-                options={filterOptions.modules}
-                selected={filters.modules}
-                onToggle={(value) => setFilters((current) => ({ ...current, modules: toggleValue(current.modules, value) }))}
+                label="Modules (disabled)"
+                options={filterOptions.moduleOptions}
+                selected={filters.disabledModules}
+                onToggle={(value) => setFilters((current) => ({ ...current, disabledModules: toggleValue(current.disabledModules, value) }))}
                 maxVisible={Infinity}
               />
             </div>
