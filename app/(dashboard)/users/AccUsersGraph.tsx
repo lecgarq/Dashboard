@@ -426,6 +426,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // graph canvas. Default open at first paint; auto-collapses when the detail
   // panel opens at narrow viewports (see effect below).
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
+
+  // UI-03: auto-collapse the filter panel when the detail panel opens AND the
+  // viewport is ≤1280px. At wider viewports both panels fit alongside a
+  // ≥720px graph (per RESEARCH.md width math), so no auto-collapse needed.
+  // We only auto-collapse on selection events — a user who manually expands
+  // the filter while detail is open keeps that state (no resize-driven fight).
+  useEffect(() => {
+    if (!selectedNode) return;
+    if (typeof window === "undefined") return;
+    const isNarrow = window.matchMedia("(max-width: 1280px)").matches;
+    if (isNarrow && !isFilterCollapsed) {
+      setIsFilterCollapsed(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedNode]);
+
   // CSS fade-out: plays a 150ms opacity dip on the canvas wrapper when the
   // visible set shrinks (filter change). Zero GPU/shader cost — purely CSS.
   const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
