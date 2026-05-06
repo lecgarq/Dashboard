@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Check } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Filter } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import {
   nodeMatchesFilters,
@@ -421,7 +421,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   });
   const [filters, setFilters] = useState<GraphFilters>(() => readFiltersFromUrl(searchParams));
   const [visibleCount, setVisibleCount] = useState(0);
-  const [showControls, setShowControls] = useState(false);
+  // UI-03: filter panel collapse state. When collapsed, the panel renders as
+  // a thin (44px) icon rail; when expanded, it renders at 240px alongside the
+  // graph canvas. Default open at first paint; auto-collapses when the detail
+  // panel opens at narrow viewports (see effect below).
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
   // CSS fade-out: plays a 150ms opacity dip on the canvas wrapper when the
   // visible set shrinks (filter change). Zero GPU/shader cost — purely CSS.
   const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
@@ -1771,7 +1775,161 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full overflow-hidden">
+      {/* UI-03: filter panel — flex sibling of the graph canvas. Collapses
+          to a 44px icon rail with active-filter badge; expands to 240px. */}
+      <div
+        className={cn(
+          "relative flex-shrink-0 flex flex-col border-r border-border/30 bg-white/95 backdrop-blur-sm",
+          "transition-[width] duration-200 motion-reduce:transition-none overflow-hidden",
+        )}
+        style={{ width: isFilterCollapsed ? 44 : 240 }}
+        aria-label="Filter panel"
+      >
+        <button
+          type="button"
+          onClick={() => setIsFilterCollapsed((v) => !v)}
+          className="flex items-center justify-center h-10 w-full border-b border-border/30 hover:bg-muted/50 focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 outline-none shrink-0"
+          aria-label={isFilterCollapsed ? "Expand filter panel" : "Collapse filter panel"}
+          aria-expanded={!isFilterCollapsed}
+        >
+          {isFilterCollapsed ? <ChevronRight size={16} /> : <ChevronLeft size={16} />}
+        </button>
+        {!isFilterCollapsed && (
+          <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Layout</p>
+              <SliderControl
+                label="Separation"
+                value={graphControls.spacing}
+                onChange={(v) => scheduleGraphControlUpdate("spacing", v)}
+              />
+              <SliderControl
+                label="Cluster"
+                value={graphControls.clusterStrength}
+                onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)}
+              />
+              <p className="text-[10px] text-gray-400 leading-tight pt-1">
+                Separation = how far apart nodes sit. Cluster: 0 = organic, 100 = grouped by role.
+              </p>
+            </div>
+            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+              {/* Filter panel header: count summary + clear-all */}
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Filters</p>
+                {activeFilterCount > 0 && (
+                  <button
+                    onClick={() => setFilters(DEFAULT_FILTERS)}
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors"
+                  >
+                    <span aria-hidden="true">×</span>
+                    <span>Clear all</span>
+                  </button>
+                )}
+              </div>
+              {activeFilterCount > 0 && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                  Showing <span className="font-bold">{displayVisibleCount.toLocaleString()}</span> of {totalInstances.toLocaleString()} users
+                </span>
+              )}
+
+              {/* Existing controls */}
+              <FilterMenu
+                label="Roles"
+                options={filterOptions.roles}
+                selected={filters.roles}
+                onToggle={(value) => setFilters((current) => ({ ...current, roles: toggleValue(current.roles, value) }))}
+                maxVisible={Infinity}
+              />
+              <FilterMenu
+                label="Last Added"
+                options={filterOptions.lastAddedBuckets}
+                selected={filters.lastAddedBuckets}
+                onToggle={(value) => setFilters((current) => ({ ...current, lastAddedBuckets: toggleValue(current.lastAddedBuckets, value) }))}
+                maxVisible={Infinity}
+              />
+              <ToggleFilterControl
+                label="Admin Access"
+                value={filters.adminAccess}
+                options={[
+                  { value: "all", label: "All" },
+                  { value: "admin", label: "Admin only" },
+                  { value: "non-admin", label: "Non-admin" },
+                ]}
+                onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
+              />
+
+              {/* FILT-02: Date range — uses lastSignIn field (label reflects field; falls back to addedOn if
+                  lastSignIn is unavailable from the ACC API — see 02.5-01 diagnostic log for confirmation) */}
+              <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Last Activity</span>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-500 w-7 shrink-0">From</span>
+                  <input
+                    type="date"
+                    value={filters.dateFrom}
+                    onChange={(e) => setFilters((current) => ({ ...current, dateFrom: e.currentTarget.value }))}
+                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5">
+                  <span className="text-[10px] text-gray-500 w-7 shrink-0">To</span>
+                  <input
+                    type="date"
+                    value={filters.dateTo}
+                    onChange={(e) => setFilters((current) => ({ ...current, dateTo: e.currentTarget.value }))}
+                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+                  />
+                </label>
+              </div>
+
+              {/* FILT-03: Module toggles — exclude-list semantics (all ON by default) */}
+              {filterOptions.moduleOptions.length > 0 && (
+                <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1">
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Modules</span>
+                  <p className="text-[9px] text-gray-400 leading-tight">Toggle off to filter users with access only to that module.</p>
+                  <div className="pt-0.5 space-y-0.5">
+                    {filterOptions.moduleOptions.map((option) => (
+                      <ModuleToggle
+                        key={option.value}
+                        label={option.label}
+                        enabled={!filters.disabledModules.includes(option.value)}
+                        onToggle={() => setFilters((current) => ({
+                          ...current,
+                          disabledModules: toggleValue(current.disabledModules, option.value),
+                        }))}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* DATA-01: companyRole multi-select with search */}
+              {filterOptions.companyRoleOptions.length > 0 && (
+                <CompanyRoleFilter
+                  options={filterOptions.companyRoleOptions}
+                  selected={filters.companyRoles}
+                  onToggle={(value) => setFilters((current) => ({
+                    ...current,
+                    companyRoles: toggleValue(current.companyRoles, value),
+                  }))}
+                />
+              )}
+            </div>
+          </div>
+        )}
+        {isFilterCollapsed && (
+          <div className="flex-1 flex flex-col items-center pt-2 gap-2" aria-hidden="true">
+            <Filter size={16} className="text-muted-foreground" />
+            {activeFilterCount > 0 && (
+              <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary text-primary-foreground">
+                {activeFilterCount}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       <div
         ref={containerRef}
         data-render-backend={renderBackend}
@@ -1779,8 +1937,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         data-acc-graph-last-worker-tick={IS_DEV ? layoutDiagnostics.lastWorkerTick : undefined}
         data-acc-graph-active-node-count={IS_DEV ? layoutDiagnostics.activeNodeCount : undefined}
         data-acc-graph-hidden-node-count={IS_DEV ? layoutDiagnostics.hiddenNodeCount : undefined}
-        className="flex-1 relative rounded-xl border border-border/30 overflow-hidden"
-        style={{ background: GRAPH_BACKGROUND }}
+        className="flex-1 relative overflow-hidden"
+        style={{ background: GRAPH_BACKGROUND, minWidth: 0 }}
       >
         {perfHudEnabled && (
           <div
@@ -1982,150 +2140,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         </div>
 
-        <div className="absolute top-3 left-3 z-20">
-          <button
-            onClick={() => setShowControls((v) => !v)}
-            className={cn(
-              "flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg border transition-all shadow-sm",
-              showControls
-                ? "bg-gray-900 text-white border-gray-900"
-                : "bg-white/90 text-gray-600 border-gray-200 hover:text-gray-900 hover:border-gray-400",
-            )}
-          >
-            <span>⚙</span>
-            <span>Controls</span>
-            {hasActiveFilters && (
-              <span className="ml-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 leading-none">
-                {activeFilterCount}
-              </span>
-            )}
-          </button>
-        </div>
-
-        {showControls && (
-          <div className="absolute top-12 left-3 bottom-3 z-10 w-64 flex flex-col gap-2 overflow-y-auto">
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Layout</p>
-              <SliderControl
-                label="Separation"
-                value={graphControls.spacing}
-                onChange={(v) => scheduleGraphControlUpdate("spacing", v)}
-              />
-              <SliderControl
-                label="Cluster"
-                value={graphControls.clusterStrength}
-                onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)}
-              />
-              <p className="text-[10px] text-gray-400 leading-tight pt-1">
-                Separation = how far apart nodes sit. Cluster: 0 = organic, 100 = grouped by role.
-              </p>
-            </div>
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              {/* Filter panel header: count summary + clear-all */}
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Filters</p>
-                {activeFilterCount > 0 && (
-                  <button
-                    onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors"
-                  >
-                    <span aria-hidden="true">×</span>
-                    <span>Clear all</span>
-                  </button>
-                )}
-              </div>
-              {activeFilterCount > 0 && (
-                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
-                  Showing <span className="font-bold">{displayVisibleCount.toLocaleString()}</span> of {totalInstances.toLocaleString()} users
-                </span>
-              )}
-
-              {/* Existing controls */}
-              <FilterMenu
-                label="Roles"
-                options={filterOptions.roles}
-                selected={filters.roles}
-                onToggle={(value) => setFilters((current) => ({ ...current, roles: toggleValue(current.roles, value) }))}
-                maxVisible={Infinity}
-              />
-              <FilterMenu
-                label="Last Added"
-                options={filterOptions.lastAddedBuckets}
-                selected={filters.lastAddedBuckets}
-                onToggle={(value) => setFilters((current) => ({ ...current, lastAddedBuckets: toggleValue(current.lastAddedBuckets, value) }))}
-                maxVisible={Infinity}
-              />
-              <ToggleFilterControl
-                label="Admin Access"
-                value={filters.adminAccess}
-                options={[
-                  { value: "all", label: "All" },
-                  { value: "admin", label: "Admin only" },
-                  { value: "non-admin", label: "Non-admin" },
-                ]}
-                onChange={(value) => setFilters((current) => ({ ...current, adminAccess: value as GraphFilters["adminAccess"] }))}
-              />
-
-              {/* FILT-02: Date range — uses lastSignIn field (label reflects field; falls back to addedOn if
-                  lastSignIn is unavailable from the ACC API — see 02.5-01 diagnostic log for confirmation) */}
-              <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Last Activity</span>
-                <label className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-gray-500 w-7 shrink-0">From</span>
-                  <input
-                    type="date"
-                    value={filters.dateFrom}
-                    onChange={(e) => setFilters((current) => ({ ...current, dateFrom: e.currentTarget.value }))}
-                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
-                  />
-                </label>
-                <label className="flex items-center gap-1.5">
-                  <span className="text-[10px] text-gray-500 w-7 shrink-0">To</span>
-                  <input
-                    type="date"
-                    value={filters.dateTo}
-                    onChange={(e) => setFilters((current) => ({ ...current, dateTo: e.currentTarget.value }))}
-                    className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
-                  />
-                </label>
-              </div>
-
-              {/* FILT-03: Module toggles — exclude-list semantics (all ON by default) */}
-              {filterOptions.moduleOptions.length > 0 && (
-                <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Modules</span>
-                  <p className="text-[9px] text-gray-400 leading-tight">Toggle off to filter users with access only to that module.</p>
-                  <div className="pt-0.5 space-y-0.5">
-                    {filterOptions.moduleOptions.map((option) => (
-                      <ModuleToggle
-                        key={option.value}
-                        label={option.label}
-                        enabled={!filters.disabledModules.includes(option.value)}
-                        onToggle={() => setFilters((current) => ({
-                          ...current,
-                          disabledModules: toggleValue(current.disabledModules, option.value),
-                        }))}
-                      />
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* DATA-01: companyRole multi-select with search */}
-              {filterOptions.companyRoleOptions.length > 0 && (
-                <CompanyRoleFilter
-                  options={filterOptions.companyRoleOptions}
-                  selected={filters.companyRoles}
-                  onToggle={(value) => setFilters((current) => ({
-                    ...current,
-                    companyRoles: toggleValue(current.companyRoles, value),
-                  }))}
-                />
-              )}
-            </div>
-          </div>
-        )}
-
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
           <div className="w-px h-3 bg-gray-200 shrink-0" />
@@ -2256,103 +2270,107 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           className="px-2 py-1 text-[11px] font-medium bg-gray-900/90 text-white rounded-lg shadow-md whitespace-nowrap"
         />
 
-        {selectedNode && !polygonSelection && (
-          <div className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none">
-            <div className="pointer-events-auto h-full">
-              <SidePanel
-                state={selectedNode}
-                onClose={() => {
-                  setSelectedNode(null);
-                  selectedNodeRef.current = null;
-                  markGraphDirty();
-                }}
-              />
-            </div>
-          </div>
-        )}
-
-        {polygonSelection && (
-          <div
-            data-testid="acc-graph-polygon-panel"
-            className="absolute top-3 right-3 bottom-3 z-20 w-72 pointer-events-none"
-          >
-            <div className="pointer-events-auto h-full overflow-y-auto rounded-xl border border-gray-200 bg-white/95 backdrop-blur-sm shadow-lg p-4 flex flex-col gap-3">
-              <div className="flex items-center justify-between gap-2">
-                <div className="flex flex-col">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    Lasso Selection
-                  </span>
-                  <span className="text-base font-bold text-gray-900">
-                    {polygonSelection.summary.count} nodes
-                  </span>
-                </div>
-                <button
-                  onClick={clearPolygonSelection}
-                  data-testid="acc-graph-polygon-clear"
-                  className="text-[10px] font-medium px-2 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
-                >
-                  Clear selection
-                </button>
-              </div>
-
-              {polygonSelection.summary.byRole.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    Top roles
-                  </span>
-                  <ul className="flex flex-col gap-0.5">
-                    {polygonSelection.summary.byRole.map((entry) => (
-                      <li
-                        key={entry.value}
-                        className="flex items-center justify-between gap-2 text-xs text-gray-800"
-                      >
-                        <span className="truncate">{entry.value}</span>
-                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
-                          {entry.count}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {polygonSelection.summary.byModule.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    Top modules
-                  </span>
-                  <ul className="flex flex-col gap-0.5">
-                    {polygonSelection.summary.byModule.map((entry) => (
-                      <li
-                        key={entry.value}
-                        className="flex items-center justify-between gap-2 text-xs text-gray-800"
-                      >
-                        <span className="truncate">{moduleLabel(entry.value)}</span>
-                        <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
-                          {entry.count}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
-              {polygonSelection.summary.sampleIds.length > 0 && (
-                <div className="flex flex-col gap-1">
-                  <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
-                    Sample ids
-                  </span>
-                  <ul className="flex flex-col gap-0.5 font-mono text-[10px] text-gray-600">
-                    {polygonSelection.summary.sampleIds.map((id) => (
-                      <li key={id} className="truncate">{id}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </div>
+
+      {/* UI-03: detail panel — flex sibling of the graph canvas. Renders only
+          when a single node is selected (and not during a lasso multi-select). */}
+      {selectedNode && !polygonSelection && (
+        <div className="relative flex-shrink-0 w-[280px] border-l border-border/30 overflow-y-auto bg-white">
+          <SidePanel
+            state={selectedNode}
+            onClose={() => {
+              setSelectedNode(null);
+              selectedNodeRef.current = null;
+              markGraphDirty();
+            }}
+          />
+        </div>
+      )}
+
+      {/* UI-03: polygon (lasso) summary panel — flex sibling, same slot as
+          the detail panel. polygonSelection is mutually exclusive with
+          selectedNode (gated by the conditional above). */}
+      {polygonSelection && (
+        <div
+          data-testid="acc-graph-polygon-panel"
+          className="relative flex-shrink-0 w-[280px] border-l border-border/30 overflow-y-auto bg-white"
+        >
+          <div className="h-full p-4 flex flex-col gap-3">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex flex-col">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  Lasso Selection
+                </span>
+                <span className="text-base font-bold text-gray-900">
+                  {polygonSelection.summary.count} nodes
+                </span>
+              </div>
+              <button
+                onClick={clearPolygonSelection}
+                data-testid="acc-graph-polygon-clear"
+                className="text-[10px] font-medium px-2 py-1 rounded-md bg-gray-100 text-gray-700 hover:bg-gray-200 transition-colors"
+              >
+                Clear selection
+              </button>
+            </div>
+
+            {polygonSelection.summary.byRole.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  Top roles
+                </span>
+                <ul className="flex flex-col gap-0.5">
+                  {polygonSelection.summary.byRole.map((entry) => (
+                    <li
+                      key={entry.value}
+                      className="flex items-center justify-between gap-2 text-xs text-gray-800"
+                    >
+                      <span className="truncate">{entry.value}</span>
+                      <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
+                        {entry.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {polygonSelection.summary.byModule.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  Top modules
+                </span>
+                <ul className="flex flex-col gap-0.5">
+                  {polygonSelection.summary.byModule.map((entry) => (
+                    <li
+                      key={entry.value}
+                      className="flex items-center justify-between gap-2 text-xs text-gray-800"
+                    >
+                      <span className="truncate">{moduleLabel(entry.value)}</span>
+                      <span className="shrink-0 rounded bg-gray-100 px-1.5 py-0.5 font-mono text-[10px] text-gray-700">
+                        {entry.count}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {polygonSelection.summary.sampleIds.length > 0 && (
+              <div className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                  Sample ids
+                </span>
+                <ul className="flex flex-col gap-0.5 font-mono text-[10px] text-gray-600">
+                  {polygonSelection.summary.sampleIds.map((id) => (
+                    <li key={id} className="truncate">{id}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
