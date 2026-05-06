@@ -2,6 +2,7 @@
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
+import { Check } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import {
   nodeMatchesFilters,
@@ -396,6 +397,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     targets: new Int32Array(0),
   });
   const [motionMetric, setMotionMetric] = useState({ averageVelocity: 0, linkCount: 0 });
+
+  // UI-02: Stability badge state. `isSimStable` flips true after sustained
+  // below-threshold velocity (Canvas2D path) or alpha (Cosmos path) for
+  // STABLE_DURATION_MS. `stableStartedAtRef` tracks the first moment we
+  // crossed below threshold; `hasReceivedTickRef` guards against the badge
+  // appearing during initial warm-up before any tick has arrived.
+  const [isSimStable, setIsSimStable] = useState(false);
+  const stableStartedAtRef = useRef<number | null>(null);
+  const hasReceivedTickRef = useRef(false);
+  const [showStableDiagnostics, setShowStableDiagnostics] = useState(false);
   const [layoutDiagnostics, setLayoutDiagnostics] = useState({
     lastWorkerTick: 0,
     activeNodeCount: 0,
@@ -1054,6 +1065,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       }
       if (message.type !== "tick") return;
       posRef.current = message.positions;
+      // UI-02: mark that at least one tick has arrived so the stability
+      // detector won't fire during the pre-warm-up window.
+      hasReceivedTickRef.current = true;
       const now = performance.now();
       // Capture latest tick duration for the perf HUD (every tick, cheap).
       if (typeof message.tickDurationMs === "number") {
@@ -1086,6 +1100,68 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (organicWorkerRef.current === worker) organicWorkerRef.current = null;
     };
   }, [markGraphDirty, rebuildGrid, renderBackend]);
+
+  // UI-02: Stability detection — Canvas2D path.
+  // Watches motionMetric.averageVelocity (updated from worker ticks). When
+  // sustained below STABLE_THRESHOLD for STABLE_DURATION_MS, flip isSimStable
+  // to true. Worker is NOT terminated; this is a UI signal only.
+  useEffect(() => {
+    if (!isReady || !hasReceivedTickRef.current) return;
+    const STABLE_THRESHOLD = 0.0001;
+    const STABLE_DURATION_MS = 500;
+    const v = motionMetric.averageVelocity;
+
+    if (v < STABLE_THRESHOLD) {
+      if (stableStartedAtRef.current === null) {
+        stableStartedAtRef.current = Date.now();
+        // Schedule a re-check in case no further ticks arrive (worker
+        // self-pauses when fully settled).
+        const handle = setTimeout(() => {
+          if (
+            stableStartedAtRef.current !== null &&
+            Date.now() - stableStartedAtRef.current >= STABLE_DURATION_MS
+          ) {
+            setIsSimStable(true);
+          }
+        }, STABLE_DURATION_MS + 20);
+        return () => clearTimeout(handle);
+      } else if (Date.now() - stableStartedAtRef.current >= STABLE_DURATION_MS) {
+        setIsSimStable(true);
+      }
+    } else {
+      stableStartedAtRef.current = null;
+      if (isSimStable) setIsSimStable(false);
+    }
+  }, [motionMetric.averageVelocity, isReady, isSimStable]);
+
+  // UI-02: Stability detection — Cosmos GPU-physics path.
+  // Polls getSimulationAlpha() and isSimulationRunning() at 100ms cadence.
+  // Stable = alpha < 0.005 AND simulation not running for STABLE_DURATION_MS.
+  useEffect(() => {
+    if (!isReady) return;
+    const cosmos = cosmosRendererRef.current;
+    if (!cosmos) return;
+    const STABLE_DURATION_MS = 500;
+    const id = window.setInterval(() => {
+      const alpha = cosmos.getSimulationAlpha?.() ?? 1;
+      const running = cosmos.isSimulationRunning?.() ?? true;
+      const stableNow = alpha < 0.005 && !running;
+      if (stableNow) {
+        // Cosmos path: a successful alpha read counts as a "tick" for the
+        // warm-up guard.
+        hasReceivedTickRef.current = true;
+        if (stableStartedAtRef.current === null) {
+          stableStartedAtRef.current = Date.now();
+        } else if (Date.now() - stableStartedAtRef.current >= STABLE_DURATION_MS) {
+          setIsSimStable(true);
+        }
+      } else {
+        stableStartedAtRef.current = null;
+        if (isSimStable) setIsSimStable(false);
+      }
+    }, 100);
+    return () => window.clearInterval(id);
+  }, [isReady, isSimStable]);
 
   useEffect(() => {
     if (!users.length) return;
