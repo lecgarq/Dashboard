@@ -1800,6 +1800,66 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {/* UI-02: Stable badge — fades in once the simulation has settled. */}
+        <div
+          role="status"
+          aria-live="polite"
+          aria-label={isSimStable ? "Graph stable" : "Graph updating"}
+          data-testid="acc-graph-stable-badge"
+          className={cn(
+            "absolute top-3 right-3 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full",
+            "text-[11px] font-medium border shadow-sm cursor-pointer select-none",
+            "bg-white/90 border-emerald-200 text-emerald-700",
+            "transition-opacity duration-200 motion-reduce:transition-none",
+            isSimStable ? "opacity-100" : "opacity-0 pointer-events-none",
+          )}
+          onClick={() => setShowStableDiagnostics((v) => !v)}
+        >
+          <Check size={10} className="shrink-0" aria-hidden="true" />
+          <span>Stable</span>
+        </div>
+
+        {/* UI-02: Stability diagnostics popover. Click the Stable badge to toggle. */}
+        {isSimStable && showStableDiagnostics && (
+          <div
+            className="absolute top-12 right-3 z-30 w-56 rounded-md border bg-white p-3 shadow-md text-[11px]"
+            role="dialog"
+            aria-label="Stability diagnostics"
+            data-testid="acc-graph-stable-diagnostics"
+          >
+            <div className="font-medium text-foreground mb-1">Simulation diagnostics</div>
+            <dl className="space-y-0.5 text-muted-foreground">
+              <div className="flex justify-between">
+                <dt>Avg velocity</dt>
+                <dd>{motionMetric.averageVelocity.toFixed(6)}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Visible nodes</dt>
+                <dd>{visibleCount.toLocaleString()}</dd>
+              </div>
+              <div className="flex justify-between">
+                <dt>Links</dt>
+                <dd>{motionMetric.linkCount.toLocaleString()}</dd>
+              </div>
+              {cosmosRendererRef.current && (
+                <div className="flex justify-between">
+                  <dt>Cosmos alpha</dt>
+                  <dd>
+                    {(cosmosRendererRef.current.getSimulationAlpha?.() ?? 0).toFixed(4)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+            <button
+              type="button"
+              className="mt-2 text-[10px] text-muted-foreground underline"
+              onClick={() => setShowStableDiagnostics(false)}
+            >
+              Close
+            </button>
+          </div>
+        )}
+
         {positionCacheCorrupt && (
           <div className="absolute top-0 left-0 right-0 z-40 flex items-center justify-between gap-3 bg-amber-50 border-b border-amber-200 px-4 py-2.5">
             <span className="text-xs text-amber-800 font-medium">
