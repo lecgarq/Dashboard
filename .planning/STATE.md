@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-06T22:54:43.975Z"
+last_updated: "2026-05-06T23:03:48.651Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 19
-  completed_plans: 17
+  completed_plans: 18
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 03 (Graph UI Completion) — IN PROGRESS
-Plan: 03-01 — CLOSED 2026-05-06. Zoom-threshold node labels (UI-01): GraphRenderFrame extended with labelFadeStartScale/EndScale/labelOverrideIndices; CanvasGraphRenderer adds late-zoom label pass (degree-priority, AABB collision, 200-cap, hover/select override). AccUsersGraph populates label/degree, tracks lastFitScale, mirrors hoveredNode for rAF. Cosmos persistent labels deferred (Open Q1). See 03-01-SUMMARY.md.
-Status: Phase 03 — 1/3 plans complete. Next: 03-02.
-Last activity: 2026-05-06 — 03-01 shipped; tsc clean.
+Plan: 03-02 — CLOSED 2026-05-06. Stability badge (UI-02): isSimStable + stableStartedAtRef + hasReceivedTickRef; Canvas2D debounce on motionMetric.averageVelocity (<0.0001 for 500ms); Cosmos 100ms poll on getSimulationAlpha + isSimulationRunning (alpha<0.005 + !running). resetStability wired to drag/filter/select; pan/zoom intentionally NOT wired. Stable badge JSX with aria-live=polite, motion-reduce honored, click toggles diagnostics popover. Worker NOT terminated. See 03-02-SUMMARY.md.
+Status: Phase 03 — 2/3 plans complete. Next: 03-03.
+Last activity: 2026-05-06 — 03-02 shipped; tsc clean.
 
-Progress: [███░░░░░░░] 33%
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
@@ -52,6 +52,7 @@ Progress: [███░░░░░░░] 33%
 | Phase 02.5-acc-data-filter-refinement P03 | 12min | 2 tasks | 4 files |
 | Phase 02.5 P02 | 7m 37s | 3 tasks | 3 files |
 | Phase 03-graph-ui-completion P01 | 8m | 3 tasks | 2 files |
+| Phase 03-graph-ui-completion P02 | 6 min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Recent decisions affecting current work:
 - [Phase 02.5]: URL param keys: roles, moff (disabledModules), croles (companyRoles), from, to, admin — lastAddedBuckets excluded (volatile derived state)
 - [Phase 02.5]: page.tsx Suspense wrapper already present pre-02.5-02 — no change needed for useSearchParams
 - [Phase 03-graph-ui-completion]: P01: Canvas2D late-zoom label pass uses fitScale*2.0/3.5 fade band, degree-priority, 200-cap, hover/select override; Cosmos persistent labels deferred (Open Q1)
+- [Phase 03-graph-ui-completion]: P02: UI-02 stability badge — STABLE_THRESHOLD=0.0001, STABLE_DURATION_MS=500, Cosmos alpha<0.005 + !isSimulationRunning; dual-path detection (tick-driven Canvas2D + 100ms poll Cosmos); resetStability wired to drag/filter/select; pan/zoom NOT wired; worker NOT terminated; lasso polygon-select intentionally not wired (multi-select UX, not pick-a-node)
 
 ### Pending Todos
 
@@ -110,5 +112,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-06
-Stopped at: 03-01 closed: zoom-threshold node labels (UI-01) shipped to Canvas2D path. Cosmos persistent labels deferred. Next: 03-02 per ROADMAP.
+Stopped at: 03-02 closed: stability badge (UI-02) shipped — dual-path detection, reheat on drag/filter/select, badge with aria-live + diagnostics popover, worker untouched. Next: 03-03 per ROADMAP.
 Resume file: None

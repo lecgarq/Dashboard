@@ -31,7 +31,7 @@
 ### Graph UI Completion (UI)
 
 - [x] **UI-01**: User can read node labels when zoomed in, with no labels cluttering the overview zoom level — zoom-threshold label rendering in `CanvasGraphRenderer.draw()` using existing `label` field
-- [ ] **UI-02**: User can see when the physics simulation has stabilized — Web Worker auto-pauses when `averageVelocity < 0.0005` for 5+ consecutive seconds; UI shows "Stable" badge
+- [x] **UI-02**: User can see when the physics simulation has stabilized — Web Worker auto-pauses when `averageVelocity < 0.0005` for 5+ consecutive seconds; UI shows "Stable" badge
 - [ ] **UI-03**: User can access the filter panel and side detail panel simultaneously on screens ≤1280px wide — layout fix prevents both panels from occupying the same top-right position
 
 ### Access Analysis (ANAL)
@@ -87,7 +87,7 @@
 | FILT-02 | Phase 2.5 | Complete |
 | FILT-03 | Phase 2.5 | Complete |
 | UI-01 | Phase 3 | Complete |
-| UI-02 | Phase 3 | Pending |
+| UI-02 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Pending |
 | ANAL-01 | Phase 4 | Pending |
 | ANAL-02 | Phase 4 | Pending |
