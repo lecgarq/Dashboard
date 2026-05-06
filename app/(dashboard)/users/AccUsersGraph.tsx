@@ -1731,12 +1731,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
         {/* FILT-01 empty-state overlay: shown when filters are active but zero users match */}
         {isReady && visibleCount === 0 && hasActiveFilters && (
-          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#F8F7F4]/90">
-            <p className="text-sm font-medium text-gray-700">No users match these filters</p>
-            <p className="text-xs text-gray-400 mt-1">Adjust filters to see results</p>
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#F8F7F4]/95">
+            <span className="text-3xl mb-2" aria-hidden="true">🔍</span>
+            <p className="text-base font-semibold text-gray-800">No users match these filters</p>
+            <p className="text-sm text-gray-500 mt-1">Try adjusting your filters to see results</p>
             <button
               onClick={() => setFilters(DEFAULT_FILTERS)}
-              className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition-colors"
+              className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold shadow-sm hover:bg-gray-700 transition-colors"
             >
               Clear filters
             </button>
@@ -1794,16 +1795,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 {activeFilterCount > 0 && (
                   <button
                     onClick={() => setFilters(DEFAULT_FILTERS)}
-                    className="text-[10px] px-2 py-0.5 rounded-lg bg-gray-100 text-gray-600 border border-gray-200 hover:bg-gray-200 transition-colors"
+                    className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors"
                   >
-                    Clear all
+                    <span aria-hidden="true">×</span>
+                    <span>Clear all</span>
                   </button>
                 )}
               </div>
               {activeFilterCount > 0 && (
-                <p className="text-[10px] text-emerald-700 font-medium">
-                  Showing {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} users
-                </p>
+                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-md bg-emerald-50 text-emerald-700 text-[11px] font-semibold">
+                  Showing <span className="font-bold">{displayVisibleCount.toLocaleString()}</span> of {totalInstances.toLocaleString()} users
+                </span>
               )}
 
               {/* Existing controls */}
@@ -2123,79 +2125,143 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 }
 
 // FILT-03: iOS-style module toggle — single toggle row
+// Renders ON/OFF text alongside the switch so the state is unambiguous without
+// relying on color alone. Disabled modules render the label struck-through.
 function ModuleToggle({ label, enabled, onToggle }: { label: string; enabled: boolean; onToggle: () => void }) {
   return (
-    <div className="flex items-center justify-between py-0.5">
-      <span className="text-[11px] text-gray-600 truncate max-w-[140px]">{label}</span>
-      <button
-        role="switch"
-        aria-checked={enabled}
-        onClick={onToggle}
+    <div className="flex items-center justify-between gap-2 py-0.5">
+      <span
         className={cn(
-          "relative inline-flex h-4 w-7 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
-          enabled ? "bg-emerald-500" : "bg-gray-200"
+          "text-[11px] truncate max-w-[120px]",
+          enabled ? "text-gray-700" : "text-gray-400 line-through",
         )}
       >
-        <span className={cn(
-          "pointer-events-none inline-block h-3 w-3 rounded-full bg-white shadow transform transition-transform duration-200",
-          enabled ? "translate-x-3" : "translate-x-0"
-        )} />
-      </button>
+        {label}
+      </span>
+      <div className="flex items-center gap-1.5 shrink-0">
+        <span
+          className={cn(
+            "text-[9px] font-semibold tracking-wide w-6 text-right",
+            enabled ? "text-emerald-600" : "text-gray-400",
+          )}
+        >
+          {enabled ? "ON" : "OFF"}
+        </span>
+        <button
+          role="switch"
+          aria-checked={enabled}
+          onClick={onToggle}
+          className={cn(
+            "relative inline-flex h-4 w-7 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
+            enabled ? "bg-emerald-500" : "bg-gray-300",
+          )}
+        >
+          <span
+            className={cn(
+              "pointer-events-none inline-block h-3 w-3 rounded-full shadow transform transition-transform duration-200",
+              enabled ? "translate-x-3 bg-white" : "translate-x-0 bg-gray-50",
+            )}
+          />
+        </button>
+      </div>
     </div>
   );
 }
 
-// DATA-01: companyRole multi-select with search box
+// DATA-01: companyRole multi-select rendered as a dropdown popover.
+// Click the trigger to open; click outside or press Escape to dismiss.
+// Selecting an option keeps the panel open so the user can multi-select.
 function CompanyRoleFilter({ options, selected, onToggle }: {
   options: FilterOption[];
   selected: string[];
   onToggle: (value: string) => void;
 }) {
+  const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onMouseDown = (event: MouseEvent) => {
+      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
   const filtered = options.filter((o) =>
     o.label.toLowerCase().includes(search.toLowerCase())
   );
+  const triggerLabel =
+    selected.length === 0
+      ? "All roles"
+      : `${selected.length} role${selected.length === 1 ? "" : "s"} selected`;
+
   return (
-    <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-1.5">
-      <div className="flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">Company Role</span>
-        {selected.length > 0 && (
-          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
-            {selected.length}
+    <div className="min-w-0 space-y-1">
+      <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Company Role</span>
+      <div ref={containerRef} className="relative">
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          aria-haspopup="listbox"
+          aria-expanded={open}
+          className={cn(
+            "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg border text-[11px] transition-colors",
+            open
+              ? "border-gray-400 bg-white"
+              : "border-gray-200 bg-white hover:bg-gray-50",
+          )}
+        >
+          <span className={cn("truncate", selected.length === 0 ? "text-gray-500" : "text-gray-800 font-medium")}>
+            {triggerLabel}
           </span>
-        )}
-      </div>
-      <input
-        type="text"
-        placeholder="Search roles..."
-        value={search}
-        onChange={(e) => setSearch(e.currentTarget.value)}
-        className="h-6 w-full rounded-md border border-gray-200 bg-white px-2 text-[10px] text-gray-700 outline-none focus:border-gray-400"
-      />
-      <div className="max-h-36 overflow-y-auto space-y-0.5 pr-0.5">
-        {filtered.length === 0 ? (
-          <span className="text-[10px] text-gray-400">No matching roles</span>
-        ) : (
-          filtered.map((option) => {
-            const active = selected.includes(option.value);
-            return (
-              <button
-                key={option.value}
-                onClick={() => onToggle(option.value)}
-                className={cn(
-                  "w-full flex items-center justify-between gap-1 px-2 py-0.5 rounded text-left text-[10px] transition-colors",
-                  active
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-600 hover:bg-gray-100",
-                )}
-              >
-                <span className="truncate">{option.label}</span>
-                <span className={cn("shrink-0 text-[9px] font-mono", active ? "opacity-70" : "text-gray-400")}>
-                  {option.count}
-                </span>
-              </button>
-            );
-          })
+          <span className={cn("text-[10px] text-gray-500 transition-transform", open && "rotate-180")}>▾</span>
+        </button>
+        {open && (
+          <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg p-2 space-y-1.5">
+            <input
+              type="text"
+              placeholder="Search roles..."
+              value={search}
+              onChange={(e) => setSearch(e.currentTarget.value)}
+              autoFocus
+              className="h-6 w-full rounded-md border border-gray-200 bg-white px-2 text-[10px] text-gray-700 outline-none focus:border-gray-400"
+            />
+            <div className="max-h-48 overflow-y-auto space-y-0.5 pr-0.5">
+              {filtered.length === 0 ? (
+                <span className="block px-1 py-1 text-[10px] text-gray-400">No matching roles</span>
+              ) : (
+                filtered.map((option) => {
+                  const active = selected.includes(option.value);
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => onToggle(option.value)}
+                      className={cn(
+                        "w-full flex items-center justify-between gap-1 px-2 py-0.5 rounded text-left text-[10px] transition-colors",
+                        active
+                          ? "bg-gray-900 text-white"
+                          : "text-gray-600 hover:bg-gray-100",
+                      )}
+                    >
+                      <span className="truncate">{option.label}</span>
+                      <span className={cn("shrink-0 text-[9px] font-mono", active ? "opacity-70" : "text-gray-400")}>
+                        {option.count}
+                      </span>
+                    </button>
+                  );
+                })
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
