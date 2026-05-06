@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-04-30T15:49:56.205Z"
+last_updated: "2026-05-06T22:54:43.975Z"
 progress:
-  total_phases: 3
-  completed_phases: 2
-  total_plans: 14
-  completed_plans: 14
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 19
+  completed_plans: 17
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — COMPLETE
-Plan: 02.5-06 — CLOSED 2026-05-06. Filter panel UI polish: companyRole dropdown popover (Gap 2), explicit ON/OFF text on module toggles (Gap 3), prominent count badge + bordered Clear-all button + magnifier-icon empty-state with primary CTA (Gap 4). All visual changes verified live via Chrome DevTools MCP. FILT-01 hide path still working (no regression). See 02.5-06-SUMMARY.md.
-Status: Phase 2.5 — all 6 plans complete. All 4 UX gaps from 02.5-VERIFICATION.md closed.
-Last activity: 2026-05-06 — Phase 2.5 sign-off ready; tsc clean, MCP visual verification passed.
+Phase: 03 (Graph UI Completion) — IN PROGRESS
+Plan: 03-01 — CLOSED 2026-05-06. Zoom-threshold node labels (UI-01): GraphRenderFrame extended with labelFadeStartScale/EndScale/labelOverrideIndices; CanvasGraphRenderer adds late-zoom label pass (degree-priority, AABB collision, 200-cap, hover/select override). AccUsersGraph populates label/degree, tracks lastFitScale, mirrors hoveredNode for rAF. Cosmos persistent labels deferred (Open Q1). See 03-01-SUMMARY.md.
+Status: Phase 03 — 1/3 plans complete. Next: 03-02.
+Last activity: 2026-05-06 — 03-01 shipped; tsc clean.
 
-Progress: [██████████] 100%
+Progress: [███░░░░░░░] 33%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [██████████] 100%
 | Phase 02-cosmos-gl-renderer P06 | 12min | 2 tasks | 3 files |
 | Phase 02.5-acc-data-filter-refinement P03 | 12min | 2 tasks | 4 files |
 | Phase 02.5 P02 | 7m 37s | 3 tasks | 3 files |
+| Phase 03-graph-ui-completion P01 | 8m | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -93,6 +94,7 @@ Recent decisions affecting current work:
 - [Phase 02.5]: nodeMatchesFilters extracted to accGraphFilters.ts (pure module) — AccUsersGraph.tsx use client prevents direct Vitest import
 - [Phase 02.5]: URL param keys: roles, moff (disabledModules), croles (companyRoles), from, to, admin — lastAddedBuckets excluded (volatile derived state)
 - [Phase 02.5]: page.tsx Suspense wrapper already present pre-02.5-02 — no change needed for useSearchParams
+- [Phase 03-graph-ui-completion]: P01: Canvas2D late-zoom label pass uses fitScale*2.0/3.5 fade band, degree-priority, 200-cap, hover/select override; Cosmos persistent labels deferred (Open Q1)
 
 ### Pending Todos
 
@@ -108,5 +110,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-06
-Stopped at: 02.5-05 closed via runtime trace. Take-1 fix vindicated; v2 instrumentation removed. Next action: plan 06 (UI polish) per ROADMAP, or any new ad-hoc work the user requests.
+Stopped at: 03-01 closed: zoom-threshold node labels (UI-01) shipped to Canvas2D path. Cosmos persistent labels deferred. Next: 03-02 per ROADMAP.
 Resume file: None
