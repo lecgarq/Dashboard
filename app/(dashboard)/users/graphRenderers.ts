@@ -15,6 +15,10 @@ export interface GraphRenderNode {
   id: string;
   color: string;
   radius?: number;
+  /** Display label drawn by the Canvas2D late-zoom label pass (UI-01). Omit to skip. */
+  label?: string;
+  /** Connection count — used as priority key for the 200-cap collision pass. */
+  degree?: number;
 }
 
 export interface GraphRenderView {
@@ -52,6 +56,19 @@ export interface GraphRenderFrame {
   cssHeight: number;
   devicePixelRatio: number;
   backgroundColor: string;
+  /**
+   * Late-zoom label fade band (UI-01). Opacity is 0 below labelFadeStartScale,
+   * lerps to 1 at labelFadeEndScale. When either is undefined, the Canvas2D
+   * label pass is skipped (back-compat).
+   */
+  labelFadeStartScale?: number;
+  labelFadeEndScale?: number;
+  /**
+   * Indices that always render their label regardless of zoom (hover/select).
+   * Override labels bypass the 200-cap and collision check, but their AABBs
+   * still occupy space so subsequent normal labels respect them.
+   */
+  labelOverrideIndices?: ReadonlySet<number>;
 }
 
 export interface GraphDrawResult {
