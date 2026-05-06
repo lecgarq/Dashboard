@@ -53,6 +53,10 @@ interface UserNode extends PhysicsNode {
   individualAccess: boolean;
   companyRole: string | null;
   lastSignIn: string | null;
+  // UI-01: optional label + degree consumed by the Canvas2D late-zoom label pass.
+  // Populated alongside the render-node assembly; safe to leave undefined.
+  label?: string;
+  degree?: number;
 }
 
 type SimNode = UserNode;
@@ -305,6 +309,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const view = useRef(loadSavedView());
   const targetView = useRef(loadSavedView());
+  // Tracks the most recent fit-to-view scale so the late-zoom label band
+  // (UI-01) can be expressed relative to the current graph extent rather
+  // than a fixed zoom number. Updated inside zoomToFit().
+  const lastFitScaleRef = useRef<number>(view.current.scale ?? 600);
   const isDragging = useRef(false);
   const saveViewTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastMouse = useRef({ x: 0, y: 0 });
@@ -316,9 +324,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   );
   const lastMetricUpdateAtRef = useRef(0);
   const forceRenderUntilRef = useRef(0);
+  // UI-01: tracks the linksRef reference last consumed for degree-recompute,
+  // so per-frame degree assignment only runs when links actually change.
+  const lastLinksForDegreeRef = useRef<{ sources: Int32Array; targets: Int32Array } | null>(null);
 
   const [isDraggingState, setIsDraggingState] = useState(false);
   const [hoveredNode, setHoveredNode] = useState<SimNode | null>(null);
+  // Mirror hoveredNode for the rAF render loop (closure captures from useEffect[[]]
+  // would otherwise be stale). Updated alongside every setHoveredNode.
+  const hoveredNodeRef = useRef<SimNode | null>(null);
   const [selectedNode, setSelectedNode] = useState<SidePanelState | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [loadingTimedOut, setLoadingTimedOut] = useState(false);
@@ -522,6 +536,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       selectedNodeRef.current = null;
       setSelectedNode(null);
       if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
+      hoveredNodeRef.current = null;
       setHoveredNode(null);
     }
 
@@ -745,12 +760,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const graphWidth = maxX - minX || 0.01;
     const graphHeight = maxY - minY || 0.01;
     const fitScale = Math.min(width / graphWidth, height / graphHeight) * 0.80;
+    const clampedFitScale = Math.max(0.01, Math.min(500000, fitScale));
     const nextView = {
       x: (minX + maxX) / 2,
       y: (minY + maxY) / 2,
-      scale: Math.max(0.01, Math.min(500000, fitScale)),
+      scale: clampedFitScale,
     };
     targetView.current = nextView;
+    // UI-01: snapshot the fit-scale so the per-frame label fade band can be
+    // expressed relative to the current graph extent.
+    lastFitScaleRef.current = clampedFitScale;
     if (options?.immediate) {
       view.current = { ...nextView };
     }
@@ -1107,6 +1126,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       return;
     }
 
+    // UI-01: populate display label so the Canvas2D late-zoom label pass has
+    // text to render. Degree is filled in once links arrive (see updateNodeDegrees).
+    for (const n of rawNodes) {
+      n.label = n.name || n.email || n.id;
+      n.degree = 0;
+    }
     nodesRef.current = rawNodes;
     const cachedPositions = readPrecomputedPositions(graph.positions, rawNodes.length * 2);
     const hasCachedPositions = Array.isArray(graph.positions) && (graph.positions as unknown[]).length > 0;
@@ -1289,6 +1314,47 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         Math.abs(tv.y - v.y) > 0.0005 ||
         Math.abs(tv.scale - v.scale) > v.scale * 0.002;
 
+      // UI-01: recompute per-node degree when the links reference changes.
+      // Cheap (O(linkCount)) and only runs on worker output / topology rebuilds.
+      const currentLinks = linksRef.current;
+      if (currentLinks !== lastLinksForDegreeRef.current && nodes.length > 0) {
+        for (let i = 0; i < nodes.length; i++) {
+          // node.degree is optional on GraphRenderNode — UserNode declares it.
+          (nodes[i] as { degree?: number }).degree = 0;
+        }
+        if (currentLinks) {
+          const { sources, targets } = currentLinks;
+          for (let i = 0; i < sources.length; i++) {
+            const s = sources[i];
+            const t = targets[i];
+            if (s >= 0 && s < nodes.length) {
+              (nodes[s] as { degree?: number }).degree = ((nodes[s] as { degree?: number }).degree ?? 0) + 1;
+            }
+            if (t >= 0 && t < nodes.length) {
+              (nodes[t] as { degree?: number }).degree = ((nodes[t] as { degree?: number }).degree ?? 0) + 1;
+            }
+          }
+        }
+        lastLinksForDegreeRef.current = currentLinks;
+      }
+
+      // UI-01: late-zoom label fade band. Multipliers (2.0× / 3.5× of fit-scale)
+      // come from RESEARCH.md — band starts at "comfortable cluster" zoom and
+      // saturates by the "individual node" zoom.
+      const fitScale = lastFitScaleRef.current || 600;
+      const labelFadeStartScale = fitScale * 2.0;
+      const labelFadeEndScale = fitScale * 3.5;
+
+      // UI-01: assemble the override set from current hover + selection so
+      // those nodes' labels render regardless of zoom.
+      const overrides = new Set<number>();
+      const hovered = hoveredNodeRef.current;
+      if (hovered) {
+        const hi = nodeIndexMapRef.current.get(hovered.id) ?? -1;
+        if (hi >= 0) overrides.add(hi);
+      }
+      if (selectedIndex >= 0) overrides.add(selectedIndex);
+
       const frame: GraphRenderFrame = {
         nodes,
         positions,
@@ -1306,6 +1372,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         cssHeight: height,
         devicePixelRatio: window.devicePixelRatio || 1,
         backgroundColor: GRAPH_BACKGROUND,
+        labelFadeStartScale,
+        labelFadeEndScale,
+        labelOverrideIndices: overrides,
       };
 
       const drawResult = renderer.draw(frame);
@@ -1382,11 +1451,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
 
     const node = hitTest(lx, ly);
+    const hoverChanged = hoveredNodeRef.current?.id !== (node?.id ?? null);
+    hoveredNodeRef.current = node;
     setHoveredNode(node);
     if (tooltipRef.current) {
       tooltipRef.current.style.transform = `translate(${lx + 14}px, ${ly + 12}px)`;
       tooltipRef.current.style.opacity = node ? "1" : "0";
     }
+    // UI-01: hover acts as a label override; trigger a redraw so the override
+    // label appears immediately (the rAF gate would otherwise skip steady frames).
+    if (hoverChanged) markGraphDirty();
   }, [hitTest, markGraphDirty, rebuildGrid, saveView]);
 
   const handlePointerUp = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
@@ -1955,6 +2029,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               }
               isDragging.current = false;
               setIsDraggingState(false);
+              hoveredNodeRef.current = null;
               setHoveredNode(null);
               if (tooltipRef.current) tooltipRef.current.style.opacity = "0";
               markGraphDirty();
