@@ -36,10 +36,6 @@ import {
   type PhysicsConfig,
 } from "./accGraphOrganicLayout";
 
-// FILT-01-debug-v2: gated diagnostics for the second debugging round.
-// All `[FILT-01-debug-v2]` logs are removed before the next commit.
-const DEBUG_FILT01_V2 = true;
-
 interface UserNode extends PhysicsNode {
   kind: "user";
   email: string;
@@ -1210,22 +1206,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     // the visible set changes so the transition feels intentional rather than abrupt.
     setIsFilterTransitioning(true);
     rebuildVisibleIndices();
-    if (DEBUG_FILT01_V2) {
-      const renderer = cosmosRendererRef.current;
-      console.log(
-        "[FILT-01-debug-v2] filter-effect",
-        "rendererRefSet=", !!renderer,
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        "rendererGraphSet=", !!(renderer && (renderer as any).graph),
-        "usePhysics=", usePhysicsRef.current,
-        "visibleSetSize=", visibleIndexSetRef.current.size,
-        "totalNodes=", nodesRef.current.length,
-        "filtersActive=",
-        filters.roles.length + filters.disabledModules.length + filters.companyRoles.length +
-          filters.lastAddedBuckets.length + (filters.dateFrom ? 1 : 0) + (filters.dateTo ? 1 : 0) +
-          (filters.adminAccess !== "all" ? 1 : 0),
-      );
-    }
     // Notify Cosmos renderer of the new visible set so it can zero-size excluded points.
     cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
     const fadeTimer = setTimeout(() => setIsFilterTransitioning(false), 150);
