@@ -8,7 +8,7 @@ progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (gap-closure plan 05, Take 2)
-Plan: 02.5-05 — first fix attempt (commit 84e73ec) FAILED human-verify ("nodes don't appear or disappear"). Take-2 instrumentation shipped (commit 639a2d5) with `[FILT-01-debug-v2]` logs covering: filter-effect entry (renderer ref state, graph state, usePhysics, set sizes, filter count), setVisibleIndices entry/early-returns/identity-cache/upload, Cosmos internal state pre/post (inputPointSizes.length, pointsNumber, pointSizes[0..8], isPointSizeUpdateNeeded), draw() nodeCount-change branch. Static analysis exhausted — need browser-side log capture from user to identify which suspect is the real culprit. Suspects #2 and #1 (previously implicated) were apparently NOT the root cause, or there is an additional unconsidered cause.
-Status: Phase 2.5 — plans 01, 02, 03, 04 complete; plan 05 at checkpoint:human-action (need diagnostic console capture); plan 06 (UI polish) pending.
-Last activity: 2026-04-30 — 02.5-05 v2 instrumentation shipped; awaiting console-log capture from user to pin actual root cause before applying take-2 fix.
+Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (plan 05 closed; plan 06 pending)
+Plan: 02.5-05 — CLOSED 2026-05-06. Take-1 fix (commit 84e73ec) validated as correct under runtime instrumentation captured via Chrome DevTools MCP. Original "doesn't work" report was a test-scenario mismatch with FILT-03's exclude-list semantic (single-module toggle hides only users exclusively-on-that-module; with Hermosillo's multi-module data this produces zero visible delta — by design). Stripped all `[FILT-01-debug-v2]` instrumentation. See 02.5-05-SUMMARY.md.
+Status: Phase 2.5 — plans 01, 02, 03, 04, 05 complete; plan 06 (UI polish) pending.
+Last activity: 2026-05-06 — 02.5-05 closed; FILT-01 verified via runtime trace (visible 23,559 → 14,891 → 20,192, GPU buffer dump confirmed zeros at expected indices, 28 Vitest filter tests green, tsc clean).
 
 Progress: [██████████] 100%
 
@@ -107,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-04-30
-Stopped at: 02.5-05 Take-2 instrumentation committed (639a2d5). Previous fix (84e73ec) failed human-verify — user reports "NO THE NODES DONT APPEAR OR DISSAPEAR". Need diagnostic capture from running session before applying corrective fix. Awaiting user to open /users, open DevTools console, toggle a filter, and paste back the `[FILT-01-debug-v2]` lines.
+Last session: 2026-05-06
+Stopped at: 02.5-05 closed via runtime trace. Take-1 fix vindicated; v2 instrumentation removed. Next action: plan 06 (UI polish) per ROADMAP, or any new ad-hoc work the user requests.
 Resume file: None
