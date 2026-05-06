@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 2.5 (ACC Data Filter Refinement) — IN PROGRESS (plan 05 closed; plan 06 pending)
-Plan: 02.5-05 — CLOSED 2026-05-06. Take-1 fix (commit 84e73ec) validated as correct under runtime instrumentation captured via Chrome DevTools MCP. Original "doesn't work" report was a test-scenario mismatch with FILT-03's exclude-list semantic (single-module toggle hides only users exclusively-on-that-module; with Hermosillo's multi-module data this produces zero visible delta — by design). Stripped all `[FILT-01-debug-v2]` instrumentation. See 02.5-05-SUMMARY.md.
-Status: Phase 2.5 — plans 01, 02, 03, 04, 05 complete; plan 06 (UI polish) pending.
-Last activity: 2026-05-06 — 02.5-05 closed; FILT-01 verified via runtime trace (visible 23,559 → 14,891 → 20,192, GPU buffer dump confirmed zeros at expected indices, 28 Vitest filter tests green, tsc clean).
+Phase: 2.5 (ACC Data Filter Refinement) — COMPLETE
+Plan: 02.5-06 — CLOSED 2026-05-06. Filter panel UI polish: companyRole dropdown popover (Gap 2), explicit ON/OFF text on module toggles (Gap 3), prominent count badge + bordered Clear-all button + magnifier-icon empty-state with primary CTA (Gap 4). All visual changes verified live via Chrome DevTools MCP. FILT-01 hide path still working (no regression). See 02.5-06-SUMMARY.md.
+Status: Phase 2.5 — all 6 plans complete. All 4 UX gaps from 02.5-VERIFICATION.md closed.
+Last activity: 2026-05-06 — Phase 2.5 sign-off ready; tsc clean, MCP visual verification passed.
 
 Progress: [██████████] 100%
 
