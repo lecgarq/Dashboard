@@ -407,6 +407,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const stableStartedAtRef = useRef<number | null>(null);
   const hasReceivedTickRef = useRef(false);
   const [showStableDiagnostics, setShowStableDiagnostics] = useState(false);
+
+  // UI-02: Reset stability whenever the user takes a graph-modifying action
+  // (drag a node, change filters, select a node). Pan/zoom MUST NOT call this.
+  const resetStability = useCallback(() => {
+    stableStartedAtRef.current = null;
+    setIsSimStable(false);
+  }, []);
   const [layoutDiagnostics, setLayoutDiagnostics] = useState({
     lastWorkerTick: 0,
     activeNodeCount: 0,
@@ -924,12 +931,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (index === null) {
             setSelectedNode(null);
             selectedNodeRef.current = null;
+            // UI-02: deselection (null) does NOT reheat — only positive selects do.
           } else {
             const node = nodesRef.current[index] ?? null;
             if (node) {
               const state: SidePanelState = { node };
               setSelectedNode(state);
               selectedNodeRef.current = state;
+              // UI-02: selecting a node reheats — hide the stable badge.
+              resetStability();
             }
           }
           markGraphDirty();
@@ -1309,9 +1319,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     rebuildVisibleIndices();
     // Notify Cosmos renderer of the new visible set so it can zero-size excluded points.
     cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
+    // UI-02: filter changes alter graph membership — reheat. We accept the
+    // slightly-eager reset on no-op filter changes (stability re-establishes
+    // within 500ms) rather than computing membership diffs.
+    resetStability();
     const fadeTimer = setTimeout(() => setIsFilterTransitioning(false), 150);
     return () => clearTimeout(fadeTimer);
-  }, [filters, rebuildVisibleIndices]);
+  }, [filters, rebuildVisibleIndices, resetStability]);
 
   // URL persistence: write non-default filter values to query params (debounced).
   // Skip the very first call so the initial mount seed doesn't echo back.
@@ -1480,14 +1494,18 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           isDraggingNodeRef.current = true;
           draggedNodeIdxRef.current = idx;
           setIsDraggingState(true);
+          // UI-02: dragging a node reheats the simulation — hide the badge.
+          resetStability();
           return;
         }
       }
     }
 
+    // NOTE: Pan must NOT reheat — UI-02 contract (CONTEXT.md). View transforms
+    // (pan/zoom) are display-only and never trigger resetStability().
     isDragging.current = true;
     setIsDraggingState(true);
-  }, [hitTest]);
+  }, [hitTest, resetStability]);
 
   const handlePointerMove = useCallback((event: React.PointerEvent<HTMLCanvasElement>) => {
     const rect = event.currentTarget.getBoundingClientRect();
@@ -1582,10 +1600,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const state: SidePanelState = { node };
     setSelectedNode(state);
     selectedNodeRef.current = state;
+    // UI-02: selecting a node reheats the simulation — hide the badge.
+    resetStability();
     markGraphDirty();
-  }, [hitTest, rebuildGrid, markGraphDirty]);
+  }, [hitTest, rebuildGrid, markGraphDirty, resetStability]);
 
   const handleWheel = useCallback((event: WheelEvent) => {
+    // NOTE: Zoom must NOT reheat — UI-02 contract (CONTEXT.md). Wheel events
+    // only mutate view.current (scale/x/y); they never call resetStability().
     event.preventDefault();
     const canvas = event.currentTarget as HTMLCanvasElement | null;
     if (!canvas) return;
