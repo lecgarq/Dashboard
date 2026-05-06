@@ -277,6 +277,147 @@ export class CanvasGraphRenderer implements GraphRenderer {
     }
 
     ctx.globalAlpha = 1;
+
+    // ---------------------------------------------------------------
+    // Late-zoom label pass (UI-01)
+    // ---------------------------------------------------------------
+    // Runs in screen space (resetTransform + dpr scale) so labels are
+    // rendered at fixed pixel size regardless of world zoom. Guarded by
+    // labelFadeStartScale/EndScale on the frame; back-compat: if either
+    // is missing, the entire pass is skipped.
+    const fadeStart = frame.labelFadeStartScale;
+    const fadeEnd = frame.labelFadeEndScale;
+    const overrideIndices = frame.labelOverrideIndices;
+    if (fadeStart != null && fadeEnd != null && fadeEnd > fadeStart) {
+      const rawOpacity = (view.scale - fadeStart) / (fadeEnd - fadeStart);
+      const opacity = rawOpacity < 0 ? 0 : rawOpacity > 1 ? 1 : rawOpacity;
+      const hasOverrides = overrideIndices && overrideIndices.size > 0;
+
+      if (opacity > 0 || hasOverrides) {
+        // Reset to screen space — labels at fixed pixel size.
+        ctx.resetTransform();
+        ctx.scale(dpr, dpr);
+        ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "alphabetic";
+        ctx.fillStyle = "#111827";
+
+        // Build candidate list: nodes with labels that are on-screen.
+        // Same world→screen formula as hitTest in AccUsersGraph:
+        //   sx = cssWidth/2 + (wx - view.x) * view.scale
+        //   sy = cssHeight/2 + (wy - view.y) * view.scale
+        const halfW = frame.cssWidth / 2;
+        const halfH = frame.cssHeight / 2;
+        const margin = 50;
+
+        type Candidate = {
+          index: number;
+          sx: number;
+          sy: number;
+          label: string;
+          degree: number;
+          override: boolean;
+        };
+
+        const overrideCandidates: Candidate[] = [];
+        const normalCandidates: Candidate[] = [];
+
+        for (let i = 0; i < frame.nodes.length; i++) {
+          const n = frame.nodes[i];
+          const label = n.label;
+          if (!label) continue;
+          const wx = frame.positions[i * 2];
+          const wy = frame.positions[i * 2 + 1];
+          const sx = halfW + (wx - view.x) * view.scale;
+          const sy = halfH + (wy - view.y) * view.scale;
+          if (
+            sx < -margin || sx > frame.cssWidth + margin ||
+            sy < -margin || sy > frame.cssHeight + margin
+          ) continue;
+
+          const isOverride = overrideIndices ? overrideIndices.has(i) : false;
+          const cand: Candidate = {
+            index: i,
+            sx,
+            sy,
+            label,
+            degree: n.degree ?? 0,
+            override: isOverride,
+          };
+          if (isOverride) overrideCandidates.push(cand);
+          else if (opacity > 0) normalCandidates.push(cand);
+        }
+
+        // Priority sort: highest degree first.
+        normalCandidates.sort((a, b) => b.degree - a.degree);
+
+        // Hard cap of 200 labels total. Override labels are guaranteed slots
+        // and count toward the cap.
+        const MAX_LABELS = 200;
+        const drawnAabbs: Array<[number, number, number, number]> = [];
+        let drawnCount = 0;
+
+        const aabbsOverlap = (
+          a: [number, number, number, number],
+          b: [number, number, number, number],
+        ): boolean => {
+          // [x, y, w, h] — x/y is top-left; rectangles overlap iff projections
+          // overlap on both axes.
+          return !(
+            a[0] + a[2] <= b[0] ||
+            b[0] + b[2] <= a[0] ||
+            a[1] + a[3] <= b[1] ||
+            b[1] + b[3] <= a[1]
+          );
+        };
+
+        // Draw override labels first — full opacity, bypass collision check
+        // but still register their AABBs so normal labels avoid them.
+        ctx.globalAlpha = 1;
+        for (const c of overrideCandidates) {
+          if (drawnCount >= MAX_LABELS) break;
+          const textWidth = ctx.measureText(c.label).width + 4;
+          const aabb: [number, number, number, number] = [
+            c.sx - textWidth / 2,
+            c.sy - 18,
+            textWidth,
+            14,
+          ];
+          ctx.fillText(c.label, c.sx, c.sy - 8);
+          drawnAabbs.push(aabb);
+          drawnCount++;
+        }
+
+        // Draw normal labels with fade opacity, skipping collisions.
+        if (opacity > 0 && drawnCount < MAX_LABELS) {
+          ctx.globalAlpha = opacity;
+          for (const c of normalCandidates) {
+            if (drawnCount >= MAX_LABELS) break;
+            const textWidth = ctx.measureText(c.label).width + 4;
+            const aabb: [number, number, number, number] = [
+              c.sx - textWidth / 2,
+              c.sy - 18,
+              textWidth,
+              14,
+            ];
+            let collides = false;
+            for (let j = 0; j < drawnAabbs.length; j++) {
+              if (aabbsOverlap(aabb, drawnAabbs[j])) {
+                collides = true;
+                break;
+              }
+            }
+            if (collides) continue;
+            ctx.fillText(c.label, c.sx, c.sy - 8);
+            drawnAabbs.push(aabb);
+            drawnCount++;
+          }
+        }
+
+        ctx.globalAlpha = 1;
+      }
+    }
+
     return { needsContinuousRedraw: false };
   }
 
