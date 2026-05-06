@@ -81,7 +81,12 @@ Plans:
   1. When zoomed in close to a cluster, node labels appear legibly; when zoomed out to full-graph overview, no label text clutters the view — the transition happens at a consistent zoom threshold
   2. After the graph has been running for several seconds without interaction, a "Stable" badge appears in the UI and the physics worker drops to near-zero CPU usage — the badge disappears if the user drags a node and triggers new simulation
   3. On a 1280px wide screen (a common laptop resolution), the filter panel and the node detail side panel are both accessible simultaneously without one hiding the other
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Zoom-threshold node labels in CanvasGraphRenderer (UI-01)
+- [ ] 03-02-PLAN.md — Stable badge with sustained-time stability detection + reheat wiring (UI-02)
+- [ ] 03-03-PLAN.md — Panel layout restructure (flex siblings, collapsible filter, auto-collapse) + phase human-verify (UI-03)
 
 ### Phase 4: Access Analysis
 **Goal**: Project managers can use the graph to identify specific access problems — duplicated roles, inconsistent module access — and export findings as PNG screenshots or CSV data for reporting
@@ -104,5 +109,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
 | 2. Cosmos.gl Renderer | 5/5 | Complete | 2026-04-29 |
 | 2.5. ACC Data + Filter Refinement | 2/4 | In Progress|  |
-| 3. Graph UI Completion | 0/TBD | Not started | - |
+| 3. Graph UI Completion | 0/3 | Planned | - |
 | 4. Access Analysis | 0/TBD | Not started | - |
