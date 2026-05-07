@@ -69,6 +69,14 @@ export interface GraphRenderFrame {
    * still occupy space so subsequent normal labels respect them.
    */
   labelOverrideIndices?: ReadonlySet<number>;
+  /**
+   * Cosmos-only fade band, expressed in Cosmos zoom-level units (1.0 ≈ fit).
+   * Read by CosmosGraphRenderer.drawLabelOverlay; ignored by CanvasGraphRenderer.
+   * `frame.view.scale` is the Canvas2D zoom and is not meaningful for the GPU
+   * backend, so the Cosmos overlay needs its own band.
+   */
+  cosmosLabelFadeStartZoom?: number;
+  cosmosLabelFadeEndZoom?: number;
 }
 
 export interface GraphDrawResult {
@@ -860,6 +868,167 @@ export class CosmosGraphRenderer implements GraphRenderer {
     } catch {
       return null;
     }
+  }
+
+  /**
+   * UI-01 (gap closure 03-04): Screen-space label pass for the Cosmos backend.
+   *
+   * Mirrors the Canvas2D label pass in CanvasGraphRenderer.draw() (fade band,
+   * AABB collision skip, override indices, 200-cap, degree-priority sort), but
+   * projects world→screen via Cosmos's spaceToScreenPosition rather than the
+   * Canvas2D `halfW + (wx - view.x) * view.scale` formula, and reads the zoom
+   * level via the public `Graph.getZoomLevel()` API so the fade band lives in
+   * Cosmos zoom-level units (1.0 ≈ fit).
+   *
+   * The overlay's backing store is sized lazily here (matches the canvas2d
+   * pattern at lines 135-142 of CanvasGraphRenderer.draw — there is no JSX-side
+   * resize block for canvas2d, and there isn't one for the overlay either).
+   *
+   * Caller (AccUsersGraph rAF tick) is expected to gate this on
+   * `renderer instanceof CosmosGraphRenderer` so the canvas2d path is unaffected.
+   */
+  drawLabelOverlay(ctx: CanvasRenderingContext2D, frame: GraphRenderFrame, dpr: number): void {
+    // Lazy-resize the backing store to cssWidth*dpr × cssHeight*dpr. Matches
+    // CanvasGraphRenderer.draw() lines 135-142.
+    const canvas = ctx.canvas;
+    const wantWidth = Math.max(1, Math.floor(frame.cssWidth * dpr));
+    const wantHeight = Math.max(1, Math.floor(frame.cssHeight * dpr));
+    if (canvas.width !== wantWidth || canvas.height !== wantHeight) {
+      canvas.width = wantWidth;
+      canvas.height = wantHeight;
+    }
+
+    // Fade band: prefer Cosmos zoom-level band; fall back to Canvas2D scale
+    // band only as a degraded last resort (units differ — approximation).
+    const fadeStart = frame.cosmosLabelFadeStartZoom ?? frame.labelFadeStartScale;
+    const fadeEnd = frame.cosmosLabelFadeEndZoom ?? frame.labelFadeEndScale;
+    const overrideIndices = frame.labelOverrideIndices;
+
+    // Always paint a clean transparent canvas at frame start.
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, frame.cssWidth, frame.cssHeight);
+
+    if (fadeStart == null || fadeEnd == null || fadeEnd <= fadeStart) return;
+    if (!this.graph) return;
+
+    // Public API verified in node_modules/@cosmos.gl/graph/dist/index.d.ts:343
+    let cosmosZoom = 1;
+    try {
+      const z = (this.graph as { getZoomLevel?: () => number }).getZoomLevel?.();
+      if (typeof z === "number" && Number.isFinite(z)) cosmosZoom = z;
+    } catch {
+      // If the call throws (older Cosmos build), we already have cosmosZoom=1
+      // which falls below typical fadeStart bands → no normal labels render,
+      // overrides still draw. Acceptable degradation.
+    }
+
+    const rawOpacity = (cosmosZoom - fadeStart) / (fadeEnd - fadeStart);
+    const opacity = rawOpacity < 0 ? 0 : rawOpacity > 1 ? 1 : rawOpacity;
+    const hasOverrides = !!overrideIndices && overrideIndices.size > 0;
+
+    if (opacity <= 0 && !hasOverrides) return;
+
+    ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "alphabetic";
+    ctx.fillStyle = "#111827";
+
+    const margin = 50;
+    type Candidate = {
+      index: number;
+      sx: number;
+      sy: number;
+      label: string;
+      degree: number;
+      override: boolean;
+    };
+    const overrideCandidates: Candidate[] = [];
+    const normalCandidates: Candidate[] = [];
+
+    for (let i = 0; i < frame.nodes.length; i++) {
+      const n = frame.nodes[i];
+      const label = n.label;
+      if (!label) continue;
+      const wx = frame.positions[i * 2];
+      const wy = frame.positions[i * 2 + 1];
+      const screen = this.spaceToScreen(wx, wy);
+      if (!screen) continue;
+      const sx = screen[0];
+      const sy = screen[1];
+      if (
+        sx < -margin || sx > frame.cssWidth + margin ||
+        sy < -margin || sy > frame.cssHeight + margin
+      ) continue;
+      const isOverride = overrideIndices ? overrideIndices.has(i) : false;
+      const cand: Candidate = {
+        index: i,
+        sx,
+        sy,
+        label,
+        degree: n.degree ?? 0,
+        override: isOverride,
+      };
+      if (isOverride) overrideCandidates.push(cand);
+      else if (opacity > 0) normalCandidates.push(cand);
+    }
+
+    normalCandidates.sort((a, b) => b.degree - a.degree);
+
+    const MAX_LABELS = 200;
+    const drawnAabbs: Array<[number, number, number, number]> = [];
+    let drawnCount = 0;
+    const aabbsOverlap = (
+      a: [number, number, number, number],
+      b: [number, number, number, number],
+    ): boolean =>
+      !(
+        a[0] + a[2] <= b[0] ||
+        b[0] + b[2] <= a[0] ||
+        a[1] + a[3] <= b[1] ||
+        b[1] + b[3] <= a[1]
+      );
+
+    // Override labels: full opacity, bypass collision, but register AABBs.
+    ctx.globalAlpha = 1;
+    for (const c of overrideCandidates) {
+      if (drawnCount >= MAX_LABELS) break;
+      const textWidth = ctx.measureText(c.label).width + 4;
+      const aabb: [number, number, number, number] = [
+        c.sx - textWidth / 2,
+        c.sy - 18,
+        textWidth,
+        14,
+      ];
+      ctx.fillText(c.label, c.sx, c.sy - 8);
+      drawnAabbs.push(aabb);
+      drawnCount++;
+    }
+
+    if (opacity > 0 && drawnCount < MAX_LABELS) {
+      ctx.globalAlpha = opacity;
+      for (const c of normalCandidates) {
+        if (drawnCount >= MAX_LABELS) break;
+        const textWidth = ctx.measureText(c.label).width + 4;
+        const aabb: [number, number, number, number] = [
+          c.sx - textWidth / 2,
+          c.sy - 18,
+          textWidth,
+          14,
+        ];
+        let collides = false;
+        for (let j = 0; j < drawnAabbs.length; j++) {
+          if (aabbsOverlap(aabb, drawnAabbs[j])) {
+            collides = true;
+            break;
+          }
+        }
+        if (collides) continue;
+        ctx.fillText(c.label, c.sx, c.sy - 8);
+        drawnAabbs.push(aabb);
+        drawnCount++;
+      }
+    }
+    ctx.globalAlpha = 1;
   }
 
   /**
