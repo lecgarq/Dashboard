@@ -14,7 +14,10 @@ COPY package*.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-RUN npm ci --include=dev
+# Use `npm install` rather than `npm ci`: Railway's npm 10 rejects our lockfile
+# (regenerated with npm 11) over a phantom typescript@5.9.3 peer hint that no
+# package actually pins. `npm install` reconciles the drift instead of erroring.
+RUN npm install --include=dev --no-audit --no-fund
 
 COPY . .
 
