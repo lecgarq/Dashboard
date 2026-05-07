@@ -157,3 +157,55 @@ TypeScript: `npx tsc --noEmit` — clean.
 ### Files Changed
 
 - `app/(dashboard)/users/graphRenderers.ts` — `drawLabelOverlay`: use `getPointPositionsArray()` for live GPU positions.
+
+---
+
+## Re-investigation #2 — zoom/pan tracking + click behavior
+
+**Status:** investigating → fixed
+**Date:** 2026-05-07
+
+### New Symptoms (post-fix UAT)
+
+1. Labels don't follow nodes during zoom/pan — overlay was stale while Cosmos animates its own smooth zoom between wheel events.
+2. "Weird behavior" on node click — selected-node label not reliably tracking the clicked node.
+
+### Root Cause
+
+**Single root cause drives both symptoms.**
+
+The rAF `render` function in `AccUsersGraph.tsx` has an early-return gate at (post-edit) the equivalent of the old line 1414:
+
+```ts
+if (!camLerping && !needsRenderRef.current && !forceLiveLayoutRender) return;
+```
+
+`camLerping` tracks the Canvas2D `view.current` lerp — it does not move during Cosmos zoom (Cosmos owns its camera independently). `markGraphDirty()` sets `needsRenderRef.current = true` for exactly ONE frame; it is reset to false at the end of that frame. Therefore:
+
+- During Cosmos's multi-frame smooth-zoom animation (many GPU frames per wheel event), every frame after the first returns at the gate — `drawLabelOverlay` never runs.
+- After a click, `onNodeSelectCallback` calls `markGraphDirty()` → one overlay redraw. If Cosmos then animates a selection zoom, subsequent frames return early → overlay goes stale with labels in wrong positions.
+- Both symptoms = **same gap**: overlay only redraws when Canvas2D is dirty, not every frame.
+
+### Fix Applied
+
+`AccUsersGraph.tsx` — rAF `render` function restructured:
+
+1. Compute `isCosmosRenderer = renderer instanceof CosmosGraphRenderer` before the gate.
+2. Gate becomes: skip only when `!needsFullDraw && !isCosmosRenderer` — Canvas2D keeps dirty-flag guard; Cosmos always continues past the gate.
+3. View lerp (`v.x +=`, `v.y +=`, `v.scale +=`) is only executed when `needsFullDraw` (lerp is meaningless for Cosmos).
+4. `renderer.draw(frame)` guarded by `needsFullDraw` — GPU uploads not triggered every frame.
+5. `drawLabelOverlay` block uses `isCosmosRenderer` (pre-computed) instead of `renderer instanceof CosmosGraphRenderer` — runs every rAF tick regardless of dirty state.
+6. `needsRenderRef.current` reset: `needsFullDraw && (forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw)` — Canvas2D continuity unchanged; Cosmos steady-state clears the flag.
+
+Frame build (overrides set, positions, selectedIndex, degree recompute) is cheap (O(1) ref reads + degree pass gated by link-reference change). Safe to run every tick.
+
+### Evidence
+
+- `AccUsersGraph.tsx` line 1414 (original): gate checks `camLerping` which only tracks Canvas2D `view.current` — Cosmos camera changes never set `camLerping` to true.
+- `markGraphDirty` (line 483): sets `needsRenderRef.current = true` — one boolean, consumed in one frame.
+- Wheel listener (line 1717): fires `markGraphDirty()` on DOM `wheel` event only — not on every Cosmos animation frame between events.
+- `drawLabelOverlay` calls `this.graph.spaceToScreenPosition()` which reads Cosmos's live camera — it returns correct positions every call, so running every frame is correct and sufficient.
+
+### Files Changed
+
+- `app/(dashboard)/users/AccUsersGraph.tsx` — rAF `render` function: per-frame Cosmos overlay draw decoupled from dirty-flag gate.

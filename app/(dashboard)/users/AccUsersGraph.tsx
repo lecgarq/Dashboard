@@ -1411,11 +1411,19 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const dsCam = Math.abs(tv.scale - v.scale);
       const camLerping = dxCam > 0.00001 || dyCam > 0.00001 || dsCam > 0.01;
       const forceLiveLayoutRender = performance.now() < forceRenderUntilRef.current;
-      if (!camLerping && !needsRenderRef.current && !forceLiveLayoutRender) return;
+      // UI-01 (gap closure follow-on): the Cosmos label overlay must redraw every
+      // rAF tick so labels track nodes during Cosmos's own smooth zoom/pan
+      // animation (which runs independently of markGraphDirty). Canvas2D still
+      // uses the dirty-flag gate since a full scene redraw is expensive.
+      const isCosmosRenderer = renderer instanceof CosmosGraphRenderer;
+      const needsFullDraw = camLerping || needsRenderRef.current || forceLiveLayoutRender;
+      if (!needsFullDraw && !isCosmosRenderer) return;
 
-      v.x += (tv.x - v.x) * 0.2;
-      v.y += (tv.y - v.y) * 0.2;
-      v.scale += (tv.scale - v.scale) * 0.2;
+      if (needsFullDraw) {
+        v.x += (tv.x - v.x) * 0.2;
+        v.y += (tv.y - v.y) * 0.2;
+        v.scale += (tv.scale - v.scale) * 0.2;
+      }
 
       const { width, height } = getViewportSize(containerRef.current);
       const nodes = nodesRef.current;
@@ -1515,12 +1523,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         cosmosLabelFadeEndZoom,
       };
 
-      const drawResult = renderer.draw(frame);
+      // Full scene draw only when dirty (GPU upload cost on Canvas2D / Cosmos data paths).
+      let drawResult: { needsContinuousRedraw: boolean } = { needsContinuousRedraw: false };
+      if (needsFullDraw) {
+        drawResult = renderer.draw(frame);
+      }
       // UI-01 (gap closure 03-04): on the Cosmos path, draw the screen-space
-      // label overlay on top of the GL canvas. Gated by `instanceof` so the
-      // canvas2d path is unaffected without reading React state in this rAF
-      // closure.
-      if (renderer instanceof CosmosGraphRenderer) {
+      // label overlay on top of the GL canvas. Runs every tick (not gated by
+      // needsFullDraw) so labels track Cosmos's own smooth zoom/pan animation.
+      // Gated by isCosmosRenderer so the canvas2d path is unaffected.
+      if (isCosmosRenderer) {
         const overlay = cosmosLabelOverlayRef.current;
         if (overlay) {
           const ctx2d = overlay.getContext("2d");
@@ -1529,7 +1541,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           }
         }
       }
-      needsRenderRef.current = forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw;
+      needsRenderRef.current = needsFullDraw && (forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw);
     };
 
     rafId.current = requestAnimationFrame(render);
