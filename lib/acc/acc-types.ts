@@ -21,4 +21,6 @@ export interface BulkAccUser {
   projects: BulkAccProject[];
   /** Company role from the ACC HQ user record. Null when not set in ACC; undefined when not yet surfaced by the API. */
   companyRole?: string | null;
+  /** Last sign-in / activity ISO string from the ACC HQ user record. Null when ACC reports no activity. */
+  lastSignIn?: string | null;
 }

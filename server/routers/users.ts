@@ -929,6 +929,8 @@ export const usersRouter = router({
       name?: string;
       syncedAt?: string;
       projects?: CachedProject[];
+      companyRole?: string | null;
+      lastSignIn?: string | null;
     };
 
     return Array.from(allEmails).map((emailLower) => {
@@ -996,6 +998,10 @@ export const usersRouter = router({
         allRoles,
         allModules,
         projects,
+        // 02.5-D fix: surface the cached HQ fields. null = ACC reported empty;
+        // undefined = older cache rows synced before fields were plumbed through.
+        companyRole: data.companyRole ?? null,
+        lastSignIn: data.lastSignIn ?? null,
       };
     });
   }),
@@ -1138,16 +1144,10 @@ export const usersRouter = router({
 
       const accountId = await getAccountId(ctx.db);
 
-      // 2. Emails to sync — use client-provided list (full directory) or fall back to registered users
-      const emails =
-        input?.emails && input.emails.length > 0
-          ? input.emails
-          : (await ctx.db.user.findMany({ select: { email: true } })).map((u) => u.email);
-
-      // 3. Prefetch the entire ACC user list ONCE and build an email→user map. Previously
+      // 2. Prefetch the entire ACC user list ONCE and build an email→user map. Previously
       // fetchAccUserByEmail paginated the full hub per call (O(emails × hub_size) API calls),
       // which blew past ACC rate limits on 1197 emails. Now it's one sweep up-front.
-      let accUserByEmail: Map<string, { id: string; email: string; name: string; status: string; role: string; company?: string; addedOn?: string }>;
+      let accUserByEmail: Map<string, { id: string; email: string; name: string; status: string; role: string; company?: string; addedOn?: string; companyRole?: string; lastSignIn?: string }>;
       try {
         const allAccUsers = await fetchAllAccUsers(accountId, accessToken);
         accUserByEmail = new Map(allAccUsers.map((u) => [u.email.toLowerCase(), u]));
@@ -1155,6 +1155,22 @@ export const usersRouter = router({
       } catch (error) {
         throw toAccRouterError(error, "Failed to prefetch ACC user list for bulk sync.");
       }
+
+      // 3. Emails to sync. Without explicit input, we want the FULL org-wide view —
+      // every ACC user, plus any local registered users who may not be in ACC (those
+      // get cached as notFound so the UI still shows them with that status).
+      // Previously this was just `db.user` which limited the cache to 3 rows when
+      // only 3 dashboard users had ever signed in.
+      const emails = input?.emails && input.emails.length > 0
+        ? input.emails
+        : Array.from(new Set([
+            ...Array.from(accUserByEmail.values(), (u) => u.email),
+            ...(await ctx.db.user.findMany({ select: { email: true } })).map((u) => u.email),
+          ]));
+      logger.info("[bulkAccSync] sync target", {
+        accUsers: accUserByEmail.size,
+        totalEmails: emails.length,
+      });
 
       let found = 0;
       let notFound = 0;
@@ -1204,6 +1220,10 @@ export const usersRouter = router({
                 role: accUser.role,
                 company: accUser.company,
                 addedOn: accUser.addedOn,
+                // 02.5-D fix: previously dropped here, leaving cached.data.companyRole and
+                // cached.data.lastSignIn permanently undefined → "Unspecified" in the UI.
+                companyRole: accUser.companyRole,
+                lastSignIn: accUser.lastSignIn,
                 projects: enrichedProjects,
                 syncedAt: new Date().toISOString(),
               };

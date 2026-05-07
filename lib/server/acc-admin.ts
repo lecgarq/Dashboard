@@ -183,9 +183,17 @@ export async function fetchAllAccUsers(
 
   while (offset < maxUsers) {
     const users = await fetchHqUsers(`${baseUrl}?limit=${limit}&offset=${offset}`, accessToken, signal);
-    // TODO[02.5]: remove after first sync confirms field names
+    // TODO[02.5-D]: remove after first sync confirms field names. We log keys
+    // for the first user AND a redacted sample to confirm whether company_role
+    // / last_sign_in / last_activity / lastSignIn are the actual HQ v1 keys.
     if (!loggedRawShape && Array.isArray(users) && users.length > 0) {
-      console.info("[02.5-DATA-01] sample ACC raw user keys:", Object.keys(users[0] as object));
+      const sample = users[0] as Record<string, unknown>;
+      const keys = Object.keys(sample);
+      const roleHits = keys.filter((k) => /role/i.test(k));
+      const signInHits = keys.filter((k) => /sign|activ|login|last/i.test(k));
+      console.info("[02.5-D-DIAG] HQ v1 user keys:", keys);
+      console.info("[02.5-D-DIAG] role-like keys:", roleHits, "sample values:", roleHits.map((k) => sample[k]));
+      console.info("[02.5-D-DIAG] activity-like keys:", signInHits, "sample values:", signInHits.map((k) => sample[k]));
       loggedRawShape = true;
     }
     for (const u of users) {
