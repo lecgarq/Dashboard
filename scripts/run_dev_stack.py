@@ -10,7 +10,6 @@ from __future__ import annotations
 
 import argparse
 import os
-import socket
 import signal
 import subprocess
 import sys
@@ -100,13 +99,85 @@ def kill_children() -> None:
                     proc.terminate()
 
 
-def get_lod_checker_service(project_root: Path) -> ManagedService:`n    return ManagedService("lod-checker", ["npx", "serve", "-s", "services/lod-engine/dist", "-l", "5173"], project_root, port=5173)
+def run_lod_checker() -> None:
+    """Spawn LOD Checker (Flask + Vite) as a background process."""
+    if not LOD_CHECKER_DIR.exists():
+        print("[runner] LOD Checker directory not found, skipping")
+        return
+
+    run_viz = LOD_CHECKER_DIR / "run_viz.py"
+    if not run_viz.exists():
+        print(f"[runner] {run_viz} not found, skipping LOD Checker")
+        return
+
+    print(f"[runner] Starting LOD Checker from {LOD_CHECKER_DIR}")
+    print("[runner] LOD Checker backend: http://localhost:8080")
+    print("[runner] LOD Checker frontend: http://localhost:5173")
+
+    proc = subprocess.Popen(
+        ["python", str(run_viz)],
+        cwd=str(LOD_CHECKER_DIR),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    with _lock:
+        _children.append(proc)
+
+    stream_output(proc, "lod-checker")
 
 
-def get_lod_query_encoder_service(project_root: Path) -> ManagedService:`n    script = project_root / "services" / "lod-engine" / "lod_query_encoder.py"`n    return ManagedService("lod-encoder", [sys.executable, str(script)], project_root, port=8091)
+def run_lod_query_encoder(project_root: Path) -> None:
+    """Spawn the local LOD query encoder service."""
+    if not LOD_QUERY_ENCODER_SCRIPT.exists():
+        print("[runner] LOD query encoder script not found, skipping")
+        return
+
+    env = os.environ.copy()
+    # Default to CPU in the shared dev runner unless the user has explicitly
+    # chosen a device in their current shell environment.
+    env.setdefault("LOD_QUERY_ENCODER_DEVICE", "cpu")
+
+    print("[runner] Starting LOD query encoder on port 8091")
+    proc = subprocess.Popen(
+        ["python", str(LOD_QUERY_ENCODER_SCRIPT)],
+        cwd=str(project_root),
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    with _lock:
+        _children.append(proc)
+
+    stream_output(proc, "lod-encoder")
 
 
-def get_yjs_service(project_root: Path) -> ManagedService:`n    script = project_root / "scripts" / "yjs-server.mjs"`n    return ManagedService("yjs", ["node", str(script)], project_root, port=4444)
+def run_yjs_server(project_root: Path) -> None:
+    """Spawn Yjs WebSocket server as a background process."""
+    script = project_root / "scripts" / "yjs-server.mjs"
+    if not script.exists():
+        print("[runner] yjs-server.mjs not found, skipping")
+        return
+
+    print("[runner] Starting Yjs WebSocket server on port 4444")
+    proc = subprocess.Popen(
+        ["node", str(script)],
+        cwd=str(project_root),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        bufsize=1,
+    )
+
+    with _lock:
+        _children.append(proc)
+
+    stream_output(proc, "yjs")
 
 
 def resolve_next_command(project_root: Path, *args: str) -> list[str]:
@@ -264,7 +335,7 @@ def main() -> int:
     args = parse_args()
     project_root = Path(__file__).resolve().parent.parent
 
-    # Patch environment
+    # Patch environment with current local IP before starting services
     print("[runner] Patching environment...")
     try:
         subprocess.run(["node", "scripts/patch-env.js"], cwd=str(project_root), check=True)
@@ -272,59 +343,66 @@ def main() -> int:
         print(f"[runner] Failed to patch environment: exit code {err.returncode}")
         return err.returncode
 
-    # Ensure PostgreSQL
-    subprocess.run(["node", "scripts/postgres-local.js", "start"], cwd=str(project_root), capture_output=True)
+    # Ensure PostgreSQL is running before any service starts
+    print("[runner] Ensuring PostgreSQL is running...")
+    pg_result = subprocess.run(
+        ["node", "scripts/postgres-local.js", "start"],
+        cwd=str(project_root),
+        capture_output=True,
+        text=True,
+    )
+    for line in (pg_result.stdout or "").strip().splitlines():
+        print(f"[postgres] {line}")
+    if pg_result.returncode != 0:
+        for line in (pg_result.stderr or "").strip().splitlines():
+            print(f"[postgres] {line}")
+        print("[runner] WARNING: PostgreSQL may not be running — auth will fail")
 
-    # Free ports
+    # Free all ports
     if not args.no_kill:
-        for p in [args.port, 4444, 8091, 5173, 8080]:
-            free_port(p)
+        free_port(args.port)
+        if not args.no_yjs:
+            free_port(4444)
+        if not args.no_lod_encoder:
+            free_port(8091)
+        if not args.no_lod:
+            free_port(5173)
+            free_port(8080)
 
+    # Avoid stale _next/static references that can cause layout.css 404s in dev.
     if not args.no_clean:
         clean_next_cache(project_root)
 
-    managed_services: list[ManagedService] = []
-
+    # Start Yjs WebSocket server in background thread
     if not args.no_yjs:
-        managed_services.append(get_yjs_service(project_root))
-    if not args.no_lod_encoder:
-        managed_services.append(get_lod_query_encoder_service(project_root))
-    if not args.no_lod:
-        managed_services.append(get_lod_checker_service(project_root))
+        yjs_thread = threading.Thread(target=run_yjs_server, args=(project_root,), daemon=True)
+        yjs_thread.start()
 
-    for svc in managed_services:
-        svc.start()
+    if not args.no_lod_encoder:
+        encoder_thread = threading.Thread(
+            target=run_lod_query_encoder,
+            args=(project_root,),
+            daemon=True,
+        )
+        encoder_thread.start()
+
+    # Start LOD Checker in background thread
+    if not args.no_lod:
+        lod_thread = threading.Thread(target=run_lod_checker, daemon=True)
+        lod_thread.start()
 
     try:
         if args.mode == "public":
-            run_next_build(project_root)
-            # For public mode, we just run start and don't monitor as much, but we could
+            build_code = run_next_build(project_root)
+            if build_code != 0:
+                return build_code
             return run_next_start(project_root, args.port)
 
-        # Dev mode monitoring loop
-        dashboard_cmd = resolve_next_command(project_root, "dev", "--webpack", "-H", "0.0.0.0", "--port", str(args.port))
-        dashboard = ManagedService("dashboard", dashboard_cmd, project_root, port=args.port)
-        dashboard.start()
-
-        print("[runner] Stack is running. Monitoring background services...")
-        while dashboard.is_alive():
-            time.sleep(5)
-            for svc in managed_services:
-                if not svc.check_health():
-                    print(f"[runner] Service {svc.name} is unhealthy or dead!")
-                    svc.restart()
-        
-        return dashboard.proc.wait() if dashboard.proc else 0
-    except KeyboardInterrupt:
-        return 0
+        return run_next_dev(project_root, args.port)
     finally:
         print("\n[runner] Shutting down all processes...")
-        for svc in managed_services:
-            svc.stop()
         kill_children()
 
 
 if __name__ == "__main__":
     sys.exit(main())
-
-

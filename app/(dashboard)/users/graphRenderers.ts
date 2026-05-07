@@ -945,12 +945,22 @@ export class CosmosGraphRenderer implements GraphRenderer {
     const overrideCandidates: Candidate[] = [];
     const normalCandidates: Candidate[] = [];
 
+    // In GPU-physics mode Cosmos moves points on the GPU and never writes them
+    // back to posRef.current (the Canvas2D position buffer). frame.positions
+    // therefore holds only the initial seed coordinates — projecting them via
+    // spaceToScreenPosition produces nonsensical screen positions and labels
+    // render off-screen. Use the live positions from getPointPositionsArray()
+    // when available; fall back to frame.positions only for worker-physics mode
+    // (where posRef IS the live buffer).
+    const livePositions = this.getPointPositionsArray();
+    const positions = livePositions ?? frame.positions;
+
     for (let i = 0; i < frame.nodes.length; i++) {
       const n = frame.nodes[i];
       const label = n.label;
       if (!label) continue;
-      const wx = frame.positions[i * 2];
-      const wy = frame.positions[i * 2 + 1];
+      const wx = positions[i * 2];
+      const wy = positions[i * 2 + 1];
       const screen = this.spaceToScreen(wx, wy);
       if (!screen) continue;
       const sx = screen[0];
