@@ -1148,8 +1148,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
   /** Current simulation alpha (1=hot, 0=cool). Returns 0 when not in physics mode. */
   getSimulationAlpha(): number {
     if (!this.graph || !this.usePhysics) return 0;
+    // cosmos.gl v3 exposes `progress` as 0=start (hot) → 1=end (cooled),
+    // i.e. the INVERSE of d3-force's alpha convention. Every caller in this
+    // codebase (stability poll at AccUsersGraph.tsx, perf HUD readout) treats
+    // the return as d3 alpha: 1=hot, 0=cool. Invert + clamp at the source so
+    // the getter conforms to its docstring and downstream thresholds work.
+    // Without this inversion the stability badge never fires: cool sim →
+    // progress ≈ 1 → caller's `alpha < 0.005` check is permanently false.
     const value = (this.graph as { progress?: number }).progress;
-    return typeof value === "number" && Number.isFinite(value) ? value : 0;
+    if (typeof value !== "number" || !Number.isFinite(value)) return 0;
+    const inverted = 1 - value;
+    return inverted < 0 ? 0 : inverted > 1 ? 1 : inverted;
   }
 
   /** True iff Cosmos is currently ticking the simulation. */
