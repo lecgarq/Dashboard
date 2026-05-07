@@ -133,7 +133,6 @@ const providers: any[] = [
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   ...authConfig,
-  // @ts-expect-error — NextAuth v5 beta adapter type mismatch; safe at runtime
   adapter: PrismaAdapter(db),
   providers,
   callbacks: {
