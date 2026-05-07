@@ -137,7 +137,7 @@ const drawPill = (
 
 Single-file edit. Roughly the structure of changes inside `drawLabelOverlay`:
 
-1. **Replace zoomScale calc** — new `pow(0.55)` + `[0.85, 1.4]` clamp.
+1. **Replace zoomScale calc** — new `pow(zoom, 0.2)` + `[0.85, 1.4]` clamp (matches table at line 45).
 2. **Add legibility floor** — early `continue` in candidate loop when `fontPx < 10`.
 3. **Add drawPill helper** — module-private or inline in the method.
 4. **Replace stroke+fill text rendering** with `drawPill` calls in both override and normal passes.

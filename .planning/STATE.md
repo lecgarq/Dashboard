@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 Phase: 03 (Graph UI Completion) — IN PROGRESS
 Plan: 03-04 — CLOSED 2026-05-07. Cosmos label overlay (UAT gaps 1, 2, 3 closure): sibling 2D <canvas> above Cosmos GL canvas with pointer-events-none; CosmosGraphRenderer.drawLabelOverlay(ctx, frame, dpr) screen-space label pass mirrors 03-01 fade-band+AABB+200-cap+override logic; world->screen via Graph.spaceToScreenPosition (public API); fade band in zoom-level units (2.0..3.5) via Graph.getZoomLevel (verified at @cosmos.gl/graph dist/index.d.ts:343); rAF tick gates on `instanceof CosmosGraphRenderer`; hover labels routed through labelOverrideIndices channel; legacy hoverLabelRef DOM element removed entirely (ref + JSX + cleanup site). Wheel-zoom on Cosmos wakes rAF via passive listener on cosmosContainerRef calling markGraphDirty (NOT a reheat). See 03-04-SUMMARY.md.
 Status: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05). Next: 03-03 (per ROADMAP).
-Last activity: 2026-05-07 — 03-04 shipped; tsc + lint clean.
+Last activity: 2026-05-07 — Completed quick task 1: Implement label readability polish per 03-06 design spec (commit 55e2378).
 
 Progress: [████████░░] 80%
 
@@ -112,6 +112,12 @@ None yet.
 - **TD-006 (non-blocking):** Cosmos slider feel refinement — separation range and organic-vs-cluster transition need additional tuning per user feedback during 02-05 verification. User explicitly deferred ("approved it needs refinement but we can see it later").
 - **TD-007 (non-blocking):** Canvas2D renderer branch + dual-path forward-projection scaffolding now vestigial — Cosmos/GPU is the only production path. Surfaced 2026-04-29 at 02-04 human-verify checkpoint. Removal deferred to standalone plan that also deprecates REND-04.
 - Phase 1 risk (HIGH): Worker production build failure (Pitfall 5) — must verify `npm run build && npm start` in CI before merging Phase 1 work
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Implement label readability polish per 03-06 design spec | 2026-05-07 | 55e2378 | [1-implement-label-readability-polish-per-0](./quick/1-implement-label-readability-polish-per-0/) |
 
 ## Session Continuity
 
