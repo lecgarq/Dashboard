@@ -928,10 +928,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     if (opacity <= 0 && !hasOverrides) return;
 
-    ctx.font = "11px ui-sans-serif, system-ui, sans-serif";
+    // Halo style: bold text with a soft white stroke. The stroke is wide
+    // enough to lift labels off any background color (light cluster fills,
+    // dark hub centers, etc.) without adding chrome. Hover/selected labels
+    // get a heavier weight + thicker halo in the override pass below.
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.fillStyle = "#111827";
+    ctx.lineJoin = "round";
+    ctx.miterLimit = 2;
 
     const margin = 50;
     type Candidate = {
@@ -999,31 +1003,42 @@ export class CosmosGraphRenderer implements GraphRenderer {
       );
 
     // Override labels: full opacity, bypass collision, but register AABBs.
+    // Heavier weight + thicker halo — these are the labels the user
+    // explicitly asked for (hover, selection).
     ctx.globalAlpha = 1;
+    ctx.font = "700 13px ui-sans-serif, system-ui, sans-serif";
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
+    ctx.fillStyle = "#0f172a";
+    ctx.lineWidth = 4;
     for (const c of overrideCandidates) {
       if (drawnCount >= MAX_LABELS) break;
-      const textWidth = ctx.measureText(c.label).width + 4;
+      const textWidth = ctx.measureText(c.label).width + 6;
       const aabb: [number, number, number, number] = [
         c.sx - textWidth / 2,
-        c.sy - 18,
+        c.sy - 22,
         textWidth,
-        14,
+        17,
       ];
-      ctx.fillText(c.label, c.sx, c.sy - 8);
+      ctx.strokeText(c.label, c.sx, c.sy - 10);
+      ctx.fillText(c.label, c.sx, c.sy - 10);
       drawnAabbs.push(aabb);
       drawnCount++;
     }
 
     if (opacity > 0 && drawnCount < MAX_LABELS) {
       ctx.globalAlpha = opacity;
+      ctx.font = "600 12px ui-sans-serif, system-ui, sans-serif";
+      ctx.fillStyle = "#0f172a";
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
+      ctx.lineWidth = 3;
       for (const c of normalCandidates) {
         if (drawnCount >= MAX_LABELS) break;
-        const textWidth = ctx.measureText(c.label).width + 4;
+        const textWidth = ctx.measureText(c.label).width + 6;
         const aabb: [number, number, number, number] = [
           c.sx - textWidth / 2,
-          c.sy - 18,
+          c.sy - 20,
           textWidth,
-          14,
+          16,
         ];
         let collides = false;
         for (let j = 0; j < drawnAabbs.length; j++) {
@@ -1033,7 +1048,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
           }
         }
         if (collides) continue;
-        ctx.fillText(c.label, c.sx, c.sy - 8);
+        ctx.strokeText(c.label, c.sx, c.sy - 9);
+        ctx.fillText(c.label, c.sx, c.sy - 9);
         drawnAabbs.push(aabb);
         drawnCount++;
       }
