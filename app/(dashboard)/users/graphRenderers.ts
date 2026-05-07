@@ -934,25 +934,23 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     if (opacity <= 0 && !hasOverrides) return;
 
-    // Halo style: bold text with a soft white stroke. The stroke is wide
-    // enough to lift labels off any background color (light cluster fills,
-    // dark hub centers, etc.) without adding chrome. Hover/selected labels
-    // get a heavier weight + thicker halo in the override pass below.
+    // Pill style: cloud labels render on near-opaque white pills with
+    // slate-900 text; override (hover/selected) labels render on dark
+    // slate pills with white text. No stroke halo — the pill fill
+    // provides contrast on busy/dense graph regions. textAlign/baseline
+    // are required by the drawPill helper below.
     ctx.textAlign = "center";
     ctx.textBaseline = "alphabetic";
-    ctx.lineJoin = "round";
-    ctx.miterLimit = 2;
 
-    // Zoom-relative font scaling: pow(cosmosZoom, 0.7) — a sublinear
+    // Zoom-relative font scaling: pow(cosmosZoom, 0.2) — a very gentle
     // ramp anchored at zoom=1 → scale=1.0 (so fit-zoom keeps the
-    // original 12/13px). Sublinear keeps mid-range zoom (z=2..3) from
-    // ballooning while still letting deep zoom-in (z=5+) grow enough
-    // for labels to stay proportional to the now-huge nodes. Floor
-    // 0.55 → ~7px when zoomed out so overrides don't dominate the
-    // panned-out view; ceiling 4.5 caps extreme zoom-in at ~54/58px.
+    // original 12/13px). The flat exponent keeps mid-range zoom growth
+    // subtle; the [0.85, 1.4] clamp enforces a hard ~18px ceiling at
+    // deep zoom-in (z>=6) and an ~11px floor at deep zoom-out (z<=0.3)
+    // so labels are always legible without ever dominating the viewport.
     const zoomScale = Math.max(
-      0.55,
-      Math.min(4.5, Math.pow(cosmosZoom, 0.7)),
+      0.85,
+      Math.min(1.4, Math.pow(cosmosZoom, 0.2)),
     );
 
     const margin = 50;
@@ -1020,51 +1018,95 @@ export class CosmosGraphRenderer implements GraphRenderer {
         b[1] + b[3] <= a[1]
       );
 
+    // Pill draw helper — captures `ctx` from the enclosing frame so it
+    // inherits the per-frame canvas state (textAlign, font, globalAlpha).
+    // Resets shadow state after the pill fill so subsequent text draws in
+    // the same frame don't inherit shadow.
+    const drawPill = (
+      cx: number,
+      cy: number,
+      text: string,
+      fontPx: number,
+      fillColor: string,
+      textColor: string,
+      padX: number,
+      padY: number,
+      radius: number,
+    ) => {
+      const w = ctx.measureText(text).width + padX * 2;
+      const h = fontPx + padY * 2;
+      const x = cx - w / 2;
+      const y = cy - h;
+      ctx.shadowColor = "rgba(0,0,0,0.08)";
+      ctx.shadowBlur = 2;
+      ctx.shadowOffsetY = 1;
+      ctx.fillStyle = fillColor;
+      ctx.beginPath();
+      ctx.roundRect(x, y, w, h, radius);
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+      ctx.fillStyle = textColor;
+      ctx.fillText(text, cx, cy - padY);
+    };
+
     // Override labels: full opacity, bypass collision, but register AABBs.
-    // Heavier weight + thicker halo — these are the labels the user
-    // explicitly asked for (hover, selection).
+    // Dark slate pill + white text + weight 700 — visually distinct from
+    // cloud labels at a glance.
     const overrideFontPx = Math.round(13 * zoomScale);
     const overrideOffsetY = Math.round(10 * zoomScale);
-    const overrideAabbY = Math.round(22 * zoomScale);
-    const overrideAabbH = Math.round(17 * zoomScale);
     ctx.globalAlpha = 1;
     ctx.font = `700 ${overrideFontPx}px ui-sans-serif, system-ui, sans-serif`;
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.95)";
-    ctx.fillStyle = "#0f172a";
-    ctx.lineWidth = Math.max(3, 4 * zoomScale * 0.6);
-    for (const c of overrideCandidates) {
-      if (drawnCount >= MAX_LABELS) break;
-      const textWidth = ctx.measureText(c.label).width + 6;
-      const aabb: [number, number, number, number] = [
-        c.sx - textWidth / 2,
-        c.sy - overrideAabbY,
-        textWidth,
-        overrideAabbH,
-      ];
-      ctx.strokeText(c.label, c.sx, c.sy - overrideOffsetY);
-      ctx.fillText(c.label, c.sx, c.sy - overrideOffsetY);
-      drawnAabbs.push(aabb);
-      drawnCount++;
+    {
+      const padX = 5;
+      const padY = 3;
+      for (const c of overrideCandidates) {
+        if (drawnCount >= MAX_LABELS) break;
+        if (overrideFontPx < 10) continue;
+        const textWidth = ctx.measureText(c.label).width;
+        const aabbW = textWidth + padX * 2;
+        const aabbH = overrideFontPx + padY * 2;
+        const aabb: [number, number, number, number] = [
+          c.sx - aabbW / 2,
+          c.sy - overrideOffsetY - aabbH + padY,
+          aabbW,
+          aabbH,
+        ];
+        drawPill(
+          c.sx,
+          c.sy - overrideOffsetY,
+          c.label,
+          overrideFontPx,
+          "rgba(15, 23, 42, 0.95)",
+          "#ffffff",
+          padX,
+          padY,
+          5,
+        );
+        drawnAabbs.push(aabb);
+        drawnCount++;
+      }
     }
 
     if (opacity > 0 && drawnCount < MAX_LABELS) {
       const normalFontPx = Math.round(12 * zoomScale);
       const normalOffsetY = Math.round(9 * zoomScale);
-      const normalAabbY = Math.round(20 * zoomScale);
-      const normalAabbH = Math.round(16 * zoomScale);
       ctx.globalAlpha = opacity;
       ctx.font = `600 ${normalFontPx}px ui-sans-serif, system-ui, sans-serif`;
-      ctx.fillStyle = "#0f172a";
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.9)";
-      ctx.lineWidth = Math.max(2.5, 3 * zoomScale * 0.6);
+      const padX = 4;
+      const padY = 2;
       for (const c of normalCandidates) {
         if (drawnCount >= MAX_LABELS) break;
-        const textWidth = ctx.measureText(c.label).width + 6;
+        if (normalFontPx < 10) continue;
+        const textWidth = ctx.measureText(c.label).width;
+        const aabbW = textWidth + padX * 2;
+        const aabbH = normalFontPx + padY * 2;
         const aabb: [number, number, number, number] = [
-          c.sx - textWidth / 2,
-          c.sy - normalAabbY,
-          textWidth,
-          normalAabbH,
+          c.sx - aabbW / 2,
+          c.sy - normalOffsetY - aabbH + padY,
+          aabbW,
+          aabbH,
         ];
         let collides = false;
         for (let j = 0; j < drawnAabbs.length; j++) {
@@ -1074,8 +1116,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
           }
         }
         if (collides) continue;
-        ctx.strokeText(c.label, c.sx, c.sy - normalOffsetY);
-        ctx.fillText(c.label, c.sx, c.sy - normalOffsetY);
+        drawPill(
+          c.sx,
+          c.sy - normalOffsetY,
+          c.label,
+          normalFontPx,
+          "rgba(255, 255, 255, 0.92)",
+          "#0f172a",
+          padX,
+          padY,
+          4,
+        );
         drawnAabbs.push(aabb);
         drawnCount++;
       }
