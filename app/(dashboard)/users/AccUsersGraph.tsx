@@ -1705,6 +1705,33 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     };
   }, [handleWheel]);
 
+  // UI-01 (gap closure 03-04): the Cosmos GL canvas owns its own wheel-zoom
+  // (we do NOT call preventDefault — Cosmos still receives the event). We
+  // only need to mark the graph dirty so the rAF tick wakes up to redraw the
+  // label overlay at the new Cosmos zoom level. NOT a reheat — just a redraw
+  // signal. UI-02 contract preserved (no resetStability call here).
+  useEffect(() => {
+    if (renderBackend !== "cosmos") return;
+    const container = cosmosContainerRef.current;
+    if (!container) return;
+    const onWheel = () => { markGraphDirty(); };
+    container.addEventListener("wheel", onWheel, { passive: true });
+    return () => { container.removeEventListener("wheel", onWheel); };
+  }, [renderBackend, markGraphDirty]);
+
+  // UI-01 (gap closure 03-04): clear the overlay canvas when the backend
+  // switches away from Cosmos so stale labels do not linger after a
+  // Cosmos→Canvas2D fallback. CSS opacity-0 also hides the overlay, but
+  // clearing the backing store is defensive — DevTools / future code paths
+  // that flip opacity back would otherwise expose stale pixels.
+  useEffect(() => {
+    if (renderBackend === "cosmos") return;
+    const overlay = cosmosLabelOverlayRef.current;
+    if (!overlay) return;
+    const ctx = overlay.getContext("2d");
+    if (ctx) ctx.clearRect(0, 0, overlay.width, overlay.height);
+  }, [renderBackend]);
+
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
