@@ -44,7 +44,7 @@ if (process.env.ENABLE_LOD === "true") {
   });
 
   lodEngine.on("exit", (code) => {
-    console.warn([lod] Exited with code \);
+    console.warn(`[lod] Exited with code ${code}`);
   });
 }
 
@@ -83,12 +83,14 @@ async function startTunnel(retries = 5, delayMs = 8000) {
 startTunnel();
 
 process.on("SIGTERM", () => {
-  nextApp.kill("SIGTERM");`n  if (lodEngine) lodEngine.kill("SIGTERM");
+  nextApp.kill("SIGTERM");
+  if (lodEngine) lodEngine.kill("SIGTERM");
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
-  nextApp.kill("SIGINT");`n  if (lodEngine) lodEngine.kill("SIGINT");
+  nextApp.kill("SIGINT");
+  if (lodEngine) lodEngine.kill("SIGINT");
   process.exit(0);
 });
 
