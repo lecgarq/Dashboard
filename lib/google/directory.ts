@@ -270,7 +270,7 @@ const globalPersonInFlight = new Map<string, Promise<OrgPerson | null>>();
 
 const DIRECTORY_CACHE_TTL = 300000; // 5 minutes
 const PERSON_CACHE_TTL = 3600000; // 1 hour for individuals (avatars don't change often)
-const DIRECTORY_REQUEST_TIMEOUT_MS = 8000;
+const DIRECTORY_REQUEST_TIMEOUT_MS = 30000; // raised from 8s — large orgs on Railway need more headroom
 
 function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> {
   return Promise.race([
