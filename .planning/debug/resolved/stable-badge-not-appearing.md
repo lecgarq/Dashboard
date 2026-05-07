@@ -1,8 +1,9 @@
 ---
-status: verifying
+status: resolved
 trigger: "Stable badge still missing on /users in production after 03-05 shipped"
 created: 2026-05-06
 updated: 2026-05-07
+resolved: 2026-05-07
 ---
 
 ## Current Focus
@@ -114,3 +115,22 @@ fix: graphRenderers.ts:1148-1153 — return `1 - progress` (clamped to [0,1]) so
 verification: TypeScript build clean expected; HUD `Sim α` will now read 1.0 at hot, fall to ≤0.005 when cool. Badge will fade in 500ms after cool. User must confirm on WebGL2 browser.
 files_changed:
   - app/(dashboard)/users/graphRenderers.ts (getSimulationAlpha returns 1 - progress)
+
+## RESOLUTION
+
+**Resolved:** 2026-05-07
+**Commit:** `5b14ae9` "fix(stable-badge): invert cosmos.gl progress to match d3 alpha convention"
+**Branch:** deploy (Railway auto-deploy)
+
+### UAT Confirmation (production, Railway, Firefox WebGL2/Cosmos path)
+
+- Nodes render: 23,889 visible
+- Avg velocity: 0.000000 (sim fully settled)
+- Cosmos `Sim α` HUD readout: 0.0000 (post-fix d3 convention — cooled = 0, as the docstring claimed all along)
+- **Stable badge appears** top-right when sim is at rest
+
+### Notes
+
+- Earlier "no nodes appear" report during this session was Railway deploy lag (old bundle still cached); recovered automatically once new bundle loaded.
+- The 03-05 `cosmosReady` wake-up fix was necessary but not sufficient. The semantic-inversion bug in `getSimulationAlpha()` was the second root cause and only became visible after 03-05 unblocked the polling effect.
+- New technical debt logged as TD-008 in `.gsd/TECHNICAL_DEBT.md` (cosmos.gl getter return-type contract — implicit assumption that cosmos.gl field semantics match d3 conventions).

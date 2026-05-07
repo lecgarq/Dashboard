@@ -70,3 +70,18 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 - **What's good enough:** layout is interactive, sliders respond, drag/pick works, TD-005 capacity gap is closed. This is UX polish, not a blocker.
 - **Remaining work:** A/B tune the gamma exponents (currently 1.4/1.6/1.1/1.0) against the production hub for the *feel* of the slider sweep, not just the endpoints. Could be folded into plan 02-04 (lasso) or handled as an out-of-band tweak.
 - **Tracking:** Non-blocking; does not gate Phase 2 sign-off.
+
+---
+
+## 2026-05-07 — Phase 03 stable-badge debug session close-out
+
+### TD-008: cosmos.gl getter semantics are not contract-checked against d3-force conventions
+- **Location:** `app/(dashboard)/users/graphRenderers.ts` `CosmosGraphRenderer` (any method that proxies a cosmos.gl Graph field), notably `getSimulationAlpha()` and `isSimulationRunning()`.
+- **Surfaced:** Debug session `stable-badge-not-appearing` (2026-05-06 → 2026-05-07, fix shipped in commit `5b14ae9`).
+- **What went wrong:** `getSimulationAlpha()` returned cosmos.gl v3's `graph.progress` field directly while its docstring (and every caller in `AccUsersGraph.tsx`) assumed the d3-force `alpha` convention (1=hot, 0=cool). cosmos.gl v3 defines `progress` as 0=start, 1=end — the **inverse** semantic. The polling threshold `alpha < 0.005` could therefore never fire once the sim cooled, and the "Stable" badge never appeared. Fixed by inverting (`return 1 - progress`) so the getter actually conforms to its own docstring and to all callers' expectations.
+- **The deeper debt:** The `CosmosGraphRenderer` adapter wraps cosmos.gl in d3-force-flavored method names (`getSimulationAlpha`, `isSimulationRunning`, etc.) without an explicit contract test or comment block documenting the semantic mapping. Future cosmos.gl version bumps could silently re-introduce similar drifts (boolean inversions, range remappings, `undefined`-vs-`0` defaults).
+- **Mitigation options (non-blocking):**
+  1. Add a short contract block at the top of `CosmosGraphRenderer` documenting the d3-force semantic each getter must preserve, with the cosmos.gl v3 source field cited inline.
+  2. Add a smoke test (Playwright or unit) that loads the Cosmos backend, lets it cool, and asserts `getSimulationAlpha() < 0.005 && !isSimulationRunning()` — would have caught this in CI.
+  3. On cosmos.gl version bumps, manually diff the relevant Graph getters' docs against this adapter.
+- **Tracking:** Non-blocking; the immediate bug is fixed in `5b14ae9` and UAT-confirmed.
