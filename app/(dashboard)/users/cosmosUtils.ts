@@ -155,6 +155,7 @@ export interface SimulationConfigPartial {
   simulationLinkSpring: number;
   simulationCluster: number;
   simulationGravity: number;
+  simulationCenter: number;
 }
 
 export function controlsToSimulationConfig(
@@ -163,14 +164,17 @@ export function controlsToSimulationConfig(
   const sep = Math.max(0, Math.min(100, controls.spacing)) / 100;
   const cluster = Math.max(0, Math.min(100, controls.clusterStrength)) / 100;
   return {
-    // TD-006 fix: cap repulsion ceiling and keep a gravity floor so hub nodes
-    // can never reach the spaceSize wall (16384). Previously sep=100 hit
-    // repulsion=50 with gravity=0 — hub nodes flew outward until they clamped
-    // against the GPU texture boundary, forming a visible square border.
-    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 19.9,       // 0.1..20.0
-    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 246,       // 4..250
+    // TD-006 fix (2nd pass): the first-pass tuning lowered repulsion ceiling
+    // and added a gravity floor, but at 25k+ nodes hub nodes still drifted to
+    // the spaceSize=16384 wall. Cosmos's `simulationCenter` is a separate
+    // force whose pull GROWS with distance from world center — exactly what
+    // prevents escape. Combined with reduced repulsion this keeps the cluster
+    // self-contained at every slider value.
+    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 9.9,        // 0.1..10.0
+    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 196,       // 4..200
     simulationLinkSpring: 0.7 - Math.pow(sep, 1.1) * 0.6,       // 0.7..0.1
     simulationGravity: 0.3 - Math.pow(sep, 1.0) * 0.2,          // 0.3..0.1
+    simulationCenter: 0.4 + sep * 0.4,                          // 0.4..0.8 — outliers always pulled back
     simulationCluster: cluster,                                  // 0..1
   };
 }

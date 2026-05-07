@@ -464,7 +464,9 @@ const DEFAULT_SIMULATION_CONFIG: Required<SimulationConfig> = {
   simulationGravity: 0.15,
   simulationFriction: 0.85,
   simulationDecay: 1000,
-  simulationCenter: 0,
+  // TD-006: center force keeps hub nodes from escaping to the spaceSize wall.
+  // Slider config (controlsToSimulationConfig) raises this further at runtime.
+  simulationCenter: 0.4,
 };
 
 export class CosmosGraphRenderer implements GraphRenderer {
