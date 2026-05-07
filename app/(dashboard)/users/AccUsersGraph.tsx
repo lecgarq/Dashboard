@@ -1884,7 +1884,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   <input
                     type="date"
                     value={filters.dateFrom}
-                    onChange={(e) => setFilters((current) => ({ ...current, dateFrom: e.currentTarget.value }))}
+                    onChange={(e) => {
+                      // Capture value synchronously — React 19 nulls e.currentTarget
+                      // by the time the setState updater runs.
+                      const value = e.target.value;
+                      setFilters((current) => ({ ...current, dateFrom: value }));
+                    }}
                     className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
                   />
                 </label>
@@ -1893,7 +1898,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   <input
                     type="date"
                     value={filters.dateTo}
-                    onChange={(e) => setFilters((current) => ({ ...current, dateTo: e.currentTarget.value }))}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setFilters((current) => ({ ...current, dateTo: value }));
+                    }}
                     className="flex-1 min-w-0 h-6 rounded-md border border-gray-200 bg-white px-1.5 text-[10px] text-gray-700 outline-none focus:border-gray-400"
                   />
                 </label>
