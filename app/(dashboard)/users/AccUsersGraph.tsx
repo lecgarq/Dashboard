@@ -368,6 +368,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   // GPU renderer state
   const [isCosmosLoading, setIsCosmosLoading] = useState(false);
+  // UI-02 (gap 4 fix): cosmosReady promotes "renderer ref is assigned" to React
+  // state so the Cosmos stability-polling effect re-runs once the async
+  // CosmosGraphRenderer.create(...).then(...) resolves. Previously the polling
+  // effect bailed silently when isReady flipped before init completed.
+  const [cosmosReady, setCosmosReady] = useState(false);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [pickMode, setPickMode] = useState(false);
   const pickModeRef = useRef(false);
@@ -866,6 +871,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       activeRendererRef.current = canvasRendererRef.current;
       usePhysicsRef.current = false;
       setRenderBackend("canvas2d");
+      setCosmosReady(false);  // GPU context lost mid-session — same flag-reset, different trigger
       setPerfGpu(null);
       setIsCosmosLoading(false);
       // Unpause d3-force worker when falling back
@@ -888,6 +894,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create: renderer=null (init failed)");
           usePhysicsRef.current = false;
           setRenderBackend("canvas2d");
+          setCosmosReady(false);  // ensure flag is false in the synchronous-init-failure case
           setIsCosmosLoading(false);
           organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
           markGraphDirty();
@@ -895,6 +902,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         }
         cosmosRendererRef.current = renderer;
         activeRendererRef.current = renderer;
+        setCosmosReady(true);  // UI-02 fix (gap 4): signal stability-polling effect to re-run
         usePhysicsRef.current = renderer.isUsingPhysics();
         // FILT-01: apply the current visibility filter the moment the renderer is
         // available, so a filter that was already active (URL-seeded or set during
@@ -1022,6 +1030,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       canvasRendererRef.current = null;
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
+      setCosmosReady(false);  // UI-02 fix (gap 4): renderer torn down, polling effect should stop
       if (hoverLabelRef.current) hoverLabelRef.current.style.display = "none";
       // Always dismiss spinner on cleanup — prevents stuck spinner if Fast Refresh
       // fires while the dynamic import is in-flight (disposed=true makes .then() bail early)
