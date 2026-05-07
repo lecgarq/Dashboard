@@ -281,8 +281,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
   const cosmosContainerRef = useRef<HTMLDivElement>(null);
+  // UI-01 (gap closure 03-04): screen-space label overlay above the Cosmos GL
+  // canvas. Driven by CosmosGraphRenderer.drawLabelOverlay each rAF tick on
+  // the Cosmos path. Replaces the legacy DOM hover-label.
+  const cosmosLabelOverlayRef = useRef<HTMLCanvasElement | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
-  const hoverLabelRef = useRef<HTMLDivElement>(null);
   const rafId = useRef<number>(0);
 
   const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
@@ -973,24 +976,28 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           markGraphDirty();
         };
 
-        // Wire hover labels via Cosmos onPointMouseOver / onPointMouseOut
+        // UI-01 (gap closure 03-04): hover labels are drawn by the Cosmos
+        // label overlay (CosmosGraphRenderer.drawLabelOverlay) via the
+        // labelOverrideIndices channel. The frame builder reads
+        // hoveredNodeRef.current and adds its index to the override set, so
+        // hover handlers just update the ref + state and mark dirty so the
+        // rAF tick rebuilds the frame.
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const cosmosGraph = (renderer as any).graph;
         if (cosmosGraph) {
           cosmosGraph.setConfigPartial({
-            onPointMouseOver: (index: number, position: [number, number], _event: MouseEvent) => {
+            onPointMouseOver: (index: number, _position: [number, number], _event: MouseEvent) => {
               const node = nodesRef.current[index];
-              if (node && hoverLabelRef.current) {
-                hoverLabelRef.current.textContent = node.name || node.email || node.id;
-                hoverLabelRef.current.style.left = `${position[0] + 12}px`;
-                hoverLabelRef.current.style.top = `${position[1] - 8}px`;
-                hoverLabelRef.current.style.display = "block";
+              if (node) {
+                hoveredNodeRef.current = node;
+                setHoveredNode(node);
+                markGraphDirty();
               }
             },
             onPointMouseOut: () => {
-              if (hoverLabelRef.current) {
-                hoverLabelRef.current.style.display = "none";
-              }
+              hoveredNodeRef.current = null;
+              setHoveredNode(null);
+              markGraphDirty();
             },
           });
         }
@@ -1031,7 +1038,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
       setCosmosReady(false);  // UI-02 fix (gap 4): renderer torn down, polling effect should stop
-      if (hoverLabelRef.current) hoverLabelRef.current.style.display = "none";
       // Always dismiss spinner on cleanup — prevents stuck spinner if Fast Refresh
       // fires while the dynamic import is in-flight (disposed=true makes .then() bail early)
       setIsCosmosLoading(false);
@@ -1468,6 +1474,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       const labelFadeStartScale = fitScale * 2.0;
       const labelFadeEndScale = fitScale * 3.5;
 
+      // UI-01 (gap closure 03-04): Cosmos fade band in zoom-level units
+      // (Cosmos's getZoomLevel returns 1.0 ≈ fit, independent of Canvas2D
+      // scale units). 2.0..3.5 mirrors the Canvas2D band semantics. Tune
+      // empirically via UAT if labels feel too eager / too late.
+      const cosmosLabelFadeStartZoom = 2.0;
+      const cosmosLabelFadeEndZoom = 3.5;
+
       // UI-01: assemble the override set from current hover + selection so
       // those nodes' labels render regardless of zoom.
       const overrides = new Set<number>();
@@ -1498,9 +1511,24 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         labelFadeStartScale,
         labelFadeEndScale,
         labelOverrideIndices: overrides,
+        cosmosLabelFadeStartZoom,
+        cosmosLabelFadeEndZoom,
       };
 
       const drawResult = renderer.draw(frame);
+      // UI-01 (gap closure 03-04): on the Cosmos path, draw the screen-space
+      // label overlay on top of the GL canvas. Gated by `instanceof` so the
+      // canvas2d path is unaffected without reading React state in this rAF
+      // closure.
+      if (renderer instanceof CosmosGraphRenderer) {
+        const overlay = cosmosLabelOverlayRef.current;
+        if (overlay) {
+          const ctx2d = overlay.getContext("2d");
+          if (ctx2d) {
+            renderer.drawLabelOverlay(ctx2d, frame, window.devicePixelRatio || 1);
+          }
+        }
+      }
       needsRenderRef.current = forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw;
     };
 
@@ -2252,6 +2280,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             )}
             // Cosmos manages its own canvas and pointer events internally
           />
+          {/* UI-01 (gap closure 03-04): screen-space label overlay above the
+              Cosmos GL canvas. pointer-events-none so wheel/click pass through
+              to Cosmos. Drawn each rAF tick by CosmosGraphRenderer.drawLabelOverlay. */}
+          <canvas
+            ref={cosmosLabelOverlayRef}
+            className={cn(
+              "absolute inset-0 w-full h-full pointer-events-none",
+              renderBackend === "cosmos" ? "opacity-100" : "opacity-0",
+            )}
+            aria-hidden="true"
+          />
         </div>
         {/* 02-04: Lasso overlay. When lassoActive it captures pointer events
             (suspending pan/zoom on the underlying canvas) and renders the
@@ -2299,13 +2338,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <UserTooltip node={hoveredNode} />
           )}
         </div>
-
-        {/* Cosmos hover label — shown on onPointMouseOver, hidden by default */}
-        <div
-          ref={hoverLabelRef}
-          style={{ display: "none", position: "absolute", pointerEvents: "none", zIndex: 50 }}
-          className="px-2 py-1 text-[11px] font-medium bg-gray-900/90 text-white rounded-lg shadow-md whitespace-nowrap"
-        />
 
       </div>
 
