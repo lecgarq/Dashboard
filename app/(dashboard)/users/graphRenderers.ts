@@ -943,14 +943,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
     ctx.lineJoin = "round";
     ctx.miterLimit = 2;
 
-    // Zoom-relative font scaling: linear in cosmosZoom (Cosmos's own
-    // zoom-level units; 1.0 ≈ fit). At fit-zoom scale = 1.0 → override
-    // 13px / normal 12px (the original sizes). Floor=0.55 lets labels
-    // shrink to ~7px when zoomed out so the selected-user overrides
-    // don't dominate the panned-out view; ceiling=2.4 prevents giant
-    // labels at extreme zoom-in. Stroke + y-offset + AABB scale with
-    // the font so the visual ratio stays constant.
-    const zoomScale = Math.max(0.55, Math.min(2.4, cosmosZoom));
+    // Zoom-relative font scaling: pow(cosmosZoom, 0.7) — a sublinear
+    // ramp anchored at zoom=1 → scale=1.0 (so fit-zoom keeps the
+    // original 12/13px). Sublinear keeps mid-range zoom (z=2..3) from
+    // ballooning while still letting deep zoom-in (z=5+) grow enough
+    // for labels to stay proportional to the now-huge nodes. Floor
+    // 0.55 → ~7px when zoomed out so overrides don't dominate the
+    // panned-out view; ceiling 4.5 caps extreme zoom-in at ~54/58px.
+    const zoomScale = Math.max(
+      0.55,
+      Math.min(4.5, Math.pow(cosmosZoom, 0.7)),
+    );
 
     const margin = 50;
     type Candidate = {
