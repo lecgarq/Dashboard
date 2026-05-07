@@ -57,10 +57,16 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 - **Resolution path:** Standalone phase or plan that (a) updates ROADMAP.md / REQUIREMENTS.md to deprecate REND-04, (b) deletes `CanvasGraphRenderer`, (c) collapses the dual forward-projection branch in AccUsersGraph.tsx to the Cosmos-only path, (d) rips `renderBackend` auto-detect and toolbar toggle, (e) removes worker spawn gate (d3-force worker becomes dead code unless retained for a different purpose).
 - **Tracking:** Non-blocking; does not gate Phase 2 sign-off.
 
-### TD-006: Cosmos slider feel refinement — separation range and organic-vs-cluster transition
+### TD-006: Cosmos slider feel refinement — separation range and organic-vs-cluster transition — PARTIALLY MITIGATED 2026-05-06
 - **Location:** `app/(dashboard)/users/cosmosUtils.ts` `controlsToSimulationConfig`, `app/(dashboard)/users/AccUsersGraph.tsx` slider wiring
 - **Surfaced:** 02-05 Task 6 human-verify checkpoint (2026-04-29)
 - **Observation:** User approved 02-05 with explicit note: "approved it needs refinement but we can see it later" — separation range and the organic↔cluster transition feel still need tuning at 25k scale even after the final pass in commit 2978186.
+- **2026-05-06 update — visible square boundary on Railway production:** With 25k+ ACC hub nodes loaded, hub nodes piled against all four walls of the `spaceSize: 16384` GPU-physics texture, forming a visible square "border" (user screenshot). Math: at default `spacing: 54` repulsion was ~21.7 with gravity ~0.115 (22× imbalance); at `spacing: 100` gravity hit 0 entirely → no inward force counteracted repulsion → wall-clamp.
+- **Mitigation applied:** Re-tuned `controlsToSimulationConfig` curves so the cluster cannot fully reach the wall at any slider value:
+  - `simulationRepulsion` ceiling 50 → 20 (still spreads, no wall-saturation)
+  - `simulationLinkDistance` ceiling 500 → 250 (matches lower repulsion)
+  - `simulationLinkSpring` floor 0.005 → 0.1 (springs always contribute)
+  - `simulationGravity` floor 0.0 → 0.1 (always pulls inward)
 - **What's good enough:** layout is interactive, sliders respond, drag/pick works, TD-005 capacity gap is closed. This is UX polish, not a blocker.
-- **Resolution path:** Standalone follow-up pass on the gamma curves in `controlsToSimulationConfig` and the cluster pull strength curve, ideally A/B-tuned against the production hub. Could be folded into plan 02-04 (lasso) or handled as an out-of-band tweak.
+- **Remaining work:** A/B tune the gamma exponents (currently 1.4/1.6/1.1/1.0) against the production hub for the *feel* of the slider sweep, not just the endpoints. Could be folded into plan 02-04 (lasso) or handled as an out-of-band tweak.
 - **Tracking:** Non-blocking; does not gate Phase 2 sign-off.

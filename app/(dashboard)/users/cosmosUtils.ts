@@ -163,10 +163,14 @@ export function controlsToSimulationConfig(
   const sep = Math.max(0, Math.min(100, controls.spacing)) / 100;
   const cluster = Math.max(0, Math.min(100, controls.clusterStrength)) / 100;
   return {
-    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 49.9,       // 0.1..50.0
-    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 496,       // 4..500
-    simulationLinkSpring: 0.7 - Math.pow(sep, 1.1) * 0.695,     // 0.7..0.005
-    simulationGravity: 0.25 - Math.pow(sep, 1.0) * 0.25,        // 0.25..0.0
+    // TD-006 fix: cap repulsion ceiling and keep a gravity floor so hub nodes
+    // can never reach the spaceSize wall (16384). Previously sep=100 hit
+    // repulsion=50 with gravity=0 — hub nodes flew outward until they clamped
+    // against the GPU texture boundary, forming a visible square border.
+    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 19.9,       // 0.1..20.0
+    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 246,       // 4..250
+    simulationLinkSpring: 0.7 - Math.pow(sep, 1.1) * 0.6,       // 0.7..0.1
+    simulationGravity: 0.3 - Math.pow(sep, 1.0) * 0.2,          // 0.3..0.1
     simulationCluster: cluster,                                  // 0..1
   };
 }
