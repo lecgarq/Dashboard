@@ -1159,8 +1159,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     if (v < STABLE_THRESHOLD) {
       if (stableStartedAtRef.current === null) {
         stableStartedAtRef.current = Date.now();
-        // Schedule a re-check in case no further ticks arrive (worker
-        // self-pauses when fully settled).
+      }
+      
+      if (Date.now() - stableStartedAtRef.current >= STABLE_DURATION_MS) {
+        setIsSimStable(true);
+      } else {
+        // Schedule a re-check in case no further ticks arrive (worker self-pauses).
+        // If another sub-threshold tick arrives, this timeout is cleared and
+        // rescheduled for the remaining duration.
+        const elapsed = Date.now() - stableStartedAtRef.current;
+        const remaining = Math.max(0, STABLE_DURATION_MS - elapsed);
         const handle = setTimeout(() => {
           if (
             stableStartedAtRef.current !== null &&
@@ -1168,10 +1176,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           ) {
             setIsSimStable(true);
           }
-        }, STABLE_DURATION_MS + 20);
+        }, remaining + 20);
         return () => clearTimeout(handle);
-      } else if (Date.now() - stableStartedAtRef.current >= STABLE_DURATION_MS) {
-        setIsSimStable(true);
       }
     } else {
       stableStartedAtRef.current = null;
