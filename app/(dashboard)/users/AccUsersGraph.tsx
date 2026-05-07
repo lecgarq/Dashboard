@@ -1176,10 +1176,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // UI-02: Stability detection — Cosmos GPU-physics path.
   // Polls getSimulationAlpha() and isSimulationRunning() at 100ms cadence.
   // Stable = alpha < 0.005 AND simulation not running for STABLE_DURATION_MS.
+  // UI-02 (gap 4 fix): cosmosReady is in deps so the effect re-runs once the
+  // async CosmosGraphRenderer.create() resolves and assigns the ref. Previously
+  // [isReady, isSimStable] alone left the effect inert when isReady flipped
+  // before Cosmos init completed (the common case).
   useEffect(() => {
-    if (!isReady) return;
+    if (!isReady || !cosmosReady) return;
     const cosmos = cosmosRendererRef.current;
-    if (!cosmos) return;
+    if (!cosmos) return; // belt-and-suspenders; cosmosReady true implies ref non-null
     const STABLE_DURATION_MS = 500;
     const id = window.setInterval(() => {
       const alpha = cosmos.getSimulationAlpha?.() ?? 1;
@@ -1200,7 +1204,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       }
     }, 100);
     return () => window.clearInterval(id);
-  }, [isReady, isSimStable]);
+  }, [isReady, isSimStable, cosmosReady]);
 
   useEffect(() => {
     if (!users.length) return;
