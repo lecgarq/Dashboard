@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-06T23:03:48.651Z"
+last_updated: "2026-05-07T17:24:32.230Z"
 progress:
   total_phases: 4
   completed_phases: 3
-  total_plans: 19
-  completed_plans: 18
+  total_plans: 21
+  completed_plans: 19
 ---
 
 # Project State
@@ -23,11 +23,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 03 (Graph UI Completion) — IN PROGRESS
-Plan: 03-02 — CLOSED 2026-05-06. Stability badge (UI-02): isSimStable + stableStartedAtRef + hasReceivedTickRef; Canvas2D debounce on motionMetric.averageVelocity (<0.0001 for 500ms); Cosmos 100ms poll on getSimulationAlpha + isSimulationRunning (alpha<0.005 + !running). resetStability wired to drag/filter/select; pan/zoom intentionally NOT wired. Stable badge JSX with aria-live=polite, motion-reduce honored, click toggles diagnostics popover. Worker NOT terminated. See 03-02-SUMMARY.md.
-Status: Phase 03 — 2/3 plans complete. Next: 03-03.
-Last activity: 2026-05-06 — 03-02 shipped; tsc clean.
+Plan: 03-05 — CLOSED 2026-05-07. Cosmos stability badge wake-up (UAT gap 4 closure): cosmosReady boolean state promotes async renderer-init readiness to React state; setCosmosReady(true) immediately after cosmosRendererRef.current=renderer; reset to false in cleanup, synchronous init-failure, and runtime fallBackToCanvas. Cosmos polling effect deps now [isReady, isSimStable, cosmosReady] — effect re-runs once Cosmos init resolves. Badge JSX + 4 reheat sites + pan/zoom no-reheat verified intact (Task 3 read-only). See 03-05-SUMMARY.md.
+Status: Phase 03 — 3/5 plans complete (03-01, 03-02, 03-05). Next: 03-04 (Cosmos labels — Wave 2; sequenced after 03-05 to minimize merge surface).
+Last activity: 2026-05-07 — 03-05 shipped; tsc clean.
 
-Progress: [██████░░░░] 67%
+Progress: [███████░░░] 60%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [██████░░░░] 67%
 | Phase 02.5 P02 | 7m 37s | 3 tasks | 3 files |
 | Phase 03-graph-ui-completion P01 | 8m | 3 tasks | 2 files |
 | Phase 03-graph-ui-completion P02 | 6 min | 3 tasks | 1 files |
+| Phase 03-graph-ui-completion P05 | 2min | 3 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -97,6 +98,7 @@ Recent decisions affecting current work:
 - [Phase 02.5]: page.tsx Suspense wrapper already present pre-02.5-02 — no change needed for useSearchParams
 - [Phase 03-graph-ui-completion]: P01: Canvas2D late-zoom label pass uses fitScale*2.0/3.5 fade band, degree-priority, 200-cap, hover/select override; Cosmos persistent labels deferred (Open Q1)
 - [Phase 03-graph-ui-completion]: P02: UI-02 stability badge — STABLE_THRESHOLD=0.0001, STABLE_DURATION_MS=500, Cosmos alpha<0.005 + !isSimulationRunning; dual-path detection (tick-driven Canvas2D + 100ms poll Cosmos); resetStability wired to drag/filter/select; pan/zoom NOT wired; worker NOT terminated; lasso polygon-select intentionally not wired (multi-select UX, not pick-a-node)
+- [Phase 03-graph-ui-completion]: P05: cosmosReady boolean state promotes async renderer-init to React state; added to Cosmos stability polling effect deps so it re-runs after CosmosGraphRenderer.create().then() resolves; closes UAT gap 4 (Stable badge on Cosmos GPU renderer)
 
 ### Pending Todos
 
