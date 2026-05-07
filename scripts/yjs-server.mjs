@@ -5,7 +5,8 @@
  * event-driven architecture using Hocuspocus.
  */
 
-import { Server } from "@hocuspocus/server";`nimport * as Y from "yjs";
+import { Server } from "@hocuspocus/server";
+import * as Y from "yjs";
 import { Database } from "@hocuspocus/extension-database";
 import { Logger } from "@hocuspocus/extension-logger";
 import { PrismaClient } from "@prisma/client";
@@ -83,7 +84,7 @@ function serializeToHtml(xmlString) {
     .replace(/<\/blockquote\/>/g, "</blockquote>");
 }
 
-1(name) {
+function parseRoomDetails(name) {
   if (name.startsWith("wiki-room-clash-")) {
     return { type: "clash", id: name.replace("wiki-room-clash-", "") };
   } else if (name.startsWith("wiki-room-sim-")) {
@@ -121,16 +122,16 @@ const server = new Server({
           const hasState = !!record.yjsState;
           const hasContent = !!record.content && record.content.length > 5;
           if (hasState && !hasContent) {
-            console.error([hocuspocus] [DRIFT] \ (\): Binary state exists but content is empty!);
+            console.error(`[hocuspocus] [DRIFT] ${table} (${record.id}): Binary state exists but content is empty!`);
             totalDrifts++;
           }
         }
       } catch (err) {
-        console.error([hocuspocus] Sync monitor failed for table \:, err.message);
+        console.error(`[hocuspocus] Sync monitor failed for table ${table}:`, err.message);
       }
     }
-    console.log([hocuspocus] Sync monitor complete. Found \ critical drifts.);
-  }
+    console.log(`[hocuspocus] Sync monitor complete. Found ${totalDrifts} critical drifts.`);
+  },
 
   async onListen() {
     console.log(`[hocuspocus] Server is listening. Testing database connection...`);
@@ -249,7 +250,7 @@ const server = new Server({
       /**
        * Store document state to Prisma when updates occur (debounced by Hocuspocus)
        */
-            store: async ({ documentName, state }) => {
+      store: async ({ documentName, state }) => {
         const { type, id } = parseRoomDetails(documentName);
         if (type === "unknown" || !id) return;
 
@@ -261,7 +262,8 @@ const server = new Server({
           Y.applyUpdate(ydoc, state);
           // Tiptap uses an XmlFragment named 'default'
           const xmlFragment = ydoc.getXmlFragment("default");
-          const xmlContent = xmlFragment.toString();`n          const content = serializeToHtml(xmlContent);
+          const xmlContent = xmlFragment.toString();
+          const content = serializeToHtml(xmlContent);
 
           if (type === "clash") {
             await prisma.clashWiki.update({
@@ -280,20 +282,7 @@ const server = new Server({
               },
             });
           }
-          console.log([hocuspocus] Persisted dual state for \-\);
-        } catch (err) {
-          console.error([hocuspocus] Database store error (\-\):, err);
-        }
-      },
-              data: { yjsState: buffer },
-            });
-          } else if (type === "sim") {
-            await prisma.simWiki.update({
-              where: { id },
-              data: { yjsState: buffer },
-            });
-          }
-          console.log(`[hocuspocus] Persisted state for ${type}-${id}`);
+          console.log(`[hocuspocus] Persisted dual state for ${type}-${id}`);
         } catch (err) {
           console.error(`[hocuspocus] Database store error (${type}-${id}):`, err);
         }
