@@ -92,20 +92,20 @@ describe("controlsToSimulationConfig", () => {
 
   it("at spacing=100, clusterStrength=100 returns max repulsion, low gravity, full cluster pull", () => {
     const cfg = controlsToSimulationConfig({ spacing: 100, clusterStrength: 100 });
-    expect(cfg.simulationRepulsion).toBeCloseTo(5.0, 5);
-    expect(cfg.simulationLinkDistance).toBeCloseTo(80, 5);
-    expect(cfg.simulationLinkSpring).toBeCloseTo(0.1, 5);
-    expect(cfg.simulationGravity).toBeCloseTo(0.05, 5);
+    expect(cfg.simulationRepulsion).toBeCloseTo(50.0, 5);
+    expect(cfg.simulationLinkDistance).toBeCloseTo(500, 5);
+    expect(cfg.simulationLinkSpring).toBeCloseTo(0.005, 5);
+    expect(cfg.simulationGravity).toBeCloseTo(0.0, 5);
     expect(cfg.simulationCluster).toBe(1);
   });
 
   it("at spacing=50 produces midrange values (sanity check)", () => {
     const cfg = controlsToSimulationConfig({ spacing: 50, clusterStrength: 50 });
     expect(cfg.simulationRepulsion).toBeGreaterThan(0.1);
-    expect(cfg.simulationRepulsion).toBeLessThan(5.0);
-    expect(cfg.simulationLinkSpring).toBeGreaterThan(0.1);
+    expect(cfg.simulationRepulsion).toBeLessThan(50.0);
+    expect(cfg.simulationLinkSpring).toBeGreaterThan(0.005);
     expect(cfg.simulationLinkSpring).toBeLessThan(0.7);
-    expect(cfg.simulationGravity).toBeGreaterThan(0.05);
+    expect(cfg.simulationGravity).toBeGreaterThan(0.0);
     expect(cfg.simulationGravity).toBeLessThan(0.25);
     expect(cfg.simulationCluster).toBe(0.5);
   });
@@ -134,8 +134,8 @@ describe("controlsToSimulationConfig", () => {
     expect(low.simulationRepulsion).toBeCloseTo(0.1, 5);
     expect(low.simulationGravity).toBeCloseTo(0.25, 5);
     expect(low.simulationCluster).toBe(0);
-    expect(high.simulationRepulsion).toBeCloseTo(5.0, 5);
-    expect(high.simulationGravity).toBeCloseTo(0.05, 5);
+    expect(high.simulationRepulsion).toBeCloseTo(50.0, 5);
+    expect(high.simulationGravity).toBeCloseTo(0.0, 5);
     expect(high.simulationCluster).toBe(1);
   });
 });

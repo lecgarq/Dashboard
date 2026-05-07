@@ -26,7 +26,7 @@
     "yjs:server": "node scripts/yjs-server.mjs",
     "start:prod": "node scripts/start-router.cjs",
     "knip": "knip",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate && patch-package"
   },
   "dependencies": {
     "@aps_sdk/authentication": "^1.0.1",
@@ -111,6 +111,7 @@
     "eslint": "^9",
     "eslint-config-next": "^16.2.4",
     "knip": "^6.3.0",
+    "patch-package": "^8.0.1",
     "sass": "^1.99.0",
     "shadcn": "^3.8.5",
     "stream-json": "^2.1.0",

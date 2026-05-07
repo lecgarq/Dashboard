@@ -577,24 +577,18 @@ export class CosmosGraphRenderer implements GraphRenderer {
         // Cosmos native drag — neighbors react to the simulation, no worker round-trip.
         baseConfig.enableDrag = true;
         baseConfig.onDragStart = () => {
-          // Re-heat so neighbors visibly react during the drag.
-          // CRITICAL: pair start(alpha) + render(alpha). start() sets
-          // store.isSimulationRunning=true + alpha (dist/index.js:6396-6398);
-          // render() pumps the rAF loop (startFrames). Without start(), once
-          // the sim has previously cooled below ALPHA_MIN, frame() called
-          // end() (line 6609-6611) which set isSimulationRunning=false.
-          // From then on runSimulationStep early-exits the force pass even
-          // though render() spins the loop and bumps alpha. Both calls are
-          // required to re-evaluate forces.
+          // Re-heat so neighbors visibly react during the drag. start()+render()
+          // pairing is required because once alpha cools below ALPHA_MIN the
+          // sim flag flips to false and render() alone won't resume forces.
           try { renderer.graph?.start?.(0.3); } catch { /* ignore */ }
           try { renderer.graph?.render?.(0.3); } catch { /* ignore */ }
         };
         baseConfig.onDragEnd = () => {
-          // Settle gently after release. Same start+render pairing — without
-          // start(), the dropped node would not settle because the sim flag
-          // stays false after the previous cool-down.
-          try { renderer.graph?.start?.(0.05); } catch { /* ignore */ }
-          try { renderer.graph?.render?.(0.05); } catch { /* ignore */ }
+          // Reheat strongly so the released node is pulled back toward its
+          // physics equilibrium by surrounding repulsion + link springs,
+          // rather than sitting wherever it was dropped.
+          try { renderer.graph?.start?.(1.0); } catch { /* ignore */ }
+          try { renderer.graph?.render?.(1.0); } catch { /* ignore */ }
         };
       }
 
@@ -714,12 +708,19 @@ export class CosmosGraphRenderer implements GraphRenderer {
         // may have uploaded — and any subsequent node-count change does the same.
         const sizes = buildNodeSizeBuffer(nodeCount, this.nodeConnections);
         const visible = this.lastVisibleSet;
+        const shapes = new Float32Array(nodeCount);
         if (visible) {
           for (let i = 0; i < nodeCount; i++) {
-            if (!visible.has(i)) sizes[i] = 0;
+            if (!visible.has(i)) {
+              sizes[i] = 0;
+              shapes[i] = 8; // None — keep parity with setVisibleIndices
+            }
           }
         }
         this.graph.setPointSizes(sizes);
+        if (visible && typeof this.graph.setPointShapes === "function") {
+          this.graph.setPointShapes(shapes);
+        }
       }
       this.lastNodeCount = nodeCount;
       // Force highlight recomputation against fresh base buffer.
@@ -1005,21 +1006,36 @@ export class CosmosGraphRenderer implements GraphRenderer {
     if (nodeCount === 0) return;
 
     const connections = this.nodeConnections;
-    const sizes = new Float32Array(nodeCount);
+    // Match buildNodeSizeBuffer's degree-scaled sizing for visible nodes so the
+    // un-filtered ones keep their original look — earlier this path used a
+    // smaller 3/4/6 ladder which made every visible node appear "thinner"
+    // when a filter was applied, even though it was supposed to be a no-op
+    // for them.
+    const sizes = buildNodeSizeBuffer(nodeCount, connections);
+    // Belt-and-suspenders hide: size=0 AND shape=8 (None). Cosmos's setPointSizes
+    // alone is fragile because cosmos.gl drops the input buffer when its length
+    // ever drifts from internal pointsNumber (dist/index.js updatePointSize fallback),
+    // restoring the default size and making hidden nodes reappear "thinner" rather
+    // than vanishing. setPointShapes with shape=8 is a separate kill switch in the
+    // shape decoder — fragments are never emitted regardless of size.
+    const shapes = new Float32Array(nodeCount);
     for (let i = 0; i < nodeCount; i++) {
       if (!visibleSet.has(i)) {
         sizes[i] = 0;
-        continue;
+        shapes[i] = 8; // None
+      } else {
+        shapes[i] = 0; // Circle (default)
       }
-      const degree = connections?.[i] ?? 0;
-      sizes[i] = degree > 3 ? 6 : degree > 0 ? 4 : 3;
     }
 
     try {
       if (typeof this.graph.setPointSizes === "function") {
         this.graph.setPointSizes(sizes);
-        this.graph.render?.();
       }
+      if (typeof this.graph.setPointShapes === "function") {
+        this.graph.setPointShapes(shapes);
+      }
+      this.graph.render?.();
     } catch {
       /* swallow — non-fatal if Cosmos rejects the upload */
     }

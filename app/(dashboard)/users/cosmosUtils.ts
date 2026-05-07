@@ -127,19 +127,21 @@ export function buildLinkBuffer(links: {
  * Map the existing 0..100 layout sliders (separation, clusterStrength) to the
  * Cosmos simulation parameters. Pure for unit testing.
  *
- * Tuned for the 25k-node ACC hub against `spaceSize: 16384`:
+ * Tuned for the 25k-node ACC hub. The cosmos.gl position-clamp shader patch
+ * removes the simulation boundary, so values can go more aggressive at sep=100
+ * without crushing nodes against an invisible wall.
  *
- * - separation: 0 = tight blob, 100 = wide organic spread (no boundary clamp).
- *   - simulationRepulsion ∈ [0.1, 5.0]    — much higher ceiling so 25k nodes
- *     visibly fan out into the larger space at sep=100.
- *   - simulationLinkDistance ∈ [4, 80]    — chains relax wide enough to avoid
- *     collapsing into a strand at the upper end.
- *   - simulationLinkSpring ∈ [0.7, 0.1]   — always loose; high values force
- *     connected nodes into linear chains ("worm strand"). Capping the ceiling
- *     and dropping further at high sep keeps the layout an organic blob.
- *   - simulationGravity ∈ [0.25, 0.05]    — strong centering at low sep keeps
- *     the layout a tight ball. Decreases with sep so nodes can fan out without
- *     gravity fighting repulsion.
+ * - separation: 0 = tight blob, 100 = wide organic spread.
+ *   - simulationRepulsion ∈ [0.1, 50.0]   — extreme ceiling at sep=100 leverages
+ *     the no-clamp patch — nodes fan out across unbounded space.
+ *   - simulationLinkDistance ∈ [4, 500]   — chains relax to ~3× the previous
+ *     ceiling, matching the higher repulsion so connected pairs aren't yanked
+ *     back toward each other before repulsion can spread them.
+ *   - simulationLinkSpring ∈ [0.7, 0.005] — effectively off at sep=100. Springs
+ *     are what pull connected nodes into the linear "worm" shape; killing them
+ *     at high sep lets repulsion dominate → organic blob.
+ *   - simulationGravity ∈ [0.25, 0.0]     — gravity off entirely at sep=100;
+ *     nothing pulls nodes back toward center, repulsion governs alone.
  * - clusterStrength: 0 = organic, 100 = fully clustered (simulationCluster ∈ [0,1]).
  */
 export interface SliderControls {
@@ -161,10 +163,10 @@ export function controlsToSimulationConfig(
   const sep = Math.max(0, Math.min(100, controls.spacing)) / 100;
   const cluster = Math.max(0, Math.min(100, controls.clusterStrength)) / 100;
   return {
-    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 4.9,        // 0.1..5.0
-    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 76,        // 4..80
-    simulationLinkSpring: 0.7 - Math.pow(sep, 1.3) * 0.6,       // 0.7..0.1
-    simulationGravity: 0.25 - Math.pow(sep, 1.2) * 0.20,        // 0.25..0.05
+    simulationRepulsion: 0.1 + Math.pow(sep, 1.4) * 49.9,       // 0.1..50.0
+    simulationLinkDistance: 4 + Math.pow(sep, 1.6) * 496,       // 4..500
+    simulationLinkSpring: 0.7 - Math.pow(sep, 1.1) * 0.695,     // 0.7..0.005
+    simulationGravity: 0.25 - Math.pow(sep, 1.0) * 0.25,        // 0.25..0.0
     simulationCluster: cluster,                                  // 0..1
   };
 }
