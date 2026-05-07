@@ -1497,7 +1497,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         const hi = nodeIndexMapRef.current.get(hovered.id) ?? -1;
         if (hi >= 0) overrides.add(hi);
       }
-      if (selectedIndex >= 0) overrides.add(selectedIndex);
+      if (selectedIndex >= 0) {
+        overrides.add(selectedIndex);
+        // Isolated-view: when a node is selected, label every same-user
+        // instance too so the user sees the full identity cluster at once
+        // (the normal-fade pass is suppressed downstream — see
+        // CosmosGraphRenderer.drawLabelOverlay).
+        for (const i of sameUserHighlightSet) overrides.add(i);
+      }
 
       const frame: GraphRenderFrame = {
         nodes,

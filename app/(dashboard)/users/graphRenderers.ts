@@ -923,7 +923,13 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
 
     const rawOpacity = (cosmosZoom - fadeStart) / (fadeEnd - fadeStart);
-    const opacity = rawOpacity < 0 ? 0 : rawOpacity > 1 ? 1 : rawOpacity;
+    // Isolated view: when a node is selected, suppress the zoom-band
+    // cloud labels entirely so only the selection + same-user overrides
+    // remain visible. AccUsersGraph adds sameUserHighlightSet to overrides.
+    const isIsolated = frame.selectedNodeIndex >= 0;
+    const opacity = isIsolated
+      ? 0
+      : rawOpacity < 0 ? 0 : rawOpacity > 1 ? 1 : rawOpacity;
     const hasOverrides = !!overrideIndices && overrideIndices.size > 0;
 
     if (opacity <= 0 && !hasOverrides) return;
