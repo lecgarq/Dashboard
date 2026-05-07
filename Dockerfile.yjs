@@ -14,7 +14,7 @@ COPY package*.json ./
 COPY prisma ./prisma
 COPY prisma.config.ts ./
 
-RUN npm ci --omit=dev --ignore-scripts \
+RUN npm install --include=dev --no-audit --no-fund \
   && npx prisma generate
 
 RUN mkdir -p scripts
