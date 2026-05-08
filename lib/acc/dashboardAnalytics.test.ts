@@ -45,6 +45,7 @@ function makeUser(overrides: Partial<BulkAccUser> = {}): BulkAccUser {
     projects: [],
     companyRole: null,
     lastSignIn: null,
+    isAccountAdmin: false,
     ...overrides,
   };
 }
