@@ -51,7 +51,7 @@
 - [x] **DASH-04**: User sees active-user tier distribution as a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets (driven by `lastSignIn`)
 - [x] **DASH-05**: User sees an admin-access list of ACC account-level admins (project admins and shadow admins excluded)
 - [ ] **DASH-06**: User sees a recently-added members widget with a configurable timeframe toggle (7d / 30d / 90d, default 30d) based on member-creation / ACC-join date
-- [ ] **DASH-07**: User sees an ACC coverage donut comparing Google Workspace directory to ACC members — three segments: `In both` / `In Workspace, missing from ACC` / `In ACC, missing from Workspace`
+- [x] **DASH-07**: User sees an ACC coverage donut comparing Google Workspace directory to ACC members — three segments: `In both` / `In Workspace, missing from ACC` / `In ACC, missing from Workspace`
 - [ ] **DASH-08**: User sees a Roles × Modules entitlement heatmap covering the entire organization (full-width, dense)
 - [x] **DASH-09**: User sees decision-support recommendations both as a dedicated widget AND as inline severity badges on roles wherever they appear elsewhere on the dashboard
 - [ ] **DASH-10**: Clicking any finding (junk/duplicate/outlier/recommendation) opens a right-side drill-down panel with affected members, modules, projects, suggested action, and a raw data table — without navigating away from the dashboard
@@ -117,7 +117,7 @@
 | DASH-04 | Phase 4 | Complete |
 | DASH-05 | Phase 4 | Complete |
 | DASH-06 | Phase 4 | Pending |
-| DASH-07 | Phase 4 | Pending |
+| DASH-07 | Phase 4 | Complete |
 | DASH-08 | Phase 4 | Pending |
 | DASH-09 | Phase 4 | Complete |
 | DASH-10 | Phase 4 | Pending |

@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:00:18.963Z"
+last_updated: "2026-05-08T19:01:19.058Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 23
+  completed_plans: 24
 ---
 
 # Project State
@@ -58,6 +58,7 @@ Progress: [████████░░] 80%
 | Phase 03-graph-ui-completion P04 | 4min | 3 tasks | 2 files |
 | Phase 04-access-analysis P04 | 3min | 2 tasks | 2 files |
 | Phase 04-access-analysis P03 | 4m 52s | 6 tasks | 6 files |
+| Phase 04-access-analysis P01 | 5min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,7 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: Plan 04-03: zeroMembers signal proxied via user.allRoles minus project assignments; real role catalog deferred
 - [Phase 04-access-analysis]: Plan 04-03: roleSeverityIndex max rule HIGH>MEDIUM>LOW; duplicate-flagged roles contribute MEDIUM
 - [Phase 04-access-analysis]: Plan 04-03: duplicate detection compares role-aggregate module sets (union across projects); per-instance comparison deferred
+- [Phase 04-access-analysis]: P01: ACC account-admin = HQ v1 user.role === 'account_admin' (verified via scraped APS docs); BulkAccUser.isAccountAdmin non-optional boolean; written by bulkAccSync into accMemberCache.data JSON (no Prisma migration); default-false for legacy cache rows in bulkAccSummary; distinct from per-project accessLevels.projectAdmin AND from HQ v1 service-level role='project_admin'
 
 ### Pending Todos
 
