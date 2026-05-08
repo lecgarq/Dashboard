@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:07:22.346Z"
+last_updated: "2026-05-08T19:16:34.377Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 25
+  completed_plans: 26
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-02 — CLOSED 2026-05-08. ACC member-creation date plumbed end-to-end as `BulkAccUser.addedOn: string | null` (non-optional). Field source verified: HQ v1 `created_at` (scraped APS docs GET_users-user_id.json:213-215 sample 257; GET_users-search.json:260 sample 304). Path A (ACC field exists); no first-seen-in-cache fallback needed. `bulkAccSync` normalizes via `Date.parse → toISOString` (null on parse failure) at write boundary; `bulkAccSummary` reads with default-null fallback for legacy rows. tsc clean. DASH-06 unblocked. Live SQL bucket-distribution verification deferred to user post-next-sync (deferred-items.md). See 04-02-SUMMARY.md.
-Status: Phase 04 — 04-01, 04-02, 04-03, 04-04 complete (4/8). Wave 0 data-pipeline gaps fully closed (isAccountAdmin + addedOn). Next per ROADMAP wave order.
-Last activity: 2026-05-08 — Completed 04-02 (commits 0b8bffe, 5cf5454, ff9c510).
+Plan: 04-05 — CLOSED 2026-05-08. /users/dashboard route shell stood up with 9 placeholder widgets in a drag-reorderable 2-col grid. Widget registry contract published (WIDGETS + DEFAULT_ORDER + WIDGET_ORDER_STORAGE_KEY) — locked for downstream widget plans. SSR-safe useWidgetOrder hook (validates on every mount; falls back to DEFAULT_ORDER on any invalid stored payload). SortableWidget wraps shadcn Card with grip-handle drag listeners (Pitfall 8). downloadCsv helper using xlsx + UTF-8 BOM (5 RFC4180 tests). Locked chart deps installed: @nivo/core/pie/bar@0.99.0, echarts^6, echarts-for-react@3.0.6, @xyflow/react@12.10.2. jsdom + @testing-library/react added as devDeps. 11/11 tests pass; npm run build succeeds; tsc clean. DASH-11/12/13 unblocked. Live drag-reorder smoke deferred to Plan 04-08 UAT. See 04-05-SUMMARY.md.
+Status: Phase 04 — 04-01, 04-02, 04-03, 04-04, 04-05 complete (5/8). Wave 0 data-pipeline + Wave 2 dashboard scaffolding complete. Next per ROADMAP wave order: 04-06 (widget implementations).
+Last activity: 2026-05-08 — Completed 04-05 (commits 5e4e5fb, 99c3363, 0e3813a).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
@@ -60,6 +60,7 @@ Progress: [████████░░] 80%
 | Phase 04-access-analysis P03 | 4m 52s | 6 tasks | 6 files |
 | Phase 04-access-analysis P01 | 5min | 3 tasks | 5 files |
 | Phase 04-access-analysis P02 | 3min | 3 tasks | 6 files |
+| Phase 04-access-analysis P05 | 5min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -113,6 +114,9 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: Plan 04-03: duplicate detection compares role-aggregate module sets (union across projects); per-instance comparison deferred
 - [Phase 04-access-analysis]: P01: ACC account-admin = HQ v1 user.role === 'account_admin' (verified via scraped APS docs); BulkAccUser.isAccountAdmin non-optional boolean; written by bulkAccSync into accMemberCache.data JSON (no Prisma migration); default-false for legacy cache rows in bulkAccSummary; distinct from per-project accessLevels.projectAdmin AND from HQ v1 service-level role='project_admin'
 - [Phase 04-access-analysis]: P02: ACC member-creation date = HQ v1 user.created_at (verified via scraped APS docs); BulkAccUser.addedOn non-optional string|null; bulkAccSync normalizes (Date.parse->toISOString, null on parse failure) at write boundary; default-null fallback for legacy cache rows in bulkAccSummary; Path A (no first-seen-in-cache fallback needed)
+- [Phase 04-access-analysis]: P05: Locked widget registry contract published — WIDGETS (9 ids: coverage/tiers/kpi/recommendations/heatmap/outliers/flow/recent/admins) + DEFAULT_ORDER + WIDGET_ORDER_STORAGE_KEY='acc-dashboard-widget-order'. Downstream widget plans (04-06/04-07/04-08) replace WIDGETS[id].component per id without renaming id, title, or span.
+- [Phase 04-access-analysis]: P05: useWidgetOrder validates stored localStorage on every mount (parse → array-of-strings → known-id check → coverage check); falling any check returns DEFAULT_ORDER without throwing — adding a NEW WIDGETS entry never orphans stored arrays.
+- [Phase 04-access-analysis]: P05: Per-file '// @vitest-environment jsdom' directive instead of switching global env — preserves node default for analytics tests committed in 04-03; jsdom + @testing-library/react added as devDeps.
 
 ### Pending Todos
 
@@ -134,5 +138,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04-02-PLAN.md (commits 0b8bffe, 5cf5454, ff9c510). DASH-06 unblocked. Live SQL verification deferred to user post-next-sync (see deferred-items.md). Wave 0 data-pipeline complete.
+Stopped at: Completed 04-05-PLAN.md (commits 5e4e5fb, 99c3363, 0e3813a). /users/dashboard route + widget grid scaffolding shipped; widget registry contract locked. DASH-11/12/13 unblocked. Drag-reorder live smoke deferred to Plan 04-08 UAT. Next: 04-06 widget implementations.
 Resume file: None

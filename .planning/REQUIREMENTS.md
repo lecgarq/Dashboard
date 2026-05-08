@@ -55,9 +55,9 @@
 - [ ] **DASH-08**: User sees a Roles × Modules entitlement heatmap covering the entire organization (full-width, dense)
 - [x] **DASH-09**: User sees decision-support recommendations both as a dedicated widget AND as inline severity badges on roles wherever they appear elsewhere on the dashboard
 - [ ] **DASH-10**: Clicking any finding (junk/duplicate/outlier/recommendation) opens a right-side drill-down panel with affected members, modules, projects, suggested action, and a raw data table — without navigating away from the dashboard
-- [ ] **DASH-11**: Every chart and table widget on the dashboard has a "Download CSV" button that exports the data currently displayed; the recommendations widget exports columns `Type, Severity, Roles, Members, Modules, SuggestedAction`
-- [ ] **DASH-12**: User can drag-reorder dashboard widgets and the chosen order persists across page reloads
-- [ ] **DASH-13**: All dashboard widgets render on a single page in a 2-column grid at 1280px with the Coverage donut + Active-user tiers above the fold; no navigation tabs are required to see any widget
+- [x] **DASH-11**: Every chart and table widget on the dashboard has a "Download CSV" button that exports the data currently displayed; the recommendations widget exports columns `Type, Severity, Roles, Members, Modules, SuggestedAction`
+- [x] **DASH-12**: User can drag-reorder dashboard widgets and the chosen order persists across page reloads
+- [x] **DASH-13**: All dashboard widgets render on a single page in a 2-column grid at 1280px with the Coverage donut + Active-user tiers above the fold; no navigation tabs are required to see any widget
 
 ---
 
@@ -121,9 +121,9 @@
 | DASH-08 | Phase 4 | Pending |
 | DASH-09 | Phase 4 | Complete |
 | DASH-10 | Phase 4 | Pending |
-| DASH-11 | Phase 4 | Pending |
-| DASH-12 | Phase 4 | Pending |
-| DASH-13 | Phase 4 | Pending |
+| DASH-11 | Phase 4 | Complete |
+| DASH-12 | Phase 4 | Complete |
+| DASH-13 | Phase 4 | Complete |
 
 **Coverage:**
 - v1.0 requirements: 28 total (15 active + 13 DASH new); 4 ANAL-* deferred to v1.x
