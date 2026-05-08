@@ -20,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { format, parseISO } from "date-fns";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
@@ -82,6 +83,14 @@ function selectedKey(s: NonNullable<SelectedFinding>): string {
       return `out:${s.finding.moduleSet.join(",")}`;
     case "role":
       return `role:${s.role}`;
+    case "admin":
+      return `admin:${s.email}`;
+    case "day":
+      return `day:${s.dateIso}`;
+    default: {
+      const _exhaust: never = s;
+      return _exhaust;
+    }
   }
 }
 
@@ -109,6 +118,14 @@ function PanelBody({
       return <OutlierBody finding={selected.finding} users={users} />;
     case "role":
       return <RoleBody role={selected.role} severity={selected.severity} users={users} />;
+    case "admin":
+      return <AdminBody email={selected.email} users={users} />;
+    case "day":
+      return <DayBody dateIso={selected.dateIso} emails={selected.emails} users={users} />;
+    default: {
+      const _exhaust: never = selected;
+      return _exhaust;
+    }
   }
 }
 
@@ -406,6 +423,95 @@ function OutlierBody({
         </Section>
 
         <RawData value={finding} />
+      </div>
+    </>
+  );
+}
+
+function AdminBody({
+  email,
+  users,
+}: {
+  email: string;
+  users: BulkAccUser[];
+}) {
+  const user = useMemo(
+    () => users.find((u) => u.email.toLowerCase() === email.toLowerCase()) ?? null,
+    [email, users],
+  );
+  const projects = user?.projects ?? [];
+  const lastSignIn = user?.lastSignIn ?? null;
+  const headerName = user?.name && user.name.length > 0 ? user.name : email;
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">Account admin: {headerName}</SheetTitle>
+        <SheetDescription>
+          {projects.length} project{projects.length === 1 ? "" : "s"}
+          {lastSignIn ? ` · Last sign-in ${lastSignIn}` : ""}
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-4 pb-6">
+        <Section title="Member">
+          <MembersTable
+            emails={[email]}
+            users={users}
+            csvName={`admin-${email}.csv`}
+          />
+        </Section>
+
+        <Section title="Company role">
+          <p className="text-sm">{user?.companyRole || "Unspecified"}</p>
+        </Section>
+
+        <Section title="Projects">
+          <ChipList items={projects.map((p) => p.name).sort()} />
+        </Section>
+
+        {user ? <RawData value={user} /> : (
+          <p className="text-sm text-muted-foreground">
+            No matching user found for {email} in the current dataset.
+          </p>
+        )}
+      </div>
+    </>
+  );
+}
+
+function DayBody({
+  dateIso,
+  emails,
+  users,
+}: {
+  dateIso: string;
+  emails: string[];
+  users: BulkAccUser[];
+}) {
+  const formatted = useMemo(() => {
+    try {
+      return format(parseISO(dateIso), "MMM d, yyyy");
+    } catch {
+      return dateIso;
+    }
+  }, [dateIso]);
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="pr-8">Members added on {formatted}</SheetTitle>
+        <SheetDescription>
+          {emails.length} member{emails.length === 1 ? "" : "s"} joined this day
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-4 pb-6">
+        <Section title="Members">
+          <MembersTable
+            emails={emails}
+            users={users}
+            csvName={`recent-${dateIso}-members.csv`}
+          />
+        </Section>
       </div>
     </>
   );

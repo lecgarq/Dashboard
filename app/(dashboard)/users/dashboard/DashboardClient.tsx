@@ -114,7 +114,16 @@ export function DashboardClient() {
           }
         }
       >
-        <SelectionProvider>
+        <SelectionProvider
+          findings={
+            findings ?? {
+              junkRoles: [],
+              duplicateRoles: [],
+              outlierCombos: [],
+              roleSeverityIndex: new Map(),
+            }
+          }
+        >
           <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
             <SortableContext items={order} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
