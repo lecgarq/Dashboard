@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T21:29:16.018Z"
+last_updated: "2026-05-08T22:34:17.584Z"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 5
-  total_plans: 29
-  completed_plans: 29
+  total_plans: 33
+  completed_plans: 30
 ---
 
 # Project State
@@ -22,13 +22,13 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 04 (ACC Access Analysis Dashboard) — COMPLETE 2026-05-08
-Plan: 04-08 — CLOSED 2026-05-08. Drill-down right-side panel (shadcn Sheet + framer-motion) shipped for junk/duplicate/outlier/role findings; inline severity dots added to Roles×Modules heatmap y-axis (ECharts rich-text formatter) and role-relationship flow nodes (custom @xyflow/react nodeTypes). SelectionContext + useSelection hook published — Pattern 4 selection-via-context. Phase 4 UAT human-verify gate PASSED 16/16 (all 13 DASH-* success criteria approved). User flagged Phase 4.1 Polish follow-up: visual polish, move dashboard under existing ACC Analysis page as a tab, replace list-based widgets with chart treatments. See 04-08-SUMMARY.md.
-Status: Phase 04 — 04-01..04-08 complete (8/8). Phase 4 functionally complete. Phase 4.1 Polish follow-up queued (visual polish + tab integration + graph-only widgets).
-Last activity: 2026-05-08 — Completed 04-08 (commits e745750, 0da5bb7, b0bc6a5).
-Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
+Phase: 04.1 (Access Analysis tab — replace lists with astonishing graphics) — IN PROGRESS
+Plan: 04.1-01 — COMPLETE 2026-05-08. Wave 1 foundation shipped: shared widget primitives (`_shared/dashboardTokens` palette + spring + opacity tokens, `_shared/useTransition` reduced-motion wrapper, `_shared/HoverSpotlight` hook, `_shared/FocusRing` Cosmos-glow component, `_shared/WidgetSkeleton` four shape-matched skeletons), SelectionContext extended with `admin` + `day` kinds plus reconciliation effect (Pitfall 4 — single place to clear stale selections on Refresh), DashboardSidePanel exhaustive switch with AdminBody + DayBody, DashboardClient passes findings into SelectionProvider, d3-hierarchy/d3-scale/d3-time/d3-time-format/d3-scale-chromatic + @types/* installed. tsc green across `app/(dashboard)/users/dashboard/`. See 04.1-01-SUMMARY.md.
+Status: Phase 04.1 — 1/4 plans complete (04.1-01). Wave 2 widget rewrites (04.1-02..04.1-04) queued.
+Last activity: 2026-05-08 — Completed 04.1-01 (commits 928aabb, 921e272, 4aee565).
+Prior phase: Phase 04 — 8/8 plans complete; UAT 16/16 PASSED 2026-05-08.
 
-Progress: [██████████] 100%
+Progress: [█████████░] 91% (30/33 plans)
 
 ## Performance Metrics
 
@@ -64,6 +64,7 @@ Progress: [██████████] 100%
 | Phase 04-access-analysis P06 | 10min | 3 tasks | 5 files |
 | Phase 04-access-analysis P07 | 7min | 3 tasks | 9 files |
 | Phase 04-access-analysis P08 | 25min | 3 tasks | 7 files |
+| Phase 04.1 P01 | 4m | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -130,6 +131,7 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: P08: DashboardSidePanel rendered as SIBLING of widget grid (NOT inside DndContext) — drag-and-drop and panel content stay isolated; panel width sm:max-w-lg keeps grid visible at 1280px.
 - [Phase 04-access-analysis]: P08: Heatmap inline severity uses ECharts rich-text axisLabel.formatter ({hi|●} RoleName) — no DOM overlay; flow widget uses @xyflow/react custom nodeTypes; both consume the same useFindings().roleSeverityIndex.
 - [Phase 04-access-analysis]: P08: Phase 4 UAT 16/16 PASSED 2026-05-08; user-flagged Phase 4.1 Polish follow-up — visual polish, move dashboard under ACC Analysis page as tab, replace list widgets (Recommendations/Outliers/Recently-added/Admin) with chart treatments.
+- [Phase 04.1]: P01: Wave 1 foundation — _shared/ primitives (dashboardTokens, useTransition, HoverSpotlight, FocusRing, WidgetSkeleton) + SelectedFinding extended with admin+day kinds + reconciliation effect in SelectionProvider (Pitfall 4 single-place reconciliation); DashboardFindings real fields (junkRoles/duplicateRoles/outlierCombos) used in isSelectionValid (plan placeholder names ignored)
 
 ### Roadmap Evolution
 
@@ -155,5 +157,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04-08-PLAN.md (commits e745750, 0da5bb7, b0bc6a5) — drill-down side panel + inline severity badges + Phase 4 UAT 16/16 PASSED. Phase 4 functionally complete. Phase 4.1 Polish follow-up queued (visual polish + tab integration + graph-only widget treatments).
-Resume file: None
+Stopped at: Completed 04.1-01-PLAN.md (commits 928aabb, 921e272, 4aee565). Wave 1 foundation green; Wave 2 widget rewrites (04.1-02 BubbleCluster, 04.1-03 Treemap, 04.1-04 Calendar+Constellation) queued.
+Resume file: .planning/phases/04.1-access-analysis-tab-replace-lists-with-astonishing-interactive-graphics-only-no-name-list-widgets/04.1-02-PLAN.md

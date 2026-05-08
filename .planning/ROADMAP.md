@@ -134,10 +134,10 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 **Goal:** Replace the four name-list / table widgets in the Access Analysis dashboard (Recommendations, Outliers, RecentlyAdded, AdminAccess) with interactive SVG + d3-hierarchy + framer-motion graphics that match the cosmos.gl graph aesthetic; member identities exit the canvas and live exclusively in the existing DashboardSidePanel and CSV exports
 **Requirements**: DASH-01, DASH-02, DASH-03, DASH-05, DASH-06, DASH-07, DASH-08, DASH-09, DASH-10, DASH-11, DASH-13 (re-skin only — capabilities unchanged)
 **Depends on:** Phase 4
-**Plans:** 4 plans
+**Plans:** 1/4 plans executed
 
 Plans:
-- [ ] 04.1-01-PLAN.md — Wave 0: shared tokens + skeleton primitives + selectionContext extensions (admin/day kinds + reconciliation) + DashboardSidePanel switch updates + d3 deps
+- [x] 04.1-01-PLAN.md — Wave 0: shared tokens + skeleton primitives + selectionContext extensions (admin/day kinds + reconciliation) + DashboardSidePanel switch updates + d3 deps
 - [ ] 04.1-02-PLAN.md — Wave 1: Rewrite RecommendationsWidget (severity bubble cluster) + OutlierCombosWidget (squarified treemap)
 - [ ] 04.1-03-PLAN.md — Wave 1: Rewrite RecentlyAddedWidget (90-day calendar heatmap) + AdminAccessWidget (orbit constellation)
 - [ ] 04.1-04-PLAN.md — Wave 2: Polish pass on existing 5 graphical widgets (token unification + spotlight) + Phase 4.1 human-verify
