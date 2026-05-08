@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:26:22.699Z"
+last_updated: "2026-05-08T19:27:38.418Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-06 — CLOSED 2026-05-08. Three above-the-fold population-context widgets shipped: CoverageDonutWidget (Nivo Pie 3-segment, DASH-01), ActiveUserTiersWidget (Nivo Bar horizontal stacked, DASH-02), RolesModulesHeatmapWidget (ECharts heatmap + visualMap + dataZoom, DASH-08). Each owns a Download CSV button via downloadCsv. WIDGETS registry coverage/tiers/heatmap entries replaced with real components. WidgetCommonProps cross-plan contract published (users + workspaceEmails). DashboardClient lifts trpc.users.bulkAccSummary + trpc.workspace.getDirectory once, spreads to all widgets, Skeleton loading states, inline ACC error banner, Workspace error non-fatal (donut empty state). Heatmap uses distinct-member counts (Set<email> per role x module) — not raw assignment counts. tsc clean; npm run build succeeds. Live UAT deferred to 04-08. See 04-06-SUMMARY.md.
-Status: Phase 04 — 04-01, 04-02, 04-03, 04-04, 04-05, 04-06 complete (6/8); 04-07 also complete in parallel (commits ff14f81, aaa3184). Next: 04-08 UAT.
-Last activity: 2026-05-08 — Completed 04-06 (commits 09f5285, 2d39109, a9f65b8).
+Plan: 04-07 — CLOSED 2026-05-08. Six findings-driven widgets shipped: KpiStripWidget (6-tile overview), RecommendationsWidget (junk + duplicate findings table with severity badges + LOCKED CSV columns Type,Severity,Roles,Members,Modules,SuggestedAction per DASH-13), OutlierCombosWidget (<5% module-set table), RoleRelationshipFlowWidget (@xyflow/react graph with duplicate-pair edges colored by name overlap), RecentlyAddedWidget (7d/30d/90d inline toggle + date-fns relative time, Path A real ACC created_at), AdminAccessWidget (strict isAccountAdmin === true filter). FindingsContext + FindingsProvider + useFindings hook published — Pattern 3 single source of truth. computeAllFindings computed ONCE in DashboardClient via useMemo; FindingsProvider always wraps with empty sentinel during load to prevent throw races. Every widget exposes Download CSV via shared downloadCsv helper. tsc + npm run build pass. WIDGETS registry now points to production components for ALL 9 ids (no placeholders). See 04-07-SUMMARY.md.
+Status: Phase 04 — 04-01..04-07 complete (7/8). Next: 04-08 drill-down side panel + UAT.
+Last activity: 2026-05-08 — Completed 04-07 (commits ff14f81, aaa3184, e687e33).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
@@ -62,6 +62,7 @@ Progress: [████████░░] 80%
 | Phase 04-access-analysis P02 | 3min | 3 tasks | 6 files |
 | Phase 04-access-analysis P05 | 5min | 3 tasks | 8 files |
 | Phase 04-access-analysis P06 | 10min | 3 tasks | 5 files |
+| Phase 04-access-analysis P07 | 7min | 3 tasks | 9 files |
 
 ## Accumulated Context
 
@@ -121,6 +122,9 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: P06: Heatmap uses distinct-member counts (Set<email>.size per role x module cell), NOT raw role-module assignment counts — single user holding pair across N projects contributes 1 not N.
 - [Phase 04-access-analysis]: P06: Coverage donut empty-Workspace fallback (workspaceEmails.length === 0) covers all three cases (non-Workspace tenant returns [], FORBIDDEN scope-missing, query in flight) with one inline message — granular re-auth UX deferred.
 - [Phase 04-access-analysis]: P06: WidgetCommonProps (users + workspaceEmails) published as cross-plan contract; DashboardClient spreads once to all widgets; widgets ignore unused fields; heights pinned (donut 300px, tiers 200px, heatmap 500px) per Pitfall 2.
+- [Phase 04-access-analysis]: P07: Pattern 3 FindingsContext shipped — findings computed ONCE in DashboardClient via useMemo(computeAllFindings) and consumed by widgets via useFindings(); FindingsProvider always wraps with empty sentinel during load to prevent throw races.
+- [Phase 04-access-analysis]: P07: Recommendations CSV column order LOCKED per DASH-13: Type,Severity,Roles,Members,Modules,SuggestedAction. Junk findings emit Modules empty when zeroModules signal fired; otherwise union of affected-member modules via per-user lookup.
+- [Phase 04-access-analysis]: P07: RecentlyAddedWidget uses Path A (real ACC created_at via 04-02) — no fallback caveat shown; users with addedOn=null excluded from every window. Inline 3-button 7d/30d/90d toggle in lieu of unavailable shadcn ToggleGroup component.
 
 ### Pending Todos
 
@@ -142,5 +146,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04-06-PLAN.md (commits 09f5285, 2d39109, a9f65b8). Coverage / Tiers / Heatmap widgets shipped with CSV exports; registry entries wired; DashboardClient query-lift + WidgetCommonProps contract published. 04-07 also complete in parallel. Next: 04-08 UAT.
+Stopped at: Completed 04-07-PLAN.md (commits ff14f81, aaa3184, e687e33) — 6 findings-driven widgets + Pattern 3 FindingsContext. All 9 widgets now point to production components. Recommendations CSV column order LOCKED per DASH-13. tsc + npm run build pass. Next: 04-08 drill-down side panel + phase UAT.
 Resume file: None
