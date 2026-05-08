@@ -14,6 +14,7 @@ import { chatRouter } from "./chat";
 import { lodRouter } from "./lod";
 import { apsSearchRouter } from "./aps-search";
 import { gmailRouter } from "./gmail";
+import { workspaceRouter } from "./workspace";
 
 export const appRouter = router({
   project: projectRouter,
@@ -31,6 +32,7 @@ export const appRouter = router({
   lod: lodRouter,
   apsSearch: apsSearchRouter,
   gmail: gmailRouter,
+  workspace: workspaceRouter,
 });
 
 export type AppRouter = typeof appRouter;
