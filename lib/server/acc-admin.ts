@@ -22,6 +22,13 @@ export type AccUser = {
   /** Derived: role === "account_admin". Always boolean. */
   isAccountAdmin: boolean;
   company?: string;
+  // ACC join-date source: HQ v1 `created_at` field (ISO 8601 datetime, format YYYY-MM-DDThh:mm:ss.sssZ).
+  // Verified 2026-05-08 against scraped APS docs (BIM 360 API/REST API/GET_users-user_id.json:213-215, line 257
+  // sample value "2015-06-26T14:47:39.458Z"; GET_users-search.json:260, line 304 same shape). Documented as the
+  // user's record creation timestamp on the account — the closest semantic match to "ACC member added on" —
+  // distinct from `last_sign_in` (most recent activity) and `updated_at` (any record change). Code below
+  // reads `match.created_at || match.addedOn` so the legacy raw-key alias `addedOn` keeps working if APS
+  // ever renames or aliases the field. Path A (ACC field exists); no first-seen-in-cache fallback needed.
   addedOn?: string;
   companyRole?: string; // company-specific role (e.g. "Architect")
   lastSignIn?: string;  // ISO date string of last activity (or fallback to addedOn)
