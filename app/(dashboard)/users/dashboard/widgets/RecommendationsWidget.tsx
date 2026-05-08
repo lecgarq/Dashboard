@@ -1,17 +1,10 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { hierarchy, pack, type HierarchyCircularNode } from "d3-hierarchy";
+import { motion, AnimatePresence } from "framer-motion";
 import { Download } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
@@ -21,30 +14,52 @@ import type {
 } from "@/lib/acc/dashboardAnalytics";
 import { useFindings } from "../findingsContext";
 import { useSelection } from "../selectionContext";
+import {
+  BUBBLE_SPRING,
+  useSeverityColor,
+  useDashboardAccent,
+} from "./_shared/dashboardTokens";
+import { useTransition } from "./_shared/useTransition";
+import { useHoverSpotlight } from "./_shared/HoverSpotlight";
+import { FocusRing } from "./_shared/FocusRing";
+import { BubbleSkeleton } from "./_shared/WidgetSkeleton";
 
 /**
- * Recommendations widget — DASH-03 + DASH-04 surfaced as a single actionable list (DASH-09).
+ * Phase 04.1 Plan 02 — Recommendations as a severity bubble cluster (DASH-09).
  *
- * Each row is either a Junk-role finding or a Duplicate-role pair. CSV column order is
- * LOCKED by DASH-13: `Type,Severity,Roles,Members,Modules,SuggestedAction`.
- *
- * Pattern 3: findings come from `useFindings()` — never recomputed locally.
+ * Junk findings cluster in the left half; duplicate findings cluster in the right half.
+ * Bubble area encodes affected-member count; bubble color encodes severity. No member
+ * names rendered anywhere — click opens the existing DashboardSidePanel via
+ * `selectionContext` (Phase 04.1 CONTEXT decision).
  */
 
-type RowFinding =
-  | { kind: "junk"; data: JunkRoleFinding }
-  | { kind: "duplicate"; data: DuplicateRoleFinding };
+const W = 600;
+const H = 360;
+const CENTER_GUTTER = 16;
 
-function severityForRow(row: RowFinding): Severity {
-  // Per 04-03 SUMMARY decision: duplicate-flagged roles contribute MEDIUM.
-  return row.kind === "junk" ? row.data.severity : "MEDIUM";
-}
+type Leaf =
+  | {
+      _kind: "junk";
+      _id: string;
+      _severity: Severity;
+      _value: number;
+      _title: string;
+      _data: JunkRoleFinding;
+    }
+  | {
+      _kind: "duplicate";
+      _id: string;
+      _severity: Severity;
+      _value: number;
+      _title: string;
+      _data: DuplicateRoleFinding;
+    };
 
-function severityVariant(sev: Severity): "destructive" | "default" | "secondary" {
-  if (sev === "HIGH") return "destructive";
-  if (sev === "MEDIUM") return "default";
-  return "secondary";
-}
+type PositionedLeaf = Leaf & {
+  cx: number;
+  cy: number;
+  r: number;
+};
 
 function junkSuggestedAction(j: JunkRoleFinding): string {
   if (j.severity === "HIGH") {
@@ -65,39 +80,34 @@ function duplicateSuggestedAction(d: DuplicateRoleFinding): string {
   return `Consider merging '${d.roleA}' and '${d.roleB}' (modules identical, name overlap ${pct}%)`;
 }
 
-function rolesLabel(row: RowFinding): string {
-  return row.kind === "junk"
-    ? row.data.role
-    : `${row.data.roleA}, ${row.data.roleB}`;
-}
+type PackNode = { _value?: number; children?: PackNode[] } & Partial<Leaf>;
 
-function memberCount(row: RowFinding): number {
-  return row.data.affectedMembers.length;
-}
+function packHalf(
+  leaves: Leaf[],
+  width: number,
+  height: number,
+  offsetX: number,
+): PositionedLeaf[] {
+  if (leaves.length === 0) return [];
+  const rootData: PackNode = { children: leaves as PackNode[] };
+  const root = hierarchy<PackNode>(rootData, (n) => n.children).sum(
+    (d) => d._value ?? 0,
+  );
 
-function modulesLabel(row: RowFinding, users: Map<string, Set<string>>): string {
-  if (row.kind === "junk") {
-    // Junk findings don't carry modules directly; HIGH cases have zero modules.
-    // Consult the per-role module union (precomputed by analytics) by deriving it
-    // from affected projects — but the simpler/correct answer is: junk roles surface
-    // either zero modules (HIGH) or whatever was aggregated; we expose empty string
-    // when zeroModules signal fired.
-    if (row.data.signals.zeroModules) return "";
-    // Fallback: union of modules across affected members for this role.
-    const mods = new Set<string>();
-    for (const email of row.data.affectedMembers) {
-      const set = users.get(email);
-      if (set) for (const m of set) mods.add(m);
-    }
-    return [...mods].sort().join(", ");
+  const layout = pack<PackNode>().size([width, height]).padding(6);
+
+  const packed = layout(root);
+  const result: PositionedLeaf[] = [];
+  for (const node of packed.leaves() as HierarchyCircularNode<PackNode>[]) {
+    const leaf = node.data as unknown as Leaf;
+    result.push({
+      ...leaf,
+      cx: node.x + offsetX,
+      cy: node.y,
+      r: node.r,
+    });
   }
-  // Duplicate: union of modules across affected members.
-  const mods = new Set<string>();
-  for (const email of row.data.affectedMembers) {
-    const set = users.get(email);
-    if (set) for (const m of set) mods.add(m);
-  }
-  return [...mods].sort().join(", ");
+  return result;
 }
 
 export function RecommendationsWidget({
@@ -107,112 +117,309 @@ export function RecommendationsWidget({
   workspaceEmails?: string[];
 }) {
   const findings = useFindings();
-  const { setSelected } = useSelection();
+  const { selected, setSelected } = useSelection();
+  const severityColor = useSeverityColor();
+  const accent = useDashboardAccent();
+  const transition = useTransition(BUBBLE_SPRING);
+  const { getOpacity, bind, hoveredId } = useHoverSpotlight();
+  const [focusIndex, setFocusIndex] = useState<number>(-1);
+  const svgRef = useRef<SVGSVGElement | null>(null);
 
-  const rows = useMemo<RowFinding[]>(() => {
-    return [
-      ...findings.junkRoles.map<RowFinding>((j) => ({ kind: "junk", data: j })),
-      ...findings.duplicateRoles.map<RowFinding>((d) => ({ kind: "duplicate", data: d })),
-    ];
+  // Build leaves once per findings change.
+  const leaves = useMemo<{ junk: Leaf[]; duplicate: Leaf[] }>(() => {
+    const junk: Leaf[] = findings.junkRoles.map((j) => ({
+      _kind: "junk" as const,
+      _id: j.role,
+      _severity: j.severity,
+      _value: Math.max(1, j.affectedMembers.length),
+      _title: j.role,
+      _data: j,
+    }));
+    const duplicate: Leaf[] = findings.duplicateRoles.map((d) => ({
+      _kind: "duplicate" as const,
+      _id: `${d.roleA}|${d.roleB}`,
+      _severity: "MEDIUM" as Severity,
+      _value: Math.max(1, d.affectedMembers.length),
+      _title: `${d.roleA} ↔ ${d.roleB}`,
+      _data: d,
+    }));
+    return { junk, duplicate };
   }, [findings]);
 
-  // Build email → user.allModules lookup so the Modules column reflects each finding's
-  // affected members. Done here (not in widget body) so it's memoized per `users` change.
+  // Pack two halves (deterministic per Pitfall (b) in plan).
+  const positioned = useMemo<PositionedLeaf[]>(() => {
+    const halfW = (W - CENTER_GUTTER) / 2;
+    const left = packHalf(leaves.junk, halfW, H, 0);
+    const right = packHalf(
+      leaves.duplicate,
+      halfW,
+      H,
+      halfW + CENTER_GUTTER,
+    );
+    return [...left, ...right];
+  }, [leaves]);
+
+  // Module lookup for CSV.
   const moduleLookup = useMemo(() => {
     const m = new Map<string, Set<string>>();
     for (const u of users) m.set(u.email, new Set(u.allModules));
     return m;
   }, [users]);
 
+  // Keep focusIndex in bounds when data changes.
+  useEffect(() => {
+    if (focusIndex >= positioned.length) {
+      setFocusIndex(positioned.length === 0 ? -1 : positioned.length - 1);
+    }
+  }, [positioned.length, focusIndex]);
+
+  function handleSelect(leaf: PositionedLeaf) {
+    if (leaf._kind === "junk") {
+      setSelected({ kind: "junk", finding: leaf._data });
+    } else {
+      setSelected({ kind: "duplicate", finding: leaf._data });
+    }
+  }
+
+  function handleKeyDown(event: React.KeyboardEvent<SVGSVGElement>) {
+    if (positioned.length === 0) return;
+    // Pitfall 2 — block bubble up to SortableWidget drag handler so Enter doesn't drag.
+    const k = event.key;
+    if (
+      k === "ArrowRight" ||
+      k === "ArrowDown" ||
+      k === "ArrowLeft" ||
+      k === "ArrowUp" ||
+      k === "Enter" ||
+      k === " "
+    ) {
+      event.stopPropagation();
+      event.preventDefault();
+    }
+    if (k === "ArrowRight" || k === "ArrowDown") {
+      setFocusIndex((i) => (i + 1) % positioned.length);
+    } else if (k === "ArrowLeft" || k === "ArrowUp") {
+      setFocusIndex((i) =>
+        i <= 0 ? positioned.length - 1 : i - 1,
+      );
+    } else if (k === "Enter" || k === " ") {
+      const target = positioned[focusIndex >= 0 ? focusIndex : 0];
+      if (target) handleSelect(target);
+    }
+  }
+
+  function isSelectedLeaf(leaf: PositionedLeaf): boolean {
+    if (!selected) return false;
+    if (selected.kind === "junk" && leaf._kind === "junk") {
+      return selected.finding.role === leaf._data.role;
+    }
+    if (selected.kind === "duplicate" && leaf._kind === "duplicate") {
+      return (
+        selected.finding.roleA === leaf._data.roleA &&
+        selected.finding.roleB === leaf._data.roleB
+      );
+    }
+    return false;
+  }
+
+  function leafOpacity(leaf: PositionedLeaf): number {
+    if (isSelectedLeaf(leaf)) return 1;
+    return getOpacity(`${leaf._kind}:${leaf._id}`);
+  }
+
   function handleDownload() {
-    // LOCKED column order — DASH-13.
-    const csvRows = rows.map((row) => {
-      const sev = severityForRow(row);
-      const action =
-        row.kind === "junk"
-          ? junkSuggestedAction(row.data)
-          : duplicateSuggestedAction(row.data);
+    const allLeaves: Leaf[] = [...leaves.junk, ...leaves.duplicate];
+    const csvRows = allLeaves.map((leaf) => {
+      if (leaf._kind === "junk") {
+        const j = leaf._data;
+        // LOCKED column order — DASH-13.
+        let modules = "";
+        if (!j.signals.zeroModules) {
+          const mods = new Set<string>();
+          for (const email of j.affectedMembers) {
+            const set = moduleLookup.get(email);
+            if (set) for (const m of set) mods.add(m);
+          }
+          modules = [...mods].sort().join(", ");
+        }
+        return {
+          Type: "Junk",
+          Severity: j.severity,
+          Roles: j.role,
+          Members: j.affectedMembers.length,
+          Modules: modules,
+          SuggestedAction: junkSuggestedAction(j),
+        };
+      }
+      const d = leaf._data;
+      const mods = new Set<string>();
+      for (const email of d.affectedMembers) {
+        const set = moduleLookup.get(email);
+        if (set) for (const m of set) mods.add(m);
+      }
       return {
-        Type: row.kind === "junk" ? "Junk" : "Duplicate",
-        Severity: sev,
-        Roles: rolesLabel(row),
-        Members: memberCount(row),
-        Modules: modulesLabel(row, moduleLookup),
-        SuggestedAction: action,
+        Type: "Duplicate",
+        Severity: "MEDIUM" as Severity,
+        Roles: `${d.roleA}, ${d.roleB}`,
+        Members: d.affectedMembers.length,
+        Modules: [...mods].sort().join(", "),
+        SuggestedAction: duplicateSuggestedAction(d),
       };
     });
     downloadCsv("recommendations.csv", csvRows);
   }
 
-  if (rows.length === 0) {
+  // Loading sentinel: empty findings AND zero users (Pattern 3 sentinel from FindingsProvider).
+  const isLoading = users.length === 0 && positioned.length === 0;
+
+  // Header
+  const header = (
+    <div className="flex items-center justify-end">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={handleDownload}
+        disabled={positioned.length === 0}
+      >
+        <Download className="mr-2 size-4" />
+        Download CSV
+      </Button>
+    </div>
+  );
+
+  if (isLoading) {
     return (
       <div className="flex flex-col gap-3">
-        <div className="flex items-center justify-end">
-          <Button variant="outline" size="sm" disabled>
-            <Download className="mr-2 size-4" />
-            Download CSV
-          </Button>
-        </div>
-        <p className="text-sm text-muted-foreground">
-          No recommendations — nothing to clean up right now.
-        </p>
+        {header}
+        <BubbleSkeleton width={W} height={H} />
       </div>
     );
   }
 
+  if (positioned.length === 0) {
+    return (
+      <div className="flex flex-col gap-3">
+        {header}
+        <div
+          className="flex items-center justify-center text-sm text-muted-foreground"
+          style={{ height: H }}
+        >
+          No recommendations — all roles healthy
+        </div>
+      </div>
+    );
+  }
+
+  const focusedLeaf =
+    focusIndex >= 0 && focusIndex < positioned.length
+      ? positioned[focusIndex]
+      : null;
+
+  // Hover-or-focus union for FocusRing rendering on selection too.
+  const selectedLeaf = positioned.find(isSelectedLeaf) ?? null;
+
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-end">
-        <Button variant="outline" size="sm" onClick={handleDownload}>
-          <Download className="mr-2 size-4" />
-          Download CSV
-        </Button>
-      </div>
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Type</TableHead>
-            <TableHead>Severity</TableHead>
-            <TableHead>Roles</TableHead>
-            <TableHead className="text-right">Members</TableHead>
-            <TableHead>Modules</TableHead>
-            <TableHead>Suggested Action</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {rows.map((row, idx) => {
-            const sev = severityForRow(row);
-            const action =
-              row.kind === "junk"
-                ? junkSuggestedAction(row.data)
-                : duplicateSuggestedAction(row.data);
+      {header}
+      <svg
+        ref={svgRef}
+        viewBox={`0 0 ${W} ${H}`}
+        preserveAspectRatio="xMidYMid meet"
+        className="w-full h-auto outline-none"
+        role="img"
+        aria-roledescription="severity bubble cluster"
+        tabIndex={0}
+        onKeyDown={handleKeyDown}
+        onFocus={() => {
+          if (focusIndex < 0 && positioned.length > 0) setFocusIndex(0);
+        }}
+      >
+        <title>
+          {leaves.junk.length} junk findings, {leaves.duplicate.length} duplicate findings
+        </title>
+        <AnimatePresence>
+          {positioned.map((leaf, i) => {
+            const id = `${leaf._kind}:${leaf._id}`;
+            const isSelected = isSelectedLeaf(leaf);
+            const isFocused = focusIndex === i;
+            const fill = severityColor[leaf._severity];
+            const opacity = leafOpacity(leaf);
+            const scale = isSelected ? 1.04 : 1;
+            const memberCount =
+              leaf._kind === "junk"
+                ? leaf._data.affectedMembers.length
+                : leaf._data.affectedMembers.length;
             return (
-              <TableRow
-                key={`${row.kind}-${idx}`}
-                className="cursor-pointer"
-                onClick={() =>
-                  row.kind === "junk"
-                    ? setSelected({ kind: "junk", finding: row.data })
-                    : setSelected({ kind: "duplicate", finding: row.data })
-                }
+              <g
+                key={id}
+                role="button"
+                tabIndex={-1}
+                aria-label={`${leaf._severity} severity, ${leaf._title}, ${memberCount} members`}
+                style={{ cursor: "pointer", outline: "none" }}
+                {...bind(id)}
+                onClick={() => handleSelect(leaf)}
               >
-                <TableCell className="capitalize">{row.kind}</TableCell>
-                <TableCell>
-                  <Badge variant={severityVariant(sev)}>{sev}</Badge>
-                </TableCell>
-                <TableCell className="font-medium">{rolesLabel(row)}</TableCell>
-                <TableCell className="text-right tabular-nums">
-                  {memberCount(row)}
-                </TableCell>
-                <TableCell className="max-w-[20ch] truncate text-muted-foreground">
-                  {modulesLabel(row, moduleLookup) || "—"}
-                </TableCell>
-                <TableCell className="whitespace-normal text-sm">{action}</TableCell>
-              </TableRow>
+                <motion.circle
+                  layoutId={`recommendations:${leaf._kind}:${leaf._id}`}
+                  initial={{ opacity: 0, scale: 0.4, cx: leaf.cx, cy: leaf.cy, r: leaf.r }}
+                  animate={{
+                    opacity,
+                    scale,
+                    cx: leaf.cx,
+                    cy: leaf.cy,
+                    r: leaf.r,
+                  }}
+                  exit={{ opacity: 0, scale: 0.4 }}
+                  transition={transition}
+                  fill={fill}
+                  stroke="rgba(0,0,0,0.15)"
+                  strokeWidth={1}
+                  style={{ transformOrigin: `${leaf.cx}px ${leaf.cy}px` }}
+                />
+              </g>
             );
           })}
-        </TableBody>
-      </Table>
+        </AnimatePresence>
+        {/* FocusRing overlays — keep above bubbles, pointer-events:none */}
+        {focusedLeaf && (
+          <FocusRing
+            shape="circle"
+            cx={focusedLeaf.cx}
+            cy={focusedLeaf.cy}
+            r={focusedLeaf.r + 3}
+            visible
+          />
+        )}
+        {selectedLeaf && selectedLeaf !== focusedLeaf && (
+          <FocusRing
+            shape="circle"
+            cx={selectedLeaf.cx}
+            cy={selectedLeaf.cy}
+            r={selectedLeaf.r + 3}
+            visible
+          />
+        )}
+        {/* Hover ring (subtle) — only when distinct from selection/focus */}
+        {hoveredId && (() => {
+          const hovered = positioned.find(
+            (l) => `${l._kind}:${l._id}` === hoveredId,
+          );
+          if (!hovered) return null;
+          if (hovered === focusedLeaf || hovered === selectedLeaf) return null;
+          return (
+            <circle
+              cx={hovered.cx}
+              cy={hovered.cy}
+              r={hovered.r + 1}
+              fill="none"
+              stroke={accent.highlight}
+              strokeOpacity={0.45}
+              strokeWidth={1.5}
+              style={{ pointerEvents: "none" }}
+            />
+          );
+        })()}
+      </svg>
     </div>
   );
 }
