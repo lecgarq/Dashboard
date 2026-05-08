@@ -934,6 +934,10 @@ export const usersRouter = router({
       // 04-01: written by bulkAccSync when accUser.role === "account_admin".
       // Optional on read because legacy cache rows predating 04-01 do not carry it.
       isAccountAdmin?: boolean;
+      // 04-02: ACC member-creation date (HQ v1 `created_at`, ISO 8601), normalized to ISO
+      // at the write site. Optional on read because legacy cache rows predate this field;
+      // those rows surface as `addedOn: null` to BulkAccUser consumers (DASH-06).
+      addedOn?: string | null;
     };
 
     return Array.from(allEmails).map((emailLower) => {
@@ -955,6 +959,7 @@ export const usersRouter = router({
           allModules: [] as string[],
           projects: [] as CachedProject[],
           isAccountAdmin: false,
+          addedOn: null,
         };
       }
 
@@ -980,6 +985,7 @@ export const usersRouter = router({
           allModules: [] as string[],
           projects: [] as CachedProject[],
           isAccountAdmin: false,
+          addedOn: null,
         };
       }
 
@@ -1010,6 +1016,11 @@ export const usersRouter = router({
         // 04-01: ACC account-level admin (DASH-07). Default false for legacy cache rows
         // synced before this field was plumbed; will populate on next bulkAccSync run.
         isAccountAdmin: data.isAccountAdmin === true,
+        // 04-02: ACC member-creation date (DASH-06). Null for legacy cache rows synced
+        // before this field was plumbed; will populate on next bulkAccSync run. The widget
+        // MUST treat null as "not in any 7d/30d/90d bucket" (do not show stale users as
+        // recently-added).
+        addedOn: typeof data.addedOn === "string" && data.addedOn.length > 0 ? data.addedOn : null,
       };
     });
   }),
@@ -1220,6 +1231,17 @@ export const usersRouter = router({
                 modules: productsByProject.get(proj.id) ?? [],
               }));
 
+              // 04-02: normalize ACC join-date (HQ v1 `created_at`) to ISO 8601 string,
+              // or null on parse failure / missing. Never write `Date.now()` here — that
+              // would defeat the field's purpose by stamping every sync as "added now".
+              let normalizedAddedOn: string | null = null;
+              if (typeof accUser.addedOn === "string" && accUser.addedOn.length > 0) {
+                const ts = Date.parse(accUser.addedOn);
+                normalizedAddedOn = Number.isFinite(ts) && ts > 0
+                  ? new Date(ts).toISOString()
+                  : null;
+              }
+
               const result = {
                 found: true as const,
                 autodeskId: accUser.id,
@@ -1227,7 +1249,7 @@ export const usersRouter = router({
                 status: accUser.status,
                 role: accUser.role,
                 company: accUser.company,
-                addedOn: accUser.addedOn,
+                addedOn: normalizedAddedOn,
                 // 02.5-D fix: previously dropped here, leaving cached.data.companyRole and
                 // cached.data.lastSignIn permanently undefined → "Unspecified" in the UI.
                 companyRole: accUser.companyRole,

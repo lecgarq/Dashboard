@@ -29,4 +29,13 @@ export interface BulkAccUser {
    * Non-optional: legacy cache rows without the field default to false in bulkAccSummary.
    */
   isAccountAdmin: boolean;
+  /**
+   * ACC member-creation date as an ISO 8601 string, OR null when ACC reported no value
+   * (or when the cache row is legacy and predates this field being plumbed). Source: HQ v1
+   * `created_at`. Used by the DASH-06 Recently-Added widget — consumers MUST handle null
+   * gracefully (legacy rows surface as null until the next bulkAccSync run; these users
+   * will not appear in the 7d/30d/90d windows). Non-optional so consumers branch on
+   * `addedOn === null` deterministically rather than guessing between null vs undefined.
+   */
+  addedOn: string | null;
 }

@@ -643,6 +643,7 @@ export function UsersDirectoryClient() {
       allModules: [],
       projects: [],
       isAccountAdmin: false,
+      addedOn: null,
     });
   }, [people, accSummary]);
 
