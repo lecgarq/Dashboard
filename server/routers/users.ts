@@ -931,6 +931,9 @@ export const usersRouter = router({
       projects?: CachedProject[];
       companyRole?: string | null;
       lastSignIn?: string | null;
+      // 04-01: written by bulkAccSync when accUser.role === "account_admin".
+      // Optional on read because legacy cache rows predating 04-01 do not carry it.
+      isAccountAdmin?: boolean;
     };
 
     return Array.from(allEmails).map((emailLower) => {
@@ -951,6 +954,7 @@ export const usersRouter = router({
           allRoles: [] as string[],
           allModules: [] as string[],
           projects: [] as CachedProject[],
+          isAccountAdmin: false,
         };
       }
 
@@ -975,6 +979,7 @@ export const usersRouter = router({
           allRoles: [] as string[],
           allModules: [] as string[],
           projects: [] as CachedProject[],
+          isAccountAdmin: false,
         };
       }
 
@@ -1002,6 +1007,9 @@ export const usersRouter = router({
         // undefined = older cache rows synced before fields were plumbed through.
         companyRole: data.companyRole ?? null,
         lastSignIn: data.lastSignIn ?? null,
+        // 04-01: ACC account-level admin (DASH-07). Default false for legacy cache rows
+        // synced before this field was plumbed; will populate on next bulkAccSync run.
+        isAccountAdmin: data.isAccountAdmin === true,
       };
     });
   }),
@@ -1147,7 +1155,7 @@ export const usersRouter = router({
       // 2. Prefetch the entire ACC user list ONCE and build an email→user map. Previously
       // fetchAccUserByEmail paginated the full hub per call (O(emails × hub_size) API calls),
       // which blew past ACC rate limits on 1197 emails. Now it's one sweep up-front.
-      let accUserByEmail: Map<string, { id: string; email: string; name: string; status: string; role: string; company?: string; addedOn?: string; companyRole?: string; lastSignIn?: string }>;
+      let accUserByEmail: Map<string, { id: string; email: string; name: string; status: string; role: string; isAccountAdmin: boolean; company?: string; addedOn?: string; companyRole?: string; lastSignIn?: string }>;
       try {
         const allAccUsers = await fetchAllAccUsers(accountId, accessToken);
         accUserByEmail = new Map(allAccUsers.map((u) => [u.email.toLowerCase(), u]));
@@ -1224,6 +1232,9 @@ export const usersRouter = router({
                 // cached.data.lastSignIn permanently undefined → "Unspecified" in the UI.
                 companyRole: accUser.companyRole,
                 lastSignIn: accUser.lastSignIn,
+                // 04-01: ACC account-level admin flag (DASH-07). Derived from HQ v1
+                // role === "account_admin"; distinct from per-project accessLevels.projectAdmin.
+                isAccountAdmin: accUser.isAccountAdmin,
                 projects: enrichedProjects,
                 syncedAt: new Date().toISOString(),
               };

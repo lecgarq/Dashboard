@@ -23,4 +23,10 @@ export interface BulkAccUser {
   companyRole?: string | null;
   /** Last sign-in / activity ISO string from the ACC HQ user record. Null when ACC reports no activity. */
   lastSignIn?: string | null;
+  /**
+   * True iff the user has ACC account-level admin access (HQ v1 `role === "account_admin"`).
+   * Distinct from per-project admin (BulkAccProject.isAdmin / accessLevels.projectAdmin).
+   * Non-optional: legacy cache rows without the field default to false in bulkAccSummary.
+   */
+  isAccountAdmin: boolean;
 }

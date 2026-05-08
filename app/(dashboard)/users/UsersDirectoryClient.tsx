@@ -642,6 +642,7 @@ export function UsersDirectoryClient() {
       allRoles: [],
       allModules: [],
       projects: [],
+      isAccountAdmin: false,
     });
   }, [people, accSummary]);
 

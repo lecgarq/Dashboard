@@ -19,6 +19,8 @@ export type AccUser = {
   //   "account_user"   — normal project user
   //   "project_admin"  — service-level project administrator (NOT the same as per-project accessLevels.projectAdmin)
   role: string;
+  /** Derived: role === "account_admin". Always boolean. */
+  isAccountAdmin: boolean;
   company?: string;
   addedOn?: string;
   companyRole?: string; // company-specific role (e.g. "Architect")
@@ -151,12 +153,14 @@ export async function fetchAccUserByEmail(
 
     const match = users.find((u) => u.email === email);
     if (match) {
+      const role = getString(match.role) || getString(match.access_level) || "user";
       return {
         id: getString(match.id),
         email: getString(match.email),
         name: getString(match.name),
         status: getString(match.status),
-        role: getString(match.role) || getString(match.access_level) || "user",
+        role,
+        isAccountAdmin: role === "account_admin",
         company: getString(match.company_name || match.company) || undefined,
         addedOn: getString(match.created_at || match.addedOn) || undefined,
         companyRole: getString(match.company_role || match.companyRole) || undefined,
@@ -203,12 +207,16 @@ export async function fetchAllAccUsers(
       loggedRawShape = true;
     }
     for (const u of users) {
+      const role = getString(u.role) || getString(u.access_level) || "user";
       all.push({
         id: getString(u.id),
         email: getString(u.email),
         name: getString(u.name),
         status: getString(u.status),
-        role: getString(u.role) || getString(u.access_level) || "user",
+        role,
+        // ACC HQ v1: role === "account_admin" identifies account-level admins (DASH-07).
+        // Distinct from per-project accessLevels.projectAdmin captured in fetchAccUserProjects.
+        isAccountAdmin: role === "account_admin",
         company: getString(u.company_name || u.company) || undefined,
         addedOn: getString(u.created_at || u.addedOn) || undefined,
         companyRole: getString(u.company_role || u.companyRole) || undefined,
