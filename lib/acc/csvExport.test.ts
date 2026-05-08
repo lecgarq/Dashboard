@@ -34,7 +34,7 @@ describe("downloadCsv", () => {
     (URL as unknown as { revokeObjectURL: typeof revokeSpy }).revokeObjectURL = revokeSpy;
     clickSpy = vi.fn();
     // Stub HTMLAnchorElement.click so it does not navigate the jsdom window
-    HTMLAnchorElement.prototype.click = clickSpy;
+    HTMLAnchorElement.prototype.click = clickSpy as unknown as () => void;
   });
 
   it("prepends UTF-8 BOM so Excel auto-detects encoding", async () => {

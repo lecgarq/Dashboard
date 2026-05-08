@@ -109,6 +109,7 @@
   "devDependencies": {
     "@ngrok/ngrok": "^1.7.0",
     "@tailwindcss/postcss": "^4",
+    "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",
     "@types/d3-force": "^3.0.10",
     "@types/node": "^20.19.39",
