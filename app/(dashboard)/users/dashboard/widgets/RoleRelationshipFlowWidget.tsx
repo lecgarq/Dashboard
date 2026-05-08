@@ -5,15 +5,22 @@ import { Download } from "lucide-react";
 import {
   Background,
   Controls,
+  Handle,
+  Position,
   ReactFlow,
   type Edge,
   type Node,
+  type NodeProps,
+  type NodeMouseHandler,
+  type EdgeMouseHandler,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
+import type { Severity } from "@/lib/acc/dashboardAnalytics";
 import { useFindings } from "../findingsContext";
+import { useSelection } from "../selectionContext";
 
 /**
  * Role-relationship flow widget (DASH-04 visualization).
@@ -28,16 +35,69 @@ import { useFindings } from "../findingsContext";
  * Library: `@xyflow/react@12.10.2` (NOT the deprecated `reactflow` package — see RESEARCH.md
  * State of the Art).
  */
+/**
+ * Custom node renderer — inline severity badge (DASH-09 "wherever else they appear").
+ * Reads severity from node `data` (populated from findings.roleSeverityIndex).
+ */
+type RoleNodeData = { role: string; severity: Severity | undefined };
+
+const SEV_COLORS: Record<Severity, string> = {
+  HIGH: "#ef4444",
+  MEDIUM: "#f59e0b",
+  LOW: "#6b7280",
+};
+
+function RoleFlowNode({ data }: NodeProps) {
+  const d = data as RoleNodeData;
+  const sev = d.severity;
+  const dotColor = sev ? SEV_COLORS[sev] : "transparent";
+  return (
+    <div
+      className="rounded-md border bg-background px-3 py-2 text-xs shadow-sm"
+      style={{ minWidth: 120 }}
+    >
+      <Handle type="target" position={Position.Top} style={{ opacity: 0 }} />
+      <div className="flex items-center gap-2">
+        {sev && (
+          <span
+            aria-label={`severity ${sev}`}
+            className="inline-block size-2.5 rounded-full"
+            style={{ backgroundColor: dotColor }}
+          />
+        )}
+        <span className="font-medium">{d.role}</span>
+        {sev && (
+          <span
+            className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase"
+            style={{ backgroundColor: `${dotColor}22`, color: dotColor }}
+          >
+            {sev}
+          </span>
+        )}
+      </div>
+      <Handle type="source" position={Position.Bottom} style={{ opacity: 0 }} />
+    </div>
+  );
+}
+
+const NODE_TYPES = { role: RoleFlowNode };
+
 export function RoleRelationshipFlowWidget(_props: {
   users?: unknown;
   workspaceEmails?: unknown;
 }) {
   const findings = useFindings();
+  const { setSelected } = useSelection();
 
-  const { nodes, edges, csvRows } = useMemo(() => {
+  const { nodes, edges, csvRows, dupeByEdge } = useMemo(() => {
     const dupes = findings.duplicateRoles;
     if (dupes.length === 0) {
-      return { nodes: [] as Node[], edges: [] as Edge[], csvRows: [] };
+      return {
+        nodes: [] as Node[],
+        edges: [] as Edge[],
+        csvRows: [],
+        dupeByEdge: new Map<string, (typeof dupes)[number]>(),
+      };
     }
     const roleSet = new Set<string>();
     for (const d of dupes) {
@@ -49,28 +109,29 @@ export function RoleRelationshipFlowWidget(_props: {
     const nodes: Node[] = roles.map((role, i) => {
       const theta = (i / roles.length) * Math.PI * 2;
       const sev = findings.roleSeverityIndex.get(role);
-      const sevLabel = sev ? ` (${sev})` : "";
       return {
         id: role,
+        type: "role",
         position: {
           x: Math.cos(theta) * radius,
           y: Math.sin(theta) * radius,
         },
-        data: { label: `${role}${sevLabel}` },
-        // Default node style; our caller's CSS controls font.
+        data: { role, severity: sev } satisfies RoleNodeData,
       };
     });
+    const dupeByEdge = new Map<string, (typeof dupes)[number]>();
     const edges: Edge[] = dupes.map((d, i) => {
       const intensity = Math.round(d.nameOverlap * 100);
-      // Stronger overlap → redder edge; lighter → grey.
       const stroke =
         d.nameOverlap >= 0.95
           ? "#ef4444"
           : d.nameOverlap >= 0.9
             ? "#f59e0b"
             : "#6b7280";
+      const id = `e${i}`;
+      dupeByEdge.set(id, d);
       return {
-        id: `e${i}`,
+        id,
         source: d.roleA,
         target: d.roleB,
         label: `${intensity}%`,
@@ -85,8 +146,19 @@ export function RoleRelationshipFlowWidget(_props: {
       Members: d.affectedMembers.length,
       Modules: d.affectedProjects.length, // placeholder — true module count surfaced via context if needed
     }));
-    return { nodes, edges, csvRows };
+    return { nodes, edges, csvRows, dupeByEdge };
   }, [findings]);
+
+  const handleNodeClick: NodeMouseHandler = (_e, node) => {
+    const role = node.id;
+    const sev = findings.roleSeverityIndex.get(role);
+    setSelected({ kind: "role", role, severity: sev });
+  };
+
+  const handleEdgeClick: EdgeMouseHandler = (_e, edge) => {
+    const finding = dupeByEdge.get(edge.id);
+    if (finding) setSelected({ kind: "duplicate", finding });
+  };
 
   function handleDownload() {
     downloadCsv("role-relationships.csv", csvRows);
@@ -124,11 +196,14 @@ export function RoleRelationshipFlowWidget(_props: {
         <ReactFlow
           nodes={nodes}
           edges={edges}
+          nodeTypes={NODE_TYPES}
           fitView
           fitViewOptions={{ padding: 0.2 }}
           proOptions={{ hideAttribution: true }}
           nodesDraggable
           panOnDrag
+          onNodeClick={handleNodeClick}
+          onEdgeClick={handleEdgeClick}
         >
           <Background />
           <Controls />

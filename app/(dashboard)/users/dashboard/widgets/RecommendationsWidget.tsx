@@ -20,6 +20,7 @@ import type {
   Severity,
 } from "@/lib/acc/dashboardAnalytics";
 import { useFindings } from "../findingsContext";
+import { useSelection } from "../selectionContext";
 
 /**
  * Recommendations widget — DASH-03 + DASH-04 surfaced as a single actionable list (DASH-09).
@@ -101,13 +102,12 @@ function modulesLabel(row: RowFinding, users: Map<string, Set<string>>): string 
 
 export function RecommendationsWidget({
   users,
-  onSelect,
 }: {
   users: BulkAccUser[];
   workspaceEmails?: string[];
-  onSelect?: (finding: JunkRoleFinding | DuplicateRoleFinding) => void;
 }) {
   const findings = useFindings();
+  const { setSelected } = useSelection();
 
   const rows = useMemo<RowFinding[]>(() => {
     return [
@@ -189,8 +189,12 @@ export function RecommendationsWidget({
             return (
               <TableRow
                 key={`${row.kind}-${idx}`}
-                className={onSelect ? "cursor-pointer" : undefined}
-                onClick={() => onSelect?.(row.data)}
+                className="cursor-pointer"
+                onClick={() =>
+                  row.kind === "junk"
+                    ? setSelected({ kind: "junk", finding: row.data })
+                    : setSelected({ kind: "duplicate", finding: row.data })
+                }
               >
                 <TableCell className="capitalize">{row.kind}</TableCell>
                 <TableCell>

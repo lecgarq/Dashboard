@@ -6,6 +6,8 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
+import { useFindings } from "../findingsContext";
+import { useSelection } from "../selectionContext";
 
 /**
  * Phase 4 Plan 06 — Roles × Modules entitlement heatmap (DASH-08).
@@ -92,8 +94,20 @@ export function RolesModulesHeatmapWidget({
   users,
 }: RolesModulesHeatmapWidgetProps) {
   const data = React.useMemo(() => aggregate(users), [users]);
+  const findings = useFindings();
+  const { setSelected } = useSelection();
+  const roleSeverityIndex = findings.roleSeverityIndex;
 
   const option = React.useMemo(() => {
+    // Inline severity badges on Y-axis labels — DASH-09 "wherever else they appear".
+    // Rich-text formatter prefixes a colored dot per severity.
+    const yAxisFormatter = (role: string) => {
+      const sev = roleSeverityIndex.get(role);
+      if (sev === "HIGH") return `{hi|●} ${role}`;
+      if (sev === "MEDIUM") return `{med|●} ${role}`;
+      if (sev === "LOW") return `{low|●} ${role}`;
+      return role;
+    };
     return {
       tooltip: {
         position: "top",
@@ -115,7 +129,16 @@ export function RolesModulesHeatmapWidget({
         type: "category",
         data: data.roles,
         splitArea: { show: true },
-        axisLabel: { fontSize: 10 },
+        triggerEvent: true, // enables click on axis labels (yAxis name/category)
+        axisLabel: {
+          fontSize: 10,
+          formatter: yAxisFormatter,
+          rich: {
+            hi: { color: "#ef4444", fontSize: 14, fontWeight: "bold" as const },
+            med: { color: "#f59e0b", fontSize: 14, fontWeight: "bold" as const },
+            low: { color: "#6b7280", fontSize: 14 },
+          },
+        },
       },
       visualMap: {
         min: 0,
@@ -144,7 +167,41 @@ export function RolesModulesHeatmapWidget({
         },
       ],
     };
-  }, [data]);
+  }, [data, roleSeverityIndex]);
+
+  // Click handlers — y-axis label OR a heatmap cell selects the role.
+  const onChartEvents = React.useMemo(
+    () => ({
+      click: (params: {
+        componentType?: string;
+        targetType?: string;
+        value?: unknown;
+      }) => {
+        // Y-axis label click (axis category name event)
+        if (
+          params.componentType === "yAxis" ||
+          params.targetType === "axisLabel"
+        ) {
+          const role = String(params.value ?? "");
+          if (!role) return;
+          setSelected({ kind: "role", role, severity: roleSeverityIndex.get(role) });
+          return;
+        }
+        // Heatmap cell click (series): value = [moduleIdx, roleIdx, count]
+        if (
+          params.componentType === "series" &&
+          Array.isArray(params.value) &&
+          params.value.length >= 2
+        ) {
+          const ri = Number(params.value[1]);
+          const role = data.roles[ri];
+          if (!role) return;
+          setSelected({ kind: "role", role, severity: roleSeverityIndex.get(role) });
+        }
+      },
+    }),
+    [data.roles, roleSeverityIndex, setSelected],
+  );
 
   function handleExport() {
     const rows = data.roles.flatMap((r) =>
@@ -186,6 +243,7 @@ export function RolesModulesHeatmapWidget({
           option={option}
           notMerge
           lazyUpdate
+          onEvents={onChartEvents}
           style={{ height: "100%", width: "100%" }}
         />
       </div>

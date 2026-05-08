@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/table";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import { useFindings } from "../findingsContext";
+import { useSelection } from "../selectionContext";
 
 /**
  * Outlier module-combinations widget (DASH-05).
@@ -23,6 +24,7 @@ export function OutlierCombosWidget(_props: {
   workspaceEmails?: unknown;
 }) {
   const findings = useFindings();
+  const { setSelected } = useSelection();
   const rows = findings.outlierCombos;
 
   function handleDownload() {
@@ -71,7 +73,11 @@ export function OutlierCombosWidget(_props: {
         </TableHeader>
         <TableBody>
           {rows.map((r, idx) => (
-            <TableRow key={idx}>
+            <TableRow
+              key={idx}
+              className="cursor-pointer"
+              onClick={() => setSelected({ kind: "outlier", finding: r })}
+            >
               <TableCell className="max-w-[28ch] truncate font-medium">
                 {r.moduleSet.length === 0 ? "(no modules)" : r.moduleSet.join(", ")}
               </TableCell>

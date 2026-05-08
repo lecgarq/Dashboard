@@ -10,6 +10,8 @@ import { trpc } from "@/lib/core/trpc";
 import { computeAllFindings } from "@/lib/acc/dashboardAnalytics";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { FindingsProvider } from "./findingsContext";
+import { SelectionProvider } from "./selectionContext";
+import { DashboardSidePanel } from "./DashboardSidePanel";
 import { SortableWidget } from "./SortableWidget";
 import { useWidgetOrder } from "./useWidgetOrder";
 import { WIDGETS, type WidgetId } from "./widgetRegistry";
@@ -112,31 +114,36 @@ export function DashboardClient() {
           }
         }
       >
-        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-          <SortableContext items={order} strategy={rectSortingStrategy}>
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-              {order.map((id) => {
-                const spec = WIDGETS[id as WidgetId];
-                if (!spec) return null;
-                const Body = spec.component;
-                return (
-                  <SortableWidget
-                    key={id}
-                    id={id}
-                    span={spec.span}
-                    title={spec.title}
-                  >
-                    {usersQuery.isLoading ? (
-                      <Skeleton className="h-48 w-full" />
-                    ) : (
-                      <Body {...widgetProps} />
-                    )}
-                  </SortableWidget>
-                );
-              })}
-            </div>
-          </SortableContext>
-        </DndContext>
+        <SelectionProvider>
+          <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+            <SortableContext items={order} strategy={rectSortingStrategy}>
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {order.map((id) => {
+                  const spec = WIDGETS[id as WidgetId];
+                  if (!spec) return null;
+                  const Body = spec.component;
+                  return (
+                    <SortableWidget
+                      key={id}
+                      id={id}
+                      span={spec.span}
+                      title={spec.title}
+                    >
+                      {usersQuery.isLoading ? (
+                        <Skeleton className="h-48 w-full" />
+                      ) : (
+                        <Body {...widgetProps} />
+                      )}
+                    </SortableWidget>
+                  );
+                })}
+              </div>
+            </SortableContext>
+          </DndContext>
+          {/* Drill-down panel — sibling of grid, OUTSIDE DndContext so the
+              panel's interactions never feed drag listeners. */}
+          <DashboardSidePanel users={users} />
+        </SelectionProvider>
       </FindingsProvider>
     </div>
   );
