@@ -12,6 +12,12 @@ export type AccUser = {
   email: string;
   name: string;
   status: string;
+  // ACC Admin API account-admin flag: HQ v1 `role` field (string enum) — verified 2026-05-08
+  // against scraped APS docs (BIM 360 API/REST API/GET_users-user_id.json:114, GET_users-search.json:161).
+  // Possible values:
+  //   "account_admin"  — user has BIM 360 / ACC account administration access (the flag DASH-07 needs)
+  //   "account_user"   — normal project user
+  //   "project_admin"  — service-level project administrator (NOT the same as per-project accessLevels.projectAdmin)
   role: string;
   company?: string;
   addedOn?: string;
