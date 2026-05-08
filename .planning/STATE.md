@@ -131,6 +131,10 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: P08: Heatmap inline severity uses ECharts rich-text axisLabel.formatter ({hi|●} RoleName) — no DOM overlay; flow widget uses @xyflow/react custom nodeTypes; both consume the same useFindings().roleSeverityIndex.
 - [Phase 04-access-analysis]: P08: Phase 4 UAT 16/16 PASSED 2026-05-08; user-flagged Phase 4.1 Polish follow-up — visual polish, move dashboard under ACC Analysis page as tab, replace list widgets (Recommendations/Outliers/Recently-added/Admin) with chart treatments.
 
+### Roadmap Evolution
+
+- Phase 04.1 inserted after Phase 4: Access Analysis tab — replace lists with astonishing, interactive graphics only (no name-list widgets) (URGENT)
+
 ### Pending Todos
 
 None yet.
