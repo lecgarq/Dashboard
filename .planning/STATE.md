@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T18:58:54.223Z"
+last_updated: "2026-05-08T19:00:18.963Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-04 — CLOSED 2026-05-08. workspaceRouter.getDirectory tRPC procedure: server-side People API listDirectoryPeople using already-granted directory.readonly scope; pagination loop with 25-page safety cap (Pitfall 3); module-level Map cache 1h TTL keyed by userId; sources=DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE; typed TRPCError vocabulary for UI (PRECONDITION_FAILED workspace_access_required, FORBIDDEN workspace_scope_missing); non-Workspace users get { emails: [] } via 400/FAILED_PRECONDITION mapping (Open Q5). Registered on server/routers/root.ts (plan said _app.ts but project file is root.ts — Rule 3 deviation). Smoke test deferred to manual UAT (requires live Workspace login). Unblocks DASH-01 Coverage donut. See 04-04-SUMMARY.md.
-Status: Phase 04 — 04-04 complete (1 of the wave-1 server-router plans). Next per ROADMAP wave order.
-Last activity: 2026-05-08 — Completed 04-04 (commits b9ea4b3 workspaceRouter, 3fea8a2 root.ts registration).
+Plan: 04-03 — CLOSED 2026-05-08. Pure-function analytics modules ready for widget consumption: nameSimilarity (Jaccard token-overlap, DUPLICATE_ROLE_NAME_THRESHOLD=0.80), activeUserTiers (7d/30d/90d/>90d/Never bucketing via date-fns differenceInDays; null+undefined+malformed → Never per Pitfall 4), dashboardAnalytics (findJunkRoles HIGH/MEDIUM/LOW signal-count tiering; findDuplicateRoles strict module-equality + ≥80% name overlap; findOutlierModuleCombos sorted-signature with strict <5% threshold; computeAllFindings exposes roleSeverityIndex Map for inline-badge consumers via HIGH>MEDIUM>LOW max rule, duplicate-flagged roles contribute MEDIUM). 45/45 Vitest tests pass. Rule 3 fix: installed vite as devDep to satisfy vite-tsconfig-paths peer. See 04-03-SUMMARY.md.
+Status: Phase 04 — 04-03 + 04-04 complete; 04-01 plumbing landed in parallel. Next per ROADMAP wave order.
+Last activity: 2026-05-08 — Completed 04-03 (commits ba86399, b3ea82a, 9f4dd14, 2eb5d35, 8cf263f, ba9b0e8).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
@@ -57,6 +57,7 @@ Progress: [████████░░] 80%
 | Phase 03-graph-ui-completion P05 | 2min | 3 tasks | 1 files |
 | Phase 03-graph-ui-completion P04 | 4min | 3 tasks | 2 files |
 | Phase 04-access-analysis P04 | 3min | 2 tasks | 2 files |
+| Phase 04-access-analysis P03 | 4m 52s | 6 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -105,6 +106,9 @@ Recent decisions affecting current work:
 - [Phase 03-graph-ui-completion]: P04: Cosmos label overlay (UI-01 gap closure) — sibling 2D canvas above Cosmos GL canvas with pointer-events-none; CosmosGraphRenderer.drawLabelOverlay reuses 03-01 fade-band/AABB/200-cap/override pipeline; world->screen via Graph.spaceToScreenPosition; fade band in zoom-level units (2.0..3.5) via Graph.getZoomLevel public API; legacy hoverLabelRef DOM element removed entirely (subsumed by labelOverrideIndices)
 - [Phase 04-access-analysis]: P04: workspaceRouter.getDirectory uses already-granted directory.readonly scope; module-level Map cache 1h TTL; sources=DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE; non-Workspace users get { emails: [] } via 400/FAILED_PRECONDITION mapping; PRECONDITION_FAILED/FORBIDDEN typed errors for UI
 - [Phase 04-access-analysis]: P04: Plan referenced server/routers/_app.ts; project app router lives at server/routers/root.ts (Rule 3 deviation, registered there)
+- [Phase 04-access-analysis]: Plan 04-03: zeroMembers signal proxied via user.allRoles minus project assignments; real role catalog deferred
+- [Phase 04-access-analysis]: Plan 04-03: roleSeverityIndex max rule HIGH>MEDIUM>LOW; duplicate-flagged roles contribute MEDIUM
+- [Phase 04-access-analysis]: Plan 04-03: duplicate detection compares role-aggregate module sets (union across projects); per-instance comparison deferred
 
 ### Pending Todos
 

@@ -46,14 +46,14 @@
 ### ACC Access Analysis Dashboard (DASH)
 
 - [x] **DASH-01**: User sees a junk-role recommendations list with HIGH / MEDIUM / LOW cleanup priority — score derived from three signals (zero members, zero modules, all members inactive >90 days)
-- [ ] **DASH-02**: User sees a duplicate-role recommendations list — pairs of roles ranked by overlap, triggered when module entitlements are identical AND role names share ≥80% normalized token overlap
-- [ ] **DASH-03**: User sees an "Unusual Access Patterns" widget surfacing module-combination outliers — module sets held by <5% of members
-- [ ] **DASH-04**: User sees active-user tier distribution as a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets (driven by `lastSignIn`)
-- [ ] **DASH-05**: User sees an admin-access list of ACC account-level admins (project admins and shadow admins excluded)
+- [x] **DASH-02**: User sees a duplicate-role recommendations list — pairs of roles ranked by overlap, triggered when module entitlements are identical AND role names share ≥80% normalized token overlap
+- [x] **DASH-03**: User sees an "Unusual Access Patterns" widget surfacing module-combination outliers — module sets held by <5% of members
+- [x] **DASH-04**: User sees active-user tier distribution as a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets (driven by `lastSignIn`)
+- [x] **DASH-05**: User sees an admin-access list of ACC account-level admins (project admins and shadow admins excluded)
 - [ ] **DASH-06**: User sees a recently-added members widget with a configurable timeframe toggle (7d / 30d / 90d, default 30d) based on member-creation / ACC-join date
 - [ ] **DASH-07**: User sees an ACC coverage donut comparing Google Workspace directory to ACC members — three segments: `In both` / `In Workspace, missing from ACC` / `In ACC, missing from Workspace`
 - [ ] **DASH-08**: User sees a Roles × Modules entitlement heatmap covering the entire organization (full-width, dense)
-- [ ] **DASH-09**: User sees decision-support recommendations both as a dedicated widget AND as inline severity badges on roles wherever they appear elsewhere on the dashboard
+- [x] **DASH-09**: User sees decision-support recommendations both as a dedicated widget AND as inline severity badges on roles wherever they appear elsewhere on the dashboard
 - [ ] **DASH-10**: Clicking any finding (junk/duplicate/outlier/recommendation) opens a right-side drill-down panel with affected members, modules, projects, suggested action, and a raw data table — without navigating away from the dashboard
 - [ ] **DASH-11**: Every chart and table widget on the dashboard has a "Download CSV" button that exports the data currently displayed; the recommendations widget exports columns `Type, Severity, Roles, Members, Modules, SuggestedAction`
 - [ ] **DASH-12**: User can drag-reorder dashboard widgets and the chosen order persists across page reloads
@@ -112,14 +112,14 @@
 | ANAL-03 | Phase 4 | Deferred (PNG export not delivered) |
 | ANAL-04 | Phase 4 | Deferred (replaced by DASH-11) |
 | DASH-01 | Phase 4 | Complete |
-| DASH-02 | Phase 4 | Pending |
-| DASH-03 | Phase 4 | Pending |
-| DASH-04 | Phase 4 | Pending |
-| DASH-05 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Complete |
+| DASH-03 | Phase 4 | Complete |
+| DASH-04 | Phase 4 | Complete |
+| DASH-05 | Phase 4 | Complete |
 | DASH-06 | Phase 4 | Pending |
 | DASH-07 | Phase 4 | Pending |
 | DASH-08 | Phase 4 | Pending |
-| DASH-09 | Phase 4 | Pending |
+| DASH-09 | Phase 4 | Complete |
 | DASH-10 | Phase 4 | Pending |
 | DASH-11 | Phase 4 | Pending |
 | DASH-12 | Phase 4 | Pending |
