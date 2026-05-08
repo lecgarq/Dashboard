@@ -11,6 +11,10 @@ import {
   type ActiveTier,
 } from "@/lib/acc/activeUserTiers";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
+import {
+  useDashboardAccent,
+  useSeverityColor,
+} from "./_shared/dashboardTokens";
 
 /**
  * Phase 4 Plan 06 — Active-user tiers stacked bar (DASH-02).
@@ -25,15 +29,27 @@ export interface ActiveUserTiersWidgetProps {
   users: BulkAccUser[];
 }
 
-const TIER_COLORS: Record<ActiveTier, string> = {
-  "7d": "#16a34a", // green-600
-  "30d": "#84cc16", // lime-500
-  "90d": "#f59e0b", // amber-500
-  ">90d": "#dc2626", // red-600
-  Never: "#9ca3af", // gray-400
-};
+/**
+ * Tier color sequence — sourced from `_shared/dashboardTokens` so the perceptual
+ * ramp (active -> stale -> never) reuses the same palette as the rest of the
+ * dashboard. Recency-good ("7d", "30d") leans on HIGHLIGHT/LOW (cool, alive),
+ * staleness ("90d", ">90d") escalates through MEDIUM/HIGH, and "Never" resolves
+ * to NEUTRAL — matching the plan's "HIGHLIGHT -> NEUTRAL gradient" intent.
+ */
+function useTierColors(): Record<ActiveTier, string> {
+  const sev = useSeverityColor();
+  const accent = useDashboardAccent();
+  return {
+    "7d": accent.highlight,
+    "30d": sev.LOW,
+    "90d": sev.MEDIUM,
+    ">90d": sev.HIGH,
+    Never: accent.neutral,
+  };
+}
 
 export function ActiveUserTiersWidget({ users }: ActiveUserTiersWidgetProps) {
+  const tierColors = useTierColors();
   const counts = React.useMemo(() => {
     const now = new Date();
     const c: Record<ActiveTier, number> = {
@@ -83,7 +99,7 @@ export function ActiveUserTiersWidget({ users }: ActiveUserTiersWidgetProps) {
           layout="horizontal"
           margin={{ top: 10, right: 16, bottom: 40, left: 80 }}
           padding={0.3}
-          colors={(d) => TIER_COLORS[d.id as ActiveTier]}
+          colors={(d) => tierColors[d.id as ActiveTier]}
           enableLabel
           labelSkipWidth={20}
           labelTextColor="#fff"

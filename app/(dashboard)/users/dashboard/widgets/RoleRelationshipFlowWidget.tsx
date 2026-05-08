@@ -21,6 +21,14 @@ import { downloadCsv } from "@/lib/acc/csvExport";
 import type { Severity } from "@/lib/acc/dashboardAnalytics";
 import { useFindings } from "../findingsContext";
 import { useSelection } from "../selectionContext";
+import {
+  HOVER_OPACITY_DIM,
+  HOVER_OPACITY_FOCUS,
+  useDashboardAccent,
+  useSeverityColor,
+  type SeverityColorMap,
+} from "./_shared/dashboardTokens";
+import { createContext, useContext } from "react";
 
 /**
  * Role-relationship flow widget (DASH-04 visualization).
@@ -41,16 +49,31 @@ import { useSelection } from "../selectionContext";
  */
 type RoleNodeData = { role: string; severity: Severity | undefined };
 
-const SEV_COLORS: Record<Severity, string> = {
-  HIGH: "#ef4444",
-  MEDIUM: "#f59e0b",
-  LOW: "#6b7280",
+/**
+ * Severity palette is themed via `useSeverityColor()` at the widget root and
+ * pushed to custom node renderers through a tiny context — xyflow's NodeProps
+ * doesn't accept hooks at the renderer site (renderers re-mount on every
+ * data-shape change), and threading the resolved colors through node `data`
+ * would require rebuilding nodes on theme toggle. Context is the cheap path.
+ */
+type FlowPalette = {
+  severity: SeverityColorMap;
+  neutral: string; // used for LOW (matches dashboard "low / neutral" treatment)
+  edgeLabel: string;
 };
+const FlowPaletteContext = createContext<FlowPalette | null>(null);
 
 function RoleFlowNode({ data }: NodeProps) {
   const d = data as RoleNodeData;
   const sev = d.severity;
-  const dotColor = sev ? SEV_COLORS[sev] : "transparent";
+  const palette = useContext(FlowPaletteContext);
+  const sevColor = (level: Severity): string => {
+    if (!palette) return "transparent"; // SSR / pre-mount safety
+    if (level === "HIGH") return palette.severity.HIGH;
+    if (level === "MEDIUM") return palette.severity.MEDIUM;
+    return palette.neutral; // LOW resolves to neutral, matching heatmap rich-text
+  };
+  const dotColor = sev ? sevColor(sev) : "transparent";
   return (
     <div
       className="rounded-md border bg-background px-3 py-2 text-xs shadow-sm"
@@ -87,7 +110,25 @@ export function RoleRelationshipFlowWidget(_props: {
   workspaceEmails?: unknown;
 }) {
   const findings = useFindings();
-  const { setSelected } = useSelection();
+  const { selected, setSelected } = useSelection();
+  const sevPalette = useSeverityColor();
+  const accent = useDashboardAccent();
+
+  const palette: FlowPalette = useMemo(
+    () => ({
+      severity: sevPalette,
+      neutral: accent.neutral,
+      // Edge label fill — neutral foreground, theme-aware. Falls back to the
+      // neutral accent (intentional: neutral grid/label color, not themed
+      // severity).
+      edgeLabel: accent.neutral,
+    }),
+    [sevPalette, accent],
+  );
+
+  // Selection spotlight target — when a role is selected upstream (via heatmap,
+  // bubble cluster, etc.), dim non-matching flow nodes to HOVER_OPACITY_DIM.
+  const selectedRole = selected?.kind === "role" ? selected.role : null;
 
   const { nodes, edges, csvRows, dupeByEdge } = useMemo(() => {
     const dupes = findings.duplicateRoles;
@@ -109,6 +150,7 @@ export function RoleRelationshipFlowWidget(_props: {
     const nodes: Node[] = roles.map((role, i) => {
       const theta = (i / roles.length) * Math.PI * 2;
       const sev = findings.roleSeverityIndex.get(role);
+      const dimmed = selectedRole !== null && selectedRole !== role;
       return {
         id: role,
         type: "role",
@@ -117,26 +159,39 @@ export function RoleRelationshipFlowWidget(_props: {
           y: Math.sin(theta) * radius,
         },
         data: { role, severity: sev } satisfies RoleNodeData,
+        style: {
+          opacity: dimmed ? HOVER_OPACITY_DIM : HOVER_OPACITY_FOCUS,
+          transition: "opacity 200ms ease-out",
+        },
       };
     });
     const dupeByEdge = new Map<string, (typeof dupes)[number]>();
     const edges: Edge[] = dupes.map((d, i) => {
       const intensity = Math.round(d.nameOverlap * 100);
+      // Edge stroke severity sourced from `_shared/dashboardTokens` so a
+      // duplicate at 95%+ name-overlap renders the SAME red as the HIGH bubble
+      // and the HIGH heatmap dot.
       const stroke =
         d.nameOverlap >= 0.95
-          ? "#ef4444"
+          ? palette.severity.HIGH
           : d.nameOverlap >= 0.9
-            ? "#f59e0b"
-            : "#6b7280";
+            ? palette.severity.MEDIUM
+            : palette.neutral;
       const id = `e${i}`;
+      const edgeDimmed =
+        selectedRole !== null && selectedRole !== d.roleA && selectedRole !== d.roleB;
       dupeByEdge.set(id, d);
       return {
         id,
         source: d.roleA,
         target: d.roleB,
         label: `${intensity}%`,
-        style: { stroke, strokeWidth: 2 },
-        labelStyle: { fontSize: 11, fill: "#374151" },
+        style: {
+          stroke,
+          strokeWidth: 2,
+          opacity: edgeDimmed ? HOVER_OPACITY_DIM : HOVER_OPACITY_FOCUS,
+        },
+        labelStyle: { fontSize: 11, fill: palette.edgeLabel },
       };
     });
     const csvRows = dupes.map((d) => ({
@@ -147,7 +202,7 @@ export function RoleRelationshipFlowWidget(_props: {
       Modules: d.affectedProjects.length, // placeholder — true module count surfaced via context if needed
     }));
     return { nodes, edges, csvRows, dupeByEdge };
-  }, [findings]);
+  }, [findings, palette, selectedRole]);
 
   const handleNodeClick: NodeMouseHandler = (_e, node) => {
     const role = node.id;
@@ -193,21 +248,23 @@ export function RoleRelationshipFlowWidget(_props: {
         </Button>
       </div>
       <div style={{ height: 400 }} className="rounded-md border">
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          nodeTypes={NODE_TYPES}
-          fitView
-          fitViewOptions={{ padding: 0.2 }}
-          proOptions={{ hideAttribution: true }}
-          nodesDraggable
-          panOnDrag
-          onNodeClick={handleNodeClick}
-          onEdgeClick={handleEdgeClick}
-        >
-          <Background />
-          <Controls />
-        </ReactFlow>
+        <FlowPaletteContext.Provider value={palette}>
+          <ReactFlow
+            nodes={nodes}
+            edges={edges}
+            nodeTypes={NODE_TYPES}
+            fitView
+            fitViewOptions={{ padding: 0.2 }}
+            proOptions={{ hideAttribution: true }}
+            nodesDraggable
+            panOnDrag
+            onNodeClick={handleNodeClick}
+            onEdgeClick={handleEdgeClick}
+          >
+            <Background />
+            <Controls />
+          </ReactFlow>
+        </FlowPaletteContext.Provider>
       </div>
     </div>
   );

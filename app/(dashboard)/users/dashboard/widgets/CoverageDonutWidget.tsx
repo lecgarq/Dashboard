@@ -6,6 +6,10 @@ import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
+import {
+  useDashboardAccent,
+  useSeverityColor,
+} from "./_shared/dashboardTokens";
 
 /**
  * Phase 4 Plan 06 — Coverage donut (DASH-01).
@@ -62,28 +66,31 @@ export function CoverageDonutWidget({
     [users, workspaceEmails]
   );
 
+  const severity = useSeverityColor();
+  const accent = useDashboardAccent();
+
   const data = React.useMemo(
     () => [
       {
         id: "In both",
         label: "In both",
         value: counts.both,
-        color: "#16a34a", // green-600
+        color: accent.neutral, // tokens — NEUTRAL: present in both
       },
       {
         id: "In Workspace, missing ACC",
         label: "In Workspace, missing ACC",
         value: counts.onlyWorkspace,
-        color: "#f59e0b", // amber-500
+        color: severity.MEDIUM, // tokens — MEDIUM: gap to fix on ACC side
       },
       {
         id: "In ACC, missing Workspace",
         label: "In ACC, missing Workspace",
         value: counts.onlyAcc,
-        color: "#3b82f6", // blue-500
+        color: severity.LOW, // tokens — LOW: gap on Workspace side
       },
     ],
-    [counts]
+    [counts, accent, severity]
   );
 
   function handleExport() {

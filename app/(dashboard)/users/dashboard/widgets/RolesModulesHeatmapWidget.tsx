@@ -8,6 +8,11 @@ import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { useFindings } from "../findingsContext";
 import { useSelection } from "../selectionContext";
+import {
+  useDashboardAccent,
+  useHeatmapRamp,
+  useSeverityColor,
+} from "./_shared/dashboardTokens";
 
 /**
  * Phase 4 Plan 06 — Roles × Modules entitlement heatmap (DASH-08).
@@ -95,8 +100,20 @@ export function RolesModulesHeatmapWidget({
 }: RolesModulesHeatmapWidgetProps) {
   const data = React.useMemo(() => aggregate(users), [users]);
   const findings = useFindings();
-  const { setSelected } = useSelection();
+  const { selected, setSelected } = useSelection();
   const roleSeverityIndex = findings.roleSeverityIndex;
+  const sev = useSeverityColor();
+  const accent = useDashboardAccent();
+  const heatmapRamp = useHeatmapRamp();
+
+  // Spotlight: when a role is selected upstream, dim heatmap rows whose y-axis
+  // index doesn't match. Pre-compute the selected role index once; the series
+  // data is rebuilt with per-cell opacity below. When no role is selected, fall
+  // back to the bare [mi, ri, c] tuple form (zero-cost path).
+  const selectedRoleIdx = React.useMemo(() => {
+    if (!selected || selected.kind !== "role") return -1;
+    return data.roles.indexOf(selected.role);
+  }, [selected, data.roles]);
 
   const option = React.useMemo(() => {
     // Inline severity badges on Y-axis labels — DASH-09 "wherever else they appear".
@@ -133,10 +150,13 @@ export function RolesModulesHeatmapWidget({
         axisLabel: {
           fontSize: 10,
           formatter: yAxisFormatter,
+          // Rich-text dot colors sourced from `_shared/dashboardTokens` so the
+          // axis-label severity dots match the bubble cluster, KPI strip, and
+          // flow-node severity dots end-to-end.
           rich: {
-            hi: { color: "#ef4444", fontSize: 14, fontWeight: "bold" as const },
-            med: { color: "#f59e0b", fontSize: 14, fontWeight: "bold" as const },
-            low: { color: "#6b7280", fontSize: 14 },
+            hi: { color: sev.HIGH, fontSize: 14, fontWeight: "bold" as const },
+            med: { color: sev.MEDIUM, fontSize: 14, fontWeight: "bold" as const },
+            low: { color: accent.neutral, fontSize: 14 },
           },
         },
       },
@@ -148,7 +168,9 @@ export function RolesModulesHeatmapWidget({
         left: "center",
         bottom: 10,
         inRange: {
-          color: ["#f0f9ff", "#7dd3fc", "#0369a1"], // sky-50 → sky-300 → sky-700
+          // Token-sourced 3-stop intensity ramp — see HEATMAP_RAMP_* in
+          // _shared/dashboardTokens.ts. Theme-aware (light/dark).
+          color: [...heatmapRamp],
         },
       },
       dataZoom: [{ type: "inside" }],
@@ -156,7 +178,15 @@ export function RolesModulesHeatmapWidget({
         {
           name: "Members",
           type: "heatmap",
-          data: data.matrix,
+          data:
+            selectedRoleIdx === -1
+              ? data.matrix
+              : data.matrix.map(([mi, ri, c]) => ({
+                  value: [mi, ri, c],
+                  itemStyle: {
+                    opacity: ri === selectedRoleIdx ? 1 : 0.4,
+                  },
+                })),
           label: { show: false },
           emphasis: {
             itemStyle: {
@@ -167,7 +197,7 @@ export function RolesModulesHeatmapWidget({
         },
       ],
     };
-  }, [data, roleSeverityIndex]);
+  }, [data, roleSeverityIndex, sev, accent, heatmapRamp, selectedRoleIdx]);
 
   // Click handlers — y-axis label OR a heatmap cell selects the role.
   const onChartEvents = React.useMemo(

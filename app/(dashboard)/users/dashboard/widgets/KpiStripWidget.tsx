@@ -6,6 +6,10 @@ import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { useFindings } from "../findingsContext";
+import {
+  useDashboardAccent,
+  useSeverityColor,
+} from "./_shared/dashboardTokens";
 
 /**
  * KPI strip — six tiles summarizing dashboard findings (DASH-09 totals surface).
@@ -21,8 +25,21 @@ import { useFindings } from "../findingsContext";
  * Per 04-03 SUMMARY decision: duplicate-flagged roles contribute MEDIUM. So HIGH/MEDIUM/LOW
  * tile counts are: junk-role findings tiered by severity + duplicate pairs counted as MEDIUM.
  */
+type DotSeverity = "info" | "high" | "medium" | "low";
+
 export function KpiStripWidget({ users }: { users: BulkAccUser[] }) {
   const findings = useFindings();
+  const sev = useSeverityColor();
+  const accent = useDashboardAccent();
+  // Token-sourced dot colors — replaces hardcoded Tailwind bg-red-500 / bg-amber-500
+  // / bg-gray-400 / bg-blue-500 classes so dashboard severity stays unified across
+  // bubble cluster, heatmap, flow nodes, and KPI strip pills.
+  const dotColor: Record<DotSeverity, string> = {
+    high: sev.HIGH,
+    medium: sev.MEDIUM,
+    low: accent.neutral,
+    info: sev.LOW,
+  };
 
   const tiles = useMemo(() => {
     const roleSet = new Set<string>();
@@ -70,16 +87,8 @@ export function KpiStripWidget({ users }: { users: BulkAccUser[] }) {
           >
             <div className="flex items-center gap-2">
               <span
-                className={
-                  "inline-block size-2 rounded-full " +
-                  (t.severity === "high"
-                    ? "bg-red-500"
-                    : t.severity === "medium"
-                      ? "bg-amber-500"
-                      : t.severity === "low"
-                        ? "bg-gray-400"
-                        : "bg-blue-500")
-                }
+                className="inline-block size-2 rounded-full"
+                style={{ backgroundColor: dotColor[t.severity] }}
                 aria-hidden
               />
               <span className="text-xs uppercase tracking-wide text-muted-foreground">

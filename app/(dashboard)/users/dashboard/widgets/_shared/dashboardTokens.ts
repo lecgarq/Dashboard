@@ -58,6 +58,21 @@ export const ORBIT_SPRING: Transition = {
   mass: 1.4,
 };
 
+/* ------------------------------------------------------------------ intensity ramps */
+
+/**
+ * Heatmap intensity ramp (low → mid → high). Sky-tinted so it composes with the
+ * Cosmos cool highlight without competing with the warm severity dots overlaid
+ * on the y-axis labels. Consumed by RolesModulesHeatmapWidget visualMap.
+ */
+export const HEATMAP_RAMP_LIGHT = ["#F0F9FF", "#7DD3FC", "#0369A1"] as const;
+export const HEATMAP_RAMP_DARK = ["#0B1726", "#1D6FA5", "#7DD3FC"] as const;
+
+export function useHeatmapRamp(): readonly [string, string, string] {
+  const { resolvedTheme } = useTheme();
+  return resolvedTheme === "dark" ? HEATMAP_RAMP_DARK : HEATMAP_RAMP_LIGHT;
+}
+
 /* ------------------------------------------------------------------ opacity */
 
 export const HOVER_OPACITY_DIM = 0.4;
