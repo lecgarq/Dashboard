@@ -3,10 +3,10 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T22:40:10.112Z"
+last_updated: "2026-05-08T22:59:22.723Z"
 progress:
   total_phases: 6
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 33
   completed_plans: 33
 ---
@@ -22,10 +22,10 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 04.1 (Access Analysis tab — replace lists with astonishing graphics) — IN PROGRESS
-Plan: 04.1-02 — COMPLETE 2026-05-08. Wave 2 RecommendationsWidget (severity bubble cluster, d3 pack + framer-motion) and OutlierCombosWidget (squarified treemap, d3 treemap + interpolateOranges reversed domain) rewritten — zero <table>/<ul>/<li>/member-name DOM; click dispatches setSelected({kind:junk|duplicate|outlier}) into existing DashboardSidePanel; CSV downloads preserved (DASH-13 column order intact for recommendations); widgetRegistry IDs/spans untouched (drag-order localStorage survives). Sibling 04.1-03 already landed in parallel (RecentlyAdded calendar + AdminAccess constellation, commits fae0a11, 72df67d). tsc green. See 04.1-02-SUMMARY.md.
-Status: Phase 04.1 — 3/4 plans complete (04.1-01, 04.1-02, 04.1-03). 04.1-04 queued (final wave widget polish).
-Last activity: 2026-05-08 — Completed 04.1-02 (commits e1a693a, a7f1cfe).
+Phase: 04.1 (Access Analysis tab — replace lists with astonishing graphics) — COMPLETE 2026-05-08
+Plan: 04.1-04 — COMPLETE 2026-05-08. Polish-only pass on the five surviving graphical widgets (CoverageDonut, ActiveUserTiers, KpiStrip, RolesModulesHeatmap, RoleRelationshipFlow) — severity colors flow through `_shared/dashboardTokens.ts` (added `useHeatmapRamp` helper); selection-aware spotlight wired into RolesModulesHeatmap (per-cell `itemStyle.opacity`) and RoleRelationshipFlow (FlowPaletteContext + node/edge `style.opacity`). `npx tsc --noEmit` clean; severity-hex grep returns zero matches. Phase 4.1 human-verify checkpoint: **APPROVED-WITH-CAVEATS** by user (ACC tab wrapper not replaced; graphics could be more interactive — logged to feedback memory; NOT remediated this round per user direction). See 04.1-04-SUMMARY.md.
+Status: Phase 04.1 — 4/4 plans complete (04.1-01, 04.1-02, 04.1-03, 04.1-04). Phase ships closed.
+Last activity: 2026-05-08 — Completed 04.1-04 (commit c816144 + final docs commit).
 Prior phase: Phase 04 — 8/8 plans complete; UAT 16/16 PASSED 2026-05-08.
 
 Progress: [██████████] 100% (33/33 plans)
@@ -67,6 +67,7 @@ Progress: [██████████] 100% (33/33 plans)
 | Phase 04.1 P01 | 4m | 3 tasks | 8 files |
 | Phase 04.1 P03 | 12m | 2 tasks | 2 files |
 | Phase 04.1 P02 | 8m | 2 tasks | 2 files |
+| Phase 04.1 P04 | 25min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -138,6 +139,8 @@ Recent decisions affecting current work:
 - [Phase 04.1]: P02: Outlier treemap color via scaleSequential(interpolateOranges).domain([0.05, 0]) reversed-domain — rarer pct → deeper orange visual intensity
 - [Phase 04.1]: P02: PackNode helper type (Partial<Leaf> + recursive children) added to satisfy d3-hierarchy generic constraint that plan ignored
 - [Phase 04.1]: P02: Duplicate findings hard-coded MEDIUM severity for bubble color (matches Phase 4 P03 decision; DuplicateRoleFinding has no Severity field)
+- [Phase 04.1]: P04: Polish-only pass — tokenized severity colors across 5 surviving widgets via dashboardTokens.ts; added useHeatmapRamp helper; selection spotlight in heatmap (per-cell itemStyle.opacity) + flow (FlowPaletteContext + node/edge style.opacity)
+- [Phase 04.1]: P04: User approved-with-caveats at human-verify — ACC tab wrapper not replaced and graphics could be more interactive; deferred to future phase per user direction (logged to feedback memory, NOT remediated)
 
 ### Roadmap Evolution
 
@@ -163,5 +166,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: 04.1-04 Task 1 of 2 done (commit c816144) — polish pass on 5 surviving widgets (CoverageDonut, ActiveUserTiers, KpiStrip, RolesModulesHeatmap, RoleRelationshipFlow). All severity colors flow through `_shared/dashboardTokens` (added `useHeatmapRamp` for the ECharts intensity ramp). Selection-aware spotlight wired in RolesModulesHeatmap (per-cell itemStyle.opacity) and RoleRelationshipFlow (FlowPaletteContext + node/edge style.opacity). npx tsc --noEmit clean; severity hex grep clean. **Task 2 = checkpoint:human-verify** — execution paused awaiting user "approved" or gap list. SUMMARY.md / ROADMAP / requirements updates deferred until checkpoint resolves.
-Resume file: .planning/phases/04.1-access-analysis-tab-replace-lists-with-astonishing-interactive-graphics-only-no-name-list-widgets/04.1-04-PLAN.md
+Stopped at: Completed 04.1-04-PLAN.md — Phase 4.1 closed (4/4). Human-verify approved-with-caveats by user; ACC-tab wrapper + further interactivity deferred to future phase per user direction (logged to feedback memory). 04.1-04-SUMMARY.md authored; STATE/ROADMAP/REQUIREMENTS updated; final docs commit landed.
+Resume file: (none — Phase 04.1 complete; next move is a fresh planning pass that consumes the user feedback as CONTEXT.md)
