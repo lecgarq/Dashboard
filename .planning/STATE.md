@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:27:38.418Z"
+last_updated: "2026-05-08T21:29:16.018Z"
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 29
-  completed_plans: 28
+  completed_plans: 29
 ---
 
 # Project State
@@ -22,13 +22,13 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-07 — CLOSED 2026-05-08. Six findings-driven widgets shipped: KpiStripWidget (6-tile overview), RecommendationsWidget (junk + duplicate findings table with severity badges + LOCKED CSV columns Type,Severity,Roles,Members,Modules,SuggestedAction per DASH-13), OutlierCombosWidget (<5% module-set table), RoleRelationshipFlowWidget (@xyflow/react graph with duplicate-pair edges colored by name overlap), RecentlyAddedWidget (7d/30d/90d inline toggle + date-fns relative time, Path A real ACC created_at), AdminAccessWidget (strict isAccountAdmin === true filter). FindingsContext + FindingsProvider + useFindings hook published — Pattern 3 single source of truth. computeAllFindings computed ONCE in DashboardClient via useMemo; FindingsProvider always wraps with empty sentinel during load to prevent throw races. Every widget exposes Download CSV via shared downloadCsv helper. tsc + npm run build pass. WIDGETS registry now points to production components for ALL 9 ids (no placeholders). See 04-07-SUMMARY.md.
-Status: Phase 04 — 04-01..04-07 complete (7/8). Next: 04-08 drill-down side panel + UAT.
-Last activity: 2026-05-08 — Completed 04-07 (commits ff14f81, aaa3184, e687e33).
+Phase: 04 (ACC Access Analysis Dashboard) — COMPLETE 2026-05-08
+Plan: 04-08 — CLOSED 2026-05-08. Drill-down right-side panel (shadcn Sheet + framer-motion) shipped for junk/duplicate/outlier/role findings; inline severity dots added to Roles×Modules heatmap y-axis (ECharts rich-text formatter) and role-relationship flow nodes (custom @xyflow/react nodeTypes). SelectionContext + useSelection hook published — Pattern 4 selection-via-context. Phase 4 UAT human-verify gate PASSED 16/16 (all 13 DASH-* success criteria approved). User flagged Phase 4.1 Polish follow-up: visual polish, move dashboard under existing ACC Analysis page as a tab, replace list-based widgets with chart treatments. See 04-08-SUMMARY.md.
+Status: Phase 04 — 04-01..04-08 complete (8/8). Phase 4 functionally complete. Phase 4.1 Polish follow-up queued (visual polish + tab integration + graph-only widgets).
+Last activity: 2026-05-08 — Completed 04-08 (commits e745750, 0da5bb7, b0bc6a5).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -63,6 +63,7 @@ Progress: [████████░░] 80%
 | Phase 04-access-analysis P05 | 5min | 3 tasks | 8 files |
 | Phase 04-access-analysis P06 | 10min | 3 tasks | 5 files |
 | Phase 04-access-analysis P07 | 7min | 3 tasks | 9 files |
+| Phase 04-access-analysis P08 | 25min | 3 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -125,6 +126,10 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: P07: Pattern 3 FindingsContext shipped — findings computed ONCE in DashboardClient via useMemo(computeAllFindings) and consumed by widgets via useFindings(); FindingsProvider always wraps with empty sentinel during load to prevent throw races.
 - [Phase 04-access-analysis]: P07: Recommendations CSV column order LOCKED per DASH-13: Type,Severity,Roles,Members,Modules,SuggestedAction. Junk findings emit Modules empty when zeroModules signal fired; otherwise union of affected-member modules via per-user lookup.
 - [Phase 04-access-analysis]: P07: RecentlyAddedWidget uses Path A (real ACC created_at via 04-02) — no fallback caveat shown; users with addedOn=null excluded from every window. Inline 3-button 7d/30d/90d toggle in lieu of unavailable shadcn ToggleGroup component.
+- [Phase 04-access-analysis]: P08: SelectionContext + useSelection hook (Pattern 4) — discriminated SelectedFinding union (junk | duplicate | outlier | role | null); SelectionProvider wraps INSIDE FindingsProvider so panel reads roleSeverityIndex without prop-drilling.
+- [Phase 04-access-analysis]: P08: DashboardSidePanel rendered as SIBLING of widget grid (NOT inside DndContext) — drag-and-drop and panel content stay isolated; panel width sm:max-w-lg keeps grid visible at 1280px.
+- [Phase 04-access-analysis]: P08: Heatmap inline severity uses ECharts rich-text axisLabel.formatter ({hi|●} RoleName) — no DOM overlay; flow widget uses @xyflow/react custom nodeTypes; both consume the same useFindings().roleSeverityIndex.
+- [Phase 04-access-analysis]: P08: Phase 4 UAT 16/16 PASSED 2026-05-08; user-flagged Phase 4.1 Polish follow-up — visual polish, move dashboard under ACC Analysis page as tab, replace list widgets (Recommendations/Outliers/Recently-added/Admin) with chart treatments.
 
 ### Pending Todos
 
@@ -146,5 +151,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04-07-PLAN.md (commits ff14f81, aaa3184, e687e33) — 6 findings-driven widgets + Pattern 3 FindingsContext. All 9 widgets now point to production components. Recommendations CSV column order LOCKED per DASH-13. tsc + npm run build pass. Next: 04-08 drill-down side panel + phase UAT.
+Stopped at: Completed 04-08-PLAN.md (commits e745750, 0da5bb7, b0bc6a5) — drill-down side panel + inline severity badges + Phase 4 UAT 16/16 PASSED. Phase 4 functionally complete. Phase 4.1 Polish follow-up queued (visual polish + tab integration + graph-only widget treatments).
 Resume file: None
