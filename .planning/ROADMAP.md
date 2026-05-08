@@ -12,8 +12,8 @@ This milestone completes and hardens an ACC Users Graph module that is already ~
 
 - [x] **Phase 1: Foundation** - Harden production stability, renderer lifecycle, and data safety before adding new features
 - [x] **Phase 2: Cosmos.gl Renderer** - Implement GPU-accelerated CosmosGraphRenderer for 500+ node performance with live physics controls
-- [ ] **Phase 2.5: ACC Data + Filter Refinement** - Extract `companyRole` from ACC, date-range filter, module on/off toggle filters with hide-on-filter
-- [ ] **Phase 3: Graph UI Completion** - Close the remaining UI gaps: zoom-level labels, physics auto-pause, and panel layout
+- [x] **Phase 2.5: ACC Data + Filter Refinement** - Extract `companyRole` from ACC, date-range filter, module on/off toggle filters with hide-on-filter
+- [x] **Phase 3: Graph UI Completion** - Close the remaining UI gaps: zoom-level labels, physics auto-pause, and panel layout
 - [ ] **Phase 4: Access Analysis** - Deliver duplicate role detection, inconsistent access flagging, and PNG/CSV exports
 
 ## Phase Details
@@ -44,7 +44,7 @@ Plans:
   2. A user can drag sliders for repulsion, link spring, and gravity and observe the graph layout shift in real time — changes take effect without restarting the simulation
   3. User nodes, Project nodes, Role nodes, and Module nodes are visually distinct in the Cosmos.gl renderer — four different colors, and edges have weight/color variation by relationship type
   4. A user on a browser that does not support WebGL2 still sees the Canvas 2D graph rendering correctly — no error screen, no empty canvas
-**Plans**: 4 plans
+**Plans**: 6 plans
 
 Plans:
 - [x] 02-01-PLAN.md — Install @cosmos.gl/graph, create cosmosUtils helpers, implement CosmosGraphRenderer class (REND-01, REND-03, REND-04)
@@ -66,12 +66,12 @@ Plans:
 **Plans**: 6 plans
 
 Plans:
-- [ ] 02.5-01-PLAN.md — Extract companyRole + lastSignIn from ACC API; surface through snapshot pipeline + SimNode (DATA-01)
-- [ ] 02.5-02-PLAN.md — Rewrite GraphFilters/nodeMatchesFilters with new semantics, recursive cascade, URL persistence, drag-defer, Vitest coverage (FILT-01, FILT-02, FILT-03)
-- [ ] 02.5-03-PLAN.md — Cosmos zero-size hide + edge-skip in both renderers, 150ms CSS fade, Company Role side-panel row (FILT-01, DATA-01)
-- [ ] 02.5-04-PLAN.md — Filter UI overhaul: date inputs, module toggles, companyRole multi-select, count header, empty-state, Clear-all + human-verify (FILT-02, FILT-03, DATA-01)
-- [ ] 02.5-05-PLAN.md — Gap closure: instrument + fix FILT-01 renderer hide (canvas not responding to filter changes); human re-verify (FILT-01)
-- [ ] 02.5-06-PLAN.md — Gap closure: companyRole dropdown, module toggle ON/OFF affordance, count/Clear-all/empty-state visual weight (DATA-01, FILT-03, FILT-02)
+- [x] 02.5-01-PLAN.md — Extract companyRole + lastSignIn from ACC API; surface through snapshot pipeline + SimNode (DATA-01)
+- [x] 02.5-02-PLAN.md — Rewrite GraphFilters/nodeMatchesFilters with new semantics, recursive cascade, URL persistence, drag-defer, Vitest coverage (FILT-01, FILT-02, FILT-03)
+- [x] 02.5-03-PLAN.md — Cosmos zero-size hide + edge-skip in both renderers, 150ms CSS fade, Company Role side-panel row (FILT-01, DATA-01)
+- [x] 02.5-04-PLAN.md — Filter UI overhaul: date inputs, module toggles, companyRole multi-select, count header, empty-state, Clear-all + human-verify (FILT-02, FILT-03, DATA-01)
+- [x] 02.5-05-PLAN.md — Gap closure: instrument + fix FILT-01 renderer hide (canvas not responding to filter changes); human re-verify (FILT-01)
+- [x] 02.5-06-PLAN.md — Gap closure: companyRole dropdown, module toggle ON/OFF affordance, count/Clear-all/empty-state visual weight (DATA-01, FILT-03, FILT-02)
 
 ### Phase 3: Graph UI Completion
 **Goal**: The graph UI has no remaining polish gaps — labels appear at the right zoom level, the physics simulation signals when it has settled, and the filter and detail panels do not fight for screen space on smaller monitors
@@ -87,8 +87,8 @@ Plans:
 - [x] 03-01-PLAN.md — Zoom-threshold node labels in CanvasGraphRenderer (UI-01)
 - [x] 03-02-PLAN.md — Stable badge with sustained-time stability detection + reheat wiring (UI-02)
 - [x] 03-03-PLAN.md — Panel layout restructure (flex siblings, collapsible filter, auto-collapse) + phase human-verify (UI-03)
-- [ ] 03-04-PLAN.md — Gap closure: Cosmos label rendering overlay (UI-01 — closes UAT gaps 1, 2, 3)
-- [ ] 03-05-PLAN.md — Gap closure: Cosmos stability detection wiring (UI-02 — closes UAT gap 4)
+- [x] 03-04-PLAN.md — Gap closure: Cosmos label rendering overlay (UI-01 — closes UAT gaps 1, 2, 3)
+- [x] 03-05-PLAN.md — Gap closure: Cosmos stability detection wiring (UI-02 — closes UAT gap 4)
 
 ### Phase 4: Access Analysis
 **Goal**: Project managers can use the graph to identify specific access problems — duplicated roles, inconsistent module access — and export findings as PNG screenshots or CSV data for reporting
@@ -109,7 +109,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Foundation | 4/4 | Complete | 2026-04-28 |
-| 2. Cosmos.gl Renderer | 5/5 | Complete | 2026-04-29 |
-| 2.5. ACC Data + Filter Refinement | 2/4 | In Progress|  |
-| 3. Graph UI Completion | 0/3 | Planned | - |
+| 2. Cosmos.gl Renderer | 6/6 | Complete | 2026-04-29 |
+| 2.5. ACC Data + Filter Refinement | 6/6 | Complete | 2026-05-06 |
+| 3. Graph UI Completion | 5/5 | Complete | 2026-05-07 |
 | 4. Access Analysis | 0/TBD | Not started | - |
