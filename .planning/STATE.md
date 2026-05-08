@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:16:34.377Z"
+last_updated: "2026-05-08T19:26:22.699Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-05 — CLOSED 2026-05-08. /users/dashboard route shell stood up with 9 placeholder widgets in a drag-reorderable 2-col grid. Widget registry contract published (WIDGETS + DEFAULT_ORDER + WIDGET_ORDER_STORAGE_KEY) — locked for downstream widget plans. SSR-safe useWidgetOrder hook (validates on every mount; falls back to DEFAULT_ORDER on any invalid stored payload). SortableWidget wraps shadcn Card with grip-handle drag listeners (Pitfall 8). downloadCsv helper using xlsx + UTF-8 BOM (5 RFC4180 tests). Locked chart deps installed: @nivo/core/pie/bar@0.99.0, echarts^6, echarts-for-react@3.0.6, @xyflow/react@12.10.2. jsdom + @testing-library/react added as devDeps. 11/11 tests pass; npm run build succeeds; tsc clean. DASH-11/12/13 unblocked. Live drag-reorder smoke deferred to Plan 04-08 UAT. See 04-05-SUMMARY.md.
-Status: Phase 04 — 04-01, 04-02, 04-03, 04-04, 04-05 complete (5/8). Wave 0 data-pipeline + Wave 2 dashboard scaffolding complete. Next per ROADMAP wave order: 04-06 (widget implementations).
-Last activity: 2026-05-08 — Completed 04-05 (commits 5e4e5fb, 99c3363, 0e3813a).
+Plan: 04-06 — CLOSED 2026-05-08. Three above-the-fold population-context widgets shipped: CoverageDonutWidget (Nivo Pie 3-segment, DASH-01), ActiveUserTiersWidget (Nivo Bar horizontal stacked, DASH-02), RolesModulesHeatmapWidget (ECharts heatmap + visualMap + dataZoom, DASH-08). Each owns a Download CSV button via downloadCsv. WIDGETS registry coverage/tiers/heatmap entries replaced with real components. WidgetCommonProps cross-plan contract published (users + workspaceEmails). DashboardClient lifts trpc.users.bulkAccSummary + trpc.workspace.getDirectory once, spreads to all widgets, Skeleton loading states, inline ACC error banner, Workspace error non-fatal (donut empty state). Heatmap uses distinct-member counts (Set<email> per role x module) — not raw assignment counts. tsc clean; npm run build succeeds. Live UAT deferred to 04-08. See 04-06-SUMMARY.md.
+Status: Phase 04 — 04-01, 04-02, 04-03, 04-04, 04-05, 04-06 complete (6/8); 04-07 also complete in parallel (commits ff14f81, aaa3184). Next: 04-08 UAT.
+Last activity: 2026-05-08 — Completed 04-06 (commits 09f5285, 2d39109, a9f65b8).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
@@ -61,6 +61,7 @@ Progress: [████████░░] 80%
 | Phase 04-access-analysis P01 | 5min | 3 tasks | 5 files |
 | Phase 04-access-analysis P02 | 3min | 3 tasks | 6 files |
 | Phase 04-access-analysis P05 | 5min | 3 tasks | 8 files |
+| Phase 04-access-analysis P06 | 10min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -117,6 +118,9 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: P05: Locked widget registry contract published — WIDGETS (9 ids: coverage/tiers/kpi/recommendations/heatmap/outliers/flow/recent/admins) + DEFAULT_ORDER + WIDGET_ORDER_STORAGE_KEY='acc-dashboard-widget-order'. Downstream widget plans (04-06/04-07/04-08) replace WIDGETS[id].component per id without renaming id, title, or span.
 - [Phase 04-access-analysis]: P05: useWidgetOrder validates stored localStorage on every mount (parse → array-of-strings → known-id check → coverage check); falling any check returns DEFAULT_ORDER without throwing — adding a NEW WIDGETS entry never orphans stored arrays.
 - [Phase 04-access-analysis]: P05: Per-file '// @vitest-environment jsdom' directive instead of switching global env — preserves node default for analytics tests committed in 04-03; jsdom + @testing-library/react added as devDeps.
+- [Phase 04-access-analysis]: P06: Heatmap uses distinct-member counts (Set<email>.size per role x module cell), NOT raw role-module assignment counts — single user holding pair across N projects contributes 1 not N.
+- [Phase 04-access-analysis]: P06: Coverage donut empty-Workspace fallback (workspaceEmails.length === 0) covers all three cases (non-Workspace tenant returns [], FORBIDDEN scope-missing, query in flight) with one inline message — granular re-auth UX deferred.
+- [Phase 04-access-analysis]: P06: WidgetCommonProps (users + workspaceEmails) published as cross-plan contract; DashboardClient spreads once to all widgets; widgets ignore unused fields; heights pinned (donut 300px, tiers 200px, heatmap 500px) per Pitfall 2.
 
 ### Pending Todos
 
@@ -138,5 +142,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04-05-PLAN.md (commits 5e4e5fb, 99c3363, 0e3813a). /users/dashboard route + widget grid scaffolding shipped; widget registry contract locked. DASH-11/12/13 unblocked. Drag-reorder live smoke deferred to Plan 04-08 UAT. Next: 04-06 widget implementations.
+Stopped at: Completed 04-06-PLAN.md (commits 09f5285, 2d39109, a9f65b8). Coverage / Tiers / Heatmap widgets shipped with CSV exports; registry entries wired; DashboardClient query-lift + WidgetCommonProps contract published. 04-07 also complete in parallel. Next: 04-08 UAT.
 Resume file: None
