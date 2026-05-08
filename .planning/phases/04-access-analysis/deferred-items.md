@@ -65,3 +65,48 @@ WHERE jsonb_path_exists(data, '$.projects[*] ? (@.isAdmin == true)');
 account-admin count is 0 unexpectedly, log distinct values of `accUser.role`
 inside `bulkAccSync` to triage the field name.
 
+---
+
+## Update from 04-02 execution (2026-05-08)
+
+Plan 04-02 (ACC join-date / addedOn plumbing for DASH-06) lands the same
+shape as 04-01: Path A (HQ v1 `created_at`) verified against scraped APS docs;
+no first-seen-in-cache fallback needed. `BulkAccUser.addedOn: string | null`
+non-optional; written by `bulkAccSync`, read by `bulkAccSummary` with
+default-null fallback for legacy rows. `tsc --noEmit` clean.
+
+### Live verification deferred (04-02 Task 3)
+
+Triggering a fresh ACC sync requires admin OAuth + DB access not available to
+the autonomous executor. Run the queries below after the next `Sync All to
+ACC` run to confirm the addedOn distribution makes sense.
+
+**Verification commands (run by user after next ACC sync):**
+
+```sql
+-- Postgres: bucket distribution by addedOn vs now()
+SELECT
+  COUNT(*) FILTER (WHERE data->>'addedOn' IS NULL OR data->>'addedOn' = '')                                      AS null_count,
+  COUNT(*) FILTER (WHERE (data->>'addedOn')::timestamptz >= now() - interval '7 days')                            AS last_7d,
+  COUNT(*) FILTER (WHERE (data->>'addedOn')::timestamptz >= now() - interval '30 days'
+                     AND (data->>'addedOn')::timestamptz <  now() - interval '7 days')                            AS prev_8_30d,
+  COUNT(*) FILTER (WHERE (data->>'addedOn')::timestamptz >= now() - interval '90 days'
+                     AND (data->>'addedOn')::timestamptz <  now() - interval '30 days')                           AS prev_31_90d,
+  COUNT(*) FILTER (WHERE (data->>'addedOn')::timestamptz <  now() - interval '90 days')                           AS older_than_90d
+FROM "AccMemberCache"
+WHERE (data->>'found')::boolean = true;
+```
+
+**Expected (Path A — ACC `created_at` is real history):** distribution should
+span all buckets, NOT collapse into "last 7d". If 100% of rows fall into
+last_7d, the field is likely being overwritten with sync time — investigate
+`bulkAccSync`'s `normalizedAddedOn` block in `server/routers/users.ts` (the
+`Date.parse` should be reading `accUser.addedOn`, not `Date.now()`).
+
+**Caveat for downstream DASH-06 widget:** legacy cache rows synced before
+04-02 surface as `addedOn: null`. Until those rows are refreshed by the next
+sync, the Recently-Added widget will under-count: a user added 5 days ago
+whose cache row predates this commit shows null, not "5d". The widget should
+either (a) display null users in a separate "unknown join date" tier, or
+(b) prompt for a Sync on first load.
+
