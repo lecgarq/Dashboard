@@ -7,6 +7,9 @@ import { RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/core/trpc";
+import { computeAllFindings } from "@/lib/acc/dashboardAnalytics";
+import type { BulkAccUser } from "@/lib/acc/acc-types";
+import { FindingsProvider } from "./findingsContext";
 import { SortableWidget } from "./SortableWidget";
 import { useWidgetOrder } from "./useWidgetOrder";
 import { WIDGETS, type WidgetId } from "./widgetRegistry";
@@ -53,13 +56,21 @@ export function DashboardClient() {
     setOrder(arrayMove(order, fromIdx, toIdx));
   }
 
-  const users = usersQuery.data ?? [];
+  const users = (usersQuery.data ?? []) as BulkAccUser[];
   // Workspace error → empty list; CoverageDonutWidget renders an inline empty state.
   const workspaceEmails = workspaceQuery.data?.emails ?? [];
 
   const widgetProps = React.useMemo(
     () => ({ users, workspaceEmails }),
     [users, workspaceEmails]
+  );
+
+  // Pattern 3 — compute findings ONCE per users-array reference. Empty users → null;
+  // FindingsProvider only wraps when findings exist so widgets calling useFindings()
+  // don't run before data arrives. Skeleton path below renders before this branch.
+  const findings = React.useMemo(
+    () => (users.length > 0 ? computeAllFindings(users, new Date()) : null),
+    [users]
   );
 
   return (
@@ -88,31 +99,45 @@ export function DashboardClient() {
         </div>
       ) : null}
 
-      <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-        <SortableContext items={order} strategy={rectSortingStrategy}>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {order.map((id) => {
-              const spec = WIDGETS[id as WidgetId];
-              if (!spec) return null;
-              const Body = spec.component;
-              return (
-                <SortableWidget
-                  key={id}
-                  id={id}
-                  span={spec.span}
-                  title={spec.title}
-                >
-                  {usersQuery.isLoading ? (
-                    <Skeleton className="h-48 w-full" />
-                  ) : (
-                    <Body {...widgetProps} />
-                  )}
-                </SortableWidget>
-              );
-            })}
-          </div>
-        </SortableContext>
-      </DndContext>
+      <FindingsProvider
+        // Stable empty findings shape while data is loading or empty so widgets
+        // that call useFindings() don't throw. Real findings flow once `users` is
+        // non-empty (Pattern 3 — single source of truth).
+        findings={
+          findings ?? {
+            junkRoles: [],
+            duplicateRoles: [],
+            outlierCombos: [],
+            roleSeverityIndex: new Map(),
+          }
+        }
+      >
+        <DndContext collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+          <SortableContext items={order} strategy={rectSortingStrategy}>
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              {order.map((id) => {
+                const spec = WIDGETS[id as WidgetId];
+                if (!spec) return null;
+                const Body = spec.component;
+                return (
+                  <SortableWidget
+                    key={id}
+                    id={id}
+                    span={spec.span}
+                    title={spec.title}
+                  >
+                    {usersQuery.isLoading ? (
+                      <Skeleton className="h-48 w-full" />
+                    ) : (
+                      <Body {...widgetProps} />
+                    )}
+                  </SortableWidget>
+                );
+              })}
+            </div>
+          </SortableContext>
+        </DndContext>
+      </FindingsProvider>
     </div>
   );
 }
