@@ -1004,6 +1004,51 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     normalCandidates.sort((a, b) => b.degree - a.degree);
 
+    // Density-aware shrink for cloud labels: when the labeled-node cloud is
+    // visually packed (e.g., separation=0/cluster=100 collapses everything
+    // into a tight ball at deep zoom-in), font sizes that feel right in
+    // spread layouts read as huge. Sample top-100-by-degree + all overrides
+    // for nearest-neighbor screen distance, then derive a multiplier in
+    // [0.65, 1.0]. Override labels intentionally bypass this — when the user
+    // hovers, they want the label readable regardless of crowd.
+    let densityScale = 1.0;
+    {
+      const sample: Candidate[] = [
+        ...overrideCandidates,
+        ...normalCandidates.slice(0, 100),
+      ];
+      if (sample.length >= 2) {
+        let totalNearest = 0;
+        let nearestCount = 0;
+        for (let i = 0; i < sample.length; i++) {
+          let minDist = Infinity;
+          for (let j = 0; j < sample.length; j++) {
+            if (i === j) continue;
+            const dx = sample[i].sx - sample[j].sx;
+            const dy = sample[i].sy - sample[j].sy;
+            const d = Math.sqrt(dx * dx + dy * dy);
+            if (d < minDist) minDist = d;
+          }
+          if (Number.isFinite(minDist)) {
+            totalNearest += minDist;
+            nearestCount++;
+          }
+        }
+        const avgNeighborPx = nearestCount > 0
+          ? totalNearest / nearestCount
+          : 60;
+        // Anchors: ≥60px → 1.0 (no shrink), 20px → 0.75, ≤12px → 0.65 floor.
+        if (avgNeighborPx >= 60) {
+          densityScale = 1.0;
+        } else if (avgNeighborPx >= 20) {
+          densityScale = 1.0 - ((60 - avgNeighborPx) / 40) * 0.25;
+        } else {
+          const t = Math.max(0, Math.min(1, (20 - avgNeighborPx) / 8));
+          densityScale = 0.75 - t * 0.10;
+        }
+      }
+    }
+
     const MAX_LABELS = 200;
     const drawnAabbs: Array<[number, number, number, number]> = [];
     let drawnCount = 0;
@@ -1090,7 +1135,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
 
     if (opacity > 0 && drawnCount < MAX_LABELS) {
-      const normalFontPx = Math.round(12 * zoomScale);
+      const normalFontPx = Math.round(12 * zoomScale * densityScale);
       const normalOffsetY = Math.round(9 * zoomScale);
       ctx.globalAlpha = opacity;
       ctx.font = `600 ${normalFontPx}px ui-sans-serif, system-ui, sans-serif`;
