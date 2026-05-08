@@ -13,6 +13,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { downloadCsv } from "@/lib/acc/csvExport";
+import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
   DuplicateRoleFinding,
   JunkRoleFinding,
@@ -99,12 +100,12 @@ function modulesLabel(row: RowFinding, users: Map<string, Set<string>>): string 
 }
 
 export function RecommendationsWidget({
+  users,
   onSelect,
-  userModulesByEmail,
 }: {
+  users: BulkAccUser[];
+  workspaceEmails?: string[];
   onSelect?: (finding: JunkRoleFinding | DuplicateRoleFinding) => void;
-  /** Optional lookup from email → set of allModules used by 04-08 to populate the Modules column. */
-  userModulesByEmail?: Map<string, Set<string>>;
 }) {
   const findings = useFindings();
 
@@ -115,7 +116,13 @@ export function RecommendationsWidget({
     ];
   }, [findings]);
 
-  const moduleLookup = userModulesByEmail ?? new Map<string, Set<string>>();
+  // Build email → user.allModules lookup so the Modules column reflects each finding's
+  // affected members. Done here (not in widget body) so it's memoized per `users` change.
+  const moduleLookup = useMemo(() => {
+    const m = new Map<string, Set<string>>();
+    for (const u of users) m.set(u.email, new Set(u.allModules));
+    return m;
+  }, [users]);
 
   function handleDownload() {
     // LOCKED column order — DASH-13.
