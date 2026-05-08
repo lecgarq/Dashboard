@@ -45,7 +45,7 @@
 
 ### ACC Access Analysis Dashboard (DASH)
 
-- [ ] **DASH-01**: User sees a junk-role recommendations list with HIGH / MEDIUM / LOW cleanup priority — score derived from three signals (zero members, zero modules, all members inactive >90 days)
+- [x] **DASH-01**: User sees a junk-role recommendations list with HIGH / MEDIUM / LOW cleanup priority — score derived from three signals (zero members, zero modules, all members inactive >90 days)
 - [ ] **DASH-02**: User sees a duplicate-role recommendations list — pairs of roles ranked by overlap, triggered when module entitlements are identical AND role names share ≥80% normalized token overlap
 - [ ] **DASH-03**: User sees an "Unusual Access Patterns" widget surfacing module-combination outliers — module sets held by <5% of members
 - [ ] **DASH-04**: User sees active-user tier distribution as a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets (driven by `lastSignIn`)
@@ -111,7 +111,7 @@
 | ANAL-02 | Phase 4 | Deferred (replaced by DASH-03/DASH-08) |
 | ANAL-03 | Phase 4 | Deferred (PNG export not delivered) |
 | ANAL-04 | Phase 4 | Deferred (replaced by DASH-11) |
-| DASH-01 | Phase 4 | Pending |
+| DASH-01 | Phase 4 | Complete |
 | DASH-02 | Phase 4 | Pending |
 | DASH-03 | Phase 4 | Pending |
 | DASH-04 | Phase 4 | Pending |

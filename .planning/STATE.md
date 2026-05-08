@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-07T17:31:40.082Z"
+last_updated: "2026-05-08T18:58:54.223Z"
 progress:
-  total_phases: 4
-  completed_phases: 3
-  total_plans: 21
-  completed_plans: 20
+  total_phases: 5
+  completed_phases: 4
+  total_plans: 29
+  completed_plans: 22
 ---
 
 # Project State
@@ -22,10 +22,11 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 
 ## Current Position
 
-Phase: 03 (Graph UI Completion) — IN PROGRESS
-Plan: 03-04 — CLOSED 2026-05-07. Cosmos label overlay (UAT gaps 1, 2, 3 closure): sibling 2D <canvas> above Cosmos GL canvas with pointer-events-none; CosmosGraphRenderer.drawLabelOverlay(ctx, frame, dpr) screen-space label pass mirrors 03-01 fade-band+AABB+200-cap+override logic; world->screen via Graph.spaceToScreenPosition (public API); fade band in zoom-level units (2.0..3.5) via Graph.getZoomLevel (verified at @cosmos.gl/graph dist/index.d.ts:343); rAF tick gates on `instanceof CosmosGraphRenderer`; hover labels routed through labelOverrideIndices channel; legacy hoverLabelRef DOM element removed entirely (ref + JSX + cleanup site). Wheel-zoom on Cosmos wakes rAF via passive listener on cosmosContainerRef calling markGraphDirty (NOT a reheat). See 03-04-SUMMARY.md.
-Status: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05). Next: 03-03 (per ROADMAP).
-Last activity: 2026-05-07 — Completed quick task 1: Implement label readability polish per 03-06 design spec (commit 55e2378).
+Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
+Plan: 04-04 — CLOSED 2026-05-08. workspaceRouter.getDirectory tRPC procedure: server-side People API listDirectoryPeople using already-granted directory.readonly scope; pagination loop with 25-page safety cap (Pitfall 3); module-level Map cache 1h TTL keyed by userId; sources=DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE; typed TRPCError vocabulary for UI (PRECONDITION_FAILED workspace_access_required, FORBIDDEN workspace_scope_missing); non-Workspace users get { emails: [] } via 400/FAILED_PRECONDITION mapping (Open Q5). Registered on server/routers/root.ts (plan said _app.ts but project file is root.ts — Rule 3 deviation). Smoke test deferred to manual UAT (requires live Workspace login). Unblocks DASH-01 Coverage donut. See 04-04-SUMMARY.md.
+Status: Phase 04 — 04-04 complete (1 of the wave-1 server-router plans). Next per ROADMAP wave order.
+Last activity: 2026-05-08 — Completed 04-04 (commits b9ea4b3 workspaceRouter, 3fea8a2 root.ts registration).
+Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
 
@@ -55,6 +56,7 @@ Progress: [████████░░] 80%
 | Phase 03-graph-ui-completion P02 | 6 min | 3 tasks | 1 files |
 | Phase 03-graph-ui-completion P05 | 2min | 3 tasks | 1 files |
 | Phase 03-graph-ui-completion P04 | 4min | 3 tasks | 2 files |
+| Phase 04-access-analysis P04 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -101,6 +103,8 @@ Recent decisions affecting current work:
 - [Phase 03-graph-ui-completion]: P02: UI-02 stability badge — STABLE_THRESHOLD=0.0001, STABLE_DURATION_MS=500, Cosmos alpha<0.005 + !isSimulationRunning; dual-path detection (tick-driven Canvas2D + 100ms poll Cosmos); resetStability wired to drag/filter/select; pan/zoom NOT wired; worker NOT terminated; lasso polygon-select intentionally not wired (multi-select UX, not pick-a-node)
 - [Phase 03-graph-ui-completion]: P05: cosmosReady boolean state promotes async renderer-init to React state; added to Cosmos stability polling effect deps so it re-runs after CosmosGraphRenderer.create().then() resolves; closes UAT gap 4 (Stable badge on Cosmos GPU renderer)
 - [Phase 03-graph-ui-completion]: P04: Cosmos label overlay (UI-01 gap closure) — sibling 2D canvas above Cosmos GL canvas with pointer-events-none; CosmosGraphRenderer.drawLabelOverlay reuses 03-01 fade-band/AABB/200-cap/override pipeline; world->screen via Graph.spaceToScreenPosition; fade band in zoom-level units (2.0..3.5) via Graph.getZoomLevel public API; legacy hoverLabelRef DOM element removed entirely (subsumed by labelOverrideIndices)
+- [Phase 04-access-analysis]: P04: workspaceRouter.getDirectory uses already-granted directory.readonly scope; module-level Map cache 1h TTL; sources=DIRECTORY_SOURCE_TYPE_DOMAIN_PROFILE; non-Workspace users get { emails: [] } via 400/FAILED_PRECONDITION mapping; PRECONDITION_FAILED/FORBIDDEN typed errors for UI
+- [Phase 04-access-analysis]: P04: Plan referenced server/routers/_app.ts; project app router lives at server/routers/root.ts (Rule 3 deviation, registered there)
 
 ### Pending Todos
 
@@ -121,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-07
-Stopped at: 03-04 closed: Cosmos label overlay (UI-01) shipped — gaps 1/2/3 expected PASS pending manual UAT smoke. Next: 03-03 per ROADMAP.
+Last session: 2026-05-08
+Stopped at: 04-04 closed: workspaceRouter.getDirectory tRPC procedure shipped (commits b9ea4b3, 3fea8a2). Smoke test deferred to manual UAT (requires live Workspace login). Next: per ROADMAP wave order.
 Resume file: None
