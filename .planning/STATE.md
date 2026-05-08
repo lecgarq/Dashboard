@@ -163,5 +163,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: Completed 04.1-02-PLAN.md (commits e1a693a, a7f1cfe). RecommendationsWidget = severity bubble cluster (d3 pack); OutlierCombosWidget = squarified treemap (d3 treemap, reversed-domain interpolateOranges). Sibling 04.1-03 already landed in parallel. tsc green. 04.1-04 queued.
+Stopped at: 04.1-04 Task 1 of 2 done (commit c816144) — polish pass on 5 surviving widgets (CoverageDonut, ActiveUserTiers, KpiStrip, RolesModulesHeatmap, RoleRelationshipFlow). All severity colors flow through `_shared/dashboardTokens` (added `useHeatmapRamp` for the ECharts intensity ramp). Selection-aware spotlight wired in RolesModulesHeatmap (per-cell itemStyle.opacity) and RoleRelationshipFlow (FlowPaletteContext + node/edge style.opacity). npx tsc --noEmit clean; severity hex grep clean. **Task 2 = checkpoint:human-verify** — execution paused awaiting user "approved" or gap list. SUMMARY.md / ROADMAP / requirements updates deferred until checkpoint resolves.
 Resume file: .planning/phases/04.1-access-analysis-tab-replace-lists-with-astonishing-interactive-graphics-only-no-name-list-widgets/04.1-04-PLAN.md
