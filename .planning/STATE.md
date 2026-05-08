@@ -3,7 +3,7 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T23:03:58.264Z"
+last_updated: "2026-05-08T23:15:06.665Z"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -15,10 +15,10 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-04-28)
+See: .planning/PROJECT.md (updated 2026-05-08 after v1.0 shipped)
 
 **Core value:** Project teams can monitor and act on ACC user access data — surfacing permission gaps, duplicated roles, and inconsistent access patterns before they cause project delivery problems.
-**Current focus:** Phase 1 — Foundation
+**Current focus:** v1.0 SHIPPED 2026-05-08 (tagged `v1.0`). Run `/gsd:new-milestone` to start next milestone.
 
 ## Current Position
 
