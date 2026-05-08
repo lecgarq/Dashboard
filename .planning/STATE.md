@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-08T19:01:19.058Z"
+last_updated: "2026-05-08T19:07:22.346Z"
 progress:
   total_phases: 5
   completed_phases: 4
   total_plans: 29
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # Project State
@@ -23,9 +23,9 @@ See: .planning/PROJECT.md (updated 2026-04-28)
 ## Current Position
 
 Phase: 04 (ACC Access Analysis Dashboard) — IN PROGRESS
-Plan: 04-03 — CLOSED 2026-05-08. Pure-function analytics modules ready for widget consumption: nameSimilarity (Jaccard token-overlap, DUPLICATE_ROLE_NAME_THRESHOLD=0.80), activeUserTiers (7d/30d/90d/>90d/Never bucketing via date-fns differenceInDays; null+undefined+malformed → Never per Pitfall 4), dashboardAnalytics (findJunkRoles HIGH/MEDIUM/LOW signal-count tiering; findDuplicateRoles strict module-equality + ≥80% name overlap; findOutlierModuleCombos sorted-signature with strict <5% threshold; computeAllFindings exposes roleSeverityIndex Map for inline-badge consumers via HIGH>MEDIUM>LOW max rule, duplicate-flagged roles contribute MEDIUM). 45/45 Vitest tests pass. Rule 3 fix: installed vite as devDep to satisfy vite-tsconfig-paths peer. See 04-03-SUMMARY.md.
-Status: Phase 04 — 04-03 + 04-04 complete; 04-01 plumbing landed in parallel. Next per ROADMAP wave order.
-Last activity: 2026-05-08 — Completed 04-03 (commits ba86399, b3ea82a, 9f4dd14, 2eb5d35, 8cf263f, ba9b0e8).
+Plan: 04-02 — CLOSED 2026-05-08. ACC member-creation date plumbed end-to-end as `BulkAccUser.addedOn: string | null` (non-optional). Field source verified: HQ v1 `created_at` (scraped APS docs GET_users-user_id.json:213-215 sample 257; GET_users-search.json:260 sample 304). Path A (ACC field exists); no first-seen-in-cache fallback needed. `bulkAccSync` normalizes via `Date.parse → toISOString` (null on parse failure) at write boundary; `bulkAccSummary` reads with default-null fallback for legacy rows. tsc clean. DASH-06 unblocked. Live SQL bucket-distribution verification deferred to user post-next-sync (deferred-items.md). See 04-02-SUMMARY.md.
+Status: Phase 04 — 04-01, 04-02, 04-03, 04-04 complete (4/8). Wave 0 data-pipeline gaps fully closed (isAccountAdmin + addedOn). Next per ROADMAP wave order.
+Last activity: 2026-05-08 — Completed 04-02 (commits 0b8bffe, 5cf5454, ff9c510).
 Prior phase: Phase 03 — 4/5 plans complete (03-01, 03-02, 03-04, 03-05).
 
 Progress: [████████░░] 80%
@@ -59,6 +59,7 @@ Progress: [████████░░] 80%
 | Phase 04-access-analysis P04 | 3min | 2 tasks | 2 files |
 | Phase 04-access-analysis P03 | 4m 52s | 6 tasks | 6 files |
 | Phase 04-access-analysis P01 | 5min | 3 tasks | 5 files |
+| Phase 04-access-analysis P02 | 3min | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -111,6 +112,7 @@ Recent decisions affecting current work:
 - [Phase 04-access-analysis]: Plan 04-03: roleSeverityIndex max rule HIGH>MEDIUM>LOW; duplicate-flagged roles contribute MEDIUM
 - [Phase 04-access-analysis]: Plan 04-03: duplicate detection compares role-aggregate module sets (union across projects); per-instance comparison deferred
 - [Phase 04-access-analysis]: P01: ACC account-admin = HQ v1 user.role === 'account_admin' (verified via scraped APS docs); BulkAccUser.isAccountAdmin non-optional boolean; written by bulkAccSync into accMemberCache.data JSON (no Prisma migration); default-false for legacy cache rows in bulkAccSummary; distinct from per-project accessLevels.projectAdmin AND from HQ v1 service-level role='project_admin'
+- [Phase 04-access-analysis]: P02: ACC member-creation date = HQ v1 user.created_at (verified via scraped APS docs); BulkAccUser.addedOn non-optional string|null; bulkAccSync normalizes (Date.parse->toISOString, null on parse failure) at write boundary; default-null fallback for legacy cache rows in bulkAccSummary; Path A (no first-seen-in-cache fallback needed)
 
 ### Pending Todos
 
@@ -132,5 +134,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-08
-Stopped at: 04-04 closed: workspaceRouter.getDirectory tRPC procedure shipped (commits b9ea4b3, 3fea8a2). Smoke test deferred to manual UAT (requires live Workspace login). Next: per ROADMAP wave order.
+Stopped at: Completed 04-02-PLAN.md (commits 0b8bffe, 5cf5454, ff9c510). DASH-06 unblocked. Live SQL verification deferred to user post-next-sync (see deferred-items.md). Wave 0 data-pipeline complete.
 Resume file: None
