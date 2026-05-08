@@ -104,7 +104,17 @@ Plans:
   6. The Admin-access widget lists ONLY ACC account-level admins (project admins and shadow admins excluded); the Roles × Modules entitlement heatmap renders full-width covering the entire organization (DASH-05, DASH-08)
   7. Every chart/table widget exposes a "Download CSV" button that exports the data currently displayed; the recommendations widget CSV uses columns `Type, Severity, Roles, Members, Modules, SuggestedAction` (DASH-11)
   8. The user can drag-reorder dashboard widgets and the chosen order persists across page reloads (DASH-12)
-**Plans**: TBD
+**Plans**: 8 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Wave 0: Plumb isAccountAdmin end-to-end (DASH-07)
+- [ ] 04-02-PLAN.md — Wave 0: Plumb addedOn (member join date) end-to-end (DASH-06)
+- [ ] 04-03-PLAN.md — TDD: Pure analytics modules — junk/duplicate/outlier/tiers/nameSim with Vitest (DASH-02, DASH-03, DASH-04, DASH-05, DASH-09)
+- [ ] 04-04-PLAN.md — Workspace People API tRPC router (DASH-01)
+- [ ] 04-05-PLAN.md — Dashboard shell + dnd-kit grid + CSV helper + widget order localStorage (DASH-11, DASH-12, DASH-13)
+- [ ] 04-06-PLAN.md — Above-fold widgets: Coverage donut + Active tiers + Roles×Modules heatmap (DASH-01, DASH-02, DASH-08)
+- [ ] 04-07-PLAN.md — Findings widgets: KPI strip + Recommendations + Outliers + Role flow + Recently-added + Admins (DASH-03, DASH-04, DASH-05, DASH-06, DASH-07, DASH-09, DASH-13)
+- [ ] 04-08-PLAN.md — Drill-down side panel + inline severity badges + Phase 4 UAT (DASH-09, DASH-10, DASH-13)
 
 ## Progress
 
@@ -117,4 +127,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 2. Cosmos.gl Renderer | 6/6 | Complete | 2026-04-29 |
 | 2.5. ACC Data + Filter Refinement | 6/6 | Complete | 2026-05-06 |
 | 3. Graph UI Completion | 5/5 | Complete | 2026-05-07 |
-| 4. Access Analysis | 0/TBD | Not started | - |
+| 4. Access Analysis | 0/8 | Not started | - |
