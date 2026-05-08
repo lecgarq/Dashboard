@@ -34,12 +34,30 @@
 - [x] **UI-02**: User can see when the physics simulation has stabilized — Web Worker auto-pauses when `averageVelocity < 0.0005` for 5+ consecutive seconds; UI shows "Stable" badge
 - [ ] **UI-03**: User can access the filter panel and side detail panel simultaneously on screens ≤1280px wide — layout fix prevents both panels from occupying the same top-right position
 
-### Access Analysis (ANAL)
+### Access Analysis (ANAL) — DEPRECATED, REPLACED BY DASH-*
 
-- [ ] **ANAL-01**: User can identify members assigned duplicate roles with overlapping module entitlements — duplicate role detector highlights affected nodes with visual indicator
-- [ ] **ANAL-02**: User can identify projects where members have inconsistent access to the same module — inconsistent access flagging per project, visible on graph and in side panel
-- [ ] **ANAL-03**: User can export the current filtered graph view as a PNG image — `canvas.toBlob()` on settled frame, triggered from export button
-- [ ] **ANAL-04**: User can export the current filtered member data as a CSV file — filter state drives export payload; no graph dependency
+> **Scope replacement (2026-05-08):** The original ANAL-01..04 requirements (graph-overlay flagging + PNG/CSV export) were replaced by Phase 4's ACC Access Analysis Dashboard (DASH-01..13) per `.planning/phases/04-access-analysis/04-CONTEXT.md`. ANAL-01..04 are deferred — they may be revisited in a future phase but are NOT delivered in v1.0.
+
+- [~] **ANAL-01** *(deferred)*: ~~User can identify members assigned duplicate roles with overlapping module entitlements via graph overlay~~ — replaced by DASH-02 (duplicate-role detection on dashboard)
+- [~] **ANAL-02** *(deferred)*: ~~User can identify projects where members have inconsistent access to the same module via graph overlay~~ — partially replaced by DASH-03 (outlier module combinations) and DASH-08 (Roles × Modules matrix)
+- [~] **ANAL-03** *(deferred)*: ~~Export the current filtered graph view as a PNG image~~ — not delivered; CSV-per-widget on dashboard (DASH-11) replaces export need
+- [~] **ANAL-04** *(deferred)*: ~~Export filtered member data as CSV from graph~~ — replaced by DASH-11 (CSV export per dashboard widget)
+
+### ACC Access Analysis Dashboard (DASH)
+
+- [ ] **DASH-01**: User sees a junk-role recommendations list with HIGH / MEDIUM / LOW cleanup priority — score derived from three signals (zero members, zero modules, all members inactive >90 days)
+- [ ] **DASH-02**: User sees a duplicate-role recommendations list — pairs of roles ranked by overlap, triggered when module entitlements are identical AND role names share ≥80% normalized token overlap
+- [ ] **DASH-03**: User sees an "Unusual Access Patterns" widget surfacing module-combination outliers — module sets held by <5% of members
+- [ ] **DASH-04**: User sees active-user tier distribution as a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets (driven by `lastSignIn`)
+- [ ] **DASH-05**: User sees an admin-access list of ACC account-level admins (project admins and shadow admins excluded)
+- [ ] **DASH-06**: User sees a recently-added members widget with a configurable timeframe toggle (7d / 30d / 90d, default 30d) based on member-creation / ACC-join date
+- [ ] **DASH-07**: User sees an ACC coverage donut comparing Google Workspace directory to ACC members — three segments: `In both` / `In Workspace, missing from ACC` / `In ACC, missing from Workspace`
+- [ ] **DASH-08**: User sees a Roles × Modules entitlement heatmap covering the entire organization (full-width, dense)
+- [ ] **DASH-09**: User sees decision-support recommendations both as a dedicated widget AND as inline severity badges on roles wherever they appear elsewhere on the dashboard
+- [ ] **DASH-10**: Clicking any finding (junk/duplicate/outlier/recommendation) opens a right-side drill-down panel with affected members, modules, projects, suggested action, and a raw data table — without navigating away from the dashboard
+- [ ] **DASH-11**: Every chart and table widget on the dashboard has a "Download CSV" button that exports the data currently displayed; the recommendations widget exports columns `Type, Severity, Roles, Members, Modules, SuggestedAction`
+- [ ] **DASH-12**: User can drag-reorder dashboard widgets and the chosen order persists across page reloads
+- [ ] **DASH-13**: All dashboard widgets render on a single page in a 2-column grid at 1280px with the Coverage donut + Active-user tiers above the fold; no navigation tabs are required to see any widget
 
 ---
 
@@ -89,16 +107,29 @@
 | UI-01 | Phase 3 | Complete |
 | UI-02 | Phase 3 | Complete |
 | UI-03 | Phase 3 | Pending |
-| ANAL-01 | Phase 4 | Pending |
-| ANAL-02 | Phase 4 | Pending |
-| ANAL-03 | Phase 4 | Pending |
-| ANAL-04 | Phase 4 | Pending |
+| ANAL-01 | Phase 4 | Deferred (replaced by DASH-02) |
+| ANAL-02 | Phase 4 | Deferred (replaced by DASH-03/DASH-08) |
+| ANAL-03 | Phase 4 | Deferred (PNG export not delivered) |
+| ANAL-04 | Phase 4 | Deferred (replaced by DASH-11) |
+| DASH-01 | Phase 4 | Pending |
+| DASH-02 | Phase 4 | Pending |
+| DASH-03 | Phase 4 | Pending |
+| DASH-04 | Phase 4 | Pending |
+| DASH-05 | Phase 4 | Pending |
+| DASH-06 | Phase 4 | Pending |
+| DASH-07 | Phase 4 | Pending |
+| DASH-08 | Phase 4 | Pending |
+| DASH-09 | Phase 4 | Pending |
+| DASH-10 | Phase 4 | Pending |
+| DASH-11 | Phase 4 | Pending |
+| DASH-12 | Phase 4 | Pending |
+| DASH-13 | Phase 4 | Pending |
 
 **Coverage:**
-- v1.0 requirements: 19 total
-- Mapped to phases: 19
+- v1.0 requirements: 28 total (15 active + 13 DASH new); 4 ANAL-* deferred to v1.x
+- Mapped to phases: 28
 - Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-04-28*
-*Last updated: 2026-04-28 — initial definition*
+*Last updated: 2026-05-08 — Phase 4 scope replacement: ANAL-01..04 deferred, DASH-01..13 added*

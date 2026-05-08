@@ -14,7 +14,7 @@ This milestone completes and hardens an ACC Users Graph module that is already ~
 - [x] **Phase 2: Cosmos.gl Renderer** - Implement GPU-accelerated CosmosGraphRenderer for 500+ node performance with live physics controls
 - [x] **Phase 2.5: ACC Data + Filter Refinement** - Extract `companyRole` from ACC, date-range filter, module on/off toggle filters with hide-on-filter
 - [x] **Phase 3: Graph UI Completion** - Close the remaining UI gaps: zoom-level labels, physics auto-pause, and panel layout
-- [ ] **Phase 4: Access Analysis** - Deliver duplicate role detection, inconsistent access flagging, and PNG/CSV exports
+- [ ] **Phase 4: ACC Access Analysis Dashboard** - Single-page analytics dashboard for ACC access — junk/duplicate/outlier role detection, active-user tiers, Workspace↔ACC coverage, entitlement matrix, recommendations with drill-down, CSV-per-widget, drag-reorderable grid
 
 ## Phase Details
 
@@ -90,15 +90,20 @@ Plans:
 - [x] 03-04-PLAN.md — Gap closure: Cosmos label rendering overlay (UI-01 — closes UAT gaps 1, 2, 3)
 - [x] 03-05-PLAN.md — Gap closure: Cosmos stability detection wiring (UI-02 — closes UAT gap 4)
 
-### Phase 4: Access Analysis
-**Goal**: Project managers can use the graph to identify specific access problems — duplicated roles, inconsistent module access — and export findings as PNG screenshots or CSV data for reporting
+### Phase 4: ACC Access Analysis Dashboard
+**Goal**: Project managers see ACC access decision-support insights — junk/duplicate/outlier roles, active-user tiers, Workspace↔ACC coverage, entitlement matrix, recently-added members — in a single drag-reorderable dashboard with per-widget CSV export and drill-down side panel
 **Depends on**: Phase 3
-**Requirements**: ANAL-01, ANAL-02, ANAL-03, ANAL-04
+**Requirements**: DASH-01, DASH-02, DASH-03, DASH-04, DASH-05, DASH-06, DASH-07, DASH-08, DASH-09, DASH-10, DASH-11, DASH-12, DASH-13
+**Note**: Replaces original ANAL-01..04 scope (graph-overlay flagging + PNG/CSV from graph). See `.planning/phases/04-access-analysis/04-CONTEXT.md` for the scope-replacement decision.
 **Success Criteria** (what must be TRUE):
-  1. Members who hold two roles with overlapping module entitlements are visually flagged on the graph — selecting a flagged node shows the duplicate role detail in the side panel
-  2. Projects where some members have access to a module and others do not (despite having the same role) are identifiable — the graph highlights the inconsistency and the side panel describes it
-  3. Clicking the export button downloads a PNG image of the current graph view — the exported image reflects the active filter state and includes the visible nodes and edges
-  4. Clicking the CSV export button downloads a file containing the currently filtered member data — opening the file in Excel or a spreadsheet shows correct columns and rows matching what the user sees in the filter panel
+  1. Opening the ACC Access Analysis Dashboard page shows a 2-column widget grid with Coverage donut + Active-user tier breakdown above the fold and KPI strip / Recommendations / Roles × Modules matrix / Outlier combinations / Recently-added / Admin-access widgets below — all on one page (DASH-13)
+  2. The Recommendations widget surfaces junk roles tiered HIGH/MEDIUM/LOW (zero members + zero modules + all-inactive-90d signals) and duplicate-role pairs (identical modules + ≥80% name token overlap), and roles flagged as findings carry inline severity badges wherever else they appear on the dashboard (DASH-01, DASH-02, DASH-09)
+  3. Clicking any finding (junk/duplicate/outlier/recommendation) opens a right-side drill-down panel showing affected members, modules, projects, suggested action, and raw data without navigating away from the dashboard (DASH-10)
+  4. The Coverage donut renders three segments — `In both` / `In Workspace, missing from ACC` / `In ACC, missing from Workspace` — by comparing Google Workspace directory against ACC members by email (DASH-07)
+  5. The Active-user tier widget shows a stacked bar across 7d / 30d / 90d / >90d / never-signed-in buckets driven by `lastSignIn`; the Unusual Access Patterns widget surfaces module sets held by <5% of members; the Recently-added widget exposes a 7d/30d/90d toggle (default 30d) (DASH-04, DASH-03, DASH-06)
+  6. The Admin-access widget lists ONLY ACC account-level admins (project admins and shadow admins excluded); the Roles × Modules entitlement heatmap renders full-width covering the entire organization (DASH-05, DASH-08)
+  7. Every chart/table widget exposes a "Download CSV" button that exports the data currently displayed; the recommendations widget CSV uses columns `Type, Severity, Roles, Members, Modules, SuggestedAction` (DASH-11)
+  8. The user can drag-reorder dashboard widgets and the chosen order persists across page reloads (DASH-12)
 **Plans**: TBD
 
 ## Progress
