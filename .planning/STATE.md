@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 3 — Activity Pipeline (2/4 plans complete)
+current_phase: Phase 3 — Activity Pipeline (3/4 plans complete)
 status: executing
-last_updated: "2026-05-11T21:52:00.000Z"
+last_updated: "2026-05-11T21:59:00.000Z"
 progress:
   total_phases: 3
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
+  completed_plans: 11
   current_phase_plans: 4
-  current_phase_completed_plans: 2
+  current_phase_completed_plans: 3
 ---
 
 # Session State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — ACC Extraction Completion
-**Current phase:** Phase 3 — Activity Pipeline (2/4 plans complete)
-**Status:** In progress — Wave 1 plan 02 shipped (ingest pipeline + tRPC router); awaiting Railway cron wire-up + first ingest. Plan 03 + Plan 04 UI work unblocked.
+**Current phase:** Phase 3 — Activity Pipeline (3/4 plans complete)
+**Status:** In progress — Wave 2 plan 03 shipped (File Activity grouped header + hover prefetch + drill-down sheet on UsersDirectoryClient; UserActivityBody reusable across DashboardSidePanel and local Sheet). Plan 04 (RecentlyAdded WHO-added-WHOM) is the last remaining plan.
 
 ## Session Log
 
@@ -35,6 +35,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 2 plan 04 complete (production cutover — cache writer + main() entry + release.cjs wired; MEM-06 marked done). v2.0 milestone closed.
 - 2026-05-11: Phase 3 plan 01 complete (AccActivity v2 schema + UnresolvedAttribution + unzipper/csv-parse deps + migration applied; ACTV-01/02/04 schema foundation done).
 - 2026-05-11: Phase 3 plan 02 complete (streaming ZIP ingest pipeline + Stage-2 cron + accActivity tRPC router with 3 procedures; ACTV-01/02/03/04/05 server-side contracts shipped). Stopped at: Plan 03-02 complete; push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires it as a 30-min cron job.
+- 2026-05-11: Phase 3 plan 03 complete (UsersDirectoryClient File Activity grouped header + 250ms hover prefetch + 4 cells; DashboardSidePanel UserActivityBody with 4 type-section drill-down + filter bar + per-section infinite pagination; SelectedFinding extended with kind=userActivity; ACTV-03/05 UI shipped). Stopped at: Plan 03-03 complete; ready for Plan 03-04 (RecentlyAdded WHO-added-WHOM + SyncFreshnessPill amber state).
 
 ## Decisions
 
@@ -60,6 +61,10 @@ See: .planning/PROJECT.md
 - **03-02:** Inline `autodeskId → email` enrichment (per-batch `findMany` against `AccProjectMember`) chosen over a post-ingest UPDATE pass — keeps the pipeline single-pass and avoids a second job. Resolves RESEARCH Open Question 4.
 - **03-02:** CJS cron loads TS helpers via `require('tsx/cjs')` register hook — no separate build step. `scripts/deep-sync-ingest.cjs` directly `require`s `lib/acc/ingestActivityZip.ts`.
 - **03-02:** Multi-job APS status reduction: `success` only if ALL jobs are success; any fail/cancel → `failed`; otherwise → `running` (next tick re-polls).
+- [Phase 03]: 03-03: UserActivityBody exported from DashboardSidePanel and mounted in BOTH places — kind='userActivity' branch on the dashboard, local Sheet on UsersDirectoryClient. Same body, two mount points, zero duplication. UsersDirectoryClient cannot dispatch into SelectionContext because that provider only wraps DashboardClient.
+- [Phase 03]: 03-03: Hover-prefetch activation is sticky — once activated by 250ms-debounced hover, FileActivityCell keeps useQuery enabled for the rest of the session. Prevents re-firing on mouse back-and-forth; pairs with 5min staleTime.
+- [Phase 03]: 03-03: Section count badges show cumulative-rows-loaded + '+' suffix when hasNextPage (e.g. '25+'). Avoids a separate count query per section per filter change. CONTEXT permits either approach.
+- [Phase 03]: 03-03: Sub-column header sort by file-activity timestamp deferred to LIST-03 in Phase 5. Reason: full-list sort requires all rows to have data, which they don't until hovered; broader LIST-03 scope owns this.
 
 ## Performance Metrics
 
@@ -68,4 +73,5 @@ See: .planning/PROJECT.md
 | 02    | 04   | ~4 min   | 3     | 5     | 2026-05-11 |
 | 03    | 01   | ~15 min  | 3     | 4     | 2026-05-11 |
 | 03    | 02   | ~5 min   | 3     | 6     | 2026-05-11 |
+| Phase 03 P03 | ~4 min | 2 tasks | 3 files |
 
