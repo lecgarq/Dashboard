@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: Folders + Folder-Role Permissions
-current_phase: Phase 4 — Folders + Folder-Role Permissions (1/7 plans complete)
+current_phase: Phase 4 — Folders + Folder-Role Permissions (3/7 plans complete)
 status: in_progress
-last_updated: "2026-05-11T23:42:32Z"
+last_updated: "2026-05-11T23:50:00Z"
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 19
-  completed_plans: 13
+  completed_plans: 15
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions
-**Current phase:** Phase 4 — Folders + Folder-Role Permissions (1/7 plans complete)
-**Status:** In progress — Plan 04-01 complete
+**Current phase:** Phase 4 — Folders + Folder-Role Permissions (3/7 plans complete)
+**Status:** In progress — Plan 04-03 complete
 
 ## Session Log
 
@@ -36,6 +36,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 3 plan 03 complete (UsersDirectoryClient File Activity grouped header + 250ms hover prefetch + 4 cells; DashboardSidePanel UserActivityBody with 4 type-section drill-down + filter bar + per-section infinite pagination; SelectedFinding extended with kind=userActivity; ACTV-03/05 UI shipped). Stopped at: Plan 03-03 complete; ready for Plan 03-04 (RecentlyAdded WHO-added-WHOM + SyncFreshnessPill amber state).
 - 2026-05-11: Phase 3 plan 04 complete (RecentlyAdded row list with stacked invitee/inviter avatars + (+N others) hover popover + click-inviter filter pill + relaxed-window query; SyncFreshnessPill amber/Partial state for Deep-Sync-ingest failure via getSyncFreshness extension; ACTV-04 marked done). Stopped at: Plan 03-04 complete — Phase 3 fully shipped. Push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires the 30-min cron; first ingest validates the row list + amber pill.
 - 2026-05-11: Phase 4 plan 01 complete (pure permission-mapping module; FLDR-03 satisfied). lib/acc/permissionMapping.ts exports PermTier union + TIER_DEFINITIONS (6 tiers high→low) + mapActions(). 14 Vitest tests pass (TDD RED→GREEN). Stopped at: Plan 04-01 complete; ready for Plan 04-02.
+- 2026-05-11: Phase 4 plan 03 complete (AccProject.folderCrawlStatus additive migration 20260511234124 applied + accFoldersRouter scaffold registered under key 'accFolders'; FLDR-01 marked done). Migration is NOT NULL DEFAULT 'never' — safe for Railway deploy on existing rows. Stopped at: Plan 04-03 complete; Wave 1 groundwork done. Ready for Wave 2 (Plans 04/05/06).
 
 ## Decisions
 
@@ -74,6 +75,8 @@ See: .planning/PROJECT.md
 - **04-01:** extended=true means at least one KNOWN input action is NOT in the matched tier's required set — distinct from unknownActions which tracks unrecognised strings.
 - **04-01:** tier=null returned (no throw) when input is empty or contains only unknown actions.
 - **04-01:** Upload Only tier = {PUBLISH} only; inputs with VIEW+DOWNLOAD+COLLABORATE+PUBLISH match View+Download+Upload first (higher in iteration order).
+- **04-03:** Migration timestamp 20260511234124; additive NOT NULL DEFAULT 'never' — existing AccProject rows get 'never' with no backfill step needed.
+- **04-03:** accFoldersRouter intentionally contains only ping placeholder; Plan 05 owns getMatrix/getOrphanRoles/getProjectFolderTree. Scaffold-first prevents Plans 05+06 from blocking each other.
 
 ## Accumulated Context
 
@@ -91,4 +94,5 @@ See: .planning/PROJECT.md
 | 03    | 03   | ~4 min   | 2     | 3     | 2026-05-11 |
 | 03    | 04   | ~5 min   | 3     | 3     | 2026-05-11 |
 | 04    | 01   | ~2 min   | 2     | 2     | 2026-05-11 |
+| 04    | 03   | ~8 min   | 2     | 4     | 2026-05-11 |
 
