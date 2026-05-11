@@ -66,9 +66,9 @@ Per `HOW_TO_Extract_Activity_Logs.md`, `HOW_TO_Extract_Last_User_File_Activity.m
 
 - [x] **ACTV-01**: Data Connector ZIP downloaded via signed S3 URL with NO Authorization header; streaming unzip into per-CSV streams without buffering full archive.
 - [x] **ACTV-02**: `project_activities.csv` and `admin_activities.csv` streamed through `csv-parse` and upserted into `AccActivity` in 500-row batches via `createMany({ skipDuplicates: true })`. All-time retention; no prune.
-- [ ] **ACTV-03**: Last file activity per user computed from `AccActivity` (filtered to file-related actions) and exposed via lazy tRPC query for side-panel drill-down — NOT eager-loaded into `BulkAccUser` or `FindingsContext`.
+- [x] **ACTV-03**: Last file activity per user computed from `AccActivity` (filtered to file-related actions) and exposed via lazy tRPC query for side-panel drill-down — NOT eager-loaded into `BulkAccUser` or `FindingsContext`.
 - [x] **ACTV-04**: WHO-added-WHOM attribution surfaced in RecentlyAdded widget — joins `Member Added`/`User Invited`/`Project Member Added` activity rows to the invited user's `AccProjectMember` row by email; surfaces inviting admin's name in widget hover/drill.
-- [ ] **ACTV-05**: Activity drill-down panel (paginated, top-N by recency) added to existing DashboardSidePanel for any selected user; respects interactivity contract.
+- [x] **ACTV-05**: Activity drill-down panel (paginated, top-N by recency) added to existing DashboardSidePanel for any selected user; respects interactivity contract.
 
 ### User List Enrichments
 
