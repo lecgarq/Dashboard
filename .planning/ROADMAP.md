@@ -49,6 +49,12 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 **Requirements:** MEM-01..06 (6), PROJ-01..02 (2), ROLE-01..03 (3) = 11
 
+**Plans:** 4 plans
+- [ ] 02-01-PLAN.md — Project extraction + soft-delete (PROJ-01, PROJ-02)
+- [ ] 02-02-PLAN.md — Hub master role extraction (ROLE-01)
+- [ ] 02-03-PLAN.md — Per-project members + per-project roles + role linking at pLimit(5) (MEM-01..05, ROLE-02, ROLE-03)
+- [ ] 02-04-PLAN.md — accMemberCache dual-write + release.cjs wiring (MEM-06)
+
 **Success criteria:**
 - Per-project members extracted via `/construction/admin/v1/projects/:id/users` with `?fields=` hardcoded so `lastSignIn` is always returned.
 - Each member row carries `status`, `companyName`, `phone`, `addedOn`, full `products` array (per-module tier), `accessLevels.projectAdmin`, `accessLevels.executive`.
@@ -146,7 +152,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 4. ACC Access Analysis Dashboard            | v1.0      | 8/8            | Complete | 2026-05-08 |
 | 4.1. Replace lists with interactive graphics | v1.0     | 4/4            | Complete | 2026-05-08 |
 | 1. Foundation: Schema + Sync Orchestration  | v2.0      | 4/4            | Complete    | 2026-05-11 |
-| 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/?            | Not started | —       |
+| 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/4            | Plans drafted | —      |
 | 3. Activity Pipeline                        | v2.0      | 0/?            | Not started | —       |
 | 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Blocked on Phase 1+2 | — |
 | 5. UI Enrichment Waves                      | v2.0      | 0/?            | Blocked on Phase 2  | — |
