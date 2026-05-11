@@ -128,9 +128,43 @@ Luis, please review the numbers and cadence trade-off:
 
 **To unblock Plan 04:** Type `approved` (or `approved with weekly cadence` / `approved with nightly cadence`).
 
-- [ ] Per-project folder counts look plausible
-- [ ] Hub totals are reasonable given 1143 active projects
-- [ ] Cadence trade-off is acceptable
-- [ ] Zero DB writes confirmed (YES)
+- [x] Per-project folder counts look plausible
+- [x] Hub totals are reasonable given 1143 active projects
+- [x] Cadence trade-off is acceptable
+- [x] Zero DB writes confirmed (YES)
 
 _Generated: 2026-05-11T23:50:00Z (partial sample — full background run in progress)_
+
+---
+
+## Approval Decision (2026-05-11)
+
+**Status:** APPROVED
+
+**Cadence decision:** **weekly**
+
+**Scope decision:** **skip archived in-flight** — do NOT soft-delete the ~526 archived
+projects in AccProject. Let the fast-fail 403 path handle them on each crawl.
+
+### Rationale
+
+- The sample of 13 out of 1143 projects is too small to commit to nightly cadence.
+  The ~48-min best-case parallel estimate has a worst-case ceiling of ~4 hours
+  (if 14% of projects hit the 5-min soft cap, as observed in the sample).
+  Weekly gives headroom for the real distribution.
+- Soft-deleting ~526 archived projects based on a 13-project sample is a one-way
+  risky operation. The fast-fail 403 path (~200ms per archived project) costs ~105s
+  per crawl and surfaces drift cleanly as a side effect — cheaper than the risk of
+  incorrectly soft-deleting an active project.
+- This locks the Plan 04-04 cron schedule at **weekly**. Easy to flip to nightly
+  later by changing only the Railway cron schedule once we have a full hub crawl
+  measurement to validate the timing.
+
+### Downstream impact
+
+- **Plan 04-04** wires the Quick Sync extraction wrapper + cron at **weekly cadence**.
+- **Plan 04-05/04-06** unblocked; depends only on the persisted data, not on cadence.
+- Archived-project filter stays out of scope for Phase 04. Revisit in v2.x CLN bucket
+  if the 403 noise becomes a Railway log-volume problem.
+
+_Approved by Luis: 2026-05-11_
