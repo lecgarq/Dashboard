@@ -434,17 +434,18 @@ model AccGraphLayoutCache {
 // ============ MODULE: ACC V2.0 RELATIONAL LAYER ============
 
 model AccProject {
-  id        String             @id // APS project ID (no b. prefix — Construction Admin)
-  accountId String
-  name      String
-  jobNumber String?
-  type      String?
-  status    String             @default("active") // active | inactive
-  createdAt DateTime?
-  updatedAt DateTime           @updatedAt
-  members   AccProjectMember[]
-  roles     AccProjectRole[]
-  folders   AccFolder[]
+  id                String             @id // APS project ID (no b. prefix — Construction Admin)
+  accountId         String
+  name              String
+  jobNumber         String?
+  type              String?
+  status            String             @default("active") // active | inactive
+  folderCrawlStatus String             @default("never") // never | ok | partial | failed
+  createdAt         DateTime?
+  updatedAt         DateTime           @updatedAt
+  members           AccProjectMember[]
+  roles             AccProjectRole[]
+  folders           AccFolder[]
 
   @@index([accountId])
   @@index([status])
