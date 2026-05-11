@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Check, ChevronLeft, ChevronRight, Filter } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Filter, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import {
   nodeMatchesFilters,
@@ -18,6 +18,14 @@ import {
   type GraphRenderFrame,
   type GraphRenderer,
 } from "./graphRenderers";
+import { ThreeGraphRenderer } from "./threeGraphRenderer";
+import {
+  readGraphDisplayMode,
+  selectInitialGraphBackend,
+  writeGraphDisplayMode,
+  type GraphDisplayMode,
+  type GraphRendererBackend,
+} from "./accGraph3d";
 import {
   isWebGL2Available,
   buildClusterIdsFromNodes,
@@ -281,6 +289,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
   const cosmosContainerRef = useRef<HTMLDivElement>(null);
+  const threeContainerRef = useRef<HTMLDivElement>(null);
   // UI-01 (gap closure 03-04): screen-space label overlay above the Cosmos GL
   // canvas. Driven by CosmosGraphRenderer.drawLabelOverlay each rAF tick on
   // the Cosmos path. Replaces the legacy DOM hover-label.
@@ -290,6 +299,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   const canvasRendererRef = useRef<CanvasGraphRenderer | null>(null);
   const cosmosRendererRef = useRef<CosmosGraphRenderer | null>(null);
+  const threeRendererRef = useRef<ThreeGraphRenderer | null>(null);
   const activeRendererRef = useRef<GraphRenderer | null>(null);
   // True when the active Cosmos renderer owns physics on the GPU (TD-005).
   // When false, slider/drag/cluster routes through the d3-force worker.
@@ -310,6 +320,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const filtersRef = useRef<GraphFilters>(DEFAULT_FILTERS);
   const hasActiveFiltersRef = useRef(false);
   const graphControlsRef = useRef<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
+  const threeCameraMovingRef = useRef(false);
 
   const view = useRef(loadSavedView());
   const targetView = useRef(loadSavedView());
@@ -345,8 +356,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return localStorage.getItem("acc-graph-cache-corrupt") === "true";
   });
   const [refreshKey, setRefreshKey] = useState(0);
-  const [renderBackend, setRenderBackend] = useState<"canvas2d" | "cosmos">(() =>
-    isWebGL2Available() ? "cosmos" : "canvas2d"
+  const [graphDisplayMode, setGraphDisplayMode] = useState<GraphDisplayMode>(() => {
+    const savedMode = readGraphDisplayMode();
+    return savedMode === "3d" && isWebGL2Available() ? "3d" : "2d";
+  });
+  const [renderBackend, setRenderBackend] = useState<GraphRendererBackend>(() =>
+    selectInitialGraphBackend(readGraphDisplayMode(), isWebGL2Available())
   );
 
   const [rendererFailureReason, setRendererFailureReason] = useState<string | null>(null);
@@ -371,6 +386,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
   // GPU renderer state
   const [isCosmosLoading, setIsCosmosLoading] = useState(false);
+  const [isThreeLoading, setIsThreeLoading] = useState(false);
   // UI-02 (gap 4 fix): cosmosReady promotes "renderer ref is assigned" to React
   // state so the Cosmos stability-polling effect re-runs once the async
   // CosmosGraphRenderer.create(...).then(...) resolves. Previously the polling
@@ -778,6 +794,27 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     });
   }, []);
 
+  const setGraphMode = useCallback((mode: GraphDisplayMode) => {
+    setGraphDisplayMode(mode);
+    writeGraphDisplayMode(mode);
+    if (mode === "3d") {
+      pickModeRef.current = false;
+      setPickMode(false);
+      lassoActiveRef.current = false;
+      setLassoActive(false);
+      lassoPathRef.current = [];
+      setLassoPath([]);
+      if (!isWebGL2Available()) {
+        setRendererFailureReason("WebGL2 is not supported in this browser");
+        setRenderBackend("canvas2d");
+        return;
+      }
+      setRenderBackend("three3d");
+      return;
+    }
+    setRenderBackend(isWebGL2Available() ? "cosmos" : "canvas2d");
+  }, []);
+
   const zoomToFit = useCallback((options?: { immediate?: boolean }) => {
     if (!posRef.current.length) return;
 
@@ -822,6 +859,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     markGraphDirty();
   }, [markGraphDirty]);
 
+  const resetActiveView = useCallback(() => {
+    if (renderBackend === "three3d") {
+      threeRendererRef.current?.resetCamera();
+      markGraphDirty();
+      return;
+    }
+    zoomToFit({ immediate: true });
+  }, [markGraphDirty, renderBackend, zoomToFit]);
+
   const hitTest = useCallback((sx: number, sy: number): SimNode | null => {
     if (!posRef.current.length) return null;
 
@@ -861,7 +907,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   useEffect(() => {
     const canvas2d = canvas2dRef.current;
     const cosmosContainer = cosmosContainerRef.current;
-    if (!canvas2d || !cosmosContainer) return;
+    const threeContainer = threeContainerRef.current;
+    if (!canvas2d || !cosmosContainer || !threeContainer) return;
 
     let disposed = false;
     const canvasRenderer = new CanvasGraphRenderer(canvas2d);
@@ -871,19 +918,84 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (disposed) return;
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
+      threeRendererRef.current?.destroy();
+      threeRendererRef.current = null;
       activeRendererRef.current = canvasRendererRef.current;
       usePhysicsRef.current = false;
       setRenderBackend("canvas2d");
       setCosmosReady(false);  // GPU context lost mid-session — same flag-reset, different trigger
       setPerfGpu(null);
       setIsCosmosLoading(false);
+      setIsThreeLoading(false);
       // Unpause d3-force worker when falling back
       organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
       toast.error("GPU renderer lost — switched back to Canvas 2D", { duration: 4000 });
       markGraphDirty();
     };
 
-    if (renderBackend === "cosmos") {
+    if (renderBackend === "three3d") {
+      activeRendererRef.current = canvasRenderer;
+      setIsThreeLoading(true);
+      usePhysicsRef.current = false;
+      organicWorkerRef.current?.postMessage({ type: "pause", paused: false });
+
+      void ThreeGraphRenderer.create(threeContainer).then(({ renderer, failureReason }) => {
+        if (disposed) { renderer?.destroy(); return; }
+        if (!renderer) {
+          setRendererFailureReason(failureReason ?? "3D renderer initialization failed");
+          setRenderBackend(isWebGL2Available() ? "cosmos" : "canvas2d");
+          setGraphDisplayMode("2d");
+          writeGraphDisplayMode("2d");
+          setIsThreeLoading(false);
+          markGraphDirty();
+          return;
+        }
+        threeRendererRef.current = renderer;
+        activeRendererRef.current = renderer;
+        setRendererFailureReason(null);
+        setPerfGpu("Three.js WebGL");
+
+        renderer.onNodeSelectCallback = (index: number | null) => {
+          if (index === null) {
+            setSelectedNode(null);
+            selectedNodeRef.current = null;
+          } else {
+            const node = nodesRef.current[index] ?? null;
+            if (node) {
+              const state: SidePanelState = { node };
+              setSelectedNode(state);
+              selectedNodeRef.current = state;
+              resetStability();
+            }
+          }
+          markGraphDirty();
+        };
+
+        renderer.onNodeHoverCallback = (index: number | null, event?: MouseEvent) => {
+          const node = index == null ? null : nodesRef.current[index] ?? null;
+          hoveredNodeRef.current = node;
+          setHoveredNode(node);
+          if (tooltipRef.current) {
+            if (node && event && containerRef.current) {
+              const rect = containerRef.current.getBoundingClientRect();
+              tooltipRef.current.style.transform = `translate(${event.clientX - rect.left + 14}px, ${event.clientY - rect.top + 12}px)`;
+              tooltipRef.current.style.opacity = "1";
+            } else {
+              tooltipRef.current.style.opacity = "0";
+            }
+          }
+          markGraphDirty();
+        };
+
+        renderer.onCameraMoveCallback = (moving: boolean) => {
+          threeCameraMovingRef.current = moving;
+          markGraphDirty();
+        };
+
+        setIsThreeLoading(false);
+        markGraphDirty();
+      });
+    } else if (renderBackend === "cosmos") {
       // Capture current view-state before Cosmos takes over
       const savedView = view.current ? { ...view.current } : null;
 
@@ -1023,6 +1135,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     } else {
       // Canvas 2D mode
       activeRendererRef.current = canvasRenderer;
+      setPerfGpu(null);
       markGraphDirty();
     }
 
@@ -1037,16 +1150,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       canvasRendererRef.current = null;
       cosmosRendererRef.current?.destroy();
       cosmosRendererRef.current = null;
+      threeRendererRef.current?.destroy();
+      threeRendererRef.current = null;
       setCosmosReady(false);  // UI-02 fix (gap 4): renderer torn down, polling effect should stop
       // Always dismiss spinner on cleanup — prevents stuck spinner if Fast Refresh
       // fires while the dynamic import is in-flight (disposed=true makes .then() bail early)
       setIsCosmosLoading(false);
+      setIsThreeLoading(false);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [renderBackend]);
 
   useEffect(() => {
     void import("@cosmos.gl/graph").catch(() => { /* ignore pre-warm errors */ });
+    void import("three").catch(() => { /* ignore pre-warm errors */ });
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -1422,8 +1539,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       // animation (which runs independently of markGraphDirty). Canvas2D still
       // uses the dirty-flag gate since a full scene redraw is expensive.
       const isCosmosRenderer = renderer instanceof CosmosGraphRenderer;
+      const isThreeRenderer = renderer instanceof ThreeGraphRenderer;
       const needsFullDraw = camLerping || needsRenderRef.current || forceLiveLayoutRender;
-      if (!needsFullDraw && !isCosmosRenderer) return;
+      if (!needsFullDraw && !isCosmosRenderer && !isThreeRenderer) return;
 
       if (needsFullDraw) {
         v.x += (tv.x - v.x) * 0.2;
@@ -1529,6 +1647,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         cssHeight: height,
         devicePixelRatio: window.devicePixelRatio || 1,
         backgroundColor: GRAPH_BACKGROUND,
+        cameraMode: isThreeRenderer ? "orbit" : undefined,
+        isCameraMoving: isThreeRenderer ? threeCameraMovingRef.current : false,
         labelFadeStartScale,
         labelFadeEndScale,
         labelOverrideIndices: overrides,
@@ -1538,7 +1658,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
       // Full scene draw only when dirty (GPU upload cost on Canvas2D / Cosmos data paths).
       let drawResult: { needsContinuousRedraw: boolean } = { needsContinuousRedraw: false };
-      if (needsFullDraw) {
+      if (needsFullDraw || isThreeRenderer) {
         drawResult = renderer.draw(frame);
       }
       // UI-01 (gap closure 03-04): on the Cosmos path, draw the screen-space
@@ -1554,7 +1674,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           }
         }
       }
-      needsRenderRef.current = needsFullDraw && (forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw);
+      needsRenderRef.current = (needsFullDraw || isThreeRenderer) && (forceLiveLayoutRender || camLerping || drawResult.needsContinuousRedraw);
     };
 
     rafId.current = requestAnimationFrame(render);
@@ -2209,6 +2329,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
+        {isThreeLoading && (
+          <div className="absolute inset-0 z-40 flex flex-col items-center justify-center bg-[#F8F7F4]/70 backdrop-blur-sm">
+            <div className="w-8 h-8 rounded-full border-4 border-gray-900 border-t-transparent animate-spin mb-4" />
+            <span className="text-sm font-medium text-gray-800">Initializing 3D orbit renderer...</span>
+          </div>
+        )}
+
         {/* FILT-01 empty-state overlay: shown when filters are active but zero users match */}
         {isReady && visibleCount === 0 && hasActiveFilters && (
           <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-[#F8F7F4]/95">
@@ -2226,18 +2353,57 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
         <div className="absolute top-3 right-3 z-10">
           <div className="text-[10px] text-gray-400 pr-1 text-right">
-            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - scroll to zoom - drag to pan
+            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - {renderBackend === "three3d" ? "orbit / pan / zoom" : "scroll to zoom - drag to pan"}
           </div>
         </div>
 
         <div className="absolute bottom-3 left-3 z-10 flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2">
           <span className="text-[10px] text-gray-500 font-medium">Colored by Primary Role</span>
           <div className="w-px h-3 bg-gray-200 shrink-0" />
+          <div className="flex items-center rounded-md border border-gray-200 bg-white p-0.5">
+            <button
+              type="button"
+              onClick={() => setGraphMode("2d")}
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                graphDisplayMode === "2d"
+                  ? "bg-gray-900 text-white"
+                  : "text-gray-500 hover:text-gray-800",
+              )}
+            >
+              2D Spatial
+            </button>
+            <button
+              type="button"
+              onClick={() => setGraphMode("3d")}
+              className={cn(
+                "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
+                graphDisplayMode === "3d"
+                  ? "bg-gray-900 text-white"
+                  : "text-gray-500 hover:text-gray-800",
+              )}
+            >
+              3D Orbit
+            </button>
+          </div>
+          <button
+            type="button"
+            onClick={resetActiveView}
+            title={renderBackend === "three3d" ? "Reset 3D camera" : "Fit graph"}
+            aria-label={renderBackend === "three3d" ? "Reset 3D camera" : "Fit graph"}
+            className="inline-flex h-6 w-6 items-center justify-center rounded-md text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
+          >
+            <RotateCcw size={12} aria-hidden="true" />
+          </button>
+          <div className="w-px h-3 bg-gray-200 shrink-0" />
           <button
             onClick={togglePickMode}
+            disabled={renderBackend === "three3d"}
             className={cn(
               "flex items-center gap-1.5 text-[10px] font-medium transition-colors rounded-md px-1.5 py-0.5",
-              pickMode
+              renderBackend === "three3d"
+                ? "text-gray-300 cursor-not-allowed"
+                : pickMode
                 ? "bg-gray-900 text-white"
                 : "text-gray-500 hover:text-gray-800",
             )}
@@ -2246,10 +2412,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </button>
           <button
             onClick={toggleLassoMode}
+            disabled={renderBackend === "three3d"}
             data-testid="acc-graph-lasso-toggle"
             className={cn(
               "flex items-center gap-1.5 text-[10px] font-medium transition-colors rounded-md px-1.5 py-0.5",
-              lassoActive
+              renderBackend === "three3d"
+                ? "text-gray-300 cursor-not-allowed"
+                : lassoActive
                 ? "bg-blue-600 text-white"
                 : "text-gray-500 hover:text-gray-800",
             )}
@@ -2304,6 +2473,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               renderBackend === "cosmos" ? "opacity-100" : "opacity-0 pointer-events-none"
             )}
             // Cosmos manages its own canvas and pointer events internally
+          />
+          <div
+            ref={threeContainerRef}
+            className={cn(
+              "absolute inset-0 w-full h-full",
+              renderBackend === "three3d" ? "opacity-100" : "opacity-0 pointer-events-none",
+            )}
           />
           {/* UI-01 (gap closure 03-04): screen-space label overlay above the
               Cosmos GL canvas. pointer-events-none so wheel/click pass through

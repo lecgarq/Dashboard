@@ -56,6 +56,9 @@ export interface GraphRenderFrame {
   cssHeight: number;
   devicePixelRatio: number;
   backgroundColor: string;
+  positions3d?: Float32Array;
+  cameraMode?: "orbit";
+  isCameraMoving?: boolean;
   /**
    * Late-zoom label fade band (UI-01). Opacity is 0 below labelFadeStartScale,
    * lerps to 1 at labelFadeEndScale. When either is undefined, the Canvas2D
@@ -84,7 +87,7 @@ export interface GraphDrawResult {
 }
 
 export interface GraphRenderer {
-  readonly backend: "canvas2d" | "cosmos";
+  readonly backend: "canvas2d" | "cosmos" | "three3d";
   draw(frame: GraphRenderFrame): GraphDrawResult;
   destroy(): void;
 }
