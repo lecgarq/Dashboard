@@ -65,6 +65,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
   private cameraSettledTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
   private hasFitCamera = false;
+  private lastPointUpdatePositions: Float32Array | null = null;
+  private lastPointStateKey = "";
 
   private constructor(
     container: HTMLElement,
@@ -130,8 +132,12 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.camera.aspect = Math.max(1, frame.cssWidth) / Math.max(1, frame.cssHeight);
     this.camera.updateProjectionMatrix();
 
+    const sourcePositionsChanged =
+      this.lastSourcePositions !== frame.positions ||
+      this.lastPositionNodeCount !== frame.nodes.length;
     this.positions3d = this.getPositions3d(frame);
     this.visibleNodeIndices = frame.userIndices ?? new Uint32Array(frame.nodes.map((_, index) => index));
+    const pointStateKey = this.makePointStateKey(frame);
 
     const visibleKey = this.makeVisibleKey(this.visibleNodeIndices);
     const needsRebuild =
@@ -147,7 +153,13 @@ export class ThreeGraphRenderer implements GraphRenderer {
       this.lastEdgeSourcePositions = null;
       this.fitCameraToVisible(frame);
     } else {
-      this.updatePointCloud(frame);
+      if (
+        sourcePositionsChanged ||
+        this.lastPointUpdatePositions !== frame.positions ||
+        this.lastPointStateKey !== pointStateKey
+      ) {
+        this.updatePointCloud(frame);
+      }
       if (!this.hasFitCamera) this.fitCameraToVisible(frame);
     }
 
@@ -185,6 +197,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.lastSourcePositions = null;
     this.lastPositionNodeCount = -1;
     this.lastEdgeSourcePositions = null;
+    this.lastPointUpdatePositions = null;
+    this.lastPointStateKey = "";
     this.onNodeSelectCallback = null;
     this.onNodeHoverCallback = null;
     this.onCameraMoveCallback = null;
@@ -199,8 +213,14 @@ export class ThreeGraphRenderer implements GraphRenderer {
     const positions = new Float32Array(count * 3);
     const colors = new Float32Array(count * 3);
     this.pointGeometry = new this.THREE.BufferGeometry();
-    this.pointGeometry.setAttribute("position", new this.THREE.BufferAttribute(positions, 3));
-    this.pointGeometry.setAttribute("color", new this.THREE.BufferAttribute(colors, 3));
+    this.pointGeometry.setAttribute(
+      "position",
+      new this.THREE.BufferAttribute(positions, 3).setUsage(this.THREE.DynamicDrawUsage),
+    );
+    this.pointGeometry.setAttribute(
+      "color",
+      new this.THREE.BufferAttribute(colors, 3).setUsage(this.THREE.DynamicDrawUsage),
+    );
 
     const material = new this.THREE.PointsMaterial({
       size: POINT_SIZE_PX,
@@ -249,7 +269,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
 
     positionAttr.needsUpdate = true;
     colorAttr.needsUpdate = true;
-    this.pointGeometry.computeBoundingSphere();
+    this.lastPointUpdatePositions = frame.positions;
+    this.lastPointStateKey = this.makePointStateKey(frame);
   }
 
   private updateEdges(frame: GraphRenderFrame): void {
@@ -338,6 +359,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
     ).normalize().multiplyScalar(Math.max(8, distance));
 
     this.controls.target.copy(center);
+    this.controls.minDistance = Math.max(0.35, distance * 0.025);
+    this.controls.maxDistance = Math.max(250, distance * 8);
     this.camera.up.set(0, 1, 0);
     this.camera.position.set(
       center.x + offset.x,
@@ -389,6 +412,10 @@ export class ThreeGraphRenderer implements GraphRenderer {
 
   private makeVisibleKey(indices: Uint32Array): string {
     return `${indices.length}:${indices[0] ?? -1}:${indices[Math.floor(indices.length / 2)] ?? -1}:${indices[indices.length - 1] ?? -1}`;
+  }
+
+  private makePointStateKey(frame: GraphRenderFrame): string {
+    return `${frame.selectedNodeIndex}:${this.hoveredIndex ?? -1}:${frame.filterActive ? 1 : 0}`;
   }
 
   private disposePointCloud(): void {

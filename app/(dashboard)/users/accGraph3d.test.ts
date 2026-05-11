@@ -54,6 +54,7 @@ describe("3D edge rendering policy", () => {
     expect(get3dEdgeSampleStep(100, 9000)).toBe(1);
     expect(get3dEdgeSampleStep(18000, 9000)).toBe(2);
     expect(get3dEdgeSampleStep(61000, 9000)).toBe(7);
+    expect(get3dEdgeSampleStep(61000)).toBeGreaterThanOrEqual(40);
   });
 });
 
@@ -77,8 +78,8 @@ describe("buildPositions3d", () => {
   });
 
   it("uses substantial bounded orbit depth so semantic layers read as a 3D volume", () => {
-    expect(ACC_GRAPH_3D_POSITION_OPTIONS.zScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.45);
-    expect(ACC_GRAPH_3D_POSITION_OPTIONS.zScale).toBeLessThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.75);
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.zScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.75);
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.volumeScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.25);
 
     const positions2d = new Float32Array([0, 0, 1, 1]);
     const positions3d = buildPositions3d(
@@ -93,8 +94,24 @@ describe("buildPositions3d", () => {
     const xySpan = Math.hypot(positions3d[3] - positions3d[0], positions3d[4] - positions3d[1]);
     const zSpan = Math.abs(positions3d[5] - positions3d[2]);
 
-    expect(zSpan).toBeGreaterThan(xySpan * 0.12);
-    expect(zSpan).toBeLessThan(xySpan * 0.8);
+    expect(zSpan).toBeGreaterThan(xySpan * 0.2);
+    expect(zSpan).toBeLessThan(xySpan * 1.3);
+  });
+
+  it("adds deterministic semantic offsets across all three axes in 3D orbit mode", () => {
+    const positions2d = new Float32Array([0.5, 0.5, 0.5, 0.5]);
+    const nodes: SemanticDepthNode[] = [
+      { ...baseNode, id: "a", projectId: "project-a", roles: ["Architect"], modules: ["docs"] },
+      { ...baseNode, id: "b", projectId: "project-b", roles: ["Reviewer"], modules: ["build"] },
+    ];
+
+    const first = buildPositions3d(nodes, positions2d, ACC_GRAPH_3D_POSITION_OPTIONS);
+    const second = buildPositions3d(nodes, positions2d, ACC_GRAPH_3D_POSITION_OPTIONS);
+
+    expect(first[0]).not.toBe(0);
+    expect(first[1]).not.toBe(0);
+    expect(first[2]).not.toBe(0);
+    expect(Array.from(first)).toEqual(Array.from(second));
   });
 
   it("returns a correctly sized empty buffer when positions are missing", () => {

@@ -1646,7 +1646,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         highlightSet,
         sameUserHighlightSet,
         filterActive: hasActiveFiltersRef.current,
-        isInteracting,
+        isInteracting: isThreeRenderer ? (isInteracting || forceLiveLayoutRender) : isInteracting,
         view: v,
         cssWidth: width,
         cssHeight: height,

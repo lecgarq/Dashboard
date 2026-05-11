@@ -15,14 +15,15 @@ export interface SemanticDepthNode {
 export const GRAPH_DISPLAY_MODE_KEY = "acc-graph-display-mode";
 export const ACC_GRAPH_3D_POSITION_OPTIONS = {
   xyScale: 16,
-  zScale: 8.5,
+  zScale: 14,
+  volumeScale: 6,
 } as const;
 export const ACC_GRAPH_3D_CAMERA_OFFSET = {
-  x: 0.42,
-  y: -0.34,
+  x: 0.78,
+  y: -0.52,
   z: 1,
 } as const;
-export const ACC_GRAPH_3D_MAX_EDGES = 9000;
+export const ACC_GRAPH_3D_MAX_EDGES = 1500;
 
 function hashString(value: string): number {
   let hash = 2166136261;
@@ -61,21 +62,30 @@ export function computeSemanticDepth(node: SemanticDepthNode): number {
 export function buildPositions3d(
   nodes: readonly SemanticDepthNode[],
   positions2d: Float32Array,
-  options?: { xyScale?: number; zScale?: number },
+  options?: { xyScale?: number; zScale?: number; volumeScale?: number },
 ): Float32Array {
   const xyScale = options?.xyScale ?? 1;
   const zScale = options?.zScale ?? 0.65;
+  const volumeScale = options?.volumeScale ?? 0;
   const out = new Float32Array(nodes.length * 3);
 
   for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
     const sourceOffset = i * 2;
     const targetOffset = i * 3;
     const hasPosition = sourceOffset + 1 < positions2d.length;
     const x = hasPosition ? positions2d[sourceOffset] : 0.5;
     const y = hasPosition ? positions2d[sourceOffset + 1] : 0.5;
-    out[targetOffset] = (x - 0.5) * xyScale;
-    out[targetOffset + 1] = (y - 0.5) * xyScale;
-    out[targetOffset + 2] = computeSemanticDepth(nodes[i]) * zScale;
+    const role = node.roles?.[0] || "no-role";
+    const moduleName = node.modules?.[0] || "no-module";
+    const project = node.projectId || "no-project";
+    const identity = node.id || `${project}:${role}:${moduleName}`;
+    const volumeX = (hashToUnit(`volume-x:${role}:${project}`) - 0.5) * volumeScale;
+    const volumeY = (hashToUnit(`volume-y:${moduleName}:${project}`) - 0.5) * volumeScale;
+    const volumeZ = (hashToUnit(`volume-z:${identity}`) - 0.5) * volumeScale * 0.8;
+    out[targetOffset] = (x - 0.5) * xyScale + volumeX;
+    out[targetOffset + 1] = (y - 0.5) * xyScale + volumeY;
+    out[targetOffset + 2] = computeSemanticDepth(node) * zScale + volumeZ;
   }
 
   return out;
