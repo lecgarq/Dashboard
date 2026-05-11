@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: ACC Extraction Completion
-status: defining_requirements
-last_updated: "2026-05-08T23:30:00.000Z"
+status: ready_to_plan_phase_1
+last_updated: "2026-05-11T16:00:00.000Z"
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-08 after v1.0 shipped)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: v2.0 Phase 1 — Foundation: Schema + Sync Orchestration (READY TO PLAN)
 Plan: —
-Status: Defining requirements (research → REQUIREMENTS.md → ROADMAP.md)
-Last activity: 2026-05-08 — Milestone v2.0 started via `/gsd:new-milestone`
+Status: REQUIREMENTS.md + ROADMAP.md locked. Phase 1 ready for `/gsd:plan-phase 1`.
+Last activity: 2026-05-11 — v2.0 ROADMAP.md drafted from REQUIREMENTS.md (41 reqs → 5 phases). REQUIREMENTS traceability table populated.
 
-Progress: [░░░░░░░░░░] 0% (0/0 plans)
+Progress: [░░░░░░░░░░] 0% (0/5 phases planned)
 
 ## Performance Metrics
 

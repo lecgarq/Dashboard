@@ -135,25 +135,25 @@ Existing 9 widgets enrich; new 10th widget (folder permissions) added; interacti
 
 ## Traceability
 
-To be populated by `gsd-roadmapper`.
+Populated 2026-05-11 from ROADMAP.md.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHEMA-01..03 | TBD | Pending |
-| SYNC-01..04 | TBD | Pending |
-| MEM-01..06 | TBD | Pending |
-| PROJ-01..02 | TBD | Pending |
-| ROLE-01..03 | TBD | Pending |
-| FLDR-01..05 | TBD | Pending |
-| ACTV-01..05 | TBD | Pending |
-| LIST-01..04 | TBD | Pending |
-| GRAPH-01..04 | TBD | Pending |
-| DASH-14..18 | TBD | Pending |
+| SCHEMA-01..03 | v2.0 Phase 1 — Foundation | Pending |
+| SYNC-01..04   | v2.0 Phase 1 — Foundation | Pending |
+| MEM-01..06    | v2.0 Phase 2 — Core Extraction | Pending |
+| PROJ-01..02   | v2.0 Phase 2 — Core Extraction | Pending |
+| ROLE-01..03   | v2.0 Phase 2 — Core Extraction | Pending |
+| ACTV-01..05   | v2.0 Phase 3 — Activity Pipeline | Pending |
+| FLDR-01..05   | v2.0 Phase 4 — Folders (perf-gated) | Pending |
+| LIST-01..04   | v2.0 Phase 5 — UI Enrichment Waves | Pending |
+| GRAPH-01..04  | v2.0 Phase 5 — UI Enrichment Waves (GRAPH-04 conditional on Phase 4 GO) | Pending |
+| DASH-14..18   | v2.0 Phase 5 — UI Enrichment Waves | Pending |
 
 **Coverage:**
 - v2.0 requirements: 41 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 41 ⚠️ (resolves after roadmap creation)
+- Mapped to phases: 41 ✅
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-05-08*
