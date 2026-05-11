@@ -13,7 +13,7 @@ Establish the relational data layer that every other category depends on.
 
 - [ ] **SCHEMA-01**: Prisma adds 7 new models — `AccProject`, `AccProjectMember`, `AccRole`, `AccProjectRole`, `AccFolder`, `AccFolderPermission`, `AccActivity` — plus `AccDataConnectorJob` for async job state. Initial migration applied on dev + Railway.
 - [ ] **SCHEMA-02**: `AccActivity` table created with composite indexes from day one: `(autodeskId, created_at DESC)`, `(projectId, created_at DESC)`, `(action)`. No retroactive index addition.
-- [ ] **SCHEMA-03**: Two distinct projectId helpers shipped with unit tests — `getAccountId(db)` (strips `b.` for Construction Admin / HQ) and `getProjectIdForDM(rawId)` (preserves `b.` for Data Management). Existing `b.`-stripping callers audited.
+- [x] **SCHEMA-03**: Two distinct projectId helpers shipped with unit tests — `getAccountId(db)` (strips `b.` for Construction Admin / HQ) and `getProjectIdForDM(rawId)` (preserves `b.` for Data Management). Existing `b.`-stripping callers audited.
 
 ### Sync Orchestration
 

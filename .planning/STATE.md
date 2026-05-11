@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: ACC Extraction Completion
-status: ready_to_plan_phase_1
-last_updated: "2026-05-11T16:00:00.000Z"
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
+status: unknown
+last_updated: "2026-05-11T15:59:28.846Z"
 progress:
-  total_phases: 5
+  total_phases: 1
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
+  total_plans: 4
+  completed_plans: 1
 ---
 
 # Project State
@@ -67,6 +67,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases planned)
 | Phase 04.1 P03 | 12m | 2 tasks | 2 files |
 | Phase 04.1 P02 | 8m | 2 tasks | 2 files |
 | Phase 04.1 P04 | 25min | 2 tasks | 6 files |
+| Phase 01-foundation-schema-sync P02 | 1m 30s | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -140,6 +141,8 @@ Recent decisions affecting current work:
 - [Phase 04.1]: P02: Duplicate findings hard-coded MEDIUM severity for bubble color (matches Phase 4 P03 decision; DuplicateRoleFinding has no Severity field)
 - [Phase 04.1]: P04: Polish-only pass — tokenized severity colors across 5 surviving widgets via dashboardTokens.ts; added useHeatmapRamp helper; selection spotlight in heatmap (per-cell itemStyle.opacity) + flow (FlowPaletteContext + node/edge style.opacity)
 - [Phase 04.1]: P04: User approved-with-caveats at human-verify — ACC tab wrapper not replaced and graphics could be more interactive; deferred to future phase per user direction (logged to feedback memory, NOT remediated)
+- [Phase 01-foundation-schema-sync]: Plan 01-02: Shared acc-helpers throw plain Error (not TRPCError/IntegrationError) so CJS release/cron scripts can require the module without pulling @trpc/server
+- [Phase 01-foundation-schema-sync]: Plan 01-02: resolveAccountIdForRouter() local wrapper in users.ts maps helper plain Error to TRPCError({ code: PRECONDITION_FAILED }) — replaces prior UNAUTHORIZED code (config-missing is a precondition, not auth)
 
 ### Roadmap Evolution
 
@@ -164,6 +167,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-05-08
-Stopped at: Completed 04.1-04-PLAN.md — Phase 4.1 closed (4/4). Human-verify approved-with-caveats by user; ACC-tab wrapper + further interactivity deferred to future phase per user direction (logged to feedback memory). 04.1-04-SUMMARY.md authored; STATE/ROADMAP/REQUIREMENTS updated; final docs commit landed.
-Resume file: (none — Phase 04.1 complete; next move is a fresh planning pass that consumes the user feedback as CONTEXT.md)
+Last session: 2026-05-11
+Stopped at: Completed 01-02-PLAN.md — SCHEMA-03 shipped (shared `lib/server/acc-helpers.ts` with `getAccountId` + `getProjectIdForDM`, 7 Vitest cases green, `server/routers/users.ts` consumes helper via `resolveAccountIdForRouter()` wrapper at all 3 call sites, audit clean).
+Resume file: .planning/phases/01-foundation-schema-sync/01-03-PLAN.md (next plan)
