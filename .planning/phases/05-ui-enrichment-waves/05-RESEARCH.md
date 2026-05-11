@@ -1,16 +1,18 @@
 # Phase 5: UI Enrichment Waves - Research
 
-**Researched:** 2026-05-11
-**Domain:** React/Next.js dashboard enrichment — TanStack/tRPC user list, cosmos.gl 3D graph, dashboard widgets (echarts + framer-motion + bubble/orbit + heatmap)
-**Confidence:** HIGH for stack and existing patterns (this is a leaf phase over a mature codebase). MEDIUM for cosmos.gl 3-tier shape/halo techniques and folder-cluster layout. LOW for performance behavior of folder-node integration (gated by Phase 4 anyway).
+**Researched:** 2026-05-11 (RE-RESEARCH pass — overwrites prior version)
+**Domain:** React/Next.js dashboard enrichment — tRPC/Prisma data bridge, TanStack user list, cosmos.gl 3D graph, dashboard widgets (framer-motion orbit/bubble, echarts heatmap, d3 calendar)
+**Confidence:** HIGH for stack, patterns, and verified codebase state. MEDIUM for cosmos.gl 3-tier shape-per-tier sequencing (API verified but no precedent in repo for multi-tier divergence). LOW for Phase 4 folder-detail tRPC procedure (Phase 4 not yet shipped).
 
 ## Summary
 
-Phase 5 is **not greenfield**. Every requirement is an enrichment of an existing surface: the user list (`UsersDirectoryClient.tsx`, 1,527 lines), the cosmos.gl spatial graph (`AccUsersGraph.tsx`, 3,068 lines), or the 9 dashboard widgets under `app/(dashboard)/users/dashboard/widgets/`. The hard task is preserving the v1 UX (label polish curve, 60 FPS, interactivity contract) while threading new fields end-to-end from Prisma → tRPC → context → widget.
+Phase 5 is **not greenfield**. Every requirement enriches an existing surface: the user list (`UsersDirectoryClient.tsx`, 1,527 lines), the cosmos.gl graph (`AccUsersGraph.tsx`, 3,068 lines), or the 9 dashboard widgets under `app/(dashboard)/users/dashboard/widgets/`. The hard work is not UI — it is **bridging data from the new Prisma tables (`AccProjectMember`, `AccProject`, `AccRole`, `AccProjectRole`) into the UI layer**, because `bulkAccSummary` currently reads exclusively from `accMemberCache` and does NOT yet touch any v2.0 table.
 
-Three sub-phases are locked: **5.1 GRAPH** (highest risk, runs first), **5.2 LIST**, **5.3 DASH**. GRAPH-04 is the only requirement gated on Phase 4 — every other requirement starts immediately and runs in parallel with Phase 4. The interactivity contract (DASH-18: hover-detail → click-through → cross-widget spotlight) is the v1.0 Phase 4.1 lesson — must be baked into every task from line one. Color is never the sole signal: pills carry text, edges carry thickness, admin tiers carry shape.
+Three sub-phases are locked: **5.1 GRAPH** (highest risk, runs first), **5.2 LIST**, **5.3 DASH**. GRAPH-04 is the only requirement gated on Phase 4. The interactivity contract (DASH-18: hover-detail → click-through → cross-widget spotlight) must be baked into every task from line one — the v1.0 Phase 4.1 lesson.
 
-**Primary recommendation:** Plan 5.1/5.2/5.3 as **3 separate plan directories** (`5.1-graph-wave/`, `5.2-list-wave/`, `5.3-dash-wave/`) — each with its own PLAN.md and UAT gate. Inside each, sequence by widget, and inside each widget sequence by interactivity layer: **(a) data plumbing → (b) hover detail → (c) click-through → (d) cross-widget spotlight**. Bake the contract in, do not retrofit.
+**Critical new finding (vs prior research):** The Refresh button in `DashboardClient.tsx:88-95` is **already removed** (confirmed by codebase scan — no `handleRefresh`, no `RefreshCw` import exists). The prior research tracked it as a live issue; it is resolved. Also: `HOVER_OPACITY_DIM` in `dashboardTokens.ts` is **0.4 (40%)**, not 0.2 (20%) as stated in CONTEXT.md. CONTEXT says "dim to ~20% opacity" — plan must decide whether to change the token or interpret CONTEXT loosely.
+
+**Primary recommendation:** For each sub-phase, sequence tasks as **(a) new tRPC procedure from v2.0 tables → (b) UI binding + render → (c) hover detail → (d) click-through → (e) cross-widget spotlight**. The data bridge step (a) is the most novel work in Phase 5; the rest extends proven patterns.
 
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
@@ -62,6 +64,11 @@ Three sub-phases are locked: **5.1 GRAPH** (highest risk, runs first), **5.2 LIS
 - **Performance budget**: **minimum 60 FPS** on UAT hardware with all overlays + filters active. Hard floor — below that, planner must defer or simplify a feature.
 - **Accessibility**: color encoding is never the sole signal. Status pills carry text, permission edges use thin/thick variants in addition to color, admin tiers use shape change in addition to color. Pattern: **color enhances, never solely encodes**.
 
+**Plan-Phase Locked Decisions (2026-05-11)**
+- **Status reduction rule (LIST-01)**: `any-active → active; else any-pending → pending; else deleted`. Single pill per user row reflects most permissive membership.
+- **AdminConstellation 3-tier shapes (GRAPH-03 + DASH-16)**: **Hub admin = star + gold halo + 1.5× size**, **Project admin = diamond**, **Executive = circle-with-ring**. Same visual language reused across GRAPH wave overlay and DashConstellation widget.
+- **DashboardClient Refresh button cleanup**: **Already removed** (confirmed 2026-05-11 codebase scan — `DashboardClient.tsx` has no `handleRefresh`, no `RefreshCw` import). Prior RESEARCH.md tracking this as an open issue is now resolved.
+
 ### Claude's Discretion
 - Exact gold/silver/bronze (or chosen) color ramp for admin tiers — pick from existing brand palette.
 - Specific severity scoring algorithm for stale-invite vs orphan-role Recommendations findings.
@@ -85,31 +92,31 @@ Three sub-phases are locked: **5.1 GRAPH** (highest risk, runs first), **5.2 LIS
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| GRAPH-01 | Per-project industry-role assignments become a graph filter dimension. | Existing `accGraphFilters.ts` exposes `roles[]` — extend to include `perProjectRoles[]` with AND-intersect semantics (CONTEXT lock). Sidebar group pattern lives in `AccUsersGraph.tsx` filter panel. |
-| GRAPH-02 | User node hover shows enriched detail (status, companyName, accessLevels, last sign-in, last file activity). | Reuse 250ms hover-prefetch + 5min staleTime pattern from `FileActivityCell` (Phase 03-03 SUMMARY). Tooltip card = floating panel anchored to pointer; install `@radix-ui/react-tooltip` (not present in repo — see Standard Stack). |
-| GRAPH-03 | 3-tier admin overlay (hub / project / executive) via shape change + gold halo on hub. | Cosmos.gl point shapes via `setPointShape` per-point uniform; halo as outer ring via second draw pass OR pre-baked sprite atlas (see Architecture Pattern 2). |
-| GRAPH-04 | Folder nodes — conditional on Phase 4 GO. Separate cluster region, edges color-coded by permission tier. | Cosmos.gl supports heterogeneous point types via `pointColors` + `pointSizes`. Cluster separation: assign initial `pointPositions` for folders to an offset (e.g. `+800, +800` in world space) and use a higher gravity coefficient ON the folder subset only. |
+| GRAPH-01 | Per-project industry-role assignments become a graph filter dimension. | `accGraphFilters.ts` has `roles: string[]` but it maps to hub master roles only. Must add `perProjectRoles: string[]` dimension to `GraphFilters`. New tRPC procedure `accGraph.perProjectRoleFacets` queries `AccProjectRole` (exists in Prisma). Add "Role" collapsible group in graph filter sidebar; `nodeMatchesFilters` extends with AND-intersect. |
+| GRAPH-02 | User node hover shows enriched detail (status, companyName, accessLevels, last sign-in, last file activity). | No `@radix-ui/react-tooltip` installed yet (confirmed). Install via `npx shadcn@latest add tooltip`. Hover data: `status`/`companyName`/`projectAdmin`/`executive` come from `AccProjectMember`; last file activity from `accActivity.getFileActivityForUser` (lazy). Tooltip anchored to invisible 1×1 div at cosmos hover coords (existing hover callback at AccUsersGraph.tsx:975). |
+| GRAPH-03 | 3-tier admin overlay (hub / project / executive) via shape change + gold halo on hub. | `setPointShapes` ALREADY USED in `graphRenderers.ts` (lines 734, 1352–1367). Shape 0 = Circle, Shape 8 = None. Diamond and Star are cosmos.gl `PointShape` enum values — must verify enum values from `@cosmos.gl/graph` source or Context7 before coding. Overlay is a new boolean state (`showAdminTiers`) stored in graph toolbar state, triggers `setPointShapes` + `setPointSizes` + `setPointColors` rebuild for the overlay pass. |
+| GRAPH-04 | Folder nodes — conditional on Phase 4 GO. Separate cluster region, edges color-coded by permission tier. | `AccFolder` and `AccFolderPermission` tables exist in Prisma (verified). No `accFolder` tRPC router exists yet. Cluster separation via offset initial positions. Folder nodes added to existing node array with a `kind: "folder"` type distinction (mirrors existing user/project/role/module node kinds in `accGraph3d.ts`). |
 
 ### Wave 5.2 — LIST (4 reqs)
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| LIST-01 | `status` column (active/pending/deleted) + multi-select filter facet. | Field already on `AccProjectMember.status` (verified). Aggregate at tRPC: status is per-project — use "any active" / "all deleted" reducer documented in CONTEXT for the row pill. |
-| LIST-02 | `projectAdmin` indicator inline + filter facet. | Field on `AccProjectMember.projectAdmin` (boolean). Row pill next to user name; facet AND-intersects with existing filters. |
-| LIST-03 | Last-file-activity column lazy-loaded post-paint. | `accActivity.getLastFileActivity` already exists from Phase 03-03 (verified via STATE.md). Reuse Phase 03-03 hover-prefetch pattern, but auto-fire via IntersectionObserver on row visibility (CONTEXT: "on-scroll batched fetch, no user action"). |
-| LIST-04 | Side-panel detail shows per-module `products` access tier. | `AccProjectMember.products` is `Json` per-module tier map. Render as collapsible "Module Access" section in `AccUserSidePanel.tsx`. Use `moduleLabel()` from `lib/acc/modules.ts`. |
+| LIST-01 | `status` column (active/pending/deleted) + multi-select filter facet. | `AccProjectMember.status` is `String` (active/pending/deleted, verified schema:460). `bulkAccSummary` currently reads from `accMemberCache` only — does NOT query `AccProjectMember`. Must add a new lookup or extend the summary. Status reduction rule locked: any-active wins. Extend `BulkAccUser` with `aggregatedStatus`. |
+| LIST-02 | `projectAdmin` indicator inline + filter facet. | `AccProjectMember.projectAdmin` is `Boolean` (verified schema:465). Same data-bridge gap as LIST-01 — must come from `AccProjectMember`, not the legacy cache. The `BulkAccUser.isAccountAdmin` field exists for hub-level admin; project admin needs a new field. |
+| LIST-03 | Last-file-activity column lazy-loaded post-paint. | `accActivity.getFileActivityForUser` exists (verified acc-activity.ts:40). Phase 03-03 uses 250ms hover-prefetch; LIST-03 extends this to auto-fire via `IntersectionObserver` on row scroll visibility. Pattern: hand-roll `IntersectionObserver` hook (~25 lines, no new dep) — existing graph code already uses IntersectionObserver patterns. ACTV-03 explicitly forbids eager-load into `BulkAccUser`. |
+| LIST-04 | Side-panel shows per-module `products` access tier. | `AccProjectMember.products` is `Json` (schema:467). `moduleLabel()` exists in `lib/acc/modules.ts` (verified). `AccUserSidePanel.tsx` is the mount point. Must add Zod parser at tRPC boundary; add collapsible "Module Access" section. |
 
 ### Wave 5.3 — DASH (5 reqs)
 
 | ID | Description | Research Support |
 |----|-------------|-----------------|
-| DASH-14 | KpiStrip: pending-invite tile + project-admin tile + folders-crawled tile. | Append to existing 6-tile strip in `KpiStripWidget.tsx` (verified). Layout already uses `grid-cols-2 sm:grid-cols-3 lg:grid-cols-6` — bump `lg:grid-cols-9` or wrap to 2 rows. |
-| DASH-15 | Recommendations gains "stale invite" + "orphan role" findings. | `dashboardAnalytics.ts` is the findings producer; add two new finding kinds to `DashboardFindings` (extend `findingsContext.tsx`), bubble through `RecommendationsWidget.tsx` (verified — bubble cluster widget). Severity interleave is at sort time. |
-| DASH-16 | AdminConstellation 3-tier with ring colors. | `AdminAccessWidget.tsx` orbit widget — currently single-tier (`isAccountAdmin === true`). Extend filter + ring color by tier; CONTEXT locks star/glyph/halo mirroring graph treatment. |
-| DASH-17 | RolesModulesHeatmap hub vs per-project toggle. | `RolesModulesHeatmapWidget.tsx` uses ECharts; add header toggle that swaps the aggregation function between `aggregateHubRoles` and `aggregateProjectRoles`. Default = Hub (CONTEXT lock). |
-| DASH-18 | Interactivity contract — UAT gate. | Cross-widget spotlight already exists via `selectionContext.tsx` (`SelectedFinding` discriminated union — verified). For each modified widget: (a) hover handler dims non-hovered to 20% via `useHoverSpotlight`, (b) click handler calls `setSelected({ kind, ... })`, (c) `DashboardSidePanel.tsx` mounts a body per kind. |
+| DASH-14 | KpiStrip: pending-invite tile + project-admin tile + folders-crawled tile. | `KpiStripWidget.tsx` uses `grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6` (verified line 82). Append 3 tiles: bump to `lg:grid-cols-9` or allow 2-row wrap via `flex-wrap`. Count queries come from new tRPC procedure querying `AccProjectMember` (pending count, projectAdmin count) and `AccFolder` (crawled count). |
+| DASH-15 | Recommendations gains "stale invite" + "orphan role" findings. | `DashboardFindings` interface in `dashboardAnalytics.ts:72-78` has 4 fields. Extend with `staleInvites` + `orphanRoles`. `detectStaleInvites` reads from `AccProjectMember` (status=pending + addedOn > 30d). `detectOrphanRoles` reads from `AccFolder`/`AccFolderPermission` + `AccProjectRole.memberId`. Severity locked: orphan=HIGH, stale=MEDIUM. Interleave at sort time in `RecommendationsWidget`. |
+| DASH-16 | AdminConstellation 3-tier (hub admin / project admin / executive). | `AdminAccessWidget.tsx` filters on `u.isAccountAdmin === true` only (line 78). Extend to pull project admins + executives from `AccProjectMember`. Uses framer-motion orbit math already in place. `useHoverSpotlight` already imported. Shapes: star (hub admin) / diamond (project admin) / circle-with-ring (executive). |
+| DASH-17 | RolesModulesHeatmap hub vs per-project toggle. | `RolesModulesHeatmapWidget.tsx` calls `aggregate(users)` (line 101) which maps `user.allRoles` (hub-level). Add `aggregateProjectRoles` function querying `AccProjectRole` from tRPC. Header toggle state selects the aggregation function. Default = Hub view. ECharts dataset swap triggers re-render. |
+| DASH-18 | Interactivity contract — UAT gate enforced on every modified widget. | `useHoverSpotlight` hook exists in `_shared/HoverSpotlight.tsx` (verified). `HOVER_OPACITY_DIM = 0.4` in `dashboardTokens.ts` (verified — CONTEXT says "~20%" but actual token is 40%). Selection context union at `selectionContext.tsx:32-40` has 7 kinds. Add 3 new kinds: `folder`, `staleInvite`, `adminTier`. `DashboardSidePanel.tsx` adds render branches for each. |
 
-**Phase 4 contingency:** If Phase 4 returns NO-GO on GRAPH-04, the dashboard-only folder fallback (DASH-14 folders-crawled tile + a folder-detail panel reachable from the Phase 4 matrix widget) ships regardless. Plan should sequence the matrix-click → folder-detail-panel hookup as part of Wave 5.3.
+**Phase 4 contingency:** If Phase 4 returns NO-GO on GRAPH-04, the dashboard-only folder fallback (DASH-14 folders-crawled tile + folder-detail panel reachable from Phase 4 matrix widget) ships regardless. Wave 5.3 plans must sequence the matrix-click → `<FolderDetailPanel>` hookup before GRAPH-04 work begins.
 </phase_requirements>
 
 ## Standard Stack
@@ -118,38 +125,41 @@ Three sub-phases are locked: **5.1 GRAPH** (highest risk, runs first), **5.2 LIS
 
 | Library | Version | Purpose | Why Standard |
 |---------|---------|---------|--------------|
-| Next.js | 16.x (App Router) | RSC + client islands | Project foundation |
-| React | 19.x | Widget components | Project foundation |
-| tRPC | 11.x | Data plumbing (Prisma → React Query) | Used by every router in `server/routers/` |
-| @tanstack/react-query | 5.x (via tRPC) | Query cache, staleTime, lazy fetch | Already drives `bulkAccSummary` |
-| Prisma | 5.x | DB access | All ACC models live here |
-| Tailwind v4 | 4.x | Styling | Project convention |
-| shadcn/ui (Radix-backed) | current | Pills, sheets, buttons | `components/ui/*` |
-| framer-motion | 12.x | Widget entrance + spring | Used by Admin/Recommendations widgets |
-| ECharts (echarts-for-react) | current | Heatmap | RolesModulesHeatmap |
-| d3-hierarchy / d3-scale / d3-time | current | Bubble pack + calendar | Recommendations + RecentlyAdded |
-| @cosmos.gl/graph | **3.0.0-beta.9** | GPU spatial graph | Verified in package.json:36. Patches in `patches/` — DO NOT upgrade in Phase 5. |
-| sonner | 2.0.7 | Toasts | Already imported by AccUsersGraph |
-| Vitest | current | Unit tests | Project convention (vitest.config.ts present) |
+| Next.js | ^16.2.6 | RSC + client islands | Project foundation |
+| React | 19.2.6 | Widget components | Project foundation |
+| tRPC | ^11.17.0 | Data plumbing (Prisma → React Query) | All ACC routers use it |
+| @tanstack/react-query | ^5.100.10 (via tRPC) | Query cache, staleTime, lazy fetch | Drives `bulkAccSummary` + `accActivity` |
+| Prisma | ^7.8.0 | DB access | `AccProjectMember`, `AccProjectRole`, `AccFolder`, etc. |
+| Tailwind | ^4.3.0 | Styling | Project convention |
+| shadcn/ui (Radix-backed) | ^4.7.0 | Pills, sheets, badges, skeletons | `components/ui/*` — 22 components already installed |
+| framer-motion | ^12.38.0 | Widget entrance + spring + orbit | Used by AdminAccess, Recommendations, Outliers |
+| ECharts (echarts-for-react) | ^6.0.0 / ^3.0.6 | Heatmap | `RolesModulesHeatmapWidget` |
+| d3-hierarchy / d3-scale / d3-time | current | Bubble pack, calendar | Recommendations, RecentlyAdded |
+| @cosmos.gl/graph | **3.0.0-beta.9** (pinned) | GPU spatial graph | DO NOT upgrade in Phase 5; patches in `patches/` |
+| sonner | ^2.0.7 | Toasts | Imported by AccUsersGraph |
+| Vitest | ^4.1.6 | Unit tests | `vitest.config.ts` present; 5+ test files active |
+| date-fns | current | Date arithmetic | Used in `dashboardAnalytics.ts` for 90d inactive calc |
 
 ### Supporting — NEW dependencies needed
 
-| Library | Version | Purpose | When to Use |
-|---------|---------|---------|-------------|
-| `@radix-ui/react-tooltip` | latest | Hover tooltip card (GRAPH-02 hover detail; LIST-03 em-dash "No activity in 90d") | Tooltip card for graph hover. shadcn ships a Tooltip primitive — install via `npx shadcn@latest add tooltip`. **Verify via Context7 before install.** |
-| `@radix-ui/react-popover` | latest | Inline filter group expand/collapse, "(+N others)" popover (already in `RecentlyAddedWidget`) | Popovers on filter sidebar Role group. Install via `npx shadcn@latest add popover` if not present. |
-| `react-intersection-observer` | optional | LIST-03 lazy column auto-fire on row visibility | Alternative: hand-rolled `IntersectionObserver` (~20 lines, no dep). **Recommend hand-rolled** to avoid new dep — pattern already in graph for label visibility. |
+| Library | Version | Purpose | Install |
+|---------|---------|---------|---------|
+| `@radix-ui/react-tooltip` | shadcn-managed | Hover tooltip card for GRAPH-02 hover detail + LIST-03 em-dash tooltip | `npx shadcn@latest add tooltip` — NOT in repo yet (confirmed) |
+| `@radix-ui/react-popover` | shadcn-managed | Filter group expand / inline popovers | `npx shadcn@latest add popover` — NOT in repo yet (confirmed). Check if `dropdown-menu.tsx` covers the use-case first — it uses Radix DropdownMenu which may suffice for the filter Role group. |
+
+**Note:** `react-intersection-observer` npm package NOT needed — hand-roll `IntersectionObserver` (~25 lines) following the existing pattern in `graphRenderers.ts`. Keeps dep count stable.
 
 ### Alternatives Considered
 
 | Instead of | Could Use | Tradeoff |
 |------------|-----------|----------|
-| shadcn Tooltip (Radix-backed) | Hand-rolled portal+positioning | shadcn is 30 lines of glue and projects already use Radix elsewhere. Hand-rolled costs >300 lines for cross-widget consistency. |
-| Cosmos.gl per-point shapes | Sprite atlas pre-baked at app start | Per-point uniforms are simpler but cost a GPU re-upload on every change. Sprite atlas is faster but requires building textures. **Recommend per-point** because shapes change at most once per session (toggle on/off). |
-| New tRPC router for folder detail | Extend `accActivity` router OR add `accFolder` router | Naming consistency — create `server/routers/acc-folder.ts` if Phase 4 hasn't already. Verify by reading Phase 4 PLAN.md when it lands; do NOT block on it. |
-| Top-level "Show admin tiers" toggle as URL param | localStorage | URL param composes with deep links (e.g. share an audit link); already used by graph display mode (`writeGraphDisplayMode`). **Recommend URL param**. |
+| Shadcn Tooltip (Radix-backed) | Custom portal+positioning | Shadcn is ~30 lines of glue; handles edge collision, escape key, ARIA. Don't hand-roll. |
+| `accMemberCache` data bridge | Read directly from `AccProjectMember` in existing `bulkAccSummary` | Extending `bulkAccSummary` adds Prisma joins; alternatively create a new `accMembers.getEnrichedSummary` procedure alongside the legacy one. Recommended: new procedure, keep legacy cache-based one for graph snapshot path to avoid breaking it. |
+| URL param for `showAdminTiers` toggle | localStorage | URL param enables shareable audit links — consistent with existing `writeGraphDisplayMode`. Recommend URL param. |
+| Top-level `accGraph` router | Extend `users` router | `users.ts` is already 1,500+ lines; create `server/routers/acc-graph.ts` and register as `accGraph` in `root.ts`. Clean separation. |
+| Top-level `accFolder` router | Extend `acc-activity` router | Naming clarity: `server/routers/acc-folder.ts` → registered as `accFolder`. Check Phase 4 output first — it may ship this. |
 
-**Installation (if Phase 4 didn't add them already):**
+**Installation:**
 ```bash
 npx shadcn@latest add tooltip popover
 ```
@@ -163,23 +173,76 @@ npx shadcn@latest add tooltip popover
 ├── 05-CONTEXT.md                  (exists)
 ├── 05-RESEARCH.md                 (this file)
 ├── 05.1-graph-wave/
-│   ├── 05.1-PLAN.md
-│   ├── 05.1-01-PLAN.md            (GRAPH-02 hover detail — bake in contract from line 1)
-│   ├── 05.1-02-PLAN.md            (GRAPH-01 per-project role filter)
+│   ├── 05.1-01-PLAN.md            (GRAPH-01 per-project role filter + data bridge)
+│   ├── 05.1-02-PLAN.md            (GRAPH-02 hover detail + tooltip install)
 │   ├── 05.1-03-PLAN.md            (GRAPH-03 3-tier admin overlay)
 │   └── 05.1-04-PLAN.md            (GRAPH-04 folder nodes — CONDITIONAL on Phase 4 GO)
 ├── 05.2-list-wave/
-│   ├── 05.2-01-PLAN.md            (LIST-01 status column + facet)
+│   ├── 05.2-01-PLAN.md            (LIST-01 status column + facet + data bridge)
 │   ├── 05.2-02-PLAN.md            (LIST-02 projectAdmin indicator + facet)
 │   ├── 05.2-03-PLAN.md            (LIST-03 lazy last-file-activity column)
 │   └── 05.2-04-PLAN.md            (LIST-04 side-panel Module Access section)
 └── 05.3-dash-wave/
-    ├── 05.3-01-PLAN.md            (DASH-14 KpiStrip tiles)
-    ├── 05.3-02-PLAN.md            (DASH-15 Recommendations new findings)
+    ├── 05.3-01-PLAN.md            (DASH-14 KpiStrip tiles + count queries)
+    ├── 05.3-02-PLAN.md            (DASH-15 Recommendations stale/orphan findings)
     ├── 05.3-03-PLAN.md            (DASH-16 AdminConstellation 3-tier)
     ├── 05.3-04-PLAN.md            (DASH-17 Heatmap hub/project toggle)
-    └── 05.3-05-PLAN.md            (DASH-18 interactivity contract gate — enforced via test matrix)
+    └── 05.3-05-PLAN.md            (DASH-18 interactivity contract gate — test matrix)
 ```
+
+### Pattern 0: Data Bridge — v2.0 Tables to UI (NEW — critical)
+
+**What:** Every Phase 5 requirement that surfaces v2.0 data (status, projectAdmin, executive, products, companyName) needs a tRPC procedure that queries `AccProjectMember` + joins, since `bulkAccSummary` reads only from `accMemberCache`. This is the common first task in each sub-phase plan.
+
+**How:** Create `server/routers/acc-members.ts` (or `acc-graph.ts` for graph-specific facets). Register in `root.ts`. Design for graceful no-data state: Phase 4 may not have completed its first Quick Sync when 5.1 begins.
+
+**Per-wave bridge shape:**
+```typescript
+// server/routers/acc-members.ts (NEW)
+export const accMembersRouter = router({
+  // LIST wave: per-user aggregated status, projectAdmin flag, products
+  enrichedUsers: protectedProcedure.query(async ({ ctx }) => {
+    const members = await ctx.db.accProjectMember.findMany({
+      where: { project: { status: "active" } },
+      select: {
+        email: true, status: true, projectAdmin: true,
+        executive: true, companyName: true, products: true,
+        addedOn: true, lastSignIn: true,
+      },
+    });
+    // Aggregate per email — status reduction: any-active wins
+    const byEmail = new Map<string, AggregatedMember>();
+    for (const m of members) {
+      const prior = byEmail.get(m.email);
+      byEmail.set(m.email, mergeAccProjectMember(prior, m));
+    }
+    return Array.from(byEmail.values());
+  }),
+
+  // GRAPH wave: distinct per-project role names for filter facet
+  perProjectRoleFacets: protectedProcedure.query(async ({ ctx }) => {
+    const roles = await ctx.db.accRole.findMany({
+      where: { projectRoles: { some: { memberId: { not: null } } } },
+      select: { name: true },
+      distinct: ["name"],
+      orderBy: { name: "asc" },
+    });
+    return roles.map(r => r.name);
+  }),
+
+  // DASH wave: KPI counts
+  dashboardCounts: protectedProcedure.query(async ({ ctx }) => {
+    const [pending, projectAdmins, folders] = await Promise.all([
+      ctx.db.accProjectMember.count({ where: { status: "pending" } }),
+      ctx.db.accProjectMember.count({ where: { projectAdmin: true }, distinct: ["email"] }),
+      ctx.db.accFolder.count(),
+    ]);
+    return { pendingInvites: pending, projectAdmins, foldersCrawled: folders };
+  }),
+});
+```
+
+**Graceful empty state:** If `accProjectMember` table has zero rows (Phase 4 not yet run), return empty arrays/zeros — UI renders "—" rather than erroring. Add `staleTime: 5 * 60 * 1000` so counts don't re-fetch every render.
 
 ### Pattern 1: Interactivity Contract — bake in from task 1
 
@@ -189,246 +252,135 @@ npx shadcn@latest add tooltip popover
 
 **Template task structure for any widget plan:**
 ```
-Task 1: Data plumbing (Prisma → tRPC procedure → React Query → widget prop)
-Task 2: Render the new field (column / pill / overlay)
-Task 3: Hover detail (Tooltip component + dim non-hovered to 20% via useHoverSpotlight)
+Task 1: Data bridge (new tRPC procedure → React Query → prop/context)
+Task 2: Render new field (column / pill / overlay)
+Task 3: Hover detail (Tooltip or useHoverSpotlight + dim siblings at HOVER_OPACITY_DIM=0.4)
 Task 4: Click handler → setSelected({ kind, ... }) via selectionContext
-Task 5: DashboardSidePanel body for the new selection kind
-Task 6: Cross-widget spotlight — verify a click in widget A dims non-matching in widget B
+Task 5: DashboardSidePanel branch for the new selection kind
+Task 6: Cross-widget verification — click in widget A dims non-matching in widget B
 ```
 
-**Source:** Verified pattern in `selectionContext.tsx` + `DashboardSidePanel.tsx` (Phase 04.1 / 03-03).
+**Opacity note:** `HOVER_OPACITY_DIM` is **0.4** in `dashboardTokens.ts` (not 0.2 as CONTEXT states). CONTEXT says "dim to ~20%". The planner must decide: update the token to 0.2, or treat CONTEXT's "~20%" as approximate and keep 0.4. Recommend flagging to user at plan-phase — changing the token changes ALL existing widgets that use it.
 
-### Pattern 2: Cosmos.gl per-point attribute updates
+### Pattern 2: Cosmos.gl Per-Point Attribute API (VERIFIED)
 
-**What:** Update `pointColors`, `pointSizes`, `pointShapes` via the renderer's setter for the entire array; do NOT mutate in place.
-**When to use:** Admin tier overlay toggle (GRAPH-03), folder cluster (GRAPH-04).
-**Source:** Existing pattern in `AccUsersGraph.tsx` (verified at lines ~1187, 1323 — `getSimulationAlpha`, `setPoints*`).
+**What:** `setPointColors(Float32Array)`, `setPointSizes(Float32Array)`, `setPointShapes(Float32Array)` on the cosmos graph instance. ALL THREE are already called in `graphRenderers.ts`.
+
+**Shape encoding (verified from graphRenderers.ts):**
+- Shape `0` = Circle (default for all visible nodes)
+- Shape `8` = None (used to hide filtered-out nodes)
+- Diamond / Star values are cosmos.gl PointShape enum — must verify numeric values from the patched `@cosmos.gl/graph` source or Context7 before GRAPH-03 implementation. The patches directory has `@cosmos.gl+graph+3.0.0-beta.9.patch` — read it to extract the enum.
+
+**Critical — size buffer interaction with shape overlay:**
+The existing `setVisibleIndices` rebuilds size+shape buffers together (graphRenderers.ts:1345-1368). The admin overlay toggle must NOT bypass this — it must compose with the visibility filter:
 
 ```typescript
-// Pattern from AccUsersGraph.tsx — extend for admin tier shapes
-const pointSizes = new Float32Array(nodes.length);
-const pointColors = new Float32Array(nodes.length * 4);
-for (let i = 0; i < nodes.length; i++) {
-  const n = nodes[i];
-  pointSizes[i] = n.isHubAdmin ? BASE * 1.5 : BASE; // CONTEXT: 1.5× for hub admins
-  // pack RGBA into pointColors[i*4 .. i*4+3]
+// Admin overlay composing with visibility filter
+function buildAdminOverlaySizeBuffer(
+  nodes: GraphRenderNode[],
+  visibleSet: Set<number>,
+  showAdminTiers: boolean,
+  BASE_SIZE: number,
+): Float32Array {
+  const buf = new Float32Array(nodes.length);
+  for (let i = 0; i < nodes.length; i++) {
+    if (!visibleSet.has(i)) { buf[i] = 0; continue; }
+    const n = nodes[i];
+    buf[i] = showAdminTiers && n.isHubAdmin ? BASE_SIZE * 1.5 : BASE_SIZE;
+  }
+  return buf;
 }
-renderer.setPoints({ positions, sizes: pointSizes, colors: pointColors });
+// After building: this.graph.setPointSizes(buf); this.graph.setPointShapes(shapes);
 ```
 
-**Cosmos.gl alpha inversion (verified via memory):** `getSimulationAlpha()` in beta.9 returns `1 - progress` — inverted from d3 alpha. Existing gating logic at AccUsersGraph.tsx:1414 accounts for this; **do not re-invert** when adding new gates.
+**Alpha gate — DO NOT re-invert:**
+`getSimulationAlpha()` in cosmos.gl v3 returns `1 - progress` (inverted from d3). The stability detector in `graphRenderers.ts:1323-1324` uses `alpha < 0.005` as "stable". Any new rAF gate for admin overlay visibility must mirror this pattern, not derive a new expression.
 
-### Pattern 3: Lazy column fetch on row visibility (LIST-03)
+### Pattern 3: Lazy Column Fetch on Row Visibility (LIST-03)
 
-**What:** Use `IntersectionObserver` per row; when row scrolls into viewport, fire a tRPC batch query for visible-but-unfetched rows.
-**When to use:** `last-file-activity` column.
-**Source:** Phase 03-03 `FileActivityCell` uses 250ms hover-prefetch — adapt to scroll trigger (CONTEXT: "no user action required").
+**What:** Hand-roll `IntersectionObserver` per row; when row scrolls into viewport, fire `accActivity.getFileActivityForUser` for that email.
+
+**Why hand-roll:** No `react-intersection-observer` in repo. The graph already uses equivalent DOM-observation patterns. ~25 lines, no new dep.
 
 ```typescript
-// pseudocode
-const visibleEmails = useVisibleRowEmails(); // IntersectionObserver pool
-const { data } = trpc.accActivity.getLastFileActivity.useQuery(
-  { emails: visibleEmails },
-  { staleTime: 300_000, enabled: visibleEmails.length > 0 }
-);
+// app/(dashboard)/users/lib/useVisibleRowEmails.ts (new)
+import { useEffect, useRef, useState } from "react";
+
+export function useVisibleRowEmails(emails: string[]): string[] {
+  const [visible, setVisible] = useState<Set<string>>(new Set());
+  const refsRef = useRef<Map<string, HTMLElement>>(new Map());
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      entries => {
+        setVisible(prev => {
+          const next = new Set(prev);
+          for (const e of entries) {
+            const email = (e.target as HTMLElement).dataset.email;
+            if (!email) continue;
+            if (e.isIntersecting) next.add(email);
+            else next.delete(email);
+          }
+          return next;
+        });
+      },
+      { rootMargin: "200px" }, // prefetch slightly off-screen
+    );
+    for (const [, el] of refsRef.current) observer.observe(el);
+    return () => observer.disconnect();
+  }, [emails.join(",")]); // re-observe when email set changes
+
+  return Array.from(visible);
+}
 ```
 
-**Empty state:** em-dash `—` with `<Tooltip>` "No activity in 90d" (CONTEXT lock).
+**Empty state:** Render em-dash `—` with `<Tooltip>` "No activity in 90d" when `getFileActivityForUser` returns empty (matches existing `FileActivityCell` empty-state pattern from Phase 03-03).
 
-### Pattern 4: Selection context extension
+**Sticky activation pattern from Phase 03-03:** Once a row's activity is fetched, set `enabled: true` permanently for that email (`useState` + `useEffect`). Prevents re-firing on scroll back.
 
-**What:** Extend `SelectedFinding` discriminated union with new kinds for Phase 5.
-**Source:** `selectionContext.tsx:32-40` already supports 7 kinds (junk/duplicate/outlier/role/admin/day/userActivity).
+### Pattern 4: Selection Context Extension
+
+**What:** Extend `SelectedFinding` discriminated union (`selectionContext.tsx:32-40`) with new Phase 5 kinds.
+**Current state (verified):** 7 kinds: junk, duplicate, outlier, role, admin, day, userActivity.
 
 **New kinds to add:**
-- `{ kind: "folder"; folderUrn: string }` — GRAPH-04 folder node click + DASH-15 orphan-role click + Phase 4 matrix-cell click
-- `{ kind: "staleInvite"; email: string }` — DASH-15 stale invite click
-- `{ kind: "adminTier"; tier: "hub" | "project" | "executive" }` — DASH-16 click on a tier ring
-
-`DashboardSidePanel.tsx` gains corresponding render branches.
-
-### Pattern 5: Findings extension (DASH-15)
-
-**What:** Add `staleInvites` and `orphanRoles` to `DashboardFindings`; severity-interleave at the sort step in `RecommendationsWidget.tsx`.
-**Where:** `lib/acc/dashboardAnalytics.ts`. Add `detectStaleInvites(users)` (pending status + addedOn > 30d) and `detectOrphanRoles(folders, members)` (folder role with zero assigned members).
-**Severity (CONTEXT lock):** orphan role = HIGH, stale invite = MEDIUM.
-
-### Anti-Patterns to Avoid
-
-- **Retrofitting interactivity after the visual reskin lands** — v1.0 Phase 4.1 feedback memory. Always Tasks 1→6 in one plan, never split across plans.
-- **Color as sole signal** — CONTEXT cross-cutting lock. Always pair color with text (status pill labels), shape (admin tier glyphs), or weight (edge thickness).
-- **New tabs / pages / views** — REQUIREMENTS.md "Out of Scope" — enrich only.
-- **Adding Sync All / Refresh buttons** — Memory: "No manual sync UI". `DashboardClient.tsx:88-95` already has a Refresh button (v1 vestige); do NOT add new ones, and surface this to the user during planning as a pre-existing inconsistency to clean up (v2.x CLN bucket).
-- **Mutating cosmos.gl point arrays in place** — always re-create the typed array and call `setPoints(...)`. Verified pattern in existing code.
-- **Eager-loading file activity into `BulkAccUser`** — Phase 3 explicitly forbids this (REQUIREMENTS ACTV-03 "NOT eager-loaded"). LIST-03 MUST stay lazy.
-- **Rebuilding the label polish curve** — UAT-approved 2026-05-08, locked by memory. Do not touch `pow(zoom, 0.2)` clamp `[0.85, 1.4]`, 11/18px floor/ceiling.
-
-## Don't Hand-Roll
-
-| Problem | Don't Build | Use Instead | Why |
-|---------|-------------|-------------|-----|
-| Hover tooltip with auto-flip/auto-shift | Custom portal + getBoundingClientRect | shadcn `Tooltip` (Radix) | Radix handles edge collision, escape key, focus restore, ARIA |
-| Filter facet UI | Custom checkbox group | Existing `cosmosUtils.ts` + `accGraphFilters.ts` pattern | Already battle-tested; just add new dimension to the existing union |
-| Severity-interleaved finding list | Custom sort + dedupe | Extend `dashboardAnalytics.ts` `computeAllFindings` | Single producer keeps `RecommendationsWidget` dumb |
-| Folder tree visualization in side panel | Custom indented div tree | Reuse `AccFolder.fullPath` string slash-split, render as breadcrumb | Folder hierarchy is shallow; full tree is overkill |
-| Spotlight halo for selected nodes | Custom WebGL pass | Cosmos.gl `pointGreyoutOpacity` + per-point color modulation | Already used in v1 spotlight pattern |
-| Lazy fetch coordinator | Custom debounce + batch | tRPC's `useQuery` with `enabled` + React Query staleTime | The framework already handles batching, dedup, cancellation |
-| Cross-widget selection wiring | Custom event bus | `selectionContext.tsx` (already shipped, 7 kinds) | Verified — extend the discriminated union, add panel branches |
-
-**Key insight:** Phase 5 is mostly *extending* existing patterns, not building new ones. The biggest hand-rolling temptation is the cosmos.gl folder cluster (GRAPH-04) — resist by treating folders as ordinary cosmos points with offset initial positions and a different color/shape, NOT a second renderer.
-
-## Common Pitfalls
-
-### Pitfall 1: Cosmos.gl alpha inversion (high cost if forgotten)
-
-**What goes wrong:** Adding a new rAF gate that uses `getSimulationAlpha()` and inverting twice → labels/overlays never show OR always show.
-**Why it happens:** Cosmos.gl v3 inverts d3 semantics. Memory documents this; existing code (line 1414 of AccUsersGraph.tsx) already accounts for it.
-**How to avoid:** When adding admin overlay or folder visibility gates, mirror the existing pattern at line 1414 verbatim. Do not derive a new gating expression.
-**Warning signs:** Overlay flickers, or only appears when simulation is fully cooled.
-
-### Pitfall 2: Eager-loading file activity into bulkAccSummary
-
-**What goes wrong:** LIST-03 implementer adds `lastFileActivity` to `BulkAccUser` — breaks REQUIREMENTS ACTV-03 (lazy contract).
-**Why it happens:** Easy to "just add the field" rather than thread a second query.
-**How to avoid:** Explicitly forbid in the plan task. Use the existing `getLastFileActivity` procedure from Phase 03-02; new procedure if needed is `accActivity.getLastFileActivityBatch({ emails: string[] })`.
-**Warning signs:** `bulkAccSummary` query becomes slow; FindingsContext starts referencing activity dates.
-
-### Pitfall 3: Phase 4 GO/NO-GO timing
-
-**What goes wrong:** GRAPH-04 plan is drafted assuming GO; Phase 4 returns NO-GO mid-implementation.
-**Why it happens:** Phase 5 starts in parallel with Phase 4 (CONTEXT lock).
-**How to avoid:**
-1. Plan GRAPH-04 LAST in Wave 5.1 sequence.
-2. Plan the dashboard fallback (DASH-15 orphan-role surfacing + matrix → folder-detail panel) BEFORE GRAPH-04 in Wave 5.3.
-3. Maintain a single source of truth for the folder-detail panel — same component used by GRAPH-04 click AND DASH matrix click. Architecture: `<FolderDetailPanel>` component, mounted in `DashboardSidePanel` via `kind: "folder"` selection.
-**Warning signs:** Diverging folder-detail code paths in graph vs dashboard.
-
-### Pitfall 4: 60 FPS budget on UAT hardware
-
-**What goes wrong:** Folder cluster adds 5,000 extra nodes (typical hub has 100 projects × 50 folders); FPS drops below 60.
-**Why it happens:** Cosmos.gl scales well on GPU but the simulation cost of 5,000 extra points + 50,000 extra edges (folder-user permission edges) is non-trivial.
-**How to avoid:** Phase 4 perf pre-flight produces the artifact. Cap edges to "most-restricted permission tier only" per user-folder pair so each user-folder pair contributes 1 edge, not 4.
-**Warning signs:** Performance overlay shows simAlpha never reaching 0; pan/zoom feels janky.
-
-### Pitfall 5: Filter intersection bugs
-
-**What goes wrong:** Per-project role filter is OR'd with status filter instead of AND'd (CONTEXT lock = AND).
-**Why it happens:** `accGraphFilters.ts` mixes include-lists and exclude-lists; easy to get the wrong type.
-**How to avoid:** Add Vitest unit tests to `accGraphFilters.test.ts` covering the new dimension's AND-intersection with each existing dimension (4 combinations minimum).
-**Warning signs:** Toggling per-project role shows MORE nodes, not fewer.
-
-### Pitfall 6: Per-module products tier rendering
-
-**What goes wrong:** `AccProjectMember.products` is `Json` — opaque to TypeScript. Renderer accidentally renders the raw JSON.
-**Why it happens:** Prisma `Json` type is `unknown` at the boundary.
-**How to avoid:** Add a Zod schema + parser at the tRPC boundary; export typed `ProductsTier = Record<ModuleName, 'administrator' | 'member' | 'none'>`. Pattern already exists for `products` in `lib/acc/quick-sync-extraction.ts` (verified).
-**Warning signs:** Side panel shows `{"docs":"member"}` instead of "Docs: Member".
-
-### Pitfall 7: AccProjectMember status is per-project, but user list is per-user
-
-**What goes wrong:** LIST-01 needs a *single* status pill per row, but a user may be `active` on project A and `pending` on project B.
-**Why it happens:** `BulkAccUser` is the dashboard aggregate; `AccProjectMember.status` is per-project.
-**How to avoid:** CONTEXT does not lock the reduction rule. Recommend: **"any active" wins → active; else any pending → pending; else deleted**. Add `aggregatedStatus: 'active' | 'pending' | 'deleted'` to `BulkAccUser` in `bulkAccSummary`. Surface the per-project breakdown in the side panel as a sub-list.
-**Warning signs:** Status filter behaves erratically (a user appears in both "active" and "pending" facets).
-
-### Pitfall 8: Existing v1 "Refresh" button in DashboardClient
-
-**What goes wrong:** Memory feedback says "No manual sync UI" — Refresh button exists at `DashboardClient.tsx:88-95`.
-**Why it happens:** v1 vestige; user feedback came in Phase 4.1 retrospective.
-**How to avoid:** Either (a) remove during Wave 5.3 cleanup, (b) leave it and surface the inconsistency to the user during plan-phase, or (c) defer to CLN bucket. **Recommend (b) — ask the user during plan-phase**, do not silently delete user-facing chrome.
-**Warning signs:** UAT comments referencing the Refresh button on dashboard.
-
-## Code Examples
-
-### Example 1: Extend SelectedFinding for folder kind
-
 ```typescript
-// app/(dashboard)/users/dashboard/selectionContext.tsx — extend the union
+// app/(dashboard)/users/dashboard/selectionContext.tsx
 export type SelectedFinding =
-  | { kind: "junk"; finding: JunkRoleFinding }
-  | { kind: "duplicate"; finding: DuplicateRoleFinding }
-  | { kind: "outlier"; finding: OutlierFinding }
-  | { kind: "role"; role: string; severity: Severity | undefined }
-  | { kind: "admin"; email: string }
-  | { kind: "day"; dateIso: string; emails: string[] }
-  | { kind: "userActivity"; email: string }
-  // Phase 5 additions:
-  | { kind: "folder"; folderUrn: string }          // GRAPH-04 + DASH matrix cell click
-  | { kind: "staleInvite"; email: string }         // DASH-15
-  | { kind: "adminTier"; tier: "hub" | "project" | "executive" }  // DASH-16
+  // ... existing 7 kinds unchanged ...
+  | { kind: "folder"; folderUrn: string }           // GRAPH-04 folder click + DASH matrix cell click
+  | { kind: "staleInvite"; email: string }          // DASH-15 stale invite click
+  | { kind: "adminTier"; tier: "hub" | "project" | "executive" }  // DASH-16 tier ring click
   | null;
-
-// Also extend `isSelectionValid()` — folder/staleInvite reconcile against
-// new findings shapes; adminTier always valid (user-list reference).
 ```
 
-### Example 2: tRPC procedure for per-project role facet (GRAPH-01)
+Also extend `isSelectionValid()` — `folder`/`staleInvite` validate against new findings shapes; `adminTier` always valid.
 
+`DashboardSidePanel.tsx` gains corresponding render branches:
 ```typescript
-// server/routers/acc-graph.ts (new — or extend users.ts)
-export const accGraphRouter = router({
-  perProjectRoleFacets: protectedProcedure
-    .query(async ({ ctx }) => {
-      // Distinct role names with member counts, joined to AccProjectRole
-      const rows = await ctx.db.accProjectRole.findMany({
-        where: { memberId: { not: null } },
-        select: { role: { select: { name: true } } },
-        distinct: ['roleId'],
-      });
-      return rows.map(r => r.role.name).filter(Boolean).sort();
-    }),
-});
-
-// Client: hook reused in accGraphFilters sidebar
-const { data: perProjectRoles } = trpc.accGraph.perProjectRoleFacets.useQuery(
-  undefined,
-  { staleTime: 5 * 60 * 1000 },
-);
+case "folder":    return <FolderDetailPanel folderUrn={selected.folderUrn} />;
+case "staleInvite": return <StaleInvitePanel email={selected.email} users={users} />;
+case "adminTier": return <AdminTierPanel tier={selected.tier} users={users} />;
 ```
 
-### Example 3: Tooltip card for graph hover (GRAPH-02)
+### Pattern 5: Findings Extension (DASH-15)
+
+**What:** Add `staleInvites` + `orphanRoles` to `DashboardFindings`; severity-interleave at sort step.
+**Where:** `lib/acc/dashboardAnalytics.ts`.
 
 ```typescript
-// Mount Tooltip primitive once at the graph container; update content per hover
-import * as Tooltip from "@radix-ui/react-tooltip";
-
-<Tooltip.Provider delayDuration={150}>
-  <Tooltip.Root open={hoveredNode !== null}>
-    <Tooltip.Trigger asChild>
-      <div ref={anchorRef} style={{ position: 'absolute', left: hx, top: hy }} />
-    </Tooltip.Trigger>
-    <Tooltip.Portal>
-      <Tooltip.Content className="rounded-md border bg-popover p-3 text-sm shadow-md">
-        <div className="font-semibold">{hoveredNode?.name}</div>
-        <div className="text-muted-foreground">{hoveredNode?.email}</div>
-        <div>Status: <Pill>{hoveredNode?.status}</Pill></div>
-        <div>Company: {hoveredNode?.company ?? "—"}</div>
-        <div>Last sign-in: {fmtRelative(hoveredNode?.lastSignIn)}</div>
-        <div>Last file activity: {fmtRelative(hoveredNode?.lastFileActivity)}</div>
-      </Tooltip.Content>
-    </Tooltip.Portal>
-  </Tooltip.Root>
-</Tooltip.Provider>
-```
-
-**Anchor strategy:** Cosmos.gl provides node screen coords via the existing hover handler. Track `[hx, hy]` in state, position an invisible 1×1 div there, anchor the tooltip to it. Avoids reimplementing positioning logic.
-
-### Example 4: Stale invite finding (DASH-15)
-
-```typescript
-// lib/acc/dashboardAnalytics.ts — extend
+// lib/acc/dashboardAnalytics.ts — extend interface
 export interface StaleInviteFinding {
   email: string;
   daysPending: number;
-  severity: "MEDIUM";  // CONTEXT lock
+  severity: "MEDIUM"; // CONTEXT lock
 }
 
 export interface OrphanRoleFinding {
   folderUrn: string;
   folderPath: string;
   roleName: string;
-  severity: "HIGH";  // CONTEXT lock
+  severity: "HIGH"; // CONTEXT lock
 }
 
 export interface DashboardFindings {
@@ -443,175 +395,436 @@ export interface DashboardFindings {
 
 export function detectStaleInvites(
   members: { email: string; status: string; addedOn: Date | null }[],
-  now: Date,
+  now = new Date(),
 ): StaleInviteFinding[] {
-  const THIRTY_DAYS = 30 * 24 * 60 * 60 * 1000;
   return members
-    .filter(m => m.status === "pending" && m.addedOn && (now.getTime() - m.addedOn.getTime()) > THIRTY_DAYS)
+    .filter(m => m.status === "pending" && m.addedOn != null &&
+      differenceInDays(now, m.addedOn) > 30)
     .map(m => ({
       email: m.email,
-      daysPending: Math.floor((now.getTime() - m.addedOn!.getTime()) / (24 * 60 * 60 * 1000)),
+      daysPending: differenceInDays(now, m.addedOn!),
       severity: "MEDIUM" as const,
     }));
 }
+```
 
-export function detectOrphanRoles(
-  permissions: { folderUrn: string; folderPath: string; roleName: string }[],
-  projectRoles: { roleId: string; memberId: string | null }[],
-): OrphanRoleFinding[] {
-  const rolesWithMembers = new Set(
-    projectRoles.filter(pr => pr.memberId !== null).map(pr => pr.roleId)
-  );
-  return permissions
-    .filter(p => !rolesWithMembers.has(p.roleName))  // adjust keying to actual roleId
-    .map(p => ({ ...p, severity: "HIGH" as const }));
+**`detectOrphanRoles`** needs `AccFolderPermission` + `AccProjectRole.memberId` data — reads from tRPC, not pure-function over `BulkAccUser`. Either pass raw data through `FindingsProvider` or make it a server-side computed field in a new procedure. **Recommend: server-side — add `orphanRoles` to `accMembers.dashboardCounts` response** so orphan detection doesn't run client-side.
+
+### Pattern 6: `BulkAccUser` Extension Strategy
+
+**Critical:** `BulkAccUser` in `lib/acc/acc-types.ts` does NOT have `aggregatedStatus`, `projectAdmin`, `executive`, `products`, `companyName` — these are on `AccProjectMember` in Prisma but the existing `bulkAccSummary` reads only from `accMemberCache`.
+
+**Recommended approach — additive merge pattern:**
+1. Create `accMembers.enrichedUsers` procedure (see Pattern 0).
+2. In `DashboardClient.tsx`, run BOTH `trpc.users.bulkAccSummary` (graph + legacy) AND `trpc.accMembers.enrichedUsers` in parallel.
+3. Merge on email — enriched data overlays the cache-based record. Missing emails in the enriched query gracefully omit new fields.
+4. Extend `BulkAccUser` interface with optional new fields:
+   ```typescript
+   // lib/acc/acc-types.ts
+   aggregatedStatus?: "active" | "pending" | "deleted";
+   projectAdmin?: boolean;
+   executive?: boolean;
+   companyName?: string | null;
+   products?: Record<string, "administrator" | "member" | "none">;
+   ```
+5. Widgets that need new fields read them; widgets that don't are unaffected (optional = safe additive change).
+
+**DO NOT modify `bulkAccSummary`** to join against `AccProjectMember` directly — it is the graph snapshot path and adds join cost to a query already called by the 3D graph.
+
+### Pattern 7: WidgetCommonProps Extension for Phase 5 data
+
+`WidgetCommonProps` in `widgetRegistry.ts` currently has `users: BulkAccUser[]` and `workspaceEmails: string[]`. Phase 5 DASH wave widgets need KPI counts and orphan roles that can't be derived from `BulkAccUser[]` alone.
+
+**Approach:** Add optional Phase 5 fields to `WidgetCommonProps` rather than per-widget prop drilling:
+```typescript
+export interface WidgetCommonProps {
+  users: BulkAccUser[];
+  workspaceEmails: string[];
+  // Phase 5 additions (optional — widgets that don't need them ignore them)
+  dashCounts?: { pendingInvites: number; projectAdmins: number; foldersCrawled: number };
+  orphanRoles?: OrphanRoleFinding[];
 }
 ```
 
-### Example 5: IntersectionObserver for lazy column (LIST-03)
+`DashboardClient` fetches `accMembers.dashboardCounts` and passes through `widgetProps`. No new context providers needed.
+
+### Anti-Patterns to Avoid
+
+- **Retrofitting interactivity after the visual reskin lands** — v1.0 Phase 4.1 feedback. Always Pattern 1 task sequence (data → render → hover → click → spotlight). Never split across plans.
+- **Color as sole signal** — CONTEXT cross-cutting lock. Status pills carry text, admin tiers use shape + size + color, permission edges use thickness + color.
+- **New tabs / pages / views** — REQUIREMENTS.md Out of Scope. Enrich only.
+- **Adding Sync All / Refresh buttons** — Memory: "No manual sync UI". The Refresh button is already removed from `DashboardClient.tsx` (verified). Do not add new ones anywhere.
+- **Mutating cosmos.gl point arrays in place** — always rebuild the typed array and call `setPointSizes`/`setPointColors`/`setPointShapes`. Verified pattern in `graphRenderers.ts`.
+- **Eager-loading file activity into `BulkAccUser`** — REQUIREMENTS ACTV-03 forbids this. LIST-03 MUST stay lazy via `IntersectionObserver` + `accActivity.getFileActivityForUser`.
+- **Rebuilding the label polish curve** — UAT-approved 2026-05-08, locked by memory. Do not touch `pow(zoom, 0.2)` clamp `[0.85, 1.4]`, 11/18px floor/ceiling in `AccUsersGraph.tsx`.
+- **Extending `bulkAccSummary` with Prisma joins** — it serves the graph snapshot too. Create a separate `accMembers.enrichedUsers` procedure instead.
+- **Creating a second cosmos.gl renderer for folder nodes** — treat folders as ordinary cosmos points with offset initial positions and a `kind: "folder"` type, NOT a second instance.
+- **Changing `HOVER_OPACITY_DIM` without user awareness** — it affects ALL existing widgets. Surface as a decision, do not silently change.
+
+## Don't Hand-Roll
+
+| Problem | Don't Build | Use Instead | Why |
+|---------|-------------|-------------|-----|
+| Hover tooltip with auto-flip/auto-shift | Custom portal + getBoundingClientRect | shadcn `Tooltip` (Radix) — install via `npx shadcn@latest add tooltip` | Handles edge collision, escape key, focus restore, ARIA |
+| Cross-widget selection wiring | Custom event bus | `selectionContext.tsx` (7 existing kinds) | Verified — extend the discriminated union, add panel branches |
+| Spotlight halo for selected nodes | Custom WebGL pass | Cosmos.gl `setPointColors` modulation + `useHoverSpotlight` (dashboard widgets) | Both already exist; dashboard uses `useHoverSpotlight`; graph uses color buffer |
+| Lazy fetch coordinator | Custom debounce + batch | tRPC `useQuery` with `enabled` + React Query staleTime | Framework handles batching, dedup, cancellation |
+| Status reduction across projects | Custom per-project join UI | Server-side aggregate in `accMembers.enrichedUsers` + extend `BulkAccUser` | Client-side join over potentially hundreds of project rows is slow |
+| Folder tree visualization in side panel | Custom indented div tree | Use `AccFolder.fullPath` slash-split, render as breadcrumb | Folder hierarchy is shallow; full tree is overkill |
+| Severity-interleaved finding list | Custom sort + dedupe | Extend `dashboardAnalytics.ts computeAllFindings` | Single producer keeps `RecommendationsWidget` dumb |
+| Cosmos.gl shape enum values | Guess or hardcode ints | Read `patches/@cosmos.gl+graph+3.0.0-beta.9.patch` source for `PointShape` enum | Beta version may differ from published types; enum source-of-truth is the patch |
+
+**Key insight:** Phase 5's biggest temptation is the `bulkAccSummary` extension. Resist. The right pattern is a parallel `accMembers.enrichedUsers` query + client-side merge on email.
+
+## Common Pitfalls
+
+### Pitfall 1: Data Bridge Assumption (HIGH COST IF MISSED)
+
+**What goes wrong:** Implementer assumes `BulkAccUser` already has v2.0 fields (`status`, `projectAdmin`, `products`, etc.) and writes widget code that reads them — then finds they're always `undefined` at runtime.
+**Why it happens:** The prior RESEARCH.md implied the data was available; in reality `bulkAccSummary` reads only `accMemberCache`.
+**How to avoid:** Task 1 in EVERY Plan file for Phase 5 must be "Verify or create tRPC procedure reading from `AccProjectMember`". Check the `accMemberCache` schema to see what fields it stores vs what's only in `AccProjectMember`.
+**Warning signs:** New pills/columns render as blank or `undefined` in all rows.
+
+### Pitfall 2: Cosmos.gl Alpha Inversion (high cost if forgotten)
+
+**What goes wrong:** Adding a new rAF gate that uses `getSimulationAlpha()` and inverting twice → overlay never shows OR always shows.
+**Why it happens:** Cosmos.gl v3 inverts d3 semantics. Stability detector at `graphRenderers.ts:1323-1325` uses `alpha < 0.005` as stable (not `> 0.995` — the inversion is already baked in at the detector level).
+**How to avoid:** Mirror the existing `alpha < 0.005` pattern. Do not re-invert.
+**Warning signs:** Admin tier overlay flickers, or only appears when simulation is fully cooled.
+
+### Pitfall 3: `setPointShapes` Enum Values Unknown
+
+**What goes wrong:** GRAPH-03 codes `shape = 1` (guessing Diamond) but cosmos.gl beta.9 uses a different numeric. Nodes render as circles or invisible.
+**Why it happens:** The `PointShape` enum is internal to cosmos.gl; published TypeScript types may be stale for beta.9.
+**How to avoid:** Before GRAPH-03 implementation, read `patches/@cosmos.gl+graph+3.0.0-beta.9.patch` to extract the enum, OR query Context7 for `@cosmos.gl/graph` PointShape enum. Document the verified values in the plan.
+**Warning signs:** Admin overlay shape toggle changes colors/sizes but nodes don't change shape.
+
+### Pitfall 4: `HOVER_OPACITY_DIM` Mismatch with CONTEXT
+
+**What goes wrong:** CONTEXT.md says "dim non-selected nodes to ~20% opacity" but `dashboardTokens.ts:78` has `HOVER_OPACITY_DIM = 0.4` (40%). Changing the constant to 0.2 would affect ALL existing widgets (AdminAccess, OutlierCombos, Recommendations). Not changing it means the graph spotlight (cosmos `setPointColors` with alpha modulation) may use 20% while dashboard widgets use 40%.
+**Why it happens:** The CONTEXT decision was made before the token value was verified.
+**How to avoid:** Surface this mismatch to the user at plan-phase. Options: (a) keep 0.4 and treat CONTEXT as approximate, (b) change token to 0.2 and re-UAT all spotlight widgets, (c) use separate constants for graph vs dashboard spotlight.
+**Warning signs:** Graph spotlight looks much darker than dashboard spotlight.
+
+### Pitfall 5: `BulkAccUser` Optional Field Spread Breaking TypeScript
+
+**What goes wrong:** Adding optional fields to `BulkAccUser` triggers TS errors in widgets that destructure `BulkAccUser` with exact shapes, or in tests that construct synthetic `BulkAccUser` objects.
+**Why it happens:** `BulkAccUser` is used by ~15 files across graph, dashboard, and test fixtures.
+**How to avoid:** Mark all Phase 5 additions as `field?: type` (optional). Add them to the end of the interface. Run `tsc --noEmit` after the interface change and fix all type errors before writing widget code.
+**Warning signs:** Compile errors in `dashboardAnalytics.test.ts`, `quick-sync-extraction.test.ts`, `cosmosUtils.test.ts`.
+
+### Pitfall 6: Phase 4 GO/NO-GO Timing
+
+**What goes wrong:** GRAPH-04 plan is drafted assuming GO; Phase 4 returns NO-GO mid-implementation.
+**Why it happens:** Phase 5 starts in parallel with Phase 4 (CONTEXT lock).
+**How to avoid:**
+1. Plan GRAPH-04 LAST in Wave 5.1.
+2. Build `<FolderDetailPanel>` as a shared component used by BOTH GRAPH-04 click AND DASH matrix click — single source of truth.
+3. Plan the dashboard fallback (matrix → `<FolderDetailPanel>`) in Wave 5.3 BEFORE GRAPH-04.
+**Warning signs:** Two diverging folder-detail code paths in graph vs dashboard.
+
+### Pitfall 7: Per-Module Products JSON Shape
+
+**What goes wrong:** `AccProjectMember.products` is `Json` type — opaque to TypeScript. Side panel renders raw JSON string `{"docs":"member","build":"administrator"}`.
+**Why it happens:** Prisma `Json` type is `unknown` at the boundary.
+**How to avoid:** Add a Zod parser in the tRPC procedure:
+```typescript
+const ProductsTierSchema = z.record(z.string(), z.enum(["administrator", "member", "none"]));
+// Then: ProductsTierSchema.safeParse(member.products)
+```
+Use `moduleLabel()` from `lib/acc/modules.ts` for display names. The label map already handles both snake_case and camelCase keys.
+**Warning signs:** Side panel "Module Access" section renders `"[object Object]"` or the raw JSON.
+
+### Pitfall 8: Status Aggregation — Distinct vs Count
+
+**What goes wrong:** The `dashboardCounts.projectAdmins` query uses `count({ where: { projectAdmin: true } })` without `distinct: ["email"]` — counts project×member rows, not distinct users. A single user who is admin on 10 projects contributes 10.
+**Why it happens:** `AccProjectMember` is per-project — a user appears once per project.
+**How to avoid:** Use `groupBy` or a subquery to count DISTINCT emails with `projectAdmin: true`. Prisma `count` with `distinct` works on single fields: `ctx.db.accProjectMember.groupBy({ by: ['email'], where: { projectAdmin: true }, _count: true })` then `result.length`.
+**Warning signs:** "Project Admins" KPI tile shows a number 5-50× higher than expected.
+
+### Pitfall 9: 60 FPS Budget on Folder Cluster (GRAPH-04)
+
+**What goes wrong:** Folder cluster adds 5,000+ extra points + 50,000+ edges; FPS drops below 60.
+**Why it happens:** Cosmos.gl GPU simulation cost for extra points + edges is non-trivial.
+**How to avoid:** Phase 4 perf pre-flight produces the GO/NO-GO artifact. If GO, cap edges to 1 per user-folder pair (most-restrictive tier only) to reduce edge count. Test with perf HUD enabled (existing perfGpu/perfSimAlpha HUD in AccUsersGraph).
+**Warning signs:** Perf HUD shows simAlpha never reaching ~0; pan/zoom janky; frame budget red.
+
+### Pitfall 10: `AccProjectMember` May Be Empty at Phase 5 Start
+
+**What goes wrong:** Phase 5 runs in parallel with Phase 4. If Phase 4's Quick Sync hasn't run yet on Railway when Wave 5.1 starts UAT, `AccProjectMember` is empty → all new UI shows blank/zero.
+**Why it happens:** Railway Quick Sync (release command) populates `AccProjectMember`; Phase 5 development may outrun the data.
+**How to avoid:** Each new procedure must return graceful empty state ([] or 0), not null/undefined. Add a "Data not yet synced — run a Quick Sync to populate" empty state message in new UI surfaces. Do NOT block shipping Phase 5 code on data availability.
+**Warning signs:** Status column shows all "—" during development.
+
+## Code Examples
+
+### Example 1: New tRPC Router Registration
 
 ```typescript
-// app/(dashboard)/users/lib/useVisibleRowEmails.ts (new)
-import { useEffect, useRef, useState } from "react";
+// server/routers/root.ts — ADD:
+import { accMembersRouter } from "./acc-members";
+import { accGraphRouter } from "./acc-graph";     // for GRAPH-01 perProjectRoleFacets
 
-export function useVisibleRowEmails<T extends HTMLElement>(
-  rowRefs: Map<string, T>,
-): string[] {
-  const [visible, setVisible] = useState<Set<string>>(new Set());
-  const observerRef = useRef<IntersectionObserver | null>(null);
+export const appRouter = router({
+  // ... existing routers unchanged ...
+  accSync: accSyncRouter,
+  accActivity: accActivityRouter,
+  accMembers: accMembersRouter,   // Phase 5 addition
+  accGraph: accGraphRouter,       // Phase 5 addition
+});
+```
 
-  useEffect(() => {
-    observerRef.current = new IntersectionObserver(
-      entries => {
-        setVisible(prev => {
-          const next = new Set(prev);
-          for (const e of entries) {
-            const email = e.target.getAttribute("data-email");
-            if (!email) continue;
-            if (e.isIntersecting) next.add(email);
-            else next.delete(email);
-          }
-          return next;
-        });
-      },
-      { rootMargin: "200px" }, // prefetch slightly off-screen
-    );
-    for (const [, el] of rowRefs) observerRef.current.observe(el);
-    return () => observerRef.current?.disconnect();
-  }, [rowRefs]);
+### Example 2: Extend SelectedFinding for Phase 5 Kinds
 
-  return Array.from(visible);
+```typescript
+// app/(dashboard)/users/dashboard/selectionContext.tsx
+export type SelectedFinding =
+  | { kind: "junk"; finding: JunkRoleFinding }
+  | { kind: "duplicate"; finding: DuplicateRoleFinding }
+  | { kind: "outlier"; finding: OutlierFinding }
+  | { kind: "role"; role: string; severity: Severity | undefined }
+  | { kind: "admin"; email: string }
+  | { kind: "day"; dateIso: string; emails: string[] }
+  | { kind: "userActivity"; email: string }
+  // Phase 5 additions:
+  | { kind: "folder"; folderUrn: string }
+  | { kind: "staleInvite"; email: string }
+  | { kind: "adminTier"; tier: "hub" | "project" | "executive" }
+  | null;
+```
+
+### Example 3: Cosmos.gl Admin Tier Overlay (GRAPH-03)
+
+```typescript
+// In CosmosGraphRenderer — new method alongside setVisibleIndices
+setAdminTierOverlay(
+  nodes: readonly GraphRenderNode[],
+  showAdminTiers: boolean,
+  visibleSet: ReadonlySet<number>,
+  adminTierByIndex: Map<number, "hub" | "project" | "executive" | null>,
+): void {
+  if (!this.graph) return;
+  const nodeCount = nodes.length;
+  const sizes = new Float32Array(nodeCount);
+  const shapes = new Float32Array(nodeCount);
+  const colors = this.baseColorBuffer
+    ? new Float32Array(this.baseColorBuffer)
+    : buildNodeColorBuffer(nodes);
+
+  for (let i = 0; i < nodeCount; i++) {
+    if (!visibleSet.has(i)) { sizes[i] = 0; shapes[i] = 8; continue; }
+    const tier = showAdminTiers ? adminTierByIndex.get(i) : null;
+    if (tier === "hub") {
+      sizes[i] = 4 * 1.5; // BASE_SIZE * 1.5 per CONTEXT lock
+      shapes[i] = STAR_SHAPE; // verify enum value from cosmos beta.9
+      // Gold halo: encode as bright amber in RGBA
+      const off = i * 4;
+      colors[off] = 1.0; colors[off+1] = 0.84; colors[off+2] = 0.0; colors[off+3] = 1.0;
+    } else if (tier === "project") {
+      sizes[i] = 4; // base size
+      shapes[i] = DIAMOND_SHAPE; // verify enum value
+    } else if (tier === "executive") {
+      sizes[i] = 4;
+      shapes[i] = 0; // Circle with programmatic ring — cosmos doesn't natively do ring; use color ring hack
+    } else {
+      sizes[i] = buildNodeSizeBuffer(1, null)[0]; // fallback to default
+      shapes[i] = 0; // Circle
+    }
+  }
+  try {
+    this.graph.setPointSizes(sizes);
+    this.graph.setPointShapes(shapes);
+    this.graph.setPointColors(colors);
+    this.graph.render?.();
+  } catch { /* non-fatal */ }
 }
+```
+
+**Note:** "circle-with-ring" for executive tier may not be a native cosmos.gl shape. If the `PointShape` enum doesn't include it, implement by: (a) using Circle shape + an outer ring drawn in the label Canvas2D overlay pass (existing overlay at AccUsersGraph.tsx:1678), or (b) choosing a different shape. Verify enum before committing to circle-with-ring.
+
+### Example 4: Tooltip Card for Graph Hover (GRAPH-02)
+
+```typescript
+// Anchor approach: cosmos hover callback provides screen coords
+// Track hovered position in state, anchor invisible div, mount Tooltip on it
+const [hoverPos, setHoverPos] = useState<{ x: number; y: number } | null>(null);
+const [hoveredNodeData, setHoveredNodeData] = useState<HoverNodeDetail | null>(null);
+
+// In AccUsersGraph useEffect — extend existing onNodeHoverCallback (line ~975):
+renderer.onNodeHoverCallback = (index, event) => {
+  if (index === null) { setHoverPos(null); setHoveredNodeData(null); return; }
+  const rect = containerRef.current?.getBoundingClientRect();
+  if (event && rect) setHoverPos({ x: event.clientX - rect.left, y: event.clientY - rect.top });
+  // Lazy fetch: accActivity.getFileActivityForUser + data from enrichedUsers merge
+  setHoveredNodeData(buildHoverDetail(nodes[index]));
+};
+
+// JSX: absolute-positioned anchor div + Tooltip
+{hoverPos && (
+  <Tooltip open delayDuration={0}>
+    <TooltipTrigger asChild>
+      <div style={{ position: "absolute", left: hoverPos.x, top: hoverPos.y, width: 1, height: 1 }} />
+    </TooltipTrigger>
+    <TooltipContent side="right" className="max-w-xs">
+      <HoverNodeCard data={hoveredNodeData} />
+    </TooltipContent>
+  </Tooltip>
+)}
+```
+
+### Example 5: KpiStrip Grid Layout (DASH-14)
+
+```typescript
+// KpiStripWidget.tsx — current:
+<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
+// Phase 5: append 3 tiles, adjust grid
+<div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-9">
+  {/* existing 6 tiles unchanged */}
+  {/* 3 new tiles: */}
+  <KpiTile label="Pending Invites" value={dashCounts?.pendingInvites ?? "—"} />
+  <KpiTile label="Project Admins" value={dashCounts?.projectAdmins ?? "—"} />
+  <KpiTile label="Folders Crawled" value={dashCounts?.foldersCrawled ?? "—"} />
+</div>
 ```
 
 ## State of the Art
 
 | Old Approach | Current Approach | When Changed | Impact |
 |--------------|------------------|--------------|--------|
-| One mega-PLAN.md per phase | Sub-phase PLAN.md per wave (5.1/5.2/5.3) | This phase (CONTEXT lock) | Faster UAT cycle, smaller blast radius per failure |
-| Retrofit interactivity after visual reskin | Bake-in template (data → render → hover → click → spotlight → cross-widget) | v1.0 Phase 4.1 retrospective | Eliminates Phase 4.1-class UAT failures |
-| `Refresh` button in dashboard chrome | No manual sync UI; Railway release + cron only | v1.0 retrospective (memory) | Existing button is vestigial — surface during planning |
-| Cosmos.gl v3 d3-style alpha | Inverted alpha (`1 - progress`) | beta.9 patch (memory) | Don't re-invert; mirror existing gate at line 1414 |
+| One mega-PLAN.md per phase | Sub-phase PLAN.md per wave (5.1/5.2/5.3) | This phase (CONTEXT lock) | Faster UAT cycle, smaller blast radius |
+| Retrofit interactivity after visual reskin | Bake-in template (data → render → hover → click → spotlight) | v1.0 Phase 4.1 retrospective | Eliminates Phase 4.1-class UAT failures |
+| `Refresh` button in DashboardClient | **Already removed** (confirmed 2026-05-11) | Pre-planning cleanup | One less anti-pattern to track |
+| Cosmos.gl v3 inverted alpha | `alpha < 0.005` = stable (inversion already accounted for at detector) | beta.9 patch (memory) | Don't re-invert; mirror line 1323 pattern |
+| `bulkAccSummary` as sole data source | `bulkAccSummary` (graph/legacy) + `accMembers.enrichedUsers` (v2.0 tables) | Phase 5 introduces | Additive parallel query, no legacy breakage |
+| `setPointShapes` for hide-only (shape=8) | `setPointShapes` extended to diamond/star for admin tiers | Phase 5 GRAPH-03 | API already proven; enum values need verification |
 
-**Deprecated/outdated:**
-- v1 spotlight pattern using full re-render — kept, but cosmos.gl `pointGreyoutOpacity` is the GPU-cheap path; verify existing implementation uses it.
+**Deprecated/outdated (vs prior RESEARCH.md):**
+- Prior research tracked "Refresh button at DashboardClient:88-95" as an open issue — **RESOLVED** (button and imports already deleted).
+- Prior research proposed `accGraph.perProjectRoleFacets` as extending `users.ts` — **UPDATE**: create separate `server/routers/acc-graph.ts` to keep `users.ts` (1,500+ lines) from growing further.
+- Prior research noted "cosmos.gl per-point shape uniforms — not verified against Context7" — **PARTIALLY RESOLVED**: `setPointShapes` API is confirmed in codebase; specific enum values for diamond/star still need verification.
 
 ## Open Questions
 
-1. **Does Phase 4 produce a tRPC procedure for folder-detail (path / roles / member counts / orphan flags)?**
-   - What we know: Phase 4 PLAN.md is still pending (ROADMAP shows "Directory ready — plan pending").
-   - What's unclear: Whether `accFolder.getDetail({ urn })` or similar exists when Wave 5.1 starts.
-   - Recommendation: Plan Wave 5.1 GRAPH-04 with an explicit dependency check task — "Verify or create `accFolder.getDetail` tRPC procedure". Either Phase 4 ships it, or Wave 5.1 ships it. **Do not block.**
+1. **What are the cosmos.gl beta.9 `PointShape` enum values for Diamond and Star?**
+   - What we know: `0` = Circle, `8` = None (verified from graphRenderers.ts). `setPointShapes` API works.
+   - What's unclear: Numeric values for `Diamond`, `Star`, `Cross`, `Ring` — if they exist.
+   - Recommendation: Read `patches/@cosmos.gl+graph+3.0.0-beta.9.patch` to extract the enum before GRAPH-03 implementation. If diamond/star not in enum, fall back to pre-baked Canvas2D overlay shapes drawn in the existing label overlay pass.
 
-2. **Per-module products tier UI label mapping**
-   - What we know: `AccProjectMember.products` is `Json`; Phase 2 stored `{ docs: "member", build: "administrator", ... }` (from MEM-03 decision).
-   - What's unclear: The exact set of module keys actually written. CONTEXT example mentions "Docs: Editor" but ACC tiers are `administrator | member | none`, not `Editor`. Editor might be a label used inside Docs sub-permissions.
-   - Recommendation: Plan task to inspect a real production row's `products` JSON before designing the side-panel section. Use `lib/acc/modules.ts moduleLabel()` for module names. Add tier→display-label map.
+2. **Does `AccProjectMember` have data when Phase 5 starts?**
+   - What we know: `AccProjectMember` is populated by Phase 2 Quick Sync; Phase 5 runs in parallel with Phase 4.
+   - What's unclear: Whether Phase 2 has been successfully run on Railway (STATE.md shows Phases 2+3 complete but "plans drafted" — did the actual Railway sync run?).
+   - Recommendation: Plan all new procedures to return graceful empty state. Add an `isEmpty` flag or UI hint "Sync required" when zero members are found.
 
-3. **AccProjectMember status reduction rule**
-   - What we know: Field is per-project (verified prisma schema:460).
-   - What's unclear: How to surface ONE pill per user in the list (Pitfall 7).
-   - Recommendation: Lock "any-active wins → active; else any-pending → pending; else deleted" in the plan and surface to user during plan-phase. CONTEXT does not lock this.
+3. **Will Phase 4 ship an `accFolder` tRPC router?**
+   - What we know: `AccFolder` + `AccFolderPermission` tables exist in Prisma (schema:504-528). No `acc-folder.ts` router exists yet.
+   - What's unclear: Phase 4 PLAN.md is not yet written — it may include an `accFolder` router or not.
+   - Recommendation: GRAPH-04 plan includes "Verify or create `accFolder.getDetail` tRPC procedure" as Task 1. Do not block; create it if Phase 4 doesn't.
 
-4. **AdminConstellation 3-tier — what is "executive" tier visually?**
-   - What we know: `AccProjectMember.executive` boolean + `isAccountAdmin` for hub admin.
-   - What's unclear: Whether "executive" gets star, diamond, or its own shape.
-   - Recommendation: Wave 5.3 plan locks shapes — propose: **star (hub) / diamond (project admin) / circle-with-ring (executive)**. User reviews during plan-phase.
+4. **`HOVER_OPACITY_DIM` = 0.4 vs CONTEXT "~20%" — which wins?**
+   - What we know: `dashboardTokens.ts:78` has `0.4`. CONTEXT says dim to "~20% opacity".
+   - What's unclear: User intent — did CONTEXT's "20%" reflect the actual token, or was it a design goal that differs from the shipped token?
+   - Recommendation: Surface at plan-phase. Option A: keep 0.4, CONTEXT was approximate. Option B: change to 0.2, re-UAT all widgets. Changing the constant affects 3 existing widgets (AdminAccess, OutlierCombos, Recommendations).
 
-5. **Sub-phase numbering convention**
-   - What we know: GSD tooling uses `05.1`, `05.2`, etc. for decimal phases.
-   - What's unclear: Whether the planner agent will auto-create subdirectories or expect them pre-staged.
-   - Recommendation: Let the planner orchestrator handle this; do not pre-create directories in research output.
+5. **"Circle-with-ring" for Executive tier — native cosmos shape or Canvas2D overlay?**
+   - What we know: CONTEXT locks "circle-with-ring" for executive, star for hub, diamond for project.
+   - What's unclear: Whether cosmos.gl beta.9 `PointShape` enum has a Ring or Donut variant.
+   - Recommendation: After verifying enum values (Q1), if no ring shape exists, implement as: Circle shape (0) in cosmos + a visible outer ring drawn in the Canvas2D label overlay pass (existing `drawLabelOverlay` at AccUsersGraph.tsx:1678). Or re-propose to user at plan-phase.
+
+6. **`detectOrphanRoles` — client-side pure function or server-side?**
+   - What we know: Orphan detection needs `AccFolderPermission` + `AccProjectRole.memberId` — not in `BulkAccUser`.
+   - What's unclear: Whether to compute orphans server-side (in `accMembers.dashboardCounts`) or client-side after fetching raw role data.
+   - Recommendation: Server-side. Add `orphanRoles: OrphanRoleFinding[]` to `accMembers.dashboardCounts` or a dedicated `accMembers.findOrphanRoles` procedure. Avoids shipping large raw datasets to the client for analytics.
 
 ## Validation Architecture
 
-> `.planning/config.json` shows `workflow.research: true` but NO `workflow.nyquist_validation` flag — defaulting to OFF. Including a lightweight test-coverage section since Vitest is already the project standard and 4 test files exist for `accGraphFilters.test.ts`, `accGraphTopology.test.ts`, `cosmosUtils.test.ts`, `dashboardAnalytics.test.ts`, plus `quick-sync-extraction.test.ts`.
+> `workflow.nyquist_validation` not set in `.planning/config.json` — treated as disabled. Including lightweight test coverage section because Vitest is active and 5+ test files exist.
 
 ### Test Framework
+
 | Property | Value |
 |----------|-------|
-| Framework | Vitest (latest in `vitest.config.ts`) |
+| Framework | Vitest ^4.1.6 |
 | Config file | `C:/LECG/Dashboard/vitest.config.ts` |
 | Quick run command | `npm test -- --run <pattern>` |
 | Full suite command | `npm test -- --run` |
 
+### Existing Test Files
+
+| File | Covers |
+|------|--------|
+| `app/(dashboard)/users/accGraphFilters.test.ts` | `nodeMatchesFilters` — extend for `perProjectRoles` AND-intersect (GRAPH-01) |
+| `app/(dashboard)/users/accGraphTopology.test.ts` | Graph topology builders |
+| `app/(dashboard)/users/cosmosUtils.test.ts` | `buildNodeColorBuffer`, `buildNodeSizeBuffer` — extend for admin tier size multiplier (GRAPH-03) |
+| `lib/acc/dashboardAnalytics.test.ts` | `computeAllFindings` — extend for `detectStaleInvites`, `detectOrphanRoles` (DASH-15) |
+| `lib/acc/quick-sync-extraction.test.ts` | Extraction pipeline |
+
 ### Phase Requirements → Test Map
 
-| Req ID | Behavior | Test Type | Automated Command | File Exists? |
-|--------|----------|-----------|-------------------|-------------|
-| GRAPH-01 | perProjectRole filter AND-intersects with status/module | unit | `npm test -- --run accGraphFilters` | ✅ extend `accGraphFilters.test.ts` |
-| GRAPH-02 | Hover tooltip renders enriched detail | manual UAT | (manual) | ❌ — visual contract |
-| GRAPH-03 | Admin tier shape/size mapping correct for hub/project/executive | unit | `npm test -- --run adminTierShape` | ❌ new — `adminTierShape.test.ts` |
-| GRAPH-04 | Folder cluster offset positioning + edge permission tier mapping | unit | `npm test -- --run folderCluster` | ❌ new — conditional on Phase 4 GO |
-| LIST-01 | Status reduction (any-active wins) | unit | `npm test -- --run accStatusReduction` | ❌ new |
-| LIST-02 | projectAdmin facet filtering | unit | (extend filter test) | ✅ extend |
-| LIST-03 | Lazy fetch fires only for visible rows | integration | (manual + react-testing-library if added) | ❌ |
-| LIST-04 | Products JSON → tier label mapping | unit | `npm test -- --run productsTierMap` | ❌ new |
-| DASH-14 | KpiStrip new tiles render with correct counts | unit | `npm test -- --run kpiStripCounts` | ❌ new |
-| DASH-15 | detectStaleInvites + detectOrphanRoles + severity interleave | unit | `npm test -- --run dashboardAnalytics` | ✅ extend `dashboardAnalytics.test.ts` |
-| DASH-16 | AdminConstellation 3-tier filter + ring color mapping | unit | `npm test -- --run adminConstellationTier` | ❌ new |
-| DASH-17 | Heatmap hub vs per-project aggregation toggle | unit | `npm test -- --run heatmapToggle` | ❌ new |
-| DASH-18 | Cross-widget spotlight: click in widget A dims in widget B | manual UAT | (manual) | ❌ — UAT gate |
+| Req ID | Behavior | Test Type | Command | File |
+|--------|----------|-----------|---------|------|
+| GRAPH-01 | perProjectRole filter AND-intersects with status/module/roles | unit | `npm test -- --run accGraphFilters` | ✅ extend |
+| GRAPH-02 | Tooltip card renders enriched fields | visual UAT | manual | ❌ visual |
+| GRAPH-03 | Admin tier size multiplier (1.5× for hub), shape mapping | unit | `npm test -- --run cosmosUtils` | ✅ extend |
+| GRAPH-04 | Folder cluster offset + edge permission tier mapping | unit | `npm test -- --run folderCluster` | ❌ new — conditional |
+| LIST-01 | Status reduction rule (any-active wins) | unit | `npm test -- --run accStatusReduction` | ❌ new |
+| LIST-02 | projectAdmin facet filter | unit | extend accGraphFilters test | ✅ extend |
+| LIST-03 | IntersectionObserver fires batch fetch on scroll visibility | integration/manual | manual | ❌ visual |
+| LIST-04 | Products JSON → tier label via Zod + moduleLabel | unit | `npm test -- --run productsTierMap` | ❌ new |
+| DASH-14 | dashboardCounts returns correct pending/admin/folder counts | unit | `npm test -- --run dashboardCounts` | ❌ new |
+| DASH-15 | detectStaleInvites + detectOrphanRoles + severity interleave | unit | `npm test -- --run dashboardAnalytics` | ✅ extend |
+| DASH-16 | 3-tier ring color mapping + orbit filter | unit | `npm test -- --run adminConstellationTier` | ❌ new |
+| DASH-17 | Hub vs per-project aggregation toggle swap | unit | `npm test -- --run heatmapToggle` | ❌ new |
+| DASH-18 | Cross-widget spotlight: click in widget A dims in widget B | manual UAT | manual | ❌ UAT gate |
 
-### Sampling Rate
-- **Per task commit:** `npm test -- --run <suite-touched>` (~5s)
-- **Per wave merge:** `npm test -- --run` full suite (~30s)
-- **Phase gate:** Full suite green per sub-phase before `/gsd:verify-work`
+### Wave 0 Gaps (new test files per sub-phase)
 
-### Wave 0 Gaps (per sub-phase)
-- 5.1: `app/(dashboard)/users/adminTierShape.test.ts` (new) + extend `accGraphFilters.test.ts`
-- 5.2: `accStatusReduction.test.ts`, `productsTierMap.test.ts`
-- 5.3: extend `dashboardAnalytics.test.ts` with stale-invite + orphan-role cases; add `kpiStripCounts.test.ts`, `adminConstellationTier.test.ts`, `heatmapToggle.test.ts`
+- **5.1:** Extend `cosmosUtils.test.ts` (admin tier size multiplier); extend `accGraphFilters.test.ts` (perProjectRoles dimension); new `adminTierShape.test.ts` (shape enum mapping)
+- **5.2:** New `accStatusReduction.test.ts`; new `productsTierMap.test.ts`
+- **5.3:** Extend `dashboardAnalytics.test.ts` (stale-invite + orphan-role cases); new `dashboardCounts.test.ts`; new `adminConstellationTier.test.ts`; new `heatmapToggle.test.ts`
 
 ## Sources
 
-### Primary (HIGH confidence)
-- `C:/LECG/Dashboard/prisma/schema.prisma:453-528` — verified ACC v2 model shapes
-- `C:/LECG/Dashboard/lib/acc/acc-types.ts` — verified `BulkAccUser` interface
-- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/selectionContext.tsx` — verified existing 7-kind discriminated union
-- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/DashboardClient.tsx` — verified Refresh button presence (vestige)
-- `C:/LECG/Dashboard/app/(dashboard)/users/accGraphFilters.ts` — verified existing filter dimension structure
-- `C:/LECG/Dashboard/package.json:36` — verified cosmos.gl 3.0.0-beta.9 pinned
-- `C:/LECG/Dashboard/server/routers/*.ts` — verified existing tRPC router layout (`acc-activity.ts`, `acc-sync.ts`)
-- `C:/LECG/Dashboard/.planning/STATE.md` — verified Phase 03-03 hover-prefetch + getLastFileActivity contract
-- `C:/LECG/Dashboard/.planning/REQUIREMENTS.md` — verified 13-req scope + out-of-scope items
-- `C:/LECG/Dashboard/.planning/phases/05-ui-enrichment-waves/05-CONTEXT.md` — verified locked decisions
+### Primary (HIGH confidence — verified by direct codebase read 2026-05-11)
+
+- `C:/LECG/Dashboard/lib/acc/acc-types.ts` — `BulkAccUser` interface (no v2.0 fields yet; confirmed gap)
+- `C:/LECG/Dashboard/lib/acc/dashboardAnalytics.ts:72-78` — `DashboardFindings` interface (4 existing fields)
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/selectionContext.tsx:32-40` — 7-kind discriminated union (verified)
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/DashboardClient.tsx` — Refresh button confirmed absent
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/widgets/_shared/dashboardTokens.ts:78` — `HOVER_OPACITY_DIM = 0.4` (verified — differs from CONTEXT's "~20%")
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/widgets/_shared/HoverSpotlight.tsx` — `useHoverSpotlight` API (verified)
+- `C:/LECG/Dashboard/app/(dashboard)/users/graphRenderers.ts:716,733-736,1346-1368` — `setPointColors`, `setPointSizes`, `setPointShapes` API (verified; shape 0=Circle, shape 8=None)
+- `C:/LECG/Dashboard/app/(dashboard)/users/cosmosUtils.ts:47-107` — `buildNodeColorBuffer`, `buildNodeSizeBuffer` (verified patterns)
+- `C:/LECG/Dashboard/app/(dashboard)/users/accGraphFilters.ts` — `GraphFilters` interface (no `perProjectRoles` yet)
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/widgetRegistry.ts` — 9 widgets registered; `WidgetCommonProps` shape
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/widgets/KpiStripWidget.tsx:82` — `grid-cols-6` confirmed
+- `C:/LECG/Dashboard/app/(dashboard)/users/dashboard/widgets/AdminAccessWidget.tsx:78` — single-tier `isAccountAdmin` filter (confirmed no project-admin tier yet)
+- `C:/LECG/Dashboard/prisma/schema.prisma:460-474` — `AccProjectMember` fields (status, projectAdmin, executive, products, companyName, addedOn, lastSignIn)
+- `C:/LECG/Dashboard/prisma/schema.prisma:504-528` — `AccFolder`, `AccFolderPermission` tables (verified)
+- `C:/LECG/Dashboard/server/routers/root.ts` — no `accGraph`, no `accMembers`, no `accFolder` router (confirmed — new in Phase 5)
+- `C:/LECG/Dashboard/server/routers/users.ts:809-867` — `bulkAccSummary` reads only from `accMemberCache` (confirmed gap)
+- `C:/LECG/Dashboard/server/routers/acc-activity.ts:40` — `getFileActivityForUser` procedure (verified for LIST-03 lazy reuse)
+- `C:/LECG/Dashboard/lib/acc/modules.ts` — `moduleLabel()` function + `ACC_MODULE_LABELS` map (verified)
+- `C:/LECG/Dashboard/package.json` — confirmed: `@radix-ui/react-tooltip` NOT installed; `@radix-ui/react-popover` NOT installed; `react-intersection-observer` NOT installed
+- `C:/LECG/Dashboard/.planning/STATE.md` — Phase 03-03 hover-prefetch pattern + sticky activation (verified for LIST-03 reuse)
 
 ### Secondary (MEDIUM confidence)
-- v1.0 memory entries (cosmos alpha inversion, no-manual-sync, widget interactivity, label polish curve) — repeatedly referenced across multiple SUMMARY.md files
+
+- v1.0 memory entries (cosmos alpha inversion, no-manual-sync, widget interactivity, label polish curve) — referenced consistently across multiple SUMMARY.md files
 - Phase 4.1 retrospective lessons informing DASH-18 hard gate
 
 ### Tertiary (LOW confidence)
-- Cosmos.gl beta.9 specific API for per-point shape uniforms — not verified against Context7 in this session. **Flag for plan-time verification** via `mcp__context7__query-docs` on `@cosmos.gl/graph` before GRAPH-03 task starts.
-- Radix Tooltip vs shadcn Tooltip wrapper — verified Radix is the underlying lib for `components/ui/*` but no existing tooltip primitive in repo (verified by Glob). Install needed.
+
+- Cosmos.gl beta.9 `PointShape` enum values for Diamond and Star — not verified against Context7 or patch file in this session. **Flag: read `patches/@cosmos.gl+graph+3.0.0-beta.9.patch` before GRAPH-03 coding begins.**
+- Whether `detectOrphanRoles` should be server-side or client-side — depends on Phase 4 data volume. If `AccFolderPermission` has millions of rows, server-side is mandatory.
 
 ## Metadata
 
 **Confidence breakdown:**
-- Standard stack: HIGH — every library is already in `package.json`; only Tooltip/Popover need to be added via shadcn CLI.
-- Architecture: HIGH for selection/findings/filter extension (mirrors v1 patterns); MEDIUM for cosmos.gl admin overlay (pattern exists but new shape uniforms); LOW for folder cluster (conditional + perf-gated).
-- Pitfalls: HIGH — most pitfalls derive from documented memory + verified code, not speculation.
-- Tests: MEDIUM — framework + existing test files verified; specific new test commands proposed but not yet implemented.
+- Standard stack: HIGH — every library verified in `package.json`; tooltip/popover need shadcn install.
+- Data bridge pattern: HIGH — gap between `bulkAccSummary` (cache-only) and v2.0 Prisma tables is verified; bridge pattern is well-established in the codebase.
+- Architecture: HIGH for selection/findings/filter extension (mirrors v1 patterns); MEDIUM for cosmos.gl admin overlay (setPointShapes API verified, enum values not); LOW for folder cluster (conditional + perf-gated).
+- Pitfalls: HIGH — most pitfalls derive from verified codebase reads, not speculation.
+- Tests: MEDIUM — framework + existing files verified; new test commands proposed but not yet implemented.
 
 **Research date:** 2026-05-11
-**Valid until:** 2026-06-10 (30 days — stable codebase, no breaking deps expected; revisit if cosmos.gl bumps off beta.9 or if Phase 4 returns NO-GO).
+**Valid until:** 2026-06-10 (30 days — stable codebase; revisit if cosmos.gl bumps off beta.9 or if Phase 4 returns NO-GO on GRAPH-04).
