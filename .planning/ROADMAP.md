@@ -19,9 +19,15 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 #### Phase 1: Foundation — Schema + Sync Orchestration
 
-**Goal:** Establish the relational data layer and the two-button sync model. Every downstream phase depends on this.
+**Goal:** Establish the relational data layer and the **backend-only** sync orchestration model (Quick Sync as Railway release step, Deep Sync as Railway cron — no user-trigger UI buttons per CONTEXT.md scope amendment). Every downstream phase depends on this.
 
 **Requirements:** SCHEMA-01, SCHEMA-02, SCHEMA-03, SYNC-01, SYNC-02, SYNC-03, SYNC-04 (7)
+
+**Plans:** 4 plans
+- [ ] 01-01-PLAN.md — Prisma schema: 8 ACC v2.0 models + SyncMeta, additive migration
+- [ ] 01-02-PLAN.md — Extract getAccountId + add getProjectIdForDM with Vitest unit tests (SCHEMA-03)
+- [ ] 01-03-PLAN.md — Sync orchestration backend: scripts/release.cjs + scripts/deep-sync.cjs + email alert + cron setup doc
+- [ ] 01-04-PLAN.md — accSync tRPC router + Sidebar freshness pill (SYNC-03 status visibility)
 
 **Success criteria:**
 - All 8 new Prisma models (`AccProject`, `AccProjectMember`, `AccRole`, `AccProjectRole`, `AccFolder`, `AccFolderPermission`, `AccActivity`, `AccDataConnectorJob`) exist with documented composite indexes; migration applied on dev + Railway.
@@ -139,7 +145,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 3. Graph UI Completion                      | v1.0      | 5/5            | Complete | 2026-05-07 |
 | 4. ACC Access Analysis Dashboard            | v1.0      | 8/8            | Complete | 2026-05-08 |
 | 4.1. Replace lists with interactive graphics | v1.0     | 4/4            | Complete | 2026-05-08 |
-| 1. Foundation: Schema + Sync Orchestration  | v2.0      | 0/?            | Not started | —       |
+| 1. Foundation: Schema + Sync Orchestration  | v2.0      | 0/4            | Planned     | —       |
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/?            | Not started | —       |
 | 3. Activity Pipeline                        | v2.0      | 0/?            | Not started | —       |
 | 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Blocked on Phase 1+2 | — |
