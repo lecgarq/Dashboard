@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
 status: unknown
-last_updated: "2026-05-11T15:59:28.846Z"
+last_updated: "2026-05-11T16:01:34.854Z"
 progress:
   total_phases: 1
   completed_phases: 0
   total_plans: 4
-  completed_plans: 1
+  completed_plans: 2
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-08 after v1.0 shipped)
 
 ## Current Position
 
-Phase: v2.0 Phase 1 — Foundation: Schema + Sync Orchestration (READY TO PLAN)
-Plan: —
-Status: REQUIREMENTS.md + ROADMAP.md locked. Phase 1 ready for `/gsd:plan-phase 1`.
-Last activity: 2026-05-11 — v2.0 ROADMAP.md drafted from REQUIREMENTS.md (41 reqs → 5 phases). REQUIREMENTS traceability table populated.
+Phase: v2.0 Phase 1 — Foundation: Schema + Sync Orchestration (IN PROGRESS)
+Plan: 2/4 complete (01-01, 01-02 shipped; 01-03, 01-04 next)
+Status: Schema layer landed. AccActivity composite DESC indexes from day one. SCHEMA-01 + SCHEMA-02 complete.
+Last activity: 2026-05-11 — Plan 01-01 executed (2 tasks, 4 min). Migration `20260511155810_acc_v2_foundation` applied to dev DB; Prisma client regenerated.
 
-Progress: [░░░░░░░░░░] 0% (0/5 phases planned)
+Progress: [██░░░░░░░░] 20% (1/5 phases — Phase 1 at 2/4 plans)
 
 ## Performance Metrics
 
@@ -68,6 +68,7 @@ Progress: [░░░░░░░░░░] 0% (0/5 phases planned)
 | Phase 04.1 P02 | 8m | 2 tasks | 2 files |
 | Phase 04.1 P04 | 25min | 2 tasks | 6 files |
 | Phase 01-foundation-schema-sync P02 | 1m 30s | 3 tasks | 3 files |
+| Phase 01-foundation-schema-sync P01 | 4min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -143,6 +144,8 @@ Recent decisions affecting current work:
 - [Phase 04.1]: P04: User approved-with-caveats at human-verify — ACC tab wrapper not replaced and graphics could be more interactive; deferred to future phase per user direction (logged to feedback memory, NOT remediated)
 - [Phase 01-foundation-schema-sync]: Plan 01-02: Shared acc-helpers throw plain Error (not TRPCError/IntegrationError) so CJS release/cron scripts can require the module without pulling @trpc/server
 - [Phase 01-foundation-schema-sync]: Plan 01-02: resolveAccountIdForRouter() local wrapper in users.ts maps helper plain Error to TRPCError({ code: PRECONDITION_FAILED }) — replaces prior UNAUTHORIZED code (config-missing is a precondition, not auth)
+- [Phase 01-foundation-schema-sync]: Plan 01-01: Generated migration via 'prisma migrate diff' (not 'migrate dev') to bypass pre-existing LodEmbedding.pgvector drift — preserves additive-only invariant
+- [Phase 01-foundation-schema-sync]: Plan 01-01: Prisma 7.8.0 emits 'createdAt' DESC correctly for @@index([..., createdAt(sort: Desc)]) — Pitfall 3 did not materialize, no manual SQL edit needed
 
 ### Roadmap Evolution
 
@@ -168,5 +171,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-11
-Stopped at: Completed 01-02-PLAN.md — SCHEMA-03 shipped (shared `lib/server/acc-helpers.ts` with `getAccountId` + `getProjectIdForDM`, 7 Vitest cases green, `server/routers/users.ts` consumes helper via `resolveAccountIdForRouter()` wrapper at all 3 call sites, audit clean).
+Stopped at: Completed 01-01-PLAN.md — SCHEMA-01 + SCHEMA-02 shipped (9 ACC v2.0 models in prisma/schema.prisma; migration `20260511155810_acc_v2_foundation` applied to dev DB with AccActivity composite DESC indexes from day one; zero DROP/RENAME). Phase 1 now at 2/4 plans (01-01 + 01-02). Next: plan 01-03 (sync orchestration).
 Resume file: .planning/phases/01-foundation-schema-sync/01-03-PLAN.md (next plan)
