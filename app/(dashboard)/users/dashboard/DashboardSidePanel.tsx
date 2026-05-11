@@ -1,10 +1,17 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download } from "lucide-react";
+import { Download, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   Sheet,
   SheetContent,
@@ -20,8 +27,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { format, parseISO } from "date-fns";
+import { format, parseISO, formatDistanceToNowStrict } from "date-fns";
 import { downloadCsv } from "@/lib/acc/csvExport";
+import { trpc } from "@/lib/core/trpc";
+import { categorize, type ActivityCategory } from "@/lib/acc/activityCategories";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
   DuplicateRoleFinding,
@@ -87,6 +96,8 @@ function selectedKey(s: NonNullable<SelectedFinding>): string {
       return `admin:${s.email}`;
     case "day":
       return `day:${s.dateIso}`;
+    case "userActivity":
+      return `userActivity:${s.email}`;
     default: {
       const _exhaust: never = s;
       return _exhaust;
@@ -122,6 +133,8 @@ function PanelBody({
       return <AdminBody email={selected.email} users={users} />;
     case "day":
       return <DayBody dateIso={selected.dateIso} emails={selected.emails} users={users} />;
+    case "userActivity":
+      return <UserActivityBody email={selected.email} users={users} />;
     default: {
       const _exhaust: never = selected;
       return _exhaust;
@@ -514,6 +527,331 @@ function DayBody({
         </Section>
       </div>
     </>
+  );
+}
+
+/* ----------------------------------------------------------------- user activity (ACTV-05) */
+
+type DateRangePreset = "all" | "7d" | "30d" | "90d";
+
+const SECTIONS: ReadonlyArray<{
+  key: "files" | "memberEvents" | "projectEvents" | "other";
+  label: string;
+  categories: ActivityCategory[];
+}> = [
+  { key: "files", label: "Files", categories: ["view", "upload", "edit", "delete"] },
+  { key: "memberEvents", label: "Member events", categories: ["memberEvent"] },
+  { key: "projectEvents", label: "Project events", categories: ["projectEvent"] },
+  { key: "other", label: "Other", categories: ["other"] },
+];
+
+function actionLabel(rawAction: string): string {
+  const cat = categorize(rawAction);
+  switch (cat) {
+    case "view":
+      return rawAction.startsWith("File Downloaded") ? "Downloaded" : "Viewed";
+    case "upload":
+      return rawAction === "Document Version Created" ? "Versioned" : "Uploaded";
+    case "edit":
+      if (rawAction === "Markup Created") return "Marked up";
+      if (rawAction === "Comment Added") return "Commented on";
+      return "Edited";
+    case "delete":
+      return rawAction === "File Restored" ? "Restored" : "Deleted";
+    case "memberEvent":
+      return rawAction;
+    case "projectEvent":
+      return rawAction;
+    default:
+      return rawAction;
+  }
+}
+
+/**
+ * Try to pull the target object (file name, user email, project) out of the raw
+ * details payload. The Data Connector CSV `details` column is free-form text,
+ * so this is a heuristic — fall back to the full string when no clear target.
+ */
+function deriveTarget(details: string | null): string {
+  if (!details) return "—";
+  const trimmed = details.trim();
+  // Prefer quoted segments ("Foo.dwg" style)
+  const quoted = trimmed.match(/"([^"]+)"|'([^']+)'/);
+  if (quoted) return quoted[1] ?? quoted[2] ?? trimmed;
+  // Otherwise first email-like or first 80 chars
+  return trimmed.length > 80 ? trimmed.slice(0, 77) + "…" : trimmed;
+}
+
+/**
+ * Standalone activity body for a single user. Renders 4 type sections, each
+ * independently paginated with a per-section "Load more" button. Filter bar
+ * above the sections is a single source of truth — every change refetches all
+ * sections.
+ *
+ * Reused both inside DashboardSidePanel (kind="userActivity") and as a body
+ * inside UsersDirectoryClient's local sheet (cell-click drilldown).
+ */
+export function UserActivityBody({
+  email,
+  users,
+}: {
+  email: string;
+  users: BulkAccUser[];
+}) {
+  const emailLower = email.toLowerCase();
+  const user = useMemo(
+    () => users.find((u) => u.email.toLowerCase() === emailLower) ?? null,
+    [users, emailLower],
+  );
+  const headerName = user?.name && user.name.length > 0 ? user.name : email;
+
+  // Build {projectId → name} map across all loaded users for row decoration.
+  const projectNameById = useMemo(() => {
+    const m = new Map<string, string>();
+    for (const u of users) {
+      for (const p of u.projects ?? []) m.set(p.id, p.name);
+    }
+    return m;
+  }, [users]);
+
+  // Filter bar state
+  const [dateRangePreset, setDateRangePreset] = useState<DateRangePreset>("all");
+  const [projectId, setProjectId] = useState<string | "all">("all");
+  const [openSections, setOpenSections] = useState<Record<string, boolean>>({
+    files: true,
+    memberEvents: true,
+    projectEvents: true,
+    other: true,
+  });
+
+  const dateRange = useMemo(() => {
+    if (dateRangePreset === "all") return undefined;
+    const days = dateRangePreset === "7d" ? 7 : dateRangePreset === "30d" ? 30 : 90;
+    const from = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+    return { from, to: new Date() };
+  }, [dateRangePreset]);
+
+  const projectChoices = useMemo(
+    () => (user?.projects ?? []).slice().sort((a, b) => a.name.localeCompare(b.name)),
+    [user],
+  );
+
+  function clearFilters() {
+    setDateRangePreset("all");
+    setProjectId("all");
+  }
+
+  const filtersActive = dateRangePreset !== "all" || projectId !== "all";
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">Activity: {headerName}</SheetTitle>
+        <SheetDescription className="truncate">{email}</SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-6">
+        {/* Filter bar */}
+        <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">
+          <Select
+            value={dateRangePreset}
+            onValueChange={(v) => setDateRangePreset(v as DateRangePreset)}
+          >
+            <SelectTrigger className="h-7 w-auto min-w-[120px] text-[11px]">
+              <SelectValue placeholder="Date range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All time</SelectItem>
+              <SelectItem value="7d">Last 7 days</SelectItem>
+              <SelectItem value="30d">Last 30 days</SelectItem>
+              <SelectItem value="90d">Last 90 days</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={projectId} onValueChange={(v) => setProjectId(v)}>
+            <SelectTrigger className="h-7 w-auto min-w-[140px] max-w-[200px] text-[11px]">
+              <SelectValue placeholder="Project" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All projects</SelectItem>
+              {projectChoices.map((p) => (
+                <SelectItem key={p.id} value={p.id}>
+                  {p.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {filtersActive && (
+            <button
+              onClick={clearFilters}
+              className="text-[11px] text-primary hover:underline"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+
+        {SECTIONS.map((section) => (
+          <ActivitySection
+            key={section.key}
+            email={emailLower}
+            sectionKey={section.key}
+            label={section.label}
+            categories={section.categories}
+            open={openSections[section.key] ?? true}
+            onToggle={() =>
+              setOpenSections((prev) => ({
+                ...prev,
+                [section.key]: !(prev[section.key] ?? true),
+              }))
+            }
+            projectId={projectId === "all" ? undefined : projectId}
+            dateRange={dateRange}
+            projectNameById={projectNameById}
+            filtersActive={filtersActive}
+            onClearFilters={clearFilters}
+          />
+        ))}
+      </div>
+    </>
+  );
+}
+
+function ActivitySection({
+  email,
+  sectionKey,
+  label,
+  categories,
+  open,
+  onToggle,
+  projectId,
+  dateRange,
+  projectNameById,
+  filtersActive,
+  onClearFilters,
+}: {
+  email: string;
+  sectionKey: string;
+  label: string;
+  categories: ActivityCategory[];
+  open: boolean;
+  onToggle: () => void;
+  projectId: string | undefined;
+  dateRange: { from: Date; to: Date } | undefined;
+  projectNameById: Map<string, string>;
+  filtersActive: boolean;
+  onClearFilters: () => void;
+}) {
+  const query = trpc.accActivity.listForUser.useInfiniteQuery(
+    {
+      email,
+      categories,
+      projectId,
+      dateRange,
+      limit: 25,
+    },
+    {
+      getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+      staleTime: 60_000,
+    },
+  );
+
+  const rows = useMemo(
+    () => (query.data?.pages ?? []).flatMap((p) => p.rows),
+    [query.data],
+  );
+
+  const count = rows.length + (query.hasNextPage ? "+" : "");
+
+  return (
+    <section className="flex flex-col gap-2">
+      <button
+        onClick={onToggle}
+        className="group flex items-center gap-2 text-left"
+      >
+        {open ? (
+          <ChevronDown size={14} className="text-primary" />
+        ) : (
+          <ChevronRight
+            size={14}
+            className="text-muted-foreground group-hover:text-primary transition-colors"
+          />
+        )}
+        <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          {label}
+        </span>
+        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
+          {query.isLoading ? "…" : count}
+        </Badge>
+      </button>
+
+      {open && (
+        <div className="ml-5 flex flex-col gap-1.5">
+          {query.isLoading && (
+            <p className="text-xs text-muted-foreground">Loading…</p>
+          )}
+          {!query.isLoading && rows.length === 0 && (
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span>No activity in this range</span>
+              {filtersActive && (
+                <button
+                  onClick={onClearFilters}
+                  className="text-primary hover:underline"
+                >
+                  Clear filters
+                </button>
+              )}
+            </div>
+          )}
+          {rows.map((row) => {
+            const created = row.createdAt instanceof Date
+              ? row.createdAt
+              : new Date(row.createdAt);
+            const projName = row.projectId
+              ? projectNameById.get(row.projectId) ?? row.projectId
+              : null;
+            return (
+              <div
+                key={row.id}
+                className="text-xs leading-snug text-foreground"
+                title={created.toISOString()}
+              >
+                <span className="font-medium">{actionLabel(row.rawAction)}</span>
+                <span className="text-muted-foreground"> → </span>
+                <span>{deriveTarget(row.details)}</span>
+                {projName && (
+                  <>
+                    <span className="text-muted-foreground"> · </span>
+                    <span className="text-muted-foreground">{projName}</span>
+                  </>
+                )}
+                <span className="text-muted-foreground"> · </span>
+                <span className="text-muted-foreground">
+                  {formatDistanceToNowStrict(created, { addSuffix: true })}
+                </span>
+              </div>
+            );
+          })}
+          {query.hasNextPage && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-1 self-start h-7 text-[11px]"
+              onClick={() => query.fetchNextPage()}
+              disabled={query.isFetchingNextPage}
+            >
+              {query.isFetchingNextPage ? "Loading…" : "Load more"}
+            </Button>
+          )}
+          {query.error && (
+            <div className="flex items-center gap-1.5 text-xs text-amber-400">
+              <AlertCircle size={11} />
+              <span>Failed to load — {query.error.message}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
   );
 }
 

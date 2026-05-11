@@ -36,6 +36,7 @@ export type SelectedFinding =
   | { kind: "role"; role: string; severity: Severity | undefined }
   | { kind: "admin"; email: string }
   | { kind: "day"; dateIso: string; emails: string[] }
+  | { kind: "userActivity"; email: string }
   | null;
 
 interface SelectionContextValue {
@@ -77,6 +78,7 @@ function isSelectionValid(
     case "role":
     case "admin":
     case "day":
+    case "userActivity":
       return true;
   }
 }
