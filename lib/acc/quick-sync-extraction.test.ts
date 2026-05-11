@@ -6,7 +6,13 @@
 //   2. Soft-delete uses set-difference (status:"active" + id notIn freshIds)
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { fetchAllProjects, extractAndPersistProjects, type RawProject } from "./quick-sync-extraction";
+import {
+  fetchAllProjects,
+  extractAndPersistProjects,
+  fetchHubRoles,
+  extractAndPersistHubRoles,
+  type RawProject,
+} from "./quick-sync-extraction";
 
 function makeProject(id: string, overrides: Partial<RawProject> = {}): RawProject {
   return {
@@ -133,5 +139,103 @@ describe("extractAndPersistProjects soft-delete", () => {
 
     expect(prisma.accProject.findMany).toHaveBeenCalledTimes(1);
     expect(prisma.accProject.updateMany).not.toHaveBeenCalled();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hub roles (ROLE-01) — plan 02-02
+// ---------------------------------------------------------------------------
+
+describe("fetchHubRoles", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("maps snake_case member_count to camelCase memberCount", async () => {
+    const raw = [
+      { id: "r1", name: "Architect", member_count: 5 },
+      { id: "r2", name: "Engineer", member_count: 0 },
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(raw)));
+
+    const roles = await fetchHubRoles("acct-xyz", "token");
+
+    expect(roles).toEqual([
+      { id: "r1", name: "Architect", memberCount: 5 },
+      { id: "r2", name: "Engineer", memberCount: 0 },
+    ]);
+  });
+
+  it("filters out entries missing id or name (defensive)", async () => {
+    const raw = [
+      { id: "r1", name: "Architect", member_count: 5 },
+      { id: null, name: "Bad" },              // missing id
+      { id: "r3", name: null, member_count: 2 }, // missing name
+      { id: "r4", name: "Engineer" },           // missing member_count → 0
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(raw)));
+
+    const roles = await fetchHubRoles("acct-xyz", "token");
+
+    expect(roles).toEqual([
+      { id: "r1", name: "Architect", memberCount: 5 },
+      { id: "r4", name: "Engineer", memberCount: 0 },
+    ]);
+  });
+});
+
+describe("extractAndPersistHubRoles", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("upserts once per role using APS role id as where.id", async () => {
+    const raw = [
+      { id: "r1", name: "Architect", member_count: 5 },
+      { id: "r2", name: "Engineer", member_count: 3 },
+      { id: "r3", name: "Owner", member_count: 1 },
+    ];
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(raw)));
+
+    const prisma = {
+      accRole: {
+        upsert: vi.fn(async () => ({})),
+      },
+    };
+
+    const roles = await extractAndPersistHubRoles(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma as any,
+      "acct-xyz",
+      "token",
+    );
+
+    expect(prisma.accRole.upsert).toHaveBeenCalledTimes(3);
+    const whereIds = prisma.accRole.upsert.mock.calls.map(
+      (call) => (call[0] as { where: { id: string } }).where.id,
+    );
+    expect(whereIds).toEqual(["r1", "r2", "r3"]);
+
+    // Verify create payload preserves PK + accountId join
+    const firstCall = prisma.accRole.upsert.mock.calls[0][0] as {
+      create: { id: string; accountId: string; name: string; memberCount: number };
+    };
+    expect(firstCall.create.id).toBe("r1");
+    expect(firstCall.create.accountId).toBe("acct-xyz");
+    expect(firstCall.create.name).toBe("Architect");
+    expect(firstCall.create.memberCount).toBe(5);
+
+    // Returned roles match the upsert input for downstream consumption (plan 02-03)
+    expect(roles).toHaveLength(3);
+    expect(roles[0]).toEqual({ id: "r1", name: "Architect", memberCount: 5 });
   });
 });
