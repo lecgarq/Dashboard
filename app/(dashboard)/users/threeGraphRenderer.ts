@@ -2,6 +2,7 @@
 
 import type * as ThreeModule from "three";
 import {
+  ACC_GRAPH_3D_CAMERA_OFFSET,
   ACC_GRAPH_3D_POSITION_OPTIONS,
   buildPositions3d,
   get3dEdgeSampleStep,
@@ -25,7 +26,7 @@ type OrbitControlsCtor = new (
   removeEventListener: (type: string, listener: () => void) => void;
 };
 
-const FIT_PADDING = 1.35;
+const FIT_PADDING = 1.55;
 const POINT_SIZE_PX = 4.2;
 
 export class ThreeGraphRenderer implements GraphRenderer {
@@ -86,7 +87,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#F8F7F4");
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
-    this.camera.position.set(0, 0, 22);
+    this.camera.position.set(8, -6, 20);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement) as InstanceType<OrbitControlsCtor>;
     this.controls.enableDamping = true;
@@ -330,9 +331,19 @@ export class ThreeGraphRenderer implements GraphRenderer {
     const fov = this.camera.fov * (Math.PI / 180);
     const distance = (maxSize * FIT_PADDING) / (2 * Math.tan(fov / 2));
 
+    const offset = new this.THREE.Vector3(
+      ACC_GRAPH_3D_CAMERA_OFFSET.x,
+      ACC_GRAPH_3D_CAMERA_OFFSET.y,
+      ACC_GRAPH_3D_CAMERA_OFFSET.z,
+    ).normalize().multiplyScalar(Math.max(8, distance));
+
     this.controls.target.copy(center);
     this.camera.up.set(0, 1, 0);
-    this.camera.position.set(center.x, center.y, center.z + Math.max(8, distance));
+    this.camera.position.set(
+      center.x + offset.x,
+      center.y + offset.y,
+      center.z + offset.z,
+    );
     this.camera.lookAt(center);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(500, distance * 20);

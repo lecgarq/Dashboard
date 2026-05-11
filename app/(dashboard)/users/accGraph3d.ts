@@ -15,7 +15,12 @@ export interface SemanticDepthNode {
 export const GRAPH_DISPLAY_MODE_KEY = "acc-graph-display-mode";
 export const ACC_GRAPH_3D_POSITION_OPTIONS = {
   xyScale: 16,
-  zScale: 4.2,
+  zScale: 8.5,
+} as const;
+export const ACC_GRAPH_3D_CAMERA_OFFSET = {
+  x: 0.42,
+  y: -0.34,
+  z: 1,
 } as const;
 export const ACC_GRAPH_3D_MAX_EDGES = 9000;
 

@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ACC_GRAPH_3D_POSITION_OPTIONS,
+  ACC_GRAPH_3D_CAMERA_OFFSET,
   buildPositions3d,
   computeSemanticDepth,
   get3dEdgeSampleStep,
@@ -75,8 +76,9 @@ describe("buildPositions3d", () => {
     expect(positions3d[2]).not.toBe(positions3d[5]);
   });
 
-  it("uses bounded orbit depth so semantic layers read as 3D without dominating x/y layout", () => {
-    expect(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.zScale * 3);
+  it("uses substantial bounded orbit depth so semantic layers read as a 3D volume", () => {
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.zScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.45);
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.zScale).toBeLessThan(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale * 0.75);
 
     const positions2d = new Float32Array([0, 0, 1, 1]);
     const positions3d = buildPositions3d(
@@ -91,7 +93,8 @@ describe("buildPositions3d", () => {
     const xySpan = Math.hypot(positions3d[3] - positions3d[0], positions3d[4] - positions3d[1]);
     const zSpan = Math.abs(positions3d[5] - positions3d[2]);
 
-    expect(zSpan).toBeLessThan(xySpan * 0.45);
+    expect(zSpan).toBeGreaterThan(xySpan * 0.12);
+    expect(zSpan).toBeLessThan(xySpan * 0.8);
   });
 
   it("returns a correctly sized empty buffer when positions are missing", () => {
@@ -99,6 +102,14 @@ describe("buildPositions3d", () => {
 
     expect(positions3d).toHaveLength(3);
     expect(Array.from(positions3d)).toEqual([0, 0, expect.any(Number)]);
+  });
+});
+
+describe("3D camera defaults", () => {
+  it("starts from an oblique view instead of looking straight down the depth axis", () => {
+    expect(Math.abs(ACC_GRAPH_3D_CAMERA_OFFSET.x)).toBeGreaterThan(0.2);
+    expect(Math.abs(ACC_GRAPH_3D_CAMERA_OFFSET.y)).toBeGreaterThan(0.2);
+    expect(ACC_GRAPH_3D_CAMERA_OFFSET.z).toBeGreaterThan(0.7);
   });
 });
 
