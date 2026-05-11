@@ -530,16 +530,32 @@ model AccFolderPermission {
 model AccActivity {
   id         String   @id @default(cuid())
   autodeskId String
-  projectId  String?
-  action     String
+  userEmail  String? // resolved from users.csv join at ingest; stored lowercased for case-insensitive lookups
+  projectId  String? // empty-string sentinel for admin rows so @@unique dedup works (Postgres NULL != NULL)
+  rawAction  String // lossless raw action_type from CSV; normalization happens at query time via lib/acc/activityCategories.ts
   service    String?
   tool       String?
   details    String?
+  sourceFile String   @default("project") // "project" | "admin" — distinguishes project_activities.csv from admin_activities.csv
   createdAt  DateTime
 
+  @@unique([autodeskId, rawAction, createdAt, projectId]) // dedup key for createMany({ skipDuplicates: true })
   @@index([autodeskId, createdAt(sort: Desc)])
+  @@index([userEmail, createdAt(sort: Desc)]) // drives ACTV-03 lazy per-user file activity query
   @@index([projectId, createdAt(sort: Desc)])
-  @@index([action])
+  @@index([rawAction])
+}
+
+model UnresolvedAttribution {
+  id         String   @id @default(cuid())
+  activityId String // logical FK to AccActivity.id (not enforced — soft retention)
+  rawEmail   String? // parsed from details column
+  rawDetails String? // full details for forensics
+  reason     String // "no_email_match" | "no_autodesk_id_match" | "ambiguous_match"
+  createdAt  DateTime @default(now())
+
+  @@index([reason])
+  @@index([createdAt])
 }
 
 model AccDataConnectorJob {
