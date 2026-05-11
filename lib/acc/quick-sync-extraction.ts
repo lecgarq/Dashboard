@@ -9,10 +9,11 @@
 // (members, roles) imports types and helpers from this module. Keep additions
 // here minimal and additive.
 
-import type { PrismaClient } from "@prisma/client";
+import type { PrismaClient, Prisma } from "@prisma/client";
 import pLimit from "p-limit";
 import { fetchHqUsers, fetchWithRetry } from "@/lib/server/acc-admin";
 import { IntegrationError } from "@/lib/server/integration-errors";
+import type { BulkAccUser, BulkAccProject } from "./acc-types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -719,3 +720,110 @@ export async function runPerProjectFanOut(
   return { aggregator, failCount: failures.length, failures };
 }
 
+// ---------------------------------------------------------------------------
+// Cache writer (MEM-06) — plan 02-04
+// ---------------------------------------------------------------------------
+//
+// v2.0 cache shape degradation: companyRole and isAccountAdmin require HQ v1
+// user enrichment which the v2.0 project-centric extraction skips. Writes
+// `null` and `false` respectively until a follow-up phase reintroduces HQ v1
+// prefetch. Existing UI already treats `null` companyRole as "Unspecified".
+// runQuickSync emits a one-time runtime warning when invoked (see Task 2).
+
+/**
+ * Build a single `BulkAccUser` cache blob from one aggregator entry.
+ *
+ * The return type annotation is load-bearing: any drift from the canonical
+ * shape in `lib/acc/acc-types.ts` is a compile error. This is the structural
+ * safety net for Pitfall 2 — the silent-zero-nodes failure mode that breaks
+ * `buildAccGraphSnapshot` if the JSON shape drifts.
+ *
+ * Per-field decisions (v2.0):
+ *   - `status: "active"` for every project — the aggregator only contains
+ *     projects that survived the soft-delete pass in `extractAndPersistProjects`.
+ *   - `companyRole: null` — HQ v1 enrichment deferred (see warning above).
+ *   - `isAccountAdmin: false` — same reason.
+ *   - `lastSignIn` = max ISO across `perProject.lastSignIn` (most recent).
+ *   - `addedOn` = min ISO across `perProject.addedOn` (earliest).
+ *   - `found: true` — any synced user is by definition found.
+ */
+export function buildCacheBlob(
+  entry: MemberAggregatorEntry,
+  syncedAt: Date,
+): BulkAccUser {
+  const projects: BulkAccProject[] = entry.perProject.map((pp) => ({
+    id: pp.projectId,
+    name: pp.projectName,
+    status: "active",
+    isAdmin: pp.projectAdmin,
+    roles: pp.roleNames,
+    modules: Object.entries(pp.products)
+      .filter(([, tier]) => tier !== "none")
+      .map(([key]) => key),
+  }));
+
+  const projectCount = projects.length;
+  const activeCount = projects.filter((p) => p.status === "active").length;
+  const adminCount = projects.filter((p) => p.isAdmin).length;
+  const hasNoProjects = projects.length === 0;
+  const allRoles = Array.from(new Set(projects.flatMap((p) => p.roles)));
+  const allModules = Array.from(new Set(projects.flatMap((p) => p.modules)));
+
+  const lastSignInIsoList = entry.perProject
+    .map((pp) => pp.lastSignIn)
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .sort()
+    .reverse();
+  const lastSignIn = lastSignInIsoList[0] ?? null;
+
+  const addedOnIsoList = entry.perProject
+    .map((pp) => pp.addedOn)
+    .filter((v): v is string => typeof v === "string" && v.length > 0)
+    .sort();
+  const addedOn = addedOnIsoList[0] ?? null;
+
+  return {
+    email: entry.email,
+    name: entry.name,
+    found: true,
+    projectCount,
+    activeCount,
+    adminCount,
+    hasNoProjects,
+    syncedAt: syncedAt.toISOString(),
+    allRoles,
+    allModules,
+    projects,
+    companyRole: null,
+    lastSignIn,
+    isAccountAdmin: false,
+    addedOn,
+  };
+}
+
+/**
+ * Walk the aggregator and upsert one `AccMemberCache` row per email.
+ *
+ * Crucially does NOT delete rows for emails not in the aggregator: if Phase 2
+ * fails partway, stale cache rows are tolerable (the v1.0 dashboard keeps
+ * rendering yesterday's data), but missing rows would zero out the graph.
+ */
+export async function writeMemberCacheFromAggregator(
+  prisma: PrismaClient,
+  aggregator: MemberAggregator,
+  syncedAt: Date,
+): Promise<{ writtenCount: number }> {
+  let writtenCount = 0;
+  for (const [email, entry] of aggregator) {
+    const blob = buildCacheBlob(entry, syncedAt);
+    const data = blob as unknown as Prisma.JsonObject;
+    await prisma.accMemberCache.upsert({
+      where: { email },
+      create: { email, data, syncedAt },
+      update: { data, syncedAt },
+    });
+    writtenCount++;
+  }
+  console.log(`[quick-sync] accMemberCache: ${writtenCount} users upserted`);
+  return { writtenCount };
+}

@@ -16,9 +16,14 @@ import {
   fetchProjectRoles,
   extractAndPersistProjectData,
   runPerProjectFanOut,
+  buildCacheBlob,
+  writeMemberCacheFromAggregator,
   type RawProject,
   type MemberAggregator,
+  type MemberAggregatorEntry,
+  type MemberAggregatorPerProject,
 } from "./quick-sync-extraction";
+import { buildAccGraphSnapshot } from "./graphSnapshot";
 
 function makeProject(id: string, overrides: Partial<RawProject> = {}): RawProject {
   return {
@@ -528,5 +533,248 @@ describe("runPerProjectFanOut skip-and-continue", () => {
     expect(result.aggregator.get("alice-p1@example.com")).toBeDefined();
     expect(result.aggregator.get("alice-p3@example.com")).toBeDefined();
     expect(result.aggregator.get("alice-p2@example.com")).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Cache writer (MEM-06) — plan 02-04
+// ---------------------------------------------------------------------------
+
+function makePerProject(
+  overrides: Partial<MemberAggregatorPerProject> = {},
+): MemberAggregatorPerProject {
+  return {
+    projectId: "p1",
+    projectName: "Project One",
+    status: "active",
+    projectAdmin: false,
+    executive: false,
+    products: { docs: "member" },
+    roleNames: ["Architect"],
+    addedOn: "2026-01-01T00:00:00.000Z",
+    lastSignIn: "2026-02-01T00:00:00.000Z",
+    companyName: null,
+    phone: null,
+    ...overrides,
+  };
+}
+
+function makeEntry(perProject: MemberAggregatorPerProject[]): MemberAggregatorEntry {
+  return {
+    email: "alice@example.com",
+    autodeskId: "u-alice",
+    name: "Alice",
+    perProject,
+  };
+}
+
+describe("buildCacheBlob", () => {
+  it("produces a structurally-correct BulkAccUser for a 2-project entry", () => {
+    const entry = makeEntry([
+      makePerProject({
+        projectId: "p1",
+        projectName: "P1",
+        projectAdmin: true,
+        roleNames: ["Architect", "Owner"],
+        products: { docs: "administrator", build: "none", cost: "member" },
+      }),
+      makePerProject({
+        projectId: "p2",
+        projectName: "P2",
+        projectAdmin: false,
+        roleNames: ["Architect"],
+        products: { docs: "member" },
+      }),
+    ]);
+    const syncedAt = new Date("2026-05-11T12:00:00.000Z");
+    const blob = buildCacheBlob(entry, syncedAt);
+
+    // All required keys present
+    const requiredKeys = [
+      "email",
+      "name",
+      "found",
+      "projectCount",
+      "activeCount",
+      "adminCount",
+      "hasNoProjects",
+      "syncedAt",
+      "allRoles",
+      "allModules",
+      "projects",
+      "companyRole",
+      "lastSignIn",
+      "isAccountAdmin",
+      "addedOn",
+    ];
+    for (const k of requiredKeys) expect(blob).toHaveProperty(k);
+
+    expect(blob.email).toBe("alice@example.com");
+    expect(blob.name).toBe("Alice");
+    expect(blob.found).toBe(true);
+    expect(blob.projectCount).toBe(2);
+    expect(blob.activeCount).toBe(2);
+    expect(blob.adminCount).toBe(1);
+    expect(blob.hasNoProjects).toBe(false);
+    expect(blob.syncedAt).toBe("2026-05-11T12:00:00.000Z");
+
+    // allRoles is union + de-duped
+    expect([...blob.allRoles].sort()).toEqual(["Architect", "Owner"]);
+    // allModules filters out "none" tiers (build:none on p1 is dropped)
+    expect([...blob.allModules].sort()).toEqual(["cost", "docs"]);
+
+    // V2.0 degradations
+    expect(blob.companyRole).toBeNull();
+    expect(blob.isAccountAdmin).toBe(false);
+
+    // Project shape
+    expect(blob.projects[0].id).toBe("p1");
+    expect(blob.projects[0].status).toBe("active");
+    expect(blob.projects[0].isAdmin).toBe(true);
+    expect([...blob.projects[0].modules].sort()).toEqual(["cost", "docs"]);
+  });
+
+  it("picks the most recent lastSignIn across projects", () => {
+    const entry = makeEntry([
+      makePerProject({ projectId: "p1", lastSignIn: "2026-01-01T00:00:00.000Z" }),
+      makePerProject({ projectId: "p2", lastSignIn: "2026-04-01T00:00:00.000Z" }),
+      makePerProject({ projectId: "p3", lastSignIn: null }),
+    ]);
+    const blob = buildCacheBlob(entry, new Date("2026-05-11T12:00:00.000Z"));
+    expect(blob.lastSignIn).toBe("2026-04-01T00:00:00.000Z");
+  });
+
+  it("picks the earliest addedOn across projects", () => {
+    const entry = makeEntry([
+      makePerProject({ projectId: "p1", addedOn: "2026-03-01T00:00:00.000Z" }),
+      makePerProject({ projectId: "p2", addedOn: "2026-01-15T00:00:00.000Z" }),
+      makePerProject({ projectId: "p3", addedOn: null }),
+    ]);
+    const blob = buildCacheBlob(entry, new Date("2026-05-11T12:00:00.000Z"));
+    expect(blob.addedOn).toBe("2026-01-15T00:00:00.000Z");
+  });
+
+  it("handles empty perProject (no projects)", () => {
+    const entry = makeEntry([]);
+    const blob = buildCacheBlob(entry, new Date("2026-05-11T12:00:00.000Z"));
+    expect(blob.hasNoProjects).toBe(true);
+    expect(blob.projectCount).toBe(0);
+    expect(blob.activeCount).toBe(0);
+    expect(blob.adminCount).toBe(0);
+    expect(blob.allRoles).toEqual([]);
+    expect(blob.allModules).toEqual([]);
+    expect(blob.lastSignIn).toBeNull();
+    expect(blob.addedOn).toBeNull();
+  });
+});
+
+describe("writeMemberCacheFromAggregator", () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+    vi.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  it("upserts once per aggregator entry, keyed by email", async () => {
+    const aggregator: MemberAggregator = new Map();
+    aggregator.set(
+      "alice@example.com",
+      makeEntry([makePerProject({ projectId: "p1" })]),
+    );
+    aggregator.set("bob@example.com", {
+      email: "bob@example.com",
+      autodeskId: "u-bob",
+      name: "Bob",
+      perProject: [makePerProject({ projectId: "p2" })],
+    });
+    aggregator.set("carol@example.com", {
+      email: "carol@example.com",
+      autodeskId: "u-carol",
+      name: "Carol",
+      perProject: [],
+    });
+
+    const upsert = vi.fn(async () => ({}));
+    const prisma = { accMemberCache: { upsert } };
+
+    const result = await writeMemberCacheFromAggregator(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma as any,
+      aggregator,
+      new Date("2026-05-11T12:00:00.000Z"),
+    );
+
+    expect(result.writtenCount).toBe(3);
+    expect(upsert).toHaveBeenCalledTimes(3);
+    const emails = (upsert.mock.calls as unknown as Array<[{ where: { email: string } }]>)
+      .map((c) => c[0].where.email)
+      .sort();
+    expect(emails).toEqual([
+      "alice@example.com",
+      "bob@example.com",
+      "carol@example.com",
+    ]);
+  });
+});
+
+describe("round-trip: aggregator -> blob -> buildAccGraphSnapshot", () => {
+  it("synthesizes a non-empty graph snapshot from a 2-user / 2-project aggregator", () => {
+    const aggregator: MemberAggregator = new Map();
+    aggregator.set(
+      "alice@example.com",
+      makeEntry([
+        makePerProject({
+          projectId: "p1",
+          projectName: "Tower",
+          projectAdmin: true,
+          roleNames: ["Architect"],
+          products: { docs: "administrator" },
+        }),
+        makePerProject({
+          projectId: "p2",
+          projectName: "Bridge",
+          projectAdmin: false,
+          roleNames: ["Owner"],
+          products: { build: "member" },
+        }),
+      ]),
+    );
+    aggregator.set("bob@example.com", {
+      email: "bob@example.com",
+      autodeskId: "u-bob",
+      name: "Bob",
+      perProject: [
+        makePerProject({
+          projectId: "p1",
+          projectName: "Tower",
+          projectAdmin: false,
+          roleNames: ["Engineer"],
+          products: { docs: "member" },
+        }),
+      ],
+    });
+
+    const syncedAt = new Date("2026-05-11T12:00:00.000Z");
+    const rows = Array.from(aggregator.entries()).map(([email, entry]) => ({
+      email,
+      data: buildCacheBlob(entry, syncedAt),
+    }));
+
+    const snapshot = buildAccGraphSnapshot(rows);
+
+    // Load-bearing assertion: graph must NOT be empty (Pitfall 2 gate).
+    expect(snapshot.nodes.length).toBeGreaterThan(0);
+    // 3 user-project instances → 3 nodes
+    expect(snapshot.nodes).toHaveLength(3);
+    expect(snapshot.stats.uniqueFoundUsers).toBe(2);
+    expect(snapshot.stats.uniqueProjects).toBe(2);
+
+    // Spot-check: Alice's p1 node has the Architect role + isAdmin true
+    const aliceTower = snapshot.nodes.find(
+      (n) => n.email === "alice@example.com" && n.projectId === "p1",
+    );
+    expect(aliceTower).toBeDefined();
+    expect(aliceTower?.isAdmin).toBe(true);
+    expect(aliceTower?.roles).toContain("Architect");
+    expect(aliceTower?.modules).toContain("docs");
   });
 });
