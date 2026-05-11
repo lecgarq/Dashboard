@@ -109,10 +109,10 @@ describe("extractAndPersistProjects soft-delete", () => {
     });
 
     expect(prisma.accProject.updateMany).toHaveBeenCalledTimes(1);
-    const updateArgs = prisma.accProject.updateMany.mock.calls[0][0] as {
+    const updateArgs = (prisma.accProject.updateMany.mock.calls[0] as unknown as [{
       where: { id: { in: string[] } };
       data: { status: string };
-    };
+    }])[0];
     expect(updateArgs.data).toEqual({ status: "inactive" });
     expect(updateArgs.where.id.in).toEqual(expect.arrayContaining(["stale-1", "stale-2"]));
     expect(updateArgs.where.id.in).toHaveLength(2);
