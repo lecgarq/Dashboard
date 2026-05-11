@@ -214,7 +214,7 @@ export async function get2LeggedAutodeskToken(): Promise<string> {
     grant_type: "client_credentials",
     client_id: clientId,
     client_secret: clientSecret,
-    scope: "account:read data:read",
+    scope: "account:read data:read data:create",
   });
   const res = await fetch(APS_TOKEN_URL, {
     method: "POST",
