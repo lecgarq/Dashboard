@@ -13,6 +13,8 @@ import type { PrismaClient, Prisma } from "@prisma/client";
 import pLimit from "p-limit";
 import { fetchHqUsers, fetchWithRetry } from "@/lib/server/acc-admin";
 import { IntegrationError } from "@/lib/server/integration-errors";
+import { getAccountId } from "@/lib/server/acc-helpers";
+import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
 import type { BulkAccUser, BulkAccProject } from "./acc-types";
 
 // ---------------------------------------------------------------------------
@@ -826,4 +828,85 @@ export async function writeMemberCacheFromAggregator(
   }
   console.log(`[quick-sync] accMemberCache: ${writtenCount} users upserted`);
   return { writtenCount };
+}
+
+// ---------------------------------------------------------------------------
+// Top-level orchestrator + CLI entry (plan 02-04, Task 2)
+// ---------------------------------------------------------------------------
+
+/**
+ * Phase 2 Quick Sync top-level orchestrator. Sequences:
+ *   1. extractAndPersistProjects     (PROJ-01..03)
+ *   2. extractAndPersistHubRoles     (ROLE-01)
+ *   3. runPerProjectFanOut           (MEM-01..05, ROLE-02, ROLE-03 — pLimit(5))
+ *   4. writeMemberCacheFromAggregator (MEM-06)
+ *
+ * Returns counters for the caller (release.cjs) to log; throws on fatal errors.
+ * Per-project failures inside step 3 are swallowed by skip-and-continue and
+ * surface in `failures`/`failCount` rather than throwing.
+ */
+export async function runQuickSync(
+  prisma: PrismaClient,
+): Promise<{
+  projectCount: number;
+  memberCount: number;
+  failCount: number;
+  failures: Array<{ projectId: string; error: string }>;
+}> {
+  const startedAt = new Date();
+  console.log(`[quick-sync] starting at ${startedAt.toISOString()}`);
+  console.warn(
+    "[quick-sync] v2.0 cache shape: companyRole=null and isAccountAdmin=false for all users (HQ v1 prefetch deferred).",
+  );
+
+  const accountId = await getAccountId(prisma);
+  const accessToken = await get2LeggedAutodeskToken();
+
+  const projects = await extractAndPersistProjects(prisma, accountId, accessToken);
+  await extractAndPersistHubRoles(prisma, accountId, accessToken);
+
+  // `extractAndPersistProjects` already returns only the fresh / active set;
+  // soft-deleted projects are excluded from the response.
+  const activeProjects = projects;
+  const { aggregator, failCount, failures } = await runPerProjectFanOut(
+    prisma,
+    accountId,
+    activeProjects,
+    accessToken,
+  );
+
+  await writeMemberCacheFromAggregator(prisma, aggregator, new Date());
+
+  const durationMs = Date.now() - startedAt.getTime();
+  console.log(
+    `[quick-sync] complete in ${(durationMs / 1000).toFixed(1)}s — ` +
+      `${activeProjects.length} projects, ${aggregator.size} users, ${failCount} project failures`,
+  );
+
+  return {
+    projectCount: activeProjects.length,
+    memberCount: aggregator.size,
+    failCount,
+    failures,
+  };
+}
+
+// CLI entry: `npx tsx lib/acc/quick-sync-extraction.ts` — invoked by scripts/release.cjs.
+// Per RESEARCH.md Decision 2: per-project failures DO NOT fail the run; only a
+// fatal exception (auth, accountId resolution, db connection) exits non-zero.
+if (require.main === module) {
+  (async () => {
+    const { PrismaClient } = await import("@prisma/client");
+    const prisma = new PrismaClient();
+    try {
+      await runQuickSync(prisma);
+      process.exit(0);
+    } catch (err) {
+      console.error("[quick-sync] fatal:", err instanceof Error ? err.message : err);
+      if (err instanceof Error && err.stack) console.error(err.stack);
+      process.exit(1);
+    } finally {
+      await prisma.$disconnect().catch(() => {});
+    }
+  })();
 }

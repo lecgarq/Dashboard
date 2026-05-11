@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { getAccountId, getProjectIdForDM } from "@/lib/server/acc-helpers";
 
-type ProjectFindFirstResult = { apsHubId: string } | null;
+type ProjectFindFirstResult = { apsHubId: string | null } | null;
 
 function makeDb(result: ProjectFindFirstResult) {
   return {
@@ -38,6 +38,11 @@ describe("getAccountId", () => {
 
   it("throws when apsHubId is an empty string", async () => {
     const db = makeDb({ apsHubId: "" });
+    await expect(getAccountId(db)).rejects.toThrowError(/hub.*not configured/i);
+  });
+
+  it("throws when apsHubId is null (Prisma optional column nullable)", async () => {
+    const db = makeDb({ apsHubId: null });
     await expect(getAccountId(db)).rejects.toThrowError(/hub.*not configured/i);
   });
 });

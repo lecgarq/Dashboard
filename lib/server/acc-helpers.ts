@@ -7,7 +7,12 @@
 
 type ProjectFindFirst = {
   project: {
-    findFirst: (args: { select: { apsHubId: true } }) => Promise<{ apsHubId: string } | null>;
+    // Accept Prisma's actual return type (`apsHubId: string | null`) — the
+    // helper performs the null check internally, so callers passing a real
+    // PrismaClient typecheck without a cast.
+    findFirst: (args: {
+      select: { apsHubId: true };
+    }) => Promise<{ apsHubId: string | null } | null>;
   };
 };
 
