@@ -206,11 +206,8 @@ describe("extractAndPersistHubRoles", () => {
     ];
     vi.stubGlobal("fetch", vi.fn(async () => jsonResponse(raw)));
 
-    const prisma = {
-      accRole: {
-        upsert: vi.fn(async () => ({})),
-      },
-    };
+    const upsert = vi.fn(async (_args: unknown) => ({}));
+    const prisma = { accRole: { upsert } };
 
     const roles = await extractAndPersistHubRoles(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -219,16 +216,17 @@ describe("extractAndPersistHubRoles", () => {
       "token",
     );
 
-    expect(prisma.accRole.upsert).toHaveBeenCalledTimes(3);
-    const whereIds = prisma.accRole.upsert.mock.calls.map(
-      (call) => (call[0] as { where: { id: string } }).where.id,
-    );
+    expect(upsert).toHaveBeenCalledTimes(3);
+    type UpsertArgs = {
+      where: { id: string };
+      create: { id: string; accountId: string; name: string; memberCount: number };
+    };
+    const calls = upsert.mock.calls as unknown as Array<[UpsertArgs]>;
+    const whereIds = calls.map((call) => call[0].where.id);
     expect(whereIds).toEqual(["r1", "r2", "r3"]);
 
     // Verify create payload preserves PK + accountId join
-    const firstCall = prisma.accRole.upsert.mock.calls[0][0] as {
-      create: { id: string; accountId: string; name: string; memberCount: number };
-    };
+    const firstCall = calls[0][0];
     expect(firstCall.create.id).toBe("r1");
     expect(firstCall.create.accountId).toBe("acct-xyz");
     expect(firstCall.create.name).toBe("Architect");
