@@ -16,6 +16,7 @@ import { apsSearchRouter } from "./aps-search";
 import { gmailRouter } from "./gmail";
 import { workspaceRouter } from "./workspace";
 import { accSyncRouter } from "./acc-sync";
+import { accActivityRouter } from "./acc-activity";
 
 export const appRouter = router({
   project: projectRouter,
@@ -35,6 +36,7 @@ export const appRouter = router({
   gmail: gmailRouter,
   workspace: workspaceRouter,
   accSync: accSyncRouter,
+  accActivity: accActivityRouter,
 });
 
 export type AppRouter = typeof appRouter;
