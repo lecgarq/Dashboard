@@ -111,7 +111,7 @@ async function runQuickSyncShell() {
     stdio: "inherit",
     timeout: TIMEOUT_MS - 30_000, // 30s buffer below the outer 5-min watchdog
     shell: process.platform === "win32",
-    env: { ...process.env },
+    env: { ...process.env, ACC_QUICK_SYNC_PROJECTS_ONLY: "1" },
   });
 
   if (result.error || result.status !== 0) {

@@ -11,6 +11,7 @@ import {
   extractAndPersistProjects,
   fetchHubRoles,
   extractAndPersistHubRoles,
+  shouldRunProjectsOnlyQuickSync,
   normalizeProducts,
   fetchProjectMembers,
   fetchProjectRoles,
@@ -156,6 +157,14 @@ describe("extractAndPersistProjects soft-delete", () => {
 // ---------------------------------------------------------------------------
 // Hub roles (ROLE-01) — plan 02-02
 // ---------------------------------------------------------------------------
+
+describe("shouldRunProjectsOnlyQuickSync", () => {
+  it("only enables project-only mode for an explicit 1 flag", () => {
+    expect(shouldRunProjectsOnlyQuickSync({ ACC_QUICK_SYNC_PROJECTS_ONLY: "1" })).toBe(true);
+    expect(shouldRunProjectsOnlyQuickSync({ ACC_QUICK_SYNC_PROJECTS_ONLY: "true" })).toBe(false);
+    expect(shouldRunProjectsOnlyQuickSync({})).toBe(false);
+  });
+});
 
 describe("fetchHubRoles", () => {
   beforeEach(() => {

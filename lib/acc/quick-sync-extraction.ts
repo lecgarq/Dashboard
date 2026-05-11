@@ -38,6 +38,10 @@ export interface RawProject {
 const ACC_ADMIN_V1_BASE = "https://developer.api.autodesk.com/construction/admin/v1";
 const PROJECT_PAGE_SIZE = 100;
 
+export function shouldRunProjectsOnlyQuickSync(env: Record<string, string | undefined>): boolean {
+  return env.ACC_QUICK_SYNC_PROJECTS_ONLY === "1";
+}
+
 // ---------------------------------------------------------------------------
 // Pagination
 // ---------------------------------------------------------------------------
@@ -885,6 +889,18 @@ export async function runQuickSync(
 
   const projects = await extractAndPersistProjects(prisma, accountId, accessToken);
   await extractAndPersistHubRoles(prisma, accountId, accessToken);
+
+  if (shouldRunProjectsOnlyQuickSync(process.env)) {
+    console.log(
+      `[quick-sync] project-only mode enabled; skipped member fan-out for ${projects.length} projects`,
+    );
+    return {
+      projectCount: projects.length,
+      memberCount: 0,
+      failCount: 0,
+      failures: [],
+    };
+  }
 
   // `extractAndPersistProjects` already returns only the fresh / active set;
   // soft-deleted projects are excluded from the response.
