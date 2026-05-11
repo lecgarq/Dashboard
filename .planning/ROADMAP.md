@@ -7,17 +7,7 @@
 
 ## Phases
 
-<details>
-<summary>✅ v1.0 (Phases 1, 2, 2.5, 3, 4, 4.1) — SHIPPED 2026-05-08</summary>
-
-- [x] Phase 1: Foundation (4/4 plans) — completed 2026-04-28
-- [x] Phase 2: Cosmos.gl Renderer (6/6 plans) — completed 2026-04-29
-- [x] Phase 2.5: ACC Data + Filter Refinement (6/6 plans) — completed 2026-05-06
-- [x] Phase 3: Graph UI Completion (5/5 plans) — completed 2026-05-07
-- [x] Phase 4: ACC Access Analysis Dashboard (8/8 plans) — completed 2026-05-08
-- [x] Phase 4.1: Replace lists with interactive graphics (INSERTED) (4/4 plans) — completed 2026-05-08
-
-</details>
+> v1.0 phases (1, 2, 2.5, 3, 4, 4.1) shipped 2026-05-08 and are archived in [milestones/v1.0-ROADMAP.md](milestones/v1.0-ROADMAP.md). The list below is the **active** v2.0 plan.
 
 ### 🚧 v2.0 — ACC Extraction Completion (5 phases, 41 requirements)
 
@@ -27,7 +17,7 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 ---
 
-#### Phase 1 — Foundation: Schema + Sync Orchestration
+#### Phase 1: Foundation — Schema + Sync Orchestration
 
 **Goal:** Establish the relational data layer and the two-button sync model. Every downstream phase depends on this.
 
@@ -47,7 +37,7 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 ---
 
-#### Phase 2 — Core Extraction: Members, Projects, Roles
+#### Phase 2: Core Extraction — Members, Projects, Roles
 
 **Goal:** Make Quick Sync actually extract real data into the new tables. The data backbone for everything downstream.
 
@@ -67,7 +57,7 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 ---
 
-#### Phase 3 — Activity Pipeline: Deep Sync + File Activity
+#### Phase 3: Activity Pipeline — Deep Sync + File Activity
 
 **Goal:** Replace the placeholder Deep Sync wiring (Phase 1 shell) with the real Data Connector flow; surface last-file-activity and WHO-added-WHOM in existing UI.
 
@@ -87,7 +77,7 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 ---
 
-#### Phase 4 — Folders & Folder-Role Permissions (perf-gated)
+#### Phase 4: Folders & Folder-Role Permissions (perf-gated)
 
 **Goal:** Crawl folder trees + folder-role permissions, surface as a new dashboard widget. Graph-node integration is GATED behind a perf pre-flight whose result feeds Phase 5.
 
@@ -108,7 +98,7 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 ---
 
-#### Phase 5 — UI Enrichment Waves
+#### Phase 5: UI Enrichment Waves
 
 **Goal:** Surface the new data through existing user-list, spatial graph, and dashboard widgets. **Leaf phase** — runs after data is in place.
 
