@@ -36,6 +36,7 @@ import {
 } from "./cosmosUtils";
 import { toast } from "sonner";
 import { type BulkAccUser } from "./AccAnalysisPanel";
+import { adminTierFor, adminTierShapeEnum } from "./adminTierShape";
 import {
   buildAccTopologyGraph,
   computeCentroid,
@@ -424,6 +425,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     };
   } | null>(null);
   const polygonSelectionRef = useRef<typeof polygonSelection>(null);
+  // GRAPH-03: admin tier overlay toggle. Persisted via URL param ?admt=1.
+  // OFF by default — matching the must_have truths in the plan.
+  const [showAdminTiers, setShowAdminTiers] = useState<boolean>(() => {
+    if (typeof window === "undefined") return false;
+    try { return new URLSearchParams(window.location.search).get("admt") === "1"; }
+    catch { return false; }
+  });
+  const showAdminTiersRef = useRef(showAdminTiers);
+
   const isDraggingNodeRef = useRef(false);
   const draggedNodeIdxRef = useRef(-1);
   const pendingFiltersRef = useRef<GraphFilters | null>(null);
@@ -482,6 +492,62 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   useEffect(() => {
     setHoverEmail(hoveredNode?.email ?? null);
   }, [hoveredNode]);
+
+  // GRAPH-03: toggle admin tier overlay. Writes to URL param ?admt=1.
+  const toggleAdminTiers = useCallback(() => {
+    setShowAdminTiers((prev) => {
+      const next = !prev;
+      showAdminTiersRef.current = next;
+      // Persist to URL
+      try {
+        const qs = new URLSearchParams(window.location.search);
+        if (next) qs.set("admt", "1"); else qs.delete("admt");
+        const qsStr = qs.toString();
+        router.replace(`${pathname}${qsStr ? `?${qsStr}` : ""}`, { scroll: false });
+      } catch { /* ignore */ }
+      return next;
+    });
+  }, [router, pathname]);
+
+  // GRAPH-03: apply/revert admin tier shapes+sizes on the cosmos renderer
+  // whenever the toggle or node list changes.
+  useEffect(() => {
+    showAdminTiersRef.current = showAdminTiers;
+    const cosmosRenderer = cosmosRendererRef.current;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const cosmosGraph = (cosmosRenderer as any)?.graph;
+    if (!cosmosGraph) return;
+    const nodes = nodesRef.current;
+    if (nodes.length === 0) return;
+
+    if (showAdminTiers) {
+      // Build new typed arrays for shapes and sizes
+      const shapes = new Float32Array(nodes.length);
+      const baseSizes = new Float32Array(nodes.length);
+      // Get baseline size (reuse cosmos default: ~7 or from the existing buffer)
+      const baseSize = 7;
+      for (let i = 0; i < nodes.length; i++) {
+        const node = nodes[i];
+        const visual = adminTierFor({
+          isAccountAdmin: node.isAccountAdmin,
+          projectAdmin: node.projectAdmin,
+          executive: node.executive,
+        });
+        shapes[i] = adminTierShapeEnum(visual.tier);
+        baseSizes[i] = baseSize * visual.sizeMultiplier;
+      }
+      if (typeof cosmosGraph.setPointShapes === "function") cosmosGraph.setPointShapes(shapes);
+      if (typeof cosmosGraph.setPointSizes === "function") cosmosGraph.setPointSizes(baseSizes);
+    } else {
+      // Revert to baseline: circle shapes, uniform base size
+      const shapes = new Float32Array(nodes.length); // all 0 = Circle
+      const sizes = new Float32Array(nodes.length).fill(7);
+      if (typeof cosmosGraph.setPointShapes === "function") cosmosGraph.setPointShapes(shapes);
+      if (typeof cosmosGraph.setPointSizes === "function") cosmosGraph.setPointSizes(sizes);
+    }
+    needsRenderRef.current = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showAdminTiers]);
 
   // CSS fade-out: plays a 150ms opacity dip on the canvas wrapper when the
   // visible set shrinks (filter change). Zero GPU/shader cost — purely CSS.
@@ -2497,6 +2563,23 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           >
             <span>Lasso {lassoActive ? "On" : "Off"}</span>
           </button>
+          {/* GRAPH-03: Admin tier toggle — off by default */}
+          <button
+            onClick={toggleAdminTiers}
+            disabled={renderBackend === "three3d"}
+            data-testid="acc-graph-admin-tiers-toggle"
+            title="Show hub admins (★), project admins (◆), and executives (◯) with distinct shapes"
+            className={cn(
+              "flex items-center gap-1.5 text-[10px] font-medium transition-colors rounded-md px-1.5 py-0.5",
+              renderBackend === "three3d"
+                ? "text-gray-300 cursor-not-allowed"
+                : showAdminTiers
+                ? "bg-amber-500 text-white"
+                : "text-gray-500 hover:text-gray-800",
+            )}
+          >
+            <span>Admin tiers {showAdminTiers ? "On" : "Off"}</span>
+          </button>
         </div>
 
         <div className="absolute bottom-3 right-3 z-10 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-xl px-3 py-2 flex flex-col gap-1">
@@ -2506,6 +2589,31 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           <LegendDot color="#9B5DE5" label="Role" />
           <LegendDot color="#F4A261" label="Module" />
         </div>
+
+        {/* GRAPH-03: Admin tier legend — shown only when toggle is ON */}
+        {showAdminTiers && (
+          <div
+            className="absolute bottom-3 right-48 z-10 bg-white/90 backdrop-blur-sm border border-amber-200 rounded-xl px-3 py-2 flex flex-col gap-1"
+            data-testid="acc-graph-admin-tier-legend"
+          >
+            <p className="text-[9px] font-semibold uppercase tracking-wide text-amber-600 mb-0.5">
+              Admin Tiers
+            </p>
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+              <span className="text-amber-500 font-bold">★</span>
+              <span>Hub admin</span>
+              <span className="text-[9px] text-gray-400">(1.5× size)</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+              <span className="text-blue-500 font-bold">◆</span>
+              <span>Project admin</span>
+            </div>
+            <div className="flex items-center gap-1.5 text-[10px] text-gray-700">
+              <span className="text-purple-500 font-bold">◯</span>
+              <span>Executive</span>
+            </div>
+          </div>
+        )}
 
         {/* 02.5-03: CSS fade wrapper — plays a 150ms opacity dip when the visible
             set shrinks on filter change. Zero shader cost; purely CSS transition. */}
