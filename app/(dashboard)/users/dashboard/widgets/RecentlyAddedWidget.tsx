@@ -2,8 +2,19 @@
 
 /**
  * Phase 04.1 Plan 03 — RecentlyAddedWidget rewrite (DASH-06).
+ * Phase 03 Plan 04 — ACTV-04 WHO-added-WHOM row list added BELOW the heatmap.
  *
- * GitHub-style 90-day calendar heatmap. Replaces the prior table.
+ * Layout (top-to-bottom):
+ *   1. Header: segmented window [7d|30d|90d] (default 30d) + CSV download.
+ *   2. Active filter pill: "Filtered by Jane Doe ×" (only when inviterFilter set).
+ *   3. GitHub-style 90-day calendar heatmap (existing 04.1 behavior — unchanged).
+ *      NOTE: When inviterFilter is active the heatmap is NOT visually filtered
+ *      (CONTEXT.md does not require it). Documented in 03-04-SUMMARY.md.
+ *   4. Row list (NEW — ACTV-04): up to 10 invitations newest-first, stacked
+ *      avatars (invitee 28px in front, inviter 22px behind w/ 6px overlap),
+ *      "(+N others)" suffix with hover popover, "Invited by Unknown" warning
+ *      for unresolved inviters, click inviter → setInviterFilter (relaxes
+ *      time window server-side per Plan 02 contract).
  *
  *   - 13 cols × 7 rows = 91 cells; first cell is a half-cell pad so the
  *     trailing column lands on `today`.
@@ -17,13 +28,14 @@
  */
 
 import { useCallback, useMemo, useState } from "react";
-import { Download } from "lucide-react";
+import { Download, AlertTriangle, X } from "lucide-react";
 import { motion } from "framer-motion";
 import { timeDays } from "d3-time";
 import { scaleSequential } from "d3-scale";
 import { interpolateBlues } from "d3-scale-chromatic";
 import {
   format,
+  formatDistanceToNow,
   parseISO,
   startOfDay,
   subDays,
@@ -32,6 +44,7 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
+import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
 import { useSelection } from "../selectionContext";
@@ -57,6 +70,13 @@ const TOTAL_DAYS = 90;
 const SVG_W = PAD_LEFT * 2 + COLS * (CELL + GAP) - GAP;
 const SVG_H = PAD_TOP * 2 + ROWS * (CELL + GAP) - GAP;
 
+const ROW_LIST_LIMIT = 10;
+
+// Stacked-avatar sizing (CONTEXT.md: invitee front ~28px, inviter behind smaller w/ ~6px overlap).
+const INVITEE_AVATAR_PX = 28;
+const INVITER_AVATAR_PX = 22;
+const AVATAR_OVERLAP_PX = 6;
+
 interface DayCell {
   date: Date;
   dateIso: string;       // yyyy-MM-dd, local TZ
@@ -67,12 +87,307 @@ interface DayCell {
   cellIdx: number;       // 0..(COLS*ROWS)-1
 }
 
+/* ------------------------------------------------------------------ helpers */
+
+function initialsFromName(name: string | null | undefined, fallbackEmail?: string | null): string {
+  const n = (name ?? "").trim();
+  if (n) {
+    const parts = n.split(/\s+/);
+    const first = parts[0]?.charAt(0) ?? "";
+    const last = parts.length > 1 ? parts[parts.length - 1]!.charAt(0) : "";
+    const initials = (first + last).toUpperCase();
+    if (initials) return initials;
+  }
+  const local = (fallbackEmail ?? "").split("@")[0] ?? "";
+  return local.slice(0, 2).toUpperCase() || "?";
+}
+
+/* ------------------------------------------------------------------ avatars */
+
+interface AvatarCircleProps {
+  size: number;
+  label: string;          // initials
+  title?: string;
+  bg?: string;
+  ring?: boolean;
+  onClick?: () => void;
+  ariaLabel?: string;
+  unresolved?: boolean;   // grey + warning indicator
+}
+
+function AvatarCircle({
+  size,
+  label,
+  title,
+  bg = "#E5E7EB",
+  ring,
+  onClick,
+  ariaLabel,
+  unresolved,
+}: AvatarCircleProps) {
+  const fontSize = Math.max(9, Math.floor(size * 0.4));
+  const interactive = !!onClick;
+  return (
+    <span
+      onClick={onClick}
+      role={interactive ? "button" : undefined}
+      tabIndex={interactive ? 0 : undefined}
+      onKeyDown={
+        interactive
+          ? (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onClick?.();
+              }
+            }
+          : undefined
+      }
+      aria-label={ariaLabel}
+      title={title}
+      style={{
+        width: size,
+        height: size,
+        fontSize,
+        background: unresolved ? "#F3F4F6" : bg,
+        boxShadow: ring ? "0 0 0 2px #fff" : undefined,
+        cursor: interactive ? "pointer" : "default",
+      }}
+      className={
+        "inline-flex items-center justify-center rounded-full text-foreground/80 font-medium select-none " +
+        (interactive ? "hover:ring-2 hover:ring-primary/40 transition-shadow" : "")
+      }
+    >
+      {unresolved ? (
+        <AlertTriangle size={Math.floor(size * 0.5)} className="text-amber-600" />
+      ) : (
+        label
+      )}
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ pill */
+
+function InviterFilterPill({
+  inviterName,
+  onClear,
+}: {
+  inviterName: string;
+  onClear: () => void;
+}) {
+  return (
+    <span
+      data-testid="recently-added-inviter-filter-pill"
+      className="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 rounded-full pl-2.5 pr-1.5 py-0.5"
+    >
+      <span className="font-medium">Filtered by:</span>
+      <span className="truncate max-w-[180px]">{inviterName}</span>
+      <button
+        onClick={onClear}
+        aria-label={`Clear filter for ${inviterName}`}
+        className="hover:bg-primary/20 rounded-full p-0.5 transition-colors"
+      >
+        <X size={10} />
+      </button>
+    </span>
+  );
+}
+
+/* ------------------------------------------------------------------ row */
+
+interface InvitationRow {
+  activityId: string;
+  createdAt: string | Date;
+  projectId: string | null;
+  rawAction: string;
+  inviterAutodeskId: string;
+  inviterName: string | null;
+  inviterEmail: string | null;
+  inviteeEmail: string | null;
+  inviteeName: string | null;
+  inviteeAutodeskId: string | null;
+}
+
+interface InvitationGroup {
+  inviteeEmail: string | null;
+  inviteeName: string | null;
+  primary: InvitationRow;
+  others: InvitationRow[];
+}
+
+function InvitationRowItem({
+  group,
+  onInviterClick,
+}: {
+  group: InvitationGroup;
+  onInviterClick: (autodeskId: string, name: string | null) => void;
+}) {
+  const [hoverOthers, setHoverOthers] = useState(false);
+  const { primary, others } = group;
+  const inviterUnresolved = !primary.inviterName;
+  const inviteeUnresolved = !primary.inviteeName && !primary.inviteeEmail;
+
+  const inviteeInitials = initialsFromName(primary.inviteeName, primary.inviteeEmail);
+  const inviterInitials = initialsFromName(primary.inviterName, primary.inviterEmail);
+
+  const createdAtDate =
+    typeof primary.createdAt === "string" ? parseISO(primary.createdAt) : primary.createdAt;
+  const ago = formatDistanceToNow(createdAtDate, { addSuffix: false });
+
+  const inviterDisplay = primary.inviterName ?? "Unknown";
+  const inviteeDisplay =
+    primary.inviteeName ?? primary.inviteeEmail ?? "Unknown invitee";
+
+  const handleInviterClick = () => {
+    if (inviterUnresolved) return;
+    onInviterClick(primary.inviterAutodeskId, primary.inviterName);
+  };
+
+  return (
+    <li className="flex items-center gap-3 py-1.5 px-1 rounded-md hover:bg-muted/40 transition-colors">
+      {/* Stacked avatars — invitee in front, inviter behind */}
+      <span
+        className="relative shrink-0 inline-block"
+        style={{
+          width: INVITEE_AVATAR_PX + INVITER_AVATAR_PX - AVATAR_OVERLAP_PX,
+          height: INVITEE_AVATAR_PX,
+        }}
+      >
+        <span
+          className="absolute"
+          style={{
+            top: (INVITEE_AVATAR_PX - INVITER_AVATAR_PX) / 2,
+            left: 0,
+            zIndex: 0,
+          }}
+        >
+          <AvatarCircle
+            size={INVITER_AVATAR_PX}
+            label={inviterInitials}
+            title={inviterUnresolved ? "Unknown inviter" : `Inviter: ${inviterDisplay}`}
+            ariaLabel={
+              inviterUnresolved
+                ? "Inviter unresolved"
+                : `Filter by inviter ${inviterDisplay}`
+            }
+            unresolved={inviterUnresolved}
+            onClick={inviterUnresolved ? undefined : handleInviterClick}
+            bg="#D1D5DB"
+          />
+        </span>
+        <span
+          className="absolute"
+          style={{
+            top: 0,
+            left: INVITER_AVATAR_PX - AVATAR_OVERLAP_PX,
+            zIndex: 1,
+          }}
+        >
+          <AvatarCircle
+            size={INVITEE_AVATAR_PX}
+            label={inviteeInitials}
+            title={inviteeUnresolved ? "Unknown invitee" : `Invitee: ${inviteeDisplay}`}
+            unresolved={inviteeUnresolved}
+            ring
+            bg="#DBEAFE"
+          />
+        </span>
+      </span>
+
+      {/* Body */}
+      <div className="flex-1 min-w-0">
+        <div className="text-xs text-foreground/90 truncate">
+          {inviterUnresolved ? (
+            <span className="inline-flex items-center gap-1 text-muted-foreground">
+              <AlertTriangle size={11} className="text-amber-600" />
+              Invited by Unknown
+            </span>
+          ) : (
+            <button
+              type="button"
+              onClick={handleInviterClick}
+              className="font-medium hover:underline"
+              aria-label={`Filter by ${inviterDisplay}`}
+            >
+              {inviterDisplay}
+            </button>
+          )}
+          <span className="text-muted-foreground"> invited </span>
+          <span className="font-medium">{inviteeDisplay}</span>
+          {others.length > 0 && (
+            <span
+              className="relative ml-1 text-muted-foreground cursor-default"
+              onMouseEnter={() => setHoverOthers(true)}
+              onMouseLeave={() => setHoverOthers(false)}
+            >
+              (+{others.length} {others.length === 1 ? "other" : "others"})
+              {hoverOthers && (
+                <span className="absolute left-0 bottom-full mb-1 z-50 min-w-[200px] rounded-md border bg-popover text-popover-foreground shadow-lg p-2 text-[11px]">
+                  <div className="font-semibold mb-1">Also invited by:</div>
+                  <ul className="space-y-0.5">
+                    {others.map((o) => {
+                      const d =
+                        typeof o.createdAt === "string"
+                          ? parseISO(o.createdAt)
+                          : o.createdAt;
+                      return (
+                        <li key={o.activityId} className="flex justify-between gap-2">
+                          <span>{o.inviterName ?? "Unknown"}</span>
+                          <span className="text-muted-foreground">
+                            {formatDistanceToNow(d, { addSuffix: true })}
+                          </span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </span>
+              )}
+            </span>
+          )}
+        </div>
+        <div className="text-[10px] text-muted-foreground truncate">
+          {primary.projectId ?? "—"} · {ago} ago
+        </div>
+      </div>
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ widget */
+
 export function RecentlyAddedWidget({ users }: { users: BulkAccUser[] }) {
   const [windowDays, setWindowDays] = useState<WindowDays>(30);
   const [focusedIdx, setFocusedIdx] = useState<number | null>(null);
+  const [inviterFilter, setInviterFilter] = useState<{
+    autodeskId: string;
+    name: string | null;
+  } | null>(null);
   const { setSelected } = useSelection();
   const { neutral } = useDashboardAccent();
   const transition = useTransition(CELL_SPRING);
+
+  // ----- invitation row list (ACTV-04 backend) -----------------------------
+  const invitationsQuery = trpc.accActivity.listInvitations.useQuery(
+    {
+      windowDays,
+      inviterFilter: inviterFilter?.autodeskId,
+      limit: 100,
+    },
+    {
+      staleTime: 60_000,
+      retry: false,
+    },
+  );
+  const invitationGroups = (invitationsQuery.data?.invitations ?? []) as InvitationGroup[];
+  const visibleGroups = invitationGroups.slice(0, ROW_LIST_LIMIT);
+
+  const clearInviterFilter = useCallback(() => setInviterFilter(null), []);
+  const handleInviterClick = useCallback(
+    (autodeskId: string, name: string | null) => {
+      setInviterFilter({ autodeskId, name });
+    },
+    [],
+  );
 
   // ----- bucket users by local-date string (Pitfall 5) ---------------------
   const countsByDay = useMemo(() => {
@@ -191,7 +506,24 @@ export function RecentlyAddedWidget({ users }: { users: BulkAccUser[] }) {
     [cells, focusedIdx, setSelected],
   );
 
-  // ----- loading / empty ---------------------------------------------------
+  // ----- "See all" handler -------------------------------------------------
+  // CONTEXT decision: "See all" reuses the existing kind:"day" side-panel by
+  // dispatching today's date + the union of invitee emails from the current
+  // list. This keeps the panel handler unchanged. A richer kind:"invitations"
+  // body is deferred (CONTEXT.md "Phase 5 may add").
+  const handleSeeAll = useCallback(() => {
+    const todayIso = format(today, "yyyy-MM-dd");
+    const emails = Array.from(
+      new Set(
+        invitationGroups
+          .map((g) => g.primary.inviteeEmail)
+          .filter((e): e is string => !!e),
+      ),
+    );
+    setSelected({ kind: "day", dateIso: todayIso, emails });
+  }, [invitationGroups, setSelected, today]);
+
+  // ----- loading / empty (heatmap section) ---------------------------------
   if (users.length === 0) {
     return (
       <div className="flex flex-col gap-3">
@@ -200,7 +532,7 @@ export function RecentlyAddedWidget({ users }: { users: BulkAccUser[] }) {
     );
   }
 
-  if (totalAddedAnyTime === 0) {
+  if (totalAddedAnyTime === 0 && visibleGroups.length === 0) {
     return (
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-end gap-2">
@@ -255,6 +587,19 @@ export function RecentlyAddedWidget({ users }: { users: BulkAccUser[] }) {
           Download CSV
         </Button>
       </div>
+
+      {/* Active inviter filter pill (ACTV-04) */}
+      {inviterFilter && (
+        <div className="flex items-center gap-2">
+          <InviterFilterPill
+            inviterName={inviterFilter.name ?? "Unknown"}
+            onClear={clearInviterFilter}
+          />
+          <span className="text-[10px] text-muted-foreground">
+            time-window filter relaxed
+          </span>
+        </div>
+      )}
 
       {/* Heatmap */}
       <svg
@@ -325,6 +670,72 @@ export function RecentlyAddedWidget({ users }: { users: BulkAccUser[] }) {
           );
         })}
       </svg>
+
+      {/* Row list (ACTV-04) */}
+      <div className="flex flex-col gap-1 mt-1 border-t pt-2">
+        <div className="flex items-center justify-between">
+          <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Recent invitations
+          </h4>
+          {invitationGroups.length > ROW_LIST_LIMIT && (
+            <button
+              type="button"
+              onClick={handleSeeAll}
+              data-testid="recently-added-see-all"
+              className="text-[11px] text-primary hover:underline"
+            >
+              See all →
+            </button>
+          )}
+        </div>
+
+        {invitationsQuery.isLoading && (
+          <p className="text-[11px] text-muted-foreground py-2">
+            Loading invitations…
+          </p>
+        )}
+
+        {!invitationsQuery.isLoading &&
+          visibleGroups.length === 0 &&
+          inviterFilter && (
+            <div className="text-[11px] text-muted-foreground py-2 flex items-center gap-2">
+              <span>
+                No invitations by {inviterFilter.name ?? "this inviter"}.
+              </span>
+              <button
+                type="button"
+                onClick={clearInviterFilter}
+                className="text-primary hover:underline"
+              >
+                Clear filter
+              </button>
+            </div>
+          )}
+
+        {!invitationsQuery.isLoading &&
+          visibleGroups.length === 0 &&
+          !inviterFilter && (
+            <p className="text-[11px] text-muted-foreground py-2">
+              No invitations in the last {windowDays} days.
+            </p>
+          )}
+
+        {visibleGroups.length > 0 && (
+          <ul className="flex flex-col">
+            {visibleGroups.map((g) => (
+              <InvitationRowItem
+                key={
+                  g.primary.activityId +
+                  ":" +
+                  (g.inviteeEmail ?? g.primary.activityId)
+                }
+                group={g}
+                onInviterClick={handleInviterClick}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }
