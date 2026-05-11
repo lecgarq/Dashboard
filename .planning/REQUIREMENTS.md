@@ -28,11 +28,11 @@ Backend-driven sync model — Quick Sync runs as a Railway release step (REST ex
 
 Full parity with `HOW_TO_Extract_Project_Members.md`. The load-bearing extraction.
 
-- [ ] **MEM-01**: Per-project members extracted via `/construction/admin/v1/projects/:id/users` with `?fields=` hardcoded so `lastSignIn` is always returned (never silently absent).
-- [ ] **MEM-02**: Each member persisted with `status`, `companyName`, `phone`, `addedOn` (from project endpoint, NOT hub `created_at`).
-- [ ] **MEM-03**: Each member's full `products` array persisted with per-module access tier (administrator / member / none) for: Docs, Design Collaboration, Model Coordination, Build, AutoSpecs, Insight, Cost, Project Administration.
-- [ ] **MEM-04**: Each member's `accessLevels.projectAdmin` and `accessLevels.executive` flags persisted distinctly from HQ-level account-admin status.
-- [ ] **MEM-05**: Per-project role assignments persisted in `AccProjectRole` (many-to-many: member × project × role).
+- [x] **MEM-01**: Per-project members extracted via `/construction/admin/v1/projects/:id/users` with `?fields=` hardcoded so `lastSignIn` is always returned (never silently absent).
+- [x] **MEM-02**: Each member persisted with `status`, `companyName`, `phone`, `addedOn` (from project endpoint, NOT hub `created_at`).
+- [x] **MEM-03**: Each member's full `products` array persisted with per-module access tier (administrator / member / none) for: Docs, Design Collaboration, Model Coordination, Build, AutoSpecs, Insight, Cost, Project Administration.
+- [x] **MEM-04**: Each member's `accessLevels.projectAdmin` and `accessLevels.executive` flags persisted distinctly from HQ-level account-admin status.
+- [x] **MEM-05**: Per-project role assignments persisted in `AccProjectRole` (many-to-many: member × project × role).
 - [ ] **MEM-06**: Existing `accMemberCache` continues to be written during the dual-existence window so the live dashboard never breaks mid-deploy.
 
 ### Project Info
@@ -47,8 +47,8 @@ Per `HOW_TO_Extract_Project_Info.md`.
 Per `HOW_TO_Extract_All_Roles.md`.
 
 - [x] **ROLE-01**: Hub master roles extracted via `/hq/v2/accounts/:id/industry_roles` and persisted in `AccRole`.
-- [ ] **ROLE-02**: Per-project industry roles extracted via `/hq/v2/accounts/:id/projects/:pid/industry_roles` and joined to `AccProject` + `AccRole` via `AccProjectRole`.
-- [ ] **ROLE-03**: Default access levels per role (`docs.access_level`, `project_administration.access_level`) persisted with each `AccProjectRole` row for downstream permission analysis.
+- [x] **ROLE-02**: Per-project industry roles extracted via `/hq/v2/accounts/:id/projects/:pid/industry_roles` and joined to `AccProject` + `AccRole` via `AccProjectRole`.
+- [x] **ROLE-03**: Default access levels per role (`docs.access_level`, `project_administration.access_level`) persisted with each `AccProjectRole` row for downstream permission analysis.
 
 ### Folders & Folder-Role Permissions (Conditional)
 
