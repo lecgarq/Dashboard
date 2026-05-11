@@ -2,6 +2,7 @@
 builder = "DOCKERFILE"
 
 [deploy]
+releaseCommand = "node scripts/release.cjs"
 startCommand = "npm run start:prod"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
