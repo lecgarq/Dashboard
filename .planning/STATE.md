@@ -3,15 +3,13 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 3 — Activity Pipeline (4/4 plans complete)
-status: phase-complete
-last_updated: "2026-05-11T22:02:00.000Z"
+status: completed
+last_updated: "2026-05-11T22:39:05.107Z"
 progress:
   total_phases: 3
   completed_phases: 3
   total_plans: 12
   completed_plans: 12
-  current_phase_plans: 4
-  current_phase_completed_plans: 4
 ---
 
 # Session State
@@ -24,7 +22,7 @@ See: .planning/PROJECT.md
 
 **Milestone:** v2.0 — ACC Extraction Completion
 **Current phase:** Phase 3 — Activity Pipeline (4/4 plans complete)
-**Status:** Phase 3 complete — all 4 plans shipped. Pending operator action: push deploy branch to Railway so scripts/deep-sync-ingest.cjs lands; wire it as a 30-min cron. First ingest will validate the listInvitations row list + getSyncFreshness ingest rollup.
+**Status:** Milestone complete
 
 ## Session Log
 
