@@ -6,6 +6,20 @@
 
 ---
 
+## 2026-05-11 Official-Docs Update
+
+Before implementing Plan `01-03`, verify current Railway config-as-code docs. The implementation behavior is stable, but the key name in `railway.toml` may differ from older plan wording:
+
+- Railway currently documents the deploy hook as a **Pre-Deploy Command**: https://docs.railway.com/deployments/pre-deploy-command
+- Railway cron jobs use UTC cron schedules and should terminate cleanly: https://docs.railway.com/reference/cron-jobs
+- Railway config-as-code key names must be checked against the current reference before editing `railway.toml`: https://docs.railway.com/config-as-code/reference
+
+Planner/implementer rule: do not blindly use `releaseCommand`. Use the current documented key, likely `preDeployCommand`, if the reference confirms it. Record the selected key and source in `01-03-SUMMARY.md`.
+
+See `01-IMPLEMENTATION-HANDOFF.md` for the implementation-ready handoff.
+
+---
+
 <user_constraints>
 ## User Constraints (from CONTEXT.md)
 
@@ -75,7 +89,7 @@ Phase 1 is an infrastructure phase: add 8 Prisma models (plus `SyncMeta`), wire 
 
 The codebase is already well-prepared. `getAccountId(db)` exists inside `server/routers/users.ts` (lines 211–221) and only needs to be extracted to a shared helper file so Phase 2 callers can import it. The email infrastructure (`lib/server/email.ts`) already supports both Resend (checked first via `RESEND_API_KEY` env var) and Gmail OAuth as fallback — Phase 1 just adds a `sendSyncFailureAlert()` wrapper. The Prisma schema uses `@prisma/adapter-pg` (driver-adapters mode) and Prisma 7.x; all new models slot in under the existing `// ============ MODULE: ACC ... ============` sections.
 
-Railway deploy flow currently has **no `releaseCommand`** in `railway.toml` — only `startCommand`. Adding a release command requires updating `railway.toml` plus writing a small Node.js release script. Railway cron is configured via the Railway dashboard's Cron UI (not in `railway.toml`). The freshness indicator goes in the sidebar bottom section (`<div className="border-t border-white/60 px-3 py-3">` in `Sidebar.tsx` lines 476–487) since there is no dashboard footer element — the sidebar bottom is the only persistent chrome below the nav.
+Railway deploy flow currently has **no deploy/pre-deploy command key** in `railway.toml` - only `startCommand`. Adding the deploy hook requires updating `railway.toml` with the current documented Railway key plus writing a small Node.js release script. Railway cron is configured via the Railway dashboard's Cron UI (not in `railway.toml`). The freshness indicator goes in the sidebar bottom section (`<div className="border-t border-white/60 px-3 py-3">` in `Sidebar.tsx` lines 476-491) since there is no dashboard footer element - the sidebar bottom is the only persistent chrome below the nav.
 
 **Primary recommendation:** Extract `getAccountId` to `lib/server/acc-helpers.ts`, add 8 Prisma models + `SyncMeta` + migration, write `scripts/release.cjs` (migrate + quick-sync shell with 5-min timeout + alert on error), add `scripts/deep-sync.cjs` (cron entry point), add `accSync` tRPC router with `getSyncFreshness` query, and add the freshness pill to the sidebar bottom.
 
@@ -140,17 +154,19 @@ components/
 │       └── Sidebar.tsx       # add SyncFreshnessPill in bottom section
 ```
 
-### Pattern 1: Railway Release Command
+### Pattern 1: Railway Deploy / Pre-Deploy Command
 
 **What:** A Node.js script runs after container build, before traffic switches. Non-zero exit = deploy fails.
 
 **How to configure in `railway.toml`:**
+Verify the current Railway config-as-code reference before editing. As of the 2026-05-11 official-docs update above, Railway documents this concept as a Pre-Deploy Command, so `preDeployCommand` is the likely key. Older research used `releaseCommand`; keep that only if the current reference still supports it.
+
 ```toml
 [build]
 builder = "DOCKERFILE"
 
 [deploy]
-releaseCommand = "node scripts/release.cjs"
+preDeployCommand = "node scripts/release.cjs"
 startCommand = "npm run start:prod"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
@@ -474,7 +490,7 @@ The new `accSync` router goes in `server/routers/acc-sync.ts` and is registered 
 | Job queue / retry | Custom retry loop | None (no-retry policy locked) | Policy: fail → wait for next nightly cron |
 | Email delivery | SMTP from scratch | `lib/server/email.ts` (Resend → Gmail OAuth) | Already wired, zero new deps |
 | "X ago" formatting | Custom date math | `date-fns` `formatDistanceToNow` | Already in repo |
-| Deploy hook | Custom webhook | Railway `releaseCommand` in `railway.toml` | First-class Railway feature |
+| Deploy hook | Custom webhook | Railway deploy/pre-deploy command in `railway.toml` | First-class Railway feature; verify current key before editing |
 
 ---
 
@@ -643,7 +659,7 @@ if (inFlight) {
 - `C:\LECG\Dashboard\prisma\schema.prisma` — existing schema; all new models verified additive
 - `C:\LECG\Dashboard\server\routers\users.ts` lines 211–221 — `getAccountId` implementation
 - `C:\LECG\Dashboard\lib\server\email.ts` lines 332–404 — Resend + Gmail OAuth dual-path, already wired
-- `C:\LECG\Dashboard\railway.toml` — confirmed no `releaseCommand` field currently
+- `C:\LECG\Dashboard\railway.toml` — confirmed no deploy/pre-deploy command field currently
 - `C:\LECG\Dashboard\Dockerfile` — Node 22, full `npm install --include=dev`
 - `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Activity_Logs.md` — Data Connector 3-step flow, endpoint URLs, response shapes
 - `C:\LECG\Dashboard\components\layout\Sidebar.tsx` lines 476–491 — sidebar bottom is the only persistent chrome for a freshness indicator
@@ -652,7 +668,7 @@ if (inFlight) {
 
 ### Secondary (MEDIUM confidence)
 
-- Railway `releaseCommand` key in `[deploy]` block — documented Railway feature; syntax from Railway docs
+- Railway deploy/pre-deploy command key in `[deploy]` block — verify current config-as-code docs before editing; likely `preDeployCommand` as of 2026-05-11 docs
 - Railway cron: 5-field POSIX cron `0 9 * * *` — standard cron; Railway confirmed
 - Prisma `@@index` with `sort: Desc` — documented Prisma 5+ feature; applicable to Prisma 7.x
 - APS Data Connector scope requirements (`data:create`) — from HOW_TO prerequisites; not verified against live APS API

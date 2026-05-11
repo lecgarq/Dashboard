@@ -75,6 +75,21 @@ Establish the v2.0 relational data layer (8 new Prisma models) and the sync orch
 
 </specifics>
 
+<implementation_handoff date="2026-05-11">
+## Implementation Handoff Addendum
+
+See `01-IMPLEMENTATION-HANDOFF.md` before implementing plans `01-03` or `01-04`.
+
+Railway terminology has changed in the current official docs. The behavior remains "run this command after build and before app start," but Claude Code must verify the current `railway.toml` key before editing. Prefer the documented Pre-Deploy Command key if available, and document the exact key used in the plan summary.
+
+The older requirement wording still says users can trigger syncs from the UI. That is not the active Phase 01 decision. Active Phase 01 behavior is backend-only:
+
+- Quick Sync shell runs from Railway deploy/pre-deploy.
+- Deep Sync shell runs from Railway cron.
+- Sidebar freshness is read-only status visibility.
+- No in-app trigger buttons are added in Phase 01.
+</implementation_handoff>
+
 <deferred>
 ## Deferred Ideas
 

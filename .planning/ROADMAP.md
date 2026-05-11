@@ -75,6 +75,12 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 **Requirements:** ACTV-01..05 (5)
 
+**Plans:** 4 plans
+- [ ] 03-01-PLAN.md — Wave 0: deps install + Prisma migration (AccActivity v2 + UnresolvedAttribution)
+- [ ] 03-02-PLAN.md — Wave 1: streaming ingest pipeline + Stage-2 cron + accActivity tRPC router
+- [ ] 03-03-PLAN.md — Wave 2: user-list File Activity columns + DashboardSidePanel drill-down
+- [ ] 03-04-PLAN.md — Wave 2: RecentlyAddedWidget WHO-added-WHOM + SyncFreshnessPill amber/Partial
+
 **Success criteria:**
 - Data Connector ZIP downloaded via signed S3 URL with NO Authorization header (APS quirk per `HOW_TO_Extract_Activity_Logs.md`).
 - Streaming unzip → streaming CSV parse → batch upsert of 500 rows via `createMany({ skipDuplicates: true })`. All-time retention, no prune.
@@ -153,7 +159,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 4.1. Replace lists with interactive graphics | v1.0     | 4/4            | Complete | 2026-05-08 |
 | 1. Foundation: Schema + Sync Orchestration  | v2.0      | 4/4            | Complete    | 2026-05-11 |
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/4            | Plans drafted | —      |
-| 3. Activity Pipeline                        | v2.0      | 0/?            | Not started | —       |
+| 3. Activity Pipeline                        | v2.0      | 0/4            | Plans drafted | —       |
 | 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Blocked on Phase 1+2 | — |
 | 5. UI Enrichment Waves                      | v2.0      | 0/?            | Blocked on Phase 2  | — |
 
