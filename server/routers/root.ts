@@ -17,6 +17,7 @@ import { gmailRouter } from "./gmail";
 import { workspaceRouter } from "./workspace";
 import { accSyncRouter } from "./acc-sync";
 import { accActivityRouter } from "./acc-activity";
+import { accFoldersRouter } from "./acc-folders";
 
 export const appRouter = router({
   project: projectRouter,
@@ -37,6 +38,7 @@ export const appRouter = router({
   workspace: workspaceRouter,
   accSync: accSyncRouter,
   accActivity: accActivityRouter,
+  accFolders: accFoldersRouter,
 });
 
 export type AppRouter = typeof appRouter;
