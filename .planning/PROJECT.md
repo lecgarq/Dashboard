@@ -27,19 +27,31 @@ Project teams can monitor, analyze, and act on ACC user access data — surfacin
 
 ### Active
 
-<!-- Cleared at v1.0 milestone close. Run /gsd:new-milestone to populate Active requirements for the next milestone. -->
+<!-- Populated for milestone v2.0 — defined by REQUIREMENTS.md. -->
 
-(None — populated by `/gsd:new-milestone`.)
+(See `.planning/REQUIREMENTS.md` for v2.0 active requirements once defined.)
+
+## Current Milestone: v2.0 ACC Extraction Completion
+
+**Goal:** Rebuild the ACC extraction layer against the 9 documented APS endpoints (see `APS_DOCS/HOW TO/`), persist it in real Prisma tables, and surface every new field across the user list, spatial graph, and Access Analysis dashboard — no new tab/page surfaces.
+
+**Target features (high level):**
+- Full extraction parity with documented APS endpoints: members matrix (products + accessLevels + addedOn), project info, hub + per-project industry roles, folder trees per project, folder-role permissions, last sign-in, activity logs (Data Connector), last file activity per user, recently-added users with admin attribution
+- Real Prisma schema for ACC entities (project, folder, role, folder-permission, activity, project-member)
+- Manual sync trigger with job-status surface (no auto-refresh)
+- Folder nodes added to spatial graph (overrides v1.0 exclusion; subject to perf verification phase)
+- Activity log retained all-time (no prune)
 
 ### Out of Scope
 
-- Real-time ACC sync / webhooks — polling sufficient through v1.0; live webhooks add complexity and ACC write-scope risk
-- Permission editing from graph UI — read-only architecture for v1.0; write operations require ACC Admin API write scopes + audit logging
+- Real-time ACC sync / webhooks — polling sufficient through v2.0; live webhooks add complexity and ACC write-scope risk
+- Permission editing from graph/list/dashboard UI — read-only architecture; write operations require ACC Admin API write scopes + audit logging (deferred)
 - LOD Checker graph integration — separate module, separate concern
-- Folder-level permission nodes — separate data model; multiplies node count unmanageably
+- ~~Folder-level permission nodes~~ — **UNLOCKED for v2.0** (originally excluded in v1.0 for node-count concerns; perf budget will be verified in research/early phase)
 - D3-force layout inside Cosmos.gl — defeats GPU simulation purpose
 - @cosmograph/react wrapper — last published 7 months ago; plain useRef pattern is equivalent
 - Animated edge particle effects — cosmetic only; static color/weight conveys the same information
+- New tabs/pages/views (Activity Log view, Folder Permissions matrix view, Project drill-down view) — explicitly deferred; v2.0 enriches existing surfaces only
 
 ## Context
 
@@ -73,6 +85,11 @@ Project teams can monitor, analyze, and act on ACC user access data — surfacin
 | Bubble cluster: deterministic two-pack over force-displacement | Stable layout + perf for severity bubbles | ✓ Good |
 | FindingsContext + SelectionContext (Pattern 3 + Pattern 4) | Single source of truth for findings/selection across drill-down panel + widgets | ✓ Good |
 | Drill-down panel as SIBLING of DndContext (not nested) | Drag-and-drop and panel content stay isolated; panel width sm:max-w-lg keeps grid visible at 1280px | ✓ Good |
+| v2.0: All 9 HOW_TO extractions in scope | User has scraped APS docs; ground truth available; aiming for extraction parity | — Pending |
+| v2.0: Real Prisma tables (not JSON cache) | Joins/indexes/incremental sync require real schema; JSON blob doesn't scale to activities + folders | — Pending |
+| v2.0: Folders enter spatial graph (override) | User wants folder/permission visibility in graph; v1.0 exclusion lifted; perf will be validated in research | — Pending (HIGH RISK) |
+| v2.0: Manual sync trigger only | User retains cost control over Data Connector job runs | — Pending |
+| v2.0: Activity log retained all-time | Audit/compliance use cases; storage cost accepted; index on (user_id, created_at) + (project_id, created_at) required | — Pending |
 
 ---
-*Last updated: 2026-05-08 after v1.0 milestone shipped*
+*Last updated: 2026-05-08 after v2.0 milestone start (`/gsd:new-milestone`)*

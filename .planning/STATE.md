@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: unknown
-last_updated: "2026-05-08T23:15:06.665Z"
+milestone: v2.0
+milestone_name: ACC Extraction Completion
+status: defining_requirements
+last_updated: "2026-05-08T23:30:00.000Z"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 33
-  completed_plans: 33
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
@@ -18,17 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-08 after v1.0 shipped)
 
 **Core value:** Project teams can monitor and act on ACC user access data — surfacing permission gaps, duplicated roles, and inconsistent access patterns before they cause project delivery problems.
-**Current focus:** v1.0 SHIPPED 2026-05-08 (tagged `v1.0`). Run `/gsd:new-milestone` to start next milestone.
+**Current focus:** v2.0 milestone STARTED 2026-05-08 — ACC Extraction Completion (defining requirements).
 
 ## Current Position
 
-Phase: 04.1 (Access Analysis tab — replace lists with astonishing graphics) — COMPLETE 2026-05-08
-Plan: 04.1-04 — COMPLETE 2026-05-08. Polish-only pass on the five surviving graphical widgets (CoverageDonut, ActiveUserTiers, KpiStrip, RolesModulesHeatmap, RoleRelationshipFlow) — severity colors flow through `_shared/dashboardTokens.ts` (added `useHeatmapRamp` helper); selection-aware spotlight wired into RolesModulesHeatmap (per-cell `itemStyle.opacity`) and RoleRelationshipFlow (FlowPaletteContext + node/edge `style.opacity`). `npx tsc --noEmit` clean; severity-hex grep returns zero matches. Phase 4.1 human-verify checkpoint: **APPROVED-WITH-CAVEATS** by user (ACC tab wrapper not replaced; graphics could be more interactive — logged to feedback memory; NOT remediated this round per user direction). See 04.1-04-SUMMARY.md.
-Status: Phase 04.1 — 4/4 plans complete (04.1-01, 04.1-02, 04.1-03, 04.1-04). Phase ships closed.
-Last activity: 2026-05-08 — Completed 04.1-04 (commit c816144 + final docs commit).
-Prior phase: Phase 04 — 8/8 plans complete; UAT 16/16 PASSED 2026-05-08.
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements (research → REQUIREMENTS.md → ROADMAP.md)
+Last activity: 2026-05-08 — Milestone v2.0 started via `/gsd:new-milestone`
 
-Progress: [██████████] 100% (33/33 plans)
+Progress: [░░░░░░░░░░] 0% (0/0 plans)
 
 ## Performance Metrics
 
