@@ -1,14 +1,14 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Folders + Folder-Role Permissions
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
 current_phase: Phase 4 — Folders + Folder-Role Permissions (3/7 plans complete)
-status: in_progress
-last_updated: "2026-05-11T23:50:00Z"
+status: executing
+last_updated: "2026-05-11T23:59:04.142Z"
 progress:
-  total_phases: 4
+  total_phases: 6
   completed_phases: 3
-  total_plans: 19
+  total_plans: 30
   completed_plans: 15
 ---
 
@@ -77,6 +77,8 @@ See: .planning/PROJECT.md
 - **04-01:** Upload Only tier = {PUBLISH} only; inputs with VIEW+DOWNLOAD+COLLABORATE+PUBLISH match View+Download+Upload first (higher in iteration order).
 - **04-03:** Migration timestamp 20260511234124; additive NOT NULL DEFAULT 'never' — existing AccProject rows get 'never' with no backfill step needed.
 - **04-03:** accFoldersRouter intentionally contains only ping placeholder; Plan 05 owns getMatrix/getOrphanRoles/getProjectFolderTree. Scaffold-first prevents Plans 05+06 from blocking each other.
+- [Phase 05-5.1]: isAccountAdmin not on AccProjectMember; enrichedUsers omits it, AdminTierBody reads from BulkAccUser.isAccountAdmin directly
+- [Phase 05-5.1]: GRAPH-04 CASE 3: Phase 4 in-flight at execution time; user decision pending at Task 5 checkpoint
 
 ## Accumulated Context
 
@@ -95,4 +97,5 @@ See: .planning/PROJECT.md
 | 03    | 04   | ~5 min   | 3     | 3     | 2026-05-11 |
 | 04    | 01   | ~2 min   | 2     | 2     | 2026-05-11 |
 | 04    | 03   | ~8 min   | 2     | 4     | 2026-05-11 |
+| Phase 05 P5.1 | ~14 min | 4 tasks | 16 files |
 

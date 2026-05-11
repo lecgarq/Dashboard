@@ -83,9 +83,9 @@ Existing user list/table surfaces gain new columns and filter facets.
 
 Cosmos.gl graph gains new node kinds and per-project role overlay.
 
-- [ ] **GRAPH-01**: Per-project industry-role assignments (vs hub master roles) become available as a graph filter dimension; default rendering remains unchanged.
-- [ ] **GRAPH-02**: User node hover shows enriched detail (status, companyName, accessLevels, last sign-in normalized, last file activity).
-- [ ] **GRAPH-03**: Account-admin overlay distinguishes hub admin / project admin / executive in node ring color (extends DASH-12 admin treatment to graph).
+- [x] **GRAPH-01**: Per-project industry-role assignments (vs hub master roles) become available as a graph filter dimension; default rendering remains unchanged.
+- [x] **GRAPH-02**: User node hover shows enriched detail (status, companyName, accessLevels, last sign-in normalized, last file activity).
+- [x] **GRAPH-03**: Account-admin overlay distinguishes hub admin / project admin / executive in node ring color (extends DASH-12 admin treatment to graph).
 - [ ] **GRAPH-04**: Folder perf pre-flight phase produces a documented GO/NO-GO decision (FPS + GPU memory at projected node count). Folder nodes ship in graph (5th node kind, hidden by default with toggle in filter panel) ONLY if GO recorded; if NO-GO, folders remain dashboard-only and contingency contract is logged.
 
 ### Dashboard Enrichments
@@ -96,7 +96,7 @@ Existing 9 widgets enrich; new 10th widget (folder permissions) added; interacti
 - [ ] **DASH-15**: Recommendations widget gains "stale invite" finding (status=pending older than 30 days) and "orphan role" finding (role assigned to folder with zero members).
 - [ ] **DASH-16**: AdminConstellation extended to 3 tiers (account admin / project admin / executive) with distinct ring colors; hover surfaces accessLevel breakdown.
 - [ ] **DASH-17**: RolesModulesHeatmap row labels distinguish hub-master role vs per-project assignment count; cell hover shows project list contributing to count.
-- [ ] **DASH-18**: Every modified or new widget passes the interactivity contract: hover detail panel, click-through to side panel, cross-widget selection spotlighting. UAT gate: non-negotiable per feedback memory.
+- [x] **DASH-18**: Every modified or new widget passes the interactivity contract: hover detail panel, click-through to side panel, cross-widget selection spotlighting. UAT gate: non-negotiable per feedback memory.
 
 ## v2.x Requirements (Deferred)
 

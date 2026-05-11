@@ -170,7 +170,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/4            | Plans drafted | —      |
 | 3. Activity Pipeline                        | v2.0      | 0/4            | Plans drafted | —       |
 | 4. Folders & Folder-Role Permissions        | v2.0      | 3/7            | In Progress | — |
-| 5. UI Enrichment Waves                      | v2.0      | 0/?            | Directory ready — gated on Phase 4 GO/NO-GO | — |
+| 5. UI Enrichment Waves                      | 1/3 | In Progress|  | — |
 
 Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–24 plans across v2.0.
 
@@ -179,7 +179,7 @@ Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–
 **Goal:** Replace the 2D Cosmos.gl graph in the Users dashboard with a 3D volumetric sphere held together by per-cluster gravity wells, rendered at a 120fps frame-budget (≤8ms/frame) on Chrome + Safari + Firefox. r3f + drei + GPUComputationRenderer; GPU picking; deterministic-replay mode for Playwright; full removal of cosmos.gl + d3-force + patch-package.
 **Requirements**: GRAPH3D-01..12 (derived from CONTEXT — no v2.0 REQ-IDs)
 **Depends on:** Phase 5
-**Plans:** 8 plans
+**Plans:** 1/3 plans executed
 
 Plans:
 - [ ] 06-01-PLAN.md — Install r3f/drei/seedrandom + scaffold Sphere3DGraph + SphereCanvas + replay mode helper
