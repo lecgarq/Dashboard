@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  ACC_GRAPH_3D_POSITION_OPTIONS,
   buildPositions3d,
   computeSemanticDepth,
   readGraphDisplayMode,
   selectInitialGraphBackend,
+  shouldInitializeLayoutWorker,
   type GraphDisplayMode,
   type SemanticDepthNode,
 } from "./accGraph3d";
@@ -56,6 +58,25 @@ describe("buildPositions3d", () => {
     expect(positions3d[2]).not.toBe(positions3d[5]);
   });
 
+  it("uses a shallow orbit depth by default so semantic layers do not dominate x/y layout", () => {
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.zScale * 4);
+
+    const positions2d = new Float32Array([0, 0, 1, 1]);
+    const positions3d = buildPositions3d(
+      [
+        { ...baseNode, id: "a", projectId: "project-a", isAdmin: true },
+        { ...baseNode, id: "b", projectId: "project-b", isAdmin: false },
+      ],
+      positions2d,
+      ACC_GRAPH_3D_POSITION_OPTIONS,
+    );
+
+    const xySpan = Math.hypot(positions3d[3] - positions3d[0], positions3d[4] - positions3d[1]);
+    const zSpan = Math.abs(positions3d[5] - positions3d[2]);
+
+    expect(zSpan).toBeLessThan(xySpan * 0.35);
+  });
+
   it("returns a correctly sized empty buffer when positions are missing", () => {
     const positions3d = buildPositions3d([baseNode], new Float32Array([]));
 
@@ -79,5 +100,12 @@ describe("graph display mode selection", () => {
 
     expect(readGraphDisplayMode(getItem)).toBe<GraphDisplayMode>("3d");
     expect(readGraphDisplayMode(() => "bogus")).toBeNull();
+  });
+
+  it("initializes the layout worker for 3D orbit when graph data is already loaded", () => {
+    expect(shouldInitializeLayoutWorker("three3d", 10)).toBe(true);
+    expect(shouldInitializeLayoutWorker("canvas2d", 10)).toBe(true);
+    expect(shouldInitializeLayoutWorker("cosmos", 10)).toBe(false);
+    expect(shouldInitializeLayoutWorker("three3d", 0)).toBe(false);
   });
 });

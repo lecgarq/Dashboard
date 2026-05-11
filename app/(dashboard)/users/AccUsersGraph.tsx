@@ -22,6 +22,7 @@ import { ThreeGraphRenderer } from "./threeGraphRenderer";
 import {
   readGraphDisplayMode,
   selectInitialGraphBackend,
+  shouldInitializeLayoutWorker,
   writeGraphDisplayMode,
   type GraphDisplayMode,
   type GraphRendererBackend,
@@ -1256,12 +1257,16 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       markGraphDirty();
     };
 
+    if (shouldInitializeLayoutWorker(renderBackend, nodesRef.current.length)) {
+      restartOrganicLayout("restart");
+    }
+
     return () => {
       worker.postMessage({ type: "stop" });
       worker.terminate();
       if (organicWorkerRef.current === worker) organicWorkerRef.current = null;
     };
-  }, [markGraphDirty, rebuildGrid, renderBackend]);
+  }, [markGraphDirty, rebuildGrid, renderBackend, restartOrganicLayout]);
 
   // UI-02: Stability detection — Canvas2D path.
   // Watches motionMetric.averageVelocity (updated from worker ticks). When

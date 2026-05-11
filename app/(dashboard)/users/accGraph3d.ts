@@ -13,6 +13,10 @@ export interface SemanticDepthNode {
 }
 
 export const GRAPH_DISPLAY_MODE_KEY = "acc-graph-display-mode";
+export const ACC_GRAPH_3D_POSITION_OPTIONS = {
+  xyScale: 16,
+  zScale: 2.4,
+} as const;
 
 function hashString(value: string): number {
   let hash = 2166136261;
@@ -98,4 +102,11 @@ export function selectInitialGraphBackend(
 ): GraphRendererBackend {
   if (!webgl2Available) return "canvas2d";
   return savedMode === "3d" ? "three3d" : "cosmos";
+}
+
+export function shouldInitializeLayoutWorker(
+  backend: GraphRendererBackend,
+  nodeCount: number,
+): boolean {
+  return nodeCount > 0 && backend !== "cosmos";
 }

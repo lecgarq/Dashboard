@@ -1,7 +1,7 @@
 "use client";
 
 import type * as ThreeModule from "three";
-import { buildPositions3d } from "./accGraph3d";
+import { ACC_GRAPH_3D_POSITION_OPTIONS, buildPositions3d } from "./accGraph3d";
 import type { GraphDrawResult, GraphRenderFrame, GraphRenderer } from "./graphRenderers";
 
 type ThreeNamespace = typeof ThreeModule;
@@ -20,8 +20,6 @@ type OrbitControlsCtor = new (
   removeEventListener: (type: string, listener: () => void) => void;
 };
 
-const NODE_XY_SCALE = 12;
-const NODE_Z_SCALE = 7;
 const FIT_PADDING = 1.25;
 
 export class ThreeGraphRenderer implements GraphRenderer {
@@ -53,6 +51,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
   private lastNodeCount = -1;
   private lastVisibleKey = "";
   private lastLinkKey = "";
+  private lastEdgeSourcePositions: Float32Array | null = null;
   private selectedIndex = -1;
   private hoveredIndex: number | null = null;
   private cameraMoving = false;
@@ -153,8 +152,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
   resetCamera(frame?: GraphRenderFrame): void {
     if (frame) {
       this.positions3d = frame.positions3d ?? buildPositions3d(frame.nodes, frame.positions, {
-        xyScale: NODE_XY_SCALE,
-        zScale: NODE_Z_SCALE,
+        ...ACC_GRAPH_3D_POSITION_OPTIONS,
       });
       this.visibleNodeIndices = frame.userIndices ?? new Uint32Array(frame.nodes.map((_, index) => index));
     }
@@ -186,6 +184,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.renderer.domElement.remove();
     this.lastSourcePositions = null;
     this.lastPositionNodeCount = -1;
+    this.lastEdgeSourcePositions = null;
     this.onNodeSelectCallback = null;
     this.onNodeHoverCallback = null;
     this.onCameraMoveCallback = null;
@@ -238,8 +237,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.lastSourcePositions = frame.positions;
     this.lastPositionNodeCount = frame.nodes.length;
     return buildPositions3d(frame.nodes, frame.positions, {
-      xyScale: NODE_XY_SCALE,
-      zScale: NODE_Z_SCALE,
+      ...ACC_GRAPH_3D_POSITION_OPTIONS,
     });
   }
 
@@ -275,9 +273,10 @@ export class ThreeGraphRenderer implements GraphRenderer {
 
   private updateEdges(frame: GraphRenderFrame): void {
     const links = frame.links;
-    const linkKey = `${links?.sources.length ?? 0}:${this.lastVisibleKey}:${frame.selectedNodeIndex}:${frame.isInteracting ? 1 : 0}`;
-    if (linkKey === this.lastLinkKey) return;
+    const linkKey = `${links?.sources.length ?? 0}:${this.lastVisibleKey}:${frame.selectedNodeIndex}:${frame.isInteracting ? 1 : 0}:${this.cameraMoving ? 1 : 0}`;
+    if (linkKey === this.lastLinkKey && this.lastEdgeSourcePositions === frame.positions) return;
     this.lastLinkKey = linkKey;
+    this.lastEdgeSourcePositions = frame.positions;
 
     if (this.edgeLines) {
       this.scene.remove(this.edgeLines);
