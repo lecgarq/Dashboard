@@ -29,6 +29,7 @@ import {
   fetchAccUserProducts,
   type AccProject,
 } from "@/lib/server/acc-admin";
+import { getAccountId } from "@/lib/server/acc-helpers";
 
 const logger = createLogger("users");
 const ACC_GRAPH_CACHE_ID = "singleton";
@@ -208,16 +209,24 @@ function readAccGraphShape(raw: unknown): { found: boolean; roles: string[]; mod
   };
 }
 
-async function getAccountId(db: any): Promise<string> {
-  const project = await db.project.findFirst({ select: { apsHubId: true } });
-  const accountId = project?.apsHubId?.replace(/^b\./, "");
-  if (!accountId) {
+// `getAccountId` is now imported from "@/lib/server/acc-helpers".
+// The shared helper throws a plain Error (not TRPCError) so it can be
+// called from non-tRPC contexts (release script, cron script). Each
+// tRPC call site below wraps the helper in a try/catch that maps the
+// plain Error to TRPCError({ code: "PRECONDITION_FAILED" }).
+async function resolveAccountIdForRouter(db: any): Promise<string> {
+  try {
+    return await getAccountId(db);
+  } catch (err) {
     throw new TRPCError({
-      code: "UNAUTHORIZED",
-      message: "APS Hub ID is not configured. Set APS_HUB-ID in Railway environment variables.",
+      code: "PRECONDITION_FAILED",
+      message:
+        err instanceof Error
+          ? `${err.message}. Set APS_HUB_ID in Railway environment variables.`
+          : "APS Hub ID is not configured. Set APS_HUB_ID in Railway environment variables.",
+      cause: err instanceof Error ? err : undefined,
     });
   }
-  return accountId;
 }
 
 export const usersRouter = router({
@@ -1073,7 +1082,7 @@ export const usersRouter = router({
 
       // 3. Get accountId from Project table
       // CRITICAL: Strip "b." prefix — ACC Admin API uses bare UUID, not Data Management hub format
-      const accountId = await getAccountId(ctx.db);
+      const accountId = await resolveAccountIdForRouter(ctx.db);
 
       // 4. Search ACC for the person by email
       // Returns null if not found (empty results) — NOT a 404 error per ACC API design
@@ -1161,7 +1170,7 @@ export const usersRouter = router({
         });
       }
 
-      const accountId = await getAccountId(ctx.db);
+      const accountId = await resolveAccountIdForRouter(ctx.db);
 
       // 2. Prefetch the entire ACC user list ONCE and build an email→user map. Previously
       // fetchAccUserByEmail paginated the full hub per call (O(emails × hub_size) API calls),
@@ -1449,7 +1458,7 @@ export const usersRouter = router({
     } catch (error) {
       throw toAccRouterError(error, "ACC Admin API: APS app credentials are not configured.");
     }
-    const accountId = await getAccountId(ctx.db);
+    const accountId = await resolveAccountIdForRouter(ctx.db);
     const { fetchAccHubRoles } = await import("@/lib/server/acc-admin");
     const roles = await fetchAccHubRoles(accountId, accessToken);
     await ctx.db.accHubRoleCache.upsert({
