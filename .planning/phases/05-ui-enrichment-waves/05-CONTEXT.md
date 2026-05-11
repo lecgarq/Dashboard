@@ -65,6 +65,12 @@ Leaf phase. No new top-level surfaces — only enrichments of existing widgets. 
 - **Performance budget**: **minimum 60 FPS** on UAT hardware with all overlays + filters active. Hard floor — below that, planner must defer or simplify a feature. Strict baseline preserves v1 graph feel.
 - **Accessibility**: color encoding is never the sole signal. Status pills carry text, permission edges use thin/thick variants in addition to color, admin tiers use shape change in addition to color. Pattern: **color enhances, never solely encodes**.
 
+### Plan-Phase Locked Decisions (2026-05-11, from research open questions)
+
+- **Status reduction rule (LIST-01)**: `any-active → active; else any-pending → pending; else deleted`. Single pill per user row reflects most permissive membership.
+- **AdminConstellation 3-tier shapes (GRAPH-03 + DASH-16)**: **Hub admin = star + gold halo + 1.5× size**, **Project admin = diamond**, **Executive = circle-with-ring**. Same visual language reused across GRAPH wave overlay and DashConstellation widget.
+- **DashboardClient Refresh button cleanup**: Removed pre-Phase-5 (commit precedes plan-phase). `DashboardClient.tsx:88-95` Refresh button + `handleRefresh` + unused `Button`/`RefreshCw` imports deleted to honor "No manual sync UI" rule before planning starts.
+
 ### Claude's Discretion
 
 - Exact gold/silver/bronze (or chosen) color ramp for admin tiers — pick from existing brand palette.

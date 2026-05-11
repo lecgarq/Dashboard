@@ -3,8 +3,6 @@
 import * as React from "react";
 import { DndContext, closestCenter, type DragEndEvent } from "@dnd-kit/core";
 import { SortableContext, arrayMove, rectSortingStrategy } from "@dnd-kit/sortable";
-import { RefreshCw } from "lucide-react";
-import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { trpc } from "@/lib/core/trpc";
 import { computeAllFindings } from "@/lib/acc/dashboardAnalytics";
@@ -43,13 +41,6 @@ export function DashboardClient() {
     retry: false,
   });
 
-  const utils = trpc.useUtils();
-
-  function handleRefresh() {
-    utils.users.bulkAccSummary.invalidate();
-    utils.workspace.getDirectory.invalidate();
-  }
-
   function handleDragEnd(e: DragEndEvent) {
     if (!e.over || e.active.id === e.over.id) return;
     const fromIdx = order.indexOf(String(e.active.id));
@@ -77,22 +68,11 @@ export function DashboardClient() {
 
   return (
     <div className="flex flex-col gap-4 p-4">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold">ACC Access Analysis</h1>
-          <p className="text-sm text-muted-foreground">
-            Drag a widget by its handle to reorder. The layout persists across reloads.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleRefresh}
-          disabled={usersQuery.isFetching || workspaceQuery.isFetching}
-        >
-          <RefreshCw className="mr-2 size-4" />
-          Refresh
-        </Button>
+      <header>
+        <h1 className="text-2xl font-semibold">ACC Access Analysis</h1>
+        <p className="text-sm text-muted-foreground">
+          Drag a widget by its handle to reorder. The layout persists across reloads.
+        </p>
       </header>
 
       {usersQuery.error ? (
