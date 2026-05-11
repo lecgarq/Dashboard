@@ -17,14 +17,12 @@ Establish the relational data layer that every other category depends on.
 
 ### Sync Orchestration
 
-Two-button sync model — REST is fast (Quick Sync), Data Connector is async (Deep Sync).
+Backend-driven sync model — Quick Sync runs as a Railway release step (REST extractions), Deep Sync runs as a Railway cron (Data Connector). No user-trigger UI; freshness is surfaced read-only in the sidebar.
 
-> **Active Phase 01 amendment (2026-05-11):** the original "two-button" wording below is retained for traceability, but Phase 01 implementation is backend-only. Quick Sync runs from the Railway deploy/pre-deploy command, Deep Sync runs from Railway cron, and the UI only shows read-only freshness status in existing sidebar chrome. Do not add Quick Sync or Deep Sync trigger buttons during Phase 01.
-
-- [x] **SYNC-01**: User can trigger a Quick Sync (REST extractions: members, projects, roles, folders, folder-permissions, last sign-in, recently-added) from the existing ACC sync surface. Runs synchronously with progress feedback; dual-writes to `accMemberCache` AND new tables during transition.
-- [x] **SYNC-02**: User can trigger a Deep Sync (Data Connector activity log) which submits an APS bulk extraction job, returns immediately with a `jobId`, and persists state in `AccDataConnectorJob`.
-- [x] **SYNC-03**: User can see Deep Sync job status (pending / running / success / failed) — UI polls a tRPC query every 5–30 seconds; status survives Railway container restarts.
-- [x] **SYNC-04**: System prevents double-submit of Deep Sync (locked while a job is in-flight) and surfaces failure reasons clearly.
+- [x] **SYNC-01**: Quick Sync runs server-side as the Railway `releaseCommand` after every deploy (REST extractions: members, projects, roles, folders, folder-permissions, last sign-in, recently-added). Hard 5-minute timeout; status persisted to `SyncMeta('quick')`; failure fails the deploy and emails the operator via Resend. During the transition window, dual-writes to `accMemberCache` AND new tables.
+- [x] **SYNC-02**: Deep Sync runs server-side as a nightly Railway cron (09:00 UTC = 02:00 Hermosillo); submits an APS Data Connector bulk extraction request and persists state (`requestId`, `status`, timestamps) in `AccDataConnectorJob`.
+- [x] **SYNC-03**: Sync freshness is visible in the existing sidebar chrome via `SyncFreshnessPill`, which polls `accSync.getSyncFreshness` + `accSync.getActiveDeepSyncJob` (15s while a deep sync is running, 5min otherwise). Status survives Railway container restarts because the source of truth is Postgres (`SyncMeta` + `AccDataConnectorJob`), not in-memory state.
+- [x] **SYNC-04**: Deep Sync cron enforces a server-side overlap guard (skips submission when any `AccDataConnectorJob` is `pending` or `running`) and surfaces failure reasons via Resend email alert (sync type, timestamp, error, `requestId` when available) to the operator.
 
 ### Members Matrix Enrichment
 
