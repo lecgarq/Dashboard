@@ -5,11 +5,13 @@
  *   1. `prisma migrate deploy` (60s timeout, no email on failure — fail fast)
  *   2. Quick Sync shell:
  *      - 5-minute hard timeout watchdog (CONTEXT-locked)
- *      - Phase 1: NO-OP body. Just upserts SyncMeta('quick') with success.
- *      - Phase 2 will fill in real extraction logic.
- *   3. Graph cache rebuild (`npx tsx scripts/rebuild-graph.ts`):
- *      - Recoverable. Failure here logs + alerts but does NOT fail the deploy
- *        (old graph cache keeps serving; can be retried on next deploy).
+ *      - Spawns `npx tsx lib/acc/quick-sync-extraction.ts` (Phase 2 wired).
+ *      - On success: upserts SyncMeta('quick','success').
+ *      - On non-zero exit / spawn error: throws → outer catch runs
+ *        recordFailure + sendFailureAlertRaw and exits 1.
+ *   3. Optional graph cache rebuild (`REBUILD_ACC_GRAPH_ON_RELEASE=1`):
+ *      - Skipped by default so deploys stay fast. When enabled, failure logs
+ *        + alerts but does NOT fail the deploy (old graph cache keeps serving).
  *   4. On any error in the Quick Sync step:
  *      - Best-effort upsert SyncMeta('quick') with lastStatus='failed' + lastError
  *      - Best-effort raw-fetch Resend alert to luis.ecorteg@gmail.com
@@ -99,24 +101,45 @@ function createPrisma() {
 }
 
 async function runQuickSyncShell() {
-  // Phase 1 NO-OP body. Phase 2 will swap this for real extraction logic.
+  // Phase 2 wired body: spawn the TS extractor via tsx. Non-zero exit throws so
+  // the outer recordFailure + sendFailureAlertRaw paths fire. SyncMeta('quick')
+  // is only marked success after the extractor exits cleanly.
+  const startedAt = new Date();
+  console.log("[release] Quick Sync: invoking lib/acc/quick-sync-extraction.ts via tsx...");
+
+  const result = spawnSync("npx", ["tsx", "lib/acc/quick-sync-extraction.ts"], {
+    stdio: "inherit",
+    timeout: TIMEOUT_MS - 30_000, // 30s buffer below the outer 5-min watchdog
+    shell: process.platform === "win32",
+    env: { ...process.env },
+  });
+
+  if (result.error || result.status !== 0) {
+    const reason = result.error
+      ? `tsx invocation failed: ${result.error.message}`
+      : `Quick Sync extraction exited ${result.status}`;
+    throw new Error(reason);
+  }
+
+  // Success: mark SyncMeta('quick','success'). The TS extractor handles
+  // per-project + member logging; release.cjs only owns the status row.
   const prisma = createPrisma();
   try {
     await prisma.syncMeta.upsert({
       where: { id: "quick" },
       create: {
         id: "quick",
-        lastRunAt: new Date(),
+        lastRunAt: startedAt,
         lastStatus: "success",
         lastError: null,
       },
       update: {
-        lastRunAt: new Date(),
+        lastRunAt: startedAt,
         lastStatus: "success",
         lastError: null,
       },
     });
-    console.log("[release] Quick Sync shell complete (Phase 2 will fill in real extraction).");
+    console.log("[release] Quick Sync complete; SyncMeta('quick','success') written.");
   } finally {
     await prisma.$disconnect().catch(() => {});
   }
@@ -185,6 +208,11 @@ async function main() {
   }
 
   // Step 3: graph cache rebuild (recoverable — logs on failure, never fails the deploy)
+  if (process.env.REBUILD_ACC_GRAPH_ON_RELEASE !== "1") {
+    console.log("[release] Skipping ACC graph cache rebuild (set REBUILD_ACC_GRAPH_ON_RELEASE=1 to run it during release).");
+    return;
+  }
+
   console.log("[release] Running ACC graph cache rebuild...");
   const rebuild = spawnSync("npx", ["tsx", "scripts/rebuild-graph.ts"], {
     stdio: "inherit",
