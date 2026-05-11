@@ -176,13 +176,20 @@ Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–
 
 ### Phase 6: 3D spherical graph with gravity at 120fps
 
-**Goal:** [To be planned]
-**Requirements**: TBD
+**Goal:** Replace the 2D Cosmos.gl graph in the Users dashboard with a 3D volumetric sphere held together by per-cluster gravity wells, rendered at a 120fps frame-budget (≤8ms/frame) on Chrome + Safari + Firefox. r3f + drei + GPUComputationRenderer; GPU picking; deterministic-replay mode for Playwright; full removal of cosmos.gl + d3-force + patch-package.
+**Requirements**: GRAPH3D-01..12 (derived from CONTEXT — no v2.0 REQ-IDs)
 **Depends on:** Phase 5
-**Plans:** 0 plans
+**Plans:** 8 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 6 to break down)
+- [ ] 06-01-PLAN.md — Install r3f/drei/seedrandom + scaffold Sphere3DGraph + SphereCanvas + replay mode helper
+- [ ] 06-02-PLAN.md — TDD pure math: radialEncoding + clusterAssignment (Vitest)
+- [ ] 06-03-PLAN.md — Topology + filter adapters: GPU edge buffers + visibility hook
+- [ ] 06-04-PLAN.md — GPGPU PhysicsCompute: GPUComputationRenderer + cluster-gravity + edge-spring shaders
+- [ ] 06-05-PLAN.md — NodesPoints + EdgesLines render layer (single draw call each, alpha-attribute filter fade)
+- [ ] 06-06-PLAN.md — Camera + GPU picking + auto-rotate + camera-tween + billboard LOD labels
+- [ ] 06-07-PLAN.md — Compose final Sphere3DGraph + replay harness + Playwright E2E suite
+- [ ] 06-08-PLAN.md — Mount swap in UsersDirectoryClient + cosmos.gl/d3-force removal cascade + cross-browser UAT (checkpoint)
 
 ---
 
