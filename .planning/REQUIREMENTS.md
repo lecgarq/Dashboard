@@ -39,8 +39,8 @@ Full parity with `HOW_TO_Extract_Project_Members.md`. The load-bearing extractio
 
 Per `HOW_TO_Extract_Project_Info.md`.
 
-- [ ] **PROJ-01**: All projects extracted via `/construction/admin/v1/accounts/:id/projects` with pagination; `type`, `name`, `jobNumber`, `accountId`, `createdAt` persisted to `AccProject`.
-- [ ] **PROJ-02**: Project list refresh integrated into Quick Sync; deleted projects in APS marked inactive in `AccProject` (not hard-deleted).
+- [x] **PROJ-01**: All projects extracted via `/construction/admin/v1/accounts/:id/projects` with pagination; `type`, `name`, `jobNumber`, `accountId`, `createdAt` persisted to `AccProject`.
+- [x] **PROJ-02**: Project list refresh integrated into Quick Sync; deleted projects in APS marked inactive in `AccProject` (not hard-deleted).
 
 ### Roles (Hub + Per-Project)
 
