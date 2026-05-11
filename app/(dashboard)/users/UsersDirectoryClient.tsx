@@ -42,6 +42,12 @@ import { AccProfileSection } from "./AccProfileSection";
 import { AccAnalysisPanel, type BulkAccUser } from "./AccAnalysisPanel";
 import { AccUsersGraph } from "./AccUsersGraph";
 import { moduleLabel } from "@/lib/acc/modules";
+import { formatDistanceToNowStrict } from "date-fns";
+import {
+  Sheet,
+  SheetContent,
+} from "@/components/ui/sheet";
+import { UserActivityBody } from "./dashboard/DashboardSidePanel";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -167,6 +173,88 @@ function matchesPerson(
   }
 
   return true;
+}
+
+// ---------------------------------------------------------------------------
+// File-activity column helpers (ACTV-03 / LIST-03 prep)
+// ---------------------------------------------------------------------------
+
+type FileActivityKey = "lastView" | "lastUpload" | "lastEdit" | "lastDelete";
+
+const FILE_ACTIVITY_COLUMNS: ReadonlyArray<{ key: FileActivityKey; label: string }> = [
+  { key: "lastView", label: "View" },
+  { key: "lastUpload", label: "Upload" },
+  { key: "lastEdit", label: "Edit" },
+  { key: "lastDelete", label: "Delete" },
+];
+
+/**
+ * Reads from React Query cache only — does NOT fire a query. This honors
+ * ACTV-03's "NOT eager-loaded" contract. Data arrives via hover prefetch
+ * (250ms debounce) or via the side-panel open (which calls useQuery directly).
+ */
+function FileActivityCell({
+  email,
+  field,
+  active,
+  onClick,
+}: {
+  email: string;
+  field: FileActivityKey;
+  active: boolean;
+  onClick: () => void;
+}) {
+  // `enabled: active` guards: cell only fetches when row was hovered
+  // (we set active=true on enter, leave it true after to keep cache warm).
+  const { data } = trpc.accActivity.getFileActivityForUser.useQuery(
+    { email },
+    { enabled: active, staleTime: 5 * 60_000, retry: false },
+  );
+
+  const value = data ? data[field] : undefined;
+
+  if (!active || data === undefined) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="text-muted-foreground/40 hover:text-primary text-[11px] tabular-nums"
+        title="Hover the row to load activity"
+      >
+        —
+      </button>
+    );
+  }
+
+  if (value === null || value === undefined) {
+    return (
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick();
+        }}
+        className="text-muted-foreground/50 hover:text-primary text-[11px]"
+      >
+        Never
+      </button>
+    );
+  }
+
+  const date: Date = value instanceof Date ? value : new Date(value as string | number);
+  return (
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+      className="text-foreground hover:text-primary text-[11px] tabular-nums truncate text-left"
+      title={date.toISOString()}
+    >
+      {formatDistanceToNowStrict(date, { addSuffix: true })}
+    </button>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -459,18 +547,28 @@ function PersonRow({
   person,
   accSummary,
   onClick,
+  activityActive,
+  onHoverEnter,
+  onHoverLeave,
+  onActivityCellClick,
 }: {
   person: OrgPerson;
   accSummary?: BulkAccUser;
   onClick: () => void;
+  activityActive: boolean;
+  onHoverEnter: () => void;
+  onHoverLeave: () => void;
+  onActivityCellClick: () => void;
 }) {
   return (
-    <button
+    <div
+      onMouseEnter={onHoverEnter}
+      onMouseLeave={onHoverLeave}
+      className="group/row w-full flex items-center gap-4 px-4 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150 cursor-pointer"
       onClick={onClick}
-      className="group/row w-full text-left flex items-center gap-4 px-4 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150"
     >
       <PersonAvatar person={person} size="sm" />
-      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_auto] gap-3 items-center">
+      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{person.displayName}</p>
           <p className="text-[11px] text-muted-foreground truncate">{person.email}</p>
@@ -487,11 +585,21 @@ function PersonRow({
         <div className="min-w-0 text-xs text-muted-foreground truncate">
           {person.phoneNumber || <span className="text-muted-foreground/30">--</span>}
         </div>
+        {FILE_ACTIVITY_COLUMNS.map((col) => (
+          <div key={col.key} className="min-w-0">
+            <FileActivityCell
+              email={person.email}
+              field={col.key}
+              active={activityActive}
+              onClick={onActivityCellClick}
+            />
+          </div>
+        ))}
         <div className="shrink-0">
           <AccBadge summary={accSummary} />
         </div>
       </div>
-    </button>
+    </div>
   );
 }
 
@@ -572,6 +680,69 @@ export function UsersDirectoryClient() {
   const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
   const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  // ACTV-03: per-row hover-prefetch state. activatedEmails tracks rows whose
+  // file-activity query has been "activated" by hover; FileActivityCell flips
+  // its useQuery `enabled` flag on once activated and stays on so the cache
+  // keeps serving subsequent renders.
+  const utils = trpc.useUtils();
+  const [activatedEmails, setActivatedEmails] = useState<Set<string>>(new Set());
+  const hoverTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
+  const [activityEmail, setActivityEmail] = useState<string | null>(null);
+
+  const activateEmail = useCallback((email: string) => {
+    setActivatedEmails((prev) => {
+      if (prev.has(email)) return prev;
+      const next = new Set(prev);
+      next.add(email);
+      return next;
+    });
+  }, []);
+
+  const handleRowHoverEnter = useCallback(
+    (email: string) => {
+      // Already active? Skip — no double prefetch.
+      if (activatedEmails.has(email)) return;
+      // Existing timer? Skip — debounce already in flight.
+      if (hoverTimers.current.has(email)) return;
+      const timer = setTimeout(() => {
+        hoverTimers.current.delete(email);
+        utils.accActivity.getFileActivityForUser
+          .prefetch({ email }, { staleTime: 5 * 60_000 })
+          .catch(() => {
+            // Silent — query.error will surface in the side panel if needed.
+          });
+        activateEmail(email);
+      }, 250);
+      hoverTimers.current.set(email, timer);
+    },
+    [activatedEmails, utils, activateEmail],
+  );
+
+  const handleRowHoverLeave = useCallback((email: string) => {
+    const timer = hoverTimers.current.get(email);
+    if (timer) {
+      clearTimeout(timer);
+      hoverTimers.current.delete(email);
+    }
+  }, []);
+
+  const openActivitySheet = useCallback(
+    (email: string) => {
+      activateEmail(email); // also flips the cell from "—" to populated
+      setActivityEmail(email);
+    },
+    [activateEmail],
+  );
+
+  // Cleanup all hover timers on unmount
+  useEffect(() => {
+    const timers = hoverTimers.current;
+    return () => {
+      for (const t of timers.values()) clearTimeout(t);
+      timers.clear();
+    };
+  }, []);
 
   // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges (Plan 7.1)
   // and for the ACC Analysis panel (Plan 7.2). Extended fields: allRoles, allModules, projects[].
@@ -812,14 +983,31 @@ export function UsersDirectoryClient() {
     if (viewMode === "list") {
       return (
         <div className="space-y-1.5">
-          {/* List header */}
-          <div className="hidden lg:grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_auto] gap-3 px-4 py-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
-            <span>Name</span>
-            <span>Department</span>
-            <span>Job Title</span>
-            <span>Cost Center</span>
-            <span>Phone</span>
-            <span>ACC</span>
+          {/* Two-row grouped header — top row spans "File Activity" across 4 sub-columns */}
+          <div className="hidden lg:block">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_2.8fr_auto] gap-3 px-4 pt-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+              <span>Name</span>
+              <span>Department</span>
+              <span>Job Title</span>
+              <span>Cost Center</span>
+              <span>Phone</span>
+              <span className="text-center border-b border-border/30 pb-0.5">
+                File Activity
+              </span>
+              <span>ACC</span>
+            </div>
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+              <span />
+              <span />
+              <span />
+              <span />
+              <span />
+              <span className="text-muted-foreground/80">View</span>
+              <span className="text-muted-foreground/80">Upload</span>
+              <span className="text-muted-foreground/80">Edit</span>
+              <span className="text-muted-foreground/80">Delete</span>
+              <span />
+            </div>
           </div>
           {list.map((person) => (
             <PersonRow
@@ -827,6 +1015,10 @@ export function UsersDirectoryClient() {
               person={person}
               accSummary={accSummaryMap.get(person.email)}
               onClick={() => setSelectedPerson(person)}
+              activityActive={activatedEmails.has(person.email)}
+              onHoverEnter={() => handleRowHoverEnter(person.email)}
+              onHoverLeave={() => handleRowHoverLeave(person.email)}
+              onActivityCellClick={() => openActivitySheet(person.email)}
             />
           ))}
         </div>
@@ -1312,6 +1504,22 @@ export function UsersDirectoryClient() {
           if (!v) setSelectedPerson(null);
         }}
       />
+
+      {/* File Activity drill-down sheet (ACTV-05) — opens when a row's
+          file-activity cell is clicked. Reuses UserActivityBody from the
+          dashboard side panel so the experience matches. */}
+      <Sheet
+        open={!!activityEmail}
+        onOpenChange={(v) => {
+          if (!v) setActivityEmail(null);
+        }}
+      >
+        <SheetContent side="right" className="sm:max-w-lg">
+          {activityEmail && (
+            <UserActivityBody email={activityEmail} users={mergedAccUsers} />
+          )}
+        </SheetContent>
+      </Sheet>
       </>
       )}
     </div>
