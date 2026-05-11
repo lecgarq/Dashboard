@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { AlertCircle, Trello } from "lucide-react";
+import { AlertCircle, Kanban } from "lucide-react";
 
 import { TrelloBoardView } from "@/components/trello/TrelloBoardView";
 import { trpc } from "@/lib/core/trpc";
@@ -57,7 +57,7 @@ export default function TrelloPage() {
         <BoardSkeleton />
       ) : boardsError?.message === "trello_access_required" ? (
         <div className="flex flex-col items-center gap-4 py-16 text-center">
-          <Trello className="text-muted-foreground/20" size={40} />
+          <Kanban className="text-muted-foreground/20" size={40} />
           <div>
             <p className="text-sm font-medium text-foreground">Connect your Trello account</p>
             <p className="mt-1 text-xs text-muted-foreground">

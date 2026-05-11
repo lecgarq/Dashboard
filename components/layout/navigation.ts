@@ -5,7 +5,7 @@ import {
   PieChart,
   Ruler,
   Settings,
-  Trello,
+  Kanban,
   Zap,
   Cpu,
   Users,
@@ -31,7 +31,7 @@ export const MODULE_NAV_ITEMS: NavigationItem[] = [
   { href: "/families", label: "Familias Parametricas", icon: Building2, module: "families", group: "Familias Parametricas" },
   { href: "/exam", label: "Examen Revit", icon: ClipboardCheck, module: "exam", group: "AI Tools" },
   { href: "/lod-checker", label: "LOD Checker", icon: Ruler, module: "lod", group: "AI Tools" },
-  { href: "/trello", label: "Trello", icon: Trello, module: "trello", group: "Integrations" },
+  { href: "/trello", label: "Trello", icon: Kanban, module: "trello", group: "Integrations" },
 ];
 
 export const STAFF_NAV_ITEM: NavigationItem = {

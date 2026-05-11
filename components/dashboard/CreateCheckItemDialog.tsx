@@ -6,7 +6,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronRight, ListChecks, Calendar, Layers, CreditCard, CheckCircle2, Trello } from "lucide-react";
+import { ChevronRight, ListChecks, Calendar, Layers, CreditCard, CheckCircle2, Kanban } from "lucide-react";
 import { format } from "date-fns";
 
 interface Props {
@@ -115,7 +115,7 @@ export function CreateCheckItemDialog({ open, onOpenChange, defaultDate, onCreat
         <div className="px-5 pb-5 space-y-2.5">
           {needsTrelloConnect && (
             <div className="flex flex-col items-center gap-3 py-6 text-center">
-              <Trello className="text-muted-foreground/20" size={32} />
+              <Kanban className="text-muted-foreground/20" size={32} />
               <div>
                 <p className="text-sm font-medium text-foreground">Connect your Trello account</p>
                 <p className="mt-1 text-xs text-muted-foreground">Grant access to create to-do items.</p>

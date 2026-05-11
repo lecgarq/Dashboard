@@ -15,7 +15,7 @@ import {
   Building2,
   Zap,
   ClipboardCheck,
-  Trello,
+  Kanban,
   Ruler,
   Cpu,
   MessageCircle,
@@ -55,7 +55,7 @@ const MODULES = [
   { key: "families", label: "Familias",  icon: Building2      },
   { key: "clash",    label: "Clash",     icon: Zap            },
   { key: "exam",     label: "Exam",      icon: ClipboardCheck },
-  { key: "trello",   label: "Trello",    icon: Trello         },
+  { key: "trello",   label: "Trello",    icon: Kanban         },
   { key: "lod",      label: "LOD",       icon: Ruler          },
   { key: "sim",      label: "Sim",       icon: Cpu            },
 ];
