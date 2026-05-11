@@ -18,6 +18,13 @@ export interface GraphFilters {
   dateFrom: string;
   /** Inclusive upper bound — YYYY-MM-DD or "". When set, null lastSignIn is excluded. */
   dateTo: string;
+  /**
+   * GRAPH-01: Per-project role include-list. Empty = all pass.
+   * Source: BulkAccUser.perProjectRoleNames (from accMembers.enrichedUsers).
+   * A node passes if its perProjectRoleNames contains at least one selected role.
+   * Graceful degradation: undefined perProjectRoleNames = treated as empty (no roles).
+   */
+  perProjectRoles: string[];
 }
 
 export const DEFAULT_FILTERS: GraphFilters = {
@@ -28,6 +35,7 @@ export const DEFAULT_FILTERS: GraphFilters = {
   companyRoles: [],
   dateFrom: "",
   dateTo: "",
+  perProjectRoles: [],
 };
 
 /** Minimal shape required by nodeMatchesFilters — matches the SimNode/UserNode fields it reads. */
@@ -38,6 +46,8 @@ export interface FilterableNode {
   modules: string[];
   companyRole: string | null;
   lastSignIn: string | null;
+  /** GRAPH-01: per-project role names from accMembers.enrichedUsers. Optional — undefined = no roles. */
+  perProjectRoleNames?: string[];
 }
 
 /**
@@ -51,6 +61,7 @@ export interface FilterableNode {
  *      nodes with no modules always pass
  *  - companyRoles (DATA-01): include-list — empty = all pass; null companyRole -> "Unspecified"
  *  - dateFrom / dateTo (FILT-02): inclusive ISO date range; null lastSignIn excluded when range active
+ *  - perProjectRoles (GRAPH-01): include-list — empty = all pass; AND-intersects with all other dimensions
  */
 export function nodeMatchesFilters(node: FilterableNode, filters: GraphFilters): boolean {
   // Existing dimensions — unchanged semantics
@@ -84,6 +95,13 @@ export function nodeMatchesFilters(node: FilterableNode, filters: GraphFilters):
     const d = node.lastSignIn.slice(0, 10);
     if (filters.dateFrom && d < filters.dateFrom) return false;
     if (filters.dateTo && d > filters.dateTo) return false;
+  }
+
+  // GRAPH-01: perProjectRoles AND-intersection with all other dimensions.
+  // Empty filter = no constraint. Undefined perProjectRoleNames gracefully treated as no roles.
+  if (filters.perProjectRoles.length > 0) {
+    const nodeRoles = node.perProjectRoleNames ?? [];
+    if (!filters.perProjectRoles.some((r) => nodeRoles.includes(r))) return false;
   }
 
   return true;

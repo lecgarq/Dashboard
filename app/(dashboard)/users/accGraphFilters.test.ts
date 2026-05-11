@@ -19,6 +19,7 @@ function makeNode(overrides: Partial<FilterableNode> = {}): FilterableNode {
     modules: [],
     companyRole: null,
     lastSignIn: null,
+    perProjectRoleNames: undefined,
     ...overrides,
   };
 }
@@ -287,6 +288,145 @@ describe("Combinations: multi-dimensional filters", () => {
       roles: ["Modeler"],
       companyRoles: ["Architect"],  // node has "Engineer" → excluded
       dateFrom: "2026-01-01",
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(false);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 6. GRAPH-01: perProjectRoles AND-intersection
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("GRAPH-01: perProjectRoles AND-intersection", () => {
+  // Empty filter = no constraint
+  it("empty perProjectRoles is a no-op (all nodes pass regardless)", () => {
+    const node = makeNode({ perProjectRoleNames: ["Architect", "BIM Manager"] });
+    expect(nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: [] })).toBe(true);
+  });
+
+  it("empty perProjectRoles passes a node with no per-project roles", () => {
+    const node = makeNode({ perProjectRoleNames: undefined });
+    expect(nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: [] })).toBe(true);
+  });
+
+  // perProjectRoles alone
+  it("perProjectRoles alone: passes node that has the selected role", () => {
+    const node = makeNode({ perProjectRoleNames: ["Architect"] });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: ["Architect"] })
+    ).toBe(true);
+  });
+
+  it("perProjectRoles alone: excludes node that does not have the selected role", () => {
+    const node = makeNode({ perProjectRoleNames: ["Engineer"] });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: ["Architect"] })
+    ).toBe(false);
+  });
+
+  it("perProjectRoles alone: excludes node with undefined perProjectRoleNames", () => {
+    const node = makeNode({ perProjectRoleNames: undefined });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: ["Architect"] })
+    ).toBe(false);
+  });
+
+  it("perProjectRoles alone: passes when node has at least one matching role (multi-select)", () => {
+    const node = makeNode({ perProjectRoleNames: ["Engineer", "BIM Manager"] });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, perProjectRoles: ["Architect", "BIM Manager"] })
+    ).toBe(true);
+  });
+
+  // perProjectRoles AND status (roles dimension)
+  it("perProjectRoles AND roles: passes node satisfying both", () => {
+    const node = makeNode({
+      roles: ["Manager"],
+      perProjectRoleNames: ["Architect"],
+    });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      roles: ["Manager"],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(true);
+  });
+
+  it("perProjectRoles AND roles: excludes node failing the roles dimension", () => {
+    const node = makeNode({ roles: ["Viewer"], perProjectRoleNames: ["Architect"] });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      roles: ["Manager"],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(false);
+  });
+
+  it("perProjectRoles AND roles: excludes node failing the perProjectRoles dimension", () => {
+    const node = makeNode({ roles: ["Manager"], perProjectRoleNames: ["Engineer"] });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      roles: ["Manager"],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(false);
+  });
+
+  // perProjectRoles AND module
+  it("perProjectRoles AND module: passes node satisfying both (module not disabled)", () => {
+    const node = makeNode({
+      modules: ["docs", "build"],
+      perProjectRoleNames: ["Architect"],
+    });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      disabledModules: ["design"],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(true);
+  });
+
+  it("perProjectRoles AND module: excludes node when all modules disabled", () => {
+    const node = makeNode({
+      modules: ["docs"],
+      perProjectRoleNames: ["Architect"],
+    });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      disabledModules: ["docs"],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(false);
+  });
+
+  // perProjectRoles AND status AND module (3-way AND)
+  it("perProjectRoles AND roles AND module: passes node satisfying all three", () => {
+    const node = makeNode({
+      roles: ["Manager"],
+      modules: ["docs"],
+      perProjectRoleNames: ["Architect"],
+    });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      roles: ["Manager"],
+      disabledModules: [],
+      perProjectRoles: ["Architect"],
+    };
+    expect(nodeMatchesFilters(node, filters)).toBe(true);
+  });
+
+  it("perProjectRoles AND roles AND module: excludes node failing any single dimension", () => {
+    // Fails perProjectRoles (node has "Engineer", filter wants "Architect")
+    const node = makeNode({
+      roles: ["Manager"],
+      modules: ["docs"],
+      perProjectRoleNames: ["Engineer"],
+    });
+    const filters = {
+      ...DEFAULT_FILTERS,
+      roles: ["Manager"],
+      disabledModules: [],
+      perProjectRoles: ["Architect"],
     };
     expect(nodeMatchesFilters(node, filters)).toBe(false);
   });

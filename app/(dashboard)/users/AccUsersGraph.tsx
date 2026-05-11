@@ -67,6 +67,13 @@ interface UserNode extends PhysicsNode {
   // Populated alongside the render-node assembly; safe to leave undefined.
   label?: string;
   degree?: number;
+  // Phase 5.1 enriched fields (from accMembers.enrichedUsers, may be undefined)
+  perProjectRoleNames?: string[];
+  aggregatedStatus?: "active" | "pending" | "deleted";
+  projectAdmin?: boolean;
+  executive?: boolean;
+  isAccountAdmin?: boolean;
+  companyName?: string | null;
 }
 
 type SimNode = UserNode;
@@ -243,6 +250,7 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
   const rolesRaw = params.get("roles") ?? "";
   const moffRaw = params.get("moff") ?? "";
   const companyRolesRaw = params.get("croles") ?? "";
+  const projRolesRaw = params.get("proles") ?? "";
 
   return {
     roles: rolesRaw ? rolesRaw.split(",").filter(Boolean) : [],
@@ -252,6 +260,7 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
     companyRoles: companyRolesRaw ? companyRolesRaw.split(",").filter(Boolean) : [],
     dateFrom: params.get("from") ?? "",
     dateTo: params.get("to") ?? "",
+    perProjectRoles: projRolesRaw ? projRolesRaw.split(",").filter(Boolean) : [],
   };
 }
 
@@ -267,6 +276,7 @@ function writeFiltersToUrl(
   if (filters.dateFrom) qs.set("from", filters.dateFrom);
   if (filters.dateTo) qs.set("to", filters.dateTo);
   if (filters.adminAccess !== "all") qs.set("admin", filters.adminAccess);
+  if (filters.perProjectRoles.length > 0) qs.set("proles", filters.perProjectRoles.join(","));
   const qsStr = qs.toString();
   router.replace(`${pathname}${qsStr ? `?${qsStr}` : ""}`, { scroll: false });
 }
@@ -467,6 +477,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedNode]);
 
+  // GRAPH-02: sync hoverEmail from hoveredNode so the lazy file-activity query
+  // activates when a node is hovered and clears when the cursor leaves.
+  useEffect(() => {
+    setHoverEmail(hoveredNode?.email ?? null);
+  }, [hoveredNode]);
+
   // CSS fade-out: plays a 150ms opacity dip on the canvas wrapper when the
   // visible set shrinks (filter change). Zero GPU/shader cost — purely CSS.
   const [isFilterTransitioning, setIsFilterTransitioning] = useState(false);
@@ -494,6 +510,23 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     staleTime: Infinity,
     retry: false,
   });
+
+  // GRAPH-01: per-project role facets for filter sidebar
+  const roleFacetsQuery = trpc.accGraph.perProjectRoleFacets.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
+
+  // GRAPH-02: lazy file-activity fetch for hover tooltip card (never eager-loaded)
+  const [hoverEmail, setHoverEmail] = useState<string | null>(null);
+  const fileActivityQuery = trpc.accActivity.getFileActivityForUser.useQuery(
+    { email: hoverEmail ?? "" },
+    {
+      enabled: !!hoverEmail,
+      staleTime: 300_000,
+      retry: false,
+    }
+  );
 
   const rebuildGraph = trpc.users.rebuildAccGraphCache.useMutation();
 
@@ -1381,9 +1414,23 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     // UI-01: populate display label so the Canvas2D late-zoom label pass has
     // text to render. Degree is filled in once links arrive (see updateNodeDegrees).
+    // Phase 5.1: merge enriched v2.0 fields from the users prop (populated by
+    // DashboardClient from accMembers.enrichedUsers). These fields are optional —
+    // safe to skip if enriched query hasn't resolved yet.
+    const userEnrichMap = new Map<string, BulkAccUser>();
+    for (const u of users) userEnrichMap.set(u.email.toLowerCase(), u);
     for (const n of rawNodes) {
       n.label = n.name || n.email || n.id;
       n.degree = 0;
+      const enriched = userEnrichMap.get(n.email.toLowerCase());
+      if (enriched) {
+        n.perProjectRoleNames = enriched.perProjectRoleNames;
+        n.aggregatedStatus = enriched.aggregatedStatus;
+        n.projectAdmin = enriched.projectAdmin;
+        n.executive = enriched.executive;
+        n.isAccountAdmin = enriched.isAccountAdmin;
+        n.companyName = enriched.companyName;
+      }
     }
     nodesRef.current = rawNodes;
     const cachedPositions = readPrecomputedPositions(graph.positions, rawNodes.length * 2);
@@ -1974,7 +2021,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     filters.disabledModules.length > 0 ||
     filters.companyRoles.length > 0 ||
     !!filters.dateFrom ||
-    !!filters.dateTo;
+    !!filters.dateTo ||
+    filters.perProjectRoles.length > 0;
 
   // activeFilterCount: number of filter dimensions that are non-default.
   // Used by plan 04's "Showing X of Y" header and "Clear all" button.
@@ -1985,7 +2033,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     (filters.disabledModules.length > 0 ? 1 : 0) +
     (filters.companyRoles.length > 0 ? 1 : 0) +
     (filters.dateFrom ? 1 : 0) +
-    (filters.dateTo ? 1 : 0);
+    (filters.dateTo ? 1 : 0) +
+    (filters.perProjectRoles.length > 0 ? 1 : 0);
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -2155,6 +2204,24 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                     ...current,
                     companyRoles: toggleValue(current.companyRoles, value),
                   }))}
+                />
+              )}
+
+              {/* GRAPH-01: Per-project role filter group */}
+              {(roleFacetsQuery.data?.length ?? 0) > 0 && (
+                <FilterMenu
+                  label="Per-Project Roles"
+                  options={(roleFacetsQuery.data ?? []).map((r) => ({
+                    value: r.name,
+                    label: r.name,
+                    count: r.memberCount,
+                  }))}
+                  selected={filters.perProjectRoles}
+                  onToggle={(value) => setFilters((current) => ({
+                    ...current,
+                    perProjectRoles: toggleValue(current.perProjectRoles, value),
+                  }))}
+                  maxVisible={Infinity}
                 />
               )}
             </div>
@@ -2541,7 +2608,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           style={{ transform: "translate(0,0)" }}
         >
           {hoveredNode && (
-            <UserTooltip node={hoveredNode} />
+            <UserTooltip
+              node={hoveredNode}
+              fileActivity={fileActivityQuery.data ?? null}
+              fileActivityLoading={fileActivityQuery.isLoading}
+            />
           )}
         </div>
 
@@ -2938,12 +3009,122 @@ function LegendDot({ color, label }: { color: string; label: string }) {
   );
 }
 
-function UserTooltip({ node }: { node: UserNode }) {
+/** Format a Date or ISO string as a relative time (e.g. "3 days ago") */
+function fmtRelative(dt: Date | string | null | undefined): string {
+  if (!dt) return "—";
+  try {
+    const d = dt instanceof Date ? dt : new Date(dt);
+    const diff = Date.now() - d.getTime();
+    const days = Math.floor(diff / 86_400_000);
+    if (days < 1) return "Today";
+    if (days === 1) return "Yesterday";
+    if (days < 30) return `${days}d ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months}mo ago`;
+    return `${Math.floor(months / 12)}y ago`;
+  } catch {
+    return "—";
+  }
+}
+
+type FileActivity = {
+  lastView: Date | null;
+  lastUpload: Date | null;
+  lastEdit: Date | null;
+  lastDelete: Date | null;
+} | null;
+
+function UserTooltip({
+  node,
+  fileActivity,
+  fileActivityLoading,
+}: {
+  node: UserNode;
+  fileActivity: FileActivity;
+  fileActivityLoading: boolean;
+}) {
+  // Derive display status: prefer aggregated status from v2.0 data, fall back to isAdmin badge
+  const statusPill = node.aggregatedStatus ?? null;
+  const statusColor =
+    statusPill === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
+    : statusPill === "pending" ? "bg-amber-50 text-amber-700 border-amber-200"
+    : statusPill === "deleted" ? "bg-red-50 text-red-600 border-red-200"
+    : null;
+
+  // Last file activity: pick the most recent across all categories
+  const lastFileAt = fileActivity
+    ? ([fileActivity.lastView, fileActivity.lastUpload, fileActivity.lastEdit, fileActivity.lastDelete]
+        .filter((d): d is Date => d != null) as Date[])
+        .map((d) => new Date(d))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null
+    : null;
+
   return (
-    <div className="space-y-1.5">
+    <div className="space-y-1.5 min-w-[180px]">
+      {/* Name + email */}
       <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
-      <p className="text-[10px] text-gray-500">{node.email}</p>
-      {node.projectName && <p className="text-[10px] text-gray-600 font-medium">{node.projectName}</p>}
+      <p className="text-[10px] text-gray-500 break-all">{node.email}</p>
+
+      {/* Status pill (text, never bare color) */}
+      {statusPill && statusColor && (
+        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-full border text-[9px] font-semibold", statusColor)}>
+          {statusPill.charAt(0).toUpperCase() + statusPill.slice(1)}
+        </span>
+      )}
+
+      {/* Company name */}
+      {(node.companyName ?? node.companyRole) && (
+        <p className="text-[10px] text-gray-600 font-medium truncate">
+          {node.companyName ?? node.companyRole}
+        </p>
+      )}
+
+      {/* Access level badges (text + color — color is NEVER the sole signal) */}
+      {(node.isAccountAdmin || node.projectAdmin || node.executive) && (
+        <div className="flex flex-wrap gap-1 pt-0.5">
+          {node.isAccountAdmin && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700 border border-yellow-200 font-semibold">
+              Hub Admin
+            </span>
+          )}
+          {node.projectAdmin && !node.isAccountAdmin && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
+              Project Admin
+            </span>
+          )}
+          {node.executive && !node.isAccountAdmin && !node.projectAdmin && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
+              Executive
+            </span>
+          )}
+          {node.isAdmin && !node.isAccountAdmin && !node.projectAdmin && !node.executive && (
+            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
+              Admin Access
+            </span>
+          )}
+        </div>
+      )}
+      {!node.isAccountAdmin && !node.projectAdmin && !node.executive && node.isAdmin && (
+        <p className="text-[9px] text-emerald-600 font-semibold">Admin Access</p>
+      )}
+
+      {/* Last sign-in */}
+      {node.lastSignIn && (
+        <p className="text-[9px] text-gray-400">
+          Sign-in: {fmtRelative(node.lastSignIn)}
+        </p>
+      )}
+
+      {/* Last file activity (lazy — shown only when loaded) */}
+      {fileActivityLoading ? (
+        <p className="text-[9px] text-gray-400 animate-pulse">File activity…</p>
+      ) : lastFileAt ? (
+        <p className="text-[9px] text-gray-400">
+          File activity: {fmtRelative(lastFileAt)}
+        </p>
+      ) : null}
+
+      {/* Roles (capped at 4) */}
       {node.roles.length > 0 && (
         <div className="flex flex-wrap gap-1 pt-0.5">
           {node.roles.slice(0, 4).map((r) => (
@@ -2954,7 +3135,7 @@ function UserTooltip({ node }: { node: UserNode }) {
           {node.roles.length > 4 && <span className="text-[9px] text-gray-400">+{node.roles.length - 4}</span>}
         </div>
       )}
-      {node.isAdmin && <p className="text-[9px] text-emerald-600 font-semibold">Admin Access</p>}
+
       {node.individualAccess && <p className="text-[9px] text-sky-600 font-semibold">Individual Access Config</p>}
     </div>
   );
