@@ -3,7 +3,7 @@ phase: 02-core-extraction
 plan: 03
 subsystem: acc-quick-sync
 tags: [acc, quick-sync, members, roles, extraction, pLimit, prisma]
-requirements_completed: [MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, ROLE-02, ROLE-03]
+requirements-completed: [MEM-01, MEM-02, MEM-03, MEM-04, MEM-05, ROLE-02, ROLE-03]
 
 dependency_graph:
   requires:

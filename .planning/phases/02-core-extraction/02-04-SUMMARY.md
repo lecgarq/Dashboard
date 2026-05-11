@@ -3,7 +3,7 @@ phase: 02-core-extraction
 plan: 04
 subsystem: acc-quick-sync
 tags: [acc, quick-sync, cache, bulkaccuser, release, mem-06, production-cutover]
-requirements_completed: [MEM-06]
+requirements-completed: [MEM-06]
 
 dependency_graph:
   requires:

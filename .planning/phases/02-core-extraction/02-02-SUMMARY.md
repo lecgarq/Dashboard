@@ -3,7 +3,7 @@ phase: 02-core-extraction
 plan: 02
 subsystem: acc-quick-sync
 tags: [acc, quick-sync, roles, extraction]
-requirements_completed: [ROLE-01]
+requirements-completed: [ROLE-01]
 dependency_graph:
   requires:
     - "lib/server/acc-admin.ts::fetchHqUsers (HQ v2 plain-array fetcher; exported as part of this plan)"

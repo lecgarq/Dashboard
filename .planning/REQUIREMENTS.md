@@ -141,9 +141,9 @@ Populated 2026-05-11 from ROADMAP.md.
 |-------------|-------|--------|
 | SCHEMA-01..03 | v2.0 Phase 1 — Foundation | Pending |
 | SYNC-01..04   | v2.0 Phase 1 — Foundation | Pending |
-| MEM-01..06    | v2.0 Phase 2 — Core Extraction | Pending |
-| PROJ-01..02   | v2.0 Phase 2 — Core Extraction | Pending |
-| ROLE-01..03   | v2.0 Phase 2 — Core Extraction | Pending |
+| MEM-01..06    | v2.0 Phase 2 — Core Extraction | Completed |
+| PROJ-01..02   | v2.0 Phase 2 — Core Extraction | Completed |
+| ROLE-01..03   | v2.0 Phase 2 — Core Extraction | Completed |
 | ACTV-01..05   | v2.0 Phase 3 — Activity Pipeline | Pending |
 | FLDR-01..05   | v2.0 Phase 4 — Folders (perf-gated) | Pending |
 | LIST-01..04   | v2.0 Phase 5 — UI Enrichment Waves | Pending |
