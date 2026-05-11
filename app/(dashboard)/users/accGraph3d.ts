@@ -15,8 +15,9 @@ export interface SemanticDepthNode {
 export const GRAPH_DISPLAY_MODE_KEY = "acc-graph-display-mode";
 export const ACC_GRAPH_3D_POSITION_OPTIONS = {
   xyScale: 16,
-  zScale: 2.4,
+  zScale: 4.2,
 } as const;
+export const ACC_GRAPH_3D_MAX_EDGES = 9000;
 
 function hashString(value: string): number {
   let hash = 2166136261;
@@ -109,4 +110,17 @@ export function shouldInitializeLayoutWorker(
   nodeCount: number,
 ): boolean {
   return nodeCount > 0 && backend !== "cosmos";
+}
+
+export function shouldRender3dEdges(options: {
+  linkCount: number;
+  isCameraMoving: boolean;
+  isInteracting: boolean;
+}): boolean {
+  return options.linkCount > 0 && !options.isCameraMoving && !options.isInteracting;
+}
+
+export function get3dEdgeSampleStep(linkCount: number, maxEdges = ACC_GRAPH_3D_MAX_EDGES): number {
+  if (linkCount <= 0 || maxEdges <= 0) return 1;
+  return Math.max(1, Math.ceil(linkCount / maxEdges));
 }

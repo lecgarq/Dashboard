@@ -1,7 +1,12 @@
 "use client";
 
 import type * as ThreeModule from "three";
-import { ACC_GRAPH_3D_POSITION_OPTIONS, buildPositions3d } from "./accGraph3d";
+import {
+  ACC_GRAPH_3D_POSITION_OPTIONS,
+  buildPositions3d,
+  get3dEdgeSampleStep,
+  shouldRender3dEdges,
+} from "./accGraph3d";
 import type { GraphDrawResult, GraphRenderFrame, GraphRenderer } from "./graphRenderers";
 
 type ThreeNamespace = typeof ThreeModule;
@@ -20,7 +25,8 @@ type OrbitControlsCtor = new (
   removeEventListener: (type: string, listener: () => void) => void;
 };
 
-const FIT_PADDING = 1.25;
+const FIT_PADDING = 1.35;
+const POINT_SIZE_PX = 4.2;
 
 export class ThreeGraphRenderer implements GraphRenderer {
   readonly backend = "three3d" as const;
@@ -37,26 +43,27 @@ export class ThreeGraphRenderer implements GraphRenderer {
   private readonly controls: InstanceType<OrbitControlsCtor>;
   private readonly raycaster: ThreeModule.Raycaster;
   private readonly pointer: ThreeModule.Vector2;
-  private readonly nodeMatrix: ThreeModule.Matrix4;
-  private readonly nodeColor: ThreeModule.Color;
+  private readonly colorScratch: ThreeModule.Color;
   private readonly dimColor: ThreeModule.Color;
 
-  private nodeMesh: ThreeModule.InstancedMesh | null = null;
+  private pointCloud: ThreeModule.Points | null = null;
+  private pointGeometry: ThreeModule.BufferGeometry | null = null;
   private edgeLines: ThreeModule.LineSegments | null = null;
   private positions3d: Float32Array = new Float32Array(0);
   private lastSourcePositions: Float32Array | null = null;
   private lastPositionNodeCount = -1;
   private visibleNodeIndices: Uint32Array = new Uint32Array(0);
-  private nodeToInstance = new Map<number, number>();
+  private visibleNodeKey = "";
   private lastNodeCount = -1;
   private lastVisibleKey = "";
   private lastLinkKey = "";
   private lastEdgeSourcePositions: Float32Array | null = null;
-  private selectedIndex = -1;
   private hoveredIndex: number | null = null;
+  private selectedIndex = -1;
   private cameraMoving = false;
   private cameraSettledTimer: ReturnType<typeof setTimeout> | null = null;
   private disposed = false;
+  private hasFitCamera = false;
 
   private constructor(
     container: HTMLElement,
@@ -66,7 +73,7 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.THREE = THREE;
     this.container = container;
     this.renderer = new THREE.WebGLRenderer({
-      antialias: true,
+      antialias: false,
       alpha: false,
       powerPreference: "high-performance",
     });
@@ -78,28 +85,22 @@ export class ThreeGraphRenderer implements GraphRenderer {
 
     this.scene = new THREE.Scene();
     this.scene.background = new THREE.Color("#F8F7F4");
-
-    this.camera = new THREE.PerspectiveCamera(45, 1, 0.05, 500);
-    this.camera.position.set(0, 0, 18);
-
-    const ambient = new THREE.AmbientLight(0xffffff, 0.85);
-    const key = new THREE.DirectionalLight(0xffffff, 1.15);
-    key.position.set(4, 8, 10);
-    this.scene.add(ambient, key);
+    this.camera = new THREE.PerspectiveCamera(42, 1, 0.05, 500);
+    this.camera.position.set(0, 0, 22);
 
     this.controls = new OrbitControls(this.camera, this.renderer.domElement) as InstanceType<OrbitControlsCtor>;
     this.controls.enableDamping = true;
-    this.controls.dampingFactor = 0.08;
-    this.controls.minDistance = 1.5;
-    this.controls.maxDistance = 80;
+    this.controls.dampingFactor = 0.075;
+    this.controls.minDistance = 2;
+    this.controls.maxDistance = 90;
     this.controls.addEventListener("start", this.handleCameraStart);
     this.controls.addEventListener("end", this.handleCameraEnd);
 
     this.raycaster = new THREE.Raycaster();
+    this.raycaster.params.Points = { threshold: 0.18 };
     this.pointer = new THREE.Vector2();
-    this.nodeMatrix = new THREE.Matrix4();
-    this.nodeColor = new THREE.Color();
-    this.dimColor = new THREE.Color("#9CA3AF");
+    this.colorScratch = new THREE.Color();
+    this.dimColor = new THREE.Color("#AEB7C2");
 
     this.renderer.domElement.addEventListener("pointermove", this.handlePointerMove);
     this.renderer.domElement.addEventListener("pointerleave", this.handlePointerLeave);
@@ -121,7 +122,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
   draw(frame: GraphRenderFrame): GraphDrawResult {
     if (this.disposed) return { needsContinuousRedraw: false };
 
-    const dpr = Math.min(frame.devicePixelRatio || 1, frame.isInteracting || this.cameraMoving ? 1.5 : 2);
+    const isMoving = frame.isCameraMoving === true || this.cameraMoving;
+    const dpr = Math.min(frame.devicePixelRatio || 1, isMoving || frame.isInteracting ? 1.25 : 1.75);
     this.renderer.setPixelRatio(dpr);
     this.renderer.setSize(Math.max(1, frame.cssWidth), Math.max(1, frame.cssHeight), false);
     this.camera.aspect = Math.max(1, frame.cssWidth) / Math.max(1, frame.cssHeight);
@@ -130,16 +132,24 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.positions3d = this.getPositions3d(frame);
     this.visibleNodeIndices = frame.userIndices ?? new Uint32Array(frame.nodes.map((_, index) => index));
 
-    const visibleKey = `${this.visibleNodeIndices.length}:${this.visibleNodeIndices[0] ?? -1}:${this.visibleNodeIndices[this.visibleNodeIndices.length - 1] ?? -1}`;
-    if (frame.nodes.length !== this.lastNodeCount || visibleKey !== this.lastVisibleKey) {
-      this.rebuildNodeMesh(frame);
+    const visibleKey = this.makeVisibleKey(this.visibleNodeIndices);
+    const needsRebuild =
+      frame.nodes.length !== this.lastNodeCount ||
+      visibleKey !== this.lastVisibleKey ||
+      !this.pointCloud;
+
+    if (needsRebuild) {
+      this.rebuildPointCloud(frame);
       this.lastNodeCount = frame.nodes.length;
       this.lastVisibleKey = visibleKey;
       this.lastLinkKey = "";
+      this.lastEdgeSourcePositions = null;
       this.fitCameraToVisible(frame);
+    } else {
+      this.updatePointCloud(frame);
+      if (!this.hasFitCamera) this.fitCameraToVisible(frame);
     }
 
-    this.updateNodeInstances(frame);
     this.updateEdges(frame);
 
     const controlsMoved = this.controls.update();
@@ -151,11 +161,10 @@ export class ThreeGraphRenderer implements GraphRenderer {
 
   resetCamera(frame?: GraphRenderFrame): void {
     if (frame) {
-      this.positions3d = frame.positions3d ?? buildPositions3d(frame.nodes, frame.positions, {
-        ...ACC_GRAPH_3D_POSITION_OPTIONS,
-      });
+      this.positions3d = this.getPositions3d(frame);
       this.visibleNodeIndices = frame.userIndices ?? new Uint32Array(frame.nodes.map((_, index) => index));
     }
+    this.hasFitCamera = false;
     this.fitCameraToVisible(frame);
   }
 
@@ -168,18 +177,8 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.renderer.domElement.removeEventListener("pointermove", this.handlePointerMove);
     this.renderer.domElement.removeEventListener("pointerleave", this.handlePointerLeave);
     this.renderer.domElement.removeEventListener("click", this.handleClick);
-    this.nodeMesh?.geometry.dispose();
-    if (Array.isArray(this.nodeMesh?.material)) {
-      this.nodeMesh.material.forEach((material) => material.dispose());
-    } else {
-      this.nodeMesh?.material.dispose();
-    }
-    this.edgeLines?.geometry.dispose();
-    if (Array.isArray(this.edgeLines?.material)) {
-      this.edgeLines.material.forEach((material) => material.dispose());
-    } else {
-      this.edgeLines?.material.dispose();
-    }
+    this.disposePointCloud();
+    this.disposeEdges();
     this.renderer.dispose();
     this.renderer.domElement.remove();
     this.lastSourcePositions = null;
@@ -190,111 +189,99 @@ export class ThreeGraphRenderer implements GraphRenderer {
     this.onCameraMoveCallback = null;
   }
 
-  private rebuildNodeMesh(frame: GraphRenderFrame): void {
-    if (this.nodeMesh) {
-      this.scene.remove(this.nodeMesh);
-      this.nodeMesh.geometry.dispose();
-      if (Array.isArray(this.nodeMesh.material)) {
-        this.nodeMesh.material.forEach((material) => material.dispose());
-      } else {
-        this.nodeMesh.material.dispose();
-      }
-      this.nodeMesh = null;
-    }
+  private rebuildPointCloud(frame: GraphRenderFrame): void {
+    this.disposePointCloud();
 
-    this.nodeToInstance.clear();
     const count = this.visibleNodeIndices.length;
     if (count === 0) return;
 
-    const geometry = new this.THREE.SphereGeometry(1, 12, 8);
-    const material = new this.THREE.MeshLambertMaterial({ vertexColors: true });
-    const mesh = new this.THREE.InstancedMesh(geometry, material, count);
-    mesh.instanceMatrix.setUsage(this.THREE.DynamicDrawUsage);
-    mesh.frustumCulled = false;
+    const positions = new Float32Array(count * 3);
+    const colors = new Float32Array(count * 3);
+    this.pointGeometry = new this.THREE.BufferGeometry();
+    this.pointGeometry.setAttribute("position", new this.THREE.BufferAttribute(positions, 3));
+    this.pointGeometry.setAttribute("color", new this.THREE.BufferAttribute(colors, 3));
 
-    for (let instance = 0; instance < count; instance++) {
-      this.nodeToInstance.set(this.visibleNodeIndices[instance], instance);
-    }
-
-    this.nodeMesh = mesh;
-    this.scene.add(mesh);
-    this.updateNodeInstances(frame);
-  }
-
-  private getPositions3d(frame: GraphRenderFrame): Float32Array {
-    if (frame.positions3d) {
-      this.lastSourcePositions = frame.positions;
-      this.lastPositionNodeCount = frame.nodes.length;
-      return frame.positions3d;
-    }
-    if (
-      this.positions3d.length === frame.nodes.length * 3 &&
-      this.lastSourcePositions === frame.positions &&
-      this.lastPositionNodeCount === frame.nodes.length
-    ) {
-      return this.positions3d;
-    }
-    this.lastSourcePositions = frame.positions;
-    this.lastPositionNodeCount = frame.nodes.length;
-    return buildPositions3d(frame.nodes, frame.positions, {
-      ...ACC_GRAPH_3D_POSITION_OPTIONS,
+    const material = new this.THREE.PointsMaterial({
+      size: POINT_SIZE_PX,
+      sizeAttenuation: false,
+      vertexColors: true,
+      transparent: true,
+      opacity: 0.95,
+      depthWrite: false,
     });
+    this.pointCloud = new this.THREE.Points(this.pointGeometry, material);
+    this.pointCloud.frustumCulled = false;
+    this.scene.add(this.pointCloud);
+    this.updatePointCloud(frame);
   }
 
-  private updateNodeInstances(frame: GraphRenderFrame): void {
-    if (!this.nodeMesh) return;
+  private updatePointCloud(frame: GraphRenderFrame): void {
+    if (!this.pointGeometry) return;
+    const positionAttr = this.pointGeometry.getAttribute("position") as ThreeModule.BufferAttribute | undefined;
+    const colorAttr = this.pointGeometry.getAttribute("color") as ThreeModule.BufferAttribute | undefined;
+    if (!positionAttr || !colorAttr) return;
 
+    const positionArray = positionAttr.array as Float32Array;
+    const colorArray = colorAttr.array as Float32Array;
     const hasSelection = frame.selectedNodeIndex >= 0;
     const selectedColor = hasSelection ? frame.nodes[frame.selectedNodeIndex]?.color : null;
 
     for (let visibleOffset = 0; visibleOffset < this.visibleNodeIndices.length; visibleOffset++) {
       const nodeIndex = this.visibleNodeIndices[visibleOffset];
       const node = frame.nodes[nodeIndex];
-      const p = nodeIndex * 3;
-      const x = this.positions3d[p];
-      const y = -this.positions3d[p + 1];
-      const z = this.positions3d[p + 2];
+      const sourceOffset = nodeIndex * 3;
+      const targetOffset = visibleOffset * 3;
+      positionArray[targetOffset] = this.positions3d[sourceOffset];
+      positionArray[targetOffset + 1] = -this.positions3d[sourceOffset + 1];
+      positionArray[targetOffset + 2] = this.positions3d[sourceOffset + 2];
+
       const isSelected = nodeIndex === frame.selectedNodeIndex;
       const isSameUser = frame.sameUserHighlightSet.has(nodeIndex);
       const isDimmed = hasSelection && !frame.highlightSet.has(nodeIndex) && !isSameUser && !isSelected;
-      const radius = isSelected ? 0.16 : this.hoveredIndex === nodeIndex ? 0.13 : 0.085 + Math.min(0.045, (node.degree ?? 0) * 0.002);
-
-      this.nodeMatrix.makeScale(radius, radius, radius);
-      this.nodeMatrix.setPosition(x, y, z);
-      this.nodeMesh.setMatrixAt(visibleOffset, this.nodeMatrix);
-
-      const color = isDimmed ? this.dimColor : this.nodeColor.set(isSameUser && selectedColor ? selectedColor : node.color);
-      this.nodeMesh.setColorAt(visibleOffset, color);
+      const color = isDimmed
+        ? this.dimColor
+        : this.colorScratch.set(isSameUser && selectedColor ? selectedColor : node.color);
+      colorArray[targetOffset] = color.r;
+      colorArray[targetOffset + 1] = color.g;
+      colorArray[targetOffset + 2] = color.b;
     }
 
-    this.nodeMesh.instanceMatrix.needsUpdate = true;
-    if (this.nodeMesh.instanceColor) this.nodeMesh.instanceColor.needsUpdate = true;
+    positionAttr.needsUpdate = true;
+    colorAttr.needsUpdate = true;
+    this.pointGeometry.computeBoundingSphere();
   }
 
   private updateEdges(frame: GraphRenderFrame): void {
     const links = frame.links;
-    const linkKey = `${links?.sources.length ?? 0}:${this.lastVisibleKey}:${frame.selectedNodeIndex}:${frame.isInteracting ? 1 : 0}:${this.cameraMoving ? 1 : 0}`;
+    const linkCount = links?.sources.length ?? 0;
+    const drawEdges = shouldRender3dEdges({
+      linkCount,
+      isCameraMoving: this.cameraMoving || frame.isCameraMoving === true,
+      isInteracting: frame.isInteracting,
+    });
+
+    if (!drawEdges) {
+      this.disposeEdges();
+      this.lastLinkKey = "";
+      this.lastEdgeSourcePositions = null;
+      return;
+    }
+
+    const step = get3dEdgeSampleStep(linkCount);
+    const linkKey = `${linkCount}:${step}:${this.lastVisibleKey}:${frame.selectedNodeIndex}`;
     if (linkKey === this.lastLinkKey && this.lastEdgeSourcePositions === frame.positions) return;
     this.lastLinkKey = linkKey;
     this.lastEdgeSourcePositions = frame.positions;
 
-    if (this.edgeLines) {
-      this.scene.remove(this.edgeLines);
-      this.edgeLines.geometry.dispose();
-      if (Array.isArray(this.edgeLines.material)) {
-        this.edgeLines.material.forEach((material) => material.dispose());
-      } else {
-        this.edgeLines.material.dispose();
-      }
-      this.edgeLines = null;
-    }
-    if (!links || links.sources.length === 0) return;
+    this.disposeEdges();
+    if (!links || linkCount === 0) return;
 
+    const visibleSet = new Set(this.visibleNodeIndices);
     const segments: number[] = [];
-    for (let i = 0; i < links.sources.length; i++) {
+    for (let i = 0; i < links.sources.length; i += step) {
       const s = links.sources[i];
       const t = links.targets[i];
-      if (!this.nodeToInstance.has(s) || !this.nodeToInstance.has(t)) continue;
+      if (!visibleSet.has(s) || !visibleSet.has(t)) continue;
       const sp = s * 3;
       const tp = t * 3;
       segments.push(
@@ -311,9 +298,9 @@ export class ThreeGraphRenderer implements GraphRenderer {
     const geometry = new this.THREE.BufferGeometry();
     geometry.setAttribute("position", new this.THREE.Float32BufferAttribute(segments, 3));
     const material = new this.THREE.LineBasicMaterial({
-      color: 0x9ca3af,
+      color: 0x94a3b8,
       transparent: true,
-      opacity: frame.isInteracting || this.cameraMoving ? 0.08 : 0.16,
+      opacity: 0.045,
       depthWrite: false,
     });
     this.edgeLines = new this.THREE.LineSegments(geometry, material);
@@ -338,31 +325,80 @@ export class ThreeGraphRenderer implements GraphRenderer {
     const size = new this.THREE.Vector3();
     box.getCenter(center);
     box.getSize(size);
+
     const maxSize = Math.max(size.x, size.y, size.z, 1);
     const fov = this.camera.fov * (Math.PI / 180);
     const distance = (maxSize * FIT_PADDING) / (2 * Math.tan(fov / 2));
 
     this.controls.target.copy(center);
-    this.camera.position.set(center.x, center.y, center.z + Math.max(5, distance));
+    this.camera.up.set(0, 1, 0);
+    this.camera.position.set(center.x, center.y, center.z + Math.max(8, distance));
+    this.camera.lookAt(center);
     this.camera.near = Math.max(0.01, distance / 100);
     this.camera.far = Math.max(500, distance * 20);
     this.camera.updateProjectionMatrix();
     this.controls.update();
-    if (frame) this.updateNodeInstances(frame);
+    if (frame) this.updatePointCloud(frame);
+    this.hasFitCamera = true;
     this.markCameraMoving();
   }
 
+  private getPositions3d(frame: GraphRenderFrame): Float32Array {
+    if (frame.positions3d) {
+      this.lastSourcePositions = frame.positions;
+      this.lastPositionNodeCount = frame.nodes.length;
+      return frame.positions3d;
+    }
+    if (
+      this.positions3d.length === frame.nodes.length * 3 &&
+      this.lastSourcePositions === frame.positions &&
+      this.lastPositionNodeCount === frame.nodes.length
+    ) {
+      return this.positions3d;
+    }
+    this.lastSourcePositions = frame.positions;
+    this.lastPositionNodeCount = frame.nodes.length;
+    return buildPositions3d(frame.nodes, frame.positions, {
+      ...ACC_GRAPH_3D_POSITION_OPTIONS,
+    });
+  }
+
   private pickNode(event: MouseEvent): number | null {
-    if (!this.nodeMesh || !this.visibleNodeIndices.length) return null;
+    if (!this.pointCloud || !this.visibleNodeIndices.length) return null;
     const rect = this.renderer.domElement.getBoundingClientRect();
     if (!rect.width || !rect.height) return null;
     this.pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     this.pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
     this.raycaster.setFromCamera(this.pointer, this.camera);
-    const hits = this.raycaster.intersectObject(this.nodeMesh, false);
-    const instanceId = hits[0]?.instanceId;
-    if (instanceId == null || instanceId < 0 || instanceId >= this.visibleNodeIndices.length) return null;
-    return this.visibleNodeIndices[instanceId];
+    const hits = this.raycaster.intersectObject(this.pointCloud, false);
+    const visibleOffset = hits[0]?.index;
+    if (visibleOffset == null || visibleOffset < 0 || visibleOffset >= this.visibleNodeIndices.length) return null;
+    return this.visibleNodeIndices[visibleOffset];
+  }
+
+  private makeVisibleKey(indices: Uint32Array): string {
+    return `${indices.length}:${indices[0] ?? -1}:${indices[Math.floor(indices.length / 2)] ?? -1}:${indices[indices.length - 1] ?? -1}`;
+  }
+
+  private disposePointCloud(): void {
+    if (!this.pointCloud) return;
+    this.scene.remove(this.pointCloud);
+    this.pointGeometry?.dispose();
+    const material = this.pointCloud.material;
+    if (Array.isArray(material)) material.forEach((entry) => entry.dispose());
+    else material.dispose();
+    this.pointCloud = null;
+    this.pointGeometry = null;
+  }
+
+  private disposeEdges(): void {
+    if (!this.edgeLines) return;
+    this.scene.remove(this.edgeLines);
+    this.edgeLines.geometry.dispose();
+    const material = this.edgeLines.material;
+    if (Array.isArray(material)) material.forEach((entry) => entry.dispose());
+    else material.dispose();
+    this.edgeLines = null;
   }
 
   private handlePointerMove = (event: MouseEvent): void => {

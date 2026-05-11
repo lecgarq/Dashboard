@@ -4,9 +4,11 @@ import {
   ACC_GRAPH_3D_POSITION_OPTIONS,
   buildPositions3d,
   computeSemanticDepth,
+  get3dEdgeSampleStep,
   readGraphDisplayMode,
   selectInitialGraphBackend,
   shouldInitializeLayoutWorker,
+  shouldRender3dEdges,
   type GraphDisplayMode,
   type SemanticDepthNode,
 } from "./accGraph3d";
@@ -39,6 +41,21 @@ describe("computeSemanticDepth", () => {
   });
 });
 
+describe("3D edge rendering policy", () => {
+  it("hides edges while camera or layout interaction is active", () => {
+    expect(shouldRender3dEdges({ linkCount: 100, isCameraMoving: false, isInteracting: false })).toBe(true);
+    expect(shouldRender3dEdges({ linkCount: 100, isCameraMoving: true, isInteracting: false })).toBe(false);
+    expect(shouldRender3dEdges({ linkCount: 100, isCameraMoving: false, isInteracting: true })).toBe(false);
+    expect(shouldRender3dEdges({ linkCount: 0, isCameraMoving: false, isInteracting: false })).toBe(false);
+  });
+
+  it("caps dense edge sets with deterministic sampling", () => {
+    expect(get3dEdgeSampleStep(100, 9000)).toBe(1);
+    expect(get3dEdgeSampleStep(18000, 9000)).toBe(2);
+    expect(get3dEdgeSampleStep(61000, 9000)).toBe(7);
+  });
+});
+
 describe("buildPositions3d", () => {
   it("preserves x/y ordering while adding finite semantic z", () => {
     const positions2d = new Float32Array([0.1, 0.2, 0.8, 0.7]);
@@ -58,8 +75,8 @@ describe("buildPositions3d", () => {
     expect(positions3d[2]).not.toBe(positions3d[5]);
   });
 
-  it("uses a shallow orbit depth by default so semantic layers do not dominate x/y layout", () => {
-    expect(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.zScale * 4);
+  it("uses bounded orbit depth so semantic layers read as 3D without dominating x/y layout", () => {
+    expect(ACC_GRAPH_3D_POSITION_OPTIONS.xyScale).toBeGreaterThan(ACC_GRAPH_3D_POSITION_OPTIONS.zScale * 3);
 
     const positions2d = new Float32Array([0, 0, 1, 1]);
     const positions3d = buildPositions3d(
@@ -74,7 +91,7 @@ describe("buildPositions3d", () => {
     const xySpan = Math.hypot(positions3d[3] - positions3d[0], positions3d[4] - positions3d[1]);
     const zSpan = Math.abs(positions3d[5] - positions3d[2]);
 
-    expect(zSpan).toBeLessThan(xySpan * 0.35);
+    expect(zSpan).toBeLessThan(xySpan * 0.45);
   });
 
   it("returns a correctly sized empty buffer when positions are missing", () => {
