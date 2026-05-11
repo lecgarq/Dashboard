@@ -149,6 +149,14 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-schema-sync]: Plan 01-01: Generated migration via 'prisma migrate diff' (not 'migrate dev') to bypass pre-existing LodEmbedding.pgvector drift — preserves additive-only invariant
 - [Phase 01-foundation-schema-sync]: Plan 01-01: Prisma 7.8.0 emits 'createdAt' DESC correctly for @@index([..., createdAt(sort: Desc)]) — Pitfall 3 did not materialize, no manual SQL edit needed
 - [Phase 01-foundation-schema-sync]: Plan 01-04: accSync tRPC router (getSyncFreshness + getActiveDeepSyncJob) reads SyncMeta + AccDataConnectorJob directly from Postgres — no in-memory cache, so SYNC-03 status survives Railway container restarts. Pill freshness = max(quick.lastRunAt, deep.lastSuccessCompletedAt); polling cadence 15s active / 5min idle.
+- [Phase 01-foundation-schema-sync]: Plan 01-03: Used `releaseCommand` in railway.toml (still accepted by current Railway config-as-code for this project); behavior identical to preDeployCommand — runs post-build, pre-traffic, non-zero fails deploy
+- [Phase 01-foundation-schema-sync]: Plan 01-03: Pure-CJS scripts (Option A) — no TS imports, no @/ aliases, Prisma via require("@prisma/client") + require("@prisma/adapter-pg"); avoids Node 22 --experimental-transform-types
+- [Phase 01-foundation-schema-sync]: Plan 01-03: scripts/deep-sync.cjs duplicates the `b.` strip inline (3 lines) — Plan 02 getAccountId stays canonical for TS callers; documented dual-implementation
+- [Phase 01-foundation-schema-sync]: Plan 01-03: 2-legged Autodesk token scope extended to `account:read data:read data:create` (data:create required by Data Connector POST /requests per RESEARCH Pitfall 7)
+- [Phase 01-foundation-schema-sync]: Plan 01-03: Manual ACC sync UI surfaces (Sync All, Refresh, stale-cache overlay) removed — release-driven Quick Sync is the only path going forward (CONTEXT scope amendment)
+- [Phase 01-foundation-schema-sync]: Plan 01-03: rebuildAccGraphCache extracted to lib/server/graph-rebuild.ts and wired as recoverable Step 3 of scripts/release.cjs — rebuild failure logs and continues (does not block deploy); tsx added as runtime dep for scripts/rebuild-graph.ts execution
+- [Phase 01-foundation-schema-sync]: Plan 01-03: Live email-failure-path NOT exercised end-to-end at human-verify (no local RESEND_API_KEY); code-walked + exit-status verified only — will be implicitly validated on first real prod failure
+- [Phase 01-foundation-schema-sync]: Plan 01-03: REQUIREMENTS.md SYNC-01..04 text still describes user-triggered UI flows; Phase 1 ships backend-only per CONTEXT.md amendment block; text intentionally NOT rewritten — the amendment block is the canonical reconciliation note
 
 ### Roadmap Evolution
 

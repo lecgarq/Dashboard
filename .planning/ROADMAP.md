@@ -145,7 +145,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 3. Graph UI Completion                      | v1.0      | 5/5            | Complete | 2026-05-07 |
 | 4. ACC Access Analysis Dashboard            | v1.0      | 8/8            | Complete | 2026-05-08 |
 | 4.1. Replace lists with interactive graphics | v1.0     | 4/4            | Complete | 2026-05-08 |
-| 1. Foundation: Schema + Sync Orchestration  | v2.0      | 0/4            | Planned     | —       |
+| 1. Foundation: Schema + Sync Orchestration  | v2.0      | 4/4            | Complete    | 2026-05-11 |
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/?            | Not started | —       |
 | 3. Activity Pipeline                        | v2.0      | 0/?            | Not started | —       |
 | 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Blocked on Phase 1+2 | — |
