@@ -969,7 +969,7 @@ export function UsersDirectoryClient() {
 
       {/* ACC Analysis tab */}
       {activeTab === "analysis" && (
-        <AccAnalysisPanel users={mergedAccUsers} refetch={refetchAccSummary} />
+        <AccAnalysisPanel users={mergedAccUsers} />
       )}
 
       {/* ACC Users Graph tab */}

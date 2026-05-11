@@ -2178,34 +2178,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
         {!isReady && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
-            {graphCacheNeedsBuild ? (
-              <>
-                <span className="text-sm font-semibold text-gray-900">
-                  {graphQuery.data?.stale ? "ACC graph cache is stale" : "ACC graph cache has not been built"}
-                </span>
-                <span className="mt-1 text-xs text-gray-500">
-                  {graphQuery.data?.stats.totalProjectInstances.toLocaleString() ?? 0} project-slots need a graph data snapshot.
-                </span>
-                <button
-                  onClick={() => {
-                    if (isRefreshingRef.current) return;
-                    isRefreshingRef.current = true;
-                    rebuildGraph.mutate(undefined, {
-                      onSettled: () => {
-                        setRefreshKey((value) => value + 1);
-                        graphQuery.refetch().finally(() => {
-                          isRefreshingRef.current = false;
-                        });
-                      },
-                    });
-                  }}
-                  disabled={rebuildGraph.isPending}
-                  className="mt-4 px-3 py-1.5 text-xs font-medium rounded-lg bg-gray-900 text-white disabled:opacity-50"
-                >
-                  {rebuildGraph.isPending ? "Rebuilding..." : "Rebuild Graph Cache"}
-                </button>
-              </>
-            ) : loadingTimedOut ? (
+            {loadingTimedOut ? (
               <>
                 <span className="text-sm font-semibold text-gray-900 text-center px-6">
                   This is taking longer than expected.
