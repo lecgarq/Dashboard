@@ -13,6 +13,7 @@ import { cn } from "@/lib/core/utils";
 import { MODULE_NAV_ITEMS, STAFF_NAV_ITEM, isNavItemActive } from "./navigation";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { trpc } from "@/lib/core/trpc";
+import { SyncFreshnessPill } from "./SyncFreshnessPill";
 
 type AccountModalProps = {
   open: boolean;
@@ -474,6 +475,7 @@ export function Sidebar() {
         </nav>
 
         <div className="border-t border-white/60 px-3 py-3">
+          <SyncFreshnessPill collapsed={collapsed} />
           <button
             onClick={() => setCollapsed((prev) => !prev)}
             className={cn(
