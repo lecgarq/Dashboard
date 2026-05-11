@@ -1,0 +1,547 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-main-contracts-POST",
+    "scrapedAt": "2026-05-08T17:57:38.430Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/main-contracts",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/cost/v1/containers/:containerId/main-contracts"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "code*string",
+          "col_1": "The code of the main contract.\nMax length: 255"
+        },
+        {
+          "col_0": "name*string",
+          "col_1": "The name of the main contract.\nMax length: 1024"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Detailed description of a main contract.\nMax length: 2048"
+        },
+        {
+          "col_0": "notestring",
+          "col_1": "A note about the main contract in Tiptap-formatted rich text."
+        },
+        {
+          "col_0": "scopeOfWorkstring",
+          "col_1": "The scope of work signed by all parties to the main contract, in Tiptap-formatted rich text."
+        },
+        {
+          "col_0": "typestring,null",
+          "col_1": "The type of the main contract. For example, Fixed Price or Unit Price. This is customizable for the project administrator."
+        },
+        {
+          "col_0": "contactIdstring,null",
+          "col_1": "The BIM360/Forma ID of the supplier’s default contact."
+        },
+        {
+          "col_0": "ownerCompanyIdstring,null",
+          "col_1": "The BIM360/Forma ID of the owner company."
+        },
+        {
+          "col_0": "ownerContactIdstring,null",
+          "col_1": "The BIM360/Forma ID of the primary contact at the owner company."
+        },
+        {
+          "col_0": "architectCompanyIdstring,null",
+          "col_1": "The BIM360/Forma ID of the architecture firm."
+        },
+        {
+          "col_0": "architectContactIdstring,null",
+          "col_1": "The BIM360/Forma ID of the primary contact at the architecture firm."
+        },
+        {
+          "col_0": "ownerCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "contractorCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "architectCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "notaryCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "startDatestring,null",
+          "col_1": "The start date of the main contract."
+        },
+        {
+          "col_0": "executedDatestring,null",
+          "col_1": "The execution date of the main contract."
+        },
+        {
+          "col_0": "plannedCompletionDatestring,null",
+          "col_1": "The planned completion date of the main contract."
+        },
+        {
+          "col_0": "revisedCompletionDatestring,null",
+          "col_1": "The revised completion date of the main contract."
+        },
+        {
+          "col_0": "actualCompletionDatestring,null",
+          "col_1": "The actual completion date of the main contract."
+        },
+        {
+          "col_0": "closeDatestring,null",
+          "col_1": "The closing date of the main contract."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "The status of the main contract. Possible values: closed, executed, review, signed."
+        },
+        {
+          "col_0": "isDefaultboolean,null",
+          "col_1": "true: This is the default main contract.\nfalse: This is not the default main contract."
+        },
+        {
+          "col_0": "completedWorkRetentionPercentnumber,null",
+          "col_1": "The completed work retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "materialsRetentionPercentnumber,null",
+          "col_1": "The materials retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "retentionCapnumber,null",
+          "col_1": "The total retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "201Created",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "The unique ID of the main contract. If not present, the system generates one automatically."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The code of the main contract.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the main contract.\nMax length: 1024"
+        },
+        {
+          "col_0": "notestring",
+          "col_1": "A note about the main contract in Tiptap-formatted rich text."
+        },
+        {
+          "col_0": "scopeOfWorkstring",
+          "col_1": "The scope of work signed by all parties to the main contract, in Tiptap-formatted rich text."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "A detailed description of the main contract.\nMax length: 2048"
+        },
+        {
+          "col_0": "typestring,null",
+          "col_1": "The type of the main contract. For example, Fixed Price or Unit Price. This is customizable for the project administrator."
+        },
+        {
+          "col_0": "contactIdstring,null",
+          "col_1": "The BIM360/Forma ID of the supplier’s default contact."
+        },
+        {
+          "col_0": "recipientsarray: object",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "isDefaultboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "creatorIdstring,null",
+          "col_1": "The BIM360/Forma ID of the user who created the main contract."
+        },
+        {
+          "col_0": "signedBystring,null",
+          "col_1": "The BIM360/Forma ID of the user who signed the main contract."
+        },
+        {
+          "col_0": "changedBystring,null",
+          "col_1": "The BIM360/Forma ID of the user who made the most recent change to the main contract."
+        },
+        {
+          "col_0": "ownerCompanyIdstring,null",
+          "col_1": "The ID of a company managed by a BIM 360 Admin. Detailed company information can be retrieved by calling GET projects/:project_id/companies and locating the member_group_id in the response."
+        },
+        {
+          "col_0": "contractorCompanyIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "ownerCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "contractorCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "architectCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "notaryCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "notaryContactIdstring,null",
+          "col_1": "The notary contact id. This is the ID of a contact managed by BIM360/Forma Admin."
+        },
+        {
+          "col_0": "additionalCollaboratorsarray: object",
+          "col_1": "The additional collaborator company and contacts."
+        },
+        {
+          "col_0": "companyIdstring",
+          "col_1": "The BIM360/Forma ID of the firm."
+        },
+        {
+          "col_0": "companyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "contactIdsarray: string",
+          "col_1": "The BIM360/Forma user ID of the contacts in the firm."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "The status of the main contract. Possible values: closed, executed, review, signed."
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The total value of the subitems of the main contract."
+        },
+        {
+          "col_0": "paidnumber,string,null",
+          "col_1": "The total amount of the main contract that has been paid to date."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "startDatestring,null",
+          "col_1": "The start date of the main contract."
+        },
+        {
+          "col_0": "executedDatestring,null",
+          "col_1": "The execution date of the main contract."
+        },
+        {
+          "col_0": "plannedCompletionDatestring,null",
+          "col_1": "The planned completion date of the main contract."
+        },
+        {
+          "col_0": "scheduleChangenumber,null",
+          "col_1": "The schedule change of the main contract."
+        },
+        {
+          "col_0": "revisedCompletionDatestring,null",
+          "col_1": "The revised completion date of the main contract."
+        },
+        {
+          "col_0": "actualCompletionDatestring,null",
+          "col_1": "The actual completion date of the main contract."
+        },
+        {
+          "col_0": "closeDatestring,null",
+          "col_1": "The closing date of the main contract."
+        },
+        {
+          "col_0": "isDefaultboolean,null",
+          "col_1": "true: This is the default main contract.\nfalse: This is not the default main contract."
+        },
+        {
+          "col_0": "completedWorkRetentionPercentnumber,null",
+          "col_1": "The completed work retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "materialsRetentionPercentnumber,null",
+          "col_1": "The materials retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "retentionCapnumber,null",
+          "col_1": "The total retention percentage of the main contract amount."
+        },
+        {
+          "col_0": "paymentDueint",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "paymentDueTypestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "unReceivedinteger,null",
+          "col_1": "The total value of the main contract amount that was approved but not paid."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        },
+        {
+          "col_0": "integrationStateChangedAtstring,null",
+          "col_1": "The date and time that the item’s integration status was last changed."
+        },
+        {
+          "col_0": "integrationStateChangedBystring,null",
+          "col_1": "The user who last changed the integration status. This is the ID of a user managed by the BIM 360/Forma Admin."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"code\": 1011,\n        \"name\": \"Site Management Staff\",\n        \"description\": \"Site Management Staff\",\n        \"note\": \"Site Management Staff\",\n        \"scopeOfWork\": \"Site Management Staff\",\n        \"type\": \"Fixed Price\",\n        \"contactId\": \"CED9LVTLHNXV\",\n        \"ownerCompanyId\": \"F71EDA97\",\n        \"ownerContactId\": \"90A2FD749912\",\n        \"architectCompanyId\": \"6FA508F4\",\n        \"architectContactId\": \"EF6BDFD0AE4D\",\n        \"ownerCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n        \"contractorCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n        \"architectCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n        \"notaryCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n        \"startDate\": \"2019-08-22\",\n        \"executedDate\": \"2019-08-22\",\n        \"plannedCompletionDate\": \"2019-08-22\",\n        \"revisedCompletionDate\": \"2019-08-22\",\n        \"actualCompletionDate\": \"2019-08-22\",\n        \"closeDate\": \"2019-08-22\",\n        \"status\": \"open\",\n        \"isDefault\": true,\n        \"completedWorkRetentionPercent\": \"50\",\n        \"materialsRetentionPercent\": \"50\",\n        \"retentionCap\": \"50\",\n        \"externalId\": \"10010-99-AB\",\n        \"externalSystem\": \"Sage300\",\n        \"externalMessage\": \"Success.\",\n        \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n        \"integrationState\": \"locked\"\n      }'",
+      "parsed": {
+        "code": 1011,
+        "name": "Site Management Staff",
+        "description": "Site Management Staff",
+        "note": "Site Management Staff",
+        "scopeOfWork": "Site Management Staff",
+        "type": "Fixed Price",
+        "contactId": "CED9LVTLHNXV",
+        "ownerCompanyId": "F71EDA97",
+        "ownerContactId": "90A2FD749912",
+        "architectCompanyId": "6FA508F4",
+        "architectContactId": "EF6BDFD0AE4D",
+        "ownerCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "contractorCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "architectCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "notaryCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "startDate": "2019-08-22",
+        "executedDate": "2019-08-22",
+        "plannedCompletionDate": "2019-08-22",
+        "revisedCompletionDate": "2019-08-22",
+        "actualCompletionDate": "2019-08-22",
+        "closeDate": "2019-08-22",
+        "status": "open",
+        "isDefault": true,
+        "completedWorkRetentionPercent": "50",
+        "materialsRetentionPercent": "50",
+        "retentionCap": "50",
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z",
+        "integrationState": "locked"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n  \"code\": 1011,\n  \"name\": \"Site Management Staff\",\n  \"note\": \"Site Management Staff\",\n  \"scopeOfWork\": \"Site Management Staff\",\n  \"description\": \"Site Management Staff\",\n  \"type\": \"Fixed Price\",\n  \"contactId\": \"CED9LVTLHNXV\",\n  \"recipients\": [\n    {\n      \"id\": \"ZPYARKZX9ANQ\",\n      \"isDefault\": false\n    }\n  ],\n  \"creatorId\": \"CED9LVTLHNXV\",\n  \"signedBy\": \"CED9LVTLHNXV\",\n  \"changedBy\": \"CED9LVTLHNXV\",\n  \"ownerCompanyId\": \"GF8XKPKWM38E\",\n  \"contractorCompanyId\": \"GF8XKPKWM38E\",\n  \"ownerCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"contractorCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"architectCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"notaryCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"notaryContactId\": \"716EF53CE6B1\",\n  \"additionalCollaborators\": [\n    {\n      \"companyId\": \"GF8XKPKWM38E\",\n      \"companyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n      \"contactIds\": [\n        \"CED9LVTLHNXV\"\n      ]\n    }\n  ],\n  \"status\": \"open\",\n  \"amount\": \"1000.0000\",\n  \"paid\": \"1000.0000\",\n  \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n  \"updatedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"startDate\": \"2019-08-22\",\n  \"executedDate\": \"2019-08-22\",\n  \"plannedCompletionDate\": \"2019-08-22\",\n  \"scheduleChange\": 10,\n  \"revisedCompletionDate\": \"2019-08-22\",\n  \"actualCompletionDate\": \"2019-08-22\",\n  \"closeDate\": \"2019-08-22\",\n  \"isDefault\": true,\n  \"completedWorkRetentionPercent\": \"50\",\n  \"materialsRetentionPercent\": \"50\",\n  \"retentionCap\": \"50\",\n  \"paymentDue\": 10,\n  \"paymentDueType\": \"afterStart\",\n  \"unReceived\": 10,\n  \"externalId\": \"10010-99-AB\",\n  \"externalSystem\": \"Sage300\",\n  \"externalMessage\": \"Success.\",\n  \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationState\": \"locked\",\n  \"integrationStateChangedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationStateChangedBy\": \"CED9LVTLHNXV\"\n}",
+      "parsed": {
+        "id": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "code": 1011,
+        "name": "Site Management Staff",
+        "note": "Site Management Staff",
+        "scopeOfWork": "Site Management Staff",
+        "description": "Site Management Staff",
+        "type": "Fixed Price",
+        "contactId": "CED9LVTLHNXV",
+        "recipients": [
+          {
+            "id": "ZPYARKZX9ANQ",
+            "isDefault": false
+          }
+        ],
+        "creatorId": "CED9LVTLHNXV",
+        "signedBy": "CED9LVTLHNXV",
+        "changedBy": "CED9LVTLHNXV",
+        "ownerCompanyId": "GF8XKPKWM38E",
+        "contractorCompanyId": "GF8XKPKWM38E",
+        "ownerCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "contractorCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "architectCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "notaryCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "notaryContactId": "716EF53CE6B1",
+        "additionalCollaborators": [
+          {
+            "companyId": "GF8XKPKWM38E",
+            "companyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+            "contactIds": [
+              "CED9LVTLHNXV"
+            ]
+          }
+        ],
+        "status": "open",
+        "amount": "1000.0000",
+        "paid": "1000.0000",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z",
+        "startDate": "2019-08-22",
+        "executedDate": "2019-08-22",
+        "plannedCompletionDate": "2019-08-22",
+        "scheduleChange": 10,
+        "revisedCompletionDate": "2019-08-22",
+        "actualCompletionDate": "2019-08-22",
+        "closeDate": "2019-08-22",
+        "isDefault": true,
+        "completedWorkRetentionPercent": "50",
+        "materialsRetentionPercent": "50",
+        "retentionCap": "50",
+        "paymentDue": 10,
+        "paymentDueType": "afterStart",
+        "unReceived": 10,
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z",
+        "integrationState": "locked",
+        "integrationStateChangedAt": "2019-09-05T01:00:12.989Z",
+        "integrationStateChangedBy": "CED9LVTLHNXV"
+      }
+    }
+  ]
+}

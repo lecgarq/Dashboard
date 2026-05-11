@@ -1,0 +1,665 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/field-guide/model-properties",
+    "scrapedAt": "2026-05-08T23:39:09.397Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Introduction to Model Properties",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "URL",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "URL": "manifestUrl",
+          "Type": "JSON",
+          "Description": "The manifest for an index or query, detailing the seed files and SVF2 PDB resources used to generate the index rows."
+        },
+        {
+          "URL": "fieldsUrl",
+          "Type": "NDJSON",
+          "Description": "The set of unique fields (property types) extracted for an index or query. One field per line."
+        },
+        {
+          "URL": "propertiesUrl",
+          "Type": "NDJSON",
+          "Description": "The raw object property values for the index. One object per line."
+        },
+        {
+          "URL": "resultsUrl",
+          "Type": "NDJSON",
+          "Description": "The object property results from a query executed against the index at build time, or after an index has been constructed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "schema",
+          "Type": "string",
+          "Description": "The version descriptor for the manifest schema version"
+        },
+        {
+          "Property": "projectId",
+          "Type": "guid",
+          "Description": "The Forma Data Management/BIM 360 Docs project GUID"
+        },
+        {
+          "Property": "status",
+          "Type": "string",
+          "Description": "The status of the index associated with this manifest. Possible values are PROCESSING, SUCCESS, PENDING or FAILED."
+        },
+        {
+          "Property": "createdAt",
+          "Type": "datetime",
+          "Description": "The index creation date time"
+        },
+        {
+          "Property": "seedFiles",
+          "Type": "array",
+          "Description": "The list of seed files in the index"
+        },
+        {
+          "Property": "errors",
+          "Type": "array",
+          "Description": "An array of errors associated with this manifest if the status is FAILED"
+        },
+        {
+          "Property": "stats",
+          "Type": "object",
+          "Description": "Summary statistics for the number of objects in the index and the content length in bytes of the raw index properties resource"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "lineageId",
+          "Type": "string",
+          "Description": "The ID assigned to the seed file in the index. Used as an object key to tie objects to lineages."
+        },
+        {
+          "Property": "lineageUrn",
+          "Type": "string",
+          "Description": "The The Forma Data Management/BIM 360 Docs Lineage URN"
+        },
+        {
+          "Property": "versionUrn",
+          "Type": "string",
+          "Description": "The The Forma Data Management/BIM 360 Docs File Version URN for the file used to build the index"
+        },
+        {
+          "Property": "databases",
+          "Type": "array",
+          "Description": "The list of SVF2 property database resources used to build the index"
+        },
+        {
+          "Property": "views",
+          "Type": "array",
+          "Description": "The list of viewables extracted from the versionUrn in which objects in the index can be displayed in the Viewer"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "id",
+          "Type": "string",
+          "Description": "The ID assigned to the SVF2 property database used to extract the properties associated with the index. Used as an object key to tie objects to database."
+        },
+        {
+          "Property": "offsets",
+          "Type": "string",
+          "Description": "The SVF2 property database offsets resource"
+        },
+        {
+          "Property": "attributes",
+          "Type": "string",
+          "Description": "The SVF2 property database attributes resource used to build the index fields resource"
+        },
+        {
+          "Property": "values",
+          "Type": "string",
+          "Description": "The SVF2 property database property values resource"
+        },
+        {
+          "Property": "mapping",
+          "Type": "string",
+          "Description": "The SVF2 property database mapping resource"
+        },
+        {
+          "Property": "ids",
+          "Type": "string",
+          "Description": "The SVF2 property database ids resource"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "id",
+          "Type": "string",
+          "Description": "The ID assigned to views containing objects in the index. Used as an object key to tie objects to views that can be loaded into the Viewer."
+        },
+        {
+          "Property": "urn",
+          "Type": "string",
+          "Description": "The The Forma Data Management/BIM 360 Docs File Version URN containing the view"
+        },
+        {
+          "Property": "is3d",
+          "Type": "boolean",
+          "Description": "Flag indicating if the view is 3D"
+        },
+        {
+          "Property": "viewableName",
+          "Type": "string",
+          "Description": "The viewable name of the view in the model derivative manifest for the Viewer"
+        },
+        {
+          "Property": "viewableId",
+          "Type": "string",
+          "Description": "The viewableId of the view in the model derivative manifest for the Viewer"
+        },
+        {
+          "Property": "viewableGuid",
+          "Type": "string",
+          "Description": "The viewable GUID of the view in the model derivative manifest for the Viewer"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Nullable",
+        "Viewer Visible",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "key",
+          "Nullable": "No",
+          "Viewer Visible": "No",
+          "Description": "The unique key for the dimension in the index"
+        },
+        {
+          "Property": "category",
+          "Nullable": "No",
+          "Viewer Visible": "Yes",
+          "Description": "The attribute category name for the field from the original PDB"
+        },
+        {
+          "Property": "type",
+          "Nullable": "No",
+          "Viewer Visible": "No",
+          "Description": "The attribute type ID from the original PDB"
+        },
+        {
+          "Property": "name",
+          "Nullable": "No",
+          "Viewer Visible": "Yes",
+          "Description": "The attribute name from the original PDB"
+        },
+        {
+          "Property": "uom",
+          "Nullable": "Yes",
+          "Viewer Visible": "No",
+          "Description": "The attribute unit of measure from the original PDB"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "svf2Id",
+          "Description": "The SVF2 ID for this object in the Viewer"
+        },
+        {
+          "Property": "lineageId",
+          "Description": "The index manifest key for the file lineage that contains this index row"
+        },
+        {
+          "Property": "externalId",
+          "Description": "The SVF2 external ID associated with this row in the SVF2 property PDB database"
+        },
+        {
+          "Property": "lmvId",
+          "Description": "The SVF ID for this row in the Viewer"
+        },
+        {
+          "Property": "databaseId",
+          "Description": "The index manifest key for the PDB resource that contains this row"
+        },
+        {
+          "Property": "props",
+          "Description": "The field values associated with this object. This is a dynamic JSON object, the properties of which correspond to field keys from\nthe fields resource created as part of the indexing process."
+        },
+        {
+          "Property": "propsHash",
+          "Description": "A hash of the properties in this row, if this hash changes the properties associated with this row have changed"
+        },
+        {
+          "Property": "propsIgnored",
+          "Description": "The property field keys that were ignored when computing the row property hash"
+        },
+        {
+          "Property": "geomHash",
+          "Description": "A hash of the geometry that represents this object. If this hash changes, the object represented by this row is viewable and has\nchanged shape."
+        },
+        {
+          "Property": "bboxMin",
+          "Description": "The min (x,y,z) coordinates, which describe the minimum extent of a bounding box which contains this object"
+        },
+        {
+          "Property": "bboxMax",
+          "Description": "The max (x,y,z) coordinates, which describe the maximum extent of a bounding box which contains this object"
+        },
+        {
+          "Property": "views",
+          "Description": "The views in an indexed file that contain this row. If this array is null, the row (object) is not viewable in the Viewer.\nThe view keys in this array belong to the index manifest. Using these keys it is possible to locate the URN of the viewable that can\nbe loaded into the Viewer. Note, properties such as geomHash, bboxMin, bboxMax, lmvId, and svf2Id are only\napplicable to index rows that are viewable in the Viewer."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Property",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Property": "type",
+          "Description": "The kind of change. OBJECT_ADDED, a new object has been added to the model. OBJECT_CHANGED, either the position/shape of the\nobject (as defined by its bounding box) or the properties associated with the object have changed. OBJECT_REMOVED, the object was\npresent in the previous version of the file processed for this index but it no longer exists in the current version."
+        },
+        {
+          "Property": "changeType",
+          "Description": "If the type of the Diff row is OBJECT_CHANGED the changeType property will be emitted into the index row. This property\ndescribes the type of geometric change which has taken place. This property can have the following possible values. Transform, the\nposition of the object has changed but its geometry remains the same. Geometry, the object has changed shape and the geomHash\nbetween the current and previous version of the object will be different. Unknown, the diff algorithm can not tell exactly how the\ngeometry has changed. Usually this means the object is made up of two or more fragments and the transformation of the first fragment\ndiffers from the transformation of the second and subsequent fragments, so a single transformation can not explain the change. This\nproperty does not apply to model properties in the props and prev.props objects."
+        },
+        {
+          "Property": "svf2Id",
+          "Description": "The SVF2 ID for this object in the Viewer"
+        },
+        {
+          "Property": "lineageId",
+          "Description": "The index manifest key for the file lineage that contains this index row"
+        },
+        {
+          "Property": "externalId",
+          "Description": "The SVF2 external ID that is associated with this row in the SVF2 property PDB database"
+        },
+        {
+          "Property": "lmvId",
+          "Description": "The SVF ID for this row in the Viewer"
+        },
+        {
+          "Property": "databaseId",
+          "Description": "The index manifest key for the PDB resource that contains this row"
+        },
+        {
+          "Property": "props",
+          "Description": "The field values associated with this object. This is a dynamic JSON object, the properties of which correspond to field keys from\nthe fields resource created as part of the indexing process."
+        },
+        {
+          "Property": "propsHash",
+          "Description": "A hash of the properties in this row. If this hash changes the properties associated with this row have changed."
+        },
+        {
+          "Property": "propsIgnored",
+          "Description": "The property field keys which were ignored when computing the row property hash"
+        },
+        {
+          "Property": "geomHash",
+          "Description": "A hash of the geometry that represents this object. If this hash changes, the object represented by this row is viewable and has\nchanged shape."
+        },
+        {
+          "Property": "bboxMin",
+          "Description": "The min (x,y,z) coordinates describing the minimum extent of a bounding box that contains this object"
+        },
+        {
+          "Property": "bboxMax",
+          "Description": "The max (x,y,z) coordinates describing the maximum extent of a bounding box that contains this object"
+        },
+        {
+          "Property": "views",
+          "Description": "The views in an indexed file that contain this row. If this array is null, the row (object) is not viewable in the Viewer.\nThe view keys in this array belong to the index manifest. Using these keys it is possible to locate the URN of the viewable that can\nbe loaded into the Viewer. Note, properties such as geomHash, bboxMin, bboxMax, lmvId, and svf2Id are only\napplicable to index rows that are viewable in the Viewer."
+        },
+        {
+          "Property": "prev",
+          "Description": "The previous version of the object. The props property, the properties associated with the object, are restricted to\nonly the properties that are different (changed) between the current version of this object and the current version. You can use the\npropsHash and geomHash properties on both the current and prev to determine if the props or bbox* values are\ndifferent."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "{\n    \"schema\": \"2.0.0\",\n    \"projectId\": \"f83cef12-deef-4771-9feb-4f85643e3c46\",\n    \"status\": \"Succeeded\",\n    \"createdAt\": \"2021-07-23T08:56:07.0868303+00:00\",\n    \"seedFiles\": [\n        {\n            \"lineageId\": \"a19f7db\",\n            \"lineageUrn\": \"urn:adsk.wipprod:dm.lineage:DyTWutcvTcOLUNUARxcTzQ\",\n            \"versionUrn\": \"urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4\",\n            \"databases\": [\n                {\n                    \"id\": \"3747dccf\",\n                    \"offsets\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_offs.json.gz\",\n                    \"attributes\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_attrs.json.gz\",\n                    \"values\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_vals.json.gz\",\n                    \"mapping\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_avs.json.gz\",\n                    \"ids\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_ids.json.gz\"\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": \"e7fda9d5\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4\",\n                    \"is3d\": true,\n                    \"viewableName\": \"{3D}\",\n                    \"viewableId\": \"0935d8b2-149b-4a0d-b816-863f0d595a20-000bcd64\",\n                    \"viewableGuid\": \"00cd2da3-fbfa-44a9-7a33-cad0bc4720cb\"\n                },\n                {\n                    \"id\": \"12fcb372\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4\",\n                    \"is3d\": true,\n                    \"viewableName\": \"New Construction\",\n                    \"viewableId\": \"c884ae1b-61e7-4f9d-0001-719e20b22d0b-00120bb2\",\n                    \"viewableGuid\": \"4a966c2a-ead6-65c3-4f98-273dd7543047\"\n                }\n            ]\n        },\n        {\n            \"lineageId\": \"b24c41\",\n            \"lineageUrn\": \"urn:adsk.wipprod:dm.lineage:LaqNypGeQTaKs0DA__nzLA\",\n            \"versionUrn\": \"urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4\",\n            \"databases\": [\n                {\n                    \"id\": \"3d24adf4\",\n                    \"offsets\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_offs.json.gz\",\n                    \"attributes\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_attrs.json.gz\",\n                    \"values\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_vals.json.gz\",\n                    \"mapping\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_avs.json.gz\",\n                    \"ids\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_ids.json.gz\"\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": \"cf7900d3\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4\",\n                    \"is3d\": true,\n                    \"viewableName\": \"{3D}\",\n                    \"viewableId\": \"845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04\",\n                    \"viewableGuid\": \"5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8\"\n                },\n                {\n                    \"id\": \"bfe04eff\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4\",\n                    \"is3d\": true,\n                    \"viewableName\": \"New Construction\",\n                    \"viewableId\": \"c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032f400\",\n                    \"viewableGuid\": \"10c25a10-5469-3aef-b0a6-1c27c7b8e93b\"\n                }\n            ]\n        },\n        {\n            \"lineageId\": \"e330f714\",\n            \"lineageUrn\": \"urn:adsk.wipprod:dm.lineage:uyT8qe04TDSTDXC2sdfBtg\",\n            \"versionUrn\": \"urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8\",\n            \"databases\": [\n                {\n                    \"id\": \"3d0bd846\",\n                    \"offsets\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_offs.json.gz\",\n                    \"attributes\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_attrs.json.gz\",\n                    \"values\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_vals.json.gz\",\n                    \"mapping\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_avs.json.gz\",\n                    \"ids\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_ids.json.gz\"\n                }\n            ],\n            \"views\": [\n                {\n                    \"id\": \"f109b687\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8\",\n                    \"is3d\": true,\n                    \"viewableName\": \"{3D}\",\n                    \"viewableId\": \"24bb580c-5e74-4a65-bcae-e97c21424529-00027e16\",\n                    \"viewableGuid\": \"a3186f12-7750-fa47-f60a-610a779ba5ac\"\n                },\n                {\n                    \"id\": \"f24d458\",\n                    \"urn\": \"urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8\",\n                    \"is3d\": true,\n                    \"viewableName\": \"New Construction\",\n                    \"viewableId\": \"c884ae1b-61e7-4f9d-0001-719e20b22d0b-001225ae\",\n                    \"viewableGuid\": \"b6e42cf6-432d-5c76-aa05-8909a2cc35c0\"\n                }\n            ]\n        }\n    ],\n    \"errors\": [],\n    \"stats\": {\n        \"objects\": 33097,\n        \"contentLength\": 1881318\n    }\n}",
+      "parsed": {
+        "schema": "2.0.0",
+        "projectId": "f83cef12-deef-4771-9feb-4f85643e3c46",
+        "status": "Succeeded",
+        "createdAt": "2021-07-23T08:56:07.0868303+00:00",
+        "seedFiles": [
+          {
+            "lineageId": "a19f7db",
+            "lineageUrn": "urn:adsk.wipprod:dm.lineage:DyTWutcvTcOLUNUARxcTzQ",
+            "versionUrn": "urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4",
+            "databases": [
+              {
+                "id": "3747dccf",
+                "offsets": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_offs.json.gz",
+                "attributes": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_attrs.json.gz",
+                "values": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_vals.json.gz",
+                "mapping": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_avs.json.gz",
+                "ids": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkR5VFd1dGN2VGNPTFVOVUFSeGNUelE_dmVyc2lvbj00/output/Resource/objects_ids.json.gz"
+              }
+            ],
+            "views": [
+              {
+                "id": "e7fda9d5",
+                "urn": "urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4",
+                "is3d": true,
+                "viewableName": "{3D}",
+                "viewableId": "0935d8b2-149b-4a0d-b816-863f0d595a20-000bcd64",
+                "viewableGuid": "00cd2da3-fbfa-44a9-7a33-cad0bc4720cb"
+              },
+              {
+                "id": "12fcb372",
+                "urn": "urn:adsk.wipprod:fs.file:vf.DyTWutcvTcOLUNUARxcTzQ?version=4",
+                "is3d": true,
+                "viewableName": "New Construction",
+                "viewableId": "c884ae1b-61e7-4f9d-0001-719e20b22d0b-00120bb2",
+                "viewableGuid": "4a966c2a-ead6-65c3-4f98-273dd7543047"
+              }
+            ]
+          },
+          {
+            "lineageId": "b24c41",
+            "lineageUrn": "urn:adsk.wipprod:dm.lineage:LaqNypGeQTaKs0DA__nzLA",
+            "versionUrn": "urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4",
+            "databases": [
+              {
+                "id": "3d24adf4",
+                "offsets": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_offs.json.gz",
+                "attributes": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_attrs.json.gz",
+                "values": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_vals.json.gz",
+                "mapping": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_avs.json.gz",
+                "ids": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLkxhcU55cEdlUVRhS3MwREFfX256TEE_dmVyc2lvbj00/output/Resource/objects_ids.json.gz"
+              }
+            ],
+            "views": [
+              {
+                "id": "cf7900d3",
+                "urn": "urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4",
+                "is3d": true,
+                "viewableName": "{3D}",
+                "viewableId": "845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04",
+                "viewableGuid": "5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8"
+              },
+              {
+                "id": "bfe04eff",
+                "urn": "urn:adsk.wipprod:fs.file:vf.LaqNypGeQTaKs0DA__nzLA?version=4",
+                "is3d": true,
+                "viewableName": "New Construction",
+                "viewableId": "c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032f400",
+                "viewableGuid": "10c25a10-5469-3aef-b0a6-1c27c7b8e93b"
+              }
+            ]
+          },
+          {
+            "lineageId": "e330f714",
+            "lineageUrn": "urn:adsk.wipprod:dm.lineage:uyT8qe04TDSTDXC2sdfBtg",
+            "versionUrn": "urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8",
+            "databases": [
+              {
+                "id": "3d0bd846",
+                "offsets": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_offs.json.gz",
+                "attributes": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_attrs.json.gz",
+                "values": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_vals.json.gz",
+                "mapping": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_avs.json.gz",
+                "ids": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnV5VDhxZTA0VERTVERYQzJzZGZCdGc_dmVyc2lvbj04/output/Resource/objects_ids.json.gz"
+              }
+            ],
+            "views": [
+              {
+                "id": "f109b687",
+                "urn": "urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8",
+                "is3d": true,
+                "viewableName": "{3D}",
+                "viewableId": "24bb580c-5e74-4a65-bcae-e97c21424529-00027e16",
+                "viewableGuid": "a3186f12-7750-fa47-f60a-610a779ba5ac"
+              },
+              {
+                "id": "f24d458",
+                "urn": "urn:adsk.wipprod:fs.file:vf.uyT8qe04TDSTDXC2sdfBtg?version=8",
+                "is3d": true,
+                "viewableName": "New Construction",
+                "viewableId": "c884ae1b-61e7-4f9d-0001-719e20b22d0b-001225ae",
+                "viewableGuid": "b6e42cf6-432d-5c76-aa05-8909a2cc35c0"
+              }
+            ]
+          }
+        ],
+        "errors": [],
+        "stats": {
+          "objects": 33097,
+          "contentLength": 1881318
+        }
+      }
+    },
+    {
+      "raw": "{\"key\":\"p153cb174\",\"category\":\"__name__\",\"type\":\"String\",\"name\":\"name\",\"uom\":null}\n{\"key\":\"p74a9a490\",\"category\":\"__document__\",\"type\":\"String\",\"name\":\"schema_name\",\"uom\":null}\n{\"key\":\"p137c14f2\",\"category\":\"__document__\",\"type\":\"String\",\"name\":\"schema_version\",\"uom\":null}\n{\"key\":\"p1490bcea\",\"category\":\"__document__\",\"type\":\"Boolean\",\"name\":\"is_doc_property\",\"uom\":null}\n{\"key\":\"p5eddc473\",\"category\":\"__category__\",\"type\":\"String\",\"name\":\"Category\",\"uom\":null}\n{\"key\":\"p00723fa6\",\"category\":\"Identity Data\",\"type\":\"String\",\"name\":\"Design Option\",\"uom\":null}\n{\"key\":\"pe8094f29\",\"category\":\"Other\",\"type\":\"String\",\"name\":\"Project Issue Date\",\"uom\":null}\n{\"key\":\"p50756a0d\",\"category\":\"Other\",\"type\":\"String\",\"name\":\"Client Name\",\"uom\":null}\n{\"key\":\"p32791eb0\",\"category\":\"Other\",\"type\":\"String\",\"name\":\"Project Address\",\"uom\":null}\n{\"key\":\"pbf75ced9\",\"category\":\"Other\",\"type\":\"String\",\"name\":\"Project Name\",\"uom\":null}\n{\"key\":\"p8213f1ad\",\"category\":\"Other\",\"type\":\"String\",\"name\":\"Project Number\",\"uom\":null}\n{\"key\":\"pa7275c45\",\"category\":\"__categoryId__\",\"type\":\"Integer\",\"name\":\"CategoryId\",\"uom\":null}\n{\"key\":\"p93e93af5\",\"category\":\"__parent__\",\"type\":\"DbKey\",\"name\":\"parent\",\"uom\":null}\n{\"key\":\"p1d45bc4f\",\"category\":\"Dimensions\",\"type\":\"Double\",\"name\":\"Computation Height\",\"uom\":\"ft\"}\n{\"key\":\"pe01bd7ef\",\"category\":\"Extents\",\"type\":\"String\",\"name\":\"Scope Box\",\"uom\":null}\n{\"key\":\"p9fffb245\",\"category\":\"Materials and Finishes\",\"type\":\"Integer\",\"name\":\"Color\",\"uom\":null}\n{\"key\":\"p1b3b6224\",\"category\":\"Materials and Finishes\",\"type\":\"String\",\"name\":\"Transparency\",\"uom\":null}\n{\"key\":\"pd9fcab30\",\"category\":\"Materials and Finishes\",\"type\":\"Boolean\",\"name\":\"Glow\",\"uom\":null}\n{\"key\":\"pf62e5a3c\",\"category\":\"Structural\",\"type\":\"Double\",\"name\":\"Structural Framing Length Roundoff\",\"uom\":\"ft\"}"
+    },
+    {
+      "raw": "{\n    \"svf2Id\": 68,\n    \"lineageId\": \"a19f7db\",\n    \"externalId\": \"b5c4b31f-321a-418d-a61a-0c8e326aa154-0003f740\",\n    \"lmvId\": 2388,\n    \"databaseId\": \"3747dccf\",\n    \"props\": {\n        \"p00723fa6\": \"Main Model\",\n        \"p09faf620\": \"HSS7X7X.250\",\n        \"p0e507bbe\": \"None\",\n        \"p13b6b3a0\": \"HSS7X7X.250\",\n        \"p153cb174\": \"HSS-Hollow Structural Section-Column [259904]\",\n        \"p188478f2\": 0.485383241976329e0,\n        \"p20d8441e\": \"Structural Columns\",\n        \"p2a0774a1\": 0e0,\n        \"p30db51f9\": \"HSS-Hollow Structural Section-Column\",\n        \"p34ed55db\": \"F-1.2\",\n        \"p3c57b64e\": \"New Construction\",\n        \"p54217060\": \"B10\",\n        \"p5eddc473\": \"Revit Structural Columns\",\n        \"p63ed81bb\": \"Superstructure\",\n        \"p6637df3c\": \"Metal - Steel - ASTM A500 - Grade B - Rectangular and Square\",\n        \"p69a0daab\": 5833333333333334e-16,\n        \"p6aba1771\": 0.01953125e0,\n        \"p751e1b21\": true,\n        \"p773b5bd7\": \"Not Defined\",\n        \"p801ffb64\": 0.0390625e0,\n        \"p809920c7\": \"Square\",\n        \"p953136d0\": 0.04e0,\n        \"pa128dfb9\": \"Vertical\",\n        \"pa57238c6\": \"Minimum Intersection\",\n        \"pa7275c45\": -2001330,\n        \"pa7456b2d\": true,\n        \"pb5b8cef7\": true,\n        \"pbadfe721\": \"BEARING\",\n        \"pbb4f1bfe\": \"None\",\n        \"pc2b858d6\": 22.4e0,\n        \"pddd761c6\": \"FOUNDATION PLAN\",\n        \"pe61a57c3\": 0e0,\n        \"pee815a7f\": \"None\",\n        \"pef87fde6\": 0e0,\n        \"pf4ca60ab\": 5833333333333334e-16,\n        \"pfa63d9d0\": -9803431364364671e-16\n    },\n    \"propsHash\": \"bcde34b3\",\n    \"propsIgnored\": {\n        \"p6a81eafd\": 2386,\n        \"p93e93af5\": 2387\n    },\n    \"geomHash\": \"TCC2Cc9tvO4EVazM73O8BQ\",\n    \"bboxMin\": {\n        \"x\": -1413565004170512e-13,\n        \"y\": -5410244931321833e-14,\n        \"z\": 10000000002097008e-14\n    },\n    \"bboxMax\": {\n        \"x\": -14063352214982766e-14,\n        \"y\": -53379471045994805e-15,\n        \"z\": 11101965298365471e-14\n    },\n    \"views\": [\n        \"e7fda9d5\",\n        \"12fcb372\"\n    ]\n}",
+      "parsed": {
+        "svf2Id": 68,
+        "lineageId": "a19f7db",
+        "externalId": "b5c4b31f-321a-418d-a61a-0c8e326aa154-0003f740",
+        "lmvId": 2388,
+        "databaseId": "3747dccf",
+        "props": {
+          "p00723fa6": "Main Model",
+          "p09faf620": "HSS7X7X.250",
+          "p0e507bbe": "None",
+          "p13b6b3a0": "HSS7X7X.250",
+          "p153cb174": "HSS-Hollow Structural Section-Column [259904]",
+          "p188478f2": 0.485383241976329,
+          "p20d8441e": "Structural Columns",
+          "p2a0774a1": 0,
+          "p30db51f9": "HSS-Hollow Structural Section-Column",
+          "p34ed55db": "F-1.2",
+          "p3c57b64e": "New Construction",
+          "p54217060": "B10",
+          "p5eddc473": "Revit Structural Columns",
+          "p63ed81bb": "Superstructure",
+          "p6637df3c": "Metal - Steel - ASTM A500 - Grade B - Rectangular and Square",
+          "p69a0daab": 0.5833333333333334,
+          "p6aba1771": 0.01953125,
+          "p751e1b21": true,
+          "p773b5bd7": "Not Defined",
+          "p801ffb64": 0.0390625,
+          "p809920c7": "Square",
+          "p953136d0": 0.04,
+          "pa128dfb9": "Vertical",
+          "pa57238c6": "Minimum Intersection",
+          "pa7275c45": -2001330,
+          "pa7456b2d": true,
+          "pb5b8cef7": true,
+          "pbadfe721": "BEARING",
+          "pbb4f1bfe": "None",
+          "pc2b858d6": 22.4,
+          "pddd761c6": "FOUNDATION PLAN",
+          "pe61a57c3": 0,
+          "pee815a7f": "None",
+          "pef87fde6": 0,
+          "pf4ca60ab": 0.5833333333333334,
+          "pfa63d9d0": -0.9803431364364671
+        },
+        "propsHash": "bcde34b3",
+        "propsIgnored": {
+          "p6a81eafd": 2386,
+          "p93e93af5": 2387
+        },
+        "geomHash": "TCC2Cc9tvO4EVazM73O8BQ",
+        "bboxMin": {
+          "x": -141.3565004170512,
+          "y": -54.10244931321833,
+          "z": 100.00000002097008
+        },
+        "bboxMax": {
+          "x": -140.63352214982766,
+          "y": -53.379471045994805,
+          "z": 111.01965298365471
+        },
+        "views": [
+          "e7fda9d5",
+          "12fcb372"
+        ]
+      }
+    },
+    {
+      "raw": "{\n    \"type\": \"OBJECT_CHANGED\",\n    \"svf2Id\": 160,\n    \"externalId\": \"552d2a83-4642-4d5c-8e7f-5de799129097-000d047a\",\n    \"lmvId\": 2699,\n    \"lineageId\": \"2b856593\",\n    \"databaseId\": \"3d0bd846\",\n    \"props\": {\n        \"p002932a2\": 0.0,\n        \"p01bbdcf2\": \"Arch-FIRST FLOOR\",\n        \"p0337db30\": true,\n        \"p09faf620\": \"45 Degree\",\n        \"p13b6b3a0\": \"45 Degree\",\n        \"p153cb174\": \"Round Transition - Angle [853114]\",\n        \"p163279c5\": 0.9999999999999983,\n        \"p1b2aabe1\": 10.018420219779415,\n        \"p20d8441e\": \"Duct Fittings\",\n        \"p240c30c1\": \"Coefficient from ASHRAE Table\",\n        \"p2508403c\": \"12\\\"ø-10\\\"ø\",\n        \"p2bb5b46f\": 0.999999999999999,\n        \"p2c0bde18\": \"Supply Air\",\n        \"p30db51f9\": \"Round Transition - Angle\",\n        \"p3c57b64e\": \"New Construction\",\n        \"p3caeb85d\": 119.99999999999999,\n        \"p440a5662\": 0.9999999999999991,\n        \"p4709f0b8\": \"12\\\"ø-10\\\"ø\",\n        \"p512a7a70\": 0.0,\n        \"p56cded73\": 5.999999999999999,\n        \"p5eddc473\": \"Revit Duct Fittings\",\n        \"p62b7a906\": 5.999999999999999,\n        \"p6de3a8d7\": 5.999999999999999,\n        \"p6e985a38\": 0.0,\n        \"p73d90dae\": 0.0,\n        \"p75e24cff\": 0.9999999999999991,\n        \"p7f055981\": 5.0,\n        \"p86cd967d\": 0.0,\n        \"p875a6521\": \"12\\\"ø-10\\\"ø\",\n        \"p8d70f1c5\": \"339\",\n        \"p8f7dfe92\": 0.0,\n        \"p92dc256f\": 0.041666666666666664,\n        \"p9d8824be\": 0.041666666666666664,\n        \"pa7275c45\": -2008010,\n        \"pab5862eb\": \"Supply Air\",\n        \"pb0457271\": 2.414213562373096,\n        \"pb257d26e\": 0.999999999999999,\n        \"pc9829743\": \"Air Ductwork\",\n        \"pd395474b\": 1.9999999999999982,\n        \"pdbb511ef\": \"SA\",\n        \"pdbc25565\": \"23.75.70.14\",\n        \"pe36ff9a6\": \"Mechanical Supply Air 2\",\n        \"pe49040a7\": 119.99999999999999,\n        \"pe5bcb794\": 45.0,\n        \"pe61a57c3\": 0.0,\n        \"pe62902c4\": 0.999999999999999,\n        \"peda7f9c8\": 2.4142135623730954,\n        \"pee815a7f\": \"None\"\n    },\n    \"propsHash\": \"66a75c85\",\n    \"propsIgnored\": {\n        \"p6a81eafd\": 2545,\n        \"p93e93af5\": 2546\n    },\n    \"geomHash\": \"6w/Zb+NZyMwH6LwMwGKZyw\",\n    \"bboxMin\": {\n        \"x\": -1413565004170512e-13,\n        \"y\": -5410244931321833e-14,\n        \"z\": 10000000002097008e-14\n    },\n    \"bboxMax\": {\n        \"x\": -14063352214982766e-14,\n        \"y\": -53379471045994805e-15,\n        \"z\": 11101965298365471e-14\n    },\n    \"views\": [\n        \"f109b687\",\n        \"f24d458\"\n    ],\n    \"prev\": {\n        \"lmvId\": 2699,\n        \"lineageId\": \"b28c3429\",\n        \"databaseId\": \"936acb06\",\n        \"props\": {\n            \"p1b2aabe1\": 10.5\n        },\n        \"propsHash\": \"ad9828df\",\n        \"propsIgnored\": {\n            \"p6a81eafd\": 2545,\n            \"p93e93af5\": 2546\n        },\n        \"geomHash\": \"4s1yfJZdOhnBu2DdFL4HEw\",\n        \"bboxMin\": {\n            \"x\": -1813565004170512e-13,\n            \"y\": -5410244931321833e-14,\n            \"z\": 10000000002097008e-14\n        },\n        \"bboxMax\": {\n            \"x\": -14063352214982766e-14,\n            \"y\": -52379471045994805e-15,\n            \"z\": 11101965298365471e-14\n        },\n        \"views\": [\n            \"f109b687\",\n            \"8e525582\"\n        ]\n    }\n}",
+      "parsed": {
+        "type": "OBJECT_CHANGED",
+        "svf2Id": 160,
+        "externalId": "552d2a83-4642-4d5c-8e7f-5de799129097-000d047a",
+        "lmvId": 2699,
+        "lineageId": "2b856593",
+        "databaseId": "3d0bd846",
+        "props": {
+          "p002932a2": 0,
+          "p01bbdcf2": "Arch-FIRST FLOOR",
+          "p0337db30": true,
+          "p09faf620": "45 Degree",
+          "p13b6b3a0": "45 Degree",
+          "p153cb174": "Round Transition - Angle [853114]",
+          "p163279c5": 0.9999999999999983,
+          "p1b2aabe1": 10.018420219779415,
+          "p20d8441e": "Duct Fittings",
+          "p240c30c1": "Coefficient from ASHRAE Table",
+          "p2508403c": "12\"ø-10\"ø",
+          "p2bb5b46f": 0.999999999999999,
+          "p2c0bde18": "Supply Air",
+          "p30db51f9": "Round Transition - Angle",
+          "p3c57b64e": "New Construction",
+          "p3caeb85d": 119.99999999999999,
+          "p440a5662": 0.9999999999999991,
+          "p4709f0b8": "12\"ø-10\"ø",
+          "p512a7a70": 0,
+          "p56cded73": 5.999999999999999,
+          "p5eddc473": "Revit Duct Fittings",
+          "p62b7a906": 5.999999999999999,
+          "p6de3a8d7": 5.999999999999999,
+          "p6e985a38": 0,
+          "p73d90dae": 0,
+          "p75e24cff": 0.9999999999999991,
+          "p7f055981": 5,
+          "p86cd967d": 0,
+          "p875a6521": "12\"ø-10\"ø",
+          "p8d70f1c5": "339",
+          "p8f7dfe92": 0,
+          "p92dc256f": 0.041666666666666664,
+          "p9d8824be": 0.041666666666666664,
+          "pa7275c45": -2008010,
+          "pab5862eb": "Supply Air",
+          "pb0457271": 2.414213562373096,
+          "pb257d26e": 0.999999999999999,
+          "pc9829743": "Air Ductwork",
+          "pd395474b": 1.9999999999999982,
+          "pdbb511ef": "SA",
+          "pdbc25565": "23.75.70.14",
+          "pe36ff9a6": "Mechanical Supply Air 2",
+          "pe49040a7": 119.99999999999999,
+          "pe5bcb794": 45,
+          "pe61a57c3": 0,
+          "pe62902c4": 0.999999999999999,
+          "peda7f9c8": 2.4142135623730954,
+          "pee815a7f": "None"
+        },
+        "propsHash": "66a75c85",
+        "propsIgnored": {
+          "p6a81eafd": 2545,
+          "p93e93af5": 2546
+        },
+        "geomHash": "6w/Zb+NZyMwH6LwMwGKZyw",
+        "bboxMin": {
+          "x": -141.3565004170512,
+          "y": -54.10244931321833,
+          "z": 100.00000002097008
+        },
+        "bboxMax": {
+          "x": -140.63352214982766,
+          "y": -53.379471045994805,
+          "z": 111.01965298365471
+        },
+        "views": [
+          "f109b687",
+          "f24d458"
+        ],
+        "prev": {
+          "lmvId": 2699,
+          "lineageId": "b28c3429",
+          "databaseId": "936acb06",
+          "props": {
+            "p1b2aabe1": 10.5
+          },
+          "propsHash": "ad9828df",
+          "propsIgnored": {
+            "p6a81eafd": 2545,
+            "p93e93af5": 2546
+          },
+          "geomHash": "4s1yfJZdOhnBu2DdFL4HEw",
+          "bboxMin": {
+            "x": -181.3565004170512,
+            "y": -54.10244931321833,
+            "z": 100.00000002097008
+          },
+          "bboxMax": {
+            "x": -140.63352214982766,
+            "y": -52.379471045994805,
+            "z": 111.01965298365471
+          },
+          "views": [
+            "f109b687",
+            "8e525582"
+          ]
+        }
+      }
+    }
+  ]
+}

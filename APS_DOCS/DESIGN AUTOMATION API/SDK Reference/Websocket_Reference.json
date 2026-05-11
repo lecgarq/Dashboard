@@ -1,0 +1,73 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/websocket",
+    "scrapedAt": "2026-05-08T17:44:56.146Z",
+    "category": "SDK Reference",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Websocket API Reference",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "action",
+        "data",
+        "example",
+        "Comment"
+      ],
+      "rows": [
+        {
+          "action": "error",
+          "data": "string",
+          "example": "{“action”: “error”,\n“data”: “Invalid payload. Unexpected character encountered while parsing value:\n\n\nPath ‘’, line 0, position 0.”\n\n\n\n\n}",
+          "Comment": "Sent when an error is\nencountered during workitem\nprocessing."
+        },
+        {
+          "action": "status",
+          "data": "same as response body of GET workitems/:id",
+          "example": "{“action”: “status”,\n“data”: {\n\n“status”: “pending”,\n“stats”: {\n\n“timeQueued”: “2021-02-19T03:09:01.4667236Z”\n\n},\n“id”: “598f34b49d264042a14373deb2d5eff0”\n\n}\n\n\n}",
+          "Comment": "Sent when the workitem is\naccepted and when the\nworkitem is completed."
+        },
+        {
+          "action": "progress",
+          "data": "same as payload of OnProgress.",
+          "example": "{“action”: “progress”,\n“data”: {\n\n“id”: “b45e43a13a0348d482c280146d1be0ea”,\n“progress”: “heartbeat”\n\n}\n\n\n}",
+          "Comment": "May be sent 0 or more\ntimes as the workitem\nprogresses."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "{\n   \"action\" : \"post-workitem\",\n   \"data\" : <workitem>,\n   \"headers\" : <key_value_pairs>,\n   \"conversationId\" : <conversation identifier>\n}"
+    },
+    {
+      "raw": "{\n   \"headers\": {\"Authorization\" : \"Bearer secret...\" },\n   \"action\" : \"post-workitem\",\n   \"data\" : {\n           \"activityId\" : \"Autodesk.Nop+Latest\"\n       }\n}",
+      "parsed": {
+        "headers": {
+          "Authorization": "Bearer secret..."
+        },
+        "action": "post-workitem",
+        "data": {
+          "activityId": "Autodesk.Nop+Latest"
+        }
+      }
+    },
+    {
+      "raw": "{\n   \"action\" = <action>\n   \"data\" = <data>\n}"
+    },
+    {
+      "raw": "{\"action\":\"status\", \"data\":{\"status\":\"pending\" ...}}"
+    },
+    {
+      "raw": "{\"action\":\"progress\", \"data\":{}}",
+      "parsed": {
+        "action": "progress",
+        "data": {}
+      }
+    },
+    {
+      "raw": "{\"action\":\"status\", \"data\":{\"status\":\"success\" ...}}"
+    }
+  ]
+}

@@ -1,0 +1,139 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/tutorials/fusion/task3-upload-appbundle",
+    "scrapedAt": "2026-05-08T17:42:13.222Z",
+    "category": "Tutorials",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Task 3 – Upload an AppBundle to the Automation Service",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "HTTP Request",
+        "Description"
+      ],
+      "rows": [
+        {
+          "HTTP Request": "POST /appbundles",
+          "Description": "Registers a new AppBundle."
+        },
+        {
+          "HTTP Request": "POST /appbundles/{id}/aliases",
+          "Description": "Creates a new alias for the AppBundle."
+        },
+        {
+          "HTTP Request": "POST /appbundles/{id}/versions",
+          "Description": "Creates a new version of the AppBundle."
+        },
+        {
+          "HTTP Request": "PATCH /appbundles/{id}/aliases/{aliasId}",
+          "Description": "Modify alias details."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "File",
+        "Description"
+      ],
+      "rows": [
+        {
+          "File": "PackageContents.xml",
+          "Description": "Contains a description of the add-in, including the GUIDs and relative path to the add-in. For more information on\nPackageContents.xml, see PackageContents.xml Format Reference"
+        },
+        {
+          "File": "main.ts",
+          "Description": "The TypeScript file that will be executed with the fusion api"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Attribute",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Attribute": "id",
+          "Description": "The name given to the AppBundle."
+        },
+        {
+          "Attribute": "engine",
+          "Description": "The engine that the AppBundle must be loaded on; Fusion latest in this case.\nFor more information on engine aliases, see the Additional Notes section at the bottom of this page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Attribute",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Attribute": "endpointURL",
+          "Description": "The URL you must upload the AppBundle zip file to."
+        },
+        {
+          "Attribute": "version",
+          "Description": "The version number of the AppBundle created by the POST request. For new AppBundles, the returned version is always 1."
+        },
+        {
+          "Attribute": "formData",
+          "Description": "The form data that must accompany the AppBundle when you upload it to endpointURL. formData expires in 3600 seconds."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "ConfigureDesign.zip\n|-- ConfigureDesign\n|   |-- PackageContents.xml\n|   |-- Contents\n|   |   |-- main.ts"
+    },
+    {
+      "raw": "curl -X POST \\\n  'https://developer.api.autodesk.com/da/us-east/v3/appbundles' \\\n  -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"id\": \"ConfigureDesignAppBundle\",\n        \"engine\": \"Autodesk.Fusion+Latest\",\n        \"description\": \"My first fusion appbundle based on the latest Fusion engine\"\n      }'",
+      "parsed": {
+        "id": "ConfigureDesignAppBundle",
+        "engine": "Autodesk.Fusion+Latest",
+        "description": "My first fusion appbundle based on the latest Fusion engine"
+      }
+    },
+    {
+      "raw": "{\n    \"uploadParameters\": {\n        \"endpointURL\": \"https://dasprod-store.s3.amazonaws.com\",\n        \"formData\": {\n            \"key\": \"apps/<YOUR_NICKNAME>/ConfigureDesignAppBundle/1\",\n            \"content-type\": \"application/octet-stream\",\n            \"policy\": \"eyJleHBpcmF0aW9uIjo... (truncated)\",\n            \"success_action_status\": \"200\",\n            \"success_action_redirect\": \"\",\n            \"x-amz-signature\": \"27e07941f952... (truncated)\",\n            \"x-amz-credential\": \"ASIATGVJZKM3N... (truncated)\",\n            \"x-amz-algorithm\": \"AWS4-HMAC-SHA256\",\n            \"x-amz-date\": \"20191128T083159Z\",\n            \"x-amz-server-side-encryption\": \"AES256\",\n            \"x-amz-security-token\": \"IQoJb3JpZ2luX2VjEGgaC... (truncated)\"\n        }\n    },\n    \"id\": \"<YOUR_NICKNAME>.ConfigureDesignAppBundle\",\n    \"engine\": \"Autodesk.Fusion+Latest\",\n    \"description\": \"Change Parameters AppBundle based on the latest Fusion engine\",\n    \"version\": 1\n}",
+      "parsed": {
+        "uploadParameters": {
+          "endpointURL": "https://dasprod-store.s3.amazonaws.com",
+          "formData": {
+            "key": "apps/<YOUR_NICKNAME>/ConfigureDesignAppBundle/1",
+            "content-type": "application/octet-stream",
+            "policy": "eyJleHBpcmF0aW9uIjo... (truncated)",
+            "success_action_status": "200",
+            "success_action_redirect": "",
+            "x-amz-signature": "27e07941f952... (truncated)",
+            "x-amz-credential": "ASIATGVJZKM3N... (truncated)",
+            "x-amz-algorithm": "AWS4-HMAC-SHA256",
+            "x-amz-date": "20191128T083159Z",
+            "x-amz-server-side-encryption": "AES256",
+            "x-amz-security-token": "IQoJb3JpZ2luX2VjEGgaC... (truncated)"
+          }
+        },
+        "id": "<YOUR_NICKNAME>.ConfigureDesignAppBundle",
+        "engine": "Autodesk.Fusion+Latest",
+        "description": "Change Parameters AppBundle based on the latest Fusion engine",
+        "version": 1
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n  'https://dasprod-store.s3.amazonaws.com' \\\n  -H 'Cache-Control: no-cache' \\\n  -F key=apps/da4fusion_app/ConfigureDesignAppBundle/1 \\\n  -F content-type=application/octet-stream \\\n  -F policy=eyJleHBpcmF0aW9uIjoi... (truncated)  \\\n  -F success_action_status=200 \\\n  -F x-amz-signature=27e07941f952d73d57eca... (truncated)  \\\n  -F x-amz-credential=ASIATGVJZKM3NNGDUZMR/20191128/us-east-1/s3/aws4_request/ \\\n  -F x-amz-algorithm=AWS4-HMAC-SHA256 \\\n  -F x-amz-date=20191128T083159Z \\\n  -F x-amz-server-side-encryption=AES256 \\\n  -F 'x-amz-security-token=IQoJb3JpZ2luX2VjEGgaCXVzLWVhc3QtMSJ... (truncated) ' \\\n  -F success_action_redirect= \\\n  -F file= @path/to/your/Script/ConfigureDesign.zip"
+    },
+    {
+      "raw": "curl -X POST \\\n  'https://developer.api.autodesk.com/da/us-east/v3/appbundles/ConfigureDesignAppBundle/aliases' \\\n    -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -d '{\n          \"version\": 1,\n          \"id\": \"my_working_version\"\n        }'",
+      "parsed": {
+        "version": 1,
+        "id": "my_working_version"
+      }
+    }
+  ]
+}

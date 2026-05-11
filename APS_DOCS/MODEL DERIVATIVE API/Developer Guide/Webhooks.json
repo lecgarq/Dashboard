@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/webhooks",
+    "scrapedAt": "2026-05-08T18:21:24.594Z",
+    "category": "Developer Guide",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Webhooks",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "System",
+        "Event",
+        "Description"
+      ],
+      "rows": [
+        {
+          "System": "derivative",
+          "Event": "extraction.finished",
+          "Description": "When a job is completed."
+        },
+        {
+          "System": "derivative",
+          "Event": "extraction.updated",
+          "Description": "When a job is in progress."
+        }
+      ]
+    }
+  ]
+}

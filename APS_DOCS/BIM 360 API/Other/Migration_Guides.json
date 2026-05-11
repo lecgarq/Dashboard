@@ -1,0 +1,1397 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/overview/migration-guides",
+    "scrapedAt": "2026-05-08T17:46:37.504Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Migration Guide",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/users/me",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/users/me",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attributes",
+          "Issues V1": "role, name, workflow_roles, workflow_type",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "is_project_admin",
+          "Issues V2": "isProjectAdmin",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "quality_issues",
+          "Issues V2": "issues",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "permitted_statuses",
+          "Issues V2": "permittedStatuses",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "permitted_attributes",
+          "Issues V2": "permittedAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "permissionLevels",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "canManageTemplates",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/ng-issue-types",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/issue-types",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameters",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[deletedAt]",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[updatedAt]",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "Pagination - limit, offset",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "createdBy",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "updatedBy",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "deletedBy",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/root-causes",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/issue-root-cause-categories",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameters",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "fields[root_causes]",
+          "Issues V2": "include=rootcauses",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[deletedAt]",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[updatedAt]",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "createdBy",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "updatedBy",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "deletedBy",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute",
+          "Issues V1": "",
+          "Issues V2": "id, title, isActive, permittedAction, permittedAttributes, createdAt, CreateBy, updatedAt, updatedBy, deletedAt, deletedBy",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/quality-issues",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/issues",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "include",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "page[limit], page[offset]",
+          "Issues V2": "limit, offset",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "fields []",
+          "Issues V2": "fields",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "sort",
+          "Issues V2": "sortBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[synced_after]",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[target_urn]",
+          "Issues V2": "filter[linkedDocumentUrn]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[created_by]",
+          "Issues V2": "filter[createdBy]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[ng_issue_type_id]",
+          "Issues V2": "filter[issueTypeId]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[ng_issue_subtype_id]",
+          "Issues V2": "filter[issueSubtypeId]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[due_date]",
+          "Issues V2": "filter[dueDate]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[created_at]",
+          "Issues V2": "filter[createdAt]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[ng_issue_type_id]",
+          "Issues V2": "filter[issueTypeId]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[ng_issue_subtype_id]",
+          "Issues V2": "filter[issueSubtypeId]",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[id], [qualityUrn], [status], [openedAt], [openedBy], [updatedAt]. [updatedBy], [assignTo], [rootCauseId], [locationId], [subLocationId], [closedBy], [closedAt], [title], [search], [displayId], [assignedToType], [ownerId], [customAttributes]",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "data",
+          "Issues V2": "results",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "due_date",
+          "Issues V2": "dueDate",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "root_cause_id",
+          "Issues V2": "rootCauseId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "comment_count",
+          "Issues V2": "commentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attachment_count",
+          "Issues V2": "attachmentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_statuses",
+          "Issues V2": "permittedStatus",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_attributes",
+          "Issues V2": "permittedAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "custom_attributes",
+          "Issues V2": "customAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_by",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "closed_by",
+          "Issues V2": "closedBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_type_id",
+          "Issues V2": "issueTypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_subtype_id",
+          "Issues V2": "issueSubtypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "lbs_location",
+          "Issues V2": "locationId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "location_description",
+          "Issues V2": "locationDetails",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "owner",
+          "Issues V2": "ownerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "identifier",
+          "Issues V2": "displayId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "quality_urns",
+          "Issues V2": "links",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_type, issues_type_id, issue_sub_type, relationships, attachments_attributes, comments_attributes, root_cause, synced_at, close_version, close_at, closed_by, starting_version, markup_metadata, answer, answered_at, answered_by tags, target_urn, target_urn_page, collection_urn, pushpin_attributes, sheet_metadata, trades",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "containerId, openedBy, openedAt, linkedDocuments, officialResponse: {response, respondedAt, respondedBy}",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "POST /issues/v1/containers/:container_id/quality-issues",
+          "Issues V2": "POST /issues/v2/containers/{containerId}/issues",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "fields[quality_issues]",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "type, data, attributes, created_at, starting_version",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "locationId, linkedDocuments, officialResponse, customAttributes, snapshotUrn",
+          "Issues V2": "",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "owner",
+          "Issues V2": "ownerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "due_date",
+          "Issues V2": "dueDate",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "assigned_to",
+          "Issues V2": "assignedTo",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "root_cause_id",
+          "Issues V2": "rootCauseId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "location_description",
+          "Issues V2": "locationDescription",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "assigned_to_type",
+          "Issues V2": "assignedToType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "ng_issue_subtype_id",
+          "Issues V2": "issueSubtypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "due_date",
+          "Issues V2": "dueDate",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "root_cause_id",
+          "Issues V2": "rootCauseId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "comment_count",
+          "Issues V2": "commentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attachment_count",
+          "Issues V2": "attachmentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_statuses",
+          "Issues V2": "permittedStatus",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_attributes",
+          "Issues V2": "permittedAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "custom_attributes",
+          "Issues V2": "customAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_by",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "closed_by",
+          "Issues V2": "closedBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_type_id",
+          "Issues V2": "issueTypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_subtype_id",
+          "Issues V2": "issueSubtypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "lbs_location",
+          "Issues V2": "locationId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "location_description",
+          "Issues V2": "locationDetails",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "owner",
+          "Issues V2": "ownerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "identifier",
+          "Issues V2": "displayId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "quality_urns",
+          "Issues V2": "links",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_type, issues_type_id, issue_sub_type, relationships, attachments_attributes, comments_attributes, root_cause, synced_at, close_version, close_at, closed_by, starting_version, markup_metadata, answer, answered_at, answered_by tags, target_urn, target_urn_page, collection_urn, pushpin_attributes, sheet_metadata, trades",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "containerId, openedBy, openedAt, linkedDocuments, officialResponse: {response, respondedAt, respondedBy}",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Request Attributes",
+        "Issues v1",
+        "Issues v2"
+      ],
+      "rows": [
+        {
+          "Request Attributes": "type",
+          "Issues v1": "required",
+          "Issues v2": "x"
+        },
+        {
+          "Request Attributes": "title",
+          "Issues v1": "required",
+          "Issues v2": "required"
+        },
+        {
+          "Request Attributes": "ng_issue_type_id",
+          "Issues v1": "required",
+          "Issues v2": "x"
+        },
+        {
+          "Request Attributes": "ng_issue_subtype_id",
+          "Issues v1": "required",
+          "Issues v2": "x"
+        },
+        {
+          "Request Attributes": "status",
+          "Issues v1": "x",
+          "Issues v2": "required"
+        },
+        {
+          "Request Attributes": "issueSubtypeId",
+          "Issues v1": "x",
+          "Issues v2": "required"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "PATCH /issues/v1/containers/:container_id/quality-issues/:id",
+          "Issues V2": "PATCH /issues/v2/containers/{containerId}/issues/{issueId}",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "id, type, close_version",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "due_date",
+          "Issues V2": "dueDate",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "assign_to",
+          "Issues V2": "assignTo",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "assign_to_type",
+          "Issues V2": "assignToType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "root_cause_id",
+          "Issues V2": "rootCauseId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "ng_issue_type_id",
+          "Issues V2": "issueTypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "ng_issue_subtype_id",
+          "Issues V2": "issueSubtypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "lbs_location",
+          "Issues V2": "locationId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "location_description",
+          "Issues V2": "locationDetails",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "owner",
+          "Issues V2": "ownerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "quality_urns",
+          "Issues V2": "links",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "",
+          "Issues V2": "linkedDocuments",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "",
+          "Issues V2": "customAttributes",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "",
+          "Issues V2": "snapshotUrn",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "",
+          "Issues V2": "officialResponse: {response, respondedAt, respondedBy}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "due_date",
+          "Issues V2": "dueDate",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "root_cause_id",
+          "Issues V2": "rootCauseId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "comment_count",
+          "Issues V2": "commentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attachment_count",
+          "Issues V2": "attachmentCount",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_statuses",
+          "Issues V2": "permittedStatus",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_attributes",
+          "Issues V2": "permittedAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "custom_attributes",
+          "Issues V2": "customAttributes",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_by",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "closed_by",
+          "Issues V2": "closedBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_type_id",
+          "Issues V2": "issueTypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "ng_issue_subtype_id",
+          "Issues V2": "issueSubtypeId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "lbs_location",
+          "Issues V2": "locationId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "location_description",
+          "Issues V2": "locationDetails",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "owner",
+          "Issues V2": "ownerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "identifier",
+          "Issues V2": "displayId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "quality_urns",
+          "Issues V2": "links",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_type, issues_type_id, issue_sub_type, relationships, attachments_attributes, comments_attributes, root_cause, synced_at, close_version, close_at, closed_by, starting_version, markup_metadata, answer, answered_at, answered_by tags, target_urn, target_urn_page, collection_urn, pushpin_attributes, sheet_metadata, trades",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "containerId, openedBy, openedAt, linkedDocuments, officialResponse: {response, respondedAt, respondedBy}",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/quality-issues/:id/comments",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/issues/{issueId}/comments",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "limit, offset",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "relationships, links, type, synced_at",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_at",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "createdBy, deletedAt, permittedActions, permittedAttributes",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "POST /issues/v1/containers/:container_id/comments",
+          "Issues V2": "POST /issues/v2/containers/{containerId}/issues/{issueId}/comments",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "limit, offset",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "fields[comments]",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attributes (request)",
+          "Issues V1": "type, attributes, issue_id",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "relationships, links, type, synced_at",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_at",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "createdBy, deletedAt, permittedActions, permittedAttributes",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "GET /issues/v1/containers/:container_id/quality-issues/:id/attachments",
+          "Issues V2": "GET /issues/v2/containers/{containerId}/issues/{issueId}/attachments",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "id",
+          "Issues V2": "issueId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "filter[synced_after], filter[created_at], page[limit], page[offset], include=, fields[attachments]=, sort",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "filter[status]=``completed``, pre-upload, file-uploaded",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "",
+          "Issues V2": "limit, offset",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "type, relationships, links, synced_at, url, url_page, urn_version",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "pagination: {limit, offset, totalResults}",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_id",
+          "Issues V2": "issueId",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_at",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attachement_type",
+          "Issues V2": "attachmentType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "markup_metadata",
+          "Issues V2": "markupMetadata",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "urn_type",
+          "Issues V2": "urnType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "deletedAt, deletedBy, permittedAttributes, wipUrn",
+          "Comments": "New"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "category",
+        "Issues V1",
+        "Issues V2",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "category": "Method and URI",
+          "Issues V1": "POST /issues/v1/containers/:container_id/attachments",
+          "Issues V2": "POST /issues/v2/containers/{containerId}/issues/{issueId}/attachments",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "container_id",
+          "Issues V2": "containerId",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "URI parameter",
+          "Issues V1": "",
+          "Issues V2": "issueId",
+          "Comments": "New"
+        },
+        {
+          "category": "Query String Parameter",
+          "Issues V1": "fields[attachments]",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "type, issue_id",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (request)",
+          "Issues V1": "urn_type",
+          "Issues V2": "urnType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "type, relationships, links, synced_at, url, url_page, urn_version",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attributes",
+          "Issues V2": "",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "issue_id",
+          "Issues V2": "issueId",
+          "Comments": "Deleted"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_at",
+          "Issues V2": "createdAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "updated_at",
+          "Issues V2": "updatedAt",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "created_by",
+          "Issues V2": "createdBy",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "attachement_type",
+          "Issues V2": "attachmentType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "markup_metadata",
+          "Issues V2": "markupMetadata",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "permitted_actions",
+          "Issues V2": "permittedActions",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "urn_type",
+          "Issues V2": "urnType",
+          "Comments": "Replaced"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "deletedAt, deletedBy, permittedAttributes, wipUrn",
+          "Comments": "New"
+        },
+        {
+          "category": "Attribute (response)",
+          "Issues V1": "",
+          "Issues V2": "resourceUrns, urnPage, urnVersion, setWipUrnRetries, clientVersion",
+          "Comments": "New"
+        }
+      ]
+    }
+  ]
+}

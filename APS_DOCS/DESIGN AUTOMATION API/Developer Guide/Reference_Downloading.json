@@ -1,0 +1,121 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/reference-downloading",
+    "scrapedAt": "2026-05-08T17:39:17.411Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Reference downloading",
+  "codeExamples": [
+    {
+      "raw": "{\n    \"activityId\": \"AutoCAD.PlotToPDF+prod\",\n    \"arguments\": {\n        \"HostDwg\": {\n            \"url\": \"https://developer.api.autodesk.com/data/v1/projects/b.25b50afe-1892-46b0-8ae6-be035605fd51/items/urn:adsk.wipprod:dm.lineage:CC-mn_2VQYunOdGi1cVdlQ\",\n            \"verb\": \"refget\",\n            \"headers\" : {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n        },\n        \"Result\": {\n            \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>\",\n            \"verb\": \"put\",\n            \"headers\": {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n        }\n    }\n}",
+      "parsed": {
+        "activityId": "AutoCAD.PlotToPDF+prod",
+        "arguments": {
+          "HostDwg": {
+            "url": "https://developer.api.autodesk.com/data/v1/projects/b.25b50afe-1892-46b0-8ae6-be035605fd51/items/urn:adsk.wipprod:dm.lineage:CC-mn_2VQYunOdGi1cVdlQ",
+            "verb": "refget",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          },
+          "Result": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"activityId\": \"AutoCAD.PlotToPDF+prod\",\n    \"arguments\": {\n        \"HostDwg\": {\n            \"url\": \"https://graph.microsoft.com/v1.0/drives/b!yh3w1z5lDUiRj9FjFTqOKg6TjrSDZGhKiMwhxVVAGCNzMbRRCKDbQosdty60L_eP/items/01CX7JXRP4STO4IQL4S5E3LLYD42ALKCRS\",\n            \"verb\": \"refget\",\n            \"headers\" : {\n                \"Authorization\": \"Bearer <A ONEDRIVE TOKEN>\"\n            }\n        },\n        \"Result\": {\n            \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>\",\n            \"verb\": \"put\",\n            \"headers\": {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n\n        }\n    }\n}",
+      "parsed": {
+        "activityId": "AutoCAD.PlotToPDF+prod",
+        "arguments": {
+          "HostDwg": {
+            "url": "https://graph.microsoft.com/v1.0/drives/b!yh3w1z5lDUiRj9FjFTqOKg6TjrSDZGhKiMwhxVVAGCNzMbRRCKDbQosdty60L_eP/items/01CX7JXRP4STO4IQL4S5E3LLYD42ALKCRS",
+            "verb": "refget",
+            "headers": {
+              "Authorization": "Bearer <A ONEDRIVE TOKEN>"
+            }
+          },
+          "Result": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"activityId\": \"AutoCAD.PlotToPDF+prod\",\n    \"arguments\": {\n        \"HostDwg\": {\n            \"url\": \"das://dropbox/id:agwbUr_7ed4AAAAAAABiqQ\",\n            \"verb\": \"refget\",\n            \"headers\" : {\n                \"Authorization\": \"Bearer <A DROPBOX TOKEN>\"\n            }\n        },\n        \"Result\": {\n            \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>\",\n            \"verb\": \"put\",\n            \"headers\": {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n\n        }\n    }\n}",
+      "parsed": {
+        "activityId": "AutoCAD.PlotToPDF+prod",
+        "arguments": {
+          "HostDwg": {
+            "url": "das://dropbox/id:agwbUr_7ed4AAAAAAABiqQ",
+            "verb": "refget",
+            "headers": {
+              "Authorization": "Bearer <A DROPBOX TOKEN>"
+            }
+          },
+          "Result": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"activityId\": \"AutoCAD.PlotToPDF+prod\",\n    \"arguments\": {\n        \"HostDwg\": {\n            \"url\": \"https://www.googleapis.com/drive/v3/files/1ZJ6CdpVbFne6ShOIi_rq50gbo0z7eQj1\",\n            \"verb\": \"refget\",\n            \"headers\" : {\n                \"Authorization\": \"Bearer <A GOOGLE TOKEN>\"\n            }\n        },\n        \"Result\": {\n            \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>\",\n            \"verb\": \"put\",\n            \"headers\": {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n\n        }\n    }\n}",
+      "parsed": {
+        "activityId": "AutoCAD.PlotToPDF+prod",
+        "arguments": {
+          "HostDwg": {
+            "url": "https://www.googleapis.com/drive/v3/files/1ZJ6CdpVbFne6ShOIi_rq50gbo0z7eQj1",
+            "verb": "refget",
+            "headers": {
+              "Authorization": "Bearer <A GOOGLE TOKEN>"
+            }
+          },
+          "Result": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"activityId\": \"AutoCAD.PlotToPDF+prod\",\n    \"arguments\": {\n        \"HostDwg\": {\n            \"url\": \"https://api.box.com/2.0/files/1778774299124\",\n            \"verb\": \"refget\",\n            \"headers\" : {\n                \"Authorization\": \"Bearer <A BOX TOKEN>\"\n            }\n        },\n        \"Result\": {\n            \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>\",\n            \"verb\": \"put\",\n            \"headers\": {\n                \"Authorization\": \"Bearer <AN AUTODESK TOKEN>\"\n            }\n\n        }\n    }\n}",
+      "parsed": {
+        "activityId": "AutoCAD.PlotToPDF+prod",
+        "arguments": {
+          "HostDwg": {
+            "url": "https://api.box.com/2.0/files/1778774299124",
+            "verb": "refget",
+            "headers": {
+              "Authorization": "Bearer <A BOX TOKEN>"
+            }
+          },
+          "Result": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <AN AUTODESK TOKEN>"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

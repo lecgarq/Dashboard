@@ -1,0 +1,188 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/relationship-service-v2-delete-relationships-POST",
+    "scrapedAt": "2026-05-08T18:05:04.372Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/:containerId/relationships:delete",
+  "httpMethod": "POST",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:delete",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/bim360/relationship/v2/containers/:containerId/relationships:delete"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The project ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "array: string: UUID*array: string: UUID",
+          "col_1": "The list of relationships (UUIDs) to delete.\nMin items: 1 Max items: 50"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "415Unsupported Media Type",
+          "col_1": "The Content-Type header must be application/json."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "deletedarray: string: UUID",
+          "col_1": "The list of UUIDs that uniquely identify the deleted relationships."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field that failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:delete' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"d98c1dd4-008f-04b2-e980-0998ecf8427e\"\n         ]'"
+    },
+    {
+      "raw": "{\n  \"deleted\": [\n    \"d98c1dd4-008f-04b2-e980-0998ecf8427e\"\n  ]\n}",
+      "parsed": {
+        "deleted": [
+          "d98c1dd4-008f-04b2-e980-0998ecf8427e"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

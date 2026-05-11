@@ -1,0 +1,146 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/document-management/download-document-s3",
+    "scrapedAt": "2026-05-08T17:49:17.585Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Download Files from BIM 360 Document Management (new)",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/project/v1/hubs\""
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/project/v1/hubs\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"hubs\",\n      \"id\": \"b.cGVyc29uYWw6cGUyOWNjZjMy\",\n      \"attributes\": {\n        \"name\": \"My First Account\",\n        \"extension\": {\n          \"type\": \"hubs:autodesk.bim360:Account\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/hubs:autodesk.bim360:Account-1.0\"\n          },\n          \"data\": {}\n        }\n      }\n    }\n  ]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/project/v1/hubs"
+          }
+        },
+        "data": [
+          {
+            "type": "hubs",
+            "id": "b.cGVyc29uYWw6cGUyOWNjZjMy",
+            "attributes": {
+              "name": "My First Account",
+              "extension": {
+                "type": "hubs:autodesk.bim360:Account",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/hubs:autodesk.bim360:Account-1.0"
+                },
+                "data": {}
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects\""
+    },
+    {
+      "raw": "{\n       \"jsonapi\": {\n               \"version\": \"1.0\"\n       },\n       \"links\": {\n               \"self\": {\n                       \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects\"\n               }\n       },\n       \"data\": [{\n               \"type\": \"projects\",\n               \"id\": \"b.cGVyc29uYWw6d2l\",\n               \"attributes\": {\n                       \"name\": \"My First Project\",\n                       \"extension\": {\n                               \"type\": \"projects:autodesk.core:Project\",\n                               \"version\": \"1.0\"\n                       }\n               }\n       }]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects"
+          }
+        },
+        "data": [
+          {
+            "type": "projects",
+            "id": "b.cGVyc29uYWw6d2l",
+            "attributes": {
+              "name": "My First Project",
+              "extension": {
+                "type": "projects:autodesk.core:Project",
+                "version": "1.0"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\"\n            \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.cGVyc29uYWw6d2l/topFolders\""
+    },
+    {
+      "raw": "{\n      \"jsonapi\": {\n              \"version\": \"1.0\"\n      },\n\n      \"data\": [{\n              \"type\": \"folders\",\n              \"id\": \"urn:adsk.wipprod:fs.folder:co.BJU3PTc4Sd2CmXM492XUiA\",\n              \"attributes\": {\n                      \"name\": \"Project Files\",\n                      \"displayName\": \"Project Files\",\n                      \"createTime\": \"2017-07-17T13:06:56.0000000Z\",\n                      \"createUserId\": \"\",\n                      \"createUserName\": \"\",\n                      \"lastModifiedTime\": \"2017-09-24T07:46:08.0000000Z\",\n                      \"lastModifiedUserId\": \"X9WYLGPNCHSL\",\n                      \"lastModifiedUserName\": \"John Smith\",\n                      \"objectCount\": 4,\n                      \"hidden\": false,\n                      \"extension\": {\n                              \"type\": \"folders:autodesk.bim360:Folder\",\n                              \"version\": \"1.0\",\n                              \"schema\": {\n                                      \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/folders:autodesk.bim360:Folder-1.0\"\n                              },\n                              \"data\": {\n                                      \"visibleTypes\": [\n                                              \"items:autodesk.bim360:File\"\n                                      ],\n                                      \"actions\": [\n                                              \"CONVERT\"\n                                      ],\n                                      \"allowedTypes\": [\n                                              \"items:autodesk.bim360:File\",\n                                              \"folders:autodesk.bim360:Folder\"\n                                      ]\n                              }\n                      }\n              }\n      }]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "data": [
+          {
+            "type": "folders",
+            "id": "urn:adsk.wipprod:fs.folder:co.BJU3PTc4Sd2CmXM492XUiA",
+            "attributes": {
+              "name": "Project Files",
+              "displayName": "Project Files",
+              "createTime": "2017-07-17T13:06:56.0000000Z",
+              "createUserId": "",
+              "createUserName": "",
+              "lastModifiedTime": "2017-09-24T07:46:08.0000000Z",
+              "lastModifiedUserId": "X9WYLGPNCHSL",
+              "lastModifiedUserName": "John Smith",
+              "objectCount": 4,
+              "hidden": false,
+              "extension": {
+                "type": "folders:autodesk.bim360:Folder",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/folders:autodesk.bim360:Folder-1.0"
+                },
+                "data": {
+                  "visibleTypes": [
+                    "items:autodesk.bim360:File"
+                  ],
+                  "actions": [
+                    "CONVERT"
+                  ],
+                  "allowedTypes": [
+                    "items:autodesk.bim360:File",
+                    "folders:autodesk.bim360:Folder"
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\"\n    \"https://developer.api.autodesk.com/data/v1/projects/b.cGVyc29uYWw6d2l/folders/urn:adsk.wipprod:fs.folder:co.BJU3PTc4Sd2CmXM492XUiA/contents\""
+    },
+    {
+      "raw": "{\n      \"jsonapi\": {\n              \"version\": \"1.0\"\n      },\n      \"included\": [{\n              \"type\": \"versions\",\n              \"id\": \"urn:adsk.wipprod:fs.file:vf.II0yMfUPQl6DaOl5z-dhcg?version=1\",\n              \"attributes\": {\n                      \"name\": \"My First File.dwg\",\n                      \"displayName\": \"My First File.dwg\",\n                      \"createTime\": \"2017-10-02T11:06:44.0000000Z\",\n                      \"createUserId\": \"X9WYLGPNCHVK\",\n                      \"createUserName\": \"John Smith\",\n                      \"lastModifiedTime\": \"2017-10-02T11:07:45.0000000Z\",\n                      \"lastModifiedUserId\": \"X9WYLGPNCHVK\",\n                      \"lastModifiedUserName\": \"John Smith\",\n                      \"versionNumber\": 1,\n                      \"storageSize\": 1952608,\n                      \"fileType\": \"dwg\",\n                      \"extension\": {\n                              \"type\": \"versions:autodesk.bim360:File\",\n                              \"version\": \"1.0\",\n                              \"schema\": {\n                                      \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:File-1.0\"\n                              },\n                              \"data\": {\n                                      \"processState\": \"PROCESSING_COMPLETE\",\n                                      \"extractionState\": \"FAILED\",\n                                      \"splittingState\": \"NOT_SPLIT\",\n                                      \"reviewState\": \"NOT_IN_REVIEW\",\n                                      \"revisionDisplayLabel\": \"1\"\n                              }\n                      }\n              },\n              \"links\": {\n                      \"relationships\": {\n                              \"storage\": {\n                                      \"data\": {\n                                              \"type\": \"objects\",\n                                              \"id\": \"urn:adsk.objects:os.object:wip.dm.prod/72d5e7e4-89a7-4cb9-9da0-2e2bbc61ca8e.dwg\"\n                                      },\n                                      \"meta\": {\n                                              \"link\": {\n                                                      \"href\": \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/72d5e7e4-89a7-4cb9-9da0-2e2bbc61ca8e.dwg\"\n                                              }\n                                      }\n                              }\n                      }\n              }\n      }]"
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/72d5e7e4-89a7-4cb9-9da0-2e2bbc61ca8e.dwg/signeds3download\""
+    },
+    {
+      "raw": "{\n  \"status\": \"complete\",\n  \"url\": \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\",\n  \"params\": {\n    \"content-type\": \"application/octet-stream\",\n    \"content-disposition\": \"attachment; filename=\\\"977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt\\\"\"\n  },\n  \"size\": 472424,\n  \"sha1\": \"ffbf5f0137a7d9dc53af930bc1b527320d50fb53\"\n}",
+      "parsed": {
+        "status": "complete",
+        "url": "https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK",
+        "params": {
+          "content-type": "application/octet-stream",
+          "content-disposition": "attachment; filename=\"977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt\""
+        },
+        "size": 472424,
+        "sha1": "ffbf5f0137a7d9dc53af930bc1b527320d50fb53"
+      }
+    },
+    {
+      "raw": "curl -X GET \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.dwg%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\" --output \"My First File.dwg\""
+    }
+  ]
+}

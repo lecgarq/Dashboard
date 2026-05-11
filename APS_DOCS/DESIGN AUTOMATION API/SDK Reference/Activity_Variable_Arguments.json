@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/vararg",
+    "scrapedAt": "2026-05-08T17:45:05.891Z",
+    "category": "SDK Reference",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Activity Variable Arguments",
+  "codeExamples": [
+    {
+      "raw": "{\n  \"id\": \"CombinePdf\",\n  \"engine\": \"Autodesk.AutoCAD+24_3\",\n  \"parameters\": {\n      \"...\": {\n        \"verb\": \"put\" // will match any extra arguments as outputs in the workitem using verb \"put\"\n      },\n      \"output\": {\n          \"verb\": \"put\",\n          \"description\": \"result\",\n          \"required\": false,\n          \"localName\": \"result.pdf\"\n      }\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"activityId\" : \"mynickname.CombinePdf+prod\",\n  \"arguments\" {\n      \"output\": {\n          \"url\" : \"http://sample.com/result.pdf\"\n      },\n      \"result1\" : {\n          \"url\": \"http://sample.com/some.ext\",\n          \"localName\":\"some.ext\"\n      },\n      \"result2\" : {\n          \"url\": \"http://sample.com/some_more.ext\",\n          \"localName\":\"some_more.ext\"\n      }\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"id\": \"VarArg\",\n  \"description\": \"An Activity with VarArg parameters\",\n  \"engine\": \"Autodesk.Revit+2023\",\n  \"commandLine\": \"dummy\",\n  \"parameters\": {\n      \"...\": {\n         // will match any extra arguments in the workitem\n      },\n      \"output\": {\n          \"zip\": false,\n          \"ondemand\": false,\n          \"verb\": \"put\",\n          \"description\": \"result\",\n          \"required\": false,\n          \"localName\": \"result.pdf\"\n      },\n      \"hostInput\": {\n          \"zip\": false,\n          \"ondemand\": false,\n          \"verb\": \"get\",\n          \"description\": \"host file\",\n          \"required\": true,\n          \"localName\": \"host.rvt\"\n      }\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"activityId\" : \"mynickname.VarArg+Latest\",\n  \"arguments\" {\n      \"hostInput\": {\n          \"url\" : \"http://sample.com/host.rvt\"\n      },\n      \"output\": {\n          \"url\" : \"http://sample.com/result.pdf\",\n      },\n      \"input1\" : {\n          \"url\": \"http://sample.com/moreinput.rvt\", // No verb defined, will be assigned to \"get\"\n      },\n      \"result1\" : {\n          \"url\": \"http://sample.com/some_more.ext\",\n          \"localName\":\"some_more.ext\",\n          \"verb\": \"put\"\n      }\n  }\n}"
+    }
+  ]
+}

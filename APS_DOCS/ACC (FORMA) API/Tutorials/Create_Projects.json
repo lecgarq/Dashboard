@@ -1,0 +1,498 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/admin/admin-create-configure-projects",
+    "scrapedAt": "2026-05-08T23:43:18.596Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Create and Configure Projects",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/admin/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/projects",
+  "codeExamples": [
+    {
+      "raw": "curl -X 'POST' 'https://developer.api.autodesk.com/construction/admin/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/projects'\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'\n\\ -H 'Content-Type: application/json'\n\\ -d '{\n        \"name\": \"Project 1\",\n        \"classification\": \"production\",\n        \"startDate\": \"2010-01-01\",\n        \"endDate\": \"2015-12-31\",\n        \"type\": \"Hospital\",\n        \"projectValue\": {\n            \"value\": 1650000,\n            \"currency\": \"USD\"\n        },\n        \"jobNumber\": \"HP-0002\",\n        \"addressLine1\": \"123 Main Street\",\n        \"addressLine2\": \"Suite 2\",\n        \"city\": \"San Francisco\",\n        \"stateOrProvince\": \"California\",\n        \"postalCode\": \"94001\",\n        \"country\": \"United States\",\n        \"latitude\": \"37.773972\",\n        \"longitude\": \"-122.431297\",\n        \"timezone\": \"America/Los_Angeles\",\n        \"constructionType\": \"New Construction\",\n        \"deliveryMethod\": \"Unit Price\",\n        \"currentPhase\": \"Design\",\n        \"businessUnitId\": \"802a4a61-3507-4d4e-8e3c-242a31cc0549\",\n        \"template\": {\n            “projectId”: “ljsdfdlskfjs”\n        }\n    }'"
+    },
+    {
+      "raw": "{\n    \"id\": \"3e354e66-ac8b-41dd-9bc1-93fc182c25dd\",\n    \"name\": \"Project 1\",\n    \"startDate\": \"2010-01-01\",\n    \"endDate\": \"2015-12-31\",\n    \"type\": \"Hospital\",\n    \"classification\": \"production\",\n    \"projectValue\": {\n        \"value\": 1650000,\n        \"currency\": \"USD\"\n    },\n    \"status\": \"active\",\n    \"jobNumber\": \"HP-0002\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Suite 2\",\n    \"city\": \"San Francisco\",\n    \"stateOrProvince\": \"California\",\n    \"postalCode\": \"94001\",\n    \"country\": \"United States\",\n    \"latitude\": \"37.773972\",\n    \"longitude\": \"-122.431297\",\n    \"timezone\": \"America/Los_Angeles\",\n    \"constructionType\": \"New Construction\",\n    \"deliveryMethod\": \"Design-Bid\",\n    \"contractType\": \"Unit Price\",\n    \"currentPhase\": \"Design\",\n    \"businessUnitId\": \"802a4a61-3507-4d4e-8e3c-242a31cc0549\",\n    \"lastSignIn\": \"2019-01-01T12:45:00.000Z\",\n    \"imageUrl\": \"https://s3.us-east-1.amazonaws.com/project_image.png\",\n    \"thumbnailImageUrl\": \"https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png\",\n    \"createdAt\": \"2018-01-01T12:45:00.000Z\",\n    \"updatedAt\": \"2019-01-01T12:45:00.000Z\",\n    \"memberGroupId\": \"3456542\",\n    \"adminGroupId\": \"3456543\",\n    \"accountId\": \"d73fc742-4538-401c-8d0f-853b49b750b2\",\n    \"sheetCount\": 512,\n    \"products\": [\n        {\n            \"key\": \"docs\",\n            \"name\": \"Document Management\",\n            \"status\": \"activating\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg\"\n        },\n        {\n            \"key\": \"insight\",\n            \"name\": \"Insight\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg\"\n        },\n        {\n            \"key\": \"projectAdministration\",\n            \"name\": \"Project Admin\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg\"\n        }\n    ],\n    \"platform\": \"acc\",\n    \"companyCount\": 10,\n    \"memberCount\": 100,\n    \"jobId\": \"5d3bc131-c0dc-4222-9a2a-351363f437fa\"\n}",
+      "parsed": {
+        "id": "3e354e66-ac8b-41dd-9bc1-93fc182c25dd",
+        "name": "Project 1",
+        "startDate": "2010-01-01",
+        "endDate": "2015-12-31",
+        "type": "Hospital",
+        "classification": "production",
+        "projectValue": {
+          "value": 1650000,
+          "currency": "USD"
+        },
+        "status": "active",
+        "jobNumber": "HP-0002",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Suite 2",
+        "city": "San Francisco",
+        "stateOrProvince": "California",
+        "postalCode": "94001",
+        "country": "United States",
+        "latitude": "37.773972",
+        "longitude": "-122.431297",
+        "timezone": "America/Los_Angeles",
+        "constructionType": "New Construction",
+        "deliveryMethod": "Design-Bid",
+        "contractType": "Unit Price",
+        "currentPhase": "Design",
+        "businessUnitId": "802a4a61-3507-4d4e-8e3c-242a31cc0549",
+        "lastSignIn": "2019-01-01T12:45:00.000Z",
+        "imageUrl": "https://s3.us-east-1.amazonaws.com/project_image.png",
+        "thumbnailImageUrl": "https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png",
+        "createdAt": "2018-01-01T12:45:00.000Z",
+        "updatedAt": "2019-01-01T12:45:00.000Z",
+        "memberGroupId": "3456542",
+        "adminGroupId": "3456543",
+        "accountId": "d73fc742-4538-401c-8d0f-853b49b750b2",
+        "sheetCount": 512,
+        "products": [
+          {
+            "key": "docs",
+            "name": "Document Management",
+            "status": "activating",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg"
+          },
+          {
+            "key": "insight",
+            "name": "Insight",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg"
+          },
+          {
+            "key": "projectAdministration",
+            "name": "Project Admin",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg"
+          }
+        ],
+        "platform": "acc",
+        "companyCount": 10,
+        "memberCount": 100,
+        "jobId": "5d3bc131-c0dc-4222-9a2a-351363f437fa"
+      }
+    },
+    {
+      "raw": "curl -X 'POST' 'https://developer.api.autodesk.com/construction/admin/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/projects'\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'\n\\ -H 'Content-Type: application/json'\n\\ -d '{\n        \"name\": \"Project 1\",\n        \"classification\": \"production\",\n        \"startDate\": \"2010-01-01\",\n        \"endDate\": \"2015-12-31\",\n        \"type\": \"Hospital\",\n        \"projectValue\": {\n            \"value\": 1650000,\n            \"currency\": \"USD\"\n        },\n        \"jobNumber\": \"HP-0002\",\n        \"addressLine1\": \"123 Main Street\",\n        \"addressLine2\": \"Suite 2\",\n        \"city\": \"San Francisco\",\n        \"stateOrProvince\": \"California\",\n        \"postalCode\": \"94001\",\n        \"country\": \"United States\",\n        \"latitude\": \"37.773972\",\n        \"longitude\": \"-122.431297\",\n        \"timezone\": \"America/Los_Angeles\",\n        \"constructionType\": \"New Construction\",\n        \"deliveryMethod\": \"Unit Price\",\n        \"currentPhase\": \"Design\",\n        \"businessUnitId\": \"802a4a61-3507-4d4e-8e3c-242a31cc0549\",\n    }'"
+    },
+    {
+      "raw": "{\n    \"id\": \"3e354e66-ac8b-41dd-9bc1-93fc182c25dd\",\n    \"name\": \"Project 1\",\n    \"startDate\": \"2010-01-01\",\n    \"endDate\": \"2015-12-31\",\n    \"type\": \"Hospital\",\n    \"classification\": \"production\",\n    \"projectValue\": {\n        \"value\": 1650000,\n        \"currency\": \"USD\"\n    },\n    \"status\": \"pending\",\n    \"jobNumber\": \"HP-0002\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Suite 2\",\n    \"city\": \"San Francisco\",\n    \"stateOrProvince\": \"California\",\n    \"postalCode\": \"94001\",\n    \"country\": \"United States\",\n    \"latitude\": \"37.773972\",\n    \"longitude\": \"-122.431297\",\n    \"timezone\": \"America/Los_Angeles\",\n    \"constructionType\": \"New Construction\",\n    \"deliveryMethod\": \"Design-Bid\",\n    \"contractType\": \"Unit Price\",\n    \"currentPhase\": \"Design\",\n    \"businessUnitId\": \"802a4a61-3507-4d4e-8e3c-242a31cc0549\",\n    \"lastSignIn\": \"2019-01-01T12:45:00.000Z\",\n    \"imageUrl\": \"https://s3.us-east-1.amazonaws.com/project_image.png\",\n    \"thumbnailImageUrl\": \"https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png\",\n    \"createdAt\": \"2018-01-01T12:45:00.000Z\",\n    \"updatedAt\": \"2019-01-01T12:45:00.000Z\",\n    \"memberGroupId\": \"3456542\",\n    \"adminGroupId\": \"3456543\",\n    \"accountId\": \"d73fc742-4538-401c-8d0f-853b49b750b2\",\n    \"sheetCount\": 512,\n    \"products\": [\n        {\n            \"key\": \"docs\",\n            \"name\": \"Docs\",\n            \"status\": \"activating\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg\"\n        },\n        {\n            \"key\": \"insight\",\n            \"name\": \"Insight\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg\"\n        },\n        {\n            \"key\": \"projectAdministration\",\n            \"name\": \"Project Admin\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg\"\n        },\n        {\n            \"key\": \"designCollaboration\",\n            \"name\": \"Design Collaboration\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/dc.svg\"\n        },\n        {\n            \"key\": \"modelCoordination\",\n            \"name\": \"Model Coordination\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/model.svg\"\n        },\n        {\n            \"key\": \"takeoff\",\n            \"name\": \"Takeoff\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/quantify.svg\"\n        },\n        {\n            \"key\": \"autoSpecs\",\n            \"name\": \"AutoSpecs\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/autospecs.svg\"\n        },\n        {\n            \"key\": \"build\",\n            \"name\": \"Build\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/build.svg\"\n        },\n        {\n            \"key\": \"cost\",\n            \"name\": \"Cost Management\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/cost.svg\"\n        },\n        {\n            \"key\": \"accountAdministration\",\n            \"name\": \"Account Admin\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg\"\n        },\n        {\n            \"key\": \"financials\",\n            \"name\": \"Project Financials\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/service_icons/cost-icon-1dcf6b647e1d4a4effe28ce9dc77063e.svg\"\n        },\n        {\n            \"key\": \"capitalPlanning\",\n            \"name\": \"Capital Planning\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/service_icons/cost-icon-1dcf6b647e1d4a4effe28ce9dc77063e.svg\"\n        },\n        {\n            \"key\": \"buildingConnected\",\n            \"name\": \"BuildingConnected\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/buildingconnected.svg\"\n        }\n    ],\n    \"platform\": \"acc\",\n    \"companyCount\": 10,\n    \"memberCount\": 100,\n    \"jobId\": \"5d3bc131-c0dc-4222-9a2a-351363f437fa\"\n}",
+      "parsed": {
+        "id": "3e354e66-ac8b-41dd-9bc1-93fc182c25dd",
+        "name": "Project 1",
+        "startDate": "2010-01-01",
+        "endDate": "2015-12-31",
+        "type": "Hospital",
+        "classification": "production",
+        "projectValue": {
+          "value": 1650000,
+          "currency": "USD"
+        },
+        "status": "pending",
+        "jobNumber": "HP-0002",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Suite 2",
+        "city": "San Francisco",
+        "stateOrProvince": "California",
+        "postalCode": "94001",
+        "country": "United States",
+        "latitude": "37.773972",
+        "longitude": "-122.431297",
+        "timezone": "America/Los_Angeles",
+        "constructionType": "New Construction",
+        "deliveryMethod": "Design-Bid",
+        "contractType": "Unit Price",
+        "currentPhase": "Design",
+        "businessUnitId": "802a4a61-3507-4d4e-8e3c-242a31cc0549",
+        "lastSignIn": "2019-01-01T12:45:00.000Z",
+        "imageUrl": "https://s3.us-east-1.amazonaws.com/project_image.png",
+        "thumbnailImageUrl": "https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png",
+        "createdAt": "2018-01-01T12:45:00.000Z",
+        "updatedAt": "2019-01-01T12:45:00.000Z",
+        "memberGroupId": "3456542",
+        "adminGroupId": "3456543",
+        "accountId": "d73fc742-4538-401c-8d0f-853b49b750b2",
+        "sheetCount": 512,
+        "products": [
+          {
+            "key": "docs",
+            "name": "Docs",
+            "status": "activating",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg"
+          },
+          {
+            "key": "insight",
+            "name": "Insight",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg"
+          },
+          {
+            "key": "projectAdministration",
+            "name": "Project Admin",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg"
+          },
+          {
+            "key": "designCollaboration",
+            "name": "Design Collaboration",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/dc.svg"
+          },
+          {
+            "key": "modelCoordination",
+            "name": "Model Coordination",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/model.svg"
+          },
+          {
+            "key": "takeoff",
+            "name": "Takeoff",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/quantify.svg"
+          },
+          {
+            "key": "autoSpecs",
+            "name": "AutoSpecs",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/autospecs.svg"
+          },
+          {
+            "key": "build",
+            "name": "Build",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/build.svg"
+          },
+          {
+            "key": "cost",
+            "name": "Cost Management",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/cost.svg"
+          },
+          {
+            "key": "accountAdministration",
+            "name": "Account Admin",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg"
+          },
+          {
+            "key": "financials",
+            "name": "Project Financials",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/service_icons/cost-icon-1dcf6b647e1d4a4effe28ce9dc77063e.svg"
+          },
+          {
+            "key": "capitalPlanning",
+            "name": "Capital Planning",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/service_icons/cost-icon-1dcf6b647e1d4a4effe28ce9dc77063e.svg"
+          },
+          {
+            "key": "buildingConnected",
+            "name": "BuildingConnected",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/buildingconnected.svg"
+          }
+        ],
+        "platform": "acc",
+        "companyCount": 10,
+        "memberCount": 100,
+        "jobId": "5d3bc131-c0dc-4222-9a2a-351363f437fa"
+      }
+    },
+    {
+      "raw": "curl -X 'GET' 'https://developer.api.autodesk.com/construction/admin/v1/projects/3e354e66-ac8b-41dd-9bc1-93fc182c25dd'\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n    \"id\": \"3e354e66-ac8b-41dd-9bc1-93fc182c25dd\",\n    \"name\": \"Project 1\",\n    \"startDate\": \"2010-01-01\",\n    \"endDate\": \"2015-12-31\",\n    \"type\": \"Hospital\",\n    \"classification\": \"production\",\n    \"projectValue\": {\n        \"value\": 1650000,\n        \"currency\": \"USD\"\n    },\n    \"status\": \"active\",\n    \"jobNumber\": \"HP-0002\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Suite 2\",\n    \"city\": \"San Francisco\",\n    \"stateOrProvince\": \"California\",\n    \"postalCode\": \"94001\",\n    \"country\": \"United States\",\n    \"latitude\": \"37.773972\",\n    \"longitude\": \"-122.431297\",\n    \"timezone\": \"America/Los_Angeles\",\n    \"constructionType\": \"New Construction\",\n    \"deliveryMethod\": \"Design-Bid\",\n    \"contractType\": \"Unit Price\",\n    \"currentPhase\": \"Design\",\n    \"businessUnitId\": \"802a4a61-3507-4d4e-8e3c-242a31cc0549\",\n    \"lastSignIn\": \"2019-01-01T12:45:00.000Z\",\n    \"imageUrl\": \"https://s3.us-east-1.amazonaws.com/project_image.png\",\n    \"thumbnailImageUrl\": \"https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png\",\n    \"createdAt\": \"2018-01-01T12:45:00.000Z\",\n    \"updatedAt\": \"2019-01-01T12:45:00.000Z\",\n    \"memberGroupId\": \"3456542\",\n    \"adminGroupId\": \"3456543\",\n    \"accountId\": \"d73fc742-4538-401c-8d0f-853b49b750b2\",\n    \"sheetCount\": 512,\n    \"products\": [\n        {\n            \"key\": \"docs\",\n            \"status\": \"activating\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg\",\n            \"name\": \"Document Management\"\n        },\n        {\n            \"key\": \"insight\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg\",\n            \"name\": \"Insight\"\n        },\n        {\n            \"key\": \"projectAdministration\",\n            \"name\": \"Project Admin\",\n            \"status\": \"active\",\n            \"icon\": \"https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg\"\n        }\n    ],\n    \"platform\": \"acc\",\n    \"companyCount\": 10,\n    \"memberCount\": 100,\n    \"jobId\": \"5d3bc131-c0dc-4222-9a2a-351363f437fa\"\n}",
+      "parsed": {
+        "id": "3e354e66-ac8b-41dd-9bc1-93fc182c25dd",
+        "name": "Project 1",
+        "startDate": "2010-01-01",
+        "endDate": "2015-12-31",
+        "type": "Hospital",
+        "classification": "production",
+        "projectValue": {
+          "value": 1650000,
+          "currency": "USD"
+        },
+        "status": "active",
+        "jobNumber": "HP-0002",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Suite 2",
+        "city": "San Francisco",
+        "stateOrProvince": "California",
+        "postalCode": "94001",
+        "country": "United States",
+        "latitude": "37.773972",
+        "longitude": "-122.431297",
+        "timezone": "America/Los_Angeles",
+        "constructionType": "New Construction",
+        "deliveryMethod": "Design-Bid",
+        "contractType": "Unit Price",
+        "currentPhase": "Design",
+        "businessUnitId": "802a4a61-3507-4d4e-8e3c-242a31cc0549",
+        "lastSignIn": "2019-01-01T12:45:00.000Z",
+        "imageUrl": "https://s3.us-east-1.amazonaws.com/project_image.png",
+        "thumbnailImageUrl": "https://s3.us-east-1.amazonaws.com/project_thumbnail_image.png",
+        "createdAt": "2018-01-01T12:45:00.000Z",
+        "updatedAt": "2019-01-01T12:45:00.000Z",
+        "memberGroupId": "3456542",
+        "adminGroupId": "3456543",
+        "accountId": "d73fc742-4538-401c-8d0f-853b49b750b2",
+        "sheetCount": 512,
+        "products": [
+          {
+            "key": "docs",
+            "status": "activating",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/docs.svg",
+            "name": "Document Management"
+          },
+          {
+            "key": "insight",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/products/insight.svg",
+            "name": "Insight"
+          },
+          {
+            "key": "projectAdministration",
+            "name": "Project Admin",
+            "status": "active",
+            "icon": "https://bim360-ea-ue1-prod-storage.s3.amazonaws.com/tools/settings.svg"
+          }
+        ],
+        "platform": "acc",
+        "companyCount": 10,
+        "memberCount": 100,
+        "jobId": "5d3bc131-c0dc-4222-9a2a-351363f437fa"
+      }
+    },
+    {
+      "raw": "curl -X 'POST' 'https://developer.api.autodesk.com/construction/admin/v1/projects/3e354e66-ac8b-41dd-9bc1-93fc182c25dd/users'\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'\n\\ -H 'Content-Type: application/json'\n\\ -d '{\n        \"email\": \"sampleUser1@autodesk.com\",\n        \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n        \"roleIds\": [\n            \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n            \"cda845af-05f0-4c46-9108-71b993946c35\",\n            \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n        ],\n        \"products\": [\n            {\n                \"key\": \"projectAdministration\",\n                \"access\": \"administrator\"\n            }\n        ]\n    }'",
+      "parsed": {
+        "email": "sampleUser1@autodesk.com",
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "roleIds": [
+          "287d5cc2-9008-462c-96e5-c9491db85d97",
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "products": [
+          {
+            "key": "projectAdministration",
+            "access": "administrator"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n    \"email\": \"bob.smith@somewhere.com\",\n    \"id\": \"39712a51-bd64-446a-9c72-48c4e43d0a0d\",\n    \"name\": \"Bob Smith\",\n    \"firstName\": \"Bob\",\n    \"lastName\": \"Smith\",\n    \"autodeskId\": \"USER123A\",\n    \"analyticsId\": \"SOMEID123\",\n    \"addressLine1\": \"123 Main Street\",\n    \"addressLine2\": \"Suite 2\",\n    \"city\": \"San Francisco\",\n    \"stateOrProvince\": \"California\",\n    \"postalCode\": \"94001\",\n    \"country\": \"United States\",\n    \"imageUrl\": \"https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg\",\n    \"phone\": {\n        \"number\": \"123-345-1234\",\n        \"phoneType\": \"mobile\",\n        \"extension\": \"10\"\n    },\n    \"jobTitle\": \"Owner\",\n    \"industry\": \"Architecture & Construction Service Providers\",\n    \"aboutMe\": \"Bob has been in construction for 25 years\",\n    \"accessLevels\": {\n        \"accountAdmin\": true,\n        \"projectAdmin\": true,\n        \"executive\": true\n    },\n    \"addedOn\": \"2018-01-01T12:45:00.000Z\",\n    \"updatedAt\": \"2018-01-01T12:45:00.000Z\",\n    \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n    \"companyName\": \"Sample Company\",\n    \"roleIds\": [\n        \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n        \"cda845af-05f0-4c46-9108-71b993946c35\",\n        \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n    ],\n    \"roles\": [\n        {\n            \"id\": \"cda845af-05f0-4c46-9108-71b993946c35\",\n            \"name\": \"Architect\"\n        },\n        {\n            \"id\": \"b8e84a73-7506-4d3f-b221-93691df2a359\",\n            \"name\": \"Engineer\"\n        }\n    ],\n    \"status\": \"active\",\n    \"products\": [\n        {\n            \"key\": \"docs\",\n            \"access\": \"administrator\"\n        },\n        {\n            \"key\": \"insight\",\n            \"access\": \"administrator\"\n        },\n        {\n            \"key\": \"projectAdministration \",\n            \"access\": \"administrator\"\n        }\n    ],\n    \"jobId\": \"5d3bc131-c0dc-4222-9a2a-351363f437fa\"\n}",
+      "parsed": {
+        "email": "bob.smith@somewhere.com",
+        "id": "39712a51-bd64-446a-9c72-48c4e43d0a0d",
+        "name": "Bob Smith",
+        "firstName": "Bob",
+        "lastName": "Smith",
+        "autodeskId": "USER123A",
+        "analyticsId": "SOMEID123",
+        "addressLine1": "123 Main Street",
+        "addressLine2": "Suite 2",
+        "city": "San Francisco",
+        "stateOrProvince": "California",
+        "postalCode": "94001",
+        "country": "United States",
+        "imageUrl": "https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg",
+        "phone": {
+          "number": "123-345-1234",
+          "phoneType": "mobile",
+          "extension": "10"
+        },
+        "jobTitle": "Owner",
+        "industry": "Architecture & Construction Service Providers",
+        "aboutMe": "Bob has been in construction for 25 years",
+        "accessLevels": {
+          "accountAdmin": true,
+          "projectAdmin": true,
+          "executive": true
+        },
+        "addedOn": "2018-01-01T12:45:00.000Z",
+        "updatedAt": "2018-01-01T12:45:00.000Z",
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "companyName": "Sample Company",
+        "roleIds": [
+          "287d5cc2-9008-462c-96e5-c9491db85d97",
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "roles": [
+          {
+            "id": "cda845af-05f0-4c46-9108-71b993946c35",
+            "name": "Architect"
+          },
+          {
+            "id": "b8e84a73-7506-4d3f-b221-93691df2a359",
+            "name": "Engineer"
+          }
+        ],
+        "status": "active",
+        "products": [
+          {
+            "key": "docs",
+            "access": "administrator"
+          },
+          {
+            "key": "insight",
+            "access": "administrator"
+          },
+          {
+            "key": "projectAdministration ",
+            "access": "administrator"
+          }
+        ],
+        "jobId": "5d3bc131-c0dc-4222-9a2a-351363f437fa"
+      }
+    },
+    {
+      "raw": "curl -X 'POST' 'https://developer.api.autodesk.com/construction/admin/v2/projects/3e354e66-ac8b-41dd-9bc1-93fc182c25dd/users:import'\n\\ -H 'Authorization: Bearer Auth IPTf4KYLTYGVnOHQ0cuolwCW2a'\n\\ -H 'Content-Type: application/json'\n\\ -d '[{\n        \"email\": \"sampleUser1@autodesk.com\",\n        \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n        \"roleIds\": [\n            \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n            \"cda845af-05f0-4c46-9108-71b993946c35\",\n            \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n        ],\n        \"products\": [\n            {\n                \"key\": \"takeoff\",\n                \"access\": \"administrator\"\n            },\n            {\n                \"key\": \"projectAdministration \",\n                \"access\": \"administrator\"\n            }\n        ]\n    },\n    {\n        \"email\": \"sampleUser2@autodesk.com\",\n        \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n        \"roleIds\": [\n            \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n            \"cda845af-05f0-4c46-9108-71b993946c35\",\n            \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n        ],\n        \"products\": [\n            {\n                \"key\": \"takeoff\",\n                \"access\": \"member\"\n            },\n            {\n                \"key\": \"projectAdministration \",\n                \"access\": \"none\"\n            }\n        ]\n    }\n]'"
+    },
+    {
+      "raw": "{\n    \"jobId\": \"5d3bc131-c0dc-4222-9a2a-351363f437fa\"\n}",
+      "parsed": {
+        "jobId": "5d3bc131-c0dc-4222-9a2a-351363f437fa"
+      }
+    },
+    {
+      "raw": "curl -X 'GET' 'https://developer.api.autodesk.com/construction/admin/v1/projects/3e354e66-ac8b-41dd-9bc1-93fc182c25dd/users\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n    \"pagination\": {\n        \"limit\": 20,\n        \"offset\": 10,\n        \"totalResults\": 121,\n        \"nextUrl\": \"https://resource?limit=20&offset=30\",\n        \"previousUrl\": \"https://resource?limit=20&offset=0\"\n    },\n    \"results\": [\n        {\n            \"email\": \"bob.smith@somewhere.com\",\n            \"id\": \"39712a51-bd64-446a-9c72-48c4e43d0a0d\",\n            \"name\": \"Bob Smith\",\n            \"firstName\": \"Bob\",\n            \"lastName\": \"Smith\",\n            \"autodeskId\": \"USER123A\",\n            \"analyticsId\": \"SOMEID123\",\n            \"addressLine1\": \"123 Main Street\",\n            \"addressLine2\": \"Suite 2\",\n            \"city\": \"San Francisco\",\n            \"stateOrProvince\": \"California\",\n            \"postalCode\": \"94001\",\n            \"country\": \"United States\",\n            \"imageUrl\": \"https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg\",\n            \"phone\": {\n                \"number\": \"123-345-1234\",\n                \"phoneType\": \"mobile\",\n                \"extension\": \"10\"\n            },\n            \"jobTitle\": \"Owner\",\n            \"industry\": \"Architecture & Construction Service Providers\",\n            \"aboutMe\": \"Bob has been in construction for 25 years.\",\n            \"accessLevels\": {\n                \"accountAdmin\": true,\n                \"projectAdmin\": true,\n                \"executive\": true\n            },\n            \"addedOn\": \"2018-01-01T12:45:00.000Z\",\n            \"updatedAt\": \"2018-01-01T12:45:00.000Z\",\n            \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n            \"companyName\": \"Sample Company\",\n            \"roleIds\": [\n                \"cda845af-05f0-4c46-9108-71b993946c35\",\n                \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n            ],\n            \"roles\": [\n                {\n                    \"id\": \"cda845af-05f0-4c46-9108-71b993946c35\",\n                    \"name\": \"Architect\"\n                },\n                {\n                    \"id\": \"b8e84a73-7506-4d3f-b221-93691df2a359\",\n                    \"name\": \"Engineer\"\n                }\n            ],\n            \"status\": \"active\",\n            \"products\": [\n                {\n                    \"key\": \"takeoff\",\n                    \"access\": \"member\"\n                },\n                {\n                    \"key\": \"docs\",\n                    \"access\": \"member\"\n                },\n                {\n                    \"key\": \"insight\",\n                    \"access\": \"member\"\n                },\n                {\n                    \"key\": \"projectAdministration\",\n                    \"access\": \"none\"\n                }\n            ]\n        }\n    ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 10,
+          "totalResults": 121,
+          "nextUrl": "https://resource?limit=20&offset=30",
+          "previousUrl": "https://resource?limit=20&offset=0"
+        },
+        "results": [
+          {
+            "email": "bob.smith@somewhere.com",
+            "id": "39712a51-bd64-446a-9c72-48c4e43d0a0d",
+            "name": "Bob Smith",
+            "firstName": "Bob",
+            "lastName": "Smith",
+            "autodeskId": "USER123A",
+            "analyticsId": "SOMEID123",
+            "addressLine1": "123 Main Street",
+            "addressLine2": "Suite 2",
+            "city": "San Francisco",
+            "stateOrProvince": "California",
+            "postalCode": "94001",
+            "country": "United States",
+            "imageUrl": "https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg",
+            "phone": {
+              "number": "123-345-1234",
+              "phoneType": "mobile",
+              "extension": "10"
+            },
+            "jobTitle": "Owner",
+            "industry": "Architecture & Construction Service Providers",
+            "aboutMe": "Bob has been in construction for 25 years.",
+            "accessLevels": {
+              "accountAdmin": true,
+              "projectAdmin": true,
+              "executive": true
+            },
+            "addedOn": "2018-01-01T12:45:00.000Z",
+            "updatedAt": "2018-01-01T12:45:00.000Z",
+            "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+            "companyName": "Sample Company",
+            "roleIds": [
+              "cda845af-05f0-4c46-9108-71b993946c35",
+              "b8e84a73-7506-4d3f-b221-93691df2a359"
+            ],
+            "roles": [
+              {
+                "id": "cda845af-05f0-4c46-9108-71b993946c35",
+                "name": "Architect"
+              },
+              {
+                "id": "b8e84a73-7506-4d3f-b221-93691df2a359",
+                "name": "Engineer"
+              }
+            ],
+            "status": "active",
+            "products": [
+              {
+                "key": "takeoff",
+                "access": "member"
+              },
+              {
+                "key": "docs",
+                "access": "member"
+              },
+              {
+                "key": "insight",
+                "access": "member"
+              },
+              {
+                "key": "projectAdministration",
+                "access": "none"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X 'PATCH' 'https://developer.api.autodesk.com/construction/admin/v1/projects/3e354e66-ac8b-41dd-9bc1-93fc182c25dd/users/39712a51-bd64-446a-9c72-48c4e43d0a0d'\n\\ -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'\n\\ -H 'Content-Type: application/json'\n\\ -d '{\n        \"email\": \"bob.smith@somewhere.com\",\n        \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n        \"roleIds\": [\n            \"cda845af-05f0-4c46-9108-71b993946c35\",\n            \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n        ],\n        \"products\": [\n            {\n                \"key\": \"takeoff\",\n                \"access\": \"member\"\n            }\n        ]\n    }'",
+      "parsed": {
+        "email": "bob.smith@somewhere.com",
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "roleIds": [
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "products": [
+          {
+            "key": "takeoff",
+            "access": "member"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"39712a51-bd64-446a-9c72-48c4e43d0a0d\",\n    \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n    \"roleIds\": [\n        \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n        \"cda845af-05f0-4c46-9108-71b993946c35\",\n        \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n    ],\n    \"products\": [\n        {\n            \"key\": \"docs\",\n            \"access\": \"member\"\n        },\n        {\n            \"key\": \"insight\",\n            \"access\": \"member\"\n        },\n        {\n            \"key\": \"projectAdministration\",\n            \"access\": \"none\"\n        },\n        {\n            \"key\": \"takeoff\",\n            \"access\": \"member\"\n        }\n    ]\n}",
+      "parsed": {
+        "id": "39712a51-bd64-446a-9c72-48c4e43d0a0d",
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "roleIds": [
+          "287d5cc2-9008-462c-96e5-c9491db85d97",
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "products": [
+          {
+            "key": "docs",
+            "access": "member"
+          },
+          {
+            "key": "insight",
+            "access": "member"
+          },
+          {
+            "key": "projectAdministration",
+            "access": "none"
+          },
+          {
+            "key": "takeoff",
+            "access": "member"
+          }
+        ]
+      }
+    }
+  ]
+}

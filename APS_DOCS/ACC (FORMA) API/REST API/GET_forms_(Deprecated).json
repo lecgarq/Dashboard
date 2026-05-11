@@ -1,0 +1,427 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-forms-(Deprecated)-GET",
+    "scrapedAt": "2026-05-08T23:54:58.273Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/projects/{projectId}/forms",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records to skip before returning the result records. Defaults to 0. Increase this value in subsequent requests to continue getting results when the number of records exceeds the requested limit."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of records to return in a single request. Can be a number between 1 and 50. Defaults to 50."
+        },
+        {
+          "col_0": "idsarray: string",
+          "col_1": "An array of Form IDs to retrieve."
+        },
+        {
+          "col_0": "formDateMinstring",
+          "col_1": "Return Forms with formDate at or after specified date."
+        },
+        {
+          "col_0": "formDateMaxstring",
+          "col_1": "Return Forms with formDate at or before specified date."
+        },
+        {
+          "col_0": "updatedAfterdatetime: ISO 8601",
+          "col_1": "Return Forms updated after a specified time."
+        },
+        {
+          "col_0": "updatedBeforedatetime: ISO 8601",
+          "col_1": "Return Forms updated before a specified time."
+        },
+        {
+          "col_0": "templateIdstring",
+          "col_1": "Return Forms on template with given ID."
+        },
+        {
+          "col_0": "statusesarray: string",
+          "col_1": "Return Forms with given statuses."
+        },
+        {
+          "col_0": "sortBystring",
+          "col_1": "Return Forms sorted by specified attribute."
+        },
+        {
+          "col_0": "sortOrderstring",
+          "col_1": "Return Forms in specified sorted order."
+        },
+        {
+          "col_0": "locationIdsarray: string",
+          "col_1": "A sequence of location IDs. Each returned object must be associated with one of the locations specified by the IDs. For example, ?locationId=123e102a-36de-14e7-8c56-1b1234ccbba8&locationId=cee45678-fcc4-43ae-80a2-8ca819dfa70d. See the usage example in the Retrieve Forms Associated With Locations tutorial."
+        },
+        {
+          "col_0": "includeInactiveFormTemplatesboolean",
+          "col_1": "Set this value to true in order to include forms that were created using inactive form templates. Defaults to false."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Forms in project at specified page."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataarray: object",
+          "col_1": "List of forms in the project."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The current status of the form. Note that forms are created in draft status. Possible values:\ndraft: you can edit forms.\ninReview: you cannot edit forms, however, they can be approved by form reviewers.\nsubmitted: forms are closed and no longer editable.\narchived forms are not edtiable and hidden in the UI."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the form."
+        },
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The unique identifier of the project the form belongs to."
+        },
+        {
+          "col_0": "formNumint",
+          "col_1": "A chronological user-fiendly identifier of the form within the project e.g. form #5."
+        },
+        {
+          "col_0": "formDatestring",
+          "col_1": "Date the form pertains to."
+        },
+        {
+          "col_0": "assigneeIdstring",
+          "col_1": "The unique identifier of the user, role, or company the form is assigned to."
+        },
+        {
+          "col_0": "assigneeTypeenum:string",
+          "col_1": "Type of entity the form is assigned to.\nPossible values: company, role, user"
+        },
+        {
+          "col_0": "locationIdstring",
+          "col_1": "Location identifier associated with the form. For more information about the location, see GET nodes."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the form was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the form."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the form’s notes section."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Text for the form’s description section."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the form instance.\nMax length: 100"
+        },
+        {
+          "col_0": "formTemplateobject",
+          "col_1": "Information about the form’s template."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Possible values: active, inactive, deleted"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the template."
+        },
+        {
+          "col_0": "projectIdstring",
+          "col_1": "Unique indentifier of the project the template belongs to."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the form template."
+        },
+        {
+          "col_0": "templateTypestring",
+          "col_1": "User defined type of the form template."
+        },
+        {
+          "col_0": "pdfValuesarray: object",
+          "col_1": "For PDF forms, values extracted from fields in the PDF."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the PDF field."
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The value of the PDF field."
+        },
+        {
+          "col_0": "pdfUrlstring",
+          "col_1": "For PDF forms, the URL to download the form’s PDF."
+        },
+        {
+          "col_0": "weatherobject",
+          "col_1": "Weather forecast captured on the form."
+        },
+        {
+          "col_0": "summaryKeystring",
+          "col_1": "A code describing the weather conditions. For weather data from DarkSky (legacy), possible values are: clear, rain, snow, sleet, wind, fog, cloudy, partlyCloudy. For weather data from WeatherKit, values come from Apple’s WeatherCondition codes and include: Clear, MostlyClear, PartlyCloudy, MostlyCloudy, Cloudy, Rain, HeavyRain, Drizzle, Snow, HeavySnow, Flurries, Sleet, FreezingRain, FreezingDrizzle, Hail, Thunderstorms, IsolatedThunderstorms, ScatteredThunderstorms, StrongStorms, Windy, Breezy, Foggy, Haze, Smoky, Blizzard, BlowingDust, BlowingSnow, TropicalStorm, Hurricane, SunShowers, Hot, Frigid, WintryMix. Check the provider field to determine which value set to expect. Additional values may appear as Apple’s WeatherKit condition codes evolve."
+        },
+        {
+          "col_0": "precipitationAccumulationnumber",
+          "col_1": "Amount of precipitation accumulated throughout the day."
+        },
+        {
+          "col_0": "precipitationAccumulationUnitstring",
+          "col_1": "Indicates the measurement unit of the precipitationAccumulation."
+        },
+        {
+          "col_0": "temperatureMinnumber",
+          "col_1": "Minimum temperature during the day."
+        },
+        {
+          "col_0": "temperatureMaxnumber",
+          "col_1": "Maximum temperature during the day."
+        },
+        {
+          "col_0": "temperatureUnitstring",
+          "col_1": "Indicates the measurement unit of the temperature values e.g. temperatureMin, temperatureMax, temp."
+        },
+        {
+          "col_0": "humiditynumber",
+          "col_1": "A percentage value indicating the humidity over the course of the day."
+        },
+        {
+          "col_0": "windSpeednumber",
+          "col_1": "Average wind speed observed throughout the day."
+        },
+        {
+          "col_0": "windGustnumber",
+          "col_1": "Maximum wind speed observed throughout the day."
+        },
+        {
+          "col_0": "speedUnitstring",
+          "col_1": "Indicates the measurement unit of the windSpeed and windGust."
+        },
+        {
+          "col_0": "windBearingnumber",
+          "col_1": "Direction of the wind, in degrees."
+        },
+        {
+          "col_0": "hourlyWeatherarray: object",
+          "col_1": "Weather information for specific hours (07:00:00, 12:00:00, 16:00:00)."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "Unique identifier."
+        },
+        {
+          "col_0": "hourstring",
+          "col_1": "Hour of the day for this forecast."
+        },
+        {
+          "col_0": "tempnumber",
+          "col_1": "Temperature during specified hour."
+        },
+        {
+          "col_0": "windSpeednumber",
+          "col_1": "Average wind speed."
+        },
+        {
+          "col_0": "windBearingint",
+          "col_1": "Direction of the wind, in degrees."
+        },
+        {
+          "col_0": "humiditynumber",
+          "col_1": "A percentage value indicating the humidity."
+        },
+        {
+          "col_0": "fetchedAtdatetime: ISO 8601",
+          "col_1": "The date when weather was fetched from weather API."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date when weather was first fetched."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the weather was last updated."
+        },
+        {
+          "col_0": "providerenum:string",
+          "col_1": "Indicates the source of the weather data.\nPossible values: darksky, weatherkit"
+        },
+        {
+          "col_0": "customValuesarray: object",
+          "col_1": "For non-PDF forms, data stored in the form fields."
+        },
+        {
+          "col_0": "fieldIdstring",
+          "col_1": "The unique identifier of the field."
+        },
+        {
+          "col_0": "sectionLabelstring",
+          "col_1": "Name of the section containing this field."
+        },
+        {
+          "col_0": "itemLabelstring",
+          "col_1": "The field’s label or question text."
+        },
+        {
+          "col_0": "valueNameenum:string",
+          "col_1": "Indicates the type of value used for this item.\nPossible values: textVal, toggleVal, arrayVal, numberVal, choiceVal, dateVal, svgVal"
+        },
+        {
+          "col_0": "toggleValenum:string",
+          "col_1": "A boolean like enum value.\nPossible values: Yes, No, False, True, Minus, Plus, Fail, Pass, NA"
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "A text value."
+        },
+        {
+          "col_0": "arrayValstring",
+          "col_1": "Multi select values."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "A numeric value."
+        },
+        {
+          "col_0": "choiceValstring",
+          "col_1": "A single select value."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "A date value."
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "A signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the field’s notes section.\nMax length: 8000"
+        },
+        {
+          "col_0": "lastReopenedBystring",
+          "col_1": "Unique identifier for the user that last re-opened the Form (if applicable)."
+        },
+        {
+          "col_0": "lastSubmitterSignaturestring",
+          "col_1": "Signature of the reviewer who last submitted the Form (if applicable). Signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "userCreatedAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was created on the client device or external system. This may differ from createdAt if the form was created offline and synced later. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was received and stored on the server. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Request pagination information."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Number of items skipped."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Number of items returned per page."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "Total number of items that can be returned."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "URL for the next page of items. Next page url is null on the last page."
+        }
+      ]
+    }
+  ]
+}

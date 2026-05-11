@@ -1,0 +1,200 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/issuesv2/create-issues-v2",
+    "scrapedAt": "2026-05-08T17:49:43.667Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Create Issues (new)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/issues/v2/containers/6c8e8341-a4da-4959-a90d-e3b16c60ffd4/issues",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/project/v1/hubs\""
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/project/v1/hubs\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"hubs\",\n      \"id\": \"b.cGVyc29uYWw6cGUyOWNjZjMy\",\n      \"attributes\": {\n        \"name\": \"My First Account\",\n        \"extension\": {\n          \"type\": \"hubs:autodesk.bim360:Account\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/hubs:autodesk.bim360:Account-1.0\"\n          },\n          \"data\": {}\n        }\n      }\n    }\n  ]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/project/v1/hubs"
+          }
+        },
+        "data": [
+          {
+            "type": "hubs",
+            "id": "b.cGVyc29uYWw6cGUyOWNjZjMy",
+            "attributes": {
+              "name": "My First Account",
+              "extension": {
+                "type": "hubs:autodesk.bim360:Account",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/hubs:autodesk.bim360:Account-1.0"
+                },
+                "data": {}
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects?filter%5Battributes.name%5D=Demo%20Project\""
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"projects\",\n      \"id\": \"b.cGVyc29uYWw6cGUyOWNjZjMyI0QyMDE2MDUyNDEyOTI5NzY\",\n      \"attributes\": {\n        \"name\": \"My First Project\",\n        \"extension\": {\n          \"type\": \"projects:autodesk.core:Project\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/projects%3Aautodesk.core%3AProject-1.0\"\n          },\n          \"data\": {}\n        }\n      },\n      \"links\": {\n        \"self\": {\n          \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.57be304852e74856a61bf25acebc200f\"\n        }\n      },\n      \"relationships\": {\n        \"hub\": {\n          \"data\": {\n            \"type\": \"hubs\",\n            \"id\": \"b.cGVyc29uYWw6cGUyOWNjZjMy\"\n          },\n          \"links\": {\n            \"related\": {\n              \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy\"\n            }\n          }\n        },\n        \"rootFolder\": {\n          \"data\": {\n            \"type\": \"folders\",\n            \"id\": \"urn:adsk.wipprod:fs.folder:co.uvDiLQ5DRYidDQ_EFW1OOg\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.57be304852e74856a61bf25acebc200f/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.uvDiLQ5DRYidDQ_EFW1OOg\"\n            }\n          }\n        },\n        \"topFolders\": {\n          \"links\": {\n            \"related\": {\n              \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.57be304852e74856a61bf25acebc200f/topFolders\"\n            }\n          }\n        },\n        \"issues\": {\n          \"data\": {\n            \"type\": \"issueContainerId\",\n            \"id\": \"be00f32e-c03c-4c7b-9ec4-d2614bf1980cfor\"\n          }\n        }\n      }\n    }\n  ]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects"
+          }
+        },
+        "data": [
+          {
+            "type": "projects",
+            "id": "b.cGVyc29uYWw6cGUyOWNjZjMyI0QyMDE2MDUyNDEyOTI5NzY",
+            "attributes": {
+              "name": "My First Project",
+              "extension": {
+                "type": "projects:autodesk.core:Project",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/projects%3Aautodesk.core%3AProject-1.0"
+                },
+                "data": {}
+              }
+            },
+            "links": {
+              "self": {
+                "href": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.57be304852e74856a61bf25acebc200f"
+              }
+            },
+            "relationships": {
+              "hub": {
+                "data": {
+                  "type": "hubs",
+                  "id": "b.cGVyc29uYWw6cGUyOWNjZjMy"
+                },
+                "links": {
+                  "related": {
+                    "href": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy"
+                  }
+                }
+              },
+              "rootFolder": {
+                "data": {
+                  "type": "folders",
+                  "id": "urn:adsk.wipprod:fs.folder:co.uvDiLQ5DRYidDQ_EFW1OOg"
+                },
+                "meta": {
+                  "link": {
+                    "href": "https://developer.api.autodesk.com/data/v1/projects/b.57be304852e74856a61bf25acebc200f/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.uvDiLQ5DRYidDQ_EFW1OOg"
+                  }
+                }
+              },
+              "topFolders": {
+                "links": {
+                  "related": {
+                    "href": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.57be304852e74856a61bf25acebc200f/topFolders"
+                  }
+                }
+              },
+              "issues": {
+                "data": {
+                  "type": "issueContainerId",
+                  "id": "be00f32e-c03c-4c7b-9ec4-d2614bf1980cfor"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl --location --request POST 'https://developer.api.autodesk.com/issues/v2/containers/6c8e8341-a4da-4959-a90d-e3b16c60ffd4/issues' \\\n    --header 'Content-Type: application/json' \\\n    --header 'Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O' \\\n    --data-raw '{\n        \"title\": \"test title\",\n        \"issueSubtypeId\": \"a0a1b5a4-2c72-4bca-8de2-f2d0e2aa0e86\",\n        \"description\": \"Check whether the pipe in room 3 is the correct size.\",\n        \"status\": \"draft\"\n    }'",
+      "parsed": {
+        "title": "test title",
+        "issueSubtypeId": "a0a1b5a4-2c72-4bca-8de2-f2d0e2aa0e86",
+        "description": "Check whether the pipe in room 3 is the correct size.",
+        "status": "draft"
+      }
+    },
+    {
+      "raw": "201 Created\nContent-Type: application/json; charset=utf-8\n\n{\n  \"id\": \"e39ae583-5f95-4c18-bf8b-0a829c808987\",\n  \"containerId\": \"6c8e8341-a4da-4959-a90d-e3b16c60ffd4\",\n  \"displayId\": 11,\n  \"rootCauseId\": null,\n  \"title\": \"test title\",\n  \"description\": \"Check whether the pipe in room 3 is the correct size.\",\n  \"issueTypeId\": \"a2b12543-e488-4578-bd4d-41212383ff5e\",\n  \"issueSubtypeId\": \"a0a1b5a4-2c72-4bca-8de2-f2d0e2aa0e86\",\n  \"status\": \"draft\",\n  \"assignedTo\": null,\n  \"assignedToType\": null,\n  \"dueDate\": null,\n  \"locationId\": null,\n  \"locationDetails\": null,\n  \"snapshotUrn\": null,\n  \"linkedDocuments\": [],\n  \"links\": [],\n  \"ownerId\": \"...\",\n  \"officialResponse\": {\n      \"response\": null,\n      \"respondedAt\": null,\n      \"respondedBy\": null\n  },\n  \"permittedAttributes\": [\n      \"title\",\n      \"description\",\n      \"issueTypeId\",\n      \"issueSubtypeId\",\n      \"status\",\n      \"assignedTo\",\n      \"assignedToType\",\n      \"dueDate\",\n      \"locationId\",\n      \"locationDetails\",\n      \"linkedDocuments\",\n      \"links\",\n      \"ownerId\",\n      \"rootCauseId\",\n      \"officialResponse\",\n      \"customAttributes\",\n      \"clientUpdatedAt\",\n      \"snapshotUrn\"\n  ],\n  \"permittedActions\": [\n      \"add_comment\",\n      \"add_attachment\",\n      \"assign_all\",\n      \"clear_assignee\"\n  ],\n  \"commentCount\": 0,\n  \"attachmentCount\": 0,\n  \"openedBy\": null,\n  \"openedAt\": null,\n  \"closedBy\": null,\n  \"closedAt\": null,\n  \"createdBy\": \"...\",\n  \"createdAt\": \"2022-10-18T10:29:11.057Z\",\n  \"updatedBy\": \"...\",\n  \"updatedAt\": \"2022-10-18T10:29:11.057Z\",\n  \"issueTemplateId\": null,\n  \"customAttributes\": [],\n  \"permittedStatuses\": [\n      \"draft\",\n      \"open\"\n  ]\n}",
+      "parsed": {
+        "id": "e39ae583-5f95-4c18-bf8b-0a829c808987",
+        "containerId": "6c8e8341-a4da-4959-a90d-e3b16c60ffd4",
+        "displayId": 11,
+        "rootCauseId": null,
+        "title": "test title",
+        "description": "Check whether the pipe in room 3 is the correct size.",
+        "issueTypeId": "a2b12543-e488-4578-bd4d-41212383ff5e",
+        "issueSubtypeId": "a0a1b5a4-2c72-4bca-8de2-f2d0e2aa0e86",
+        "status": "draft",
+        "assignedTo": null,
+        "assignedToType": null,
+        "dueDate": null,
+        "locationId": null,
+        "locationDetails": null,
+        "snapshotUrn": null,
+        "linkedDocuments": [],
+        "links": [],
+        "ownerId": "...",
+        "officialResponse": {
+          "response": null,
+          "respondedAt": null,
+          "respondedBy": null
+        },
+        "permittedAttributes": [
+          "title",
+          "description",
+          "issueTypeId",
+          "issueSubtypeId",
+          "status",
+          "assignedTo",
+          "assignedToType",
+          "dueDate",
+          "locationId",
+          "locationDetails",
+          "linkedDocuments",
+          "links",
+          "ownerId",
+          "rootCauseId",
+          "officialResponse",
+          "customAttributes",
+          "clientUpdatedAt",
+          "snapshotUrn"
+        ],
+        "permittedActions": [
+          "add_comment",
+          "add_attachment",
+          "assign_all",
+          "clear_assignee"
+        ],
+        "commentCount": 0,
+        "attachmentCount": 0,
+        "openedBy": null,
+        "openedAt": null,
+        "closedBy": null,
+        "closedAt": null,
+        "createdBy": "...",
+        "createdAt": "2022-10-18T10:29:11.057Z",
+        "updatedBy": "...",
+        "updatedAt": "2022-10-18T10:29:11.057Z",
+        "issueTemplateId": null,
+        "customAttributes": [],
+        "permittedStatuses": [
+          "draft",
+          "open"
+        ]
+      }
+    }
+  ]
+}

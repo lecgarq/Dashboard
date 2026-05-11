@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatThumbnail",
+    "scrapedAt": "2026-05-08T18:27:19.430Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatThumbnail",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatThumbnail : IJobPayloadFormat"
+    },
+    {
+      "raw": "public JobPayloadFormatThumbnail()"
+    },
+    {
+      "raw": "[DataMember(Name = \"advanced\", EmitDefaultValue = false)]\npublic JobPayloadFormatAdvancedThumbnail Advanced { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = false)]\npublic OutputType Type { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

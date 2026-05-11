@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/IJobPayloadFormatSVFAdvanced",
+    "scrapedAt": "2026-05-08T18:28:57.633Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Interface IJobPayloadFormatSVFAdvanced",
+  "codeExamples": [
+    {
+      "raw": "public interface IJobPayloadFormatSVFAdvanced"
+    }
+  ]
+}

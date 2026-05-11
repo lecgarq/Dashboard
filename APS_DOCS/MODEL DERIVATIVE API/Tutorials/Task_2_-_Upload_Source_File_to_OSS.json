@@ -1,0 +1,120 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/tutorials/prep-roominfo4viewer/task2-upload_source_file_to_oss",
+    "scrapedAt": "2026-05-08T18:23:55.118Z",
+    "category": "Tutorials",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Task 2 – Upload Source File to OSS",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Operation",
+        "HTTP Request"
+      ],
+      "rows": [
+        {
+          "Operation": "Create a Bucket",
+          "HTTP Request": "POST /buckets"
+        },
+        {
+          "Operation": "Get a Signed URL to Upload a File",
+          "HTTP Request": "GET /buckets/{bucketKey}/objects/{objectKey}/signeds3upload"
+        },
+        {
+          "Operation": "Finalize File Upload",
+          "HTTP Request": "POST /buckets/{bucketKey}/objects/{objectKey}/signeds3upload"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "raw",
+          "col_1": "urn:adsk.objects:os.object:md_tute_01/Tuner.zip"
+        },
+        {
+          "col_0": "Base64",
+          "col_1": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bWRfdHV0ZV8wMS9UdW5lci56aXA="
+        },
+        {
+          "col_0": "URL-safe Base64 (no padding)",
+          "col_1": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bWRfdHV0ZV8wMS9UdW5lci56aXA"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -X POST \\\n    'https://developer.api.autodesk.com/oss/v2/buckets' \\\n    -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -H 'x-ads-region: US' \\\n    -d '{\n        \"bucketKey\": \"<YOUR_BUCKET_KEY>\",\n        \"access\": \"full\",\n        \"policyKey\": \"transient\"\n        }'",
+      "parsed": {
+        "bucketKey": "<YOUR_BUCKET_KEY>",
+        "access": "full",
+        "policyKey": "transient"
+      }
+    },
+    {
+      "raw": "{\n    \"bucketKey\": \"<YOUR_BUCKET_KEY>\",\n    \"bucketOwner\": \"<YOUR_CLIENT_ID>\",\n    \"createdDate\": 1571296694595,\n    \"permissions\": [\n        {\n            \"authId\": \"T05H372IE11Kmkksdh73ndj0qie2f6nib\",\n            \"access\": \"full\"\n        }\n    ],\n    \"policyKey\": \"transient\"\n}",
+      "parsed": {
+        "bucketKey": "<YOUR_BUCKET_KEY>",
+        "bucketOwner": "<YOUR_CLIENT_ID>",
+        "createdDate": 1571296694595,
+        "permissions": [
+          {
+            "authId": "T05H372IE11Kmkksdh73ndj0qie2f6nib",
+            "access": "full"
+          }
+        ],
+        "policyKey": "transient"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n    'https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>/signeds3upload?minutesExpiration=<LIFESPAN_OF_URL>' \\\n    -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n    -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n      \"uploadKey\": \"<YOUR_UPLOAD_KEY>\",\n      \"uploadExpiration\": \"2022-04-08T00:00:00Z\",\n      \"urlExpiration\": \"2022-04-06T17:59:46Z\",\n      \"urls\": [\"<SIGNED_UPLOAD_URL>\"],\n      \"location\": \"https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>\"\n  }",
+      "parsed": {
+        "uploadKey": "<YOUR_UPLOAD_KEY>",
+        "uploadExpiration": "2022-04-08T00:00:00Z",
+        "urlExpiration": "2022-04-06T17:59:46Z",
+        "urls": [
+          "<SIGNED_UPLOAD_URL>"
+        ],
+        "location": "https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>"
+      }
+    },
+    {
+      "raw": "curl -X PUT \\\n    '<SIGNED_UPLOAD_URL>'\\\n    --data-binary '@<PATH_TO_YOUR_FILE_TO_UPLOAD>'"
+    },
+    {
+      "raw": "curl -X POST \\\n    'https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>/signeds3upload' \\\n    -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -d '{\n        \"ossbucketKey\": \"<YOUR_BUCKET_KEY>\",\n        \"ossSourceFileObjectKey\": \"<YOUR_OBJECT_KEY>\",\n        \"access\": \"full\",\n        \"uploadKey\": \"<YOUR_UPLOAD_KEY>\"\n        }'",
+      "parsed": {
+        "ossbucketKey": "<YOUR_BUCKET_KEY>",
+        "ossSourceFileObjectKey": "<YOUR_OBJECT_KEY>",
+        "access": "full",
+        "uploadKey": "<YOUR_UPLOAD_KEY>"
+      }
+    },
+    {
+      "raw": "{\n    \"bucketKey\": \"<YOUR_BUCKET_KEY>\",\n    \"objectId\": \"<YOUR_OBJECT_ID>\",\n    \"objectKey\": \"<YOUR_OBJECT_KEY>\",\n    \"size\": \"34803712\",\n    \"contentType\": \"application/octet-stream\",\n    \"location\": \"https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>\",\n    \"permissions\": [\n        {\n            \"authId\": \"<YOUR_ACCESS_TOKEN>\",\n            \"access\": \"full\"\n        }\n    ],\n    \"policyKey\": \"transient\"\n }",
+      "parsed": {
+        "bucketKey": "<YOUR_BUCKET_KEY>",
+        "objectId": "<YOUR_OBJECT_ID>",
+        "objectKey": "<YOUR_OBJECT_KEY>",
+        "size": "34803712",
+        "contentType": "application/octet-stream",
+        "location": "https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<YOUR_OBJECT_KEY>",
+        "permissions": [
+          {
+            "authId": "<YOUR_ACCESS_TOKEN>",
+            "access": "full"
+          }
+        ],
+        "policyKey": "transient"
+      }
+    }
+  ]
+}

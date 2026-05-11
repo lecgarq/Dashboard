@@ -1,0 +1,58 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/tutorials/revit/step8-download-results",
+    "scrapedAt": "2026-05-08T17:41:56.740Z",
+    "category": "Tutorials",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Task 8 - Download the Results",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "HTTP Request",
+        "Description"
+      ],
+      "rows": [
+        {
+          "HTTP Request": "GET /buckets/{bucketKey}/objects/{objectKey}/signeds3download",
+          "Description": "Creates a signed URL to an object in an OSS bucket."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Attribute",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Attribute": "url",
+          "Description": "The signed S3 URL to download the .rvt file."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -X GET \\\n      'https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<RESULT_FILE_OBJECT_KEY>/signeds3download'\n      - H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n      - H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n    \"status\": \"complete\",\n    \"url\": \"<SIGNED_URL_TO_RESULT_FILE>\",\n    \"params\": {\n        \"content-type\": \"application/octet-stream\",\n        \"content-disposition\": \"attachment; filename*=utf-8''ResultSmall.ipt; filename=ResultSmall.ipt; creation-date=\\\"Wed, 27 Sep 2023 08:52:52 GMT\\\"; modification-date=\\\"Wed, 27 Sep 2023 08:52:52 GMT\\\"; read-date=\\\"Wed, 27 Sep 2023 08:52:52 GMT\\\"; size=240128\"\n    },\n    \"size\": 240128,\n    \"sha1\": \"064db8ddbfc3779335518f496ca232b140783201\"\n}",
+      "parsed": {
+        "status": "complete",
+        "url": "<SIGNED_URL_TO_RESULT_FILE>",
+        "params": {
+          "content-type": "application/octet-stream",
+          "content-disposition": "attachment; filename*=utf-8''ResultSmall.ipt; filename=ResultSmall.ipt; creation-date=\"Wed, 27 Sep 2023 08:52:52 GMT\"; modification-date=\"Wed, 27 Sep 2023 08:52:52 GMT\"; read-date=\"Wed, 27 Sep 2023 08:52:52 GMT\"; size=240128"
+        },
+        "size": 240128,
+        "sha1": "064db8ddbfc3779335518f496ca232b140783201"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n    '<SIGNED_URL_TO_RESULT_FILE>' \\\n    -o 'SOME/PATH/ON/YOUR/COMPUTER/result.rvt'"
+    }
+  ]
+}

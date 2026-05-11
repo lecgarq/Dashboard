@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/link-budgets-and-contract-new",
+    "scrapedAt": "2026-05-08T17:48:21.944Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Link Budgets to Contracts (new)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/contracts?limit=100&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/contracts?limit=100&offset=0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n    \"results\": [\n      {\n        \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n        \"name\": \"Contract 1\",\n        \"...\":\"...\",\n      },\n      {\n        \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109f\",\n        \"name\": \"Contract 2\",\n        \"...\":\"...\",\n      }\n    ],\n    \"pagination\": {\n        \"totalResults\": 2,\n        \"limit\": 100,\n        \"offset\": 0\n    }\n  }"
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/budgets?limit=100&offset=0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"name\": \"Doors\",\n      \"id\": \"5573e292-4355-4d00-a204-2cba97b7025a\",\n      \"...\":\"...\",\n    },\n    {\n      \"name\": \"Windows\",\n      \"id\": \"f7840135-dd11-45d2-9b54-b0887ab3c29b\",\n      \"...\":\"...\",\n    },\n    {\n      \"name\": \"Flooring\",\n      \"id\": \"f7840135-dd11-45d2-9b54-b0887ab3c29c\",\n      \"...\":\"...\",\n    }\n  ],\n  \"pagination\": {\n      \"totalResults\": 3,\n      \"limit\": 100,\n      \"offset\": 0\n  }\n}"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/budgets-contracts:link' -d '{\n  \"create\": [\n    {\n      \"budgetId\": \"5573e292-4355-4d00-a204-2cba97b7025a\",\n      \"contractId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\"\n    },\n    {\n      \"budgetId\": \"f7840135-dd11-45d2-9b54-b0887ab3c29b\",\n      \"contractId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\"\n    },\n    {\n      \"budgetId\": \"f7840135-dd11-45d2-9b54-b0887ab3c29c\",\n      \"contractId\": \"55254a50-44d9-11e9-99d7-79aa05d3109f\"\n    },\n  ]\n}' -X 'POST' \\\n    -H 'Content-Type: application/json' \\\n    -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    }
+  ]
+}

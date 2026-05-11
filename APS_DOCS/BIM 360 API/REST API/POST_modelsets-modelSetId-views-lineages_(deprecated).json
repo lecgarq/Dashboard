@@ -1,0 +1,281 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/mc-modelset-service-v3-search-model-set-view-lineages-POST",
+    "scrapedAt": "2026-05-08T18:02:43.334Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/:containerId/modelsets/:modelSetId/views:lineages",
+  "httpMethod": "POST",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views:lineages",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/views:lineages"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        },
+        {
+          "col_0": "modelSetIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the model set."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "exactboolean",
+          "col_1": "Determines whether to exactly match the set of lineages passed."
+        },
+        {
+          "col_0": "pageLimitint",
+          "col_1": "The maximum number of views to return in a page. If not set, the default page limit is used, as determined by the server."
+        },
+        {
+          "col_0": "continuationTokenstring",
+          "col_1": "The token indicating the start of the page. If not set, the first page is retrieved."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "array: string*array: string",
+          "col_1": "An array of lineage URNs. Min items: 1 Max items: 1000."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "415Unsupported Media Type",
+          "col_1": "The Content-Type header must be application/json."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pageobject",
+          "col_1": "Paging information associated with a paging response."
+        },
+        {
+          "col_0": "continuationTokenstring",
+          "col_1": "A continuation token to retrieve the next page."
+        },
+        {
+          "col_0": "modelSetViewsarray: object",
+          "col_1": "The list of model set views."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the model set view. Min length: 1 Max length: 64."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the model set view. Min length: 1 Max length: 1024."
+        },
+        {
+          "col_0": "isPrivateboolean",
+          "col_1": "Determines whether the view is only accessible to its creator."
+        },
+        {
+          "col_0": "definitionarray: object",
+          "col_1": "The definition of models in a model set view, which is used to track the same models through time. Min items: 1 Max items: 1000."
+        },
+        {
+          "col_0": "lineageUrnstring",
+          "col_1": "The lineage URN of the seed file or document lineage to track with this view. Min length: 1 Max length: 80."
+        },
+        {
+          "col_0": "viewableNamestring",
+          "col_1": "The name of the viewable in the Model Derivative manifest to track along the seed file lineage. This value is ignored if lineageUrn is the URN of a BIM360 Docs Plans folder document. Min length: 1 Max length: 430."
+        },
+        {
+          "col_0": "viewIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the view."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The ID of the user or service that created the view."
+        },
+        {
+          "col_0": "createdTimedatetime: ISO 8601",
+          "col_1": "The date and time that the view was created."
+        },
+        {
+          "col_0": "modifiedBystring",
+          "col_1": "The ID of the user or service that last modified the view."
+        },
+        {
+          "col_0": "modifiedTimedatetime: ISO 8601",
+          "col_1": "The date and time that the view was last modified."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views:lineages' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA\"\n         ]'"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views:lineages?exact=False&pageLimit=134&continuationToken=10' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA\"\n         ]'"
+    },
+    {
+      "raw": "{\n  \"page\": {\n    \"continuationToken\": \"10\"\n  },\n  \"modelSetViews\": [\n    {\n      \"name\": \"L1 - All disciplines\",\n      \"description\": \"All discipline models for Level 1\",\n      \"isPrivate\": false,\n      \"definition\": [\n        {\n          \"lineageUrn\": \"urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA\",\n          \"viewableName\": \"Level 1\"\n        }\n      ],\n      \"viewId\": \"7ed27144-ac06-4b72-5dd6-76bee05854be\",\n      \"createdBy\": \"PD23PXGV8V3V\",\n      \"createdTime\": \"2015-10-21T16:31:44Z\"\n    }\n  ]\n}",
+      "parsed": {
+        "page": {
+          "continuationToken": "10"
+        },
+        "modelSetViews": [
+          {
+            "name": "L1 - All disciplines",
+            "description": "All discipline models for Level 1",
+            "isPrivate": false,
+            "definition": [
+              {
+                "lineageUrn": "urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA",
+                "viewableName": "Level 1"
+              }
+            ],
+            "viewId": "7ed27144-ac06-4b72-5dd6-76bee05854be",
+            "createdBy": "PD23PXGV8V3V",
+            "createdTime": "2015-10-21T16:31:44Z"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ObjectTree",
+    "scrapedAt": "2026-05-08T18:28:05.358Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ObjectTree",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ObjectTree"
+    },
+    {
+      "raw": "public ObjectTree()"
+    },
+    {
+      "raw": "[DataMember(Name = \"data\", EmitDefaultValue = false)]\npublic ObjectTreeData Data { get; set; }"
+    },
+    {
+      "raw": "public bool IsProcessing { get; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

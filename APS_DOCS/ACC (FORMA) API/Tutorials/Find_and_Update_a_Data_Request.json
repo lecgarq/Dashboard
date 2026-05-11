@@ -1,0 +1,93 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/data-connector/dc-tutorial-find-update-data-request",
+    "scrapedAt": "2026-05-08T23:42:28.674Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Find and Update a Data Request",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests?limit=20&sort=desc",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET 'https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests?limit=20&sort=desc' \\\n-H 'Authorization: Bearer <authToken>'"
+    },
+    {
+      "raw": "{\n    \"pagination\": {\n        \"limit\": 20,\n        \"offset\": 0,\n        \"totalResults\": 1\n    },\n    \"results\": [\n        {\n            \"id\": \"55e410c5-4294-44ce-becf-68e1cfd6738c\",\n            \"description\": \"My Weekly Extract\",\n            \"isActive\": true,\n            \"accountId\": \"872264f8-2433-498d-8d36-16649ecb13fe\",\n            \"projectId\": \"ffffffff-1f51-4b26-a6b7-6ac0639cb138\",\n            \"createdBy\": \"73f00c25-a5f9-4c05-861d-ce56d54fa649\",\n            \"createdByEmail\": \"your.name@autodesk.com\",\n            \"updatedBy\": \"73f00c25-a5f9-4c05-861d-ce56d54fa649\",\n            \"scheduleInterval\": \"WEEK\",\n            \"reoccuringInterval\": 1,\n            \"effectiveFrom\": \"2020-11-19T16:00:00.000Z\",\n            \"effectiveTo\": \"2021-11-19T16:00:00.000Z\",\n            \"lastQueuedAt\": \"2020-11-19T16:32:54.725Z\",\n            \"nextExecAt\": \"2020-11-26T16:00:00.000Z\",\n            \"serviceGroups\": [\n                \"admin\",\n                \"issues\",\n                \"locations\",\n                \"submittals\",\n                \"cost\",\n                \"rfis\"\n            ],\n            \"callbackUrl\": null,\n            \"createdAt\": \"2020-11-19T16:32:13.545Z\",\n            \"updatedAt\": \"2020-11-19T16:32:54.728Z\",\n            \"deletedAt\": null\n        }\n    ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 0,
+          "totalResults": 1
+        },
+        "results": [
+          {
+            "id": "55e410c5-4294-44ce-becf-68e1cfd6738c",
+            "description": "My Weekly Extract",
+            "isActive": true,
+            "accountId": "872264f8-2433-498d-8d36-16649ecb13fe",
+            "projectId": "ffffffff-1f51-4b26-a6b7-6ac0639cb138",
+            "createdBy": "73f00c25-a5f9-4c05-861d-ce56d54fa649",
+            "createdByEmail": "your.name@autodesk.com",
+            "updatedBy": "73f00c25-a5f9-4c05-861d-ce56d54fa649",
+            "scheduleInterval": "WEEK",
+            "reoccuringInterval": 1,
+            "effectiveFrom": "2020-11-19T16:00:00.000Z",
+            "effectiveTo": "2021-11-19T16:00:00.000Z",
+            "lastQueuedAt": "2020-11-19T16:32:54.725Z",
+            "nextExecAt": "2020-11-26T16:00:00.000Z",
+            "serviceGroups": [
+              "admin",
+              "issues",
+              "locations",
+              "submittals",
+              "cost",
+              "rfis"
+            ],
+            "callbackUrl": null,
+            "createdAt": "2020-11-19T16:32:13.545Z",
+            "updatedAt": "2020-11-19T16:32:54.728Z",
+            "deletedAt": null
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X PATCH 'https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests/<requestId>' \\\n-H 'Content-Type: application/json' \\\n-H 'Authorization: Bearer <authToken>' \\\n-d '{\n    \"description\": \"My Updated Weekly Extract\"\n}'",
+      "parsed": {
+        "description": "My Updated Weekly Extract"
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"55e410c5-4294-44ce-becf-68e1cfd6738c\",\n    \"description\": \"My Updated Weekly Extract\",\n    \"isActive\": true,\n    \"accountId\": \"872264f8-2433-498d-8d36-16649ecb13fe\",\n    \"projectId\": \"ffffffff-1f51-4b26-a6b7-6ac0639cb138\",\n    \"createdBy\": \"73f00c25-a5f9-4c05-861d-ce56d54fa649\",\n    \"createdByEmail\": \"your.name@autodesk.com\",\n    \"updatedBy\": \"73f00c25-a5f9-4c05-861d-ce56d54fa649\",\n    \"scheduleInterval\": \"WEEK\",\n    \"reoccuringInterval\": 1,\n    \"effectiveFrom\": \"2020-11-19T16:00:00.000Z\",\n    \"effectiveTo\": \"2021-11-19T16:00:00.000Z\",\n    \"lastQueuedAt\": \"2020-11-19T16:32:54.725Z\",\n    \"nextExecAt\": \"2020-11-26T16:00:00.000Z\",\n    \"callbackUrl\": null,\n    \"createdAt\": \"2020-11-19T16:32:13.545Z\",\n    \"updatedAt\": \"2020-11-19T16:35:13.912Z\",\n    \"deletedAt\": null,\n    \"serviceGroups\": [\n        \"admin\",\n        \"issues\",\n        \"locations\",\n        \"submittals\",\n        \"cost\",\n        \"rfis\"\n    ]\n}",
+      "parsed": {
+        "id": "55e410c5-4294-44ce-becf-68e1cfd6738c",
+        "description": "My Updated Weekly Extract",
+        "isActive": true,
+        "accountId": "872264f8-2433-498d-8d36-16649ecb13fe",
+        "projectId": "ffffffff-1f51-4b26-a6b7-6ac0639cb138",
+        "createdBy": "73f00c25-a5f9-4c05-861d-ce56d54fa649",
+        "createdByEmail": "your.name@autodesk.com",
+        "updatedBy": "73f00c25-a5f9-4c05-861d-ce56d54fa649",
+        "scheduleInterval": "WEEK",
+        "reoccuringInterval": 1,
+        "effectiveFrom": "2020-11-19T16:00:00.000Z",
+        "effectiveTo": "2021-11-19T16:00:00.000Z",
+        "lastQueuedAt": "2020-11-19T16:32:54.725Z",
+        "nextExecAt": "2020-11-26T16:00:00.000Z",
+        "callbackUrl": null,
+        "createdAt": "2020-11-19T16:32:13.545Z",
+        "updatedAt": "2020-11-19T16:35:13.912Z",
+        "deletedAt": null,
+        "serviceGroups": [
+          "admin",
+          "issues",
+          "locations",
+          "submittals",
+          "cost",
+          "rfis"
+        ]
+      }
+    }
+  ]
+}

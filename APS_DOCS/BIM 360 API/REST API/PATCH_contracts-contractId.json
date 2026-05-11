@@ -1,0 +1,949 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-contracts-contractId-PATCH",
+    "scrapedAt": "2026-05-08T17:56:26.261Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/contracts/{contractId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/97363960-9483-11e8-a7ec-7ddae203e404",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PATCH https://developer.api.autodesk.com/cost/v1/containers/:containerId/contracts/:contractId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        },
+        {
+          "col_0": "contractIdstring: UUID",
+          "col_1": "The contract ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "codestring",
+          "col_1": "The code of the contract.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the contract.\nMax length: 1024"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The detailed description of a contract.\nMax length: 2048"
+        },
+        {
+          "col_0": "companyIdstring,null",
+          "col_1": "The ID of a company managed by a BIM 360 Admin. Detailed company information can be retrieved by calling GET projects/:project_id/companies and locating the member_group_id in the response."
+        },
+        {
+          "col_0": "companyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "typestring,null",
+          "col_1": "The type of contract. For example, consultant or purchase order. The type can be customized by the project admin."
+        },
+        {
+          "col_0": "contactIdstring,null",
+          "col_1": "The unique identifier of the default contact for the supplier. This ID is generated and managed by the BIM 360 Admin service. The contactId can be used to query user information such as email and company."
+        },
+        {
+          "col_0": "recipientsarray: object",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "isDefaultboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "sourcestring,null",
+          "col_1": "The URN of the source entity from which the contract is created."
+        },
+        {
+          "col_0": "additionalContactsobject",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "sovContactIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "signatoryIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "rfqRecipientIdstring,null,array",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "scoSignatoryIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "costPaymentApplicationContactIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "signedBystring,null",
+          "col_1": "The user who signed the contract. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "ownerIdstring,null",
+          "col_1": "The user responsible for the purchase. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "mainContractIdstring,null",
+          "col_1": "The ID of the main contract with which this item is associated."
+        },
+        {
+          "col_0": "completedWorkRetentionPercentnumber,null",
+          "col_1": "The completed work retention percentage of the contract amount."
+        },
+        {
+          "col_0": "materialsRetentionPercentnumber,null",
+          "col_1": "The materials retention percentage of the contract amount."
+        },
+        {
+          "col_0": "retentionCapnumber,null",
+          "col_1": "The maximum percentage of the total contract amount which can be used as the retention amount."
+        },
+        {
+          "col_0": "statusstring,null",
+          "col_1": "The status of this contract.\nPossible values: draft, pending, submitted, revise, sent, signed, executed, closed, inReview"
+        },
+        {
+          "col_0": "subStatusstring,null",
+          "col_1": "The subStatus is used when the contract is in an executed state and may have additional statuses under it. For example, if a contract is “executed” but requires the supplier to provide additional information, the status will be executed and the subStatus will be pending. In other cases, subStatus is always null. Possible values: null, pending, submitted, revise. Default value: null."
+        },
+        {
+          "col_0": "currencystring",
+          "col_1": "The code of the currency specified for the contract if it’s awarded in a foreign currency."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "The final exchange rate for the specified currency, applied as a multiplier of the contract’s base currency. For example, 1 base currency = 0.7455 foreign currency."
+        },
+        {
+          "col_0": "forecastExchangeRatenumber,string,null",
+          "col_1": "The forecast exchange rate. Default value: null."
+        },
+        {
+          "col_0": "forecastExchangeRateUpdatedAtdatetime: ISO 8601",
+          "col_1": "The last time that the forecast exchange rate was updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "awardedAtstring,null",
+          "col_1": "The date and time of the contract award, in ISO 8601 format."
+        },
+        {
+          "col_0": "sentAtstring,null",
+          "col_1": "The date and time of contract transmission to the supplier, in ISO 8601 format."
+        },
+        {
+          "col_0": "respondedAtstring,null",
+          "col_1": "The date and time of the supplier’s response, in ISO 8601 format."
+        },
+        {
+          "col_0": "responseDuestring,null",
+          "col_1": "The date and time by which the supplier response is due, in ISO 8601 format."
+        },
+        {
+          "col_0": "returnedAtstring,null",
+          "col_1": "The date and time of the signed contract return, in ISO 8601 format."
+        },
+        {
+          "col_0": "onsiteAtstring,null",
+          "col_1": "The date and time of the supplier’s arrival on-site, in ISO 8601 format."
+        },
+        {
+          "col_0": "offsiteAtstring,null",
+          "col_1": "The date and time of job completion by the supplier, in ISO 8601 format."
+        },
+        {
+          "col_0": "procuredAtstring,null",
+          "col_1": "The date and time of purchase, in ISO 8601 format. This is designed for Purchase Order contracts."
+        },
+        {
+          "col_0": "approvedAtstring,null",
+          "col_1": "The date and time of contract approval, in ISO 8601 format."
+        },
+        {
+          "col_0": "executedAtstring,null",
+          "col_1": "The date and time of contract execution, in ISO 8601 format."
+        },
+        {
+          "col_0": "internalIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "internalSystemstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of a contract."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The code of the contract.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the contract.\nMax length: 1024"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The detailed description of a contract.\nMax length: 2048"
+        },
+        {
+          "col_0": "companyIdstring,null",
+          "col_1": "The ID of a company managed by a BIM 360 Admin. Detailed company information can be retrieved by calling GET projects/:project_id/companies and locating the member_group_id in the response."
+        },
+        {
+          "col_0": "companyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "typestring,null",
+          "col_1": "The type of contract. For example, consultant or purchase order. The type can be customized by the project admin."
+        },
+        {
+          "col_0": "contactIdstring,null",
+          "col_1": "The unique identifier of the default contact for the supplier. This ID is generated and managed by the BIM 360 Admin service. The contactId can be used to query user information such as email and company."
+        },
+        {
+          "col_0": "recipientsarray: object",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "isDefaultboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "sourcestring,null",
+          "col_1": "The URN of the source entity from which the contract is created."
+        },
+        {
+          "col_0": "additionalContactsobject",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "sovContactIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "signatoryIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "rfqRecipientIdstring,null,array",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "scoSignatoryIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "costPaymentApplicationContactIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "signedBystring,null",
+          "col_1": "The user who signed the contract. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "ownerIdstring,null",
+          "col_1": "The user responsible for the purchase. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "mainContractIdstring,null",
+          "col_1": "The ID of the main contract with which this item is associated."
+        },
+        {
+          "col_0": "completedWorkRetentionPercentnumber,null",
+          "col_1": "The completed work retention percentage of the contract amount."
+        },
+        {
+          "col_0": "materialsRetentionPercentnumber,null",
+          "col_1": "The materials retention percentage of the contract amount."
+        },
+        {
+          "col_0": "retentionCapnumber,null",
+          "col_1": "The maximum percentage of the total contract amount which can be used as the retention amount."
+        },
+        {
+          "col_0": "statusstring,null",
+          "col_1": "The status of this contract.\nPossible values: draft, pending, submitted, revise, sent, signed, executed, closed, inReview"
+        },
+        {
+          "col_0": "subStatusstring,null",
+          "col_1": "The subStatus is used when the contract is in an executed state and may have additional statuses under it. For example, if a contract is “executed” but requires the supplier to provide additional information, the status will be executed and the subStatus will be pending. In other cases, subStatus is always null. Possible values: null, pending, submitted, revise. Default value: null."
+        },
+        {
+          "col_0": "currencystring",
+          "col_1": "The code of the currency specified for the contract if it’s awarded in a foreign currency."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "The final exchange rate for the specified currency, applied as a multiplier of the contract’s base currency. For example, 1 base currency = 0.7455 foreign currency."
+        },
+        {
+          "col_0": "forecastExchangeRatenumber,string,null",
+          "col_1": "The forecast exchange rate. Default value: null."
+        },
+        {
+          "col_0": "forecastExchangeRateUpdatedAtdatetime: ISO 8601",
+          "col_1": "The last time that the forecast exchange rate was updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "awardedAtstring,null",
+          "col_1": "The date and time of the contract award, in ISO 8601 format."
+        },
+        {
+          "col_0": "statusChangedAtdatetime: ISO 8601",
+          "col_1": "The date and time of the last status change, in ISO 8601 format."
+        },
+        {
+          "col_0": "sentAtstring,null",
+          "col_1": "The date and time of contract transmission to the supplier, in ISO 8601 format."
+        },
+        {
+          "col_0": "respondedAtstring,null",
+          "col_1": "The date and time of the supplier’s response, in ISO 8601 format."
+        },
+        {
+          "col_0": "responseDuestring,null",
+          "col_1": "The date and time by which the supplier response is due, in ISO 8601 format."
+        },
+        {
+          "col_0": "returnedAtstring,null",
+          "col_1": "The date and time of the signed contract return, in ISO 8601 format."
+        },
+        {
+          "col_0": "onsiteAtstring,null",
+          "col_1": "The date and time of the supplier’s arrival on-site, in ISO 8601 format."
+        },
+        {
+          "col_0": "offsiteAtstring,null",
+          "col_1": "The date and time of job completion by the supplier, in ISO 8601 format."
+        },
+        {
+          "col_0": "procuredAtstring,null",
+          "col_1": "The date and time of purchase, in ISO 8601 format. This is designed for Purchase Order contracts."
+        },
+        {
+          "col_0": "approvedAtstring,null",
+          "col_1": "The date and time of contract approval, in ISO 8601 format."
+        },
+        {
+          "col_0": "executedAtstring,null",
+          "col_1": "The date and time of contract execution, in ISO 8601 format."
+        },
+        {
+          "col_0": "internalIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "internalSystemstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "changedBystring",
+          "col_1": "The user who made the last change to the contract. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "creatorIdstring",
+          "col_1": "The user who created the contract. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "awardednumber",
+          "col_1": "Amount of the original Contract"
+        },
+        {
+          "col_0": "originalBudgetnumber",
+          "col_1": "The total amount of original amount of budgets associated to this Contract."
+        },
+        {
+          "col_0": "internalAdjustmentnumber",
+          "col_1": "The total amount of internal transfers of budgets associated to this Contract."
+        },
+        {
+          "col_0": "approvedOwnerChangesnumber",
+          "col_1": "The total amount of the changes approved by the owner."
+        },
+        {
+          "col_0": "pendingOwnerChangesnumber",
+          "col_1": "The total amount of the changes pending approval by the owner."
+        },
+        {
+          "col_0": "approvedChangeOrdersnumber",
+          "col_1": "The total amount of the changes committed to the supplier."
+        },
+        {
+          "col_0": "approvedInScopeChangeOrdersnumber",
+          "col_1": "The total amount of in-scope changes committed to the supplier."
+        },
+        {
+          "col_0": "pendingChangeOrdersnumber",
+          "col_1": "The total amount of the changes not committed to the supplier."
+        },
+        {
+          "col_0": "reservesnumber",
+          "col_1": "The total amount of the changes under estimating."
+        },
+        {
+          "col_0": "actualCostnumber",
+          "col_1": "The total amount of actual cost of the contract."
+        },
+        {
+          "col_0": "uncommittednumber",
+          "col_1": "The amount that has been approved by owner but not committed to the supplier. This is calculated as approvedOwnerChanges - (approvedChangeOrders - approvedInScopeChangeOrders)."
+        },
+        {
+          "col_0": "revisednumber",
+          "col_1": "The total amount of the approved budget from the owner, equals to originalAmount + internalAdjustment + approvedOwnerChanges."
+        },
+        {
+          "col_0": "projectedCostnumber",
+          "col_1": "The total amount of the project cost. For a budget, it is equal to originalCommitment + approvedChangeOrders + pendingChangeOrders + reserves. For a contract , it is equal to awarded + approvedChangeOrders + pendingChangeOrders + reserves."
+        },
+        {
+          "col_0": "projectedBudgetnumber",
+          "col_1": "The total amount of the project budget including pending changes, equals to revised + pendingOwnerChanges."
+        },
+        {
+          "col_0": "forecastFinalCostnumber",
+          "col_1": "The total amount of the project cost including forecast adjustments, equals to projectedCost + adjustmentsTotal."
+        },
+        {
+          "col_0": "forecastVariancenumber",
+          "col_1": "The total amount of the forecast variance, equals to projectedBudget - forecastFinalCost."
+        },
+        {
+          "col_0": "forecastCostCompletenumber",
+          "col_1": "The total amount of the forecast cost to complete, equals to forecastFinalCost - actualCost."
+        },
+        {
+          "col_0": "varianceTotalnumber",
+          "col_1": "The total amount of the variance of a budget, equals to projectedBudget - projectedCost."
+        },
+        {
+          "col_0": "documentGeneratedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the contract document was generated, in ISO 8601 format."
+        },
+        {
+          "col_0": "scopeOfWorkstring",
+          "col_1": "Scope of work agreed upon and signed by all parties of the contract. This is a Tiptap formatted rich text (https://tiptap.dev/introduction/)."
+        },
+        {
+          "col_0": "notestring",
+          "col_1": "A note related to the contract. This is a Tiptap formatted rich text (https://tiptap.dev/introduction/)"
+        },
+        {
+          "col_0": "compoundedobject",
+          "col_1": "The calculated values based on the contract’s customized columns."
+        },
+        {
+          "col_0": "paymentDueint",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "paymentDueTypestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "budgetIdsarray: string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "budgetsarray: object",
+          "col_1": "Budgets that are linked to this contract."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the budget linked to the contract."
+        },
+        {
+          "col_0": "mainContractIdstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "scheduleOfValuesarray: object",
+          "col_1": "The schedule of values for the contract."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique ID of the schedule of values (SOV) item."
+        },
+        {
+          "col_0": "parentIdstring,null",
+          "col_1": "The ID of the SOV item’s parent item, the default value is null. For root SOV items, this value is null."
+        },
+        {
+          "col_0": "contractIdstring",
+          "col_1": "The ID of the contract to which the SOV item belongs."
+        },
+        {
+          "col_0": "budgetIdstring,null",
+          "col_1": "The ID of the budget to which the SOV item belongs."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The code of the SOV item.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "quantitynumber",
+          "col_1": "The quantity of the SOV item."
+        },
+        {
+          "col_0": "unitPricenumber",
+          "col_1": "The unit price of the SOV item."
+        },
+        {
+          "col_0": "unitstring",
+          "col_1": "The unit of measure of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The total price of the SOV item."
+        },
+        {
+          "col_0": "allocatedAmountnumber,string,null",
+          "col_1": "The amount of budget allocated to this contract."
+        },
+        {
+          "col_0": "quantityPerBulknumber",
+          "col_1": "The quantity conversion ratio of the SOV item."
+        },
+        {
+          "col_0": "bulkUnitPricenumber",
+          "col_1": "The unit price of the converted SOV item quantity."
+        },
+        {
+          "col_0": "bulknumber",
+          "col_1": "The converted quantity of the SOV item."
+        },
+        {
+          "col_0": "associationIdstring,null",
+          "col_1": "The ID of a change order or cost item that this SOV item was originally created from."
+        },
+        {
+          "col_0": "associationTypestring,null",
+          "col_1": "The type of object from which the SOV item was created:a change order or a cost item."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "The exchange rate that applies to the SOV item’s base currency price. For example, provide the value 0.7455 for a foreign currency that’s worth 0.7455 of your base currency."
+        },
+        {
+          "col_0": "positionnumber",
+          "col_1": "The position of the SOV item in the list of SOV items."
+        },
+        {
+          "col_0": "hasBudgetLinkedboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "companyNamestring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "lockStatestring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "lockedBystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "lockedAtdatetime: ISO 8601",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        },
+        {
+          "col_0": "integrationStateChangedAtstring,null",
+          "col_1": "The date and time that the item’s integration status was last changed."
+        },
+        {
+          "col_0": "integrationStateChangedBystring,null",
+          "col_1": "The user who last changed the integration status. This is the ID of a user managed by the BIM 360/Forma Admin."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "companyERPIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "companyTaxIdstring,null",
+          "col_1": "Not relevant"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/97363960-9483-11e8-a7ec-7ddae203e404' \\\n  -X 'PATCH' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"code\": \"GC-01\",\n        \"name\": \"Site Management Staff\",\n        \"description\": \"Site Management Staff\",\n        \"companyId\": \"GF8XKPKWM38E\",\n        \"companyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n        \"type\": \"consultant\",\n        \"contactId\": \"CED9LVTLHNXV\",\n        \"recipients\": [\n          {\n            \"id\": \"ZPYARKZX9ANQ\",\n            \"isDefault\": false\n          }\n        ],\n        \"source\": \"urn:adsk.service-name:us.prd:customer:1234\",\n        \"additionalContacts\": {\n          \"sovContactId\": \"CED9LVTLHNXV\",\n          \"signatoryId\": \"CED9LVTLHNXV\",\n          \"rfqRecipientId\": \"CED9LVTLHNXV\",\n          \"scoSignatoryId\": \"CED9LVTLHNXV\",\n          \"costPaymentApplicationContactId\": \"CED9LVTLHNXV\"\n        },\n        \"signedBy\": \"CED9LVTLHNXV\",\n        \"ownerId\": \"CED9LVTLHNXV\",\n        \"mainContractId\": \"\",\n        \"completedWorkRetentionPercent\": \"50\",\n        \"materialsRetentionPercent\": \"50\",\n        \"retentionCap\": \"50\",\n        \"status\": \"open\",\n        \"subStatus\": \"open\",\n        \"currency\": \"USD\",\n        \"exchangeRate\": \"1000.0000\",\n        \"forecastExchangeRate\": \"1000.0000\",\n        \"forecastExchangeRateUpdatedAt\": \"2019-09-06T01:24:22.678Z\",\n        \"awardedAt\": \"2019-09-04T01:45:24.582Z\",\n        \"sentAt\": \"2019-09-04T01:45:24.582Z\",\n        \"respondedAt\": \"2019-09-04T01:45:24.582Z\",\n        \"responseDue\": \"2019-09-04T01:45:24.582Z\",\n        \"returnedAt\": \"2019-09-04T01:45:24.582Z\",\n        \"onsiteAt\": \"2019-09-04T01:45:24.582Z\",\n        \"offsiteAt\": \"2019-09-04T01:45:24.582Z\",\n        \"procuredAt\": \"2019-09-04T01:45:24.582Z\",\n        \"approvedAt\": \"2019-09-04T01:45:24.582Z\",\n        \"executedAt\": \"2019-09-04T01:45:24.582Z\",\n        \"internalId\": \"123\",\n        \"internalSystem\": \"GCPay\",\n        \"externalId\": \"10010-99-AB\",\n        \"externalSystem\": \"Sage300\",\n        \"externalMessage\": \"Success.\",\n        \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n        \"integrationState\": \"locked\"\n      }'",
+      "parsed": {
+        "code": "GC-01",
+        "name": "Site Management Staff",
+        "description": "Site Management Staff",
+        "companyId": "GF8XKPKWM38E",
+        "companyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "type": "consultant",
+        "contactId": "CED9LVTLHNXV",
+        "recipients": [
+          {
+            "id": "ZPYARKZX9ANQ",
+            "isDefault": false
+          }
+        ],
+        "source": "urn:adsk.service-name:us.prd:customer:1234",
+        "additionalContacts": {
+          "sovContactId": "CED9LVTLHNXV",
+          "signatoryId": "CED9LVTLHNXV",
+          "rfqRecipientId": "CED9LVTLHNXV",
+          "scoSignatoryId": "CED9LVTLHNXV",
+          "costPaymentApplicationContactId": "CED9LVTLHNXV"
+        },
+        "signedBy": "CED9LVTLHNXV",
+        "ownerId": "CED9LVTLHNXV",
+        "mainContractId": "",
+        "completedWorkRetentionPercent": "50",
+        "materialsRetentionPercent": "50",
+        "retentionCap": "50",
+        "status": "open",
+        "subStatus": "open",
+        "currency": "USD",
+        "exchangeRate": "1000.0000",
+        "forecastExchangeRate": "1000.0000",
+        "forecastExchangeRateUpdatedAt": "2019-09-06T01:24:22.678Z",
+        "awardedAt": "2019-09-04T01:45:24.582Z",
+        "sentAt": "2019-09-04T01:45:24.582Z",
+        "respondedAt": "2019-09-04T01:45:24.582Z",
+        "responseDue": "2019-09-04T01:45:24.582Z",
+        "returnedAt": "2019-09-04T01:45:24.582Z",
+        "onsiteAt": "2019-09-04T01:45:24.582Z",
+        "offsiteAt": "2019-09-04T01:45:24.582Z",
+        "procuredAt": "2019-09-04T01:45:24.582Z",
+        "approvedAt": "2019-09-04T01:45:24.582Z",
+        "executedAt": "2019-09-04T01:45:24.582Z",
+        "internalId": "123",
+        "internalSystem": "GCPay",
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z",
+        "integrationState": "locked"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"97363960-9483-11e8-a7ec-7ddae203e404\",\n  \"code\": \"GC-01\",\n  \"name\": \"Site Management Staff\",\n  \"description\": \"Site Management Staff\",\n  \"companyId\": \"GF8XKPKWM38E\",\n  \"companyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"type\": \"consultant\",\n  \"contactId\": \"CED9LVTLHNXV\",\n  \"recipients\": [\n    {\n      \"id\": \"ZPYARKZX9ANQ\",\n      \"isDefault\": false\n    }\n  ],\n  \"source\": \"urn:adsk.service-name:us.prd:customer:1234\",\n  \"additionalContacts\": {\n    \"sovContactId\": \"CED9LVTLHNXV\",\n    \"signatoryId\": \"CED9LVTLHNXV\",\n    \"rfqRecipientId\": \"CED9LVTLHNXV\",\n    \"scoSignatoryId\": \"CED9LVTLHNXV\",\n    \"costPaymentApplicationContactId\": \"CED9LVTLHNXV\"\n  },\n  \"signedBy\": \"CED9LVTLHNXV\",\n  \"ownerId\": \"CED9LVTLHNXV\",\n  \"mainContractId\": \"\",\n  \"completedWorkRetentionPercent\": \"50\",\n  \"materialsRetentionPercent\": \"50\",\n  \"retentionCap\": \"50\",\n  \"status\": \"open\",\n  \"subStatus\": \"open\",\n  \"currency\": \"USD\",\n  \"exchangeRate\": \"1000.0000\",\n  \"forecastExchangeRate\": \"1000.0000\",\n  \"forecastExchangeRateUpdatedAt\": \"2019-09-06T01:24:22.678Z\",\n  \"awardedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"statusChangedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"sentAt\": \"2019-09-04T01:45:24.582Z\",\n  \"respondedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"responseDue\": \"2019-09-04T01:45:24.582Z\",\n  \"returnedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"onsiteAt\": \"2019-09-04T01:45:24.582Z\",\n  \"offsiteAt\": \"2019-09-04T01:45:24.582Z\",\n  \"procuredAt\": \"2019-09-04T01:45:24.582Z\",\n  \"approvedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"executedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"internalId\": \"123\",\n  \"internalSystem\": \"GCPay\",\n  \"changedBy\": \"CED9LVTLHNXV\",\n  \"creatorId\": \"CED9LVTLHNXV\",\n  \"awarded\": 1000,\n  \"originalBudget\": 1000,\n  \"internalAdjustment\": 1000,\n  \"approvedOwnerChanges\": 1000,\n  \"pendingOwnerChanges\": 1000,\n  \"approvedChangeOrders\": 1000,\n  \"approvedInScopeChangeOrders\": 1000,\n  \"pendingChangeOrders\": 1000,\n  \"reserves\": 1000,\n  \"actualCost\": 1000,\n  \"uncommitted\": 1000,\n  \"revised\": 1000,\n  \"projectedCost\": 1000,\n  \"projectedBudget\": 1000,\n  \"forecastFinalCost\": 1000,\n  \"forecastVariance\": 1000,\n  \"forecastCostComplete\": 1000,\n  \"varianceTotal\": 1000,\n  \"documentGeneratedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"scopeOfWork\": \"\",\n  \"note\": \"\",\n  \"compounded\": {},\n  \"paymentDue\": 10,\n  \"paymentDueType\": \"afterStart\",\n  \"budgetIds\": [\n    \"48934441-e392-49d7-bf58-8dea43d413ae\"\n  ],\n  \"budgets\": [\n    {\n      \"id\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n      \"mainContractId\": \"f6445638-ca68-4e3c-9160-15864de6b819\"\n    }\n  ],\n  \"scheduleOfValues\": [\n    {\n      \"id\": \"88dc0f70-9483-11e8-a7ec-7ddae203e404\",\n      \"parentId\": \"null\",\n      \"contractId\": \"2256dc50-9481-11e8-87fb-215990a8aeb3\",\n      \"budgetId\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n      \"code\": \"03 30 01.1\",\n      \"name\": \"Concrete to Pile Caps\",\n      \"quantity\": 50,\n      \"unitPrice\": 20,\n      \"unit\": \"ea\",\n      \"amount\": \"1000.0000\",\n      \"allocatedAmount\": \"1000.0000\",\n      \"quantityPerBulk\": 50,\n      \"bulkUnitPrice\": 20,\n      \"bulk\": 50,\n      \"associationId\": \"88dc0f70-9483-11e8-a7ec-7ddae203e404\",\n      \"associationType\": \"SCO\",\n      \"exchangeRate\": \"1000.0000\",\n      \"position\": 1,\n      \"hasBudgetLinked\": false,\n      \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n      \"updatedAt\": \"2019-09-05T01:00:12.989Z\",\n      \"externalId\": \"10010-99-AB\",\n      \"externalSystem\": \"Sage300\",\n      \"externalMessage\": \"Success.\",\n      \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\"\n    }\n  ],\n  \"companyName\": \"Autodesk\",\n  \"lockState\": \"LOCKED\",\n  \"lockedBy\": \"CED9LVTLHNXV\",\n  \"lockedAt\": \"2019-09-04T01:45:24.582Z\",\n  \"externalId\": \"10010-99-AB\",\n  \"externalSystem\": \"Sage300\",\n  \"externalMessage\": \"Success.\",\n  \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationState\": \"locked\",\n  \"integrationStateChangedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationStateChangedBy\": \"CED9LVTLHNXV\",\n  \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n  \"updatedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"companyERPId\": \"GF8XKPKWM38E\",\n  \"companyTaxId\": \"GF8XKPKWM38E\"\n}",
+      "parsed": {
+        "id": "97363960-9483-11e8-a7ec-7ddae203e404",
+        "code": "GC-01",
+        "name": "Site Management Staff",
+        "description": "Site Management Staff",
+        "companyId": "GF8XKPKWM38E",
+        "companyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "type": "consultant",
+        "contactId": "CED9LVTLHNXV",
+        "recipients": [
+          {
+            "id": "ZPYARKZX9ANQ",
+            "isDefault": false
+          }
+        ],
+        "source": "urn:adsk.service-name:us.prd:customer:1234",
+        "additionalContacts": {
+          "sovContactId": "CED9LVTLHNXV",
+          "signatoryId": "CED9LVTLHNXV",
+          "rfqRecipientId": "CED9LVTLHNXV",
+          "scoSignatoryId": "CED9LVTLHNXV",
+          "costPaymentApplicationContactId": "CED9LVTLHNXV"
+        },
+        "signedBy": "CED9LVTLHNXV",
+        "ownerId": "CED9LVTLHNXV",
+        "mainContractId": "",
+        "completedWorkRetentionPercent": "50",
+        "materialsRetentionPercent": "50",
+        "retentionCap": "50",
+        "status": "open",
+        "subStatus": "open",
+        "currency": "USD",
+        "exchangeRate": "1000.0000",
+        "forecastExchangeRate": "1000.0000",
+        "forecastExchangeRateUpdatedAt": "2019-09-06T01:24:22.678Z",
+        "awardedAt": "2019-09-04T01:45:24.582Z",
+        "statusChangedAt": "2019-09-04T01:45:24.582Z",
+        "sentAt": "2019-09-04T01:45:24.582Z",
+        "respondedAt": "2019-09-04T01:45:24.582Z",
+        "responseDue": "2019-09-04T01:45:24.582Z",
+        "returnedAt": "2019-09-04T01:45:24.582Z",
+        "onsiteAt": "2019-09-04T01:45:24.582Z",
+        "offsiteAt": "2019-09-04T01:45:24.582Z",
+        "procuredAt": "2019-09-04T01:45:24.582Z",
+        "approvedAt": "2019-09-04T01:45:24.582Z",
+        "executedAt": "2019-09-04T01:45:24.582Z",
+        "internalId": "123",
+        "internalSystem": "GCPay",
+        "changedBy": "CED9LVTLHNXV",
+        "creatorId": "CED9LVTLHNXV",
+        "awarded": 1000,
+        "originalBudget": 1000,
+        "internalAdjustment": 1000,
+        "approvedOwnerChanges": 1000,
+        "pendingOwnerChanges": 1000,
+        "approvedChangeOrders": 1000,
+        "approvedInScopeChangeOrders": 1000,
+        "pendingChangeOrders": 1000,
+        "reserves": 1000,
+        "actualCost": 1000,
+        "uncommitted": 1000,
+        "revised": 1000,
+        "projectedCost": 1000,
+        "projectedBudget": 1000,
+        "forecastFinalCost": 1000,
+        "forecastVariance": 1000,
+        "forecastCostComplete": 1000,
+        "varianceTotal": 1000,
+        "documentGeneratedAt": "2019-09-04T01:45:24.582Z",
+        "scopeOfWork": "",
+        "note": "",
+        "compounded": {},
+        "paymentDue": 10,
+        "paymentDueType": "afterStart",
+        "budgetIds": [
+          "48934441-e392-49d7-bf58-8dea43d413ae"
+        ],
+        "budgets": [
+          {
+            "id": "f6445638-ca68-4e3c-9160-15864de6b818",
+            "mainContractId": "f6445638-ca68-4e3c-9160-15864de6b819"
+          }
+        ],
+        "scheduleOfValues": [
+          {
+            "id": "88dc0f70-9483-11e8-a7ec-7ddae203e404",
+            "parentId": "null",
+            "contractId": "2256dc50-9481-11e8-87fb-215990a8aeb3",
+            "budgetId": "f6445638-ca68-4e3c-9160-15864de6b818",
+            "code": "03 30 01.1",
+            "name": "Concrete to Pile Caps",
+            "quantity": 50,
+            "unitPrice": 20,
+            "unit": "ea",
+            "amount": "1000.0000",
+            "allocatedAmount": "1000.0000",
+            "quantityPerBulk": 50,
+            "bulkUnitPrice": 20,
+            "bulk": 50,
+            "associationId": "88dc0f70-9483-11e8-a7ec-7ddae203e404",
+            "associationType": "SCO",
+            "exchangeRate": "1000.0000",
+            "position": 1,
+            "hasBudgetLinked": false,
+            "createdAt": "2019-01-06T01:24:22.678Z",
+            "updatedAt": "2019-09-05T01:00:12.989Z",
+            "externalId": "10010-99-AB",
+            "externalSystem": "Sage300",
+            "externalMessage": "Success.",
+            "lastSyncTime": "2019-09-05T01:00:12.989Z"
+          }
+        ],
+        "companyName": "Autodesk",
+        "lockState": "LOCKED",
+        "lockedBy": "CED9LVTLHNXV",
+        "lockedAt": "2019-09-04T01:45:24.582Z",
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z",
+        "integrationState": "locked",
+        "integrationStateChangedAt": "2019-09-05T01:00:12.989Z",
+        "integrationStateChangedBy": "CED9LVTLHNXV",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z",
+        "companyERPId": "GF8XKPKWM38E",
+        "companyTaxId": "GF8XKPKWM38E"
+      }
+    }
+  ]
+}

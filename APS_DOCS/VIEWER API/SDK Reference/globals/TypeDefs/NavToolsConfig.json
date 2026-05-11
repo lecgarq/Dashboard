@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/NavToolsConfig",
+    "scrapedAt": "2026-05-08T18:49:19.897Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "NavToolsConfig",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dollyScrollScalenumber",
+          "col_1": "Deprecated Please, use zoomScrollSpeed viewer setting instead. The dolly (zoom) scale of the scroll wheel which is used to calculate the camera distance. The default is set to 0.6."
+        },
+        {
+          "col_0": "dollyDragScalenumber",
+          "col_1": "Deprecated Please, use zoomDragSpeed viewer setting instead. The dolly (zoom) scale for the zoom tool which is used to calculate the camera distance. The default is set to 100."
+        }
+      ]
+    }
+  ]
+}

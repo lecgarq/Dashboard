@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/change_history/changelog_v4",
+    "scrapedAt": "2026-05-08T18:50:32.068Z",
+    "category": "Other",
+    "apiName": "VIEWER API"
+  },
+  "title": "V4 Changelog",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Existing 3D Settings (4.0.1 and earlier)",
+        "New 3D Settings (4.1)"
+      ],
+      "rows": [
+        {
+          "Existing 3D Settings (4.0.1 and earlier)": "",
+          "New 3D Settings (4.1)": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Existing 2D Settings (4.0.1 and earlier)",
+        "New 2D Settings (4.1)"
+      ],
+      "rows": [
+        {
+          "Existing 2D Settings (4.0.1 and earlier)": "",
+          "New 2D Settings (4.1)": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Existing UI theme (3.3.5 and earlier)",
+        "string = “dark-theme”",
+        "string = “light-theme”"
+      ],
+      "rows": [
+        {
+          "Existing UI theme (3.3.5 and earlier)": "",
+          "string = “dark-theme”": "",
+          "string = “light-theme”": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Existing search (3.3.5 and earlier)",
+        "Improved version 4.0 behavior"
+      ],
+      "rows": [
+        {
+          "Existing search (3.3.5 and earlier)": "",
+          "Improved version 4.0 behavior": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "activateExtension(extensionID, mode);  // Activates the extension based on the extensionID and mode given.\n                                       // By default uses the first available mode in getExtensionModes()\n\ndeactivateExtension(extensionID);      // Deactivates the extension based on the extensionID specified.\n\nIsExtensionActive(extensionID);        // Check if the extension is active or not by passing the extensionID.\n\nIsExtensionLoaded(extensionID);        // Check if the extension is loaded or not by passing the extensionID.\n\ngetLoadedExtensions();                 // Get a list of all the extensions that are currently loaded.\n\ngetExtensionModes(extensionID);        // Get a list of all the modes that are available for the given extensionID.\n                                       // For example, \"Autodesk.Measure\" has modes: \"distance\", \"area\", \"angle\", \"calibrate\""
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/Profile",
+    "scrapedAt": "2026-05-08T18:44:30.754Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "Profile",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "profileSettings*ProfileSettings",
+          "col_1": "the profile settings."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "prefs*Autodesk.Viewing.Private.Preferences",
+          "col_1": "preferences instance."
+        },
+        {
+          "col_0": "overrideboolean",
+          "col_1": "Override all existing preferences with the profile’s preferences."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "const profileSettings = {\n name: \"mySettings\",\n description: \"My personal settings.\",\n settings: {\n     ambientShadows: false,\n     groundShadows: true\n }\n persistent: ['ambientShadows'],\n extensions: {\n     load: [\"Autodesk.BimWalk\"],   // Extensions to load\n     unload: [\"Autodesk.ViewCubeUi\"]  // Extensions to unload and to not load\n }"
+    }
+  ]
+}

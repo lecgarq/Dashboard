@@ -1,0 +1,181 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/projects-project_id-users-user_id-PATCH",
+    "scrapedAt": "2026-05-08T17:52:23.876Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/:project_id/users/:user_id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v2/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/users/a75e8769-621e-40b6-a524-0cffdd2f784e",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI (US)",
+          "col_1": "PATCH https://developer.api.autodesk.com/hq/v2/accounts/:account_id/projects/:project_id/users/:user_id"
+        },
+        {
+          "col_0": "Method and URI (Legacy)",
+          "col_1": "PATCH https://developer.api.autodesk.com/hq/v2/regions/eu/accounts/:account_id/projects/:project_id/users/:user_id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:write"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow.\n\nNote that it will not accept a two-legged token, unless you add the x-user-id header."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified.\n\nThe user’s BIM 360 ID. A user is assigned a BIM 360 ID (id) for all BIM 360 accounts and projects. To verify the ID, call GET users.\n\nNote that the user must either be an account admin of the account or a project admin of the project."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json."
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Specifies the region where the service is located.                                                                                                       | Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring",
+          "col_1": "The account ID of the user. This corresponds to hub ID in the Data Management API. To convert a hub ID into an account ID you need to remove the “b.\" prefix. For example, a hub ID of b.c8b0c73d-3ae9 translates to an account ID of c8b0c73d-3ae9."
+        },
+        {
+          "col_0": "project_idstring",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the BIM 360 API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "user_idstring",
+          "col_1": "The user’s BIM 360 ID. A user is assigned a BIM 360 ID (id) for all BIM 360 accounts and projects. To verify the ID, call GET users."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "company_idstring",
+          "col_1": "The ID of the company to assign to the user.\n\nTo delete the company, use an empty value.\n\nFor a list of companies for the account, see\nGET companies."
+        },
+        {
+          "col_0": "industry_rolesarray:string",
+          "col_1": "The IDs of industry roles to assign to the user for the project.\n\nTo remove a user’s industry roles, use an empty array.\n\nFor a list of industry roles and industry role IDs, see\nGET industry_roles."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "user_idstring",
+          "col_1": "The user’s BIM 360 ID."
+        },
+        {
+          "col_0": "account_idstring",
+          "col_1": "The account ID."
+        },
+        {
+          "col_0": "project_idstring",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "company_idstring",
+          "col_1": "The ID of the company assigned to the user.\nFor a list of companies for the account, see\nGET companies."
+        },
+        {
+          "col_0": "industry_rolesarray:string",
+          "col_1": "The IDs of the industry roles assigned to the user for the project. For a list of industry roles for the project, see\nGET industry_roles."
+        },
+        {
+          "col_0": "email",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v2/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/users/a75e8769-621e-40b6-a524-0cffdd2f784e' \\\n  -X 'PATCH' \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O' \\\n  -d '{\n    \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n    \"industry_roles\": [\n      \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n    ]\n  }'",
+      "parsed": {
+        "company_id": "dc9e8af9-2978-4f6a-90b6-b294ae11c701",
+        "industry_roles": [
+          "dc9e8af9-2978-4f6a-90b6-b294ae11c701"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"user_id\": \"0b1fb8cc-cb14-44bc-991b-eda0862acd14\",\n  \"account_id\": \"68a12a11-f1ce-4abf-af85-601e8e97b551\",\n  \"project_id\": \"93a26902-e709-43e8-b865-4f216ecfa3ff\",\n  \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n  \"industry_roles\": [\n    \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n  ],\n  \"email\": \"john.doe@autodesk.com\"\n}",
+      "parsed": {
+        "user_id": "0b1fb8cc-cb14-44bc-991b-eda0862acd14",
+        "account_id": "68a12a11-f1ce-4abf-af85-601e8e97b551",
+        "project_id": "93a26902-e709-43e8-b865-4f216ecfa3ff",
+        "company_id": "dc9e8af9-2978-4f6a-90b6-b294ae11c701",
+        "industry_roles": [
+          "dc9e8af9-2978-4f6a-90b6-b294ae11c701"
+        ],
+        "email": "john.doe@autodesk.com"
+      }
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/forgeapps-id-GET",
+    "scrapedAt": "2026-05-08T17:44:13.669Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "forgeapps/:id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "Must be “me” for the call to succeed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get the user’s nickname."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Unknown error."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "\"\""
+    }
+  ]
+}

@@ -1,0 +1,187 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-get-weather-data-for-a-project-GET",
+    "scrapedAt": "2026-05-08T23:55:30.209Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v3/projects/{projectId}/weather/{weatherId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/forms/v3/projects/:projectId/weather/:weatherId",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/forms/v3/projects/:projectId/weather/:weatherId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "weatherIdint",
+          "col_1": "The unique identifier of the weather record.\nUse GET forms to retrieve the weather ID from a form’s weatherId field."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Weather data in metric units."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The weather record cannot be found"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idint",
+          "col_1": "Unique identifier for the weather record."
+        },
+        {
+          "col_0": "summaryKeystring",
+          "col_1": "A code describing the weather conditions in SCREAMING_SNAKE_CASE. Common values include: CLEAR, RAIN, SNOW, SLEET, WIND, FOG, CLOUDY, PARTLY_CLOUDY, MOSTLY_CLEAR, MOSTLY_CLOUDY, HEAVY_RAIN, DRIZZLE, HEAVY_SNOW, FLURRIES, FREEZING_RAIN, THUNDERSTORMS, WINDY, BREEZY, FOGGY, HAZE, BLIZZARD, HOT, FRIGID, WINTRY_MIX. Additional values may appear as weather condition codes evolve."
+        },
+        {
+          "col_0": "precipitationTypestring",
+          "col_1": "Type of precipitation. Possible values: RAIN, SNOW, SLEET, or null if no precipitation."
+        },
+        {
+          "col_0": "precipitationAccumulationnumber",
+          "col_1": "Amount of precipitation accumulated throughout the day, in millimeters (mm)."
+        },
+        {
+          "col_0": "hourlyWeatherarray: object",
+          "col_1": "Weather observations for specific hours of the day (typically 07:00, 12:00, and 16:00 local time)."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "Unique identifier for the hourly weather record."
+        },
+        {
+          "col_0": "summaryKeystring",
+          "col_1": "A code describing the weather conditions for this hour in SCREAMING_SNAKE_CASE. Common values include: CLEAR, RAIN, SNOW, SLEET, WIND, FOG, CLOUDY, PARTLY_CLOUDY, MOSTLY_CLEAR, MOSTLY_CLOUDY, HEAVY_RAIN, DRIZZLE, HEAVY_SNOW, FLURRIES, FREEZING_RAIN, THUNDERSTORMS, WINDY, BREEZY, FOGGY, HAZE, BLIZZARD, HOT, FRIGID, WINTRY_MIX. Additional values may appear as weather condition codes evolve."
+        },
+        {
+          "col_0": "hourstring",
+          "col_1": "The hour of day for this observation, in HH:MM:SS format (24-hour clock)."
+        },
+        {
+          "col_0": "tempnumber",
+          "col_1": "Temperature during the specified hour, in degrees Celsius (°C)."
+        },
+        {
+          "col_0": "windSpeednumber",
+          "col_1": "Average wind speed during the specified hour, in kilometers per hour (km/h)."
+        },
+        {
+          "col_0": "windBearingint",
+          "col_1": "Direction the wind is coming from, in degrees (0-360). North is 0°, East is 90°, South is 180°, West is 270°."
+        },
+        {
+          "col_0": "windBearingKeystring",
+          "col_1": "Cardinal direction the wind is coming from. Possible values: N, NE, E, SE, S, SW, W, NW."
+        },
+        {
+          "col_0": "humiditynumber",
+          "col_1": "Relative humidity as a decimal value between 0 and 1 (e.g., 0.65 represents 65% humidity)."
+        },
+        {
+          "col_0": "providerenum:string",
+          "col_1": "Indicates the source of the weather data.\nPossible values: DARK_SKY, WEATHER_KIT"
+        },
+        {
+          "col_0": "fetchedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the weather data was fetched from the weather API."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v3/projects/:projectId/weather/:weatherId' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"id\": 12345,\n  \"summaryKey\": \"CLEAR\",\n  \"precipitationType\": \"RAIN\",\n  \"precipitationAccumulation\": 12.7,\n  \"hourlyWeather\": [\n    {\n      \"id\": 67890,\n      \"summaryKey\": \"PARTLY_CLOUDY\",\n      \"hour\": \"12:00:00\",\n      \"temp\": 22.5,\n      \"windSpeed\": 16.9,\n      \"windBearing\": 225,\n      \"windBearingKey\": \"SW\",\n      \"humidity\": 0.65\n    }\n  ],\n  \"provider\": \"WEATHER_KIT\",\n  \"fetchedAt\": \"2024-01-20T14:30:00+00:00\"\n}",
+      "parsed": {
+        "id": 12345,
+        "summaryKey": "CLEAR",
+        "precipitationType": "RAIN",
+        "precipitationAccumulation": 12.7,
+        "hourlyWeather": [
+          {
+            "id": 67890,
+            "summaryKey": "PARTLY_CLOUDY",
+            "hour": "12:00:00",
+            "temp": 22.5,
+            "windSpeed": 16.9,
+            "windBearing": 225,
+            "windBearingKey": "SW",
+            "humidity": 0.65
+          }
+        ],
+        "provider": "WEATHER_KIT",
+        "fetchedAt": "2024-01-20T14:30:00+00:00"
+      }
+    }
+  ]
+}

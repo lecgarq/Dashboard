@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/graphql_endpoint",
+    "scrapedAt": "2026-05-08T18:15:13.525Z",
+    "category": "SDK Reference",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "GraphQL Endpoint",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/dataexchange/2023-05/graphql",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/dataexchange/2023-05/graphql"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <TOKEN>, where <TOKEN> is an access token obtained by a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Typestring",
+          "col_1": "Must be application/json."
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Must be US, EMEA, AUS, IND, JPN, CAN, GBR, or DEU."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Regions",
+        "API Value",
+        "AWS Location"
+      ],
+      "rows": [
+        {
+          "Regions": "United States",
+          "API Value": "US",
+          "AWS Location": "US-East"
+        },
+        {
+          "Regions": "Canada",
+          "API Value": "CAN",
+          "AWS Location": "Central"
+        },
+        {
+          "Regions": "Europe",
+          "API Value": "EMEA",
+          "AWS Location": "Ireland"
+        },
+        {
+          "Regions": "United Kingdom",
+          "API Value": "GBR",
+          "AWS Location": "London"
+        },
+        {
+          "Regions": "Germany",
+          "API Value": "DEU",
+          "AWS Location": "Frankfurt"
+        },
+        {
+          "Regions": "India",
+          "API Value": "IND",
+          "AWS Location": "Mumbai"
+        },
+        {
+          "Regions": "Japan",
+          "API Value": "JPN",
+          "AWS Location": "Tokyo"
+        },
+        {
+          "Regions": "Australia",
+          "API Value": "AUS",
+          "AWS Location": "Sydney"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "query*object",
+          "col_1": "Contains the GraphQL query to send to the Data Exchange GraphQL API service."
+        },
+        {
+          "col_0": "variablesobject",
+          "col_1": "Contains a set of key-value pairs, where the keys correspond to the names of the variables defined in your GraphQL query, and the values represent the values of those variables."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/dataexchange/2023-05/graphql' \\\n--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtNwzPPdpCo740uFQ....' \\\n--header 'Region: US' \\\n--header 'Content-Type: application/json' \\\n--data '{\"query\":\"query Exchange($exchangeId: ID!){ exchange(exchangeId: $exchangeId) { elements {  results { id name properties { results { name value }  } } } }}\",\"variables\":{\"exchangeId\":\"18f22e98-241c-332b-a610-8c66f87bcd97\"}}'",
+      "parsed": {
+        "query": "query Exchange($exchangeId: ID!){ exchange(exchangeId: $exchangeId) { elements {  results { id name properties { results { name value }  } } } }}",
+        "variables": {
+          "exchangeId": "18f22e98-241c-332b-a610-8c66f87bcd97"
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"exchange\": {\n            \"elements\": {\n                \"results\": [\n                    {\n                        \"id\": \"83EFE862322051AA757717FF4F72702AE82B68A8\",\n                        \"name\": \"359330\",\n                        \"properties\": {\n                            \"results\": [\n                                {\n                                    \"name\": \"category\",\n                                    \"value\": \"Windows\"\n                                },\n                                {\n                                    \"name\": \"family\",\n                                    \"value\": \"Fixed\"\n                                },\n                                {\n                                    \"name\": \"type\",\n                                    \"value\": \"36\\\" x 48\\\"\"\n                                },\n                                {\n                                    \"name\": \"name\",\n                                    \"value\": \"359330\"\n                                },\n                                {\n                                    \"name\": \"sourceId\",\n                                    \"value\": \"b39727d0-fac7-4e2b-b6ca-bdc2e3caf878-00057ba2\"\n                                },\n                                {\n                                    \"name\": \"Volume\",\n                                    \"value\": 0.042134214118499255\n                                },\n                                {\n                                    \"name\": \"Area\",\n                                    \"value\": 2.289672839999995\n                                },\n                                {\n                                    \"name\": \"Export to IFC\",\n                                    \"value\": 0\n                                },\n                                {\n                                    \"name\": \"IfcGUID\",\n                                    \"value\": \"2pboVG_iTEAxRAlSBZpuFQ\"\n                                },\n                                {\n                                    \"name\": \"Phase Created\",\n                                    \"value\": \"New Construction\"\n                                },\n                                {\n                                    \"name\": \"Operation\",\n                                    \"value\": \"INSERT\"\n                                }\n                            ]\n                        }\n                    }\n                ]\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "exchange": {
+            "elements": {
+              "results": [
+                {
+                  "id": "83EFE862322051AA757717FF4F72702AE82B68A8",
+                  "name": "359330",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "category",
+                        "value": "Windows"
+                      },
+                      {
+                        "name": "family",
+                        "value": "Fixed"
+                      },
+                      {
+                        "name": "type",
+                        "value": "36\" x 48\""
+                      },
+                      {
+                        "name": "name",
+                        "value": "359330"
+                      },
+                      {
+                        "name": "sourceId",
+                        "value": "b39727d0-fac7-4e2b-b6ca-bdc2e3caf878-00057ba2"
+                      },
+                      {
+                        "name": "Volume",
+                        "value": 0.042134214118499255
+                      },
+                      {
+                        "name": "Area",
+                        "value": 2.289672839999995
+                      },
+                      {
+                        "name": "Export to IFC",
+                        "value": 0
+                      },
+                      {
+                        "name": "IfcGUID",
+                        "value": "2pboVG_iTEAxRAlSBZpuFQ"
+                      },
+                      {
+                        "name": "Phase Created",
+                        "value": "New Construction"
+                      },
+                      {
+                        "name": "Operation",
+                        "value": "INSERT"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "axios({\nmethod: 'POST',\nurl: 'https://developer.api.autodesk.com/dataexchange/2023-05/graphql',\nheaders: {\n    'Authorization': 'Bearer YOUR_ACCESS_TOKEN_HERE',\n    'Region: US'\n},\ndata: {\n    query: `{\n    hubs {\n        results {\n        name\n        }\n    }\n    }`\n}\n})"
+    },
+    {
+      "raw": "{\n \"data\":{\n    \"hubs\":{\n       \"results\":[\n          {\n             \"id\":\"b.438ed63f-39c9-4ec4-80ca-1f9a193et0d4\",\n             \"name\":\"Golden Gate\"\n          },\n          {\n             \"id\":\"b.7c52c85a-8e52-4893-9038-6d77ac9dc742\",\n             \"name\":\"DataExchange\"\n          }\n       ]\n    }\n }\n}",
+      "parsed": {
+        "data": {
+          "hubs": {
+            "results": [
+              {
+                "id": "b.438ed63f-39c9-4ec4-80ca-1f9a193et0d4",
+                "name": "Golden Gate"
+              },
+              {
+                "id": "b.7c52c85a-8e52-4893-9038-6d77ac9dc742",
+                "name": "DataExchange"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

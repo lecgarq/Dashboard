@@ -1,0 +1,47 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/advanced_queries/retrieve_ifc_elements/fixed_windows_ifc",
+    "scrapedAt": "2026-05-08T18:14:50.480Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Retrieve Fixed Windows of a Specific Type from IFC Exchange",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "GetElementsByExchangeId",
+          "Description": "Retrieves a list of elements in an exchange by using the element ID."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetElementsByExchangeId($exchangeId: ID!, $elementFilter: ElementFilterInput, $elementPagination: PaginationInput) {\n     exchange(exchangeId: $exchangeId) {\n         id\n         name\n         elements(filter: $elementFilter, pagination: $elementPagination) {\n             pagination {\n                 pageSize\n                 cursor\n             }\n             results {\n                 id\n                 name\n                 properties {\n                     results {\n                         name\n                         value\n                     }\n                 }\n             }\n         }\n     }\n }"
+    },
+    {
+      "raw": "{\n \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1MmEzMGMzLTkxYWMtNDIwNC04NzJmLWM0MDc3ZjJkZDI1YQ\",\n \"elementFilter\": {\n     \"query\": \"(property.name.IfcObject.IfcClass==IfcWindow) and (property.name.IfcObject.ObjectType=='Fixed:96\\\" x 36\\\"')\"\n },\n \"elementPagination\": {\n     \"limit\": 5,\n     \"cursor\": \"\"\n }\n }",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1MmEzMGMzLTkxYWMtNDIwNC04NzJmLWM0MDc3ZjJkZDI1YQ",
+        "elementFilter": {
+          "query": "(property.name.IfcObject.IfcClass==IfcWindow) and (property.name.IfcObject.ObjectType=='Fixed:96\" x 36\"')"
+        },
+        "elementPagination": {
+          "limit": 5,
+          "cursor": ""
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"exchange\": {\n        \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1MmEzMGMzLTkxYWMtNDIwNC04NzJmLWM0MDc3ZjJkZDI1YQ\",\n        \"name\": \"Urban House_1500elem_2024\",\n        \"elements\": {\n            \"pagination\": {\n            \"pageSize\": 2,\n            \"cursor\": \"\"\n            },\n            \"results\": [\n            {\n                \"id\": \"0E2C82ED5C10B950B2757FC4EF5E1D13BB907354\",\n                \"name\": \"Fixed:96\\\" x 36\\\":712049\",\n                \"properties\": {\n                \"results\": [\n                    {\n                    \"name\": \"name\",\n                    \"value\": \"Fixed:96\\\" x 36\\\":712049\"\n                    },\n                    {\n                    \"name\": \"IfcObject.ObjectType\",\n                    \"value\": \"Fixed:96\\\" x 36\\\"\"\n                    },\n                    {\n                    \"name\": \"IfcElement.Tag\",\n                    \"value\": \"712049\"\n                    },\n                    {\n                    \"name\": \"IfcObject.IfcClass\",\n                    \"value\": \"IfcWindow\"\n                    },\n                    {\n                    \"name\": \"Pset_WindowCommon.IsExternal\",\n                    \"value\": true\n                    },\n                    {\n                    \"name\": \"Pset_WindowCommon.Reference\",\n                    \"value\": \"96\\\" x 36\\\"\"\n                    },\n                    {\n                    \"name\": \"Operation\",\n                    \"value\": \"INSERT\"\n                    }\n                  ]\n                }\n            },\n            {\n                \"id\": \"BB608E35911E28A06E6D4682DF3C38699E805294\",\n                \"name\": \"Fixed:96\\\" x 36\\\":712080\",\n                \"properties\": {\n                \"results\": [\n                    {\n                    \"name\": \"name\",\n                    \"value\": \"Fixed:96\\\" x 36\\\":712080\"\n                    },\n                    {\n                    \"name\": \"Pset_WindowCommon.IsExternal\",\n                    \"value\": false\n                    },\n                    {\n                    \"name\": \"Pset_WindowCommon.Reference\",\n                    \"value\": \"96\\\" x 36\\\"\"\n                    },\n                    {\n                    \"name\": \"IfcObject.ObjectType\",\n                    \"value\": \"Fixed:96\\\" x 36\\\"\"\n                    },\n                    {\n                    \"name\": \"IfcElement.Tag\",\n                    \"value\": \"712080\"\n                    },\n                    {\n                    \"name\": \"IfcObject.IfcClass\",\n                    \"value\": \"IfcWindow\"\n                    },\n                    {\n                    \"name\": \"Operation\",\n                    \"value\": \"INSERT\"\n                    }\n                  ]\n                }\n              }\n            ]\n          }\n        }\n      }\n    }\n  }"
+    }
+  ]
+}

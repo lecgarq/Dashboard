@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/viewer_basics/toolbar-button",
+    "scrapedAt": "2026-05-08T18:42:42.330Z",
+    "category": "Developer Guide/viewer_basics",
+    "apiName": "VIEWER API"
+  },
+  "title": "Customizing the Toolbar",
+  "codeExamples": [
+    {
+      "raw": "function ToolbarExtension(viewer, options) {\n  Autodesk.Viewing.Extension.call(this, viewer, options);\n}\n\nToolbarExtension.prototype = Object.create(Autodesk.Viewing.Extension.prototype);\nToolbarExtension.prototype.constructor = ToolbarExtension;\n\nToolbarExtension.prototype.load = function() {\n  // Set background environment to \"Infinity Pool\"\n  // and make sure the environment background texture is visible\n  this.viewer.setLightPreset(6);\n  this.viewer.setEnvMapBackground(true);\n\n  // Ensure the model is centered\n  this.viewer.fitToView();\n\n  return true;\n};\n\nToolbarExtension.prototype.unload = function() {\n  // nothing yet\n};\n\nAutodesk.Viewing.theExtensionManager.registerExtension('ToolbarExtension', ToolbarExtension);"
+    },
+    {
+      "raw": "ToolbarExtension.prototype.onToolbarCreated = function(toolbar) {\n\n  alert('TODO: customize Viewer toolbar');\n};"
+    },
+    {
+      "raw": "ToolbarExtension.prototype.onToolbarCreated = function(toolbar) {\n  // alert('TODO: customize Viewer toolbar');\n\n  var viewer = this.viewer;\n\n  // Button 1\n  var button1 = new Autodesk.Viewing.UI.Button('show-env-bg-button');\n  button1.onClick = function(e) {\n      viewer.setEnvMapBackground(true);\n  };\n  button1.addClass('show-env-bg-button');\n  button1.setToolTip('Show Environment');\n\n  // Button 2\n  var button2 = new Autodesk.Viewing.UI.Button('hide-env-bg-button');\n  button2.onClick = function(e) {\n      viewer.setEnvMapBackground(false);\n  };\n  button2.addClass('hide-env-bg-button');\n  button2.setToolTip('Hide Environment');\n\n  // SubToolbar\n  this.subToolbar = new Autodesk.Viewing.UI.ControlGroup('my-custom-toolbar');\n  this.subToolbar.addControl(button1);\n  this.subToolbar.addControl(button2);\n\n  toolbar.addControl(this.subToolbar);\n};"
+    },
+    {
+      "raw": "<style>\n  .show-env-bg-button {\n    background: red;\n  }\n  .hide-env-bg-button {\n    background: blue;\n  }\n</style>"
+    },
+    {
+      "raw": "ToolbarExtension.prototype.unload = function() {\n  if (this.subToolbar) {\n      this.viewer.toolbar.removeControl(this.subToolbar);\n      this.subToolbar = null;\n  }\n};"
+    }
+  ]
+}

@@ -1,0 +1,585 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/rfis/rfi-transitions",
+    "scrapedAt": "2026-05-08T17:50:45.945Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "RFI Transitions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Project Admin Module Workflow Role Name",
+        "RFIs API Workflow Role Name"
+      ],
+      "rows": [
+        {
+          "Project Admin Module Workflow Role Name": "Creator",
+          "RFIs API Workflow Role Name": "Subcontractor (projectSC)"
+        },
+        {
+          "Project Admin Module Workflow Role Name": "Manager",
+          "RFIs API Workflow Role Name": "General Contractor (projectGC)"
+        },
+        {
+          "Project Admin Module Workflow Role Name": "Reviewer 1 (EMEA workflow)",
+          "RFIs API Workflow Role Name": "Construction Manager (projectCM)"
+        },
+        {
+          "Project Admin Module Workflow Role Name": "Reviewer (US workflow) / Reviewer 2 (EMEA workflow)",
+          "RFIs API Workflow Role Name": "Architect (projectArch)"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -X GET \\\n  https://developer.api.autodesk.com/bim360/rfis/v2/containers/e59adc9d-2677-4afc-a800-4bc42101f7d8/users/me \\\n  -H 'Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O' \\\n  -H 'Cache-Control: no-cache' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"user\": {\n    \"id\": \"PER8KQPK2JRT\",\n    \"name\": \"John Smith\",\n    \"role\": \"project_user\"\n  },\n  \"permittedActions\": {\n    \"createRfi\": {\n      \"permittedStatuses\": [\n        {\n          \"status\": \"draft\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"title\"\n            }\n          ]\n        },\n        {\n          \"status\": \"submitted\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"title\"\n            },\n            {\n              \"name\": \"assignedTo\",\n              \"values\": [\n                {\n                  \"value\": \"SN8TPJUCUASA\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"BXQXL7646C2R\",\n                  \"type\": \"user\"\n                }\n              ]\n            }\n          ]\n        },\n        {\n          \"status\": \"open\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"title\"\n            },\n            {\n              \"name\": \"assignedTo\",\n              \"values\": [\n                {\n                  \"value\": \"8QVAQV5PW36V\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"LXD6JZWKDFKA\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"R7ZNPU3EZRMM\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"53SAKU73TL5R\",\n                  \"type\": \"user\"\n                }\n              ]\n            }\n          ]\n        }\n      ]\n    }\n  },\n  \"workflow\": {\n    \"roles\": [\n      \"projectSC\",\n      \"projectGC\"\n    ],\n    \"type\": \"US\"\n  }\n}",
+      "parsed": {
+        "user": {
+          "id": "PER8KQPK2JRT",
+          "name": "John Smith",
+          "role": "project_user"
+        },
+        "permittedActions": {
+          "createRfi": {
+            "permittedStatuses": [
+              {
+                "status": "draft",
+                "requiredAttributes": [
+                  {
+                    "name": "title"
+                  }
+                ]
+              },
+              {
+                "status": "submitted",
+                "requiredAttributes": [
+                  {
+                    "name": "title"
+                  },
+                  {
+                    "name": "assignedTo",
+                    "values": [
+                      {
+                        "value": "SN8TPJUCUASA",
+                        "type": "user"
+                      },
+                      {
+                        "value": "BXQXL7646C2R",
+                        "type": "user"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "status": "open",
+                "requiredAttributes": [
+                  {
+                    "name": "title"
+                  },
+                  {
+                    "name": "assignedTo",
+                    "values": [
+                      {
+                        "value": "8QVAQV5PW36V",
+                        "type": "user"
+                      },
+                      {
+                        "value": "LXD6JZWKDFKA",
+                        "type": "user"
+                      },
+                      {
+                        "value": "R7ZNPU3EZRMM",
+                        "type": "user"
+                      },
+                      {
+                        "value": "53SAKU73TL5R",
+                        "type": "user"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "workflow": {
+          "roles": [
+            "projectSC",
+            "projectGC"
+          ],
+          "type": "US"
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/bim360/rfis/v1/containers/e59adc9d-2677-4afc-a800-4bc42101f7d8/rfis\" -d '{\n    \"title\": \"Pipe Size\",\n    \"status\": \"draft\",\n    \"question\": \"Is the pipe in room 3 the correct size?\",\n    \"suggestedAnswer\": \"No\",\n    \"location\": {\n        \"description\": \"Room 3\"\n    },\n    \"dueDate\": \"2020-07-31T09:35:54.000Z\"\n  }' -X POST \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O\"",
+      "parsed": {
+        "title": "Pipe Size",
+        "status": "draft",
+        "question": "Is the pipe in room 3 the correct size?",
+        "suggestedAnswer": "No",
+        "location": {
+          "description": "Room 3"
+        },
+        "dueDate": "2020-07-31T09:35:54.000Z"
+      }
+    },
+    {
+      "raw": "{\n  \"createdAt\": \"2020-05-10T09:35:57.871Z\",\n  \"updatedAt\": \"2020-05-10T09:35:57.871Z\",\n  \"id\": \"5a8e2519-7e91-4c4c-ba5c-685fdbbf021e\",\n  \"assignedToType\": \"user\",\n  \"coReviewers\": [\n\n  ],\n  \"distributionList\": [\n\n  ],\n  \"mentionees\": [\n\n  ],\n  \"discipline\": [\n\n  ],\n  \"category\": [\n\n  ],\n  \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n  \"title\": \"Pipe Size\",\n  \"status\": \"draft\",\n  \"question\": \"\",\n  \"dueDate\": \"2020-05-11T09:35:54.000Z\",\n  \"workflowType\": \"US\",\n  \"createdBy\": \"PER8KQPK2JRT\",\n  \"assignedTo\": \"PER8KQPK2JRT\",\n  \"workflowStateId\": \"57780388-37f8-4505-9758-808adcb9b124\",\n  \"pushpinAttributes\": null,\n  \"permittedActions\": {\n    \"updateRfi\": {\n      \"permittedAttributes\": [\n        {\n          \"name\": \"category\"\n        },\n        {\n          \"name\": \"costImpact\"\n        },\n        {\n          \"name\": \"discipline\"\n        },\n        {\n          \"name\": \"distributionList\"\n        },\n        {\n          \"name\": \"dueDate\"\n        },\n        {\n          \"name\": \"linkedDocument\"\n        },\n        {\n          \"name\": \"linkedDocumentVersion\"\n        },\n        {\n          \"name\": \"location\"\n        },\n        {\n          \"name\": \"priority\"\n        },\n        {\n          \"name\": \"question\"\n        },\n        {\n          \"name\": \"reference\"\n        },\n        {\n          \"name\": \"scheduleImpact\"\n        },\n        {\n          \"name\": \"suggestedAnswer\"\n        },\n        {\n          \"name\": \"title\"\n        },\n        {\n          \"name\": \"status\",\n          \"values\": [\n            {\n              \"value\": \"submitted\"\n            },\n            {\n              \"value\": \"open\"\n            },\n            {\n              \"value\": \"void\"\n            }\n          ]\n        }\n      ],\n      \"permittedStatuses\": [\n        {\n          \"status\": \"submitted\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"assignedTo\",\n              \"values\": [\n                {\n                  \"value\": \"8QVAQV5PW36V\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"BXQXL7646C2R\",\n                  \"type\": \"user\"\n                }\n              ]\n            }\n          ]\n        },\n        {\n          \"status\": \"open\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"assignedTo\",\n              \"values\": [\n                {\n                  \"value\": \"8QVAQV5PW36V\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"LXD6JZWKDFKA\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"R7ZNPU3EZRMM\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"53SAKU73TL5R\",\n                  \"type\": \"user\"\n                }\n              ]\n            }\n          ]\n        },\n        {\n          \"status\": \"void\",\n          \"requiredAttributes\": [\n\n          ]\n        }\n      ]\n    },\n    \"createComment\": true,\n    \"createAttachment\": true,\n    \"togglePushpinVisibility\": false\n  }\n}",
+      "parsed": {
+        "createdAt": "2020-05-10T09:35:57.871Z",
+        "updatedAt": "2020-05-10T09:35:57.871Z",
+        "id": "5a8e2519-7e91-4c4c-ba5c-685fdbbf021e",
+        "assignedToType": "user",
+        "coReviewers": [],
+        "distributionList": [],
+        "mentionees": [],
+        "discipline": [],
+        "category": [],
+        "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+        "title": "Pipe Size",
+        "status": "draft",
+        "question": "",
+        "dueDate": "2020-05-11T09:35:54.000Z",
+        "workflowType": "US",
+        "createdBy": "PER8KQPK2JRT",
+        "assignedTo": "PER8KQPK2JRT",
+        "workflowStateId": "57780388-37f8-4505-9758-808adcb9b124",
+        "pushpinAttributes": null,
+        "permittedActions": {
+          "updateRfi": {
+            "permittedAttributes": [
+              {
+                "name": "category"
+              },
+              {
+                "name": "costImpact"
+              },
+              {
+                "name": "discipline"
+              },
+              {
+                "name": "distributionList"
+              },
+              {
+                "name": "dueDate"
+              },
+              {
+                "name": "linkedDocument"
+              },
+              {
+                "name": "linkedDocumentVersion"
+              },
+              {
+                "name": "location"
+              },
+              {
+                "name": "priority"
+              },
+              {
+                "name": "question"
+              },
+              {
+                "name": "reference"
+              },
+              {
+                "name": "scheduleImpact"
+              },
+              {
+                "name": "suggestedAnswer"
+              },
+              {
+                "name": "title"
+              },
+              {
+                "name": "status",
+                "values": [
+                  {
+                    "value": "submitted"
+                  },
+                  {
+                    "value": "open"
+                  },
+                  {
+                    "value": "void"
+                  }
+                ]
+              }
+            ],
+            "permittedStatuses": [
+              {
+                "status": "submitted",
+                "requiredAttributes": [
+                  {
+                    "name": "assignedTo",
+                    "values": [
+                      {
+                        "value": "8QVAQV5PW36V",
+                        "type": "user"
+                      },
+                      {
+                        "value": "BXQXL7646C2R",
+                        "type": "user"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "status": "open",
+                "requiredAttributes": [
+                  {
+                    "name": "assignedTo",
+                    "values": [
+                      {
+                        "value": "8QVAQV5PW36V",
+                        "type": "user"
+                      },
+                      {
+                        "value": "LXD6JZWKDFKA",
+                        "type": "user"
+                      },
+                      {
+                        "value": "R7ZNPU3EZRMM",
+                        "type": "user"
+                      },
+                      {
+                        "value": "53SAKU73TL5R",
+                        "type": "user"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "status": "void",
+                "requiredAttributes": []
+              }
+            ]
+          },
+          "createComment": true,
+          "createAttachment": true,
+          "togglePushpinVisibility": false
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/bim360/rfis/v2/containers/e59adc9d-2677-4afc-a800-4bc42101f7d8/rfis/5a8e2519-7e91-4c4c-ba5c-685fdbbf021e\" -d '{\n      \"status\": \"submitted\",\n      \"assignedTo\": \"8QVAQV5PW36V\"\n  }' -X PATCH \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O\"",
+      "parsed": {
+        "status": "submitted",
+        "assignedTo": "8QVAQV5PW36V"
+      }
+    },
+    {
+      "raw": "200 Success\nContent-Type: application/json; charset=utf-8\n\n{\n  \"id\": \"5a8e2519-7e91-4c4c-ba5c-685fdbbf021e\",\n  \"title\": \"Pipe Size\",\n  \"question\": \"Is the pipe in room 3 the correct size?\",\n  \"status\": \"submitted\",\n  \"assignedTo\": \"8QVAQV5PW36V\",\n  \"assignedToType\": \"user\",\n  \"dueDate\": \"2020-05-11T09:35:54.000Z\",\n  \"createdBy\": \"PER8KQPK2JRT\",\n  \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n  \"workflowStateId\": \"57780388-37f8-4505-9758-808adcb9b124\",\n  \"workflowType\": \"US\",\n  \"coReviewers\": [\n\n  ],\n  \"distributionList\": [\n\n  ],\n  \"mentionees\": [\n\n  ],\n  \"discipline\": [\n\n  ],\n  \"category\": [\n\n  ],\n  \"createdAt\": \"2020-05-10T09:35:57.871Z\",\n  \"updatedAt\": \"2020-05-10T09:35:57.872Z\",\n  \"comments\": [\n\n  ],\n  \"attachments\": [\n\n  ],\n  \"managerId\": \"8QVAQV5PW36V\",\n  \"updatedBy\": \"PER8KQPK2JRT\",\n  \"permittedActions\": {\n    \"updateRfi\": {\n      \"permittedAttributes\": [\n        {\n          \"name\": \"assignedTo\",\n          \"values\": [\n            {\n              \"value\": \"SN8TPJUCUASA\",\n              \"type\": \"user\"\n            },\n            {\n              \"value\": \"BXQXL7646C2R\",\n              \"type\": \"user\"\n            }\n          ]\n        },\n        {\n          \"name\": \"category\"\n        },\n        {\n          \"name\": \"coReviewers\"\n        },\n        {\n          \"name\": \"costImpact\"\n        },\n        {\n          \"name\": \"discipline\"\n        },\n        {\n          \"name\": \"distributionList\"\n        },\n        {\n          \"name\": \"dueDate\"\n        },\n        {\n          \"name\": \"linkedDocument\"\n        },\n        {\n          \"name\": \"linkedDocumentVersion\"\n        },\n        {\n          \"name\": \"location\"\n        },\n        {\n          \"name\": \"priority\"\n        },\n        {\n          \"name\": \"question\"\n        },\n        {\n          \"name\": \"reference\"\n        },\n        {\n          \"name\": \"scheduleImpact\"\n        },\n        {\n          \"name\": \"suggestedAnswer\"\n        },\n        {\n          \"name\": \"title\"\n        },\n        {\n          \"name\": \"status\",\n          \"values\": [\n            {\n              \"value\": \"open\"\n            },\n            {\n              \"value\": \"closed\"\n            },\n            {\n              \"value\": \"void\"\n            }\n          ]\n        }\n      ],\n      \"permittedStatuses\": [\n        {\n          \"status\": \"open\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"assignedTo\",\n              \"values\": [\n                {\n                  \"value\": \"JZ7WLLQUKRAD\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"LXD6JZWKDFKA\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"R7ZNPU3EZRMM\",\n                  \"type\": \"user\"\n                },\n                {\n                  \"value\": \"53SAKU73TL5R\",\n                  \"type\": \"user\"\n                }\n              ]\n            }\n          ]\n        },\n        {\n          \"status\": \"closed\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"officialResponse\"\n            }\n          ]\n        },\n        {\n          \"status\": \"void\",\n          \"requiredAttributes\": [\n\n          ]\n        }\n      ]\n    },\n    \"createComment\": true,\n    \"createAttachment\": true,\n    \"togglePushpinVisibility\": false\n  }\n}",
+      "parsed": {
+        "id": "5a8e2519-7e91-4c4c-ba5c-685fdbbf021e",
+        "title": "Pipe Size",
+        "question": "Is the pipe in room 3 the correct size?",
+        "status": "submitted",
+        "assignedTo": "8QVAQV5PW36V",
+        "assignedToType": "user",
+        "dueDate": "2020-05-11T09:35:54.000Z",
+        "createdBy": "PER8KQPK2JRT",
+        "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+        "workflowStateId": "57780388-37f8-4505-9758-808adcb9b124",
+        "workflowType": "US",
+        "coReviewers": [],
+        "distributionList": [],
+        "mentionees": [],
+        "discipline": [],
+        "category": [],
+        "createdAt": "2020-05-10T09:35:57.871Z",
+        "updatedAt": "2020-05-10T09:35:57.872Z",
+        "comments": [],
+        "attachments": [],
+        "managerId": "8QVAQV5PW36V",
+        "updatedBy": "PER8KQPK2JRT",
+        "permittedActions": {
+          "updateRfi": {
+            "permittedAttributes": [
+              {
+                "name": "assignedTo",
+                "values": [
+                  {
+                    "value": "SN8TPJUCUASA",
+                    "type": "user"
+                  },
+                  {
+                    "value": "BXQXL7646C2R",
+                    "type": "user"
+                  }
+                ]
+              },
+              {
+                "name": "category"
+              },
+              {
+                "name": "coReviewers"
+              },
+              {
+                "name": "costImpact"
+              },
+              {
+                "name": "discipline"
+              },
+              {
+                "name": "distributionList"
+              },
+              {
+                "name": "dueDate"
+              },
+              {
+                "name": "linkedDocument"
+              },
+              {
+                "name": "linkedDocumentVersion"
+              },
+              {
+                "name": "location"
+              },
+              {
+                "name": "priority"
+              },
+              {
+                "name": "question"
+              },
+              {
+                "name": "reference"
+              },
+              {
+                "name": "scheduleImpact"
+              },
+              {
+                "name": "suggestedAnswer"
+              },
+              {
+                "name": "title"
+              },
+              {
+                "name": "status",
+                "values": [
+                  {
+                    "value": "open"
+                  },
+                  {
+                    "value": "closed"
+                  },
+                  {
+                    "value": "void"
+                  }
+                ]
+              }
+            ],
+            "permittedStatuses": [
+              {
+                "status": "open",
+                "requiredAttributes": [
+                  {
+                    "name": "assignedTo",
+                    "values": [
+                      {
+                        "value": "JZ7WLLQUKRAD",
+                        "type": "user"
+                      },
+                      {
+                        "value": "LXD6JZWKDFKA",
+                        "type": "user"
+                      },
+                      {
+                        "value": "R7ZNPU3EZRMM",
+                        "type": "user"
+                      },
+                      {
+                        "value": "53SAKU73TL5R",
+                        "type": "user"
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "status": "closed",
+                "requiredAttributes": [
+                  {
+                    "name": "officialResponse"
+                  }
+                ]
+              },
+              {
+                "status": "void",
+                "requiredAttributes": []
+              }
+            ]
+          },
+          "createComment": true,
+          "createAttachment": true,
+          "togglePushpinVisibility": false
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/bim360/rfis/v2/containers/e59adc9d-2677-4afc-a800-4bc42101f7d8/rfis/5a8e2519-7e91-4c4c-ba5c-685fdbbf021e\" -d '{\n      \"status\": \"open\",\n      \"assignedTo\": \"JZ7WLLQUKRAD\"\n  }' -X PATCH \\\n  -H \"Content-Type: application/json\" \\\n  -H \"Authorization: Bearer l0ZSIsImRhdGE6cmVhZCIsImRhdGE6Y3JlYXRlIiwiZGF0YTpzZWFyY2gi\"",
+      "parsed": {
+        "status": "open",
+        "assignedTo": "JZ7WLLQUKRAD"
+      }
+    },
+    {
+      "raw": "200 Success\nContent-Type: application/json; charset=utf-8\n\n{\n  \"id\": \"5a8e2519-7e91-4c4c-ba5c-685fdbbf021e\",\n  \"title\": \"Pipe Size\",\n  \"question\": \"Is the pipe in room 3 the correct size?\",\n  \"status\": \"open\",\n  \"assignedTo\": \"JZ7WLLQUKRAD\",\n  \"assignedToType\": \"user\",\n  \"dueDate\": \"2020-05-11T09:35:54.000Z\",\n  \"createdBy\": \"PER8KQPK2JRT\",\n  \"updatedBy\": \"8QVAQV5PW36V\",\n  \"containerId\": \"80d025dc-6c45-4178-95a8-d4066a28da09\",\n  \"workflowStateId\": \"bf6f2833-6ab1-403d-83f6-2c716fbf8e06\",\n  \"workflowType\": \"US\",\n  \"coReviewers\": [\n\n  ],\n  \"distributionList\": [\n\n  ],\n  \"managerId\": \"8QVAQV5PW36V\",\n  \"mentionees\": [\n\n  ],\n  \"discipline\": [\n\n  ],\n  \"category\": [\n\n  ],\n  \"createdAt\": \"2020-05-10T09:35:57.871Z\",\n  \"updatedAt\": \"2020-05-10T13:13:35.297Z\",\n  \"comments\": [\n\n  ],\n  \"attachments\": [\n\n  ],\n  \"customIdentifier\": \"1\",\n  \"openedBy\": \"8QVAQV5PW36V\",\n  \"openedAt\": \"2020-05-10T14:04:03.328Z\",\n  \"reviewerId\": \"JZ7WLLQUKRAD\",\n  \"architectId\": \"JZ7WLLQUKRAD\",\n  \"permittedActions\": {\n    \"updateRfi\": {\n      \"permittedAttributes\": [\n        {\n          \"name\": \"assignedTo\",\n          \"values\": [\n            {\n              \"value\": \"8QVAQV5PW36V\",\n              \"type\": \"user\"\n            },\n            {\n              \"value\": \"LXD6JZWKDFKA\",\n              \"type\": \"user\"\n            },\n            {\n              \"value\": \"R7ZNPU3EZRMM\",\n              \"type\": \"user\"\n            },\n            {\n              \"value\": \"53SAKU73TL5R\",\n              \"type\": \"user\"\n            }\n          ]\n        },\n        {\n          \"name\": \"category\"\n        },\n        {\n          \"name\": \"coReviewers\"\n        },\n        {\n          \"name\": \"costImpact\"\n        },\n        {\n          \"name\": \"customIdentifier\"\n        },\n        {\n          \"name\": \"discipline\"\n        },\n        {\n          \"name\": \"distributionList\"\n        },\n        {\n          \"name\": \"dueDate\"\n        },\n        {\n          \"name\": \"linkedDocument\"\n        },\n        {\n          \"name\": \"linkedDocumentVersion\"\n        },\n        {\n          \"name\": \"location\"\n        },\n        {\n          \"name\": \"officialResponse\"\n        },\n        {\n          \"name\": \"priority\"\n        },\n        {\n          \"name\": \"question\"\n        },\n        {\n          \"name\": \"reference\"\n        },\n        {\n          \"name\": \"scheduleImpact\"\n        },\n        {\n          \"name\": \"suggestedAnswer\"\n        },\n        {\n          \"name\": \"title\"\n        },\n        {\n          \"name\": \"status\",\n          \"values\": [\n            {\n              \"value\": \"answered\"\n            },\n            {\n              \"value\": \"rejected\"\n            },\n            {\n              \"value\": \"void\"\n            }\n          ]\n        }\n      ],\n      \"permittedStatuses\": [\n        {\n          \"status\": \"answered\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"officialResponse\"\n            }\n          ]\n        },\n        {\n          \"status\": \"rejected\",\n          \"requiredAttributes\": [\n            {\n              \"name\": \"officialResponse\"\n            }\n          ]\n        },\n        {\n          \"status\": \"void\",\n          \"requiredAttributes\": [\n\n          ]\n        }\n      ]\n    },\n    \"createComment\": true,\n    \"createAttachment\": true,\n    \"togglePushpinVisibility\": false\n  }\n}",
+      "parsed": {
+        "id": "5a8e2519-7e91-4c4c-ba5c-685fdbbf021e",
+        "title": "Pipe Size",
+        "question": "Is the pipe in room 3 the correct size?",
+        "status": "open",
+        "assignedTo": "JZ7WLLQUKRAD",
+        "assignedToType": "user",
+        "dueDate": "2020-05-11T09:35:54.000Z",
+        "createdBy": "PER8KQPK2JRT",
+        "updatedBy": "8QVAQV5PW36V",
+        "containerId": "80d025dc-6c45-4178-95a8-d4066a28da09",
+        "workflowStateId": "bf6f2833-6ab1-403d-83f6-2c716fbf8e06",
+        "workflowType": "US",
+        "coReviewers": [],
+        "distributionList": [],
+        "managerId": "8QVAQV5PW36V",
+        "mentionees": [],
+        "discipline": [],
+        "category": [],
+        "createdAt": "2020-05-10T09:35:57.871Z",
+        "updatedAt": "2020-05-10T13:13:35.297Z",
+        "comments": [],
+        "attachments": [],
+        "customIdentifier": "1",
+        "openedBy": "8QVAQV5PW36V",
+        "openedAt": "2020-05-10T14:04:03.328Z",
+        "reviewerId": "JZ7WLLQUKRAD",
+        "architectId": "JZ7WLLQUKRAD",
+        "permittedActions": {
+          "updateRfi": {
+            "permittedAttributes": [
+              {
+                "name": "assignedTo",
+                "values": [
+                  {
+                    "value": "8QVAQV5PW36V",
+                    "type": "user"
+                  },
+                  {
+                    "value": "LXD6JZWKDFKA",
+                    "type": "user"
+                  },
+                  {
+                    "value": "R7ZNPU3EZRMM",
+                    "type": "user"
+                  },
+                  {
+                    "value": "53SAKU73TL5R",
+                    "type": "user"
+                  }
+                ]
+              },
+              {
+                "name": "category"
+              },
+              {
+                "name": "coReviewers"
+              },
+              {
+                "name": "costImpact"
+              },
+              {
+                "name": "customIdentifier"
+              },
+              {
+                "name": "discipline"
+              },
+              {
+                "name": "distributionList"
+              },
+              {
+                "name": "dueDate"
+              },
+              {
+                "name": "linkedDocument"
+              },
+              {
+                "name": "linkedDocumentVersion"
+              },
+              {
+                "name": "location"
+              },
+              {
+                "name": "officialResponse"
+              },
+              {
+                "name": "priority"
+              },
+              {
+                "name": "question"
+              },
+              {
+                "name": "reference"
+              },
+              {
+                "name": "scheduleImpact"
+              },
+              {
+                "name": "suggestedAnswer"
+              },
+              {
+                "name": "title"
+              },
+              {
+                "name": "status",
+                "values": [
+                  {
+                    "value": "answered"
+                  },
+                  {
+                    "value": "rejected"
+                  },
+                  {
+                    "value": "void"
+                  }
+                ]
+              }
+            ],
+            "permittedStatuses": [
+              {
+                "status": "answered",
+                "requiredAttributes": [
+                  {
+                    "name": "officialResponse"
+                  }
+                ]
+              },
+              {
+                "status": "rejected",
+                "requiredAttributes": [
+                  {
+                    "name": "officialResponse"
+                  }
+                ]
+              },
+              {
+                "status": "void",
+                "requiredAttributes": []
+              }
+            ]
+          },
+          "createComment": true,
+          "createAttachment": true,
+          "togglePushpinVisibility": false
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/UI/DataTable",
+    "scrapedAt": "2026-05-08T18:45:13.600Z",
+    "category": "SDK Reference/UI",
+    "apiName": "VIEWER API"
+  },
+  "title": "DataTable",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dockingPanel*Autodesk.Viewing.UI.DockingPanel",
+          "col_1": "Instance of the Docking Panel"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "rowdata*Array.<Array.<Array>>",
+          "col_1": "The dataset in array of arrays and represents a set of rows"
+        },
+        {
+          "col_0": "columndata*Array",
+          "col_1": "The dataset in array and represents the column data"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sortFunc*function",
+          "col_1": "custom sort function for the table dataset"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "function",
+          "description": "custom sort function set by the setSortFunction method"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "col*number",
+          "col_1": "column index"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<number>",
+          "description": "rowGroups - an array of grouped data, where each group contains numbers that represent the row-indices of the original table dataset."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "col*number",
+          "col_1": "column index"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "type*string",
+          "col_1": "type of aggregation"
+        },
+        {
+          "col_0": "col*number",
+          "col_1": "column index"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "the final result of the aggregation"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "type*string",
+          "col_1": "type of aggregation"
+        },
+        {
+          "col_0": "col*number",
+          "col_1": "column index"
+        }
+      ]
+    }
+  ]
+}

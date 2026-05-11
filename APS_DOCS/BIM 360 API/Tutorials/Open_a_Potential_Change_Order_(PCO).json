@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/open-pco",
+    "scrapedAt": "2026-05-08T17:48:31.794Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Open a Potential Change Order (PCO)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/pco?limit=100&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/pco?limit=100&offset=0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n  \"results\": [{\n      \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n      \"...\":\"...\",\n  }],\n  \"pagination\": {\n      \"totalResults\": 1,\n      \"limit\": 100,\n      \"offset\": 0\n  }\n}"
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/workflows/FormInstance/5254a50-44d9-11e9-99d7-79aa05d3109e/actions' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "[{\n    \"name\": \"open\",\n    \"transforms\": [{\n            \"key\": \"budgetStatusId\",\n            \"to\": \"open\"\n        },\n        {\n            \"key\": \"costStatusId\",\n            \"to\": \"open\"\n        }\n    ],\n    \"rules\": [{\n            \"key\": \"budgetStatusId\",\n            \"only\": [\"draft\"]\n        },\n        {\n            \"key\": \"costStatusId\",\n            \"only\": [\"draft\"]\n        }\n    ]\n}]",
+      "parsed": {
+        "name": "open",
+        "transforms": [
+          {
+            "key": "budgetStatusId",
+            "to": "open"
+          },
+          {
+            "key": "costStatusId",
+            "to": "open"
+          }
+        ],
+        "rules": [
+          {
+            "key": "budgetStatusId",
+            "only": [
+              "draft"
+            ]
+          },
+          {
+            "key": "costStatusId",
+            "only": [
+              "draft"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X POST 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/workflows/actions' \\\n-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n-H 'Content-Type: application/json'\n-d '[\n        {\n            \"action\": \"open\",\n            \"associationId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n            \"associationType\": \"FormInstance\",\n        }\n    ]'"
+    },
+    {
+      "raw": "[\n    {\n        \"action\": \"open\",\n        \"associationId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n        \"associationType\": \"FormInstance\",\n        \"errors\": []\n    }\n]",
+      "parsed": {
+        "action": "open",
+        "associationId": "55254a50-44d9-11e9-99d7-79aa05d3109e",
+        "associationType": "FormInstance",
+        "errors": []
+      }
+    }
+  ]
+}

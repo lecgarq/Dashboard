@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/getting_started/task2",
+    "scrapedAt": "2026-05-08T18:14:17.165Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Get Projects",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "projects",
+          "Description": "Retrieves all projects within a hub."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetProjects ($hubId: ID!) {\n    projects(hubId: $hubId) {\n        results {\n            id\n            name\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"hubId\": \"b.768cae14-76b3-4531-9030-25212dab4e48\"\n}",
+      "parsed": {
+        "hubId": "b.768cae14-76b3-4531-9030-25212dab4e48"
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"projects\": {\n            \"results\": [\n                {\n                    \"id\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg\",\n                    \"name\": \"DataExchange-Graph\"\n                },\n                {\n                    \"id\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjViYWI0YWUzLTRjM2QtNDMxYi05NWQzLWViMjJlOGU1MDg5NA\",\n                    \"name\": \"Data Exchanges\"\n                }\n            ]\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "projects": {
+            "results": [
+              {
+                "id": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg",
+                "name": "DataExchange-Graph"
+              },
+              {
+                "id": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjViYWI0YWUzLTRjM2QtNDMxYi05NWQzLWViMjJlOGU1MDg5NA",
+                "name": "Data Exchanges"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

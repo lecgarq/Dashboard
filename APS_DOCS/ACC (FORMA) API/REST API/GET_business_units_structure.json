@@ -1,0 +1,171 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/business_units_structure-GET",
+    "scrapedAt": "2026-05-08T23:57:17.100Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "business_units_structure",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/business_units_structure",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/accounts/:account_id/business_units_structure"
+        },
+        {
+          "col_0": "Method and URI（Legacy）",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/business_units_structure"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorizationyes",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "col_0": "Regionno",
+          "col_1": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account/hub ID of the business unit. This corresponds to the hub ID used in the Data Management API, with the “b.\" prefix removed. For example, b.c8b0c73d-3ae9 becomes c8b0c73d-3ae9."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "business_unitsarray:object",
+          "col_1": ""
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Business unit ID"
+        },
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "Account/Hub ID"
+        },
+        {
+          "col_0": "parent_idstring: UUID",
+          "col_1": "The ID of the parent business unit;\nused to configure the tree structure of business units"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the business unit"
+        },
+        {
+          "col_0": "pathstring",
+          "col_1": "The path of the business unit in the tree structure"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the business unit"
+        },
+        {
+          "col_0": "created_at",
+          "col_1": ""
+        },
+        {
+          "col_0": "updated_at",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/business_units_structure' \\\n   -H 'Authorization: Bearer 9ezBnx9Rd5D1xG4KMt6b72T4w0MG'"
+    },
+    {
+      "raw": "{\n  \"business_units\":[\n   {\n     \"id\": \"933df8fd-abb2-4e4e-8f79-95ba2afebc6c\",\n     \"account_id\": \"e3d5ef8d-5c37-4b9d-925d-1e6d24753ace\",\n     \"parent_id\": null,\n     \"name\": \"North America\",\n     \"description\": \"USA, Canada\",\n     \"path\": null,\n     \"created_at\": \"2016-04-11T03:49:09.176Z\",\n     \"updated_at\": \"2016-04-11T03:49:09.176Z\"\n   },\n   {\n     \"id\": \"fda4ab9e-ab82-4ba9-8d6c-ae7dbd7cee31\",\n     \"account_id\": \"e3d5ef8d-5c37-4b9d-925d-1e6d24753ace\",\n     \"parent_id\": \"933df8fd-abb2-4e4e-8f79-95ba2afebc6c\",\n     \"name\": \"USA Western Region\",\n     \"description\": \"California, Nevada, Washington\",\n     \"path\": \"North America\",\n     \"created_at\": \"2016-04-11T03:49:09.176Z\",\n     \"updated_at\": \"2016-04-11T03:49:09.176Z\"\n   }\n  ]\n}",
+      "parsed": {
+        "business_units": [
+          {
+            "id": "933df8fd-abb2-4e4e-8f79-95ba2afebc6c",
+            "account_id": "e3d5ef8d-5c37-4b9d-925d-1e6d24753ace",
+            "parent_id": null,
+            "name": "North America",
+            "description": "USA, Canada",
+            "path": null,
+            "created_at": "2016-04-11T03:49:09.176Z",
+            "updated_at": "2016-04-11T03:49:09.176Z"
+          },
+          {
+            "id": "fda4ab9e-ab82-4ba9-8d6c-ae7dbd7cee31",
+            "account_id": "e3d5ef8d-5c37-4b9d-925d-1e6d24753ace",
+            "parent_id": "933df8fd-abb2-4e4e-8f79-95ba2afebc6c",
+            "name": "USA Western Region",
+            "description": "California, Nevada, Washington",
+            "path": "North America",
+            "created_at": "2016-04-11T03:49:09.176Z",
+            "updated_at": "2016-04-11T03:49:09.176Z"
+          }
+        ]
+      }
+    }
+  ]
+}

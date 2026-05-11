@@ -1,0 +1,2567 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/GuiViewer3D",
+    "scrapedAt": "2026-05-08T18:44:11.086Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "GuiViewer3D",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "container*HTMLElement",
+          "col_1": "The viewer container."
+        },
+        {
+          "col_0": "config*object",
+          "col_1": "The initial settings object. See base class for details."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "ViewerCount",
+          "col_1": "Need to keep track of viewers in document so we know when it is safe to call clearPropertyWorkerCache()"
+        },
+        {
+          "col_0": "kDefaultCanvasConfig",
+          "col_1": "Default values passed into #setCanvasClickBehavior specifying how the viewer canvas will react to user input as well as other 3d-canvas related options."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        },
+        {
+          "col_0": "options*Object",
+          "col_1": "An optional dictionary of options."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "Resolves with the extension requested."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        },
+        {
+          "col_0": "callbackfunction",
+          "col_1": "That receives an extension instance as argument."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Object",
+          "description": "Extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "Resolves with the loaded extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension was successfully unloaded."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        },
+        {
+          "col_0": "options*Object",
+          "col_1": "An optional dictionary of options."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "Resolves with the extension requested."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "callback*function",
+          "col_1": "That receives an extension instance as argument."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urlstring",
+          "col_1": "Optional URN or filepath to load on start."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Optional path to shared property database."
+        },
+        {
+          "col_0": "onSuccessCallbackAutodesk.Viewing.Viewer3D~onLoadModelSuccess",
+          "col_1": "Method that gets called when initial loading is done and streaming starts."
+        },
+        {
+          "col_0": "onErrorCallbackAutodesk.Viewing.Viewer3D~onLoadModelFailure",
+          "col_1": "Method that gets called when initial loading ends with an error."
+        },
+        {
+          "col_0": "initOptionsobject",
+          "col_1": "Optional: Options forwarded to viewer.initialize()"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "0 if the viewer has started, an error code (same as that returned by initialize()) otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "configobject",
+          "col_1": "configuration values"
+        },
+        {
+          "col_0": "extensionsArray.<string>",
+          "col_1": "List of extension ids to load with the model."
+        },
+        {
+          "col_0": "canvasConfigobject",
+          "col_1": "Overrides for click/tap events on the 3D canvas. Refer to #setCanvasClickBehavior for details."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "isUnloadModelsWantedboolean",
+          "col_1": "Whether to unload models at the end. Default is true."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "url*string",
+          "col_1": "The url to the model."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Dictionary of options."
+        },
+        {
+          "col_0": "fileLoaderAutodesk.Viewing.FileLoader",
+          "col_1": "The file loader to use for this url. Required for unsupported file types."
+        },
+        {
+          "col_0": "keepCurrentModelsboolean",
+          "col_1": "Flag indicating whether viewer should keep or unload all other models."
+        },
+        {
+          "col_0": "loadOptionsobject",
+          "col_1": "May contain params that are specific for certain loaders/filetypes."
+        },
+        {
+          "col_0": "sharedPropertyDbPathstring",
+          "col_1": "Optional path to shared property database."
+        },
+        {
+          "col_0": "idsstring",
+          "col_1": "A list of object IDs to load."
+        },
+        {
+          "col_0": "loadAsHiddenboolean",
+          "col_1": "By default, a new model is instantly shown and triggers viewer refreshes during loading. Setting this option avoids that. The model can then be shown later by calling showModel()."
+        },
+        {
+          "col_0": "modelNameOverridestring",
+          "col_1": "Allows host application to override model name used in UI."
+        },
+        {
+          "col_0": "placementTransformLmvMatrix4",
+          "col_1": "Applied to the model during loading."
+        },
+        {
+          "col_0": "applyScalingstring, Object",
+          "col_1": "Unit-Scaling that is applied to the model on load, e.g. { from: ‘ft’, to: ‘m’ }. If ‘from’ is not set, it is determined from model metadata (if provided). If only ‘to’ is set, you can just assign a string directly, e.g. applyScaling = ‘m’ is the same as applyScaling = { to: ‘m’ }."
+        },
+        {
+          "col_0": "applyPlacementInModelUnitsboolean",
+          "col_1": "Only relevant if options.placementTransform and options.applyScaling are both used at once. In this way, it controls the order in which placement and scaling happen: - False: Placement happens in viewer world-units. That is, applyScaling is done first, then the custom placementMatrix is applied. (Default behavior) - True: Placement happens in model units. That is, custom placementMatrix is applied first, then the unit scaling."
+        },
+        {
+          "col_0": "onSuccessCallbackAutodesk.Viewing.Viewer3D~onLoadModelSuccess",
+          "col_1": "A method that gets called when model’s metadata loading is done and geometry streaming starts."
+        },
+        {
+          "col_0": "onErrorCallbackAutodesk.Viewing.Viewer3D~onLoadModelFailure",
+          "col_1": "A method that gets called when loading fails."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "includeObject",
+          "col_1": "Optional object to set the scope of the wait"
+        },
+        {
+          "col_0": "geometryBoolean",
+          "col_1": "Set to false to exclude the geometry loading from consideration. Because textures are loaded with geometry, include.textures must also be set to false to prevent geometry from being considered. Defaults to true."
+        },
+        {
+          "col_0": "propDbBoolean",
+          "col_1": "Set to false to exclude the property data base loading from consideration. Defaults to true."
+        },
+        {
+          "col_0": "texturesBoolean",
+          "col_1": "Set to false to exclude the texture loading from consideration. Defaults to true."
+        },
+        {
+          "col_0": "hiddenBoolean",
+          "col_1": "Set to true to include hidden models for consideration. Defaults to false."
+        },
+        {
+          "col_0": "onlyModelsModel, Array.<Model>",
+          "col_1": "Limits the check to the model or models in this property. Note that checking for textures loaded cannot be limited to models."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Boolean",
+          "description": "True if all models are completely loaded, otherwise false"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "includeObject",
+          "col_1": "Optional object to set the scope of the wait"
+        },
+        {
+          "col_0": "geometryBoolean",
+          "col_1": "Set to false to exclude the geometry loading from consideration. Because textures are loaded with geometry, include.textures must also be set to false to prevent waiting for geometry to load. Defaults to true."
+        },
+        {
+          "col_0": "propDbBoolean",
+          "col_1": "Set to false to exclude the property data base loading from consideration. Defaults to true."
+        },
+        {
+          "col_0": "texturesBoolean",
+          "col_1": "Set to false to exclude the texture loading from consideration. Defaults to true."
+        },
+        {
+          "col_0": "hiddenBoolean",
+          "col_1": "Set to true to include hidden models for consideration. Defaults to false."
+        },
+        {
+          "col_0": "onlyModelsModel, Array.<Model>",
+          "col_1": "Limits the wait to the model or models in this property. Note that waiting for textures loaded cannot be limited to models."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "resolves when all models are loaded. This promise can be rejected by a LOADER_LOAD_ERROR_EVENT event."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "model*Autodesk.Viewing.Model",
+          "col_1": "The model to unload."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "avDocument*Autodesk.Viewing.Document",
+          "col_1": "The Document instance, which owns the model being loaded"
+        },
+        {
+          "col_0": "manifestNode*Autodesk.Viewing.BubbleNode",
+          "col_1": "The specific manifest node to load (within the Document)"
+        },
+        {
+          "col_0": "optionsViewerConfig",
+          "col_1": "Options to pass to Autodesk.Viewing.Viewer3D#loadModel. Will be initialized internally if not specified. The options object will be augmented by automatically determined load parameters."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "Resolves with an object representing the model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "manifestNode*Autodesk.Viewing.BubbleNode",
+          "col_1": "The specific manifest node to unload (within the Document)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true on success"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "Client rectangle bounds object { width:Number, height: Number }"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.HotkeyManager",
+          "description": "The hotkey manager."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Camera",
+          "description": "The active camera."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filterobject",
+          "col_1": "Specifies which viewer values to get."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "Viewer state."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewerState*Object",
+          "col_1": ""
+        },
+        {
+          "col_0": "filterObject",
+          "col_1": "Similar in structure to viewerState used to filter out values that should not be restored."
+        },
+        {
+          "col_0": "immediateboolean",
+          "col_1": "Whether the new view is applied with (true) or without transition (false)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if restore operation was successful."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewNode*Autodesk.Viewing.BubbleNode",
+          "col_1": "bubble node representing the view"
+        },
+        {
+          "col_0": "optionsObject",
+          "col_1": ""
+        },
+        {
+          "col_0": "skipTransitionboolean",
+          "col_1": "true to apply instanstly instead of lerping."
+        },
+        {
+          "col_0": "useExactCameraboolean",
+          "col_1": "whether any up vector adjustment is to be done (to keep head up view)"
+        },
+        {
+          "col_0": "skipViewpointExtraboolean",
+          "col_1": "true to skip using extra viewpoint information"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true, if the view is applied."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "params*Array.<Number>",
+          "col_1": "View parameters: [position-x, position-y, position-z, target-x, target-y, target-z, up-x, up-y, up-z, aspect, fov (radians), orthoScale, isPerspective (0=perspective, 1=ortho)]"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "params*Array.<Number>",
+          "col_1": "Array with 13 elements describing different aspects of a camera."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "Camera is transformed in the same way as the model. Default is this.model (only sufficient for single-view scenarios)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Object, null",
+          "description": "Camera object, or null if argument is invalid or missing."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Number>",
+          "description": "Array with 13 elements describing different aspects of the current camera."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewbox*Array.<Number>",
+          "col_1": "View parameters: [min-x, min-y, max-x, max-y]"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Optional named view name to also set the layer visibility state associated with this view."
+        },
+        {
+          "col_0": "skipTransitionboolean",
+          "col_1": "true to apply instanstly instead of lerping."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "stateName*string",
+          "col_1": "Name of the layer state to activate."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Object>, null",
+          "description": "Array of layer states. If layers don’t exist or are hidden, this methods returns null."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model, defaults to the loaded model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbid*number",
+          "col_1": "The database identifier."
+        },
+        {
+          "col_0": "onSuccessCallbackCallbacks#onPropertiesSuccess",
+          "col_1": "Callback for when the properties are fetched."
+        },
+        {
+          "col_0": "onErrorCallbackCallbacks#onGenericError",
+          "col_1": "Callback for when the properties are not found or another error occurs."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "onSuccessCallbackCallbacks#onObjectTreeSuccess",
+          "col_1": "Success callback invoked once the object tree is available."
+        },
+        {
+          "col_0": "onErrorCallbackCallbacks#onGenericError",
+          "col_1": "Error callback invoked when the object tree is not found available."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "config*object",
+          "col_1": "Parameter object that meets the above layout."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "text*string",
+          "col_1": "The search term (not case sensitive)."
+        },
+        {
+          "col_0": "onSuccessCallback*Callbacks#onSearchSuccess",
+          "col_1": "Invoked when the search results are ready."
+        },
+        {
+          "col_0": "onErrorCallback*Callbacks#onGenericError",
+          "col_1": "Invoke when an error occured during search."
+        },
+        {
+          "col_0": "attributeNamesArray.<string>",
+          "col_1": "Restricts search to specific attribute names."
+        },
+        {
+          "col_0": "optionsObject",
+          "col_1": "Search options."
+        },
+        {
+          "col_0": "searchHiddenboolean",
+          "col_1": "Set to true to also search hidden properties"
+        },
+        {
+          "col_0": "includeInheritedboolean",
+          "col_1": "Set to true to include nodes that inherit the property"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "Model object, if passed in the hidden nodes of the model are returned"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<number>",
+          "description": "Array of nodes that are currently hidden, when no isolation is in place."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "Model object, if passed in the isolated nodes of the model are returned"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<number>",
+          "description": "Array of nodes that are currently isolated."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "node*Array.<number>, number",
+          "col_1": "A node ID or array of node IDs from the model tree BaseViewer#getObjectTree."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the node id. Defaults to the first loaded model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "red*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "green*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "blue*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "red2*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "green2*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "blue2*number",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "opacity*number",
+          "col_1": "Value is in the range [0.0..1.0]"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbid*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the dbId. Uses the initial model loaded by default."
+        },
+        {
+          "col_0": "selectionType*number",
+          "col_1": "a member of Autodesk.Viewing.SelectionMode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbids*Array.<number>, number",
+          "col_1": "element or array of elements to select."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model instance containing the ids."
+        },
+        {
+          "col_0": "selectionTypenumber",
+          "col_1": "a member of Autodesk.Viewing.SelectionType."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "{hasVisible:boolean, hasHidden:boolean}"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "number of selected nodes"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mode*number",
+          "col_1": "The selection mode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<number>",
+          "description": "Array of the nodes (dbIds) of the currently selected nodes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIds*Number, Array.<Number>",
+          "col_1": "dbIds to lock"
+        },
+        {
+          "col_0": "lock*Boolean",
+          "col_1": "true to lock, false otherwise"
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIdsArray.<Number>",
+          "col_1": "dbIds to unlock"
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model associated to the nodes parameters"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "the object’s identifier."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True is the visibility is locked"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "callbackfunction",
+          "col_1": "Optional callback to receive enumerated pairs of model and dbId for each selected object. If no callback is given, an array of objects is returned."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<object>",
+          "description": "An array of objects with a model and selectionSet properties for each model that has selected items in the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "selection*Array.<SelectionDef>",
+          "col_1": "Array of selection objects defining what to select"
+        },
+        {
+          "col_0": "fireEventBoolean",
+          "col_1": "Whether an event is fired at the end"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<{model: Autodesk.Viewing.Model, ids: Array.<number>}>",
+          "description": "An array of objects with a model and the isolated ids in that model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "isolation*Array.<{model: Autodesk.Viewing.Model, ids: (Array.<number>|number)}>",
+          "col_1": "An array of objects with a model and the ids to isolate in that model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<{model: Autodesk.Viewing.Model, ids: Array.<number>}>",
+          "description": "An array of objects with a model and the hidden ids in that model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "node*Array.<number>, number",
+          "col_1": "An array of nodes (dbids) or just a single node."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "node*Array.<number>, number",
+          "col_1": "An array of nodes (dbids) or just a single node."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "the object’s identifier."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if every node is visible, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nodeId*number",
+          "col_1": "Geometry node to check if visible."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model that contains the specified nodeId."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*Array.<number>, number",
+          "col_1": "array of nodes or a single node"
+        },
+        {
+          "col_0": "locked*boolean",
+          "col_1": "Set to true to lock the nodes visible. Set to false to allow the nodes to be hidden."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "the object’s identifier."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "the object’s identifier."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "the model that contains the dbId. By default uses the initial model loaded into the scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True is the visibility is locked"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "scale*number",
+          "col_1": "A value from 0.0-1.0 to indicate how much to explode."
+        },
+        {
+          "col_0": "options*Object",
+          "col_1": "Additional setting for STRATEGY_HIERARCHY."
+        },
+        {
+          "col_0": "magnitude*Number",
+          "col_1": "Controls the spread of explode."
+        },
+        {
+          "col_0": "depthDampening*Number",
+          "col_1": "Controls the reduction of the explode effect with depth of the object in the hierarchy."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "A value from 0.0-1.0 indicating how exploded the model is."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "{magnitude:Number, depthDampening:Number}"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbids*Array.<number>, number",
+          "col_1": "The dbids to lock or unlock"
+        },
+        {
+          "col_0": "lock*boolean",
+          "col_1": "Set to true to prevent dbids from exploding. Set to false to allow dbids to explode."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model containing the dbids. Defaults to this.model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if any dbids were changed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbid*number",
+          "col_1": "The dbid to check"
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model containing the dbids. Defaults to this.model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if dbid is locked to prevent explode"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbid*number",
+          "col_1": "The dbid to lock or unlock"
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "The model containing the dbids. Defaults to this.model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if any dbids were changed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "useSAO*boolean",
+          "col_1": "True or false to enable screen space ambient occlusion."
+        },
+        {
+          "col_0": "useFXAA*boolean",
+          "col_1": "True or false to enable fast approximate anti-aliasing."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "Indicates whether ghosting is on or off."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "Indicates whether shadow is on or off."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "Indicates whether reflection is on or off."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "Indicates whether environment map for background is on or off."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "Indicates whether first person tool popup is showed or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the First Person Walk tool popup appears, false if the First Person Walk tool popup does not appear."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "whether it is on or off"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "whether it is on or off"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "whether it is on or off"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "whether it is on or off"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "True if the navigation should be locked."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "The previous state of the lock (this may be used to restore the lock to it’s previous state)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the navigation controls are currently locked."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "settings*object",
+          "col_1": "Map of : pairs specifying whether the given action is enabled even when the navigation is locked."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "Map of : pairs specifying whether the given action is enabled even when the navigation is locked."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolNamestring",
+          "col_1": "The name of the tool to activate. By default it will switch to the default tool."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tool was set successfully. False otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The tool’s name."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolName*string",
+          "col_1": "The name of the new default navigation tool."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Object",
+          "description": "The default navigation tool."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "the field of view in degrees."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "degrees*number",
+          "col_1": "Field of view in degrees."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "the focal length in millimetres."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mm*number",
+          "col_1": "Focal length in millimetres"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "hide*boolean",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "hide*boolean",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "show*boolean",
+          "col_1": "true to turn edge topology display on, false to turn edge topology display off."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "camera*THREE.Camera",
+          "col_1": "the camera to apply."
+        },
+        {
+          "col_0": "fitboolean",
+          "col_1": "Do a fit to view after transition."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "objectIdsArray.<number>, null",
+          "col_1": "array of Ids to fit into the view. Avoid passing this value to fit the entire model."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model, null",
+          "col_1": "The model containing the objectIds. If falsey, the viewer’s current model will be used."
+        },
+        {
+          "col_0": "immediateboolean",
+          "col_1": "true to avoid the default transition."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "what*string",
+          "col_1": "which click config to modify (one of “click”, “clickAlt”, “clickCtrl”, “clickShift”, “clickCtrlShift”)."
+        },
+        {
+          "col_0": "where*string",
+          "col_1": "hit location selector (one of “onObject”, “offObject”)."
+        },
+        {
+          "col_0": "newAction*Array.<string>",
+          "col_1": "action list (containing any of “setCOI”, “selectOnly”, “selectToggle”, “deselectAll”, “deselectAll”, “isolate”, “showAll”, “hide”, “focus”)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "False if specified entry is not found, otherwise true."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "what*string",
+          "col_1": "which click config to fetch (one of “click”, “clickAlt”, “clickCtrl”, “clickShift”, “clickCtrlShift”)."
+        },
+        {
+          "col_0": "where*string",
+          "col_1": "hit location selector (one of “onObject”, “offObject”)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "array",
+          "description": "action list for the given entry or null if not found."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "state*boolean",
+          "col_1": "If true the default is to set the center of interest. If false the default is single select."
+        },
+        {
+          "col_0": "updatePrefsboolean",
+          "col_1": "Whether to update user preferences. Defaults to true unless explicitly set to false."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "profile*Autodesk.Viewing.Profile",
+          "col_1": "profile containing settings."
+        },
+        {
+          "col_0": "overrideboolean",
+          "col_1": "If set to true this will override all existing preference with the new profile preference. Default: true"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "index*Number",
+          "col_1": "The index mapping looks like this: 0 -> Simple Grey, 1 -> Sharp Highlights, 2 -> Dark Sky, 3 -> Grey Room, 4 -> Photo Booth, 5 -> Tranquility, 6 -> Infinity Pool, 7 -> Simple White, 8 -> Riverbank, 9 -> Contrast, 1 ->0 Rim Highlights, 1 ->1 Cool Light, 1 ->2 Warm Light, 1 ->3 Soft Light, 1 ->4 Grid Light, 1 ->5 Plaza, 1 ->6 Snow Field"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true to request use of the pivot point. When false some controls may pivot around the center of the view. (Currently applies only to the view-cube orbit controls.)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true for reverse, false for default"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true for reverse, false for default"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true for reverse, false for default"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true for towards the pivot, false for default"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true to allow orbiting past the poles."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*boolean",
+          "col_1": "value of the option, true to request reversal of mouse button assignments."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "value of the option, can be between 5 and 300. Default is 100."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "value of the option, can be between 0.1 and 3.0. Default is 0.6."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*string",
+          "col_1": "display units to set. The units can be “” (file units), “mm”, “cm”, “m”, “in”, “ft”, “ft-and-fractional-in”, “ft-and-decimal-in”, “decimal-in”, “decimal-ft”, “fractional-in”, “m-and-cm”,"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "precision for the units The value is the number of decimal values after the “.”. For e.g., a value of 5 would be either 0.12345 or 1/32 (2^5) for fraction type units Values greater than 6 is not supported If value is not specified, it defaults to the precision in the file"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nodes*Array",
+          "col_1": "An array of layer nodes, or a single layer node, or null for all layers"
+        },
+        {
+          "col_0": "visible*boolean",
+          "col_1": "true to show the layer, false to hide it"
+        },
+        {
+          "col_0": "isolateboolean",
+          "col_1": "true to isolate the layer"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "node*Object",
+          "col_1": "Layer node"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the layer is visible"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if any layer is hidden"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if all layers are hidden"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "color*THREE.Color",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "alpha*float",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "color*THREE.Color",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "alpha*number",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<THREE.Vector4>",
+          "description": "List of Vector4 plane representation {x:a, y:b, z:c, w:d}"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "planes*Array.<THREE.Vector4>",
+          "col_1": "List of Vector4 plane representation: {x:a, y:b, z:c, w:d} Plane general equation: ax + by + cz + d = 0 where a, b, and c are not all zero Passing an empty list or null is equivalent to setting zero cut planes"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "wnumber",
+          "col_1": "width of the requested image"
+        },
+        {
+          "col_0": "hnumber",
+          "col_1": "height of the requested image"
+        },
+        {
+          "col_0": "cbfunction",
+          "col_1": "callback"
+        },
+        {
+          "col_0": "overlayRendererfunction",
+          "col_1": "overlayRenderer"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "DOMString",
+          "description": "screenshot image Blob URL, if no parameters are given"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "point*THREE.Vector3",
+          "col_1": "Point in world space coordinates."
+        },
+        {
+          "col_0": "camera*THREE.Camera",
+          "col_1": "Optional camera to use - default is the viewer’s native camera."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Vector3",
+          "description": "Point transformed and projected into client space coordinates. Z value is 0."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "clientX*Number",
+          "col_1": "X coordinate where 0 is left"
+        },
+        {
+          "col_0": "clientY*Number",
+          "col_1": "Y coordinate where 0 is top"
+        },
+        {
+          "col_0": "ignoreTransparentBoolean",
+          "col_1": "Ignores transparent materials"
+        },
+        {
+          "col_0": "ignore2dModelBoundsboolean",
+          "col_1": "For 2d models - whether to return a result outside of the model’s bounds."
+        },
+        {
+          "col_0": "ignore2dModelsOn3dboolean",
+          "col_1": "Whether to ignore 2d models when in 3d mode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Object, null",
+          "description": "contains point attribute. 3d models have additional attributes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "value - Indicates whether the model has topology information."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "color*THREE.Color",
+          "col_1": ""
+        },
+        {
+          "col_0": "selectionType*number",
+          "col_1": "a member of Autodesk.Viewing.SelectionMode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "color*THREE.Color",
+          "col_1": ""
+        },
+        {
+          "col_0": "opacity*number",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Name of the theme, it will be added to the viewer’s container class list."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": ""
+        },
+        {
+          "col_0": "color*THREE.Vector4",
+          "col_1": "(r, g, b, intensity), all in [0,1]."
+        },
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "For multi-model support."
+        },
+        {
+          "col_0": "recursiveboolean",
+          "col_1": "Should apply theming color recursively to all child nodes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "For multi-model support."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelAutodesk.Viewing.Model",
+          "col_1": "For multi-model support."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "model*number, Autodesk.Viewing.Model",
+          "col_1": "model id or Model object"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true indicates success, i.e., modelId referred to a visible model that is now hidden"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "model*number, Autodesk.Viewing.Model",
+          "col_1": "model id or Model object"
+        },
+        {
+          "col_0": "preserveTools*boolean",
+          "col_1": "disable automatic activation of default tool"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true indicates success, i.e., model referred to a hidden model that is now visible"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Autodesk.Viewing.Model>",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Autodesk.Viewing.Model>",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Autodesk.Viewing.Model>",
+          "description": "An array of visible and hidden models"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.Model",
+          "description": "A model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "bubbleNode*Autodesk.Viewing.BubbleNode",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Autodesk.Viewing.Model>",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "disable*boolean",
+          "col_1": "Indicates whether highlighting should be on or off. True to disable highlights, false to enable them."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "disable*boolean",
+          "col_1": "true to disable selection, false to enable selection."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionID*string",
+          "col_1": "The extension id."
+        },
+        {
+          "col_0": "modestring",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionID*string",
+          "col_1": "the extension ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the extension was deactivated false otherwise"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionID*string",
+          "col_1": "the extension ID"
+        },
+        {
+          "col_0": "mode*string",
+          "col_1": "The model of the extension"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension is active, false otherwise"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionID*string",
+          "col_1": "the extension ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "returns true if the extension was loaded, false otherwise"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": "returns the IDs of all of the loaded extensions"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionID*string",
+          "col_1": "the extension ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": "array of the extension’s modes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x*number",
+          "col_1": "X-coordinate, i.e., horizontal distance (in pixels) from the left border of the canvas."
+        },
+        {
+          "col_0": "y*number",
+          "col_1": "Y-coordinate, i.e., vertical distance (in pixels) from the top border of the canvas."
+        },
+        {
+          "col_0": "ignoreTransparentboolean",
+          "col_1": "ignores any transparent objects that might intersect x,y"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Intersection, null",
+          "description": "Intersection information about closest hit point."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "clear*boolean",
+          "col_1": "clears the screen and redraws the overlays."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.Profile, null",
+          "description": "a Profile"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "forEachExtension(function(ext){\n    console.log(ext.id);\n })"
+    },
+    {
+      "raw": "{\n     \"click\": {\n         \"onObject\": [ACTIONS],\n         \"offObject\": [ACTIONS]\n     },\n     \"clickCtrl\": {\n         \"onObject\": [ACTIONS],\n         \"offObject\": [ACTIONS]\n     },\n     \"clickShift\": {\n         ...\n     },\n     \"clickCtrlShift\": {\n         ...\n     },\n     \"disableSpinner\": BOOLEAN\n     \"disableMouseWheel\": BOOLEAN,\n     \"disableTwoFingerSwipe\": BOOLEAN\n}"
+    },
+    {
+      "raw": "const profileSettings = {\n   name: \"mySettings\",\n   settings: {\n       ambientShadows: false,\n       groundShadows: true\n   }\n   extensions: {\n       load: [],   // Extension IDs\n       unload: []  // Extension IDs\n   }\n}\nconst profile = new Autodesk.Viewing.Profile(profileSettings);\nviewer.setProfile(profile);"
+    },
+    {
+      "raw": "viewer.setSelectionColor(new THREE.Color(0xFF0000), Autodesk.Viewing.SelectionType.MIXED); // red color"
+    },
+    {
+      "raw": "viewer.set2dSelectionColor(new THREE.Color(0xFF0000), 0.1); // red color, opacity of 0.1"
+    }
+  ]
+}

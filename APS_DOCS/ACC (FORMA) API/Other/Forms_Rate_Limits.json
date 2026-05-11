@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/forms-rate-limits",
+    "scrapedAt": "2026-05-08T23:39:55.347Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: Forms API Rate Limit",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Forms API endpoints combined",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per application (specified by client ID)"
+        }
+      ]
+    }
+  ]
+}

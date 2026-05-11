@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/cost-setup-budget-code-template",
+    "scrapedAt": "2026-05-08T17:48:18.711Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Set Up a Budget Code Template",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/templates",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/templates' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n  [{\n      \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n      \"name\": \"Default Template\",\n      \"...\":\"...\",\n  }]\n}"
+    },
+    {
+      "raw": "curl -X POST 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/templates/55254a50-44d9-11e9-99d7-79aa05d3109e/segments' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n-d '{\"name\": \"Job Number\", \"type\": \"code\", \"delimiter\": \"none\", \"length\": 5, \"position\": 0}'",
+      "parsed": {
+        "name": "Job Number",
+        "type": "code",
+        "delimiter": "none",
+        "length": 5,
+        "position": 0
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"9bd1ed70-783b-11e8-acb8-8b72f6541e12\",\n    \"name\": \"Job Number\",\n    \"type\": \"code\",\n    \"delimiter\": \"none\",\n    \"length\": 5,\n    \"position\": 0,\n    \"sampleCode\": \"#####\",\n    \"createdAt\": \"2020-01-06T01:24:22.678Z\",\n    \"updatedAt\": \"2020-01-06T01:24:22.678Z\"\n}",
+      "parsed": {
+        "id": "9bd1ed70-783b-11e8-acb8-8b72f6541e12",
+        "name": "Job Number",
+        "type": "code",
+        "delimiter": "none",
+        "length": 5,
+        "position": 0,
+        "sampleCode": "#####",
+        "createdAt": "2020-01-06T01:24:22.678Z",
+        "updatedAt": "2020-01-06T01:24:22.678Z"
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/55254a50-44d9-11e9-99d7-79aa05d3109e/values' -X 'POST' -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' -H 'Content-Type: application/json' \\\n-d '{\"segmentId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\", \"code\": \"84720\", \"description\": \"Future City\"}'",
+      "parsed": {
+        "segmentId": "55254a50-44d9-11e9-99d7-79aa05d3109e",
+        "code": "84720",
+        "description": "Future City"
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"2236aea0-783c-11e8-926b-e3dd8c091ed4\",\n    \"segmentId\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n    \"parentId\": null,\n    \"code\": \"84720\",\n    \"description\": \"Future City\",\n    \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n    \"updatedAt\": \"2019-01-06T01:24:22.678Z\"\n}",
+      "parsed": {
+        "id": "2236aea0-783c-11e8-926b-e3dd8c091ed4",
+        "segmentId": "55254a50-44d9-11e9-99d7-79aa05d3109e",
+        "parentId": null,
+        "code": "84720",
+        "description": "Future City",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-01-06T01:24:22.678Z"
+      }
+    }
+  ]
+}

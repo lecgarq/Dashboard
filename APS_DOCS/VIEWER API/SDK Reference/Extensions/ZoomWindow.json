@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/ZoomWindow",
+    "scrapedAt": "2026-05-08T18:47:34.673Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "ZoomWindow",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modestring",
+          "col_1": "Either ‘zoomwindow’ or ‘dolly’"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.Viewing.ZoomWindow')"
+    }
+  ]
+}

@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ObjectTreeDataObjects",
+    "scrapedAt": "2026-05-08T18:28:11.911Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ObjectTreeDataObjects",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ObjectTreeDataObjects"
+    },
+    {
+      "raw": "public ObjectTreeDataObjects()"
+    },
+    {
+      "raw": "[DataMember(Name = \"name\", EmitDefaultValue = false)]\npublic string Name { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"objectid\", EmitDefaultValue = false)]\npublic decimal? ObjectId { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"objects\", EmitDefaultValue = false)]\npublic List<ObjectTreeDataObjects> Objects { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

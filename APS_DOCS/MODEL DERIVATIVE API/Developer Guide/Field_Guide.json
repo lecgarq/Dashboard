@@ -1,0 +1,591 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/field-guide",
+    "scrapedAt": "2026-05-08T18:21:27.837Z",
+    "category": "Developer Guide",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Field Guide",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "Type of this JSON object"
+        },
+        {
+          "col_0": "hasThumbnailbool",
+          "col_1": "Indicates if a thumbnail has been generated for the source file URN"
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Overall status for translation jobs in the manifest\nPossible values: pending, success, inprogress,\nfailed, timeout"
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Overall progress for all translation jobs in the manifest\nPossible values: complete or a percentage value"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Coming soon. Currently set to US."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The Base64 (URL safe) encoded source file URN"
+        },
+        {
+          "col_0": "derivativesarray: object",
+          "col_1": "Requested output files for the source file URN"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the derivative"
+        },
+        {
+          "col_0": "hasThumbnailbool",
+          "col_1": "Indicates if this derivative includes a thumbnail\nAvailable only for svf2, svf and  thumbnail output types."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status for requested translation for this output type\nPossible values: pending, inprogress, success,\nfailed, timeout"
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Progress for requested translations for this output type\nPossible values: complete or a percentage value"
+        },
+        {
+          "col_0": "outputTypestring",
+          "col_1": "Translation output type.\nPossible values: dwg, fbx, ifc, iges, obj,\nstep, stl, svf2, svf, thumbnail"
+        },
+        {
+          "col_0": "childrenarray: object",
+          "col_1": "Contains information about generated resource files that are\nassociated with a derivative.\nThese resources are grouped for svf2 and svf output types, while they\nare collected in a flat list for other output types."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "guidstring",
+          "col_1": "Unique identifier of the group of resources"
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of object this JSON object represents.\nSet to geometry for svf2 and svf"
+        },
+        {
+          "col_0": "rolestring",
+          "col_1": "Output file type\nPossible values: 2d, 3d"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Optional. Name of the group of resources"
+        },
+        {
+          "col_0": "hasThumbnailbool",
+          "col_1": "Indicates if this group of resources includes a thumbnail"
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status for the group of resources\nPossible values: pending, inprogress, success,\nfailed, timeout"
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Progress for the group of resources\nPossible values: complete or a percentage value"
+        },
+        {
+          "col_0": "outputTypestring",
+          "col_1": "svf2 or svf, depending on the derivative."
+        },
+        {
+          "col_0": "childrenarray: object",
+          "col_1": "Contains information about generated files of the group of\nresources that are associated with an SVF2/SVF derivative."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "guidstring",
+          "col_1": "Unique identifier of the generated file"
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "Type of this JSON object\nSet to resource"
+        },
+        {
+          "col_0": "rolestring",
+          "col_1": "Output file type"
+        },
+        {
+          "col_0": "mimestring",
+          "col_1": "MIME type of the generated file"
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "Output file URN; used as a file identifier"
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status of the requested entity\nPossible values: pending, inprogress, success,\nfailed, timeout\nIf omitted, the implicit meaning is success"
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Translation progress for requested entity.\nPossible values: complete or a percentage value\nIf omitted, the implicit meaning is complete."
+        },
+        {
+          "col_0": "resolutionarray: int",
+          "col_1": "The resolution of the thumbnail image\nAvailable only for thumbnail output type."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the model view"
+        },
+        {
+          "col_0": "guidstring",
+          "col_1": "Unique identifier for the model view"
+        },
+        {
+          "col_0": "rolestring",
+          "col_1": "Type of model view\nPossible values: 2d, 3d"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "Objects type\nSet to objects"
+        },
+        {
+          "col_0": "objectsarray: object",
+          "col_1": "Collection of objects"
+        },
+        {
+          "col_0": "objectidint",
+          "col_1": "Unique ID for the object"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the object"
+        },
+        {
+          "col_0": "objectsarray: object",
+          "col_1": "Optional collection of children objects within the hierarchy"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "Object type\nSet to properties"
+        },
+        {
+          "col_0": "collectionarray: object",
+          "col_1": "Array of objects with their properties as a\nnon-hierarchical list"
+        },
+        {
+          "col_0": "objectidint",
+          "col_1": "Unique identifier of the object"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the object"
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "External unique identifier of the object\ndefined in the product. For example UniqueID in Revit files."
+        },
+        {
+          "col_0": "propertiesobject",
+          "col_1": "Represents the object’s properties"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "{\n    \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA\",\n    \"derivatives\": [\n        {\n            \"hasThumbnail\": \"true\",\n            \"children\": [\n                {\n                    \"role\": \"3d\",\n                    \"hasThumbnail\": \"true\",\n                    \"children\": [\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_400x400.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"b436f3d9-5f62-4f78-b403-5c5c055ce964\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                400,\n                                400\n                            ]\n                        },\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_200x200.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"af4ea613-9950-4b4e-a260-226fe72dda52\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                200,\n                                200\n                            ]\n                        },\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_100x100.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"1030bcaf-9b52-4f57-955b-d1adb0bf5655\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                100,\n                                100\n                            ]\n                        },\n                        {\n                            \"role\": \"graphics\",\n                            \"mime\": \"application/autodesk-svf2\",\n                            \"guid\": \"997adf5c-c221-4945-af4f-267e6700a4bd\",\n                            \"type\": \"resource\"\n                        }\n                    ],\n                    \"name\": \"Scene\",\n                    \"guid\": \"7f04134d-c31e-4ec5-8ef4-e03b237d63e8\",\n                    \"progress\": \"complete\",\n                    \"type\": \"geometry\",\n                    \"status\": \"success\"\n                },\n                {\n                    \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/properties.db\",\n                    \"role\": \"Autodesk.CloudPlatform.PropertyDatabase\",\n                    \"mime\": \"application/autodesk-db\",\n                    \"guid\": \"8362ddfe-8e62-4c27-8da5-26082e4b9955\",\n                    \"type\": \"resource\",\n                    \"status\": \"success\"\n                }\n            ],\n            \"name\": \"Metal_Container.zipbox.ipt\",\n            \"progress\": \"complete\",\n            \"outputType\": \"svf2\",\n            \"status\": \"success\"\n        }\n    ],\n    \"hasThumbnail\": \"true\",\n    \"progress\": \"complete\",\n    \"type\": \"manifest\",\n    \"region\": \"US\",\n    \"version\": \"1.0\",\n    \"status\": \"success\"\n}",
+      "parsed": {
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA",
+        "derivatives": [
+          {
+            "hasThumbnail": "true",
+            "children": [
+              {
+                "role": "3d",
+                "hasThumbnail": "true",
+                "children": [
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_400x400.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "b436f3d9-5f62-4f78-b403-5c5c055ce964",
+                    "type": "resource",
+                    "resolution": [
+                      400,
+                      400
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_200x200.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "af4ea613-9950-4b4e-a260-226fe72dda52",
+                    "type": "resource",
+                    "resolution": [
+                      200,
+                      200
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_100x100.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "1030bcaf-9b52-4f57-955b-d1adb0bf5655",
+                    "type": "resource",
+                    "resolution": [
+                      100,
+                      100
+                    ]
+                  },
+                  {
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf2",
+                    "guid": "997adf5c-c221-4945-af4f-267e6700a4bd",
+                    "type": "resource"
+                  }
+                ],
+                "name": "Scene",
+                "guid": "7f04134d-c31e-4ec5-8ef4-e03b237d63e8",
+                "progress": "complete",
+                "type": "geometry",
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/properties.db",
+                "role": "Autodesk.CloudPlatform.PropertyDatabase",
+                "mime": "application/autodesk-db",
+                "guid": "8362ddfe-8e62-4c27-8da5-26082e4b9955",
+                "type": "resource",
+                "status": "success"
+              }
+            ],
+            "name": "Metal_Container.zipbox.ipt",
+            "progress": "complete",
+            "outputType": "svf2",
+            "status": "success"
+          }
+        ],
+        "hasThumbnail": "true",
+        "progress": "complete",
+        "type": "manifest",
+        "region": "US",
+        "version": "1.0",
+        "status": "success"
+      }
+    },
+    {
+      "raw": "{\n    \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA\",\n    \"derivatives\": [\n        {\n            \"hasThumbnail\": \"true\",\n            \"children\": [\n                {\n                    \"role\": \"3d\",\n                    \"hasThumbnail\": \"true\",\n                    \"children\": [\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf\",\n                            \"role\": \"graphics\",\n                            \"mime\": \"application/autodesk-svf\",\n                            \"guid\": \"e1531ef8-d097-4a91-8f29-afb75ee6680b\",\n                            \"type\": \"resource\"\n                        },\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_400x400.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"f15625c8-b03f-4099-87fa-0e846f4e4749\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                400,\n                                400\n                            ]\n                        },\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_200x200.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"54fa7420-ca60-4334-9173-daec018123ff\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                200,\n                                200\n                            ]\n                        },\n                        {\n                            \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_100x100.png\",\n                            \"role\": \"thumbnail\",\n                            \"mime\": \"image/png\",\n                            \"guid\": \"aaaca5e2-99f3-4f02-a5a7-b29985efb411\",\n                            \"type\": \"resource\",\n                            \"resolution\": [\n                                100,\n                                100\n                            ]\n                        }\n                    ],\n                    \"success\": \"99%\",\n                    \"name\": \"Scene\",\n                    \"guid\": \"904da86c-86ff-438f-9078-9193595db9f2\",\n                    \"progress\": \"99%\",\n                    \"type\": \"geometry\",\n                    \"status\": \"inprogress\"\n                },\n                {\n                    \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/properties.db\",\n                    \"role\": \"Autodesk.CloudPlatform.PropertyDatabase\",\n                    \"mime\": \"application/autodesk-db\",\n                    \"guid\": \"e8b00378-40b9-4db1-9745-9fb7ad682e9f\",\n                    \"type\": \"resource\",\n                    \"status\": \"success\"\n                }\n            ],\n            \"name\": \"Metal_Container.zipbox.ipt\",\n            \"progress\": \"complete\",\n            \"outputType\": \"svf\",\n            \"status\": \"success\"\n        }\n    ],\n    \"hasThumbnail\": \"true\",\n    \"progress\": \"complete\",\n    \"type\": \"manifest\",\n    \"region\": \"US\",\n    \"version\": \"1.0\",\n    \"status\": \"success\"\n}",
+      "parsed": {
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA",
+        "derivatives": [
+          {
+            "hasThumbnail": "true",
+            "children": [
+              {
+                "role": "3d",
+                "hasThumbnail": "true",
+                "children": [
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf",
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf",
+                    "guid": "e1531ef8-d097-4a91-8f29-afb75ee6680b",
+                    "type": "resource"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_400x400.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "f15625c8-b03f-4099-87fa-0e846f4e4749",
+                    "type": "resource",
+                    "resolution": [
+                      400,
+                      400
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_200x200.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "54fa7420-ca60-4334-9173-daec018123ff",
+                    "type": "resource",
+                    "resolution": [
+                      200,
+                      200
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/Metal_Container.zipbox.svf.png01_thumb_100x100.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "aaaca5e2-99f3-4f02-a5a7-b29985efb411",
+                    "type": "resource",
+                    "resolution": [
+                      100,
+                      100
+                    ]
+                  }
+                ],
+                "success": "99%",
+                "name": "Scene",
+                "guid": "904da86c-86ff-438f-9078-9193595db9f2",
+                "progress": "99%",
+                "type": "geometry",
+                "status": "inprogress"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmMl9nYV90ZXN0cy9NZXRhbF9Db250YWluZXIuemlwYm94LmlwdA/output/1/properties.db",
+                "role": "Autodesk.CloudPlatform.PropertyDatabase",
+                "mime": "application/autodesk-db",
+                "guid": "e8b00378-40b9-4db1-9745-9fb7ad682e9f",
+                "type": "resource",
+                "status": "success"
+              }
+            ],
+            "name": "Metal_Container.zipbox.ipt",
+            "progress": "complete",
+            "outputType": "svf",
+            "status": "success"
+          }
+        ],
+        "hasThumbnail": "true",
+        "progress": "complete",
+        "type": "manifest",
+        "region": "US",
+        "version": "1.0",
+        "status": "success"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n    \"type\": \"metadata\",\n    \"metadata\": [\n      {\n        \"name\": \"Scene\",\n        \"role\": \"3d\",\n        \"guid\": \"4f981e94-8241-4eaf-b08b-cd337c6b8b1f\",\n      },\n      {\n        \"name\": \"Sheet: A101\",\n        \"role\": \"2d\",\n        \"guid\": \"8e7c6bca-cfd1-290e-4b16-f3670169bb71\"\n      }\n    ]\n   }\n}"
+    },
+    {
+      "raw": "{\n  \"data\": {\n    \"type\": \"objects\",\n    \"objects\": [\n      {\n        \"objectid\": 1,\n        \"name\": \"A5\",\n        \"objects\": [\n          {\n            \"objectid\": 2,\n            \"name\": \"Model\",\n            \"objects\": [\n              {\n                \"objectid\": 3,\n                \"name\": \"Bottom\",\n                \"objects\": [\n                  {\n                    \"objectid\": 4,\n                    \"name\": \"Box\"\n                  }\n                ]\n              },\n              {\n                \"objectid\": 5,\n                \"name\": \"Pillar\",\n                \"objects\": [\n                  {\n                    \"objectid\": 6,\n                    \"name\": \"Cylinder\"\n                  }\n                ]\n              },\n              {\n                \"objectid\": 7,\n                \"name\": \"Top\",\n                \"objects\": [\n                  {\n                    \"objectid\": 8,\n                    \"name\": \"Box\"\n                  }\n                ]\n              }\n            ]\n          }\n        ]\n      }\n    ]\n  }\n}",
+      "parsed": {
+        "data": {
+          "type": "objects",
+          "objects": [
+            {
+              "objectid": 1,
+              "name": "A5",
+              "objects": [
+                {
+                  "objectid": 2,
+                  "name": "Model",
+                  "objects": [
+                    {
+                      "objectid": 3,
+                      "name": "Bottom",
+                      "objects": [
+                        {
+                          "objectid": 4,
+                          "name": "Box"
+                        }
+                      ]
+                    },
+                    {
+                      "objectid": 5,
+                      "name": "Pillar",
+                      "objects": [
+                        {
+                          "objectid": 6,
+                          "name": "Cylinder"
+                        }
+                      ]
+                    },
+                    {
+                      "objectid": 7,
+                      "name": "Top",
+                      "objects": [
+                        {
+                          "objectid": 8,
+                          "name": "Box"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n    \"type\": \"properties\",\n    \"collection\": [\n      {\n        \"objectid\": 1,\n        \"name\": \"A5\",\n        \"externalId\": \"mou0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Name\": \"A5\"\n        }\n      },\n      {\n        \"objectid\": 2,\n        \"name\": \"Model\",\n        \"externalId\": \"z4u0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Component Name\": \"Model\",\n          \"Name\": \"Model\",\n          \"Design Tracking Properties\": {\n            \"Design State\": \"WorkInProgress\",\n            \"Designer\": \"ADSK\",\n            \"File Subtype\": \"Assembly\"\n          },\n          \"File Properties\": {\n            \"Author\": \"ADSK\",\n            \"Creation Date\": \"2012-Jul-09 20:18:20\",\n            \"Original System\": \"Autodesk Inventor 2017\",\n            \"Part Number\": \"Model\"\n          },\n          \"Mass Properties\": {\n            \"Area\": \"19772.676 millimeter^2\",\n            \"Volume\": \"83673.946 millimeter^3\"\n          }\n        }\n      },\n      {\n        \"objectid\": 3,\n        \"name\": \"Bottom\",\n        \"externalId\": \"0Yu0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Component Name\": \"A5-P1\",\n          \"Name\": \"Bottom\",\n          \"Design Tracking Properties\": {\n            \"Design State\": \"WorkInProgress\",\n            \"Designer\": \"ADSK\",\n            \"File Subtype\": \"Modeling\"\n          },\n          \"File Properties\": {\n            \"Author\": \"ADSK\",\n            \"Creation Date\": \"2012-Jul-09 20:18:35\",\n            \"Original System\": \"Autodesk Inventor 2017\",\n            \"Part Number\": \"Bottom\"\n          },\n          \"Mass Properties\": {\n            \"Area\": \"7000 millimeter^2\",\n            \"Volume\": \"25000 millimeter^3\"\n          }\n        }\n      },\n      {\n        \"objectid\": 4,\n        \"name\": \"Box\",\n        \"externalId\": \"1Iu0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Center of Gravity:\": \"-13.452 mm, -9.879 mm, -40.735 mm\",\n          \"Name\": \"Box\"\n        }\n      },\n      {\n        \"objectid\": 5,\n        \"name\": \"Pillar\",\n        \"externalId\": \"1ou0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Component Name\": \"Pillar\",\n          \"Name\": \"Pillar\",\n          \"Design Tracking Properties\": {\n            \"Design State\": \"WorkInProgress\",\n            \"Designer\": \"ADSK\",\n            \"File Subtype\": \"Modeling\"\n          },\n          \"File Properties\": {\n            \"Author\": \"ADSK\",\n            \"Creation Date\": \"2012-Jul-09 20:18:35\",\n            \"Original System\": \"Autodesk Inventor 2017\",\n            \"Part Number\": \"Pillar\"\n          },\n          \"Mass Properties\": {\n            \"Area\": \"7000 millimeter^2\",\n            \"Volume\": \"25000 millimeter^3\"\n          }\n        }\n      },\n      {\n        \"objectid\": 6,\n        \"name\": \"Cylinder\",\n        \"externalId\": \"2Iu0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Mass:\": \"0.012 gram\",\n          \"Name\": \"Cylinder\"\n        }\n      },\n      {\n        \"objectid\": 7,\n        \"name\": \"Top\",\n        \"externalId\": \"2ou0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Component Name\": \"Top\",\n          \"Name\": \"Top\",\n          \"Design Tracking Properties\": {\n            \"Design State\": \"WorkInProgress\",\n            \"Designer\": \"ADSK\",\n            \"File Subtype\": \"Modeling\"\n          },\n          \"File Properties\": {\n            \"Author\": \"ADSK\",\n            \"Creation Date\": \"2012-Jul-09 20:19:38\",\n            \"Original System\": \"Autodesk Inventor 2017\",\n            \"Part Number\": \"Top\"\n          },\n          \"Mass Properties\": {\n            \"Area\": \"5772.676 millimeter^2\",\n            \"Volume\": \"33673.946 millimeter^3\"\n          }\n        }\n      },\n      {\n        \"objectid\": 8,\n        \"name\": \"Box\",\n        \"externalId\": \"3Iu0zG8ViUOsqUzhb4TUiA\",\n        \"properties\": {\n          \"Material\": \"ABS Plastic\",\n          \"Name\": \"Box\"\n        }\n      }\n    ]\n  }\n}",
+      "parsed": {
+        "data": {
+          "type": "properties",
+          "collection": [
+            {
+              "objectid": 1,
+              "name": "A5",
+              "externalId": "mou0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Name": "A5"
+              }
+            },
+            {
+              "objectid": 2,
+              "name": "Model",
+              "externalId": "z4u0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Component Name": "Model",
+                "Name": "Model",
+                "Design Tracking Properties": {
+                  "Design State": "WorkInProgress",
+                  "Designer": "ADSK",
+                  "File Subtype": "Assembly"
+                },
+                "File Properties": {
+                  "Author": "ADSK",
+                  "Creation Date": "2012-Jul-09 20:18:20",
+                  "Original System": "Autodesk Inventor 2017",
+                  "Part Number": "Model"
+                },
+                "Mass Properties": {
+                  "Area": "19772.676 millimeter^2",
+                  "Volume": "83673.946 millimeter^3"
+                }
+              }
+            },
+            {
+              "objectid": 3,
+              "name": "Bottom",
+              "externalId": "0Yu0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Component Name": "A5-P1",
+                "Name": "Bottom",
+                "Design Tracking Properties": {
+                  "Design State": "WorkInProgress",
+                  "Designer": "ADSK",
+                  "File Subtype": "Modeling"
+                },
+                "File Properties": {
+                  "Author": "ADSK",
+                  "Creation Date": "2012-Jul-09 20:18:35",
+                  "Original System": "Autodesk Inventor 2017",
+                  "Part Number": "Bottom"
+                },
+                "Mass Properties": {
+                  "Area": "7000 millimeter^2",
+                  "Volume": "25000 millimeter^3"
+                }
+              }
+            },
+            {
+              "objectid": 4,
+              "name": "Box",
+              "externalId": "1Iu0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Center of Gravity:": "-13.452 mm, -9.879 mm, -40.735 mm",
+                "Name": "Box"
+              }
+            },
+            {
+              "objectid": 5,
+              "name": "Pillar",
+              "externalId": "1ou0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Component Name": "Pillar",
+                "Name": "Pillar",
+                "Design Tracking Properties": {
+                  "Design State": "WorkInProgress",
+                  "Designer": "ADSK",
+                  "File Subtype": "Modeling"
+                },
+                "File Properties": {
+                  "Author": "ADSK",
+                  "Creation Date": "2012-Jul-09 20:18:35",
+                  "Original System": "Autodesk Inventor 2017",
+                  "Part Number": "Pillar"
+                },
+                "Mass Properties": {
+                  "Area": "7000 millimeter^2",
+                  "Volume": "25000 millimeter^3"
+                }
+              }
+            },
+            {
+              "objectid": 6,
+              "name": "Cylinder",
+              "externalId": "2Iu0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Mass:": "0.012 gram",
+                "Name": "Cylinder"
+              }
+            },
+            {
+              "objectid": 7,
+              "name": "Top",
+              "externalId": "2ou0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Component Name": "Top",
+                "Name": "Top",
+                "Design Tracking Properties": {
+                  "Design State": "WorkInProgress",
+                  "Designer": "ADSK",
+                  "File Subtype": "Modeling"
+                },
+                "File Properties": {
+                  "Author": "ADSK",
+                  "Creation Date": "2012-Jul-09 20:19:38",
+                  "Original System": "Autodesk Inventor 2017",
+                  "Part Number": "Top"
+                },
+                "Mass Properties": {
+                  "Area": "5772.676 millimeter^2",
+                  "Volume": "33673.946 millimeter^3"
+                }
+              }
+            },
+            {
+              "objectid": 8,
+              "name": "Box",
+              "externalId": "3Iu0zG8ViUOsqUzhb4TUiA",
+              "properties": {
+                "Material": "ABS Plastic",
+                "Name": "Box"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

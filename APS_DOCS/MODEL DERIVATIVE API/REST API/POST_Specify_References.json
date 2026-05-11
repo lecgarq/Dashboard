@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-references-POST",
+    "scrapedAt": "2026-05-08T18:24:14.918Z",
+    "category": "REST API",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "modelderivative/v2/designdata/{urn}/references",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/references"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read data:write data:create"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the data center where the manifest and derivatives of the specified source design are stored. Possible values are:\n\nUS - (Default) Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urnstring",
+          "col_1": "The Base64 (URL Safe) encoded design URN."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urn*string",
+          "col_1": "The URL safe Base64 encoded URN of the source design. Mandatory if the Base64 encoded urn in the request URL is a logical URN."
+        },
+        {
+          "col_0": "regionenum:string",
+          "col_1": "Specifies where the referenced files are stored. Possible values:\n\nUS - Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+        },
+        {
+          "col_0": "filename*string",
+          "col_1": "The file name of the top level component. By default, it is set to \"\" and the file will be download with its urn."
+        },
+        {
+          "col_0": "references*array: object",
+          "col_1": "An array of objects, where each object represents a referenced file."
+        },
+        {
+          "col_0": "urn*string",
+          "col_1": "The URN of the referenced file."
+        },
+        {
+          "col_0": "relativePath*string",
+          "col_1": "The path to the referenced file, relative to the top level component. By default, it is set to \"\", which means that the referenced file and top level component are in the same folder."
+        },
+        {
+          "col_0": "filename*string",
+          "col_1": "The file name of the referenced file. By default, it is set to \"\" and the referenced file will be downloaded by its urn and placed relative to the top-level component using relativePath."
+        },
+        {
+          "col_0": "metadataobject",
+          "col_1": "An object to hold custom metadata."
+        },
+        {
+          "col_0": "*object",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The locations of referenced files were successfully recorded."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The server was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource was not found. Review the request and try again."
+        },
+        {
+          "col_0": "406Not Acceptable",
+          "col_1": "The request contains unacceptable references. For example, one or more referenced files may be stored in a different region than the source design. Please verify that all referenced resources are in the same region and adjust your request accordingly."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x-ads-app-identifierstring",
+          "col_1": "The service identifier. Comprises of the service name, version, and environment."
+        },
+        {
+          "col_0": "x-ads-durationstring",
+          "col_1": "The amount of time spent servicing the request, in milliseconds."
+        },
+        {
+          "col_0": "x-ads-startup-timestring",
+          "col_1": "The service startup time, in the following date format: EEE MMM dd HH:mm:ss Z yyyy."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultstring",
+          "col_1": "The result of the operation. Always success for status 200."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN of the top level component."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json' \\\n--data '{\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n}'",
+      "parsed": {
+        "urn": "urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam",
+        "filename": "scissors.iam",
+        "references": [
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt",
+            "relativePath": "Components/blade_main.ipt",
+            "filename": "blade_main.ipt"
+          },
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt",
+            "relativePath": "Components/blade_top.ipt",
+            "filename": "blade_top.ipt"
+          },
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt",
+            "relativePath": "Components/scissor_spring.ipt",
+            "filename": "scissor_spring.ipt"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "// Create headers for the request\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\");\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Prepare the payload with the source file and its references\nconst raw = JSON.stringify({\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n});\n\n// Set up the request options for fetch\nconst requestOptions = {\n        method: \"POST\",\n        headers: myHeaders,\n        body: raw,\n        redirect: \"follow\"\n};\n\n// Send the POST request to the API endpoint\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\", requestOptions)\n        .then((response) => response.text()) // Parse the response as text\n        .then((result) => console.log(result)) // Log the result to the console\n        .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n// Set the Authorization header with the Bearer token\nclient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(\"Bearer\", \"eyJh...\");\n// Set the Accept header to application/json\nclient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(\"application/json\"));\n\n// Prepare the payload with the source file and its references\nvar payload = new\n{\n        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        filename = \"scissors.iam\",\n        references = new[]\n        {\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        relativePath = \"Components/blade_main.ipt\",\n                        filename = \"blade_main.ipt\"\n                },\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        relativePath = \"Components/blade_top.ipt\",\n                        filename = \"blade_top.ipt\"\n                },\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        relativePath = \"Components/scissor_spring.ipt\",\n                        filename = \"scissor_spring.ipt\"\n                }\n        }\n};\n\n// Serialize the payload to JSON and create the StringContent\nvar content = new StringContent(\n        Newtonsoft.Json.JsonConvert.SerializeObject(payload),\n        System.Text.Encoding.UTF8,\n        \"application/json\"\n);\n\n// Send the POST request to the API endpoint\nvar response = await client.PostAsync(\n        \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\",\n        content\n);\n\n// Read and print the response from the API\nvar result = await response.Content.ReadAsStringAsync();\nConsole.WriteLine(result);"
+    },
+    {
+      "raw": "# Import required libraries\nimport requests\nimport json\n\n# Set the API endpoint URL\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\"\n\n# Prepare the payload with the source file and its references\npayload = json.dumps({\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n})\n# Set the request headers including authorization\nheaders = {\n        'Authorization': 'Bearer eyJh...',\n        'Content-Type': 'application/json'\n}\n\n# Send the POST request to the API\nresponse = requests.post(url, headers=headers, data=payload)\n\n# Print the response from the API\nprint(response.text)"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nServer: nginx\nDate: Fri, 16 May 2025 06:22:28 GMT\nContent-Type: application/json; charset=utf-8\nContent-Length: 20\nConnection: keep-alive\nx-ads-duration: 339 ms\nx-ads-startup-time: Thu Apr 24 11:14:32 UTC 2025\nx-ads-app-identifier: platform-viewing-2025.02.01.1205.2f1fdcae1-staging\nstrict-transport-security: max-age=31536000; includeSubDomains; preload\nx-frame-options: SAMEORIGIN\nx-request-id: 1ed7bcb2-9746-42fb-b959-b4c35198715f\n\n{\n  \"result\": \"success\"\n}",
+      "parsed": {
+        "result": "success"
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json' \\\n--data '{\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n}'",
+      "parsed": {
+        "urn": "urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam",
+        "filename": "scissors.iam",
+        "references": [
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt",
+            "relativePath": "Components/blade_main.ipt",
+            "filename": "blade_main.ipt"
+          },
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt",
+            "relativePath": "Components/blade_top.ipt",
+            "filename": "blade_top.ipt"
+          },
+          {
+            "urn": "urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt",
+            "relativePath": "Components/scissor_spring.ipt",
+            "filename": "scissor_spring.ipt"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "// Create headers for the request\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\");\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Prepare the payload with the source file and its references\nconst raw = JSON.stringify({\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n});\n\n// Set up the request options for fetch\nconst requestOptions = {\n        method: \"POST\",\n        headers: myHeaders,\n        body: raw,\n        redirect: \"follow\"\n};\n\n// Send the POST request to the API endpoint\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\", requestOptions)\n        .then((response) => response.text()) // Parse the response as text\n        .then((result) => console.log(result)) // Log the result to the console\n        .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n// Set the Authorization header with the Bearer token\nclient.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue(\"Bearer\", \"eyJh...\");\n// Set the Accept header to application/json\nclient.DefaultRequestHeaders.Accept.Add(new System.Net.Http.Headers.MediaTypeWithQualityHeaderValue(\"application/json\"));\n\n// Prepare the payload with the source file and its references\nvar payload = new\n{\n        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        filename = \"scissors.iam\",\n        references = new[]\n        {\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        relativePath = \"Components/blade_main.ipt\",\n                        filename = \"blade_main.ipt\"\n                },\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        relativePath = \"Components/blade_top.ipt\",\n                        filename = \"blade_top.ipt\"\n                },\n                new {\n                        urn = \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        relativePath = \"Components/scissor_spring.ipt\",\n                        filename = \"scissor_spring.ipt\"\n                }\n        }\n};\n\n// Serialize the payload to JSON and create the StringContent\nvar content = new StringContent(\n        Newtonsoft.Json.JsonConvert.SerializeObject(payload),\n        System.Text.Encoding.UTF8,\n        \"application/json\"\n);\n\n// Send the POST request to the API endpoint\nvar response = await client.PostAsync(\n        \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\",\n        content\n);\n\n// Read and print the response from the API\nvar result = await response.Content.ReadAsStringAsync();\nConsole.WriteLine(result);"
+    },
+    {
+      "raw": "# Import required libraries\nimport requests\nimport json\n\n# Set the API endpoint URL\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references\"\n\n# Prepare the payload with the source file and its references\npayload = json.dumps({\n        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissors.iam\",\n        \"filename\": \"scissors.iam\",\n        \"references\": [\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_main.ipt\",\n                        \"relativePath\": \"Components/blade_main.ipt\",\n                        \"filename\": \"blade_main.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/blade_top.ipt\",\n                        \"relativePath\": \"Components/blade_top.ipt\",\n                        \"filename\": \"blade_top.ipt\"\n                },\n                {\n                        \"urn\": \"urn:adsk.objects:os.object:jp-bucket-250502/scissor_spring.ipt\",\n                        \"relativePath\": \"Components/scissor_spring.ipt\",\n                        \"filename\": \"scissor_spring.ipt\"\n                }\n        ]\n})\n# Set the request headers including authorization\nheaders = {\n        'Authorization': 'Bearer eyJh...',\n        'Content-Type': 'application/json'\n}\n\n# Send the POST request to the API\nresponse = requests.post(url, headers=headers, data=payload)\n\n# Print the response from the API\nprint(response.text)"
+    },
+    {
+      "raw": "Status Code: 406 Not Acceptable\nAccess-Control-Allow-Credentials:true\nAccess-Control-Allow-Origin:*\nConnection: close\nContent-Length:144\nContent-Type:application/json;charset=utf-8\nDate: Fri, 01 Sep 2017 06:00:42 GMT\nx-ads-app-identifier:platform-viewing-2017.07.02.32.cf55416-production\nx-ads-duration:34 ms\nx-ads-startup-time:Wed Aug 30 03:20:17 UTC 2017\n\n\n{\n  \"diagnostic\": \"Can not register the same design on different regions, you should delete old registration for register it to another region.\"\n}",
+      "parsed": {
+        "diagnostic": "Can not register the same design on different regions, you should delete old registration for register it to another region."
+      }
+    }
+  ]
+}

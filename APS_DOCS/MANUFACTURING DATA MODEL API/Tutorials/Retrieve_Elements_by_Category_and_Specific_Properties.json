@@ -1,0 +1,95 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/advanced_queries/task2",
+    "scrapedAt": "2026-05-08T18:14:33.695Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Retrieve Elements by Category and Specific Properties",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "exchange",
+          "Description": "Retrieves a list of elements in an Exchange."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetElementsOfCategoryWalls(\n    $exchangeId: ID!\n    $elementFilter: ElementFilterInput\n    $elementPagination: PaginationInput\n) {\n    exchange(exchangeId: $exchangeId) {\n        id\n        name\n        elements(filter: $elementFilter, pagination: $elementPagination) {\n            pagination {\n                pageSize\n                cursor\n            }\n            results {\n                id\n                name\n                properties(filter: { names: [\"category\", \"Area\"] }) {\n                    results {\n                        name\n                        value\n                    }\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n    \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n    \"elementFilter\": {\n        \"query\": \"property.name.category==Walls\"\n    },\n    \"elementPagination\": {\n        \"limit\": 2,\n        \"cursor\": \"\"\n    }\n}",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+        "elementFilter": {
+          "query": "property.name.category==Walls"
+        },
+        "elementPagination": {
+          "limit": 2,
+          "cursor": ""
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"exchange\": {\n            \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n            \"name\": \"SHARE -Multi-Fam Apt-Wing 2\",\n            \"elements\": {\n                \"pagination\": {\n                    \"pageSize\": 2,\n                    \"cursor\": \"812c4ec6-058e-4112-b241-0e54b5c3def4\"\n                },\n                \"results\": [\n                    {\n                        \"id\": \"0035F6FC1E195ECB479AC714FB33DAC21E7A3AC5\",\n                        \"name\": \"2212392\",\n                        \"properties\": {\n                            \"results\": [\n                                {\n                                    \"name\": \"Area\",\n                                    \"value\": 16.898064740675814\n                                },\n                                {\n                                    \"name\": \"category\",\n                                    \"value\": \"Walls\"\n                                }\n                            ]\n                        }\n                    },\n                    {\n                        \"id\": \"002EDE9A075642C3535288AE5F37AF324462AC7D\",\n                        \"name\": \"1026226\",\n                        \"properties\": {\n                            \"results\": [\n                                {\n                                    \"name\": \"Area\",\n                                    \"value\": 3.525154240002383\n                                },\n                                {\n                                    \"name\": \"category\",\n                                    \"value\": \"Walls\"\n                                }\n                            ]\n                        }\n                    }\n                ]\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "exchange": {
+            "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+            "name": "SHARE -Multi-Fam Apt-Wing 2",
+            "elements": {
+              "pagination": {
+                "pageSize": 2,
+                "cursor": "812c4ec6-058e-4112-b241-0e54b5c3def4"
+              },
+              "results": [
+                {
+                  "id": "0035F6FC1E195ECB479AC714FB33DAC21E7A3AC5",
+                  "name": "2212392",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "Area",
+                        "value": 16.898064740675814
+                      },
+                      {
+                        "name": "category",
+                        "value": "Walls"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "002EDE9A075642C3535288AE5F37AF324462AC7D",
+                  "name": "1026226",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "Area",
+                        "value": 3.525154240002383
+                      },
+                      {
+                        "name": "category",
+                        "value": "Walls"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

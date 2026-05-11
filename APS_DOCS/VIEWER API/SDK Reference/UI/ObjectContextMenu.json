@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/UI/ObjectContextMenu",
+    "scrapedAt": "2026-05-08T18:45:26.641Z",
+    "category": "SDK Reference/UI",
+    "apiName": "VIEWER API"
+  },
+  "title": "ObjectContextMenu",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Autodesk.Viewing.Viewer3D",
+          "col_1": "Viewer instance."
+        }
+      ]
+    }
+  ]
+}

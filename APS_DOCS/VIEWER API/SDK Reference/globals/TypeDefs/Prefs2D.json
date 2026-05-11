@@ -1,0 +1,37 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/Prefs2D",
+    "scrapedAt": "2026-05-08T18:49:36.263Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "Prefs2D",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "GRAYSCALEstring",
+          "col_1": "Overrides line colors in 2D models to render in shades of gray."
+        },
+        {
+          "col_0": "SWAP_BLACK_AND_WHITEstring",
+          "col_1": "Will switch to white lines on a black background."
+        },
+        {
+          "col_0": "FORCE_PDF_CALIBRATIONstring",
+          "col_1": "Force PDF calibration before measuring."
+        },
+        {
+          "col_0": "FORCE_LEAFLET_CALIBRATIONstring",
+          "col_1": "Force Leaflet calibration before measuring."
+        },
+        {
+          "col_0": "VECTOR_VIEWINGstring",
+          "col_1": "Vector viewing of PDF."
+        }
+      ]
+    }
+  ]
+}

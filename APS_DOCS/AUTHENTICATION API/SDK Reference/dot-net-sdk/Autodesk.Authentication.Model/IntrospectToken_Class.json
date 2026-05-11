@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication.Model/IntrospectToken",
+    "scrapedAt": "2026-05-08T17:36:22.974Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Class IntrospectToken",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class IntrospectToken"
+    },
+    {
+      "raw": "public IntrospectToken()"
+    },
+    {
+      "raw": "[DataMember(Name = \"active\", EmitDefaultValue = false)]\npublic bool? Active { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"client_id\", EmitDefaultValue = false)]\npublic string ClientId { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"exp\", EmitDefaultValue = false)]\npublic int? Exp { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"scope\", EmitDefaultValue = false)]\npublic string Scope { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"userid\", EmitDefaultValue = false)]\npublic string UserId { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

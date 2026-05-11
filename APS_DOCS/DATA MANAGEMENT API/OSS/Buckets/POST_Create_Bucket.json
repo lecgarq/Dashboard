@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-POST",
+    "scrapedAt": "2026-05-08T16:27:57.015Z",
+    "category": "OSS/Buckets"
+  },
+  "title": "oss/v2/buckets",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets\"",
+  "description": null,
+  "requestExample": "curl -v \"https://developer.api.autodesk.com/oss/v2/buckets\"\n  -X POST\n  -H \"Content-Type: application/json\"\n  -H \"Authorization: Bearer kgEJWMJitdYbhfxghap8SbZqXMoS\"\n  -d '\n  {\n    \"bucketKey\":\"apptestbucket\",\n    \"policyKey\":\"transient\"\n  }\n  '\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nContent-Type: application/json; charset=utf-8\nDate: Sat, 21 May 2016 00:05:30 GMT\nServer: Apigee Router\nContent-Length: 209\nConnection: keep-alive\n\n{\n  \"bucketKey\":\"apptestbucket\",\n  \"bucketOwner\":\"RlKfGlAbb7N8VJwLllOvpfonB1Ex52qG\",\n  \"createdDate\":1463785698600,\n  \"permissions\":[\n    {\n      \"authId\":\"RlKffonB1Ex52GlAbb7N8VJwLllOvpqG\",\n      \"access\":\"full\"\n    }\n  ],\n  \"policyKey\":\"transient\"\n}\n\ncurl -v \"https://developer.api.autodesk.com/oss/v2/buckets\"\n  -X POST\n  -H \"Content-Type: application/json\"\n  -H \"Authorization: Bearer kgEJWMJitdYbhfxghap8SbZqXMoS\"\n  -d '\n  {\n    \"bucketKey\":\"bucketExamplekey\",\n    \"policyKey\":\"transient\"\n  }\n  '\n\nHTTP/1.1 400 Bad Request\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nContent-Type: application/json; charset=utf-8\nDate: Tue, 24 May 2016 20:53:09 GMT\nServer: Apigee Router\nContent-Length: 76\nConnection: keep-alive\n\n{\n  \"reason\":\"Valid field 'bucketKey' must be of the form  [-_.a-z0-9]{3,128}\"\n}\n\ncurl -v \"https://developer.api.autodesk.com/oss/v2/buckets\"\n  -X POST\n  -H \"Content-Type: application/json\"\n  -H \"Authorization: Bearer kgEJWMJitdYbhfxghap8SbZqXMoS\"\n  -d '\n  {\n    \"bucketKey\":\"apptestbucket\",\n    \"policyKey\":\"transient\"\n  }\n  '\n\nHTTP/1.1 409 Conflict\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nContent-Type: application/json; charset=utf-8\nDate: Tue, 24 May 2016 20:54:19 GMT\nServer: Apigee Router\nContent-Length: 34\nConnection: keep-alive\n\n{\n  \"reason\":\"Bucket already exists\"\n}",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "POST https://developer.api.autodesk.com/oss/v2/buckets"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "bucket:create"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "x-ads-regionstring",
+      "col_1": "Specifies where the bucket must be stored. Possible values are:\n\nUS - (Default) Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for Australia.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+    },
+    {
+      "col_0": "Content-Type*string",
+      "col_1": "Must be application/json"
+    },
+    {
+      "col_0": "bucketKey*string",
+      "col_1": "Bucket key: A unique name you assign to a bucket. Bucket keys must be globally unique across all applications and regions. They must consist of only lower case characters, numbers 0-9, and underscores (_).\nNote: You cannot change a bucket key once the bucket is created."
+    },
+    {
+      "col_0": "allowarray: object",
+      "col_1": "An array of objects, where each object represents an application that can access the bucket."
+    },
+    {
+      "col_0": "authId*string",
+      "col_1": "The Client ID of the application."
+    },
+    {
+      "col_0": "access*enum:string",
+      "col_1": "Specifies the level of permission the application has. Required when allow is specified. Possible values are:\n\n\nfull - Unrestricted access to objects within the bucket.\n\n\n\nread_only - Read only access to the objects within the bucket. Modification or deletion of objects is not allowed."
+    },
+    {
+      "col_0": "policyKey*enum:string",
+      "col_1": "Specifies the retention policy for the objects stored in the bucket. Possible values are:\n\ntransient - Objects are retained for 24 hours.\ntemporary - Objects are retained for 30 days.\npersistent - Objects are retained until they are deleted."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The bucket was successfully created."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "OSS was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request"
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "409Conflict",
+      "col_1": "The specified bucket key already exists."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "Bucket key: An ID that uniquely identifies the bucket."
+    },
+    {
+      "col_0": "bucketOwnerstring",
+      "col_1": "The Client ID of the application that owns the bucket."
+    },
+    {
+      "col_0": "createdDatestring",
+      "col_1": "The time the bucket was created, represented as a Unix timestamp."
+    },
+    {
+      "col_0": "permissionsarray: object",
+      "col_1": "An array of objects, where each object represents an application that can access the bucket."
+    },
+    {
+      "col_0": "authIdstring",
+      "col_1": "The Client ID of the application."
+    },
+    {
+      "col_0": "accessenum:string",
+      "col_1": "Specifies the level of permission the application has. Possible values are:\n\nfull - Unrestricted access to objects within the bucket.\nread_only - Read only access to the objects within the bucket. Modification and deletion of objects is not allowed."
+    },
+    {
+      "col_0": "policyKeyenum:string",
+      "col_1": "Specifies the retention policy for the objects stored in the bucket. Possible values are:\n\ntransient - Objects are retained for 24 hours.\ntemporary - Objects are retained for 30 days.\npersistent - Objects are retained until they are deleted."
+    }
+  ]
+}

@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/exchangeversion",
+    "scrapedAt": "2026-05-08T18:16:58.833Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "ExchangeVersion",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*String! non-null",
+          "col_1": "Exchange revisionId"
+        },
+        {
+          "col_0": "createdOnDateTime",
+          "col_1": "Date and time of version creation."
+        },
+        {
+          "col_0": "createdByUser",
+          "col_1": "User that created this specific version."
+        },
+        {
+          "col_0": "versionNumber*Int! non-null",
+          "col_1": "Number of the version."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "Exchange",
+          "Description": "A specific collection of Elements."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Lineage",
+          "Description": "Information related to versions of an exchange.  Note: This Object is deprecated. Use ExchangeVersionHistory instead."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "ExchangeVersionHistory",
+          "Description": "Information related to versions of an elementGroup."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "ExchangeVersions",
+          "Description": "Contains a list of Exchange versions returned in response to a query."
+        }
+      ]
+    }
+  ]
+}

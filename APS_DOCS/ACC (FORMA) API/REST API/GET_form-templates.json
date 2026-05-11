@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-form-templates-GET",
+    "scrapedAt": "2026-05-08T23:54:47.515Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/projects/{projectId}/form-templates",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records to skip before returning the result records. Defaults to 0. Increase this value in subsequent requests to continue getting results when the number of records exceeds the requested limit."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of records to return in a single request. Can be a number between 1 and 50. Defaults to 50."
+        },
+        {
+          "col_0": "updatedAfterdatetime: ISO 8601",
+          "col_1": "Return Templates updated after specified time."
+        },
+        {
+          "col_0": "updatedBeforedatetime: ISO 8601",
+          "col_1": "Return Templates updated before specified time."
+        },
+        {
+          "col_0": "sortOrderenum:string",
+          "col_1": "Return Templates in specified sorted order.\nPossible values: desc, asc"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Form Templates."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataarray: object",
+          "col_1": "List of form templates in the project."
+        },
+        {
+          "col_0": "projectIdstring",
+          "col_1": "Unique indentifier of the project the template belongs to."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the template."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Display name of template."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Status of template: \"active\", \"inactive\" (archived), or \"deleted\"\nPossible values: active, inactive, deleted"
+        },
+        {
+          "col_0": "templateTypestring",
+          "col_1": "User supplied type of template. Can be a custom string or one of the standard template types: pg.template_type.daily_report, pg.template_type.quality, pg.template_type.safety, pg.template_type.punchlist, pg.template_type.commissioning, pg.template_type.time_sheet, pg.template_type.other"
+        },
+        {
+          "col_0": "userPermissionsarray",
+          "col_1": "Permissions on this template assigned to individual users."
+        },
+        {
+          "col_0": "groupPermissionsarray",
+          "col_1": "Permissions on this template assigned to companies and roles."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the template."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the template was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "isPdfboolean",
+          "col_1": "A flag that indicates whether the template has a PDF or not."
+        },
+        {
+          "col_0": "pdfUrlstring",
+          "col_1": "For PDF forms, the URL to download the form’s PDF."
+        },
+        {
+          "col_0": "formsobject",
+          "col_1": "Reference to fetch forms created from this template."
+        },
+        {
+          "col_0": "urlstring",
+          "col_1": "URL to retrieve resources."
+        },
+        {
+          "col_0": "currentLayoutIdstring: UUID",
+          "col_1": "The unique identifier of the form template’s current layout, if it is not a PDF template. This can be used to retrieve detailed layout information via the GET layouts endpoint."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Request pagination information."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Number of items skipped."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Number of items returned per page."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "Total number of items that can be returned."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "URL for the next page of items. Next page url is null on the last page."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"projectId\": \"9ba6681e-1952-4d54-aac4-9de6d9858dd4\",\n      \"id\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n      \"name\": \"Daily Report\",\n      \"status\": \"active\",\n      \"templateType\": \"pg.template_type.daily_report\",\n      \"userPermissions\": [\n        {\n          \"permissions\": [\n            \"submit\"\n          ],\n          \"userId\": \"USER123A\"\n        }\n      ],\n      \"groupPermissions\": [\n        {\n          \"permissions\": [\n            \"manage\"\n          ],\n          \"roleKey\": \"hq_access_level:admin\",\n          \"roleName\": \"Admin\"\n        }\n      ],\n      \"createdBy\": \"USER123A\",\n      \"updatedAt\": \"2020-11-20T16:13:33.615127+00:00\",\n      \"isPdf\": true,\n      \"pdfUrl\": \"https://link.to/form.pdf\",\n      \"forms\": {\n        \"url\": \"https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms?templateId=2f634a22-779d-4930-9f08-8391a41fea05\"\n      },\n      \"currentLayoutId\": \"123e4567-e89b-12d3-a456-426614174000\"\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "projectId": "9ba6681e-1952-4d54-aac4-9de6d9858dd4",
+            "id": "2f634a22-779d-4930-9f08-8391a41fea05",
+            "name": "Daily Report",
+            "status": "active",
+            "templateType": "pg.template_type.daily_report",
+            "userPermissions": [
+              {
+                "permissions": [
+                  "submit"
+                ],
+                "userId": "USER123A"
+              }
+            ],
+            "groupPermissions": [
+              {
+                "permissions": [
+                  "manage"
+                ],
+                "roleKey": "hq_access_level:admin",
+                "roleName": "Admin"
+              }
+            ],
+            "createdBy": "USER123A",
+            "updatedAt": "2020-11-20T16:13:33.615127+00:00",
+            "isPdf": true,
+            "pdfUrl": "https://link.to/form.pdf",
+            "forms": {
+              "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms?templateId=2f634a22-779d-4930-9f08-8391a41fea05"
+            },
+            "currentLayoutId": "123e4567-e89b-12d3-a456-426614174000"
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

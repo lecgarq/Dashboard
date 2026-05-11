@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative/ModelDerivativeClient",
+    "scrapedAt": "2026-05-08T18:25:00.754Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ModelDerivativeClient",
+  "codeExamples": [
+    {
+      "raw": "public class ModelDerivativeClient : BaseClient"
+    },
+    {
+      "raw": "public ModelDerivativeClient(SDKManager sdkManager = null, IAuthenticationProvider authenticationProvider = null)"
+    },
+    {
+      "raw": "public Task<DeleteManifest> DeleteManifestAsync(string urn, Region region = Region.US, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<SpecificProperties> FetchSpecificPropertiesAsync(string urn, string modelGuid, SpecificPropertiesPayload specificPropertiesPayload, Region region = Region.US, XAdsDerivativeFormat xAdsDerivativeFormat = XAdsDerivativeFormat.Latest, string acceptEncoding = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<Properties> GetAllPropertiesAsync(string urn, string modelGuid, Region region = Region.US, string acceptEncoding = null, bool xAdsForce = false, XAdsDerivativeFormat xAdsDerivativeFormat = XAdsDerivativeFormat.Latest, int objectid = 0, string forceget = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<DerivativeDownload> GetDerivativeUrlAsync(string derivativeUrn, string urn, Region region = Region.US, int minutesExpiration = 0, string responseContentDisposition = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<SupportedFormats> GetFormatsAsync(string ifModifiedSince = null, string acceptEncoding = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<Manifest> GetManifestAsync(string urn, Region region = Region.US, string acceptEncoding = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<ModelViews> GetModelViewsAsync(string urn, Region region = Region.US, string acceptEncoding = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<ObjectTree> GetObjectTreeAsync(string urn, string modelGuid, Region region = Region.US, string acceptEncoding = null, bool xAdsForce = false, XAdsDerivativeFormat xAdsDerivativeFormat = XAdsDerivativeFormat.Latest, string forceget = null, int objectid = 0, string level = null, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<Stream> GetThumbnailAsync(string urn, Width width = Width.NUMBER_200, Height height = Height.NUMBER_200, Region region = Region.US, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<HttpResponseMessage> HeadCheckDerivativeAsync(string urn, string derivativeUrn, Region region = Region.US, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<SpecifyReferences> SpecifyReferencesAsync(string urn, SpecifyReferencesPayload referencesPayload, Region region = Region.US, string accessToken = null, bool throwOnError = true)"
+    },
+    {
+      "raw": "public Task<Job> StartJobAsync(JobPayload jobPayload, Region region = Region.US, bool xAdsForce = false, XAdsDerivativeFormat xAdsDerivativeFormat = XAdsDerivativeFormat.Latest, string accessToken = null, bool throwOnError = true)"
+    }
+  ]
+}

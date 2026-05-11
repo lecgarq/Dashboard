@@ -1,0 +1,122 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-:bucketKey-objects-:objectKey-details-GET",
+    "scrapedAt": "2026-05-08T16:28:22.552Z",
+    "category": "OSS/Objects"
+  },
+  "title": "oss/v2/buckets/{bucketKey}/objects/{objectKey}/details",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets/apptestbucket/objects/test.txt/details\"",
+  "description": null,
+  "requestExample": "curl -v \"https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/test.txt/details\"\n  -X GET\n  -H \"Authorization: Bearer ShiAeQ67rdNSfmyEmtGW8Lnrcqto\"\n  -H \"Content-Type: application/json\"\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nContent-Type: application/json; charset=utf-8\nDate: Sat, 21 May 2016 00:23:28 GMT\nServer: Apigee Router\nContent-Length: 401\nConnection: keep-alive\n\n{\n  \"bucketKey\" : \"apptestbucket\",\n  \"objectId\" : \"urn:adsk.objects:os.object:apptestbucket/test.txt\",\n  \"objectKey\" : \"test.txt\",\n  \"sha1\" : \"33a16388013ce310564af70b0ef5320d8fd85444\",\n  \"size\" : 618,\n  \"contentType\" : \"application/x-www-form-urlencoded\",\n  \"location\" : \"https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/test.txt\",\n  \"blockSizes\" : [ 2048 ]\n}",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "GET https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/details"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:read"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "If-Modified-Sincestring",
+      "col_1": "A timestamp in the HTTP date format (Mon, DD Month YYYY HH:MM:SS GMT). The requested data is returned only if the object has been modified since the specified timestamp. If not, a 304 (Not Modified) HTTP status is returned."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the objects you are operating on."
+    },
+    {
+      "col_0": "objectKeystring",
+      "col_1": "The URL-encoded human friendly name of the object."
+    },
+    {
+      "col_0": "withenum:string",
+      "col_1": "Possible values: createdDate, lastAccessedDate, lastModifiedDate, userDefinedMetadata"
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The object details were successfully retrieved."
+    },
+    {
+      "col_0": "304Not Modified",
+      "col_1": "The object has not been modified since the specified date."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "OSS was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request"
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "NOT FOUND, Object does not exist."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the object."
+    },
+    {
+      "col_0": "objectIdstring",
+      "col_1": "An identifier (URN) that uniquely and persistently identifies the object."
+    },
+    {
+      "col_0": "objectKeystring",
+      "col_1": "A URL-encoded human-friendly name that identifies the object."
+    },
+    {
+      "col_0": "sha1string",
+      "col_1": "A hash value computed from the data of the object."
+    },
+    {
+      "col_0": "sizeint",
+      "col_1": "The total amount of storage space occupied by the object, in bytes."
+    },
+    {
+      "col_0": "contentTypestring",
+      "col_1": "The format of the data stored within the object, expressed as a MIME type."
+    },
+    {
+      "col_0": "locationstring",
+      "col_1": "A URL that points to the actual location of the object."
+    },
+    {
+      "col_0": "createdDateint",
+      "col_1": "The time the object was created, represented as a Unix timestamp. Only returned if explicitly requested using the with query string parameter."
+    },
+    {
+      "col_0": "lastAccessedDateint",
+      "col_1": "The time the object was last accessed, represented as a Unix timestamp. Only returned if explicitly requested using the with query string parameter."
+    },
+    {
+      "col_0": "lastModifiedDateint",
+      "col_1": "The time the object was most recently modified, represented as a Unix timestamp. Only returned if explicitly requested using the with query string parameter."
+    },
+    {
+      "col_0": "userDefinedMetadatastring",
+      "col_1": "Any custom metadata, if available. Only returned if explicitly requested for using the with query string parameter."
+    }
+  ]
+}

@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/appbundles-GET",
+    "scrapedAt": "2026-05-08T17:43:21.567Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "appbundles",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/appbundles",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/appbundles"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pagestring",
+          "col_1": "Access an additional ‘page’ of data when necessary, based on the ‘paginationToken’ returned from a previous invocation."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get all AppBundles."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Unknown error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationTokenstring",
+          "col_1": ""
+        },
+        {
+          "col_0": "dataarray: string",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/appbundles' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"paginationToken\": \"\",\n  \"data\": [\n    \"AutoCAD.Publish2View22+prod\",\n    \"Revit.RVTIOSandboxTestPackage2018+prod\",\n    \"Inventor.iLogicSampleAppPackage+prod\",\n    \"Inventor.Configuration+Beta\",\n    \"AutoCAD.Publish2View23+prod\",\n    \"Inventor.ChangeParams+prod\",\n    \"3dsMax.bakeToTexture+prod\",\n    \"Revit.RVTIOSketchItPackage2018+prod\"\n  ]\n}",
+      "parsed": {
+        "paginationToken": "",
+        "data": [
+          "AutoCAD.Publish2View22+prod",
+          "Revit.RVTIOSandboxTestPackage2018+prod",
+          "Inventor.iLogicSampleAppPackage+prod",
+          "Inventor.Configuration+Beta",
+          "AutoCAD.Publish2View23+prod",
+          "Inventor.ChangeParams+prod",
+          "3dsMax.bakeToTexture+prod",
+          "Revit.RVTIOSketchItPackage2018+prod"
+        ]
+      }
+    }
+  ]
+}

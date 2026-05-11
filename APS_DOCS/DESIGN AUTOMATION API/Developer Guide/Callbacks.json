@@ -1,0 +1,98 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/callbacks",
+    "scrapedAt": "2026-05-08T17:39:04.479Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Callbacks",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Engine",
+        "onDemand (input)",
+        "onDemand (output)",
+        "onProgress",
+        "onComplete"
+      ],
+      "rows": [
+        {
+          "Engine": "AutoCAD",
+          "onDemand (input)": "Yes",
+          "onDemand (output)": "Yes",
+          "onProgress": "Yes",
+          "onComplete": "Yes"
+        },
+        {
+          "Engine": "3ds Max",
+          "onDemand (input)": "Yes",
+          "onDemand (output)": "No",
+          "onProgress": "Yes",
+          "onComplete": "Yes"
+        },
+        {
+          "Engine": "Inventor",
+          "onDemand (input)": "Yes",
+          "onDemand (output)": "No",
+          "onProgress": "Yes",
+          "onComplete": "Yes"
+        },
+        {
+          "Engine": "Revit",
+          "onDemand (input)": "Yes",
+          "onDemand (output)": "No",
+          "onProgress": "Yes",
+          "onComplete": "Yes"
+        },
+        {
+          "Engine": "Fusion",
+          "onDemand (input)": "See Fusion Specific Info"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "!ACESAPI:acesHttpOperation(\"onProgress\",\"\",\"\",\"{<your-call-body-content>}\",\"\")"
+    },
+    {
+      "raw": "LogTrace(\"!ACESAPI:acesHttpOperation({0},\\\"\\\",\\\"\\\",{1},\\\"\\\")\",\n         \"onProgress\",\n         \"{ \\\"current-progress\\\": 30, \\\"step\\\": \\\"apply parameters\\\" }\");"
+    },
+    {
+      "raw": "curl -X POST \\\nhttps://developer.api.autodesk.com/da/us-east/v3/workitems \\\n...\n-d '{\n  \"activityId\": \"\"QDsYgPEnrk7aPsaP6VvmEXPBmwYAZcMx.timeSleep7x10s+prod\",\n  \"arguments\": {\n      ...\n      \"onProgress\": {\n          \"verb\": \"post\",\n          \"url\": \"https://onprogress.free.beeceptor.com\"\n      },\n      \"onComplete\": {\n          \"verb\": \"post\",\n          \"url\": \"https://oncomplete.free.beeceptor.com\"\n      }\n  }\n}'"
+    },
+    {
+      "raw": "{\n  \"id\":\"0d891fa9da8f4dff8ecf248cca81c9d3\"\n}",
+      "parsed": {
+        "id": "0d891fa9da8f4dff8ecf248cca81c9d3"
+      }
+    },
+    {
+      "raw": "{\n  \"id\":\"0d891fa9da8f4dff8ecf248cca81c9d3\",\n  \"progress\": {\n      \"current-progress\": 30,\n      \"step\": \"apply parameters\"\n  }\n}",
+      "parsed": {
+        "id": "0d891fa9da8f4dff8ecf248cca81c9d3",
+        "progress": {
+          "current-progress": 30,
+          "step": "apply parameters"
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"status\": \"failedInstructions\",\n  \"reportUrl\": \"https://dasprod-store.s3.us-east-1.amazonaws.com/workItem/QDsYgPEnrk7aPsaP6VvmEXPBmwYAZcMx/0d891fa9da8f4dff8ecf248cca81c9d3/report.txt?...\",\n  \"stats\": {\n      \"timeQueued\": \"2019-07-16T08:22:44.2532481Z\",\n      \"timeDownloadStarted\": \"2019-07-16T08:22:45.9190287Z\",\n      \"timeInstructionsStarted\": \"2019-07-16T08:22:46.6863037Z\",\n      \"timeInstructionsEnded\": \"2019-07-16T08:24:00.421216Z\",\n      \"timeUploadEnded\": \"2019-07-16T08:24:00.421216Z\",\n      \"bytesDownloaded\": 1425408\n  },\n  \"id\": \"0d891fa9da8f4dff8ecf248cca81c9d3\"\n}",
+      "parsed": {
+        "status": "failedInstructions",
+        "reportUrl": "https://dasprod-store.s3.us-east-1.amazonaws.com/workItem/QDsYgPEnrk7aPsaP6VvmEXPBmwYAZcMx/0d891fa9da8f4dff8ecf248cca81c9d3/report.txt?...",
+        "stats": {
+          "timeQueued": "2019-07-16T08:22:44.2532481Z",
+          "timeDownloadStarted": "2019-07-16T08:22:45.9190287Z",
+          "timeInstructionsStarted": "2019-07-16T08:22:46.6863037Z",
+          "timeInstructionsEnded": "2019-07-16T08:24:00.421216Z",
+          "timeUploadEnded": "2019-07-16T08:24:00.421216Z",
+          "bytesDownloaded": 1425408
+        },
+        "id": "0d891fa9da8f4dff8ecf248cca81c9d3"
+      }
+    }
+  ]
+}

@@ -1,0 +1,232 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/assets/manage-assets",
+    "scrapedAt": "2026-05-08T17:47:59.020Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Managing BIM 360 Assets",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-create",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-create' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           {\n             \"clientAssetId\": \"MVS-3D2\",\n             \"categoryId\": \"124\",\n             \"statusId\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n             \"description\": \"Electrical outlet - single\",\n             \"barcode\": \"F0086728\",\n             \"customAttributes\": {\n               \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n             }\n           },\n           {\n             \"clientAssetId\": \"MVS-F38\",\n             \"categoryId\": \"124\",\n             \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n             \"description\": \"Electrical outlet - double\",\n             \"barcode\": \"F0086730\",\n             \"customAttributes\": {\n               \"ca1\": \"582eac28-f4e4-475d-b38c-fd57997c9cc6\"\n             }\n           }\n         ]'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"id\": \"8947f8af-3247-4bfe-82f9-976181596e24\",\n      \"clientAssetId\": \"MVS-3D2\",\n      \"categoryId\": \"124\",\n      \"statusId\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n      \"description\": \"Electrical outlet - single\",\n      \"barcode\": \"F0086728\",\n      \"customAttributes\": {\n        \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n      },\n      \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 1\n    },\n    {\n      \"id\": \"a0fd5800-1616-49d8-a847-103fc44bdc6a\",\n      \"clientAssetId\": \"MVS-F38\",\n      \"categoryId\": \"124\",\n      \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n      \"description\": \"Electrical outlet - double\",\n      \"barcode\": \"F0086730\",\n      \"customAttributes\": {\n        \"ca1\": \"582eac28-f4e4-475d-b38c-fd57997c9cc6\"\n      },\n      \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": "8947f8af-3247-4bfe-82f9-976181596e24",
+            "clientAssetId": "MVS-3D2",
+            "categoryId": "124",
+            "statusId": "b302d910-b5e3-46ba-81d8-6b6d30406e14",
+            "description": "Electrical outlet - single",
+            "barcode": "F0086728",
+            "customAttributes": {
+              "ca1": "fd0e4a00-26df-454e-8fba-e76652aa55b4"
+            },
+            "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 1
+          },
+          {
+            "id": "a0fd5800-1616-49d8-a847-103fc44bdc6a",
+            "clientAssetId": "MVS-F38",
+            "categoryId": "124",
+            "statusId": "e0484858-1683-42fe-9136-6575e43c8eac",
+            "description": "Electrical outlet - double",
+            "barcode": "F0086730",
+            "customAttributes": {
+              "ca1": "582eac28-f4e4-475d-b38c-fd57997c9cc6"
+            },
+            "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 1
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-patch' \\\n     -X 'PATCH' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"8947f8af-3247-4bfe-82f9-976181596e24\": {\n             \"clientAssetId\": \"MVS-3D2 v2.0\",\n             \"description\": \"Modified 2.0 Electrical outlet - single\",\n             \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\"\n           },\n           \"4a125d1b-0803-408e-ab8b-ccdd159b8ca8\": {\n             \"clientAssetId\": \"MVS-F38 v2.0\",\n             \"description\": \"Modified 2.0 Electrical outlet - double\",\n             \"customAttributes\": {\n                \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n              }\n           }\n         }'",
+      "parsed": {
+        "8947f8af-3247-4bfe-82f9-976181596e24": {
+          "clientAssetId": "MVS-3D2 v2.0",
+          "description": "Modified 2.0 Electrical outlet - single",
+          "statusId": "e0484858-1683-42fe-9136-6575e43c8eac"
+        },
+        "4a125d1b-0803-408e-ab8b-ccdd159b8ca8": {
+          "clientAssetId": "MVS-F38 v2.0",
+          "description": "Modified 2.0 Electrical outlet - double",
+          "customAttributes": {
+            "ca1": "fd0e4a00-26df-454e-8fba-e76652aa55b4"
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"8947f8af-3247-4bfe-82f9-976181596e24\": {\n    \"id\": \"8947f8af-3247-4bfe-82f9-976181596e24\",\n    \"clientAssetId\": \"MVS-3D2 v2.0\",\n    \"categoryId\": \"124\",\n    \"description\": \"Modified 2.0 Electrical outlet - single\",\n    \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n    \"barcode\": \"F0086728\",\n    \"customAttributes\": {\n      \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n    },\n    \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n    \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n    \"createdBy\": \"LA7ZL85MU7ML\",\n    \"updatedAt\": \"2020-05-02T14:00:00.000Z\",\n    \"updatedBy\": \"LA7ZL85MU7ML\",\n    \"isActive\": true,\n    \"version\": 2\n  },\n  \"a0fd5800-1616-49d8-a847-103fc44bdc6a\": {\n    \"id\": \"a0fd5800-1616-49d8-a847-103fc44bdc6a\",\n    \"clientAssetId\": \"MVS-F38 v2.0\",\n    \"categoryId\": \"124\",\n    \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n    \"description\": \"Modified 2.0 Electrical outlet - double\",\n    \"barcode\": \"F0086730\",\n    \"customAttributes\": {\n      \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n    },\n    \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n    \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n    \"createdBy\": \"LA7ZL85MU7ML\",\n    \"updatedAt\": \"2020-05-02T14:00:00.000Z\",\n    \"updatedBy\": \"LA7ZL85MU7ML\",\n    \"isActive\": true,\n    \"version\": 2\n  }\n}",
+      "parsed": {
+        "8947f8af-3247-4bfe-82f9-976181596e24": {
+          "id": "8947f8af-3247-4bfe-82f9-976181596e24",
+          "clientAssetId": "MVS-3D2 v2.0",
+          "categoryId": "124",
+          "description": "Modified 2.0 Electrical outlet - single",
+          "statusId": "e0484858-1683-42fe-9136-6575e43c8eac",
+          "barcode": "F0086728",
+          "customAttributes": {
+            "ca1": "fd0e4a00-26df-454e-8fba-e76652aa55b4"
+          },
+          "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+          "createdAt": "2020-05-01T06:00:00.000Z",
+          "createdBy": "LA7ZL85MU7ML",
+          "updatedAt": "2020-05-02T14:00:00.000Z",
+          "updatedBy": "LA7ZL85MU7ML",
+          "isActive": true,
+          "version": 2
+        },
+        "a0fd5800-1616-49d8-a847-103fc44bdc6a": {
+          "id": "a0fd5800-1616-49d8-a847-103fc44bdc6a",
+          "clientAssetId": "MVS-F38 v2.0",
+          "categoryId": "124",
+          "statusId": "e0484858-1683-42fe-9136-6575e43c8eac",
+          "description": "Modified 2.0 Electrical outlet - double",
+          "barcode": "F0086730",
+          "customAttributes": {
+            "ca1": "fd0e4a00-26df-454e-8fba-e76652aa55b4"
+          },
+          "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+          "createdAt": "2020-05-01T06:00:00.000Z",
+          "createdBy": "LA7ZL85MU7ML",
+          "updatedAt": "2020-05-02T14:00:00.000Z",
+          "updatedBy": "LA7ZL85MU7ML",
+          "isActive": true,
+          "version": 2
+        }
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-get?includeCustomAttributes=true' \\\n-X 'POST' \\\n-H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n-H 'Content-Type: application/json' \\\n-d '{\n      \"ids\": [\n        \"8947f8af-3247-4bfe-82f9-976181596e24\",\n        \"a0fd5800-1616-49d8-a847-103fc44bdc6a\"\n      ]\n    }'",
+      "parsed": {
+        "ids": [
+          "8947f8af-3247-4bfe-82f9-976181596e24",
+          "a0fd5800-1616-49d8-a847-103fc44bdc6a"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"id\": \"8947f8af-3247-4bfe-82f9-976181596e24\",\n      \"clientAssetId\": \"MVS-3D2\",\n      \"categoryId\": \"124\",\n      \"statusId\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n      \"description\": \"Electrical outlet - single\",\n      \"barcode\": \"F0086728\",\n      \"customAttributes\": {\n        \"ca1\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\"\n      },\n      \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 1\n    },\n    {\n      \"id\": \"a0fd5800-1616-49d8-a847-103fc44bdc6a\",\n      \"clientAssetId\": \"MVS-F38\",\n      \"categoryId\": \"124\",\n      \"statusId\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n      \"description\": \"Electrical outlet - double\",\n      \"barcode\": \"F0086730\",\n      \"customAttributes\": {\n        \"ca1\": \"582eac28-f4e4-475d-b38c-fd57997c9cc6\"\n      },\n      \"companyId\": \"07b5f07d-c54a-4236-a086-f84192fabdb3\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 1\n    }\n  ]\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": "8947f8af-3247-4bfe-82f9-976181596e24",
+            "clientAssetId": "MVS-3D2",
+            "categoryId": "124",
+            "statusId": "b302d910-b5e3-46ba-81d8-6b6d30406e14",
+            "description": "Electrical outlet - single",
+            "barcode": "F0086728",
+            "customAttributes": {
+              "ca1": "fd0e4a00-26df-454e-8fba-e76652aa55b4"
+            },
+            "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 1
+          },
+          {
+            "id": "a0fd5800-1616-49d8-a847-103fc44bdc6a",
+            "clientAssetId": "MVS-F38",
+            "categoryId": "124",
+            "statusId": "e0484858-1683-42fe-9136-6575e43c8eac",
+            "description": "Electrical outlet - double",
+            "barcode": "F0086730",
+            "customAttributes": {
+              "ca1": "582eac28-f4e4-475d-b38c-fd57997c9cc6"
+            },
+            "companyId": "07b5f07d-c54a-4236-a086-f84192fabdb3",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 1
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets/a0fd5800-1616-49d8-a847-103fc44bdc6a/relationships' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"entities\": [\n             {\n               \"id\": \"a3311fc6-4571-4fca-9fb4-37120d976bd2\",\n               \"type\": \"issue\"\n             }\n           ]\n         }'",
+      "parsed": {
+        "entities": [
+          {
+            "id": "a3311fc6-4571-4fca-9fb4-37120d976bd2",
+            "type": "issue"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"2299821e-c3e6-4ad7-92c3-ea4ddaf941bf\",\n    \"createdOn\": \"2020-05-01T06:00:00.000Z\",\n    \"isReadOnly\": false,\n    \"isService\": false,\n    \"isDeleted\": false,\n    \"entities\": [\n      {\n        \"id\": \"a0fd5800-1616-49d8-a847-103fc44bdc6a\",\n        \"domain\": \"autodesk-bim360-asset\",\n        \"type\": \"asset\",\n        \"createdOn\": \"2020-05-01T06:00:00.000Z\"\n      },\n      {\n        \"id\": \"a3311fc6-4571-4fca-9fb4-37120d976bd2\",\n        \"domain\": \"autodesk-bim360-issue\",\n        \"type\": \"issue\",\n        \"createdOn\": \"2020-05-01T06:00:00.000Z\"\n      }\n    ]\n  }\n]",
+      "parsed": {
+        "id": "2299821e-c3e6-4ad7-92c3-ea4ddaf941bf",
+        "createdOn": "2020-05-01T06:00:00.000Z",
+        "isReadOnly": false,
+        "isService": false,
+        "isDeleted": false,
+        "entities": [
+          {
+            "id": "a0fd5800-1616-49d8-a847-103fc44bdc6a",
+            "domain": "autodesk-bim360-asset",
+            "type": "asset",
+            "createdOn": "2020-05-01T06:00:00.000Z"
+          },
+          {
+            "id": "a3311fc6-4571-4fca-9fb4-37120d976bd2",
+            "domain": "autodesk-bim360-issue",
+            "type": "issue",
+            "createdOn": "2020-05-01T06:00:00.000Z"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/relationships:delete' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"relationshipIds\": [\n             \"2299821e-c3e6-4ad7-92c3-ea4ddaf941bf\"\n           ]\n         }'",
+      "parsed": {
+        "relationshipIds": [
+          "2299821e-c3e6-4ad7-92c3-ea4ddaf941bf"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"deleted\": [\n    \"2299821e-c3e6-4ad7-92c3-ea4ddaf941bf\"\n  ]\n}",
+      "parsed": {
+        "deleted": [
+          "2299821e-c3e6-4ad7-92c3-ea4ddaf941bf"
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-delete' \\\n-X 'POST' \\\n-H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n-H 'Content-Type: application/json' \\\n-d '{\n      \"ids\": [\n        \"8947f8af-3247-4bfe-82f9-976181596e24\",\n        \"a0fd5800-1616-49d8-a847-103fc44bdc6a\"\n      ]\n    }'",
+      "parsed": {
+        "ids": [
+          "8947f8af-3247-4bfe-82f9-976181596e24",
+          "a0fd5800-1616-49d8-a847-103fc44bdc6a"
+        ]
+      }
+    },
+    {
+      "raw": "204 No Content"
+    }
+  ]
+}

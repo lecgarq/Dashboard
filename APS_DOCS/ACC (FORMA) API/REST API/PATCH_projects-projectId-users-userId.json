@@ -1,0 +1,397 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/admin-projects-project-Id-users-userId-PATCH",
+    "scrapedAt": "2026-05-08T23:57:06.456Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/users/{userId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users/6cc15635-2fbd-4f73-afbe-abd833408a1d",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PATCH https://developer.api.autodesk.com/construction/admin/v1/projects/:projectId/users/:userId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Specifies the region where your request should be routed. If not set, the request is routed automatically, which may result in a slight increase in latency.\nPossible values: US, EMEA. For a complete list of supported regions, see the Regions page."
+        },
+        {
+          "col_0": "User-Idstring",
+          "col_1": "The ID of a user on whose behalf your request is acting.\nYour app has access to all users specified by the administrator in the SaaS integrations UI. Provide this header value to identify the user to be affected by the request.\nYou can use either the user’s Forma ID (id), or their Autodesk ID (autodeskId).\nNote that this header is required for hub Admin POST, PATCH, and DELETE endpoints if you want to use a 2-legged authentication context. This header is optional for hub Admin GET endpoints."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the Forma API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "userIdstring",
+          "col_1": "The ID of the user. To find the ID call GET users. You can use either the Forma ID (id) or the Autodesk ID (autodeskId)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "companyIdnull,string",
+          "col_1": "The ID of the company that the user is representing in the project. To obtain a list of all company IDs associated with a project, call GET projects/:projectId/companies."
+        },
+        {
+          "col_0": "companyNamenull,string",
+          "col_1": "The name of the company to which the user belongs.\nMax length: 255"
+        },
+        {
+          "col_0": "roleIdsarray: string",
+          "col_1": "A list of IDs of the roles that the user belongs to in the project."
+        },
+        {
+          "col_0": "productsarray: object",
+          "col_1": "Information about the products activated in the specified project for this user. Do not include this field if the requester has Member Manager access level."
+        },
+        {
+          "col_0": "key*enum:string",
+          "col_1": "A machine-readable identifier for the product (e.g., docs, build).\nEach product has a unique key used throughout the API for identification, filtering, and integration logic (e.g., in query parameters like filter[key]).\nPossible values:\nForma - autoSpecs, build, cost, designCollaboration, docs, insight, modelCoordination, projectAdministration, and takeoff.\nBIM 360 - assets, costManagement, designCollaboration, documentManagement, field, fieldManagement, glue, insight, modelCoordination, plan, projectAdministration, projectHome, projectManagement, and quantification.\nNote that this endpoint returns only Forma products. Other endpoints, such as GET projects and GET projects/:projectId, may return both Forma and BIM 360 projects. In those responses, product keys may include BIM 360 values."
+        },
+        {
+          "col_0": "access*enum:string",
+          "col_1": "The user’s type of access to the product identified by key. Possible values:\n\nadministrator\nmember\nnone\n\nNote that when you’re using a POST or PATCH endpoint to set this value, you must adhere to the following guidelines:\n\nIf you set a product’s key to projectAdministration and you set access to none, all other products should be set to member access for the user.\nIf you set a product’s key to projectAdministration and you set access to administrator, all other products should be set to administrator access for the user.\nYou cannot set a product’s key to projectAdministration and set access to member."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The project user was successfully updated. The response includes only the fields being updated along with the Forma ID of the user."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Request has not been applied because it lacks valid authentication credentials for the target resource."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The server understood the request but refuses to authorize it."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource could not be found."
+        },
+        {
+          "col_0": "410",
+          "col_1": "Access to the target resource is no longer available."
+        },
+        {
+          "col_0": "415",
+          "col_1": "The server refuses to accept the request because the payload format is in an unsupported format."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "User has sent too many requests in a given amount of time."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Server is not ready to handle the request."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The Forma ID of the user."
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "The email of the user.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The full name of the user.\nMax length: 255"
+        },
+        {
+          "col_0": "firstNamestring",
+          "col_1": "The user’s first name. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "lastNamestring",
+          "col_1": "The user’s last name. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "addressLine1string",
+          "col_1": "The user’s address line 1. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "addressLine2string",
+          "col_1": "The user’s address line 2. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "The User’s city. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "stateOrProvincenull,string",
+          "col_1": "The state or province of the user. The accepted values here change depending on which country is provided. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "postalCodestring",
+          "col_1": "The zip or postal code of the user. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "countrynull,string",
+          "col_1": "The user’s country. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "phoneobject",
+          "col_1": "The user’s phone number. This data syncs from the user’s Autodesk profile."
+        },
+        {
+          "col_0": "numberstring",
+          "col_1": "User’s phone number"
+        },
+        {
+          "col_0": "phoneTypeenum:string",
+          "col_1": "The user’s phone type.\nPossible values: home, mobile, or office. Default value: mobile."
+        },
+        {
+          "col_0": "extensionstring",
+          "col_1": "User’s phone extension."
+        },
+        {
+          "col_0": "accessLevelsobject",
+          "col_1": "Flags indicating the user’s access levels in the hub."
+        },
+        {
+          "col_0": "accountAdminboolean",
+          "col_1": "Indicates whether the user is a hub administrator for the hub. Possible values:\n\ntrue: The user is a hub administrator.\nfalse: The user is not a hub administrator."
+        },
+        {
+          "col_0": "projectAdminboolean",
+          "col_1": "Indicates whether the user is a project administrator for the project. Possible values:\n\ntrue: The user is a project administrator.\nfalse: The user is not a project administrator."
+        },
+        {
+          "col_0": "executiveboolean",
+          "col_1": "Indicates whether the user is an executive in the hub. Possible values:\n\ntrue: The user is an executive.\nfalse: The user is not an executive."
+        },
+        {
+          "col_0": "addedOndatetime: ISO 8601",
+          "col_1": "The timestamp when the user was first given access to any product on the project."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The timestamp when the project user was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "companyIdnull,string",
+          "col_1": "The ID of the company that the user is representing in the project. To obtain a list of all company IDs associated with a project, call GET projects/:projectId/companies."
+        },
+        {
+          "col_0": "companyNamenull,string",
+          "col_1": "The name of the company to which the user belongs.\nMax length: 255"
+        },
+        {
+          "col_0": "roleIdsarray: string",
+          "col_1": "A list of IDs of the roles that the user belongs to in the project."
+        },
+        {
+          "col_0": "rolesarray: object",
+          "col_1": "A list of the role IDs and names that are associated with the user in the project."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of a role that the user belongs to in the project."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of a role that the user belongs to in the project."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "The status of the user on the hub. A pending user could be waiting for its products to activate or the user hasn’t accepted an email to create a hub with Autodesk.\nPossible values: active, pending, disabled, and deleted.’"
+        },
+        {
+          "col_0": "productsarray: object",
+          "col_1": "Information about the products activated in the specified project for this user. Do not include this field if the requester has Member Manager access level."
+        },
+        {
+          "col_0": "keyenum:string",
+          "col_1": "A machine-readable identifier for the product (e.g., docs, build).\nEach product has a unique key used throughout the API for identification, filtering, and integration logic (e.g., in query parameters like filter[key]).\nPossible values:\nForma - autoSpecs, build, cost, designCollaboration, docs, insight, modelCoordination, projectAdministration, and takeoff.\nBIM 360 - assets, costManagement, designCollaboration, documentManagement, field, fieldManagement, glue, insight, modelCoordination, plan, projectAdministration, projectHome, projectManagement, and quantification.\nNote that this endpoint returns only Forma products. Other endpoints, such as GET projects and GET projects/:projectId, may return both Forma and BIM 360 projects. In those responses, product keys may include BIM 360 values."
+        },
+        {
+          "col_0": "accessenum:string",
+          "col_1": "The user’s type of access to the product identified by key. Possible values:\n\nadministrator\nmember\nnone\n\nNote that when you’re using a POST or PATCH endpoint to set this value, you must adhere to the following guidelines:\n\nIf you set a product’s key to projectAdministration and you set access to none, all other products should be set to member access for the user.\nIf you set a product’s key to projectAdministration and you set access to administrator, all other products should be set to administrator access for the user.\nYou cannot set a product’s key to projectAdministration and set access to member."
+        },
+        {
+          "col_0": "imageUrlstring",
+          "col_1": "The URL of the user’s avatar. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The ID of the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "analyticsIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "jobTitlestring",
+          "col_1": "The user’s job title. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "industrystring",
+          "col_1": "The industry the user works in. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "aboutMestring",
+          "col_1": "A short bio about the user. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "jobIdstring: UUID",
+          "col_1": "Not relevant - we don’t currently support this field."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users/6cc15635-2fbd-4f73-afbe-abd833408a1d' \\\n  -X 'PATCH' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n        \"companyName\": \"Sample Company\",\n        \"roleIds\": [\n          \"cda845af-05f0-4c46-9108-71b993946c35\",\n          \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n        ],\n        \"products\": [\n          {\n            \"key\": \"projectAdministration\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"designCollaboration\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"build\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"cost\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"modelCoordination\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"docs\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"insight\",\n            \"access\": \"administrator\"\n          },\n          {\n            \"key\": \"takeoff\",\n            \"access\": \"administrator\"\n          }\n        ]\n      }'",
+      "parsed": {
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "companyName": "Sample Company",
+        "roleIds": [
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "products": [
+          {
+            "key": "projectAdministration",
+            "access": "administrator"
+          },
+          {
+            "key": "designCollaboration",
+            "access": "administrator"
+          },
+          {
+            "key": "build",
+            "access": "administrator"
+          },
+          {
+            "key": "cost",
+            "access": "administrator"
+          },
+          {
+            "key": "modelCoordination",
+            "access": "administrator"
+          },
+          {
+            "key": "docs",
+            "access": "administrator"
+          },
+          {
+            "key": "insight",
+            "access": "administrator"
+          },
+          {
+            "key": "takeoff",
+            "access": "administrator"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"39712a51-bd64-446a-9c72-48c4e43d0a0d\",\n  \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n  \"roleIds\": [\n    \"cda845af-05f0-4c46-9108-71b993946c35\",\n    \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n  ],\n  \"products\": [\n    {\n      \"key\": \"projectAdministration\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"designCollaboration\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"build\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"cost\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"modelCoordination\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"docs\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"insight\",\n      \"access\": \"administrator\"\n    },\n    {\n      \"key\": \"takeoff\",\n      \"access\": \"administrator\"\n    }\n  ]\n}",
+      "parsed": {
+        "id": "39712a51-bd64-446a-9c72-48c4e43d0a0d",
+        "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+        "roleIds": [
+          "cda845af-05f0-4c46-9108-71b993946c35",
+          "b8e84a73-7506-4d3f-b221-93691df2a359"
+        ],
+        "products": [
+          {
+            "key": "projectAdministration",
+            "access": "administrator"
+          },
+          {
+            "key": "designCollaboration",
+            "access": "administrator"
+          },
+          {
+            "key": "build",
+            "access": "administrator"
+          },
+          {
+            "key": "cost",
+            "access": "administrator"
+          },
+          {
+            "key": "modelCoordination",
+            "access": "administrator"
+          },
+          {
+            "key": "docs",
+            "access": "administrator"
+          },
+          {
+            "key": "insight",
+            "access": "administrator"
+          },
+          {
+            "key": "takeoff",
+            "access": "administrator"
+          }
+        ]
+      }
+    }
+  ]
+}

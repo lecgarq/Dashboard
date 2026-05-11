@@ -1,0 +1,249 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/advanced_queries/task4",
+    "scrapedAt": "2026-05-08T18:14:40.383Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Retrieve Element Properties and Associated Reference Properties such as typeProperties",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "GetElementsByExchangeId",
+          "Description": "Retrieves a list of elements in an exchange by using the element ID."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetReferenceElementsByExchangeId(\n    $exchangeId: ID!\n    $elementFilter: ElementFilterInput\n    $elementPagination: PaginationInput\n) {\n    exchange(exchangeId: $exchangeId) {\n        id\n        name\n        elements(filter: $elementFilter, pagination: $elementPagination) {\n            pagination {\n                pageSize\n                cursor\n            }\n            results {\n                id\n                name\n                properties(filter: { names: [\"category\", \"type\", \"Element Name\"] }) {\n                    results {\n                        name\n                        value\n                    }\n                }\n                references {\n                    results {\n                        name\n                        value {\n                            id\n                            name\n                            properties {\n                                results {\n                                    name\n                                    value\n                                }\n                            }\n                        }\n                    }\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n    \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n    \"elementFilter\": {\n        \"query\": \"property.name.category==Windows\"\n    },\n    \"elementPagination\": {\n        \"limit\": 1\n    }\n}",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+        "elementFilter": {
+          "query": "property.name.category==Windows"
+        },
+        "elementPagination": {
+          "limit": 1
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"exchange\": {\n            \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n            \"name\": \"SHARE -Multi-Fam Apt-Wing 2\",\n            \"elements\": {\n                \"pagination\": {\n                    \"pageSize\": 1,\n                    \"cursor\": \"70df33f1-8514-4a2e-89ba-1bccf287aacf\"\n                },\n                \"results\": [\n                    {\n                        \"id\": \"00F20DEBD19DDCE9130ED15C3C4DF92FB01B63DF\",\n                        \"name\": \"1175245\",\n                        \"properties\": {\n                            \"results\": [\n                                {\n                                    \"name\": \"type\",\n                                    \"value\": \"01\"\n                                },\n                                {\n                                     \"name\": \"Element Name\",\n                                     \"value\": \"01\"\n                                },\n                                {\n                                    \"name\": \"category\",\n                                    \"value\": \"Windows\"\n                                }\n                            ]\n                        },\n                        \"references\": {\n                            \"results\": [\n                                {\n                                    \"name\": \"Host Id\",\n                                    \"value\": {\n                                        \"id\": \"3E5589CF107DC161B5B2D8AD1EECBFE9B8BDCC3C\",\n                                        \"name\": \"707055\",\n                                        \"properties\": {\n                                            \"results\": [\n                                                {\n                                                    \"name\": \"Area\",\n                                                    \"value\": 298.1054587020523\n                                                },\n                                                {\n                                                    \"name\": \"type\",\n                                                    \"value\": \"X - FMP 3/4 + AIR 1 1/2 + RIGID 3 _ GYP SHTG 5/8 + MS 6 _ GYP BD 5/8 (VERT)\"\n                                                },\n                                                {\n                                                    \"name\": \"Base is Attached\",\n                                                    \"value\": false\n                                                },\n                                                {\n                                                    \"name\": \"Element Name\",\n                                                    \"value\": \"X - FMP 3/4 + AIR 1 1/2 + RIGID 3 _ GYP SHTG 5/8 + MS 6 _ GYP BD 5/8 (VERT)\"\n                                                },\n                                                {\n                                                    \"name\": \"Family Name\",\n                                                    \"value\": \"Basic Wall\"\n                                                },\n                                                {\n                                                    \"name\": \"Revit Category Type Id\",\n                                                    \"value\": \"Walls\"\n                                                },\n                                                {\n                                                    \"name\": \"family\",\n                                                    \"value\": \"Basic Wall\"\n                                                },\n                                                {\n                                                    \"name\": \"category\",\n                                                    \"value\": \"Walls\"\n                                                },\n                                                {\n                                                    \"name\": \"Length\",\n                                                    \"value\": 34.92499587150709\n                                                },\n                                                {\n                                                    \"name\": \"Volume\",\n                                                    \"value\": 93.00784049825333\n                                                },\n                                                {\n                                                    \"name\": \"Operation\",\n                                                    \"value\": \"INSERT\"\n                                                }\n                                            ]\n                                        }\n                                    }\n                                },\n                                {\n                                    \"name\": \"To Room\",\n                                    \"value\": {\n                                        \"id\": \"DF90F99E14F05F597E769DF70A3C693123E837C7\",\n                                        \"name\": \"Rooms__UNIT E-329__1066270\",\n                                        \"properties\": {\n                                            \"results\": [\n                                                {\n                                                    \"name\": \"Revit Category Type Id\",\n                                                    \"value\": \"Rooms\"\n                                                },\n                                                {\n                                                    \"name\": \"Number of People\",\n                                                    \"value\": 0\n                                                },\n                                                {\n                                                    \"name\": \"category\",\n                                                    \"value\": \"Rooms\"\n                                                },\n                                                {\n                                                    \"name\": \"Operation\",\n                                                    \"value\": \"INSERT\"\n                                                }\n                                            ]\n                                        }\n                                    }\n                                },\n                                {\n                                    \"name\": \"Level\",\n                                    \"value\": {\n                                        \"id\": \"F6BA047FAC35CDBDD48CC976EFC0C4FF849BD15B\",\n                                        \"name\": \"394693\",\n                                        \"properties\": {\n                                            \"results\": [\n                                                {\n                                                    \"name\": \"category\",\n                                                    \"value\": \"Levels\"\n                                                },\n                                                {\n                                                    \"name\": \"family\",\n                                                    \"value\": \"Level\"\n                                                },\n                                                {\n                                                    \"name\": \"Name\",\n                                                    \"value\": \"03 THIRD - FINISH FLOOR\"\n                                                },\n                                                {\n                                                    \"name\": \"Elevation\",\n                                                    \"value\": 7.87400000000334\n                                                }\n                                            ]\n                                        }\n                                    }\n                                },\n                                {\n                                    \"name\": \"Level\",\n                                    \"value\": {\n                                        \"id\": \"F6BA047FAC35CDBDD48CC976EFC0C4FF849BD15B\",\n                                        \"name\": \"394693\",\n                                        \"properties\": {\n                                            \"results\": [\n                                                {\n                                                    \"name\": \"type\",\n                                                    \"value\": \"3/32\\\" Head\"\n                                                },\n                                                {\n                                                    \"name\": \"Structural\",\n                                                    \"value\": false\n                                                },\n                                                {\n                                                    \"name\": \"Element Name\",\n                                                    \"value\": \"3/32\\\" Head\"\n                                                },\n                                                {\n                                                    \"name\": \"category\",\n                                                    \"value\": \"Levels\"\n                                                },\n                                                {\n                                                    \"name\": \"family\",\n                                                    \"value\": \"Level\"\n                                                },\n                                                {\n                                                    \"name\": \"Name\",\n                                                    \"value\": \"03 THIRD - FINISH FLOOR\"\n                                                }\n                                            ]\n                                        }\n                                    }\n                                },\n                                {\n                                    \"name\": \"Type\",\n                                    \"value\": {\n                                        \"id\": \"F565E4CCC850427F0E2CBE96D78B13086C2D76DA\",\n                                        \"name\": \"01\",\n                                        \"properties\": {\n                                            \"results\": [\n                                                {\n                                                    \"name\": \"Family Name\",\n                                                    \"value\": \"PUNCHED OPENING - A2 LITEX\"\n                                                },\n                                                {\n                                                    \"name\": \"Operation\",\n                                                    \"value\": \"MODIFY\"\n                                                }\n                                            ]\n                                        }\n                                    }\n                                }\n                            ]\n                        }\n                    }\n                ]\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "exchange": {
+            "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+            "name": "SHARE -Multi-Fam Apt-Wing 2",
+            "elements": {
+              "pagination": {
+                "pageSize": 1,
+                "cursor": "70df33f1-8514-4a2e-89ba-1bccf287aacf"
+              },
+              "results": [
+                {
+                  "id": "00F20DEBD19DDCE9130ED15C3C4DF92FB01B63DF",
+                  "name": "1175245",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "type",
+                        "value": "01"
+                      },
+                      {
+                        "name": "Element Name",
+                        "value": "01"
+                      },
+                      {
+                        "name": "category",
+                        "value": "Windows"
+                      }
+                    ]
+                  },
+                  "references": {
+                    "results": [
+                      {
+                        "name": "Host Id",
+                        "value": {
+                          "id": "3E5589CF107DC161B5B2D8AD1EECBFE9B8BDCC3C",
+                          "name": "707055",
+                          "properties": {
+                            "results": [
+                              {
+                                "name": "Area",
+                                "value": 298.1054587020523
+                              },
+                              {
+                                "name": "type",
+                                "value": "X - FMP 3/4 + AIR 1 1/2 + RIGID 3 _ GYP SHTG 5/8 + MS 6 _ GYP BD 5/8 (VERT)"
+                              },
+                              {
+                                "name": "Base is Attached",
+                                "value": false
+                              },
+                              {
+                                "name": "Element Name",
+                                "value": "X - FMP 3/4 + AIR 1 1/2 + RIGID 3 _ GYP SHTG 5/8 + MS 6 _ GYP BD 5/8 (VERT)"
+                              },
+                              {
+                                "name": "Family Name",
+                                "value": "Basic Wall"
+                              },
+                              {
+                                "name": "Revit Category Type Id",
+                                "value": "Walls"
+                              },
+                              {
+                                "name": "family",
+                                "value": "Basic Wall"
+                              },
+                              {
+                                "name": "category",
+                                "value": "Walls"
+                              },
+                              {
+                                "name": "Length",
+                                "value": 34.92499587150709
+                              },
+                              {
+                                "name": "Volume",
+                                "value": 93.00784049825333
+                              },
+                              {
+                                "name": "Operation",
+                                "value": "INSERT"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "name": "To Room",
+                        "value": {
+                          "id": "DF90F99E14F05F597E769DF70A3C693123E837C7",
+                          "name": "Rooms__UNIT E-329__1066270",
+                          "properties": {
+                            "results": [
+                              {
+                                "name": "Revit Category Type Id",
+                                "value": "Rooms"
+                              },
+                              {
+                                "name": "Number of People",
+                                "value": 0
+                              },
+                              {
+                                "name": "category",
+                                "value": "Rooms"
+                              },
+                              {
+                                "name": "Operation",
+                                "value": "INSERT"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "name": "Level",
+                        "value": {
+                          "id": "F6BA047FAC35CDBDD48CC976EFC0C4FF849BD15B",
+                          "name": "394693",
+                          "properties": {
+                            "results": [
+                              {
+                                "name": "category",
+                                "value": "Levels"
+                              },
+                              {
+                                "name": "family",
+                                "value": "Level"
+                              },
+                              {
+                                "name": "Name",
+                                "value": "03 THIRD - FINISH FLOOR"
+                              },
+                              {
+                                "name": "Elevation",
+                                "value": 7.87400000000334
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "name": "Level",
+                        "value": {
+                          "id": "F6BA047FAC35CDBDD48CC976EFC0C4FF849BD15B",
+                          "name": "394693",
+                          "properties": {
+                            "results": [
+                              {
+                                "name": "type",
+                                "value": "3/32\" Head"
+                              },
+                              {
+                                "name": "Structural",
+                                "value": false
+                              },
+                              {
+                                "name": "Element Name",
+                                "value": "3/32\" Head"
+                              },
+                              {
+                                "name": "category",
+                                "value": "Levels"
+                              },
+                              {
+                                "name": "family",
+                                "value": "Level"
+                              },
+                              {
+                                "name": "Name",
+                                "value": "03 THIRD - FINISH FLOOR"
+                              }
+                            ]
+                          }
+                        }
+                      },
+                      {
+                        "name": "Type",
+                        "value": {
+                          "id": "F565E4CCC850427F0E2CBE96D78B13086C2D76DA",
+                          "name": "01",
+                          "properties": {
+                            "results": [
+                              {
+                                "name": "Family Name",
+                                "value": "PUNCHED OPENING - A2 LITEX"
+                              },
+                              {
+                                "name": "Operation",
+                                "value": "MODIFY"
+                              }
+                            ]
+                          }
+                        }
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

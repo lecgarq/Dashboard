@@ -1,0 +1,219 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/ViewingUtilities",
+    "scrapedAt": "2026-05-08T18:44:53.904Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "ViewingUtilities",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewerImplIn*object",
+          "col_1": "The viewer implementation object."
+        },
+        {
+          "col_0": "autocam*object",
+          "col_1": "The Autocam interface object."
+        },
+        {
+          "col_0": "navapi*object",
+          "col_1": "The Navigation interface object."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pos*THREE.Vector3",
+          "col_1": "The new world space position of the camera."
+        },
+        {
+          "col_0": "coi*THREE.Vector3",
+          "col_1": "The new center of interest (look at point)."
+        },
+        {
+          "col_0": "fov*number",
+          "col_1": "The new field of view for the camera in degrees."
+        },
+        {
+          "col_0": "up*THREE.Vector3",
+          "col_1": "The new camera up direction."
+        },
+        {
+          "col_0": "worldUp*THREE.Vector3",
+          "col_1": "The new world up direction."
+        },
+        {
+          "col_0": "reorient*boolean",
+          "col_1": "If true the given camera up parameter is ignored and a new up direction will be calculated to be aligned with the given world up direction."
+        },
+        {
+          "col_0": "pivot*THREE.Vector3",
+          "col_1": "The new pivot point."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x*number",
+          "col_1": "The normalized screen x coordinate in [0, 1]."
+        },
+        {
+          "col_0": "y*number",
+          "col_1": "The normalized screen y coordinate in [0, 1]."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Vector3",
+          "description": "The world space hit position or null if no object was hit."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fadeIt*boolean",
+          "col_1": "If true the indicator will be displayed and then fade away after a short period."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "state*boolean",
+          "col_1": "The requested display state for the indicator."
+        },
+        {
+          "col_0": "fadeIt*boolean",
+          "col_1": "If true and “state” is also true, the indicator will be displayed and then fade away after a short period."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "newPivot*THREE.Vector3",
+          "col_1": "The world space position of the new pivot point."
+        },
+        {
+          "col_0": "preserveView*boolean",
+          "col_1": "If false the camera’s view direction will change to look at the new pivot point. If true the camera’s view will not be changed."
+        },
+        {
+          "col_0": "isset*boolean",
+          "col_1": "The new state of the pivot set flag."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Optional unique name of the saved location."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Optional unique name of the saved location."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "newPivot*THREE.Vector3",
+          "col_1": "The new pivot to be assigned or null to clear any previously saved pivot."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "scale*number",
+          "col_1": "Default size value is 1"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "color*number",
+          "col_1": "RBG Hex color."
+        },
+        {
+          "col_0": "opacitynumber",
+          "col_1": "Opacity value from 0 (transparent) to 1 (opaque)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "ignoreSelection*boolean",
+          "col_1": "If true the current selection is ignored and the model bounds is returned."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Box3",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "immediate*boolean",
+          "col_1": "If true the transition will be immediate, otherwise animated over a short time period."
+        }
+      ]
+    }
+  ]
+}

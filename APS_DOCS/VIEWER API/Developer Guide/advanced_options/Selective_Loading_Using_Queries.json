@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/advanced_options/selective-loading",
+    "scrapedAt": "2026-05-08T18:43:28.466Z",
+    "category": "Developer Guide/advanced_options",
+    "apiName": "VIEWER API"
+  },
+  "title": "Selective Loading Using Queries",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Condition",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Condition": "{ \"$intersects\": [ <sprimitive> ] }",
+          "Description": "True, if the primitive intersects with the objects’s axis-aligned bounding box."
+        },
+        {
+          "Condition": "{ \"$encloses\": [ <sprimitive>, <sproxy>?, epsilon? ] }",
+          "Description": "True, if the primitive has a volume and fully encloses the objects’s axis-aligned bounding box. sproxy (optional) defines the type of the bounding box. Defaults to aabbox if not provided. epsilon (optional) is a scalar that expands each dimension of the primitive. Defaults to 0.0 if not provided."
+        },
+        {
+          "Condition": "{ \"$extent\": [ <threshold> ] }",
+          "Description": "True, if the volume of the objects’s axis-aligned bounding box (world space) passes the threshold."
+        },
+        {
+          "Condition": "{ \"$not\": <scondition> }",
+          "Description": "Inverts the given condition."
+        },
+        {
+          "Condition": "{ \"$or\": [ <scondition1>, <scondition2>, ... ] }",
+          "Description": "Any of the given conditions must be fulfilled."
+        },
+        {
+          "Condition": "{ \"$and\": [ <scondition1>, <scondition2>, ... ] }",
+          "Description": "All of the given conditions must be fulfilled."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Primitive",
+        "Specification",
+        "Example"
+      ],
+      "rows": [
+        {
+          "Primitive": "aabox",
+          "Specification": "[ minx, miny, minz, maxx, maxy, maxz ]",
+          "Example": "{ \"aabox\": [ -3.3,  1.1,  0.4, -1.8,  3.9,  2.7 ] }"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Proxy",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Proxy": "aabbox",
+          "Description": "Axis-Aligned Bounding Box"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "const viewer = new Autodesk.Viewing.GuiViewer3D(document.getElementById('viewer'));\nAutodesk.Viewing.Initializer(options, () => {\n    viewer.start();\n    Autodesk.Viewing.Document.load(documentID, onDocumentLoadSuccess,\n        () => console.error('Failed to fetch the manifest.'));\n});\n\nfunction onDocumentLoadSuccess(viewerDocument) {\n    const defaultModel = viewerDocument.getRoot().getDefaultGeometry();\n    viewer.loadDocumentNode(viewerDocument, defaultModel, { // ...options\n        filter: {\n            \"spatial_query\": {\n                \"$encloses\": [ { \"aabox\": [ -21.0, 37.0, -4.0, 46.0, 59.0, 21.0 ] } ]\n            },\n        }\n    });\n}"
+    },
+    {
+      "raw": "\"spatial_query\": { \"$encloses\": [ { \"aabox\": [ -0.3, -3.3, -4.9, +0.0, -3.2, -2.1 ] } ] }"
+    },
+    {
+      "raw": "\"spatial_query\": { \"$or\": [\n\n        /* two regions of interest where objects should be loaded */\n        { \"$encloses\": [ { \"aabox\": [ -168.99, -226.19, -739.92, -133.78, -192.75, 978.69 ] } ] },\n        { \"$encloses\": [ { \"aabox\": [ -389.19, -368.12,  836.04,  382.63,  140.48, 978.69 ] } ] },\n\n        { \"$and\": [\n\n            /* two regions that should remain empty (not intersecting with the scene objects) */\n            { \"$not\": { \"$or\": [\n                    { \"$intersects\": [ { \"aabox\": [  -88.49, -331.87, -536.42, 486.78, 350.62, -314.62 ] } ] },\n                    { \"$intersects\": [ { \"aabox\": [ -285.78, -170.97,  119.58, -10.78, 353.67,  581.08 ] } ] }\n                ] } },\n\n            /* objects should pass a minimal world-space volume */\n            { \"$extent\": 100000.0 } ] }\n        ] }"
+    },
+    {
+      "raw": "viewer.loadDocumentNode(viewerDocument, defaultModel, { // ...options\n    filter: {\n        \"spatial_behavior\": \"immediate\", // or \"exact\" (default)\n        \"spatial_query\": { ... },\n    }\n});"
+    },
+    {
+      "raw": "\"property_query\": {\n    \"$and\": [\n        { \"$notnull\": \"s.props.p20d8441e\" },\n        { \"$notnull\": \"s.props.p30db51f9\" },\n        { \"$notnull\": \"s.props.p13b6b3a0\" }\n    ] }",
+      "parsed": {
+        "$and": [
+          {
+            "$notnull": "s.props.p20d8441e"
+          },
+          {
+            "$notnull": "s.props.p30db51f9"
+          },
+          {
+            "$notnull": "s.props.p13b6b3a0"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "\"property_query\": [\n    { \"s.props.p4735026f\": \"'VALV'\" },\n    { \"s.props.p4735026f\": \"'FBLI'\" },\n    { \"s.props.p4735026f\": \"'TUBI'\" },\n    { \"s.props.p4735026f\": \"'INST'\" },\n    { \"s.props.p4735026f\": \"'ELBO'\" },\n    { \"s.props.p4735026f\": \"'REDU'\" },\n    { \"s.props.p4735026f\": \"'ATTA'\" },\n    { \"s.props.p4735026f\": \"'FLAN'\" } ]"
+    },
+    {
+      "raw": "const propertyHashes = await model.getPropertyHashes();"
+    },
+    {
+      "raw": "// Match basic walls (by name property) and all objects that have CENTRIFUGE in their LTS description\n\"property_query\": [\n    // instead of { \"s.props.p153cb174\": \"'Basic Wall'\" },\n    { \"?name\": \"'Basic Wall'\" }, // note the ? indicating a look-up\n    { \"?Base Constraint\": \"'Level 1'\" } ]"
+    },
+    {
+      "raw": "viewer.loadDocumentNode(viewerDocument, defaultModel, { // ...options\n    filter: {\n        \"root_condition\": \"or\", // or \"and\" (default)\n        \"spatial_query\": { ... },\n        \"property_query\": { ... },\n    }\n});"
+    }
+  ]
+}

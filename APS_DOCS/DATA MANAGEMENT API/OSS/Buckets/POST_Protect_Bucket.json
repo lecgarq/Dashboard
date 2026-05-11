@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/post-oss-v2-buckets-bucketkey-pr-POST",
+    "scrapedAt": "2026-05-08T16:28:09.731Z",
+    "category": "OSS/Buckets"
+  },
+  "title": "oss/v2/buckets/{bucketKey}/protect",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/oss/v2/buckets/prodbucket_03/protect",
+  "description": null,
+  "requestExample": "curl --location 'https://developer.api.autodesk.com/oss/v2/buckets/prodbucket_03/protect' \\\n  --header 'Authorization: Bearer eyJh...' \\\n  --header 'Content-Type: application/json' \\\n  --header 'x-ads-region: US' \\\n  --data '{\n      \"protection\": true\n  }'\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE\nAccess-Control-Allow-Origin: *\nContent-Type: text/plain; charset=utf-8\nDate: Tue, 26 Aug 2025 10:30:15 GMT\nServer: Apigee Router\nContent-Length: 43\nConnection: keep-alive\n\nBucket prodbucket_03 protection set to true\n\ncurl --location 'https://developer.api.autodesk.com/oss/v2/buckets/prodbucket_03/protect' \\\n  --header 'Authorization: Bearer eyJhb...' \\\n  --header 'Content-Type: application/json' \\\n  --header 'x-ads-region: US' \\\n  --data '{\n      \"protection\": false\n  }'\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET, POST, PUT, DELETE\nAccess-Control-Allow-Origin: *\nContent-Type: text/plain; charset=utf-8\nDate: Tue, 26 Aug 2025 10:35:20 GMT\nServer: Apigee Router\nContent-Length: 44\nConnection: keep-alive\n\nBucket prodbucket_03 protection set to false",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "POST https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/protect"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "bucket:update"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "Content-Typestring",
+      "col_1": "Must be application/json"
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the objects you are operating on."
+    },
+    {
+      "col_0": "protectionboolean",
+      "col_1": "true:  Protects the bucket from accidental deletion.\nfalse: Leaves the bucket unprotected or removes protection from a previously protected bucket."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The bucket protection status was successfully updated. If protection was set to true, bucket protection is now enabled; if set to false, it is now disabled."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "OSS was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request"
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The requested resource could not be found. Verify the IDs of the resources you requested before you send this request again."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    }
+  ]
+}

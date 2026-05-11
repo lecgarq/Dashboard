@@ -1,0 +1,310 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Private/PropertyDatabase",
+    "scrapedAt": "2026-05-08T18:48:04.228Z",
+    "category": "SDK Reference/Private",
+    "apiName": "VIEWER API"
+  },
+  "title": "PropertyDatabase",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbjsons*object",
+          "col_1": "is expected to be of the form {{ attrs: {filename1:x, filename2:y}, ids: {filename1:x… }, values: {… }, offsets: {… }, avs: {… } } where each of the elements of each array is a pair of the original name and the unzipped raw    byte array buffer corresponding to the respective property database constituent. In the current implementation each array is expected to only have one name-value element."
+        },
+        {
+          "col_0": "fileType*string",
+          "col_1": "Optional file type (‘rvt’, ‘dwg’, etc.) for applying file-specific naming logic"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "attrId*number",
+          "col_1": "The attribute id"
+        },
+        {
+          "col_0": "valId*number",
+          "col_1": "The value id"
+        },
+        {
+          "col_0": "integerHintboolean",
+          "col_1": "If true the return value will be casted to integer."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "The database id"
+        },
+        {
+          "col_0": "propFilterArray.<string>",
+          "col_1": "Array of property names to return values for. Use null for no filtering."
+        },
+        {
+          "col_0": "ignoreHiddenboolean",
+          "col_1": "true to ignore hidden properties."
+        },
+        {
+          "col_0": "propIgnoredArray.<string>",
+          "col_1": "Array of property names to not include in the return value."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "consisting of attributes name, dbId, properties and externalId."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extIdFilterArray.<number>",
+          "col_1": "Limits the result to only contain the ids in this array."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "map from dbId into external-id."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "searchText*string",
+          "col_1": "Text to search"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "propertyName*string",
+          "col_1": "Property name"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "attrId*number",
+          "col_1": "The attribute id."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "containing name, category, dataType, dataTypeContext, description, displayName and flags."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cb*function",
+          "col_1": "Callback invoked"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "The attribute id."
+        },
+        {
+          "col_0": "cb*function",
+          "col_1": "callback function, that receives 2 arguments: attribute-id (attrId) and value-id (valId). Have the function return true to abort iteration."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "Integer input object ID"
+        },
+        {
+          "col_0": "desiredAttrIds*object",
+          "col_1": "An optional map of the requested attribute Ids, where desiredAttrIds[attrId] is “truthy”. If not provided, all properties will be returned."
+        },
+        {
+          "col_0": "dstValIds*object",
+          "col_1": "A storage target map, such that dstValIds[attrId] will be the resulting value ID. It is the responsibility of the caller to zero initialize this map."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<number>",
+          "description": "A flat list of integers attributeId - valueId pairs. This is in addition to the dstValIds, for cases where the object has mutliple properties of the same type, e.g. children, viewable_in, etc."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cb*function",
+          "col_1": "callback function. Receives a single parameter: the database-id. Have the function return true to abort iteration."
+        },
+        {
+          "col_0": "fromId*number",
+          "col_1": "starting id (inclusive)"
+        },
+        {
+          "col_0": "toId*number",
+          "col_1": "end id (exclusive)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "attrId*number",
+          "col_1": "The attribute id."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the attribute is a hidden one."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "pdb.enumAttributes(function(attrId, attrDef) {\n        // attrDef is an object\n        if (attrDef.name === 'name') {\n            return true; // return true to stop iteration.\n        }\n   })"
+    }
+  ]
+}

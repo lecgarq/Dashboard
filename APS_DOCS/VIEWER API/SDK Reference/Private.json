@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Private",
+    "scrapedAt": "2026-05-08T18:47:50.981Z",
+    "category": "SDK Reference",
+    "apiName": "VIEWER API"
+  },
+  "title": "Private",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "Prefs3D"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "Prefs2D"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "Prefs"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "VIEW_TYPES"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "FPS_TARGET_MODES"
+        }
+      ]
+    }
+  ]
+}

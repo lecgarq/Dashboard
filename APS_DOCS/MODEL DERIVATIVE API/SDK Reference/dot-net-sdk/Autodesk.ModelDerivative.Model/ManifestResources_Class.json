@@ -1,0 +1,68 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ManifestResources",
+    "scrapedAt": "2026-05-08T18:27:45.634Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ManifestResources",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ManifestResources"
+    },
+    {
+      "raw": "public ManifestResources()"
+    },
+    {
+      "raw": "[DataMember(Name = \"camera\", EmitDefaultValue = false)]\npublic List<decimal?> Camera { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"children\", EmitDefaultValue = false)]\npublic List<ManifestResources> Children { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"guid\", EmitDefaultValue = false)]\npublic string Guid { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"hasThumbnail\", EmitDefaultValue = false)]\npublic string HasThumbnail { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"messages\", EmitDefaultValue = false)]\npublic List<Messages> Messages { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"mime\", EmitDefaultValue = false)]\npublic string Mime { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"name\", EmitDefaultValue = false)]\npublic string Name { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"phaseIds\", EmitDefaultValue = false)]\npublic object PhaseIds { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"phaseNames\", EmitDefaultValue = false)]\npublic object PhaseNames { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"progress\", EmitDefaultValue = false)]\npublic string Progress { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"resolution\", EmitDefaultValue = false)]\npublic List<int?> Resolution { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"role\", EmitDefaultValue = false)]\npublic string Role { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"status\", EmitDefaultValue = false)]\npublic string Status { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = false)]\npublic string Type { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"urn\", EmitDefaultValue = false)]\npublic string Urn { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"viewableID\", EmitDefaultValue = false)]\npublic string ViewableID { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

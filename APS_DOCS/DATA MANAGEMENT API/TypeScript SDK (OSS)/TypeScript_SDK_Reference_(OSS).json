@@ -1,0 +1,132 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/typescript-sdk-oss",
+    "scrapedAt": "2026-05-08T17:02:02.811Z",
+    "category": "TypeScript SDK (OSS)",
+    "sdkType": "TypeScript"
+  },
+  "title": "TypeScript SDK Reference for OSS",
+  "properties": [
+    {
+      "col_0": "Package Name:",
+      "col_1": "@aps_sdk/oss"
+    },
+    {
+      "col_0": "Version:",
+      "col_1": "1.0.0"
+    },
+    {
+      "operation category": "Buckets",
+      "operation": "Create Bucket",
+      "method": "createBucket",
+      "http request": "POST /buckets"
+    },
+    {
+      "operation category": "List Buckets",
+      "operation": "getBuckets",
+      "method": "GET /buckets"
+    },
+    {
+      "operation category": "Get Bucket Details",
+      "operation": "getBucketDetails",
+      "method": "GET /buckets/{bucketKey}/details"
+    },
+    {
+      "operation category": "Delete Bucket",
+      "operation": "deleteBucket",
+      "method": "DELETE /buckets/{bucketKey}"
+    },
+    {
+      "operation category": "Objects",
+      "operation": "Delete Object",
+      "method": "deleteObject",
+      "http request": "DELETE /buckets/{bucketKey}/objects/{objectKey}"
+    },
+    {
+      "operation category": "List Objects",
+      "operation": "getObjects",
+      "method": "GET /buckets/{bucketKey}/objects"
+    },
+    {
+      "operation category": "Get Object Details",
+      "operation": "getObjectDetails",
+      "method": "GET /buckets/{bucketKey}/objects/{objectKey}/details"
+    },
+    {
+      "operation category": "Generate OSS Signed URL",
+      "operation": "createSignedResource",
+      "method": "POST /buckets/{bucketKey}/objects/{objectKey}/signed"
+    },
+    {
+      "operation category": "Download Object Using Signed URL",
+      "operation": "getSignedResource",
+      "method": "GET /signedresources/hash"
+    },
+    {
+      "operation category": "Replace Object Using Signed URL",
+      "operation": "uploadSignedResource",
+      "method": "PUT /signedresources/{hash}"
+    },
+    {
+      "operation category": "Delete Object Using Signed URL",
+      "operation": "deleteSignedResource",
+      "method": "DELETE /signedresources/{hash}"
+    },
+    {
+      "operation category": "Upload Object Using Signed URL",
+      "operation": "uploadSignedResourcesChunk",
+      "method": "PUT /signedresources/{hash}/resumable"
+    },
+    {
+      "operation category": "Copy Object",
+      "operation": "copyTo",
+      "method": "PUT /buckets/{bucketKey}/objects/{objectKey}/copyto/{newObjName}"
+    },
+    {
+      "operation category": "Generate Signed S3 Download URL",
+      "operation": "signedS3Download",
+      "method": "GET /buckets/{bucketKey}/objects/{objectKey}/signeds3download"
+    },
+    {
+      "operation category": "Generate Signed S3 Upload URL",
+      "operation": "signedS3Upload",
+      "method": "GET /buckets/{bucketKey}/objects/{objectKey}/signeds3upload"
+    },
+    {
+      "operation category": "Complete Upload to S3 Signed URL",
+      "operation": "completeSignedS3Upload",
+      "method": "POST /buckets/{bucketKey}/objects/{objectKey}/signeds3upload"
+    },
+    {
+      "operation category": "Batch Generate Signed S3 Download URLs",
+      "operation": "batchSignedS3Download",
+      "method": "POST/buckets/{bucketKey}/objects/batchsigneds3download"
+    },
+    {
+      "operation category": "Batch Generate Signed S3 Upload URLs",
+      "operation": "batchSignedS3Upload",
+      "method": "POST /buckets/{bucketKey}/objects/batchsigneds3upload"
+    },
+    {
+      "operation category": "Complete Batch Upload to S3 Signed URLs",
+      "operation": "batchCompleteUpload",
+      "method": "POST buckets/{bucketKey}/objects/batchcompleteupload"
+    },
+    {
+      "operation category": "Objects",
+      "operation": "Upload an Object",
+      "method": "uploadObject",
+      "description": "Uploads a file or stream by transparently handling operations\nlike obtaining signed URLs, chunking large files for optimal\ntransfer, and notifying OSS to assemble the uploaded parts."
+    },
+    {
+      "operation category": "Download an Object",
+      "operation": "downloadObject",
+      "method": "Downloads a file by transparently handling  operations\nlike obtaining signed download URLs."
+    }
+  ],
+  "codeExamples": [
+    "npm i @aps_sdk/oss",
+    "import { ObjectDetails, OssClient } from \"@aps_sdk/oss\";\n\n// Access token for authentication\nconst ACCESS_TOKEN = \"...\";\n// Key for the bucket where the object will be stored\nconst BUCKET_KEY = \"...\";\n// Key for the object to be uploaded\nconst OBJECT_KEY = \"...\";\n// Source path or data of the object to be uploaded\nconst FILEPATH_OR_BUFFER =\"...\";\n\n// Initialize the OSS Client\nconst ossClient = new OssClient();\n\n// Upload the object to the specified bucket with the given object key and source\nconst ObjectDetails = await ossClient.uploadObject(BUCKET_KEY, OBJECT_KEY, FILEPATH_OR_BUFFER, { accessToken: ACCESS_TOKEN});\n\n// Log the details of the uploaded object to the console\nconsole.log(objectDetails);"
+  ],
+  "fullText": "Data Management API\nVersion 2\nDeveloper's Guide\nOverview\nAPI Basics\nField Guide\nAuthentication\nPagination\nFiltering\nRetention Policies\nCommands\nRate Limits\nAPS Rate Limits and Quotas\nData Management Rate Limits\nHow-to Guide\nDownload a File\nUpload a File\nCreate an Attachment\nCreate an App-Managed Bucket and Upload a File\nPublish a Cloud Workshared Revit Model\nDelete and Restore Files in BIM 360 Document Management\nReference Guide\nREST API Reference\nData Management\nHubs\nGET hubs\nGET hubs/:hub_id\nProjects\nGET hubs/:hub_id/projects\nGET hubs/:hub_id/projects/:project_id\nGET hubs/:hub_id/projects/:project_id/hub\nGET hubs/:hub_id/projects/:project_id/topFolders\nGET projects/:project_id/downloads/:download_id\nGET projects/:project_id/jobs/:job_id\nPOST projects/:project_id/downloads\nPOST projects/:project_id/storage\nFolders\nGET projects/:project_id/folders/:folder_id\nGET projects/:project_id/folders/:folder_id/contents\nGET projects/:project_id/folders/:folder_id/parent\nGET projects/:project_id/folders/:folder_id/refs\nGET projects/:project_id/folders/:folder_id/relationships/links\nGET projects/:project_id/folders/:folder_id/relationships/refs\nGET projects/:project_id/folders/:folder_id/search\nPOST projects/:project_id/folders\nPOST projects/:project_id/folders/:folder_id/relationships/refs\nPATCH projects/:project_id/folders/:folder_id\nItems\nGET projects/:project_id/items/:item_id\nGET projects/:project_id/items/:item_id/parent\nGET projects/:project_id/items/:item_id/refs\nGET projects/:project_id/items/:item_id/relationships/links\nGET projects/:project_id/items/:item_id/relationships/refs\nGET projects/:project_id/items/:item_id/tip\nGET projects/:project_id/items/:item_id/versions\nPOST projects/:project_id/items\nPOST projects/:project_id/items/:item_id/relationships/refs\nPATCH projects/:project_id/items/:item_id\nVersions\nGET projects/:project_id/versions/:version_id\nGET projects/:project_id/versions/:version_id/downloadFormats\nGET projects/:project_id/versions/:version_id/downloads\nGET projects/:project_id/versions/:version_id/item\nGET projects/:project_id/versions/:version_id/refs\nGET projects/:project_id/versions/:version_id/relationships/links\nGET projects/:project_id/versions/:version_id/relationships/refs\nPOST projects/:project_id/versions\nPOST projects/:project_id/versions/:version_id/relationships/refs\nPATCH projects/:project_id/versions/:version_id\nCommands\nCheckPermission\nListRefs\nListItems\nPublishModel\nPublishWithoutLinks\nGetPublishModelJob\nOSS\nBuckets\nGET List Buckets\nPOST Create Bucket\nDELETE Delete Bucket\nGET Get Bucket Details\nPOST Protect Bucket\nObjects\nDELETE Delete Object\nGET List Objects\nGET Get Object Details\nPUT Copy Object\nUpload Workflow\nGET Generate Signed S3 Upload URL\nPOST Complete Upload to S3 Signed URL\nDownload Workflow\nGET Generate Signed S3 Download URL\nBatch Upload Workflow\nPOST Batch Generate Signed S3 Upload URLs\nPOST Complete Batch Upload to S3 Signed URLs\nBatch Download Workflow\nPOST Generate Signed S3 Download URLs (Batch)\nP"
+}

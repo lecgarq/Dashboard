@@ -1,0 +1,155 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/ExplodeExtension",
+    "scrapedAt": "2026-05-08T18:46:05.800Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "ExplodeExtension",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Viewer3D",
+          "col_1": "Viewer instance"
+        },
+        {
+          "col_0": "options*object",
+          "col_1": "Configurations for the extension"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolbar*Autodesk.Viewing.UI.ToolBar",
+          "col_1": "toolbar instance."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the ExplodeTool is active."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "Between 0 and 1."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "Between 0 and 1."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "0 - +inf."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "0 - +inf."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "1 - +inf."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*number",
+          "col_1": "0 - +inf."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "strategy*string",
+          "col_1": "Either ‘hierarchy’ or ‘radial’."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "enable*boolean",
+          "col_1": "enable / disable the UI."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.Explode')"
+    }
+  ]
+}

@@ -1,0 +1,450 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/index-v2-diff-manifest-get",
+    "scrapedAt": "2026-05-08T18:04:34.802Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/:projectId/diffs/:diffId/manifest",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/manifest",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/index/v2/projects/:projectId/diffs/:diffId/manifest"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "diffIdstring",
+          "col_1": "The diff ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Returns the diff manifest."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Response in case of an error."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "schemaenum: string",
+          "col_1": "current schema version.\nPossible values: 2.0.0"
+        },
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "project ID."
+        },
+        {
+          "col_0": "statusenum: string",
+          "col_1": "manifest status.\nPossible values: Failed, Running, Succeeded"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "creation timestampe."
+        },
+        {
+          "col_0": "seedFilesarray: object",
+          "col_1": "current seed files."
+        },
+        {
+          "col_0": "lineageIdstring",
+          "col_1": "lineage ID."
+        },
+        {
+          "col_0": "lineageUrnstring",
+          "col_1": "lineage URN."
+        },
+        {
+          "col_0": "versionUrnstring",
+          "col_1": "file version URN."
+        },
+        {
+          "col_0": "databasesarray: object",
+          "col_1": "databases."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "DB ID."
+        },
+        {
+          "col_0": "offsetsstring",
+          "col_1": "OSS path for the offsets file."
+        },
+        {
+          "col_0": "attributesstring",
+          "col_1": "OSS path for the attributes file."
+        },
+        {
+          "col_0": "valuesstring",
+          "col_1": "OSS path for the values file."
+        },
+        {
+          "col_0": "mappingstring",
+          "col_1": "OSS path for the mapping file."
+        },
+        {
+          "col_0": "idsstring",
+          "col_1": "OSS path for the IDs file."
+        },
+        {
+          "col_0": "viewsarray: object",
+          "col_1": "views."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "view ID."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "file version URN."
+        },
+        {
+          "col_0": "is3dboolean",
+          "col_1": "is this a 3D view?."
+        },
+        {
+          "col_0": "viewableNamestring",
+          "col_1": "viewable name."
+        },
+        {
+          "col_0": "viewableIdstring",
+          "col_1": "viewable ID."
+        },
+        {
+          "col_0": "viewableGuidstring",
+          "col_1": "viewable GUID."
+        },
+        {
+          "col_0": "prevarray: object",
+          "col_1": "previous seed files."
+        },
+        {
+          "col_0": "lineageIdstring",
+          "col_1": "lineage ID."
+        },
+        {
+          "col_0": "lineageUrnstring",
+          "col_1": "lineage URN."
+        },
+        {
+          "col_0": "versionUrnstring",
+          "col_1": "file version URN."
+        },
+        {
+          "col_0": "databasesarray: object",
+          "col_1": "databases."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "DB ID."
+        },
+        {
+          "col_0": "offsetsstring",
+          "col_1": "OSS path for the offsets file."
+        },
+        {
+          "col_0": "attributesstring",
+          "col_1": "OSS path for the attributes file."
+        },
+        {
+          "col_0": "valuesstring",
+          "col_1": "OSS path for the values file."
+        },
+        {
+          "col_0": "mappingstring",
+          "col_1": "OSS path for the mapping file."
+        },
+        {
+          "col_0": "idsstring",
+          "col_1": "OSS path for the IDs file."
+        },
+        {
+          "col_0": "viewsarray: object",
+          "col_1": "views."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "view ID."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "file version URN."
+        },
+        {
+          "col_0": "is3dboolean",
+          "col_1": "is this a 3D view?."
+        },
+        {
+          "col_0": "viewableNamestring",
+          "col_1": "viewable name."
+        },
+        {
+          "col_0": "viewableIdstring",
+          "col_1": "viewable ID."
+        },
+        {
+          "col_0": "viewableGuidstring",
+          "col_1": "viewable GUID."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "errors if the index processing has failed."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "statsarray: object",
+          "col_1": "High level statistics about the diff index."
+        },
+        {
+          "col_0": "addedObjectsint",
+          "col_1": "The number of design elements added between the compared model versions."
+        },
+        {
+          "col_0": "removedObjectsint",
+          "col_1": "The number of design elements removed between the compared model versions."
+        },
+        {
+          "col_0": "changedObjectsint",
+          "col_1": "The number of design elements which have update property values or altered geometry."
+        },
+        {
+          "col_0": "contentLengthint",
+          "col_1": "The compressed file size in bytes of the index. This file can be downloaded via the diff properties endpoint."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/manifest' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "{\n  \"schema\": \"2.0.0\",\n  \"projectId\": \"d88f5314-90c3-4ccd-9460-810097580b12\",\n  \"status\": \"Succeeded\",\n  \"createdAt\": \"2020-06-30T06:43:51.391Z\",\n  \"seedFiles\": [\n    {\n      \"lineageId\": \"344b06a3\",\n      \"lineageUrn\": \"urn:adsk.wipstg:dm.lineage:-7p38avKTMGWp2vcCW568Q\",\n      \"versionUrn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2\",\n      \"databases\": [\n        {\n          \"id\": \"b834bb65\",\n          \"offsets\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_offs.json.gz\",\n          \"attributes\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_attrs.json.gz\",\n          \"values\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_vals.json.gz\",\n          \"mapping\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_avs.json.gz\",\n          \"ids\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_ids.json.gz\"\n        }\n      ],\n      \"views\": [\n        {\n          \"id\": \"cf7900d3\",\n          \"urn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2\",\n          \"is3d\": \"true\",\n          \"viewableName\": \"{3D}\",\n          \"viewableId\": \"845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04\",\n          \"viewableGuid\": \"5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8\"\n        },\n        {\n          \"id\": \"7ca0051c\",\n          \"urn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2\",\n          \"is3d\": \"false\",\n          \"viewableName\": \"New Construction\",\n          \"viewableId\": \"c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032d30d\",\n          \"viewableGuid\": \"8ac4ddd7-61f9-c4fa-a216-d771f8ed260a\"\n        }\n      ]\n    }\n  ],\n  \"prev\": [\n    {\n      \"lineageId\": \"344b06a3\",\n      \"lineageUrn\": \"urn:adsk.wipstg:dm.lineage:-7p38avKTMGWp2vcCW568Q\",\n      \"versionUrn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1\",\n      \"databases\": [\n        {\n          \"id\": \"b834bb65\",\n          \"offsets\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_offs.json.gz\",\n          \"attributes\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_attrs.json.gz\",\n          \"values\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_vals.json.gz\",\n          \"mapping\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_avs.json.gz\",\n          \"ids\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_ids.json.gz\"\n        }\n      ],\n      \"views\": [\n        {\n          \"id\": \"cf7900d3\",\n          \"urn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1\",\n          \"is3d\": \"true\",\n          \"viewableName\": \"{3D}\",\n          \"viewableId\": \"845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04\",\n          \"viewableGuid\": \"5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8\"\n        },\n        {\n          \"id\": \"876a3f8c\",\n          \"urn\": \"urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1\",\n          \"is3d\": \"false\",\n          \"viewableName\": \"New Construction\",\n          \"viewableId\": \"c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032d24c\",\n          \"viewableGuid\": \"20fc3340-55db-876f-13c1-7601c1c46483\"\n        }\n      ]\n    }\n  ],\n  \"errors\": []\n}",
+      "parsed": {
+        "schema": "2.0.0",
+        "projectId": "d88f5314-90c3-4ccd-9460-810097580b12",
+        "status": "Succeeded",
+        "createdAt": "2020-06-30T06:43:51.391Z",
+        "seedFiles": [
+          {
+            "lineageId": "344b06a3",
+            "lineageUrn": "urn:adsk.wipstg:dm.lineage:-7p38avKTMGWp2vcCW568Q",
+            "versionUrn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2",
+            "databases": [
+              {
+                "id": "b834bb65",
+                "offsets": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_offs.json.gz",
+                "attributes": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_attrs.json.gz",
+                "values": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_vals.json.gz",
+                "mapping": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_avs.json.gz",
+                "ids": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTI/output/Resource/objects_ids.json.gz"
+              }
+            ],
+            "views": [
+              {
+                "id": "cf7900d3",
+                "urn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2",
+                "is3d": "true",
+                "viewableName": "{3D}",
+                "viewableId": "845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04",
+                "viewableGuid": "5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8"
+              },
+              {
+                "id": "7ca0051c",
+                "urn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=2",
+                "is3d": "false",
+                "viewableName": "New Construction",
+                "viewableId": "c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032d30d",
+                "viewableGuid": "8ac4ddd7-61f9-c4fa-a216-d771f8ed260a"
+              }
+            ]
+          }
+        ],
+        "prev": [
+          {
+            "lineageId": "344b06a3",
+            "lineageUrn": "urn:adsk.wipstg:dm.lineage:-7p38avKTMGWp2vcCW568Q",
+            "versionUrn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1",
+            "databases": [
+              {
+                "id": "b834bb65",
+                "offsets": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_offs.json.gz",
+                "attributes": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_attrs.json.gz",
+                "values": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_vals.json.gz",
+                "mapping": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_avs.json.gz",
+                "ids": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwc3RnOmZzLmZpbGU6dmYuLTdwMzhhdktUTUdXcDJ2Y0NXNTY4UT92ZXJzaW9uPTE/output/Resource/objects_ids.json.gz"
+              }
+            ],
+            "views": [
+              {
+                "id": "cf7900d3",
+                "urn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1",
+                "is3d": "true",
+                "viewableName": "{3D}",
+                "viewableId": "845097d1-c3be-4a6f-9dbe-51582fa6d465-002c2f04",
+                "viewableGuid": "5d41dda7-eea1-eff5-77dd-ee1aa81fc3a8"
+              },
+              {
+                "id": "876a3f8c",
+                "urn": "urn:adsk.wipstg:fs.file:vf.-7p38avKTMGWp2vcCW568Q?version=1",
+                "is3d": "false",
+                "viewableName": "New Construction",
+                "viewableId": "c884ae1b-61e7-4f9d-0001-719e20b22d0b-0032d24c",
+                "viewableGuid": "20fc3340-55db-876f-13c1-7601c1c46483"
+              }
+            ]
+          }
+        ],
+        "errors": []
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

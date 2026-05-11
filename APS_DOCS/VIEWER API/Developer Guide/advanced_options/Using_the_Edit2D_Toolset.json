@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/advanced_options/edit2d-use",
+    "scrapedAt": "2026-05-08T18:43:15.303Z",
+    "category": "Developer Guide/advanced_options",
+    "apiName": "VIEWER API"
+  },
+  "title": "Using the Edit2D Toolset",
+  "codeExamples": [
+    {
+      "raw": "// Facilitate access to extension and layer\nwindow.edit2d = NOP_VIEWER.getExtension('Autodesk.Edit2D');\nwindow.layer  = edit2d.defaultContext.layer;\nwindow.tools  = edit2d.defaultTools;\n\n// Convenience function for tool switching per console. E.g. startTool(tools.polygonTool)\nvar startTool = function(tool) {\n\n    var controller = NOP_VIEWER.toolController;\n\n    // Check if currently active tool is from Edit2D\n    var activeTool = controller.getActiveTool();\n    var isEdit2D = activeTool && activeTool.getName().startsWith(\"Edit2\");\n\n    // deactivate any previous edit2d tool\n    if (isEdit2D) {\n        controller.deactivateTool(activeTool.getName());\n        activeTool = null;\n    }\n\n    // stop editing tools\n    if (!tool) {\n        return;\n    }\n\n    controller.activateTool(tool.getName());\n}"
+    },
+    {
+      "raw": "startTool(tools.polygonTool);"
+    },
+    {
+      "raw": "startTool(tools.polylineTool)"
+    },
+    {
+      "raw": "startTool(tools.polygonEditTool);"
+    },
+    {
+      "raw": "startTool(tools.insertSymbolTool);"
+    },
+    {
+      "raw": "let line = new Autodesk.Edit2D.Polyline().makeLine(-1, -1, 1, 1);\ntools.insertSymbolTool.symbol=line;"
+    },
+    {
+      "raw": "tools.polygonTool.setAreaLabelVisible(true);"
+    },
+    {
+      "raw": "tools.polygonTool.setLengthLabelVisible(true);"
+    },
+    {
+      "raw": "tools.polygonEditTool.setAreaLabelVisible(true);\ntools.polygonEditTool.setLengthLabelVisible(true);"
+    },
+    {
+      "raw": "var poly = layer.shapes[0];\nvar label = new Autodesk.Edit2D.ShapeLabel(poly, layer);\nlabel.setText('MyLabel');"
+    },
+    {
+      "raw": "var poly = layer.shapes[0];\nvar label = new Autodesk.Edit2D.EdgeLabel(layer);\nlabel.attachToEdge(poly, 0);\nlabel.setText('My Edge Label');"
+    },
+    {
+      "raw": "label.dtor();"
+    },
+    {
+      "raw": "// Label each shape with its className\nvar classRule = new Autodesk.Edit2D.ShapeLabelRule(layer, shape => shape.constructor.name);"
+    },
+    {
+      "raw": "edit2d.defaultContext.snapper.angleSnapper.snapAngles"
+    }
+  ]
+}

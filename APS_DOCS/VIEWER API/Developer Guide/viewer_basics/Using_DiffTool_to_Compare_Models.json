@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/viewer_basics/difftool",
+    "scrapedAt": "2026-05-08T18:42:48.872Z",
+    "category": "Developer Guide/viewer_basics",
+    "apiName": "VIEWER API"
+  },
+  "title": "Using DiffTool to Compare Models",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "primaryModels*Autodesk.Viewing.Model",
+          "col_1": "An array of loaded “Autodesk.Viewing.Model” instances that are compared by the DiffTool."
+        },
+        {
+          "col_0": "diffModels*Autodesk.Viewing.Model",
+          "col_1": "An array of other loaded Autodesk.Viewing.Model instances that participate in the diff operation as the previous state. Length must match primaryModels to define pairs of models to be compared."
+        },
+        {
+          "col_0": "versionA*string",
+          "col_1": "Version identifier for the primary models, such as “2”, “Version 2”, or “02/26/2018”. Note that you must provide a localized string if you are using something other than numbers or dates."
+        },
+        {
+          "col_0": "versionB*string",
+          "col_1": "Version identifier of the diff models, usually a previous version"
+        },
+        {
+          "col_0": "mimeType*string",
+          "col_1": "‘application/vnd.autodesk.revit’: Revit\n‘application/vnd.autodesk.r360’: Revit\n‘application/vnd.autodesk.fusion360’: For Fusion 360\n‘application/vnd.autodesk.f3d’: For Fusion 360\n‘application/vnd.autodesk.inventor.assembly’: For Inventor (IAM)\n‘application/vnd.autodesk.navisworks’`: For Navisworks (NWD)\n‘application/vnd.autodesk.cad’: For IFC\n‘application/vnd.autodesk.dxf’: For DXF\n‘application/vnd.autodesk.autocad.dwg’: For DWG"
+        },
+        {
+          "col_0": "propertyFilter{Object.<string,Array<string>}",
+          "col_1": "An object representing a category and properties key-value pair to ignore for diff computation. Example: {“Dimensions”:[“Area”,”Length”], “Mechanical - Flow”:[“Flow”]}"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.DiffTool')"
+    },
+    {
+      "raw": "var config = {\n    availableDiffModes: ['overlay', 'sidebyside'],\n    diffModels: A,\n    primaryModels: B,\n    mimeType: 'application/vnd.autodesk.revit',\n    diffMode: 'overlay',\n    versionA: 'A',\n    versionB: 'B',\n    propertyFilter: { \"Category1\": [ \"Property1\", \"Property2\" ] }\n};\n\nviewer.loadExtension(\"Autodesk.DiffTool\", config);"
+    }
+  ]
+}

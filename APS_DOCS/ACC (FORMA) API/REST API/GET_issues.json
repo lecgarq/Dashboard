@@ -1,0 +1,622 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/issues-issues-GET",
+    "scrapedAt": "2026-05-08T23:57:38.359Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/issues",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues?filter[linkedDocumentUrn]=urn%3Aadsk.wipprod%3Afs.folder%3Aco.rLYHljHURdiG-o4HXOwByg%403",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/issues/v1/projects/{projectId}/issues"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "x-ads-regionstring",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA.\nFor the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filter[id]array: string: uuid",
+          "col_1": "Filter issues by the unique issue ID. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[issueTypeId]array: string: uuid",
+          "col_1": "Filter issues by the unique identifier of the category of the issue. Note that the API name for category is type.  Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[issueSubtypeId]array: string: uuid",
+          "col_1": "Filter issues by the unique identifier of the type of the issue. Note that the API name for type is subtype. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[status]string",
+          "col_1": "Filter issues by their status. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[linkedDocumentUrn]array: string",
+          "col_1": "Retrieves pushpin issues associated with the specified files. We support all file types that are compatible with the Files tool. You need to specify the URL-encoded file item IDs. To find the file item IDs, use the Data Management API.\nNote that you need to specify the 3D model item ID, which retrieves all pushpins associated with all 2D sheets and views associated with the 3D model. Similarly, if you specify a specific PDF file it retrieves all the pushpin issues associated with all the PDF file pages. We do not currently support retrieving pushpin issues associated with a specific 2D sheet or view.\nBy default, it returns pushpins for the latest version of the file. To retrieve pushpins for a specific version of a file together with pushpins for all previous versions of the specified file version, specify the version number, in the following format: @[version-number].\nFor example, filter[linkedDocument]=urn%3Aadsk.wipprod%3Adm.lineage%3AtFbo9zuDTW-nPh45gnM4gA@2.\nSeparate multiple values with commas.\nNote that we do not currently support filtering sheets from the Forma Build Sheets tool."
+        },
+        {
+          "col_0": "filter[dueDate]string",
+          "col_1": "Filter issues by due date, in one of the following URL-encoded format: YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03\nSpecific day: e.g., 2022-03-02\nSpecific start date: e.g.,  2022-03-02..\nSpecific end date: e.g., ..2022-03-02\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[startDate]string",
+          "col_1": "Filter issues by start date, in one of the following URL-encoded format: YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03\nSpecific day: e.g., 2022-03-02\nSpecific start date: e.g.,  2022-03-02..\nSpecific end date: e.g., ..2022-03-02\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[deleted]boolean",
+          "col_1": "Filter deleted issues. For example, filter[deleted]=true. If set to true it only returns deleted issues. If set to false it only returns undeleted issues. Note that we do not currently support returning both deleted and undeleted issues. Default value: false.\nProject members with View and assign to their company and Full visibility can view deleted published and unpublished issues they originally created. Project members with Manage issues or Manage member permissions access can view all published issues that were deleted in a project. In addition, they can see unpublished deleted issues if they are an issue watcher, assignee, or creator.\nFor more information about deleted issues see the Help documentation."
+        },
+        {
+          "col_0": "filter[createdAt]datetime: ISO 8601",
+          "col_1": "Filter issues created at the specified date and time, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[createdBy]array: string",
+          "col_1": "Filter issues by the unique identifier of the user who created the issue. Separate multiple values with commas. For Example: A3RGM375QTZ7."
+        },
+        {
+          "col_0": "filter[updatedAt]datetime: ISO 8601",
+          "col_1": "Filter issues updated at the specified date and time, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[updatedBy]array: string",
+          "col_1": "Filter issues by the unique identifier of the user who updated the issue. Separate multiple values with commas. For Example: A3RGM375QTZ7."
+        },
+        {
+          "col_0": "filter[assignedTo]array: string",
+          "col_1": "Filter issues by the unique Autodesk ID of the User/Company/Role identifier of the current assignee of this issue. Separate multiple values with commas. For Example: A3RGM375QTZ7."
+        },
+        {
+          "col_0": "filter[rootCauseId]array: string: uuid",
+          "col_1": "Filter issues by the unique identifier of the type of root cause for the issue. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[locationId]array: string: uuid",
+          "col_1": "Retrieves issues associated with the specified location but not the location’s sublocations. To also retrieve issues that relate to the locations’s sublocations use the sublocationId filter. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[subLocationId]array: string: uuid",
+          "col_1": "Retrieves issues associated with the specified unique LBS (Location Breakdown Structure) identifier, as well as issues associated with the sub locations of the LBS identifier. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[closedBy]array: string",
+          "col_1": "Filter issues by the unique identifier of the user who closed the issue. Separate multiple values with commas. For Example: A3RGM375QTZ7."
+        },
+        {
+          "col_0": "filter[closedAt]datetime: ISO 8601",
+          "col_1": "Filter issues closed at the specified date and time, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[search]string",
+          "col_1": "Filter issues using ‘search’ criteria. this will filter both title and issues display ID. For example, use filter[search]=300"
+        },
+        {
+          "col_0": "filter[displayId]int",
+          "col_1": "Filter issues by the chronological user-friendly identifier. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[assignedToType]string",
+          "col_1": "Filter issues by the type of the current assignee of this issue. Separate multiple values with commas. Possible values: Possible values: user, company, role, null. For Example: user."
+        },
+        {
+          "col_0": "filter[customAttributes]array: string",
+          "col_1": "Filter issues by the custom attributes. Each custom attribute filter should be defined by it’s uuid. For example: filter[customAttributes][f227d940-ae9b-4722-9297-389f4411f010]=1,2,3. Separate multiple values with commas."
+        },
+        {
+          "col_0": "filter[valid]boolean",
+          "col_1": "Only return valid issues (=no empty type/subtype). Default value: undefined (meaning will return both valid & invalid issues)."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Return specified number of issues. Acceptable values are 1-100. Default value: 100."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Return issues starting from the specified offset number. Default value: 0."
+        },
+        {
+          "col_0": "sortByarray: string",
+          "col_1": "Sort issues by specified fields. Separate multiple values with commas. To sort in descending order add a - (minus sign) before the sort criteria. Possible values: displayId, title, description, status, assignedTo, assignedToType, dueDate, locationDetails, published, closedBy, closedAt, createdBy, createdAt, updatedAt, issueSubType, issueType, customAttributes, startDate, rootCause. For example: sortBy=status,-displayId,-dueDate,customAttributes[5c07cbe2-256a-48f1-b35b-2e5e00914104]."
+        },
+        {
+          "col_0": "fieldsarray: string",
+          "col_1": "Return only specific fields in issue object. Separate multiple values with commas. Fields which will be returned in any case: id, title, status, issueTypeId. Possible values: id, displayId, title, description, issueTypeId, issueSubtypeId, status, assignedTo, assignedToType, dueDate, startDate, locationId, locationDetails, rootCauseTitle, rootCauseId, permittedStatuses, permittedAttributes, permittedActions, published, commentCount, openedBy, openedAt, closedBy, closedAt, createdBy, createdAt, updatedBy, updatedAt, customAttributes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "List of relevant issues in combination with pagination details"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request headers. The client SHOULD NOT repeat the request without modifications. The response body may give an indication of what is wrong with the request"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request is valid but lacks the necessary permissions."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The specified resource was not found"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "The pagination object defining the limit, offset, total number of issues, next and previous URL"
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of issues to be returned in each page"
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The offset defining the start position from where the issues are returned"
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of issues including the ones of the current page"
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of issues in the current page"
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of the issue."
+        },
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "deletedboolean",
+          "col_1": "Indicates whether the issue was deleted. Default value: false.\nDeleted issues can only be accessed by specific users. Project members with View and assign to their company and Full visibility permissions can view deleted published and unpublished issues they originally created. Project members with Manage issues or Manage member permissions access can view all published issues that were deleted in a project. In addition, they can see unpublished deleted issues if they are an issue watcher, assignee, or creator.\nFor more information about deleted issues see the Help documentation."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The date and time the issue was deleted, in ISO8601 format. This is only relevant for deleted issues."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The Autodesk ID of the user who deleted the issue. This is only relevant for deleted issues."
+        },
+        {
+          "col_0": "displayIdint",
+          "col_1": "The chronological user-friendly identifier of the issue."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "The title of the issue. Maximum 100 characters."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "A brief description of the issue and its purpose. Maximum 1000 characters."
+        },
+        {
+          "col_0": "snapshotUrnstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "issueTypeIdstring: UUID",
+          "col_1": "The unique identifier of the type of the issue."
+        },
+        {
+          "col_0": "issueSubtypeIdstring: UUID",
+          "col_1": "The unique identifier of the subtype of the issue."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The current status of the issue.\nPossible values: draft, open, pending, in_progress, completed, in_review,  not_approved, in_dispute,  closed.\nFor more information about statuses, see the Help documentation."
+        },
+        {
+          "col_0": "assignedTostring",
+          "col_1": "The unique Autodesk ID of the member, company, or role of the current assignee for this issue. Note that if you select an assignee ID, you also need to select a type (assignedToType)."
+        },
+        {
+          "col_0": "assignedToTypestring",
+          "col_1": "The type of the current assignee of this issue. Possible values: user, company, role, null. Note that if you select a type, you also need to select the assignee ID (assignedTo)."
+        },
+        {
+          "col_0": "dueDatestring",
+          "col_1": "The due date of the issue, in ISO8601 format."
+        },
+        {
+          "col_0": "startDatestring",
+          "col_1": "The start date of the issue, in ISO8601 format."
+        },
+        {
+          "col_0": "locationIdstring: UUID",
+          "col_1": "The unique LBS (Location Breakdown Structure) identifier that relates to the issue."
+        },
+        {
+          "col_0": "locationDetailsstring",
+          "col_1": "The location related to the issue, provided as plain text. Maximum 250 characters."
+        },
+        {
+          "col_0": "linkedDocumentsarray: object",
+          "col_1": "Information about the files associated with issues (pushpins)."
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of file. Possible values:\nTwoDVectorPushpin (3D models)\nTwoDRasterPushpin (2D sheets and views)"
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The ID of the file associated with the issue (pushpin). Note that we do not currently support data associated with the Forma Build Sheets tool."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the pushpin issue."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time the pushpin was created, in ISO8601 format."
+        },
+        {
+          "col_0": "createdAtVersionint",
+          "col_1": "The version of the file the pushin issue was added to. For information about file versions, see the Data Management API."
+        },
+        {
+          "col_0": "closedBystring",
+          "col_1": "The Autodesk ID of the user who closed the pushpin issue."
+        },
+        {
+          "col_0": "closedAtdatetime: ISO 8601",
+          "col_1": "The date and time the pushpin issue was closed, in ISO8601 format."
+        },
+        {
+          "col_0": "closedAtVersionint",
+          "col_1": "The version of the file when the pushpin issue was closed."
+        },
+        {
+          "col_0": "detailsobject",
+          "col_1": "Information about the individual viewable."
+        },
+        {
+          "col_0": "viewableobject",
+          "col_1": "The individual viewable associated with the issue (pushpin). This is relevant for both individual 2D sheets and views within a 3D model, and individual PDF sheets within a multi-sheet PDF file. It is only relevant if the issue is associated with a file."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "guidstring",
+          "col_1": "The ID of the viewable (guid)."
+        },
+        {
+          "col_0": "viewableIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the viewable.\nMax length: 1000"
+        },
+        {
+          "col_0": "is3Dboolean",
+          "col_1": "true if it is a 3D viewable\nfalse if it is a 2D viewable"
+        },
+        {
+          "col_0": "positionobject",
+          "col_1": "The position of the pushpin in the viewable."
+        },
+        {
+          "col_0": "xnumber",
+          "col_1": "The x-value of the position in the viewable."
+        },
+        {
+          "col_0": "ynumber",
+          "col_1": "The y-value of the position in the viewable."
+        },
+        {
+          "col_0": "znumber",
+          "col_1": "The z-value of the position in the viewable. This value is only relevant for 3D views."
+        },
+        {
+          "col_0": "objectIdint",
+          "col_1": "The ID of the element the pushpin is associated with in the viewable."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "An external identifier of the element the pushpin is associated with in the viewable."
+        },
+        {
+          "col_0": "viewerStateobject",
+          "col_1": "The viewer state at the time the pushpin was created. Maximum length: 2,500,000 characters. You can get the viewer state object by calling ViewerState.getState(). To restore the viewer instance use ViewerState.restoreState(). See the `Viewer API documentation https://developer.autodesk.com/en/docs/viewer/v2/reference/javascript/viewerstate/`_ for more details."
+        },
+        {
+          "col_0": "linksarray: object",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "ownerIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "rootCauseIdstring: UUID",
+          "col_1": "The unique identifier of the type of root cause for the issue."
+        },
+        {
+          "col_0": "officialResponseobject",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "issueTemplateIdstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "permittedStatusesarray: string",
+          "col_1": "A list of statuses accessible to the current user, this is based on the current status of the issue and the user permissions.\nPossible Values: draft, open, pending, in_review, closed."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "A list of attributes the current user can manipulate in the current context. issueTypeId, linkedDocument, links, ownerId, officialResponse, rootCauseId, snapshotUrn are not applicable.\nPossible Values: title, description, issueTypeId, issueSubtypeId, status, assignedTo, assignedToType, dueDate, locationId, locationDetails, linkedDocuments, links, ownerId, rootCauseId, officialResponse, customAttributes, snapshotUrn, startDate, published, deleted, watchers, placements, watcherObjects, gpsCoordinates."
+        },
+        {
+          "col_0": "publishedboolean",
+          "col_1": "States whether the issue is published. Default value: false (e.g. unpublished)."
+        },
+        {
+          "col_0": "permittedActionsarray: string",
+          "col_1": "The list of actions permitted for the user for this issue in its current state.\nNote that if a user with View and assign to their company permissions attempts to assign a user from a another company to the issue, it will return an error.\nPossible Values: assign_all (can assign another user from another company to the issue), assign_same_company (can only assign another user from the same company to the issue), clear_assignee, copy (can copy the issue), delete, add_comment, add_attachment, remove_attachment, upsert_pin, unlink_pin.\nThe following values are not relevant: add_attachment, remove_attachment."
+        },
+        {
+          "col_0": "commentCountint",
+          "col_1": "The number of comments in this issue."
+        },
+        {
+          "col_0": "attachmentCountint",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "openedBystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "openedAtdatetime: ISO 8601",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "closedBystring",
+          "col_1": "The unique identifier of the user who closed the issue."
+        },
+        {
+          "col_0": "closedAtdatetime: ISO 8601",
+          "col_1": "The date and time the issue was closed, in ISO8601 format."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the issue."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time the issue was created, in ISO8601 format."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The unique identifier of the user who updated the issue."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time the issue was updated, in ISO8601 format."
+        },
+        {
+          "col_0": "watchersarray: string",
+          "col_1": "The list of watchers for the issue. To find the name of the watcher, call GET users."
+        },
+        {
+          "col_0": "customAttributesarray: object",
+          "col_1": "A list of custom attributes of the specific issue."
+        },
+        {
+          "col_0": "attributeDefinitionIdstring: UUID",
+          "col_1": "The unique identifier of the custom attribute."
+        },
+        {
+          "col_0": "valueone of",
+          "col_1": "Custom attribute value. Possible value types: string, number, null."
+        },
+        {
+          "col_0": "0string",
+          "col_1": ""
+        },
+        {
+          "col_0": "1number",
+          "col_1": ""
+        },
+        {
+          "col_0": "2null",
+          "col_1": ""
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of attribute. Possible values: numeric, paragraph, list (this corresponds to dropdown in the UI), text."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "Free text description of the attribute."
+        },
+        {
+          "col_0": "gpsCoordinatesobject",
+          "col_1": "A GPS Coordinate which represents the geo location of the issue."
+        },
+        {
+          "col_0": "latitudenumber",
+          "col_1": ""
+        },
+        {
+          "col_0": "longitudenumber",
+          "col_1": ""
+        },
+        {
+          "col_0": "snapshotHasMarkupsboolean",
+          "col_1": "Not relevant"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues?filter[linkedDocumentUrn]=urn%3Aadsk.wipprod%3Afs.folder%3Aco.rLYHljHURdiG-o4HXOwByg%403' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 100,\n    \"totalResults\": 25\n  },\n  \"results\": [\n    {\n      \"id\": \"3570f222-6c54-4b01-90e6-e701749f0222\",\n      \"containerId\": \"2220f222-6c54-4b01-90e6-d701748f0222\",\n      \"deleted\": false,\n      \"deletedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"deletedBy\": \"A3RGM375QTZ7\",\n      \"displayId\": 7,\n      \"title\": \"Door missing a screw.\",\n      \"description\": \"The door is missing a screw. Please fix this\",\n      \"snapshotUrn\": \"\",\n      \"issueTypeId\": \"8770f222-6c54-4e01-93e6-e701749f0222\",\n      \"issueSubtypeId\": \"1370f222-6c54-3a01-93e6-e701749f0222\",\n      \"status\": \"open\",\n      \"assignedTo\": \"A3RGM375QTZ7\",\n      \"assignedToType\": \"user\",\n      \"dueDate\": \"2018-07-25\",\n      \"startDate\": \"1982-06-01\",\n      \"locationId\": \"35de6f24-39f5-4808-ba5f-6cbbe2a858e1\",\n      \"locationDetails\": \"issue location details\",\n      \"linkedDocuments\": [\n        {\n          \"type\": \"TwoDVectorPushpin\",\n          \"urn\": \"urn:adsk.wipprod:dm.lineage:0C9edNQuT2SrfoyKQ1Gv_Q\",\n          \"createdBy\": \"A3RGM375QTZ7\",\n          \"createdAt\": \"2018-07-22T15:05:58.033Z\",\n          \"createdAtVersion\": 1,\n          \"closedBy\": \"A3RGM375QTZ7\",\n          \"closedAt\": \"2018-08-22T15:05:58.033Z\",\n          \"closedAtVersion\": 1,\n          \"details\": {\n            \"viewable\": {\n              \"id\": \"24820322-7c54-4a01-93e6-e701749f0345\",\n              \"guid\": \"24820322-7c54-4a01-93e6-e701749f0345\",\n              \"viewableId\": \"42\",\n              \"name\": \"3D view of the 3rd floor of the building\",\n              \"is3D\": true\n            },\n            \"position\": {\n              \"x\": 2,\n              \"y\": 3,\n              \"z\": 8\n            },\n            \"objectId\": 1220,\n            \"externalId\": \"01a239ce-47cc-4e94-8aa3-2a39866cfc61\",\n            \"viewerState\": {}\n          }\n        }\n      ],\n      \"links\": [\n        {}\n      ],\n      \"ownerId\": \"\",\n      \"rootCauseId\": \"2370f222-6c54-3a01-93e6-f701772f0222\",\n      \"officialResponse\": {},\n      \"issueTemplateId\": \"\",\n      \"permittedStatuses\": [\n        \"open\"\n      ],\n      \"permittedAttributes\": [\n        \"title\"\n      ],\n      \"published\": true,\n      \"permittedActions\": [\n        \"add_comment\"\n      ],\n      \"commentCount\": 3,\n      \"attachmentCount\": \"\",\n      \"openedBy\": \"A3RGM375QTZ7\",\n      \"openedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"closedBy\": \"A3RGM375QTZ7\",\n      \"closedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"createdBy\": \"A3RGM375QTZ7\",\n      \"createdAt\": \"2018-07-22T15:05:58.033Z\",\n      \"updatedBy\": \"A3RGM375QTZ7\",\n      \"updatedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"watchers\": [\n        \"A3RGM375QTZ7\"\n      ],\n      \"customAttributes\": [\n        {\n          \"attributeDefinitionId\": \"2220f222-6c54-4b01-90e6-d701748f0888\",\n          \"value\": \"368\",\n          \"type\": \"numeric\",\n          \"title\": \"Cost Impact ($)\"\n        }\n      ],\n      \"gpsCoordinates\": {\n        \"latitude\": 35.7795897,\n        \"longitude\": -78.6381787\n      },\n      \"snapshotHasMarkups\": false\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 10,
+          "offset": 100,
+          "totalResults": 25
+        },
+        "results": [
+          {
+            "id": "3570f222-6c54-4b01-90e6-e701749f0222",
+            "containerId": "2220f222-6c54-4b01-90e6-d701748f0222",
+            "deleted": false,
+            "deletedAt": "2018-07-22T15:05:58.033Z",
+            "deletedBy": "A3RGM375QTZ7",
+            "displayId": 7,
+            "title": "Door missing a screw.",
+            "description": "The door is missing a screw. Please fix this",
+            "snapshotUrn": "",
+            "issueTypeId": "8770f222-6c54-4e01-93e6-e701749f0222",
+            "issueSubtypeId": "1370f222-6c54-3a01-93e6-e701749f0222",
+            "status": "open",
+            "assignedTo": "A3RGM375QTZ7",
+            "assignedToType": "user",
+            "dueDate": "2018-07-25",
+            "startDate": "1982-06-01",
+            "locationId": "35de6f24-39f5-4808-ba5f-6cbbe2a858e1",
+            "locationDetails": "issue location details",
+            "linkedDocuments": [
+              {
+                "type": "TwoDVectorPushpin",
+                "urn": "urn:adsk.wipprod:dm.lineage:0C9edNQuT2SrfoyKQ1Gv_Q",
+                "createdBy": "A3RGM375QTZ7",
+                "createdAt": "2018-07-22T15:05:58.033Z",
+                "createdAtVersion": 1,
+                "closedBy": "A3RGM375QTZ7",
+                "closedAt": "2018-08-22T15:05:58.033Z",
+                "closedAtVersion": 1,
+                "details": {
+                  "viewable": {
+                    "id": "24820322-7c54-4a01-93e6-e701749f0345",
+                    "guid": "24820322-7c54-4a01-93e6-e701749f0345",
+                    "viewableId": "42",
+                    "name": "3D view of the 3rd floor of the building",
+                    "is3D": true
+                  },
+                  "position": {
+                    "x": 2,
+                    "y": 3,
+                    "z": 8
+                  },
+                  "objectId": 1220,
+                  "externalId": "01a239ce-47cc-4e94-8aa3-2a39866cfc61",
+                  "viewerState": {}
+                }
+              }
+            ],
+            "links": [
+              {}
+            ],
+            "ownerId": "",
+            "rootCauseId": "2370f222-6c54-3a01-93e6-f701772f0222",
+            "officialResponse": {},
+            "issueTemplateId": "",
+            "permittedStatuses": [
+              "open"
+            ],
+            "permittedAttributes": [
+              "title"
+            ],
+            "published": true,
+            "permittedActions": [
+              "add_comment"
+            ],
+            "commentCount": 3,
+            "attachmentCount": "",
+            "openedBy": "A3RGM375QTZ7",
+            "openedAt": "2018-07-22T15:05:58.033Z",
+            "closedBy": "A3RGM375QTZ7",
+            "closedAt": "2018-07-22T15:05:58.033Z",
+            "createdBy": "A3RGM375QTZ7",
+            "createdAt": "2018-07-22T15:05:58.033Z",
+            "updatedBy": "A3RGM375QTZ7",
+            "updatedAt": "2018-07-22T15:05:58.033Z",
+            "watchers": [
+              "A3RGM375QTZ7"
+            ],
+            "customAttributes": [
+              {
+                "attributeDefinitionId": "2220f222-6c54-4b01-90e6-d701748f0888",
+                "value": "368",
+                "type": "numeric",
+                "title": "Cost Impact ($)"
+              }
+            ],
+            "gpsCoordinates": {
+              "latitude": 35.7795897,
+              "longitude": -78.6381787
+            },
+            "snapshotHasMarkups": false
+          }
+        ]
+      }
+    }
+  ]
+}

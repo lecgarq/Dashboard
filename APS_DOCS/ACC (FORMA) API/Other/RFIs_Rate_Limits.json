@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/rfis-rate-limits",
+    "scrapedAt": "2026-05-08T23:40:16.880Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: RFIs API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoint Group",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoint Group": "All RFIs API endpoints (combined)",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per API key (APS application ID)"
+        }
+      ]
+    }
+  ]
+}

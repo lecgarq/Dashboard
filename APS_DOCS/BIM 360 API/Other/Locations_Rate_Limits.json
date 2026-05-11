@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/rate-limits/locations-rate-limits",
+    "scrapedAt": "2026-05-08T17:47:19.830Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "BIM 360: Locations API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Locations API endpoints combined",
+          "Limit (requests/minute)": "600",
+          "Scope": "Per application (by client ID)"
+        },
+        {
+          "Endpoints": "All Locations API endpoints combined",
+          "Limit (requests/minute)": "200",
+          "Scope": "Per APS user account"
+        }
+      ]
+    }
+  ]
+}

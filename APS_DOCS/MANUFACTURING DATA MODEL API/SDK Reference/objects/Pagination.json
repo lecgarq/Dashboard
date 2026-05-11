@@ -1,0 +1,90 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/pagination",
+    "scrapedAt": "2026-05-08T18:17:28.167Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Pagination",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cursorString",
+          "col_1": "A pointer to a specific page in the results."
+        },
+        {
+          "col_0": "pageSizeInt",
+          "col_1": "The number of items in the response page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "ReferenceProperties",
+          "Description": "Reference properties."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Elements",
+          "Description": "Contains a list of Elements returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Exchanges",
+          "Description": "Contains a list of Exchanges returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "PropertyDefinitions",
+          "Description": "Contains a list of Property Definitions returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Properties",
+          "Description": "Contains a list of Element Properties returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "ExchangeVersions",
+          "Description": "Contains a list of Exchange versions returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Hubs",
+          "Description": "Contains a list of hubs returned in response to a query.  A hub is a container of projects, shared resources, and users with a common context."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Projects",
+          "Description": "Contains a list of projects returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Folders",
+          "Description": "Contains a list of folders returned in response to a query."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Items",
+          "Description": "Contains a list of items returned in response to a query.  An item refers to a file that exists within a folder."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "BasicItemVersions",
+          "Description": "Contains a list of file versions returned in response to a query."
+        }
+      ]
+    }
+  ]
+}

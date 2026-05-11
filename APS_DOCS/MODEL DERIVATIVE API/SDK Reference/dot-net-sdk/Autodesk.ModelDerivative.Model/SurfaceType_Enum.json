@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SurfaceType",
+    "scrapedAt": "2026-05-08T18:30:06.901Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Enum SurfaceType",
+  "codeExamples": [
+    {
+      "raw": "[JsonConverter(typeof(StringEnumConverter))]\npublic enum SurfaceType"
+    }
+  ]
+}

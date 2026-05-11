@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/basics",
+    "scrapedAt": "2026-05-08T18:20:58.204Z",
+    "category": "Developer Guide",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "About this API",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Term",
+        "Definition"
+      ],
+      "rows": [
+        {
+          "Term": "source design",
+          "Definition": "The design that is translated to other formats; sometimes called “seed file”.\n\nFor information about supported file formats, see the\n\nGET formats endpoint."
+        },
+        {
+          "Term": "derivatives",
+          "Definition": "The translated output files"
+        },
+        {
+          "Term": "manifest",
+          "Definition": "A JSON file with information about the derivatives of a specific source design. It contains information such as the derivative type, the URN of the derivative, and the translation job status (how far translation has progressed) of each derivative. It also contains metadata about each derivative, which lets you identify individual objects within a model, their hierarchical organization, and associated properties."
+        }
+      ]
+    }
+  ]
+}

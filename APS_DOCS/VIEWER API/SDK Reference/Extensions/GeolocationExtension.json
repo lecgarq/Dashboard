@@ -1,0 +1,125 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/GeolocationExtension",
+    "scrapedAt": "2026-05-08T18:46:15.649Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "GeolocationExtension",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Autodesk.Viewing.Viewer3D",
+          "col_1": "The Viewer instance"
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Not used"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension is active."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true when the model contains geolocation data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "lmvPoint*THREE.Vector3",
+          "col_1": "3D point in the scene"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Vector3",
+          "description": "GPS coordinate in WGS-84 format: { x: Longitude, y: Latitude, z: Height }"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "lonLat*THREE.Vector3",
+          "col_1": "GPS coordinate in WGS-84 format: { x: Longitude, y: Latitude, z: Height }"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Vector3",
+          "description": "3D point in the scene"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pointLL84THREE.Vector3",
+          "col_1": "GPS location in WGS-84 format: { x: Longitude, y: Latitude }. Height is ignored."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "that resolves with a THREE.Vector3 containing Viewer-space coordinates. It rejects if device’s real world GPS position is not available."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.Geolocation')"
+    }
+  ]
+}

@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/viewer_basics",
+    "scrapedAt": "2026-05-08T18:42:32.502Z",
+    "category": "Developer Guide",
+    "apiName": "VIEWER API"
+  },
+  "title": "Getting Started",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Parameter",
+        "SVF",
+        "SVF2"
+      ],
+      "rows": [
+        {
+          "Parameter": "env",
+          "SVF": "AutodeskProduction",
+          "SVF2": "AutodeskProduction2"
+        },
+        {
+          "Parameter": "api",
+          "SVF": "derivativeV2",
+          "SVF2": "streamingV2"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "<head>\n    <meta name=\"viewport\" content=\"width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=no\" />\n    <meta charset=\"utf-8\">\n\n    <link rel=\"stylesheet\" href=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/style.min.css\" type=\"text/css\">\n    <script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js\"></script>\n\n    <style>\n        body {\n            margin: 0;\n        }\n        #forgeViewer {\n            width: 100%;\n            height: 100%;\n            margin: 0;\n            background-color: #F0F8FF;\n        }\n    </style>\n</head>\n<body>\n\n    <div id=\"forgeViewer\"></div>\n\n</body>"
+    },
+    {
+      "raw": "<!-- Fetch exactly version 7.0.0 -->\n<script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.0.0/viewer3D.min.js\"></script>\n\n<!-- Fetch latest patch version for 7.0 -->\n<script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.0.*/viewer3D.min.js\"></script>\n\n<!-- Also fetch latest patch version for 7.0 -->\n<script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.0/viewer3D.min.js\"></script>\n\n<!-- Fetch latest minor version for 7.0 -->\n<script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js\"></script>"
+    },
+    {
+      "raw": "var viewer;\nvar options = {\n    env: 'AutodeskProduction2', // Use 'AutodeskProduction' for SVF\n    api: 'streamingV2', // Use 'derivativeV2' for SVF\n    getAccessToken: function(onTokenReady) {\n        var token = 'YOUR_ACCESS_TOKEN';\n        var timeInSeconds = 3600; // Use value provided by APS Authentication (OAuth) API\n        onTokenReady(token, timeInSeconds);\n    }\n};\n\nAutodesk.Viewing.FeatureFlags.set(‘DS_ENDPOINTS’, true); // Enable automatic region routing\n\nAutodesk.Viewing.Initializer(options, function() {\n\n    var htmlDiv = document.getElementById('forgeViewer');\n    viewer = new Autodesk.Viewing.GuiViewer3D(htmlDiv);\n    var startedCode = viewer.start();\n    if (startedCode > 0) {\n        console.error('Failed to create a Viewer: WebGL not supported.');\n        return;\n    }\n\n    console.log('Initialization complete, loading a model next...');\n\n});"
+    },
+    {
+      "raw": "var htmlDiv = document.getElementById('forgeViewer');\nviewer = new Autodesk.Viewing.GuiViewer3D(htmlDiv, {});",
+      "parsed": {}
+    },
+    {
+      "raw": "viewer.finish();\nviewer = null;\nAutodesk.Viewing.shutdown();"
+    },
+    {
+      "raw": "var documentId = 'urn:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bXktYnVja2V0L215LWF3ZXNvbWUtZm9yZ2UtZmlsZS5ydnQ';\nAutodesk.Viewing.Document.load(documentId, onDocumentLoadSuccess, onDocumentLoadFailure);\n\nfunction onDocumentLoadSuccess(viewerDocument) {\n    // viewerDocument is an instance of Autodesk.Viewing.Document\n}\n\nfunction onDocumentLoadFailure() {\n    console.error('Failed fetching Forge manifest');\n}"
+    },
+    {
+      "raw": "var defaultModel = viewerDocument.getRoot().getDefaultGeometry();\nviewer.loadDocumentNode(viewerDocument, defaultModel);"
+    },
+    {
+      "raw": "var viewables = viewerDocument.getRoot().search({'type':'geometry'});\nviewer.loadDocumentNode(viewerDocument, viewables[0]);"
+    },
+    {
+      "raw": "var documentId = 'urn:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bXktYnVja2V0L215LWF3ZXNvbWUtZm9yZ2UtZmlsZS5ydnQ';\nAutodesk.Viewing.Document.load(documentId, onDocumentLoadSuccess, onDocumentLoadFailure);\n\nfunction onDocumentLoadSuccess(viewerDocument) {\n    var defaultModel = viewerDocument.getRoot().getDefaultGeometry();\n    viewer.loadDocumentNode(viewerDocument, defaultModel);\n}\n\nfunction onDocumentLoadFailure() {\n    console.error('Failed fetching Forge manifest');\n}"
+    }
+  ]
+}

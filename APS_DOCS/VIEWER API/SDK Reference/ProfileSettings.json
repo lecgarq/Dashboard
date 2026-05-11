@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/ProfileSettings",
+    "scrapedAt": "2026-05-08T18:48:14.122Z",
+    "category": "SDK Reference",
+    "apiName": "VIEWER API"
+  },
+  "title": "ProfileSettings",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "clonefunction",
+          "col_1": "This function is used to clone an existing ProfileSetting."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "ProfileSettings"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "ProfileSettings"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "ProfileSettings"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "ProfileSettings"
+        }
+      ]
+    }
+  ]
+}

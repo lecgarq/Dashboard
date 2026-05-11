@@ -1,0 +1,351 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/index-v2-diff-query-job-status-get",
+    "scrapedAt": "2026-05-08T18:04:41.317Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/:projectId/diffs/:diffId/queries/:queryId",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/queries/0a2bef712ffee30a",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/index/v2/projects/:projectId/diffs/:diffId/queries/:queryId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "diffIdstring",
+          "col_1": "The diff ID."
+        },
+        {
+          "col_0": "queryIdstring",
+          "col_1": "The query ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Response in case of an error."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Response in case of an not found error."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "project id."
+        },
+        {
+          "col_0": "diffIdstring",
+          "col_1": "diff id."
+        },
+        {
+          "col_0": "queryIdstring",
+          "col_1": "query id."
+        },
+        {
+          "col_0": "typeenum: string",
+          "col_1": "type.\nPossible values: DIFF"
+        },
+        {
+          "col_0": "stateenum: string",
+          "col_1": "job status.\nPossible values: PROCESSING, FINISHED, FAILED"
+        },
+        {
+          "col_0": "selfUrlstring",
+          "col_1": "unique url for this job status."
+        },
+        {
+          "col_0": "prevVersionUrnsarray: string",
+          "col_1": "The previous file versions used in this index."
+        },
+        {
+          "col_0": "curVersionUrnsarray: string",
+          "col_1": "The current file versions used in this index."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "timestamp."
+        },
+        {
+          "col_0": "retryAtdatetime: ISO 8601",
+          "col_1": "timestamp."
+        },
+        {
+          "col_0": "statsobject",
+          "col_1": "Some higher level diff index statistics."
+        },
+        {
+          "col_0": "addedint",
+          "col_1": "number of objects added."
+        },
+        {
+          "col_0": "removedint",
+          "col_1": "number of objects removed."
+        },
+        {
+          "col_0": "modifiedint",
+          "col_1": "number of objects modified."
+        },
+        {
+          "col_0": "manifestUrlstring",
+          "col_1": "url for downloading the diff manifest."
+        },
+        {
+          "col_0": "fieldsUrlstring",
+          "col_1": "url for downloading the diff fields."
+        },
+        {
+          "col_0": "propertiesUrlstring",
+          "col_1": "url for downloading the diff properties."
+        },
+        {
+          "col_0": "queryResultsUrlstring",
+          "col_1": "url for downloading the query result."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "errors."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/queries/0a2bef712ffee30a' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "{\n  \"projectId\": \"some_project_id\",\n  \"diffId\": \"fe34bb65aeef\",\n  \"queryId\": \"4af40764ae14\",\n  \"type\": \"DIFF\",\n  \"selfUrl\": \"https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/queries/4af40764ae14\",\n  \"prevVersionUrns\": [\n    \"some_version_urn_1\"\n  ],\n  \"curVersionUrns\": [\n    \"some_version_urn_2\"\n  ],\n  \"updatedAt\": \"2020-09-18T07:44:04.946Z\",\n  \"state\": \"FINISHED\",\n  \"stats\": {\n    \"added\": \"15\",\n    \"removed\": \"10\",\n    \"modified\": \"42\"\n  },\n  \"manifestUrl\": \"https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/manifest\",\n  \"fieldsUrl\": \"https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/fields\",\n  \"propertiesUrl\": \"https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/properties\",\n  \"queryResultsUrl\": \"https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/queries/4af40764ae14/properties\"\n}",
+      "parsed": {
+        "projectId": "some_project_id",
+        "diffId": "fe34bb65aeef",
+        "queryId": "4af40764ae14",
+        "type": "DIFF",
+        "selfUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/queries/4af40764ae14",
+        "prevVersionUrns": [
+          "some_version_urn_1"
+        ],
+        "curVersionUrns": [
+          "some_version_urn_2"
+        ],
+        "updatedAt": "2020-09-18T07:44:04.946Z",
+        "state": "FINISHED",
+        "stats": {
+          "added": "15",
+          "removed": "10",
+          "modified": "42"
+        },
+        "manifestUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/manifest",
+        "fieldsUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/fields",
+        "propertiesUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/properties",
+        "queryResultsUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/some_project_id/diffs/fe34bb65aeef/queries/4af40764ae14/properties"
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,55 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/folders",
+    "scrapedAt": "2026-05-08T18:17:11.898Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Folders",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationPagination",
+          "col_1": "Contains information about the current page, when results are split into multiple pages."
+        },
+        {
+          "col_0": "results*[Folder!] non-null",
+          "col_1": "An array that contains objects representing folders."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "Project",
+          "Description": "Represents a project.  A project is a shared workspace for teams of people working together on a project, to store, organize, and manage all related exchange data."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Folder",
+          "Description": "Represents a folder.  A folder is a location for storing files, data, and other folders (sub-folders)."
+        },
+        {
+          "Usage": "Query By",
+          "Used By": "folders",
+          "Description": "Retrieves all sub-folders within a specified folder that meet the filter criteria specified by the filter argument."
+        },
+        {
+          "Usage": "Query By",
+          "Used By": "topFolders",
+          "Description": "Retrieves all top-level folders within a specified project."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,271 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/forms/retrieve-forms-v2",
+    "scrapedAt": "2026-05-08T23:43:01.045Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Retrieve Forms (v2)",
+  "codeExamples": [
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/form-templates\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/vnd.api+json\""
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"projectId\": \"9ba6681e-1952-4d54-aac4-9de6d9858dd4\",\n      \"id\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n      \"name\": \"Daily Report\",\n      \"status\": \"active\",\n      \"templateType\": \"pg.template_type.daily_report\",\n      \"userPermissions\": [\n        {\n          \"permissions\": [\n            \"submit\"\n          ],\n          \"userId\": \"USER123A\"\n        }\n      ],\n      \"groupPermissions\": [\n        {\n          \"permissions\": [\n            \"manage\"\n          ],\n          \"roleKey\": \"hq_access_level:admin\",\n          \"roleName\": \"Admin\"\n        }\n      ],\n      \"createdBy\": \"USER123A\",\n      \"updatedAt\": \"2020-11-20T16:13:33.615127+00:00\",\n      \"isPdf\": false,\n      \"pdfUrl\": null,\n      \"forms\": {}\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "projectId": "9ba6681e-1952-4d54-aac4-9de6d9858dd4",
+            "id": "2f634a22-779d-4930-9f08-8391a41fea05",
+            "name": "Daily Report",
+            "status": "active",
+            "templateType": "pg.template_type.daily_report",
+            "userPermissions": [
+              {
+                "permissions": [
+                  "submit"
+                ],
+                "userId": "USER123A"
+              }
+            ],
+            "groupPermissions": [
+              {
+                "permissions": [
+                  "manage"
+                ],
+                "roleKey": "hq_access_level:admin",
+                "roleName": "Admin"
+              }
+            ],
+            "createdBy": "USER123A",
+            "updatedAt": "2020-11-20T16:13:33.615127+00:00",
+            "isPdf": false,
+            "pdfUrl": null,
+            "forms": {}
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v2/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms?templateId=2f634a22-779d-4930-9f08-8391a41fea05&include=nativeValues\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"status\": \"draft\",\n      \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n      \"formTemplateId\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n      \"formNum\": 1,\n      \"formDate\": \"2020-11-20\",\n      \"assigneeId\": \"USER123A\",\n      \"assigneeType\": \"user\",\n      \"locationId\": \"d14ce3a6-e61b-4ab0-a9be-5acf7b5366df\",\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"createdAt\": \"2020-11-20T16:14:00.000000+00:00\",\n      \"createdBy\": \"USER123A\",\n      \"notes\": \"Form notes\",\n      \"description\": \"Form description\",\n      \"name\": \"Daily Report - Nov 20\",\n      \"nativeForm\": {\n        \"id\": \"a8f3c2d1-5b6e-4a7f-9c8d-1e2f3a4b5c6d\",\n        \"layoutId\": \"7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b\",\n        \"version\": \"1.0\",\n        \"layoutInfo\": {\n          \"uid\": \"7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b\",\n          \"type\": \"form\",\n          \"description\": \"Daily Report Template\",\n          \"hasSectionAssignees\": false\n        },\n        \"tabularValues\": [\n          {\n            \"id\": \"cb95aceb-187a-3a8f-2e5f-502a555c03d5\",\n            \"table\": \"worklogEntries\",\n            \"schema\": \"worklogEntries\",\n            \"rank\": 0,\n            \"deleted\": false,\n            \"columns\": [\n              {\n                \"formValueId\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n                \"columnId\": \"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d\",\n                \"columnName\": \"trade\",\n                \"textVal\": \"Plumbers\"\n              },\n              {\n                \"formValueId\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n                \"columnId\": \"b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e\",\n                \"columnName\": \"timespan\",\n                \"timespanVal\": 21600000\n              },\n              {\n                \"formValueId\": \"3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f\",\n                \"columnId\": \"c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f\",\n                \"columnName\": \"headcount\",\n                \"numberVal\": 4\n              },\n              {\n                \"formValueId\": \"4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a\",\n                \"columnId\": \"d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a\",\n                \"columnName\": \"description\",\n                \"textVal\": \"change pipes\"\n              }\n            ],\n            \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n            \"updatedBy\": \"USER123A\"\n          },\n          {\n            \"id\": \"2f7e534d-d084-594b-8aa6-147cb8fbc060\",\n            \"table\": \"materialsEntries\",\n            \"schema\": \"materialsEntries\",\n            \"rank\": 0,\n            \"deleted\": false,\n            \"columns\": [\n              {\n                \"formValueId\": \"5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b\",\n                \"columnId\": \"e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b\",\n                \"columnName\": \"item\",\n                \"textVal\": \"Glue\"\n              },\n              {\n                \"formValueId\": \"6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c\",\n                \"columnId\": \"f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c\",\n                \"columnName\": \"quantity\",\n                \"numberVal\": 3\n              },\n              {\n                \"formValueId\": \"7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d\",\n                \"columnId\": \"a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d\",\n                \"columnName\": \"unit\",\n                \"textVal\": \"qt\"\n              }\n            ],\n            \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n            \"updatedBy\": \"USER123A\"\n          }\n        ],\n        \"customValues\": [\n          {\n            \"fieldId\": \"a184ac19-01b5-250e-43d3-56c63b61f952\",\n            \"sectionLabel\": \"Observation\",\n            \"itemLabel\": \"Masks / Face Protection\",\n            \"valueName\": \"toggleVal\",\n            \"toggleVal\": \"Yes\",\n            \"notes\": \"Observed Masks and Face Protection\"\n          },\n          {\n            \"fieldId\": \"b295bd2a-02c6-361f-54e4-67d74c720063\",\n            \"sectionLabel\": \"Weather Conditions\",\n            \"itemLabel\": \"Temperature\",\n            \"valueName\": \"numberVal\",\n            \"numberVal\": 72\n          }\n        ]\n      },\n      \"pdfFile\": null,\n      \"lastFetchedAt\": \"2020-11-20T16:14:27.615127+00:00\"\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "status": "draft",
+            "id": "932da979-e537-4530-b8aa-18607ac6db37",
+            "formTemplateId": "2f634a22-779d-4930-9f08-8391a41fea05",
+            "formNum": 1,
+            "formDate": "2020-11-20",
+            "assigneeId": "USER123A",
+            "assigneeType": "user",
+            "locationId": "d14ce3a6-e61b-4ab0-a9be-5acf7b5366df",
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "createdAt": "2020-11-20T16:14:00.000000+00:00",
+            "createdBy": "USER123A",
+            "notes": "Form notes",
+            "description": "Form description",
+            "name": "Daily Report - Nov 20",
+            "nativeForm": {
+              "id": "a8f3c2d1-5b6e-4a7f-9c8d-1e2f3a4b5c6d",
+              "layoutId": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+              "version": "1.0",
+              "layoutInfo": {
+                "uid": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+                "type": "form",
+                "description": "Daily Report Template",
+                "hasSectionAssignees": false
+              },
+              "tabularValues": [
+                {
+                  "id": "cb95aceb-187a-3a8f-2e5f-502a555c03d5",
+                  "table": "worklogEntries",
+                  "schema": "worklogEntries",
+                  "rank": 0,
+                  "deleted": false,
+                  "columns": [
+                    {
+                      "formValueId": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+                      "columnId": "a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d",
+                      "columnName": "trade",
+                      "textVal": "Plumbers"
+                    },
+                    {
+                      "formValueId": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+                      "columnId": "b2c3d4e5-f6a7-8b9c-0d1e-2f3a4b5c6d7e",
+                      "columnName": "timespan",
+                      "timespanVal": 21600000
+                    },
+                    {
+                      "formValueId": "3c4d5e6f-7a8b-9c0d-1e2f-3a4b5c6d7e8f",
+                      "columnId": "c3d4e5f6-a7b8-9c0d-1e2f-3a4b5c6d7e8f",
+                      "columnName": "headcount",
+                      "numberVal": 4
+                    },
+                    {
+                      "formValueId": "4d5e6f7a-8b9c-0d1e-2f3a-4b5c6d7e8f9a",
+                      "columnId": "d4e5f6a7-b8c9-0d1e-2f3a-4b5c6d7e8f9a",
+                      "columnName": "description",
+                      "textVal": "change pipes"
+                    }
+                  ],
+                  "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+                  "updatedBy": "USER123A"
+                },
+                {
+                  "id": "2f7e534d-d084-594b-8aa6-147cb8fbc060",
+                  "table": "materialsEntries",
+                  "schema": "materialsEntries",
+                  "rank": 0,
+                  "deleted": false,
+                  "columns": [
+                    {
+                      "formValueId": "5e6f7a8b-9c0d-1e2f-3a4b-5c6d7e8f9a0b",
+                      "columnId": "e5f6a7b8-c9d0-1e2f-3a4b-5c6d7e8f9a0b",
+                      "columnName": "item",
+                      "textVal": "Glue"
+                    },
+                    {
+                      "formValueId": "6f7a8b9c-0d1e-2f3a-4b5c-6d7e8f9a0b1c",
+                      "columnId": "f6a7b8c9-d0e1-2f3a-4b5c-6d7e8f9a0b1c",
+                      "columnName": "quantity",
+                      "numberVal": 3
+                    },
+                    {
+                      "formValueId": "7a8b9c0d-1e2f-3a4b-5c6d-7e8f9a0b1c2d",
+                      "columnId": "a7b8c9d0-e1f2-3a4b-5c6d-7e8f9a0b1c2d",
+                      "columnName": "unit",
+                      "textVal": "qt"
+                    }
+                  ],
+                  "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+                  "updatedBy": "USER123A"
+                }
+              ],
+              "customValues": [
+                {
+                  "fieldId": "a184ac19-01b5-250e-43d3-56c63b61f952",
+                  "sectionLabel": "Observation",
+                  "itemLabel": "Masks / Face Protection",
+                  "valueName": "toggleVal",
+                  "toggleVal": "Yes",
+                  "notes": "Observed Masks and Face Protection"
+                },
+                {
+                  "fieldId": "b295bd2a-02c6-361f-54e4-67d74c720063",
+                  "sectionLabel": "Weather Conditions",
+                  "itemLabel": "Temperature",
+                  "valueName": "numberVal",
+                  "numberVal": 72
+                }
+              ]
+            },
+            "pdfFile": null,
+            "lastFetchedAt": "2020-11-20T16:14:27.615127+00:00"
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v2/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms?locationIds=d14ce3a6-e61b-4ab0-a9be-5acf7b5366df&locationIds=8da1faf2-a72f-421b-89df-00d77e545faf&include=nativeValues\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms/932da979-e537-4530-b8aa-18607ac6db37/table/d4b7df4c-24e8-583h-76g6-89f96e94i285/values?limit=10&offset=0\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"id\": \"1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d\",\n      \"schema\": \"ec7b2dea-9383-49d4-b22d-52e04659e28b\",\n      \"rank\": 0,\n      \"deleted\": false,\n      \"columns\": [\n        {\n          \"formValueId\": \"3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d\",\n          \"columnId\": \"e5c8eg5d-35f9-694i-87h7-90ga7fa5j396\",\n          \"columnName\": \"equipment_name\",\n          \"textVal\": \"Excavator #12\"\n        },\n        {\n          \"formValueId\": \"4b5c6d7e-8f9a-0b1c-2d3e-4f5a6b7c8d9e\",\n          \"columnId\": \"f6d9fh6e-46ga-7a5j-98i8-01hb8gb6k4a7\",\n          \"columnName\": \"inspection_date\",\n          \"dateVal\": \"2020-11-20\"\n        },\n        {\n          \"formValueId\": \"5c6d7e8f-9a0b-1c2d-3e4f-5a6b7c8d9e0f\",\n          \"columnId\": \"g7eagi7f-57hb-8b6k-a9j9-12ic9hc7l5b8\",\n          \"columnName\": \"status\",\n          \"textVal\": \"Pass\"\n        },\n        {\n          \"formValueId\": \"6d7e8f9a-0b1c-2d3e-4f5a-6b7c8d9e0f1a\",\n          \"columnId\": \"h8fbhj8g-68ic-9c7l-bak-23jd0id8m6c9\",\n          \"columnName\": \"inspector_notes\",\n          \"textVal\": \"All systems operational\"\n        }\n      ],\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"updatedBy\": \"USER123A\"\n    },\n    {\n      \"id\": \"2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e\",\n      \"schema\": \"ec7b2dea-9383-49d4-b22d-52e04659e28b\",\n      \"rank\": 1,\n      \"deleted\": false,\n      \"columns\": [\n        {\n          \"formValueId\": \"7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b\",\n          \"columnId\": \"e5c8eg5d-35f9-694i-87h7-90ga7fa5j396\",\n          \"columnName\": \"equipment_name\",\n          \"textVal\": \"Crane #5\"\n        },\n        {\n          \"formValueId\": \"8f9a0b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c\",\n          \"columnId\": \"f6d9fh6e-46ga-7a5j-98i8-01hb8gb6k4a7\",\n          \"columnName\": \"inspection_date\",\n          \"dateVal\": \"2020-11-20\"\n        },\n        {\n          \"formValueId\": \"9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4d\",\n          \"columnId\": \"g7eagi7f-57hb-8b6k-a9j9-12ic9hc7l5b8\",\n          \"columnName\": \"status\",\n          \"textVal\": \"Needs Repair\"\n        },\n        {\n          \"formValueId\": \"0b1c2d3e-4f5a-6b7c-8d9e-0f1a2b3c4d5e\",\n          \"columnId\": \"h8fbhj8g-68ic-9c7l-bak-23jd0id8m6c9\",\n          \"columnName\": \"inspector_notes\",\n          \"textVal\": \"Hydraulic leak detected\"\n        }\n      ],\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"updatedBy\": \"USER123A\"\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 10,\n    \"totalResults\": 2,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "id": "1a2b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d",
+            "schema": "ec7b2dea-9383-49d4-b22d-52e04659e28b",
+            "rank": 0,
+            "deleted": false,
+            "columns": [
+              {
+                "formValueId": "3a4b5c6d-7e8f-9a0b-1c2d-3e4f5a6b7c8d",
+                "columnId": "e5c8eg5d-35f9-694i-87h7-90ga7fa5j396",
+                "columnName": "equipment_name",
+                "textVal": "Excavator #12"
+              },
+              {
+                "formValueId": "4b5c6d7e-8f9a-0b1c-2d3e-4f5a6b7c8d9e",
+                "columnId": "f6d9fh6e-46ga-7a5j-98i8-01hb8gb6k4a7",
+                "columnName": "inspection_date",
+                "dateVal": "2020-11-20"
+              },
+              {
+                "formValueId": "5c6d7e8f-9a0b-1c2d-3e4f-5a6b7c8d9e0f",
+                "columnId": "g7eagi7f-57hb-8b6k-a9j9-12ic9hc7l5b8",
+                "columnName": "status",
+                "textVal": "Pass"
+              },
+              {
+                "formValueId": "6d7e8f9a-0b1c-2d3e-4f5a-6b7c8d9e0f1a",
+                "columnId": "h8fbhj8g-68ic-9c7l-bak-23jd0id8m6c9",
+                "columnName": "inspector_notes",
+                "textVal": "All systems operational"
+              }
+            ],
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "updatedBy": "USER123A"
+          },
+          {
+            "id": "2b3c4d5e-6f7a-8b9c-0d1e-2f3a4b5c6d7e",
+            "schema": "ec7b2dea-9383-49d4-b22d-52e04659e28b",
+            "rank": 1,
+            "deleted": false,
+            "columns": [
+              {
+                "formValueId": "7e8f9a0b-1c2d-3e4f-5a6b-7c8d9e0f1a2b",
+                "columnId": "e5c8eg5d-35f9-694i-87h7-90ga7fa5j396",
+                "columnName": "equipment_name",
+                "textVal": "Crane #5"
+              },
+              {
+                "formValueId": "8f9a0b1c-2d3e-4f5a-6b7c-8d9e0f1a2b3c",
+                "columnId": "f6d9fh6e-46ga-7a5j-98i8-01hb8gb6k4a7",
+                "columnName": "inspection_date",
+                "dateVal": "2020-11-20"
+              },
+              {
+                "formValueId": "9a0b1c2d-3e4f-5a6b-7c8d-9e0f1a2b3c4d",
+                "columnId": "g7eagi7f-57hb-8b6k-a9j9-12ic9hc7l5b8",
+                "columnName": "status",
+                "textVal": "Needs Repair"
+              },
+              {
+                "formValueId": "0b1c2d3e-4f5a-6b7c-8d9e-0f1a2b3c4d5e",
+                "columnId": "h8fbhj8g-68ic-9c7l-bak-23jd0id8m6c9",
+                "columnName": "inspector_notes",
+                "textVal": "Hydraulic leak detected"
+              }
+            ],
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "updatedBy": "USER123A"
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 10,
+          "totalResults": 2,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,103 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-:bucketKey-objects-:objectKey-signeds3upload-POST",
+    "scrapedAt": "2026-05-08T16:28:35.324Z",
+    "category": "OSS/Objects"
+  },
+  "title": "oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets/apptestbucket/objects/random_file.bin/signeds3upload'",
+  "description": null,
+  "requestExample": "curl -X POST\n  -H 'Authorization: Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi'\n  -H 'Content-Type: application/json'\n  -H 'x-ads-meta-Content-Type: application/octet-stream'\n  --data-raw '{\n    \"uploadKey\": \"{UPLOAD_KEY_PROVIDED_FROM_GET_UPLOAD_URLS_RESPONSE}\"\n  }'\n  'https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/random_file.bin/signeds3upload'\n\ncurl -XPOST\n  -H'Authorization: Bearer {YOUR_TOKEN}'\n  -H 'Content-Type: application/json'\n  -H 'x-ads-meta-Content-Type: application/octet-stream'\n  --data-raw '{\n    \"uploadKey\": \"{UPLOAD_KEY_PROVIDED_FROM_GET_UPLOAD_URLS_RESPONSE}\",\n    \"size\": 1,\n    \"eTags\": [\n        \"c4ca4238a0b923820dcc509a6f75849b\",\n        \"68ed4d53c0c933b7bf7debbd640386b1\",\n        \"12ee9a859b60e71df4ef727f41c6b6d8\"\n    ]\n  }'\n  'https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/random_file.bin/signeds3upload'",
+  "responseExample": "{\n  \"bucketKey\": \"apptestbucket\",\n  \"objectId\": \"urn:adsk.objects:os.object:apptestbucket/random_file.bin\",\n  \"objectKey\": \"random_file.bin\",\n  \"size\": 12582912,\n  \"contentType\": \"application/octet-stream\",\n  \"location\": \"https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/random_file.bin\"\n}\n\n{\n  \"uploadKey\": \"{UPLOAD_KEY}\",\n  \"status\": \"error\",\n  \"reason\": \"MissingOrInvalidParts\",\n  \"size\": {\n      \"expected\": 1,\n      \"detected\": 12582912\n  },\n  \"parts\": [\n      {\n        \"part\": 1,\n        \"size\": 5242880,\n        \"eTag\": \"9aec28c3d07e2978e6502f6427c515da\",\n        \"status\": \"Unexpected\"\n      },\n      {\n        \"part\": 2,\n        \"size\": 5242880,\n        \"eTag\": \"68ed4d53c0c933b7bf7debbd640386b1\",\n        \"status\": \"Ok\"\n      },\n      {\n        \"part\": 3,\n        \"size\": 2097152,\n        \"eTag\": \"12ee9a859b60e71df4ef727f41c6b6d8\",\n        \"status\": \"Ok\"\n      }\n  ]\n}",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "POST https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}/signeds3upload"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:write data:create"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "Content-Type*string",
+      "col_1": "Must be application/json."
+    },
+    {
+      "col_0": "x-ads-meta-Content-Typestring",
+      "col_1": "The Content-Type value for the uploaded object to record within OSS."
+    },
+    {
+      "col_0": "x-ads-meta-Content-Dispositionstring",
+      "col_1": "The Content-Disposition value for the uploaded object to record within OSS."
+    },
+    {
+      "col_0": "x-ads-meta-Content-Encodingstring",
+      "col_1": "The Content-Encoding value for the uploaded object to record within OSS."
+    },
+    {
+      "col_0": "x-ads-meta-Cache-Controlstring",
+      "col_1": "The Cache-Control value for the uploaded object to record within OSS."
+    },
+    {
+      "col_0": "x-ads-user-defined-metadatastring",
+      "col_1": "Custom metadata to be stored with the object, which can be retrieved later on download or when retrieving object details. Must be a JSON object that is less than 100 bytes."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the objects you are operating on."
+    },
+    {
+      "col_0": "objectKeystring",
+      "col_1": "The URL-encoded human friendly name of the object."
+    },
+    {
+      "col_0": "uploadKey*string",
+      "col_1": "The ID uniquely identifying the upload session that was returned when you called Get S3 Signed Upload URL."
+    },
+    {
+      "col_0": "sizeint",
+      "col_1": "The expected size of the object. If provided, OSS will check this against the object in S3 and return an error if the size does not match."
+    },
+    {
+      "col_0": "eTagsarray: string",
+      "col_1": "An array of eTags. S3 returns an eTag to each upload request, be it for a chunk or an entire file. For a single-part upload, this array contains the expected eTag of the entire object. For a multipart upload, this array contains the expected eTag of each part of the upload; the index of an eTag in the array corresponds to its part number in the upload. If provided, OSS will validate these eTags against the content in S3, and return an error if the eTags do not match."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The upload was successfully completed."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "OSS was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request"
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified object or bucket does not exist."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    }
+  ]
+}

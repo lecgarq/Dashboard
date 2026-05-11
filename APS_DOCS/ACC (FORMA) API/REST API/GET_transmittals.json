@@ -1,0 +1,311 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/transmittals-listtransmittals-GET",
+    "scrapedAt": "2026-05-09T00:08:09.922Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/transmittals",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/6fbcdf65-f2e4-4dd4-86bd-96febe58ff82/transmittals?limit=20&sort=sequenceId desc",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/transmittals/v1/projects/{projectId}/transmittals"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The Autodesk ID of the user on whose behalf the request is made.\nThis header is required only when using two-legged authentication. It is not needed for three-legged authentication.\nYour application can access only those users who are assigned to it in the SaaS Integrations UI.\nOnly user Autodesk IDs (autodeskId) are supported."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nYou can retrieve the project ID using the Data Management API. For more details, see the Retrieve a Project ID tutorial.\nYou may provide the project ID with or without the b. prefix:\n\nWith prefix: b.657a5565-09b7-48e0-bd03-acacfe42efaf\nWithout prefix: 657a5565-09b7-48e0-bd03-acacfe42efaf"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results to return per page.\nAcceptable values: 1-200.\nDefault value: 20.\nFor example, to limit the response to two results per page, use limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index from which the response starts returning results.\nDefault value: 0.\nFor example, to skip the first three results, use offset=3."
+        },
+        {
+          "col_0": "sortenum:string",
+          "col_1": "Sorts the transmittals by a supported field and order.\n\nBy default, results are sorted by sequenceId desc (descending order).\nTo sort in ascending order, add asc after the field name.\nFormat: sort=<field> [asc or desc]\nPossible values: status, sequenceId, title, sentByName, createdAt, documentsCount.\nExamples:\n\nsort=status asc – sorts transmittals by status in ascending order.\nsort=createdAt desc – sorts transmittals by creation date in descending order."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the list of transmittals\nIf one or more transmittals are still being processed, some fields—such as recipients and externalMembers—may be temporarily empty."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request. The input parameters were invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Unauthorized error"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The project does not exist"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "A list of transmittals that belong to the specified project."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of the transmittal."
+        },
+        {
+          "col_0": "sequenceIdstring",
+          "col_1": "A project-specific number automatically assigned when the transmittal is first submitted. It identifies the transmittal within the project and reflects the order in which it was created."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "The title of the transmittal."
+        },
+        {
+          "col_0": "messagestring",
+          "col_1": "An optional message included with the transmittal."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The current processing state of the transmittal.\n\nSENDING – The transmittal is being processed or packaged; some fields may be temporarily empty. The recipients and externalMembers fields may be temporarily empty.\nCOMPLETED – The transmittal has been successfully issued and all data is available.\nFAILED – The transmittal failed to process or send.\n\nPossible values: SENDING, COMPLETED, FAILED."
+        },
+        {
+          "col_0": "sentByobject",
+          "col_1": "Information about the user who created and sent the transmittal."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the transmittal creator."
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "The email of the transmittal creator."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The full name of the transmittal creator."
+        },
+        {
+          "col_0": "companyAutodeskIdstring",
+          "col_1": "The Autodesk ID of the creator’s company at the time the transmittal was created."
+        },
+        {
+          "col_0": "companyNamestring",
+          "col_1": "The name of the creator’s company at the time the transmittal was created."
+        },
+        {
+          "col_0": "recipientsobject",
+          "col_1": "The list of recipients included in the transmittal, grouped by user, company, and role.\nFor more information on how to add recipients to a transmittal, see the Create Transmittals documentation."
+        },
+        {
+          "col_0": "usersarray: object",
+          "col_1": "The list of individual users who were added as recipients."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the user recipient."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the user recipient."
+        },
+        {
+          "col_0": "companiesarray: object",
+          "col_1": "The list of companies that were added as recipients."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the company recipient."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the company recipient."
+        },
+        {
+          "col_0": "rolesarray: object",
+          "col_1": "The list of project roles that were added as recipients."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the role recipient."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the role recipient."
+        },
+        {
+          "col_0": "externalMembersarray: object",
+          "col_1": "The list of external recipients who are not members of the project."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the external recipient."
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "The email address of the external recipient."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time when the transmittal was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "documentsCountint",
+          "col_1": "The total number of documents included in the transmittal."
+        },
+        {
+          "col_0": "packedStatusenum:string",
+          "col_1": "Indicates the progress of packaging transmittal files into a ZIP archive.\nPossible values: SUCCESS, PARTIAL_SUCCESS, FAILED, PROCESSING, EXPIRED, NOT_ALLOWED"
+        },
+        {
+          "col_0": "displayRecipientsenum:string",
+          "col_1": "Specifies how much recipient information each recipient can see.\n\n\nALL – All recipients can view the full recipient list.\nLIMITED – Each recipient can view only their own recipient information.\n\nProject Admins and the sender always see the full list.\n\nPossible values: ALL, LIMITED"
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "The list of pagination details for the response."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results returned per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before the current page, starting from zero."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of results that match the query, regardless of pagination."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL to retrieve the next page of transmittals. If this field is not included, the current page is the last page of results."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/transmittals/v1/projects/6fbcdf65-f2e4-4dd4-86bd-96febe58ff82/transmittals?limit=20&sort=sequenceId desc' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"id\": \"88c286a3-4100-4251-8d0e-830e7726fc17\",\n      \"sequenceId\": \"25\",\n      \"title\": \"Building design\",\n      \"message\": \"This is a building design pdf\",\n      \"status\": \"COMPLETED\",\n      \"sentBy\": {\n        \"autodeskId\": \"HWUBNU689CRH\",\n        \"email\": \"john.smith@email.com\",\n        \"name\": \"John Smith\",\n        \"companyAutodeskId\": \"156891388\",\n        \"companyName\": \"BuildCo Ltd.\"\n      },\n      \"recipients\": {\n        \"users\": [\n          {\n            \"autodeskId\": \"HWUBNU689CRH\",\n            \"name\": \"John Smith\"\n          }\n        ],\n        \"companies\": [\n          {\n            \"autodeskId\": \"73758762\",\n            \"name\": \"Autodesk Inc.\"\n          }\n        ],\n        \"roles\": [\n          {\n            \"autodeskId\": \"233404534\",\n            \"name\": \"designer\"\n          }\n        ]\n      },\n      \"externalMembers\": [\n        {\n          \"name\": \"John Smith\",\n          \"email\": \"john.smith@email.com\"\n        }\n      ],\n      \"createdAt\": \"2025-04-03T09:42:17.476Z\",\n      \"documentsCount\": 2,\n      \"packedStatus\": \"SUCCESS\",\n      \"displayRecipients\": \"ALL\"\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 20,\n    \"offset\": 0,\n    \"totalResults\": 100,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals?limit=20&offset=10\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": "88c286a3-4100-4251-8d0e-830e7726fc17",
+            "sequenceId": "25",
+            "title": "Building design",
+            "message": "This is a building design pdf",
+            "status": "COMPLETED",
+            "sentBy": {
+              "autodeskId": "HWUBNU689CRH",
+              "email": "john.smith@email.com",
+              "name": "John Smith",
+              "companyAutodeskId": "156891388",
+              "companyName": "BuildCo Ltd."
+            },
+            "recipients": {
+              "users": [
+                {
+                  "autodeskId": "HWUBNU689CRH",
+                  "name": "John Smith"
+                }
+              ],
+              "companies": [
+                {
+                  "autodeskId": "73758762",
+                  "name": "Autodesk Inc."
+                }
+              ],
+              "roles": [
+                {
+                  "autodeskId": "233404534",
+                  "name": "designer"
+                }
+              ]
+            },
+            "externalMembers": [
+              {
+                "name": "John Smith",
+                "email": "john.smith@email.com"
+              }
+            ],
+            "createdAt": "2025-04-03T09:42:17.476Z",
+            "documentsCount": 2,
+            "packedStatus": "SUCCESS",
+            "displayRecipients": "ALL"
+          }
+        ],
+        "pagination": {
+          "limit": 20,
+          "offset": 0,
+          "totalResults": 100,
+          "nextUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals?limit=20&offset=10"
+        }
+      }
+    }
+  ]
+}

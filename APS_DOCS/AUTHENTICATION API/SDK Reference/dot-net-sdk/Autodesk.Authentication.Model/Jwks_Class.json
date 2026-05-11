@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication.Model/Jwks",
+    "scrapedAt": "2026-05-08T17:36:26.280Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Class Jwks",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class Jwks"
+    },
+    {
+      "raw": "public Jwks()"
+    },
+    {
+      "raw": "[DataMember(Name = \"keys\", EmitDefaultValue = false)]\npublic List<JwksKey> Keys { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

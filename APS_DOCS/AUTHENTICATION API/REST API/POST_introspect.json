@@ -1,0 +1,204 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/http/introspect-POST",
+    "scrapedAt": "2026-05-08T17:35:56.882Z",
+    "category": "REST API",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "introspect",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/authentication/v2/introspect",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/authentication/v2/introspect"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "Form encoding (request); JSON (response)"
+        },
+        {
+          "col_0": "Rate Limit",
+          "col_1": "100 calls per minute"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/x-www-form-urlencoded"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "token*string",
+          "col_1": "The token to be introspected"
+        },
+        {
+          "col_0": "client_id*string",
+          "col_1": "This field is only required for public clients"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "activeboolean",
+          "col_1": "The status of this operation"
+        },
+        {
+          "col_0": "scopestring",
+          "col_1": "A URL-encoded, space-separated list of requested scopes"
+        },
+        {
+          "col_0": "expstring",
+          "col_1": "Expiration timestamp of the token"
+        },
+        {
+          "col_0": "client_idstring",
+          "col_1": "The ID of the client associated with the token"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/x-www-form-urlencoded"
+        },
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be in the form Basic ${Base64(<client_id>:<client_secret>)}"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "token*string",
+          "col_1": "The token to be introspected"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "activeboolean",
+          "col_1": "The status of this operation"
+        },
+        {
+          "col_0": "scopestring",
+          "col_1": "A URL-encoded, space-separated list of requested scopes"
+        },
+        {
+          "col_0": "client_idstring",
+          "col_1": "The ID of the client associated with the token"
+        },
+        {
+          "col_0": "expstring",
+          "col_1": "Expiration timestamp of the token"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successful request; information of token returned."
+        },
+        {
+          "col_0": "400Invalid Request",
+          "col_1": "The request is missing a required parameter ‘token’."
+        },
+        {
+          "col_0": "400Invalid Request",
+          "col_1": "The ‘client_id’ is not supported in the request body when Authorization headers are present."
+        },
+        {
+          "col_0": "401Invalid credentials",
+          "col_1": "The client credentials are invalid."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Generic internal server error."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/authentication/v2/introspect'\n     -X 'POST'\n     -H 'Content-Type:application/x-www-form-urlencoded'\n     -d '{\n           'token=eyJraWQiOiJubkFKZm82T2lMRHhINXZkbDhBT0lQeVBpcjRLTEJsTUZEZzFXOEFMa3A0IiwiYWxnIjoiUlMyNTYifQ.\n            eyJ2ZXIiOjEsImp0aSI6IkFULklSakNLM3VIZUdvQWtxVXRfTUtBdDV6RE1laUJBaUtlMURYb3pJck9jNGcub2Fyd2liYTly\n            M2MyYUwxWW0waDYiLCJpc3MiOiJodHRwczovL2F1dG9kZXNrLXRlc3Qub2t0YXByZXZpZXcuY29tL29hdXRoMi9k\n            ZWZhdWx0IiwiYXVkIjoiYXBpOi8vZGVmYXVsdCIsImlhdCI6MTYxMjk0OTM2MSwiZXhwIjoxNjEyOTUyOTYxLC\n            JjaWQiOiIwb2F3djE4dzYzaTAzQ2dtWjBoNyIsInVpZCI6IjAwdXd2Nm05dm1jb1RNTE9GMGg3Iiwic2NwI\n            jpbIm9mZmxpbmVfYWNjZXNzIiwib3BlbmlkIl0sInN1YiI6ImFrYXNodGVzdEBtYWlsaW5hdG9yLmNvbSJ9.\n            CyxjzWiaxV1ybLGPsQPvjg5nUlb4pl6wnWvWp2Q_kNd8Z6o5-lvJWr2HyrJIG2Qtodb3RPz\n            b0gc4lNue7oqXz8kQMECjgG62MZ31RBN_J98JSKvnCubWJAYmdITpbOSXGuUwEf1eB8FyHR-\n            Wc6epk1rRT-ZoHMd42zCygmYKFDY_w2EDnxIvP-6lEfhz4fgT5mj5jOlomZJDrUfWEMO10Sjzs\n            N7G5utuTh025EUpQza2JoI1baJun0jNR5eO-NhBHmGTJl8biHpd7gDfscVKmPQDeLoOgUda7hPiZXHbEuovr1_\n            ybkr26k8ab24gVqVK9HIxsl3w8KKPw-CoBoO38A'\\\n            'client_id=0oawv18w63i03CgmZ0h7'\n         }'"
+    },
+    {
+      "raw": "{\n  \"active\": true,\n  \"scope\": \"offline_access openid\",\n  \"client_id\": \"0oawv18w63i03CgmZ0h7\",\n  \"exp\": 1612952961,\n  \"userid\": \"T8SLL89JABCK\"\n}",
+      "parsed": {
+        "active": true,
+        "scope": "offline_access openid",
+        "client_id": "0oawv18w63i03CgmZ0h7",
+        "exp": 1612952961,
+        "userid": "T8SLL89JABCK"
+      }
+    },
+    {
+      "raw": "{\n   \"active\": false\n}",
+      "parsed": {
+        "active": false
+      }
+    },
+    {
+      "raw": "{\n   \"active\": false\n}",
+      "parsed": {
+        "active": false
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/authentication/v2/introspect'\n     -X 'POST'\n     -H 'Content-Type: application/x-www-form-urlencoded'\n     -H 'Authorization: Basic RjZEbjh5cGVtMWo4UDZzVXo4SVgzcG1Tc09BOTlHVVQ6QVNOa3c4S3F6MXQwV1hISw==' \\\n     -d '{\n           'token=eyJhbGciOiJSUzI1NiIsImtpZCI6IlpxUnVxc1hheWU5dmpIVTYyU2R6Y3N0anRDUFJkR0owIn0.\n           eyJzY29wZSI6WyJ1c2VyOnJlYWQiXSwiY2xpZW50X2lkIjoiYWthc2h0ZXN0IiwiYXVkIjoiaHR0cHM6Ly\n           9hdXRvZGVzay5jb20vYXVkL2Fqd3RleHA2MCIsImp0aSI6InczTjA5ZUloWWdWMnQwRDFueGxneGd6cW04\n           UzRoN2d2aDhLZTM4VzZCa3QzOXhPbTRmRXZpbWIzZEhkODQ0TjAiLCJ1c2VyaWQiOiJFN0M5TjU1SFpXS0\n           EiLCJleHAiOjE2MTI5NDk0NDN9.PCmyIn_My9C_4Srii_b5mCf0qPb9UIcxlQvhtc7aM_c76Ub4FoVm_\n           wSSecgbe4KEU0B9QqDnPcW49M1Hg3-lgGAd-HkIolv_duFRi0f9l6Yqqd0RCyQR0-7sJHx9XvqoYW7sEYY7\n           lQcjbeOAWLiw6ufoOzGXnad5SaK6lgVfnK5i7jELNp5UAtlk2Y-ULEH8cp-QB_NZGneTwmJYw72U5b7uY-\n           wxrhIA0y-zZOXLTRIQDW9E_rhahRV51sT7mUn8ltQ8owRPFGkdkJ1YwkXIES6KN7QXjER2PQdc8q9G58Vz\n           RAISYqxKioJV3uyds8cF87T6uWXgy2EQnc8QdDTmtA'\n         }'"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/authentication/v2/introspect'\n     -X 'POST'\n     -H 'Content-Type: application/x-www-form-urlencoded'\n     -H 'Authorization: Basic RjZEbjh5cGVtMWo4UDZzVXo4SVgzcG1Tc09BOTlHVVQ6QVNOa3c4S3F6MXQwV1hISw==' \\\n     -d '{\n           'token=QNuvfgORVpUlbhaKvQZC6yhPF43p'\n         }'"
+    },
+    {
+      "raw": "{\n  \"active\": true,\n  \"scope\": \"user:read\",\n  \"client_id\": \"0oawv18w63i03CgmZ0h7\",\n  \"exp\": 1612949443,\n  \"userid\": \"T8SLL89JABCK\"\n}",
+      "parsed": {
+        "active": true,
+        "scope": "user:read",
+        "client_id": "0oawv18w63i03CgmZ0h7",
+        "exp": 1612949443,
+        "userid": "T8SLL89JABCK"
+      }
+    },
+    {
+      "raw": "{\n   \"active\": false\n}",
+      "parsed": {
+        "active": false
+      }
+    },
+    {
+      "raw": "{\n   \"active\": false\n}",
+      "parsed": {
+        "active": false
+      }
+    }
+  ]
+}

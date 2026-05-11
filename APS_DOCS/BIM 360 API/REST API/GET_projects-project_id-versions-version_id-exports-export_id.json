@@ -1,0 +1,148 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/document-management-projects-project_id-versions-version_id-exports-export_id-GET",
+    "scrapedAt": "2026-05-08T18:00:35.094Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/{project_id}/versions/{version_id}/exports/{export_id}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipqa%3Afs.file%3Avf.pf3frU0gTZaOotKXg2h1Fw%3Fversion%3D1/exports/433d07ec-32a2-44eb-a5eb-b41090bfe932",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/versions/:version_id/exports/:export_id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "project_idstring: UUID",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the BIM 360 API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "version_idstring",
+          "col_1": "The URL-encoded version ID (URN) of the exported page; selected when initiating POST projects/:project_id/versions/:version_id/exports."
+        },
+        {
+          "col_0": "export_idstring: UUID",
+          "col_1": "The ID of the export job; returned when initiating POST projects/:project_id/versions/:version_id/exports."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The project, exported document or job does not exist."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the export job."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The status of the export job. Possible values: committed, completed, failed. When the job is complete, an object representing the result of the job is returned in the response."
+        },
+        {
+          "col_0": "dataobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "versionUrnstring",
+          "col_1": "The Base64 (URL Safe) encoded ID (URN) assigned to the file when it was first uploaded to BIM 360 Document Management. This is used to download the page. Note that this is equal to the urn parameter in GET :urn/manifest/:derivativeurn"
+        },
+        {
+          "col_0": "resourceIdstring",
+          "col_1": "The URL-encoded ID (URN) of the exported PDF page. Note that this is equivalent to the derivativeurn parameter in GET :urn/manifest/:derivativeurn."
+        },
+        {
+          "col_0": "signedUrlstring",
+          "col_1": "The signed URL for downloading the export result. By default, it expires after two minutes."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipqa%3Afs.file%3Avf.pf3frU0gTZaOotKXg2h1Fw%3Fversion%3D1/exports/433d07ec-32a2-44eb-a5eb-b41090bfe932' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"id\": \"433d07ec-32a2-44eb-a5eb-b41090bfe932\",\n  \"status\": \"completed\",\n  \"data\": {\n    \"versionUrn\": \"dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ\",\n    \"resourceId\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf\",\n    \"signedUrl\": \"https://autodesk-360-translation-storage.s3.amazonaws.com/9358_dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5jb1pWZEdIclNMMkJ4SGJZTEFhVWF3P3ZlcnNpb249MQ/output/4/page.pdf?X-Amz-Security-Token={token}&X-Amz-Algorithm={algorithm}&X-Amz-Date={date}&X-Amz-SignedHeaders={header}&X-Amz-Expires={expire}&X-Amz-Credential={credential}&X-Amz-Signature={sign}\"\n  }\n}",
+      "parsed": {
+        "id": "433d07ec-32a2-44eb-a5eb-b41090bfe932",
+        "status": "completed",
+        "data": {
+          "versionUrn": "dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ",
+          "resourceId": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf",
+          "signedUrl": "https://autodesk-360-translation-storage.s3.amazonaws.com/9358_dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5jb1pWZEdIclNMMkJ4SGJZTEFhVWF3P3ZlcnNpb249MQ/output/4/page.pdf?X-Amz-Security-Token={token}&X-Amz-Algorithm={algorithm}&X-Amz-Date={date}&X-Amz-SignedHeaders={header}&X-Amz-Expires={expire}&X-Amz-Credential={credential}&X-Amz-Signature={sign}"
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,224 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/hubs-hub_id-projects-project_id-hub-GET",
+    "scrapedAt": "2026-05-08T16:24:54.034Z",
+    "category": "Data Management/Projects"
+  },
+  "title": "hubs/:hub_id/projects/:project_id/hub",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id/hub",
+  "description": null,
+  "requestExample": "curl -v 'https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id/hub' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'",
+  "responseExample": {
+    "jsonapi": {
+      "version": "1.0"
+    },
+    "links": {
+      "self": {
+        "href": "/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE"
+      }
+    },
+    "data": {
+      "type": "hubs",
+      "id": "a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE",
+      "attributes": {
+        "name": "my hub",
+        "extension": {
+          "data": {},
+          "version": "1.0",
+          "type": "hubs:autodesk.core:Hub",
+          "schema": {
+            "href": "/schema/v1/versions/hubs%3Aautodesk.core%3AHub-1.0"
+          }
+        },
+        "region": "US"
+      },
+      "relationships": {
+        "projects": {
+          "links": {
+            "related": {
+              "href": "/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects"
+            }
+          }
+        },
+        "pimCollection": {
+          "data": {
+            "type": "collection",
+            "id": "co.d41d8cd00998ecf8427e"
+          }
+        }
+      },
+      "links": {
+        "self": {
+          "href": "/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE"
+        }
+      }
+    }
+  },
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "GET https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id/hub"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "User context optional"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:read"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+    },
+    {
+      "col_0": "x-user-idstring",
+      "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified."
+    },
+    {
+      "col_0": "hub_idstring",
+      "col_1": "The unique identifier of a hub."
+    },
+    {
+      "col_0": "project_idstring",
+      "col_1": "The unique identifier of a project.\nTo convert BIM 360 or Forma Project IDs to Data Management Project IDs, prefix them with b. For example, a Project ID of c8b0c73d-3ae9 becomes b.c8b0c73d-3ae9."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "Successful retrieval of a specific hub."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "The request could not be understood by the server due to malformed syntax or missing request headers.\nThe client SHOULD NOT repeat the request without modifications. The response body may give an indication\nof what is wrong with the request."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but permission is not granted or the\napplication has not been white-listed.\nDo not try again unless you solve permissions first."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified resource was not found."
+    },
+    {
+      "col_0": "jsonapiobject",
+      "col_1": "The JSON API object."
+    },
+    {
+      "col_0": "versionenum:string",
+      "col_1": "The version of JSON API. Will always be: 1.0"
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "The object containing information on the hub."
+    },
+    {
+      "col_0": "typeenum:string",
+      "col_1": "The type of this resource. Will always be: hubs"
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "attributesobject",
+      "col_1": "The attributes of the hub."
+    },
+    {
+      "col_0": "namestring",
+      "col_1": "Displayable name of the hub."
+    },
+    {
+      "col_0": "extensionobject",
+      "col_1": "The extension object of the data."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of the schema that the resource’s data object adheres to."
+    },
+    {
+      "col_0": "versionstring",
+      "col_1": "The version of the schema that the data is adhering to."
+    },
+    {
+      "col_0": "schemaobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "Additional properties that the resource’s data possesses."
+    },
+    {
+      "col_0": "regionenum:string",
+      "col_1": "Specifies where the hub is stored. Possible values are:\n\nUS - Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data centre for the Germany region.\nIND - Data centre for the India region.\nJPN - Data centre for the Japan region.\nGBR  - Data centre for the United Kingdom region."
+    },
+    {
+      "col_0": "relationshipsobject",
+      "col_1": "The resources that share a relationship with this hub."
+    },
+    {
+      "col_0": "projectsobject",
+      "col_1": "Information on resources that are found under this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "The object containing information on links of related resources."
+    },
+    {
+      "col_0": "relatedobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "pimCollectionobject",
+      "col_1": "Information on the id and type properties of a resource. This is available only for Fusion Team hubs and A360 Personal hubs."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    }
+  ]
+}

@@ -1,0 +1,197 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/Settings",
+    "scrapedAt": "2026-05-08T18:49:49.428Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "Settings",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewCubeboolean",
+          "col_1": "Sets the visibility of the viewcube."
+        },
+        {
+          "col_0": "viewCubeCompassboolean",
+          "col_1": "Sets the visibility of the viewcube compass. The compass will only be displayed if model contains orientation data."
+        },
+        {
+          "col_0": "viewTypenumber",
+          "col_1": "Sets the view to default (0), orthographic (1), perspective (2) or perspective with ortho faces (3)."
+        },
+        {
+          "col_0": "alwaysUsePivotboolean",
+          "col_1": "Orbit controls always orbit around the currently set pivot point."
+        },
+        {
+          "col_0": "zoomTowardsPivotboolean",
+          "col_1": "default direction for camera dolly (zoom) operations to be towards the camera pivot point."
+        },
+        {
+          "col_0": "reverseHorizontalLookDirectionboolean",
+          "col_1": "Sets a view navigation option to reverse the default direction for horizontal look operations."
+        },
+        {
+          "col_0": "reverseVerticalLookDirectionboolean",
+          "col_1": "Sets a view navigation option to reverse the default direction for vertical look operations."
+        },
+        {
+          "col_0": "orbitPastWorldPolesboolean",
+          "col_1": "Set a view navigation option to allow the orbit controls to move the camera beyond the north and south poles (world up/down direction)."
+        },
+        {
+          "col_0": "clickToSetCOIboolean",
+          "col_1": "Modify the default click behavior for the viewer."
+        },
+        {
+          "col_0": "ghostingboolean",
+          "col_1": "Toggles ghosting during search and isolate."
+        },
+        {
+          "col_0": "optimizeNavigationboolean",
+          "col_1": "Toggles whether the navigation should be optimized for performance."
+        },
+        {
+          "col_0": "ambientShadowsboolean",
+          "col_1": "Enables or disables ambient shadows."
+        },
+        {
+          "col_0": "antialiasingboolean",
+          "col_1": "Enables or disables antialiasing."
+        },
+        {
+          "col_0": "groundShadowboolean",
+          "col_1": "Toggles ground shadow."
+        },
+        {
+          "col_0": "groundReflectionboolean",
+          "col_1": "Toggles ground reflection."
+        },
+        {
+          "col_0": "lineRenderingboolean",
+          "col_1": "Hides all lines in the scene."
+        },
+        {
+          "col_0": "edgeRenderingboolean",
+          "col_1": "Turns edge topology display on/off (where available)."
+        },
+        {
+          "col_0": "lightPresetnumber, string",
+          "col_1": "Sets the Light Presets (Environments) for the Viewer."
+        },
+        {
+          "col_0": "envMapBackgroundboolean",
+          "col_1": "Toggles environment map for background."
+        },
+        {
+          "col_0": "bimWalkToolPopupboolean",
+          "col_1": "Toggles the bimwalk tool popup."
+        },
+        {
+          "col_0": "grayscaleboolean",
+          "col_1": "Overrides line colors in 2D models to render in shades of gray."
+        },
+        {
+          "col_0": "swapBlackAndWhiteboolean",
+          "col_1": "Will switch to white lines on a black background."
+        },
+        {
+          "col_0": "progressiveRenderingboolean",
+          "col_1": "Toggles whether progressive rendering is used."
+        },
+        {
+          "col_0": "openPropertiesOnSelectboolean",
+          "col_1": "Open property panel when selecting an object (Only for GuiViewer3D)."
+        },
+        {
+          "col_0": "pointRenderingboolean",
+          "col_1": "Hides all points in the scene."
+        },
+        {
+          "col_0": "backgroundColorPreset",
+          "col_1": "Sets a color to the background."
+        },
+        {
+          "col_0": "reverseMouseZoomDirboolean",
+          "col_1": "Reverse the default direction for camera dolly (zoom) operations."
+        },
+        {
+          "col_0": "leftHandedMouseSetupboolean",
+          "col_1": "Reverse mouse buttons from their default assignment (i.e. Left mouse operation becomes right mouse and vice versa)."
+        },
+        {
+          "col_0": "fusionOrbitboolean",
+          "col_1": "Sets the orbit to fusion orbit."
+        },
+        {
+          "col_0": "fusionOrbitConstrainedboolean",
+          "col_1": "Sets the the orbit to the contrained fusion orbit."
+        },
+        {
+          "col_0": "wheelSetsPivotboolean",
+          "col_1": "Sets wheel-zoom action to automatically reset the orbit pivot to the location under the cursor."
+        },
+        {
+          "col_0": "selectionSetsPivotboolean",
+          "col_1": "Sets selection / un-selection action to automatically reset the orbit pivot to be the center of the multiple selection."
+        },
+        {
+          "col_0": "bimWalkNavigatorTypestring",
+          "col_1": "Sets the BimWalk tool navigator."
+        },
+        {
+          "col_0": "bimWalkGravityboolean",
+          "col_1": "Toggles the BimWalk tool’s gravity."
+        },
+        {
+          "col_0": "defaultNavigationTool3Dstring",
+          "col_1": "Sets which navigation tool will be used by the viewer. (ie: ‘extractor_defined’ || ‘bimwalk’)"
+        },
+        {
+          "col_0": "explodeStrategystring",
+          "col_1": "Sets which algorithm is used when exploding a model. Supported values are ‘hierarchy’ (default) and ‘radial’. Other values are treated as ‘radial’."
+        },
+        {
+          "col_0": "loadingAnimationboolean",
+          "col_1": "Toggles loading animation for 2D Models."
+        },
+        {
+          "col_0": "forcePDFCalibrationboolean",
+          "col_1": "Force PDF calibration before measuring."
+        },
+        {
+          "col_0": "forceLeafletCalibrationboolean",
+          "col_1": "Force Leaflet calibration before measuring."
+        },
+        {
+          "col_0": "restoreMeasurementsboolean",
+          "col_1": "When opening the measure tool restore any existing measurements that where created during the session."
+        },
+        {
+          "col_0": "forceDoubleSidedboolean",
+          "col_1": "Force the render to use double sided materials."
+        },
+        {
+          "col_0": "keyMapCmdboolean",
+          "col_1": "Force mapping CMD key to Ctrl in Mac."
+        },
+        {
+          "col_0": "displaySectionHatchesboolean",
+          "col_1": "Display the hatch pattern for planes in the section tool. This does not apply to the section box."
+        },
+        {
+          "col_0": "zoomDragSpeednumber",
+          "col_1": "Sets a sensitivity of mouse movement with the zoom tool."
+        },
+        {
+          "col_0": "zoomScrollSpeednumber",
+          "col_1": "Sets a sensitivity of the mouse scroll wheel when zooming."
+        }
+      ]
+    }
+  ]
+}

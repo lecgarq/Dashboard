@@ -1,0 +1,64 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/bim-360-compatibility/docs-compatibility",
+    "scrapedAt": "2026-05-08T23:40:52.909Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma Data Management Compatibility With BIM 360 APIs",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "BIM 360 Platform Pemission Type",
+        "Unified Forma Platform Permission Type",
+        "BIM 360 Platform API Permission Actions",
+        "Unified Forma Platform API Permission Actions"
+      ],
+      "rows": [
+        {
+          "BIM 360 Platform Pemission Type": "View Only",
+          "Unified Forma Platform Permission Type": "View (View files)",
+          "BIM 360 Platform API Permission Actions": "VIEW,COLLABORATE",
+          "Unified Forma Platform API Permission Actions": "VIEW,COLLABORATE"
+        },
+        {
+          "BIM 360 Platform Pemission Type": "View/Download",
+          "Unified Forma Platform Permission Type": "View (View and Download files)",
+          "BIM 360 Platform API Permission Actions": "VIEW,DOWNLOAD,COLLABORATE",
+          "Unified Forma Platform API Permission Actions": "VIEW,DOWNLOAD,COLLABORATE"
+        },
+        {
+          "BIM 360 Platform Pemission Type": "Upload Only",
+          "Unified Forma Platform Permission Type": "",
+          "BIM 360 Platform API Permission Actions": "PUBLISH",
+          "Unified Forma Platform API Permission Actions": ""
+        },
+        {
+          "BIM 360 Platform Pemission Type": "",
+          "Unified Forma Platform Permission Type": "Create (View+Download+Publish markups)",
+          "BIM 360 Platform API Permission Actions": "",
+          "Unified Forma Platform API Permission Actions": "VIEW,DOWNLOAD,COLLABORATE,PUBLISH_MARKUP"
+        },
+        {
+          "BIM 360 Platform Pemission Type": "View/Download+Upload",
+          "Unified Forma Platform Permission Type": "Create (View+Download+Publish markups+Upload)",
+          "BIM 360 Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE",
+          "Unified Forma Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE,PUBLISH_MARKUP"
+        },
+        {
+          "BIM 360 Platform Pemission Type": "View/Download+Upload + Edit",
+          "Unified Forma Platform Permission Type": "Edit (View+Download+Publish markups+Upload+Edit)",
+          "BIM 360 Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE,EDIT",
+          "Unified Forma Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE,PUBLISH_MARKUP,EDIT"
+        },
+        {
+          "BIM 360 Platform Pemission Type": "Full Control",
+          "Unified Forma Platform Permission Type": "Manage (Full Administrative Control)",
+          "BIM 360 Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE,EDIT,CONTROL",
+          "Unified Forma Platform API Permission Actions": "PUBLISH,VIEW,DOWNLOAD,COLLABORATE,PUBLISH_MARKUP,EDIT,CONTROL"
+        }
+      ]
+    }
+  ]
+}

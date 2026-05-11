@@ -1,0 +1,474 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/admin-projectsprojectId-users-GET",
+    "scrapedAt": "2026-05-08T17:52:07.522Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/{projectId}/users",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users?filter[products]=build,cost&filter[name]=Sample User&filter[email]=sampleUser1@autodesk.com&filter[accessLevels]=accountAdmin,executive&filter[addedOn]=2024-01-01&filter[companyId]=d1163421-e7eb-4862-ac15-b33777ba42de&filter[companyName]=Sample Company&filter[autodeskId]=User123,User124&filter[id]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[roleId]=cda845af-05f0-4c46-9108-71b993946c35&filter[roleIds]=cda845af-05f0-4c46-9108-71b993946c35,b8e84a73-7506-4d3f-b221-93691df2a359&filter[status]=active,pending&sort=name&fields=name,email&orFilters=id,name&filterTextMatch=contains&limit=20",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/admin/v1/projects/:projectId/users"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Specifies the region where your request should be routed. If not set, the request is routed automatically, which may result in a slight increase in latency.\nPossible values: US, EMEA. For a complete list of supported regions, see the Regions page."
+        },
+        {
+          "col_0": "User-Idstring",
+          "col_1": "The ID of a user on whose behalf your request is acting.\nYour app has access to all users specified by the administrator in the SaaS integrations UI. Provide this header value to identify the user to be affected by the request.\nYou can use either the user’s Forma ID (id), or their Autodesk ID (autodeskId).\nNote that this header is required for hub Admin POST, PATCH, and DELETE endpoints if you want to use a 2-legged authentication context. This header is optional for hub Admin GET endpoints."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the Forma API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filter[products]array: string",
+          "col_1": "A comma-separated list of the products that the returned users must have access to in the specified project. Only users that have access to one or more of the specified products are returned.\nNote that every product in the same hub as the project is activated for the project, and a separate subset of these products is active for each user. This endpoint can retrieve users from Forma or BIM 360 projects.\nSome products are exclusive to Forma or to BIM 360, others are available on both platforms. Specify only the products on the appropriate platform for the users you want to retrieve.\nPossible Forma values: accountAdministration, autoSpecs, build, buildingConnected, capitalPlanning, cloudWorksharing, cost, designCollaboration, docs, financials, insight, modelCoordination, projectAdministration, takeoff, and workshopxr.\nPossible BIM 360 values: accountAdministration, assets, cloudWorksharing, costManagement, designCollaboration, documentManagement, field, fieldManagement, glue, insight, modelCoordination, plan, projectAdministration, projectHome, projectManagement, and quantification."
+        },
+        {
+          "col_0": "filter[name]string",
+          "col_1": "A user name or name pattern that the returned users must have. Can be a partial match based on the value of filterTextMatch that you provide.\nFor example:\nfilter[name]=Sample filterTextMatch=startsWith\nMax length: 255"
+        },
+        {
+          "col_0": "filter[email]string",
+          "col_1": "A user email address or address pattern that the returned users must have. This can be a partial match based on the value of filterTextMatch that you provide.\nFor example:\nfilter[email]=sample filterTextMatch=startsWith\nMax length: 255"
+        },
+        {
+          "col_0": "filter[accessLevels]array: string",
+          "col_1": "A list of user access levels that the returned users must have.\nPossible values: accountAdmin, projectAdmin, executive.\nMax length: 255"
+        },
+        {
+          "col_0": "filter[addedOn]string",
+          "col_1": "Filters users by the date they were added to the project (YYYY-MM-DD). Only users that were added on this date are returned."
+        },
+        {
+          "col_0": "filter[companyId]string",
+          "col_1": "The ID of a company that the returned users must represent.\nMax length: 255"
+        },
+        {
+          "col_0": "filter[companyName]string",
+          "col_1": "The name of a company that returned users must be associated with. Can be a partial match based on the value of filterTextMatch that you provide.\nFor example: filter[companyName]=Sample filterTextMatch=startsWith\nMax length: 255"
+        },
+        {
+          "col_0": "filter[autodeskId]array: string",
+          "col_1": "A list of the Autodesk IDs of users to retrieve."
+        },
+        {
+          "col_0": "filter[id]array: string: uuid",
+          "col_1": "A list of the Forma IDs of users to retrieve."
+        },
+        {
+          "col_0": "filter[roleId]string: UUID",
+          "col_1": "The ID of a user role that the returned users must have.\nTo obtain a role ID for this filter, you can inspect the roleId field in previous responses to this endpoint or to the GET projects/:projectId/users/:userId endpoint.\nMax length: 255"
+        },
+        {
+          "col_0": "filter[roleIds]array: string: uuid",
+          "col_1": "A list of the IDs of user roles that the returned users must have.\nTo obtain a role ID for this filter, you can inspect the roleId field in previous responses to this endpoint or to the GET projects/:projectId/users/:userId endpoint."
+        },
+        {
+          "col_0": "filter[status]array: string",
+          "col_1": "A list of statuses that the returned project users must be in. The default values are active and pending.\nPossible values: active, pending, and deleted."
+        },
+        {
+          "col_0": "sortarray: string",
+          "col_1": "A list of fields to sort the returned users by. Multiple sort fields are applied in sequence order - each sort field produces groupings of projects with the same values of that field; the next sort field applies within the groupings produced by the previous sort field.\nEach property can be followed by a direction modifier of either asc (ascending) or desc (descending). The default is asc.\nPossible values: name, email, firstName, lastName, addressLine1, addressLine2, city, companyName, stateOrProvince, status, phone, postalCode, country and addedOn. Default value: name."
+        },
+        {
+          "col_0": "fieldsarray: string",
+          "col_1": "A list of the project fields to include in the response. Default value: all fields.\nPossible values: name, email, firstName, lastName, autodeskId, analyticsId, addressLine1, addressLine2, city, stateOrProvince, postalCode, country, imageUrl, phone, jobTitle, industry, aboutMe, companyId, accessLevels, roleIds, roles, status, addedOn and products."
+        },
+        {
+          "col_0": "orFiltersarray: string",
+          "col_1": "A list of user fields to combine with the SQL OR operator for filtering the returned project users. The OR is automatically incorporated between the fields; any one of them can produce a valid match.\nPossible values: id, name, email, autodeskId, status and accessLevels."
+        },
+        {
+          "col_0": "filterTextMatchenum:string",
+          "col_1": "Specifies how text-based filters should match values in supported fields.\nThis parameter can be used in any endpoint that supports text-based filtering (e.g., filter[name], filter[jobNumber], filter[companyName], etc.).\nPossible values:\ncontains (default) – Matches if the field contains the specified text anywhere\nstartsWith – Matches if the field starts with the specified text\nendsWith – Matches if the field ends with the specified text\nequals – Matches only if the field exactly matches the specified text\nMatching is case-insensitive.\nWildcards and regular expressions are not supported."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records to return in the response.\nDefault: 20\nMinimum: 1\nMaximum: 200 (If a larger value is provided, only 200 records are returned)"
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first record to return.\nUsed for pagination in combination with the limit parameter.\nExample: limit=20 and offset=40 returns records 41–60."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "A list of requested project users."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Request has not been applied because it lacks valid authentication credentials for the target resource."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The server understood the request but refuses to authorize it."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource could not be found."
+        },
+        {
+          "col_0": "406Not Acceptable",
+          "col_1": "The server cannot produce a response matching the list of acceptable values defined in the request."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "410",
+          "col_1": "Access to the target resource is no longer available."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "User has sent too many requests in a given amount of time."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Server is not ready to handle the request."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "Contains pagination details for the records returned by the endpoint."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records returned per page. The last page may contain fewer records than the specified limit."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first record in the returned page. Used for pagination."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of records matching the request."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL for the next page of records, if more results are available. Max length: 2000 characters.\nMax length: 2000"
+        },
+        {
+          "col_0": "previousUrlstring",
+          "col_1": "The URL for the previous page of records, if applicable. Max length: 2000 characters.\nMax length: 2000"
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The requested page of project users."
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "The email of the user.\nMax length: 255"
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The Forma ID of the user."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The full name of the user.\nMax length: 255"
+        },
+        {
+          "col_0": "firstNamestring",
+          "col_1": "The user’s first name. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "lastNamestring",
+          "col_1": "The user’s last name. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The ID of the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "analyticsIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "addressLine1string",
+          "col_1": "The user’s address line 1. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "addressLine2string",
+          "col_1": "The user’s address line 2. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "The User’s city. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "stateOrProvincenull,string",
+          "col_1": "The state or province of the user. The accepted values here change depending on which country is provided. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "postalCodestring",
+          "col_1": "The zip or postal code of the user. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "countrynull,string",
+          "col_1": "The user’s country. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "imageUrlstring",
+          "col_1": "The URL of the user’s avatar. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "phoneobject",
+          "col_1": "The user’s phone number. This data syncs from the user’s Autodesk profile."
+        },
+        {
+          "col_0": "numberstring",
+          "col_1": "User’s phone number"
+        },
+        {
+          "col_0": "phoneTypeenum:string",
+          "col_1": "The user’s phone type.\nPossible values: home, mobile, or office. Default value: mobile."
+        },
+        {
+          "col_0": "extensionstring",
+          "col_1": "User’s phone extension."
+        },
+        {
+          "col_0": "jobTitlestring",
+          "col_1": "The user’s job title. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "industrystring",
+          "col_1": "The industry the user works in. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "aboutMestring",
+          "col_1": "A short bio about the user. This data syncs from the user’s Autodesk profile.\nMax length: 255"
+        },
+        {
+          "col_0": "accessLevelsobject",
+          "col_1": "Flags that identify a returned user’s access levels in the hub or project."
+        },
+        {
+          "col_0": "accountAdminboolean",
+          "col_1": "Indicates whether the user is a hub administrator for the hub. Possible values:\n\ntrue: The user is a hub administrator.\nfalse: The user is not a hub administrator."
+        },
+        {
+          "col_0": "projectAdminboolean",
+          "col_1": "Indicates whether the user is a project administrator for the project. Possible values:\n\ntrue: The user is a project administrator.\nfalse: The user is not a project administrator."
+        },
+        {
+          "col_0": "executiveboolean",
+          "col_1": "Indicates whether the user is an executive in the hub. Possible values:\n\ntrue: The user is an executive.\nfalse: The user is not an executive."
+        },
+        {
+          "col_0": "addedOndatetime: ISO 8601",
+          "col_1": "The timestamp when the user was first given access to any product on the project."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The timestamp when the project user was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "companyIdnull,string",
+          "col_1": "The ID of the company that the user is representing in the project. To obtain a list of all company IDs associated with a project, call GET projects/:projectId/companies."
+        },
+        {
+          "col_0": "companyNamenull,string",
+          "col_1": "The name of the company to which the user belongs.\nMax length: 255"
+        },
+        {
+          "col_0": "roleIdsarray: string",
+          "col_1": "A list of IDs of the roles that the user belongs to in the project."
+        },
+        {
+          "col_0": "rolesarray: object",
+          "col_1": "A list of the role IDs and names that are associated with the user in the project."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of a role that the user belongs to in the project."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of a role that the user belongs to in the project."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "The status of the user in the project. A pending user could be waiting for their products to activate, or the user hasn’t accepted an email to create a hub with Autodesk.\nPossible values:\n\nactive: The user has been added to the project.\npending: The user is in the process of being added to the project.\ndisabled: The user has been temporarily suspended from the project.\ndeleted: The user has been removed from the project."
+        },
+        {
+          "col_0": "productsarray: object",
+          "col_1": "Information about the products activated in the specified project for this user. Do not include this field if the requester has Member Manager access level."
+        },
+        {
+          "col_0": "keyenum:string",
+          "col_1": "A machine-readable identifier for the product (e.g., docs, build).\nEach product has a unique key used throughout the API for identification, filtering, and integration logic (e.g., in query parameters like filter[key]).\nPossible values:\nForma - autoSpecs, build, cost, designCollaboration, docs, insight, modelCoordination, projectAdministration, and takeoff.\nBIM 360 - assets, costManagement, designCollaboration, documentManagement, field, fieldManagement, glue, insight, modelCoordination, plan, projectAdministration, projectHome, projectManagement, and quantification.\nNote that this endpoint returns only Forma products. Other endpoints, such as GET projects and GET projects/:projectId, may return both Forma and BIM 360 projects. In those responses, product keys may include BIM 360 values."
+        },
+        {
+          "col_0": "accessenum:string",
+          "col_1": "The user’s type of access to the product identified by key. Possible values:\n\nadministrator\nmember\nnone\n\nNote that when you’re using a POST or PATCH endpoint to set this value, you must adhere to the following guidelines:\n\nIf you set a product’s key to projectAdministration and you set access to none, all other products should be set to member access for the user.\nIf you set a product’s key to projectAdministration and you set access to administrator, all other products should be set to administrator access for the user.\nYou cannot set a product’s key to projectAdministration and set access to member."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users?filter[products]=build,cost&filter[name]=Sample User&filter[email]=sampleUser1@autodesk.com&filter[accessLevels]=accountAdmin,executive&filter[addedOn]=2024-01-01&filter[companyId]=d1163421-e7eb-4862-ac15-b33777ba42de&filter[companyName]=Sample Company&filter[autodeskId]=User123,User124&filter[id]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[roleId]=cda845af-05f0-4c46-9108-71b993946c35&filter[roleIds]=cda845af-05f0-4c46-9108-71b993946c35,b8e84a73-7506-4d3f-b221-93691df2a359&filter[status]=active,pending&sort=name&fields=name,email&orFilters=id,name&filterTextMatch=contains&limit=20' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 20,\n    \"offset\": 10,\n    \"totalResults\": 121,\n    \"nextUrl\": \"https://resource?limit=20&offset=30\",\n    \"previousUrl\": \"https://resource?limit=20&offset=0\"\n  },\n  \"results\": [\n    {\n      \"email\": \"sampleUser1@autodesk.com\",\n      \"id\": \"39712a51-bd64-446a-9c72-48c4e43d0a0d\",\n      \"name\": \"Bob Smith\",\n      \"firstName\": \"Bob\",\n      \"lastName\": \"Smith\",\n      \"autodeskId\": \"USER123A\",\n      \"analyticsId\": \"SOMEID123\",\n      \"addressLine1\": \"123 Main Street\",\n      \"addressLine2\": \"Suite 2\",\n      \"city\": \"San Francisco\",\n      \"stateOrProvince\": \"California\",\n      \"postalCode\": \"94001\",\n      \"country\": \"United States\",\n      \"imageUrl\": \"https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg\",\n      \"phone\": {\n        \"number\": \"123-345-1234\",\n        \"phoneType\": \"mobile\",\n        \"extension\": \"10\"\n      },\n      \"jobTitle\": \"Owner\",\n      \"industry\": \"Architecture & Construction Service Providers\",\n      \"aboutMe\": \"Bob has been in construction for 25 years.\",\n      \"accessLevels\": {\n        \"accountAdmin\": true,\n        \"projectAdmin\": true,\n        \"executive\": true\n      },\n      \"addedOn\": \"2018-01-01T12:45:00.000Z\",\n      \"updatedAt\": \"2018-01-01T12:45:00.000Z\",\n      \"companyId\": \"c32ffb13-83f8-43fb-bddf-3e5c0c2dda24\",\n      \"companyName\": \"Sample Company\",\n      \"roleIds\": [\n        \"cda845af-05f0-4c46-9108-71b993946c35\",\n        \"b8e84a73-7506-4d3f-b221-93691df2a359\"\n      ],\n      \"roles\": [\n        {\n          \"id\": \"cda845af-05f0-4c46-9108-71b993946c35\",\n          \"name\": \"Architect\"\n        },\n        {\n          \"id\": \"b8e84a73-7506-4d3f-b221-93691df2a359\",\n          \"name\": \"Engineer\"\n        }\n      ],\n      \"status\": \"active\",\n      \"products\": [\n        {\n          \"key\": \"projectAdministration\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"designCollaboration\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"build\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"cost\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"modelCoordination\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"docs\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"insight\",\n          \"access\": \"administrator\"\n        },\n        {\n          \"key\": \"takeoff\",\n          \"access\": \"administrator\"\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 10,
+          "totalResults": 121,
+          "nextUrl": "https://resource?limit=20&offset=30",
+          "previousUrl": "https://resource?limit=20&offset=0"
+        },
+        "results": [
+          {
+            "email": "sampleUser1@autodesk.com",
+            "id": "39712a51-bd64-446a-9c72-48c4e43d0a0d",
+            "name": "Bob Smith",
+            "firstName": "Bob",
+            "lastName": "Smith",
+            "autodeskId": "USER123A",
+            "analyticsId": "SOMEID123",
+            "addressLine1": "123 Main Street",
+            "addressLine2": "Suite 2",
+            "city": "San Francisco",
+            "stateOrProvince": "California",
+            "postalCode": "94001",
+            "country": "United States",
+            "imageUrl": "https://s3.amazonaws.com:443/com.autodesk.storage.public.dev/oxygen/USER123A/profilepictures/x20.jpg",
+            "phone": {
+              "number": "123-345-1234",
+              "phoneType": "mobile",
+              "extension": "10"
+            },
+            "jobTitle": "Owner",
+            "industry": "Architecture & Construction Service Providers",
+            "aboutMe": "Bob has been in construction for 25 years.",
+            "accessLevels": {
+              "accountAdmin": true,
+              "projectAdmin": true,
+              "executive": true
+            },
+            "addedOn": "2018-01-01T12:45:00.000Z",
+            "updatedAt": "2018-01-01T12:45:00.000Z",
+            "companyId": "c32ffb13-83f8-43fb-bddf-3e5c0c2dda24",
+            "companyName": "Sample Company",
+            "roleIds": [
+              "cda845af-05f0-4c46-9108-71b993946c35",
+              "b8e84a73-7506-4d3f-b221-93691df2a359"
+            ],
+            "roles": [
+              {
+                "id": "cda845af-05f0-4c46-9108-71b993946c35",
+                "name": "Architect"
+              },
+              {
+                "id": "b8e84a73-7506-4d3f-b221-93691df2a359",
+                "name": "Engineer"
+              }
+            ],
+            "status": "active",
+            "products": [
+              {
+                "key": "projectAdministration",
+                "access": "administrator"
+              },
+              {
+                "key": "designCollaboration",
+                "access": "administrator"
+              },
+              {
+                "key": "build",
+                "access": "administrator"
+              },
+              {
+                "key": "cost",
+                "access": "administrator"
+              },
+              {
+                "key": "modelCoordination",
+                "access": "administrator"
+              },
+              {
+                "key": "docs",
+                "access": "administrator"
+              },
+              {
+                "key": "insight",
+                "access": "administrator"
+              },
+              {
+                "key": "takeoff",
+                "access": "administrator"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

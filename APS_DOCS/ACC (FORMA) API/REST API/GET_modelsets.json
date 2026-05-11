@@ -1,0 +1,251 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/mc-modelset-service-v3-get-model-sets-GET",
+    "scrapedAt": "2026-05-09T00:01:25.194Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "containers/:containerId/modelsets",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/bim360/modelset/v3/containers/:containerId/modelsets"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pageLimitint",
+          "col_1": "The maximum number of model sets to return in a page. If not set, the default page limit is used, as determined by the server."
+        },
+        {
+          "col_0": "continuationTokenstring",
+          "col_1": "The token indicating the start of the page. If not set, the first page is retrieved."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "A model set name filter. This is an equality filter."
+        },
+        {
+          "col_0": "folderUrnstring",
+          "col_1": "A folder URN filter."
+        },
+        {
+          "col_0": "includeDisabledboolean",
+          "col_1": "Determines whether to include disabled model sets."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pageobject",
+          "col_1": "Paging information associated with a paging response."
+        },
+        {
+          "col_0": "continuationTokenstring",
+          "col_1": "A continuation token to retrieve the next page."
+        },
+        {
+          "col_0": "modelSetsarray: object",
+          "col_1": "List of model set summaries."
+        },
+        {
+          "col_0": "modelSetIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the model set."
+        },
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the model set."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Additional information about the model set."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the model set."
+        },
+        {
+          "col_0": "createdTimedatetime: ISO 8601",
+          "col_1": "The date and time that the model set was created."
+        },
+        {
+          "col_0": "isDisabledboolean",
+          "col_1": "Indicates if new versions are created for model set changes."
+        },
+        {
+          "col_0": "isDeletedboolean",
+          "col_1": "Indicates whether the model set is deleted."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets?pageLimit=134&continuationToken=10&name=Formal+Coordination&folderUrn=urn%3aadsk.wipprod%3afs.folder%3aco.WI8roO18TU2Cl3P9y64z4w&includeDisabled=False' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "{\n  \"page\": {\n    \"continuationToken\": \"10\"\n  },\n  \"modelSets\": [\n    {\n      \"modelSetId\": \"00fb28a5-e8a4-2755-562a-7c2f0fc87911\",\n      \"containerId\": \"f0f4f36a-ac64-687f-b132-8efe04b22454\",\n      \"name\": \"Formal Coordination\",\n      \"description\": \"Space for coordinating all disciplines\",\n      \"createdBy\": \"PD23PXGV8V3V\",\n      \"createdTime\": \"2015-10-21T16:31:44Z\",\n      \"isDisabled\": true,\n      \"isDeleted\": false\n    }\n  ]\n}",
+      "parsed": {
+        "page": {
+          "continuationToken": "10"
+        },
+        "modelSets": [
+          {
+            "modelSetId": "00fb28a5-e8a4-2755-562a-7c2f0fc87911",
+            "containerId": "f0f4f36a-ac64-687f-b132-8efe04b22454",
+            "name": "Formal Coordination",
+            "description": "Space for coordinating all disciplines",
+            "createdBy": "PD23PXGV8V3V",
+            "createdTime": "2015-10-21T16:31:44Z",
+            "isDisabled": true,
+            "isDeleted": false
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

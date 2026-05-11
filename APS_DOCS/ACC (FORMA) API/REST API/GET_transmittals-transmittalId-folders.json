@@ -1,0 +1,222 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/transmittals-listtransmittalfolders-GET",
+    "scrapedAt": "2026-05-09T00:08:20.621Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/transmittals/{transmittalId}/folders",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/folders",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/transmittals/v1/projects/{projectId}/transmittals/{transmittalId}/folders"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The Autodesk ID of the user on whose behalf the request is made.\nThis header is required only when using two-legged authentication. It is not needed for three-legged authentication.\nYour application can access only those users who are assigned to it in the SaaS Integrations UI.\nOnly user Autodesk IDs (autodeskId) are supported."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nYou can retrieve the project ID using the Data Management API. For more details, see the Retrieve a Project ID tutorial.\nYou may provide the project ID with or without the b. prefix:\n\nWith prefix: b.657a5565-09b7-48e0-bd03-acacfe42efaf\nWithout prefix: 657a5565-09b7-48e0-bd03-acacfe42efaf"
+        },
+        {
+          "col_0": "transmittalIdstring: UUID",
+          "col_1": "The ID of the transmittal. To find the ID, call GET transmittals."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results to return per page.\nAcceptable values: 1-200.\nDefault value: 20.\nFor example, to limit the response to two results per page, use limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index from which the response starts returning results.\nDefault value: 0.\nFor example, to skip the first three results, use offset=3."
+        },
+        {
+          "col_0": "sortenum:string",
+          "col_1": "Sorts the folders by a supported field and order.\nBy default, folders are sorted in ascending order by name (name asc).\nTo sort in descending order, add desc after the field name.\nFormat: sort=<field> [asc or desc]\nSupported fields: name, lastUpdatedAt, updatedByName.\nExamples:\n\nsort=name asc – sorts folders alphabetically by name.\nsort=lastUpdatedAt desc – sorts folders by last updated time in descending order.\n\nPossible values: name, lastUpdatedAt, updatedByName, name asc, lastUpdatedAt asc, updatedByName asc, name desc, lastUpdatedAt desc, updatedByName desc"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the folders of the transmittal"
+        },
+        {
+          "col_0": "202Accepted",
+          "col_1": "The transmittal has been created and is currently being processed but not ready for review yet. The folders list will be empty."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Operation failed because of bad user input"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Unauthorized error"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The project or transmittal does not exist."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of folders included in the transmittal."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN of the folder."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the folder."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the folder."
+        },
+        {
+          "col_0": "lastUpdatedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the folder was last modified, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedByNamestring",
+          "col_1": "The Autodesk ID of the user who last modified the folder."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who last modified the folder. For details about the user, call GET user."
+        },
+        {
+          "col_0": "isDeletedboolean",
+          "col_1": "Indicates whether the folder is deleted.\ntrue – The folder is deleted, either directly or because its parent folder was deleted.\nfalse – The folder is not deleted."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "The list of pagination details for the response."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results returned per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before the current page, starting from zero."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of results that match the query, regardless of pagination."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL to retrieve the next page of transmittal folders. If not included, this is the last page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "This list of folders will be empty."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/folders' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"urn\": \"urn:adsk.wipprod:fs.folder:co.93vIs_WjTw2aynKiXkYVKA\",\n      \"name\": \"Building Design\",\n      \"description\": \"Design PDF files\",\n      \"lastUpdatedAt\": \"2025-04-19T01:38:27.306Z\",\n      \"updatedByName\": \"John Smith\",\n      \"updatedBy\": \"8T4JUUX7NCG726NJ\",\n      \"isDeleted\": false\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 1,\n    \"offset\": 0,\n    \"totalResults\": 10,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/folders?limit=1&offset=1\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "urn": "urn:adsk.wipprod:fs.folder:co.93vIs_WjTw2aynKiXkYVKA",
+            "name": "Building Design",
+            "description": "Design PDF files",
+            "lastUpdatedAt": "2025-04-19T01:38:27.306Z",
+            "updatedByName": "John Smith",
+            "updatedBy": "8T4JUUX7NCG726NJ",
+            "isDeleted": false
+          }
+        ],
+        "pagination": {
+          "limit": 1,
+          "offset": 0,
+          "totalResults": 10,
+          "nextUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/folders?limit=1&offset=1"
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"results\": [],\n  \"pagination\": {\n    \"limit\": 1,\n    \"offset\": 0,\n    \"totalResults\": 0,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "results": [],
+        "pagination": {
+          "limit": 1,
+          "offset": 0,
+          "totalResults": 0,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

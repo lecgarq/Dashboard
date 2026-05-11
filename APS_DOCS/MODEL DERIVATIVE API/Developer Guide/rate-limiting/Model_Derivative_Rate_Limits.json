@@ -1,0 +1,112 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/rate-limiting/md-rate-limits",
+    "scrapedAt": "2026-05-08T18:21:41.027Z",
+    "category": "Developer Guide/rate-limiting",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Model Derivative Rate Limits and Quotas",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Method",
+        "Endpoint",
+        "Limit (requests/minute)",
+        "Comments"
+      ],
+      "rows": [
+        {
+          "Method": "POST",
+          "Endpoint": "/job",
+          "Limit (requests/minute)": "500",
+          "Comments": ""
+        },
+        {
+          "Method": "GET",
+          "Endpoint": "/{urn}/metadata/{modelGuid}/properties",
+          "Limit (requests/minute)": "300",
+          "Comments": "This rate limit applies only when a request triggers a metadata extraction process. It does not apply to requests querying models whose metadata extraction is complete or in progress."
+        },
+        {
+          "Method": "GET",
+          "Endpoint": "/{urn}/metadata/{modelGuid}",
+          "Limit (requests/minute)": "300",
+          "Comments": "This rate limit applies only when a request triggers a metadata extraction process. It does not apply to requests querying models whose metadata extraction is complete or in progress."
+        },
+        {
+          "Method": "POST",
+          "Endpoint": "/{urn}/metadata/{modelGuid}/properties:query",
+          "Limit (requests/minute)": "300",
+          "Comments": "This rate limit applies only when a request triggers a metadata extraction process. It does not apply to requests querying models whose metadata extraction is complete or in progress."
+        },
+        {
+          "Method": "GET",
+          "Endpoint": "/{urn}/metadata/{guid}/properties?forceget=true",
+          "Limit (requests/minute)": "60",
+          "Comments": ""
+        },
+        {
+          "Method": "GET",
+          "Endpoint": "/{urn}/metadata/{modelGuid}?forceget=true",
+          "Limit (requests/minute)": "60",
+          "Comments": ""
+        },
+        {
+          "Method": "",
+          "Endpoint": "Other endpoint limits coming soon",
+          "Limit (requests/minute)": "",
+          "Comments": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Method",
+        "Endpoint",
+        "Limit Description",
+        "Limit",
+        "Units",
+        "Notification"
+      ],
+      "rows": [
+        {
+          "Method": "GET",
+          "Endpoint": ":/urn/metadata/{guid}/properties",
+          "Limit Description": "The maximum download size for a request",
+          "Limit": "20",
+          "Units": "MB",
+          "Notification": "HTTP 413 response"
+        },
+        {
+          "Method": "GET",
+          "Endpoint": "{urn}/manifest/{derivativeurn}",
+          "Limit Description": "The maximum download size for derivatives with a URN ending with .db or .sdb.\n\nTip: If the derivative to download is larger than the specified limit, use the Range header to download the derivative in chunks.",
+          "Limit": "64",
+          "Units": "MB",
+          "Notification": "HTTP 413 response"
+        },
+        {
+          "Method": "",
+          "Endpoint": "Other quotas coming soon",
+          "Limit Description": "",
+          "Limit": "",
+          "Units": "",
+          "Notification": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "HTTP/1.1 413 Request Entity Too Large\nContent-Type: application/json\ndate: Fri, 03 Aug 2018 08:17:33 GMT\nx-ads-app-identifier=platform-viewing-2018.06.02.63.f1ad853-production\nx-ads-startup-time: Fri Aug 03 05:34:31 UTC 2018\nx-ads-duration: 126 ms\nx-ads-size: 529625314"
+    },
+    {
+      "raw": "{\n  \"diagnostic\": \"Please use the 'forceget' parameter to force querying the data.\"\n}",
+      "parsed": {
+        "diagnostic": "Please use the 'forceget' parameter to force querying the data."
+      }
+    }
+  ]
+}

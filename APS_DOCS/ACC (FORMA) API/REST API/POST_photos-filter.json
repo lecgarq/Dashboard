@@ -1,0 +1,338 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/photos-getfilteredphotos-POST",
+    "scrapedAt": "2026-05-08T23:58:28.216Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "photos:filter",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/photos/projects/36c0838c-0360-4cfa-b2c6-85e0056ec7e8/photos:filter",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/construction/photos/v1/projects/:projectId/photos:filter"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "Unique identifier of the project."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cursorStatestring",
+          "col_1": "An opaque cursor token that identifies where the next page of paginated results should start. It’s returned in each paginated response so that it can be supplied in the next request to continue paginated results. If a paginated response contains no cursorState value, then there are no further pages to return. If provided, all other body parameters are ignored."
+        },
+        {
+          "col_0": "filterobject",
+          "col_1": "Parameters to filter media by"
+        },
+        {
+          "col_0": "createdAtstring",
+          "col_1": "Filter by when the media was submitted to the server. A string that specifies a date and time or a date and time range at which all returned objects mast have been updated. A single date and time takes this format: YYYY-MM-DDThh:mm:ss.SSSZ, A date and time range takes this format: YYYY-MM-DDThh:mm:ss.SSSZ..YYYY-MM-DDThh:mm:ss.SSSZ. Range queries can be closed or open in either direction: YYYY-MM-DDThh:mm:ss.SSSZ.. or ..YYYY-MM-DDThh:mm:ss.SSSZ."
+        },
+        {
+          "col_0": "createdByarray: string",
+          "col_1": "The actor that created the media. This is an Autodesk ID."
+        },
+        {
+          "col_0": "idarray: string",
+          "col_1": "List of IDs to filter by"
+        },
+        {
+          "col_0": "mediaTypearray: string",
+          "col_1": "Filter by type of the media\nPossible values: NORMAL, INFRARED, PHOTOSPHERE, VIDEO"
+        },
+        {
+          "col_0": "takenAtstring",
+          "col_1": "Filter by when the media was captured on the camera. A string that specifies a date and time or a date and time range at which all returned objects mast have been updated. A single date and time takes this format: YYYY-MM-DDThh:mm:ss.SSSZ, A date and time range takes this format: YYYY-MM-DDThh:mm:ss.SSSZ..YYYY-MM-DDThh:mm:ss.SSSZ. Range queries can be closed or open in either direction: YYYY-MM-DDThh:mm:ss.SSSZ.. or ..YYYY-MM-DDThh:mm:ss.SSSZ."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "Filter by media title"
+        },
+        {
+          "col_0": "includearray: string",
+          "col_1": "Extra fields to be returned for each Photo Objects (e.g. signedUrls) Will always be: signedUrls"
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of objects that can be returned in a page. A request might return fewer objects than the limit if the Photos service runs out of specified objects to return - at the end of a set of paged results, for example. The maximum limit is 50; the default limit is 25."
+        },
+        {
+          "col_0": "sortarray: string",
+          "col_1": "Define how results are sorted. Provide the field (createdAt, takenAt) and the direction (asc, desc) eg. [\"createdAt\", \"asc\"]"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successful return of the filtered media"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "Pagination details"
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Number of result in a page"
+        },
+        {
+          "col_0": "nextPostobject",
+          "col_1": "Information to fetch the next results of data via POST"
+        },
+        {
+          "col_0": "bodyobject",
+          "col_1": "The POST body to use to get the next result"
+        },
+        {
+          "col_0": "cursorStatestring",
+          "col_1": "An opaque cursor token that identifies where the next page of paginated results should start. It’s returned in each paginated response so that it can be supplied in the next request to continue paginated results. If a paginated response contains no cursorState value, then there are no further pages to return."
+        },
+        {
+          "col_0": "urlstring",
+          "col_1": "The URL to get the next result"
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The filtered media"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The time when the media was created at (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The actor that created the media. This is an Autodesk ID."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The time when the media was deleted at (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The actor that deleted the media. This is an Autodesk ID."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Description of the media"
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the media.\nMax length: 36"
+        },
+        {
+          "col_0": "isPublicboolean",
+          "col_1": "If true the media is public and visible to everyone"
+        },
+        {
+          "col_0": "latitudenumber",
+          "col_1": "Latitude in decimal degrees"
+        },
+        {
+          "col_0": "lockedboolean",
+          "col_1": "If true the media cannot be deleted or edited"
+        },
+        {
+          "col_0": "longitudenumber",
+          "col_1": "Longitude in decimal degrees"
+        },
+        {
+          "col_0": "mediaTypeenum:string",
+          "col_1": "The type of the media (NORMAL is for a normal photo)\nPossible values: NORMAL, INFRARED, PHOTOSPHERE, VIDEO"
+        },
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The id of the project\nMax length: 36"
+        },
+        {
+          "col_0": "signedUrlsobject",
+          "col_1": "URLs to the media’s assets. Accessible by anyone but is short-lived. Must be explicitly requested via `include field"
+        },
+        {
+          "col_0": "fileUrlstring",
+          "col_1": "Signed URL to the original asset"
+        },
+        {
+          "col_0": "thumbnailUrlstring",
+          "col_1": "Signed URL to the thumbnail asset"
+        },
+        {
+          "col_0": "sizenumber",
+          "col_1": "Filesize of the media in bytes"
+        },
+        {
+          "col_0": "takenAtdatetime: ISO 8601",
+          "col_1": "The time when the media was captured by the camera at (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "Title of the media"
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of object this media was initially added with\nPossible values: FIELD-REPORT, FORM, ISSUE, RFI, MARKUP, ASSET, GALLERY, MEETING, SUBMITTAL, LOGO"
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The time when the media was last updated (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The actor that last updated the media. This is an Autodesk ID."
+        },
+        {
+          "col_0": "urlsobject",
+          "col_1": "URLs to the media’s assets. Requires API auth headers (data:read) to access it."
+        },
+        {
+          "col_0": "fileUrlstring",
+          "col_1": "URL to the original asset"
+        },
+        {
+          "col_0": "thumbnailUrlstring",
+          "col_1": "URL to the thumbnail asset"
+        },
+        {
+          "col_0": "userCreatedAtdatetime: ISO 8601",
+          "col_1": "The time when the media was added to the project at (whether it was offline/locally or online) at (ISO8601 Date time format in UTC)."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/photos/projects/36c0838c-0360-4cfa-b2c6-85e0056ec7e8/photos:filter' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"cursorState\": \"eyJsaW1pdCI6MjUsICJ0aXRsZSI6ICJ3YWxsIn0Ks\",\n        \"filter\": {\n          \"createdAt\": \"2021-03-14T10:10:00..2021-03-16T10:15:00\",\n          \"createdBy\": [\n            \"NCSNR6R5NHUD\",\n            \"5QCVQ6JAUTHB\"\n          ],\n          \"id\": [\n            \"0c96ea4c-bd3d-4b80-9eb6-c123e1faecd5\",\n            \"5439bfb7-8006-4388-a454-f02560f99566\"\n          ],\n          \"mediaType\": [\n            \"NORMAL\"\n          ],\n          \"takenAt\": \"2021-03-12T10:10:00..2021-03-15T10:15:00\",\n          \"title\": \"dry wall\"\n        },\n        \"include\": [\n          \"signedUrls\"\n        ],\n        \"limit\": 25,\n        \"sort\": [\n          \"createdAt\",\n          \"asc\"\n        ]\n      }'",
+      "parsed": {
+        "cursorState": "eyJsaW1pdCI6MjUsICJ0aXRsZSI6ICJ3YWxsIn0Ks",
+        "filter": {
+          "createdAt": "2021-03-14T10:10:00..2021-03-16T10:15:00",
+          "createdBy": [
+            "NCSNR6R5NHUD",
+            "5QCVQ6JAUTHB"
+          ],
+          "id": [
+            "0c96ea4c-bd3d-4b80-9eb6-c123e1faecd5",
+            "5439bfb7-8006-4388-a454-f02560f99566"
+          ],
+          "mediaType": [
+            "NORMAL"
+          ],
+          "takenAt": "2021-03-12T10:10:00..2021-03-15T10:15:00",
+          "title": "dry wall"
+        },
+        "include": [
+          "signedUrls"
+        ],
+        "limit": 25,
+        "sort": [
+          "createdAt",
+          "asc"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 25,\n    \"nextPost\": {\n      \"body\": {\n        \"cursorState\": \"eyJsaW1pdCI6MjUsICJ0aXRsZSI6ICJ3YWxsIn0Ks\"\n      },\n      \"url\": \"https://developer.api.autodesk.com/construction/photos/v1/projects/8e52b200-f856-4f17-a57c-c03ba2f6673a/photos:filter\"\n    }\n  },\n  \"results\": [\n    {\n      \"createdAt\": \"2021-03-14T10:20:33\",\n      \"createdBy\": \"PER8KQPK2JRT\",\n      \"deletedAt\": \"2021-03-19T11:50:33\",\n      \"deletedBy\": \"PER8KQPK2JRT\",\n      \"description\": \"The left side of the office\",\n      \"id\": \"5439bfb7-8006-4388-a454-f02560f99566\",\n      \"isPublic\": false,\n      \"latitude\": 37.757497,\n      \"locked\": false,\n      \"longitude\": -122.42115,\n      \"mediaType\": \"NORMAL\",\n      \"projectId\": \"36c0838c-0360-4cfa-b2c6-85e0056ec7e8\",\n      \"signedUrls\": {\n        \"fileUrl\": \"https://s3.amazonaws.com/com.autodesk.oss-persistent/f0/7b/66/4df1b73d0cc643e6179b85eae7d8d529d2/ce8edd30-ef28-467c-8d99-7d7051097ee0?response-content-disposition=attachment%3B%20filename%3D%22c35b8b28-859e-4256-a3bc-41772a673260.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCOKZyru7bEOWhRlJOiFZUwLwGSFSWPO5VknX%2BIisldAwIgWN6g5zYxXLOzdiZgR4sYuyY4qr1k1SAQOTOCI7EOmKIqvQMI3P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw5OTM3ODk5OTIwNjMiDK0wr6QcJBV%2BrqLz7iqRA55WGaeF1IZVyH5XzR%2FyR72VqyCRIEwm9D3Pt%2BTOxtaNa519ldQcvjYptWrlwnrgr1T9c3jxtEXxHZveX3XwgaSQq7JyHACBAMVwkKABwczEzPOryCvIJBWjgr2ABoYGr0dDCFdh9IjdoDrOrXDDesn4I5GamK%2BdNzXBR1MJH3ocmoZXxrmaJGigr62ShQ3q7AoqMgIX55XH8DnYMP4k9OlGGJsL7P80OnvOXfNLFl9EVJp5jnp%2BT1eO3FezRxc%2FqkeTG7t6QHh87P4cJKzWV9pW3AQoYvBKyQ5uJn5WA8%2FFg%2BhzYalr5Y%2B4%2FneB0xfn7WS2I%2FvjIo6rOkIqx7K3Ty1p1kuZ6e64%2BlEXx8mYHO2NOYobbSf%2Fx%2B7FU1rhZqvqUGB%2BRoMXFI%2FIkaxe%2B%2Ba6sZYV6Dm6bcim835asw%2B48vkt3XLZ6kBNqOJMdqvIBp%2F7opV9Bc4%2BMkhPc6wT%2BwAoQ0jHGuNZiLh%2BsxcB8EtwziI18v5LFw6WmffTQD3oc8WTb9xUZmoQ8qDq5z%2FY4%2BY2EAq6MNaP7oIGOusBXz4xrUPPH0cr5UO912gp6aysXFnqxu55it8zqPwiGI2Xe0RlaMTAMh1jwDZ4LZD4N2NERk%2F%2BlR1KaRk2Jvo34HIXVnUqNWlYAR3TyV2intl8wwJWlgKQH6DI%2BzwOJ27kDToULG5TQpQk6xAQaToplmERCien7Pi8vlb0JNBCzkoKNh40Z1wPxcS%2BitdU0IkD0n39bvWy5uG0hoUuifHr53vaf7eqFRSdrd%2B%2BYuJ00yT%2FtWS6FLpLKCSgZw8GKoAq3PpfPggmg99bAju7H%2FD8xfVgBPhb91tEGCCdyub4jDtj6euoUFXK%2FiMIVg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210324T193346Z&X-Amz-SignedHeaders=host&X-Amz-Expires=60&X-Amz-Credential=ASIA6OYT73R75HNE4VUO%2F20210324%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=e694954290d485482c6334b39b591c87e4a16ba2425f05da1dc25faf47afba2d\",\n        \"thumbnailUrl\": \"https://s3.amazonaws.com/com.autodesk.oss-opsstaging-persistent/81/b8/3d/e2855b46af2060d595ce31923310079c4b/ce8edd30-ef28-467c-8d99-7d7051097ee0?response-content-disposition=attachment%3B%20filename%3D%22c35b8b28-859e-4256-a3bc-41772a673260_t.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCOKZyru7bEOWhRlJOiFZUwLwGSFSWPO5VknX%2BIisldAwIgWN6g5zYxXLOzdiZgR4sYuyY4qr1k1SAQOTOCI7EOmKIqvQMI3P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw5OTM3ODk5OTIwNjMiDK0wr6QcJBV%2BrqLz7iqRA55WGaeF1IZVyH5XzR%2FyR72VqyCRIEwm9D3Pt%2BTOxtaNa519ldQcvjYptWrlwnrgr1T9c3jxtEXxHZveX3XwgaSQq7JyHACBAMVwkKABwczEzPOryCvIJBWjgr2ABoYGr0dDCFdh9IjdoDrOrXDDesn4I5GamK%2BdNzXBR1MJH3ocmoZXxrmaJGigr62ShQ3q7AoqMgIX55XH8DnYMP4k9OlGGJsL7P80OnvOXfNLFl9EVJp5jnp%2BT1eO3FezRxc%2FqkeTG7t6QHh87P4cJKzWV9pW3AQoYvBKyQ5uJn5WA8%2FFg%2BhzYalr5Y%2B4%2FneB0xfn7WS2I%2FvjIo6rOkIqx7K3Ty1p1kuZ6e64%2BlEXx8mYHO2NOYobbSf%2Fx%2B7FU1rhZqvqUGB%2BRoMXFI%2FIkaxe%2B%2Ba6sZYV6Dm6bcim835asw%2B48vkt3XLZ6kBNqOJMdqvIBp%2F7opV9Bc4%2BMkhPc6wT%2BwAoQ0jHGuNZiLh%2BsxcB8EtwziI18v5LFw6WmffTQD3oc8WTb9xUZmoQ8qDq5z%2FY4%2BY2EAq6MNaP7oIGOusBXz4xrUPPH0cr5UO912gp6aysXFnqxu55it8zqPwiGI2Xe0RlaMTAMh1jwDZ4LZD4N2NERk%2F%2BlR1KaRk2Jvo34HIXVnUqNWlYAR3TyV2intl8wwJWlgKQH6DI%2BzwOJ27kDToULG5TQpQk6xAQaToplmERCien7Pi8vlb0JNBCzkoKNh40Z1wPxcS%2BitdU0IkD0n39bvWy5uG0hoUuifHr53vaf7eqFRSdrd%2B%2BYuJ00yT%2FtWS6FLpLKCSgZw8GKoAq3PpfPggmg99bAju7H%2FD8xfVgBPhb91tEGCCdyub4jDtj6euoUFXK%2FiMIVg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210324T193346Z&X-Amz-SignedHeaders=host&X-Amz-Expires=60&X-Amz-Credential=ASIA6OYT73R75HNE4VUO%2F20210324%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=fac56130302305057c9ae301503860edb2d296c43dcfb5a59ebf3744f5126baa\"\n      },\n      \"size\": 11359,\n      \"takenAt\": \"2021-03-13T18:15:00\",\n      \"title\": \"Office Dry Wall\",\n      \"type\": \"FIELD-REPORT\",\n      \"updatedAt\": \"2021-03-14T11:20:33\",\n      \"updatedBy\": \"PER8KQPK2JRT\",\n      \"urls\": {\n        \"fileUrl\": \"https://developer.api.autodesk.com/construction/photos/assets/ce8edd30-ef28-467c-8d99-7d7051097ee0/c35b8b28-859e-4256-a3bc-41772a673260.jpg\\\"\",\n        \"thumbnailUrl\": \"https://developer.api.autodesk.com/construction/photos/assets/ce8edd30-ef28-467c-8d99-7d7051097ee0/c35b8b28-859e-4256-a3bc-41772a673260_t.jpg\\\"\"\n      },\n      \"userCreatedAt\": \"2021-03-13T18:20:33\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 25,
+          "nextPost": {
+            "body": {
+              "cursorState": "eyJsaW1pdCI6MjUsICJ0aXRsZSI6ICJ3YWxsIn0Ks"
+            },
+            "url": "https://developer.api.autodesk.com/construction/photos/v1/projects/8e52b200-f856-4f17-a57c-c03ba2f6673a/photos:filter"
+          }
+        },
+        "results": [
+          {
+            "createdAt": "2021-03-14T10:20:33",
+            "createdBy": "PER8KQPK2JRT",
+            "deletedAt": "2021-03-19T11:50:33",
+            "deletedBy": "PER8KQPK2JRT",
+            "description": "The left side of the office",
+            "id": "5439bfb7-8006-4388-a454-f02560f99566",
+            "isPublic": false,
+            "latitude": 37.757497,
+            "locked": false,
+            "longitude": -122.42115,
+            "mediaType": "NORMAL",
+            "projectId": "36c0838c-0360-4cfa-b2c6-85e0056ec7e8",
+            "signedUrls": {
+              "fileUrl": "https://s3.amazonaws.com/com.autodesk.oss-persistent/f0/7b/66/4df1b73d0cc643e6179b85eae7d8d529d2/ce8edd30-ef28-467c-8d99-7d7051097ee0?response-content-disposition=attachment%3B%20filename%3D%22c35b8b28-859e-4256-a3bc-41772a673260.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCOKZyru7bEOWhRlJOiFZUwLwGSFSWPO5VknX%2BIisldAwIgWN6g5zYxXLOzdiZgR4sYuyY4qr1k1SAQOTOCI7EOmKIqvQMI3P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw5OTM3ODk5OTIwNjMiDK0wr6QcJBV%2BrqLz7iqRA55WGaeF1IZVyH5XzR%2FyR72VqyCRIEwm9D3Pt%2BTOxtaNa519ldQcvjYptWrlwnrgr1T9c3jxtEXxHZveX3XwgaSQq7JyHACBAMVwkKABwczEzPOryCvIJBWjgr2ABoYGr0dDCFdh9IjdoDrOrXDDesn4I5GamK%2BdNzXBR1MJH3ocmoZXxrmaJGigr62ShQ3q7AoqMgIX55XH8DnYMP4k9OlGGJsL7P80OnvOXfNLFl9EVJp5jnp%2BT1eO3FezRxc%2FqkeTG7t6QHh87P4cJKzWV9pW3AQoYvBKyQ5uJn5WA8%2FFg%2BhzYalr5Y%2B4%2FneB0xfn7WS2I%2FvjIo6rOkIqx7K3Ty1p1kuZ6e64%2BlEXx8mYHO2NOYobbSf%2Fx%2B7FU1rhZqvqUGB%2BRoMXFI%2FIkaxe%2B%2Ba6sZYV6Dm6bcim835asw%2B48vkt3XLZ6kBNqOJMdqvIBp%2F7opV9Bc4%2BMkhPc6wT%2BwAoQ0jHGuNZiLh%2BsxcB8EtwziI18v5LFw6WmffTQD3oc8WTb9xUZmoQ8qDq5z%2FY4%2BY2EAq6MNaP7oIGOusBXz4xrUPPH0cr5UO912gp6aysXFnqxu55it8zqPwiGI2Xe0RlaMTAMh1jwDZ4LZD4N2NERk%2F%2BlR1KaRk2Jvo34HIXVnUqNWlYAR3TyV2intl8wwJWlgKQH6DI%2BzwOJ27kDToULG5TQpQk6xAQaToplmERCien7Pi8vlb0JNBCzkoKNh40Z1wPxcS%2BitdU0IkD0n39bvWy5uG0hoUuifHr53vaf7eqFRSdrd%2B%2BYuJ00yT%2FtWS6FLpLKCSgZw8GKoAq3PpfPggmg99bAju7H%2FD8xfVgBPhb91tEGCCdyub4jDtj6euoUFXK%2FiMIVg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210324T193346Z&X-Amz-SignedHeaders=host&X-Amz-Expires=60&X-Amz-Credential=ASIA6OYT73R75HNE4VUO%2F20210324%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=e694954290d485482c6334b39b591c87e4a16ba2425f05da1dc25faf47afba2d",
+              "thumbnailUrl": "https://s3.amazonaws.com/com.autodesk.oss-opsstaging-persistent/81/b8/3d/e2855b46af2060d595ce31923310079c4b/ce8edd30-ef28-467c-8d99-7d7051097ee0?response-content-disposition=attachment%3B%20filename%3D%22c35b8b28-859e-4256-a3bc-41772a673260_t.jpg%22&response-content-type=image%2Fjpeg&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEKP%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEaCXVzLWVhc3QtMSJHMEUCIQCOKZyru7bEOWhRlJOiFZUwLwGSFSWPO5VknX%2BIisldAwIgWN6g5zYxXLOzdiZgR4sYuyY4qr1k1SAQOTOCI7EOmKIqvQMI3P%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FARAAGgw5OTM3ODk5OTIwNjMiDK0wr6QcJBV%2BrqLz7iqRA55WGaeF1IZVyH5XzR%2FyR72VqyCRIEwm9D3Pt%2BTOxtaNa519ldQcvjYptWrlwnrgr1T9c3jxtEXxHZveX3XwgaSQq7JyHACBAMVwkKABwczEzPOryCvIJBWjgr2ABoYGr0dDCFdh9IjdoDrOrXDDesn4I5GamK%2BdNzXBR1MJH3ocmoZXxrmaJGigr62ShQ3q7AoqMgIX55XH8DnYMP4k9OlGGJsL7P80OnvOXfNLFl9EVJp5jnp%2BT1eO3FezRxc%2FqkeTG7t6QHh87P4cJKzWV9pW3AQoYvBKyQ5uJn5WA8%2FFg%2BhzYalr5Y%2B4%2FneB0xfn7WS2I%2FvjIo6rOkIqx7K3Ty1p1kuZ6e64%2BlEXx8mYHO2NOYobbSf%2Fx%2B7FU1rhZqvqUGB%2BRoMXFI%2FIkaxe%2B%2Ba6sZYV6Dm6bcim835asw%2B48vkt3XLZ6kBNqOJMdqvIBp%2F7opV9Bc4%2BMkhPc6wT%2BwAoQ0jHGuNZiLh%2BsxcB8EtwziI18v5LFw6WmffTQD3oc8WTb9xUZmoQ8qDq5z%2FY4%2BY2EAq6MNaP7oIGOusBXz4xrUPPH0cr5UO912gp6aysXFnqxu55it8zqPwiGI2Xe0RlaMTAMh1jwDZ4LZD4N2NERk%2F%2BlR1KaRk2Jvo34HIXVnUqNWlYAR3TyV2intl8wwJWlgKQH6DI%2BzwOJ27kDToULG5TQpQk6xAQaToplmERCien7Pi8vlb0JNBCzkoKNh40Z1wPxcS%2BitdU0IkD0n39bvWy5uG0hoUuifHr53vaf7eqFRSdrd%2B%2BYuJ00yT%2FtWS6FLpLKCSgZw8GKoAq3PpfPggmg99bAju7H%2FD8xfVgBPhb91tEGCCdyub4jDtj6euoUFXK%2FiMIVg%3D%3D&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210324T193346Z&X-Amz-SignedHeaders=host&X-Amz-Expires=60&X-Amz-Credential=ASIA6OYT73R75HNE4VUO%2F20210324%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=fac56130302305057c9ae301503860edb2d296c43dcfb5a59ebf3744f5126baa"
+            },
+            "size": 11359,
+            "takenAt": "2021-03-13T18:15:00",
+            "title": "Office Dry Wall",
+            "type": "FIELD-REPORT",
+            "updatedAt": "2021-03-14T11:20:33",
+            "updatedBy": "PER8KQPK2JRT",
+            "urls": {
+              "fileUrl": "https://developer.api.autodesk.com/construction/photos/assets/ce8edd30-ef28-467c-8d99-7d7051097ee0/c35b8b28-859e-4256-a3bc-41772a673260.jpg\"",
+              "thumbnailUrl": "https://developer.api.autodesk.com/construction/photos/assets/ce8edd30-ef28-467c-8d99-7d7051097ee0/c35b8b28-859e-4256-a3bc-41772a673260_t.jpg\""
+            },
+            "userCreatedAt": "2021-03-13T18:20:33"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,554 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/BubbleNode",
+    "scrapedAt": "2026-05-08T18:43:44.825Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "BubbleNode",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "data*object",
+          "col_1": "Raw node from the bubble JSON."
+        },
+        {
+          "col_0": "parentobject",
+          "col_1": "Parent node from the bubble JSON."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the bubble is from MD API."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.BubbleNode, undefined",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewableIDstring",
+          "col_1": "The viewable ID to get the property DB manifest for, defaults to this node’s GUID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.BubbleNode",
+          "description": "Top-most bubble node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewableIDstring",
+          "col_1": "The viewable ID to use for looking up the property DB, defaults to this node’s GUID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string, null",
+          "description": "Shared property DB path, or null."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The node’s name."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The node’s GUID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The node’s type."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": "Either an Array of extension ids, or undefined."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "searchParent*boolean",
+          "col_1": "If URN is not available for this node, search through its ancestors, too."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Viewable URN."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "encodeboolean",
+          "col_1": "Whether to return the result base64 encoded or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Viewable lineageUrn, or null in case of an error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a geometry leaf node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a viewable node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "BubbleNode",
+          "description": "The LOD node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a geometry node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a view preset/camera definition node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a 2D node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a 3D node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a 2D geometry node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a 3D geometry node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the node is meant to be loaded initially."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "searchMasterviewboolean",
+          "col_1": "Search for master view"
+        },
+        {
+          "col_0": "loadLargestViewboolean",
+          "col_1": "Sort by geometry size"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "BubbleNode",
+          "description": "The default geometry if any, and otherwise the full data set. For SVF: A geometry node marked as being the default (for SVF: useAsDefault=true). When none is found, it returns the first element from this.search({'type': 'geometry'})."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "Placement transform of the node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this is a metadata node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.BubbleNode",
+          "description": "First parent in the hierarchy that is a viewable. If called on the top level design node, returns the first child of the design node that is a viewable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "optionsobject",
+          "col_1": "Advance usage options"
+        },
+        {
+          "col_0": "fallbackParentAutodesk.Viewing.BubbleNode",
+          "col_1": "Gets returned when no geometry node is available after iterating through the parent chain."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.BubbleNode",
+          "description": "First parent in the hierarchy that is a 2D or 3D geometry."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<Autodesk.Viewing.BubbleNode>",
+          "description": "Array with all of the viewables under this node."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "ignoreLeaflet*boolean",
+          "col_1": "If set, it will skip any image pyramid sub-nodes and return a path to F2D file if available."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Viewable root path, or null."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "array",
+          "description": "All named views. Returns empty array if none are found."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "guid*string",
+          "col_1": "Node GUID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.BubbleNode",
+          "description": "Matching bubble node, or null."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "propsToMatch*object",
+          "col_1": "Filter criteria: To match, nodes must have the specified properties and values. Use comma-separated property:value pairs or named preset object. (See comments in examples below.)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<BubbleNode>",
+          "description": "Matching nodes, or null."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cb*function",
+          "col_1": "Callback function, accepts a bubble node as an argument, and returns true if the traversal should be terminated."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Result of the last callback invocation."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The Revit level/floor name of this bubble node. Only relevant for 2d sheets coming from Revit at the moment."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "// Filter criteria syntax:"
+    }
+  ]
+}

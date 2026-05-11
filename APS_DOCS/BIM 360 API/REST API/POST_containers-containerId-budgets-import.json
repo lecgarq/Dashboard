@@ -1,0 +1,274 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/en/docs/bim360/v1/reference/http/cost-budgetsimport-POST",
+    "scrapedAt": "2026-05-08T18:07:41.835Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/budgets:import",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets:import",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/cost/v1/containers/:containerId/budgets:import"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "forceboolean",
+          "col_1": "true: This request forces an override of locked budgeting so the request can succeed. The ability to create, update, or delete budgets can be locked at the project level, and force enables administrators to override the lock. A locked budget. Only a project administrator is allowed to update, create, or delete budgets when locked.\nfalse: This request does not override locked budgeting."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "data*array: object",
+          "col_1": "A list of budget."
+        },
+        {
+          "col_0": "parentIdstring,null",
+          "col_1": "ID of the parent budget, used only when creating sub budgets."
+        },
+        {
+          "col_0": "code*string",
+          "col_1": "Unique code compliant with the budget code template defined by the project admin. Ignored if segmentCodeMap is defined.\nMax length: 255"
+        },
+        {
+          "col_0": "scopeenum:string",
+          "col_1": "The scope of the budget. Possible values are budgetOnly and budgetAndCost."
+        },
+        {
+          "col_0": "segmentCodeMapobject",
+          "col_1": "Map of budget code segments to be used in the budget code, required when updating root budget code with variable length segment. Key is the budget code segment ID, value is the code for the segment."
+        },
+        {
+          "col_0": "*string",
+          "col_1": "Max length: 255"
+        },
+        {
+          "col_0": "name*string",
+          "col_1": "Name of the budget.\nMax length: 1024"
+        },
+        {
+          "col_0": "quantitynumber",
+          "col_1": "The quantity of labor, material, and other items planned for the budget."
+        },
+        {
+          "col_0": "inputQuantitynumber,null",
+          "col_1": "The input quantity planned for the budget."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Detail description of the budget."
+        },
+        {
+          "col_0": "unitPricenumber,string,null",
+          "col_1": "Unit price of a budget."
+        },
+        {
+          "col_0": "costUnitPricenumber,string,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "unitstring",
+          "col_1": "Unit of measures used in the budget."
+        },
+        {
+          "col_0": "mainContractAmountSourceenum:string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "mainContractIdstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "locationsarray,null",
+          "col_1": "A list of the IDs of the project locations where this item applies.\nFor more information, see the Locations Help documentation help."
+        },
+        {
+          "col_0": "plannedStartDatestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "plannedEndDatestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "actualStartDatestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "actualEndDatestring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "durationDaysnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        },
+        {
+          "col_0": "appendboolean",
+          "col_1": "true if you want to append the new budgets to the project.\nfalse if you want to purge existing budgets before importing the new budgets."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "204No Content",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets:import' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"data\": [\n          {\n            \"parentId\": \"null\",\n            \"code\": \"84720010130000GEN\",\n            \"scope\": \"budgetAndCost\",\n            \"segmentCodeMap\": {\n              \"42905750-8c20-11eb-b691-9d0026ec3ddc\": \"8472\",\n              \"4299f440-8c20-11eb-b691-9d0026ec3ddc\": \"0010130000\",\n              \"42927a30-8c20-11eb-b691-9d0026ec3ddc\": \"GEN\"\n            },\n            \"name\": \"Contingency\",\n            \"quantity\": 50,\n            \"inputQuantity\": 50,\n            \"description\": \"Reserved for contingency\",\n            \"unitPrice\": \"1000.0000\",\n            \"costUnitPrice\": \"1000.0000\",\n            \"unit\": \"LS\",\n            \"mainContractAmountSource\": \"forecastFinalCost\",\n            \"mainContractId\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n            \"locations\": [\n              \"683904a0-47ce-4146-ac2d-a3840f00e0f4\"\n            ],\n            \"plannedStartDate\": \"2019-01-06\",\n            \"plannedEndDate\": \"2020-01-06\",\n            \"actualStartDate\": \"2019-01-06\",\n            \"actualEndDate\": \"2020-02-10\",\n            \"durationDays\": 90,\n            \"externalId\": \"10010-99-AB\",\n            \"externalSystem\": \"Sage300\",\n            \"externalMessage\": \"Success.\",\n            \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n            \"integrationState\": \"locked\"\n          }\n        ],\n        \"append\": false\n      }'",
+      "parsed": {
+        "data": [
+          {
+            "parentId": "null",
+            "code": "84720010130000GEN",
+            "scope": "budgetAndCost",
+            "segmentCodeMap": {
+              "42905750-8c20-11eb-b691-9d0026ec3ddc": "8472",
+              "4299f440-8c20-11eb-b691-9d0026ec3ddc": "0010130000",
+              "42927a30-8c20-11eb-b691-9d0026ec3ddc": "GEN"
+            },
+            "name": "Contingency",
+            "quantity": 50,
+            "inputQuantity": 50,
+            "description": "Reserved for contingency",
+            "unitPrice": "1000.0000",
+            "costUnitPrice": "1000.0000",
+            "unit": "LS",
+            "mainContractAmountSource": "forecastFinalCost",
+            "mainContractId": "f6445638-ca68-4e3c-9160-15864de6b818",
+            "locations": [
+              "683904a0-47ce-4146-ac2d-a3840f00e0f4"
+            ],
+            "plannedStartDate": "2019-01-06",
+            "plannedEndDate": "2020-01-06",
+            "actualStartDate": "2019-01-06",
+            "actualEndDate": "2020-02-10",
+            "durationDays": 90,
+            "externalId": "10010-99-AB",
+            "externalSystem": "Sage300",
+            "externalMessage": "Success.",
+            "lastSyncTime": "2019-09-05T01:00:12.989Z",
+            "integrationState": "locked"
+          }
+        ],
+        "append": false
+      }
+    },
+    {
+      "raw": "204 No Content"
+    }
+  ]
+}

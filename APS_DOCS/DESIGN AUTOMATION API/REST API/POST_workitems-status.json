@@ -1,0 +1,131 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/workitems-status-POST",
+    "scrapedAt": "2026-05-08T17:44:49.624Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "workitems/status",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/workitems/status",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/workitems/status"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "ids*array: object",
+          "col_1": "Array of WorkItem Ids."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get the status for the array of WorkItem Ids."
+        },
+        {
+          "col_0": "400BadRequest",
+          "col_1": "The request is invalid."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "Array of WorkItem status."
+        },
+        {
+          "col_0": "errorsmap: object",
+          "col_1": "Map of errors for WorkItem ids faling to get status."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/workitems/status' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '[\n        \"03d65402faeb4409ac672f341462f689\",\n        \"032a3a8e25b3409584194e7221a40059\",\n        \"1230059b3409584194e7221230059000\",\n        \"02d6d69106b14946b319ab68d68cc04f\"\n      ]'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n      {\n          \"status\": \"success\",\n          \"reportUrl\": \"https://dasprod-store.s3.amazonaws.com/workItem/mynickname/03d65402faeb4409ac672f341462f689/report.txt\",\n          \"activityId\": \"mynickname.myApp1+prod\",\n          \"stats\": {\n              \"timeQueued\": \"2024-03-06T03:11:09.1510699Z\",\n              \"timeDownloadStarted\": \"2024-03-06T03:11:09.2898279Z\",\n              \"timeInstructionsStarted\": \"2024-03-06T03:11:09.4473947Z\",\n              \"timeInstructionsEnded\": \"2024-03-06T03:11:12.9289128Z\",\n              \"timeUploadEnded\": \"2024-03-06T03:11:12.9633762Z\",\n              \"timeFinished\": \"2024-03-06T03:11:13.3608607Z\",\n              \"bytesDownloaded\": 87040,\n              \"bytesUploaded\": 3\n          },\n          \"id\": \"03d65402faeb4409ac672f341462f689\"\n      },\n      {\n          \"status\": \"success\",\n          \"reportUrl\": \"https://dasprod-store.s3.amazonaws.com/workItem/mynickname/02d6d69106b14946b319ab68d68cc04f/report.txt\",\n          \"activityId\": \"mynickname.myApp1+prod\",\n          \"stats\": {\n              \"timeQueued\": \"2024-03-06T04:07:34.6920266Z\",\n              \"timeDownloadStarted\": \"2024-03-06T04:07:36.0231791Z\",\n              \"timeInstructionsStarted\": \"2024-03-06T04:07:39.9518961Z\",\n              \"timeInstructionsEnded\": \"2024-03-06T04:08:15.9285096Z\",\n              \"timeUploadEnded\": \"2024-03-06T04:08:16.1572555Z\",\n              \"timeFinished\": \"2024-03-06T04:08:17.0213784Z\",\n              \"bytesDownloaded\": 113,\n              \"bytesUploaded\": 352256\n          },\n          \"id\": \"02d6d69106b14946b319ab68d68cc04f\"\n      }\n  ],\n  \"errors\": {\n      \"032a3a8e25b3409584194e7221a40059\": \"Not found\",\n      \"1230059b3409584194e7221230059000\": \"Not found\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "status": "success",
+            "reportUrl": "https://dasprod-store.s3.amazonaws.com/workItem/mynickname/03d65402faeb4409ac672f341462f689/report.txt",
+            "activityId": "mynickname.myApp1+prod",
+            "stats": {
+              "timeQueued": "2024-03-06T03:11:09.1510699Z",
+              "timeDownloadStarted": "2024-03-06T03:11:09.2898279Z",
+              "timeInstructionsStarted": "2024-03-06T03:11:09.4473947Z",
+              "timeInstructionsEnded": "2024-03-06T03:11:12.9289128Z",
+              "timeUploadEnded": "2024-03-06T03:11:12.9633762Z",
+              "timeFinished": "2024-03-06T03:11:13.3608607Z",
+              "bytesDownloaded": 87040,
+              "bytesUploaded": 3
+            },
+            "id": "03d65402faeb4409ac672f341462f689"
+          },
+          {
+            "status": "success",
+            "reportUrl": "https://dasprod-store.s3.amazonaws.com/workItem/mynickname/02d6d69106b14946b319ab68d68cc04f/report.txt",
+            "activityId": "mynickname.myApp1+prod",
+            "stats": {
+              "timeQueued": "2024-03-06T04:07:34.6920266Z",
+              "timeDownloadStarted": "2024-03-06T04:07:36.0231791Z",
+              "timeInstructionsStarted": "2024-03-06T04:07:39.9518961Z",
+              "timeInstructionsEnded": "2024-03-06T04:08:15.9285096Z",
+              "timeUploadEnded": "2024-03-06T04:08:16.1572555Z",
+              "timeFinished": "2024-03-06T04:08:17.0213784Z",
+              "bytesDownloaded": 113,
+              "bytesUploaded": 352256
+            },
+            "id": "02d6d69106b14946b319ab68d68cc04f"
+          }
+        ],
+        "errors": {
+          "032a3a8e25b3409584194e7221a40059": "Not found",
+          "1230059b3409584194e7221230059000": "Not found"
+        }
+      }
+    }
+  ]
+}

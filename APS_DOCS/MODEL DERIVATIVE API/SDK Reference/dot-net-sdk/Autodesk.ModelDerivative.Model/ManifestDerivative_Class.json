@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ManifestDerivative",
+    "scrapedAt": "2026-05-08T18:27:42.401Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ManifestDerivative",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ManifestDerivative"
+    },
+    {
+      "raw": "public ManifestDerivative()"
+    },
+    {
+      "raw": "[DataMember(Name = \"children\", EmitDefaultValue = false)]\npublic List<ManifestResources> Children { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"hasThumbnail\", EmitDefaultValue = false)]\npublic string HasThumbnail { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"messages\", EmitDefaultValue = false)]\npublic List<Messages> Messages { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"name\", EmitDefaultValue = false)]\npublic string Name { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"outputType\", EmitDefaultValue = false)]\npublic string OutputType { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"progress\", EmitDefaultValue = false)]\npublic string Progress { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"status\", EmitDefaultValue = false)]\npublic string Status { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

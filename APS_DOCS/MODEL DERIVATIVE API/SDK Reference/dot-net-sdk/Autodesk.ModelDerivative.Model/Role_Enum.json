@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Role",
+    "scrapedAt": "2026-05-08T18:29:53.679Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Enum Role",
+  "codeExamples": [
+    {
+      "raw": "[JsonConverter(typeof(StringEnumConverter))]\npublic enum Role"
+    }
+  ]
+}

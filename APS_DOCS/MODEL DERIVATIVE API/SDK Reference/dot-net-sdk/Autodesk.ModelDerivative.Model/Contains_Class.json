@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Contains",
+    "scrapedAt": "2026-05-08T18:25:17.136Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class Contains",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class Contains : ISpecificPropertiesPayloadQuery"
+    },
+    {
+      "raw": "public Contains()"
+    },
+    {
+      "raw": "[DataMember(Name = \"$contains\", EmitDefaultValue = false)]\npublic List<string> _Contains { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

@@ -1,0 +1,814 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-manifest-GET",
+    "scrapedAt": "2026-05-08T18:24:18.235Z",
+    "category": "REST API",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "modelderivative/v2/designdata/{urn}/manifest",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/manifest"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read viewables:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Accept-Encodingstring",
+          "col_1": "A comma separated list of the algorithms you want the response to be encoded in, specified in the order of preference.\nIf you specify gzip or *, content is compressed and returned in gzip format."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the data center where the manifest and derivatives of the specified source design are stored. Possible values are:\n\nUS - (Default) Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urnstring",
+          "col_1": "The URL-safe Base64 encoded URN of the source design. This value is used as the urn URI parameter in operations to access data for this source design."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The manifest was successfully retrieved."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The server was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource was not found. Review the request and try again."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x-ads-app-identifierstring",
+          "col_1": "The service identifier. Comprises of the service name, version, and environment."
+        },
+        {
+          "col_0": "x-ads-startup-timestring",
+          "col_1": "The service startup time, in the following date format: EEE MMM dd HH:mm:ss Z yyyy."
+        },
+        {
+          "col_0": "x-ads-durationstring",
+          "col_1": "The amount of time spent servicing the request, in milliseconds."
+        },
+        {
+          "col_0": "x-ads-troubleshootingstring",
+          "col_1": "Provides information about server failures, if any."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urnstring",
+          "col_1": "The URL-safe Base64 encoded URN of the source design."
+        },
+        {
+          "col_0": "derivativesarray: object",
+          "col_1": "An array of objects, where each object represents a derivative of the source design."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the source design."
+        },
+        {
+          "col_0": "hasThumbnailstring",
+          "col_1": "true - The derivative has a thumbnail.\nfalse - The derivative does not have a thumbnail."
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Indicates the progress of the process generating this derivative, as a percentage. Once complete, the value changes to complete."
+        },
+        {
+          "col_0": "outputTypestring",
+          "col_1": "The file type/format of the derivative. Possible values are: dwg, fbx, ifc, iges, obj , step, stl, svf, svf2,  thumbnail."
+        },
+        {
+          "col_0": "propertiesobject",
+          "col_1": "A JSON object containing metadata extracted from the source design. This metadata provides valuable information about the model, such as its author, client name, project status, and other relevant details.\nNote: This metadata is currently returned for the following source design types:\n\nRVT - Revit models\nNWD - Navisworks models\nDWG - AutoCAD models"
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status of the task generating this derivative. Possible values are: pending, inprogress, success, failed, timeout."
+        },
+        {
+          "col_0": "messagesarray: object",
+          "col_1": "An array of objects where each object represents a message logged to the manifest during translation. For example, error messages and warning messages."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "Indicates the type of the message. For example, warning indicates a warning message and error indicates an error message."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The ID of the message. For example, the error code reported by an error message."
+        },
+        {
+          "col_0": "messageobject",
+          "col_1": "A human-readable explanation of the event being reported. Can be a string or an array of string."
+        },
+        {
+          "col_0": "childrenarray: object",
+          "col_1": "An array of objects, where each object represents a resource generated for the derivative. For example, a Model View (Viewable) of the source design."
+        },
+        {
+          "col_0": "guidstring",
+          "col_1": "An ID that uniquely identifies the resource."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "Type of resource this JSON object represents."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN that you can use to access the resource."
+        },
+        {
+          "col_0": "rolestring",
+          "col_1": "File type of the resource."
+        },
+        {
+          "col_0": "mimestring",
+          "col_1": "MIME type of the content of the resource."
+        },
+        {
+          "col_0": "viewableIDstring",
+          "col_1": "An ID assigned to a resource that can be displayed in a viewer."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the resource."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status of the task generating this resource; Possible values are:  pending, inprogress, success, failed, timeout"
+        },
+        {
+          "col_0": "hasThumbnailstring",
+          "col_1": "true - There is a thumbnail for the resource.\nfalse - There is no thumbnail for the resource."
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Indicates the progress of the process generating this resource, as a percentage. Once complete, the value changes to complete."
+        },
+        {
+          "col_0": "phaseNamesobject",
+          "col_1": "The name of the phase the resource file was generated from. This attribute is present only on Model Views (Viewables) generated from a Revit source design. This attribute can be a string (for Revit non-sheet 2D or 3D views) or an array of strings (for Revit sheet views)."
+        },
+        {
+          "col_0": "phaseIdsobject",
+          "col_1": "The unique ID of the phase the resource file was generated from. This attribute is present only on Model Views (Viewables) generated from a Revit source design. This attribute can be a string (for Revit non-sheet 2D or 3D views) or an array of strings (for Revit sheet views)."
+        },
+        {
+          "col_0": "cameraarray: number",
+          "col_1": "The default viewpoint of a viewable 3D resource."
+        },
+        {
+          "col_0": "resolutionarray: integer",
+          "col_1": "An array of two integers where the first number represents the width of a thumbnail in pixels, and the second the height. Available only for thumbnail resources."
+        },
+        {
+          "col_0": "messagesarray: object",
+          "col_1": ""
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "Indicates the type of the message. For example, warning indicates a warning message and error indicates an error message."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The ID of the message. For example, the error code reported by an error message."
+        },
+        {
+          "col_0": "messageobject",
+          "col_1": "A human-readable explanation of the event being reported. Can be a string or an array of string."
+        },
+        {
+          "col_0": "childrenarray: object",
+          "col_1": "An optional array of objects, where each object (of type children) represents another resource generated for this resource."
+        },
+        {
+          "col_0": "hasThumbnailstring",
+          "col_1": "true - There is a thumbnail for the source design.\nfalse - There is no thumbnail for the source design."
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "Indicates the overall progress of all translation jobs, as a percentage. Once all requested derivatives are generated, the value changes to complete."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of data that is returned. Always manifest."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the data center where the manifest, derivatives, and references are stored. Possible values are:\n\nUS - Data center for the US region.\nEMEA - Data center for European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+        },
+        {
+          "col_0": "versionstring",
+          "col_1": "Indicates the version of the schema that the manifest is based on."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Overall status of all translation jobs for the source design. Possible values are: pending, success, inprogress, failed, timeout."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json'"
+    },
+    {
+      "raw": "// Create a new Headers object and set the required headers\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\"); // Replace with your access token\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Set up the request options for the fetch call\nconst requestOptions = {\n  method: \"GET\",\n  headers: myHeaders,\n  redirect: \"follow\"\n};\n\n// Make the GET request to the Model Derivative API for the manifest\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\", requestOptions)\n  .then((response) => response.text()) // Parse the response as text\n  .then((result) => console.log(result)) // Log the result to the console\n  .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n\n// Create a new HttpRequestMessage for the GET request\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\");\n\n// Add the Authorization header with your access token\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Create an empty StringContent and set the Content-Type header\nvar content = new StringContent(string.Empty);\ncontent.Headers.ContentType = new MediaTypeHeaderValue(\"application/json\");\nrequest.Content = content;\n\n// Send the request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Throw an exception if the response indicates an error\nresponse.EnsureSuccessStatusCode();\n\n// Read and print the response content as a string\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "import requests\nimport json\n\n# Set the API endpoint URL for the manifest request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\"\n\n# No payload is needed for a GET request\npayload = {}\n\n# Set the required headers, including your access token\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace with your access token\n    'Content-Type': 'application/json'\n}\n\n# Make the GET request to the Model Derivative API\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response text (the manifest)\nprint(response.text)"
+    },
+    {
+      "raw": "{\n  \"type\": \"manifest\",\n  \"hasThumbnail\": \"false\",\n  \"status\": \"pending\",\n  \"progress\": \"0% complete\",\n  \"region\": \"US\",\n  \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA\",\n  \"derivatives\": [\n  ]\n}",
+      "parsed": {
+        "type": "manifest",
+        "hasThumbnail": "false",
+        "status": "pending",
+        "progress": "0% complete",
+        "region": "US",
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA",
+        "derivatives": []
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json'"
+    },
+    {
+      "raw": "// Create a new Headers object and set the required headers\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\"); // Replace with your access token\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Set up the request options for the fetch call\nconst requestOptions = {\n  method: \"GET\",\n  headers: myHeaders,\n  redirect: \"follow\"\n};\n\n// Make the GET request to the Model Derivative API for the manifest\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\", requestOptions)\n  .then((response) => response.text()) // Parse the response as text\n  .then((result) => console.log(result)) // Log the result to the console\n  .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n\n// Create a new HttpRequestMessage for the GET request\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\");\n\n// Add the Authorization header with your access token\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Create an empty StringContent and set the Content-Type header\nvar content = new StringContent(string.Empty);\ncontent.Headers.ContentType = new MediaTypeHeaderValue(\"application/json\");\nrequest.Content = content;\n\n// Send the request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Throw an exception if the response indicates an error\nresponse.EnsureSuccessStatusCode();\n\n// Read and print the response content as a string\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "import requests\nimport json\n\n# Set the API endpoint URL for the manifest request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\"\n\n# No payload is needed for a GET request\npayload = {}\n\n# Set the required headers, including your access token\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace with your access token\n    'Content-Type': 'application/json'\n}\n\n# Make the GET request to the Model Derivative API\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response text (the manifest)\nprint(response.text)"
+    },
+    {
+      "raw": "{\n  \"type\": \"manifest\",\n  \"hasThumbnail\": \"true\",\n  \"status\": \"inprogress\",\n  \"progress\": \"99% complete\",\n  \"region\": \"US\",\n  \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA\",\n  \"derivatives\": [\n    {\n      \"name\": \"A5.iam\",\n      \"hasThumbnail\": \"true\",\n      \"status\": \"success\",\n      \"progress\": \"99% complete\",\n      \"outputType\": \"svf\",\n      \"children\": [\n        {\n          \"guid\": \"d998268f-eeb4-da87-0db4-c5dbbc4926d0\",\n          \"type\": \"geometry\",\n          \"role\": \"3d\",\n          \"name\": \"Scene\",\n          \"status\": \"success\",\n          \"progress\": \"99% complete\",\n          \"hasThumbnail\": \"true\",\n          \"children\": [\n            {\n              \"guid\": \"4f981e94-8241-4eaf-b08b-cd337c6b8b1f\",\n              \"type\": \"resource\",\n              \"progress\": \"99% complete\",\n              \"role\": \"graphics\",\n              \"mime\": \"application/autodesk-svf\"\n            },\n            {\n              \"guid\": \"d718eb7e-fa8a-42f9-8b32-e323c0fbea0c\",\n              \"type\": \"resource\",\n              \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_400x400.png\",\n              \"resolution\": [\n                400.0,\n                400.0\n              ],\n              \"mime\": \"image/png\",\n              \"role\": \"thumbnail\"\n            },\n            {\n              \"guid\": \"34dc340b-835f-47f7-9da5-b8219aefe741\",\n              \"type\": \"resource\",\n              \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_200x200.png\",\n              \"resolution\": [\n                200.0,\n                200.0\n              ],\n              \"mime\": \"image/png\",\n              \"role\": \"thumbnail\"\n            },\n            {\n              \"guid\": \"299c6ba6-650e-423e-bbd6-3aaff44ee104\",\n              \"type\": \"resource\",\n              \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_100x100.png\",\n              \"resolution\": [\n                100.0,\n                100.0\n              ],\n              \"mime\": \"image/png\",\n              \"role\": \"thumbnail\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "type": "manifest",
+        "hasThumbnail": "true",
+        "status": "inprogress",
+        "progress": "99% complete",
+        "region": "US",
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA",
+        "derivatives": [
+          {
+            "name": "A5.iam",
+            "hasThumbnail": "true",
+            "status": "success",
+            "progress": "99% complete",
+            "outputType": "svf",
+            "children": [
+              {
+                "guid": "d998268f-eeb4-da87-0db4-c5dbbc4926d0",
+                "type": "geometry",
+                "role": "3d",
+                "name": "Scene",
+                "status": "success",
+                "progress": "99% complete",
+                "hasThumbnail": "true",
+                "children": [
+                  {
+                    "guid": "4f981e94-8241-4eaf-b08b-cd337c6b8b1f",
+                    "type": "resource",
+                    "progress": "99% complete",
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf"
+                  },
+                  {
+                    "guid": "d718eb7e-fa8a-42f9-8b32-e323c0fbea0c",
+                    "type": "resource",
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_400x400.png",
+                    "resolution": [
+                      400,
+                      400
+                    ],
+                    "mime": "image/png",
+                    "role": "thumbnail"
+                  },
+                  {
+                    "guid": "34dc340b-835f-47f7-9da5-b8219aefe741",
+                    "type": "resource",
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_200x200.png",
+                    "resolution": [
+                      200,
+                      200
+                    ],
+                    "mime": "image/png",
+                    "role": "thumbnail"
+                  },
+                  {
+                    "guid": "299c6ba6-650e-423e-bbd6-3aaff44ee104",
+                    "type": "resource",
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf.png01_thumb_100x100.png",
+                    "resolution": [
+                      100,
+                      100
+                    ],
+                    "mime": "image/png",
+                    "role": "thumbnail"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json'"
+    },
+    {
+      "raw": "// Create a new Headers object and set the required headers\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\"); // Replace with your access token\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Set up the request options for the fetch call\nconst requestOptions = {\n  method: \"GET\",\n  headers: myHeaders,\n  redirect: \"follow\"\n};\n\n// Make the GET request to the Model Derivative API for the manifest\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\", requestOptions)\n  .then((response) => response.text()) // Parse the response as text\n  .then((result) => console.log(result)) // Log the result to the console\n  .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n\n// Create a new HttpRequestMessage for the GET request\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\");\n\n// Add the Authorization header with your access token\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Create an empty StringContent and set the Content-Type header\nvar content = new StringContent(string.Empty);\ncontent.Headers.ContentType = new MediaTypeHeaderValue(\"application/json\");\nrequest.Content = content;\n\n// Send the request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Throw an exception if the response indicates an error\nresponse.EnsureSuccessStatusCode();\n\n// Read and print the response content as a string\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "import requests\nimport json\n\n# Set the API endpoint URL for the manifest request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest\"\n\n# No payload is needed for a GET request\npayload = {}\n\n# Set the required headers, including your access token\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace with your access token\n    'Content-Type': 'application/json'\n}\n\n# Make the GET request to the Model Derivative API\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response text (the manifest)\nprint(response.text)"
+    },
+    {
+      "raw": "{\n  \"type\": \"manifest\",\n  \"hasThumbnail\": \"false\",\n  \"status\": \"failed\",\n  \"progress\": \"complete\",\n  \"region\": \"US\",\n  \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA\",\n  \"derivatives\": [\n    {\n      \"name\": \"A5.iam\",\n      \"hasThumbnail\": \"false\",\n      \"status\": \"failed\",\n      \"progress\": \"complete\",\n      \"messages\": [\n        {\n          \"type\": \"warning\",\n          \"message\": \"The drawing's thumbnails were not properly created.\",\n          \"code\": \"TranslationWorker-ThumbnailGenerationFailed\"\n        }\n      ],\n      \"outputType\": \"svf\",\n      \"children\": [\n        {\n          \"guid\": \"d998268f-eeb4-da87-0db4-c5dbbc4926d0\",\n          \"type\": \"geometry\",\n          \"role\": \"3d\",\n          \"name\": \"Scene\",\n          \"status\": \"success\",\n          \"messages\": [\n            {\n              \"type\": \"warning\",\n              \"code\": \"ATF-1023\",\n              \"message\": [\n                \"The file: {0} does not exist.\",\n                \"C:\\\\Users\\\\ADSK\\\\Documents\\\\A5\\\\Top.ipt\"\n              ]\n            },\n            {\n              \"type\": \"warning\",\n              \"code\": \"ATF-1023\",\n              \"message\": [\n                \"The file: {0} does not exist.\",\n                \"C:\\\\Users\\\\ADSK\\\\Documents\\\\A5\\\\Bottom.ipt\"\n              ]\n            },\n            {\n              \"type\": \"error\",\n              \"code\": \"ATF-1026\",\n              \"message\": [\n                \"The file: {0} is empty.\",\n                \"C:/worker/viewing-inventor-lmv/tmp/job-1/5/output/1/A5.svf\"\n              ]\n            }\n          ],\n          \"progress\": \"complete\",\n          \"hasThumbnail\": \"false\",\n          \"children\": [\n            {\n              \"guid\": \"4f981e94-8241-4eaf-b08b-cd337c6b8b1f\",\n              \"type\": \"resource\",\n              \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf\",\n              \"role\": \"graphics\",\n              \"mime\": \"application/autodesk-svf\"\n            }\n          ]\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "type": "manifest",
+        "hasThumbnail": "false",
+        "status": "failed",
+        "progress": "complete",
+        "region": "US",
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA",
+        "derivatives": [
+          {
+            "name": "A5.iam",
+            "hasThumbnail": "false",
+            "status": "failed",
+            "progress": "complete",
+            "messages": [
+              {
+                "type": "warning",
+                "message": "The drawing's thumbnails were not properly created.",
+                "code": "TranslationWorker-ThumbnailGenerationFailed"
+              }
+            ],
+            "outputType": "svf",
+            "children": [
+              {
+                "guid": "d998268f-eeb4-da87-0db4-c5dbbc4926d0",
+                "type": "geometry",
+                "role": "3d",
+                "name": "Scene",
+                "status": "success",
+                "messages": [
+                  {
+                    "type": "warning",
+                    "code": "ATF-1023",
+                    "message": [
+                      "The file: {0} does not exist.",
+                      "C:\\Users\\ADSK\\Documents\\A5\\Top.ipt"
+                    ]
+                  },
+                  {
+                    "type": "warning",
+                    "code": "ATF-1023",
+                    "message": [
+                      "The file: {0} does not exist.",
+                      "C:\\Users\\ADSK\\Documents\\A5\\Bottom.ipt"
+                    ]
+                  },
+                  {
+                    "type": "error",
+                    "code": "ATF-1026",
+                    "message": [
+                      "The file: {0} is empty.",
+                      "C:/worker/viewing-inventor-lmv/tmp/job-1/5/output/1/A5.svf"
+                    ]
+                  }
+                ],
+                "progress": "complete",
+                "hasThumbnail": "false",
+                "children": [
+                  {
+                    "guid": "4f981e94-8241-4eaf-b08b-cd337c6b8b1f",
+                    "type": "resource",
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/output/1/A5.svf",
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json'"
+    },
+    {
+      "raw": "// Create a new Headers object and set the required headers\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\"); // Replace with your access token\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Set up the request options for the fetch call\nconst requestOptions = {\n  method: \"GET\",\n  headers: myHeaders,\n  redirect: \"follow\"\n};\n\n// Make the GET request to the Model Derivative API for the manifest\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\", requestOptions)\n  .then((response) => response.text()) // Parse the response as text\n  .then((result) => console.log(result)) // Log the result to the console\n  .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n\n// Create a new HttpRequestMessage for the GET request\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\");\n\n// Add the Authorization header with your access token\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Create an empty StringContent and set the Content-Type header\nvar content = new StringContent(string.Empty);\ncontent.Headers.ContentType = new MediaTypeHeaderValue(\"application/json\");\nrequest.Content = content;\n\n// Send the request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Throw an exception if the response indicates an error\nresponse.EnsureSuccessStatusCode();\n\n// Read and print the response content as a string\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "import requests\nimport json\n\n# Set the API endpoint URL for the manifest request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\"\n\n# No payload is needed for a GET request\npayload = {}\n\n# Set the required headers, including your access token\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace with your access token\n    'Content-Type': 'application/json'\n}\n\n# Make the GET request to the Model Derivative API\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response text (the manifest)\nprint(response.text)"
+    },
+    {
+      "raw": "{\n     \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0\",\n     \"derivatives\": [\n         {\n             \"hasThumbnail\": \"true\",\n             \"children\": [\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/model.sdb\",\n                     \"role\": \"Autodesk.CloudPlatform.PropertyDatabase\",\n                     \"mime\": \"application/autodesk-db\",\n                     \"guid\": \"6fac95cb-af5d-3e4f-b943-8a7f55847ff1\",\n                     \"type\": \"resource\",\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/AECModelData.json\",\n                     \"role\": \"Autodesk.AEC.ModelData\",\n                     \"mime\": \"application/json\",\n                     \"guid\": \"a4aac952-a3f4-031c-4113-b2d9ac2d0de6\",\n                     \"type\": \"resource\",\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"guid\": \"02efa4e8-11ec-5b90-1c0b-4775bad24b58\",\n                     \"type\": \"geometry\",\n                     \"role\": \"3d\",\n                     \"name\": \"3D\",\n                     \"viewableID\": \"92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0\",\n                     \"phaseNames\": \"New Construction\",\n                     \"status\": \"success\",\n                     \"hasThumbnail\": \"true\",\n                     \"progress\": \"complete\",\n                     \"children\": [\n                         {\n                             \"guid\": \"92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0\",\n                             \"type\": \"view\",\n                             \"role\": \"3d\",\n                             \"name\": \"3D\",\n                             \"status\": \"success\",\n                             \"progress\": \"complete\",\n                             \"camera\": [\n                                 63.460731506347656,\n                                 -69.05099487304688,\n                                 85.06072235107422,\n                                 -12.099991798400879,\n                                 6.50972843170166,\n                                 9.5,\n                                 -0.40824830532073975,\n                                 0.40824830532073975,\n                                 0.8164966106414795,\n                                 1.3879648447036743,\n                                 0,\n                                 1,\n                                 1\n                             ]\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D.svf\",\n                             \"role\": \"graphics\",\n                             \"mime\": \"application/autodesk-svf\",\n                             \"guid\": \"1821b502-b91e-f9f2-56e9-2d7cb4b0f4a3\",\n                             \"type\": \"resource\"\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D1.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"c70aa596-d404-714f-6795-9276087c3800\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 100,\n                                 100\n                             ],\n                             \"status\": \"success\"\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D2.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"6ef65d1a-4a59-111d-f1ec-4e543bd2712b\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 200,\n                                 200\n                             ],\n                             \"status\": \"success\"\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D4.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"2c06739e-5164-4f6d-450e-c8833fd2a2ba\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 400,\n                                 400\n                             ],\n                             \"status\": \"success\"\n                         }\n                     ]\n                 }\n             ],\n             \"name\": \"Link Arc_2018.rvt\",\n             \"progress\": \"complete\",\n             \"outputType\": \"svf\",\n             \"status\": \"success\"\n         },\n         {\n             \"children\": [\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview1.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"db899ab5-939f-e250-d79d-2d1637ce4565\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         100,\n                         100\n                     ],\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview2.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"3f6c118d-f551-7bf0-03c9-8548d26c9772\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         200,\n                         200\n                     ],\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview4.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"4e751806-0920-ce32-e9fd-47c3cec21536\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         400,\n                         400\n                     ],\n                     \"status\": \"success\"\n                 }\n             ],\n             \"progress\": \"complete\",\n             \"outputType\": \"thumbnail\",\n             \"status\": \"success\"\n         }\n     ],\n     \"hasThumbnail\": \"true\",\n     \"progress\": \"complete\",\n     \"type\": \"manifest\",\n     \"region\": \"US\",\n     \"version\": \"1.0\",\n     \"status\": \"success\"\n }",
+      "parsed": {
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0",
+        "derivatives": [
+          {
+            "hasThumbnail": "true",
+            "children": [
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/model.sdb",
+                "role": "Autodesk.CloudPlatform.PropertyDatabase",
+                "mime": "application/autodesk-db",
+                "guid": "6fac95cb-af5d-3e4f-b943-8a7f55847ff1",
+                "type": "resource",
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/AECModelData.json",
+                "role": "Autodesk.AEC.ModelData",
+                "mime": "application/json",
+                "guid": "a4aac952-a3f4-031c-4113-b2d9ac2d0de6",
+                "type": "resource",
+                "status": "success"
+              },
+              {
+                "guid": "02efa4e8-11ec-5b90-1c0b-4775bad24b58",
+                "type": "geometry",
+                "role": "3d",
+                "name": "3D",
+                "viewableID": "92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0",
+                "phaseNames": "New Construction",
+                "status": "success",
+                "hasThumbnail": "true",
+                "progress": "complete",
+                "children": [
+                  {
+                    "guid": "92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0",
+                    "type": "view",
+                    "role": "3d",
+                    "name": "3D",
+                    "status": "success",
+                    "progress": "complete",
+                    "camera": [
+                      63.460731506347656,
+                      -69.05099487304688,
+                      85.06072235107422,
+                      -12.099991798400879,
+                      6.50972843170166,
+                      9.5,
+                      -0.40824830532073975,
+                      0.40824830532073975,
+                      0.8164966106414795,
+                      1.3879648447036743,
+                      0,
+                      1,
+                      1
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D.svf",
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf",
+                    "guid": "1821b502-b91e-f9f2-56e9-2d7cb4b0f4a3",
+                    "type": "resource"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D1.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "c70aa596-d404-714f-6795-9276087c3800",
+                    "type": "resource",
+                    "resolution": [
+                      100,
+                      100
+                    ],
+                    "status": "success"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D2.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "6ef65d1a-4a59-111d-f1ec-4e543bd2712b",
+                    "type": "resource",
+                    "resolution": [
+                      200,
+                      200
+                    ],
+                    "status": "success"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D4.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "2c06739e-5164-4f6d-450e-c8833fd2a2ba",
+                    "type": "resource",
+                    "resolution": [
+                      400,
+                      400
+                    ],
+                    "status": "success"
+                  }
+                ]
+              }
+            ],
+            "name": "Link Arc_2018.rvt",
+            "progress": "complete",
+            "outputType": "svf",
+            "status": "success"
+          },
+          {
+            "children": [
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview1.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "db899ab5-939f-e250-d79d-2d1637ce4565",
+                "type": "resource",
+                "resolution": [
+                  100,
+                  100
+                ],
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview2.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "3f6c118d-f551-7bf0-03c9-8548d26c9772",
+                "type": "resource",
+                "resolution": [
+                  200,
+                  200
+                ],
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMS9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview4.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "4e751806-0920-ce32-e9fd-47c3cec21536",
+                "type": "resource",
+                "resolution": [
+                  400,
+                  400
+                ],
+                "status": "success"
+              }
+            ],
+            "progress": "complete",
+            "outputType": "thumbnail",
+            "status": "success"
+          }
+        ],
+        "hasThumbnail": "true",
+        "progress": "complete",
+        "type": "manifest",
+        "region": "US",
+        "version": "1.0",
+        "status": "success"
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest' \\\n--header 'Authorization: Bearer eyJh...' \\\n--header 'Content-Type: application/json'"
+    },
+    {
+      "raw": "// Create a new Headers object and set the required headers\nconst myHeaders = new Headers();\nmyHeaders.append(\"Authorization\", \"Bearer eyJh...\"); // Replace with your access token\nmyHeaders.append(\"Content-Type\", \"application/json\");\n\n// Set up the request options for the fetch call\nconst requestOptions = {\n  method: \"GET\",\n  headers: myHeaders,\n  redirect: \"follow\"\n};\n\n// Make the GET request to the Model Derivative API for the manifest\nfetch(\"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\", requestOptions)\n  .then((response) => response.text()) // Parse the response as text\n  .then((result) => console.log(result)) // Log the result to the console\n  .catch((error) => console.error(error)); // Log any errors"
+    },
+    {
+      "raw": "// Create a new HttpClient instance\nvar client = new HttpClient();\n\n// Create a new HttpRequestMessage for the GET request\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\");\n\n// Add the Authorization header with your access token\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Create an empty StringContent and set the Content-Type header\nvar content = new StringContent(string.Empty);\ncontent.Headers.ContentType = new MediaTypeHeaderValue(\"application/json\");\nrequest.Content = content;\n\n// Send the request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Throw an exception if the response indicates an error\nresponse.EnsureSuccessStatusCode();\n\n// Read and print the response content as a string\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "import requests\nimport json\n\n# Set the API endpoint URL for the manifest request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/manifest\"\n\n# No payload is needed for a GET request\npayload = {}\n\n# Set the required headers, including your access token\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace with your access token\n    'Content-Type': 'application/json'\n}\n\n# Make the GET request to the Model Derivative API\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response text (the manifest)\nprint(response.text)"
+    },
+    {
+      "raw": "{\n     \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0\",\n     \"derivatives\": [\n         {\n             \"hasThumbnail\": \"true\",\n             \"children\": [\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/model.sdb\",\n                     \"role\": \"Autodesk.CloudPlatform.PropertyDatabase\",\n                     \"mime\": \"application/autodesk-db\",\n                     \"guid\": \"6fac95cb-af5d-3e4f-b943-8a7f55847ff1\",\n                     \"type\": \"resource\",\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/AECModelData.json\",\n                     \"role\": \"Autodesk.AEC.ModelData\",\n                     \"mime\": \"application/json\",\n                     \"guid\": \"a4aac952-a3f4-031c-4113-b2d9ac2d0de6\",\n                     \"type\": \"resource\",\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"phaseNames\": \"New Construction\",\n                     \"role\": \"3d\",\n                     \"hasThumbnail\": \"true\",\n                     \"children\": [\n                         {\n                             \"guid\": \"92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0\",\n                             \"type\": \"view\",\n                             \"role\": \"3d\",\n                             \"name\": \"3D\",\n                             \"status\": \"success\",\n                             \"progress\": \"complete\",\n                             \"camera\": [\n                                 63.460731506347656,\n                                 -69.05099487304688,\n                                 85.06072235107422,\n                                 -12.099991798400879,\n                                 6.50972843170166,\n                                 9.5,\n                                 -0.40824830532073975,\n                                 0.40824830532073975,\n                                 0.8164966106414795,\n                                 1.3879648447036743,\n                                 0,\n                                 1,\n                                 1\n                             ]\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D1.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"c70aa596-d404-714f-6795-9276087c3800\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 100,\n                                 100\n                             ],\n                             \"status\": \"success\"\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D2.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"6ef65d1a-4a59-111d-f1ec-4e543bd2712b\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 200,\n                                 200\n                             ],\n                             \"status\": \"success\"\n                         },\n                         {\n                             \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D4.png\",\n                             \"role\": \"thumbnail\",\n                             \"mime\": \"image/png\",\n                             \"guid\": \"2c06739e-5164-4f6d-450e-c8833fd2a2ba\",\n                             \"type\": \"resource\",\n                             \"resolution\": [\n                                 400,\n                                 400\n                             ],\n                             \"status\": \"success\"\n                         },\n                         {\n                             \"role\": \"graphics\",\n                             \"mime\": \"application/autodesk-svf2\",\n                             \"guid\": \"1821b502-b91e-f9f2-56e9-2d7cb4b0f4a3\",\n                             \"type\": \"resource\"\n                         }\n                     ],\n                     \"name\": \"3D\",\n                     \"guid\": \"02efa4e8-11ec-5b90-1c0b-4775bad24b58\",\n                     \"progress\": \"complete\",\n                     \"type\": \"geometry\",\n                     \"viewableID\": \"92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0\",\n                     \"status\": \"success\"\n                 }\n             ],\n             \"name\": \"Link Arc_2018.rvt\",\n             \"progress\": \"complete\",\n             \"outputType\": \"svf2\",\n             \"status\": \"success\"\n         },\n         {\n             \"children\": [\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview1.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"db899ab5-939f-e250-d79d-2d1637ce4565\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         100,\n                         100\n                     ],\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview2.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"3f6c118d-f551-7bf0-03c9-8548d26c9772\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         200,\n                         200\n                     ],\n                     \"status\": \"success\"\n                 },\n                 {\n                     \"urn\": \"urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview4.png\",\n                     \"role\": \"thumbnail\",\n                     \"mime\": \"image/png\",\n                     \"guid\": \"4e751806-0920-ce32-e9fd-47c3cec21536\",\n                     \"type\": \"resource\",\n                     \"resolution\": [\n                         400,\n                         400\n                     ],\n                     \"status\": \"success\"\n                 }\n             ],\n             \"progress\": \"complete\",\n             \"outputType\": \"thumbnail\",\n             \"status\": \"success\"\n         }\n     ],\n     \"hasThumbnail\": \"true\",\n     \"progress\": \"complete\",\n     \"type\": \"manifest\",\n     \"region\": \"US\",\n     \"version\": \"1.0\",\n     \"status\": \"success\"\n }",
+      "parsed": {
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0",
+        "derivatives": [
+          {
+            "hasThumbnail": "true",
+            "children": [
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/model.sdb",
+                "role": "Autodesk.CloudPlatform.PropertyDatabase",
+                "mime": "application/autodesk-db",
+                "guid": "6fac95cb-af5d-3e4f-b943-8a7f55847ff1",
+                "type": "resource",
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/AECModelData.json",
+                "role": "Autodesk.AEC.ModelData",
+                "mime": "application/json",
+                "guid": "a4aac952-a3f4-031c-4113-b2d9ac2d0de6",
+                "type": "resource",
+                "status": "success"
+              },
+              {
+                "phaseNames": "New Construction",
+                "role": "3d",
+                "hasThumbnail": "true",
+                "children": [
+                  {
+                    "guid": "92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0",
+                    "type": "view",
+                    "role": "3d",
+                    "name": "3D",
+                    "status": "success",
+                    "progress": "complete",
+                    "camera": [
+                      63.460731506347656,
+                      -69.05099487304688,
+                      85.06072235107422,
+                      -12.099991798400879,
+                      6.50972843170166,
+                      9.5,
+                      -0.40824830532073975,
+                      0.40824830532073975,
+                      0.8164966106414795,
+                      1.3879648447036743,
+                      0,
+                      1,
+                      1
+                    ]
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D1.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "c70aa596-d404-714f-6795-9276087c3800",
+                    "type": "resource",
+                    "resolution": [
+                      100,
+                      100
+                    ],
+                    "status": "success"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D2.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "6ef65d1a-4a59-111d-f1ec-4e543bd2712b",
+                    "type": "resource",
+                    "resolution": [
+                      200,
+                      200
+                    ],
+                    "status": "success"
+                  },
+                  {
+                    "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/Resource/3D View/3D/3D4.png",
+                    "role": "thumbnail",
+                    "mime": "image/png",
+                    "guid": "2c06739e-5164-4f6d-450e-c8833fd2a2ba",
+                    "type": "resource",
+                    "resolution": [
+                      400,
+                      400
+                    ],
+                    "status": "success"
+                  },
+                  {
+                    "role": "graphics",
+                    "mime": "application/autodesk-svf2",
+                    "guid": "1821b502-b91e-f9f2-56e9-2d7cb4b0f4a3",
+                    "type": "resource"
+                  }
+                ],
+                "name": "3D",
+                "guid": "02efa4e8-11ec-5b90-1c0b-4775bad24b58",
+                "progress": "complete",
+                "type": "geometry",
+                "viewableID": "92b5dec7-790a-45b0-a5e8-cd9f76058c3a-0004bdc0",
+                "status": "success"
+              }
+            ],
+            "name": "Link Arc_2018.rvt",
+            "progress": "complete",
+            "outputType": "svf2",
+            "status": "success"
+          },
+          {
+            "children": [
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview1.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "db899ab5-939f-e250-d79d-2d1637ce4565",
+                "type": "resource",
+                "resolution": [
+                  100,
+                  100
+                ],
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview2.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "3f6c118d-f551-7bf0-03c9-8548d26c9772",
+                "type": "resource",
+                "resolution": [
+                  200,
+                  200
+                ],
+                "status": "success"
+              },
+              {
+                "urn": "urn:adsk.viewing:fs.file:dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c3ZmX3NhbXBsZV8wMi9MaW5rJTIwQXJjXzIwMTgucnZ0/output/preview4.png",
+                "role": "thumbnail",
+                "mime": "image/png",
+                "guid": "4e751806-0920-ce32-e9fd-47c3cec21536",
+                "type": "resource",
+                "resolution": [
+                  400,
+                  400
+                ],
+                "status": "success"
+              }
+            ],
+            "progress": "complete",
+            "outputType": "thumbnail",
+            "status": "success"
+          }
+        ],
+        "hasThumbnail": "true",
+        "progress": "complete",
+        "type": "manifest",
+        "region": "US",
+        "version": "1.0",
+        "status": "success"
+      }
+    }
+  ]
+}

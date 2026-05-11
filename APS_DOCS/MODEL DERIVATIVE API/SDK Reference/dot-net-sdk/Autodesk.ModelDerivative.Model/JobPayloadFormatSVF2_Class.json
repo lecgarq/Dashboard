@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2",
+    "scrapedAt": "2026-05-08T18:26:36.688Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatSVF2",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatSVF2 : IJobPayloadFormat"
+    },
+    {
+      "raw": "public JobPayloadFormatSVF2()"
+    },
+    {
+      "raw": "[DataMember(Name = \"advanced\", EmitDefaultValue = false)]\npublic IJobPayloadFormatSVF2Advanced Advanced { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = true)]\npublic OutputType Type { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"views\", EmitDefaultValue = false)]\npublic List<View> Views { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/propertydefinitions",
+    "scrapedAt": "2026-05-08T18:17:54.599Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "PropertyDefinitions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationPagination",
+          "col_1": "Contains information about the current page, when results are split into multiple pages."
+        },
+        {
+          "col_0": "results*[PropertyDefinition]! non-null",
+          "col_1": "List of Exchange property definitions."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "Exchange",
+          "Description": "A specific collection of Elements."
+        }
+      ]
+    }
+  ]
+}

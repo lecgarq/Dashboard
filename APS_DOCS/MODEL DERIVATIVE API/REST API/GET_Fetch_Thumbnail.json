@@ -1,0 +1,175 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/http/urn-thumbnail-GET",
+    "scrapedAt": "2026-05-08T18:24:34.670Z",
+    "category": "REST API",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "modelderivative/v2/designdata/{urn}/thumbnail",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/modelderivative/v2/designdata/{urn}/thumbnail"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the data center where the manifest and derivatives of the specified source design are stored. Possible values are:\n\nUS - (Default) Data center for the US region.\nEMEA - Data center for the European Union, Middle East, and Africa.\nAUS - Data center for the Australia region.\nCAN - Data center for the Canada region.\nDEU - Data center for the Germany region.\nIND - Data center for the India region.\nJPN - Data center for the Japan region.\nGBR - Data center for the United Kingdom region."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "urnstring",
+          "col_1": "The URL-safe Base64 encoded URN of the source design. This value is used as the urn URI parameter in operations to access data for this source design."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "widthint",
+          "col_1": "Width of thumbnail in pixels. Possible values:\n\n100 - 100 pixels wide.\n200 - 200 pixels wide.\n400 - 400 pixels wide.\n\nIf width is omitted, but height is specified, width defaults to height. If both width and height are omitted, the server will return a thumbnail closest to 200, if such a thumbnail is available."
+        },
+        {
+          "col_0": "heightint",
+          "col_1": "Height of thumbnails in pixels. Possible values:\n\n100 - 100 pixels high.\n200 - 200 pixels high.\n400 - 400 pixels high.\n\nIf height is omitted, but width is specified, height defaults to width. If both width and height are omitted, the server will return a thumbnail closest to 200, if such a thumbnail is available."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The requested thumbnail was successfully retrieved."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The server was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource was not found. Review the request and try again."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x-ads-namestring",
+          "col_1": "The thumbnail file name, expressed as an encoded string. The encoding method is indicated by the x-ads-name-encoding response header.\nNote: If the value does not contain percent-encoded sequences (a % followed by two hexadecimal digits), it is already the literal file name and decoding will not have any impact on it."
+        },
+        {
+          "col_0": "x-ads-name-encodingstring",
+          "col_1": "The encoding scheme used for the x-ads-name value. Use this header to determine how to decode the filename. Possible values:\n\nurl-encoded - RFC 3986 percent-encoding (UTF-8).\n\nThis header is included only when x-ads-name is present in the response."
+        },
+        {
+          "col_0": "x-ads-sizestring",
+          "col_1": "Thumbnail size. Possible values are: [100,100], [200,200], [400,400]"
+        },
+        {
+          "col_0": "x-ads-rolestring",
+          "col_1": "The source of the thumbnail. Possible values:\n\nrendered - Generated pursuant to this operation call.\nextracted - Obtained from the original design file."
+        },
+        {
+          "col_0": "x-ads-job-statusstring",
+          "col_1": "The execution status of the translation job. Possible values:\n\ninprogress - Translation job is in progress.\nsuccess - Translation job completed successfully.\nfailed - Translation job failed.\ntimedout - Translation job timed out."
+        },
+        {
+          "col_0": "x-ads-app-identifierstring",
+          "col_1": "The service identifier. Comprises of the service name, version, and environment."
+        },
+        {
+          "col_0": "x-ads-startup-timestring",
+          "col_1": "The service startup time, in the following date format: EEE MMM dd HH:mm:ss Z yyyy."
+        },
+        {
+          "col_0": "x-ads-durationstring",
+          "col_1": "The amount of time spent servicing the request, in milliseconds."
+        },
+        {
+          "col_0": "x-ads-troubleshootingstring",
+          "col_1": "Provides information about server failures, if any."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl \\\n  --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail' \\\n  --header 'Authorization: Bearer eyJh...'"
+    },
+    {
+      "raw": "// Define the URL for the GET request\nconst url = 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail';\n\n// Define the request options, including the HTTP method and headers\nconst options = {\n    method: 'GET',\n    headers: {\n        'Authorization': 'Bearer eyJh...'\n    }\n};\n\n// Make the GET request using the Fetch API\nfetch(url, options)\n    .then(response => response.json())\n    .then(data => console.log(data))\n    .catch(error => console.error('Error:', error));"
+    },
+    {
+      "raw": "// Create a new instance of HttpClient to send HTTP requests\nvar client = new HttpClient();\n\n// Create a new HTTP GET request to the specified URL\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail\");\n\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Send the HTTP request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Ensure the response indicates success (status code 200-299)\nresponse.EnsureSuccessStatusCode();\n\n// Read the response content as a string and print it to the console\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "# Import the requests library to handle HTTP requests\nimport requests\n\n# Define the URL for the GET request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail\"\n\n# Define the headers\nheaders = {\n    'Authorization': 'Bearer eyJh...',\n}\n\n# Make the GET request using the requests library\nresponse = requests.get(url, headers=headers)\n\n# Print the response content to the console\nprint(response.text)"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Origin: *\nCache-Control: public, max-age=86400\nContent-Type: image/png\nx-ads-app-identifier: platform-viewing-2016.05.03.1102.2f6bfbf-production\nx-ads-duration: 142 ms\nx-ads-name: 0.svf.png01_thumb_100x100.png\nx-ads-job-status: success\nx-ads-role: rendered\nx-ads-size: [100, 100]\nx-ads-startup-time: Thu May 19 10:38:55 UTC 2016\ntransfer-encoding: chunked\nConnection: keep-alive"
+    },
+    {
+      "raw": "curl \\\n  --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail?width=400&height=400' \\\n  --header 'Authorization: Bearer eyJh...'"
+    },
+    {
+      "raw": "// Define the URL for the GET request\nconst url = 'https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail?width=400&height=400';\n\n// Define the request options, including the HTTP method and headers\nconst options = {\n    method: 'GET',\n    headers: {\n        'Authorization': 'Bearer eyJh...'\n    }\n};\n\n// Make the GET request using the Fetch API\nfetch(url, options)\n    .then(response => response.json())\n    .then(data => console.log(data))\n    .catch(error => console.error('Error:', error));"
+    },
+    {
+      "raw": "// Create a new instance of HttpClient to send HTTP requests\nvar client = new HttpClient();\n\n// Create a new HTTP GET request to the specified URL\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail?width=400&height=400\");\n\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Send the HTTP request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Ensure the response indicates success (status code 200-299)\nresponse.EnsureSuccessStatusCode();\n\n// Read the response content as a string and print it to the console\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "# Import the requests library to handle HTTP requests\nimport requests\n\n# Define the URL for the GET request\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/thumbnail?width=400&height=400\"\n\n# Define the headers\nheaders = {\n    'Authorization': 'Bearer eyJh...',\n}\n\n# Make the GET request using the requests library\nresponse = requests.get(url, headers=headers)\n\n# Print the response content to the console\nprint(response.text)"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Origin: *\nCache-Control: public, max-age=86400\nContent-Type: image/png\nx-ads-app-identifier: platform-viewing-2016.05.03.1102.2f6bfbf-production\nx-ads-duration: 142 ms\nx-ads-name: 0.svf.png01_thumb_400x400.png\nx-ads-job-status: success\nx-ads-role: rendered\nx-ads-size: [400, 400]\nx-ads-startup-time: Thu May 19 10:40:25 UTC 2016\ntransfer-encoding: chunked\nConnection: keep-alive"
+    }
+  ]
+}

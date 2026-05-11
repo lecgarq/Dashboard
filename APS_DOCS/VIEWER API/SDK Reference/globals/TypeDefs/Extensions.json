@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/Extensions",
+    "scrapedAt": "2026-05-08T18:49:52.743Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "Extensions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "loadArray.<string>",
+          "col_1": "An array of extension ids that should be loaded."
+        },
+        {
+          "col_0": "unloadArray.<string>",
+          "col_1": "An array of extension ids that should not be loaded."
+        }
+      ]
+    }
+  ]
+}

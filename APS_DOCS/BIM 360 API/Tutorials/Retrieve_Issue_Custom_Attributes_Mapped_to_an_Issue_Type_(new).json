@@ -1,0 +1,172 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/issuesv2/retrieve-custom-attr-issues-v2",
+    "scrapedAt": "2026-05-08T17:49:50.126Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Retrieve Issue Custom Attributes Mapped to an Issue Type (new)",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/issues/v2/containers/2b26ddea-34a8-4f11-b352-2a1406ec454e/issue-types?include=subtypes\""
+    },
+    {
+      "raw": "{\n\"pagination\": {\n    \"limit\": 200,\n    \"offset\": 0,\n    \"totalResults\": 1\n},\n\"results\": [\n    {\n        \"id\": \"72b4d9a9-52c5-41a2-8e09-c119f590b183\",\n        \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n        \"title\": \"Coordination\",\n        \"createdBy\": \"System\",\n        \"updatedBy\": \"System\",\n        \"deletedBy\": null,\n        \"statusSet\": \"basic\",\n        \"createdAt\": \"2019-01-08T23:31:30.163Z\",\n        \"updatedAt\": \"2019-01-08T23:31:30.163Z\",\n        \"deletedAt\": null,\n        \"subtypes\": [\n            {\n                \"id\": \"65d1d70f-c996-4c4d-8968-afb3447a3a50\",\n                \"issueTypeId\": \"72b4d9a9-52c5-41a2-8e09-c119f590b183\",\n                \"title\": \"Coordination\",\n                \"createdBy\": \"System\",\n                \"updatedBy\": \"System\",\n                \"deletedBy\": null,\n                \"createdAt\": \"2019-01-08T23:31:30.170Z\",\n                \"updatedAt\": \"2019-01-08T23:31:30.170Z\",\n                \"deletedAt\": null,\n                \"isActive\": true,\n                \"orderIndex\": 0,\n                \"isReadOnly\": true,\n                \"permittedActions\": [\n                    \"change_order\"\n                ],\n                \"permittedAttributes\": []\n            },\n            {\n                \"id\": \"0d54731e-6bbc-4d77-949b-1ced6b0292da\",\n                \"issueTypeId\": \"72b4d9a9-52c5-41a2-8e09-c119f590b183\",\n                \"title\": \"Clash\",\n                \"createdBy\": \"System\",\n                \"updatedBy\": \"System\",\n                \"deletedBy\": null,\n                \"createdAt\": \"2019-01-08T23:31:30.170Z\",\n                \"updatedAt\": \"2019-01-08T23:31:30.170Z\",\n                \"deletedAt\": null,\n                \"isActive\": true,\n                \"orderIndex\": 1,\n                \"isReadOnly\": true,\n                \"permittedActions\": [\n                    \"change_order\",\n                    \"edit\"\n                ],\n                \"permittedAttributes\": [\n                    \"isActive\"\n                ]\n            }\n        ],\n        \"isActive\": true,\n        \"orderIndex\": 1,\n        \"permittedActions\": [\n            \"change_order\",\n            \"edit\"\n        ],\n        \"permittedAttributes\": [\n            \"isActive\"\n        ]\n    }\n]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 200,
+          "offset": 0,
+          "totalResults": 1
+        },
+        "results": [
+          {
+            "id": "72b4d9a9-52c5-41a2-8e09-c119f590b183",
+            "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+            "title": "Coordination",
+            "createdBy": "System",
+            "updatedBy": "System",
+            "deletedBy": null,
+            "statusSet": "basic",
+            "createdAt": "2019-01-08T23:31:30.163Z",
+            "updatedAt": "2019-01-08T23:31:30.163Z",
+            "deletedAt": null,
+            "subtypes": [
+              {
+                "id": "65d1d70f-c996-4c4d-8968-afb3447a3a50",
+                "issueTypeId": "72b4d9a9-52c5-41a2-8e09-c119f590b183",
+                "title": "Coordination",
+                "createdBy": "System",
+                "updatedBy": "System",
+                "deletedBy": null,
+                "createdAt": "2019-01-08T23:31:30.170Z",
+                "updatedAt": "2019-01-08T23:31:30.170Z",
+                "deletedAt": null,
+                "isActive": true,
+                "orderIndex": 0,
+                "isReadOnly": true,
+                "permittedActions": [
+                  "change_order"
+                ],
+                "permittedAttributes": []
+              },
+              {
+                "id": "0d54731e-6bbc-4d77-949b-1ced6b0292da",
+                "issueTypeId": "72b4d9a9-52c5-41a2-8e09-c119f590b183",
+                "title": "Clash",
+                "createdBy": "System",
+                "updatedBy": "System",
+                "deletedBy": null,
+                "createdAt": "2019-01-08T23:31:30.170Z",
+                "updatedAt": "2019-01-08T23:31:30.170Z",
+                "deletedAt": null,
+                "isActive": true,
+                "orderIndex": 1,
+                "isReadOnly": true,
+                "permittedActions": [
+                  "change_order",
+                  "edit"
+                ],
+                "permittedAttributes": [
+                  "isActive"
+                ]
+              }
+            ],
+            "isActive": true,
+            "orderIndex": 1,
+            "permittedActions": [
+              "change_order",
+              "edit"
+            ],
+            "permittedAttributes": [
+              "isActive"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/issues/v2/containers/e59adc9d-2677-4afc-a800-4bc42101f7d8/issue-attribute-mappings?filter[mappedItemId]=0d54731e-6bbc-4d77-949b-1ced6b0292da,72b4d9a9-52c5-41a2-8e09-c119f590b183,e59adc9d-2677-4afc-a800-4bc42101f7d8\""
+    },
+    {
+      "raw": "{\n \"pagination\": {\n     \"limit\": 200,\n     \"offset\": 0,\n     \"totalResults\": 3\n },\n \"results\": [\n             {\n         \"id\": \"86afb15e-09cb-46aa-8b73-c01e2f43bfe5\",\n         \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n         \"attributeDefinitionId\": \"c41750ab-9189-4d0e-9b80-c9ac0f9a1a62\",\n         \"mappedItemId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n         \"mappedItemType\": \"container\",\n         \"order\": 0,\n         \"isRequired\": false,\n         \"createdBy\": \"System\",\n         \"updatedBy\": \"System\",\n         \"deletedBy\": null,\n         \"createdAt\": \"2019-01-31T16:44:31.190Z\",\n         \"updatedAt\": \"2019-01-31T16:44:31.190Z\",\n         \"deletedAt\": null,\n         \"permittedActions\": [\n             \"change_order\",\n             \"edit\",\n             \"delete\"\n         ],\n         \"permittedAttributes\": [\n             \"isRequired\"\n         ]\n     },\n     {\n         \"id\": \"c9088c83-70e4-4630-af07-c5e96d084bb8\",\n         \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n         \"attributeDefinitionId\": \"7f7e94fb-e00d-4fb6-9cf7-c18bb8e5e891\",\n         \"mappedItemId\": \"72b4d9a9-52c5-41a2-8e09-c119f590b183\",\n         \"mappedItemType\": \"issueType\",\n         \"order\": 0,\n         \"isRequired\": false,\n         \"createdBy\": \"System\",\n         \"updatedBy\": \"System\",\n         \"deletedBy\": null,\n         \"createdAt\": \"2019-01-13T09:48:30.425Z\",\n         \"updatedAt\": \"2019-01-13T09:48:30.425Z\",\n         \"deletedAt\": null,\n         \"permittedActions\": [\n             \"change_order\",\n             \"edit\",\n             \"delete\"\n         ],\n         \"permittedAttributes\": [\n             \"isRequired\"\n         ]\n     },\n     {\n         \"id\": \"75919b67-3716-48e6-b25a-5cda566b8119\",\n         \"containerId\": \"e59adc9d-2677-4afc-a800-4bc42101f7d8\",\n         \"attributeDefinitionId\": \"8g3k94fb-e00d-4fb6-9cf7-c18bb8e5c325\",\n         \"mappedItemId\": \"0d54731e-6bbc-4d77-949b-1ced6b0292da\",\n         \"mappedItemType\": \"issueSubtype\",\n         \"order\": 0,\n         \"isRequired\": false,\n         \"createdBy\": \"System\",\n         \"updatedBy\": \"System\",\n         \"deletedBy\": null,\n         \"createdAt\": \"2019-01-21T09:58:42.300Z\",\n         \"updatedAt\": \"2019-01-21T09:58:42.300Z\",\n         \"deletedAt\": null,\n         \"permittedActions\": [\n             \"change_order\",\n             \"edit\",\n             \"delete\"\n         ],\n         \"permittedAttributes\": [\n             \"isRequired\"\n         ]\n     }\n\n ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 200,
+          "offset": 0,
+          "totalResults": 3
+        },
+        "results": [
+          {
+            "id": "86afb15e-09cb-46aa-8b73-c01e2f43bfe5",
+            "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+            "attributeDefinitionId": "c41750ab-9189-4d0e-9b80-c9ac0f9a1a62",
+            "mappedItemId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+            "mappedItemType": "container",
+            "order": 0,
+            "isRequired": false,
+            "createdBy": "System",
+            "updatedBy": "System",
+            "deletedBy": null,
+            "createdAt": "2019-01-31T16:44:31.190Z",
+            "updatedAt": "2019-01-31T16:44:31.190Z",
+            "deletedAt": null,
+            "permittedActions": [
+              "change_order",
+              "edit",
+              "delete"
+            ],
+            "permittedAttributes": [
+              "isRequired"
+            ]
+          },
+          {
+            "id": "c9088c83-70e4-4630-af07-c5e96d084bb8",
+            "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+            "attributeDefinitionId": "7f7e94fb-e00d-4fb6-9cf7-c18bb8e5e891",
+            "mappedItemId": "72b4d9a9-52c5-41a2-8e09-c119f590b183",
+            "mappedItemType": "issueType",
+            "order": 0,
+            "isRequired": false,
+            "createdBy": "System",
+            "updatedBy": "System",
+            "deletedBy": null,
+            "createdAt": "2019-01-13T09:48:30.425Z",
+            "updatedAt": "2019-01-13T09:48:30.425Z",
+            "deletedAt": null,
+            "permittedActions": [
+              "change_order",
+              "edit",
+              "delete"
+            ],
+            "permittedAttributes": [
+              "isRequired"
+            ]
+          },
+          {
+            "id": "75919b67-3716-48e6-b25a-5cda566b8119",
+            "containerId": "e59adc9d-2677-4afc-a800-4bc42101f7d8",
+            "attributeDefinitionId": "8g3k94fb-e00d-4fb6-9cf7-c18bb8e5c325",
+            "mappedItemId": "0d54731e-6bbc-4d77-949b-1ced6b0292da",
+            "mappedItemType": "issueSubtype",
+            "order": 0,
+            "isRequired": false,
+            "createdBy": "System",
+            "updatedBy": "System",
+            "deletedBy": null,
+            "createdAt": "2019-01-21T09:58:42.300Z",
+            "updatedAt": "2019-01-21T09:58:42.300Z",
+            "deletedAt": null,
+            "permittedActions": [
+              "change_order",
+              "edit",
+              "delete"
+            ],
+            "permittedAttributes": [
+              "isRequired"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,375 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/users-import-POST",
+    "scrapedAt": "2026-05-08T23:56:23.561Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "users/import",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/users/import",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v1/accounts/:account_id/users/import"
+        },
+        {
+          "col_0": "Method and URI (Legacy)",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/users/import"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:write"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorizationyes",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Typeyes",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "Regionno",
+          "col_1": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account/hub ID of the users. This corresponds to hub ID in the Data Management API. To obtain hub ID you need to remove the “b.” prefix. For example: b.c8b0c73d-3ae9 becomes c8b0c73d-3ae9."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "company_idstring: UUID",
+          "col_1": "The user’s default company ID in BIM 360"
+        },
+        {
+          "col_0": "email*string",
+          "col_1": "User’s email\n\nMax length: 255"
+        },
+        {
+          "col_0": "nicknamestring",
+          "col_1": "Nick name for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "first_namestring",
+          "col_1": "User’s first name\n\nMax length: 255"
+        },
+        {
+          "col_0": "last_namestring",
+          "col_1": "User’s last name\n\nMax length: 255"
+        },
+        {
+          "col_0": "image_urlstring",
+          "col_1": "URL for user’s profile image\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_1string",
+          "col_1": "User’s address line 1\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_2string",
+          "col_1": "User’s address line 2\n\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "City in which user is located\n\nMax length: 255"
+        },
+        {
+          "col_0": "state_or_provinceenum: string",
+          "col_1": "State or province in which user is located\n\nMax length: 255\n\nNote that the state_or_province value depends on the selected country value;\nsee the valid values in the state_or_province list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "postal_codestring",
+          "col_1": "Postal code for the user’s location\n\nMax length: 255"
+        },
+        {
+          "col_0": "countryenum: string",
+          "col_1": "Country for this user\n\nRefer to the country list in the Parameters guide."
+        },
+        {
+          "col_0": "phonestring",
+          "col_1": "Contact phone number for the user\n\nMax length: 255"
+        },
+        {
+          "col_0": "companystring",
+          "col_1": "Company information from the Autodesk user profile\n\nMax length: 255\n\nNote that this is different from company in BIM 360."
+        },
+        {
+          "col_0": "job_titlestring",
+          "col_1": "User’s job title\n\nMax length: 255"
+        },
+        {
+          "col_0": "industrystring",
+          "col_1": "Industry information for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "about_mestring",
+          "col_1": "Short description about the user\n\nMax length: 255"
+        },
+        {
+          "col_0": "default_rolestring",
+          "col_1": "The user’s default role\n\nMax length: 255"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "201Created",
+          "col_1": "A new resource has been successfully created."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "successint",
+          "col_1": "Import success company count"
+        },
+        {
+          "col_0": "failureint",
+          "col_1": "Import failure company count"
+        },
+        {
+          "col_0": "success_itemsarray:object",
+          "col_1": "Array of user objects that were successfully imported"
+        },
+        {
+          "col_0": "id",
+          "col_1": ""
+        },
+        {
+          "col_0": "account_id",
+          "col_1": ""
+        },
+        {
+          "col_0": "status",
+          "col_1": ""
+        },
+        {
+          "col_0": "role",
+          "col_1": ""
+        },
+        {
+          "col_0": "company_id",
+          "col_1": ""
+        },
+        {
+          "col_0": "company_name",
+          "col_1": ""
+        },
+        {
+          "col_0": "email",
+          "col_1": ""
+        },
+        {
+          "col_0": "name",
+          "col_1": ""
+        },
+        {
+          "col_0": "nickname",
+          "col_1": ""
+        },
+        {
+          "col_0": "first_name",
+          "col_1": ""
+        },
+        {
+          "col_0": "last_name",
+          "col_1": ""
+        },
+        {
+          "col_0": "uid",
+          "col_1": ""
+        },
+        {
+          "col_0": "image_url",
+          "col_1": ""
+        },
+        {
+          "col_0": "last_sign_in",
+          "col_1": ""
+        },
+        {
+          "col_0": "address_line_1",
+          "col_1": ""
+        },
+        {
+          "col_0": "address_line_2",
+          "col_1": ""
+        },
+        {
+          "col_0": "city",
+          "col_1": ""
+        },
+        {
+          "col_0": "postal_code",
+          "col_1": ""
+        },
+        {
+          "col_0": "state_or_province",
+          "col_1": ""
+        },
+        {
+          "col_0": "country",
+          "col_1": ""
+        },
+        {
+          "col_0": "phone",
+          "col_1": ""
+        },
+        {
+          "col_0": "company",
+          "col_1": ""
+        },
+        {
+          "col_0": "job_title",
+          "col_1": ""
+        },
+        {
+          "col_0": "industry",
+          "col_1": ""
+        },
+        {
+          "col_0": "about_me",
+          "col_1": ""
+        },
+        {
+          "col_0": "created_at",
+          "col_1": ""
+        },
+        {
+          "col_0": "updated_at",
+          "col_1": ""
+        },
+        {
+          "col_0": "failure_itemsarray:object",
+          "col_1": "Array of user objects that failed to import, along with content and error information"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/users/import' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer XZvCJNhdxESsBRIH28MfLf2hKL5O' \\\n  -H 'Content-Type: application/json' \\\n  -d '[\n    {\n      \"email\": \"john.smith@mail.com\",\n      \"nickname\": \"Johnny\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Smith\",\n      \"image_url\": \"http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png\",\n      \"address_line_1\": \"The Fifth Avenue\",\n      \"address_line_2\": \"#301\",\n      \"city\": \"New York\",\n      \"postal_code\": \"10011\",\n      \"state_or_province\": \"shanghai\",\n      \"country\": \"United States\",\n      \"phone\": \"(634)329-2353\",\n      \"company\": \"autodesk\",\n      \"job_title\": \"software developer\",\n      \"industry\": \"IT\",\n      \"about_me\": \"nothing\",\n      \"company_id\": \"14e95a5e-02eb-49aa-a39a-447d90544873\",\n      \"default_role\": \"BIM Manager\"\n    }\n  ]'",
+      "parsed": {
+        "email": "john.smith@mail.com",
+        "nickname": "Johnny",
+        "first_name": "John",
+        "last_name": "Smith",
+        "image_url": "http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "shanghai",
+        "country": "United States",
+        "phone": "(634)329-2353",
+        "company": "autodesk",
+        "job_title": "software developer",
+        "industry": "IT",
+        "about_me": "nothing",
+        "company_id": "14e95a5e-02eb-49aa-a39a-447d90544873",
+        "default_role": "BIM Manager"
+      }
+    },
+    {
+      "raw": "{\n  \"success\": 1,\n  \"failure\": 0,\n  \"success_items\": [\n    {\n      \"id\": \"8e3d3095-5e4a-4918-b57a-fe2066f8d443\",\n      \"account_id\": \"80793a28-f9b1-4888-9533-5f00cddcd6fb\",\n      \"status\": \"not_invited\",\n      \"role\": \"account_user\",\n      \"company_id\": \"14e95a5e-02eb-49aa-a39a-447d90544873\",\n      \"company_name\": \"Autodesk\",\n      \"email\": \"john.smith@mail.com\",\n      \"name\": \"John Smith\",\n      \"nickname\": \"Johnny\",\n      \"first_name\": \"John\",\n      \"last_name\": \"Smith\",\n      \"uid\": \"L9EBJKCGCXBB\",\n      \"image_url\": \"http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png\",\n      \"last_sign_in\": null,\n      \"address_line_1\": \"The Fifth Avenue\",\n      \"address_line_2\": \"#301\",\n      \"city\": \"New York\",\n      \"postal_code\": \"10011\",\n      \"state_or_province\": \"New York\",\n      \"country\": \"United States\",\n      \"phone\": \"(634)329-2353\",\n      \"company\": \"Autodesk\",\n      \"job_title\": \"Software Developer\",\n      \"industry\": \"IT\",\n      \"about_me\": \"Nothing\",\n      \"default_role\": \"BIM Manager\",\n      \"default_role_id\": \"4e7e02ae-2994-4210-9153-84bfb9a23a63\",\n      \"created_at\": \"2016-04-07T08:45:51.050Z\",\n      \"updated_at\": \"2016-04-07T08:45:51.050Z\"\n    }\n  ],\n  \"failure_items\": []\n}",
+      "parsed": {
+        "success": 1,
+        "failure": 0,
+        "success_items": [
+          {
+            "id": "8e3d3095-5e4a-4918-b57a-fe2066f8d443",
+            "account_id": "80793a28-f9b1-4888-9533-5f00cddcd6fb",
+            "status": "not_invited",
+            "role": "account_user",
+            "company_id": "14e95a5e-02eb-49aa-a39a-447d90544873",
+            "company_name": "Autodesk",
+            "email": "john.smith@mail.com",
+            "name": "John Smith",
+            "nickname": "Johnny",
+            "first_name": "John",
+            "last_name": "Smith",
+            "uid": "L9EBJKCGCXBB",
+            "image_url": "http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png",
+            "last_sign_in": null,
+            "address_line_1": "The Fifth Avenue",
+            "address_line_2": "#301",
+            "city": "New York",
+            "postal_code": "10011",
+            "state_or_province": "New York",
+            "country": "United States",
+            "phone": "(634)329-2353",
+            "company": "Autodesk",
+            "job_title": "Software Developer",
+            "industry": "IT",
+            "about_me": "Nothing",
+            "default_role": "BIM Manager",
+            "default_role_id": "4e7e02ae-2994-4210-9153-84bfb9a23a63",
+            "created_at": "2016-04-07T08:45:51.050Z",
+            "updated_at": "2016-04-07T08:45:51.050Z"
+          }
+        ],
+        "failure_items": []
+      }
+    }
+  ]
+}

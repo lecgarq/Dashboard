@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/engines-id-GET",
+    "scrapedAt": "2026-05-08T17:44:07.093Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "engines/:id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/engines/:id",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/engines/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "Full qualified id of the Engine (owner.name+label)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get the details of an Engine."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Resource cannot be found. Note that the server will return this result if a valid but unqualified id is passed."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Unknown error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "productVersionstring",
+          "col_1": "The product version of the Engine."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Human readable description of the object."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "The version this engine id refers to."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Full qualified id of the Engine."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/engines/:id' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"productVersion\": \"23.00\",\n  \"description\": \"Inventor 2019 RTM\",\n  \"version\": 31,\n  \"id\": \"Autodesk.Inventor+23\"\n}",
+      "parsed": {
+        "productVersion": "23.00",
+        "description": "Inventor 2019 RTM",
+        "version": 31,
+        "id": "Autodesk.Inventor+23"
+      }
+    }
+  ]
+}

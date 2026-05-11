@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-:bucketKey-DELETE",
+    "scrapedAt": "2026-05-08T16:28:01.280Z",
+    "category": "OSS/Buckets"
+  },
+  "title": "oss/v2/buckets/{bucketKey}",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets/bucketexamplekey\"",
+  "description": null,
+  "requestExample": "curl -v \"https://developer.api.autodesk.com/oss/v2/buckets/bucketexamplekey\"\n-X DELETE\n-H \"Authorization: Bearer kuhodzPEHSCrWH3Pm1WuBMBnxw39\"\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nDate: Wed, 25 May 2016 19:39:39 GMT\nServer: Apigee Router\nContent-Length: 0\nConnection: keep-alive",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "DELETE https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "bucket:delete"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The unique identifier of the bucket to delete."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The bucket deletion request was accepted."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "The request could not be processed due to malformed syntax or missing headers."
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified bucketKey does not exist."
+    },
+    {
+      "col_0": "409Conflict",
+      "col_1": "The specified bucket is already marked for deletion."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/Prefs",
+    "scrapedAt": "2026-05-08T18:49:39.583Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "Prefs",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "PROGRESSIVE_RENDERINGstring",
+          "col_1": "Toggles whether progressive rendering is used."
+        },
+        {
+          "col_0": "PROGRESSIVE_FPS_TARGETstring",
+          "col_1": "Sets the target for number of frames per second when progressive rendering is used."
+        },
+        {
+          "col_0": "OPEN_PROPERTIES_ON_SELECTstring",
+          "col_1": "Open property panel when selecting an object. (Only for GuiViewer3D)"
+        },
+        {
+          "col_0": "POINT_RENDERINGstring",
+          "col_1": "Hides all points in the scene."
+        },
+        {
+          "col_0": "BACKGROUND_COLOR_PRESETstring",
+          "col_1": "Sets a color to the background."
+        },
+        {
+          "col_0": "REVERSE_MOUSE_ZOOM_DIRstring",
+          "col_1": "Reverse the default direction for camera dolly (zoom) operations."
+        },
+        {
+          "col_0": "LEFT_HANDED_MOUSE_SETUPstring",
+          "col_1": "Reverse mouse buttons from their default assignment (i.e. Left mouse operation becomes right mouse and vice versa)."
+        },
+        {
+          "col_0": "FUSION_ORBITstring",
+          "col_1": "Sets the orbit to fusion orbit."
+        },
+        {
+          "col_0": "FUSION_ORBIT_CONSTRAINEDstring",
+          "col_1": "Sets the the orbit to the contrained fusion orbit."
+        },
+        {
+          "col_0": "WHEEL_SETS_PIVOTstring",
+          "col_1": "Sets wheel-zoom action to automatically reset the orbit pivot to the location under the cursor."
+        },
+        {
+          "col_0": "RESTORE_SESSION_MEASUREMENTSstring",
+          "col_1": "When opening the measure tool restore any existing measurements that where created during the session."
+        },
+        {
+          "col_0": "DISPLAY_UNITSstring",
+          "col_1": "Units for quantities displayed in the property panel"
+        },
+        {
+          "col_0": "DISPLAY_UNITS_PRECISIONstring",
+          "col_1": "Precision for quantities displayed in the property panel"
+        },
+        {
+          "col_0": "KEY_MAP_CMDstring",
+          "col_1": "CMD key mapping to CTRL key in Mac"
+        },
+        {
+          "col_0": "ZOOM_DRAG_SPEEDstring",
+          "col_1": "Sets a sensitivity of mouse movement with the zoom tool"
+        },
+        {
+          "col_0": "ZOOM_SCROLL_SPEEDstring",
+          "col_1": "Sets a sensitivity of the mouse scroll wheel when zooming"
+        }
+      ]
+    }
+  ]
+}

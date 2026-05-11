@@ -1,0 +1,147 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/workitems-startAfterTime-GET",
+    "scrapedAt": "2026-05-08T17:44:46.404Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "workitems?startAfterTime=:epochSecondsInUTC",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/workitems?startAfterTime=1709780574000",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/workitems?startAfterTime=:epochSecondsInUTC"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": ""
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "startAfterTime*integer",
+          "col_1": "The epoch seconds of UTC time."
+        },
+        {
+          "col_0": "pagestring",
+          "col_1": "Access an additional page of data when necessary, based on the paginationToken returned from a previous invocation."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get the Ids of a WorkItem."
+        },
+        {
+          "col_0": "400BadRequest",
+          "col_1": "three-legged token is disallowed. Or startAfterTime is not provided or it is 5 days older than Utc.Now"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationTokenstring",
+          "col_1": ""
+        },
+        {
+          "col_0": "dataarray: object",
+          "col_1": ""
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The WorkItem id."
+        },
+        {
+          "col_0": "lastModifiedInUTCEpochSecondinteger",
+          "col_1": "The last modified time stamp of the WorkItem id in the epoch seconds of UTC."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/workitems?startAfterTime=1709780574000' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"paginationToken\": \"eyJTdGFydEFmdGVyVGltZSI6\",\n  \"data\": [\n      {\n          \"id\": \"00365ed602d64d669c3121ef0b6e90eb\",\n          \"lastModifiedInUTCEpochSecond\": 1709702768\n      },\n      {\n          \"id\": \"0134b3d6dbf245ce82d8a2707d2e6128\",\n          \"lastModifiedInUTCEpochSecond\": 1709702768\n      },\n      {\n          \"id\": \"00eeabf6731d403f973d27856d822cc4\",\n          \"lastModifiedInUTCEpochSecond\": 1709703379\n      },\n      {\n          \"id\": \"007c0424fcb944349b7098b1ecdca663\",\n          \"lastModifiedInUTCEpochSecond\": 1709704867\n      },\n      {\n          \"id\": \"01d5e5ea71f14815a65c3ea7012b821d\",\n          \"lastModifiedInUTCEpochSecond\": 1709713268\n      }\n  ]\n}",
+      "parsed": {
+        "paginationToken": "eyJTdGFydEFmdGVyVGltZSI6",
+        "data": [
+          {
+            "id": "00365ed602d64d669c3121ef0b6e90eb",
+            "lastModifiedInUTCEpochSecond": 1709702768
+          },
+          {
+            "id": "0134b3d6dbf245ce82d8a2707d2e6128",
+            "lastModifiedInUTCEpochSecond": 1709702768
+          },
+          {
+            "id": "00eeabf6731d403f973d27856d822cc4",
+            "lastModifiedInUTCEpochSecond": 1709703379
+          },
+          {
+            "id": "007c0424fcb944349b7098b1ecdca663",
+            "lastModifiedInUTCEpochSecond": 1709704867
+          },
+          {
+            "id": "01d5e5ea71f14815a65c3ea7012b821d",
+            "lastModifiedInUTCEpochSecond": 1709713268
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/workitems?startAfterTime=1709780574000&page=eyJTdGFydEFmdGVyVGltZSI6' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"paginationToken\": \"eyJTdGFydEFmdGVyVGltZSI6MTcwOTY5N\",\n  \"data\": [\n      {\n          \"id\": \"03d65402faeb4409ac672f341462f689\",\n          \"lastModifiedInUTCEpochSecond\": 1709694967\n      },\n      {\n          \"id\": \"032a3a8e25b3409584194e7221a40019\",\n          \"lastModifiedInUTCEpochSecond\": 1709697966\n      }\n  ]\n}",
+      "parsed": {
+        "paginationToken": "eyJTdGFydEFmdGVyVGltZSI6MTcwOTY5N",
+        "data": [
+          {
+            "id": "03d65402faeb4409ac672f341462f689",
+            "lastModifiedInUTCEpochSecond": 1709694967
+          },
+          {
+            "id": "032a3a8e25b3409584194e7221a40019",
+            "lastModifiedInUTCEpochSecond": 1709697966
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,74 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/project",
+    "scrapedAt": "2026-05-08T18:15:49.932Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "project",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectId*ID! non-null",
+          "col_1": "The ID of the project to retrieve."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Project",
+          "Description": "Represents a project.  A project is a shared workspace for teams of people working together on a project, to store, organize, and manage all related exchange data."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetProject($projectId: ID!) {\n  project(projectId: $projectId) {\n    # Project Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"projectId\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\"\n}",
+      "parsed": {
+        "projectId": "<SOME-ID-TYPE-SCALAR-VALUE>"
+      }
+    },
+    {
+      "raw": "query GetProject($projectId: ID!){\n  project(projectId: $projectId){\n      id\n      name\n      folders{\n          results{\n              id\n              name\n              objectCount\n          }\n      }\n   }\n }"
+    },
+    {
+      "raw": "{\n \"projectId\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg\"\n}",
+      "parsed": {
+        "projectId": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"project\": {\n          \"id\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg\",\n          \"name\": \"DataExchange-Graph\",\n          \"folders\": {\n              \"results\": [\n                  {\n                      \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB\",\n                      \"name\": \"Project Files\",\n                      \"objectCount\": 7\n                  }\n              ]\n          }\n      }\n   }\n}",
+      "parsed": {
+        "data": {
+          "project": {
+            "id": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg",
+            "name": "DataExchange-Graph",
+            "folders": {
+              "results": [
+                {
+                  "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB",
+                  "name": "Project Files",
+                  "objectCount": 7
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

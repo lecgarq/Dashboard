@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/Viewer3DExtraScene",
+    "scrapedAt": "2026-05-08T18:50:05.793Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "Viewer3DExtraScene",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "skipIdTargetboolean",
+          "col_1": "Set to true to prevent the id target from being rendered."
+        },
+        {
+          "col_0": "skipDepthTargetboolean",
+          "col_1": "Set to true to prevent the ambient occlusion depth target from being rendered."
+        }
+      ]
+    }
+  ]
+}

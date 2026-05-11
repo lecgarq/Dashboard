@@ -1,0 +1,461 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/UI/RadioButtonGroup",
+    "scrapedAt": "2026-05-08T18:45:33.183Z",
+    "category": "SDK Reference/UI",
+    "apiName": "VIEWER API"
+  },
+  "title": "RadioButtonGroup",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*string",
+          "col_1": "The id for this control group."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "An optional dictionary of options."
+        },
+        {
+          "col_0": "collapsibleboolean",
+          "col_1": "Whether this control group is collapsible."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "control*Autodesk.Viewing.UI.Button",
+          "col_1": "The button to add."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "An option dictionary of options."
+        },
+        {
+          "col_0": "indexobject",
+          "col_1": "The index to insert the control at."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the button was successfully added."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "control*string, Autodesk.Viewing.UI.Control",
+          "col_1": "The control ID or control instance to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the control was successfully removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.UI.Button",
+          "description": "The active button. Null if no button is active."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "control*string, Autodesk.Viewing.UI.Control",
+          "col_1": "The control ID or control instance to find."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "Index of a successfully removed control, otherwise -1."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlId*string",
+          "col_1": "The ID of the control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.UI.Control",
+          "description": "The control or null if it doesn’t exist."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "index*number",
+          "col_1": "Index of the control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The ID of the control or null if it doesn’t exist."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "The number of controls."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "collapsed*boolean",
+          "col_1": "The collapsed value to set."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if at least one collapsible child’s state changes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The control’s ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "visible*boolean",
+          "col_1": "The visibility value to set."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the control’s visibility changed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the this control is visible."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolTipText*string",
+          "col_1": "The text for the tooltip."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tooltip was successfully set."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The tooltip text. Null if it’s not set."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this control is collapsed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if this control can be collapsed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cssClass*string",
+          "col_1": "The name of the CSS class."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cssClass*string",
+          "col_1": "The name of the CSS class."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "The top and left values of the toolbar."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "The width and height of the toolbar."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "value*string",
+          "col_1": "CSS display value"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the control was successfully removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "buttonAutodesk.Viewing.UI.Button",
+          "col_1": "The button whose state is changing."
+        },
+        {
+          "col_0": "isActiveButtonboolean",
+          "col_1": "Is the event target the currently active button."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlstring",
+          "col_1": "The control that was added."
+        },
+        {
+          "col_0": "indexnumber",
+          "col_1": "The index at which the control was added."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlstring",
+          "col_1": "The control that was removed."
+        },
+        {
+          "col_0": "indexnumber",
+          "col_1": "The index at which the control was removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "childEventobject",
+          "col_1": "The event that the child fired."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlIdstring",
+          "col_1": "The ID of the control that fired this event."
+        },
+        {
+          "col_0": "isVisibleboolean",
+          "col_1": "True if the control is now visible."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlIdstring",
+          "col_1": "The ID of the control that fired this event."
+        },
+        {
+          "col_0": "isCollapsedboolean",
+          "col_1": "True if the control is now collapsed."
+        }
+      ]
+    }
+  ]
+}

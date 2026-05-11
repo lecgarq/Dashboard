@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/FPS_TARGET_MODES",
+    "scrapedAt": "2026-05-08T18:49:46.179Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "_TARGET_MODES",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "LOWnumber",
+          "col_1": "sets the FPS target to 6."
+        },
+        {
+          "col_0": "MODERATEnumber",
+          "col_1": "sets the FPS target to 15."
+        },
+        {
+          "col_0": "MEDIUMnumber",
+          "col_1": "sets the FPS target to 30."
+        },
+        {
+          "col_0": "HIGHnumber",
+          "col_1": "sets the FPS target to 60."
+        }
+      ]
+    }
+  ]
+}

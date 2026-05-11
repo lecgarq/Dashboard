@@ -1,0 +1,140 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/document-management/update-custom-attribute-values",
+    "scrapedAt": "2026-05-08T17:49:30.654Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Update a Document’s Custom Attribute Values",
+  "codeExamples": [
+    {
+      "raw": "curl -X POST \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/versions:batch-get \\\n  -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n  -d '{\n      \"urns\": [\n          \"urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1\"\n      ]\n  }'",
+      "parsed": {
+        "urns": [
+          "urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1"
+        ]
+      }
+    },
+    {
+      "raw": "{\n    \"results\": [\n        {\n            \"urn\": \"urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1\",\n            \"itemUrn\": \"urn:adsk.wipprod:dm.lineage:AS3XD9MzQvu4MakMF-w7vQ\",\n            \"name\": \"Oct.pdf\",\n            \"title\": \"Bin Work\",\n            \"number\": \"E1001\",\n            \"createTime\": \"2019-04-18T03:33:36+0000\",\n            \"createUserId\": \"CGZ5PG7PZMAS\",\n            \"createUserName\": \"Tom Jerry\",\n            \"lastModifiedTime\": \"2019-04-18T03:33:36+0000\",\n            \"lastModifiedUserId\": \"CGZ5PG7PZMAS\",\n            \"lastModifiedUserName\": \"2019-04-18T03:33:36+0000\",\n            \"storageUrn\": \"urn:adsk.objects:os.object:wip.dm.prod/  c4a75bbc-24eb-41a3-a58b-48e51942222e.pdf\",\n            \"storageSize\": 7164826,\n            \"entityType\": \"SEED_FILE\",\n            \"revisionNumber\": 1,\n            \"processState\": \"PROCESSING_COMPLETE\",\n            \"approvalStatus\": {\n                \"label\": \"Approved w/ comments.\",\n                \"value\": \"approved\"\n            },\n            \"customAttributes\": [\n                {\n                    \"id\": 101,\n                    \"type\": \"string\",\n                    \"name\": \"n1\",\n                    \"value\": \"v1\"\n                },\n                {\n                    \"id\": 102,\n                    \"type\": \"array\",\n                    \"name\": \"n2\",\n                    \"value\": \"v2\"\n                }\n            ]\n        }\n    ]\n}",
+      "parsed": {
+        "results": [
+          {
+            "urn": "urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1",
+            "itemUrn": "urn:adsk.wipprod:dm.lineage:AS3XD9MzQvu4MakMF-w7vQ",
+            "name": "Oct.pdf",
+            "title": "Bin Work",
+            "number": "E1001",
+            "createTime": "2019-04-18T03:33:36+0000",
+            "createUserId": "CGZ5PG7PZMAS",
+            "createUserName": "Tom Jerry",
+            "lastModifiedTime": "2019-04-18T03:33:36+0000",
+            "lastModifiedUserId": "CGZ5PG7PZMAS",
+            "lastModifiedUserName": "2019-04-18T03:33:36+0000",
+            "storageUrn": "urn:adsk.objects:os.object:wip.dm.prod/  c4a75bbc-24eb-41a3-a58b-48e51942222e.pdf",
+            "storageSize": 7164826,
+            "entityType": "SEED_FILE",
+            "revisionNumber": 1,
+            "processState": "PROCESSING_COMPLETE",
+            "approvalStatus": {
+              "label": "Approved w/ comments.",
+              "value": "approved"
+            },
+            "customAttributes": [
+              {
+                "id": 101,
+                "type": "string",
+                "name": "n1",
+                "value": "v1"
+              },
+              {
+                "id": 102,
+                "type": "array",
+                "name": "n2",
+                "value": "v2"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.hGZHbcx2QHufgVMs_IDFlg/custom-attribute-definitions?offset=0&limit=50 \\\n  -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n  -d '{\n      \"urns\": [\n          \"urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1\"\n      ]\n  }'",
+      "parsed": {
+        "urns": [
+          "urn:adsk.wipprod:fs.file:vf.AS3XD9MzQvu4MakMF-w7vQ?version=1"
+        ]
+      }
+    },
+    {
+      "raw": "{\n    \"results\": [\n        {\n            \"id\": 101,\n            \"name\": \"n1\",\n            \"type\": \"string\"\n        },\n        {\n            \"id\": 102,\n            \"name\": \"n2\",\n            \"type\": \"array\",\n            \"arrayValues\": [\n                \"v1\",\n                \"v2\",\n                \"v3\"\n            ]\n        },\n        {\n            \"id\": 103,\n            \"name\": \"n3\",\n            \"type\": \"date\"\n        },\n        {\n            \"id\": 104,\n            \"name\": \"n4\",\n            \"type\": \"string\"\n        },\n        {\n            \"id\": 105,\n            \"name\": \"n5\",\n            \"type\": \"string\"\n        }\n    ],\n    \"pagination\": {\n        \"limit\": 50,\n        \"offset\": 0,\n        \"totalResults\": 5\n    }\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": 101,
+            "name": "n1",
+            "type": "string"
+          },
+          {
+            "id": 102,
+            "name": "n2",
+            "type": "array",
+            "arrayValues": [
+              "v1",
+              "v2",
+              "v3"
+            ]
+          },
+          {
+            "id": 103,
+            "name": "n3",
+            "type": "date"
+          },
+          {
+            "id": 104,
+            "name": "n4",
+            "type": "string"
+          },
+          {
+            "id": 105,
+            "name": "n5",
+            "type": "string"
+          }
+        ],
+        "pagination": {
+          "limit": 50,
+          "offset": 0,
+          "totalResults": 5
+        }
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.AS3XD9MzQvu4MakMF-w7vQ%3Fversion%3D1/custom-attributes:batch-update \\\n  -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n  -d '[\n      {\n          \"id\": 101,\n          \"value\": null\n      },\n      {\n          \"id\": 102,\n          \"value\": \"v3\"\n      },\n      {\n          \"id\": 103,\n          \"value\": \"2020-04-05T00:00:00+0000\"\n      },\n      {\n          \"id\": 105,\n          \"value\": \"viewed\"\n      }\n  ]'"
+    },
+    {
+      "raw": "{\n    \"results\": [\n        {\n            \"id\": 102,\n            \"name\": \"n2\",\n            \"type\": \"array\",\n            \"value\": \"v3\"\n        },\n        {\n            \"id\": 103,\n            \"name\": \"n3\",\n            \"type\": \"date\",\n            \"value\": \"2020-04-05T00:00:00+0000\"\n        },\n        {\n            \"id\": 105,\n            \"name\": \"n5\",\n            \"type\": \"string\",\n            \"value\": \"viewed\"\n        }\n    ]\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": 102,
+            "name": "n2",
+            "type": "array",
+            "value": "v3"
+          },
+          {
+            "id": 103,
+            "name": "n3",
+            "type": "date",
+            "value": "2020-04-05T00:00:00+0000"
+          },
+          {
+            "id": 105,
+            "name": "n5",
+            "type": "string",
+            "value": "viewed"
+          }
+        ]
+      }
+    }
+  ]
+}

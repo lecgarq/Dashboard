@@ -1,0 +1,163 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/jobs-:job_id-GET",
+    "scrapedAt": "2026-05-08T17:52:37.046Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "jobs/:job_id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/jobs/aca11a7abd1747cdab996548d0e6fe25",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI（US)",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/accounts/:account_id/jobs/:job_id"
+        },
+        {
+          "col_0": "Method and URI（Legacy)",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/jobs/:job_id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorizationyes",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "col_0": "Regionno",
+          "col_1": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account ID of the job. This corresponds to hub ID in the Data Management API. To convert a hub ID into an account ID you need to remove the “b.\" prefix. For example, a hub ID of b.c8b0c73d-3ae9 translates to an account ID of c8b0c73d-3ae9."
+        },
+        {
+          "col_0": "job_idstring: UUID",
+          "col_1": "Job ID\n\nFor jobs that create new BIM 360 Field projects based on templates,\nthis value can be found in the copy_project_job_id attribute in\nthe JSON response of the\nPOST projects\nendpoint."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Job ID"
+        },
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "Account ID"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the job; currently always copy_project_job\n(copying project settings from an existing BIM 360 Field\nproject to a new project)"
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Job status\n\nPossible values:\ncompleted: the job has been completed\nin progress: the job is in progress"
+        },
+        {
+          "col_0": "detailsobject",
+          "col_1": "Additional information about the job"
+        },
+        {
+          "col_0": "project_id",
+          "col_1": ""
+        },
+        {
+          "col_0": "template_project_id",
+          "col_1": ""
+        },
+        {
+          "col_0": "include_companies",
+          "col_1": ""
+        },
+        {
+          "col_0": "include_locations",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/jobs/aca11a7abd1747cdab996548d0e6fe25'\n  -H \"Authorization: Bearer 9ezBnx9Rd5D1xG4KMt6b72T4w0MG\""
+    },
+    {
+      "raw": "{\n  \"id\": \"aca11a7abd1747cdab996548d0e6fe25\",\n  \"account_id\": \"e3d5ef8d-5c37-4b9d-925d-1e6d24753ace\",\n  \"name\": \"copy_project_job\",\n  \"status\": \"completed\",\n  \"details\": {\n    \"project_id\": \"80793a28-f9b1-4888-9533-5f00cddcd6fb\",\n    \"template_project_id\": \"fda4ab9e-ab82-4ba9-8d6c-ae7dbd7cee31\",\n    \"include_companies\": \"true\",\n    \"include_locations\": \"false\"\n  }\n}",
+      "parsed": {
+        "id": "aca11a7abd1747cdab996548d0e6fe25",
+        "account_id": "e3d5ef8d-5c37-4b9d-925d-1e6d24753ace",
+        "name": "copy_project_job",
+        "status": "completed",
+        "details": {
+          "project_id": "80793a28-f9b1-4888-9533-5f00cddcd6fb",
+          "template_project_id": "fda4ab9e-ab82-4ba9-8d6c-ae7dbd7cee31",
+          "include_companies": "true",
+          "include_locations": "false"
+        }
+      }
+    }
+  ]
+}

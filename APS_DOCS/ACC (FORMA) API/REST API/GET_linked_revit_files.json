@@ -1,0 +1,237 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/rcm-linked-files-GET",
+    "scrapedAt": "2026-05-08T23:54:36.766Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "construction/rcm/v1/projects/{projectId}/published-versions/{versionId}/linked-files",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com//construction/rcm/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/published-versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.b909RzMKR4mhc3O7UBY_8g%3Fversion%3D2/linked-files?limit=100&offset=200&includeHost=true",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/rcm/v1/projects/{projectId}/published-versions/{versionId}/linked-files"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The ID of the user on whose behalf the request is made. This header is only required when using two-legged authentication with user impersonation. It is not needed for three-legged authentication.\nBy providing this header, the API call is limited to act on behalf of the user specified. The user must have at least download permission to the host model.\nYour application can act on behalf of any user who has been authorized in the SaaS Integrations UI. You can only provide the user’s Autodesk ID (autodeskId) as the value of this header."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You can provide the project ID with or without the “b.\" prefix.\n\n\nExample with prefix: b.563a4c30-e30d-4869-ac02-2a18b6447abe\nExample without prefix: 563a4c30-e30d-4869-ac02-2a18b6447abe"
+        },
+        {
+          "col_0": "versionIdstring",
+          "col_1": "The URL-encoded version ID (URN) of the published Revit model version for which you want to retrieve linked files.\nWhen a Cloud Workshared Revit model is published in BIM 360 or Forma, a new version ID is created for each published Revit model version.\nEvery time a model is updated and published, it receives a new unique version ID.\nYou must provide a version ID to retrieve the linked files for that specific published Revit model version.\nTo retrieve the latest (tip) version ID, use GET projects/:project_id/folders/:folder_id/contents. To filter out non-cloud workshared Revit files, use the items:autodesk.bim360:C4RModel filter .\nTo retrieve a specific past version, use GET projects/:project_id/items/:item_id/versions.\nFor more details about retrieving the version ID, see the Retrieve Signed URLs for Linked RVT Files tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of linked models to return in a single request. Maxium: 600. Default: 600."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index at which the endpoint starts returning results. Used for pagination. Default: 0.\nThis is a zero-based index (if set to 100, results start from the 101st entry)."
+        },
+        {
+          "col_0": "filterobject",
+          "col_1": "Specifies criteria for filtering the linked files by name or publish status.\n\nFilter by file name:\n\n\nExample: filter[name]=StructuralModel_2023.rvt&filter[name]=ArchitecturalModel_2023.rvt\n\n\n\nFilter by publish status:\n\n\nPublished files: filter[publishStatus]=published\nUnpublished files: filter[publishStatus]=notPublished\nBoth published and unpublished: filter[publishStatus]=published,notPublished"
+        },
+        {
+          "col_0": "includeHostboolean",
+          "col_1": "Indicates whether to include the signed URL for the host model in the response.\ntrue (default): the host model’s signed URL is included.\nfalse: only includes the signed URLs of the linked files."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "OK, Success."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request. The request contained invalid parameters or malformed syntax."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Unauthorized. The request is missing authentication credentials or contains an invalid authorization token."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user does not have permission to access the project or requested version."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Not found. The requested version does not exist or was published before this feature was released."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Internal server error. An unexpected error occurred while processing the request."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "hostFileobject",
+          "col_1": "Metadata about the host model (the main Revit model that contains linked files). This object is only returned in the response when includeHost is set to true."
+        },
+        {
+          "col_0": "modelNamestring",
+          "col_1": "The name of the host model."
+        },
+        {
+          "col_0": "signedUrlstring",
+          "col_1": "A temporary URL used to download the host model. Signed URLs are valid for 1 hour."
+        },
+        {
+          "col_0": "itemIdstring",
+          "col_1": "The URN of the host model."
+        },
+        {
+          "col_0": "versionIdstring",
+          "col_1": "The version ID of the host model."
+        },
+        {
+          "col_0": "sizeint",
+          "col_1": "The file size of the host model in bytes."
+        },
+        {
+          "col_0": "publishStatusenum:string",
+          "col_1": "Indicates whether the host model has been published. Possible values:\npublished – The model has been published.\nnotPublished – The model has not been published."
+        },
+        {
+          "col_0": "linkedFilesobject",
+          "col_1": "A list of linked Revit (RVT) models associated with the requested published model version.\nThis object contains a list of linked files and pagination details."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Contains pagination details, including the number of results, starting offset, and total available results."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of results returned in this response. This may be lower than the requested limit if fewer results are available."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first result in the response, based on the requested offset value."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "A URL for retrieving the next page of results. If this field is not included, there are no additional pages. A page may be empty but still include a nextUrl, so continue paging until this field is no longer returned."
+        },
+        {
+          "col_0": "nextOffsetint",
+          "col_1": "The offset value to use when requesting the next page. This field is useful for clients that build the request URL manually instead of using the nextUrl link."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of linked files available for the requested published version."
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "File information about each linked model. This collection is paginated according to the limit and offset parameters."
+        },
+        {
+          "col_0": "modelNamestring",
+          "col_1": "The name of the linked model, as referenced within the host model."
+        },
+        {
+          "col_0": "signedUrlstring",
+          "col_1": "A temporary URL used to download the linked model. Signed URLs are valid for 1 hour."
+        },
+        {
+          "col_0": "itemIdstring",
+          "col_1": "The URN of the linked model."
+        },
+        {
+          "col_0": "versionIdstring",
+          "col_1": "The version ID of the linked model. If the model is unpublished, this field is omitted from the response."
+        },
+        {
+          "col_0": "publishStatusenum:string",
+          "col_1": "Indicates whether the linked model has been published. Possible values:\npublished – The model has been published.\nnotPublished – The model has not been published."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com//construction/rcm/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/published-versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.b909RzMKR4mhc3O7UBY_8g%3Fversion%3D2/linked-files?limit=100&offset=200&includeHost=true' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"hostFile\": {\n    \"modelName\": \"Arch.rvt\",\n    \"signedUrl\": \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\",\n    \"itemId\": \"urn:adsk.wipprod:dm.lineage:f909RzMKR4mhc3O7UBY_3g\",\n    \"versionId\": \"urn:adsk.wipprod:fs.file:vf.f909RzMKR4mhc3O7UBY_3g?version=2\",\n    \"size\": 2003,\n    \"publishStatus\": \"published\"\n  },\n  \"linkedFiles\": {\n    \"pagination\": {\n      \"limit\": 100,\n      \"offset\": 200,\n      \"nextUrl\": \"https://developer.api.autodesk.com/construction/rcm/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/published-versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.b909RzMKR4mhc3O7UBY_8g%3Fversion%3D2/linked-files?offset=300&limit=100\",\n      \"nextOffset\": 300,\n      \"totalResults\": 305\n    },\n    \"results\": [\n      {\n        \"modelName\": \"StructuralModel_2023.rvt\",\n        \"signedUrl\": \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\",\n        \"itemId\": \"urn:adsk.wipprod:dm.lineage:XYZ123003443we\",\n        \"versionId\": \"urn:adsk.wipprod:fs.file:vf.e7r4RzMKR4mhc3Oc4y6?version=1\",\n        \"publishStatus\": \"published\"\n      }\n    ]\n  }\n}",
+      "parsed": {
+        "hostFile": {
+          "modelName": "Arch.rvt",
+          "signedUrl": "https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK",
+          "itemId": "urn:adsk.wipprod:dm.lineage:f909RzMKR4mhc3O7UBY_3g",
+          "versionId": "urn:adsk.wipprod:fs.file:vf.f909RzMKR4mhc3O7UBY_3g?version=2",
+          "size": 2003,
+          "publishStatus": "published"
+        },
+        "linkedFiles": {
+          "pagination": {
+            "limit": 100,
+            "offset": 200,
+            "nextUrl": "https://developer.api.autodesk.com/construction/rcm/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/published-versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.b909RzMKR4mhc3O7UBY_8g%3Fversion%3D2/linked-files?offset=300&limit=100",
+            "nextOffset": 300,
+            "totalResults": 305
+          },
+          "results": [
+            {
+              "modelName": "StructuralModel_2023.rvt",
+              "signedUrl": "https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%977d69b1-43e7-40fa-8ece-6ec4602892f3.rvt%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK",
+              "itemId": "urn:adsk.wipprod:dm.lineage:XYZ123003443we",
+              "versionId": "urn:adsk.wipprod:fs.file:vf.e7r4RzMKR4mhc3Oc4y6?version=1",
+              "publishStatus": "published"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

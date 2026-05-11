@@ -1,0 +1,339 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-schedule-of-values-POST",
+    "scrapedAt": "2026-05-08T17:58:20.986Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/schedule-of-values",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/cost/v1/containers/:containerId/schedule-of-values"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique ID of this SOV item."
+        },
+        {
+          "col_0": "parentId*string,null",
+          "col_1": "The ID of the SOV item’s parent item. For root SOV items, this value is null.\nRoot items can only be created when allocating a budget to a contract."
+        },
+        {
+          "col_0": "contractIdstring",
+          "col_1": "The ID of the contract to which the SOV item belongs."
+        },
+        {
+          "col_0": "budgetIdstring,null",
+          "col_1": "The ID of the budget to which the SOV item belongs."
+        },
+        {
+          "col_0": "code*string",
+          "col_1": "The code of the SOV item.\nMax length: 255"
+        },
+        {
+          "col_0": "name*string",
+          "col_1": "The name of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "quantitynumber",
+          "col_1": "The quantity of the SOV item."
+        },
+        {
+          "col_0": "unitPricenumber",
+          "col_1": "The unit price of the SOV item."
+        },
+        {
+          "col_0": "unitstring",
+          "col_1": "The unit of measure of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The total price of the SOV item."
+        },
+        {
+          "col_0": "quantityPerBulknumber",
+          "col_1": "The quantity conversion ratio of the SOV item."
+        },
+        {
+          "col_0": "bulkUnitPricenumber",
+          "col_1": "The unit price of the converted SOV item quantity."
+        },
+        {
+          "col_0": "bulknumber",
+          "col_1": "The converted quantity of the SOV item."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "The exchange rate that applies to the SOV item’s base currency price. For example, provide the value 0.7455 for a foreign currency that’s worth 0.7455 of your base currency."
+        },
+        {
+          "col_0": "positionnumber",
+          "col_1": "The position of the SOV item in the list of SOV items."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique ID of this SOV item."
+        },
+        {
+          "col_0": "parentIdstring,null",
+          "col_1": "The ID of the SOV item’s parent item. For root SOV items, this value is null.\nRoot items can only be created when allocating a budget to a contract."
+        },
+        {
+          "col_0": "contractIdstring",
+          "col_1": "The ID of the contract to which the SOV item belongs."
+        },
+        {
+          "col_0": "budgetIdstring,null",
+          "col_1": "The ID of the budget to which the SOV item belongs."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "The code of the SOV item.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "quantitynumber",
+          "col_1": "The quantity of the SOV item."
+        },
+        {
+          "col_0": "unitPricenumber",
+          "col_1": "The unit price of the SOV item."
+        },
+        {
+          "col_0": "unitstring",
+          "col_1": "The unit of measure of the SOV item.\nMax length: 1024"
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The total price of the SOV item."
+        },
+        {
+          "col_0": "quantityPerBulknumber",
+          "col_1": "The quantity conversion ratio of the SOV item."
+        },
+        {
+          "col_0": "bulkUnitPricenumber",
+          "col_1": "The unit price of the converted SOV item quantity."
+        },
+        {
+          "col_0": "bulknumber",
+          "col_1": "The converted quantity of the SOV item."
+        },
+        {
+          "col_0": "associationIdstring,null",
+          "col_1": "The ID of a change order or cost item that this SOV item was originally created from."
+        },
+        {
+          "col_0": "associationTypestring,null",
+          "col_1": "The type of object from which the SOV item was created:a change order or a cost item."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "The exchange rate that applies to the SOV item’s base currency price. For example, provide the value 0.7455 for a foreign currency that’s worth 0.7455 of your base currency."
+        },
+        {
+          "col_0": "positionnumber",
+          "col_1": "The position of the SOV item in the list of SOV items."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"id\": \"88dc0f70-9483-11e8-a7ec-7ddae203e404\",\n        \"parentId\": \"76b8e1b8-14a7-4dbe-b406-b4f0c0f86df6\",\n        \"contractId\": \"2256dc50-9481-11e8-87fb-215990a8aeb3\",\n        \"budgetId\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n        \"code\": \"03 30 01.1\",\n        \"name\": \"Concrete to Pile Caps\",\n        \"quantity\": 50,\n        \"unitPrice\": 20,\n        \"unit\": \"ea\",\n        \"amount\": \"1000.0000\",\n        \"quantityPerBulk\": 50,\n        \"bulkUnitPrice\": 20,\n        \"bulk\": 50,\n        \"exchangeRate\": \"1000.0000\",\n        \"position\": 1,\n        \"externalId\": \"10010-99-AB\",\n        \"externalSystem\": \"Sage300\",\n        \"externalMessage\": \"Success.\",\n        \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\"\n      }'",
+      "parsed": {
+        "id": "88dc0f70-9483-11e8-a7ec-7ddae203e404",
+        "parentId": "76b8e1b8-14a7-4dbe-b406-b4f0c0f86df6",
+        "contractId": "2256dc50-9481-11e8-87fb-215990a8aeb3",
+        "budgetId": "f6445638-ca68-4e3c-9160-15864de6b818",
+        "code": "03 30 01.1",
+        "name": "Concrete to Pile Caps",
+        "quantity": 50,
+        "unitPrice": 20,
+        "unit": "ea",
+        "amount": "1000.0000",
+        "quantityPerBulk": 50,
+        "bulkUnitPrice": 20,
+        "bulk": 50,
+        "exchangeRate": "1000.0000",
+        "position": 1,
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"88dc0f70-9483-11e8-a7ec-7ddae203e404\",\n  \"parentId\": \"76b8e1b8-14a7-4dbe-b406-b4f0c0f86df6\",\n  \"contractId\": \"2256dc50-9481-11e8-87fb-215990a8aeb3\",\n  \"budgetId\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n  \"code\": \"03 30 01.1\",\n  \"name\": \"Concrete to Pile Caps\",\n  \"quantity\": 50,\n  \"unitPrice\": 20,\n  \"unit\": \"ea\",\n  \"amount\": \"1000.0000\",\n  \"quantityPerBulk\": 50,\n  \"bulkUnitPrice\": 20,\n  \"bulk\": 50,\n  \"associationId\": \"88dc0f70-9483-11e8-a7ec-7ddae203e404\",\n  \"associationType\": \"SCO\",\n  \"exchangeRate\": \"1000.0000\",\n  \"position\": 1,\n  \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n  \"updatedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"externalId\": \"10010-99-AB\",\n  \"externalSystem\": \"Sage300\",\n  \"externalMessage\": \"Success.\",\n  \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\"\n}",
+      "parsed": {
+        "id": "88dc0f70-9483-11e8-a7ec-7ddae203e404",
+        "parentId": "76b8e1b8-14a7-4dbe-b406-b4f0c0f86df6",
+        "contractId": "2256dc50-9481-11e8-87fb-215990a8aeb3",
+        "budgetId": "f6445638-ca68-4e3c-9160-15864de6b818",
+        "code": "03 30 01.1",
+        "name": "Concrete to Pile Caps",
+        "quantity": 50,
+        "unitPrice": 20,
+        "unit": "ea",
+        "amount": "1000.0000",
+        "quantityPerBulk": 50,
+        "bulkUnitPrice": 20,
+        "bulk": 50,
+        "associationId": "88dc0f70-9483-11e8-a7ec-7ddae203e404",
+        "associationType": "SCO",
+        "exchangeRate": "1000.0000",
+        "position": 1,
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z",
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z"
+      }
+    }
+  ]
+}

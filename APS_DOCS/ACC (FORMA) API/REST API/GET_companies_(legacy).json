@@ -1,0 +1,212 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/companies-GET-legacy",
+    "scrapedAt": "2026-05-08T23:55:55.226Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "companies",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies?limit=1&offset=0",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/accounts/:account_id/companies"
+        },
+        {
+          "col_0": "Method and URI (Legacy)",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/companies"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorizationyes",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "col_0": "Regionno",
+          "col_1": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account/hub ID of the company. This corresponds to the hub ID used in the Data Management API, with the “b.\" prefix removed. For example, b.c8b0c73d-3ae9 becomes c8b0c73d-3ae9."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "Response array’s size\nDefault value: 10\nMax limit: 100"
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Offset of response array\nDefault value: 0"
+        },
+        {
+          "col_0": "sortstring",
+          "col_1": "Comma-separated fields to sort by in ascending order\n\nPrepending a field with - sorts in descending order\nInvalid fields and whitespaces will be ignored"
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "Comma-separated fields to include in response\n\nid will always be returned\nInvalid fields will be ignored"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource"
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Company ID"
+        },
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "Account/Hub ID"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Company name should be unique under a hub\n\nMax length: 255"
+        },
+        {
+          "col_0": "tradestring",
+          "col_1": "Trade type based on specialization\n\nRefer to the trade list in the Parameters guide."
+        },
+        {
+          "col_0": "address_line_1string",
+          "col_1": "Company address line 1\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_2string",
+          "col_1": "Company address line 2\n\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "City in which company is located\n\nMax length: 255"
+        },
+        {
+          "col_0": "state_or_provinceenum: string",
+          "col_1": "State or province in which company is located\n\nMax length: 255\n\nNote that the state_or_province value depends on the selected country value;\nsee the valid values in the state_or_province list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "postal_codestring",
+          "col_1": "Postal code for the company location\n\nMax length: 255"
+        },
+        {
+          "col_0": "countryenum: string",
+          "col_1": "Country for this company\n\nRefer to the country list in the Parameters guide."
+        },
+        {
+          "col_0": "phonestring",
+          "col_1": "Business phone number for the company\n\nMax length: 255"
+        },
+        {
+          "col_0": "website_urlstring",
+          "col_1": "Company website\n\nMax length: 255"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Short description or overview for company\n\nMax length: 255"
+        },
+        {
+          "col_0": "erp_idstring",
+          "col_1": "Used to associate a company in BIM 360 with the company data in an ERP system"
+        },
+        {
+          "col_0": "tax_idstring",
+          "col_1": "Used to associate a company in BIM 360 with the company data from public and industry sources"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies?limit=1&offset=0' \\\n  -H 'Authorization: Bearer 07YyCEjv3qs8FA7ysntmsuErYXHv'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"fc830fd8-f1ef-4cd6-9163-fb115dc698d7\",\n    \"account_id\": \"80793a28-f9b1-4888-9533-5f00cddcd6fb\",\n    \"name\": \"Autodesk\",\n    \"trade\": \"Concrete\",\n    \"address_line_1\": \"The Fifth Avenue\",\n    \"address_line_2\": \"#301\",\n    \"city\": \"New York\",\n    \"postal_code\": \"10011\",\n    \"state_or_province\": \"New York\",\n    \"country\": \"United States\",\n    \"phone\": \"(503)623-1525\",\n    \"website_url\": \"http://www.autodesk.com\",\n    \"description\": \"Autodesk, Inc., is a leader in 3D design, engineering and entertainment software.\",\n    \"created_at\": \"2016-05-20T02:24:21.400Z\",\n    \"updated_at\": \"2016-05-20T02:24:21.400Z\",\n    \"erp_id\": \"c79bf096-5a3e-41a4-aaf8-a771ed329047\",\n    \"tax_id\": \"213-73-8867\"\n  }\n]",
+      "parsed": {
+        "id": "fc830fd8-f1ef-4cd6-9163-fb115dc698d7",
+        "account_id": "80793a28-f9b1-4888-9533-5f00cddcd6fb",
+        "name": "Autodesk",
+        "trade": "Concrete",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "New York",
+        "country": "United States",
+        "phone": "(503)623-1525",
+        "website_url": "http://www.autodesk.com",
+        "description": "Autodesk, Inc., is a leader in 3D design, engineering and entertainment software.",
+        "created_at": "2016-05-20T02:24:21.400Z",
+        "updated_at": "2016-05-20T02:24:21.400Z",
+        "erp_id": "c79bf096-5a3e-41a4-aaf8-a771ed329047",
+        "tax_id": "213-73-8867"
+      }
+    }
+  ]
+}

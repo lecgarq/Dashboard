@@ -1,0 +1,241 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/reviews-getreviewversions-GET",
+    "scrapedAt": "2026-05-08T23:58:59.653Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/reviews/{reviewId}/versions",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/versions?limit=2&offset=10&filter[approveStatus]=Approved",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/reviews/v1/projects/{projectId}/reviews/{reviewId}/versions"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The Autodesk ID of the user on whose behalf the request is made. Use this header to specify which user should be affected by the request. Your application must be configured to act on behalf of that user.\nThis header is only required when using two-legged authentication. It is not needed for three-legged authentication.\nOnly the user’s Autodesk ID (autodeskId) can be accepted."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You can provide the project ID with or without the “b.\" prefix.\n\nExample with prefix: b.563a4c30-e30d-4869-ac02-2a18b6447abe\nExample without prefix: 563a4c30-e30d-4869-ac02-2a18b6447abe"
+        },
+        {
+          "col_0": "reviewIdstring: UUID",
+          "col_1": "The unique ID of the review.\nIt must be in UUID format — not the numeric sequence ID shown in the Reviews UI. To find the review ID, call GET reviews."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The number of file versions to return in the response. Possible values: 1-50. Maximum: 50. Default: 50. For example: limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first result to return (zero-based). Default: 0. For example: offset=10."
+        },
+        {
+          "col_0": "filter[approveStatus]array",
+          "col_1": "Filters the results based on the approval status assigned to each file during the review. It should be URL-encoded.\nThe filter applies to the label of the approval status, as defined in the workflow — not the internal value.\nFor example, if your workflow includes a status labeled Approved with comments, you would filter using that label:\nfilter[approveStatus]=Approved with comments.\nThis is especially useful when a workflow includes multiple approval options with customized labels.\nNote: It supports multiple values.\nFor example, if you want to filter with 2 labels: both Approved and Rejected, you could filter with the query string:\nfilter[approveStatus]=Approved&filter[approveStatus]=Rejected"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the file versions in the latest review round"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request. The input parameters were invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Authentication failed. Required authentication headers are missing or invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user does not have permission to access this resource."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Not found. The resource does not exist or is inaccessible."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected server error occurred."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "A list of file versions included in the latest round of the review."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN of the file version currently under review.\nThis value is used when retrieving the full approval and review history of a specific version.\nSee GET approval-statuses for more details."
+        },
+        {
+          "col_0": "itemUrnstring",
+          "col_1": "The URN of the file item this version belongs to."
+        },
+        {
+          "col_0": "approveStatusobject",
+          "col_1": "The approval status assigned to the file during the review."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the approval status."
+        },
+        {
+          "col_0": "labelstring",
+          "col_1": "The custom label assigned to the approval status.\nMax length: 255"
+        },
+        {
+          "col_0": "valueenum:string",
+          "col_1": "The internal value representing the approval status outcome. Possible values: APPROVED, REJECTED."
+        },
+        {
+          "col_0": "reviewContentobject",
+          "col_1": "Review-specific metadata related to the file version."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The pending file name assigned during the review.\nIf the review is approved, this becomes the official version name.\nIn most cases, this value is automatically generated according to the naming standard configured on the folder."
+        },
+        {
+          "col_0": "customAttributesarray: object",
+          "col_1": "A list of custom attributes applied to the file during the review."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "The ID of the attribute."
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The data type of the attribute. Possible values: string (text field), date, array (drop-list)."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the attribute."
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The value of the attribute."
+        },
+        {
+          "col_0": "copiedFileVersionUrnstring",
+          "col_1": "The URN of the version copied to the target folder after the file was approved.\nThis field is only present if the workflow includes a copy action and the file was approved."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the resulting file version."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Metadata about the paginated results."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results returned per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before the current page. Zero-based index."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of results that match the query, regardless of pagination."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL to retrieve the next page of file versions results, if any.\nIf not included, this is the last page."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/versions?limit=2&offset=10&filter[approveStatus]=Approved' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"urn\": \"urn:adsk.wipprod:fs.file:vf.Zvg8qMkjQ26MBJjIA2ZjeU?version=1\",\n      \"itemUrn\": \"urn:adsk.wipprod:dm.lineage:Zvg8qMkjQ26MBJjIA2ZjeU\",\n      \"approveStatus\": {\n        \"id\": \"f44e623d-f04f-47fe-8195-efc43d1d985b\",\n        \"label\": \"Approved\",\n        \"value\": \"APPROVED\"\n      },\n      \"reviewContent\": {\n        \"name\": \"3rd Floor 3D Models (shared).pdf\",\n        \"customAttributes\": [\n          {\n            \"id\": 10272,\n            \"type\": \"string\",\n            \"name\": \"Reference Document Number\",\n            \"value\": \"X-3910-3DWA\"\n          }\n        ]\n      },\n      \"copiedFileVersionUrn\": \"urn:adsk.wipprod:fs.file:vf.Zvg8qMkjQ26MBJjIA2ZjeK?version=3\",\n      \"name\": \"3rd Floor 3D Models.pdf\"\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 100,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/reviews/v1/projects/497f6eca-6276-4993-bfeb-53cbbbba6f08/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/versions?limit=10&offset=10\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "urn": "urn:adsk.wipprod:fs.file:vf.Zvg8qMkjQ26MBJjIA2ZjeU?version=1",
+            "itemUrn": "urn:adsk.wipprod:dm.lineage:Zvg8qMkjQ26MBJjIA2ZjeU",
+            "approveStatus": {
+              "id": "f44e623d-f04f-47fe-8195-efc43d1d985b",
+              "label": "Approved",
+              "value": "APPROVED"
+            },
+            "reviewContent": {
+              "name": "3rd Floor 3D Models (shared).pdf",
+              "customAttributes": [
+                {
+                  "id": 10272,
+                  "type": "string",
+                  "name": "Reference Document Number",
+                  "value": "X-3910-3DWA"
+                }
+              ]
+            },
+            "copiedFileVersionUrn": "urn:adsk.wipprod:fs.file:vf.Zvg8qMkjQ26MBJjIA2ZjeK?version=3",
+            "name": "3rd Floor 3D Models.pdf"
+          }
+        ],
+        "pagination": {
+          "limit": 10,
+          "offset": 0,
+          "totalResults": 100,
+          "nextUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/497f6eca-6276-4993-bfeb-53cbbbba6f08/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/versions?limit=10&offset=10"
+        }
+      }
+    }
+  ]
+}

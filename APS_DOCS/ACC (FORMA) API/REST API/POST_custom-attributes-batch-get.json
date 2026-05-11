@@ -1,0 +1,321 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/assets-custom-attributes-batch-get-POST",
+    "scrapedAt": "2026-05-08T23:46:51.479Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "custom-attributes:batch-get",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes:batch-get?includeDeleted=true",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/construction/assets/v1/projects/{projectId}/custom-attributes:batch-get"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The Forma project ID. Must be a UUID or a project ID of the form “b.{UUID}”."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "includeDeletedboolean",
+          "col_1": "Whether or not soft-deleted object should be included in the response. If true, soft-deleted objects are returned. If false, they are not. The default is false."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idsarray: string",
+          "col_1": "Unique IDs of Custom Attributes to fetch. One or both of these body structure fields must be present to\nspecify at least one custom attribute."
+        },
+        {
+          "col_0": "namesarray: string",
+          "col_1": "Unique names of custom attributes to fetch. One or both of these body structure fields must be present\nto specify at least one custom attribute. Note that the unique name of a custom attribute is not the\ndisplay name of the attribute, but the immutable name returned by the attribute’s name field."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully returned a batch of custom attributes."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request was not accepted because the rate limit was exceeded due to too many requests being made."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "Returned custom attributes"
+        },
+        {
+          "col_0": "displayNamestring",
+          "col_1": "The human-readable display name for the Asset custom attribute. This name appears when viewing the custom\nattribute in the Assets UI, and must be unique within a project.\nMax length: 100"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "A description of the Asset custom attribute.\nMax length: 1000"
+        },
+        {
+          "col_0": "enumValuesarray: string",
+          "col_1": "An array of string values that defines possible values that may be supplied when this custom attributes data\ntype (defined by dataType) is set to select or multi_select. This field is required when the data\ntype is set to select or multi_select."
+        },
+        {
+          "col_0": "requiredOnIngressboolean",
+          "col_1": "Specifies whether or not this custom attribute is required when creating or editing an asset. If true, the\ncustom attribute is required. If false, it is not required. Setting this field to true does not guarantee\nthat existing or imported assets will have this custom attribute."
+        },
+        {
+          "col_0": "maxLengthOnIngressint",
+          "col_1": "The maximum length that a text value can be for this custom attribute when creating or editing an asset.\nSetting a value for this field does not guarantee that existing or imported assets with this custom\nattribute will have this attribute’s value limited to this length. This field only applies when datatype\nis set to text. Default is 250, which is the maximum value this field can be set to."
+        },
+        {
+          "col_0": "defaultValueone of",
+          "col_1": "The default value for this custom attribute if no value is specified on asset creation. If this field is not\nspecified, the custom attribute does not have a default value. The default value it takes can be any one of\nthree possible value types, defined below."
+        },
+        {
+          "col_0": "0string",
+          "col_1": "A String value, maximum length: 250\nMax length: 250"
+        },
+        {
+          "col_0": "1array: string",
+          "col_1": "An array of string values that are set for a multi_select custom attribute."
+        },
+        {
+          "col_0": "2boolean",
+          "col_1": "A Boolean value"
+        },
+        {
+          "col_0": "dataTypeenum:string",
+          "col_1": "The data type that this custom attribute’s value must take. Once set, the data type can’t be changed.\nPossible values:\n\nboolean: true or false\ntext: a string\nnumeric: a string that parses as a valid floating point number (not localized)\ndate: an ISO8601 date string with no time, for example, “2021-04-01”.\nselect: a valid ID from the list of values defined by enumValues.\nmulti_select: an array of valid IDs from the list of values defined by enumValues."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the component."
+        },
+        {
+          "col_0": "createdAtstring",
+          "col_1": "The time when the component was created (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The actor that created the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "updatedAtstring",
+          "col_1": "The time when the component was last updated (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The actor that last updated the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "deletedAtstring",
+          "col_1": "The time when the component was deleted at (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The actor that deleted the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "isActiveboolean",
+          "col_1": "A flag indicating whether the component is active or inactive (isActive is true if-and-only-if deletedAt is empty)."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "A global sequence number that is incremented any time a component of this type is created, updated, or deleted. If you cache components, you can use the version value to compare the cached component to the same component online to see if the component has been updated. If the online component has a higher version value, it has been updated."
+        },
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The Forma project ID. Must be a UUID or a project ID of the form “b.{UUID}”."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "An autogenerated value, created when an Asset custom attribute is created. The name does not change\nover the life of the custom attribute."
+        },
+        {
+          "col_0": "valuesarray: object",
+          "col_1": "An array of objects that describe the select values for select and multi_select Asset custom\nattributes."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the component."
+        },
+        {
+          "col_0": "createdAtstring",
+          "col_1": "The time when the component was created (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The actor that created the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "updatedAtstring",
+          "col_1": "The time when the component was last updated (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The actor that last updated the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "deletedAtstring",
+          "col_1": "The time when the component was deleted at (ISO8601 Date time format in UTC)."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The actor that deleted the component. This is an Autodesk / Oxygen ID."
+        },
+        {
+          "col_0": "isActiveboolean",
+          "col_1": "A flag indicating whether the component is active or inactive (isActive is true if-and-only-if deletedAt is empty)."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "A global sequence number that is incremented any time a component of this type is created, updated, or deleted. If you cache components, you can use the version value to compare the cached component to the same component online to see if the component has been updated. If the online component has a higher version value, it has been updated."
+        },
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The Forma project ID. Must be a UUID or a project ID of the form “b.{UUID}”."
+        },
+        {
+          "col_0": "customAttributeIdstring: UUID",
+          "col_1": "The ID of the custom attribute."
+        },
+        {
+          "col_0": "displayNamestring",
+          "col_1": "The display name of the value. Must be unique within the custom attribute (case-insensitive). Use to\ngenerate the enumValues field for the custom attribute."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes:batch-get?includeDeleted=true' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"ids\": [\n          \"3063f212-6ce9-494e-b749-eb73b4445bf0\"\n        ],\n        \"names\": [\n          \"ca1\"\n        ]\n      }'",
+      "parsed": {
+        "ids": [
+          "3063f212-6ce9-494e-b749-eb73b4445bf0"
+        ],
+        "names": [
+          "ca1"
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"displayName\": \"Elevator Speed\",\n      \"description\": \"The average speed of an elevator in meters per second\",\n      \"enumValues\": [\n        \"Custom Select Value\"\n      ],\n      \"requiredOnIngress\": true,\n      \"maxLengthOnIngress\": 100,\n      \"defaultValue\": \"2019-01-01\",\n      \"dataType\": \"multi_select\",\n      \"id\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"deletedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"deletedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 1,\n      \"projectId\": \"f74a012c-62fd-4988-ac2b-c5b4fd937724\",\n      \"name\": \"ca1\",\n      \"values\": [\n        {\n          \"id\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n          \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n          \"createdBy\": \"LA7ZL85MU7ML\",\n          \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n          \"updatedBy\": \"LA7ZL85MU7ML\",\n          \"deletedAt\": \"2020-05-01T06:00:00.000Z\",\n          \"deletedBy\": \"LA7ZL85MU7ML\",\n          \"isActive\": true,\n          \"version\": 1,\n          \"projectId\": \"f74a012c-62fd-4988-ac2b-c5b4fd937724\",\n          \"customAttributeId\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n          \"displayName\": \"Custom Select Value\"\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "results": [
+          {
+            "displayName": "Elevator Speed",
+            "description": "The average speed of an elevator in meters per second",
+            "enumValues": [
+              "Custom Select Value"
+            ],
+            "requiredOnIngress": true,
+            "maxLengthOnIngress": 100,
+            "defaultValue": "2019-01-01",
+            "dataType": "multi_select",
+            "id": "b302d910-b5e3-46ba-81d8-6b6d30406e14",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "deletedAt": "2020-05-01T06:00:00.000Z",
+            "deletedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 1,
+            "projectId": "f74a012c-62fd-4988-ac2b-c5b4fd937724",
+            "name": "ca1",
+            "values": [
+              {
+                "id": "b302d910-b5e3-46ba-81d8-6b6d30406e14",
+                "createdAt": "2020-05-01T06:00:00.000Z",
+                "createdBy": "LA7ZL85MU7ML",
+                "updatedAt": "2020-05-01T06:00:00.000Z",
+                "updatedBy": "LA7ZL85MU7ML",
+                "deletedAt": "2020-05-01T06:00:00.000Z",
+                "deletedBy": "LA7ZL85MU7ML",
+                "isActive": true,
+                "version": 1,
+                "projectId": "f74a012c-62fd-4988-ac2b-c5b4fd937724",
+                "customAttributeId": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+                "displayName": "Custom Select Value"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

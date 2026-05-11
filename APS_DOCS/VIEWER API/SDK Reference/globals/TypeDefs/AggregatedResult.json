@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/AggregatedResult",
+    "scrapedAt": "2026-05-08T18:50:02.483Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "AggregatedResult",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "averageNumber",
+          "col_1": "Average of all displayValues"
+        },
+        {
+          "col_0": "countNumber",
+          "col_1": "The number of properties"
+        },
+        {
+          "col_0": "maxNumber",
+          "col_1": "The max of all displayValues"
+        },
+        {
+          "col_0": "medianNumber",
+          "col_1": "The median of all displayValues"
+        },
+        {
+          "col_0": "minNumber",
+          "col_1": "The min of all displayValues"
+        },
+        {
+          "col_0": "modeArray.<Number>",
+          "col_1": "An array of possible modes"
+        },
+        {
+          "col_0": "rangeNumber",
+          "col_1": "The range (max-min) of all of the displayValues"
+        },
+        {
+          "col_0": "sumNumber",
+          "col_1": "The sum of all displayValues"
+        }
+      ]
+    }
+  ]
+}

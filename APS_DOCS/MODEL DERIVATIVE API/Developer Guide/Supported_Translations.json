@@ -1,0 +1,460 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/supported-translations",
+    "scrapedAt": "2026-05-08T18:21:31.167Z",
+    "category": "Developer Guide",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Supported Translation Formats",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Source Format",
+        "Derivative\nFormats"
+      ],
+      "rows": [
+        {
+          "Source Format": "123DX",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "3DM",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "3DS",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "3DXML",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "3MF",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "A",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "ASM (Creo assembly files)",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "ASM (Solid Edge assembly files)",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "ASM.d+$",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "ATFX",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "AXM",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "AXMF",
+          "Derivative\nFormats": "Thumbnail"
+        },
+        {
+          "Source Format": "BDF",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "BRD",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "CATPART",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "CATPRODUCT",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "CGR",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "COLLABORATION",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DAE",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DDX",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DDZ",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DGK",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DGN",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DLV3",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DMT",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DWF",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DWFX",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DWG",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DWGX",
+          "Derivative\nFormats": "Thumbnail"
+        },
+        {
+          "Source Format": "DWT",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "DXF",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "EMODEL",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "EMN",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "EXP",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "F2D",
+          "Derivative\nFormats": "DWG\nThumbnail"
+        },
+        {
+          "Source Format": "F3D",
+          "Derivative\nFormats": "DWG\nFBX\nIGES\nOBJ\nSTEP\nSTL\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "FBRD",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "FBX",
+          "Derivative\nFormats": "F3D\nIGES\nOBJ\nSTEP\nSTL\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "FLBR",
+          "Derivative\nFormats": "Thumbnail"
+        },
+        {
+          "Source Format": "FPRJ",
+          "Derivative\nFormats": "Thumbnail"
+        },
+        {
+          "Source Format": "FSCH",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "G",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "GBXML",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "GLB",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "GLTF",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IAM",
+          "Derivative\nFormats": "F3D\nIGES\nOBJ\nSTEP\nSTL\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IDW",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IFC",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IFW",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IGE",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IGES",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IGS",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IPT",
+          "Derivative\nFormats": "F3D\nIGES\nOBJ\nSTEP\nSTL\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "IWM",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "JT",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "MAX",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "MODEL",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "MPF",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "MSR",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "NEU",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "NEU.d+$",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "NWC",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "NWD",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "OBJ",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "OSB",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PAR",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PCBDATA",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "PCBXML",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "PDF",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PMLPRJ",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PMLPRJZ",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PRT",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PRT.d+$",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PSM",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "PSMODEL",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "RVA",
+          "Derivative\nFormats": "Thumbnail"
+        },
+        {
+          "Source Format": "RVM",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "RVT",
+          "Derivative\nFormats": "Annotations\nDWG\nIFC\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SAB",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SAT",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SCH",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SESSION",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SKP",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SLDASM",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SLDDRW",
+          "Derivative\nFormats": "DWG"
+        },
+        {
+          "Source Format": "SLDPRT",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SMB",
+          "Derivative\nFormats": "F3D\nOBJ\nSTEP\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "SMT",
+          "Derivative\nFormats": "F3D\nOBJ\nSTEP\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STA",
+          "Derivative\nFormats": "F3D"
+        },
+        {
+          "Source Format": "STE",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STEP",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STL",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STLA",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STLB",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STP",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "STPZ",
+          "Derivative\nFormats": "OBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "TRITONMESH",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "USD",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "USDA",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "USDC",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "USDZ",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "VPB",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "VUE",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "WIRE",
+          "Derivative\nFormats": "F3D\nIGES\nOBJ\nSTEP\nSTL\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "X_B",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "X_T",
+          "Derivative\nFormats": "F3D\nOBJ\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "XAS",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "XML",
+          "Derivative\nFormats": "F3D\nSVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "XPR",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        },
+        {
+          "Source Format": "ZIP",
+          "Derivative\nFormats": "SVF\nSVF2\nThumbnail"
+        }
+      ]
+    }
+  ]
+}

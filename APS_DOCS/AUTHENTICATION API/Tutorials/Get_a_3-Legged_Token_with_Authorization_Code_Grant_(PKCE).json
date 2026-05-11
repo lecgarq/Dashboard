@@ -1,0 +1,28 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/tutorials/get-3-legged-token-pkce",
+    "scrapedAt": "2026-05-08T17:35:24.455Z",
+    "category": "Tutorials",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Get a 3-Legged Token with Authorization Code Grant (PKCE) for Public Clients",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/authentication/v2/token",
+  "codeExamples": [
+    {
+      "raw": "<a href=\"https://developer.api.autodesk.com/authentication/v2/authorize?response_type=code&client_id=GCi5oTYLE36CTUlcL7wWbhq9mC5DzG9w&redirect_uri=http%3A%2F%2Flocalhost%3A8080%2Foauth%2Fcallback%2F&nonce=1232132&scope=data:read&prompt=login&state=12321321&code_challenge=fePr9SDGJIToHximLHTRokkzkfzZksznrDIx9bexsto&code_challenge_method=S256\">Click here to grant access to your data!</a>"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/authentication/v2/token'\n     -X 'POST'\n     -H 'Content-Type: application/x-www-form-urlencoded''\n     -H 'accept: application/json' \\'\n     -d 'grant_type=authorization_code'\n     -d 'client_id=GCi5oTYLE36CTUlcL7wWbhq9mC5DzG9w'\n     -d 'code_verifier=ZGI6X4QR3FFXh3Bs9zNMgazTYDHEb_GqTt_fue4tFKYjRNR9N32bCqr~Hsxl673Ssf0RqyxC0avKNo_AKlE_7tj6cm4i5XbmjuGrCsu7X9rE~MqmoBLrLjvmvQscCfi2'\n     -d 'code=wroM1vFA4E-Aj241-quh_LVjm7UldawnNgYEHQ8I'\n     -d 'redirect_uri=http://localhost:8080/oauth/callback/'"
+    },
+    {
+      "raw": "{\n  \"access_token\": \"eyJhbGciOiJSUzI1NiIsImtpZCI6IlU3c0dGRldUTzlBekNhSzBqZURRM2dQZXBURVdWN2VhIn0.eyJzY29wZSI6WyJkYXRhOnJlYWQiXSwiY2xpZW50X2lkIjoiR0NpNW9UWUxFMzZDVFVsY0w3d1diaHE5bUM1RHpHOXciLCJpc3MiOiJodHRwczovL2RldmVsb3Blci5hcGkuYXV0b2Rlc2suY29tIiwiYXVkIjoiaHR0cHM6Ly9hdXRvZGVzay5jb20iLCJqdGkiOiJXWUhWa3Mwc0hBdmYzZWphWHFCdUl4UWNKa29RMnpEMW9aSHkydG1sVHVMdTliN0R1M3pvU1padnpXRGxZM0lsIiwidXNlcmlkIjoiM1hWU0w3MkpMMlU1IiwiZXhwIjoxNjY5ODgzMjcyfQ.Z7M2ZeuCc9oCuPn1CBr7axkOfONWtrZIROq0rROmpZ_Or5S34YL1BvcrVqfQj8VnmXgw5WbJcUEmDrRnH3Qo9nxK5OxKaunOL00qTQZZQ8KrmOkCx9ZVeKZhrss21f4asQWI7kgG09xLRvlt1jNcFvSrbXSCDm8suALhBv5PF_8S2cTbH-lNz0vZVn2uHzsokAGFDGnxZkaEZagqJUHIOdQiSJF_dP3s4j5OFCq60LP_hwBV5LXkZ4eq2rSpqwtvpldJxzXE3T9KdXeHEz__GSnuItS7_EkCu0Gmk5tf6JWyZImV68-uu4c8rB1rXV2XaiLS69zRWfyD9bpX6OZw1w\",\n  \"token_type\": \"Bearer\",\n  \"expires_in\": 3599,\n  \"refresh_token\": \"Zxn4ucyciQSfCN7dC7e4MWCaIZRLtYsB6vhcmg5LMH\"\n}",
+      "parsed": {
+        "access_token": "eyJhbGciOiJSUzI1NiIsImtpZCI6IlU3c0dGRldUTzlBekNhSzBqZURRM2dQZXBURVdWN2VhIn0.eyJzY29wZSI6WyJkYXRhOnJlYWQiXSwiY2xpZW50X2lkIjoiR0NpNW9UWUxFMzZDVFVsY0w3d1diaHE5bUM1RHpHOXciLCJpc3MiOiJodHRwczovL2RldmVsb3Blci5hcGkuYXV0b2Rlc2suY29tIiwiYXVkIjoiaHR0cHM6Ly9hdXRvZGVzay5jb20iLCJqdGkiOiJXWUhWa3Mwc0hBdmYzZWphWHFCdUl4UWNKa29RMnpEMW9aSHkydG1sVHVMdTliN0R1M3pvU1padnpXRGxZM0lsIiwidXNlcmlkIjoiM1hWU0w3MkpMMlU1IiwiZXhwIjoxNjY5ODgzMjcyfQ.Z7M2ZeuCc9oCuPn1CBr7axkOfONWtrZIROq0rROmpZ_Or5S34YL1BvcrVqfQj8VnmXgw5WbJcUEmDrRnH3Qo9nxK5OxKaunOL00qTQZZQ8KrmOkCx9ZVeKZhrss21f4asQWI7kgG09xLRvlt1jNcFvSrbXSCDm8suALhBv5PF_8S2cTbH-lNz0vZVn2uHzsokAGFDGnxZkaEZagqJUHIOdQiSJF_dP3s4j5OFCq60LP_hwBV5LXkZ4eq2rSpqwtvpldJxzXE3T9KdXeHEz__GSnuItS7_EkCu0Gmk5tf6JWyZImV68-uu4c8rB1rXV2XaiLS69zRWfyD9bpX6OZw1w",
+        "token_type": "Bearer",
+        "expires_in": 3599,
+        "refresh_token": "Zxn4ucyciQSfCN7dC7e4MWCaIZRLtYsB6vhcmg5LMH"
+      }
+    }
+  ]
+}

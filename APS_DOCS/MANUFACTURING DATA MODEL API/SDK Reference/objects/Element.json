@@ -1,0 +1,81 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/element",
+    "scrapedAt": "2026-05-08T18:16:25.831Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Element",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*ID! non-null",
+          "col_1": "Globally unique identifier for an Element."
+        },
+        {
+          "col_0": "name*String! non-null",
+          "col_1": "The human-readable name of the Element."
+        },
+        {
+          "col_0": "properties*Properties! non-null",
+          "col_1": "Query for specific Properties"
+        },
+        {
+          "col_0": "referencesReferenceProperties",
+          "col_1": "Represents information that further defines the Element (e.g. Type data)"
+        },
+        {
+          "col_0": "referencedByElements",
+          "col_1": "Elements which have references to current element"
+        },
+        {
+          "col_0": "createdByUser",
+          "col_1": "User responsible for creating this element"
+        },
+        {
+          "col_0": "createdOnDateTime",
+          "col_1": "Timestamp of element creation"
+        },
+        {
+          "col_0": "lastModifiedByUser",
+          "col_1": "Latest user who modified the data"
+        },
+        {
+          "col_0": "lastModifiedOnDateTime",
+          "col_1": "Latest timestamp when the element was modified"
+        },
+        {
+          "col_0": "alternativeRepresentationsElementAlternativeRepresentations",
+          "col_1": "Alternative identifiers for this element.  This field is deprecated. Use alternativeIdentifiers instead."
+        },
+        {
+          "col_0": "alternativeIdentifiersElementAlternativeIdentifiers",
+          "col_1": "Alternative identifiers for this element"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "ReferenceProperty",
+          "Description": "A reference property which describes relationship between elements."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Elements",
+          "Description": "Contains a list of Elements returned in response to a query."
+        }
+      ]
+    }
+  ]
+}

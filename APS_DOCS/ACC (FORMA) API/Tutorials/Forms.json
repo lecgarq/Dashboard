@@ -1,0 +1,161 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/forms",
+    "scrapedAt": "2026-05-08T23:42:53.797Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Retrieve Forms",
+  "codeExamples": [
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/form-templates\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/vnd.api+json\""
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"projectId\": \"9ba6681e-1952-4d54-aac4-9de6d9858dd4\",\n      \"id\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n      \"name\": \"Daily Report\",\n      \"status\": \"active\",\n      \"templateType\": \"pg.template_type.daily_report\",\n      \"userPermissions\": [\n        {\n          \"permissions\": [\n            \"submit\"\n          ],\n          \"userId\": \"USER123A\"\n        }\n      ],\n      \"groupPermissions\": [\n        {\n          \"permissions\": [\n            \"manage\"\n          ],\n          \"roleKey\": \"hq_access_level:admin\",\n          \"roleName\": \"Admin\"\n        }\n      ],\n      \"createdBy\": \"USER123A\",\n      \"updatedAt\": \"2020-11-20T16:13:33.615127+00:00\",\n      \"isPdf\": true,\n      \"pdfUrl\": \"https://link.to/form-template.pdf\",\n      \"forms\": {}\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "projectId": "9ba6681e-1952-4d54-aac4-9de6d9858dd4",
+            "id": "2f634a22-779d-4930-9f08-8391a41fea05",
+            "name": "Daily Report",
+            "status": "active",
+            "templateType": "pg.template_type.daily_report",
+            "userPermissions": [
+              {
+                "permissions": [
+                  "submit"
+                ],
+                "userId": "USER123A"
+              }
+            ],
+            "groupPermissions": [
+              {
+                "permissions": [
+                  "manage"
+                ],
+                "roleKey": "hq_access_level:admin",
+                "roleName": "Admin"
+              }
+            ],
+            "createdBy": "USER123A",
+            "updatedAt": "2020-11-20T16:13:33.615127+00:00",
+            "isPdf": true,
+            "pdfUrl": "https://link.to/form-template.pdf",
+            "forms": {}
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    },
+    {
+      "raw": "curl \"https://developer.api.autodesk.com/construction/forms/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/forms?templateId=2f634a22-779d-4930-9f08-8391a41fea05\" -X GET \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/vnd.api+json\""
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"status\": \"draft\",\n      \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n      \"projectId\": \"9ba6681e-1952-4d54-aac4-9de6d9858dd4\",\n      \"formNum\": 1,\n      \"formDate\": \"2020-11-20\",\n      \"assigneeId\": \"USER123A\",\n      \"locationId\": \"d14ce3a6-e61b-4ab0-a9be-5acf7b5366df\",\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"createdBy\": \"USER123A\",\n      \"notes\": \"Form notes\",\n      \"description\": \"Form description\",\n      \"formTemplate\": {\n        \"status\": \"active\",\n        \"id\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n        \"projectId\": \"9ba6681e-1952-4d54-aac4-9de6d9858dd4\",\n        \"name\": \"Daily Report\",\n        \"templateType\": \"pg.template_type.daily_report\"\n      },\n      \"pdfValues\": [],\n      \"pdfUrl\": null,\n      \"weather\": {\n        \"summaryKey\": \"clear\",\n        \"precipitationAccumulation\": 2.3,\n        \"precipitationAccumulationUnit\": \"in\",\n        \"temperatureMin\": 47.1,\n        \"temperatureMax\": 65.1,\n        \"temperatureUnit\": \"Fahrenheit\",\n        \"humidity\": 0.2,\n        \"windSpeed\": 12.5,\n        \"windGust\": 34.6,\n        \"speedUnit\": \"mph\",\n        \"windBearing\": 18,\n        \"hourlyWeather\": [\n          {\n            \"id\": 1234,\n            \"hour\": \"07:00:00\",\n            \"temp\": 54.12,\n            \"windSpeed\": 14.2,\n            \"windBearing\": 14,\n            \"humidity\": 0.24,\n            \"fetchedAt\": null,\n            \"createdAt\": \"2021-01-20T20:38:32+00:00\",\n            \"updatedAt\": \"2021-01-20T20:38:32+00:00\"\n          }\n        ]\n      },\n      \"tabularValues\": {\n        \"worklogEntries\": [\n          {\n            \"id\": \"cb95aceb-187a-3a8f-2e5f-502a555c03d5\",\n            \"deleted\": false,\n            \"trade\": \"Plumbers\",\n            \"timespan\": 21600000,\n            \"headcount\": 4,\n            \"description\": \"change pipes\"\n          }\n        ],\n        \"materialsEntries\": [\n          {\n            \"id\": \"2f7e534d-d084-594b-8aa6-147cb8fbc060\",\n            \"deleted\": false,\n            \"item\": \"Glue\",\n            \"quantity\": 3,\n            \"unit\": \"qt\",\n            \"description\": null\n          }\n        ],\n        \"equipmentEntries\": [\n          {\n            \"id\": \"84a32af6-b2b1-c3ae-c186-caef48fe4ffd\",\n            \"deleted\": false,\n            \"item\": \"Hammer\",\n            \"timespan\": 7200000,\n            \"quantity\": 1,\n            \"description\": null\n          }\n        ]\n      },\n      \"customValues\": [\n        {\n          \"sectionLabel\": \"Observation\",\n          \"itemLabel\": \"Masks / Face Protection\",\n          \"valueName\": \"textVal\",\n          \"textVal\": \"Yes\",\n          \"notes\": \"Observed Masks and Face Protection\"\n        }\n      ]\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "status": "draft",
+            "id": "932da979-e537-4530-b8aa-18607ac6db37",
+            "projectId": "9ba6681e-1952-4d54-aac4-9de6d9858dd4",
+            "formNum": 1,
+            "formDate": "2020-11-20",
+            "assigneeId": "USER123A",
+            "locationId": "d14ce3a6-e61b-4ab0-a9be-5acf7b5366df",
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "createdBy": "USER123A",
+            "notes": "Form notes",
+            "description": "Form description",
+            "formTemplate": {
+              "status": "active",
+              "id": "2f634a22-779d-4930-9f08-8391a41fea05",
+              "projectId": "9ba6681e-1952-4d54-aac4-9de6d9858dd4",
+              "name": "Daily Report",
+              "templateType": "pg.template_type.daily_report"
+            },
+            "pdfValues": [],
+            "pdfUrl": null,
+            "weather": {
+              "summaryKey": "clear",
+              "precipitationAccumulation": 2.3,
+              "precipitationAccumulationUnit": "in",
+              "temperatureMin": 47.1,
+              "temperatureMax": 65.1,
+              "temperatureUnit": "Fahrenheit",
+              "humidity": 0.2,
+              "windSpeed": 12.5,
+              "windGust": 34.6,
+              "speedUnit": "mph",
+              "windBearing": 18,
+              "hourlyWeather": [
+                {
+                  "id": 1234,
+                  "hour": "07:00:00",
+                  "temp": 54.12,
+                  "windSpeed": 14.2,
+                  "windBearing": 14,
+                  "humidity": 0.24,
+                  "fetchedAt": null,
+                  "createdAt": "2021-01-20T20:38:32+00:00",
+                  "updatedAt": "2021-01-20T20:38:32+00:00"
+                }
+              ]
+            },
+            "tabularValues": {
+              "worklogEntries": [
+                {
+                  "id": "cb95aceb-187a-3a8f-2e5f-502a555c03d5",
+                  "deleted": false,
+                  "trade": "Plumbers",
+                  "timespan": 21600000,
+                  "headcount": 4,
+                  "description": "change pipes"
+                }
+              ],
+              "materialsEntries": [
+                {
+                  "id": "2f7e534d-d084-594b-8aa6-147cb8fbc060",
+                  "deleted": false,
+                  "item": "Glue",
+                  "quantity": 3,
+                  "unit": "qt",
+                  "description": null
+                }
+              ],
+              "equipmentEntries": [
+                {
+                  "id": "84a32af6-b2b1-c3ae-c186-caef48fe4ffd",
+                  "deleted": false,
+                  "item": "Hammer",
+                  "timespan": 7200000,
+                  "quantity": 1,
+                  "description": null
+                }
+              ]
+            },
+            "customValues": [
+              {
+                "sectionLabel": "Observation",
+                "itemLabel": "Masks / Face Protection",
+                "valueName": "textVal",
+                "textVal": "Yes",
+                "notes": "Observed Masks and Face Protection"
+              }
+            ]
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

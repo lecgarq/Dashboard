@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/cost-actions-POST",
+    "scrapedAt": "2026-05-08T23:47:30.598Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/containers/{containerId}/workflows/actions",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/workflows/actions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/cost/v1/containers/:containerId/workflows/actions"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "action*string",
+          "col_1": "Name of the action to perform. The possible actions are from GET /actions.\nMax length: 255"
+        },
+        {
+          "col_0": "associationId*string",
+          "col_1": "The ID of the item on which to perform the action. For example, change order ID."
+        },
+        {
+          "col_0": "associationType*enum:string",
+          "col_1": "The type of the item on which to perform the action. Possible values: FormInstance, OCO, PCO, RCO, RFQ, SCO, Expense, Contract, CostPayment, BudgetPayment, BudgetTransfer, MainContract, DistributionItem."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Extra data required by the action."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "actionstring",
+          "col_1": "The name of the action performed on the specified item. For example, budgetOpen on a PCO.\nMax length: 255"
+        },
+        {
+          "col_0": "associationIdstring",
+          "col_1": "The object ID of the item on which the action was performed - a change order (PCO, RCO, OCO, RFQ or SCO) for example."
+        },
+        {
+          "col_0": "associationTypestring",
+          "col_1": "The type of the item on which the action was performed. Possible values: FormInstance, OCO, PCO, RCO, RFQ, SCO, Expense, Contract, CostPayment, BudgetPayment, BudgetTransfer, MainContract."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "An array of errors that occurred during action execution."
+        },
+        {
+          "col_0": "statusint",
+          "col_1": "BIM 360 Cost Management defined error code for the error."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "Title of the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "Detailed description of the error."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "List of field validation errors."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "BIM 360 Cost Management defined error code for the error."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "Name of the field associated to the error."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "Title of the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "The detailed description of the error."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/workflows/actions' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '[\n        {\n          \"action\": \"open\",\n          \"associationId\": \"48934441-e392-49d7-bf58-8dea43d413ae\",\n          \"associationType\": \"FormInstance\",\n          \"options\": {}\n        }\n      ]'",
+      "parsed": {
+        "action": "open",
+        "associationId": "48934441-e392-49d7-bf58-8dea43d413ae",
+        "associationType": "FormInstance",
+        "options": {}
+      }
+    },
+    {
+      "raw": "[\n  {\n    \"action\": \"open\",\n    \"associationId\": \"48934441-e392-49d7-bf58-8dea43d413ae\",\n    \"associationType\": \"FormInstance\",\n    \"errors\": [\n      {\n        \"status\": 400,\n        \"title\": \"Authentication required\",\n        \"detail\": \"Missing authentication credentials for the Greeting resource.\",\n        \"errors\": [\n          {\n            \"code\": 400010,\n            \"field\": \"color\",\n            \"title\": \"Invalid Parameter\",\n            \"detail\": \"color must be ``green``, ``red`` or ``blue``\"\n          }\n        ]\n      }\n    ]\n  }\n]",
+      "parsed": {
+        "action": "open",
+        "associationId": "48934441-e392-49d7-bf58-8dea43d413ae",
+        "associationType": "FormInstance",
+        "errors": [
+          {
+            "status": 400,
+            "title": "Authentication required",
+            "detail": "Missing authentication credentials for the Greeting resource.",
+            "errors": [
+              {
+                "code": 400010,
+                "field": "color",
+                "title": "Invalid Parameter",
+                "detail": "color must be ``green``, ``red`` or ``blue``"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

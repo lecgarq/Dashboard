@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/Classes/SearchResults",
+    "scrapedAt": "2026-05-08T18:49:13.268Z",
+    "category": "SDK Reference/globals/Classes",
+    "apiName": "VIEWER API"
+  },
+  "title": "SearchResults",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "parent*HTMLElement",
+          "col_1": "HTMLElement where the search result will be inserted"
+        },
+        {
+          "col_0": "excludeRoot*boolean",
+          "col_1": "Flag indicating whether to exclude the root in the search"
+        },
+        {
+          "col_0": "container*GuiViewer3D, HTMLElement",
+          "col_1": "Viewer container element"
+        }
+      ]
+    }
+  ]
+}

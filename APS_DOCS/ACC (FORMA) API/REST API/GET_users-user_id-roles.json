@@ -1,0 +1,243 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/admin-usersuseridroles-GET",
+    "scrapedAt": "2026-05-08T23:56:41.391Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "accounts/{accountId}/users/{userId}/roles",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/users/6cc15635-2fbd-4f73-afbe-abd833408a1d/roles?filter[projectId]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[status]=active&filter[name]=Architect&filterTextMatch=contains&fields=name&sort=name&limit=20",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/admin/v1/accounts/:accountId/users/:userId/roles"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Specifies the region where your request should be routed. If not set, the request is routed automatically, which may result in a slight increase in latency.\nPossible values: US, EMEA. For a complete list of supported regions, see the Regions page."
+        },
+        {
+          "col_0": "User-Idstring",
+          "col_1": "The ID of a user on whose behalf your request is acting.\nYour app has access to all users specified by the administrator in the SaaS integrations UI. Provide this header value to identify the user to be affected by the request.\nYou can use either the user’s Forma ID (id), or their Autodesk ID (autodeskId).\nNote that this header is required for hub Admin POST, PATCH, and DELETE endpoints if you want to use a 2-legged authentication context. This header is optional for hub Admin GET endpoints."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "accountIdstring: UUID",
+          "col_1": "The ID of the hub that contains the projects. This corresponds to the hub ID used in the Data Management API, with the “b.\" prefix removed. For example, b.c8b0c73d-3ae9 becomes c8b0c73d-3ae9."
+        },
+        {
+          "col_0": "userIdstring",
+          "col_1": "The ID of the user. To find the ID call GET users. You can use either the Forma ID (id) or the Autodesk ID (autodeskId)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filter[projectId]array: string: uuid",
+          "col_1": "A list of project IDs. Only results where the user is associated with one or more of the specified projects are returned."
+        },
+        {
+          "col_0": "filter[status]array: string",
+          "col_1": "Filters roles by their status. Accepts one or more of the following values:\nactive – The role is currently in use.\ninactive – The role has been removed or is no longer in use."
+        },
+        {
+          "col_0": "filter[name]string",
+          "col_1": "Filters roles by name.\nBy default, this performs a partial match (case-insensitive).\nYou can control how the match behaves by using the filterTextMatch parameter. For example, to match only names that start with (startsWith), end with (endsWith), or exactly equal (equals) the provided value."
+        },
+        {
+          "col_0": "filterTextMatchenum:string",
+          "col_1": "Specifies how text-based filters should match values in supported fields.\nThis parameter can be used in any endpoint that supports text-based filtering (e.g., filter[name], filter[jobNumber], filter[companyName], etc.).\nPossible values:\ncontains (default) – Matches if the field contains the specified text anywhere\nstartsWith – Matches if the field starts with the specified text\nendsWith – Matches if the field ends with the specified text\nequals – Matches only if the field exactly matches the specified text\nMatching is case-insensitive.\nWildcards and regular expressions are not supported."
+        },
+        {
+          "col_0": "fieldsarray: string",
+          "col_1": "A comma-separated list of response fields to include.\nDefaults to all fields if not specified.\nUse this parameter to reduce the response size by retrieving only the fields you need.\nPossible values:\nprojectIds – Projects where the user holds this role\nname – Role name\nstatus – Role status (active or inactive)\nkey – Internal key used to translate the role name\nisImmutable – Indicates whether the role is immutable\ncreatedAt – Timestamp when the role was created\nupdatedAt – Timestamp when the role was last updated"
+        },
+        {
+          "col_0": "sortarray: string",
+          "col_1": "Sorts the results by one or more fields.\nEach field can be followed by a direction modifier:\nasc – Ascending order (default)\ndesc – Descending order\nPossible values: name, createdAt, updatedAt.\nDefault sort: name asc\nExample: sort=name,updatedAt desc"
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records to return in the response.\nDefault: 20\nMinimum: 1\nMaximum: 200 (If a larger value is provided, only 200 records are returned)"
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first record to return.\nUsed for pagination in combination with the limit parameter.\nExample: limit=20 and offset=40 returns records 41–60."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "A list of requested roles associated with the user"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Request has not been applied because it lacks valid authentication credentials for the target resource."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The server understood the request but refuses to authorize it."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource could not be found."
+        },
+        {
+          "col_0": "406Not Acceptable",
+          "col_1": "The server cannot produce a response matching the list of acceptable values defined in the request."
+        },
+        {
+          "col_0": "410",
+          "col_1": "Access to the target resource is no longer available."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "User has sent too many requests in a given amount of time."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Server is not ready to handle the request."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "Contains pagination details for the records returned by the endpoint."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records returned per page. The last page may contain fewer records than the specified limit."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index of the first record in the returned page. Used for pagination."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of records matching the request."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL for the next page of records, if more results are available. Max length: 2000 characters.\nMax length: 2000"
+        },
+        {
+          "col_0": "previousUrlstring",
+          "col_1": "The URL for the previous page of records, if applicable. Max length: 2000 characters.\nMax length: 2000"
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The requested page of roles associated with the user."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique ID of the role."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The role status. Possible values: active, inactive."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the role. Predefined roles are localized based on the request language.\nMax length: 255"
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "The internal key used for translating predefined role names.\nMax length: 255"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The timestamp when the role was created."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The timestamp when the role was last updated."
+        },
+        {
+          "col_0": "projectIdsarray: string",
+          "col_1": "The list of projects where the user is associated with this role."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/users/6cc15635-2fbd-4f73-afbe-abd833408a1d/roles?filter[projectId]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[status]=active&filter[name]=Architect&filterTextMatch=contains&fields=name&sort=name&limit=20' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 20,\n    \"offset\": 10,\n    \"totalResults\": 121,\n    \"nextUrl\": \"https://resource?limit=20&offset=30\",\n    \"previousUrl\": \"https://resource?limit=20&offset=0\"\n  },\n  \"results\": [\n    {\n      \"id\": \"287d5cc2-9008-462c-96e5-c9491db85d97\",\n      \"status\": \"active\",\n      \"name\": \"Architect\",\n      \"key\": \"architect\",\n      \"createdAt\": \"2018-01-01T12:45:00.000Z\",\n      \"updatedAt\": \"2019-01-01T12:45:00.000Z\",\n      \"projectIds\": [\n        \"3e354e66-ac8b-41dd-9bc1-93fc182c25dd\"\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 10,
+          "totalResults": 121,
+          "nextUrl": "https://resource?limit=20&offset=30",
+          "previousUrl": "https://resource?limit=20&offset=0"
+        },
+        "results": [
+          {
+            "id": "287d5cc2-9008-462c-96e5-c9491db85d97",
+            "status": "active",
+            "name": "Architect",
+            "key": "architect",
+            "createdAt": "2018-01-01T12:45:00.000Z",
+            "updatedAt": "2019-01-01T12:45:00.000Z",
+            "projectIds": [
+              "3e354e66-ac8b-41dd-9bc1-93fc182c25dd"
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/getting_started/task3",
+    "scrapedAt": "2026-05-08T18:14:20.493Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Navigate to Exchanges within a Folder",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "topFolders",
+          "Description": "Retrieves all the topFolders that are available within a project."
+        },
+        {
+          "Type": "Query",
+          "Operation": "folder",
+          "Description": "Retrieves all the exchanges that are available within a folder."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetTopFolders($projectId: ID!) {\n    topFolders(projectId: $projectId) {\n        results {\n            id\n            name\n            folders {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"projectId\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg\"\n}",
+      "parsed": {
+        "projectId": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg"
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"topFolders\": {\n            \"results\": [\n                {\n                    \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB\",\n                    \"name\": \"Project Files\",\n                    \"folders\": {\n                        \"results\": [\n                            {\n                                \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\",\n                                \"name\": \"Large-models\"\n                            },\n                            {\n                                \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5TWW9LbnlJNVJOU3pmNVBVeWlqNXB3\",\n                                \"name\": \"Small-models\"\n                            }\n                        ]\n                    }\n                }\n            ]\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "topFolders": {
+            "results": [
+              {
+                "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB",
+                "name": "Project Files",
+                "folders": {
+                  "results": [
+                    {
+                      "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR",
+                      "name": "Large-models"
+                    },
+                    {
+                      "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5TWW9LbnlJNVJOU3pmNVBVeWlqNXB3",
+                      "name": "Small-models"
+                    }
+                  ]
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "raw": "query GetFolder($folderId: ID!) {\n    folder(folderId: $folderId) {\n        id\n        name\n        exchanges {\n            results {\n                id\n                name\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n \"folderId\" : \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\"\n}",
+      "parsed": {
+        "folderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR"
+      }
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"folder\": {\n            \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\",\n            \"name\": \"Large-models\",\n            \"exchanges\": {\n                \"results\": [\n                    {\n                        \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjgwNDg4OWIzLTk0YjAtMzFkOC1hZTBiLWUxNmM5ODJmMTM2NQ\",\n                        \"name\": \"SHARE - First Floor\"\n                    },\n                    {\n                        \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjI0ZjQ0MmZkLTcxYmQtMzNmNi1hMDg2LTk4NTZjZDUxYmEyMQ\",\n                        \"name\": \"SHARE - Overall\"\n                    },\n                    {\n                        \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n                        \"name\": \"SHARE -Multi-Fam Apt-Wing 2\"\n                    }\n                ]\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "folder": {
+            "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR",
+            "name": "Large-models",
+            "exchanges": {
+              "results": [
+                {
+                  "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjgwNDg4OWIzLTk0YjAtMzFkOC1hZTBiLWUxNmM5ODJmMTM2NQ",
+                  "name": "SHARE - First Floor"
+                },
+                {
+                  "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjI0ZjQ0MmZkLTcxYmQtMzNmNi1hMDg2LTk4NTZjZDUxYmEyMQ",
+                  "name": "SHARE - Overall"
+                },
+                {
+                  "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+                  "name": "SHARE -Multi-Fam Apt-Wing 2"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

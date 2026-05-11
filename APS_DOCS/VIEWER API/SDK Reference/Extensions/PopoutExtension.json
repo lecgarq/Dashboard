@@ -1,0 +1,100 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/PopoutExtension",
+    "scrapedAt": "2026-05-08T18:47:01.726Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "PopoutExtension",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Autodesk.Viewing.Viewer3D",
+          "col_1": "Viewer instance."
+        },
+        {
+          "col_0": "options*object",
+          "col_1": "Not used."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "child*object",
+          "col_1": "Already open window created with window.open()"
+        },
+        {
+          "col_0": "elementid*string",
+          "col_1": "The dom element id in the child where the viewer will be moved to"
+        },
+        {
+          "col_0": "copyStylesboolean",
+          "col_1": "Flag to copy the styles from the current window to the child. Set this to false if you intend to copy the styles yourself"
+        },
+        {
+          "col_0": "setupStyleObserverboolean",
+          "col_1": "Style observers clone dynamically added  (from extensions loading) into child. This is required for extensions to work. Set this to false if you intend to set up the cloning with mutation observers yourself"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "optionsobject",
+          "col_1": "windowFeature options"
+        },
+        {
+          "col_0": "onBeforeUnloadfunction",
+          "col_1": "Called before the popout window is unloaded"
+        },
+        {
+          "col_0": "onClosefunction",
+          "col_1": "Called when popout window is closed"
+        },
+        {
+          "col_0": "onBlockedfunction",
+          "col_1": "Called when popup blockers block creating child window"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.Viewing.Popout');"
+    }
+  ]
+}

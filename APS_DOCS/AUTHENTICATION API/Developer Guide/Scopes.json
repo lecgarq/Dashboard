@@ -1,0 +1,106 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/developers_guide/scopes",
+    "scrapedAt": "2026-05-08T17:34:55.085Z",
+    "category": "Developer Guide",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Scopes",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Value",
+        "Display Message on Consent Page\n(in three-legged OAuth flow)",
+        "Meaning"
+      ],
+      "rows": [
+        {
+          "Value": "user-profile:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your profile info",
+          "Meaning": "The application will be able to read the end user’s profile data (not including associated products and services)."
+        },
+        {
+          "Value": "user:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your profile info",
+          "Meaning": "The application will be able to read the end user’s profile data, including associated products and services."
+        },
+        {
+          "Value": "user:write",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Manage your profile info",
+          "Meaning": "The application will be able to create, update, and delete the end user’s profile data, including associated products and services."
+        },
+        {
+          "Value": "viewables:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your viewable data",
+          "Meaning": "The application will only be able to read the end user’s viewable data (e.g., PNG and SVF files) within the Autodesk ecosystem."
+        },
+        {
+          "Value": "data:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your data",
+          "Meaning": "The application will be able to read all the end user’s data (viewable and non-viewable) within the\nAutodesk ecosystem."
+        },
+        {
+          "Value": "data:write",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Manage your data",
+          "Meaning": "The application will be able to create, update, and delete data on\nbehalf of the end user within the Autodesk ecosystem."
+        },
+        {
+          "Value": "data:create",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Write data",
+          "Meaning": "The application will be able to create data on behalf of the end user\nwithin the Autodesk ecosystem."
+        },
+        {
+          "Value": "data:search",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Search across your data",
+          "Meaning": "The application will be able to search the end user’s data within\nthe Autodesk ecosystem."
+        },
+        {
+          "Value": "bucket:create",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Create new buckets",
+          "Meaning": "The application will be able to create an OSS bucket it will own."
+        },
+        {
+          "Value": "bucket:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your buckets",
+          "Meaning": "The application will be able to read the metadata and list contents\nfor OSS buckets that it has access to."
+        },
+        {
+          "Value": "bucket:update",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Update your buckets",
+          "Meaning": "The application will be able to set permissions and entitlements\nfor OSS buckets that it has permission to modify."
+        },
+        {
+          "Value": "bucket:delete",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Delete your buckets",
+          "Meaning": "The application will be able to delete a bucket that it has\npermission to delete."
+        },
+        {
+          "Value": "code:all",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Author or execute your codes",
+          "Meaning": "The application will be able to author and execute code on behalf\nof the end user (e.g., scripts processed by the Design Automation\nAPI)."
+        },
+        {
+          "Value": "account:read",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "View your product and service accounts",
+          "Meaning": "For Product APIs, the application will be able to read the account\ndata the end user has entitlements to."
+        },
+        {
+          "Value": "account:write",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Manage your product and service accounts",
+          "Meaning": "For Product APIs, the application will be able to update the account\ndata the end user has entitlements to."
+        },
+        {
+          "Value": "openid",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "Authorize the call",
+          "Meaning": "The application requires this scope to generate an id_token."
+        },
+        {
+          "Value": "data:read:<URN_OF_RESOURCE>",
+          "Display Message on Consent Page\n(in three-legged OAuth flow)": "data:read dynamic scope which allow\nclient to access the specific resource",
+          "Meaning": "The application will be able to read only the resource with the URN/Object ID specified by <URN_OF_RESOURCE>.\n<URN_OF_RESOURCE> takes the form urn:adsk.*. It can contain all characters (including unicode charcters) except *, \\, \".\n\nExample: urn:adsk.objects:os.object:jp-220520/box.ipt\n\nNote: <URN_OF_RESOURCE> must be a raw URN and not a Base64 encoded URN."
+        }
+      ]
+    }
+  ]
+}

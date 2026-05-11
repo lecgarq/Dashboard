@@ -1,0 +1,754 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-payments-GET",
+    "scrapedAt": "2026-05-08T17:58:07.810Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/payments",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/payments?limit=100&sort=name,createdAt desc&filter[associationType]=Contract&filter[status]=paid&filter[lastModifiedSince]=2020-03-01T13:00:00Z",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/cost/v1/containers/:containerId/payments"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records to skip before returning results. Used together with limit to paginate through results, where offset specifies the starting point and limit specifies the number of records to return."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records returned per page. Default: 100. A page may contain fewer records than the limit if there are fewer matching items or if it is the last page of results."
+        },
+        {
+          "col_0": "sortstring",
+          "col_1": "Defines the sort order for the results. Each attribute can be sorted in asc (default) or desc order. For example, sort=name desc sorts the results by name in descending order."
+        },
+        {
+          "col_0": "filter[associationType]enum:string",
+          "col_1": "Returns only the payments that are associated with the type of contract specified. Possible values:Contract for cost payments; MainContract for budget payments. For example, filter[associationType]=Contract."
+        },
+        {
+          "col_0": "filter[associationId]array: string: uuid",
+          "col_1": "Returns only the payments that are associated with the provided list of contract or main contract IDs. Separate multiple IDs with commas. For example, filter[associationId]=id1,id2."
+        },
+        {
+          "col_0": "filter[id]array: string: uuid",
+          "col_1": "Returns only the items that are identified by the provided list of item IDs. Separate multiple IDs with commas. For example, filter[id]=id1,id2."
+        },
+        {
+          "col_0": "filter[number]array: string",
+          "col_1": "Returns only the items that are identified by the provided list of auto-generated sequence numbers. Separate multiple numbers with commas; for example, filter[number]=0001,0002."
+        },
+        {
+          "col_0": "filter[status]array: string",
+          "col_1": "Returns only payments that have a status on the provided list of statuses. Separate multiple values with commas. For example, filter[status]=draft,submitted. Possible values:draft, pendingInput, submitted, revise, inReview, accepted, paid."
+        },
+        {
+          "col_0": "filter[budgetPaymentId]array: string: uuid",
+          "col_1": "Returns only the payments associated with the budget payments (used to query the related cost payments or expenses) that are identified on this list of IDs. Separate multiple IDs with commas; for example, filter[budgetPaymentId]=id1,id2."
+        },
+        {
+          "col_0": "filter[lastModifiedSince]string",
+          "col_1": "Returns only items that were modified since the specified date and time, in ISO 8601 format. For example, filter[lastModifiedSince]=2020-03-01T13:00:00Z."
+        },
+        {
+          "col_0": "filter[externalSystem]string",
+          "col_1": "The name of the external ERP system. Use this name to identify or search within the integrated system. For example, filter[externalSystem]=Sage300.\nMax length: 255"
+        },
+        {
+          "col_0": "filter[externalId]array: string",
+          "col_1": "The ID of the item in the external ERP system. Use this ID to track or look up data in an integrated ERP system. For example, filter[externalId]=id1,id2."
+        },
+        {
+          "col_0": "includearray: string",
+          "col_1": "Include nested resources in the response. For example, include=paymentReferences will return payment references to each payment. include=attributes will return custom attributes which represents the “properties” in the response. Possible values: paymentReferences, attributes, summaryCalculatedFields, complianceExpiration."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "Contains pagination information when data is returned page by page."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of records returned in the response."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records skipped before returning the page of results."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of records that matched the request criteria."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL for the next request to retrieve the next page of results. Max length: 2000.\nMax length: 2000"
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The project cost payments or budget payments."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of the payment."
+        },
+        {
+          "col_0": "billingPeriodIdstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "previousPaymentIdstring: UUID",
+          "col_1": "The unique identifier of the previous payment for this payment."
+        },
+        {
+          "col_0": "associationTypeenum:string",
+          "col_1": "The type of contract associated with this payment.\nPossible values: Contract, MainContract."
+        },
+        {
+          "col_0": "associationIdstring: UUID",
+          "col_1": "The ID of the contract or main contract that the payment is associated with."
+        },
+        {
+          "col_0": "mainContractIdstring: UUID",
+          "col_1": "The ID of the main contract associated with this payment."
+        },
+        {
+          "col_0": "budgetPaymentIdstring,null",
+          "col_1": "The ID of the budget payment associated with this cost payment. This field is valid only for cost payments."
+        },
+        {
+          "col_0": "budgetTransferIdsarray: string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "startDatestring",
+          "col_1": "The start date of this payment."
+        },
+        {
+          "col_0": "endDatestring",
+          "col_1": "The end date of this payment."
+        },
+        {
+          "col_0": "dueDatestring",
+          "col_1": "The due date of this payment."
+        },
+        {
+          "col_0": "numberstring",
+          "col_1": "The number of this payment.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of this payment.\nMax length: 1024"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "A detailed description of this payment."
+        },
+        {
+          "col_0": "notestring",
+          "col_1": "The note attached to the payment, if returned. The note consists of Tiptap formatted rich text. For more information, see https://tiptap.dev."
+        },
+        {
+          "col_0": "contactIdstring,null",
+          "col_1": "The ID of a contact managed by a BIM 360 Admin."
+        },
+        {
+          "col_0": "creatorIdstring,null",
+          "col_1": "The user who created the payment. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The status of this payment. For details about the possible values of this field, see Payment Application Statuses.\nPossible values: draft, pendingInput, submitted, revise, accepted, approved, paid."
+        },
+        {
+          "col_0": "exchangeRatenumber,string,null",
+          "col_1": "Exchange rate. Default value is 1. If multi-currency is not enabled, it will also be 1."
+        },
+        {
+          "col_0": "previousExchangeRatenumber,string,null",
+          "col_1": "Exchange rate from previous payment application. Default value is 1, if multi-currency is not enabled, it will also be 1."
+        },
+        {
+          "col_0": "contractAmountnumber,string,null",
+          "col_1": "The original contract amount of the payment."
+        },
+        {
+          "col_0": "contractAmountForeignCurrencynumber,string,null",
+          "col_1": "The original contract amount of the payment, in foreign currency."
+        },
+        {
+          "col_0": "approvedChangeOrdersnumber,string,null",
+          "col_1": "The amount of total approved change orders in this payment."
+        },
+        {
+          "col_0": "approvedChangeOrdersForeignCurrencynumber,string,null",
+          "col_1": "The amount of total approved change orders in this payment, in foreign currency."
+        },
+        {
+          "col_0": "approvedBudgetTransfersnumber,string,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "approvedBudgetTransfersForeignCurrencynumber,string,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "originalAmountnumber,string,null",
+          "col_1": "The original payment amount, including the main contract amount, change orders, and internal budget transfers that affect the schedule of values defined in project settings."
+        },
+        {
+          "col_0": "originalAmountForeignCurrencynumber,string,null",
+          "col_1": "The original payment amount in foreign currency, including the main contract amount, change orders, and internal budget transfers that affect the schedule of values defined in project settings."
+        },
+        {
+          "col_0": "previousAmountnumber,string,null",
+          "col_1": "The amount of total work completed prior to this period."
+        },
+        {
+          "col_0": "previousAmountForeignCurrencynumber,string,null",
+          "col_1": "The amount of total work completed prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "previousApprovedChangeOrdersnumber,string,null",
+          "col_1": "The amount of total approved change orders prior to this period."
+        },
+        {
+          "col_0": "previousApprovedChangeOrdersForeignCurrencynumber,string,null",
+          "col_1": "The amount of total approved change orders prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "previousApprovedBudgetTransfersnumber,string,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "previousApprovedBudgetTransfersForeignCurrencynumber,string,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The amount of the work completed in this period."
+        },
+        {
+          "col_0": "previousMaterialsOnStorenumber,string,null",
+          "col_1": "The amount of total materials stored prior to this period."
+        },
+        {
+          "col_0": "materialsOnStorenumber,string,null",
+          "col_1": "The amount of the materials stored in this application."
+        },
+        {
+          "col_0": "previousMaterialsBillednumber,string,null",
+          "col_1": "The amount of total materials billed prior to this period."
+        },
+        {
+          "col_0": "previousMaterialsBilledForeignCurrencynumber,string,null",
+          "col_1": "The amount of total materials billed prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "materialsBillednumber,string,null",
+          "col_1": "The amount of the materials billed in this period."
+        },
+        {
+          "col_0": "currentCompletedWorkRetentionPercentnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "completedWorkRetainedPercentnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "completedWorkRetainednumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "completedWorkRetentionnumber,string,null",
+          "col_1": "The amount of total work completed retained in this application."
+        },
+        {
+          "col_0": "completedWorkRetentionForeignCurrencynumber,string,null",
+          "col_1": "The amount of total work completed retained (pre-release), in foreign currency."
+        },
+        {
+          "col_0": "completedWorkGrossRetentionPercentnumber",
+          "col_1": "The percentage of the gross retention amount of the payment for work completed. (released value is not removed)"
+        },
+        {
+          "col_0": "currentMaterialsRetentionPercentnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "materialsGrossRetentionPercentnumber",
+          "col_1": "The percentage of the gross retention of the payment for material (released value is not removed)."
+        },
+        {
+          "col_0": "materialsRetainedPercentnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "materialsRetainednumber,string,null",
+          "col_1": "The amount of the materials (stored or billed) retained in this application."
+        },
+        {
+          "col_0": "materialsRetentionnumber,string,null",
+          "col_1": "The amount of the materials (stored or billed) retained in this application."
+        },
+        {
+          "col_0": "materialsOnStoreRetentionnumber,string,null",
+          "col_1": "The amount of the materials stored retained in this application. This parameter is deprecated."
+        },
+        {
+          "col_0": "materialsRetentionForeignCurrencynumber,string,null",
+          "col_1": "The amount of the materials (stored or billed) retained in this application, in foreign currency."
+        },
+        {
+          "col_0": "totalGrossRetentionPercentnumber",
+          "col_1": "The percentage of the gross retention of the payment for work completed and material. (released value is not removed)"
+        },
+        {
+          "col_0": "totalRetainedPercentnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "totalRetainednumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "previousRetentionnumber,string,null",
+          "col_1": "The retained amount of total work completed and materials (stored or billed) prior to this period."
+        },
+        {
+          "col_0": "previousRetentionForeignCurrencynumber,string,null",
+          "col_1": "The retained amount of total work completed and materials (stored or billed) prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "netAmountnumber,string,null",
+          "col_1": "The net amount that should be paid in this period, including work completed, advance amount, materials stored or billed, retention and release."
+        },
+        {
+          "col_0": "netAmountForeignCurrencynumber,string,null",
+          "col_1": "The net amount that should be paid in this period, including work completed, advance amount, materials stored or billed, retention and release, in foreign currency."
+        },
+        {
+          "col_0": "netMaterialsOnStorenumber,string,null",
+          "col_1": "The net materials stored in this period, which equals to (materialsOnStore - previousMaterialsOnStore)."
+        },
+        {
+          "col_0": "netRetentionnumber,string,null",
+          "col_1": "The net retention in this period, which equals to (completedWorkRetention + materialsOnStoreRetention - previousRetention)."
+        },
+        {
+          "col_0": "previousClaimedAmountnumber,string,null",
+          "col_1": "The claimed amount of total work completed prior to this period."
+        },
+        {
+          "col_0": "previousClaimedAmountForeignCurrencynumber,string,null",
+          "col_1": "The claimed amount of total work completed prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "claimedAmountnumber,string,null",
+          "col_1": "The claimed amount of total work completed in this period."
+        },
+        {
+          "col_0": "previousAdvanceAmountnumber,string,null",
+          "col_1": "The advance amount of total work completed prior to this period."
+        },
+        {
+          "col_0": "previousAdvanceAmountForeignCurrencynumber,string,null",
+          "col_1": "The advance amount of total work completed prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "previousRecoupmentAmountnumber,string,null",
+          "col_1": "The recoupment amount of total work completed prior to this period."
+        },
+        {
+          "col_0": "previousRecoupmentAmountForeignCurrencynumber,string,null",
+          "col_1": "The recoupment amount of total work completed prior to this period, in foreign currency."
+        },
+        {
+          "col_0": "advancePercentnumber,null",
+          "col_1": "The advance percent of the work completed in this period."
+        },
+        {
+          "col_0": "advanceAmountnumber,string,null",
+          "col_1": "The advance amount of the work completed in this period."
+        },
+        {
+          "col_0": "recoupmentAmountnumber,string,null",
+          "col_1": "The recoupment amount of the work completed in this period."
+        },
+        {
+          "col_0": "recoupmentPercentOfCompletedWorknumber,null",
+          "col_1": "The recoupment percentage of the work completed in this period."
+        },
+        {
+          "col_0": "aggregateBystring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "canReleaseRetentionboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "hasItemRejectedboolean",
+          "col_1": "Indicate if this payment has item rejected. This parameter is deprecated."
+        },
+        {
+          "col_0": "hasItemReviewedboolean",
+          "col_1": "Indicate if this payment has item reviewed. This parameter is deprecated."
+        },
+        {
+          "col_0": "recipientsarray: object",
+          "col_1": "Persons that the generated documents will be sent to."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "isDefaultboolean",
+          "col_1": "True if this is the default recipient of a Contract or Change Order."
+        },
+        {
+          "col_0": "companyIdstring,null",
+          "col_1": "The ID of a company managed by a BIM 360 Admin. Detailed company information can be retrieved by calling GET projects/:project_id/companies and locating the member_group_id in the response."
+        },
+        {
+          "col_0": "companyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "architectCompanyIdstring,null",
+          "col_1": "The BIM360/Forma ID of the architecture firm. The detailed company information can be retrieved from GET projects/:project_id/companies endpoint by searching the member_group_id in the response."
+        },
+        {
+          "col_0": "architectCompanyUidstring,null",
+          "col_1": "The unique ID of the architecture firm. The detailed company information can be retrieved by this uuid from GET companies/:company_id <en/docs/bim360/v1/reference/http/companies-:company_id-GET/> in the response"
+        },
+        {
+          "col_0": "architectContactIdstring,null",
+          "col_1": "The BIM360/Forma ID of the primary contact at the architecture firm."
+        },
+        {
+          "col_0": "additionalCollaboratorsarray: object",
+          "col_1": "The additional collaborator company and contacts."
+        },
+        {
+          "col_0": "companyIdstring",
+          "col_1": "The BIM360/Forma ID of the firm."
+        },
+        {
+          "col_0": "companyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "contactIdsarray: string",
+          "col_1": "The BIM360/Forma user ID of the contacts in the firm."
+        },
+        {
+          "col_0": "approvedAtstring,null",
+          "col_1": "The date and time that the item was approved, in ISO 8601 format."
+        },
+        {
+          "col_0": "calculatedAtstring,null",
+          "col_1": "The date and time that the item was calculated, in ISO 8601 format."
+        },
+        {
+          "col_0": "calculatedBystring",
+          "col_1": "The ID of the user who calculated the payment."
+        },
+        {
+          "col_0": "paidAtstring,null",
+          "col_1": "The date and time when the expense is paid."
+        },
+        {
+          "col_0": "forecastDistributionAtstring,null",
+          "col_1": "The date and time determine which distribution period this payment belongs to, after the status of status is set to approved or paid."
+        },
+        {
+          "col_0": "submittedAtstring,null",
+          "col_1": "The date and time when the payment is submitted."
+        },
+        {
+          "col_0": "paymentStageenum:string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "internalIdstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "internalSystemstring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        },
+        {
+          "col_0": "integrationStateChangedAtstring,null",
+          "col_1": "The date and time that the item’s integration status was last changed."
+        },
+        {
+          "col_0": "integrationStateChangedBystring,null",
+          "col_1": "The user who last changed the integration status. This is the ID of a user managed by the BIM 360/Forma Admin."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/payments?limit=100&sort=name,createdAt desc&filter[associationType]=Contract&filter[status]=paid&filter[lastModifiedSince]=2020-03-01T13:00:00Z' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 20,\n    \"offset\": 0,\n    \"totalResults\": 1,\n    \"nextUrl\": \"\"\n  },\n  \"results\": [\n    {\n      \"id\": \"a2e16076-d5bb-44b3-b451-fb1fb390e4fc\",\n      \"billingPeriodId\": \"18d97ae0-9484-11e8-a7ec-7ddae203e404\",\n      \"previousPaymentId\": \"18d97ae0-9484-11e8-a7ec-7ddae203e404\",\n      \"associationType\": \"Contract\",\n      \"associationId\": \"18d97ae0-9484-11e8-a7ec-7ddae203e404\",\n      \"mainContractId\": \"18d97ae0-9484-11e8-a7ec-7ddae203e404\",\n      \"budgetPaymentId\": \"18d97ae0-9484-11e8-a7ec-7ddae203e404\",\n      \"budgetTransferIds\": [\n        \"a2e16076-d5bb-44b3-b451-fb1fb390e4fc\"\n      ],\n      \"startDate\": \"2019-02-01\",\n      \"endDate\": \"2019-02-28\",\n      \"dueDate\": \"2019-02-28\",\n      \"number\": \"09871000072000O\",\n      \"name\": \"INSURANCE\",\n      \"description\": \"Description of Payment\",\n      \"note\": \"\",\n      \"contactId\": \"CED9LVTLHNXV\",\n      \"creatorId\": \"CED9LVTLHNXV\",\n      \"status\": \"draft\",\n      \"exchangeRate\": \"1.0000\",\n      \"previousExchangeRate\": \"1.0000\",\n      \"contractAmount\": \"1000.0000\",\n      \"contractAmountForeignCurrency\": \"1000.0000\",\n      \"approvedChangeOrders\": \"1000.0000\",\n      \"approvedChangeOrdersForeignCurrency\": \"1000.0000\",\n      \"approvedBudgetTransfers\": \"1000.0000\",\n      \"approvedBudgetTransfersForeignCurrency\": \"1000.0000\",\n      \"originalAmount\": \"1000.0000\",\n      \"originalAmountForeignCurrency\": \"1000.0000\",\n      \"previousAmount\": \"1000.0000\",\n      \"previousAmountForeignCurrency\": \"1000.0000\",\n      \"previousApprovedChangeOrders\": \"1000.0000\",\n      \"previousApprovedChangeOrdersForeignCurrency\": \"1000.0000\",\n      \"previousApprovedBudgetTransfers\": \"1000.0000\",\n      \"previousApprovedBudgetTransfersForeignCurrency\": \"1000.0000\",\n      \"amount\": \"1000.0000\",\n      \"previousMaterialsOnStore\": \"1000.0000\",\n      \"materialsOnStore\": \"1000.0000\",\n      \"previousMaterialsBilled\": \"1000.0000\",\n      \"previousMaterialsBilledForeignCurrency\": \"1000.0000\",\n      \"materialsBilled\": \"1000.0000\",\n      \"currentCompletedWorkRetentionPercent\": 0.1,\n      \"completedWorkRetainedPercent\": 0.1,\n      \"completedWorkRetained\": \"\",\n      \"completedWorkRetention\": \"1000.0000\",\n      \"completedWorkRetentionForeignCurrency\": \"1000.0000\",\n      \"completedWorkGrossRetentionPercent\": 0.1,\n      \"currentMaterialsRetentionPercent\": 0.1,\n      \"materialsGrossRetentionPercent\": 0.1,\n      \"materialsRetainedPercent\": 0.1,\n      \"materialsRetained\": \"1000.0000\",\n      \"materialsRetention\": \"1000.0000\",\n      \"materialsOnStoreRetention\": \"1000.0000\",\n      \"materialsRetentionForeignCurrency\": \"1000.0000\",\n      \"totalGrossRetentionPercent\": 0.1,\n      \"totalRetainedPercent\": 0.1,\n      \"totalRetained\": \"\",\n      \"previousRetention\": \"1000.0000\",\n      \"previousRetentionForeignCurrency\": \"1000.0000\",\n      \"netAmount\": \"1000.0000\",\n      \"netAmountForeignCurrency\": \"1000.0000\",\n      \"netMaterialsOnStore\": \"1000.0000\",\n      \"netRetention\": \"1000.0000\",\n      \"previousClaimedAmount\": \"1000.0000\",\n      \"previousClaimedAmountForeignCurrency\": \"1000.0000\",\n      \"claimedAmount\": \"1000.0000\",\n      \"previousAdvanceAmount\": \"1000.0000\",\n      \"previousAdvanceAmountForeignCurrency\": \"1000.0000\",\n      \"previousRecoupmentAmount\": \"1000.0000\",\n      \"previousRecoupmentAmountForeignCurrency\": \"1000.0000\",\n      \"advancePercent\": 0.1,\n      \"advanceAmount\": \"1000.0000\",\n      \"recoupmentAmount\": \"1000.0000\",\n      \"recoupmentPercentOfCompletedWork\": 0.1,\n      \"aggregateBy\": \"workCompleted\",\n      \"canReleaseRetention\": false,\n      \"hasItemRejected\": true,\n      \"hasItemReviewed\": true,\n      \"recipients\": [\n        {\n          \"id\": \"ZPYARKZX9ANQ\",\n          \"isDefault\": false\n        }\n      ],\n      \"companyId\": \"GF8XKPKWM38E\",\n      \"companyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n      \"architectCompanyId\": \"GF8XKPKWM38E\",\n      \"architectCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n      \"architectContactId\": \"CED9LVTLHNXV\",\n      \"additionalCollaborators\": [\n        {\n          \"companyId\": \"GF8XKPKWM38E\",\n          \"companyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n          \"contactIds\": [\n            \"CED9LVTLHNXV\"\n          ]\n        }\n      ],\n      \"approvedAt\": \"2019-02-05T01:00:12.989Z\",\n      \"calculatedAt\": \"2019-02-05T01:00:12.989Z\",\n      \"calculatedBy\": \"CED9LVTLHNXV\",\n      \"paidAt\": \"2019-02-05T01:00:12.989Z\",\n      \"forecastDistributionAt\": \"2019-02-05T01:00:12.989Z\",\n      \"submittedAt\": \"2019-02-05T01:00:12.989Z\",\n      \"paymentStage\": \"Progress\",\n      \"internalId\": \"123\",\n      \"internalSystem\": \"GCPay\",\n      \"integrationState\": \"locked\",\n      \"integrationStateChangedAt\": \"2019-09-05T01:00:12.989Z\",\n      \"integrationStateChangedBy\": \"CED9LVTLHNXV\",\n      \"externalId\": \"10010-99-AB\",\n      \"externalSystem\": \"Sage300\",\n      \"externalMessage\": \"Success.\",\n      \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n      \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n      \"updatedAt\": \"2019-09-05T01:00:12.989Z\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 0,
+          "totalResults": 1,
+          "nextUrl": ""
+        },
+        "results": [
+          {
+            "id": "a2e16076-d5bb-44b3-b451-fb1fb390e4fc",
+            "billingPeriodId": "18d97ae0-9484-11e8-a7ec-7ddae203e404",
+            "previousPaymentId": "18d97ae0-9484-11e8-a7ec-7ddae203e404",
+            "associationType": "Contract",
+            "associationId": "18d97ae0-9484-11e8-a7ec-7ddae203e404",
+            "mainContractId": "18d97ae0-9484-11e8-a7ec-7ddae203e404",
+            "budgetPaymentId": "18d97ae0-9484-11e8-a7ec-7ddae203e404",
+            "budgetTransferIds": [
+              "a2e16076-d5bb-44b3-b451-fb1fb390e4fc"
+            ],
+            "startDate": "2019-02-01",
+            "endDate": "2019-02-28",
+            "dueDate": "2019-02-28",
+            "number": "09871000072000O",
+            "name": "INSURANCE",
+            "description": "Description of Payment",
+            "note": "",
+            "contactId": "CED9LVTLHNXV",
+            "creatorId": "CED9LVTLHNXV",
+            "status": "draft",
+            "exchangeRate": "1.0000",
+            "previousExchangeRate": "1.0000",
+            "contractAmount": "1000.0000",
+            "contractAmountForeignCurrency": "1000.0000",
+            "approvedChangeOrders": "1000.0000",
+            "approvedChangeOrdersForeignCurrency": "1000.0000",
+            "approvedBudgetTransfers": "1000.0000",
+            "approvedBudgetTransfersForeignCurrency": "1000.0000",
+            "originalAmount": "1000.0000",
+            "originalAmountForeignCurrency": "1000.0000",
+            "previousAmount": "1000.0000",
+            "previousAmountForeignCurrency": "1000.0000",
+            "previousApprovedChangeOrders": "1000.0000",
+            "previousApprovedChangeOrdersForeignCurrency": "1000.0000",
+            "previousApprovedBudgetTransfers": "1000.0000",
+            "previousApprovedBudgetTransfersForeignCurrency": "1000.0000",
+            "amount": "1000.0000",
+            "previousMaterialsOnStore": "1000.0000",
+            "materialsOnStore": "1000.0000",
+            "previousMaterialsBilled": "1000.0000",
+            "previousMaterialsBilledForeignCurrency": "1000.0000",
+            "materialsBilled": "1000.0000",
+            "currentCompletedWorkRetentionPercent": 0.1,
+            "completedWorkRetainedPercent": 0.1,
+            "completedWorkRetained": "",
+            "completedWorkRetention": "1000.0000",
+            "completedWorkRetentionForeignCurrency": "1000.0000",
+            "completedWorkGrossRetentionPercent": 0.1,
+            "currentMaterialsRetentionPercent": 0.1,
+            "materialsGrossRetentionPercent": 0.1,
+            "materialsRetainedPercent": 0.1,
+            "materialsRetained": "1000.0000",
+            "materialsRetention": "1000.0000",
+            "materialsOnStoreRetention": "1000.0000",
+            "materialsRetentionForeignCurrency": "1000.0000",
+            "totalGrossRetentionPercent": 0.1,
+            "totalRetainedPercent": 0.1,
+            "totalRetained": "",
+            "previousRetention": "1000.0000",
+            "previousRetentionForeignCurrency": "1000.0000",
+            "netAmount": "1000.0000",
+            "netAmountForeignCurrency": "1000.0000",
+            "netMaterialsOnStore": "1000.0000",
+            "netRetention": "1000.0000",
+            "previousClaimedAmount": "1000.0000",
+            "previousClaimedAmountForeignCurrency": "1000.0000",
+            "claimedAmount": "1000.0000",
+            "previousAdvanceAmount": "1000.0000",
+            "previousAdvanceAmountForeignCurrency": "1000.0000",
+            "previousRecoupmentAmount": "1000.0000",
+            "previousRecoupmentAmountForeignCurrency": "1000.0000",
+            "advancePercent": 0.1,
+            "advanceAmount": "1000.0000",
+            "recoupmentAmount": "1000.0000",
+            "recoupmentPercentOfCompletedWork": 0.1,
+            "aggregateBy": "workCompleted",
+            "canReleaseRetention": false,
+            "hasItemRejected": true,
+            "hasItemReviewed": true,
+            "recipients": [
+              {
+                "id": "ZPYARKZX9ANQ",
+                "isDefault": false
+              }
+            ],
+            "companyId": "GF8XKPKWM38E",
+            "companyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+            "architectCompanyId": "GF8XKPKWM38E",
+            "architectCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+            "architectContactId": "CED9LVTLHNXV",
+            "additionalCollaborators": [
+              {
+                "companyId": "GF8XKPKWM38E",
+                "companyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+                "contactIds": [
+                  "CED9LVTLHNXV"
+                ]
+              }
+            ],
+            "approvedAt": "2019-02-05T01:00:12.989Z",
+            "calculatedAt": "2019-02-05T01:00:12.989Z",
+            "calculatedBy": "CED9LVTLHNXV",
+            "paidAt": "2019-02-05T01:00:12.989Z",
+            "forecastDistributionAt": "2019-02-05T01:00:12.989Z",
+            "submittedAt": "2019-02-05T01:00:12.989Z",
+            "paymentStage": "Progress",
+            "internalId": "123",
+            "internalSystem": "GCPay",
+            "integrationState": "locked",
+            "integrationStateChangedAt": "2019-09-05T01:00:12.989Z",
+            "integrationStateChangedBy": "CED9LVTLHNXV",
+            "externalId": "10010-99-AB",
+            "externalSystem": "Sage300",
+            "externalMessage": "Success.",
+            "lastSyncTime": "2019-09-05T01:00:12.989Z",
+            "createdAt": "2019-01-06T01:24:22.678Z",
+            "updatedAt": "2019-09-05T01:00:12.989Z"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/fusion_specific/arguments",
+    "scrapedAt": "2026-05-08T17:39:46.639Z",
+    "category": "Developer Guide/fusion_specific",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Arguments",
+  "codeExamples": [
+    {
+      "raw": "{\n        \"arguments\":{\n                \"TaskScript\":\"import { adsk } from \\\"@adsk/fas\\\"; adsk.log(\\\"Hello Fusion\\\");\"\n        }\n}",
+      "parsed": {
+        "arguments": {
+          "TaskScript": "import { adsk } from \"@adsk/fas\"; adsk.log(\"Hello Fusion\");"
+        }
+      }
+    },
+    {
+      "raw": "{\n...\n        \"parameters\": {\n                \"TaskScript\": {\n                        \"verb\": \"read\",\n                        \"description\": \"the script to run\",\n                        \"required\": true\n                },\n        },\n...\n}"
+    },
+    {
+      "raw": "{\n        \"TaskScriptUrl\":{\n                \"url\":\"https://<YOUR_SERVER_URL>/script/sample.ts\",\n                \"headers\":{\n                        \"Authorization\":\"Bearer <YOUR_ACCESS_TOKEN>\"\n                }\n        }\n}",
+      "parsed": {
+        "TaskScriptUrl": {
+          "url": "https://<YOUR_SERVER_URL>/script/sample.ts",
+          "headers": {
+            "Authorization": "Bearer <YOUR_ACCESS_TOKEN>"
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n...\n        \"parameters\": {\n                \"TaskScriptUrl\": {\n                        \"verb\": \"get\",\n                        \"description\": \"the script to download and run\",\n                        \"required\": true\n                },\n        },\n...\n}"
+    },
+    {
+      "raw": "{\n        \"TaskParameters\":\"{\\n  \\\"fileURN\\\": \\\"urn:adsk.wipprod:dm.lineage:shuH8zKvThW_4Tdu-m22sw\\\",\\n  \\\"parameters\\\": {\\n    \\\"d3\\\": \\\"40mm\\\"\\n  }\\n}\"\n}",
+      "parsed": {
+        "TaskParameters": "{\n  \"fileURN\": \"urn:adsk.wipprod:dm.lineage:shuH8zKvThW_4Tdu-m22sw\",\n  \"parameters\": {\n    \"d3\": \"40mm\"\n  }\n}"
+      }
+    },
+    {
+      "raw": "{\n\"TaskParameters\": {\n        \"value\": {\n                \"fileURN\": \"urn:adsk.wipprod:dm.lineage:shuH8zKvThW_4Tdu-m22sw\",\n                \"parameters\": {\n                        \"d3\": \"40mm\"\n                }\n        }\n}"
+    },
+    {
+      "raw": "{\n...\n        \"parameters\": {\n                \"TaskParameters\": {\n                        \"verb\": \"read\",\n                        \"description\": \"the parameters for the script\",\n                        \"required\": false\n                },\n        },\n...\n}"
+    }
+  ]
+}

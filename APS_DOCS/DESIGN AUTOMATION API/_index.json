@@ -1,0 +1,804 @@
+{
+  "_meta": {
+    "title": "DESIGN AUTOMATION API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/",
+    "scrapedAt": "2026-05-08T17:45:35.042Z",
+    "totalPages": 129
+  },
+  "categories": {
+    "Developer Guide": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "API Basics",
+        "file": "Developer Guide/API_Basics.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Field Guide",
+        "file": "Developer Guide/Field_Guide.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Rate Limits and Quotas",
+        "file": "Developer Guide/Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Restrictions",
+        "file": "Developer Guide/Restrictions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Aliases and IDs",
+        "file": "Developer Guide/Aliases_and_IDs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Callbacks",
+        "file": "Developer Guide/Callbacks.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "WebSockets for When Callbacks Aren't an Option",
+        "file": "Developer Guide/WebSockets_for_When_Callbacks_Aren't_an_Option.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using 3-legged OAuth Tokens",
+        "file": "Developer Guide/Using_3-legged_OAuth_Tokens.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Engine Lifecycle Policy",
+        "file": "Developer Guide/Engine_Lifecycle_Policy.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reference Downloading",
+        "file": "Developer Guide/Reference_Downloading.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Revit Specific Info",
+        "file": "Developer Guide/Revit_Specific_Info.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Inventor Specific Info",
+        "file": "Developer Guide/Inventor_Specific_Info.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Fusion Specific Info",
+        "file": "Developer Guide/Fusion_Specific_Info.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FAQs",
+        "file": "Developer Guide/FAQs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Troubleshooting",
+        "file": "Developer Guide/Troubleshooting.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/rate-limits": [
+      {
+        "name": "APS Rate Limits and Quotas",
+        "file": "Developer Guide/rate-limits/APS_Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Automation API Rate Limits",
+        "file": "Developer Guide/rate-limits/Automation_API_Rate_Limits.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/revit_specific": [
+      {
+        "name": "Handling Revit Failures",
+        "file": "Developer Guide/revit_specific/Handling_Revit_Failures.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Custom Fonts Support",
+        "file": "Developer Guide/revit_specific/Custom_Fonts_Support.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Revit Cloud Model Integration",
+        "file": "Developer Guide/revit_specific/Revit_Cloud_Model_Integration.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/inventor_specific": [
+      {
+        "name": "iLogic logging",
+        "file": "Developer Guide/inventor_specific/iLogic_logging.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/fusion_specific": [
+      {
+        "name": "TypeScript",
+        "file": "Developer Guide/fusion_specific/TypeScript.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Arguments",
+        "file": "Developer Guide/fusion_specific/Arguments.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Fusion Team Integration",
+        "file": "Developer Guide/fusion_specific/Fusion_Team_Integration.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Callbacks",
+        "file": "Developer Guide/fusion_specific/Callbacks.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Tutorials": [
+      {
+        "name": "Execute a 3ds Max MaxScript",
+        "file": "Tutorials/Execute_a_3ds_Max_MaxScript.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Create a Nickname",
+        "file": "Tutorials/Task_2_-_Create_a_Nickname.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Publish an Activity",
+        "file": "Tutorials/Task_3_-_Publish_an_Activity.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Prepare Cloud Storage",
+        "file": "Tutorials/Task_4_-_Prepare_Cloud_Storage.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 - Submit a WorkItem",
+        "file": "Tutorials/Task_5_-_Submit_a_WorkItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 6 - Download the Results",
+        "file": "Tutorials/Task_6_-_Download_the_Results.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Execute an AutoCAD Plug-in",
+        "file": "Tutorials/Execute_an_AutoCAD_Plug-in.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 – Create a Nickname",
+        "file": "Tutorials/Task_2_–_Create_a_Nickname.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 – Upload an AppBundle",
+        "file": "Tutorials/Task_3_–_Upload_an_AppBundle.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 – Publish an Activity",
+        "file": "Tutorials/Task_4_–_Publish_an_Activity.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 – Prepare Cloud Storage",
+        "file": "Tutorials/Task_5_–_Prepare_Cloud_Storage.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 6 – Submit a WorkItem",
+        "file": "Tutorials/Task_6_–_Submit_a_WorkItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 7 - Download the Results",
+        "file": "Tutorials/Task_7_-_Download_the_Results.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Execute an Inventor Add-in",
+        "file": "Tutorials/Execute_an_Inventor_Add-in.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Create a Nickname",
+        "file": "Tutorials/Task_2_-_Create_a_Nickname.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 – Upload an AppBundle",
+        "file": "Tutorials/Task_3_–_Upload_an_AppBundle.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 – Publish an Activity",
+        "file": "Tutorials/Task_4_–_Publish_an_Activity.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 – Prepare Cloud Storage",
+        "file": "Tutorials/Task_5_–_Prepare_Cloud_Storage.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 6 – Submit a WorkItem",
+        "file": "Tutorials/Task_6_–_Submit_a_WorkItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 7 - Download the Results",
+        "file": "Tutorials/Task_7_-_Download_the_Results.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Execute a Revit Add-in",
+        "file": "Tutorials/Execute_a_Revit_Add-in.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 – Convert Revit Add-in",
+        "file": "Tutorials/Task_1_–_Convert_Revit_Add-in.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 2 – Obtain an Access Token",
+        "file": "Tutorials/Task_2_–_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 3 – Create a Nickname",
+        "file": "Tutorials/Task_3_–_Create_a_Nickname.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 – Upload an AppBundle",
+        "file": "Tutorials/Task_4_–_Upload_an_AppBundle.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 – Publish an Activity",
+        "file": "Tutorials/Task_5_–_Publish_an_Activity.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 6 – Prepare Cloud Storage",
+        "file": "Tutorials/Task_6_–_Prepare_Cloud_Storage.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 7 – Submit a WorkItem",
+        "file": "Tutorials/Task_7_–_Submit_a_WorkItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 8 - Download the Results",
+        "file": "Tutorials/Task_8_-_Download_the_Results.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Execute a Fusion Script",
+        "file": "Tutorials/Execute_a_Fusion_Script.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Create a Nickname",
+        "file": "Tutorials/Task_2_-_Create_a_Nickname.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 – Upload an AppBundle",
+        "file": "Tutorials/Task_3_–_Upload_an_AppBundle.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 – Publish an Activity",
+        "file": "Tutorials/Task_4_–_Publish_an_Activity.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 – Submit a WorkItem",
+        "file": "Tutorials/Task_5_–_Submit_a_WorkItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 6 - Open Result in Fusion",
+        "file": "Tutorials/Task_6_-_Open_Result_in_Fusion.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Advanced",
+        "file": "Tutorials/Advanced.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Use OnDemand Input",
+        "file": "Tutorials/Use_OnDemand_Input.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Other": [
+      {
+        "name": "Code Samples",
+        "file": "Other/Code_Samples.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Blog Posts",
+        "file": "Other/Blog_Posts.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Automation API Changelog",
+        "file": "Other/Automation_API_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AutoCAD Automation Service Release Notes",
+        "file": "Other/AutoCAD_Automation_Service_Release_Notes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Inventor Automation Service Release Notes",
+        "file": "Other/Inventor_Automation_Service_Release_Notes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Revit Automation Service Release Notes",
+        "file": "Other/Revit_Automation_Service_Release_Notes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Automation API",
+        "file": "Other/Automation_API.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reference Guide",
+        "file": "Other/Reference_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "REST API": [
+      {
+        "name": "GET activities",
+        "file": "REST API/GET_activities.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities"
+      },
+      {
+        "name": "POST activities",
+        "file": "REST API/POST_activities.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities"
+      },
+      {
+        "name": "DELETE activities/:id/aliases/:aliasId",
+        "file": "REST API/DELETE_activities-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/aliases/:aliasId"
+      },
+      {
+        "name": "GET activities/:id/aliases/:aliasId",
+        "file": "REST API/GET_activities-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/aliases/:aliasId"
+      },
+      {
+        "name": "PATCH activities/:id/aliases/:aliasId",
+        "file": "REST API/PATCH_activities-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/aliases/:aliasId"
+      },
+      {
+        "name": "GET activities/:id/aliases",
+        "file": "REST API/GET_activities-id-aliases.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/aliases"
+      },
+      {
+        "name": "POST activities/:id/aliases",
+        "file": "REST API/POST_activities-id-aliases.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/aliases"
+      },
+      {
+        "name": "DELETE activities/:id",
+        "file": "REST API/DELETE_activities-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id"
+      },
+      {
+        "name": "GET activities/:id",
+        "file": "REST API/GET_activities-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id"
+      },
+      {
+        "name": "GET activities/:id/versions",
+        "file": "REST API/GET_activities-id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/versions"
+      },
+      {
+        "name": "POST activities/:id/versions",
+        "file": "REST API/POST_activities-id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/SampleActivity/versions"
+      },
+      {
+        "name": "GET activities/:id/versions/:version",
+        "file": "REST API/GET_activities-id-versions-version.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/versions/:version"
+      },
+      {
+        "name": "DELETE activities/:id/versions/:version",
+        "file": "REST API/DELETE_activities-id-versions-version.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/activities/:id/versions/:version"
+      },
+      {
+        "name": "GET appbundles",
+        "file": "REST API/GET_appbundles.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles"
+      },
+      {
+        "name": "POST appbundles",
+        "file": "REST API/POST_appbundles.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles"
+      },
+      {
+        "name": "DELETE appbundles/:id/aliases/:aliasId",
+        "file": "REST API/DELETE_appbundles-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/aliases/:aliasId"
+      },
+      {
+        "name": "GET appbundles/:id/aliases/:aliasId",
+        "file": "REST API/GET_appbundles-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/aliases/:aliasId"
+      },
+      {
+        "name": "PATCH appbundles/:id/aliases/:aliasId",
+        "file": "REST API/PATCH_appbundles-id-aliases-aliasId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/aliases/:aliasId"
+      },
+      {
+        "name": "GET appbundles/:id/aliases",
+        "file": "REST API/GET_appbundles-id-aliases.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/aliases"
+      },
+      {
+        "name": "POST appbundles/:id/aliases",
+        "file": "REST API/POST_appbundles-id-aliases.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/aliases"
+      },
+      {
+        "name": "DELETE appbundles/:id",
+        "file": "REST API/DELETE_appbundles-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id"
+      },
+      {
+        "name": "GET appbundles/:id",
+        "file": "REST API/GET_appbundles-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id"
+      },
+      {
+        "name": "GET appbundles/:id/versions",
+        "file": "REST API/GET_appbundles-id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/versions"
+      },
+      {
+        "name": "POST appbundles/:id/versions",
+        "file": "REST API/POST_appbundles-id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/ChangeParams/versions"
+      },
+      {
+        "name": "GET appbundles/:id/versions/:version",
+        "file": "REST API/GET_appbundles-id-versions-version.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/versions/:version"
+      },
+      {
+        "name": "DELETE appbundles/:id/versions/:version",
+        "file": "REST API/DELETE_appbundles-id-versions-version.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/versions/:version"
+      },
+      {
+        "name": "GET engines",
+        "file": "REST API/GET_engines.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/engines"
+      },
+      {
+        "name": "GET engines/:id",
+        "file": "REST API/GET_engines-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/engines/:id"
+      },
+      {
+        "name": "DELETE forgeapps/:id",
+        "file": "REST API/DELETE_forgeapps-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id"
+      },
+      {
+        "name": "GET forgeapps/:id",
+        "file": "REST API/GET_forgeapps-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id"
+      },
+      {
+        "name": "PATCH forgeapps/:id",
+        "file": "REST API/PATCH_forgeapps-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id"
+      },
+      {
+        "name": "GET health/:engine",
+        "file": "REST API/GET_health-engine.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/health/:engine"
+      },
+      {
+        "name": "PUT servicelimits/:owner",
+        "file": "REST API/PUT_servicelimits-owner.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/servicelimits/:owner"
+      },
+      {
+        "name": "GET servicelimits/:owner",
+        "file": "REST API/GET_servicelimits-owner.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/servicelimits/:owner"
+      },
+      {
+        "name": "GET shares",
+        "file": "REST API/GET_shares.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/shares"
+      },
+      {
+        "name": "GET workitems/:id",
+        "file": "REST API/GET_workitems-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems/:id"
+      },
+      {
+        "name": "DELETE workitems/:id",
+        "file": "REST API/DELETE_workitems-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems/:id"
+      },
+      {
+        "name": "POST workitems",
+        "file": "REST API/POST_workitems.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems"
+      },
+      {
+        "name": "POST workitems/batch",
+        "file": "REST API/POST_workitems-batch.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems/batch"
+      },
+      {
+        "name": "GET workitems?startAfterTime=:epochSecondsInUTC",
+        "file": "REST API/GET_workitems-startAfterTime=-epochSecondsInUTC.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems?startAfterTime=1709780574000"
+      },
+      {
+        "name": "POST workitems/status",
+        "file": "REST API/POST_workitems-status.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems/status"
+      },
+      {
+        "name": "POST workitems/combine",
+        "file": "REST API/POST_workitems-combine.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/da/us-east/v3/workitems/combine"
+      },
+      {
+        "name": "DELETE servicelimits/{owner}",
+        "file": "REST API/DELETE_servicelimits-{owner}.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference": [
+      {
+        "name": "Websocket Reference",
+        "file": "SDK Reference/Websocket_Reference.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "WorkItem combine API Reference",
+        "file": "SDK Reference/WorkItem_combine_API_Reference.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Special URLs",
+        "file": "SDK Reference/Special_URLs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Activity Variable Arguments",
+        "file": "SDK Reference/Activity_Variable_Arguments.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Command Line Reference",
+        "file": "SDK Reference/Command_Line_Reference.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/cmdLine": [
+      {
+        "name": "Inventor",
+        "file": "SDK Reference/cmdLine/Inventor.json",
+        "method": null,
+        "url": null
+      }
+    ]
+  }
+}

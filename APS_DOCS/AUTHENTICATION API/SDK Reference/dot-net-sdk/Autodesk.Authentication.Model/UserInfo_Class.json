@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication.Model/UserInfo",
+    "scrapedAt": "2026-05-08T17:36:42.578Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Class UserInfo",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class UserInfo"
+    },
+    {
+      "raw": "public UserInfo()"
+    },
+    {
+      "raw": "[DataMember(Name = \"about_me\", EmitDefaultValue = false)]\npublic string AboutMe { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"address\", EmitDefaultValue = false)]\npublic UserInfoAddress Address { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"company\", EmitDefaultValue = false)]\npublic string Company { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"country_code\", EmitDefaultValue = false)]\npublic string CountryCode { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"created_date\", EmitDefaultValue = false)]\npublic string CreatedDate { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"eidm_guid\", EmitDefaultValue = false)]\npublic string EidmGuid { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"email\", EmitDefaultValue = false)]\npublic string Email { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"email_verified\", EmitDefaultValue = false)]\npublic bool? EmailVerified { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"family_name\", EmitDefaultValue = false)]\npublic string FamilyName { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"given_name\", EmitDefaultValue = false)]\npublic string GivenName { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"industry\", EmitDefaultValue = false)]\npublic string Industry { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"industry_code\", EmitDefaultValue = false)]\npublic string IndustryCode { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"is_2fa_enabled\", EmitDefaultValue = false)]\npublic bool? Is2faEnabled { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"job_title\", EmitDefaultValue = false)]\npublic string JobTitle { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"language\", EmitDefaultValue = false)]\npublic string Language { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"last_login_date\", EmitDefaultValue = false)]\npublic string LastLoginDate { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"ldap_domain\", EmitDefaultValue = false)]\npublic string LdapDomain { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"ldap_enabled\", EmitDefaultValue = false)]\npublic bool? LdapEnabled { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"locale\", EmitDefaultValue = false)]\npublic string Locale { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"name\", EmitDefaultValue = false)]\npublic string Name { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"opt_in\", EmitDefaultValue = false)]\npublic bool? OptIn { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"phone_number\", EmitDefaultValue = false)]\npublic string PhoneNumber { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"phone_number_verified\", EmitDefaultValue = false)]\npublic bool? PhoneNumberVerified { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"picture\", EmitDefaultValue = false)]\npublic string Picture { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"preferred_username\", EmitDefaultValue = false)]\npublic string PreferredUsername { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"profile\", EmitDefaultValue = false)]\npublic string Profile { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"social_userinfo_list\", EmitDefaultValue = false)]\npublic List<UserInfoSocialUserinfoList> SocialUserinfoList { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"sub\", EmitDefaultValue = false)]\npublic string Sub { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"thumbnails\", EmitDefaultValue = false)]\npublic Dictionary<string, string> Thumbnails { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"updated_at\", EmitDefaultValue = false)]\npublic int? UpdatedAt { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

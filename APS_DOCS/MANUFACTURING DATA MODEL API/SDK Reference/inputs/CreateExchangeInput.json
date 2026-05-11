@@ -1,0 +1,48 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/inputs/createexchangeinput",
+    "scrapedAt": "2026-05-08T18:18:30.565Z",
+    "category": "SDK Reference/inputs",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "CreateExchangeInput",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filterString",
+          "col_1": "Required while creating AEC-DM based exchanges"
+        },
+        {
+          "col_0": "viewNameString",
+          "col_1": "Name of view of the source file to be exchanged."
+        },
+        {
+          "col_0": "source*ExchangeSourceInput! non-null",
+          "col_1": "Source input for the exchange."
+        },
+        {
+          "col_0": "target*ExchangeTargetInput! non-null",
+          "col_1": "Target input for the exchange."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Input for Mutation",
+          "Used By": "createExchange",
+          "Description": "Creates an exchange on the specified source and target files."
+        }
+      ]
+    }
+  ]
+}

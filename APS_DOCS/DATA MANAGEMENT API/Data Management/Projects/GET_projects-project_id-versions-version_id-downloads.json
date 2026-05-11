@@ -1,0 +1,204 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/projects-project_id-versions-version_id-downloads-GET",
+    "scrapedAt": "2026-05-08T16:26:53.370Z",
+    "category": "Data Management/Projects"
+  },
+  "title": "projects/:project_id/versions/:version_id/downloads",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/downloads",
+  "description": null,
+  "requestExample": "curl -v 'https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/downloads' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'",
+  "responseExample": {
+    "jsonapi": {
+      "version": "1.0"
+    },
+    "links": {
+      "self": {
+        "href": "/data/v1/projects/{project_id}/downloads"
+      }
+    },
+    "data": [
+      {
+        "type": "downloads",
+        "id": "{download_id}",
+        "attributes": {
+          "format": {
+            "fileType": "pdf"
+          }
+        },
+        "relationships": {
+          "source": {
+            "links": {
+              "related": {
+                "href": "/data/v1/projects/{project_id}/downloads/{download_id}/source"
+              }
+            },
+            "data": {
+              "type": "versions",
+              "id": "{version_id}"
+            }
+          },
+          "storage": {
+            "data": {
+              "type": "objects",
+              "id": "urn:adsk.objects:os.object:{wip_bucket}/{guid}.pdf"
+            },
+            "meta": {
+              "link": {
+                "href": "/oss/v2/buckets/{wip_bucket}/objects/{guid}.pdf?scopes={list_of_scopes}"
+              }
+            }
+          }
+        },
+        "links": {
+          "self": {
+            "href": "/data/v1/projects/{project_id}/downloads/{download_id}"
+          }
+        }
+      }
+    ]
+  },
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "GET https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/downloads"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "User context optional"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:read"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+    },
+    {
+      "col_0": "x-user-idstring",
+      "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified."
+    },
+    {
+      "col_0": "project_idstring",
+      "col_1": "The unique identifier of a project.\nTo convert BIM 360 or Forma Project IDs to Data Management Project IDs, prefix them with b. For example, a Project ID of c8b0c73d-3ae9 becomes b.c8b0c73d-3ae9."
+    },
+    {
+      "col_0": "version_idstring",
+      "col_1": "The unique identifier of a version."
+    },
+    {
+      "col_0": "filter[format.fileType]array: string",
+      "col_1": "Filter by the file type of the download object."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "Successful retrieval of the available downloads collection associated with a specific version."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "The request could not be understood by the server due to malformed syntax or missing request headers.\nThe client SHOULD NOT repeat the request without modifications. The response body may give an indication\nof what is wrong with the request."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but permission is not granted or the\napplication has not been white-listed.\nDo not try again unless you solve permissions first."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified resource was not found."
+    },
+    {
+      "col_0": "jsonapiobject",
+      "col_1": "The JSON API object."
+    },
+    {
+      "col_0": "versionenum:string",
+      "col_1": "The version of JSON API. Will always be: 1.0"
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataarray: object",
+      "col_1": "The array of download objects."
+    },
+    {
+      "col_0": "typeenum:string",
+      "col_1": "The type of this resource. Will always be: downloads"
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "attributesobject",
+      "col_1": "The attributes of the download object."
+    },
+    {
+      "col_0": "formatobject",
+      "col_1": "The object containing information on the format of the download."
+    },
+    {
+      "col_0": "fileTypestring",
+      "col_1": "The file type of the resource."
+    },
+    {
+      "col_0": "relationshipsobject",
+      "col_1": "Information on other resources that shares a relationship with this resource."
+    },
+    {
+      "col_0": "storageobject",
+      "col_1": "Information on resources that are indirectly related to this resource."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    }
+  ]
+}

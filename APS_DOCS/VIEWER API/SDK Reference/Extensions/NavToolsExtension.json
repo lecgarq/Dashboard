@@ -1,0 +1,76 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/NavToolsExtension",
+    "scrapedAt": "2026-05-08T18:46:51.812Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "NavToolsExtension",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Viewer3D",
+          "col_1": "Viewer instance"
+        },
+        {
+          "col_0": "options*object",
+          "col_1": "Configurations for the extension"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mode*string",
+          "col_1": "one of the supported modes, see getModes()."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true when deactivation is successful."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mode*string",
+          "col_1": "one of the supported modes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true is the mode queried is currently active."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.DefaultTools.NavTools')"
+    }
+  ]
+}

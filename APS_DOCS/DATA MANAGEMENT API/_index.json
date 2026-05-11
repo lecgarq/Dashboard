@@ -1,0 +1,446 @@
+{
+  "_meta": {
+    "title": "Autodesk Data Management API v2 — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/",
+    "scrapedAt": "2026-05-08T16:29:30.672Z",
+    "totalEndpoints": 70
+  },
+  "categories": {
+    "Data Management/Hubs": [
+      {
+        "name": "GET hubs",
+        "file": "Data Management/Hubs/GET_hubs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs"
+      },
+      {
+        "name": "GET hubs/:hub_id",
+        "file": "Data Management/Hubs/GET_hubs-hub_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id"
+      }
+    ],
+    "Data Management/Projects": [
+      {
+        "name": "GET hubs/:hub_id/projects",
+        "file": "Data Management/Projects/GET_hubs-hub_id-projects.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects"
+      },
+      {
+        "name": "GET hubs/:hub_id/projects/:project_id",
+        "file": "Data Management/Projects/GET_hubs-hub_id-projects-project_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id"
+      },
+      {
+        "name": "GET hubs/:hub_id/projects/:project_id/hub",
+        "file": "Data Management/Projects/GET_hubs-hub_id-projects-project_id-hub.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id/hub"
+      },
+      {
+        "name": "GET hubs/:hub_id/projects/:project_id/topFolders",
+        "file": "Data Management/Projects/GET_hubs-hub_id-projects-project_id-topFolders.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects/:project_id/topFolders"
+      },
+      {
+        "name": "GET projects/:project_id/downloads/:download_id",
+        "file": "Data Management/Projects/GET_projects-project_id-downloads-download_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/downloads/:download_id"
+      },
+      {
+        "name": "GET projects/:project_id/jobs/:job_id",
+        "file": "Data Management/Projects/GET_projects-project_id-jobs-job_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/jobs/:job_id"
+      },
+      {
+        "name": "POST projects/:project_id/downloads",
+        "file": "Data Management/Projects/POST_projects-project_id-downloads.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/downloads"
+      },
+      {
+        "name": "POST projects/:project_id/storage",
+        "file": "Data Management/Projects/POST_projects-project_id-storage.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/storage"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/downloads",
+        "file": "Data Management/Projects/GET_projects-project_id-versions-version_id-downloads.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/downloads"
+      }
+    ],
+    "Data Management/Folders": [
+      {
+        "name": "GET projects/:project_id/folders/:folder_id",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/contents",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-contents.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/contents"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/parent",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-parent.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/parent"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/refs",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/refs"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/relationships/links",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-relationships-links.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/relationships/links"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/relationships/refs",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/relationships/refs"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/search",
+        "file": "Data Management/Folders/GET_projects-project_id-folders-folder_id-search.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/search"
+      },
+      {
+        "name": "POST projects/:project_id/folders",
+        "file": "Data Management/Folders/POST_projects-project_id-folders.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders"
+      },
+      {
+        "name": "POST projects/:project_id/folders/:folder_id/relationships/refs",
+        "file": "Data Management/Folders/POST_projects-project_id-folders-folder_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id/relationships/refs"
+      },
+      {
+        "name": "PATCH projects/:project_id/folders/:folder_id",
+        "file": "Data Management/Folders/PATCH_projects-project_id-folders-folder_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/folders/:folder_id"
+      }
+    ],
+    "Data Management/Items": [
+      {
+        "name": "GET projects/:project_id/items/:item_id",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/parent",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-parent.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/parent"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/refs",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/refs"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/relationships/links",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-relationships-links.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/relationships/links"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/relationships/refs",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/relationships/refs"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/tip",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-tip.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/tip"
+      },
+      {
+        "name": "GET projects/:project_id/items/:item_id/versions",
+        "file": "Data Management/Items/GET_projects-project_id-items-item_id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/versions"
+      },
+      {
+        "name": "POST projects/:project_id/items",
+        "file": "Data Management/Items/POST_projects-project_id-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items"
+      },
+      {
+        "name": "POST projects/:project_id/items/:item_id/relationships/refs",
+        "file": "Data Management/Items/POST_projects-project_id-items-item_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id/relationships/refs"
+      },
+      {
+        "name": "PATCH projects/:project_id/items/:item_id",
+        "file": "Data Management/Items/PATCH_projects-project_id-items-item_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/items/:item_id"
+      },
+      {
+        "name": "ListItems",
+        "file": "Data Management/Items/ListItems.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Data Management/Versions": [
+      {
+        "name": "GET projects/:project_id/versions/:version_id",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/downloadFormats",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id-downloadFormats.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/downloadFormats"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/item",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id-item.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/item"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/refs",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/refs"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/relationships/links",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id-relationships-links.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/relationships/links"
+      },
+      {
+        "name": "GET projects/:project_id/versions/:version_id/relationships/refs",
+        "file": "Data Management/Versions/GET_projects-project_id-versions-version_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/relationships/refs"
+      },
+      {
+        "name": "POST projects/:project_id/versions",
+        "file": "Data Management/Versions/POST_projects-project_id-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions"
+      },
+      {
+        "name": "POST projects/:project_id/versions/:version_id/relationships/refs",
+        "file": "Data Management/Versions/POST_projects-project_id-versions-version_id-relationships-refs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id/relationships/refs"
+      },
+      {
+        "name": "PATCH projects/:project_id/versions/:version_id",
+        "file": "Data Management/Versions/PATCH_projects-project_id-versions-version_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/:project_id/versions/:version_id"
+      }
+    ],
+    "Data Management/Commands": [
+      {
+        "name": "CheckPermission",
+        "file": "Data Management/Commands/CheckPermission.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ListRefs",
+        "file": "Data Management/Commands/ListRefs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PublishModel",
+        "file": "Data Management/Commands/PublishModel.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PublishWithoutLinks",
+        "file": "Data Management/Commands/PublishWithoutLinks.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GetPublishModelJob",
+        "file": "Data Management/Commands/GetPublishModelJob.json",
+        "method": null,
+        "url": "/data/v1/projects/b.c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d/commands/\""
+      }
+    ],
+    "OSS/Buckets": [
+      {
+        "name": "GET List Buckets",
+        "file": "OSS/Buckets/GET_List_Buckets.json",
+        "method": null,
+        "url": "/oss/v2/buckets\""
+      },
+      {
+        "name": "POST Create Bucket",
+        "file": "OSS/Buckets/POST_Create_Bucket.json",
+        "method": null,
+        "url": "/oss/v2/buckets\""
+      },
+      {
+        "name": "DELETE Delete Bucket",
+        "file": "OSS/Buckets/DELETE_Delete_Bucket.json",
+        "method": null,
+        "url": "/oss/v2/buckets/bucketexamplekey\""
+      },
+      {
+        "name": "GET Get Bucket Details",
+        "file": "OSS/Buckets/GET_Get_Bucket_Details.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/details\""
+      },
+      {
+        "name": "POST Protect Bucket",
+        "file": "OSS/Buckets/POST_Protect_Bucket.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/oss/v2/buckets/prodbucket_03/protect"
+      }
+    ],
+    "OSS/Objects": [
+      {
+        "name": "DELETE Delete Object",
+        "file": "OSS/Objects/DELETE_Delete_Object.json",
+        "method": null,
+        "url": "/oss/v2/buckets/bucketexamplekey/objects/objectKey\""
+      },
+      {
+        "name": "GET List Objects",
+        "file": "OSS/Objects/GET_List_Objects.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects?limit=1\""
+      },
+      {
+        "name": "GET Get Object Details",
+        "file": "OSS/Objects/GET_Get_Object_Details.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/test.txt/details\""
+      },
+      {
+        "name": "PUT Copy Object",
+        "file": "OSS/Objects/PUT_Copy_Object.json",
+        "method": null,
+        "url": "/oss/v2/buckets/bucketexamplekey/objects/testobject/copyto/copyoftestobject\""
+      },
+      {
+        "name": "GET Generate Signed S3 Upload URL",
+        "file": "OSS/Objects/GET_Generate_Signed_S3_Upload_URL.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/objectKeyFoo/signeds3upload?parts=3'"
+      },
+      {
+        "name": "POST Complete Upload to S3 Signed URL",
+        "file": "OSS/Objects/POST_Complete_Upload_to_S3_Signed_URL.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/random_file.bin/signeds3upload'"
+      },
+      {
+        "name": "GET Generate Signed S3 Download URL",
+        "file": "OSS/Objects/GET_Generate_Signed_S3_Download_URL.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/objectKeyFoo/signeds3download"
+      },
+      {
+        "name": "POST Batch Generate Signed S3 Upload URLs",
+        "file": "OSS/Objects/POST_Batch_Generate_Signed_S3_Upload_URLs.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/batchsigneds3upload'"
+      },
+      {
+        "name": "POST Complete Batch Upload to S3 Signed URLs",
+        "file": "OSS/Objects/POST_Complete_Batch_Upload_to_S3_Signed_URLs.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/batchcompleteupload'"
+      },
+      {
+        "name": "POST Generate Signed S3 Download URLs (Batch)",
+        "file": "OSS/Objects/POST_Generate_Signed_S3_Download_URLs_(Batch).json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/batchsigneds3download"
+      },
+      {
+        "name": "POST Generate Signed OSS URL",
+        "file": "OSS/Objects/POST_Generate_Signed_OSS_URL.json",
+        "method": null,
+        "url": "/oss/v2/buckets/apptestbucket/objects/objectKeyFoo/signed"
+      },
+      {
+        "name": "GET Download Object Using Signed URL",
+        "file": "OSS/Objects/GET_Download_Object_Using_Signed_URL.json",
+        "method": null,
+        "url": "/oss/v2/signedresources/7ffc5eef-1407-4c24-b3f3-3cbfe32a9232?region=US\""
+      },
+      {
+        "name": "PUT Replace Object Using Signed URL",
+        "file": "OSS/Objects/PUT_Replace_Object_Using_Signed_URL.json",
+        "method": null,
+        "url": "/oss/v2/buckets/bucketexamplekey/objects/testobject/signed?access=write\""
+      },
+      {
+        "name": "DELETE Delete Object Using Signed URL",
+        "file": "OSS/Objects/DELETE_Delete_Object_Using_Signed_URL.json",
+        "method": null,
+        "url": "/oss/v2/signedresources/322cca8f-4cbf-448f-b70b-55df2597b0d2\""
+      },
+      {
+        "name": "PUT Upload Object Using Signed URL",
+        "file": "OSS/Objects/PUT_Upload_Object_Using_Signed_URL.json",
+        "method": null,
+        "url": "/oss/v2/signedresources/4ff88e65-e7c0-4b10-bac8-750f48b37cf2/resumable\""
+      },
+      {
+        "name": "PUT buckets/:bucketKey/objects/:objectKey",
+        "file": "OSS/Objects/PUT_buckets-bucketKey-objects-objectKey.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PUT buckets/:bucketKey/objects/:objectKey/resumable",
+        "file": "OSS/Objects/PUT_buckets-bucketKey-objects-objectKey-resumable.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET buckets/:bucketKey/objects/:objectKey/status/:sessionId",
+        "file": "OSS/Objects/GET_buckets-bucketKey-objects-objectKey-status-sessionId.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET buckets/:bucketKey/objects/:objectKey",
+        "file": "OSS/Objects/GET_buckets-bucketKey-objects-objectKey.json",
+        "method": null,
+        "url": null
+      }
+    ]
+  }
+}

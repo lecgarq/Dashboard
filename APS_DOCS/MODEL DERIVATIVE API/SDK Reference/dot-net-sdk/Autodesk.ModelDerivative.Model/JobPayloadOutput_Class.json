@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadOutput",
+    "scrapedAt": "2026-05-08T18:27:29.355Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadOutput",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadOutput"
+    },
+    {
+      "raw": "public JobPayloadOutput()"
+    },
+    {
+      "raw": "[Obsolete(\"This attribute is replaced by the region parameter.\")]\n[DataMember(Name = \"destination\", EmitDefaultValue = false)]\npublic JobPayloadOutputDestination Destination { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"formats\", EmitDefaultValue = false)]\npublic List<IJobPayloadFormat> Formats { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

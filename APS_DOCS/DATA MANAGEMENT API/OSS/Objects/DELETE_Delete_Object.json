@@ -1,0 +1,66 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-:bucketKey-objects-:objectKey-DELETE",
+    "scrapedAt": "2026-05-08T16:28:14.013Z",
+    "category": "OSS/Objects"
+  },
+  "title": "oss/v2/buckets/{bucketKey}/objects/{objectKey}",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets/bucketexamplekey/objects/objectKey\"",
+  "description": null,
+  "requestExample": "curl -v \"https://developer.api.autodesk.com/oss/v2/buckets/bucketexamplekey/objects/objectKey\"\n-X DELETE\n-H \"Authorization: Bearer kuhodzPEHSCrWH3Pm1WuBMBnxw39\"\n-H \"Content-Type: application/json;charset=UTF-8\"\n\nHTTP/1.1 200 OK\nAccess-Control-Allow-Credentials: true\nAccess-Control-Allow-Headers: Authorization, Accept-Encoding, Range, Content-Type\nAccess-Control-Allow-Methods: GET\nAccess-Control-Allow-Origin: *\nDate: Wed, 25 May 2016 19:39:39 GMT\nServer Apigee Router is not blacklisted\nServer: Apigee Router\nContent-Length: 0\nConnection: keep-alive",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "DELETE https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/{objectKey}"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:write"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the objects you are operating on."
+    },
+    {
+      "col_0": "objectKeystring",
+      "col_1": "The URL-encoded human friendly name of the object."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The object was successfully deleted."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "OSS was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request"
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "NOT FOUND, Bucket does not exist."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    }
+  ]
+}

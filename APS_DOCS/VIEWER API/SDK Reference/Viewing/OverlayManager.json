@@ -1,0 +1,176 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/OverlayManager",
+    "scrapedAt": "2026-05-08T18:44:27.438Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "OverlayManager",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "scene identifier"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the overlay was added or already exists, false otherwise"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "scene identifier"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the overlay was removed or if it doesn’t exist"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "scene identifier"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "scene identifier"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true the scene exists"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mesh*THREE.Mesh, Array",
+          "col_1": "A mesh instance or an Array of them."
+        },
+        {
+          "col_0": "sceneName*string",
+          "col_1": "Name of an existing scene."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the mesh was added to the scene"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mesh*THREE.Mesh, Array",
+          "col_1": "A mesh instance or an Array of them."
+        },
+        {
+          "col_0": "sceneName*string",
+          "col_1": "Name of the scene the mesh(es) belong to."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the mesh (or meshes) was removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "mesh*THREE.Mesh",
+          "col_1": "The mesh instance."
+        },
+        {
+          "col_0": "sceneName*string",
+          "col_1": "Name of the scene to check against."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the mesh belongs to the scene."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "// Create a new mesh\n   const geometry = new THREE.SphereGeometry(10, 8, 8);\n   const material = new THREE.MeshBasicMaterial({ color: 0x336699 });\n   const mesh = new THREE.Mesh(geometry, material);\n   mesh.position.x = 1.0; mesh.position.y = 2.0; mesh.position.z = 3.0;\n   // Add scene and mesh\n   addScene('my_scene');\n   addMesh([mesh], 'my_scene');"
+    }
+  ]
+}

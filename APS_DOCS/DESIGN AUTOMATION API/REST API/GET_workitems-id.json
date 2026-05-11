@@ -1,0 +1,157 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/workitems-id-GET",
+    "scrapedAt": "2026-05-08T17:44:33.300Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "workitems/:id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/workitems/:id",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/workitems/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "The GUID used to identify the WorkItem."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get the status of a WorkItem."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user is not authorized to get the WorkItem status."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The WorkItem status doesn’t exist."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Status value of a WorkItem.\nPossible values: pending, inprogress, cancelled, failedLimitProcessingTime, failedDownload, failedInstructions, failedUpload, failedUploadOptional, success"
+        },
+        {
+          "col_0": "progressstring",
+          "col_1": "The current status of the workitem."
+        },
+        {
+          "col_0": "reportUrlstring",
+          "col_1": "The detailed report about the workitem, report url is valid for 24 hours from first receiving it."
+        },
+        {
+          "col_0": "statsobject",
+          "col_1": "Basic statistics about workitem processing."
+        },
+        {
+          "col_0": "timeQueueddatetime: ISO 8601",
+          "col_1": "The time in UTC when the workitem was queued."
+        },
+        {
+          "col_0": "timeDownloadStarteddatetime: ISO 8601",
+          "col_1": "The time in UTC when the system started processing the workitem by transferring input data to the processing node."
+        },
+        {
+          "col_0": "timeInstructionsStarteddatetime: ISO 8601",
+          "col_1": "The time in UTC when the system finished downloading input and started processing instructions from the Activity associated with this workitem."
+        },
+        {
+          "col_0": "timeInstructionsEndeddatetime: ISO 8601",
+          "col_1": "The time in UTC when the system finished executing instructions and started uploading outputs."
+        },
+        {
+          "col_0": "timeUploadEndeddatetime: ISO 8601",
+          "col_1": "The time in UTC when the system finished uploading outputs."
+        },
+        {
+          "col_0": "timeFinisheddatetime: ISO 8601",
+          "col_1": "The time in UTC when the system finished the workitem and reported the status."
+        },
+        {
+          "col_0": "bytesDownloadedint",
+          "col_1": "The file size of bytes the job downloads for input."
+        },
+        {
+          "col_0": "bytesUploadedint",
+          "col_1": "The file size of bytes the job uploads for output."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": ""
+        },
+        {
+          "col_0": "activityIdstring",
+          "col_1": "The activityId the WorkItem posted for."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/workitems/:id' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"status\": \"success\",\n  \"reportUrl\": \"https://dasprod-store.s3.amazonaws.com/workItem/Revit/wi1234/report.txt?xxxxxxx\",\n  \"stats\": {\n      \"timeQueued\": \"2022-12-16T05:04:46.8214232Z\",\n      \"timeDownloadStarted\": \"2022-12-16T05:04:46.994739Z\",\n      \"timeInstructionsStarted\": \"2022-12-16T05:04:47.7968341Z\",\n      \"timeInstructionsEnded\": \"2022-12-16T05:04:48.189266Z\",\n      \"timeFinished\": \"2022-12-16T05:04:48.7960863Z\",\n      \"bytesDownloaded\": 169,\n      \"bytesDownloaded\": 2000\n  },\n  \"id\": \"wi1234\",\n  \"activityId\": \"mynickname.myactivity+prod\"\n}",
+      "parsed": {
+        "status": "success",
+        "reportUrl": "https://dasprod-store.s3.amazonaws.com/workItem/Revit/wi1234/report.txt?xxxxxxx",
+        "stats": {
+          "timeQueued": "2022-12-16T05:04:46.8214232Z",
+          "timeDownloadStarted": "2022-12-16T05:04:46.994739Z",
+          "timeInstructionsStarted": "2022-12-16T05:04:47.7968341Z",
+          "timeInstructionsEnded": "2022-12-16T05:04:48.189266Z",
+          "timeFinished": "2022-12-16T05:04:48.7960863Z",
+          "bytesDownloaded": 2000
+        },
+        "id": "wi1234",
+        "activityId": "mynickname.myactivity+prod"
+      }
+    }
+  ]
+}

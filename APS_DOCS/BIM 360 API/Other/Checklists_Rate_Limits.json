@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/rate-limits/checklists-rate-limits",
+    "scrapedAt": "2026-05-08T17:46:57.001Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "BIM 360: Checklists API Rate Limit",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Checklists API endpoints combined",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per application (by client ID)"
+        }
+      ]
+    }
+  ]
+}

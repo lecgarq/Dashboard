@@ -1,0 +1,172 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/mutations/createexchange",
+    "scrapedAt": "2026-05-08T18:16:02.946Z",
+    "category": "SDK Reference/mutations",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "createExchange",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "input*createExchangeInput non-null",
+          "col_1": "The input for creating an exchange."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "CreateExchangeResult",
+          "Description": "Represents the result of creating an exchange."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "mutation CreateExchange($input: createExchangeInput!){\n  createExchange(input: $input) {\n    #CreateExchange Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"input\" : \"<SOME-CREATEEXCHANGE-INPUT-TYPE-SCALAR-VALUE>\"\n}",
+      "parsed": {
+        "input": "<SOME-CREATEEXCHANGE-INPUT-TYPE-SCALAR-VALUE>"
+      }
+    },
+    {
+      "raw": "mutation CreateExchange(\n    $viewName: String\n    $sourceFileId: String!\n    $targetExchangeName: String!\n    $targetFolderId: String!\n) {\n    createExchange(\n        input: {\n            viewName: $viewName\n            source: { fileId: $sourceFileId }\n            target: { name: $targetExchangeName, folderId: $targetFolderId }\n        }\n    ) {\n        exchange {\n            id\n            name\n            elements {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"viewName\": \"FourWalls_3D\",\n  \"sourceFileId\": \"aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB\",\n  \"targetExchangeName\": \"3D View Category Door Exchange\",\n  \"targetFolderId\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\"\n}",
+      "parsed": {
+        "viewName": "FourWalls_3D",
+        "sourceFileId": "aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB",
+        "targetExchangeName": "3D View Category Door Exchange",
+        "targetFolderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"createExchange\": {\n          \"exchange\": {\n              \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg\",\n              \"name\": \"3D View Category Door Exchange\",\n              \"elements\": {\n                  \"results\": [\n                      {\n                          \"id\": \"6CD2C9602D7D8878069B4F2A52431C4F82F942D3\",\n                          \"name\": \"Level 1\"\n                      },\n                      {\n                          \"id\": \"E700279D3C18E48406E9369085BF3A3D639C3575\",\n                          \"name\": \"New Construction\"\n                      },\n                      {\n                          \"id\": \"627E20C02DB930726F6BCADAB32FEE60037D0271\",\n                          \"name\": \"Level 2\"\n                      }\n                  ]\n              }\n          }\n      }\n  }\n}",
+      "parsed": {
+        "data": {
+          "createExchange": {
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg",
+              "name": "3D View Category Door Exchange",
+              "elements": {
+                "results": [
+                  {
+                    "id": "6CD2C9602D7D8878069B4F2A52431C4F82F942D3",
+                    "name": "Level 1"
+                  },
+                  {
+                    "id": "E700279D3C18E48406E9369085BF3A3D639C3575",
+                    "name": "New Construction"
+                  },
+                  {
+                    "id": "627E20C02DB930726F6BCADAB32FEE60037D0271",
+                    "name": "Level 2"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "mutation CreateExchange(\n    $filter: String\n    $sourceFileId: String!\n    $targetExchangeName: String!\n    $targetFolderId: String!\n) {\n    createExchange(\n        input: {\n            filter: $filter\n            source: { fileId: $sourceFileId }\n            target: { name: $targetExchangeName, folderId: $targetFolderId }\n        }\n    ) {\n        exchange {\n            id\n            name\n            elements {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"filter\": \"(category=='Windows')\",\n  \"sourceFileId\": \"aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB\",\n  \"targetExchangeName\": \"AEC Filter based Exchange - Category Windows\",\n  \"targetFolderId\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\"\n}",
+      "parsed": {
+        "filter": "(category=='Windows')",
+        "sourceFileId": "aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB",
+        "targetExchangeName": "AEC Filter based Exchange - Category Windows",
+        "targetFolderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"createExchange\": {\n          \"exchange\": {\n              \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ\",\n              \"name\": \"AEC Filter based Exchange - Category Windows\",\n              \"elements\": {\n                  \"results\": [\n                      {\n                          \"id\": \"YWVjZX53TGhzYkpOSmVndGM5QlVsaFB6a2xwX0wyQ35CVGJ3enVuSlFRU0wwTVBsbFhNVDZBXzU3YmEy\",\n                          \"name\": \"36\\\" x 48\\\"\"\n                        }\n                    ]\n                }\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "createExchange": {
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ",
+              "name": "AEC Filter based Exchange - Category Windows",
+              "elements": {
+                "results": [
+                  {
+                    "id": "YWVjZX53TGhzYkpOSmVndGM5QlVsaFB6a2xwX0wyQ35CVGJ3enVuSlFRU0wwTVBsbFhNVDZBXzU3YmEy",
+                    "name": "36\" x 48\""
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "mutation CreateExchange(\n    $filter: String\n    $sourceFileId: String!\n    $targetExchangeName: String!\n    $targetFolderId: String!\n) {\n    createExchange(\n        input: {\n            filter: $filter\n            source: { fileId: $sourceFileId }\n            target: { name: $targetExchangeName, folderId: $targetFolderId }\n        }\n    ) {\n        exchange {\n            id\n            name\n            elements {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n   \"filter\": \"ifcClass=in=(IfcDoor)\",\n   \"sourceFileId\": \"aXRlbX5iLjVjMDdjODRjLWJiZDktNDc2ZS04NzEyLTU0N2Y3NGM1Yjc2Yn5iLjg0ZmJiNTg3LTJmYWUtNDlkNy1iYmZhLTVjYmJkNWIxNjgyOH51cm46YWRzay53aXBzdGc6ZnMuZm9sZGVyOmNvLmFlNzlOOFJIUTJtWnYyOHo3cF9vekF-dXJuOmFkc2sud2lwc3RnOmRtLmxpbmVhZ2U6RG5ySVZRNVNUd2FINk5XZXNDVS1Pdw\",\n   \"targetExchangeName\": \"IFC Filter based Exchange - IFC Class- IfcDoor\",\n   \"targetFolderId\": \"Zm9sZH5iLjVjMDdjODRjLWJiZDktNDc2ZS04NzEyLTU0N2Y3NGM1Yjc2Yn5iLjg0ZmJiNTg3LTJmYWUtNDlkNy1iYmZhLTVjYmJkNWIxNjgyOH51cm46YWRzay53aXBzdGc6ZnMuZm9sZGVyOmNvLmFlNzlOOFJIUTJtWnYyOHo3cF9vekE\"\n}",
+      "parsed": {
+        "filter": "ifcClass=in=(IfcDoor)",
+        "sourceFileId": "aXRlbX5iLjVjMDdjODRjLWJiZDktNDc2ZS04NzEyLTU0N2Y3NGM1Yjc2Yn5iLjg0ZmJiNTg3LTJmYWUtNDlkNy1iYmZhLTVjYmJkNWIxNjgyOH51cm46YWRzay53aXBzdGc6ZnMuZm9sZGVyOmNvLmFlNzlOOFJIUTJtWnYyOHo3cF9vekF-dXJuOmFkc2sud2lwc3RnOmRtLmxpbmVhZ2U6RG5ySVZRNVNUd2FINk5XZXNDVS1Pdw",
+        "targetExchangeName": "IFC Filter based Exchange - IFC Class- IfcDoor",
+        "targetFolderId": "Zm9sZH5iLjVjMDdjODRjLWJiZDktNDc2ZS04NzEyLTU0N2Y3NGM1Yjc2Yn5iLjg0ZmJiNTg3LTJmYWUtNDlkNy1iYmZhLTVjYmJkNWIxNjgyOH51cm46YWRzay53aXBzdGc6ZnMuZm9sZGVyOmNvLmFlNzlOOFJIUTJtWnYyOHo3cF9vekE"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"createExchange\": {\n          \"exchange\": {\n              \"id\": \"ZXhjfkJ3WlJiS01jYU9lUDhuOTZSZWtpYVFfTDJDfmEwZTBmYzUyLWMzZjgtMzg3OS05YmMwLTRmMTY3NDNhOTE5ZA\",\n              \"name\": \"IFC Filter based Exchange - IFC Class- IfcDoor\",\n              \"elements\": {\n                  \"results\": [\n                      {\n                          \"id\": \"66C096214CF868C87897CAAE800045B5CC9B0FA6\",\n                          \"name\": \"Single-Flush:36\\\" x 84\\\":359363\"\n                      },\n                      {\n                          \"id\": \"16F8B0BE54FA26AD8F2FE96CF062A70DB02657D1\",\n                          \"name\": \"Frame/Mullion\"\n                      },\n                      {\n                          \"id\": \"B9DA087FECCF4CE128318B08AA19D9D8256BF986\",\n                          \"name\": \"Panel\"\n                      },\n                      {\n                          \"id\": \"0700F206A1D9E0CFB8D785262788D8B59A3476CC\",\n                          \"name\": \"Level 1\"\n                      },\n                      {\n                          \"id\": \"D52633CBACB7AD1EC88CE72F542F1BA2DD9442EE\",\n                          \"name\": \"\"\n                      },\n                      {\n                          \"id\": \"BB2C97B77EA8F78CB36F9511EA36ED5E2CE6A486\",\n                          \"name\": \"Default\"\n                      }\n                  ]\n              }\n          }\n      }\n  }\n}",
+      "parsed": {
+        "data": {
+          "createExchange": {
+            "exchange": {
+              "id": "ZXhjfkJ3WlJiS01jYU9lUDhuOTZSZWtpYVFfTDJDfmEwZTBmYzUyLWMzZjgtMzg3OS05YmMwLTRmMTY3NDNhOTE5ZA",
+              "name": "IFC Filter based Exchange - IFC Class- IfcDoor",
+              "elements": {
+                "results": [
+                  {
+                    "id": "66C096214CF868C87897CAAE800045B5CC9B0FA6",
+                    "name": "Single-Flush:36\" x 84\":359363"
+                  },
+                  {
+                    "id": "16F8B0BE54FA26AD8F2FE96CF062A70DB02657D1",
+                    "name": "Frame/Mullion"
+                  },
+                  {
+                    "id": "B9DA087FECCF4CE128318B08AA19D9D8256BF986",
+                    "name": "Panel"
+                  },
+                  {
+                    "id": "0700F206A1D9E0CFB8D785262788D8B59A3476CC",
+                    "name": "Level 1"
+                  },
+                  {
+                    "id": "D52633CBACB7AD1EC88CE72F542F1BA2DD9442EE",
+                    "name": ""
+                  },
+                  {
+                    "id": "BB2C97B77EA8F78CB36F9511EA36ED5E2CE6A486",
+                    "name": "Default"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

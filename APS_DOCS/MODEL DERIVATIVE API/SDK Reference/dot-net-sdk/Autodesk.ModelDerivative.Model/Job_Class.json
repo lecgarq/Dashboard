@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Job",
+    "scrapedAt": "2026-05-08T18:25:33.591Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class Job",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class Job"
+    },
+    {
+      "raw": "public Job()"
+    },
+    {
+      "raw": "[DataMember(Name = \"acceptedJobs\", EmitDefaultValue = false)]\npublic JobAcceptedJobs AcceptedJobs { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"result\", EmitDefaultValue = false)]\npublic string Result { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"urn\", EmitDefaultValue = false)]\npublic string Urn { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

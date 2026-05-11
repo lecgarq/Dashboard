@@ -1,0 +1,491 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-valuesbatch-update-(Deprecated)-PUT",
+    "scrapedAt": "2026-05-08T23:55:12.263Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/projects/{projectId}/forms/{formId}/values:batch-update",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PUT https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms/:formId/values:batch-update"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "formIdstring",
+          "col_1": "The unique identifier of the form.\nUse GET forms to retrieve the form ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "customValuesarray: object",
+          "col_1": "The list of non-tabular fields. Maximum 10 items per request."
+        },
+        {
+          "col_0": "fieldId*string: UUID",
+          "col_1": "The unique identifier of the field."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the field’s notes section. This is relevant for all fields.\nMax length: 8000"
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "The attribute used for updating text value fields, For example, textVal: This is my response!.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. textVal is only relevant for updating text value fields. To verify whether the field you want to update is a text value field, call GET forms and check the field’s valueName.\nMax length: 8000"
+        },
+        {
+          "col_0": "choiceValstring",
+          "col_1": "The attribute used for updating single-select and dropdown fields. For example, choiceVal: Answer 3.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. choiceVal is only relevant for updating single-select and dropdown fields. To verify whether the field you want to update is a single-select or dropdown field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "arrayValarray: string",
+          "col_1": "The attribute used for updating multi-select fields. For example, arrayVal: [\"Answer 1\", \"Answer 2\"].\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. arrayVal is only relevant for updating multi-select fields. To verify whether the field you want to update is a multi-select field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "The attribute used for updating date fields, in the following format (YYYY-MM-DD). For example, \"dateVal\": \"1999-12-31\".\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. dateVal is only relevant for updating date fields. To verify whether the field you want to update is a date field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "The attribute used for updating number fields. For example, \"numberVal\": \"42\".\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. numberVal is only relevant for updating number fields. To verify whether the field you want to update is a number field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "toggleValenum:string",
+          "col_1": "The attribute used for updating preconfigured fields. For example, “toggleVal”: “Yes”.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. toggleVal is only relevant for updating preconfigured fields. To verify whether the field you want to update is a preconfigured field, call GET forms and check the field’s valueName.\nPossible values: Yes, No, False, True, Minus, Plus, Fail, Pass, NA"
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "The attribute used for updating signature fields.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. svgVal is only relevant for updating signature fields. To verify whether the field you want to update is a signature field, call GET forms and check the field’s valueName.\nThe signature needs to be in SVG format and it needs to be base64 encoded."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the person who signed the form. By default, it is the name of the logged in user. It is only relevant for signature fields. To update the name you need to use the signature field ID."
+        },
+        {
+          "col_0": "tabularValuesarray: object",
+          "col_1": "The list of tabular fields. Maximum 10 items per request."
+        },
+        {
+          "col_0": "id*string: UUID",
+          "col_1": "The ID of the table row. You need to generarte the ID (UUID) for the row."
+        },
+        {
+          "col_0": "table*enum:string",
+          "col_1": "The table to update.\nPossible values: worklogEntries, materialsEntries, equipmentEntries"
+        },
+        {
+          "col_0": "columnsarray: object",
+          "col_1": "The set of values for the columns in the row."
+        },
+        {
+          "col_0": "columnIdstring: UUID",
+          "col_1": "Unique identifier for the column. Either columnId or columnName must be provided, but not both."
+        },
+        {
+          "col_0": "columnNameenum:string",
+          "col_1": "The name of the column to update. Either columnId or columnName must be provided, but not both.\nFor the Work Log table:\ntrade (Crew) - use textVal, timespan (Total hours) - use timespanVal, headcount (workers) - use numberVal, description (work performed) - use textVal\nFor the Equipment table:\nitem (equipment) - use textVal, timespan (Hours used) -  use timespanVal, quantity (Quantity) - use numberVal, description (comment) - use textVal\nFor the Materials table:\nitem (Material) - use textVal, quantity (Quantity) - use numberVal, unit (Unit) - use textVal, description (Comment) - use textVal.\nPossible values: companyId, description, headcount, item, quantity, roleId, timespan, trade, unit"
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "The attribute used for updating number columns. For example, \"numberVal\": \"42\".\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. numberVal is relevant for updating the following columns: headcount (Workers) and quantity (Quantity)."
+        },
+        {
+          "col_0": "integerValint",
+          "col_1": "The attribute used for updating integer columns."
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "The attribute used for updating text value columns.\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. textVal is relevant for updating the following columns: description (Work performed), description (comment), item (Equipment), item (Material), trade (Crew), and unit (Unit).\nNote: When using svgVal for signatures, textVal should contain the name of the person who signed.\nMax length: 8000"
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "Base64 encoded SVG string used for signature fields. When providing a signature, you must also include the signer’s name in textVal."
+        },
+        {
+          "col_0": "arrayValarray: string",
+          "col_1": "Array of strings for dropdown or multi-select answers."
+        },
+        {
+          "col_0": "timespanValnumber",
+          "col_1": "The attribute used for updating time-related columns. Value represents amount of time in milliseconds.\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. timespanVal is relevant for updating the following columns: timespan (Total hours), timespan (Hours used)."
+        },
+        {
+          "col_0": "uidValstring",
+          "col_1": "UUID value for fields that store unique identifiers."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "Date value without timezone."
+        },
+        {
+          "col_0": "timeValstring",
+          "col_1": "Time value without timezone."
+        },
+        {
+          "col_0": "datetimeLocalValstring",
+          "col_1": "Datetime value in local time. When providing this field, you must also include datetimeUtcVal, timezoneVal, and timezoneRulesVal. Optionally include latVal and lngVal for more accurate timezone handling."
+        },
+        {
+          "col_0": "datetimeUtcValstring",
+          "col_1": "Datetime value in UTC. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "timezoneValstring",
+          "col_1": "Timezone identifier. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "timezoneRulesValstring",
+          "col_1": "Timezone rules data. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "latValnumber",
+          "col_1": "Latitude value. Optional but recommended when using datetime fields for accurate timezone handling during daylight saving transitions."
+        },
+        {
+          "col_0": "lngValnumber",
+          "col_1": "Longitude value. Optional but recommended when using datetime fields for accurate timezone handling during daylight saving transitions."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The updated Form"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the target resource"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The current status of the form. Note that forms are created in draft status. Possible values:\ndraft: you can edit forms.\ninReview: you cannot edit forms, however, they can be approved by form reviewers.\nsubmitted: forms are closed and no longer editable.\narchived forms are not edtiable and hidden in the UI."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the form."
+        },
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The unique identifier of the project the form belongs to."
+        },
+        {
+          "col_0": "formNumint",
+          "col_1": "A chronological user-fiendly identifier of the form within the project e.g. form #5."
+        },
+        {
+          "col_0": "formDatestring",
+          "col_1": "Date the form pertains to."
+        },
+        {
+          "col_0": "assigneeIdstring",
+          "col_1": "The unique identifier of the user, role, or company the form is assigned to."
+        },
+        {
+          "col_0": "assigneeTypeenum:string",
+          "col_1": "Type of entity the form is assigned to.\nPossible values: company, role, user"
+        },
+        {
+          "col_0": "locationIdstring",
+          "col_1": "Location identifier associated with the form. For more information about the location, see GET nodes."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the form was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the form."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the form’s notes section."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Text for the form’s description section."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the form instance.\nMax length: 100"
+        },
+        {
+          "col_0": "formTemplateobject",
+          "col_1": "Information about the form’s template."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Possible values: active, inactive, deleted"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the template."
+        },
+        {
+          "col_0": "projectIdstring",
+          "col_1": "Unique indentifier of the project the template belongs to."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the form template."
+        },
+        {
+          "col_0": "templateTypestring",
+          "col_1": "User defined type of the form template."
+        },
+        {
+          "col_0": "pdfValuesarray: object",
+          "col_1": "For PDF forms, values extracted from fields in the PDF."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the PDF field."
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The value of the PDF field."
+        },
+        {
+          "col_0": "pdfUrlstring",
+          "col_1": "For PDF forms, the URL to download the form’s PDF."
+        },
+        {
+          "col_0": "weatherobject",
+          "col_1": "Weather forecast captured on the form."
+        },
+        {
+          "col_0": "summaryKeystring",
+          "col_1": "A code describing the weather conditions. For weather data from DarkSky (legacy), possible values are: clear, rain, snow, sleet, wind, fog, cloudy, partlyCloudy. For weather data from WeatherKit, values come from Apple’s WeatherCondition codes and include: Clear, MostlyClear, PartlyCloudy, MostlyCloudy, Cloudy, Rain, HeavyRain, Drizzle, Snow, HeavySnow, Flurries, Sleet, FreezingRain, FreezingDrizzle, Hail, Thunderstorms, IsolatedThunderstorms, ScatteredThunderstorms, StrongStorms, Windy, Breezy, Foggy, Haze, Smoky, Blizzard, BlowingDust, BlowingSnow, TropicalStorm, Hurricane, SunShowers, Hot, Frigid, WintryMix. Check the provider field to determine which value set to expect. Additional values may appear as Apple’s WeatherKit condition codes evolve."
+        },
+        {
+          "col_0": "precipitationAccumulationnumber",
+          "col_1": "Amount of precipitation accumulated throughout the day."
+        },
+        {
+          "col_0": "precipitationAccumulationUnitstring",
+          "col_1": "Indicates the measurement unit of the precipitationAccumulation."
+        },
+        {
+          "col_0": "temperatureMinnumber",
+          "col_1": "Minimum temperature during the day."
+        },
+        {
+          "col_0": "temperatureMaxnumber",
+          "col_1": "Maximum temperature during the day."
+        },
+        {
+          "col_0": "temperatureUnitstring",
+          "col_1": "Indicates the measurement unit of the temperature values e.g. temperatureMin, temperatureMax, temp."
+        },
+        {
+          "col_0": "humiditynumber",
+          "col_1": "A percentage value indicating the humidity over the course of the day."
+        },
+        {
+          "col_0": "windSpeednumber",
+          "col_1": "Average wind speed observed throughout the day."
+        },
+        {
+          "col_0": "windGustnumber",
+          "col_1": "Maximum wind speed observed throughout the day."
+        },
+        {
+          "col_0": "speedUnitstring",
+          "col_1": "Indicates the measurement unit of the windSpeed and windGust."
+        },
+        {
+          "col_0": "windBearingnumber",
+          "col_1": "Direction of the wind, in degrees."
+        },
+        {
+          "col_0": "hourlyWeatherarray: object",
+          "col_1": "Weather information for specific hours (07:00:00, 12:00:00, 16:00:00)."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "Unique identifier."
+        },
+        {
+          "col_0": "hourstring",
+          "col_1": "Hour of the day for this forecast."
+        },
+        {
+          "col_0": "tempnumber",
+          "col_1": "Temperature during specified hour."
+        },
+        {
+          "col_0": "windSpeednumber",
+          "col_1": "Average wind speed."
+        },
+        {
+          "col_0": "windBearingint",
+          "col_1": "Direction of the wind, in degrees."
+        },
+        {
+          "col_0": "humiditynumber",
+          "col_1": "A percentage value indicating the humidity."
+        },
+        {
+          "col_0": "fetchedAtdatetime: ISO 8601",
+          "col_1": "The date when weather was fetched from weather API."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date when weather was first fetched."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the weather was last updated."
+        },
+        {
+          "col_0": "providerenum:string",
+          "col_1": "Indicates the source of the weather data.\nPossible values: darksky, weatherkit"
+        },
+        {
+          "col_0": "customValuesarray: object",
+          "col_1": "For non-PDF forms, data stored in the form fields."
+        },
+        {
+          "col_0": "fieldIdstring",
+          "col_1": "The unique identifier of the field."
+        },
+        {
+          "col_0": "sectionLabelstring",
+          "col_1": "Name of the section containing this field."
+        },
+        {
+          "col_0": "itemLabelstring",
+          "col_1": "The field’s label or question text."
+        },
+        {
+          "col_0": "valueNameenum:string",
+          "col_1": "Indicates the type of value used for this item.\nPossible values: textVal, toggleVal, arrayVal, numberVal, choiceVal, dateVal, svgVal"
+        },
+        {
+          "col_0": "toggleValenum:string",
+          "col_1": "A boolean like enum value.\nPossible values: Yes, No, False, True, Minus, Plus, Fail, Pass, NA"
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "A text value."
+        },
+        {
+          "col_0": "arrayValstring",
+          "col_1": "Multi select values."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "A numeric value."
+        },
+        {
+          "col_0": "choiceValstring",
+          "col_1": "A single select value."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "A date value."
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "A signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the field’s notes section.\nMax length: 8000"
+        },
+        {
+          "col_0": "lastReopenedBystring",
+          "col_1": "Unique identifier for the user that last re-opened the Form (if applicable)."
+        },
+        {
+          "col_0": "lastSubmitterSignaturestring",
+          "col_1": "Signature of the reviewer who last submitted the Form (if applicable). Signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "userCreatedAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was created on the client device or external system. This may differ from createdAt if the form was created offline and synced later. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was received and stored on the server. UTC date and time in ISO-8601 format."
+        }
+      ]
+    }
+  ]
+}

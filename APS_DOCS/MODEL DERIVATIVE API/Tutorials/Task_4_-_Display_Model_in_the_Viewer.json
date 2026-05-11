@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/tutorials/prep-roominfo4viewer/task4-display_model",
+    "scrapedAt": "2026-05-08T18:24:01.780Z",
+    "category": "Tutorials",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Task 4 – Display the Model in the Viewer",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Parameter",
+          "col_1": "SVF2"
+        },
+        {
+          "col_0": "api",
+          "col_1": "streamingV2"
+        },
+        {
+          "col_0": "env",
+          "col_1": "AutodeskProduction2"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "SVF2"
+      ],
+      "rows": [
+        {
+          "SVF2": "Show Web page"
+        },
+        {
+          "SVF2": ""
+        },
+        {
+          "SVF2": "Source"
+        }
+      ]
+    }
+  ]
+}

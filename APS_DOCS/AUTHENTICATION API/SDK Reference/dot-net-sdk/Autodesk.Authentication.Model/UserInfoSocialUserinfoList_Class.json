@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication.Model/UserInfoSocialUserinfoList",
+    "scrapedAt": "2026-05-08T17:36:49.070Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Class UserInfoSocialUserinfoList",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class UserInfoSocialUserinfoList"
+    },
+    {
+      "raw": "public UserInfoSocialUserinfoList()"
+    },
+    {
+      "raw": "[DataMember(Name = \"providerId\", EmitDefaultValue = false)]\npublic string ProviderId { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"providerName\", EmitDefaultValue = false)]\npublic string ProviderName { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"socialUserId\", EmitDefaultValue = false)]\npublic string SocialUserId { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

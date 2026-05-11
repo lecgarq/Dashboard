@@ -1,0 +1,1546 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference",
+    "scrapedAt": "2026-05-08T18:06:43.014Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "HTTP Specification",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST projects",
+          "Description": "Creates a new project"
+        },
+        {
+          "Endpoint": "GET projects",
+          "Description": "Queries all the projects in a specific account"
+        },
+        {
+          "Endpoint": "GET projects/:project_id",
+          "Description": "Queries a specific project’s details"
+        },
+        {
+          "Endpoint": "PATCH projects/:project_id",
+          "Description": "Updates a project’s properties"
+        },
+        {
+          "Endpoint": "PATCH projects/:project_id/image",
+          "Description": "Creates or update a project’s image"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST companies",
+          "Description": "Creates a new partner company"
+        },
+        {
+          "Endpoint": "POST companies/import",
+          "Description": "Bulk imports partner companies"
+        },
+        {
+          "Endpoint": "GET companies",
+          "Description": "Queries all the partner companies in a specific account"
+        },
+        {
+          "Endpoint": "GET companies/:company_id",
+          "Description": "Queries a partner company’s details"
+        },
+        {
+          "Endpoint": "GET companies/search",
+          "Description": "Searches partner companies by name"
+        },
+        {
+          "Endpoint": "GET projects/:project_id/companies",
+          "Description": "Queries all the partner companies in a specific project"
+        },
+        {
+          "Endpoint": "PATCH companies/:company_id",
+          "Description": "Updates a partner company’s properties"
+        },
+        {
+          "Endpoint": "PATCH companies/:company_id/image",
+          "Description": "Creates or updates a company’s image"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST users",
+          "Description": "Creates a new user"
+        },
+        {
+          "Endpoint": "POST users/import",
+          "Description": "Bulk imports users"
+        },
+        {
+          "Endpoint": "GET users",
+          "Description": "Queries all the users in a specific account"
+        },
+        {
+          "Endpoint": "GET users/:user_id",
+          "Description": "Queries a user’s details"
+        },
+        {
+          "Endpoint": "GET users/search",
+          "Description": "Searches users by specific fields"
+        },
+        {
+          "Endpoint": "PATCH users/:user_id",
+          "Description": "Updates a user’s status or default company"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET projects/:project_id/users",
+          "Description": "Retrieves information about project users"
+        },
+        {
+          "Endpoint": "GET projects/:project_id/users/:users_id",
+          "Description": "Retrieves details about a single project user"
+        },
+        {
+          "Endpoint": "POST projects/:project_id/users",
+          "Description": "Adds a user to a project"
+        },
+        {
+          "Endpoint": "POST projects/:project_id/users/import (v2)",
+          "Description": "Adds multiple users to a project"
+        },
+        {
+          "Endpoint": "PATCH projects/:project_id/users/user_id (v2)",
+          "Description": "Updates a user’s profile for a project"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET industry_roles (v2)",
+          "Description": "Queries the industry roles for the project"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "PUT business_units_structure",
+          "Description": "Replaces the business units of the account"
+        },
+        {
+          "Endpoint": "GET business_units_structure",
+          "Description": "Queries all the business units of the account"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET jobs/:job_id",
+          "Description": "Returns the job status"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST requests",
+          "Description": "Creates a data request."
+        },
+        {
+          "Endpoint": "GET requests",
+          "Description": "Returns an array of data requests in the specified account."
+        },
+        {
+          "Endpoint": "GET requests/:requestId",
+          "Description": "Returns information about a data request."
+        },
+        {
+          "Endpoint": "PATCH requests/:requestId",
+          "Description": "Updates the attributes of an existing data request."
+        },
+        {
+          "Endpoint": "DELETE requests/:requestId",
+          "Description": "Deletes a data request."
+        },
+        {
+          "Endpoint": "GET requests/:requestId/jobs",
+          "Description": "Returns an array of data connector jobs associated with a data request."
+        },
+        {
+          "Endpoint": "GET jobs",
+          "Description": "Returns an array of data connector jobs associated with a project."
+        },
+        {
+          "Endpoint": "GET jobs/:jobId",
+          "Description": "Returns information about a specified job that was spawned by a data request."
+        },
+        {
+          "Endpoint": "DELETE jobs/:jobId",
+          "Description": "Cancels a specified running job spawned by a data request."
+        },
+        {
+          "Endpoint": "GET data/:jobId/data-listing",
+          "Description": "Returns information about the files contained within a data extract."
+        },
+        {
+          "Endpoint": "GET data/:jobId/data/:name",
+          "Description": "Returns a signed URL that you can contact to retrieve a specified file from a data extract."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST projects/:project_id/versions/:version_id/exports",
+          "Description": "Exports a single page from an uploaded PDF file into a new PDF file"
+        },
+        {
+          "Endpoint": "GET projects/:project_id/versions/:version_id/exports/:export_id",
+          "Description": "Returns the status of a PDF export job"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "Assign permissions",
+          "Description": "Assigns permissions to multiple users, roles, and companies for a folder."
+        },
+        {
+          "Endpoint": "GET permissions",
+          "Description": "Retrieves information about the permissions assigned to users, roles and companies for a folder."
+        },
+        {
+          "Endpoint": "Update permissions",
+          "Description": "Updates the permissions assigned to multiple users, roles, and companies for a folder."
+        },
+        {
+          "Endpoint": "Delete permissions",
+          "Description": "Deletes all the permissions assigned to specified users, roles, and companies for a folder."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "Batch get versions",
+          "Description": "Retrieves a list of custom attributes for multiple BIM 360 Document Management files."
+        },
+        {
+          "Endpoint": "GET custom attribute definitions",
+          "Description": "Retrieves a list of custom attribute definitions for a specified BIM 360 folder."
+        },
+        {
+          "Endpoint": "POST custom attribute definitions",
+          "Description": "Adds a custom attribute to a specified BIM 360 folder."
+        },
+        {
+          "Endpoint": "Batch update custom attribute values",
+          "Description": "Creates, updates, and deletes custom attribute values for a specified BIM 360 document."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET naming-standards",
+          "Description": "Retrieves information about the file naming standard for a project."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET users-me",
+          "Description": "Retrieves profile information about an end user"
+        },
+        {
+          "Endpoint": "GET issues",
+          "Description": "Retrieves information about all the issues in a project"
+        },
+        {
+          "Endpoint": "GET issues/:id",
+          "Description": "Retrieves detailed information about a single issue"
+        },
+        {
+          "Endpoint": "POST issues",
+          "Description": "Adds an issue to a project"
+        },
+        {
+          "Endpoint": "PATCH issues/:id",
+          "Description": "Updates an issue"
+        },
+        {
+          "Endpoint": "GET issues/:id/comments",
+          "Description": "Retrieves a comment associated with an issue"
+        },
+        {
+          "Endpoint": "POST issues/comments",
+          "Description": "Adds a comment to an issue"
+        },
+        {
+          "Endpoint": "GET issues/attachments",
+          "Description": "Retrieves an attachment associated with an issue"
+        },
+        {
+          "Endpoint": "POST issues/attachments",
+          "Description": "Adds an attachment to an issue"
+        },
+        {
+          "Endpoint": "GET root-causes",
+          "Description": "Retrieves a list of supported root causes that you can allocate to an issue"
+        },
+        {
+          "Endpoint": "GET ng-issue-types",
+          "Description": "Retrieves a list of supported issue types that you can allocate to an issue"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET users-me (v2)",
+          "Description": "Retrieves profile information about an end user issues v2 (new)"
+        },
+        {
+          "Endpoint": "GET issues (v2)",
+          "Description": "Retrieves information about all the issues in a project"
+        },
+        {
+          "Endpoint": "GET issues/:issueId (v2)",
+          "Description": "Retrieves detailed information about a single issue"
+        },
+        {
+          "Endpoint": "POST issues (v2)",
+          "Description": "Adds an issue to a project"
+        },
+        {
+          "Endpoint": "PATCH issues/:issueId (v2)",
+          "Description": "Updates an issue"
+        },
+        {
+          "Endpoint": "GET issues/comments (v2)",
+          "Description": "Retrieves a comment associated with an issue"
+        },
+        {
+          "Endpoint": "POST issues/comments (v2)",
+          "Description": "Adds a comment to an issue"
+        },
+        {
+          "Endpoint": "GET issues/attachments (v2)",
+          "Description": "Retrieves an attachment associated with an issue"
+        },
+        {
+          "Endpoint": "POST issues/attachments (v2)",
+          "Description": "Adds an attachment to an issue"
+        },
+        {
+          "Endpoint": "GET root-causes-categories (v2)",
+          "Description": "Retrieves a list of supported root causes that you can allocate to an issue"
+        },
+        {
+          "Endpoint": "GET issue-types (v2)",
+          "Description": "Retrieves a list of supported issue types that you can allocate to an issue"
+        },
+        {
+          "Endpoint": "GET attribute-definitions (v2)",
+          "Description": "Retrieves a list of attribute definitions that you can use in an issue"
+        },
+        {
+          "Endpoint": "GET attribute-mappings (v2)",
+          "Description": "Retrieves a list of attribute mappings that you use in an issue"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET rfis-users-me",
+          "Description": "Retrieves profile information about an end user"
+        },
+        {
+          "Endpoint": "GET rfis",
+          "Description": "Retrieves information about all the RFIs in a project"
+        },
+        {
+          "Endpoint": "GET rfis/:id",
+          "Description": "Retrieves detailed information about a single RFI"
+        },
+        {
+          "Endpoint": "POST rfis",
+          "Description": "Adds an RFI to a project"
+        },
+        {
+          "Endpoint": "PATCH rfis/:id",
+          "Description": "Updates an RFI"
+        },
+        {
+          "Endpoint": "GET rfis/:id/comments",
+          "Description": "Retrieves a comment associated with an RFI"
+        },
+        {
+          "Endpoint": "POST rfis/comments",
+          "Description": "Adds a comment to an RFI"
+        },
+        {
+          "Endpoint": "GET rfis/:id/attachments",
+          "Description": "Retrieves an attachment associated with an RFI"
+        },
+        {
+          "Endpoint": "POST rfis/attachments",
+          "Description": "Adds an attachment to an RFI"
+        },
+        {
+          "Endpoint": "DELETE rfis/attachments/:attachment_id",
+          "Description": "Deletes an RFI"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET instances",
+          "Description": "Retrieves information about all the checklists in a project."
+        },
+        {
+          "Endpoint": "GET instances/:id",
+          "Description": "Retrieves detailed information about a single checklist."
+        },
+        {
+          "Endpoint": "GET templates",
+          "Description": "Retrieves information about all the templates in a project."
+        },
+        {
+          "Endpoint": "GET templates/:id",
+          "Description": "Retrieves detailed information about a single template."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/modelsets",
+          "Description": "Creates a model set within a given container"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets",
+          "Description": "Retrieves a list of model sets in a given container that match the provided search parameters"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/jobs/:jobId",
+          "Description": "Retrieves information about a given container job"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId",
+          "Description": "Retrieves a requested model set based on the model set ID"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/modelsets/:modelSetId",
+          "Description": "Updates a given model set name and/or description"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/issues",
+          "Description": "Adds a model set visual inspection issue, represented as a BIM360 issue"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/issues/viewcontext",
+          "Description": "Retrieves the view context around a set of visual inspection issues"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/jobs/:jobId",
+          "Description": "Retrieves information about a given model set job"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/screenshots",
+          "Description": "Uploads a screenshot, associating it with a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/screenshots/:screenShotId",
+          "Description": "Retrieves a specific screenshot based on the screenshot ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/versions",
+          "Description": "Creates a new version of a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions",
+          "Description": "Retrieves a list of versions of a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/latest",
+          "Description": "Retrieves the latest version of a given model set based on the model set ID"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version",
+          "Description": "Retrieves a specific version of a given model set based on the model set ID and version number"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/modelsets/:modelSetId/versions:enable",
+          "Description": "Enables automatic version creation for a given model set"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/modelsets/:modelSetId/versions:disable",
+          "Description": "Disables automatic version creation for a given model set"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/views",
+          "Description": "Creates a view for a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/views",
+          "Description": "Retrieves a list of model set views in a given model set"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/views:lineages",
+          "Description": "Retrieves a list of model set views in a given model set that contain the provided set of document lineage URNs"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/views/:viewId",
+          "Description": "Retrieves a specific model set view based on the view ID"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/modelsets/:modelSetId/views/:viewId",
+          "Description": "Updates a specific model set view"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/modelsets/:modelSetId/views/:viewId",
+          "Description": "Deletes a specific model set view based on the view ID"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version/views",
+          "Description": "Retrieves a list of all model set views in a given model set as they exist in a specific model set version"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version/views/:viewId",
+          "Description": "Retrieves a model set view as it exists in a specific model set version"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/views/:viewId/jobs/:jobId",
+          "Description": "Retrieves information about a given model set view job"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/tests",
+          "Description": "Retrieves a list of summaries for all clash tests that have been executed for a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version/tests",
+          "Description": "Retrieves a list of summaries for all clash tests that have been executed for a given model set version"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/tests/:testId",
+          "Description": "Retrieves a requested clash test based on the clash test ID"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/tests/:testId/resources",
+          "Description": "Retrieves information about a given clash test result resources"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/tests/:testId/clashes:close",
+          "Description": "Adds a batch of new closed clash groups to the given clash test"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/tests/:testId/clashes/closed",
+          "Description": "Retrieves the state of all closed clash groups in a particular model set"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/tests/:testId/clashes/closed",
+          "Description": "Retrieves the state of the specified closed clash groups"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/clashes:reopen",
+          "Description": "Re-opens a batch of existing closed clash groups"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/clashes/closed",
+          "Description": "Retrieves a list of closed clash groups in a given model set which match the provided search parameters"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/tests/:testId/clashes:assign",
+          "Description": "Creates a batch of new assigned clash groups for the given clash test"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/clashes/assigned/viewcontext",
+          "Description": "Retrieves the view context around a set of assigned clash groups, such as the model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/tests/:testId/clashes/assigned",
+          "Description": "Retrieves the state of all assigned clash groups in a particular model set"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/tests/:testId/clashes/assigned",
+          "Description": "Retrieves the state of the specified assigned clash groups"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/clashes/assigned",
+          "Description": "Retrieves a list of assigned clash groups in a given model set which match the provided search parameters"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/clashes/jobs/:jobId",
+          "Description": "Retrieves information about a given clash job"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/clashes/grouped",
+          "Description": "Retrieves a list of clashes associated with assigned or closed clash groups"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/screenshots",
+          "Description": "Uploads a screenshot, associating it with a given model set"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/screenshots/:screenShotId",
+          "Description": "Retrieves a specific screenshot based on the screenshot ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version/manifest",
+          "Description": "Retrieves the index manifest for a given model set version"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/versions/:version/fields",
+          "Description": "Retrieves information about a given model set version index field resource"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/modelsets/:modelSetId/versions/:version/indexes:query",
+          "Description": "Queries a model set version index using the given statement"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/modelsets/:modelSetId/jobs/:jobId",
+          "Description": "Retrieves information about a given index view job"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/attachment-folders",
+          "Description": "Creates a folder you can upload attachments to"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/attachments",
+          "Description": "Creates an attachment to house an uploaded document"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/attachments",
+          "Description": "Retrieves all the attachments associated with a project"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/attachments/:attachmentId",
+          "Description": "Deletes an attachment"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/budgets",
+          "Description": "Retrieves all the budget items in a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/budgets/:budgetId",
+          "Description": "Retrieves a single budget item"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/budgets/:budgetId",
+          "Description": "Updates a budget item"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/budgets",
+          "Description": "Creates a budget item"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/budgets:import",
+          "Description": "Imports a list of budgets into a project"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/budgets/:budgetId",
+          "Description": "Deletes budget items"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/templates/{templateId}/segments",
+          "Description": "Retrieves segments of a budget code template"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/templates/{templateId}/segments",
+          "Description": "Creates segments of a budget code template"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/templates/{templateId}/segments/{segmentId}",
+          "Description": "Retrieves a segment"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/templates/{templateId}/segments/{segmentId}",
+          "Description": "Updates a segment"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/templates/{templateId}/segments/{segmentId}",
+          "Description": "Deletes a segment"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/segments/:segmentId/values",
+          "Description": "Retrieves segment values"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/segments/:segmentId/values",
+          "Description": "Creates a segment value"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/segments/:segmentId/values/{valueId}",
+          "Description": "Retrieves a segment value"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/segments/:segmentId/values/{valueId}",
+          "Description": "Updates a segment value"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/segments/:segmentId/values/{valueId}",
+          "Description": "Deletes a segment value"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/segments/:segmentId/values:import",
+          "Description": "Batch imports segment values"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/templates",
+          "Description": "Retrieves budget code templates"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/cost-items",
+          "Description": "Retrieves all cost items associated with a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/cost-items/:costItemId",
+          "Description": "Retrieves a single cost item"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/cost-items/:costItemId",
+          "Description": "Updates a cost item"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/cost-items",
+          "Description": "Creates a cost item"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/cost-items/:costItemId",
+          "Description": "Deletes costs items"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/change-orders",
+          "Description": "Retrieves change order types associated with a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/change-orders/:changeOrder",
+          "Description": "Retrieves a list of a type of change order"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/change-orders/:changeOrder/:id",
+          "Description": "Retrieves a single change order"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/change-orders/:changeOrder/:id",
+          "Description": "Updates a change order"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/change-orders/:changeOrder",
+          "Description": "Creates a change order"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/change-orders/:changeOrder/:id",
+          "Description": "Deletes change orders"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/cost-items:attach",
+          "Description": "Adds existing cost items to a change order"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/cost-items:detach",
+          "Description": "Deletes existing cost items from a change order"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/contracts",
+          "Description": "Retrieves all contracts associated with a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/contracts/:contractId",
+          "Description": "Retrieves a single contract"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/contracts/:contractId",
+          "Description": "Updates a contract"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/contracts",
+          "Description": "Creates a contract"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/contracts/:contractId",
+          "Description": "Deletes contracts"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/properties",
+          "Description": "Retrieves custom attributes definitions for all modules in a project"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/property-values:batch-update",
+          "Description": "Batch updates values of custom attributes"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/expenses",
+          "Description": "Retrieves the requested set of expenses in a project"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/expenses",
+          "Description": "Creates an expense in a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/expenses/:id",
+          "Description": "Retrieves the specified expense"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/expenses/:id",
+          "Description": "Updates the specified expense"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/expenses/:id",
+          "Description": "Deletes the specified expense"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/expenses/:expenseId/items",
+          "Description": "Retrieves the requested set of expenses in a project"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/expenses/:expenseId/items",
+          "Description": "Creates an expense item in the specified expense of a project"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/expenses/:expenseId/items/:id",
+          "Description": "Retrieves an expense item in the specified expense of a project"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/expenses/:expenseId/items/:id",
+          "Description": "Updates an expense item in the specified expense of a project"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/expenses/:expenseId/items/:id",
+          "Description": "Deletes an expense item from the specified expense of a project"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/documents",
+          "Description": "Retrieves documents associated with a change order"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/main-contracts",
+          "Description": "Retrieves one or more main contracts in a project"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/main-contracts",
+          "Description": "Creates a main contract"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/main-contracts/:id",
+          "Description": "Retrieves a main contract by ID"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/main-contracts/:id",
+          "Description": "Updates a main contract"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/main-contracts/:id",
+          "Description": "Deletes a main contract"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/main-contracts/:mainContractId/items",
+          "Description": "Retrieves one or more items in the specified main contracts"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/main-contracts/:mainContractId/items",
+          "Description": "Creates a main contract item"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/main-contracts/:mainContractId/items/:id",
+          "Description": "Retrieves a main contract item by ID"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/main-contracts/:mainContractId/items/:id",
+          "Description": "Updates a main contract item"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/main-contracts/:mainContractId/items/:id",
+          "Description": "Deletes a main contract item"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/payments",
+          "Description": "Retrieves payments"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/payments/:id",
+          "Description": "Retrieves the specified payment"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/payment-items",
+          "Description": "Retrieves one or more payment items"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/performance-tracking-items",
+          "Description": "Retrieves one or more performance tracking items"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/performance-tracking-items",
+          "Description": "Creates a performance tracking item"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/performance-tracking-items/:id",
+          "Description": "Retrieves a performance tracking item by ID"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/performance-tracking-items/:id",
+          "Description": "Deletes a performance tracking item"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/performance-tracking-item-instances",
+          "Description": "Retrieves one or more performance tracking item instances"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/performance-tracking-item-instances",
+          "Description": "Creates a performance tracking item instance"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/performance-tracking-item-instances/:id",
+          "Description": "Retrieves a performance tracking item instance by ID"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/performance-tracking-item-instances/:id",
+          "Description": "Updates a performance tracking item instance by ID"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/performance-tracking-item-instances/:id",
+          "Description": "Deletes a performance tracking item instance"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/schedule-of-values",
+          "Description": "Retrieves one or more SOV items in a project"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/schedule-of-values/:id",
+          "Description": "Updates the specified SOV item in a projec"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/schedule-of-values",
+          "Description": "Creates a new SOV item for a project"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/schedule-of-values/:id",
+          "Description": "Deletes one or more specified SOV items in a project"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET containers/:containerId/time-sheets",
+          "Description": "Retrieves one or more timesheets"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/time-sheets",
+          "Description": "Creates a timesheet for the specified tracking item instance"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/time-sheets/:id",
+          "Description": "Retrieves the specified timesheet"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/time-sheets/:id",
+          "Description": "Updates the specified timesheet"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/time-sheets/:id",
+          "Description": "Deletes the specified timesheet"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/cost-items/:costItemId/sub-cost-items",
+          "Description": "Retrieves sub cost item for the specified cost item"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/cost-items/:costItemId/sub-cost-item",
+          "Description": "Creates a sub cost item for the specified cost item"
+        },
+        {
+          "Endpoint": "PATCH containers/:containerId/cost-items/:costItemId/sub-cost-item/:subCostItemId",
+          "Description": "Updates the specified sub cost item"
+        },
+        {
+          "Endpoint": "DELETE containers/:containerId/cost-items/:costItemId/sub-cost-item/:subCostItemId",
+          "Description": "Deletes the specified sub cost item"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/cost-items/:costItemId/sub-cost-item:copy",
+          "Description": "Copies the specified sub cost item"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "PUT containers/:containerId/relationships",
+          "Description": "Creates a relationship between two entities (for example, asset and photo)"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/relationships:delete",
+          "Description": "Deletes one or more relationships by passing an array of relationship UUIDs"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/relationships:batch",
+          "Description": "Retrieves a list of one or more relationships by passing an array of relationship IDs"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/relationships:search",
+          "Description": "Retrieves a list of relationships that match the provided search parameters"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/relationships:intersect",
+          "Description": "Retrieves a list of relationships that contain the specified relationship entities"
+        },
+        {
+          "Endpoint": "GET containers/:containerId/relationships/:relationshipId",
+          "Description": "Retrieves a requested relationship based on the relationship’s ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST containers/:containerId/relationships:syncStatus",
+          "Description": "Retrieves the relationship synchronization status for the caller"
+        },
+        {
+          "Endpoint": "POST containers/:containerId/relationships:sync",
+          "Description": "Synchronise relationships using the (optional) synchronization token passed by the caller"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET utility/relationships:writable",
+          "Description": "Retrieves a list of compatible entity types between which relationships can be created or deleted"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v2/projects/:projectId/assets:batch-create",
+          "Description": "Creates a set of new assets"
+        },
+        {
+          "Endpoint": "POST v2/projects/:projectId/assets:batch-get",
+          "Description": "Returns a specified set of assets"
+        },
+        {
+          "Endpoint": "GET v2/projects/:projectId/assets",
+          "Description": "Searches for and returns specified assets"
+        },
+        {
+          "Endpoint": "PATCH v2/projects/:projectId/assets:batch-patch",
+          "Description": "Updates a set of one or more assets"
+        },
+        {
+          "Endpoint": "POST v2/projects/:projectId/assets:batch-delete",
+          "Description": "Deletes one or more assets"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v1/projects/:projectId/categories",
+          "Description": "Creates a new category"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/categories:batch-get",
+          "Description": "Returns a specified set of categories"
+        },
+        {
+          "Endpoint": "GET v1/projects/:projectId/categories",
+          "Description": "Searches for and returns specified categories"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v1/projects/:projectId/status-step-sets",
+          "Description": "Creates a new status set"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/status-step-sets:batch-get",
+          "Description": "Returns a specified set of status sets"
+        },
+        {
+          "Endpoint": "GET v1/projects/:projectId/status-step-sets",
+          "Description": "Searches for and returns specified status sets"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/category-status-step-sets/status-step-sets:batch-get",
+          "Description": "Returns status set assignments for a specified set of categories"
+        },
+        {
+          "Endpoint": "PUT v1/projects/:projectId/categories/:categoryId/status-step-set/:statusStepSetId",
+          "Description": "Assigns a status set to a category"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v1/projects/:projectId/asset-statuses",
+          "Description": "Creates a new asset status"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/asset-statuses:batch-get",
+          "Description": "Returns a specified set of statuses"
+        },
+        {
+          "Endpoint": "GET v1/projects/:projectId/asset-statuses",
+          "Description": "Searches for and returns specified asset statuses"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v1/projects/:projectId/custom-attributes",
+          "Description": "Creates a new custom attribute"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/custom-attributes:batch-get",
+          "Description": "Returns a specified set of custom attributes"
+        },
+        {
+          "Endpoint": "GET v1/projects/:projectId/custom-attributes",
+          "Description": "Searches for and returns specified custom attributes"
+        },
+        {
+          "Endpoint": "PATCH v1/projects/:projectId/custom-attributes/:customAttributeId",
+          "Description": "Updates a custom attribute"
+        },
+        {
+          "Endpoint": "GET v1/projects/:projectId/categories/:categoryId/custom-attributes",
+          "Description": "Returns the custom attribute assignments for a specified category"
+        },
+        {
+          "Endpoint": "PUT v1/projects/:projectId/categories/:categoryId/custom-attributes/:customAttributeId",
+          "Description": "Assigns a custom attribute to a category"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "POST v1/projects/:projectId/assets/:assetId/relationships",
+          "Description": "Creates relationships between an asset and one or more target entities"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/categories/:categoryId/relationships",
+          "Description": "Creates relationships between a category and one or more target entities"
+        },
+        {
+          "Endpoint": "POST v1/projects/:projectId/relationships:delete",
+          "Description": "Deletes one or more relationships"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoint",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Endpoint": "GET v1/error-codes",
+          "Description": "Retrieves a list of all error codes returned by the Assets API."
+        },
+        {
+          "Endpoint": "GET v1/error-codes/errorCodeName",
+          "Description": "Retrieves details about an error code by name."
+        }
+      ]
+    }
+  ]
+}

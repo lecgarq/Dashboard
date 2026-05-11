@@ -1,0 +1,104 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/cost/download-cost-document-s3",
+    "scrapedAt": "2026-05-08T23:42:00.479Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Download a Document Generated From an SCO (new)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/sco?limit=100&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/sco?limit=100&offset=0' \\\n-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n  \"results\": [{\n      \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n      \"...\":\"...\",\n  }],\n  \"pagination\": {\n      \"totalResults\": 1,\n      \"limit\": 100,\n      \"offset\": 0\n  }\n}"
+    },
+    {
+      "raw": "curl -X GET 'https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/documents?associationId=55254a50-44d9-11e9-99d7-79aa05d3109e&associationType=FormInstance' \\\n-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n-H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"id\": \"80b446f0-4261-11e9-9f1f-e19f7c813519\",\n  \"urn\": \"urn:adsk.wipprod:fs.file:vf.kYtkYWBsSKSCMXYzEYe80w?version=1\",\n  \"...\": \"...\"\n}",
+      "parsed": {
+        "id": "80b446f0-4261-11e9-9f1f-e19f7c813519",
+        "urn": "urn:adsk.wipprod:fs.file:vf.kYtkYWBsSKSCMXYzEYe80w?version=1",
+        "...": "..."
+      }
+    },
+    {
+      "raw": "curl -X GET 'https://developer.api.autodesk.com/data/v1/projects/b.e8d3c2a0-b913-11e9-893e-e55449557ed8/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.kYtkYWBsSKSCMXYzEYe80w%3Fversion%3D1' \\\n-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n-H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n    \"jsonapi\": {\n        \"version\": \"1.0\"\n    },\n    \"links\": {\n        \"...\": \"...\"\n    },\n    \"data\": {\n        \"type\": \"versions\",\n        \"id\": \"urn:adsk.wipprod:fs.file:vf.kYtkYWBsSKSCMXYzEYe80w?version=1\",\n        \"attributes\": {\n            \"...\": \"...\"\n        },\n        \"links\": {\n            \"...\": \"...\"\n        },\n        \"relationships\": {\n            \"item\": {\n                \"...\": \"...\"\n            },\n            \"links\": {\n                \"...\": \"...\"\n            },\n            \"refs\": {\n                \"...\": \"...\"\n            },\n            \"downloadFormats\": {\n                \"...\": \"...\"\n            },\n            \"derivatives\": {\n                \"...\": \"...\"\n            },\n            \"thumbnails\": {\n                \"...\": \"...\"\n            },\n            \"storage\": {\n                \"data\": {\n                    \"type\": \"objects\",\n                    \"id\": \"urn:adsk.objects:os.object:wip.dm.prod/af47b92e-7096-4c1f-b090-f77b1d83485f.docx\"\n                },\n                \"meta\": {\n                    \"link\": {\n                        \"href\": \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/af47b92e-7096-4c1f-b090-f77b1d83485f.docx?scopes=b360project.6b975448-835b-4625-ad1a-0e9961749de3,global,O2tenant.3751451\"\n                    }\n                }\n            }\n        }\n    }\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "...": "..."
+        },
+        "data": {
+          "type": "versions",
+          "id": "urn:adsk.wipprod:fs.file:vf.kYtkYWBsSKSCMXYzEYe80w?version=1",
+          "attributes": {
+            "...": "..."
+          },
+          "links": {
+            "...": "..."
+          },
+          "relationships": {
+            "item": {
+              "...": "..."
+            },
+            "links": {
+              "...": "..."
+            },
+            "refs": {
+              "...": "..."
+            },
+            "downloadFormats": {
+              "...": "..."
+            },
+            "derivatives": {
+              "...": "..."
+            },
+            "thumbnails": {
+              "...": "..."
+            },
+            "storage": {
+              "data": {
+                "type": "objects",
+                "id": "urn:adsk.objects:os.object:wip.dm.prod/af47b92e-7096-4c1f-b090-f77b1d83485f.docx"
+              },
+              "meta": {
+                "link": {
+                  "href": "https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/af47b92e-7096-4c1f-b090-f77b1d83485f.docx?scopes=b360project.6b975448-835b-4625-ad1a-0e9961749de3,global,O2tenant.3751451"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "curl -X GET \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/af47b92e-7096-4c1f-b090-f77b1d83485f.docx/signeds3download\" \\\n-H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\""
+    },
+    {
+      "raw": "{\n  \"status\": \"complete\",\n  \"url\": \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%af47b92e-7096-4c1f-b090-f77b1d83485f.docx%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\",\n  \"params\": {\n    \"content-type\": \"application/octet-stream\",\n    \"content-disposition\": \"attachment; filename=\\\"af47b92e-7096-4c1f-b090-f77b1d83485f.docx\\\"\"\n  },\n  \"size\": 472424,\n  \"sha1\": \"ffbf5f0137a7d9dc53af930bc1b527320d50fb53\"\n}",
+      "parsed": {
+        "status": "complete",
+        "url": "https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%af47b92e-7096-4c1f-b090-f77b1d83485f.docx%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK",
+        "params": {
+          "content-type": "application/octet-stream",
+          "content-disposition": "attachment; filename=\"af47b92e-7096-4c1f-b090-f77b1d83485f.docx\""
+        },
+        "size": 472424,
+        "sha1": "ffbf5f0137a7d9dc53af930bc1b527320d50fb53"
+      }
+    },
+    {
+      "raw": "curl -X GET \"https://cdn.us.oss.api.autodesk.com/com.autodesk.oss-persistent/us-east-1/3f/bf/5f/0137a7d9dc53af930bc1b527320d50fb5f/wip.dm.prod?response-content-type=application%2Foctet-stream&response-content-disposition=attachment%3B+filename%3D%af47b92e-7096-4c1f-b090-f77b1d83485f.docx%22&Expires=1643864703&Signature=00PZYS6gL~Nc6aRG2HAhOCKYl0xtqsuujMJ~VKSXm1vBa-OxS4lPQBSlTx5bswpLBe1W6Rz94eIZW2sPN-v6Mzz~JyXNZ-V9Z7zlBoE1VoQhspLioC225hxq6ZmDSU5QnZXuNDV4ih~p1n3xacYvUvQWX-ONAGVUgQvZ253Svw~qx-pO4j-Yh4kVRmzDZqQut1xOI5ZGH6JFGhXLSzkgbYcfYx6fvCxnvYUJrgAcqncIwGVewI3uC0I84Fzrj8nXE8ojuojqJP0pNlxkfBe~2LfjjzqKDKaNvfC2Grt12j9QgC~cN7nQCRcVUhExpoV1VVB5x3AkVTJ-q5NoedvsfO__&Key-Pair-Id=95HRZD7MMO1UK\" \\\n--output \"55254a50-44d9-11e9-99d7-79aa05d3109e.docx\""
+    }
+  ]
+}

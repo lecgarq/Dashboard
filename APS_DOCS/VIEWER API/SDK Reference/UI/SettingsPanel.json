@@ -1,0 +1,639 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/UI/SettingsPanel",
+    "scrapedAt": "2026-05-08T18:45:36.425Z",
+    "category": "SDK Reference/UI",
+    "apiName": "VIEWER API"
+  },
+  "title": "SettingsPanel",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "parentContainer*HTMLElement",
+          "col_1": "The container for this panel."
+        },
+        {
+          "col_0": "id*string",
+          "col_1": "The id to assign this panel."
+        },
+        {
+          "col_0": "title*string",
+          "col_1": "The title of this panel."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "An optional dictionary of options."
+        },
+        {
+          "col_0": "widthnumber",
+          "col_1": "Override panel’s minimum width"
+        },
+        {
+          "col_0": "heightAdjustmentnumber",
+          "col_1": "Override panel’s extra content height, to account for non-scrolling elements."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "show*boolean",
+          "col_1": "The desired visibility state."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "id for the tab (DOM element will have an extended ID to ensure uniqueness)."
+        },
+        {
+          "col_0": "tabTitle*string",
+          "col_1": ""
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "optional parameter that allows for additional options for the tab: * tabClassName - class name for the Dom elements* minWidth - min width for the tab* index - index if the tab should be inserted instead of added at the end."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tab was added to the panel, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tab was successfully removed, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab id."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tab with given id exists, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to select."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tab was selected, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to check."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the tab is selected, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Id of the tab that will contain the button."
+        },
+        {
+          "col_0": "name*string",
+          "col_1": "User facing text."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "the label control"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Id of the tab that will contain the button."
+        },
+        {
+          "col_0": "label*string",
+          "col_1": "User facing text."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of a new control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new checkbox."
+        },
+        {
+          "col_0": "caption*string",
+          "col_1": "The text associated with the checkbox."
+        },
+        {
+          "col_0": "initialState*boolean",
+          "col_1": "Initial value for the checkbox (checked or not)."
+        },
+        {
+          "col_0": "onchange*function",
+          "col_1": "Callback that is called when the checkbox is changed."
+        },
+        {
+          "col_0": "description*",
+          "col_1": ""
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional options: * insertAtIndex - index at which to insert a new checkbox* i18nOptions - additional translation options forwarded to i18n.t"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of a new control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new row."
+        },
+        {
+          "col_0": "caption*string",
+          "col_1": "The text associated with the row."
+        },
+        {
+          "col_0": "description*string",
+          "col_1": "Description"
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional options: * insertAtIndex - index at which to insert a new row"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of a new control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new slider."
+        },
+        {
+          "col_0": "caption*string",
+          "col_1": "The text associated with the slider"
+        },
+        {
+          "col_0": "min*number",
+          "col_1": "Min value of the slider."
+        },
+        {
+          "col_0": "max*number",
+          "col_1": "Max value of the slider."
+        },
+        {
+          "col_0": "initialValue*number",
+          "col_1": "Initial value for the slider."
+        },
+        {
+          "col_0": "onchange*function",
+          "col_1": "Callback that is called when the slider value is changed."
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional options: * insertAtIndex - index at which to insert a new slider"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of a new control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new slider."
+        },
+        {
+          "col_0": "caption*string",
+          "col_1": "The text associated with the slider"
+        },
+        {
+          "col_0": "description*string",
+          "col_1": "The description for the slider"
+        },
+        {
+          "col_0": "min*number",
+          "col_1": "Min value of the slider."
+        },
+        {
+          "col_0": "max*number",
+          "col_1": "Max value of the slider."
+        },
+        {
+          "col_0": "initialValue*number",
+          "col_1": "Initial value for the slider."
+        },
+        {
+          "col_0": "onchange*function",
+          "col_1": "Callback that is called when the slider value is changed."
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional options: * insertAtIndex - index at which to insert a new slider"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": "an array of control ids"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new slider."
+        },
+        {
+          "col_0": "caption*string",
+          "col_1": "The text associated with the slider."
+        },
+        {
+          "col_0": "items*Array",
+          "col_1": "List of items for the menu."
+        },
+        {
+          "col_0": "initialItemIndex*number",
+          "col_1": "Initial choice."
+        },
+        {
+          "col_0": "onchange*function",
+          "col_1": "Callback that is called when the menu selection is changed."
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional options: * insertAtIndex - index at which to insert a new drop down menu"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of a new control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tabId*string",
+          "col_1": "Tab to which to add a new."
+        },
+        {
+          "col_0": "control*object, HTMLElement",
+          "col_1": "Control to add to the given tab."
+        },
+        {
+          "col_0": "options*object, undefined",
+          "col_1": "Additional parameters: * insertAtIndex - index at which to insert a new control* caption - caption for the control"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "ID of the added control."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "buttonId*string, Autodesk.Viewing.UI.Control",
+          "col_1": "button, or button id, to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the button was removed, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "checkboxId*string, Autodesk.Viewing.UI.Control",
+          "col_1": "Checkbox to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the checkbox was removed, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sliderId*string, Autodesk.Viewing.UI.Control",
+          "col_1": "Slider control to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the slider control was removed, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dropdownMenuId*string, Autodesk.Viewing.UI.Control",
+          "col_1": "Dropdown to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the dropdown was removed, false if the dropdown was not removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlId*string, Autodesk.Viewing.UI.Control",
+          "col_1": "The control ID or control instance to remove."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the control was removed, false if the control was not removed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "controlId*string",
+          "col_1": "Checkbox id to return."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "Control object if found, null otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "{height: number, width: number}."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "container*HTMLElement",
+          "col_1": "parent container of settings panel"
+        }
+      ]
+    }
+  ]
+}

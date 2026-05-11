@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/FeatureFlags",
+    "scrapedAt": "2026-05-08T18:44:04.518Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "FeatureFlags",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Feature flag identifier"
+        },
+        {
+          "col_0": "enable*boolean",
+          "col_1": "New value of the feature flag"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Feature flag identifier"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean, undefined",
+          "description": "Feature flag enabled state or undefined if the flag does not exist."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "FeatureFlags.set('ENABLE_FEATURE', true);"
+    }
+  ]
+}

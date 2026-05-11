@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/takeoff-projects-project_id-content-views-GET",
+    "scrapedAt": "2026-05-09T00:08:06.530Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/content-views",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/content-views?limit=10",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/takeoff/v1/projects/{projectId}/content-views"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the service is located.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nThis corresponds to project ID in the Data Management API, and can be specified in the form of “UUID” or b.”UUID”.\nTo learn how to find the project ID, see the Retrieve Forma hub and project ID tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The content view object number from which the pagination starts. This is zero-based."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of content view objects per page.\nAcceptable values: 1-200.\nDefault value: 200."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the content views."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The ‘Retry-After’ header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "The pagination object."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of objects per page."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL path that returns the next page of data."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The object number from which the pagination starts. This is zero-based."
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "A list of content views for the project."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The content view ID."
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The content view type.\nPossible values: SHEET (2D Sheet), FILE_MODEL (3D Model)."
+        },
+        {
+          "col_0": "viewone of",
+          "col_1": "The content view."
+        },
+        {
+          "col_0": "Model Viewobject",
+          "col_1": "The 3D model view."
+        },
+        {
+          "col_0": "lineageUrnstring",
+          "col_1": "The URN of the 3D model view.\nTo learn how to use this attribute to retrieve details of the 3D model, see the Takeoff Extract Inventory tutorial."
+        },
+        {
+          "col_0": "viewNamestring",
+          "col_1": "The name of the 3D model view."
+        },
+        {
+          "col_0": "Sheet Viewobject",
+          "col_1": "The 2D sheet view."
+        },
+        {
+          "col_0": "sheetNamestring",
+          "col_1": "The sheet view name."
+        },
+        {
+          "col_0": "calibrationobject",
+          "col_1": "The sheet view calibration details."
+        },
+        {
+          "col_0": "scaleFactornumber",
+          "col_1": "The scale used in the sheet view calibration."
+        },
+        {
+          "col_0": "unitsenum:string",
+          "col_1": "The units used in the sheet view calibration.\nPossible values: FT_AND_DECIMAL_IN, FT_AND_FRACTIONAL_IN, M, CM, MM."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/content-views?limit=10' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 100,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/takeoff/v1/resources?limit=100&offset=200\",\n    \"offset\": 100\n  },\n  \"results\": [\n    [\n      {\n        \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n        \"type\": \"FILE_MODEL\",\n        \"view\": {\n          \"lineageUrn\": \"urn:adsk.wipqa:dm.lineage:TCBw0V-GQX2aAWWSSrhQmQ\",\n          \"viewName\": \"3D\"\n        }\n      },\n      {\n        \"id\": \"95451383-ee38-44da-b06c-2d5266e726d2\",\n        \"type\": \"SHEET\",\n        \"view\": {\n          \"sheetName\": \"A09.05\",\n          \"calibration\": {\n            \"scaleFactor\": 0.987,\n            \"units\": \"FT_AND_FRACTIONAL_IN\"\n          }\n        }\n      }\n    ]\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 100,
+          "nextUrl": "https://developer.api.autodesk.com/construction/takeoff/v1/resources?limit=100&offset=200",
+          "offset": 100
+        },
+        "results": [
+          [
+            {
+              "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+              "type": "FILE_MODEL",
+              "view": {
+                "lineageUrn": "urn:adsk.wipqa:dm.lineage:TCBw0V-GQX2aAWWSSrhQmQ",
+                "viewName": "3D"
+              }
+            },
+            {
+              "id": "95451383-ee38-44da-b06c-2d5266e726d2",
+              "type": "SHEET",
+              "view": {
+                "sheetName": "A09.05",
+                "calibration": {
+                  "scaleFactor": 0.987,
+                  "units": "FT_AND_FRACTIONAL_IN"
+                }
+              }
+            }
+          ]
+        ]
+      }
+    }
+  ]
+}

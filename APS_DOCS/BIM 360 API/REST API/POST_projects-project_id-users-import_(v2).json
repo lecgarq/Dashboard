@@ -1,0 +1,324 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/projects-project_id-users-import-POST",
+    "scrapedAt": "2026-05-08T17:52:20.642Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/:project_id/users/import",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v2/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/users/import",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI (US)",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v2/accounts/:account_id/projects/:project_id/users/import"
+        },
+        {
+          "col_0": "Method and URI (Legacy)",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v2/regions/eu/accounts/:account_id/projects/:project_id/users/import"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:write"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow.\n\nNote that it will not accept a two-legged token, unless you add the x-user-id header."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified.\n\nThe user’s BIM 360 ID. A user is assigned a BIM 360 ID (id) for all BIM 360 accounts and projects. To verify the ID, call GET users.\n\nNote that the user must either be an account admin of the account or a project admin of the project."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json."
+        },
+        {
+          "col_0": "Regionstring",
+          "col_1": "Specifies the region where the service is located.                                                                                                         Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring",
+          "col_1": "The account ID of the project. This corresponds to hub ID in the Data Management API. To convert a hub ID into an account ID you need to remove the “b.\" prefix. For example, a hub ID of b.c8b0c73d-3ae9 translates to an account ID of c8b0c73d-3ae9."
+        },
+        {
+          "col_0": "project_idstring",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the BIM 360 API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "emailstring",
+          "col_1": "The user’s email address.\n\nNote that you need to specify either an email,\nor a user_id. However, you cannot specify both."
+        },
+        {
+          "col_0": "user_idstring",
+          "col_1": "The user’s BIM 360 ID. A user is assigned a BIM 360\nID (id) for all BIM 360 accounts and projects.\n\nTo verify the user_id, see GET users.\n\nNote that you need to specify either a user_id,\nor an email. However, you cannot specify both."
+        },
+        {
+          "col_0": "servicesobject",
+          "col_1": "The services object (project administration)."
+        },
+        {
+          "col_0": "project_administrationobject",
+          "col_1": "The project administration object."
+        },
+        {
+          "col_0": "access_levelenum:string",
+          "col_1": "The BIM 360 access level to assign to the user for\nthe Project Administration service.\n\nNote that a user must be assigned to at least one service (Document Management or Project Administration).\n\nPossible value:\n\nadmin - can manage and configure the project. For example, adding users and activating services.\n\nNote that if you want to also grant access to BIM 360 Document Management, you need to add the user with admin access\n(services.document_management.access_level)."
+        },
+        {
+          "col_0": "servicesobject",
+          "col_1": "The services object (document management)."
+        },
+        {
+          "col_0": "document_managementobject",
+          "col_1": "The document management object."
+        },
+        {
+          "col_0": "access_levelenum:string",
+          "col_1": "The BIM 360 access level to assign to the user for BIM 360 Document Management.\n\nNote that a user must be assigned to at least one service (Document Management or Project Administration).\n\nPossible values:\n\nadmin - can manage and configure the project’s documents.\n\nNote that if you assign admin access to the user, you also need to assign admin access for the Project Administration service\n(services.project_adminstration.access_level).\n\nuser - can access the project’s documents.\n\nNote that if you assign admin access for the Project Administration service, you cannot assign user access for the Document Management service."
+        },
+        {
+          "col_0": "company_idstring",
+          "col_1": "The ID of the company to assign to the user.\n\nIf the user was previously added as an account admin and assigned a default company, the user will automatically inherit the company if it is not specified.\n\nTo delete the company, use an empty value.\n\nFor a list of companies for the account, see\nGET companies."
+        },
+        {
+          "col_0": "industry_rolesarray:string",
+          "col_1": "The IDs of industry roles to assign to the user for the project.\n\nNote that if you do not want to assign any industry roles to the user, you need to add an empty array.\n\nFor a list of industry roles and industry role IDs, see\nGET industry_roles."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "201Created",
+          "col_1": "A new resource has been successfully created."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "successint",
+          "col_1": "The number of successfully created users."
+        },
+        {
+          "col_0": "failureint",
+          "col_1": "The number of users that were not created\nsuccessfully."
+        },
+        {
+          "col_0": "success_itemsarray:object",
+          "col_1": "An array of data about the successfully created users."
+        },
+        {
+          "col_0": "user_idstring",
+          "col_1": "The user’s BIM 360 ID."
+        },
+        {
+          "col_0": "account_idstring",
+          "col_1": "The account ID."
+        },
+        {
+          "col_0": "project_idstring",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "servicesobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "document_managementobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "access_levelenum:string",
+          "col_1": ""
+        },
+        {
+          "col_0": "company_idstring",
+          "col_1": "The ID of the company assigned to the user.\nFor a list of companies for the account, see\nGET companies."
+        },
+        {
+          "col_0": "industry_rolesarray:string",
+          "col_1": "The IDs of the industry roles assigned to the user for the project. For a list of industry roles for the project, see\nGET industry_roles."
+        },
+        {
+          "col_0": "email",
+          "col_1": ""
+        },
+        {
+          "col_0": "failure_itemsarray:object",
+          "col_1": "An array of data about the users that were not created successfully."
+        },
+        {
+          "col_0": "account_idstring",
+          "col_1": "The account ID."
+        },
+        {
+          "col_0": "project_idstring",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "user_idstring",
+          "col_1": "The user’s BIM 360 ID."
+        },
+        {
+          "col_0": "servicesobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "project_administrationobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "access_levelenum:string",
+          "col_1": "The access level assigned to the user for the Project Administration service. Possible value: admin."
+        },
+        {
+          "col_0": "document_managementobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "access_levelenum:string",
+          "col_1": "The access level assigned to the user for the Document Management service. Possible values: admin, user."
+        },
+        {
+          "col_0": "company_idstring",
+          "col_1": "The ID of the company assigned to the user.\nFor a list of companies for the account, see\nGET companies."
+        },
+        {
+          "col_0": "industry_rolesarray:string",
+          "col_1": "The IDs of the industry roles assigned to the user for the project. For a list of industry roles for the project, see\nGET industry_roles."
+        },
+        {
+          "col_0": "email",
+          "col_1": ""
+        },
+        {
+          "col_0": "errorsarray:object",
+          "col_1": "A list of errors for unsuccessfully created users."
+        },
+        {
+          "col_0": "message",
+          "col_1": ""
+        },
+        {
+          "col_0": "code",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v2/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/users/import' \\\n  -X 'POST' \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer hW0DvSvGgszPis1Yhot4c8kWW3NG' \\\n  -d '[\n    {\n      \"email\": \"john.doe@autodesk.com\",\n      \"services\": {\n        \"document_management\": {\n          \"access_level\": \"user\"\n        }\n      },\n      \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n      \"industry_roles\": [\n        \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n      ]\n    },\n    {\n      \"user_id\": \"3a2bs9ba-ba44-12ed-132d-fab8822bac22\",\n      \"services\": {\n        \"project_administration\": {\n          \"access_level\": \"admin\"\n        },\n        \"document_management\": {\n          \"access_level\": \"admin\"\n        }\n      },\n      \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n      \"industry_roles\": [\n        \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n      ]\n    }\n   ]'"
+    },
+    {
+      "raw": "{\n  \"success\": 1,\n  \"failure\": 1,\n  \"success_items\": [\n    {\n       \"user_id\": \"0b1fb8cc-cb14-44bc-991b-eda0862acd14\",\n       \"account_id\": \"68a12a11-f1ce-4abf-af85-601e8e97b551\",\n       \"project_id\": \"93a26902-e709-43e8-b865-4f216ecfa3ff\",\n       \"services\": {\n        \"document_management\": {\n          \"access_level\": \"user\"\n        }\n      },\n      \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n      \"industry_roles\": [\n        \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n      ],\n      \"email\": \"john.doe@autodesk.com\"\n    }\n  ],\n  \"failure_items\": [\n    {\n      \"user_id\": \"3a2bs9ba-ba44-12ed-132d-fab8822bac22\",\n      \"account_id\": \"68a12a11-f1ce-4abf-af85-601e8e97b551\",\n      \"project_id\": \"93a26902-e709-43e8-b865-4f216ecfa3ff\",\n      \"services\": {\n        \"project_administration\": {\n          \"access_level\": \"admin\"\n        },\n        \"document_management\": {\n          \"access_level\": \"admin\"\n        }\n      },\n      \"company_id\": \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\",\n      \"industry_roles\": [\n        \"dc9e8af9-2978-4f6a-90b6-b294ae11c701\"\n      ],\n      \"email\": \"jill.doe@autodesk.com\",\n      \"errors\": [\n        {\n          \"message\": \"string\",\n          \"code\": \"error-code-1\"\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "success": 1,
+        "failure": 1,
+        "success_items": [
+          {
+            "user_id": "0b1fb8cc-cb14-44bc-991b-eda0862acd14",
+            "account_id": "68a12a11-f1ce-4abf-af85-601e8e97b551",
+            "project_id": "93a26902-e709-43e8-b865-4f216ecfa3ff",
+            "services": {
+              "document_management": {
+                "access_level": "user"
+              }
+            },
+            "company_id": "dc9e8af9-2978-4f6a-90b6-b294ae11c701",
+            "industry_roles": [
+              "dc9e8af9-2978-4f6a-90b6-b294ae11c701"
+            ],
+            "email": "john.doe@autodesk.com"
+          }
+        ],
+        "failure_items": [
+          {
+            "user_id": "3a2bs9ba-ba44-12ed-132d-fab8822bac22",
+            "account_id": "68a12a11-f1ce-4abf-af85-601e8e97b551",
+            "project_id": "93a26902-e709-43e8-b865-4f216ecfa3ff",
+            "services": {
+              "project_administration": {
+                "access_level": "admin"
+              },
+              "document_management": {
+                "access_level": "admin"
+              }
+            },
+            "company_id": "dc9e8af9-2978-4f6a-90b6-b294ae11c701",
+            "industry_roles": [
+              "dc9e8af9-2978-4f6a-90b6-b294ae11c701"
+            ],
+            "email": "jill.doe@autodesk.com",
+            "errors": [
+              {
+                "message": "string",
+                "code": "error-code-1"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

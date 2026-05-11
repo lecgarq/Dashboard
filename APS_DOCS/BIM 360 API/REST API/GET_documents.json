@@ -1,0 +1,215 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-documents-GET",
+    "scrapedAt": "2026-05-08T17:56:59.074Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/documents",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/documents?associationId=18d97ae0-9484-11e8-a7ec-7ddae203e404&associationType=Budget&filter[latest]=true&filter[signed]=true",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/cost/v1/containers/:containerId/documents"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "associationId*array: string",
+          "col_1": "The object ID of the item is associated to. For example, ID of the budget, contract or cost item. Use comma separated string for multiple IDs."
+        },
+        {
+          "col_0": "associationType*enum:string",
+          "col_1": "The type of the item is associated to. Possible values Budget, Contract, CostItem, FormInstance, Payment, BudgetPayment, Expense, OCO, SCO."
+        },
+        {
+          "col_0": "filter[latest]boolean",
+          "col_1": "Filter to get only the latest version of a document if it has been generated multiple times. For example, filter[latest]=true. This is deprecated as we’ll always response the latest document."
+        },
+        {
+          "col_0": "filter[signed]boolean",
+          "col_1": "Filter to get only documents that have been signed. For example, filter[signed]=true. This is deprecated."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Unique auto-generated identifier of the generated document."
+        },
+        {
+          "col_0": "recipientIdstring",
+          "col_1": "Autodesk ID of the recipient, who is a project user inside BIM 360 Admin."
+        },
+        {
+          "col_0": "signedBystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The version URN of the document with docx format in the Autodesk Forma Data Management service."
+        },
+        {
+          "col_0": "pdfUrnstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Current status of the document. Possible values: Pending, Started, Completed, Failed, PendingSign, Signed."
+        },
+        {
+          "col_0": "jobIdnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "errorInfoobject",
+          "col_1": "Error information if this document failed to be generated from the template."
+        },
+        {
+          "col_0": "codestring",
+          "col_1": "Error code for this document."
+        },
+        {
+          "col_0": "messagestring",
+          "col_1": "Error message to describe this error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "Provides detailed information about the error."
+        },
+        {
+          "col_0": "associationIdstring: UUID",
+          "col_1": "The object ID of the item associated with the actions, such as a budget, contract, or cost item."
+        },
+        {
+          "col_0": "associationTypeenum:string",
+          "col_1": "The type of item to which it is associated.\nPossible values: Budget, Contract, ScheduleOfValue, FormInstance, CostItem, Payment, MainContract, BudgetPayment, Expense, CostPayment, ExpenseItem, PaymentItem, OCO, RCO, SCO, PCO, RFQ, DistributionItem, BudgetTransfer, Fee"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/documents?associationId=18d97ae0-9484-11e8-a7ec-7ddae203e404&associationType=Budget&filter[latest]=true&filter[signed]=true' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n    \"recipientId\": \"GF8XKPKWM38E\",\n    \"signedBy\": \"CED9LVTLHNXV\",\n    \"urn\": \"urn:adsk.wipprod:fs.file:vf.PMbRnoPZR2mKDhau2uw4SQ?version=1\",\n    \"pdfUrn\": \"urn:adsk.wipprod:fs.file:vf.PMbRnoPZR2mKDhau2uw4SQ?version=1\",\n    \"status\": \"Completed\",\n    \"jobId\": 1,\n    \"errorInfo\": {\n      \"code\": \"missingTemplate\",\n      \"message\": \"Couldn't generate the document because the template is invalid.\",\n      \"detail\": \"Got timeout for POST upload URL.\"\n    },\n    \"associationId\": \"EDC42DF6-277A-436A-A50D-EF57F35E1248\",\n    \"associationType\": \"Budget\",\n    \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n    \"updatedAt\": \"2019-09-05T01:00:12.989Z\"\n  }\n]",
+      "parsed": {
+        "id": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "recipientId": "GF8XKPKWM38E",
+        "signedBy": "CED9LVTLHNXV",
+        "urn": "urn:adsk.wipprod:fs.file:vf.PMbRnoPZR2mKDhau2uw4SQ?version=1",
+        "pdfUrn": "urn:adsk.wipprod:fs.file:vf.PMbRnoPZR2mKDhau2uw4SQ?version=1",
+        "status": "Completed",
+        "jobId": 1,
+        "errorInfo": {
+          "code": "missingTemplate",
+          "message": "Couldn't generate the document because the template is invalid.",
+          "detail": "Got timeout for POST upload URL."
+        },
+        "associationId": "EDC42DF6-277A-436A-A50D-EF57F35E1248",
+        "associationType": "Budget",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z"
+      }
+    }
+  ]
+}

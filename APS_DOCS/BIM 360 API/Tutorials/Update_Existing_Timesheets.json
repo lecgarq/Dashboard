@@ -1,0 +1,62 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/cost-update-existing-time-sheets",
+    "scrapedAt": "2026-05-08T17:48:51.465Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Update Existing Timesheets",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets?filter[budgetCode]=84720010121001FEE&filter[endDate]=2022-05-06",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets?filter[budgetCode]=84720010121001FEE&filter[endDate]=2022-05-06' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n    \"pagination\": {\n        \"limit\": 20,\n        \"offset\": 0,\n        \"totalResults\": 100,\n        \"nextUrl\": \"...\"\n    },\n    \"results\": [\n        {\n            \"id\": \"6f7f7780-3867-4aa3-9f37-8ae53532a590\",\n            \"containerId\": \"e94b9bc8-1775-4d76-9b1d-c613e120ccff\",\n            \"trackingItemInstanceId\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n            \"startDate\": \"2020-01-06\",\n            \"endDate\": \"2020-05-06\",\n            \"inputQuantity\": \"100\",\n            \"outputQuantity\": \"50\",\n            \"creatorId\": \"GF8XKPKWM38E\",\n            \"changedBy\": \"GF8XKPKWM38E\",\n            \"createdAt\": \"2020-01-06T01:24:22.678Z\",\n            \"updatedAt\": \"2020-05-06T01:00:12.989Z\"\n        }\n    ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 20,
+          "offset": 0,
+          "totalResults": 100,
+          "nextUrl": "..."
+        },
+        "results": [
+          {
+            "id": "6f7f7780-3867-4aa3-9f37-8ae53532a590",
+            "containerId": "e94b9bc8-1775-4d76-9b1d-c613e120ccff",
+            "trackingItemInstanceId": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+            "startDate": "2020-01-06",
+            "endDate": "2020-05-06",
+            "inputQuantity": "100",
+            "outputQuantity": "50",
+            "creatorId": "GF8XKPKWM38E",
+            "changedBy": "GF8XKPKWM38E",
+            "createdAt": "2020-01-06T01:24:22.678Z",
+            "updatedAt": "2020-05-06T01:00:12.989Z"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X PATCH 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/6f7f7780-3867-4aa3-9f37-8ae53532a590'\n\\ -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'\n\\ -H 'Content-Type: application/json'\n\\ -d '{\n        \"inputQuantity\": 100,\n        \"outputQuantity\": 2\n      }'",
+      "parsed": {
+        "inputQuantity": 100,
+        "outputQuantity": 2
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"6f7f7780-3867-4aa3-9f37-8ae53532a590\",\n    \"startDate\": \"2022-05-06\",\n    \"endDate\": \"2022-05-06\",\n    \"inputQuantity\": 100,\n    \"inputUnit\": \"hr\",\n    \"outputQuantity\": 2,\n    \"outputUnit\": \"ea\",\n    \"trackingItemInstanceId\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\"\n}",
+      "parsed": {
+        "id": "6f7f7780-3867-4aa3-9f37-8ae53532a590",
+        "startDate": "2022-05-06",
+        "endDate": "2022-05-06",
+        "inputQuantity": 100,
+        "inputUnit": "hr",
+        "outputQuantity": 2,
+        "outputUnit": "ea",
+        "trackingItemInstanceId": "1df59db0-9484-11e8-a7ec-7ddae203e404"
+      }
+    }
+  ]
+}

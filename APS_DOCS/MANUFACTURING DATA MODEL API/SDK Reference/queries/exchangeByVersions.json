@@ -1,0 +1,105 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/exchangebyversions",
+    "scrapedAt": "2026-05-08T18:15:30.132Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "exchangeByVersions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "exchangeId*ID! non-null",
+          "col_1": "The ID of the exchange."
+        },
+        {
+          "col_0": "filter*ExchangeFilterInput! non-null",
+          "col_1": "Specifies how to filter the elements of an exchange. You can filter by versionId."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Exchange! non-null",
+          "Description": "A specific collection of Elements."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetExchangeByVersions($exchangeId: ID!, $filter: ExchangeFilterInput!) {\n  exchangeByVersions(exchangeId: $exchangeId, filter: $filter) {\n    # ExchangeByVersions Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"exchangeId\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\",\n  \"filter\" : \"<SOME-EXCHANGEFILTER-INPUT\n}"
+    },
+    {
+      "raw": "query GetElementsInExchangeByVersions ($exchangeId: ID!, $exchangeFilterInput: ExchangeFilterInput!, $elementPagination: PaginationInput){\n  exchangeByVersions(exchangeId: $exchangeId, filter: $exchangeFilterInput) {\n      id\n      name\n      elements (pagination: $elementPagination){\n          pagination{\n              pageSize\n              cursor\n          }\n          results{\n              id\n              name\n              properties(filter: {names: [\"Operation\"]}){\n                  results{\n                      name\n                      value\n                  }\n              }\n          }\n      }\n    }\n  }"
+    },
+    {
+      "raw": "{\n   \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA\",\n   \"exchangeFilterInput\" : {\n       \"query\": \"version.fromId==latest-1 and version.toId==latest\"\n   },\n   \"elementPagination\": {\n       \"limit\": 3,\n       \"cursor\": \"\"\n   }\n}",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjkwMGM5ODY1LWI2ZmMtMzI0Ny04NWUxLTgxMmZhOGY1ZTJkNA",
+        "exchangeFilterInput": {
+          "query": "version.fromId==latest-1 and version.toId==latest"
+        },
+        "elementPagination": {
+          "limit": 3,
+          "cursor": ""
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"exchangeByVersions\": {\n          \"id\": \"ZXhjfmNvLmNqbTNjUVBkUkJHS2Z0NklXcVREZFF+NGEwYTI0ZTktYzhjMC0zYjA4LWE1YzgtZjMzMDQxOThjOTYy\",\n          \"name\": \"FourWalls_3D-0306-ft\",\n          \"elements\": {\n              \"pagination\": {\n                  \"pageSize\": 2,\n                  \"cursor\": \"67cff34c-5f48-4741-a906-e25e89ab8570\"\n              },\n              \"results\": [\n                  {\n                      \"id\": \"18F3A3ECD10B38BFED6C384009E623907BF63BD0\",\n                      \"name\": \"358688\",\n                      \"properties\": {\n                          \"results\": [\n                              {\n                                  \"name\": \"Operation\",\n                                  \"value\": \"REMOVE\"\n                              }\n                          ]\n                      }\n                  },\n                  {\n                      \"id\": \"0D25694A92A20714FF3992D9BCDD86474EBB3D0E\",\n                      \"name\": \"359330\",\n                      \"properties\": {\n                          \"results\": [\n                              {\n                                  \"name\": \"Operation\",\n                                  \"value\": \"REMOVE\"\n                              }\n                          ]\n                      }\n                  }\n              ]\n          }\n      }\n    }\n }",
+      "parsed": {
+        "data": {
+          "exchangeByVersions": {
+            "id": "ZXhjfmNvLmNqbTNjUVBkUkJHS2Z0NklXcVREZFF+NGEwYTI0ZTktYzhjMC0zYjA4LWE1YzgtZjMzMDQxOThjOTYy",
+            "name": "FourWalls_3D-0306-ft",
+            "elements": {
+              "pagination": {
+                "pageSize": 2,
+                "cursor": "67cff34c-5f48-4741-a906-e25e89ab8570"
+              },
+              "results": [
+                {
+                  "id": "18F3A3ECD10B38BFED6C384009E623907BF63BD0",
+                  "name": "358688",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "Operation",
+                        "value": "REMOVE"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "id": "0D25694A92A20714FF3992D9BCDD86474EBB3D0E",
+                  "name": "359330",
+                  "properties": {
+                    "results": [
+                      {
+                        "name": "Operation",
+                        "value": "REMOVE"
+                      }
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

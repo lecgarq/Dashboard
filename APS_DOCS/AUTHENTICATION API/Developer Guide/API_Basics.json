@@ -1,0 +1,60 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/developers_guide/basics",
+    "scrapedAt": "2026-05-08T17:34:32.291Z",
+    "category": "Developer Guide",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "API Basics",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Term",
+        "Meaning"
+      ],
+      "rows": [
+        {
+          "Term": "app",
+          "Meaning": "The “app” is the code that you’re writing that calls APS APIs. It can be a web application, a headless server process, a mobile app, or even embedded firmware. Within the APS developer portal, your app is registered in the My Apps section.\n\nSometimes “app” refers to your code; other times, it refers to the entity registered in the Dev Portal. It will be clear from context which is meant.\n\n\nWhen you register your app in the APS developer portal, you select the APIs that you want to bind it to. This ensures that even if you lose control of your authentication credentials, calls cannot be made on your behalf to APIs the app was not designed for.\n\n\n\nA registered app has assigned to it credentials called a “client ID” and “client secret”, which are analogous to a username and password, except that you do not select them. These are used to obtain access tokens."
+        },
+        {
+          "Term": "client ID",
+          "Meaning": "The “client ID” is essentially your app’s username and can be found in the My Apps section. It is an alphanumeric string (e.g., 5zw90va0UuwMKTnPS5sLsdgZjDkVYXN7), and it is passed as the value for the client_id query parameter and JSON attribute.\n\nOn other platforms, this is sometimes called “consumer key” or “API key”."
+        },
+        {
+          "Term": "client secret",
+          "Meaning": "The “client secret” is essentially your app’s password and can be found next to the client ID in the My Apps section. It is an alphanumeric string (e.g., 7I6uN1rjneirxiMW), and it is passed as the value for the client_secret query parameter.\n\nOn other platforms, this is sometimes called “consumer secret” or “API secret”."
+        },
+        {
+          "Term": "two-legged authentication",
+          "Meaning": "This is often considered the default type of authentication, and it is the simplest. When your app needs to call the API without having to access resources that require an end user’s permission (for example, translating a design file from one format to another), the communication is directly between your app and APS. The end user, if there is one, does not need to be aware of the authentication or provide authorization for the app to access any resources.\n\nThis kind of flow is called “two-legged” because your app and APS are the two “legs”.\n\n\n\nSee the section below about common authentication flows."
+        },
+        {
+          "Term": "three-legged authentication",
+          "Meaning": "When an app needs to access resources belonging to an end user, that user must explicitly provide authorization. The typical mechanism, in the case of a web app, is for the app to redirect the user to an Autodesk login page with information about which of the user’s resources it wishes to access. The user then provides explicit consent, letting APS know that the referring app is to be granted the requested access. The user is then redirected back to the app, which can then access the required resources.\n\nThis kind of flow is called “three-legged” because your app, APS, and the end user make up the three “legs” of the flow. Three-legged authentication can be done by using authorization code. When the authorization code grant is used, an Authorization Code is issued to the user to exchange it to obtain Access Token and Refresh Token.\n\n\n\nSee the section below about common authentication flows."
+        },
+        {
+          "Term": "callback URL",
+          "Meaning": "In certain contexts, your app needs to hand over part of the authentication flow to APS. For example, in three-legged authentication for a web app, an end user of your app is redirected to an Autodesk login flow, so that the user can tell the platform that your app is authorized to act on the user’s behalf. The callback URL is what is passed to the Autodesk login flow to tell it how to redirect the user back to your app.\n\nCallback URLs are specified in two places. You first specify a callback URL for your app in the My Apps section. Then, when you redirect your user to the Autodesk login flow, you also specify the callback URL in the redirect_uri parameter. This allows you to use different callback URLs in different parts of your app. All callback URLs are validated against what is specified in your app’s registration, and any run-time callback URL must match the pattern of the registered one.\n\n\n\n\n\nSee the GET authorize documentation for more details on the relationship between the callback URL field and the redirect_uri parameter.\n\n\n\n\n\nNote that if your app does not require three-legged authentication, you can put any valid value in the callback URL field when you register your app, as no redirect_uri will ever be validated against it."
+        },
+        {
+          "Term": "authorization code",
+          "Meaning": "In a three-legged authorization code grant type flow, an authorization code is passed through a code query parameter when the user is redirected back to the app via the callback URL.\n\nAlong with its client ID and secret, an app calls the POST token endpoint to exchange the authorization code for an access token.\n\n\nThe authorization code is a 40-character string (e.g., wroM1vFA4E-Aj241-quh_LVjm7UldawnNgYEHQ8I)."
+        },
+        {
+          "Term": "access token",
+          "Meaning": "An access token (sometimes just “token” or “bearer token”) is returned at the end of a successful authentication flow. APS uses JSON Web Tokens (JWT), which are alphanumeric strings of variable length (including periods to separate their different parts), used in subsequent API calls to the platform. The platform keeps track of what resources the token is entitled to access and either allows or denies access at call time.\n\nTokens have a limited lifespan and expire after a specified number of seconds."
+        },
+        {
+          "Term": "scopes",
+          "Meaning": "A scope is a permission that is set on a token, a context in which that token may act.\n\nFor example, a token with the data:read scope is permitted to read data within the APS ecosystem and can be used on those endpoints that require that scope. Tokens without that scope would be denied access to such endpoints. (Individual endpoint reference pages list the required scopes.)\n\n\n\n\n\nScopes serve two principal functions: In a three-legged context, they act as a mechanism for requesting and securing permission to act on an end user’s behalf in specified ways. In both two- and three-legged contexts, they ensure that if you lose control of your token, it cannot be misused to access resources for which it was not intended.\n\n\n\nFor more information, see the Scopes page."
+        },
+        {
+          "Term": "authentication context",
+          "Meaning": "With the exception of OAuth endpoints and those that do not require authentication, all endpoints have one of the following authentication contexts:\n\napp only: The endpoint accepts either a two-legged or three-legged token, but it will only act on behalf of the app itself, ignoring any permissions associated with the end user.\n\n\n\n\n\nuser context required: The endpoint requires a three-legged token and acts on behalf of the authenticating end user.\n\n\n\n\n\nuser context optional: If provided a two-legged token, the endpoint will act on behalf of the app, accessing only those resources for which the app itself has permission. If provided a three-legged token, the endpoint will act on behalf of the end user, accessing only those resources for which the user has permission."
+        }
+      ]
+    }
+  ]
+}

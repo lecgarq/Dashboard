@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/integrate-with-external-system",
+    "scrapedAt": "2026-05-08T17:48:54.748Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Integrating Cost Management with External ERP Systems",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/71e6b356-a101-4277-b4ca-98989bff4a90/budgets?limit=100&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/71e6b356-a101-4277-b4ca-98989bff4a90/budgets?limit=100&offset=0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5I00'"
+    },
+    {
+      "raw": "{\n  \"results\": [{\n      \"formattedCode\": \"001\",\n      \"origCommitment\": \"50.0000\",\n      \"id\": \"bb8cf933-a5ab-47f1-9103-fe6804303f07\",\n      \"...\":\"...\",\n  }],\n  \"pagination\": {\n      \"totalResults\": 1,\n      \"limit\": 100,\n      \"offset\": 0\n  }\n}"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/71e6b356-a101-4277-b4ca-98989bff4a90/budgets/ bb8cf933-a5ab-47f1-9103-fe6804303f07' -X 'PATCH' -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' -H 'Content-Type: application/json' \\\n-d '{\n     \"externalMessage\": \"success\",\n     \"externalSystem\": \"morpheus\",\n     \"externalId\": \"M001\",\n     \"integrationState\": \"locked\",\n     \"lastSyncTime\": \"2024-02-27T10:00:00.354Z\"\n   }'",
+      "parsed": {
+        "externalMessage": "success",
+        "externalSystem": "morpheus",
+        "externalId": "M001",
+        "integrationState": "locked",
+        "lastSyncTime": "2024-02-27T10:00:00.354Z"
+      }
+    },
+    {
+      "raw": "{\n    \"formattedCode\": \"l1\",\n    \"id\": \"bb8cf933-a5ab-47f1-9103-fe6804303f07\",\n    \"containerId\": \"71e6b356-a101-4277-b4ca-98989bff4a90\",\n    \"parentId\": null,\n    \"rootId\": null,\n    \"name\": \"l1\",\n    \"code\": \"l1\",\n    \"scope\": \"budgetAndCost\",\n    \"description\": null,\n    \"quantity\": 1,\n    \"unitPrice\": \"100.00000000\",\n    \"...\": \"...\",\n    \"externalSystem\": \"morpheus\",\n    \"externalId\": \"M001\",\n    \"externalMessage\": \"success\",\n    \"integrationState\": \"locked\",\n    \"lastSyncTime\": \"2024-02-27T10:00:00.354Z\",\n    \"mainContract\": {\n        \"id\": \"d1109c69-d70e-49df-bc88-05032089ead9\",\n        \"name\": \"mainContract1\"\n    },\n    \"...\": \"...\"\n}",
+      "parsed": {
+        "formattedCode": "l1",
+        "id": "bb8cf933-a5ab-47f1-9103-fe6804303f07",
+        "containerId": "71e6b356-a101-4277-b4ca-98989bff4a90",
+        "parentId": null,
+        "rootId": null,
+        "name": "l1",
+        "code": "l1",
+        "scope": "budgetAndCost",
+        "description": null,
+        "quantity": 1,
+        "unitPrice": "100.00000000",
+        "...": "...",
+        "externalSystem": "morpheus",
+        "externalId": "M001",
+        "externalMessage": "success",
+        "integrationState": "locked",
+        "lastSyncTime": "2024-02-27T10:00:00.354Z",
+        "mainContract": {
+          "id": "d1109c69-d70e-49df-bc88-05032089ead9",
+          "name": "mainContract1"
+        }
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/construction/cost/v1/projects/71e6b356-a101-4277-b4ca-98989bff4a90/budgets' \\\n--header 'Content-Type: application/json' \\\n--data '{\n    \"code\": \"1\",\n    \"name\": \"1\",\n    \"quantity\": 1,\n    \"unitPrice\": 0,\n    \"unit\": \"ea\",\n    \"segmentCodeMap\": {},\n    \"externalSystem\": \"morpheus\",\n    \"externalId\": \"M001\",\n    \"externalMessage\": \"success\",\n    \"integrationState\": \"locked\",\n    \"lastSyncTime\": \"2024-01-23T21:51:57.775Z\"\n}'",
+      "parsed": {
+        "code": "1",
+        "name": "1",
+        "quantity": 1,
+        "unitPrice": 0,
+        "unit": "ea",
+        "segmentCodeMap": {},
+        "externalSystem": "morpheus",
+        "externalId": "M001",
+        "externalMessage": "success",
+        "integrationState": "locked",
+        "lastSyncTime": "2024-01-23T21:51:57.775Z"
+      }
+    },
+    {
+      "raw": "{\n    \"formattedCode\": \"\",\n    \"id\": \"b16ac870-e151-11ee-b31d-0969f47312bd\",\n    \"containerId\": \"71e6b356-a101-4277-b4ca-98989bff4a90\",\n    \"name\": \"1\",\n    \"code\": \"1\",\n    \"scope\": \"budgetAndCost\",\n    \"description\": null,\n    \"quantity\": 1,\n    \"unitPrice\": \"0.00000000\",\n    \"inputQuantity\": null,\n    \"ratio\": 1,\n    \"unit\": \"ea\",\n    \"originalAmount\": \"0.0000\",\n    \"budgetCodeId\": \"b1683060-e151-11ee-b31d-0969f47312bd\",\n    \"contractId\": null,\n    \"mainContractId\": \"d1109c69-d70e-49df-bc88-05032089ead9\",\n    \"mainContractItemId\": null,\n    \"creatorId\": \"WHA2J3KBMHKRQCHD\",\n    \"changedBy\": \"WHA2J3KBMHKRQCHD\",\n    \"createdAt\": \"2024-03-13T15:52:28.024Z\",\n    \"updatedAt\": \"2024-03-13T15:52:28.049Z\",\n    \"integrationStateChangedAt\": \"2024-03-13T15:52:28.024Z\",\n    \"integrationStateChangedBy\": \"WHA2J3KBMHKRQCHD\",\n    \"isTracked\": false,\n    \"distributionItemId\": null,\n    \"externalSystem\": \"morpheus\",\n    \"externalId\": \"MB002\",\n    \"externalMessage\": null,\n    \"integrationState\": \"locked\",\n    \"lastSyncTime\": \"2024-01-23T21:51:57.775Z\",\n    \"mainContract\": {\n        \"id\": \"d1109c69-d70e-49df-bc88-05032089ead9\",\n        \"name\": \"mainContract1\"\n    },\n    \"mainContractItem\": null,\n    \"properties\": [],\n    \"budgetCode\": \"l1\",\n    \"...\": \"...\"\n}",
+      "parsed": {
+        "formattedCode": "",
+        "id": "b16ac870-e151-11ee-b31d-0969f47312bd",
+        "containerId": "71e6b356-a101-4277-b4ca-98989bff4a90",
+        "name": "1",
+        "code": "1",
+        "scope": "budgetAndCost",
+        "description": null,
+        "quantity": 1,
+        "unitPrice": "0.00000000",
+        "inputQuantity": null,
+        "ratio": 1,
+        "unit": "ea",
+        "originalAmount": "0.0000",
+        "budgetCodeId": "b1683060-e151-11ee-b31d-0969f47312bd",
+        "contractId": null,
+        "mainContractId": "d1109c69-d70e-49df-bc88-05032089ead9",
+        "mainContractItemId": null,
+        "creatorId": "WHA2J3KBMHKRQCHD",
+        "changedBy": "WHA2J3KBMHKRQCHD",
+        "createdAt": "2024-03-13T15:52:28.024Z",
+        "updatedAt": "2024-03-13T15:52:28.049Z",
+        "integrationStateChangedAt": "2024-03-13T15:52:28.024Z",
+        "integrationStateChangedBy": "WHA2J3KBMHKRQCHD",
+        "isTracked": false,
+        "distributionItemId": null,
+        "externalSystem": "morpheus",
+        "externalId": "MB002",
+        "externalMessage": null,
+        "integrationState": "locked",
+        "lastSyncTime": "2024-01-23T21:51:57.775Z",
+        "mainContract": {
+          "id": "d1109c69-d70e-49df-bc88-05032089ead9",
+          "name": "mainContract1"
+        },
+        "mainContractItem": null,
+        "properties": [],
+        "budgetCode": "l1",
+        "...": "..."
+      }
+    }
+  ]
+}

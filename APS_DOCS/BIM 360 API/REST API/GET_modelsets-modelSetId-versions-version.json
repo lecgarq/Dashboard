@@ -1,0 +1,290 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/mc-modelset-service-v3-get-model-set-version-GET",
+    "scrapedAt": "2026-05-08T18:02:26.970Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/:containerId/modelsets/:modelSetId/versions/:version",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/bim360/modelset/v3/containers/:containerId/modelsets/:modelSetId/versions/:version"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        },
+        {
+          "col_0": "modelSetIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the model set."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "The model set version number."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelSetIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the model set."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "The model set version number."
+        },
+        {
+          "col_0": "createTimedatetime: ISO 8601",
+          "col_1": "The date and time that the model set version was created."
+        },
+        {
+          "col_0": "statusenum: string",
+          "col_1": "The creation status of the model set version. Possible values: Pending, Processing, Successful, Partial, Failed."
+        },
+        {
+          "col_0": "documentVersionsarray: object",
+          "col_1": "The document versions included in this version of the model set."
+        },
+        {
+          "col_0": "documentLineageobject",
+          "col_1": "A document from a model set."
+        },
+        {
+          "col_0": "lineageUrnstring",
+          "col_1": "The URN of the document lineage."
+        },
+        {
+          "col_0": "parentFolderUrnstring",
+          "col_1": "The URN of the parent folder for the document lineage."
+        },
+        {
+          "col_0": "isAlignedboolean",
+          "col_1": "Indicates whether the document lineage is aligned."
+        },
+        {
+          "col_0": "tipVersionUrnstring",
+          "col_1": "The tip version URN for the document lineage."
+        },
+        {
+          "col_0": "documentStatusenum: string",
+          "col_1": "The status of the document. Possible values: Succeeded, Failed, Running, Skipped."
+        },
+        {
+          "col_0": "forgeTypeenum: string",
+          "col_1": "The forge type associated with this document (used by the Document Management APIs). Possible values: versions:autodesk.bim360:Document, versions:autodesk.bim360:File."
+        },
+        {
+          "col_0": "versionUrnstring",
+          "col_1": "The URN of the document version."
+        },
+        {
+          "col_0": "displayNamestring",
+          "col_1": "The display name of the document version."
+        },
+        {
+          "col_0": "viewableNamestring",
+          "col_1": "The name of the viewable in the Model Derivative manifest."
+        },
+        {
+          "col_0": "createUserIdstring",
+          "col_1": "The unique identifier of the user who created the document version."
+        },
+        {
+          "col_0": "createTimedatetime: ISO 8601",
+          "col_1": "The date and time that the document version was created."
+        },
+        {
+          "col_0": "viewableGuidstring",
+          "col_1": "The ID of the geometry node in the derivative manifest to which this document version refers."
+        },
+        {
+          "col_0": "viewableIdstring",
+          "col_1": "The ID of the viewable for the document version."
+        },
+        {
+          "col_0": "viewableMimestring",
+          "col_1": "The mime type of the viewable for the document version."
+        },
+        {
+          "col_0": "bubbleUrnstring",
+          "col_1": "The URN of the Model Derivative bubble for the document version."
+        },
+        {
+          "col_0": "originalSeedFileVersionUrnstring",
+          "col_1": "The URN of the seed file version from which this document was originally extracted."
+        },
+        {
+          "col_0": "originalSeedFileVersionNamestring",
+          "col_1": "The name of the seed file version from which this document was originally extracted."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "{\n  \"modelSetId\": \"00fb28a5-e8a4-2755-562a-7c2f0fc87911\",\n  \"version\": 42,\n  \"createTime\": \"2015-10-21T16:29:30Z\",\n  \"status\": \"Successful\",\n  \"documentVersions\": [\n    {\n      \"documentLineage\": {\n        \"lineageUrn\": \"urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA\",\n        \"parentFolderUrn\": \"urn:adsk.wipprod:fs.folder:co.WI8roO18TU2Cl3P9y64z4w\",\n        \"isAligned\": false,\n        \"tipVersionUrn\": \"urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1\"\n      },\n      \"documentStatus\": \"Succeeded\",\n      \"forgeType\": \"versions:autodesk.bim360:Document\",\n      \"versionUrn\": \"urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1\",\n      \"displayName\": \"example_document.rvt\",\n      \"viewableName\": \"Level 1\",\n      \"createUserId\": \"PD23PXGV8V3V\",\n      \"createTime\": \"2015-10-21T16:29:30Z\",\n      \"viewableGuid\": \"b1e3fda8-9a15-8cb9-9951-6f4781f8f897\",\n      \"viewableId\": \"2df27d58-d1c2-467b-be10-80baf501cb87-0008ebd5\",\n      \"viewableMime\": \"application/autodesk-svf\",\n      \"bubbleUrn\": \"urn:adsk.wipprod:fs.file:vf.M7KsPcpXTn6nPPRhrQnjGA?version=1\",\n      \"originalSeedFileVersionUrn\": \"urn:adsk.wipprod:fs.file:vf.M7KsPcpXTn6nPPRhrQnjGA?version=1\",\n      \"originalSeedFileVersionName\": \"Hospital_Architectural.rvt\"\n    }\n  ]\n}",
+      "parsed": {
+        "modelSetId": "00fb28a5-e8a4-2755-562a-7c2f0fc87911",
+        "version": 42,
+        "createTime": "2015-10-21T16:29:30Z",
+        "status": "Successful",
+        "documentVersions": [
+          {
+            "documentLineage": {
+              "lineageUrn": "urn:adsk.wipprod:dm.lineage:jvMF7mrHR7OwG_DToKsJUA",
+              "parentFolderUrn": "urn:adsk.wipprod:fs.folder:co.WI8roO18TU2Cl3P9y64z4w",
+              "isAligned": false,
+              "tipVersionUrn": "urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1"
+            },
+            "documentStatus": "Succeeded",
+            "forgeType": "versions:autodesk.bim360:Document",
+            "versionUrn": "urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1",
+            "displayName": "example_document.rvt",
+            "viewableName": "Level 1",
+            "createUserId": "PD23PXGV8V3V",
+            "createTime": "2015-10-21T16:29:30Z",
+            "viewableGuid": "b1e3fda8-9a15-8cb9-9951-6f4781f8f897",
+            "viewableId": "2df27d58-d1c2-467b-be10-80baf501cb87-0008ebd5",
+            "viewableMime": "application/autodesk-svf",
+            "bubbleUrn": "urn:adsk.wipprod:fs.file:vf.M7KsPcpXTn6nPPRhrQnjGA?version=1",
+            "originalSeedFileVersionUrn": "urn:adsk.wipprod:fs.file:vf.M7KsPcpXTn6nPPRhrQnjGA?version=1",
+            "originalSeedFileVersionName": "Hospital_Architectural.rvt"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

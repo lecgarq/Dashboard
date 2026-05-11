@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/account-admin/activate-service",
+    "scrapedAt": "2026-05-08T17:47:45.947Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Activate a Service",
+  "codeExamples": [
+    {
+      "raw": "curl -H \"Content-Type: application/json\" -H \"Authorization: Bearer hW0DvSvGgszPis1Yhot4c8kWW3NG\" -X POST\nhttps://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/users\n-d '\n{\n  \"service_type\": \"field\",\n  \"company_id\":\"14e95a5e-02eb-49aa-a39a-447d90544873\",\n  \"email\":\"john.smith@mail.com\",\n  \"nickname\":\"Johnny\",\n  \"first_name\":\"John\",\n  \"last_name\":\"Smith\",\n  \"role\": \"project_admin\",\n  \"image_url\": \"http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png\",\n  \"address_line_1\": \"The Fifth Avenue\",\n  \"address_line_2\": \"#301\",\n  \"city\": \"New York\",\n  \"postal_code\": \"10011\",\n  \"state_or_province\": \"New York\",\n  \"country\": \"United States\",\n  \"phone\": \"(634)329-2353\",\n  \"company\": \"Autodesk\",\n  \"job_title\": \"Software Developer\",\n  \"industry\": \"IT\",\n  \"about_me\": \"Nothing here\"\n}'",
+      "parsed": {
+        "service_type": "field",
+        "company_id": "14e95a5e-02eb-49aa-a39a-447d90544873",
+        "email": "john.smith@mail.com",
+        "nickname": "Johnny",
+        "first_name": "John",
+        "last_name": "Smith",
+        "role": "project_admin",
+        "image_url": "http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "New York",
+        "country": "United States",
+        "phone": "(634)329-2353",
+        "company": "Autodesk",
+        "job_title": "Software Developer",
+        "industry": "IT",
+        "about_me": "Nothing here"
+      }
+    }
+  ]
+}

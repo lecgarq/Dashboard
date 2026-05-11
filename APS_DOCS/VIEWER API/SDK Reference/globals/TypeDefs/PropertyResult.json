@@ -1,0 +1,49 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/PropertyResult",
+    "scrapedAt": "2026-05-08T18:49:29.705Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "PropertyResult",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "attributeNamestring",
+          "col_1": "The property identifying name."
+        },
+        {
+          "col_0": "displayCategorystring, null",
+          "col_1": "Category the attribute belongs into."
+        },
+        {
+          "col_0": "displayNamestring",
+          "col_1": "A user facing label for the property. It could contain the same value as attributeName."
+        },
+        {
+          "col_0": "displayValuestring, number, boolean",
+          "col_1": "The value for the property."
+        },
+        {
+          "col_0": "hiddenboolean",
+          "col_1": "Whether the property is meant to be user facing or not."
+        },
+        {
+          "col_0": "precisionnumber",
+          "col_1": "Applies only to numerical displayValues."
+        },
+        {
+          "col_0": "typeobject",
+          "col_1": "An enumeration value of type AttributeType indicating how to interpret displayValue."
+        },
+        {
+          "col_0": "unitsstring, null",
+          "col_1": "The units associated with displayValue."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/tutorials/get-ID-token",
+    "scrapedAt": "2026-05-08T17:35:34.182Z",
+    "category": "Tutorials",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Get an ID Token",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Claim Names",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Claim Names": "first_name",
+          "Description": "First name of the user"
+        },
+        {
+          "Claim Names": "last_name",
+          "Description": "Last name of the user"
+        },
+        {
+          "Claim Names": "user_name",
+          "Description": "A unique identifier name associated with the user entity"
+        },
+        {
+          "Claim Names": "user_email",
+          "Description": "Email address of the user"
+        },
+        {
+          "Claim Names": "userid",
+          "Description": "Unique Id of the user"
+        },
+        {
+          "Claim Names": "analytics_id",
+          "Description": "A unique Id of the user in third-party tracking/analytics system"
+        }
+      ]
+    }
+  ]
+}

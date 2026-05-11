@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/viewer_basics/GLTFExtension",
+    "scrapedAt": "2026-05-08T18:42:45.635Z",
+    "category": "Developer Guide/viewer_basics",
+    "apiName": "VIEWER API"
+  },
+  "title": "Loading glTF 2.0 Models",
+  "codeExamples": [
+    {
+      "raw": "var viewer;\nvar options = {\n    env: 'AutodeskProduction2',\n    api: 'streamingV2',  // for models uploaded to EMEA change this option to 'streamingV2_EU'\n    documentId: 'tests/unittest/models/glTF/duck.gltf'\n    getAccessToken: function(onTokenReady) {\n        var token = 'YOUR_ACCESS_TOKEN';\n        var timeInSeconds = 3600; // Use value provided by APS Authentication (OAuth) API\n        onTokenReady(token, timeInSeconds);\n    }\n};\n\nAutodesk.Viewing.Initializer(options, function() {\n    var htmlDiv = document.getElementById('forgeViewer');\n    viewer = new Autodesk.Viewing.GuiViewer3D(htmlDiv);\n    var startedCode = viewer.start();\n    if (startedCode > 0) {\n        console.error('Failed to create a Viewer: WebGL not supported.');\n        return;\n    }\n});"
+    },
+    {
+      "raw": "var measuretool = NOP_VIEWER.getExtension('Autodesk.Measure');\nmeasuretool.setFreeMeasureMode(true);"
+    }
+  ]
+}

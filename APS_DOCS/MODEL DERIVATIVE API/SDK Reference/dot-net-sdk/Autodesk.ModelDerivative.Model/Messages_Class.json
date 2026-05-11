@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Messages",
+    "scrapedAt": "2026-05-08T18:27:52.226Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class Messages",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class Messages"
+    },
+    {
+      "raw": "public Messages()"
+    },
+    {
+      "raw": "[DataMember(Name = \"code\", EmitDefaultValue = false)]\npublic string Code { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"message\", EmitDefaultValue = false)]\npublic object Message { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = false)]\npublic string Type { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

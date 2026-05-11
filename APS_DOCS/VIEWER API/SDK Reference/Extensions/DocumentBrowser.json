@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/DocumentBrowser",
+    "scrapedAt": "2026-05-08T18:45:59.311Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "DocumentBrowser",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewerConfigobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "loadOptionsobject",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewerConfigobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "loadOptionsobject",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.DocumentBrowser')"
+    }
+  ]
+}

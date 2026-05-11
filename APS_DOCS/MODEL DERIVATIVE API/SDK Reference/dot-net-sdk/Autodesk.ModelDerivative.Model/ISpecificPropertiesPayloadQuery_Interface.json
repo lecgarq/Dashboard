@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ISpecificPropertiesPayloadQuery",
+    "scrapedAt": "2026-05-08T18:29:00.868Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Interface ISpecificPropertiesPayloadQuery",
+  "codeExamples": [
+    {
+      "raw": "public interface ISpecificPropertiesPayloadQuery"
+    }
+  ]
+}

@@ -1,0 +1,123 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/change_history/changelog_v3",
+    "scrapedAt": "2026-05-08T18:50:35.307Z",
+    "category": "Other",
+    "apiName": "VIEWER API"
+  },
+  "title": "V3 Changelog",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "None (value = “” or “off”)",
+        "value = “edging”",
+        "value = “cel”",
+        "value = “graphite”",
+        "value = “pencil”"
+      ],
+      "rows": [
+        {
+          "None (value = “” or “off”)": "",
+          "value = “edging”": "",
+          "value = “cel”": "",
+          "value = “graphite”": "",
+          "value = “pencil”": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Before",
+        "Now"
+      ],
+      "rows": [
+        {
+          "Before": "",
+          "Now": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "URL",
+          "col_1": "https://developer.api.autodesk.com/modelderivative/v2/viewers/viewer3D.min.js?v=3.2"
+        },
+        {
+          "col_0": "Content",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Event",
+          "col_1": "Autodesk.Viewing.CAMERA_TRANSITION_COMPLETED"
+        },
+        {
+          "col_0": "Usage",
+          "col_1": "// Hook the event\nviewer.addEventListener(Autodesk.Viewing.CAMERA_TRANSITION_COMPLETED, function(){\n    console.log('camera is no longer moving');\n});\n\n// Trigger an action that will move the camera and fire the event\nviewer.fitToView();"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "",
+          "col_1": "Before",
+          "col_2": "Now"
+        },
+        {
+          "col_0": "method",
+          "col_1": "Autodesk.Viewing.setApiEndpoint",
+          "col_2": "Autodesk.Viewing.endpoint.setApiEndpoint"
+        },
+        {
+          "col_0": "method",
+          "col_1": "Autodesk.Viewing.getEndpointAndApi",
+          "col_2": "Autodesk.Viewing.endpoint.getApiEndpoint"
+        },
+        {
+          "col_0": "object",
+          "col_1": "Autodesk.Viewing.HTTP_REQUEST_HEADERS",
+          "col_2": "Autodesk.Viewing.endpoint.HTTP_REQUEST_HEADERS"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "preloadPostProcessStyle();        //OPTIONAL: loads all textures needed, for all styles.\npreloadPostProcessStyle(string);  //OPTIONAL: use style string to initialize textures for a single style"
+    },
+    {
+      "raw": "setPostProcessParameter(string, value);  //string options and value ranges are described in the reference below"
+    },
+    {
+      "raw": "// Optional call, do this some time before using a style so that the required textures are loaded before the style is used.\n// Not doing so may give a bad render or two while the textures are being loaded. In particular, Graphite will look black.\n// This loads all textures needed, for all styles. You can instead pass an individual style string to initialize only it.\n// Currently only the graphite and pencil styles require textures. If not called, the first call to setPostProcessParameter\n// which sets a style will load the textures.\nviewer.impl.preloadPostProcessStyle();\n\n// Turn on a style. Styles are passed in as strings, for the \"value\" parameter:\n// \"\" - turn off the style; back to normal, no post-process is done.\n// \"edging\" - turn on image-based edging system\n// \"cel\" - cartoon (\"posterized\") style, with edges\n// \"graphite\" - black pencil style\n// \"pencil\" - colored pencil and paper\nvar value = \"graphite\";\nviewer.impl.setPostProcessParameter( \"style\", value );\n\n// make the image have no edges:\nviewer.impl.setPostProcessParameter( \"edges\", false);\n\n// turn up brightness a bit:\nviewer.impl.setPostProcessParameter( \"brightness\", 0.4);"
+    },
+    {
+      "raw": "disableHighlight(boolean); //true to disable highlight, false to show highlight (defaults to false)\ndisableSelection(boolean); //true to disable selection, false to allow selection (defaults to false)"
+    },
+    {
+      "raw": "// Disable highlight when cursor hovers over an object\ndisableHighlight(true);\n\n// Enable highlight when cursor hovers over an object\ndisableHighlight(false);\n\n// Disable selection when clicking an object in the view or Model Browser\ndisableSelection(true);\n\n// Enable selection when clicking an object in the view or Model Browser\ndisableSelection(false);"
+    },
+    {
+      "raw": "// Hook the event\nviewer.addEventListener(Autodesk.Viewing.CAMERA_TRANSITION_COMPLETED, function(){\n    console.log('camera is no longer moving');\n});\n\n// Trigger an action that will move the camera and fire the event\nviewer.fitToView();"
+    },
+    {
+      "raw": "// Default implementation\nthis.getPriority = function() {\n   return 0;\n};"
+    },
+    {
+      "raw": "// Tool with high priority\nfunction MyAwesomeTool() {\n  Autodesk.Viewing.ToolInterface.call(this);\n  this.names = ['my-awesome-tool'];\n\n    this.getPriority = function() {\n       return 1000; // Default is 0, higher numerical value results in higher priority.\n    };\n};\n\n// Tool with default priority\nfunction MyRegularTool() {\n    Autodesk.Viewing.ToolInterface.call(this);\n    this.names = ['my-regular-tool'];\n};\n\n// Register them to the Viewer instance (no matter the order)\nviewer.toolController.registerTool(new MyAwesomeTool());\nviewer.toolController.registerTool(new MyRegularTool());\n\n// Activate tools\nviewer.toolController.activateTool('my-awesome-tool'); // MyAwesomeTool gets all events because it is being activated\nviewer.toolController.activateTool('my-regular-tool'); // MyAwesomeTool STILL gets all events first because it has the highest priority."
+    }
+  ]
+}

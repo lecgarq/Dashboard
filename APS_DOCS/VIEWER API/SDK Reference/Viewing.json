@@ -1,0 +1,1052 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing",
+    "scrapedAt": "2026-05-08T18:43:35.004Z",
+    "category": "SDK Reference",
+    "apiName": "VIEWER API"
+  },
+  "title": "Viewing",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "options*object",
+          "col_1": "The options object contains configuration parameters used to do initializations. If no access token or authentication callback is provided, the Initializer will fall back on an access token provided in the URL query string, or a previous access token stored in the cookie cache, if available."
+        },
+        {
+          "col_0": "envstring",
+          "col_1": "Either AutodeskProduction, AutodeskStaging, or AutodeskDevelopment. Local can be used to avoid attaching authentication headers to XHR requests."
+        },
+        {
+          "col_0": "apistring",
+          "col_1": "If automatic routing (the DS_ENDPOINTS feature flag) is enabled, must be streamingV2 for SVF2 or derivativeV2 for SVF. If automatic routing is disabled, must be streamingV2 (SVF2) or derivativeV2 (SVF) for models stored in a US data center, streamingV2_EU (SVF2) or derivativeV2_EU (SVF) for models stored in a European data center, or streamingV2_AUS (SVF2) or derivativeV2_AUS (SVF) for models stored in an Australian data center. Defaults to derivativeV2 if left undefined."
+        },
+        {
+          "col_0": "getAccessTokenfunction",
+          "col_1": "An function that provides an access token asynchronously. The function signature is getAccessToken(onSuccess), where onSuccess is a callback that getAccessToken function should invoke when a token is granted, with the token being the first input parameter for the onSuccess function, and the token expire time (in seconds) being the second input parameter for the function. Viewer relies on both getAccessToken and the expire time to automatically renew token, so it is critical that getAccessToken must be implemented as described here."
+        },
+        {
+          "col_0": "accessTokenstring",
+          "col_1": "An access token. Not needed when options.getAccessToken is provided.`"
+        },
+        {
+          "col_0": "webGLHelpLinkstring",
+          "col_1": "A link to a help page on webGL if it’s disabled."
+        },
+        {
+          "col_0": "languagestring",
+          "col_1": "Preferred language code as defined in RFC 4646, such as en, de, fr, etc. If no language is set, viewer will pick it up from the browser. If language is not as defined in RFC, viewer will fall back to “en” (English) but the behavior is undefined."
+        },
+        {
+          "col_0": "lmvResourceRootstring",
+          "col_1": "The root folder that contains LMV resources, will be derived if not specified."
+        },
+        {
+          "col_0": "callback*function",
+          "col_1": "A method the client executes when initialization is finished."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Parameter name"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Parameter value"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Parameter name"
+        },
+        {
+          "col_0": "url*string",
+          "col_1": "URL"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Parameter value"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "str*string",
+          "col_1": "String to convert"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "",
+          "description": "Url-safe base64 string"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "str*string",
+          "col_1": "String to convert"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "String after decoding from base64"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "str*string",
+          "col_1": "String to convert"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "String after decoding from base64 or string as is if decoding was not possible"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "Settings"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewCubeboolean",
+          "col_1": "Default Value: true. Sets the visibility of the viewcube. Set to false for mobile devices."
+        },
+        {
+          "col_0": "alwaysUsePivotboolean",
+          "col_1": "Default Value: false. Orbit controls always orbit around the currently set pivot point."
+        },
+        {
+          "col_0": "zoomTowardsPivotboolean",
+          "col_1": "Default Value: false. default direction for camera dolly (zoom) operations to be towards the camera pivot point."
+        },
+        {
+          "col_0": "reverseHorizontalLookDirectionboolean",
+          "col_1": "Default Value: false. Sets a view navigation option to reverse the default direction for horizontal look operations."
+        },
+        {
+          "col_0": "reverseVerticalLookDirectionboolean",
+          "col_1": "Default Value: false. Sets a view navigation option to reverse the default direction for vertical look operations."
+        },
+        {
+          "col_0": "orbitPastWorldPolesboolean",
+          "col_1": "Default Value: true. Set a view navigation option to allow the orbit controls to move the camera beyond the north and south poles (world up/down direction)."
+        },
+        {
+          "col_0": "clickToSetCOIboolean",
+          "col_1": "Default Value: false. Modify the default click behavior for the viewer."
+        },
+        {
+          "col_0": "ghostingboolean",
+          "col_1": "Default Value: true. Toggles ghosting during search and isolate."
+        },
+        {
+          "col_0": "optimizeNavigationboolean",
+          "col_1": "Default Value: false. Toggles whether the navigation should be optimized for performance. Set to true for mobile devices."
+        },
+        {
+          "col_0": "ambientShadowsboolean",
+          "col_1": "Default Value: true. Enables or disables ambient shadows."
+        },
+        {
+          "col_0": "antialiasingboolean",
+          "col_1": "Default Value: true. Enables or disables antialiasing. Set to false for mobile devices."
+        },
+        {
+          "col_0": "groundShadowboolean",
+          "col_1": "Default Value: true. Toggles ground shadow."
+        },
+        {
+          "col_0": "groundReflectionboolean",
+          "col_1": "Default Value: false. Toggles ground reflection."
+        },
+        {
+          "col_0": "lineRenderingboolean",
+          "col_1": "Default Value: true. Hides all lines in the scene."
+        },
+        {
+          "col_0": "edgeRenderingboolean",
+          "col_1": "Default Value: false. Turns edge topology display on/off (where available)."
+        },
+        {
+          "col_0": "lightPresetnumber",
+          "col_1": "Default Value: 1. Sets the Light Presets (Environments) for the Viewer."
+        },
+        {
+          "col_0": "envMapBackgroundboolean",
+          "col_1": "Default Value: false. Toggles environment map for background."
+        },
+        {
+          "col_0": "bimWalkToolPopupboolean",
+          "col_1": "Default Value: true. Toggles the bimwalk tool popup."
+        },
+        {
+          "col_0": "grayscaleboolean",
+          "col_1": "Default Value: false. Overrides line colors in 2D models to render in shades of gray."
+        },
+        {
+          "col_0": "swapBlackAndWhiteboolean",
+          "col_1": "Default Value: false. Will switch to white lines on a black background for 2D models."
+        },
+        {
+          "col_0": "progressiveRenderingboolean",
+          "col_1": "Default Value: true. Toggles whether progressive rendering is used."
+        },
+        {
+          "col_0": "openPropertiesOnSelectboolean",
+          "col_1": "Default Value: false. Open property panel when selecting an object (Only for GuiViewer3D)."
+        },
+        {
+          "col_0": "pointRenderingboolean",
+          "col_1": "Default Value: true. Hides all points in the scene."
+        },
+        {
+          "col_0": "backgroundColorPreset",
+          "col_1": "Default Value: null. Sets a color to the background."
+        },
+        {
+          "col_0": "reverseMouseZoomDirboolean",
+          "col_1": "Default Value: false. Reverse the default direction for camera dolly (zoom) operations."
+        },
+        {
+          "col_0": "leftHandedMouseSetupboolean",
+          "col_1": "Default Value: false. Reverse mouse buttons from their default assignment (i.e. Left mouse operation becomes right mouse and vice versa)."
+        },
+        {
+          "col_0": "fusionOrbitboolean",
+          "col_1": "Default Value: true. Sets the orbit to fusion orbit."
+        },
+        {
+          "col_0": "fusionOrbitConstrainedboolean",
+          "col_1": "Default Value: true. Sets the the orbit to the contrained fusion orbit."
+        },
+        {
+          "col_0": "wheelSetsPivotboolean",
+          "col_1": "Default Value: false. Sets wheel-zoom action to automatically reset the orbit pivot to the location under the cursor."
+        },
+        {
+          "col_0": "selectionSetsPivotboolean",
+          "col_1": "Default Value: false. Sets selection / un-selection action to automatically reset the orbit pivot to be the center of the multiple selection."
+        },
+        {
+          "col_0": "bimWalkNavigatorTypestring",
+          "col_1": "Default Value: ‘default’. Sets the BimWalk tool navigator."
+        },
+        {
+          "col_0": "defaultNavigationTool3Dstring",
+          "col_1": "Default Value: ‘default’. Sets which navigation tool will be used by the viewer. (ie: ‘extractor_defined’ || ‘bimwalk’)"
+        },
+        {
+          "col_0": "loadingAnimationboolean",
+          "col_1": "Default Value: true. Toggles loading animation for 2D Models."
+        },
+        {
+          "col_0": "zoomDragSpeednumber",
+          "col_1": "Default value: 100. Sets a sensitivity of mouse movement with the zoom tool."
+        },
+        {
+          "col_0": "zoomScrollSpeednumber",
+          "col_1": "Default value: 0.6. Sets a sensitivity of the mouse scroll wheel when zooming."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "number"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type"
+      ],
+      "rows": [
+        {
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "percentnumber",
+          "col_1": "Estimated progress."
+        },
+        {
+          "col_0": "statenumber",
+          "col_1": "Value from Autodesk.Viewing.ProgressState, providing details on the progress state."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model being loaded."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modeAutodesk.Viewing.ScreenMode",
+          "col_1": "New screen mode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "Tool identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "valueboolean",
+          "col_1": "Success of the state restoration."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "widthnumber",
+          "col_1": "New width of the viewer."
+        },
+        {
+          "col_0": "heightnumber",
+          "col_1": "New height of the viewer."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "languagestring",
+          "col_1": "The new language code (e.g., ‘en’, ‘de’, ‘ja’)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "loaderobject",
+          "col_1": "Instance of the Loader class"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "loaderobject",
+          "col_1": "Instance of the Loader class"
+        },
+        {
+          "col_0": "errorobject",
+          "col_1": "The error reported by the loader."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "loaderObject",
+          "col_1": "Instance of the Loader class"
+        },
+        {
+          "col_0": "modelModel",
+          "col_1": "Loaded model"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "svfobject",
+          "col_1": "Parsed SVF/F2D JSON."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "svfobject",
+          "col_1": "Parsed SVF/F2D JSON."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "svfobject",
+          "col_1": "Parsed SVF/F2D JSON."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "svfobject",
+          "col_1": "Parsed SVF/F2D JSON."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data (after disposing data)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "rootobject",
+          "col_1": "Model layers root."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        },
+        {
+          "col_0": "matrixobject",
+          "col_1": "Transform matrix."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        },
+        {
+          "col_0": "modestring",
+          "col_1": "Activated mode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        },
+        {
+          "col_0": "modestring",
+          "col_1": "Activated mode."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionIdstring",
+          "col_1": "Extension identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fragIdsArrayArray.<number>",
+          "col_1": "Fragment IDs of selected objects."
+        },
+        {
+          "col_0": "dbIdArrayArray.<number>",
+          "col_1": "dbIDs of selected objects."
+        },
+        {
+          "col_0": "nodeArrayArray.<number>",
+          "col_1": "Same as dbIdArray."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "selectionsArray.<object>",
+          "col_1": "List of objects containing the typical selection properties of {@link Autodesk.Viewing#SELECTION_CHANGED_EVENT} for each model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nodeIdArrayArray.<number>",
+          "col_1": "List of isolated node IDs."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "isolationArray.<object>",
+          "col_1": "List of objects containing the typical selection properties of {@link Autodesk.Viewing#ISOLATE_EVENT} for each model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nodeIdArrayArray.<number>",
+          "col_1": "List of hidden node IDs."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "hiddenArray.<object>",
+          "col_1": "List of objects containing the typical selection properties of {@link Autodesk.Viewing#HIDE_EVENT} for each model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nodeIdArrayArray.<number>",
+          "col_1": "List of shown node IDs."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIdnumber",
+          "col_1": "dbId of the object."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cameraobject",
+          "col_1": "Affected camera."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "scalenumber",
+          "col_1": "Scale of the current exploded state."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Optional values of the current exploded state."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "immediateboolean",
+          "col_1": "True if the change was immediate."
+        },
+        {
+          "col_0": "nodeIdArrayArray.<number>",
+          "col_1": "List of node IDs fitted. Array is empty when fitting to the whole model."
+        },
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "selectionArray.<object>",
+          "col_1": "List of objects each containing a model instance and a selection array of ids."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "planesArray.<object>",
+          "col_1": "List of cutplanes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolNamestring",
+          "col_1": "Name of a specific mode of a tool."
+        },
+        {
+          "col_0": "toolobject",
+          "col_1": "Tool object."
+        },
+        {
+          "col_0": "activeboolean",
+          "col_1": "Current status of the tool."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "finalFrameboolean",
+          "col_1": "final frame is displayed this tick."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "valueobject",
+          "col_1": "Event data object containing frame rendering information."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "namestring",
+          "col_1": "Property name."
+        },
+        {
+          "col_0": "valueobject",
+          "col_1": "New property value."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "namestring",
+          "col_1": "Property name."
+        },
+        {
+          "col_0": "valueobject",
+          "col_1": "New property value."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataobject",
+          "col_1": "Hyperlink data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "delayboolean",
+          "col_1": "A flag used to aggregate multiple events during user interactions. Defaults to true."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewAutodesk.Viewing.BubbleNode",
+          "col_1": "The view object that was applied."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sceneAnimStateobject",
+          "col_1": "// scene state of transition"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sceneAnimStateobject",
+          "col_1": "// scene state of transition, this will be null for models that do not have any clusters or animations"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "modelobject",
+          "col_1": "Model data."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "visibleboolean",
+          "col_1": "True if the viewer is visible, false otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "reason‘integrated-gpu’, ‘software-renderer’",
+          "col_1": "Detected reason for the warning."
+        },
+        {
+          "col_0": "rendererInfoObject",
+          "col_1": "Raw WebGL vendor/renderer strings."
+        },
+        {
+          "col_0": "suppressDefaultfunction",
+          "col_1": "Call to prevent the default HudMessage from being shown."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "var options = {\n   env: \"AutodeskProduction\",\n   language: \"en\",\n   getAccessToken: function(onSuccess) {\n       // TODO: Get actual APS token and expiration time.\n       var accessToken = 'your_access_token';\n       var expirationTimeSeconds = 5 * 60; // 5 minutes\n       onSuccess(accessToken, expirationTimeSeconds);\n   }\n};\nvar myCallback = function() {\n   console.log(\"initialization complete, creating the viewer...\");\n};\nAutodesk.Viewing.Initializer(options, myCallback);"
+    }
+  ]
+}

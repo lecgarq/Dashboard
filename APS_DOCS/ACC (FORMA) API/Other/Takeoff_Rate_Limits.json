@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/takeoff-rate-limits",
+    "scrapedAt": "2026-05-08T23:40:24.208Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: Takeoff API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "This rate limit applies to these endpoints combined:\n\nGET v1/projects/:projectId/classification-systems\nGET v1/projects/:projectId/classification-systems/:systemId\nGET v1/projects/:projectId/classification-systems/:systemId/classifications\nGET v1/projects/:projectId/content-views\nGET v1/projects/:projectId/packages\nGET v1/projects/:projectId/packages/:packageId\nGET v1/projects/:projectId/packages/:packageId/takeoff-items\nGET v1/projects/:projectId/packages/:packageId/takeoff-items/:takeoffItemId\nGET v1/projects/:projectId/packages/:packageId/takeoff-types\nGET v1/projects/:projectId/packages/:packageId/takeoff-types/:takeoffTypeId\nGET v1/projects/:projectId/settings",
+          "Limit (requests/minute)": "300",
+          "Scope": "Per user account"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "This rate limit applies to these endpoints combined:\n\nPOST v1/projects/:projectId/classification-systems\nDELETE v1/projects/:projectId/classification-systems/:systemId\nPOST v1/projects/:projectId/classification-systems/:systemId/classifications:import\nPATCH v1/projects/:projectId/packages/:packageId\nPOST v1/projects/:projectId/packages\nPATCH v1/projects/:projectId/settings",
+          "Limit (requests/minute)": "50",
+          "Scope": "Per user account"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,467 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/hubs-hub_id-projects-GET",
+    "scrapedAt": "2026-05-08T16:24:45.519Z",
+    "category": "Data Management/Projects"
+  },
+  "title": "hubs/:hub_id/projects",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects",
+  "description": null,
+  "requestExample": "curl -v 'https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'\n\ncurl -v 'https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects?page[number]=1&page[limit]=2' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'",
+  "responseExample": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.622cb5d1-581b-4a46-a6d9-4ebc68ea4051/projects\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"projects\",\n      \"id\": \"b.c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d\",\n      \"attributes\": {\n        \"name\": \"my project\",\n        \"scopes\": [\n          \"global\"\n        ],\n        \"extension\": {\n          \"type\": \"projects:autodesk.bim360:Project\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/projects:autodesk.bim360:Project-1.0\"\n          },\n          \"data\": {\n            \"projectType\": \"BIM360\"\n          }\n        }\n      },\n      \"links\": {\n        \"self\": {\n          \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.622cb5d1-581b-4a46-a6d9-4ebc68ea4051/projects/b.c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d\"\n        },\n        \"webView\": {\n          \"href\": \"https://docs.b360.autodesk.com/projects/c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d\"\n        }\n      },\n      \"relationships\": {\n        \"hub\": {\n          \"data\": {\n            \"type\": \"hubs\",\n            \"id\": \"b.622cb5d1-581b-4a46-a6d9-4ebc68ea4051\"\n          },\n          \"links\": {\n            \"related\": {\n              \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.622cb5d1-581b-4a46-a6d9-4ebc68ea4051\"\n            }\n          }\n        },\n        \"rootFolder\": {\n          \"data\": {\n            \"type\": \"folders\",\n            \"id\": \"urn:adsk.wipprod:fs.folder:co.lw7b0sXUQ-6hWRgf34hBuw\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d/folders/urn:adsk.wipprod:fs.folder:co.lw7b0sXUQ-6hWRgf34hBuw\"\n            }\n          }\n        },\n        \"topFolders\": {\n          \"links\": {\n            \"related\": {\n              \"href\": \"https://developer.api.autodesk.com/project/v1/hubs/b.622cb5d1-581b-4a46-a6d9-4ebc68ea4051/projects/b.c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d/topFolders\"\n            }\n          }\n        },\n        \"issues\": {\n          \"data\": {\n            \"type\": \"issueContainerId\",\n            \"id\": \"93f8bd6a-2222-415c-8d58-c8fa7c292044\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/issues/v1/containers/93f8bd6a-2222-415c-8d58-c8fa7c292044/issues\"\n            }\n          }\n        },\n        \"submittals\": {\n          \"data\": {\n            \"type\": \"submittalContainerId\",\n            \"id\": \"c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/submittals/v1/containers/c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d/items\"\n            }\n          }\n        },\n        \"rfis\": {\n          \"data\": {\n            \"type\": \"rfisContainerId\",\n            \"id\": \"93f8bd6a-2222-415c-8d58-c8fa7c292044\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/bim360/rfis/v1/containers/93f8bd6a-2222-415c-8d58-c8fa7c292044/rfis\"\n            }\n          }\n        },\n        \"markups\": {\n          \"data\": {\n            \"type\": \"markupsContainerId\",\n            \"id\": \"93f8bd6a-2222-415c-8d58-c8fa7c292044\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/issues/v1/containers/93f8bd6a-2222-415c-8d58-c8fa7c292044/markups\"\n            }\n          }\n        },\n        \"checklists\": {\n          \"data\": {\n            \"type\": \"checklistsContainerId\",\n            \"id\": \"93f8bd6a-2222-415c-8d58-c8fa7c292044\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/bim360/checklists/v1/containers/93f8bd6a-2222-415c-8d58-c8fa7c292044/instances\"\n            }\n          }\n        },\n        \"cost\": {\n          \"data\": {\n            \"type\": \"costContainerId\",\n            \"id\": \"c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/cost/v1/containers/c2960674-2d1e-4cc8-a5f0-4b9026fd3f5d/budgets\"\n            }\n          }\n        },\n        \"locations\": {\n          \"data\": {\n            \"type\": \"locationsContainerId\",\n            \"id\": \"5010258a-a341-4d95-8046-3905e1a983a6\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"https://developer.api.autodesk.com/bim360/locations/v2/containers/5010258a-a341-4d95-8046-3905e1a983a6/trees/default/nodes\"\n            }\n          }\n        }\n      }\n    }\n  ]\n}\n\n{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects\"\n    },\n    \"first\": {\n        \"href\": \"project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects?page%5Bnumber%5D=0&page%5Blimit%5D=2\"\n    },\n    \"prev\": {\n        \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects?page%5Bnumber%5D=0&page%5Blimit%5D=2\"\n    },\n    \"next\": {\n        \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects?page%5Bnumber%5D=2&page%5Blimit%5D=2\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"projects\",\n      \"id\": \"a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx\",\n      \"attributes\": {\n        \"name\": \"my project\",\n        \"scopes\": [\n          \"global\"\n        ],\n        \"extension\": {\n          \"type\": \"projects:autodesk.core:Project\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"/schema/v1/versions/projects%3Aautodesk.core%3AProject-1.0\"\n          },\n          \"data\": {\n              \"projectType\": \"ACC\"\n          }\n        }\n      },\n      \"links\": {\n        \"self\": {\n          \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx\"\n        }\n      },\n      \"relationships\": {\n        \"hub\": {\n          \"data\": {\n            \"type\": \"hubs\",\n            \"id\": \"a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE\"\n          },\n          \"links\": {\n            \"related\": {\n              \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE\"\n            }\n          }\n        },\n        \"rootFolder\": {\n          \"data\": {\n            \"type\": \"folders\",\n            \"id\": \"urn:adsk.wipprod:dm.folder:hC6k4hndRWaeIVhIjvHu8w\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"/data/v1/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx/folders/urn%3Aadsk.wipprod%3Adm.folder%3AhC6k4hndRWaeIVhIjvHu8w\"\n            }\n          }\n        },\n        \"topFolders\": {\n          \"links\": {\n            \"related\": {\n              \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx/topFolders\"\n            }\n          }\n        }\n      }\n    },\n    {\n      \"type\": \"projects\",\n      \"id\": \"a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx\",\n      \"attributes\": {\n        \"name\": \"my project\",\n        \"scopes\": [\n          \"global\"\n        ],\n        \"extension\": {\n          \"type\": \"projects:autodesk.core:Project\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"/schema/v1/versions/projects%3Aautodesk.core%3AProject-1.0\"\n          },\n          \"data\": {}\n        }\n      },\n      \"links\": {\n        \"self\": {\n          \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx\"\n        }\n      },\n      \"relationships\": {\n        \"hub\": {\n          \"data\": {\n            \"type\": \"hubs\",\n            \"id\": \"a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE\"\n          },\n          \"links\": {\n            \"related\": {\n              \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE\"\n            }\n          }\n        },\n        \"rootFolder\": {\n          \"data\": {\n            \"type\": \"folders\",\n            \"id\": \"urn:adsk.wipprod:dm.folder:hC6k4hndRWaeIVhIjvHu8w\"\n          },\n          \"meta\": {\n            \"link\": {\n              \"href\": \"/data/v1/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx/folders/urn%3Aadsk.wipprod%3Adm.folder%3AhC6k4hndRWaeIVhIjvHu8w\"\n            }\n          }\n        },\n        \"topFolders\": {\n          \"links\": {\n            \"related\": {\n              \"href\": \"/project/v1/hubs/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjE/projects/a.ZXhhbXBsZTp3aXAxZnFhYXV0b2Rlc2sxNjEjMjAyMzAzMTcwMDAwMDAx/topFolders\"\n            }\n          }\n        }\n      }\n    }\n  ]\n}",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "GET https://developer.api.autodesk.com/project/v1/hubs/:hub_id/projects"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "User context optional"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:read"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+    },
+    {
+      "col_0": "x-user-idstring",
+      "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified."
+    },
+    {
+      "col_0": "hub_idstring",
+      "col_1": "The unique identifier of a hub."
+    },
+    {
+      "col_0": "filter[id]array: string",
+      "col_1": "Filter by the id of the ref target."
+    },
+    {
+      "col_0": "filter[extension.type]array: string",
+      "col_1": "Filter by the extension type."
+    },
+    {
+      "col_0": "page[number]int",
+      "col_1": "Specifies what page to return. Page numbers start at 0, so the first page is page 0."
+    },
+    {
+      "col_0": "page[limit]int",
+      "col_1": "Specifies the maximum number of elements to return in the page. The default value is 200. The min value is 1. The max value is 200."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "Successful retrieval of the projects collection associated with a specific hub."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "The request could not be understood by the server due to malformed syntax or missing request headers.\nThe client SHOULD NOT repeat the request without modifications. The response body may give an indication\nof what is wrong with the request."
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied Authorization header was not valid or the supplied token scope was not acceptable.\nVerify Authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but permission is not granted or the\napplication has not been white-listed.\nDo not try again unless you solve permissions first."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified resource was not found."
+    },
+    {
+      "col_0": "jsonapiobject",
+      "col_1": "The JSON API object."
+    },
+    {
+      "col_0": "versionenum:string",
+      "col_1": "The version of JSON API. Will always be: 1.0"
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "firstobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "prevobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "nextobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataarray: object",
+      "col_1": "The array of project objects."
+    },
+    {
+      "col_0": "typeenum:string",
+      "col_1": "The type of this resource. Will always be: projects"
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "attributesobject",
+      "col_1": "The attributes of the project."
+    },
+    {
+      "col_0": "namestring",
+      "col_1": "Displayable name of the project."
+    },
+    {
+      "col_0": "scopesarray: string",
+      "col_1": "The array of scopes applicable to this project."
+    },
+    {
+      "col_0": "extensionobject",
+      "col_1": "The extension object of the data."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of the schema that the resource’s data object adheres to."
+    },
+    {
+      "col_0": "versionstring",
+      "col_1": "The version of the schema that the data is adhering to."
+    },
+    {
+      "col_0": "schemaobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "Additional properties that the resource’s data possesses. Note that the types of properties in the data object changes according to the resource type."
+    },
+    {
+      "col_0": "projectTypestring",
+      "col_1": "The type of project. Only relevant for BIM 360 and Forma projects. Possible values: BIM360 (for BIM 360 projects), ACC (for Forma projects)."
+    },
+    {
+      "col_0": "relationshipsobject",
+      "col_1": "The resources that share a relationship with this project."
+    },
+    {
+      "col_0": "hubobject",
+      "col_1": "Information on resources that are found above this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "The object containing information on links of related resources."
+    },
+    {
+      "col_0": "relatedobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "rootFolderobject",
+      "col_1": "Information on resources that are indirectly related to this resource."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "topFoldersobject",
+      "col_1": "Information on resources that are found under this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "The object containing information on links of related resources."
+    },
+    {
+      "col_0": "relatedobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "issuesobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "submittalsobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "rfisobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "markupsobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "checklistsobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "costobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "locationsobject",
+      "col_1": "Information on resources that are indirectly related to this resource. This is available only with BIM360."
+    },
+    {
+      "col_0": "metaobject",
+      "col_1": "Meta-information on links to this resource."
+    },
+    {
+      "col_0": "linkobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "dataobject",
+      "col_1": "An object containing the id and type properties of a resource."
+    },
+    {
+      "col_0": "idstring",
+      "col_1": "The id of the resource."
+    },
+    {
+      "col_0": "typestring",
+      "col_1": "The type of this resource."
+    },
+    {
+      "col_0": "linksobject",
+      "col_1": "Information on links to this resource."
+    },
+    {
+      "col_0": "selfobject",
+      "col_1": "An object containing an API link property."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "A hyperlink reference to this resource."
+    },
+    {
+      "col_0": "webViewobject",
+      "col_1": "An object containing a link that opens the resource in a browser."
+    },
+    {
+      "col_0": "hrefstring",
+      "col_1": "The location (URL) of the resource the link goes to."
+    }
+  ]
+}

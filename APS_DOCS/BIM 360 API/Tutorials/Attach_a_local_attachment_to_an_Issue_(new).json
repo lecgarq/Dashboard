@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/issuesv2/attach-local-attachment-issues-v2",
+    "scrapedAt": "2026-05-08T17:49:53.357Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Directly Attach Local Files to an Issue (new)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/issues/v2/containers/:containerId/issues/:issueId/attachments",
+  "codeExamples": [
+    {
+      "raw": "curl --request POST 'https://developer.api.autodesk.com/issues/v2/containers/:containerId/issues/:issueId/attachments' \\\n--header 'Authorization: Bearer eyJhbGciOiJSUzI1NiIsImtpZCI6' \\\n--header 'Content-Type: application/json' \\\n--data-raw '{\n    \"name\": \"test_file.png\",\n    \"urnType\": \"oss\"\n}'",
+      "parsed": {
+        "name": "test_file.png",
+        "urnType": "oss"
+      }
+    },
+    {
+      "raw": "{\n    \"id\": \"cdd1b6f9-9c05-46f4-92f4-8759fb00e42b\",\n    \"name\": \"test_file.png\",\n    \"urnType\": \"oss\",\n    \"urn\": \"urn:adsk.objects:os.object:wip.dm.prod/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png\",\n    \"status\": \"pre-upload\",\n    \"attachmentType\": \"photo\",\n    \"issueId\": \"ce382c8b-90da-4123-ae9e-414cd02c6427\",\n    \"updatedAt\": \"2022-12-07T13:23:13.892Z\",\n    \"createdAt\": \"2022-12-07T13:23:13.892Z\",\n    \"createdBy\": \"...\",\n    \"updatedBy\": \"...\",\n    \"deletedAt\": null,\n    \"urnPage\": null,\n    \"markupMetadata\": null,\n    \"resourceUrns\": null,\n    \"urnVersion\": null,\n    \"setWipUrnRetries\": 0,\n    \"deletedBy\": null,\n    \"permittedActions\": [\n        \"remove_attachment\"\n    ],\n    \"permittedAttributes\": [\n        \"name\"\n    ]\n}",
+      "parsed": {
+        "id": "cdd1b6f9-9c05-46f4-92f4-8759fb00e42b",
+        "name": "test_file.png",
+        "urnType": "oss",
+        "urn": "urn:adsk.objects:os.object:wip.dm.prod/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png",
+        "status": "pre-upload",
+        "attachmentType": "photo",
+        "issueId": "ce382c8b-90da-4123-ae9e-414cd02c6427",
+        "updatedAt": "2022-12-07T13:23:13.892Z",
+        "createdAt": "2022-12-07T13:23:13.892Z",
+        "createdBy": "...",
+        "updatedBy": "...",
+        "deletedAt": null,
+        "urnPage": null,
+        "markupMetadata": null,
+        "resourceUrns": null,
+        "urnVersion": null,
+        "setWipUrnRetries": 0,
+        "deletedBy": null,
+        "permittedActions": [
+          "remove_attachment"
+        ],
+        "permittedAttributes": [
+          "name"
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png/signeds3upload\" \\\n-H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\""
+    },
+    {
+      "raw": "{\n    \"uploadKey\": \"AQICAHifrJ6-BSHUmjAat4QWI...cdWHJD90Ec7ZAaODsH_1LqXihzMNcJBA==\",\n    \"uploadExpiration\": \"2022-12-10T00:00:00Z\",\n    \"urlExpiration\": \"2022-12-07T13:11:40Z\",\n    \"urls\": [\n        \"https://com-autodesk-oss-direct-upload.s3-accelerate.amazonaws.com/signed-url-uploads/e9367e98-68fd-41b5-9c6d-71e9f8887179?uploadId=gbcGiDs0qWR975_q_VCAZGDWkXSad.XUQfTo4ZqVIlUi.mIe86gV0gXERp_WdfH3OYiimhSJeNSqGG9kTe.2PObko8c9qNE2e5hEFlkr_EbCkP2ag9JFXfbHjhiUcQdBU7ecWdmpkxzSC7.U6HnrNQ--&partNumber=1&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAQaCXVzLWVhc3QtMSJHMEUCIAH4W%2FrhlZBYETNUOjxJ6w7F3orenRlIkX%2BfhBM0V9r%2BAiEAijxxGQG9%2FodHiYgWI8Ico40BjFqzxTPjz5EqNgjWlJsqzAQILRAAGgw2MDQ3MzMwMDk0MDMiDIcNzCG6Ts%2BSju5KuCqpBHpufWy85XlevlAEv4CL84MPidv67kXIGgNZE1QMp%2FfH1ETjCKEQZoEv7i77XLhDW22xheaHRyg1T3vpPNRn6GBbO2jUn5WDeHpyfgPy78xm%2BGtn%2BLPCX6O8smSuVNLW53am7xb7QUuVgDtMblYfjIQ%2BnTZO9YszYbwhnaDI7V6SJhtqJRsOLFSSedmj22WtFf%2Bbw2zFdu0V%2BRfQlD0trwK3J5wvNL%2BBs1OxNxvDiy2%2BMQtJE4lTKz59JdaF0PstNlTrNNtOQP1OpqBruFm426AC30vXWglKuCC9X2yf%2BvqjWahzhbtPUzg4ILD6nzgytVcnjAYEpC39%2F4Z1bv5E%2BeNLY2dOuUFXa6KOtcdOFJfFWa2D3fAF7a5kzdvF%2Bq5PcM0stWmjMywWHLI32IeOjyumYRpOLHtH%2BkyNNUsPqRUpOXUPgjpzrb6Lvg4IDEH2YjJYTN5woYOW3OedTSX4aP2ZgrIRHOUubTxWiPAveemQxsIBktAaTdFqo5ni8pwUQq7cKymDPsL%2BpqJVSb%2BNg31KBY3h0aJ0mS26OUPcGo7tW6JTaelFAGiXRASXq6Eoz%2Byso4oosF8kFeC83AMVZ0vCotuKJqBHojH%2FsK8Zi0QnAk8yLsFgah2zoejAAFr7Ali8MNYOZowVnSOMiRnDnlMr4N1ktRFingdQ1CkT1f2vJ5ERYMyDbm6tHxHqaCM3m4%2BKANa08q3VDrFcji%2FO1QBoQQKyJEc1SPQwi%2B%2FBnAY6qQEpRV9jIR%2B3hdY8M%2BaCe7r9xImzHrmHBPc%2BxrkK4EP5gWxaZDs8Jfdp08BBG2T072%2FR9e4TfUprycO14B2z6YkhwSJThMDlQTvrJwztetAiXge5vttSTrnp6QA5UHvvpg8b2tn1LS3hHVNP5ghhj4QVNvdCpT9SPdN4G9g%2Fs8jjbRnDxNLz3URJi4qcFwAqYAu%2B7YfDJ50B%2FYJKA61PUSNk0O%2FmV6nfVgS7&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20221207T130940Z&X-Amz-SignedHeaders=host&X-Amz-Expires=119&X-Amz-Credential=ASIAYZTHFNX522TA6XO4%2F20221207%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=d784e982910dc4ad0061ae05259ef9fbe6b52c0e61cd66c463d41f344592d3e2\"\n    ]\n}",
+      "parsed": {
+        "uploadKey": "AQICAHifrJ6-BSHUmjAat4QWI...cdWHJD90Ec7ZAaODsH_1LqXihzMNcJBA==",
+        "uploadExpiration": "2022-12-10T00:00:00Z",
+        "urlExpiration": "2022-12-07T13:11:40Z",
+        "urls": [
+          "https://com-autodesk-oss-direct-upload.s3-accelerate.amazonaws.com/signed-url-uploads/e9367e98-68fd-41b5-9c6d-71e9f8887179?uploadId=gbcGiDs0qWR975_q_VCAZGDWkXSad.XUQfTo4ZqVIlUi.mIe86gV0gXERp_WdfH3OYiimhSJeNSqGG9kTe.2PObko8c9qNE2e5hEFlkr_EbCkP2ag9JFXfbHjhiUcQdBU7ecWdmpkxzSC7.U6HnrNQ--&partNumber=1&X-Amz-Security-Token=IQoJb3JpZ2luX2VjEAQaCXVzLWVhc3QtMSJHMEUCIAH4W%2FrhlZBYETNUOjxJ6w7F3orenRlIkX%2BfhBM0V9r%2BAiEAijxxGQG9%2FodHiYgWI8Ico40BjFqzxTPjz5EqNgjWlJsqzAQILRAAGgw2MDQ3MzMwMDk0MDMiDIcNzCG6Ts%2BSju5KuCqpBHpufWy85XlevlAEv4CL84MPidv67kXIGgNZE1QMp%2FfH1ETjCKEQZoEv7i77XLhDW22xheaHRyg1T3vpPNRn6GBbO2jUn5WDeHpyfgPy78xm%2BGtn%2BLPCX6O8smSuVNLW53am7xb7QUuVgDtMblYfjIQ%2BnTZO9YszYbwhnaDI7V6SJhtqJRsOLFSSedmj22WtFf%2Bbw2zFdu0V%2BRfQlD0trwK3J5wvNL%2BBs1OxNxvDiy2%2BMQtJE4lTKz59JdaF0PstNlTrNNtOQP1OpqBruFm426AC30vXWglKuCC9X2yf%2BvqjWahzhbtPUzg4ILD6nzgytVcnjAYEpC39%2F4Z1bv5E%2BeNLY2dOuUFXa6KOtcdOFJfFWa2D3fAF7a5kzdvF%2Bq5PcM0stWmjMywWHLI32IeOjyumYRpOLHtH%2BkyNNUsPqRUpOXUPgjpzrb6Lvg4IDEH2YjJYTN5woYOW3OedTSX4aP2ZgrIRHOUubTxWiPAveemQxsIBktAaTdFqo5ni8pwUQq7cKymDPsL%2BpqJVSb%2BNg31KBY3h0aJ0mS26OUPcGo7tW6JTaelFAGiXRASXq6Eoz%2Byso4oosF8kFeC83AMVZ0vCotuKJqBHojH%2FsK8Zi0QnAk8yLsFgah2zoejAAFr7Ali8MNYOZowVnSOMiRnDnlMr4N1ktRFingdQ1CkT1f2vJ5ERYMyDbm6tHxHqaCM3m4%2BKANa08q3VDrFcji%2FO1QBoQQKyJEc1SPQwi%2B%2FBnAY6qQEpRV9jIR%2B3hdY8M%2BaCe7r9xImzHrmHBPc%2BxrkK4EP5gWxaZDs8Jfdp08BBG2T072%2FR9e4TfUprycO14B2z6YkhwSJThMDlQTvrJwztetAiXge5vttSTrnp6QA5UHvvpg8b2tn1LS3hHVNP5ghhj4QVNvdCpT9SPdN4G9g%2Fs8jjbRnDxNLz3URJi4qcFwAqYAu%2B7YfDJ50B%2FYJKA61PUSNk0O%2FmV6nfVgS7&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20221207T130940Z&X-Amz-SignedHeaders=host&X-Amz-Expires=119&X-Amz-Credential=ASIAYZTHFNX522TA6XO4%2F20221207%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=d784e982910dc4ad0061ae05259ef9fbe6b52c0e61cd66c463d41f344592d3e2"
+        ]
+      }
+    },
+    {
+      "raw": "curl -X PUT --data-binary @D:\\test_file.png \"https://com-autodesk-oss-direct-upload.s3-accelerate.amazonaws.com/signed-url-uploads/e9367e98-68fd-41b5-9c6d-71e9f8887179?uploadId=[UPLOAD_ID]&partNumber=1&X-Amz-Security-Token=[AMZ_TOKEN]X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20221207T130940Z&X-Amz-SignedHeaders=host&X-Amz-Expires=119&X-Amz-Credential=[AMZ_CREDENTIAL]%2F20221207%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=[AMZ_SIGNATURE]\"\n\nA successful call (``200``) returns an empty response."
+    },
+    {
+      "raw": "curl -X POST -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" --data-raw '{\"uploadKey\":\"AQICAHifrJ6-BSHUmjAat4..........QWI-fuvghN23akgePMdmykV\"}' \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/2a6d61f2-49df-4d7b-9aed-439586d61df7.jpg/signeds3upload\"\ncurl -X POST 'https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png/signeds3upload' \\\n-H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n-H 'Content-Type: application/json' \\\n--data-raw '{ \"uploadKey\":\"AQICAHifrJ6-BSHUmjAat4QWI...cdWHJD90Ec7ZAaODsH_1LqXihzMNcJBA==\"}'"
+    },
+    {
+      "raw": "{\n  \"bucketKey\" : \"wip.dm.prod\",\n  \"objectId\" : \"urn:adsk.objects:os.object:wip.dm.prod/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png\",\n  \"objectKey\" : \"0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png\",\n  \"size\" : 2393038,\n  \"contentType\" : \"application/octet-stream\",\n  \"location\" : \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png\"\n}",
+      "parsed": {
+        "bucketKey": "wip.dm.prod",
+        "objectId": "urn:adsk.objects:os.object:wip.dm.prod/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png",
+        "objectKey": "0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png",
+        "size": 2393038,
+        "contentType": "application/octet-stream",
+        "location": "https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/0ff06f5b-0f81-4d58-bd5c-16d204cd661e.png"
+      }
+    },
+    {
+      "raw": "curl -X POST 'https://developer.api.autodesk.com/issues/v2/containers/:containerId/issues/:issueId/attachments/:attachmentId?task=post-upload-process' \\\n-H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n-H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n    \"id\": \"436aa3c4-9b79-4980-b2bd-1cdc274d34d5\",\n    \"issueId\": \"ce382c8b-90da-4123-ae9e-414cd02c6427\",\n    \"name\": \"test_file.png\",\n    \"urn\": \"urn:adsk.objects:os.object:wip.dm.prod/fc158b4f-3d78-4201-8d6b-8f319c068987.png\",\n    \"createdBy\": \"...\",\n    \"updatedBy\": \"...\",\n    \"createdAt\": \"2022-12-07T12:46:22.771Z\",\n    \"updatedAt\": \"2022-12-07T13:15:02.232Z\",\n    \"deletedAt\": null,\n    \"markupMetadata\": null,\n    \"attachmentType\": \"photo\",\n    \"status\": \"file-uploaded\",\n    \"urnType\": \"oss\",\n    \"wipUrn\": null,\n    \"deletedBy\": null,\n    \"permittedActions\": [\n        \"remove_attachment\"\n    ],\n    \"permittedAttributes\": [\n        \"name\"\n    ]\n}",
+      "parsed": {
+        "id": "436aa3c4-9b79-4980-b2bd-1cdc274d34d5",
+        "issueId": "ce382c8b-90da-4123-ae9e-414cd02c6427",
+        "name": "test_file.png",
+        "urn": "urn:adsk.objects:os.object:wip.dm.prod/fc158b4f-3d78-4201-8d6b-8f319c068987.png",
+        "createdBy": "...",
+        "updatedBy": "...",
+        "createdAt": "2022-12-07T12:46:22.771Z",
+        "updatedAt": "2022-12-07T13:15:02.232Z",
+        "deletedAt": null,
+        "markupMetadata": null,
+        "attachmentType": "photo",
+        "status": "file-uploaded",
+        "urnType": "oss",
+        "wipUrn": null,
+        "deletedBy": null,
+        "permittedActions": [
+          "remove_attachment"
+        ],
+        "permittedAttributes": [
+          "name"
+        ]
+      }
+    }
+  ]
+}

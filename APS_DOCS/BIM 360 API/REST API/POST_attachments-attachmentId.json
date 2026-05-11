@@ -1,0 +1,223 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/issues-v2-attachments-attachmentId-POST",
+    "scrapedAt": "2026-05-08T18:01:37.625Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/{containerId}/issues/{issueId}/attachments/{attachmentId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/issues/v2/containers/a5f49f04-59bb-477c-97e6-6833cb50bdac/issues/a5f49f04-59bb-477c-97e6-6833cb50bdac/attachments/a5f49f04-59bb-477c-97e6-6833cb50bdac?task=post-upload-process",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/issues/v2/containers/:containerId/issues/:issueId/attachments/:attachmentId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring",
+          "col_1": "The ID of the container.\nEach project is assigned to a container that stores all the issues for the project.\nUse the Data Management API to retrieve the container ID. For more information, see the Retrieve Issues Container ID tutorial."
+        },
+        {
+          "col_0": "issueIdstring",
+          "col_1": "The unique issue ID"
+        },
+        {
+          "col_0": "attachmentIdstring",
+          "col_1": "The unique attachment ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "task*enum:string",
+          "col_1": "Specify the task that should be performed Will always be: post-upload-process"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "202Accepted",
+          "col_1": "Accepted"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Invalid input"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied Authorization header was not valid. Verify Authentication and try again"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but permission is not granted"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Container or Issue not found"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": ""
+        },
+        {
+          "col_0": "issueIdstring: UUID",
+          "col_1": ""
+        },
+        {
+          "col_0": "namestring",
+          "col_1": ""
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "Use this attribute if urnType=dm.\nNote that response format can be either dm -urn:adsk.objects:os.object:wip.dm.prod/... or oss - urn:adsk.wipprod:dm.lineage:..."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the attachment."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The unique identifier of the user who updated the attachment."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The unique identifier of the user who deleted the attachment."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time the attachment was created (attached), in ISO8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time the attachment was updated, in ISO8601 format."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The date and time the attachment was deleted, in ISO8601 format."
+        },
+        {
+          "col_0": "markupMetadataobject",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "attachmentTypeenum:string",
+          "col_1": "The attachmentType attribute indicates the type of file that is being attached.\nThe value of attachmentType is determined by the file suffix of the attached file.\nIf the file has a suffix that corresponds to a lowercase photo format (such as .jpg, .png etc.), then attachmentType is set to photo.\nOtherwise, it is set to document.\nPossible Values: document or photo."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The status of an attachment file to an issue.\npre-upload: The file has not yet been uploaded.\nfile-uploaded: The file has been successfully uploaded, but the process of attaching it to an issue is not yet complete.\ncompleted: The process of attaching the file to issue is finished and the file is now fully accessible and ready for use.\nPossible Values: pre-upload, file-uploaded, completed."
+        },
+        {
+          "col_0": "clientCreatedAtstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "clientUpdatedAtdatetime: ISO 8601",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "urnTypeenum:string",
+          "col_1": "urnType attribute indicates the type of storage where the attachment will be stored.\nIf urnType is set to oss, it indicates that the URN refers to a file stored in an Object Storage Service (OSS). see the Attach local attachment to an Issue tutorial\nIf urnType is set to dm, it indicates that the URN refers to a file stored in a BIM360 Document Management (DM).\nPossible Values: oss or dm."
+        },
+        {
+          "col_0": "wipUrnobject",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "permittedActionsarray: string",
+          "col_1": "The list of actions permitted for the user for attachment.\nPossible Values: remove_attachment."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "A list of attributes you are allowed to edit regard the attachment.\nPossible Values: name."
+        },
+        {
+          "col_0": "urnVersionint",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/issues/v2/containers/a5f49f04-59bb-477c-97e6-6833cb50bdac/issues/a5f49f04-59bb-477c-97e6-6833cb50bdac/attachments/a5f49f04-59bb-477c-97e6-6833cb50bdac?task=post-upload-process' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"id\": \"1110f111-6c54-4b01-90e6-d701748f1111\",\n  \"issueId\": \"1110f111-6c54-4b01-90e6-d701748f1111\",\n  \"name\": \"Darth Vader\",\n  \"urn\": \"urn:adsk.wipqa:fs.folder:co.LymIC3w5SEOE6jXChqmkqg\",\n  \"createdBy\": \"A3RGM375QTZ7\",\n  \"updatedBy\": \"A3RGM375QTZ7\",\n  \"deletedBy\": \"A3RGM375QTZ7\",\n  \"createdAt\": \"2018-07-22T15:05:58.033Z\",\n  \"updatedAt\": \"2018-07-22T15:05:58.033Z\",\n  \"deletedAt\": \"2018-07-22T15:05:58.033Z\",\n  \"markupMetadata\": {},\n  \"attachmentType\": \"photo\",\n  \"status\": \"completed\",\n  \"clientCreatedAt\": \"A3RGM375QTZ7\",\n  \"clientUpdatedAt\": \"2018-07-22T15:05:58.033Z\",\n  \"urnType\": \"dm\",\n  \"wipUrn\": {},\n  \"permittedActions\": [\n    \"remove_attachment\"\n  ],\n  \"permittedAttributes\": [\n    \"name\"\n  ],\n  \"urnVersion\": 1\n}",
+      "parsed": {
+        "id": "1110f111-6c54-4b01-90e6-d701748f1111",
+        "issueId": "1110f111-6c54-4b01-90e6-d701748f1111",
+        "name": "Darth Vader",
+        "urn": "urn:adsk.wipqa:fs.folder:co.LymIC3w5SEOE6jXChqmkqg",
+        "createdBy": "A3RGM375QTZ7",
+        "updatedBy": "A3RGM375QTZ7",
+        "deletedBy": "A3RGM375QTZ7",
+        "createdAt": "2018-07-22T15:05:58.033Z",
+        "updatedAt": "2018-07-22T15:05:58.033Z",
+        "deletedAt": "2018-07-22T15:05:58.033Z",
+        "markupMetadata": {},
+        "attachmentType": "photo",
+        "status": "completed",
+        "clientCreatedAt": "A3RGM375QTZ7",
+        "clientUpdatedAt": "2018-07-22T15:05:58.033Z",
+        "urnType": "dm",
+        "wipUrn": {},
+        "permittedActions": [
+          "remove_attachment"
+        ],
+        "permittedAttributes": [
+          "name"
+        ],
+        "urnVersion": 1
+      }
+    }
+  ]
+}

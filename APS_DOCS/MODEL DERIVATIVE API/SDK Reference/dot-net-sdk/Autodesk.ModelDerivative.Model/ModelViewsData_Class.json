@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ModelViewsData",
+    "scrapedAt": "2026-05-08T18:27:58.776Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ModelViewsData",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ModelViewsData"
+    },
+    {
+      "raw": "public ModelViewsData()"
+    },
+    {
+      "raw": "[DataMember(Name = \"metadata\", EmitDefaultValue = false)]\npublic List<ModelViewsDataMetadata> Metadata { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = false)]\npublic string Type { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

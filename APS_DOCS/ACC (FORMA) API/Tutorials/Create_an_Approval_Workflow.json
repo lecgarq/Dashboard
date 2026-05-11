@@ -1,0 +1,351 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/reviews/reviews-create-workflow",
+    "scrapedAt": "2026-05-08T23:44:40.197Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Create Approval Workflows",
+  "httpMethod": "POST",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows",
+  "codeExamples": [
+    {
+      "raw": "{\n  \"name\": \"Final Structural Review\",\n  \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n  \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n  \"steps\": [\n    {\n      \"name\": \"Initial Review\",\n      \"type\": \"INITIATOR\",\n      \"candidates\": {\n        \"roles\": [ ],\n        \"users\": [\n          {\n            \"autodeskId\": \"U5XCJQ22TL8G\"\n          }\n        ],\n        \"companies\": [ ]\n      }\n    },\n    {\n      \"name\": \"Final Review\",\n      \"type\": \"APPROVER\",\n      \"candidates\": {\n        \"users\": [\n          {\n            \"autodeskId\": \"7J9JYVXFM24N4S8R\"\n          },\n          {\n            \"autodeskId\": \"5CQFQS4GQCUS\"\n          }\n        ],\n        \"roles\": [ ],\n        \"companies\": [ ]\n      },\n      \"duration\": 3,\n      \"dueDateType\": \"CALENDAR_DAY\"\n    }\n  ],\n  \"additionalApprovalStatusOptions\": [\n    {\n      \"label\": \"Approved with comments\",\n      \"value\": \"APPROVED\"\n    }\n  ],\n  \"additionalOptions\": {\n    \"initiatorEditPermissions\": [\n      \"APPROVERS\"\n    ]\n  },\n  \"attachedAttributes\": [\n    { \"id\": 10272, \"required\": false }\n  ],\n  \"updateAttributesOptions\": {\n    \"enableAttachedAttributes\": true,\n    \"updateSourceAndCopiedFiles\": false,\n    \"allowApproverToUpdateRejectedFiles\": false\n  },\n  \"copyFilesOptions\": {\n    \"enabled\": true,\n    \"allowOverride\": true,\n    \"condition\": \"ANY\",\n    \"folderUrn\": \"urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ\",\n    \"includeMarkups\": false,\n    \"disableOverrideMarkupSetting\": false\n  }\n}",
+      "parsed": {
+        "name": "Final Structural Review",
+        "description": "Used to review structural plans before finalizing IFC drawings.",
+        "notes": "Please check all rebar annotations before approving. Include markup if changes are required.",
+        "steps": [
+          {
+            "name": "Initial Review",
+            "type": "INITIATOR",
+            "candidates": {
+              "roles": [],
+              "users": [
+                {
+                  "autodeskId": "U5XCJQ22TL8G"
+                }
+              ],
+              "companies": []
+            }
+          },
+          {
+            "name": "Final Review",
+            "type": "APPROVER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "7J9JYVXFM24N4S8R"
+                },
+                {
+                  "autodeskId": "5CQFQS4GQCUS"
+                }
+              ],
+              "roles": [],
+              "companies": []
+            },
+            "duration": 3,
+            "dueDateType": "CALENDAR_DAY"
+          }
+        ],
+        "additionalApprovalStatusOptions": [
+          {
+            "label": "Approved with comments",
+            "value": "APPROVED"
+          }
+        ],
+        "additionalOptions": {
+          "initiatorEditPermissions": [
+            "APPROVERS"
+          ]
+        },
+        "attachedAttributes": [
+          {
+            "id": 10272,
+            "required": false
+          }
+        ],
+        "updateAttributesOptions": {
+          "enableAttachedAttributes": true,
+          "updateSourceAndCopiedFiles": false,
+          "allowApproverToUpdateRejectedFiles": false
+        },
+        "copyFilesOptions": {
+          "enabled": true,
+          "allowOverride": true,
+          "condition": "ANY",
+          "folderUrn": "urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ",
+          "includeMarkups": false,
+          "disableOverrideMarkupSetting": false
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"name\": \"Final Structural Review\",\n  \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n  \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n  \"steps\": [\n    {\n      \"name\": \"Initial Review\",\n      \"type\": \"INITIATOR\",\n      \"candidates\": {\n        \"roles\": [ ],\n        \"users\": [\n          {\n            \"autodeskId\": \"U5XCJQ22TL8G\"\n          }\n        ],\n        \"companies\": [ ]\n      }\n    },\n    {\n      \"name\": \"Multiple Reviewer\",\n      \"type\": \"REVIEWER\",\n      \"candidates\": {\n        \"users\": [\n          { \"autodeskId\": \"QZH2T4QCKRCHUUAK\" },\n          { \"autodeskId\": \"T9V3MNG47NSE\" },\n          { \"autodeskId\": \"YQKULET3A2P2\" }\n        ],\n        \"roles\": [ { \"autodeskId\": \"1473816\" } ],\n        \"companies\": [ { \"autodeskId\": \"26980302\" } ]\n      },\n      \"dueDateType\": \"CALENDAR_DAY\",\n      \"groupReview\": {\n        \"enabled\": true,\n        \"type\": \"MINIMUM\",\n        \"min\": 2\n      },\n      \"duration\": 3\n    },\n    {\n      \"name\": \"Single Reviewer\",\n      \"type\": \"REVIEWER\",\n      \"candidates\": {\n        \"users\": [ { \"autodeskId\": \"5NYJZXZMJTY8J58K\" } ],\n        \"roles\": [ { \"autodeskId\": \"81454472\" } ],\n        \"companies\": [ ]\n      },\n      \"dueDateType\": \"WORKDAY\",\n      \"groupReview\": {\n        \"enabled\": false,\n        \"type\": \"MINIMUM\",\n        \"min\": 2\n      },\n      \"duration\": 4\n    },\n    {\n      \"name\": \"Final Review\",\n      \"type\": \"APPROVER\",\n      \"candidates\": {\n        \"users\": [\n          { \"autodeskId\": \"7J9JYVXFM24N4S8R\" },\n          { \"autodeskId\": \"5CQFQS4GQCUS\" }\n        ],\n        \"roles\": [ ],\n        \"companies\": [ ]\n      },\n      \"duration\": 3,\n      \"dueDateType\": \"CALENDAR_DAY\"\n    }\n  ],\n  \"additionalApprovalStatusOptions\": [\n    {\n      \"label\": \"Approved with comments\",\n      \"value\": \"APPROVED\"\n    }\n  ],\n  \"additionalOptions\": {\n    \"initiatorEditPermissions\": [\n      \"REVIEWER_ASSIGNMENTS_AND_DURATION\",\n      \"APPROVERS\"\n    ]\n  },\n  \"attachedAttributes\": [\n    { \"id\": 10272, \"required\": true },\n    { \"id\": 10273, \"required\": false }\n  ],\n  \"updateAttributesOptions\": {\n    \"enableAttachedAttributes\": true,\n    \"updateSourceAndCopiedFiles\": false,\n    \"allowApproverToUpdateRejectedFiles\": false\n  },\n  \"copyFilesOptions\": {\n    \"enabled\": true,\n    \"allowOverride\": true,\n    \"condition\": \"ANY\",\n    \"folderUrn\": \"urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ\",\n    \"includeMarkups\": false,\n    \"disableOverrideMarkupSetting\": false\n  }\n}",
+      "parsed": {
+        "name": "Final Structural Review",
+        "description": "Used to review structural plans before finalizing IFC drawings.",
+        "notes": "Please check all rebar annotations before approving. Include markup if changes are required.",
+        "steps": [
+          {
+            "name": "Initial Review",
+            "type": "INITIATOR",
+            "candidates": {
+              "roles": [],
+              "users": [
+                {
+                  "autodeskId": "U5XCJQ22TL8G"
+                }
+              ],
+              "companies": []
+            }
+          },
+          {
+            "name": "Multiple Reviewer",
+            "type": "REVIEWER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "QZH2T4QCKRCHUUAK"
+                },
+                {
+                  "autodeskId": "T9V3MNG47NSE"
+                },
+                {
+                  "autodeskId": "YQKULET3A2P2"
+                }
+              ],
+              "roles": [
+                {
+                  "autodeskId": "1473816"
+                }
+              ],
+              "companies": [
+                {
+                  "autodeskId": "26980302"
+                }
+              ]
+            },
+            "dueDateType": "CALENDAR_DAY",
+            "groupReview": {
+              "enabled": true,
+              "type": "MINIMUM",
+              "min": 2
+            },
+            "duration": 3
+          },
+          {
+            "name": "Single Reviewer",
+            "type": "REVIEWER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "5NYJZXZMJTY8J58K"
+                }
+              ],
+              "roles": [
+                {
+                  "autodeskId": "81454472"
+                }
+              ],
+              "companies": []
+            },
+            "dueDateType": "WORKDAY",
+            "groupReview": {
+              "enabled": false,
+              "type": "MINIMUM",
+              "min": 2
+            },
+            "duration": 4
+          },
+          {
+            "name": "Final Review",
+            "type": "APPROVER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "7J9JYVXFM24N4S8R"
+                },
+                {
+                  "autodeskId": "5CQFQS4GQCUS"
+                }
+              ],
+              "roles": [],
+              "companies": []
+            },
+            "duration": 3,
+            "dueDateType": "CALENDAR_DAY"
+          }
+        ],
+        "additionalApprovalStatusOptions": [
+          {
+            "label": "Approved with comments",
+            "value": "APPROVED"
+          }
+        ],
+        "additionalOptions": {
+          "initiatorEditPermissions": [
+            "REVIEWER_ASSIGNMENTS_AND_DURATION",
+            "APPROVERS"
+          ]
+        },
+        "attachedAttributes": [
+          {
+            "id": 10272,
+            "required": true
+          },
+          {
+            "id": 10273,
+            "required": false
+          }
+        ],
+        "updateAttributesOptions": {
+          "enableAttachedAttributes": true,
+          "updateSourceAndCopiedFiles": false,
+          "allowApproverToUpdateRejectedFiles": false
+        },
+        "copyFilesOptions": {
+          "enabled": true,
+          "allowOverride": true,
+          "condition": "ANY",
+          "folderUrn": "urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ",
+          "includeMarkups": false,
+          "disableOverrideMarkupSetting": false
+        }
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows' \\\n  -X POST \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n    \"name\": \"Final Structural Review\",\n    \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n    \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n    \"steps\": [\n      {\n        \"name\": \"Initial Review\",\n        \"type\": \"INITIATOR\",\n        \"candidates\": {\n          \"roles\": [\n            { \"autodeskId\": \"1473817\" }\n          ],\n          \"users\": [\n            { \"autodeskId\": \"HWUBNU689CRU\" }\n          ],\n          \"companies\": [\n            { \"autodeskId\": \"26980302\" }\n          ]\n        }\n      },\n      {\n        \"name\": \"Structural Design Reviewer\",\n        \"type\": \"REVIEWER\",\n        \"candidates\": {\n          \"users\": [\n            { \"autodeskId\": \"QZH2T4QCKRCHUUAK\" },\n            { \"autodeskId\": \"T9V3MNG47NSE\" },\n            { \"autodeskId\": \"YQKULET3A2P2\" }\n          ],\n          \"roles\": [\n            { \"autodeskId\": \"1473816\" }\n          ],\n          \"companies\": [\n            { \"autodeskId\": \"26980302\" }\n          ]\n        },\n        \"dueDateType\": \"CALENDAR_DAY\",\n        \"groupReview\": { \"enabled\": true, \"type\": \"MINIMUM\", \"min\": 2 },\n        \"duration\": 3\n      },\n      {\n        \"name\": \"Structural Design Approver\",\n        \"type\": \"APPROVER\",\n        \"candidates\": {\n          \"users\": [\n            { \"autodeskId\": \"7J9JYVXFM24N4S8R\" },\n            { \"autodeskId\": \"5CQFQS4GQCUS\" }\n          ],\n          \"roles\": [ ],\n          \"companies\": [ ]\n        },\n        \"duration\": 3,\n        \"dueDateType\": \"CALENDAR_DAY\"\n      }\n    ],\n    \"additionalApprovalStatusOptions\": [\n      { \"label\": \"Approved with comments\", \"value\": \"APPROVED\" }\n    ],\n    \"additionalOptions\": {\n      \"initiatorEditPermissions\": [\n        \"REVIEWER_ASSIGNMENTS_AND_DURATION\",\n        \"APPROVERS\"\n      ]\n    },\n    \"attachedAttributes\": [\n      { \"id\": 10272, \"required\": true },\n      { \"id\": 10273, \"required\": false }\n    ],\n    \"updateAttributesOptions\": {\n      \"enableAttachedAttributes\": true,\n      \"updateSourceAndCopiedFiles\": false,\n      \"allowApproverToUpdateRejectedFiles\": false\n    },\n    \"copyFilesOptions\": {\n      \"enabled\": true,\n      \"allowOverride\": true,\n      \"condition\": \"ANY\",\n      \"folderUrn\": \"urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ\",\n      \"includeMarkups\": false,\n      \"disableOverrideMarkupSetting\": false\n    }\n  }'",
+      "parsed": {
+        "name": "Final Structural Review",
+        "description": "Used to review structural plans before finalizing IFC drawings.",
+        "notes": "Please check all rebar annotations before approving. Include markup if changes are required.",
+        "steps": [
+          {
+            "name": "Initial Review",
+            "type": "INITIATOR",
+            "candidates": {
+              "roles": [
+                {
+                  "autodeskId": "1473817"
+                }
+              ],
+              "users": [
+                {
+                  "autodeskId": "HWUBNU689CRU"
+                }
+              ],
+              "companies": [
+                {
+                  "autodeskId": "26980302"
+                }
+              ]
+            }
+          },
+          {
+            "name": "Structural Design Reviewer",
+            "type": "REVIEWER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "QZH2T4QCKRCHUUAK"
+                },
+                {
+                  "autodeskId": "T9V3MNG47NSE"
+                },
+                {
+                  "autodeskId": "YQKULET3A2P2"
+                }
+              ],
+              "roles": [
+                {
+                  "autodeskId": "1473816"
+                }
+              ],
+              "companies": [
+                {
+                  "autodeskId": "26980302"
+                }
+              ]
+            },
+            "dueDateType": "CALENDAR_DAY",
+            "groupReview": {
+              "enabled": true,
+              "type": "MINIMUM",
+              "min": 2
+            },
+            "duration": 3
+          },
+          {
+            "name": "Structural Design Approver",
+            "type": "APPROVER",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "7J9JYVXFM24N4S8R"
+                },
+                {
+                  "autodeskId": "5CQFQS4GQCUS"
+                }
+              ],
+              "roles": [],
+              "companies": []
+            },
+            "duration": 3,
+            "dueDateType": "CALENDAR_DAY"
+          }
+        ],
+        "additionalApprovalStatusOptions": [
+          {
+            "label": "Approved with comments",
+            "value": "APPROVED"
+          }
+        ],
+        "additionalOptions": {
+          "initiatorEditPermissions": [
+            "REVIEWER_ASSIGNMENTS_AND_DURATION",
+            "APPROVERS"
+          ]
+        },
+        "attachedAttributes": [
+          {
+            "id": 10272,
+            "required": true
+          },
+          {
+            "id": 10273,
+            "required": false
+          }
+        ],
+        "updateAttributesOptions": {
+          "enableAttachedAttributes": true,
+          "updateSourceAndCopiedFiles": false,
+          "allowApproverToUpdateRejectedFiles": false
+        },
+        "copyFilesOptions": {
+          "enabled": true,
+          "allowOverride": true,
+          "condition": "ANY",
+          "folderUrn": "urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ",
+          "includeMarkups": false,
+          "disableOverrideMarkupSetting": false
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"name\": \"Final Structural Review\",\n  \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n  \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n  \"id\": \"4e609369-e950-4097-b7d3-e6cf1c3c5415\",\n  \"status\": \"ACTIVE\",\n  \"approvalStatusOptions\": [\n    { \"label\": \"Approved\", \"value\": \"APPROVED\", \"id\": \"f44e623d...\", \"builtIn\": true },\n    { \"label\": \"Rejected\", \"value\": \"REJECTED\", \"id\": \"b2a3c3b7...\", \"builtIn\": true },\n    { \"label\": \"Approved with comments\", \"value\": \"APPROVED\", \"id\": \"e683e927...\", \"builtIn\": false }\n  ],\n  \"steps\": [\n    { \"name\": \"Initial Review\", \"type\": \"INITIATOR\", \"id\": \"Lane_vCfFkOixUp\", ... },\n    { \"name\": \"Structural Design Reviewer\", \"type\": \"REVIEWER\", \"id\": \"Lane_3ReoxO2T0o\", ... },\n    { \"name\": \"Structural Design Approver\", \"type\": \"APPROVER\", \"id\": \"Lane_Z76ZdpGSm5\", ... }\n  ],\n  \"copyFilesOptions\": { \"enabled\": true, \"allowOverride\": true, \"condition\": \"ANY\", ... },\n  \"additionalOptions\": {\n    \"initiatorEditPermissions\": [\n      \"REVIEWER_ASSIGNMENTS_AND_DURATION\",\n      \"APPROVERS\"\n    ]\n  },\n  \"attachedAttributes\": [\n    { \"id\": 10272, \"required\": true },\n    { \"id\": 10273, \"required\": false }\n  ],\n  \"updateAttributesOptions\": {\n    \"enableAttachedAttributes\": true,\n    \"updateSourceAndCopiedFiles\": false,\n    \"allowApproverToUpdateRejectedFiles\": false\n  },\n  \"createdAt\": \"2024-07-07T09:21:17.577Z\",\n  \"updatedAt\": \"2025-01-07T08:43:10.189Z\"\n}"
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows/4e609369-e950-4097-b7d3-e6cf1c3c5415' \\\n  -X GET \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"name\": \"Final Structural Review\",\n  \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n  \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n  \"id\": \"4e609369-e950-4097-b7d3-e6cf1c3c5415\",\n  \"status\": \"ACTIVE\",\n  \"approvalStatusOptions\": [\n    { \"label\": \"Approved\", \"value\": \"APPROVED\", \"id\": \"f44e623d...\", \"builtIn\": true },\n    { \"label\": \"Rejected\", \"value\": \"REJECTED\", \"id\": \"b2a3c3b7...\", \"builtIn\": true },\n    { \"label\": \"Approved with comments\", \"value\": \"APPROVED\", \"id\": \"e683e927...\", \"builtIn\": false }\n  ],\n  \"steps\": [\n    { \"name\": \"Initial Review\", \"type\": \"INITIATOR\", \"id\": \"Lane_vCfFkOixUp\", ... },\n    { \"name\": \"Structural Design Reviewer\", \"type\": \"REVIEWER\", \"id\": \"Lane_3ReoxO2T0o\", ... },\n    { \"name\": \"Structural Design Approver\", \"type\": \"APPROVER\", \"id\": \"Lane_Z76ZdpGSm5\", ... }\n  ],\n  \"copyFilesOptions\": { \"enabled\": true, \"allowOverride\": true, \"condition\": \"ANY\", ... },\n  \"additionalOptions\": {\n    \"initiatorEditPermissions\": [\n      \"REVIEWER_ASSIGNMENTS_AND_DURATION\",\n      \"APPROVERS\"\n    ]\n  },\n  \"attachedAttributes\": [\n    { \"id\": 10272, \"required\": true },\n    { \"id\": 10273, \"required\": false }\n  ],\n  \"updateAttributesOptions\": {\n    \"enableAttachedAttributes\": true,\n    \"updateSourceAndCopiedFiles\": false,\n    \"allowApproverToUpdateRejectedFiles\": false\n  },\n  \"createdAt\": \"2024-07-07T09:21:17.577Z\",\n  \"updatedAt\": \"2025-01-07T08:43:10.189Z\"\n}"
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows?limit=10&offset=0&filter[status]=ACTIVE' \\\n  -X GET \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"name\": \"Final Structural Review\",\n      \"description\": \"Used to review structural plans before finalizing IFC drawings.\",\n      \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n      \"id\": \"4e609369-e950-4097-b7d3-e6cf1c3c5415\",\n      \"status\": \"ACTIVE\",\n      \"approvalStatusOptions\": [\n        {\n          \"label\": \"Approved\",\n          \"value\": \"APPROVED\",\n          \"id\": \"f44e623d-f04f-47fe-8195-efc43d1d985b\",\n          \"builtIn\": true\n        },\n        {\n          \"label\": \"Rejected\",\n          \"value\": \"REJECTED\",\n          \"id\": \"b2a3c3b7-4fef-40a4-868b-981b23e7182f\",\n          \"builtIn\": true\n        },\n        {\n          \"label\": \"Approved with comments\",\n          \"value\": \"APPROVED\",\n          \"id\": \"e683e927-fea7-4858-86af-f022b3c52aa4\",\n          \"builtIn\": false\n        }\n      ],\n      \"steps\": [\n        {\n          \"name\": \"Initial Review\",\n          \"type\": \"INITIATOR\",\n          \"id\": \"Lane_vCfFkOixUp\",\n          \"candidates\": {\n            \"roles\": [\n              { \"autodeskId\": \"1473817\", \"name\": \"Architect\" }\n            ],\n            \"users\": [\n              { \"autodeskId\": \"HWUBNU689CRU\", \"name\": \"James Smith\" }\n            ],\n            \"companies\": [\n              { \"autodeskId\": \"26980302\", \"name\": \"Autodesk Co. Ltd.\" }\n            ]\n          }\n        },\n        {\n          \"name\": \"Structural Design Reviewer\",\n          \"type\": \"REVIEWER\",\n          \"id\": \"Lane_3ReoxO2T0o\",\n          \"candidates\": {\n            \"users\": [\n              { \"autodeskId\": \"QZH2T4QCKRCHUUAK\", \"name\": \"John Doe\" },\n              { \"autodeskId\": \"T9V3MNG47NSE\", \"name\": \"Jane Lee\" },\n              { \"autodeskId\": \"YQKULET3A2P2\", \"name\": \"Jim Green\" }\n            ],\n            \"roles\": [\n              { \"autodeskId\": \"1473816\", \"name\": \"Structural Engineer\" }\n            ],\n            \"companies\": [\n              { \"autodeskId\": \"26980302\", \"name\": \"Autodesk Co. Ltd.\" }\n            ]\n          },\n          \"groupReview\": {\n            \"enabled\": true,\n            \"type\": \"MINIMUM\",\n            \"min\": 2\n          },\n          \"dueDateType\": \"CALENDAR_DAY\",\n          \"duration\": 3\n        },\n        {\n          \"name\": \"Structural Design Approver\",\n          \"type\": \"APPROVER\",\n          \"id\": \"Lane_Z76ZdpGSm5\",\n          \"candidates\": {\n            \"users\": [\n              { \"autodeskId\": \"7J9JYVXFM24N4S8R\", \"name\": \"Jimmy Park\" },\n              { \"autodeskId\": \"5CQFQS4GQCUS\", \"name\": \"Kevin Dow\" }\n            ],\n            \"roles\": [ ],\n            \"companies\": [ ]\n          },\n          \"duration\": 3,\n          \"dueDateType\": \"CALENDAR_DAY\"\n        }\n      ],\n      \"copyFilesOptions\": {\n        \"enabled\": true,\n        \"allowOverride\": true,\n        \"condition\": \"ANY\",\n        \"folderUrn\": \"urn:adsk.wipprod:fs.folder:co.XqQ14eRpSZiNe1xB7A_DNQ\",\n        \"includeMarkups\": false,\n        \"disableOverrideMarkupSetting\": false\n      },\n      \"additionalOptions\": {\n        \"initiatorEditPermissions\": [\n          \"REVIEWER_ASSIGNMENTS_AND_DURATION\",\n          \"APPROVERS\"\n        ]\n      },\n      \"attachedAttributes\": [\n        {\n          \"id\": 10272,\n          \"required\": true\n        },\n        {\n          \"id\": 10273,\n          \"required\": false\n        }\n      ],\n      \"updateAttributesOptions\": {\n        \"enableAttachedAttributes\": true,\n        \"updateSourceAndCopiedFiles\": false,\n        \"allowApproverToUpdateRejectedFiles\": false\n      },\n      \"createdAt\": \"2024-07-07T09:21:17.577Z\",\n      \"updatedAt\": \"2025-01-07T08:43:10.189Z\"\n    },\n    ...\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 100,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows?limit=10&offset=10&filter[status]=ACTIVE\"\n  }\n}"
+    }
+  ]
+}

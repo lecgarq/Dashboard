@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/interfaces",
+    "scrapedAt": "2026-05-08T18:19:13.193Z",
+    "category": "SDK Reference",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Item",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*ID! non-null",
+          "col_1": "The ID that uniquely identifies the item."
+        },
+        {
+          "col_0": "hubHub",
+          "col_1": "An object representing the hub that contains this item."
+        },
+        {
+          "col_0": "projectProject",
+          "col_1": "An object representing the project that contains this item."
+        },
+        {
+          "col_0": "parentFolderFolder",
+          "col_1": "The folder that contains this item."
+        },
+        {
+          "col_0": "nameString",
+          "col_1": "A human-readable name to identify this item."
+        },
+        {
+          "col_0": "createdOnDateTime",
+          "col_1": "Indicates when this item was created."
+        },
+        {
+          "col_0": "createdByUser",
+          "col_1": "An object representing the user who created this item."
+        },
+        {
+          "col_0": "lastModifiedOnDateTime",
+          "col_1": "Indicates when this item was most recently modified."
+        },
+        {
+          "col_0": "lastModifiedByUser",
+          "col_1": "An object representing the user who made the most recent modification."
+        },
+        {
+          "col_0": "extensionTypeString",
+          "col_1": "The extension type of the item."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Implemented By",
+          "Used By": "BasicItem",
+          "Description": "Represents a file that does not contain components or drawings."
+        }
+      ]
+    }
+  ]
+}

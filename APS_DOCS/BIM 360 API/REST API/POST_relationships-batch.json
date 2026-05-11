@@ -1,0 +1,244 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/relationship-service-v2-get-relationships-batch-POST",
+    "scrapedAt": "2026-05-08T18:05:14.213Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/:containerId/relationships:batch",
+  "httpMethod": "POST",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:batch",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/bim360/relationship/v2/containers/:containerId/relationships:batch"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "array: string: UUID*array: string: UUID",
+          "col_1": "The list of relationship IDs to retrieve.\nMin items: 1 Max items: 50"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "415Unsupported Media Type",
+          "col_1": "The Content-Type header must be application/json."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The UUID that uniquely identifies the relationship."
+        },
+        {
+          "col_0": "createdOndatetime: ISO 8601",
+          "col_1": "The date and time the relationship was created."
+        },
+        {
+          "col_0": "isReadOnlyboolean",
+          "col_1": "true if this relationship is read only for the current caller.\nfalse if this relationship is not read only for the current caller."
+        },
+        {
+          "col_0": "isServiceboolean",
+          "col_1": "true if this relationship was created by a service.\nfalse if this relationship was not created by a service."
+        },
+        {
+          "col_0": "isDeletedboolean",
+          "col_1": "true if this relationship is deleted.\nfalse if this relationship is not deleted."
+        },
+        {
+          "col_0": "deletedOndatetime: ISO 8601",
+          "col_1": "The date and time the relationship was deleted."
+        },
+        {
+          "col_0": "entitiesarray: object",
+          "col_1": "The entities contained in the relationship.\nMin items: 2 Max items: 2"
+        },
+        {
+          "col_0": "createdOndatetime: ISO 8601",
+          "col_1": "The date and time the entity was created."
+        },
+        {
+          "col_0": "domainstring",
+          "col_1": "The domain to which the entity belongs.\nTo learn more about domains and entities, see the Relationship Service Field Guide.\nMax length: 128"
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of entity.\nMax length: 128"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the entity.\nMax length: 512"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field that failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:batch' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"d98c1dd4-008f-04b2-e980-0998ecf8427e\"\n         ]'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"74b70bb8-8802-a1fd-f201-890375a60c8f\",\n    \"createdOn\": \"2015-10-21T16:32:22Z\",\n    \"isReadOnly\": true,\n    \"isService\": false,\n    \"isDeleted\": false,\n    \"entities\": [\n      {\n        \"domain\": \"autodesk-bim360-asset\",\n        \"type\": \"asset\",\n        \"id\": \"2b95ba7a-3df5-4e99-a693-9c7cc15ee8c0\",\n        \"createdOn\": \"2021-07-29T11:39:12+01:00\"\n      },\n      {\n        \"domain\": \"autodesk-bim360-documentmanagement\",\n        \"type\": \"documentlineage\",\n        \"id\": \"urn:adsk.wipprod:dm.lineage:hC6k4hndRWaeIVhIjvHu8w\",\n        \"createdOn\": \"2021-07-29T13:39:12+01:00\"\n      }\n    ]\n  }\n]",
+      "parsed": {
+        "id": "74b70bb8-8802-a1fd-f201-890375a60c8f",
+        "createdOn": "2015-10-21T16:32:22Z",
+        "isReadOnly": true,
+        "isService": false,
+        "isDeleted": false,
+        "entities": [
+          {
+            "domain": "autodesk-bim360-asset",
+            "type": "asset",
+            "id": "2b95ba7a-3df5-4e99-a693-9c7cc15ee8c0",
+            "createdOn": "2021-07-29T11:39:12+01:00"
+          },
+          {
+            "domain": "autodesk-bim360-documentmanagement",
+            "type": "documentlineage",
+            "id": "urn:adsk.wipprod:dm.lineage:hC6k4hndRWaeIVhIjvHu8w",
+            "createdOn": "2021-07-29T13:39:12+01:00"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

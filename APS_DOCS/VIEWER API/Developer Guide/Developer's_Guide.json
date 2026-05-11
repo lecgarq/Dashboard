@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide",
+    "scrapedAt": "2026-05-08T18:50:45.111Z",
+    "category": "Developer Guide",
+    "apiName": "VIEWER API"
+  },
+  "title": "About the Viewer SDK",
+  "codeExamples": [
+    {
+      "raw": "viewer.addEventListener(Autodesk.Viewing.GEOMETRY_LOADED_EVENT, function () {\n viewer.search('concrete', function (ids) {\n     viewer.isolate(ids);\n });\n});"
+    }
+  ]
+}

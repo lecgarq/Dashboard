@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/inputs/exchangesourceinput",
+    "scrapedAt": "2026-05-08T18:18:40.478Z",
+    "category": "SDK Reference/inputs",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "ExchangeSourceInput",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fileId*String! non-null",
+          "col_1": "File id of the source file."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Argument for Input",
+          "Used By": "CreateExchangeInput",
+          "Description": "Input for creating an exchange."
+        }
+      ]
+    }
+  ]
+}

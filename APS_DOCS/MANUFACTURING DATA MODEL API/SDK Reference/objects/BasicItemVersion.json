@@ -1,0 +1,96 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/basicitemversion",
+    "scrapedAt": "2026-05-08T18:16:12.760Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "BasicItemVersion",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*ID! non-null",
+          "col_1": "A system-generated ID that uniquely identifies this object."
+        },
+        {
+          "col_0": "hubHub",
+          "col_1": "An object representing the hub that contains this file."
+        },
+        {
+          "col_0": "projectProject",
+          "col_1": "An object representing the project that contains this file."
+        },
+        {
+          "col_0": "nameString",
+          "col_1": "A human-readable name to identify this file."
+        },
+        {
+          "col_0": "createdOnDateTime",
+          "col_1": "Indicates when this version of the file was created."
+        },
+        {
+          "col_0": "createdByUser",
+          "col_1": "An object representing the user who created this version of the file."
+        },
+        {
+          "col_0": "lastModifiedOnDateTime",
+          "col_1": "Indicates when this version of the file was most recently modified."
+        },
+        {
+          "col_0": "lastModifiedByUser",
+          "col_1": "An object representing the user who made the most recent modification."
+        },
+        {
+          "col_0": "versionNumberInt",
+          "col_1": "Version indicator of this file."
+        },
+        {
+          "col_0": "mimeTypeString",
+          "col_1": "The mime type of the file."
+        },
+        {
+          "col_0": "extensionTypeString",
+          "col_1": "The extension type of the file."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Interface",
+          "Used By": "ItemVersion",
+          "Description": "Represents a version of a file.  A file is a container that stores data, information, settings, or commands used with a computer program."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "BasicItem",
+          "Description": "Represents a file that does not contain components or drawings."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "BasicItemVersions",
+          "Description": "Contains a list of file versions returned in response to a query."
+        }
+      ]
+    }
+  ]
+}

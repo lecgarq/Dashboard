@@ -1,0 +1,399 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/MarkupsCore",
+    "scrapedAt": "2026-05-08T18:46:35.291Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "MarkupsCore",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Autodesk.Viewing.Viewer3D",
+          "col_1": "Viewer instance used to operate on."
+        },
+        {
+          "col_0": "options*object",
+          "col_1": "Same Dictionary object passed into Viewer3D’s constructor."
+        },
+        {
+          "col_0": "markupDisableHotkeysboolean",
+          "col_1": "Disables hotkeys for copy, cut, paste, duplicate, undo, redo and deselect."
+        },
+        {
+          "col_0": "markupToolClassAutodesk.Viewing.ToolInterface",
+          "col_1": "Class override for input handling. Use it to override/extend default hotkeys and/or mouse/gesture input."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "layerId*string",
+          "col_1": "[optional] Identifier for the layer of markups to be edited. Example “Layer1”."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Returns true if editMode is active"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Returns true if Edit mode has been deactivated"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether it successfully entered view mode or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether it successfully left view mode or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "Returns an SVG element with all of the created markups in a string format."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "editMode*object",
+          "col_1": "Object instance for the drawing tool"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether allowNavigation() can succeed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "allow*boolean",
+          "col_1": "Whether camera navigation interactions are active or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "disable*boolean",
+          "col_1": "true to disable interactions with markups; false to enable interactions with markups; default false."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if there are no changes to undo; false if there are changes to undo."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if there are no changes to redo; false if there are changes to redo."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*string",
+          "col_1": "Markup identifier."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.Extensions.Markups.Core.Markup",
+          "description": "Returns markup object."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "markup*Autodesk.Viewing.Extensions.Markups.Core.Markup, null",
+          "col_1": "The markup instance to select. Set the value to null to deselect a markup."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.Extensions.Markups.Core.Markup, null",
+          "description": "Returns selected markup object; null if no markup is selected."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "markup*Autodesk.Viewing.Extensions.Markups.Core.Markup",
+          "col_1": "Markup object."
+        },
+        {
+          "col_0": "dontAddToHistoryboolean",
+          "col_1": "Whether delete action can be undone."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "markupString*string",
+          "col_1": "SVG string with markups. See also generateData()."
+        },
+        {
+          "col_0": "layerId*string",
+          "col_1": "Identifier for the layer where the markup should be loaded to. Example “Layer1”."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether the markup string was able to be loaded successfully"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "layerId*string",
+          "col_1": "ID of the layer to revert any changes that were made to it."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true if the layer was unloaded, false if the layer was not unloaded."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "layerId*string",
+          "col_1": "ID of the layer containing all markups to unload (from the DOM)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether the operation succeeded or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "layerId*string",
+          "col_1": "ID of the layer containing all markups that should be hidden (in the DOM)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether the operation succeeded or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "layerId*string",
+          "col_1": "ID of the layer containing all markups to unload (from the DOM)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "Whether the operation succeeded or not."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "markupMarkup",
+          "col_1": "The selected markup"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataEventHistoryChangedData",
+          "col_1": "The event data to identify the action and target"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "markupIdnumber",
+          "col_1": "The id of the selected markup"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/inputs/folderfilterinput",
+    "scrapedAt": "2026-05-08T18:18:46.978Z",
+    "category": "SDK Reference/inputs",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "FolderFilterInput",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nameString",
+          "col_1": "The name of the folder you want to match. Currently, only exact matches are supported."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Argument for Query",
+          "Used By": "folders",
+          "Description": "Retrieves all sub-folders within a specified folder that meet the filter criteria specified by the filter argument."
+        }
+      ]
+    }
+  ]
+}

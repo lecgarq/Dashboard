@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/Functions/setCompassRotation",
+    "scrapedAt": "2026-05-08T18:48:40.436Z",
+    "category": "SDK Reference/globals/Functions",
+    "apiName": "VIEWER API"
+  },
+  "title": "setCompassRotation",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "radiansnumber",
+          "col_1": "// Angle of north in radians wrt front"
+        }
+      ]
+    }
+  ]
+}

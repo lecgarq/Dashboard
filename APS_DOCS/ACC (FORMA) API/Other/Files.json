@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/field-guide/files",
+    "scrapedAt": "2026-05-08T23:38:34.050Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma Files API Field Guide",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Published standard markups",
+          "Description": "Markups visible to all project members."
+        },
+        {
+          "Type": "Unpublished standard markups",
+          "Description": "Markups visible only to their creator."
+        },
+        {
+          "Type": "Added markup links",
+          "Description": "Links added manually to a standard markup, including links to Sheets, Files, RFIs, Forms, Submittals, and Assets."
+        },
+        {
+          "Type": "Published issues markups",
+          "Description": "Issues visible to anyone with the correct permission on your project."
+        },
+        {
+          "Type": "Unpublished issues markups",
+          "Description": "Issues visible only to the issue markup creator and the assignee."
+        },
+        {
+          "Type": "Published photos markups",
+          "Description": "Photos visible to anyone on your project. A subscription to Autodesk Forma Build is required."
+        },
+        {
+          "Type": "Unpublished photos markups",
+          "Description": "Photos visible only to the photo markup creator. A subscription to Autodesk Forma Build is required."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Version Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Version Type": "Current versions",
+          "Description": "CURRENT – Files in this package automatically update to the latest current versions."
+        },
+        {
+          "Version Type": "Fixed versions",
+          "Description": "FIXED – Files in this package remain fixed at the selected versions."
+        }
+      ]
+    }
+  ]
+}

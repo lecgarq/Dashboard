@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/projects",
+    "scrapedAt": "2026-05-08T18:17:41.286Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Projects",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationPagination",
+          "col_1": "Contains information about the current page, when results are split into multiple pages."
+        },
+        {
+          "col_0": "results*[Project!] non-null",
+          "col_1": "An array that contains objects representing projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "Hub",
+          "Description": "Represents a hub.  A hub is a container of projects, shared resources, and users with a common context."
+        },
+        {
+          "Usage": "Query By",
+          "Used By": "projects",
+          "Description": "Retrieves all projects that match the specified filter criteria from a specified hub."
+        }
+      ]
+    }
+  ]
+}

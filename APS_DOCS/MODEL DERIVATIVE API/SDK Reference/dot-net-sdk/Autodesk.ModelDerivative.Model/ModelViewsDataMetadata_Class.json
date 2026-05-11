@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ModelViewsDataMetadata",
+    "scrapedAt": "2026-05-08T18:28:02.014Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class ModelViewsDataMetadata",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class ModelViewsDataMetadata"
+    },
+    {
+      "raw": "public ModelViewsDataMetadata()"
+    },
+    {
+      "raw": "[DataMember(Name = \"guid\", EmitDefaultValue = false)]\npublic string Guid { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"isMasterView\", EmitDefaultValue = false)]\npublic bool? IsMasterView { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"name\", EmitDefaultValue = false)]\npublic string Name { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"role\", EmitDefaultValue = true)]\npublic Role Role { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

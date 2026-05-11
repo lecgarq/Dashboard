@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/rate-limits/da-rate-limits",
+    "scrapedAt": "2026-05-08T17:38:54.641Z",
+    "category": "Developer Guide/rate-limits",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Automation API Rate Limit and Quotas",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Quota",
+        "AutoCAD",
+        "Inventor",
+        "Revit",
+        "3ds Max",
+        "Fusion",
+        "Units"
+      ],
+      "rows": [
+        {
+          "Quota": "Default maximum duration of processing time for a WorkItem. Note: Includes download and upload time",
+          "AutoCAD": "100",
+          "Inventor": "900",
+          "Revit": "10800",
+          "3ds Max": "3600",
+          "Fusion": "900",
+          "Units": "seconds"
+        },
+        {
+          "Quota": "Maximum duration of processing time for a WorkItem that may be specified using the limitProcessingTimeSec attribute (described below). Note: Includes download and upload time",
+          "AutoCAD": "3600",
+          "Inventor": "43200",
+          "Revit": "43200",
+          "3ds Max": "36000",
+          "Fusion": "3600",
+          "Units": "seconds"
+        },
+        {
+          "Quota": "Maximum permitted size for a WorkItem’s JSON payload",
+          "AutoCAD": "64",
+          "Inventor": "64",
+          "Revit": "64",
+          "3ds Max": "64",
+          "Fusion": "64",
+          "Units": "KB"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Quota",
+        "Applies to",
+        "AutoCAD",
+        "Inventor",
+        "Revit",
+        "3ds Max",
+        "Fusion",
+        "Units"
+      ],
+      "rows": [
+        {
+          "Quota": "Maximum uncompressed size of app bundles for each job",
+          "Applies to": "App bundle",
+          "AutoCAD": "500",
+          "Inventor": "500",
+          "Revit": "5000",
+          "3ds Max": "5000",
+          "Fusion": "500",
+          "Units": "MB"
+        },
+        {
+          "Quota": "Maximum number of total versions for app bundles and activities (app bundles and activities counted separately)",
+          "Applies to": "App bundles, activities",
+          "AutoCAD": "100",
+          "Inventor": "100",
+          "Revit": "100",
+          "3ds Max": "100",
+          "Fusion": "100",
+          "Units": "versions"
+        },
+        {
+          "Quota": "Maximum number of total aliases for app bundles and activities (app bundles and activities counted separately)",
+          "Applies to": "App bundles, activities",
+          "AutoCAD": "100",
+          "Inventor": "100",
+          "Revit": "100",
+          "3ds Max": "100",
+          "Fusion": "100",
+          "Units": "aliases"
+        },
+        {
+          "Quota": "Max permitted size of an AppBundle upload",
+          "Applies to": "App bundle",
+          "AutoCAD": "100",
+          "Inventor": "100",
+          "Revit": "100",
+          "3ds Max": "100",
+          "Fusion": "100",
+          "Units": "MB"
+        },
+        {
+          "Quota": "Max permitted size for an activity’s or app bundle’s JSON payload",
+          "Applies to": "App bundle, activity",
+          "AutoCAD": "64",
+          "Inventor": "64",
+          "Revit": "64",
+          "3ds Max": "64",
+          "Fusion": "64",
+          "Units": "KB"
+        }
+      ]
+    }
+  ]
+}

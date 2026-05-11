@@ -1,0 +1,115 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/forgeapps-id-PATCH",
+    "scrapedAt": "2026-05-08T17:44:16.950Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "forgeapps/:id",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PATCH https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "Must be “me” for the call to succeed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "nicknamestring",
+          "col_1": ""
+        },
+        {
+          "col_0": "publicKeyobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "Exponentstring",
+          "col_1": ""
+        },
+        {
+          "col_0": "Modulusstring",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully update the user’s nickname."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "Conflict (in use by someone else)."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Unknown error."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/forgeapps/:id' \\\n  -X 'PATCH' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"nickname\": \"\",\n        \"publicKey\": {\n          \"Exponent\": \"\",\n          \"Modulus\": \"\"\n        }\n      }'",
+      "parsed": {
+        "nickname": "",
+        "publicKey": {
+          "Exponent": "",
+          "Modulus": ""
+        }
+      }
+    }
+  ]
+}

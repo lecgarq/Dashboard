@@ -1,0 +1,710 @@
+{
+  "_meta": {
+    "title": "MANUFACTURING DATA MODEL API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/developers_guide/overview/",
+    "scrapedAt": "2026-05-08T18:19:46.142Z",
+    "totalPages": 112
+  },
+  "categories": {
+    "Developer Guide": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Beta",
+        "file": "Developer Guide/About_this_Beta.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using Data Exchanges Today",
+        "file": "Developer Guide/Using_Data_Exchanges_Today.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "API Essentials",
+        "file": "Developer Guide/API_Essentials.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About GraphQL",
+        "file": "Developer Guide/About_GraphQL.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About Data Exchange Explorer",
+        "file": "Developer Guide/About_Data_Exchange_Explorer.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Developer's Guide",
+        "file": "Developer Guide/Developer's_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/API%20Essentials": [
+      {
+        "name": "API Constructs and Capabilities",
+        "file": "Developer Guide/API%20Essentials/API_Constructs_and_Capabilities.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Advanced Filtering Capabilities",
+        "file": "Developer Guide/API%20Essentials/Advanced_Filtering_Capabilities.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Tutorials": [
+      {
+        "name": "Before You Begin",
+        "file": "Tutorials/Before_You_Begin.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Getting Started",
+        "file": "Tutorials/Getting_Started.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Get Hubs",
+        "file": "Tutorials/Get_Hubs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Get Projects",
+        "file": "Tutorials/Get_Projects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Navigate to Exchanges within a Folder",
+        "file": "Tutorials/Navigate_to_Exchanges_within_a_Folder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Get Exchange Details",
+        "file": "Tutorials/Get_Exchange_Details.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Advanced Queries",
+        "file": "Tutorials/Advanced_Queries.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Elements by Category",
+        "file": "Tutorials/Retrieve_Elements_by_Category.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Elements by Category and Specific Properties",
+        "file": "Tutorials/Retrieve_Elements_by_Category_and_Specific_Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Elements by Category and Property Name and Value",
+        "file": "Tutorials/Retrieve_Elements_by_Category_and_Property_Name_and_Value.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Element Properties and Associated Reference Properties such as typeProperties",
+        "file": "Tutorials/Retrieve_Element_Properties_and_Associated_Reference_Properties_such_as_typeProperties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Elements from IFC Exchange",
+        "file": "Tutorials/Retrieve_Elements_from_IFC_Exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Windows from IFC Exchange",
+        "file": "Tutorials/Retrieve_Windows_from_IFC_Exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Fixed Windows of a Specific Type from IFC Exchange",
+        "file": "Tutorials/Retrieve_Fixed_Windows_of_a_Specific_Type_from_IFC_Exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Create Exchanges Using Mutations",
+        "file": "Tutorials/Create_Exchanges_Using_Mutations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Exchanges and Mutations",
+        "file": "Tutorials/Exchanges_and_Mutations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Create a 3D View Exchange",
+        "file": "Tutorials/Create_a_3D_View_Exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Create Exchange Using AEC Data Model Filters",
+        "file": "Tutorials/Create_Exchange_Using_AEC_Data_Model_Filters.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Create Exchange Using IFC Filters",
+        "file": "Tutorials/Create_Exchange_Using_IFC_Filters.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/dataexchange/2023-05/graphql"
+      }
+    ],
+    "Other": [
+      {
+        "name": "Code Samples",
+        "file": "Other/Code_Samples.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Changelog",
+        "file": "Other/Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Data Exchange GraphQL",
+        "file": "Other/Data_Exchange_GraphQL.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference": [
+      {
+        "name": "GraphQL Endpoint",
+        "file": "SDK Reference/GraphQL_Endpoint.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/dataexchange/2023-05/graphql"
+      },
+      {
+        "name": "Queries",
+        "file": "SDK Reference/Queries.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Mutations",
+        "file": "SDK Reference/Mutations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Objects",
+        "file": "SDK Reference/Objects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Enums",
+        "file": "SDK Reference/Enums.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Inputs",
+        "file": "SDK Reference/Inputs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Interfaces",
+        "file": "SDK Reference/Interfaces.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Scalars",
+        "file": "SDK Reference/Scalars.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/queries": [
+      {
+        "name": "exchange",
+        "file": "SDK Reference/queries/exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "exchangeByFileId (Deprecated)",
+        "file": "SDK Reference/queries/exchangeByFileId_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "exchangeByFileUrn",
+        "file": "SDK Reference/queries/exchangeByFileUrn.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "exchangeByVersions",
+        "file": "SDK Reference/queries/exchangeByVersions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "folder",
+        "file": "SDK Reference/queries/folder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "folders",
+        "file": "SDK Reference/queries/folders.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "getExchangeCreationStatus",
+        "file": "SDK Reference/queries/getExchangeCreationStatus.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "hub",
+        "file": "SDK Reference/queries/hub.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "hubs",
+        "file": "SDK Reference/queries/hubs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "project",
+        "file": "SDK Reference/queries/project.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "projects",
+        "file": "SDK Reference/queries/projects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "topFolders",
+        "file": "SDK Reference/queries/topFolders.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/mutations": [
+      {
+        "name": "createExchange",
+        "file": "SDK Reference/mutations/createExchange.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/objects": [
+      {
+        "name": "BasicItem",
+        "file": "SDK Reference/objects/BasicItem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BasicItemVersion",
+        "file": "SDK Reference/objects/BasicItemVersion.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BasicItemVersions",
+        "file": "SDK Reference/objects/BasicItemVersions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "CreateExchangeResult",
+        "file": "SDK Reference/objects/CreateExchangeResult.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Definition (Deprecated)",
+        "file": "SDK Reference/objects/Definition_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Element",
+        "file": "SDK Reference/objects/Element.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ElementAlternativeRepresentations (Deprecated)",
+        "file": "SDK Reference/objects/ElementAlternativeRepresentations_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ElementAlternativeIdentifiers",
+        "file": "SDK Reference/objects/ElementAlternativeIdentifiers.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Elements",
+        "file": "SDK Reference/objects/Elements.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Exchange",
+        "file": "SDK Reference/objects/Exchange.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeAlternativeRepresentations (Deprecated)",
+        "file": "SDK Reference/objects/ExchangeAlternativeRepresentations_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeAlternativeIdentifiers",
+        "file": "SDK Reference/objects/ExchangeAlternativeIdentifiers.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeCreationResult",
+        "file": "SDK Reference/objects/ExchangeCreationResult.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeCreationStatus",
+        "file": "SDK Reference/objects/ExchangeCreationStatus.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Exchanges",
+        "file": "SDK Reference/objects/Exchanges.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeVersion",
+        "file": "SDK Reference/objects/ExchangeVersion.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeVersionHistory",
+        "file": "SDK Reference/objects/ExchangeVersionHistory.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeVersions",
+        "file": "SDK Reference/objects/ExchangeVersions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Folder",
+        "file": "SDK Reference/objects/Folder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Folders",
+        "file": "SDK Reference/objects/Folders.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hub",
+        "file": "SDK Reference/objects/Hub.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hubs",
+        "file": "SDK Reference/objects/Hubs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Item",
+        "file": "SDK Reference/objects/Item.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Lineage (Deprecated)",
+        "file": "SDK Reference/objects/Lineage_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Pagination",
+        "file": "SDK Reference/objects/Pagination.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Project",
+        "file": "SDK Reference/objects/Project.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProjectAlternativeIdentifiers",
+        "file": "SDK Reference/objects/ProjectAlternativeIdentifiers.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProjectAlternativeRepresentations (Deprecated)",
+        "file": "SDK Reference/objects/ProjectAlternativeRepresentations_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Projects",
+        "file": "SDK Reference/objects/Projects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Properties",
+        "file": "SDK Reference/objects/Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Property",
+        "file": "SDK Reference/objects/Property.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyDefinition",
+        "file": "SDK Reference/objects/PropertyDefinition.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyDefinitions",
+        "file": "SDK Reference/objects/PropertyDefinitions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ReferenceProperties",
+        "file": "SDK Reference/objects/ReferenceProperties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ReferenceProperty",
+        "file": "SDK Reference/objects/ReferenceProperty.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Units",
+        "file": "SDK Reference/objects/Units.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "User",
+        "file": "SDK Reference/objects/User.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Version",
+        "file": "SDK Reference/objects/Version.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Versions",
+        "file": "SDK Reference/objects/Versions.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/graphqltypes": [
+      {
+        "name": "ExchangeStatus",
+        "file": "SDK Reference/graphqltypes/ExchangeStatus.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Region",
+        "file": "SDK Reference/graphqltypes/Region.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/inputs": [
+      {
+        "name": "CreateExchangeInput",
+        "file": "SDK Reference/inputs/CreateExchangeInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ElementFilterInput",
+        "file": "SDK Reference/inputs/ElementFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeFilterInput",
+        "file": "SDK Reference/inputs/ExchangeFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeSourceInput",
+        "file": "SDK Reference/inputs/ExchangeSourceInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExchangeTargetInput",
+        "file": "SDK Reference/inputs/ExchangeTargetInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FolderFilterInput",
+        "file": "SDK Reference/inputs/FolderFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "HubFilterInput",
+        "file": "SDK Reference/inputs/HubFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ItemFilterInput",
+        "file": "SDK Reference/inputs/ItemFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PaginationInput",
+        "file": "SDK Reference/inputs/PaginationInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProjectFilterInput",
+        "file": "SDK Reference/inputs/ProjectFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyDefinitionFilterInput",
+        "file": "SDK Reference/inputs/PropertyDefinitionFilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyfilterInput",
+        "file": "SDK Reference/inputs/PropertyfilterInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ReferencePropertyFilterInput",
+        "file": "SDK Reference/inputs/ReferencePropertyFilterInput.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/interfaces": [
+      {
+        "name": "Item",
+        "file": "SDK Reference/interfaces/Item.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ItemVersion",
+        "file": "SDK Reference/interfaces/ItemVersion.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ItemVersions",
+        "file": "SDK Reference/interfaces/ItemVersions.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/overview/en/docs/fdxgraph/v1/tutorials": [
+      {
+        "name": "How-to Guide",
+        "file": "Developer Guide/overview/en/docs/fdxgraph/v1/tutorials/How-to_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/overview/en/docs/fdxgraph/v1/code_samples": [
+      {
+        "name": "Code Samples",
+        "file": "Developer Guide/overview/en/docs/fdxgraph/v1/code_samples/Code_Samples.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/overview/en/docs/fdxgraph/v1/reference": [
+      {
+        "name": "Reference Guide",
+        "file": "Developer Guide/overview/en/docs/fdxgraph/v1/reference/Reference_Guide.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/dataexchange/2023-05/graphql"
+      }
+    ]
+  }
+}

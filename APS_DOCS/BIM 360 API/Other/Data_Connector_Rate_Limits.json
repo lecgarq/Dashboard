@@ -1,0 +1,41 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/rate-limits/data-connector-rate-limits",
+    "scrapedAt": "2026-05-08T17:47:03.499Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Data Connector API Rate Limit and Quota",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Data Connector API endpoints combined",
+          "Limit (requests/minute)": "60",
+          "Scope": "Per application as specified by client ID"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Resource",
+        "Limit",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Resource": "Active data requests",
+          "Limit": "200",
+          "Scope": "Per account/hub per user"
+        }
+      ]
+    }
+  ]
+}

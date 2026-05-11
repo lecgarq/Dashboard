@@ -1,0 +1,243 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/issues-v2-issue-attribute-mappings-GET",
+    "scrapedAt": "2026-05-08T18:01:04.738Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/{containerId}/issue-attribute-mappings",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/issues/v2/containers/a5f49f04-59bb-477c-97e6-6833cb50bdac/issue-attribute-mappings?filter[attributeDefinitionId]=18ee5858-cbf1-451a-a525-7c6ff8156775&filter[mappedItemId]=18ee5858-cbf1-451a-a525-7c6ff81567aa&filter[isRequired]=true",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/issues/v2/containers/:containerId/issue-attribute-mappings"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring",
+          "col_1": "The ID of the container.\nEach project is assigned to a container that stores all the issues for the project.\nUse the Data Management API to retrieve the container ID. For more information, see the Retrieve Issues Container ID tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The number of custom attribute mappings to return in the response payload.  For example, limit=2. Acceptable values: 1-200. Default value: 200."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of custom attribute mappings you want to begin retrieving results from."
+        },
+        {
+          "col_0": "filter[createdAt]datetime: ISO 8601",
+          "col_1": "Retrieves items that were last created at the specified date and time range, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[updatedAt]datetime: ISO 8601",
+          "col_1": "Retrieves items that were last updated at the specified date and time range, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[deletedAt]datetime: ISO 8601",
+          "col_1": "Retrieves items that were last deleted at the specified date and time range, in one of the following URL-encoded formats: YYYY-MM-DDThh:mm:ss.sz or YYYY-MM-DD. Separate multiple values with commas. We support the following filtering options:\n\nDate range: e.g., 2022-03-02..2022-03-03 or 2022-02-28T22:00:00.000Z..2022-03-28T22:00:00.000Z\nSpecific day: e.g., 2022-03-02 or 2022-02-28T22:00:00.000Z\nSpecific start date: e.g.,  2022-03-02.. or 2022-02-28T22:00:00.000Z..\nSpecific end date: e.g., ..2022-03-02 or ..2022-02-28T22:00:00.000Z\n\nTo include non-deleted items in the response, add null to the filter:  filter[deletedAt]=null,YYYY-MM-DDThh:mm:ss.sz..YYYY-MM-DDThh:mm:ss.sz.\nFor more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[attributeDefinitionId]string",
+          "col_1": "Retrieves issue custom attribute mappings associated with the specified issue custom attribute definitions. Separate multiple values with commas. For example: filter[attributeDefinitionId]=18ee5858-cbf1-451a-a525-7c6ff8156775."
+        },
+        {
+          "col_0": "filter[mappedItemId]string",
+          "col_1": "Retrieves issue custom attribute mappings associated with the specified items (container, type, or subtype). Separate multiple values with commas. For example: filter[mappedItemId]=18ee5858-cbf1-451a-a525-7c6ff8156775."
+        },
+        {
+          "col_0": "filter[isRequired]string",
+          "col_1": "Retrieves issue custom attribute mappings associated with custom attributes that are either required or not required. Possible values: true, false. For example: filter[isRequired]=true."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "List of issue attribute mappings"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Invalid input"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied Authorization header was not valid. Verify Authentication and try again"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but permission is not granted"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Container not found"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "The pagination object."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of items per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The page number that the results begin from."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The number of items in the response."
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "A list of issue attribute mappings."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the custom attribute mapping."
+        },
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the container."
+        },
+        {
+          "col_0": "attributeDefinitionIdstring: UUID",
+          "col_1": "The ID of the custom attribute definition."
+        },
+        {
+          "col_0": "mappedItemTypeenum:string",
+          "col_1": "The type of item the custom attribute is mapped to.\nPossible values:\nissueType - this corresponds to Issue Category in the UI.\nissueSubtype - this corresponds to Issue Type in the UI.\nNote that issueSubtype's inherit issueType's."
+        },
+        {
+          "col_0": "mappedItemIdstring: UUID",
+          "col_1": "The ID of the item (type, or subtype) the custom attribute is mapped to."
+        },
+        {
+          "col_0": "orderint",
+          "col_1": "The order that the custom attributes were mapped to the item (type, subtype). This is only relevant to non-inherited mappings."
+        },
+        {
+          "col_0": "isRequiredboolean",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "permittedActionsarray: string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time the custom attribute mapping was created, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the custom attribute mapping."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The last date and time the custom attribute mapping was updated, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who last updated the custom attribute mapping."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The date and time the custom attribute mapping was deleted, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The Autodesk ID of the user who deleted the custom attribute mapping."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/issues/v2/containers/a5f49f04-59bb-477c-97e6-6833cb50bdac/issue-attribute-mappings?filter[attributeDefinitionId]=18ee5858-cbf1-451a-a525-7c6ff8156775&filter[mappedItemId]=18ee5858-cbf1-451a-a525-7c6ff81567aa&filter[isRequired]=true' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 100,\n    \"totalResults\": 25\n  },\n  \"results\": [\n    {\n      \"id\": \"1110f111-6c54-4b01-90e6-d701748f1111\",\n      \"containerId\": \"2220f222-6c54-4b01-90e6-d701748f0222\",\n      \"attributeDefinitionId\": \"1110f111-6c54-4b01-90e6-d701748f1333\",\n      \"mappedItemType\": \"issueType\",\n      \"mappedItemId\": \"2220f222-6c54-4b01-90e6-d701748f0222\",\n      \"order\": 2,\n      \"isRequired\": false,\n      \"permittedActions\": [\n        \"delete\"\n      ],\n      \"permittedAttributes\": [\n        \"isRequired\"\n      ],\n      \"createdAt\": \"2018-07-22T15:05:58.033Z\",\n      \"createdBy\": \"A3RGM375QTZ7\",\n      \"updatedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"updatedBy\": \"A3RGM375QTZ7\",\n      \"deletedAt\": \"2018-07-22T15:05:58.033Z\",\n      \"deletedBy\": \"A3RGM375QTZ7\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 10,
+          "offset": 100,
+          "totalResults": 25
+        },
+        "results": [
+          {
+            "id": "1110f111-6c54-4b01-90e6-d701748f1111",
+            "containerId": "2220f222-6c54-4b01-90e6-d701748f0222",
+            "attributeDefinitionId": "1110f111-6c54-4b01-90e6-d701748f1333",
+            "mappedItemType": "issueType",
+            "mappedItemId": "2220f222-6c54-4b01-90e6-d701748f0222",
+            "order": 2,
+            "isRequired": false,
+            "permittedActions": [
+              "delete"
+            ],
+            "permittedAttributes": [
+              "isRequired"
+            ],
+            "createdAt": "2018-07-22T15:05:58.033Z",
+            "createdBy": "A3RGM375QTZ7",
+            "updatedAt": "2018-07-22T15:05:58.033Z",
+            "updatedBy": "A3RGM375QTZ7",
+            "deletedAt": "2018-07-22T15:05:58.033Z",
+            "deletedBy": "A3RGM375QTZ7"
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,158 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/locations-nodesnodeid-PATCH",
+    "scrapedAt": "2026-05-08T23:58:20.957Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v2/projects/{projectId}/trees/{treeId}/nodes/{nodeId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes/:nodeId",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PATCH https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes/:nodeId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The identifier of the project that contains your locations tree.\nUse the Data Management API to retrieve the relevant Forma hub and project IDs."
+        },
+        {
+          "col_0": "treeIdstring",
+          "col_1": "Must be default. Currently a project can contain only the default tree."
+        },
+        {
+          "col_0": "nodeIdstring: UUID",
+          "col_1": "The unique identifier of an LBS node.\nTo find node IDs, call the GET nodes endpoint and check the value of results.id in the returned nodes."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "The name of the specified LBS node to update. Note that you must specify name, barcode, or both for this endpoint to succeed.\nMax length: 255"
+        },
+        {
+          "col_0": "barcode*string",
+          "col_1": "The barcode of the specified LBS node to update. This value must be unique per project. Note that you must specify barcode, name, or both for this endpoint to succeed.\nMax length: 255"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Node updated"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request. Note that renaming the root node is not permitted."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The caller has no permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The specified project, tree or node was not found."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of the new LBS node."
+        },
+        {
+          "col_0": "parentIdstring: UUID",
+          "col_1": "The identifier of the parent node of this LBS node."
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of this LBS node. Note that only Area is a currently supported request value.\nPossible values: Area, Level, Root"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of this LBS node.\nMax length: 255"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "barcodestring",
+          "col_1": "The barcode that represents this LBS node. This value must be unique per project.\nMax length: 255"
+        },
+        {
+          "col_0": "orderint",
+          "col_1": "This node’s position relative to its sibling nodes. Nodes with the same parent have a defined sequence order. A node with a lower order value will be positioned before a node with a higher order value.\nThis is zero-based; for example, a node with an order value of 3 is the fourth node among its sibling nodes.\nIf an existing sibling node has the same or higher order value, that value will be incremented to make room for the new node."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes/:nodeId' \\\n  -X 'PATCH' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"name\": \"Suite 205\",\n        \"barcode\": \"1234567890\"\n      }'",
+      "parsed": {
+        "name": "Suite 205",
+        "barcode": "1234567890"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"802ffa47-6e29-40f5-8e82-65bda03a7f5a\",\n  \"parentId\": \"88e07ccb-4594-4dc5-8973-304412b8fa96\",\n  \"type\": \"Area\",\n  \"name\": \"Suite 205\",\n  \"description\": \"The Suite 205 node\",\n  \"barcode\": \"1234567890\",\n  \"order\": 0\n}",
+      "parsed": {
+        "id": "802ffa47-6e29-40f5-8e82-65bda03a7f5a",
+        "parentId": "88e07ccb-4594-4dc5-8973-304412b8fa96",
+        "type": "Area",
+        "name": "Suite 205",
+        "description": "The Suite 205 node",
+        "barcode": "1234567890",
+        "order": 0
+      }
+    }
+  ]
+}

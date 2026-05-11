@@ -1,0 +1,772 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/checklists-instances-GET",
+    "scrapedAt": "2026-05-08T17:54:08.591Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/{containerId}/instances",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/checklists/v1/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?sort=title&filter[templateTypeId]=1&filter[statusId]=3&filter[assigneeIds]=NZFGQS2CTCCC&filter[scheduledDate]=2017-09-13T10:25:03.000Z&limit=10",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/bim360/checklists/v1/containers/{containerId}/instances"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring",
+          "col_1": "Each project is assigned a container that stores all the checklists for the project. To find the ID, see the Retrieve a Container ID tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sortenum:string",
+          "col_1": "Sort the checklists by title, templateType.id, or scheduledDate. For example, sort=title. Separate multiple values with commas. To sort in descending order add a - before the sort criteria; for example, sort=-title. For more details, see JSON API Sorting.\nPossible values: templateType.id, title, scheduledDate"
+        },
+        {
+          "col_0": "filter[templateTypeId]number",
+          "col_1": "Retrieves checklists associated with the specified template type. For example, filter[templateTypeId]=1 or queryFilter[templateType.id]=1 or queryFilter[templateTypeId]=1. Possible values: 1 (quality), 6 (punch List), 11 (safety), 15 (commissioning). Separate multiple values with commas. For more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[statusId]number",
+          "col_1": "Retrieves checklists with the specified status. For example,  filter[statusId]=3 or queryFilter[status.id]=3 or queryFilter[statusId]=3. Possible values: 1 (not scheduled), 2 (scheduled), 3 (in progress), 4 (completed), 5 (signed off), 6 (pending signature), 7 (not started). Separate multiple values with commas. For more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[assigneeIds]string",
+          "col_1": "Retrieves checklists assigned to the specified user. For example, filter[assigneeIds]=PER8KQPK2JRT or queryFilter[assignees.assigneeId]=PER8KQPK2JRT or queryFilter[assigneeIds]=PER8KQPK2JRT. Use the assignee’s Autodesk ID. To check a user`s Autodesk ID, call GET users and check the uid. Note that you need to use a 2-legged token to call GET users. For more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "filter[scheduledDate]datetime: ISO 8601",
+          "col_1": "Retrieves checklists with the specified scheduled date. Value is the timestamp of the date in the following format: YYYY-MM-DDThh:mm:ss.sz, or a date range in the following format: YYYY-MM-DDThh:mm:ss.sz...YYYY-MM-DDThh:mm:ss.sz. For more details, see JSON API Filtering."
+        },
+        {
+          "col_0": "limitnumber",
+          "col_1": "The number of checklists to return in the response payload. Default value: 50. For example, to limit the response to two checklists per page, use page[limit]=2 or limit=2. For more details, see JSON API Paging."
+        },
+        {
+          "col_0": "offsetnumber",
+          "col_1": "The page number that you want to begin checklist results from; for example, page[offset]=20 or offset=20. For more details, see JSON API Paging."
+        },
+        {
+          "col_0": "fields[instances]string",
+          "col_1": "Specify which attributes you want to appear in the response. Separate multiple values with commas; for example, fields[instances]=createdAt,templateType. For more details, see JSON API Sparse Fieldsets."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request has not been applied because it lacks valid authentication credentials for the target resource"
+        },
+        {
+          "col_0": "410",
+          "col_1": "Forbidden"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "jsonapiobject",
+          "col_1": "The JSON API object."
+        },
+        {
+          "col_0": "versionstring",
+          "col_1": "The version of JSON API; will always be 1.0."
+        },
+        {
+          "col_0": "metaobject",
+          "col_1": "The meta object."
+        },
+        {
+          "col_0": "offsetnumber",
+          "col_1": "The page number that the checklist results begin from."
+        },
+        {
+          "col_0": "limitnumber",
+          "col_1": "The number of checklists per page."
+        },
+        {
+          "col_0": "totalnumber",
+          "col_1": "The total number of checklists."
+        },
+        {
+          "col_0": "linksobject",
+          "col_1": "The links object."
+        },
+        {
+          "col_0": "selfstring",
+          "col_1": "A link to the checklist itself."
+        },
+        {
+          "col_0": "firststring",
+          "col_1": "A link to the first page."
+        },
+        {
+          "col_0": "laststring",
+          "col_1": "A link to the last page."
+        },
+        {
+          "col_0": "nextstring",
+          "col_1": "A link to the next page."
+        },
+        {
+          "col_0": "prevstring",
+          "col_1": "A link to the previous page."
+        },
+        {
+          "col_0": "dataarray: object",
+          "col_1": "The data object."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the checklist."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of object; will always be instances."
+        },
+        {
+          "col_0": "attributesobject",
+          "col_1": "The attributes object."
+        },
+        {
+          "col_0": "instanceRevisionstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "scheduledDatedatetime: ISO 8601",
+          "col_1": "The due date for the checklist, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "locationstring: UUID",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "The name of the checklist.\nMax length: 100"
+        },
+        {
+          "col_0": "templateVersionIdint",
+          "col_1": "The version ID of the template associated with the checklist. Every time you update a template it updates the version ID."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the checklist."
+        },
+        {
+          "col_0": "modifiedBystring",
+          "col_1": "The Autodesk ID of the user who last modified the checklist."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was last updated, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was created, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was deleted, in the following format: YYYY-MM-DDThh:mm:ss.sz. This is used for offline mobile database managment."
+        },
+        {
+          "col_0": "tradesarray: object",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "instructionsstring",
+          "col_1": "The description of the template."
+        },
+        {
+          "col_0": "templateTypeobject",
+          "col_1": "Information about the type of template.\nPossible values:\n1 - Quality\n6 - Punch List\n11 - Safety\n15 - Commissioning"
+        },
+        {
+          "col_0": "idnumber",
+          "col_1": "The ID of the type of template. Possible values: 1 (Quality), 6 (Punch List), 11 (Safety), 15 (Commissioning)."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the type of template. Possible values: Quality, Punch List, Safety, Commissioning."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "statusobject",
+          "col_1": "Information about the status of the checklist."
+        },
+        {
+          "col_0": "idnumber",
+          "col_1": "The ID of the status. Possible values:\n1 - Not Scheduled\n2 - Scheduled\n3 - In Progress\n4 - Completed\n5 - Signed off\n6 - Pending Signature\n7 - Not Started"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the status. Possible values: Not Scheduled, Scheduled, In Progress, Completed, Signed Off, Pending Signature, Not Started."
+        },
+        {
+          "col_0": "urgencynumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "signaturesStatusenum:string",
+          "col_1": "The signatures status of the checklist. Possible values:\nPending - all sections are complete but one or more signatures are required.\nRequired - not all sections are complete, and one or more signatures are required.\nSigned - no more signatures are required.\nNone - signatures are not needed."
+        },
+        {
+          "col_0": "assigneesarray: object",
+          "col_1": "A list of users who have been assigned to the checklist."
+        },
+        {
+          "col_0": "idnumber",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "assigneeIdstring",
+          "col_1": "The Autodesk ID of the assignee."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the assignee."
+        },
+        {
+          "col_0": "typeobject",
+          "col_1": "Information about the type of entity assigned to the checklist."
+        },
+        {
+          "col_0": "idnumber",
+          "col_1": "The ID of the type of entity assigned to the checklist.\nPossible values:\n1 - User\n2 - Company\n3 - Role"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the entity assigned to the checklist. Possible values: User, Company, Role."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "progressnumber",
+          "col_1": "The percentage of checklist items that are completed; calculated using data.attributes.completedItemsCount and data.meta.totalItems."
+        },
+        {
+          "col_0": "completedItemsCountnumber",
+          "col_1": "The number of completed checklist items."
+        },
+        {
+          "col_0": "permittedActionsarray: string",
+          "col_1": "A list of actions that the user is permitted to perform on the resource."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "A list of properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "allowSectionAssigneeboolean",
+          "col_1": "If true, the user can be assigned to the checklist sections.\nIf false, the user cannot be assigned to the checklist sections."
+        },
+        {
+          "col_0": "signaturesarray: object",
+          "col_1": "A list of final signoff signatures."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN of the signature."
+        },
+        {
+          "col_0": "instanceRevisionstring",
+          "col_1": "The identifier of a specific version of a checklist."
+        },
+        {
+          "col_0": "instanceIdint",
+          "col_1": "The identifier of the signature."
+        },
+        {
+          "col_0": "indexint",
+          "col_1": "The array index of the signature."
+        },
+        {
+          "col_0": "requiredBystring",
+          "col_1": "The name of the person or organization that requires the checklist to be signed."
+        },
+        {
+          "col_0": "isRequiredboolean",
+          "col_1": "If true, the signature is required.\nIf false, the signature is not required.\n\nCurrently, all signatures are required."
+        },
+        {
+          "col_0": "definedAtstring",
+          "col_1": "The type of object in which the signature is defined. This can be an instance or a template."
+        },
+        {
+          "col_0": "requiredNamestring",
+          "col_1": "The name of the person that is required to sign the checklist."
+        },
+        {
+          "col_0": "requiredCompanystring",
+          "col_1": "The name of the company that is required to sign the checklist."
+        },
+        {
+          "col_0": "isSignedboolean",
+          "col_1": "If true, the instance is signed.\nIf false, the instance is not signed."
+        },
+        {
+          "col_0": "formalSignatureobject",
+          "col_1": "The properties of the individual signature."
+        },
+        {
+          "col_0": "instanceSignedRevisionstring",
+          "col_1": "The identifier of a specific version of a signed instance."
+        },
+        {
+          "col_0": "signedNamestring",
+          "col_1": "The name of the person who signed the instance."
+        },
+        {
+          "col_0": "signedCompanystring",
+          "col_1": "The name of the company that signed the instance."
+        },
+        {
+          "col_0": "signedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the person or company signed the instance, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "graphicobject",
+          "col_1": "The details of the signature graphic."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The image type of the signature graphic."
+        },
+        {
+          "col_0": "contentstring",
+          "col_1": "The raw signature image data, or a link to the signature image file."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of graphic properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of signature properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was last updated, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was created, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the resource was deleted, in the following format: YYYY-MM-DDThh:mm:ss.sz. This is used for offline mobile database managment."
+        },
+        {
+          "col_0": "submittedBystring",
+          "col_1": "The Autodesk ID of the user who last submitted signataures to this checklist instance."
+        },
+        {
+          "col_0": "permittedAttributesarray: string",
+          "col_1": "The list of signature properties that a user with edit permission is allowed to modify."
+        },
+        {
+          "col_0": "permittedActionsarray: string",
+          "col_1": "The list of actions that the user is permitted to perform on the signature."
+        },
+        {
+          "col_0": "relationshipsobject",
+          "col_1": "The relationships object."
+        },
+        {
+          "col_0": "sectionsobject",
+          "col_1": "The sections object."
+        },
+        {
+          "col_0": "linksobject",
+          "col_1": "The links object."
+        },
+        {
+          "col_0": "selfstring",
+          "col_1": "A link to the object itself."
+        },
+        {
+          "col_0": "relatedstring",
+          "col_1": "A link to the related object."
+        },
+        {
+          "col_0": "metaobject",
+          "col_1": "The meta object."
+        },
+        {
+          "col_0": "dataarray: object",
+          "col_1": "The data object."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of object; will always be instance_sections"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the object."
+        },
+        {
+          "col_0": "containerobject",
+          "col_1": "The related container object."
+        },
+        {
+          "col_0": "linksobject",
+          "col_1": "The links object."
+        },
+        {
+          "col_0": "selfstring",
+          "col_1": "A link to the object itself."
+        },
+        {
+          "col_0": "relatedstring",
+          "col_1": "A link to the related object."
+        },
+        {
+          "col_0": "metaobject",
+          "col_1": "The meta object."
+        },
+        {
+          "col_0": "dataobject",
+          "col_1": "The data object."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of object; will always be containers."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the object."
+        },
+        {
+          "col_0": "createdFromobject",
+          "col_1": "The relation to template."
+        },
+        {
+          "col_0": "linksobject",
+          "col_1": "The links object."
+        },
+        {
+          "col_0": "selfstring",
+          "col_1": "A link to the object itself."
+        },
+        {
+          "col_0": "relatedstring",
+          "col_1": "A link to the related object."
+        },
+        {
+          "col_0": "metaobject",
+          "col_1": "The meta object."
+        },
+        {
+          "col_0": "dataobject",
+          "col_1": "The data object."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The type of object; will always be templates."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The ID of the object."
+        },
+        {
+          "col_0": "metaobject",
+          "col_1": "The meta object."
+        },
+        {
+          "col_0": "totalItemsnumber",
+          "col_1": "The number of items in all the sections of the checklist."
+        },
+        {
+          "col_0": "totalSectionsnumber",
+          "col_1": "The number of sections in the checklist."
+        },
+        {
+          "col_0": "totalRequiredSignaturesnumber",
+          "col_1": "The number of required checklist-level signatures. For information about section-level signatures, see included[].attributes.signatures."
+        },
+        {
+          "col_0": "totalSignedSignaturesnumber",
+          "col_1": "The number of checklist-level signed signatures. For information about section-level signatures, see included[].attributes.signatures."
+        },
+        {
+          "col_0": "totalUnsignedSignaturesnumber",
+          "col_1": "The number of unsigned checklist-level signatures in the checklist. For information about section-level signatures, see included[].attributes.signatures."
+        },
+        {
+          "col_0": "linksobject",
+          "col_1": "The links object."
+        },
+        {
+          "col_0": "selfstring",
+          "col_1": "A link to the object itself."
+        },
+        {
+          "col_0": "relatedstring",
+          "col_1": "A link to the related object."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/checklists/v1/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?sort=title&filter[templateTypeId]=1&filter[statusId]=3&filter[assigneeIds]=NZFGQS2CTCCC&filter[scheduledDate]=2017-09-13T10:25:03.000Z&limit=10' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"meta\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"total\": 210\n  },\n  \"links\": {\n    \"self\": \"/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=50\",\n    \"first\": \"/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=0\",\n    \"last\": \"/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=200\",\n    \"next\": \"/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=100\",\n    \"prev\": \"/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=0\"\n  },\n  \"data\": [\n    {\n      \"id\": \"41\",\n      \"type\": \"instances\",\n      \"attributes\": {\n        \"instanceRevision\": \"fesd3\",\n        \"urn\": \"urn:adsk.checklists.cs.instance:efca79bd-3865-4e68-88d5-30d982175c7d/41\",\n        \"scheduledDate\": \"2018-05-24T15:29:29.772Z\",\n        \"location\": \"3ba7a68b-1cd2-4a63-a08a-cdda3e94e5ea\",\n        \"title\": \"Painting Checklist\",\n        \"templateVersionId\": 1433,\n        \"createdBy\": \"1QAZ2WSX\",\n        \"modifiedBy\": \"1QAZ2WSX\",\n        \"updatedAt\": \"2018-05-23T08:18:55.098Z\",\n        \"createdAt\": \"2018-05-23T08:18:55.098Z\",\n        \"deletedAt\": \"2018-05-23T08:18:55.098Z\",\n        \"trades\": [],\n        \"instructions\": \"detailed description\",\n        \"templateType\": {\n          \"id\": 1,\n          \"name\": \"Quality\",\n          \"permittedAttributes\": [\n            \"id\"\n          ]\n        },\n        \"status\": {\n          \"id\": 4,\n          \"name\": \"Completed\",\n          \"urgency\": 0,\n          \"permittedAttributes\": [\n            \"id\"\n          ]\n        },\n        \"signaturesStatus\": \"None\",\n        \"assignees\": [\n          {\n            \"id\": 13200,\n            \"assigneeId\": \"93TNJUDDTJXL\",\n            \"name\": \"John Doe\",\n            \"type\": {\n              \"id\": 1,\n              \"name\": \"User\",\n              \"permittedAttributes\": [\n                \"id\"\n              ]\n            },\n            \"permittedAttributes\": [\n              \"assigneeId\",\n              \"name\",\n              \"type\"\n            ]\n          }\n        ],\n        \"progress\": 0,\n        \"completedItemsCount\": 0,\n        \"permittedActions\": [\n          \"canArchive\",\n          \"canEdit\"\n        ],\n        \"permittedAttributes\": [\n          \"title\",\n          \"location\",\n          \"scheduledDate\",\n          \"sections\",\n          \"assignees\",\n          \"status\"\n        ],\n        \"allowSectionAssignee\": true,\n        \"signatures\": [\n          {\n            \"urn\": \"urn:adsk.checklists.cs.instance.signature:efca79bd-3865-4e68-88d5-30d982175c7d/41\",\n            \"instanceRevision\": \"fesd3\",\n            \"instanceId\": 11453,\n            \"index\": 11,\n            \"requiredBy\": \"IKEA\",\n            \"isRequired\": true,\n            \"definedAt\": \"Template\",\n            \"requiredName\": \"Carlos\",\n            \"requiredCompany\": \"IKEA\",\n            \"isSigned\": true,\n            \"formalSignature\": {\n              \"instanceSignedRevision\": \"fesd6\",\n              \"signedName\": \"Rodrigo\",\n              \"signedCompany\": \"IKEA\",\n              \"signedAt\": \"2018-05-23T08:18:55.098Z\",\n              \"graphic\": {\n                \"type\": \"SVG\",\n                \"content\": \"<svg> .... </svg>\",\n                \"permittedAttributes\": [\n                  \"content\",\n                  \"type\"\n                ]\n              },\n              \"permittedAttributes\": [\n                \"instanceSignedRevision\",\n                \"signedName\",\n                \"signedCompany\",\n                \"signedAt\",\n                \"graphic\"\n              ]\n            },\n            \"updatedAt\": \"2018-05-23T08:18:55.098Z\",\n            \"createdAt\": \"2018-05-23T08:18:55.098Z\",\n            \"deletedAt\": \"2018-05-23T08:18:55.098Z\",\n            \"submittedBy\": \"1QAZ2WSX\",\n            \"permittedAttributes\": [\n              \"requiredName\",\n              \"requiredCompany\",\n              \"correlationId\"\n            ],\n            \"permittedActions\": [\n              \"canEdit\"\n            ]\n          }\n        ]\n      },\n      \"relationships\": {\n        \"sections\": {\n          \"links\": {\n            \"self\": \"\",\n            \"related\": \"\"\n          },\n          \"meta\": {},\n          \"data\": [\n            {\n              \"type\": \"instance_sections\",\n              \"id\": \"1\"\n            }\n          ]\n        },\n        \"container\": {\n          \"links\": {\n            \"self\": \"\",\n            \"related\": \"\"\n          },\n          \"meta\": {},\n          \"data\": {\n            \"type\": \"containers\",\n            \"id\": \"efca79bd-3865-4e68-88d5-30d982175c7d\"\n          }\n        },\n        \"createdFrom\": {\n          \"links\": {\n            \"self\": \"\",\n            \"related\": \"\"\n          },\n          \"meta\": {},\n          \"data\": {\n            \"type\": \"templates\",\n            \"id\": \"66\"\n          }\n        }\n      },\n      \"meta\": {\n        \"totalItems\": 1,\n        \"totalSections\": 1,\n        \"totalRequiredSignatures\": 3,\n        \"totalSignedSignatures\": 1,\n        \"totalUnsignedSignatures\": 2\n      },\n      \"links\": {\n        \"self\": \"\",\n        \"related\": \"\"\n      }\n    }\n  ]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "meta": {
+          "offset": 0,
+          "limit": 50,
+          "total": 210
+        },
+        "links": {
+          "self": "/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=50",
+          "first": "/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=0",
+          "last": "/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=200",
+          "next": "/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=100",
+          "prev": "/containers/efca79bd-3865-4e68-88d5-30d982175c7d/instances?page[offset]=0"
+        },
+        "data": [
+          {
+            "id": "41",
+            "type": "instances",
+            "attributes": {
+              "instanceRevision": "fesd3",
+              "urn": "urn:adsk.checklists.cs.instance:efca79bd-3865-4e68-88d5-30d982175c7d/41",
+              "scheduledDate": "2018-05-24T15:29:29.772Z",
+              "location": "3ba7a68b-1cd2-4a63-a08a-cdda3e94e5ea",
+              "title": "Painting Checklist",
+              "templateVersionId": 1433,
+              "createdBy": "1QAZ2WSX",
+              "modifiedBy": "1QAZ2WSX",
+              "updatedAt": "2018-05-23T08:18:55.098Z",
+              "createdAt": "2018-05-23T08:18:55.098Z",
+              "deletedAt": "2018-05-23T08:18:55.098Z",
+              "trades": [],
+              "instructions": "detailed description",
+              "templateType": {
+                "id": 1,
+                "name": "Quality",
+                "permittedAttributes": [
+                  "id"
+                ]
+              },
+              "status": {
+                "id": 4,
+                "name": "Completed",
+                "urgency": 0,
+                "permittedAttributes": [
+                  "id"
+                ]
+              },
+              "signaturesStatus": "None",
+              "assignees": [
+                {
+                  "id": 13200,
+                  "assigneeId": "93TNJUDDTJXL",
+                  "name": "John Doe",
+                  "type": {
+                    "id": 1,
+                    "name": "User",
+                    "permittedAttributes": [
+                      "id"
+                    ]
+                  },
+                  "permittedAttributes": [
+                    "assigneeId",
+                    "name",
+                    "type"
+                  ]
+                }
+              ],
+              "progress": 0,
+              "completedItemsCount": 0,
+              "permittedActions": [
+                "canArchive",
+                "canEdit"
+              ],
+              "permittedAttributes": [
+                "title",
+                "location",
+                "scheduledDate",
+                "sections",
+                "assignees",
+                "status"
+              ],
+              "allowSectionAssignee": true,
+              "signatures": [
+                {
+                  "urn": "urn:adsk.checklists.cs.instance.signature:efca79bd-3865-4e68-88d5-30d982175c7d/41",
+                  "instanceRevision": "fesd3",
+                  "instanceId": 11453,
+                  "index": 11,
+                  "requiredBy": "IKEA",
+                  "isRequired": true,
+                  "definedAt": "Template",
+                  "requiredName": "Carlos",
+                  "requiredCompany": "IKEA",
+                  "isSigned": true,
+                  "formalSignature": {
+                    "instanceSignedRevision": "fesd6",
+                    "signedName": "Rodrigo",
+                    "signedCompany": "IKEA",
+                    "signedAt": "2018-05-23T08:18:55.098Z",
+                    "graphic": {
+                      "type": "SVG",
+                      "content": "<svg> .... </svg>",
+                      "permittedAttributes": [
+                        "content",
+                        "type"
+                      ]
+                    },
+                    "permittedAttributes": [
+                      "instanceSignedRevision",
+                      "signedName",
+                      "signedCompany",
+                      "signedAt",
+                      "graphic"
+                    ]
+                  },
+                  "updatedAt": "2018-05-23T08:18:55.098Z",
+                  "createdAt": "2018-05-23T08:18:55.098Z",
+                  "deletedAt": "2018-05-23T08:18:55.098Z",
+                  "submittedBy": "1QAZ2WSX",
+                  "permittedAttributes": [
+                    "requiredName",
+                    "requiredCompany",
+                    "correlationId"
+                  ],
+                  "permittedActions": [
+                    "canEdit"
+                  ]
+                }
+              ]
+            },
+            "relationships": {
+              "sections": {
+                "links": {
+                  "self": "",
+                  "related": ""
+                },
+                "meta": {},
+                "data": [
+                  {
+                    "type": "instance_sections",
+                    "id": "1"
+                  }
+                ]
+              },
+              "container": {
+                "links": {
+                  "self": "",
+                  "related": ""
+                },
+                "meta": {},
+                "data": {
+                  "type": "containers",
+                  "id": "efca79bd-3865-4e68-88d5-30d982175c7d"
+                }
+              },
+              "createdFrom": {
+                "links": {
+                  "self": "",
+                  "related": ""
+                },
+                "meta": {},
+                "data": {
+                  "type": "templates",
+                  "id": "66"
+                }
+              }
+            },
+            "meta": {
+              "totalItems": 1,
+              "totalSections": 1,
+              "totalRequiredSignatures": 3,
+              "totalSignedSignatures": 1,
+              "totalUnsignedSignatures": 2
+            },
+            "links": {
+              "self": "",
+              "related": ""
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

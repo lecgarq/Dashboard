@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication/AuthenticationApiException",
+    "scrapedAt": "2026-05-08T17:36:09.989Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Class AuthenticationApiException",
+  "codeExamples": [
+    {
+      "raw": "public class AuthenticationApiException : ServiceApiException, ISerializable"
+    },
+    {
+      "raw": "public AuthenticationApiException(string message)"
+    },
+    {
+      "raw": "public AuthenticationApiException(string message, HttpResponseMessage httpResponseMessage, Exception exception)"
+    }
+  ]
+}

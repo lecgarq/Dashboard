@@ -1,0 +1,260 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/typescript-sdk-dm",
+    "scrapedAt": "2026-05-08T17:04:10.216Z",
+    "category": "TypeScript SDK (Data Management)",
+    "sdkType": "TypeScript"
+  },
+  "title": "TypeScript SDK Reference for Data Management",
+  "properties": [
+    {
+      "col_0": "Package Name:",
+      "col_1": "@aps_sdk/data-management"
+    },
+    {
+      "col_0": "Version:",
+      "col_1": "1.0.0"
+    },
+    {
+      "operation category": "Commands",
+      "operation": "Check Permission",
+      "method": "executeCheckPermissionCommand",
+      "http request": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "Publish Model",
+      "operation": "executeGetPublishModelJobCommand",
+      "method": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "Publish Without Links",
+      "operation": "executePublishWithoutLinksCommand",
+      "method": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "Get Publish Model Job",
+      "operation": "executePublishModelCommand",
+      "method": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "List Refs",
+      "operation": "executeListRefsCommand",
+      "method": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "List Items",
+      "operation": "executeListItemsCommand",
+      "method": "POST /projects/{project_id}/commands"
+    },
+    {
+      "operation category": "Hubs",
+      "operation": "List Hubs",
+      "method": "getHubs",
+      "http request": "GET /hubs"
+    },
+    {
+      "operation category": "Get a Hub",
+      "operation": "getHub",
+      "method": "GET /hubs/{hub_id}"
+    },
+    {
+      "operation category": "Projects",
+      "operation": "Get Projects",
+      "method": "getHubProjects",
+      "http request": "GET /hubs/{hub_id}/projects"
+    },
+    {
+      "operation category": "Get a Project",
+      "operation": "getProject",
+      "method": "GET /hubs/{hub_id}/projects/{project_id}"
+    },
+    {
+      "operation category": "Get Hub for Project",
+      "operation": "getProjectHub",
+      "method": "GET /hubs/{hub_id}/projects/{project_id}/hub"
+    },
+    {
+      "operation category": "List Top-level Project Folders",
+      "operation": "getProjectTopFolders",
+      "method": "GET /hubs/{hub_id}/projects/{project_id}/topFolders"
+    },
+    {
+      "operation category": "Create a Storage Location in OSS",
+      "operation": "createStorage",
+      "method": "POST /projects/{project_id}/storage"
+    },
+    {
+      "operation category": "Get Download Details",
+      "operation": "getDownload",
+      "method": "GET /projects/{project_id}/downloads/{download_id}"
+    },
+    {
+      "operation category": "Create Download",
+      "operation": "createDownload",
+      "method": "POST /projects/{project_id}/downloads"
+    },
+    {
+      "operation category": "Check Download Creation Progress",
+      "operation": "getDownloadJob",
+      "method": "GET /projects/{project_id}/jobs/{job_id}"
+    },
+    {
+      "operation category": "Folders",
+      "operation": "Get a Folder",
+      "method": "getFolder",
+      "http request": "GET /projects/{project_id}/folders/{folder_id}"
+    },
+    {
+      "operation category": "Modify a Folder",
+      "operation": "patchFolder",
+      "method": "PATCH /projects/{project_id}/folders/{folder_id}"
+    },
+    {
+      "operation category": "Get Parent of a Folder",
+      "operation": "getFolderParent",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/parent"
+    },
+    {
+      "operation category": "List Folder Contents",
+      "operation": "getFolderContents",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/contents"
+    },
+    {
+      "operation category": "List Related Resources for a Folder",
+      "operation": "getFolderRefs",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/refs"
+    },
+    {
+      "operation category": "List Folder and Subfolder Contents",
+      "operation": "getFolderSearch",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/search"
+    },
+    {
+      "operation category": "List Custom Relationships for a Folder",
+      "operation": "getFolderRelationshipsRefs",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/relationships/refs"
+    },
+    {
+      "operation category": "Create a Custom Relationship for a Folder",
+      "operation": "createFolderRelationshipsRef",
+      "method": "POST /projects/{project_id}/folders/{folder_id}/relationships/refs"
+    },
+    {
+      "operation category": "List Relationship Links for a Folder",
+      "operation": "getFolderRelationshipsLinks",
+      "method": "GET /projects/{project_id}/folders/{folder_id}/relationships/links"
+    },
+    {
+      "operation category": "Create a Folder",
+      "operation": "createFolder",
+      "method": "POST /projects/{project_id}/folders"
+    },
+    {
+      "operation category": "Items",
+      "operation": "Get an Item",
+      "method": "getItem",
+      "http request": "GET /projects/{project_id}/items/{item_id}"
+    },
+    {
+      "operation category": "Update an Item",
+      "operation": "patchItem",
+      "method": "PATCH /projects/{project_id}/items/{item_id}"
+    },
+    {
+      "operation category": "Get Parent of an Item",
+      "operation": "getItemParentFolder",
+      "method": "GET /projects/{project_id}/items/{item_id}/parent"
+    },
+    {
+      "operation category": "List Custom Relationships for an Item",
+      "operation": "getItemRelationshipsRefs",
+      "method": "GET /projects/{project_id}/items/{item_id}/relationships/refs"
+    },
+    {
+      "operation category": "Create a Custom Relationship for an Item",
+      "operation": "createItemRelationshipsRef",
+      "method": "POST /projects/{project_id}/items/{item_id}/relationships/refs"
+    },
+    {
+      "operation category": "List Related Resources for an Item",
+      "operation": "getItemRefs",
+      "method": "GET /projects/{project_id}/items/{item_id}/refs"
+    },
+    {
+      "operation category": "List Relationship Links for an Item",
+      "operation": "getItemRelationshipsLinks",
+      "method": "GET /projects/{project_id}/items/{item_id}/relationships/links"
+    },
+    {
+      "operation category": "Get Tip Version of an Item",
+      "operation": "getItemTip",
+      "method": "GET /projects/{project_id}/items/{item_id}/tip"
+    },
+    {
+      "operation category": "List all Versions of an Item",
+      "operation": "getItemVersions",
+      "method": "GET /projects/{project_id}/items/{item_id}/versions"
+    },
+    {
+      "operation category": "Create an Item",
+      "operation": "createItem",
+      "method": "POST /projects/{project_id}/items"
+    },
+    {
+      "operation category": "Versions",
+      "operation": "Get a Version",
+      "method": "getVersion",
+      "http request": "GET /projects/{project_id}/versions/{version_id}"
+    },
+    {
+      "operation category": "Update a Version",
+      "operation": "patchVersion",
+      "method": "PATCH /projects/{project_id}/versions/{version_id}"
+    },
+    {
+      "operation category": "Get Item by Version",
+      "operation": "getVersionItem",
+      "method": "GET /projects/{project_id}/versions/{version_id}/item"
+    },
+    {
+      "operation category": "List Related Resources for a Version",
+      "operation": "getVersionRefs",
+      "method": "GET /projects/{project_id}/versions/{version_id}/refs"
+    },
+    {
+      "operation category": "List Custom Relationships for a Version",
+      "operation": "getVersionRelationshipsRefs",
+      "method": "LIST /projects/{project_id}/versions/{version_id}/relationships/refs"
+    },
+    {
+      "operation category": "Create Custom Relationship for a Version",
+      "operation": "createVersionRelationshipsRef",
+      "method": "POST /projects/{project_id}/versions/{version_id}/relationships/refs"
+    },
+    {
+      "operation category": "List Links for a Version",
+      "operation": "getVersionRelationshipsLinks",
+      "method": "GET /projects/{project_id}/versions/{version_id}/relationships/links"
+    },
+    {
+      "operation category": "Create a Version",
+      "operation": "createVersion",
+      "method": "POST /projects/{project_id}/versions"
+    },
+    {
+      "operation category": "List Supported Download Formats",
+      "operation": "getVersionDownloadFormats",
+      "method": "GET /projects/{project_id}/versions/{version_id}/downloadFormats"
+    },
+    {
+      "operation category": "List Available Download Formats",
+      "operation": "getVersionDownloads",
+      "method": "GET /projects/{project_id}/versions/{version_id}/downloads"
+    }
+  ],
+  "codeExamples": [
+    "npm i @aps_sdk/data-management",
+    "import { Hubs } from \"@aps_sdk/data-management\";\n\n// Access token for authentication\nconst ACCESS_TOKEN = \"...\";\n\n// Initialize the Data Management Client\nconst dataManagementClient = new DataManagementClient();\n\n// Returns a collection of accessible hubs.\nconst hubs = await dataManagementClient.getHubs({accessToken: ACCESS_TOKEN});\n\n// Log the details of the retrieved hubs to the console\nconsole.log(hubs);"
+  ],
+  "fullText": "Data Management API\nVersion 2\nDeveloper's Guide\nOverview\nAPI Basics\nField Guide\nAuthentication\nPagination\nFiltering\nRetention Policies\nCommands\nRate Limits\nAPS Rate Limits and Quotas\nData Management Rate Limits\nHow-to Guide\nDownload a File\nUpload a File\nCreate an Attachment\nCreate an App-Managed Bucket and Upload a File\nPublish a Cloud Workshared Revit Model\nDelete and Restore Files in BIM 360 Document Management\nReference Guide\nREST API Reference\nData Management\nHubs\nGET hubs\nGET hubs/:hub_id\nProjects\nGET hubs/:hub_id/projects\nGET hubs/:hub_id/projects/:project_id\nGET hubs/:hub_id/projects/:project_id/hub\nGET hubs/:hub_id/projects/:project_id/topFolders\nGET projects/:project_id/downloads/:download_id\nGET projects/:project_id/jobs/:job_id\nPOST projects/:project_id/downloads\nPOST projects/:project_id/storage\nFolders\nGET projects/:project_id/folders/:folder_id\nGET projects/:project_id/folders/:folder_id/contents\nGET projects/:project_id/folders/:folder_id/parent\nGET projects/:project_id/folders/:folder_id/refs\nGET projects/:project_id/folders/:folder_id/relationships/links\nGET projects/:project_id/folders/:folder_id/relationships/refs\nGET projects/:project_id/folders/:folder_id/search\nPOST projects/:project_id/folders\nPOST projects/:project_id/folders/:folder_id/relationships/refs\nPATCH projects/:project_id/folders/:folder_id\nItems\nGET projects/:project_id/items/:item_id\nGET projects/:project_id/items/:item_id/parent\nGET projects/:project_id/items/:item_id/refs\nGET projects/:project_id/items/:item_id/relationships/links\nGET projects/:project_id/items/:item_id/relationships/refs\nGET projects/:project_id/items/:item_id/tip\nGET projects/:project_id/items/:item_id/versions\nPOST projects/:project_id/items\nPOST projects/:project_id/items/:item_id/relationships/refs\nPATCH projects/:project_id/items/:item_id\nVersions\nGET projects/:project_id/versions/:version_id\nGET projects/:project_id/versions/:version_id/downloadFormats\nGET projects/:project_id/versions/:version_id/downloads\nGET projects/:project_id/versions/:version_id/item\nGET projects/:project_id/versions/:version_id/refs\nGET projects/:project_id/versions/:version_id/relationships/links\nGET projects/:project_id/versions/:version_id/relationships/refs\nPOST projects/:project_id/versions\nPOST projects/:project_id/versions/:version_id/relationships/refs\nPATCH projects/:project_id/versions/:version_id\nCommands\nCheckPermission\nListRefs\nListItems\nPublishModel\nPublishWithoutLinks\nGetPublishModelJob\nOSS\nBuckets\nGET List Buckets\nPOST Create Bucket\nDELETE Delete Bucket\nGET Get Bucket Details\nPOST Protect Bucket\nObjects\nDELETE Delete Object\nGET List Objects\nGET Get Object Details\nPUT Copy Object\nUpload Workflow\nGET Generate Signed S3 Upload URL\nPOST Complete Upload to S3 Signed URL\nDownload Workflow\nGET Generate Signed S3 Download URL\nBatch Upload Workflow\nPOST Batch Generate Signed S3 Upload URLs\nPOST Complete Batch Upload to S3 Signed URLs\nBatch Download Workflow\nPOST Generate Signed S3 Download URLs (Batch)\nP"
+}

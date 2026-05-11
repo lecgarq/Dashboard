@@ -1,0 +1,185 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/submittals-specs-GET",
+    "scrapedAt": "2026-05-09T00:06:34.325Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/specs",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/specs",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/submittals/v2/projects/:projectId/specs"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results per page. Possible values: 1- 50. Default value: 20. For example, to limit the response to two results per page, use limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results to skip before starting to return data. For example, to skip the first 20 results, include offset=20 in the query string. For more details, see the JSON API Paging Help documentation."
+        },
+        {
+          "col_0": "searchstring",
+          "col_1": "Search for spec sections by querying a specified string within specific fields (identifier, title), and retrieve the associated items that match the search criteria. This includes spec sections where the string matches part of a field. For example, search=1."
+        },
+        {
+          "col_0": "sortstring",
+          "col_1": "Sort spec sections by specified fields. Separate multiple values with commas. To sort in descending or ascending order, add desc or asc after the sort criteria. For example, identifier asc.\nPossible values: identifier, title."
+        },
+        {
+          "col_0": "filter[identifier]string",
+          "col_1": "Filter spec sections with the specified spec section ID (the spec section ID in the UI). You can specify multiple values. Separate multiple values with commas. For example, filter[identifier]=2."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successful retrieval of spec sections"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationobject",
+          "col_1": "Describes pagination details for the response, including information about the current page and navigation to other pages."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results to be displayed on each page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before starting the current page."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The overall count of results available across all pages."
+        },
+        {
+          "col_0": "previousUrlstring",
+          "col_1": "The URL to retrieve the preceding page of results, if applicable. Not returned on the first page of results."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL to retrieve the subsequent page of results, if available. If not included, this is the last page of data."
+        },
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of spec sections."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The internal, globally unique identifier (UUID) for the spec section."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "The title of the spec section."
+        },
+        {
+          "col_0": "identifierstring",
+          "col_1": "The unique ID assigned to the spec section within the UI."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the spec section."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The time and date when the spec section was created."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who last updated the spec section."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The time and date when spec section was last updated."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/specs' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 100,\n    \"totalResults\": 25,\n    \"previousUrl\": \"https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/settings/mappings?offset=10&limit=100\",\n    \"nextUrl\": null\n  },\n  \"results\": [\n    {\n      \"id\": \"e6111f96-8437-491e-a1ae-16fd53f0cbef\",\n      \"title\": \"Materials\",\n      \"identifier\": \"500\",\n      \"createdBy\": \"WD43ZJGKDFLFH\",\n      \"createdAt\": \"2018-02-01T12:09:24.198466Z\",\n      \"updatedBy\": \"WD43ZJGKDFLFH\",\n      \"updatedAt\": \"2018-02-01T12:09:24.198466Z\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 10,
+          "offset": 100,
+          "totalResults": 25,
+          "previousUrl": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/settings/mappings?offset=10&limit=100",
+          "nextUrl": null
+        },
+        "results": [
+          {
+            "id": "e6111f96-8437-491e-a1ae-16fd53f0cbef",
+            "title": "Materials",
+            "identifier": "500",
+            "createdBy": "WD43ZJGKDFLFH",
+            "createdAt": "2018-02-01T12:09:24.198466Z",
+            "updatedBy": "WD43ZJGKDFLFH",
+            "updatedAt": "2018-02-01T12:09:24.198466Z"
+          }
+        ]
+      }
+    }
+  ]
+}

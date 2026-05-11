@@ -1,0 +1,306 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/cost-expenses-id-GET",
+    "scrapedAt": "2026-05-08T23:50:38.312Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/containers/{containerId}/expenses/{id}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/:id",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/cost/v1/containers/:containerId/expenses/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        },
+        {
+          "col_0": "idarray: string",
+          "col_1": "The object ID of the expense. You can obtain this ID from the response to the POST expenses or GET expenses endpoint."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "includearray: string",
+          "col_1": "A list of the nested expense resources to include in the response with the expenses. For example, include=expenseItems returns the expense items related to each expense. include=attributes will return custom attributes which represents the “properties” in the response.\nPossible values: expenseItems, mainContract, attributes, externalRelationship, paymentReferences."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier of the expense."
+        },
+        {
+          "col_0": "supplierIdstring,null",
+          "col_1": "The ID of a company managed by a BIM 360 Admin. Detailed company information can be retrieved by calling GET projects/:project_id/companies and locating the member_group_id in the response."
+        },
+        {
+          "col_0": "supplierCompanyUidstring,null",
+          "col_1": "The unique ID (UUID) of the company in this hub. Detailed company information can be retrieved using this UUID by calling GET companies/:company_id in the response."
+        },
+        {
+          "col_0": "supplierNamestring,null",
+          "col_1": "The supplier company name for the expense. Any company can be used regardless the ones added in Hub Administration.\nMax length: 255"
+        },
+        {
+          "col_0": "mainContractIdstring",
+          "col_1": "The ID of the Main Contract to which the expense belongs."
+        },
+        {
+          "col_0": "budgetPaymentIdstring,null",
+          "col_1": "The ID of the Budget Pay App the expense amount will be aggregated to."
+        },
+        {
+          "col_0": "numberstring",
+          "col_1": "The auto-generated sequence number for the expense.\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the expense.\nMax length: 1024"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The detailed description of the expense.\nMax length: 2048"
+        },
+        {
+          "col_0": "notestring",
+          "col_1": "The note attached to the expense, if returned. The note consists of Tiptap formatted rich text. For more information, see https://tiptap.dev."
+        },
+        {
+          "col_0": "termstring",
+          "col_1": "The term of the expense. This is customizable by the project administrator."
+        },
+        {
+          "col_0": "referenceNumberstring",
+          "col_1": "The user-provided reference number of the expense."
+        },
+        {
+          "col_0": "typestring,null",
+          "col_1": "The type of the expense. This is customizable by the project administrator.\nMax length: 128"
+        },
+        {
+          "col_0": "scopestring,null",
+          "col_1": "The applicable scope of the expense. Possible values: full, partial."
+        },
+        {
+          "col_0": "creatorIdstring,null",
+          "col_1": "The user who created the expense. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "changedBystring,null",
+          "col_1": "The user who made the last change to the expense. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "purchasedBystring,null",
+          "col_1": "The user who purchased the expense. This is the ID of a user managed by BIM 360 Admin."
+        },
+        {
+          "col_0": "statusstring,null",
+          "col_1": "The status of the expense. Possible values: draft, pending, revise, rejected, approved, paid."
+        },
+        {
+          "col_0": "amountnumber,string,null",
+          "col_1": "The total value of the subitems of the expense."
+        },
+        {
+          "col_0": "paymentDuestring,null",
+          "col_1": "The payment due date and time of the expense."
+        },
+        {
+          "col_0": "issuedAtstring,null",
+          "col_1": "The date and time when the expense was issued."
+        },
+        {
+          "col_0": "receivedAtstring,null",
+          "col_1": "The date and time when the expense was received."
+        },
+        {
+          "col_0": "approvedAtstring,null",
+          "col_1": "The date and time when the expense was approved."
+        },
+        {
+          "col_0": "paidAtstring,null",
+          "col_1": "The date and time when the expense was paid."
+        },
+        {
+          "col_0": "forecastDistributionAtstring,null",
+          "col_1": "The date and time determine which distribution period this expense belongs to, after the status of status is set to approved or paid."
+        },
+        {
+          "col_0": "aggregateBystring,null",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The identifier assigned to an item in its original external ERP system. Use this ID to track and look up data within the integrated system. Note that this value comes from the item’s ID in the external system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalSystemstring",
+          "col_1": "The name of the external ERP system integrated with Cost Management. Use this name to identify and search for data within the integrated system.\nMax length: 255"
+        },
+        {
+          "col_0": "externalMessagestring",
+          "col_1": "A message generated by the external ERP system that explains the sync status of the integration. For example, common values include success or fail to indicate the result of the integration operation.\nMax length: 255"
+        },
+        {
+          "col_0": "lastSyncTimedatetime: ISO 8601",
+          "col_1": "The date and time when the item was last synchronized with the external ERP system. This value is updated by the external system and is in ISO 8601 format."
+        },
+        {
+          "col_0": "integrationStatestring,null",
+          "col_1": "The state of the item during the integration with the external ERP system (such as SignNow). An item can be a budget, contract, main contract, main contract item, cost item, expense, expense item, change order, or schedule of value. For more details, see Integrate with External System tutorial.\nPossible values:\nlocked: the item is currently locked within the ERP system, preventing modifications until unlocked. To unlock and modify the item, use the relevant PATCH endpoint to set integrationState to null. For example, for a budget, call PATCH budgets. For a contract, call PATCH contracts. For more details, see the Help documentation.\nintegrated: the item has been successfully added to the ERP system.\nfailed: the item encountered an error during the integration process and was not successfully added to the ERP system. For example, if a user tries to integrate contracts from an ERP system and the updates fail, the integrationState can be set to failed. Retry the sync process or analyze the issue if it continues to fail.\nnull: The item has not been integrated with the ERP system. This is default value.\nFor more information regarding integrations within the Cost Management system, see Integrations in Cost Management."
+        },
+        {
+          "col_0": "integrationStateChangedAtstring,null",
+          "col_1": "The date and time that the item’s integration status was last changed."
+        },
+        {
+          "col_0": "integrationStateChangedBystring,null",
+          "col_1": "The user who last changed the integration status. This is the ID of a user managed by the BIM 360/Forma Admin."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/:id' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"id\": \"efcc4961-6115-4147-84c7-51b37be933c8\",\n  \"supplierId\": \"GF8XKPKWM38E\",\n  \"supplierCompanyUid\": \"683904a0-47ce-4146-ac2d-a3840f00e0f4\",\n  \"supplierName\": \"Supply US\",\n  \"mainContractId\": \"48934441-e392-49d7-bf58-8dea43d413ae\",\n  \"budgetPaymentId\": \"ce4af4e1-d14c-4c9b-89fb-0d932306f093\",\n  \"number\": 1,\n  \"name\": \"Site Management Staff\",\n  \"description\": \"Site Management Staff\",\n  \"note\": \"Site Management Staff\",\n  \"term\": \" Net 30\",\n  \"referenceNumber\": 20,\n  \"type\": \"expense\",\n  \"scope\": \"full\",\n  \"creatorId\": \"CED9LVTLHNXV\",\n  \"changedBy\": \"CED9LVTLHNXV\",\n  \"purchasedBy\": \"CED9LVTLHNXV\",\n  \"status\": \"draft\",\n  \"amount\": \"1000.0000\",\n  \"paymentDue\": \"2019-05-05T01:00:12.989Z\",\n  \"issuedAt\": \"2019-02-05T01:00:12.989Z\",\n  \"receivedAt\": \"2019-02-05T01:00:12.989Z\",\n  \"approvedAt\": \"2019-02-05T01:00:12.989Z\",\n  \"paidAt\": \"2019-02-05T01:00:12.989Z\",\n  \"forecastDistributionAt\": \"2019-02-05T01:00:12.989Z\",\n  \"aggregateBy\": \"workCompleted\",\n  \"externalId\": \"10010-99-AB\",\n  \"externalSystem\": \"Sage300\",\n  \"externalMessage\": \"Success.\",\n  \"lastSyncTime\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationState\": \"locked\",\n  \"integrationStateChangedAt\": \"2019-09-05T01:00:12.989Z\",\n  \"integrationStateChangedBy\": \"CED9LVTLHNXV\",\n  \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n  \"updatedAt\": \"2019-09-05T01:00:12.989Z\"\n}",
+      "parsed": {
+        "id": "efcc4961-6115-4147-84c7-51b37be933c8",
+        "supplierId": "GF8XKPKWM38E",
+        "supplierCompanyUid": "683904a0-47ce-4146-ac2d-a3840f00e0f4",
+        "supplierName": "Supply US",
+        "mainContractId": "48934441-e392-49d7-bf58-8dea43d413ae",
+        "budgetPaymentId": "ce4af4e1-d14c-4c9b-89fb-0d932306f093",
+        "number": 1,
+        "name": "Site Management Staff",
+        "description": "Site Management Staff",
+        "note": "Site Management Staff",
+        "term": " Net 30",
+        "referenceNumber": 20,
+        "type": "expense",
+        "scope": "full",
+        "creatorId": "CED9LVTLHNXV",
+        "changedBy": "CED9LVTLHNXV",
+        "purchasedBy": "CED9LVTLHNXV",
+        "status": "draft",
+        "amount": "1000.0000",
+        "paymentDue": "2019-05-05T01:00:12.989Z",
+        "issuedAt": "2019-02-05T01:00:12.989Z",
+        "receivedAt": "2019-02-05T01:00:12.989Z",
+        "approvedAt": "2019-02-05T01:00:12.989Z",
+        "paidAt": "2019-02-05T01:00:12.989Z",
+        "forecastDistributionAt": "2019-02-05T01:00:12.989Z",
+        "aggregateBy": "workCompleted",
+        "externalId": "10010-99-AB",
+        "externalSystem": "Sage300",
+        "externalMessage": "Success.",
+        "lastSyncTime": "2019-09-05T01:00:12.989Z",
+        "integrationState": "locked",
+        "integrationStateChangedAt": "2019-09-05T01:00:12.989Z",
+        "integrationStateChangedBy": "CED9LVTLHNXV",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z"
+      }
+    }
+  ]
+}

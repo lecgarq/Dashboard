@@ -1,0 +1,3196 @@
+{
+  "_meta": {
+    "title": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/",
+    "scrapedAt": "2026-05-09T00:09:30.882Z",
+    "totalPages": 530
+  },
+  "categories": {
+    "Other": [
+      {
+        "name": "Introduction",
+        "file": "Other/Introduction.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Field Guide",
+        "file": "Other/Field_Guide.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Admin",
+        "file": "Other/Admin.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Assets",
+        "file": "Other/Assets.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AutoSpecs",
+        "file": "Other/AutoSpecs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Cost Management",
+        "file": "Other/Cost_Management.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Data Connector",
+        "file": "Other/Data_Connector.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Files",
+        "file": "Other/Files.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forms",
+        "file": "Other/Forms.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Issues",
+        "file": "Other/Issues.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Locations",
+        "file": "Other/Locations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Coordination",
+        "file": "Other/Model_Coordination.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Sets",
+        "file": "Other/Model_Sets.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Clash Testing",
+        "file": "Other/Clash_Testing.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Relationships",
+        "file": "Other/Relationships.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reviews",
+        "file": "Other/Reviews.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RFIs",
+        "file": "Other/RFIs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Properties",
+        "file": "Other/Model_Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Sheets",
+        "file": "Other/Sheets.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Submittals",
+        "file": "Other/Submittals.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Transmittals",
+        "file": "Other/Transmittals.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Regions",
+        "file": "Other/Regions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Rate Limits and Quotas",
+        "file": "Other/Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "APS Rate Limits and Quotas",
+        "file": "Other/APS_Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Admin Rate Limits",
+        "file": "Other/Admin_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Assets Rate Limits",
+        "file": "Other/Assets_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AutoSpecs Rate Limits",
+        "file": "Other/AutoSpecs_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Cost Management Rate Limits",
+        "file": "Other/Cost_Management_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Data Connector Rate Limits",
+        "file": "Other/Data_Connector_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Files Rate Limits",
+        "file": "Other/Files_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forms Rate Limits",
+        "file": "Other/Forms_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Issues Rate Limits",
+        "file": "Other/Issues_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Locations Rate Limits",
+        "file": "Other/Locations_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Coordination Rate Limits",
+        "file": "Other/Model_Coordination_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Relationships Rate Limits",
+        "file": "Other/Relationships_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reviews Rate Limits",
+        "file": "Other/Reviews_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RFIs Rate Limits",
+        "file": "Other/RFIs_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Submittals Rate Limits",
+        "file": "Other/Submittals_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Takeoff Rate Limits",
+        "file": "Other/Takeoff_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Sheets Rate Limits",
+        "file": "Other/Sheets_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Transmittals Rate Limits",
+        "file": "Other/Transmittals_Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Migration Guides",
+        "file": "Other/Migration_Guides.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forms API Migration Guide (2026 April Release)",
+        "file": "Other/Forms_API_Migration_Guide_(2026_April_Release).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BIM 360 Compatibility",
+        "file": "Other/BIM_360_Compatibility.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BIM 360 Compatibility",
+        "file": "Other/BIM_360_Compatibility.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Compatibility Table",
+        "file": "Other/Compatibility_Table.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forma Data Management Compatibility",
+        "file": "Other/Forma_Data_Management_Compatibility.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Verify Project Type",
+        "file": "Other/Verify_Project_Type.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Assets Changelog",
+        "file": "Other/Assets_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Cost V1 Changelog",
+        "file": "Other/Cost_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Data Connector V1 Changelog",
+        "file": "Other/Data_Connector_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Files V1 Changelog",
+        "file": "Other/Files_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forms Changelog",
+        "file": "Other/Forms_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hub Admin Changelog",
+        "file": "Other/Hub_Admin_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Issues V1 Changelog",
+        "file": "Other/Issues_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Locations V2 Changelog",
+        "file": "Other/Locations_V2_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Coordination Changelog",
+        "file": "Other/Model_Coordination_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reviews V1 Changelog",
+        "file": "Other/Reviews_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RFIs Changelog",
+        "file": "Other/RFIs_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Sheets V1 Changelog",
+        "file": "Other/Sheets_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Submittals Changelog",
+        "file": "Other/Submittals_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Takeoff V1 Changelog",
+        "file": "Other/Takeoff_V1_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forma APIs",
+        "file": "Other/Forma_APIs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "API Reference",
+        "file": "Other/API_Reference.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets:batch-create"
+      },
+      {
+        "name": "Assets Field Guide",
+        "file": "Other/Assets_Field_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Tutorials": [
+      {
+        "name": "Getting Started",
+        "file": "Tutorials/Getting_Started.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Manage API Access to Forma",
+        "file": "Tutorials/Manage_API_Access_to_Forma.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Forma Hub and Project ID",
+        "file": "Tutorials/Retrieve_Forma_Hub_and_Project_ID.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Assets",
+        "file": "Tutorials/Assets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets?includeCustomAttributes=true"
+      },
+      {
+        "name": "Retrieve Forma Assets Data",
+        "file": "Tutorials/Retrieve_Forma_Assets_Data.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets?includeCustomAttributes=true"
+      },
+      {
+        "name": "Setup Forma Assets Project Settings",
+        "file": "Tutorials/Setup_Forma_Assets_Project_Settings.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories?includeUid=true"
+      },
+      {
+        "name": "Managing Forma Assets",
+        "file": "Tutorials/Managing_Forma_Assets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/assets:batch-create"
+      },
+      {
+        "name": "AutoSpecs",
+        "file": "Tutorials/AutoSpecs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/75c643d1-c80b-4bca-800f-111a1111aa1a/metadata"
+      },
+      {
+        "name": "Retrieve a Smart Register",
+        "file": "Tutorials/Retrieve_a_Smart_Register.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/75c643d1-c80b-4bca-800f-111a1111aa1a/metadata"
+      },
+      {
+        "name": "Cost Management",
+        "file": "Tutorials/Cost_Management.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Cost Container ID (deprecated)",
+        "file": "Tutorials/Retrieve_Cost_Container_ID_(deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Setup a Budget Code Template",
+        "file": "Tutorials/Setup_a_Budget_Code_Template.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/templates"
+      },
+      {
+        "name": "Link Budgets to Contracts",
+        "file": "Tutorials/Link_Budgets_to_Contracts.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/contracts?limit=100&offset=0"
+      },
+      {
+        "name": "Update a Contract's Company",
+        "file": "Tutorials/Update_a_Contract's_Company.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts?limit=100&offset=0"
+      },
+      {
+        "name": "Create a Potential Change Order (PCO)",
+        "file": "Tutorials/Create_a_Potential_Change_Order_(PCO).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Open a Potential Change Order (PCO)",
+        "file": "Tutorials/Open_a_Potential_Change_Order_(PCO).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/pco?limit=100&offset=0"
+      },
+      {
+        "name": "Directly Attach Local Files to a Cost Item",
+        "file": "Tutorials/Directly_Attach_Local_Files_to_a_Cost_Item.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/cost-items?limit=100&offset=0"
+      },
+      {
+        "name": "Download a Document Generated from an SCO",
+        "file": "Tutorials/Download_a_Document_Generated_from_an_SCO.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/18ece8b1-204d-11e8-ad71-d73b169f902a/change-orders/sco?limit=100&offset=0"
+      },
+      {
+        "name": "Update a PCO's Custom Attributes",
+        "file": "Tutorials/Update_a_PCO's_Custom_Attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco?limit=100&offset=0&include=attributes"
+      },
+      {
+        "name": "Track Performance with Breakdowns",
+        "file": "Tutorials/Track_Performance_with_Breakdowns.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances?limit=20&offset=0"
+      },
+      {
+        "name": "Track Aggregated Budget Performance",
+        "file": "Tutorials/Track_Aggregated_Budget_Performance.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "Update Existing Timesheets",
+        "file": "Tutorials/Update_Existing_Timesheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets?filter[budgetCode]=84720010121001FEE&filter[endDate]=2022-05-06"
+      },
+      {
+        "name": "Integrating Cost Management with External ERP Systems",
+        "file": "Tutorials/Integrating_Cost_Management_with_External_ERP_Systems.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/71e6b356-a101-4277-b4ca-98989bff4a90/budgets?limit=100&offset=0"
+      },
+      {
+        "name": "Data Connector",
+        "file": "Tutorials/Data_Connector.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests"
+      },
+      {
+        "name": "Submit a Data Request",
+        "file": "Tutorials/Submit_a_Data_Request.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests"
+      },
+      {
+        "name": "Find and Update a Data Request",
+        "file": "Tutorials/Find_and_Update_a_Data_Request.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests?limit=20&sort=desc"
+      },
+      {
+        "name": "Find a Job and Retrieve Its Data Extract",
+        "file": "Tutorials/Find_a_Job_and_Retrieve_Its_Data_Extract.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/<accountId>/requests/<requestId>/jobs?sort=desc&limit=10&offset=0"
+      },
+      {
+        "name": "Files",
+        "file": "Tutorials/Files.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Export Files from the Files Tool",
+        "file": "Tutorials/Export_Files_from_the_Files_Tool.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data/v1/projects/b.139532ee-5cdb-4c9e-a293-652693991e65/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.BJU3PTc4Sd2CmXM492XUiA/contents"
+      },
+      {
+        "name": "Upload Files to the Files Tool",
+        "file": "Tutorials/Upload_Files_to_the_Files_Tool.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Download Files from the Files Tool",
+        "file": "Tutorials/Download_Files_from_the_Files_Tool.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Download RVT Files from a Published Model",
+        "file": "Tutorials/Download_RVT_Files_from_a_Published_Model.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Forms",
+        "file": "Tutorials/Forms.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Forms (Deprecated)",
+        "file": "Tutorials/Retrieve_Forms_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Forms (New - Beta)",
+        "file": "Tutorials/Retrieve_Forms_(New_-_Beta).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Retrieve Forms Associated With Specific Locations",
+        "file": "Tutorials/Retrieve_Forms_Associated_With_Specific_Locations.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/trees/:treeId/nodes"
+      },
+      {
+        "name": "Manage Forms",
+        "file": "Tutorials/Manage_Forms.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/cd13503e-1265-49c3-b2da-477c57cda60c/form-templates"
+      },
+      {
+        "name": "Work with Form Layouts and Custom Tables",
+        "file": "Tutorials/Work_with_Form_Layouts_and_Custom_Tables.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hub Admin",
+        "file": "Tutorials/Hub_Admin.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/projects"
+      },
+      {
+        "name": "Create Projects",
+        "file": "Tutorials/Create_Projects.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/projects"
+      },
+      {
+        "name": "Issues",
+        "file": "Tutorials/Issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/issues"
+      },
+      {
+        "name": "Retrieve Issues",
+        "file": "Tutorials/Retrieve_Issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/issues"
+      },
+      {
+        "name": "Create Issues",
+        "file": "Tutorials/Create_Issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/users/me"
+      },
+      {
+        "name": "Add References To Issues",
+        "file": "Tutorials/Add_References_To_Issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/users/me"
+      },
+      {
+        "name": "Download Issue References",
+        "file": "Tutorials/Download_Issue_References.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/issues"
+      },
+      {
+        "name": "Upload Issue Attachments",
+        "file": "Tutorials/Upload_Issue_Attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b8c45fe1-2ab3-4b71-8563-d9f9c5c2a7e5/topFolders"
+      },
+      {
+        "name": "Retrieve Issue Attachments",
+        "file": "Tutorials/Retrieve_Issue_Attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/b8c45fe1-2ab3-4b71-8563-d9f9c5c2a7e5/issues"
+      },
+      {
+        "name": "Download Issue Attachments",
+        "file": "Tutorials/Download_Issue_Attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/b8c45fe1-2ab3-4b71-8563-d9f9c5c2a7e5/issues"
+      },
+      {
+        "name": "Retrieve Available Members Roles and Companies",
+        "file": "Tutorials/Retrieve_Available_Members_Roles_and_Companies.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/g5s4e3b5-vbta-6b02-d23a-5d55f36ba876/requests"
+      },
+      {
+        "name": "Locations",
+        "file": "Tutorials/Locations.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/e4ae9874-0ab6-4b33-ac91-ff70e806e013/trees/default/nodes"
+      },
+      {
+        "name": "Configure a Locations Tree",
+        "file": "Tutorials/Configure_a_Locations_Tree.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/e4ae9874-0ab6-4b33-ac91-ff70e806e013/trees/default/nodes"
+      },
+      {
+        "name": "Model Coordination",
+        "file": "Tutorials/Model_Coordination.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f83cef12-deef-4771-9feb-4f85643e3c46/modelsets"
+      },
+      {
+        "name": "Working with Model Sets and Versions",
+        "file": "Tutorials/Working_with_Model_Sets_and_Versions.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f83cef12-deef-4771-9feb-4f85643e3c46/modelsets"
+      },
+      {
+        "name": "Working with Clash Results",
+        "file": "Tutorials/Working_with_Clash_Results.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/e6efd20e-f971-4705-aae0-1e5faa2eec11/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/latest"
+      },
+      {
+        "name": "Model Properties",
+        "file": "Tutorials/Model_Properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/f83cef12-deef-4771-9feb-4f85643e3c46/indexes:batch-status"
+      },
+      {
+        "name": "Index Querying",
+        "file": "Tutorials/Index_Querying.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/f83cef12-deef-4771-9feb-4f85643e3c46/indexes:batch-status"
+      },
+      {
+        "name": "Tracking Changes",
+        "file": "Tutorials/Tracking_Changes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/f83cef12-deef-4771-9feb-4f85643e3c46/diffs:batch-status"
+      },
+      {
+        "name": "Query Language Reference",
+        "file": "Tutorials/Query_Language_Reference.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Relationships",
+        "file": "Tutorials/Relationships.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/04074497-ed5d-4ea3-861d-1f146418f5bb/relationships/b544a7eb-3c64-4a56-a7ff-392d0441015f"
+      },
+      {
+        "name": "Relationship Querying",
+        "file": "Tutorials/Relationship_Querying.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/04074497-ed5d-4ea3-861d-1f146418f5bb/relationships/b544a7eb-3c64-4a56-a7ff-392d0441015f"
+      },
+      {
+        "name": "Create Relationships",
+        "file": "Tutorials/Create_Relationships.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/utility/relationships:writable"
+      },
+      {
+        "name": "Reviews",
+        "file": "Tutorials/Reviews.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows"
+      },
+      {
+        "name": "Create an Approval Workflow",
+        "file": "Tutorials/Create_an_Approval_Workflow.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows"
+      },
+      {
+        "name": "Create a Review",
+        "file": "Tutorials/Create_a_Review.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/workflows?limit=10&offset=0"
+      },
+      {
+        "name": "Inspect a Review",
+        "file": "Tutorials/Inspect_a_Review.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/reviews/4e609369-e950-4097-b7d3-e6cf1c3c5415/versions?limit=10&offset=0"
+      },
+      {
+        "name": "RFIs",
+        "file": "Tutorials/RFIs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/ce8edd30-ef28-467c-8d99-7d7051097ee0/users/me"
+      },
+      {
+        "name": "Create an RFI",
+        "file": "Tutorials/Create_an_RFI.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/ce8edd30-ef28-467c-8d99-7d7051097ee0/users/me"
+      },
+      {
+        "name": "Submit a Response",
+        "file": "Tutorials/Submit_a_Response.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/ce8edd30-ef28-467c-8d99-7d7051097ee0/rfis/a1d12f69-3c02-4bba-936d-cccd73f001ee"
+      },
+      {
+        "name": "Submit an Official Response",
+        "file": "Tutorials/Submit_an_Official_Response.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/ce8edd30-ef28-467c-8d99-7d7051097ee0/rfis:search"
+      },
+      {
+        "name": "Upload Attachment",
+        "file": "Tutorials/Upload_Attachment.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/v3/projects/b.cGVyc29uYWw6d2l/rfis/31a3f98d-34a8-4d4c-a362-3cc9de44f89c"
+      },
+      {
+        "name": "RFI Transitions",
+        "file": "Tutorials/RFI_Transitions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/afc6e536-3a12-4ecf-8302-3f283d50dc6f/users/me"
+      },
+      {
+        "name": "Sheets",
+        "file": "Tutorials/Sheets.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets"
+      },
+      {
+        "name": "Upload Files to Forma Sheets",
+        "file": "Tutorials/Upload_Files_to_Forma_Sheets.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets"
+      },
+      {
+        "name": "Export Sheets from Forma Build",
+        "file": "Tutorials/Export_Sheets_from_Forma_Build.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/b.139532ee-5cdb-4c9e-a293-652693991e65/sheets?currentOnly=true&filter[versionSetId]=7c2ecde0-2406-49f9-9199-50176848a0b7"
+      },
+      {
+        "name": "Submittals",
+        "file": "Tutorials/Submittals.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/items"
+      },
+      {
+        "name": "Download Submittal Attachments",
+        "file": "Tutorials/Download_Submittal_Attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/items"
+      },
+      {
+        "name": "Attach Files From the Forma Files Tool",
+        "file": "Tutorials/Attach_Files_From_the_Forma_Files_Tool.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/55451d9a-b6a5-429d-8bc3-6074765c52e0/items/463c0b75-7c85-43ce-aa9f-74781aa29070"
+      },
+      {
+        "name": "Attach Local Files",
+        "file": "Tutorials/Attach_Local_Files.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/2570d4e5-9aef-4b41-8e45-a454f2f3fd65/items/938eb16d-5603-4df9-adcd-00f75d48e145"
+      },
+      {
+        "name": "Create a Submittal Item",
+        "file": "Tutorials/Create_a_Submittal_Item.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/91b5ea71-e3ea-495b-999d-57443a8af6a4/users/me"
+      },
+      {
+        "name": "Manage Submittal Transitions",
+        "file": "Tutorials/Manage_Submittal_Transitions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/2570d4e5-9aef-4b41-8e45-a454f2f3fd65/items/2ae22463-83d2-4f1a-9b2f-6898e616bfc3"
+      },
+      {
+        "name": "Takeoff",
+        "file": "Tutorials/Takeoff.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extract an Inventory",
+        "file": "Tutorials/Extract_an_Inventory.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "REST API": [
+      {
+        "name": "POST assets:batch-create V2",
+        "file": "REST API/POST_assets-batch-create_V2.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets:batch-create"
+      },
+      {
+        "name": "POST assets:batch-get V2",
+        "file": "REST API/POST_assets-batch-get_V2.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets:batch-get?includeCustomAttributes=true&includeDeleted=true"
+      },
+      {
+        "name": "GET assets V2",
+        "file": "REST API/GET_assets_V2.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets?cursorState=eyJsaW1pdCI6MjUsIm9mZnNldCI6MjV9&filter[customAttributes]=[object Object]&filter[searchText]=Air Handler&filter[updatedAt]=2020-05-01T06:00:00.000Z..&sort=createdAt asc,clientAssetId desc&includeCustomAttributes=true&includeDeleted=true"
+      },
+      {
+        "name": "PATCH assets:batch-patch V2",
+        "file": "REST API/PATCH_assets-batch-patch_V2.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets:batch-patch"
+      },
+      {
+        "name": "POST assets:batch-delete V2",
+        "file": "REST API/POST_assets-batch-delete_V2.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v2/projects/:projectId/assets:batch-delete"
+      },
+      {
+        "name": "POST categories",
+        "file": "REST API/POST_categories.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories?includeUid=true"
+      },
+      {
+        "name": "POST categories:batch-get",
+        "file": "REST API/POST_categories-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories:batch-get?includeUid=true"
+      },
+      {
+        "name": "GET categories",
+        "file": "REST API/GET_categories.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories?filter[isActive]=true&filter[parentId]=122&filter[maxDepth]=3&filter[updatedAt]=2020-05-01T06:00:00.000Z..&includeUid=true"
+      },
+      {
+        "name": "POST status-step-sets",
+        "file": "REST API/POST_status-step-sets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/status-step-sets?renameConflicting=true"
+      },
+      {
+        "name": "POST status-step-sets:batch-get",
+        "file": "REST API/POST_status-step-sets-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/status-step-sets:batch-get?includeDeleted=true"
+      },
+      {
+        "name": "GET status-step-sets",
+        "file": "REST API/GET_status-step-sets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/status-step-sets?cursorState=eyJsaW1pdCI6MjUsIm9mZnNldCI6MjV9&includeDeleted=true&filter[updatedAt]=2020-05-01T06:00:00.000Z.."
+      },
+      {
+        "name": "POST category-status-step-sets/status-step-sets:batch-get",
+        "file": "REST API/POST_category-status-step-sets-status-step-sets-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/category-status-step-sets/status-step-sets:batch-get"
+      },
+      {
+        "name": "PUT categories/:categoryId/status-step-set/:statusStepSetId",
+        "file": "REST API/PUT_categories-categoryId-status-step-set-statusStepSetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories/123/status-step-set/6eb35939-e5fb-453a-98ed-e2e11f326e73"
+      },
+      {
+        "name": "POST asset-statuses",
+        "file": "REST API/POST_asset-statuses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/asset-statuses"
+      },
+      {
+        "name": "POST asset-statuses:batch-get",
+        "file": "REST API/POST_asset-statuses-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/asset-statuses:batch-get?includeDeleted=true"
+      },
+      {
+        "name": "GET asset-statuses",
+        "file": "REST API/GET_asset-statuses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/asset-statuses?cursorState=eyJsaW1pdCI6MjUsIm9mZnNldCI6MjV9&includeDeleted=true&filter[updatedAt]=2020-05-01T06:00:00.000Z.."
+      },
+      {
+        "name": "POST custom-attributes",
+        "file": "REST API/POST_custom-attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes?renameConflicting=true"
+      },
+      {
+        "name": "POST custom-attributes:batch-get",
+        "file": "REST API/POST_custom-attributes-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes:batch-get?includeDeleted=true"
+      },
+      {
+        "name": "GET custom-attributes",
+        "file": "REST API/GET_custom-attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes?cursorState=eyJsaW1pdCI6MjUsIm9mZnNldCI6MjV9&includeDeleted=true&filter[updatedAt]=2020-05-01T06:00:00.000Z.."
+      },
+      {
+        "name": "PATCH custom-attributes/:customAttributeId",
+        "file": "REST API/PATCH_custom-attributes-customAttributeId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/custom-attributes/3063f212-6ce9-494e-b749-eb73b4445bf0"
+      },
+      {
+        "name": "GET categories/:categoryId/custom-attributes",
+        "file": "REST API/GET_categories-categoryId-custom-attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories/123/custom-attributes"
+      },
+      {
+        "name": "PUT categories/:categoryId/custom-attributes/:customAttributeId",
+        "file": "REST API/PUT_categories-categoryId-custom-attributes-customAttributeId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories/123/custom-attributes/3063f212-6ce9-494e-b749-eb73b4445bf0"
+      },
+      {
+        "name": "GET error-codes",
+        "file": "REST API/GET_error-codes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/error-codes"
+      },
+      {
+        "name": "GET error-codes/:errorCodeName",
+        "file": "REST API/GET_error-codes-errorCodeName.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/error-codes/FIELD_EXCEEDS_MAX_LENGTH"
+      },
+      {
+        "name": "GET project metadata",
+        "file": "REST API/GET_project_metadata.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/metadata"
+      },
+      {
+        "name": "GET smartregister",
+        "file": "REST API/GET_smartregister.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/version/:versionId/smartregister"
+      },
+      {
+        "name": "GET requirements",
+        "file": "REST API/GET_requirements.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/version/:versionId/requirements"
+      },
+      {
+        "name": "GET summary",
+        "file": "REST API/GET_summary.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/version/:versionId/submittalsSummary"
+      },
+      {
+        "name": "POST actions",
+        "file": "REST API/POST_actions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/workflows/actions"
+      },
+      {
+        "name": "GET actions",
+        "file": "REST API/GET_actions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/workflows/FormInstance/18d97ae0-9484-11e8-a7ec-7ddae203e404/actions"
+      },
+      {
+        "name": "GET attachments",
+        "file": "REST API/GET_attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/attachments?filter[associationType]=Budget&filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST attachments",
+        "file": "REST API/POST_attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/attachments"
+      },
+      {
+        "name": "POST attachments:batch-create",
+        "file": "REST API/POST_attachments-batch-create.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/attachments:batch-create"
+      },
+      {
+        "name": "DELETE attachments/:attachmentId",
+        "file": "REST API/DELETE_attachments-attachmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/attachments/18d97ae0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "POST attachment-folders",
+        "file": "REST API/POST_attachment-folders.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/attachment-folders"
+      },
+      {
+        "name": "GET properties",
+        "file": "REST API/GET_properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/properties?filter[associationType]=Budget&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "POST property-values:batch-update",
+        "file": "REST API/POST_property-values-batch-update.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/property-values:batch-update"
+      },
+      {
+        "name": "GET segment-values",
+        "file": "REST API/GET_segment-values.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segment-values?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc&cursorState=AMMAEACAtgALYWRzay53aXBkZXYNZnMuZmlsZS5hZGRlZAZmb2xk"
+      },
+      {
+        "name": "GET values",
+        "file": "REST API/GET_values.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST values",
+        "file": "REST API/POST_values.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values"
+      },
+      {
+        "name": "POST values:import",
+        "file": "REST API/POST_values-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values:import"
+      },
+      {
+        "name": "DELETE values/:valueId",
+        "file": "REST API/DELETE_values-valueId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values/229d3420-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "PATCH values/:valueId",
+        "file": "REST API/PATCH_values-valueId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values/229d3420-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET values/:valueId",
+        "file": "REST API/GET_values-valueId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc/values/229d3420-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET templates/:templateId/segments",
+        "file": "REST API/GET_templates-templateId-segments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates/a2a9eb81-052b-4a18-9988-571e8134f98b/segments?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST segments",
+        "file": "REST API/POST_segments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates/a2a9eb81-052b-4a18-9988-571e8134f98b/segments"
+      },
+      {
+        "name": "DELETE segments/:segmentId",
+        "file": "REST API/DELETE_segments-segmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates/a2a9eb81-052b-4a18-9988-571e8134f98b/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc"
+      },
+      {
+        "name": "PATCH segments/:segmentId",
+        "file": "REST API/PATCH_segments-segmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates/a2a9eb81-052b-4a18-9988-571e8134f98b/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc"
+      },
+      {
+        "name": "GET segments/:segmentId",
+        "file": "REST API/GET_segments-segmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates/a2a9eb81-052b-4a18-9988-571e8134f98b/segments/87256c07-5c03-42cd-b4dc-e9d06411c0cc"
+      },
+      {
+        "name": "GET templates",
+        "file": "REST API/GET_templates.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/templates"
+      },
+      {
+        "name": "GET budgets",
+        "file": "REST API/GET_budgets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST budgets",
+        "file": "REST API/POST_budgets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets"
+      },
+      {
+        "name": "POST budgets:import",
+        "file": "REST API/POST_budgets-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets:import"
+      },
+      {
+        "name": "DELETE budgets/:budgetId",
+        "file": "REST API/DELETE_budgets-budgetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "PATCH budgets/:budgetId",
+        "file": "REST API/PATCH_budgets-budgetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET budgets/:budgetId",
+        "file": "REST API/GET_budgets-budgetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "POST budgets-contracts:link",
+        "file": "REST API/POST_budgets-contracts-link.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/budgets-contracts:link"
+      },
+      {
+        "name": "POST cost-items:attach",
+        "file": "REST API/POST_cost-items-attach.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items:attach"
+      },
+      {
+        "name": "POST cost-items:detach",
+        "file": "REST API/POST_cost-items-detach.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items:detach"
+      },
+      {
+        "name": "GET change-orders",
+        "file": "REST API/GET_change-orders.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders"
+      },
+      {
+        "name": "GET change-orders/:changeOrder",
+        "file": "REST API/GET_change-orders-changeOrder.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco?limit=100&sort=name,createdAt desc&filter[sourceId]=b6445638-ca68-4e3c-9160-15864de6b818&include=include=costItems,attributes,comments&filter[budgetStatus]=open&filter[costStatus]=open&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "POST change-orders/:changeOrder",
+        "file": "REST API/POST_change-orders-changeOrder.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco"
+      },
+      {
+        "name": "GET change-orders/:changeOrder/:id",
+        "file": "REST API/GET_change-orders-changeOrder-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco/18d97ae0-9484-11e8-a7ec-7ddae203e404?include=include=costItems,attributes,comments"
+      },
+      {
+        "name": "PATCH change-orders/:changeOrder/:id",
+        "file": "REST API/PATCH_change-orders-changeOrder-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco/18d97ae0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE change-orders/:changeOrder/:id",
+        "file": "REST API/DELETE_change-orders-changeOrder-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco/:id"
+      },
+      {
+        "name": "DELETE contracts/:contractId",
+        "file": "REST API/DELETE_contracts-contractId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "PATCH contracts/:contractId",
+        "file": "REST API/PATCH_contracts-contractId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/97363960-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "GET contracts/:contractId",
+        "file": "REST API/GET_contracts-contractId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/97363960-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "GET contracts",
+        "file": "REST API/GET_contracts.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts?limit=100&sort=name,createdAt desc&filter[status]=open&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "POST contracts",
+        "file": "REST API/POST_contracts.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts"
+      },
+      {
+        "name": "GET cost-items",
+        "file": "REST API/GET_cost-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items?filter[lastModifiedSince]=2020-03-01T13:00:00Z&filter[budgetStatus]=open&filter[costStatus]=open&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST cost-items",
+        "file": "REST API/POST_cost-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items"
+      },
+      {
+        "name": "POST cost-items:batch-create",
+        "file": "REST API/POST_cost-items-batch-create.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items:batch-create"
+      },
+      {
+        "name": "GET cost-items/:costItemId",
+        "file": "REST API/GET_cost-items-costItemId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/f6445638-ca68-4e3c-9160-15864de6b818"
+      },
+      {
+        "name": "PATCH cost-items/:costItemId",
+        "file": "REST API/PATCH_cost-items-costItemId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/f6445638-ca68-4e3c-9160-15864de6b818"
+      },
+      {
+        "name": "DELETE cost-items/:costItemId",
+        "file": "REST API/DELETE_cost-items-costItemId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/:costItemId"
+      },
+      {
+        "name": "GET documents",
+        "file": "REST API/GET_documents.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/documents?associationId=18d97ae0-9484-11e8-a7ec-7ddae203e404&associationType=Budget&filter[latest]=true&filter[signed]=true"
+      },
+      {
+        "name": "GET expenses",
+        "file": "REST API/GET_expenses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses?filter[status]=open&filter[createdAt]=2020-10-31T14:48:00.000Z..2020-11-01T14:48:00.000Z&filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST expenses",
+        "file": "REST API/POST_expenses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses"
+      },
+      {
+        "name": "DELETE expenses/:id",
+        "file": "REST API/DELETE_expenses-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH expenses/:id",
+        "file": "REST API/PATCH_expenses-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/:id"
+      },
+      {
+        "name": "GET expenses/:id",
+        "file": "REST API/GET_expenses-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/:id"
+      },
+      {
+        "name": "GET expenses/:expenseId/items",
+        "file": "REST API/GET_expenses-expenseId-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/:expenseId/items?filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST expenses/:expenseId/items",
+        "file": "REST API/POST_expenses-expenseId-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/f6445638-ca68-4e3c-9160-15864de6b818/items"
+      },
+      {
+        "name": "DELETE expenses/:expenseId/items/:id",
+        "file": "REST API/DELETE_expenses-expenseId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/f6445638-ca68-4e3c-9160-15864de6b818/items/:id"
+      },
+      {
+        "name": "PATCH expenses/:expenseId/items/:id",
+        "file": "REST API/PATCH_expenses-expenseId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/f6445638-ca68-4e3c-9160-15864de6b818/items/f6445638-ca68-4e3c-9160-15864de6b818"
+      },
+      {
+        "name": "GET expenses/:expenseId/items/:id",
+        "file": "REST API/GET_expenses-expenseId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/expenses/f6445638-ca68-4e3c-9160-15864de6b818/items/f6445638-ca68-4e3c-9160-15864de6b818"
+      },
+      {
+        "name": "GET main-contracts",
+        "file": "REST API/GET_main-contracts.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts?filter[status]=open&filter[lastModifiedSince]=2020-03-01T13:00:00Z&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST main-contracts",
+        "file": "REST API/POST_main-contracts.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts"
+      },
+      {
+        "name": "GET main-contracts/:id",
+        "file": "REST API/GET_main-contracts-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH main-contracts/:id",
+        "file": "REST API/PATCH_main-contracts-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE main-contracts/:id",
+        "file": "REST API/DELETE_main-contracts-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "GET main-contracts/:mainContractId/items",
+        "file": "REST API/GET_main-contracts-mainContractId-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/b6445638-ca68-4e3c-9160-15864de6b818/items?limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST main-contracts/:mainContractId/items",
+        "file": "REST API/POST_main-contracts-mainContractId-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/f6445638-ca68-4e3c-9160-15864de6b818/items"
+      },
+      {
+        "name": "GET main-contracts/:mainContractId/items/:id",
+        "file": "REST API/GET_main-contracts-mainContractId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/f6445638-ca68-4e3c-9160-15864de6b818/items/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH main-contracts/:mainContractId/items/:id",
+        "file": "REST API/PATCH_main-contracts-mainContractId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/f6445638-ca68-4e3c-9160-15864de6b818/items/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE main-contracts/:mainContractId/items/:id",
+        "file": "REST API/DELETE_main-contracts-mainContractId-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/main-contracts/f6445638-ca68-4e3c-9160-15864de6b818/items/1df59db0-9484-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "GET payments",
+        "file": "REST API/GET_payments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/payments?limit=100&sort=name,createdAt desc&filter[associationType]=Contract&filter[status]=paid&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "GET payments/:id",
+        "file": "REST API/GET_payments-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/payments/:id"
+      },
+      {
+        "name": "GET payment-items",
+        "file": "REST API/GET_payment-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/payment-items?limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "GET schedule-of-values",
+        "file": "REST API/GET_schedule-of-values.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values?limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST schedule-of-values",
+        "file": "REST API/POST_schedule-of-values.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values"
+      },
+      {
+        "name": "GET schedule-of-values/:id",
+        "file": "REST API/GET_schedule-of-values-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values/88dc0f70-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH schedule-of-values/:id",
+        "file": "REST API/PATCH_schedule-of-values-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values/88dc0f70-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE schedule-of-values/:id",
+        "file": "REST API/DELETE_schedule-of-values-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/schedule-of-values/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET sub-cost-items",
+        "file": "REST API/GET_sub-cost-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/eb284d80-f026-11e7-98ee-cb31483cc0ac/sub-cost-items?filter[type]=estimated&limit=100&sort=name,createdAt desc"
+      },
+      {
+        "name": "POST sub-cost-items",
+        "file": "REST API/POST_sub-cost-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/eb284d80-f026-11e7-98ee-cb31483cc0ac/sub-cost-items"
+      },
+      {
+        "name": "POST sub-cost-items:copy",
+        "file": "REST API/POST_sub-cost-items-copy.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/eb284d80-f026-11e7-98ee-cb31483cc0ac/sub-cost-items:copy"
+      },
+      {
+        "name": "PATCH sub-cost-items/:subCostItemsId",
+        "file": "REST API/PATCH_sub-cost-items-subCostItemsId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/eb284d80-f026-11e7-98ee-cb31483cc0ac/sub-cost-items/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE sub-cost-items/:subCostItemsId",
+        "file": "REST API/DELETE_sub-cost-items-subCostItemsId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/cost-items/eb284d80-f026-11e7-98ee-cb31483cc0ac/sub-cost-items/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "GET taxes",
+        "file": "REST API/GET_taxes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/taxes?limit=100&sort=name,createdAt desc&associationId=18d97ae0-9484-11e8-a7ec-7ddae203e404&associationType=Contract"
+      },
+      {
+        "name": "GET time-sheets",
+        "file": "REST API/GET_time-sheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets?limit=100&sort=name,createdAt desc&filter[budgetCode]=code&filter[trackingItemInstanceId]=b6445638-ca68-4e3c-9160-15864de6b818&filter[lastModifiedSince]=2020-03-01T13:00:00Z&filter[startDate]=2020-10-31T14:48:00.000Z..2020-11-01T14:48:00.000Z&filter[endDate]=2020-10-31T14:48:00.000Z..2020-11-01T14:48:00.000Z"
+      },
+      {
+        "name": "POST time-sheets",
+        "file": "REST API/POST_time-sheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets"
+      },
+      {
+        "name": "GET time-sheets/:id",
+        "file": "REST API/GET_time-sheets-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH time-sheets/:id",
+        "file": "REST API/PATCH_time-sheets-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE time-sheets/:id",
+        "file": "REST API/DELETE_time-sheets-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET performance-tracking-items",
+        "file": "REST API/GET_performance-tracking-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-items?limit=100&sort=name,createdAt desc&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "POST performance-tracking-items",
+        "file": "REST API/POST_performance-tracking-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-items"
+      },
+      {
+        "name": "GET performance-tracking-items/:id",
+        "file": "REST API/GET_performance-tracking-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-items/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "DELETE performance-tracking-items/:id",
+        "file": "REST API/DELETE_performance-tracking-items-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-items/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET performance-tracking-item-instances",
+        "file": "REST API/GET_performance-tracking-item-instances.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances?limit=100&sort=name,createdAt desc&filter[lastModifiedSince]=2020-03-01T13:00:00Z"
+      },
+      {
+        "name": "POST performance-tracking-item-instances",
+        "file": "REST API/POST_performance-tracking-item-instances.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances"
+      },
+      {
+        "name": "GET performance-tracking-item-instances/:id",
+        "file": "REST API/GET_performance-tracking-item-instances-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "PATCH performance-tracking-item-instances/:id",
+        "file": "REST API/PATCH_performance-tracking-item-instances-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances/9e027d30-9483-11e8-a7ec-7ddae203e404"
+      },
+      {
+        "name": "DELETE performance-tracking-item-instances/:id",
+        "file": "REST API/DELETE_performance-tracking-item-instances-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/performance-tracking-item-instances/226449d0-9481-11e8-87fb-215990a8aeb3"
+      },
+      {
+        "name": "GET action-histories",
+        "file": "REST API/GET_action-histories.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/workflows/action-histories?limit=100&sort=name,createdAt desc&cursorState=AMMAEACAtgALYWRzay53aXBkZXYNZnMuZmlsZS5hZGRlZAZmb2xk&associationId=18d97ae0-9484-11e8-a7ec-7ddae203e404&associationType=Contract"
+      },
+      {
+        "name": "POST requests",
+        "file": "REST API/POST_requests.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests"
+      },
+      {
+        "name": "GET requests",
+        "file": "REST API/GET_requests.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests?sort=asc&limit=20&offset=0&sortFields=createdByEmail,-createdAt&filter[field_to_filter]=_filter_value_"
+      },
+      {
+        "name": "GET requests/:requestId",
+        "file": "REST API/GET_requests-requestId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests/:requestId"
+      },
+      {
+        "name": "PATCH requests/:requestId",
+        "file": "REST API/PATCH_requests-requestId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests/:requestId"
+      },
+      {
+        "name": "DELETE requests/:requestId",
+        "file": "REST API/DELETE_requests-requestId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests/:requestId"
+      },
+      {
+        "name": "GET requests/:requestId/jobs",
+        "file": "REST API/GET_requests-requestId-jobs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/requests/:requestId/jobs?sort=asc&limit=20&offset=0"
+      },
+      {
+        "name": "GET jobs",
+        "file": "REST API/GET_jobs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/jobs?sort=asc&limit=20&offset=0&projectId=ffffffff-1f51-4b26-a6b7-6ac0639cb138&sortFields=createdByEmail,-createdAt&filter[field_to_filter]=_filter_value_"
+      },
+      {
+        "name": "GET jobs/:jobId",
+        "file": "REST API/GET_jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/jobs/:jobId"
+      },
+      {
+        "name": "DELETE jobs/:jobId",
+        "file": "REST API/DELETE_jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/jobs/:jobId"
+      },
+      {
+        "name": "GET jobs/:jobId/data-listing",
+        "file": "REST API/GET_jobs-jobId-data-listing.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/jobs/:jobId/data-listing"
+      },
+      {
+        "name": "GET jobs/:jobId/data/:name",
+        "file": "REST API/GET_jobs-jobId-data-name.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/data-connector/v1/accounts/:accountId/jobs/:jobId/data/:name"
+      },
+      {
+        "name": "POST PDF File Export",
+        "file": "REST API/POST_PDF_File_Export.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/files/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/exports"
+      },
+      {
+        "name": "GET Export Status",
+        "file": "REST API/GET_Export_Status.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/files/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/exports/5b4bb914-c123-4f10-87e3-579ef934aaf9"
+      },
+      {
+        "name": "POST projects/:project_id/folders/:folder_id/permissions:batch-create",
+        "file": "REST API/POST_projects-project_id-folders-folder_id-permissions-batch-create.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn:adsk.wipprod:fs.folder:co.9g7HeA2wRqOxLlgLJ40UGQ/permissions:batch-create"
+      },
+      {
+        "name": "POST projects/:project_id/folders/:folder_id/permissions:batch-update",
+        "file": "REST API/POST_projects-project_id-folders-folder_id-permissions-batch-update.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn:adsk.wipprod:fs.folder:co.9g7HeA2wRqOxLlgLJ40UGQ/permissions:batch-update"
+      },
+      {
+        "name": "POST projects/:project_id/folders/:folder_id/permissions:batch-delete",
+        "file": "REST API/POST_projects-project_id-folders-folder_id-permissions-batch-delete.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn:adsk.wipprod:fs.folder:co.9g7HeA2wRqOxLlgLJ40UGQ/permissions:batch-delete"
+      },
+      {
+        "name": "GET projects/:project_id/folders/:folder_id/permissions",
+        "file": "REST API/GET_projects-project_id-folders-folder_id-permissions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn:adsk.wipprod:fs.folder:co.9g7HeA2wRqOxLlgLJ40UGQ/permissions"
+      },
+      {
+        "name": "POST versions:batch-get",
+        "file": "REST API/POST_versions-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/versions:batch-get"
+      },
+      {
+        "name": "GET custom-attribute-definitions",
+        "file": "REST API/GET_custom-attribute-definitions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.9g7HeA2wRqOxLlgLJ40UGQ/custom-attribute-definitions"
+      },
+      {
+        "name": "POST custom-attribute-definitions",
+        "file": "REST API/POST_custom-attribute-definitions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.9g7HeA2wRqOxLlgLJ40UGQ/custom-attribute-definitions"
+      },
+      {
+        "name": "POST custom-attributes:batch-update",
+        "file": "REST API/POST_custom-attributes-batch-update.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.AS3XD9MzQvu4MakMF-w7vQ%3Fversion%3D1/custom-attributes:batch-update"
+      },
+      {
+        "name": "GET naming-standards/:id",
+        "file": "REST API/GET_naming-standards-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/naming-standards/68097e38-bcae-4fb6-9da2-89eca69bccc8"
+      },
+      {
+        "name": "GET linked revit files",
+        "file": "REST API/GET_linked_revit_files.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com//construction/rcm/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/published-versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.b909RzMKR4mhc3O7UBY_8g%3Fversion%3D2/linked-files?limit=100&offset=200&includeHost=true"
+      },
+      {
+        "name": "GET packages",
+        "file": "REST API/GET_packages.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/packages/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/packages?limit=200&filter[createdBy]=L9VDREARJ7X2,9NGKQKPXAUHG&filter[updatedBy]=L9VDREARJ7X2,9NGKQKPXAUHG&filter[createdAt]=2025-03-26T16:00:00.000Z..2025-03-28T15:59:59.999Z&filter[updatedAt]=2025-03-26T16:00:00.000Z..2025-03-28T15:59:59.999Z&sort=name&filter[versionType]=FIXED"
+      },
+      {
+        "name": "GET packages/:packageId/resources",
+        "file": "REST API/GET_packages-packageId-resources.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/packages/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/packages/c25d1273-41e3-4e04-be1e-f4c1ba809d14/resources?limit=200&filter[fileType]=pdf,rvt&filter[version]=1,2,3&sort=name"
+      },
+      {
+        "name": "GET form-templates",
+        "file": "REST API/GET_form-templates.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates"
+      },
+      {
+        "name": "GET layouts/:layoutId (Beta)",
+        "file": "REST API/GET_layouts-layoutId_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/layouts/:layoutId"
+      },
+      {
+        "name": "GET sections/:sectionId (Beta)",
+        "file": "REST API/GET_sections-sectionId_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/layouts/:layoutId/sections/:sectionId"
+      },
+      {
+        "name": "GET forms (Deprecated)",
+        "file": "REST API/GET_forms_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET forms (New - Beta)",
+        "file": "REST API/GET_forms_(New_-_Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms"
+      },
+      {
+        "name": "POST forms",
+        "file": "REST API/POST_forms.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates/:templateId/forms"
+      },
+      {
+        "name": "PATCH forms/:formId",
+        "file": "REST API/PATCH_forms-formId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/form-templates/:templateId/forms/:formId"
+      },
+      {
+        "name": "PUT values:batch-update (Deprecated)",
+        "file": "REST API/PUT_values-batch-update_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PUT values:batch-update (New - Beta)",
+        "file": "REST API/PUT_values-batch-update_(New_-_Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-update"
+      },
+      {
+        "name": "POST values:batch-delete (Beta)",
+        "file": "REST API/POST_values-batch-delete_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-delete"
+      },
+      {
+        "name": "GET custom values (Beta)",
+        "file": "REST API/GET_custom_values_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values"
+      },
+      {
+        "name": "GET table values (Beta)",
+        "file": "REST API/GET_table_values_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms/:formId/table/:fieldId/values"
+      },
+      {
+        "name": "GET weather (Beta)",
+        "file": "REST API/GET_weather_(Beta).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/forms/v3/projects/:projectId/weather/:weatherId"
+      },
+      {
+        "name": "GET accounts/:account_id/projects",
+        "file": "REST API/GET_accounts-account_id-projects.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/projects?fields=name,platform&filter[classification]=production,sample&filter[products]=build,docs&filter[name]=Sample Project&filter[type]=Convention Center,-Bridge&filter[status]=active,pending&filter[businessUnitId]=802a4a61-3507-4d4e-8e3c-242a31cc0549&filter[dataServiceId]=bd44763a-5184-483f-85e7-5d97fe589d55&filter[jobNumber]=HP-0002&filter[updatedAt]=2019-06-01T00:00:00.000Z..&filterTextMatch=contains&sort=name desc&limit=20"
+      },
+      {
+        "name": "GET projects/:project_id",
+        "file": "REST API/GET_projects-project_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93?fields=name,platform"
+      },
+      {
+        "name": "POST accounts/:account_id/projects",
+        "file": "REST API/POST_accounts-account_id-projects.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/projects"
+      },
+      {
+        "name": "PATCH projects/:project_id/image",
+        "file": "REST API/PATCH_projects-project_id-image.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/projects/aca11a7a-bd17-47cd-ab99-6548d0e6fe25/image"
+      },
+      {
+        "name": "POST companies",
+        "file": "REST API/POST_companies.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies"
+      },
+      {
+        "name": "POST companies/import",
+        "file": "REST API/POST_companies-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies/import"
+      },
+      {
+        "name": "GET companies (legacy)",
+        "file": "REST API/GET_companies_(legacy).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies?limit=1&offset=0"
+      },
+      {
+        "name": "GET companies (new)",
+        "file": "REST API/GET_companies_(new).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/companies?filter[name]=Plumbing unlimited&filter[trade]=Plumbing&filter[erpId]=companyErpId&filter[taxId]=434920482-22&filter[updatedAt]=2019-06-01T00:00:00.000Z..&filter[status]=active&orFilters=name,trade&filterTextMatch=contains&sort=name&fields=name&limit=20"
+      },
+      {
+        "name": "GET companies/:company_id",
+        "file": "REST API/GET_companies-company_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies/fc830fd8-f1ef-4cd6-9163-fb115dc698d7"
+      },
+      {
+        "name": "GET companies/search",
+        "file": "REST API/GET_companies-search.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies/search?name=Autodesk&limit=1&offset=0"
+      },
+      {
+        "name": "GET projects/:project_id/companies",
+        "file": "REST API/GET_projects-project_id-companies.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/companies?limit=1&offset=0"
+      },
+      {
+        "name": "PATCH companies/:company_id",
+        "file": "REST API/PATCH_companies-company_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies/fc830fd8-f1ef-4cd6-9163-fb115dc698d7"
+      },
+      {
+        "name": "PATCH companies/:company_id/image",
+        "file": "REST API/PATCH_companies-company_id-image.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/companies/fc830fd8-f1ef-4cd6-9163-fb115dc698d7/image"
+      },
+      {
+        "name": "POST users",
+        "file": "REST API/POST_users.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/users"
+      },
+      {
+        "name": "POST users/import",
+        "file": "REST API/POST_users-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/80793a28-f9b1-4888-9533-5f00cddcd6fb/users/import"
+      },
+      {
+        "name": "GET users",
+        "file": "REST API/GET_users.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/efec10ec-a367-49fd-ab92-c70185fbb660/users"
+      },
+      {
+        "name": "GET users/:user_id",
+        "file": "REST API/GET_users-user_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/users/a75e8769-621e-40b6-a524-0cffdd2f784e"
+      },
+      {
+        "name": "GET users/:user_id/projects",
+        "file": "REST API/GET_users-user_id-projects.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/users/6cc15635-2fbd-4f73-afbe-abd833408a1d/projects?filter[id]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&fields=name,platform&filter[classification]=production,sample&filter[name]=Sample Project&filter[platform]=acc,bim360&filter[status]=active,pending&filter[type]=Convention Center,-Bridge&filter[jobNumber]=HP-0002&filter[updatedAt]=2019-06-01T00:00:00.000Z..&filter[accessLevels]=projectAdmin&filterTextMatch=contains&sort=name desc&limit=20"
+      },
+      {
+        "name": "GET users/:user_id/products",
+        "file": "REST API/GET_users-user_id-products.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/users/6cc15635-2fbd-4f73-afbe-abd833408a1d/products?filter[projectId]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[key]=build,docs&fields=name&sort=name&limit=20"
+      },
+      {
+        "name": "GET users/:user_id/roles",
+        "file": "REST API/GET_users-user_id-roles.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/accounts/d73fc742-4538-401c-8d0f-853b49b750b2/users/6cc15635-2fbd-4f73-afbe-abd833408a1d/roles?filter[projectId]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[status]=active&filter[name]=Architect&filterTextMatch=contains&fields=name&sort=name&limit=20"
+      },
+      {
+        "name": "GET users/search",
+        "file": "REST API/GET_users-search.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/efec10ec-a367-49fd-ab92-c70185fbb660/users/search?email=john.smith2%40gamil.com&limit=1"
+      },
+      {
+        "name": "PATCH users/:user_id",
+        "file": "REST API/PATCH_users-user_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/users/a75e8769-621e-40b6-a524-0cffdd2f784e"
+      },
+      {
+        "name": "GET projects/:projectId/users",
+        "file": "REST API/GET_projects-projectId-users.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users?filter[products]=build,cost&filter[name]=Sample User&filter[email]=sampleUser1@autodesk.com&filter[accessLevels]=accountAdmin,executive&filter[addedOn]=2024-01-01&filter[companyId]=d1163421-e7eb-4862-ac15-b33777ba42de&filter[companyName]=Sample Company&filter[autodeskId]=User123,User124&filter[id]=39712a51-bd64-446a-9c72-48c4e43d0a0d,d1163421-e7eb-4862-ac15-b33777ba42de&filter[roleId]=cda845af-05f0-4c46-9108-71b993946c35&filter[roleIds]=cda845af-05f0-4c46-9108-71b993946c35,b8e84a73-7506-4d3f-b221-93691df2a359&filter[status]=active,pending&sort=name&fields=name,email&orFilters=id,name&filterTextMatch=contains&limit=20"
+      },
+      {
+        "name": "GET projects/:projectId/users/:userId",
+        "file": "REST API/GET_projects-projectId-users-userId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users/6cc15635-2fbd-4f73-afbe-abd833408a1d?fields=name"
+      },
+      {
+        "name": "POST projects/:projectId/users",
+        "file": "REST API/POST_projects-projectId-users.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users"
+      },
+      {
+        "name": "POST projects/:projectId/users:import",
+        "file": "REST API/POST_projects-projectId-users-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v2/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users:import"
+      },
+      {
+        "name": "PATCH projects/:projectId/users/:userId",
+        "file": "REST API/PATCH_projects-projectId-users-userId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users/6cc15635-2fbd-4f73-afbe-abd833408a1d"
+      },
+      {
+        "name": "DELETE projects/:projectId/users/:userId",
+        "file": "REST API/DELETE_projects-projectId-users-userId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/admin/v1/projects/367d5cc2-9008-462c-96e5-c9491db85d93/users/6cc15635-2fbd-4f73-afbe-abd833408a1d"
+      },
+      {
+        "name": "PUT business_units_structure",
+        "file": "REST API/PUT_business_units_structure.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/business_units_structure"
+      },
+      {
+        "name": "GET business_units_structure",
+        "file": "REST API/GET_business_units_structure.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/business_units_structure"
+      },
+      {
+        "name": "GET users/me",
+        "file": "REST API/GET_users-me.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/users/me"
+      },
+      {
+        "name": "GET issue-types",
+        "file": "REST API/GET_issue-types.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issue-types"
+      },
+      {
+        "name": "GET issue-attribute-definitions",
+        "file": "REST API/GET_issue-attribute-definitions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issue-attribute-definitions"
+      },
+      {
+        "name": "GET issue-attribute-mappings",
+        "file": "REST API/GET_issue-attribute-mappings.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issue-attribute-mappings"
+      },
+      {
+        "name": "GET issue-root-cause-categories",
+        "file": "REST API/GET_issue-root-cause-categories.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issue-root-cause-categories"
+      },
+      {
+        "name": "GET issues",
+        "file": "REST API/GET_issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues?filter[linkedDocumentUrn]=urn%3Aadsk.wipprod%3Afs.folder%3Aco.rLYHljHURdiG-o4HXOwByg%403"
+      },
+      {
+        "name": "POST issues",
+        "file": "REST API/POST_issues.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues"
+      },
+      {
+        "name": "GET issues/:issueId",
+        "file": "REST API/GET_issues-issueId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues/:issueId"
+      },
+      {
+        "name": "PATCH issues/:issueId",
+        "file": "REST API/PATCH_issues-issueId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues/:issueId"
+      },
+      {
+        "name": "GET comments",
+        "file": "REST API/GET_comments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues/:issueId/comments"
+      },
+      {
+        "name": "POST comments",
+        "file": "REST API/POST_comments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/issues/:issueId/comments"
+      },
+      {
+        "name": "POST attachments",
+        "file": "REST API/POST_attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/attachments"
+      },
+      {
+        "name": "DELETE items/:attachmentId",
+        "file": "REST API/DELETE_items-attachmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/attachments/:issueId/items/:attachmentId"
+      },
+      {
+        "name": "GET attachments/:issueId/items",
+        "file": "REST API/GET_attachments-issueId-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/issues/v1/projects/:projectId/attachments/:issueId/items"
+      },
+      {
+        "name": "GET nodes",
+        "file": "REST API/GET_nodes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes"
+      },
+      {
+        "name": "POST nodes",
+        "file": "REST API/POST_nodes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes"
+      },
+      {
+        "name": "DELETE nodes/:nodeId",
+        "file": "REST API/DELETE_nodes-nodeId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes/:nodeId"
+      },
+      {
+        "name": "PATCH nodes/:nodeId",
+        "file": "REST API/PATCH_nodes-nodeId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/locations/v2/projects/:projectId/trees/:treeId/nodes/:nodeId"
+      },
+      {
+        "name": "GET photo",
+        "file": "REST API/GET_photo.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/photos/projects/36c0838c-0360-4cfa-b2c6-85e0056ec7e8/photos/5439bfb7-8006-4388-a454-f02560f99566?include=signedUrls"
+      },
+      {
+        "name": "POST photos:filter",
+        "file": "REST API/POST_photos-filter.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/photos/projects/36c0838c-0360-4cfa-b2c6-85e0056ec7e8/photos:filter"
+      },
+      {
+        "name": "GET workflows/:workflowId",
+        "file": "REST API/GET_workflows-workflowId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/workflows/2483599f-b62a-42fb-aa5e-888468fb63eb"
+      },
+      {
+        "name": "GET workflows",
+        "file": "REST API/GET_workflows.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/workflows?limit=2&offset=10&sort=sort=name desc&filter[initiator]=true&filter[status]=ACTIVE"
+      },
+      {
+        "name": "POST workflows",
+        "file": "REST API/POST_workflows.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/workflows"
+      },
+      {
+        "name": "GET reviews",
+        "file": "REST API/GET_reviews.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews?limit=2&offset=10&sort=createdAt desc&filter[workflowId]=497f6eca-6276-4993-bfeb-53cbbbba6f08&filter[status]=OPEN&filter[currentStepDueDate]=2023-06-01..2023-06-30&filter[createdAt]=2023-06-01..2023-06-30&filter[updatedAt]=2023-06-01..2023-06-30&filter[finishedAt]=2023-06-01..2023-06-30&filter[nextActionByUser]=A96JX8NUKRLVFWSR&filter[nextActionByRole]=1572818&filter[nextActionByCompany]=81768771&filter[name]=Apartment&filter[sequenceId]=11&filter[archivedBy]=A96JX8NUKRLVFWSR&filter[archivedAt]=2023-06-01..2023-06-30"
+      },
+      {
+        "name": "POST reviews",
+        "file": "REST API/POST_reviews.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews"
+      },
+      {
+        "name": "GET reviews/:reviewId",
+        "file": "REST API/GET_reviews-reviewId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c"
+      },
+      {
+        "name": "GET reviews/:reviewId/workflow",
+        "file": "REST API/GET_reviews-reviewId-workflow.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/workflow"
+      },
+      {
+        "name": "GET reviews/:reviewId/progress",
+        "file": "REST API/GET_reviews-reviewId-progress.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/progress?limit=2&offset=10"
+      },
+      {
+        "name": "GET reviews/:reviewId/versions",
+        "file": "REST API/GET_reviews-reviewId-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/versions?limit=2&offset=10&filter[approveStatus]=Approved"
+      },
+      {
+        "name": "GET versions/:versionId/approval-statuses",
+        "file": "REST API/GET_versions-versionId-approval-statuses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.Ibsc4cPuQEqBHRJdBjhr6w%3Fversion%3D2/approval-statuses?limit=2&offset=10"
+      },
+      {
+        "name": "POST rfi-search",
+        "file": "REST API/POST_rfi-search.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/search:rfis"
+      },
+      {
+        "name": "GET rfis/:id",
+        "file": "REST API/GET_rfis-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId"
+      },
+      {
+        "name": "POST rfis",
+        "file": "REST API/POST_rfis.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis"
+      },
+      {
+        "name": "GET users/me",
+        "file": "REST API/GET_users-me.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/users/me"
+      },
+      {
+        "name": "PATCH rfis/:id",
+        "file": "REST API/PATCH_rfis-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId"
+      },
+      {
+        "name": "GET RFI types",
+        "file": "REST API/GET_RFI_types.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfi-types"
+      },
+      {
+        "name": "GET attributes",
+        "file": "REST API/GET_attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/attributes"
+      },
+      {
+        "name": "POST attributes",
+        "file": "REST API/POST_attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/attributes"
+      },
+      {
+        "name": "PATCH custom-attributes/:attributeId",
+        "file": "REST API/PATCH_custom-attributes-attributeId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/attributes/:attributeId"
+      },
+      {
+        "name": "GET custom-identifier",
+        "file": "REST API/GET_custom-identifier.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/custom-identifier"
+      },
+      {
+        "name": "GET rfis/:id/attachments",
+        "file": "REST API/GET_rfis-id-attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId/attachments"
+      },
+      {
+        "name": "POST rfis/:id/responses",
+        "file": "REST API/POST_rfis-id-responses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId/responses"
+      },
+      {
+        "name": "PATCH rfis/:id/responses/:responseId",
+        "file": "REST API/PATCH_rfis-id-responses-responseId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId/responses/:responseId"
+      },
+      {
+        "name": "GET rfis/:rfiId/comments",
+        "file": "REST API/GET_rfis-rfiId-comments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId/comments"
+      },
+      {
+        "name": "POST rfis/:rfiId/comments",
+        "file": "REST API/POST_rfis-rfiId-comments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/rfis/:rfiId/comments"
+      },
+      {
+        "name": "GET workflow",
+        "file": "REST API/GET_workflow.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/rfis/v3/projects/:projectId/workflow"
+      },
+      {
+        "name": "POST version-sets",
+        "file": "REST API/POST_version-sets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets"
+      },
+      {
+        "name": "GET version-sets",
+        "file": "REST API/GET_version-sets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets?limit=100&sort=issuanceDate desc"
+      },
+      {
+        "name": "PATCH version-sets/:versionSetId",
+        "file": "REST API/PATCH_version-sets-versionSetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets/7c2ecde0-2406-49f9-9199-50176848a0b7"
+      },
+      {
+        "name": "POST version-sets:batch-get",
+        "file": "REST API/POST_version-sets-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets:batch-get"
+      },
+      {
+        "name": "POST version-sets:batch-delete",
+        "file": "REST API/POST_version-sets-batch-delete.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/version-sets:batch-delete"
+      },
+      {
+        "name": "POST storage",
+        "file": "REST API/POST_storage.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/storage"
+      },
+      {
+        "name": "POST uploads",
+        "file": "REST API/POST_uploads.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads"
+      },
+      {
+        "name": "GET uploads",
+        "file": "REST API/GET_uploads.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads?sort=createdAt desc"
+      },
+      {
+        "name": "GET uploads/:uploadId",
+        "file": "REST API/GET_uploads-uploadId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads/5cb5d9da-060e-421e-bca9-97dd8b5cd800"
+      },
+      {
+        "name": "GET review-sheets",
+        "file": "REST API/GET_review-sheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads/5cb5d9da-060e-421e-bca9-97dd8b5cd800/review-sheets"
+      },
+      {
+        "name": "PATCH review-sheets",
+        "file": "REST API/PATCH_review-sheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads/5cb5d9da-060e-421e-bca9-97dd8b5cd800/review-sheets"
+      },
+      {
+        "name": "POST review-sheets:publish",
+        "file": "REST API/POST_review-sheets-publish.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads/5cb5d9da-060e-421e-bca9-97dd8b5cd800/review-sheets:publish"
+      },
+      {
+        "name": "POST thumbnails:batch-get",
+        "file": "REST API/POST_thumbnails-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/uploads/5cb5d9da-060e-421e-bca9-97dd8b5cd800/thumbnails:batch-get"
+      },
+      {
+        "name": "GET sheets",
+        "file": "REST API/GET_sheets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/sheets?currentOnly=true&filter[versionSetId]=7c2ecde0-2406-49f9-9199-50176848a0b7&filter[tags]=floor"
+      },
+      {
+        "name": "POST sheets:batch-get",
+        "file": "REST API/POST_sheets-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/sheets:batch-get"
+      },
+      {
+        "name": "POST sheets:batch-update",
+        "file": "REST API/POST_sheets-batch-update.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/sheets:batch-update"
+      },
+      {
+        "name": "POST sheets:batch-delete",
+        "file": "REST API/POST_sheets-batch-delete.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/sheets:batch-delete"
+      },
+      {
+        "name": "POST sheets:batch-restore",
+        "file": "REST API/POST_sheets-batch-restore.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/sheets:batch-restore"
+      },
+      {
+        "name": "POST exports",
+        "file": "REST API/POST_exports.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/exports"
+      },
+      {
+        "name": "GET exports/:exportId",
+        "file": "REST API/GET_exports-exportId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/exports/5b4bb914-c123-4f10-87e3-579ef934aaf9"
+      },
+      {
+        "name": "GET collections",
+        "file": "REST API/GET_collections.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/collections"
+      },
+      {
+        "name": "GET collections/:collectionId",
+        "file": "REST API/GET_collections-collectionId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/sheets/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/collections/5cb5d9da-060e-421e-bca9-97dd8b5cd800"
+      },
+      {
+        "name": "POST modelsets",
+        "file": "REST API/POST_modelsets.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets"
+      },
+      {
+        "name": "GET modelsets",
+        "file": "REST API/GET_modelsets.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets"
+      },
+      {
+        "name": "GET jobs/:jobId",
+        "file": "REST API/GET_jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/jobs/49244371-ee08-9afa-01f8-26fcd8ecb03d"
+      },
+      {
+        "name": "GET modelsets/:modelSetId",
+        "file": "REST API/GET_modelsets-modelSetId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911"
+      },
+      {
+        "name": "PATCH modelsets/:modelSetId",
+        "file": "REST API/PATCH_modelsets-modelSetId.json",
+        "method": "PATCH",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/issues",
+        "file": "REST API/POST_modelsets-modelSetId-issues.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/issues"
+      },
+      {
+        "name": "POST issues/viewcontext",
+        "file": "REST API/POST_issues-viewcontext.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/issues/viewcontext"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/jobs/:jobId",
+        "file": "REST API/GET_modelsets-modelSetId-jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/jobs/49244371-ee08-9afa-01f8-26fcd8ecb03d"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/screenshots",
+        "file": "REST API/POST_modelsets-modelSetId-screenshots.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/screenshots"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/screenshots/:screenShotId",
+        "file": "REST API/GET_modelsets-modelSetId-screenshots-screenShotId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/screenshots/3b86f3bf-4292-5d29-231b-6c934f5e28b8"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/versions",
+        "file": "REST API/POST_modelsets-modelSetId-versions.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions",
+        "file": "REST API/GET_modelsets-modelSetId-versions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions/latest",
+        "file": "REST API/GET_modelsets-modelSetId-versions-latest.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/latest"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions/:version",
+        "file": "REST API/GET_modelsets-modelSetId-versions-version.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42"
+      },
+      {
+        "name": "PATCH modelsets/:modelSetId/versions:enable",
+        "file": "REST API/PATCH_modelsets-modelSetId-versions-enable.json",
+        "method": "PATCH",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions:enable"
+      },
+      {
+        "name": "PATCH modelsets/:modelSetId/versions:disable",
+        "file": "REST API/PATCH_modelsets-modelSetId-versions-disable.json",
+        "method": "PATCH",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions:disable"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/views",
+        "file": "REST API/POST_modelsets-modelSetId-views.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/views",
+        "file": "REST API/GET_modelsets-modelSetId-views.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/views:lineages (deprecated)",
+        "file": "REST API/POST_modelsets-modelSetId-views-lineages_(deprecated).json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views:lineages"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/views/:viewId",
+        "file": "REST API/GET_modelsets-modelSetId-views-viewId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views/7ed27144-ac06-4b72-5dd6-76bee05854be"
+      },
+      {
+        "name": "PATCH modelsets/:modelSetId/views/:viewId",
+        "file": "REST API/PATCH_modelsets-modelSetId-views-viewId.json",
+        "method": "PATCH",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views/7ed27144-ac06-4b72-5dd6-76bee05854be"
+      },
+      {
+        "name": "DELETE modelsets/:modelSetId/views/:viewId",
+        "file": "REST API/DELETE_modelsets-modelSetId-views-viewId.json",
+        "method": "DELETE",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views/7ed27144-ac06-4b72-5dd6-76bee05854be"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions/:version/views",
+        "file": "REST API/GET_modelsets-modelSetId-versions-version-views.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42/views"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions/:version/views/:viewId",
+        "file": "REST API/GET_modelsets-modelSetId-versions-version-views-viewId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42/views/7ed27144-ac06-4b72-5dd6-76bee05854be"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/views/:viewId/jobs/:jobId",
+        "file": "REST API/GET_modelsets-modelSetId-views-viewId-jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/modelset/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/views/7ed27144-ac06-4b72-5dd6-76bee05854be/jobs/49244371-ee08-9afa-01f8-26fcd8ecb03d"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/tests",
+        "file": "REST API/GET_modelsets-modelSetId-tests.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/tests"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/versions/:version/tests",
+        "file": "REST API/GET_modelsets-modelSetId-versions-version-tests.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/versions/42/tests"
+      },
+      {
+        "name": "GET tests/:testId",
+        "file": "REST API/GET_tests-testId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10"
+      },
+      {
+        "name": "GET tests/:testId/resources",
+        "file": "REST API/GET_tests-testId-resources.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/resources"
+      },
+      {
+        "name": "POST tests/:testId/clashes:close",
+        "file": "REST API/POST_tests-testId-clashes-close.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes:close"
+      },
+      {
+        "name": "GET tests/:testId/clashes/closed",
+        "file": "REST API/GET_tests-testId-clashes-closed.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/closed"
+      },
+      {
+        "name": "POST tests/:testId/clashes/closed",
+        "file": "REST API/POST_tests-testId-clashes-closed.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/closed"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/clashes:reopen",
+        "file": "REST API/POST_modelsets-modelSetId-clashes-reopen.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/clashes:reopen"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/clashes/closed",
+        "file": "REST API/GET_modelsets-modelSetId-clashes-closed.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/clashes/closed"
+      },
+      {
+        "name": "POST tests/:testId/clashes:assign",
+        "file": "REST API/POST_tests-testId-clashes-assign.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes:assign"
+      },
+      {
+        "name": "GET tests/:testId/clashes/assigned",
+        "file": "REST API/GET_tests-testId-clashes-assigned.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/assigned"
+      },
+      {
+        "name": "POST tests/:testId/clashes/assigned",
+        "file": "REST API/POST_tests-testId-clashes-assigned.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/assigned"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/clashes/assigned",
+        "file": "REST API/GET_modelsets-modelSetId-clashes-assigned.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/clashes/assigned"
+      },
+      {
+        "name": "GET clashes/assigned/viewcontext",
+        "file": "REST API/GET_clashes-assigned-viewcontext.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/clashes/assigned/viewcontext"
+      },
+      {
+        "name": "GET clashes/jobs/:jobId",
+        "file": "REST API/GET_clashes-jobs-jobId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/clashes/jobs/49244371-ee08-9afa-01f8-26fcd8ecb03d"
+      },
+      {
+        "name": "POST modelsets/:modelSetId/screenshots",
+        "file": "REST API/POST_modelsets-modelSetId-screenshots.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/screenshots"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/screenshots/:screenShotId",
+        "file": "REST API/GET_modelsets-modelSetId-screenshots-screenShotId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/screenshots/3b86f3bf-4292-5d29-231b-6c934f5e28b8"
+      },
+      {
+        "name": "GET modelsets/:modelSetId/clashes/grouped",
+        "file": "REST API/GET_modelsets-modelSetId-clashes-grouped.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/modelsets/00fb28a5-e8a4-2755-562a-7c2f0fc87911/clashes/grouped"
+      },
+      {
+        "name": "GET indexes/:indexId/fields",
+        "file": "REST API/GET_indexes-indexId-fields.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/fields"
+      },
+      {
+        "name": "GET indexes/:indexId/manifest",
+        "file": "REST API/GET_indexes-indexId-manifest.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/manifest"
+      },
+      {
+        "name": "GET indexes/:indexId/properties",
+        "file": "REST API/GET_indexes-indexId-properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/properties"
+      },
+      {
+        "name": "GET indexes/:indexId/queries/:queryId",
+        "file": "REST API/GET_indexes-indexId-queries-queryId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/queries/0a2bef712ffee30a"
+      },
+      {
+        "name": "GET indexes/:indexId/queries/:queryId/properties",
+        "file": "REST API/GET_indexes-indexId-queries-queryId-properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/queries/0a2bef712ffee30a/properties"
+      },
+      {
+        "name": "GET indexes/:indexId",
+        "file": "REST API/GET_indexes-indexId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d"
+      },
+      {
+        "name": "POST indexes:batchStatus",
+        "file": "REST API/POST_indexes-batchStatus.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes:batchStatus"
+      },
+      {
+        "name": "POST indexes/:indexId/queries",
+        "file": "REST API/POST_indexes-indexId-queries.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/indexes/da39a3ee5e6b4b0d/queries"
+      },
+      {
+        "name": "GET diffs/:diffId/fields",
+        "file": "REST API/GET_diffs-diffId-fields.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/fields"
+      },
+      {
+        "name": "GET diffs/:diffId/manifest",
+        "file": "REST API/GET_diffs-diffId-manifest.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/manifest"
+      },
+      {
+        "name": "GET diffs/:diffId/properties",
+        "file": "REST API/GET_diffs-diffId-properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/properties"
+      },
+      {
+        "name": "GET diffs/:diffId/queries/:queryId",
+        "file": "REST API/GET_diffs-diffId-queries-queryId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/queries/0a2bef712ffee30a"
+      },
+      {
+        "name": "GET diffs/:diffId/queries/:queryId/properties",
+        "file": "REST API/GET_diffs-diffId-queries-queryId-properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/queries/0a2bef712ffee30a/properties"
+      },
+      {
+        "name": "GET diffs/:diffId",
+        "file": "REST API/GET_diffs-diffId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5"
+      },
+      {
+        "name": "POST diffs:batchStatus",
+        "file": "REST API/POST_diffs-batchStatus.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs:batchStatus"
+      },
+      {
+        "name": "POST diffs/:diffId/queries",
+        "file": "REST API/POST_diffs-diffId-queries.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/queries"
+      },
+      {
+        "name": "GET utility/relationships:writable",
+        "file": "REST API/GET_utility-relationships-writable.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/utility/relationships:writable"
+      },
+      {
+        "name": "PUT relationships",
+        "file": "REST API/PUT_relationships.json",
+        "method": "PUT",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships"
+      },
+      {
+        "name": "POST relationships:delete",
+        "file": "REST API/POST_relationships-delete.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:delete"
+      },
+      {
+        "name": "POST relationships:syncStatus",
+        "file": "REST API/POST_relationships-syncStatus.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/relationships:syncStatus"
+      },
+      {
+        "name": "POST relationships:sync",
+        "file": "REST API/POST_relationships-sync.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/relationships:sync"
+      },
+      {
+        "name": "POST relationships:batch",
+        "file": "REST API/POST_relationships-batch.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/fbd6cb57-7d0e-4961-8c2c-69646514ef44/relationships:batch"
+      },
+      {
+        "name": "GET relationships:search",
+        "file": "REST API/GET_relationships-search.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/relationships:search"
+      },
+      {
+        "name": "POST relationships:intersect",
+        "file": "REST API/POST_relationships-intersect.json",
+        "method": "POST",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/relationships:intersect"
+      },
+      {
+        "name": "GET relationships/:relationshipId",
+        "file": "REST API/GET_relationships-relationshipId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/bim360/relationship/v2/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/relationships/ec69ef97-fde9-e002-bc1c-32cb41dc3239"
+      },
+      {
+        "name": "GET items/:itemId/attachments",
+        "file": "REST API/GET_items-itemId-attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/attachments"
+      },
+      {
+        "name": "POST attachments",
+        "file": "REST API/POST_attachments.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/attachments"
+      },
+      {
+        "name": "PATCH attachments/:attachmentId",
+        "file": "REST API/PATCH_attachments-attachmentId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/attachments/c0a85932-c7de-4a58-ae82-41ecb1d687d4"
+      },
+      {
+        "name": "GET items",
+        "file": "REST API/GET_items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items"
+      },
+      {
+        "name": "POST items",
+        "file": "REST API/POST_items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items"
+      },
+      {
+        "name": "GET items/:itemId",
+        "file": "REST API/GET_items-itemId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce"
+      },
+      {
+        "name": "PATCH items/:itemId",
+        "file": "REST API/PATCH_items-itemId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce"
+      },
+      {
+        "name": "GET revisions",
+        "file": "REST API/GET_revisions.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/revisions"
+      },
+      {
+        "name": "POST items/:itemId:transition",
+        "file": "REST API/POST_items-itemId-transition.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce:transition"
+      },
+      {
+        "name": "POST items:validate-custom-identifier",
+        "file": "REST API/POST_items-validate-custom-identifier.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items:validate-custom-identifier"
+      },
+      {
+        "name": "GET items:next-custom-identifier",
+        "file": "REST API/GET_items-next-custom-identifier.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items:next-custom-identifier"
+      },
+      {
+        "name": "GET item-types",
+        "file": "REST API/GET_item-types.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/item-types"
+      },
+      {
+        "name": "GET item-types/:id",
+        "file": "REST API/GET_item-types-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/item-types/:id"
+      },
+      {
+        "name": "GET metadata",
+        "file": "REST API/GET_metadata.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/metadata"
+      },
+      {
+        "name": "GET packages",
+        "file": "REST API/GET_packages.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/packages"
+      },
+      {
+        "name": "GET packages/:id",
+        "file": "REST API/GET_packages-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/packages/:id"
+      },
+      {
+        "name": "GET responses",
+        "file": "REST API/GET_responses.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/responses"
+      },
+      {
+        "name": "GET responses/:id",
+        "file": "REST API/GET_responses-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/responses/:id"
+      },
+      {
+        "name": "GET mappings",
+        "file": "REST API/GET_mappings.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/settings/mappings"
+      },
+      {
+        "name": "GET specs",
+        "file": "REST API/GET_specs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/specs"
+      },
+      {
+        "name": "POST specs",
+        "file": "REST API/POST_specs.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/specs"
+      },
+      {
+        "name": "GET specs/:id",
+        "file": "REST API/GET_specs-id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/specs/:id"
+      },
+      {
+        "name": "GET steps",
+        "file": "REST API/GET_steps.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/steps"
+      },
+      {
+        "name": "GET steps/:stepId",
+        "file": "REST API/GET_steps-stepId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/steps/b79059cc-611b-4769-80b7-f8db9a2dfcdf"
+      },
+      {
+        "name": "GET users/me",
+        "file": "REST API/GET_users-me.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/users/me"
+      },
+      {
+        "name": "GET tasks",
+        "file": "REST API/GET_tasks.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/steps/b79059cc-611b-4769-80b7-f8db9a2dfcdf/tasks"
+      },
+      {
+        "name": "GET tasks/:taskId",
+        "file": "REST API/GET_tasks-taskId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/steps/b79059cc-611b-4769-80b7-f8db9a2dfcdf/tasks/f2bc8b34-7e95-4317-b298-0ed80c3eba6d"
+      },
+      {
+        "name": "POST tasks/:taskId:close",
+        "file": "REST API/POST_tasks-taskId-close.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/items/767b5888-2c6a-413d-8487-613966dd64ce/steps/b79059cc-611b-4769-80b7-f8db9a2dfcdf/tasks/f2bc8b34-7e95-4317-b298-0ed80c3eba6d:close"
+      },
+      {
+        "name": "GET templates",
+        "file": "REST API/GET_templates.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/templates"
+      },
+      {
+        "name": "GET projects/:project_id/settings",
+        "file": "REST API/GET_projects-project_id-settings.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/settings"
+      },
+      {
+        "name": "PATCH projects/:project_id/settings",
+        "file": "REST API/PATCH_projects-project_id-settings.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/settings"
+      },
+      {
+        "name": "GET projects/:project_id/classification-systems",
+        "file": "REST API/GET_projects-project_id-classification-systems.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems?limit=10"
+      },
+      {
+        "name": "POST projects/:project_id/classification-systems",
+        "file": "REST API/POST_projects-project_id-classification-systems.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems"
+      },
+      {
+        "name": "GET projects/:project_id/classification-systems/:system_id/classifications",
+        "file": "REST API/GET_projects-project_id-classification-systems-system_id-classifications.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId/classifications?limit=10000"
+      },
+      {
+        "name": "GET projects/:project_id/classification-systems/:system_id",
+        "file": "REST API/GET_projects-project_id-classification-systems-system_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId"
+      },
+      {
+        "name": "DELETE projects/:project_id/classification-systems/:system_id",
+        "file": "REST API/DELETE_projects-project_id-classification-systems-system_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId"
+      },
+      {
+        "name": "POST projects/:project_id/classification-systems/:system_id/classifications:import",
+        "file": "REST API/POST_projects-project_id-classification-systems-system_id-classifications-import.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId/classifications:import"
+      },
+      {
+        "name": "GET projects/:project_id/packages",
+        "file": "REST API/GET_projects-project_id-packages.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages?limit=200"
+      },
+      {
+        "name": "POST projects/:project_id/packages",
+        "file": "REST API/POST_projects-project_id-packages.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages"
+      },
+      {
+        "name": "GET projects/:project_id/packages/:package_id",
+        "file": "REST API/GET_projects-project_id-packages-package_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId"
+      },
+      {
+        "name": "PATCH projects/:project_id/packages/:package_id",
+        "file": "REST API/PATCH_projects-project_id-packages-package_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId"
+      },
+      {
+        "name": "GET projects/:project_id/packages/:package_id/takeoff-types",
+        "file": "REST API/GET_projects-project_id-packages-package_id-takeoff-types.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId/takeoff-types?limit=100"
+      },
+      {
+        "name": "GET projects/:project_id/packages/:package_id/takeoff-types/:takeoff_type_id",
+        "file": "REST API/GET_projects-project_id-packages-package_id-takeoff-types-takeoff_type_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId/takeoff-types/:takeoffTypeId"
+      },
+      {
+        "name": "GET projects/:project_id/packages/:package_id/takeoff-items",
+        "file": "REST API/GET_projects-project_id-packages-package_id-takeoff-items.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId/takeoff-items?limit=1000"
+      },
+      {
+        "name": "GET projects/:project_id/packages/:package_id/takeoff-items/:takeoff_item_id",
+        "file": "REST API/GET_projects-project_id-packages-package_id-takeoff-items-takeoff_item_id.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/packages/:packageId/takeoff-items/:takeoffItemId"
+      },
+      {
+        "name": "GET projects/:project_id/content-views",
+        "file": "REST API/GET_projects-project_id-content-views.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/content-views?limit=10"
+      },
+      {
+        "name": "GET transmittals",
+        "file": "REST API/GET_transmittals.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/6fbcdf65-f2e4-4dd4-86bd-96febe58ff82/transmittals?limit=20&sort=sequenceId desc"
+      },
+      {
+        "name": "GET transmittals/:transmittalId",
+        "file": "REST API/GET_transmittals-transmittalId.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/6fbcdf65-f2e4-4dd4-86bd-96febe58ff82/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17"
+      },
+      {
+        "name": "GET transmittals/:transmittalId/recipients",
+        "file": "REST API/GET_transmittals-transmittalId-recipients.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/recipients"
+      },
+      {
+        "name": "GET transmittals/:transmittalId/folders",
+        "file": "REST API/GET_transmittals-transmittalId-folders.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/folders"
+      },
+      {
+        "name": "GET transmittals/:transmittalId/documents",
+        "file": "REST API/GET_transmittals-transmittalId-documents.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/documents"
+      },
+      {
+        "name": "POST category-status-step-sets/status-step-sets:batch-get",
+        "file": "REST API/POST_category-status-step-sets-status-step-sets-batch-get.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/category-status-step-sets/status-step-sets:batch-get"
+      },
+      {
+        "name": "GET categories/:categoryId/custom-attributes",
+        "file": "REST API/GET_categories-categoryId-custom-attributes.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/construction/assets/v1/projects/:projectId/categories/123/custom-attributes"
+      }
+    ]
+  }
+}

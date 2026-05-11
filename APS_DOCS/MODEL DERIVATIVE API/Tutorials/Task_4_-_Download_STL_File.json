@@ -1,0 +1,94 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/tutorials/translate-source-file-containing-xref/task4-download-stl-file",
+    "scrapedAt": "2026-05-08T18:22:39.792Z",
+    "category": "Tutorials",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Task 4 – Download STL file",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Operation",
+        "HTTP Request"
+      ],
+      "rows": [
+        {
+          "Operation": "Fetch Manifest",
+          "HTTP Request": "GET /{urn}/manifest"
+        },
+        {
+          "Operation": "Fetch Derivative Download URL",
+          "HTTP Request": "GET {urn}/manifest/{derivativeUrn}/signedcookies"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl  -X GET \\\n      'https://developer.api.autodesk.com/modelderivative/v2/designdata/<URL_SAFE_URN_OF_SOURCE_FILE>/manifest' \\\n      -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>'"
+    },
+    {
+      "raw": "{\n  \"urn\": \"dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c2pzXzAzL3NjaXNzb3JzLmlhbQ\",\n  \"derivatives\": [\n      {\n          \"children\": [\n              {\n                  \"urn\": \"urn:adsk.viewing:fs.file:<URL_SAFE_URN_OF_SOURCE_FILE>/output/ae8fcf0e-6820-4ae8-8e78-82960f5d9070/scissors.stl\",\n                  \"role\": \"STL\",\n                  \"exportFileStructure\": \"single\",\n                  \"mime\": \"application/octet-stream\",\n                  \"exportColor\": true,\n                  \"format\": \"binary\",\n                  \"guid\": \"3aa8c215-9f66-45c6-aa80-3b0edeabcdff\",\n                  \"type\": \"resource\",\n                  \"status\": \"success\"\n              }\n          ],\n          \"progress\": \"complete\",\n          \"outputType\": \"stl\",\n          \"status\": \"success\"\n      }\n  ],\n  \"hasThumbnail\": \"false\",\n  \"messages\": [\n      {\n          \"code\": \"ATF-1023\",\n          \"message\": [\n              \"The file: {0} does not exist\",\n              \"C:\\\\Users\\\\itools\\\\Desktop\\\\autodesk_inventor_2018_samples\\\\Models\\\\Assemblies\\\\Scissors\\\\Components\\\\blade_main.ipt\"\n          ],\n          \"type\": \"warning\"\n      }\n  ],\n  \"progress\": \"complete\",\n  \"type\": \"manifest\",\n  \"region\": \"US\",\n  \"version\": \"1.0\",\n  \"status\": \"success\"\n}",
+      "parsed": {
+        "urn": "dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6c2pzXzAzL3NjaXNzb3JzLmlhbQ",
+        "derivatives": [
+          {
+            "children": [
+              {
+                "urn": "urn:adsk.viewing:fs.file:<URL_SAFE_URN_OF_SOURCE_FILE>/output/ae8fcf0e-6820-4ae8-8e78-82960f5d9070/scissors.stl",
+                "role": "STL",
+                "exportFileStructure": "single",
+                "mime": "application/octet-stream",
+                "exportColor": true,
+                "format": "binary",
+                "guid": "3aa8c215-9f66-45c6-aa80-3b0edeabcdff",
+                "type": "resource",
+                "status": "success"
+              }
+            ],
+            "progress": "complete",
+            "outputType": "stl",
+            "status": "success"
+          }
+        ],
+        "hasThumbnail": "false",
+        "messages": [
+          {
+            "code": "ATF-1023",
+            "message": [
+              "The file: {0} does not exist",
+              "C:\\Users\\itools\\Desktop\\autodesk_inventor_2018_samples\\Models\\Assemblies\\Scissors\\Components\\blade_main.ipt"
+            ],
+            "type": "warning"
+          }
+        ],
+        "progress": "complete",
+        "type": "manifest",
+        "region": "US",
+        "version": "1.0",
+        "status": "success"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n\n     'https://developer.api.autodesk.com/modelderivative/v2/designdata/<URL_SAFE_URN_OF_SOURCE_FILE>/manifest/<URN_OF_STL_FILE>/signedcookies' \\\n     -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>'"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nContent-Encoding: gzip\nContent-Type: application/json; charset=utf-8\nDate: Thu, 26 May 2022 03:57:31 GMT\nSet-Cookie: <FIRST_SIGNED_COOKIE>\nSet-Cookie: <SECOND_SIGNED_COOKIE>\nSet-Cookie: <THIRD_SIGNED_COOKIE>\nStrict-Transport-Security: max-age=31536000; includeSubDomains\nVary: Accept-Encoding\nx-ads-app-identifier: platform-viewing-2022.05.01.75.c20538dec-production\nx-ads-duration: 48 ms\nx-ads-region: US\nx-ads-startup-time: Tue May 24 06:11:48 UTC 2022\nContent-Length: 262\nConnection: keep-alive\n\n{\n\n  \"etag\": \"561cd8670926bc0acd8d431d51c6b1c3\",\n  \"size\": 89884,\n  \"url\": \"<DOWNLOAD_URL>\",\n  \"content-type\": \"application/vnd.ms-pki.stl\",\n  \"expiration\": 1653576191971\n}",
+      "parsed": {
+        "etag": "561cd8670926bc0acd8d431d51c6b1c3",
+        "size": 89884,
+        "url": "<DOWNLOAD_URL>",
+        "content-type": "application/vnd.ms-pki.stl",
+        "expiration": 1653576191971
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n    '<SIGNED_DOWNLOAD_URL>'\\\n     -H 'Cookie: <FIRST_SIGNED_COOKIE>;<SECOND_SIGNED_COOKIE>;<THIRD_SIGNED_COOKIE>'"
+    },
+    {
+      "raw": "<CONTENT_OF_STL_FILE>"
+    }
+  ]
+}

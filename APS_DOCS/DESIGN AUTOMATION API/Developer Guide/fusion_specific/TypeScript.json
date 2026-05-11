@@ -1,0 +1,92 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/fusion_specific/typescript",
+    "scrapedAt": "2026-05-08T17:39:43.419Z",
+    "category": "Developer Guide/fusion_specific",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "TypeScript",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Andale Mono",
+          "col_1": "DejaVu Sans Mono",
+          "col_2": "Cdm_nc.shx"
+        },
+        {
+          "col_0": "Arial",
+          "col_1": "DejaVu Serif",
+          "col_2": "G12f13.shx"
+        },
+        {
+          "col_0": "Arial Black",
+          "col_1": "Georgia",
+          "col_2": "G13f12d.shx"
+        },
+        {
+          "col_0": "Arimo",
+          "col_1": "Impact",
+          "col_2": "G13f12w.shx"
+        },
+        {
+          "col_0": "Artifakt Element",
+          "col_1": "Liberation Mono",
+          "col_2": "Geniso.shx"
+        },
+        {
+          "col_0": "Artifakt Element Black",
+          "col_1": "Liberation Sans",
+          "col_2": "Geniso12.shx"
+        },
+        {
+          "col_0": "Artifakt Element Extra Bold",
+          "col_1": "Liberation Sans Narrow",
+          "col_2": "Iso.shx"
+        },
+        {
+          "col_0": "Artifakt Element Extra Light",
+          "col_1": "Liberation Serif",
+          "col_2": "Isocp.shx"
+        },
+        {
+          "col_0": "Artifakt Element Light",
+          "col_1": "Monospace",
+          "col_2": "Italic8.shx"
+        },
+        {
+          "col_0": "Artifakt Element Medium",
+          "col_1": "Sans Serif",
+          "col_2": "Monotxt8.shx"
+        },
+        {
+          "col_0": "Artifakt Element Semi Bold",
+          "col_1": "Serif",
+          "col_2": "Romans.shx"
+        },
+        {
+          "col_0": "Artifakt Element Thin",
+          "col_1": "Times New Roman",
+          "col_2": "Simplex.shx"
+        },
+        {
+          "col_0": "Comic Sans MS",
+          "col_1": "Trebuchet MS",
+          "col_2": "Simplex8.shx"
+        },
+        {
+          "col_0": "Courier New",
+          "col_1": "Verdana",
+          "col_2": "Weidner.shx"
+        },
+        {
+          "col_0": "DejaVu Sans",
+          "col_1": "Cdm.shx",
+          "col_2": ""
+        }
+      ]
+    }
+  ]
+}

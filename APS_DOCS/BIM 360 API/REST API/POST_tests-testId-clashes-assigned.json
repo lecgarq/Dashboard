@@ -1,0 +1,325 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/mc-clash-service-v3-get-assigned-clash-group-batch-POST",
+    "scrapedAt": "2026-05-08T18:03:42.461Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "containers/:containerId/tests/:testId/clashes/assigned",
+  "httpMethod": "POST",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/assigned",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/bim360/clash/v3/containers/:containerId/tests/:testId/clashes/assigned"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the container."
+        },
+        {
+          "col_0": "testIdstring: UUID",
+          "col_1": "The GUID that uniquely identifies the clash test."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "issuesboolean",
+          "col_1": "If set to true, the query is performed on issue IDs instead of clash group IDs."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "array: string: UUID*array: string: UUID",
+          "col_1": "The list of clash group IDs OR BIM 360 issue IDs to query (depending on the value of the issues query parameter). Min items: 1 Max items: 20."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "415Unsupported Media Type",
+          "col_1": "The Content-Type header must be application/json."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier of the assigned clash group."
+        },
+        {
+          "col_0": "clashTestIdstring: UUID",
+          "col_1": "The unique identifier of the clash test associated with the assigned clash group."
+        },
+        {
+          "col_0": "issueIdstring: UUID",
+          "col_1": "The unique identifier of the issue associated with the assigned clash group."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The unique identifier of the user who created the assigned clash group."
+        },
+        {
+          "col_0": "createdOndatetime: ISO 8601",
+          "col_1": "The date and time that the assigned clash group was created."
+        },
+        {
+          "col_0": "clashDataobject",
+          "col_1": "The clash data associated with a clash group."
+        },
+        {
+          "col_0": "documentsarray: object",
+          "col_1": "The documents associated with the clash groups supplied."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "The document index ID."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The document URN."
+        },
+        {
+          "col_0": "viewableNamestring",
+          "col_1": "The viewable name of the document in the model set version."
+        },
+        {
+          "col_0": "clashesarray: object",
+          "col_1": "The clashes associated with the clash groups supplied."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "The clash index ID."
+        },
+        {
+          "col_0": "clasharray: int",
+          "col_1": "The clash instance index ID. Min items: 2 Max items: 2."
+        },
+        {
+          "col_0": "distint",
+          "col_1": "The clash distance."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "The status of the clash."
+        },
+        {
+          "col_0": "clashInstancesarray: object",
+          "col_1": "The clash instances associated with the clash groups supplied."
+        },
+        {
+          "col_0": "cidint",
+          "col_1": "The clash ID in the model set version."
+        },
+        {
+          "col_0": "ldidint",
+          "col_1": "The left-hand-side document ID."
+        },
+        {
+          "col_0": "loidint",
+          "col_1": "The left-hand-side object ID."
+        },
+        {
+          "col_0": "lvidint",
+          "col_1": "The left-hand-side viewable ID."
+        },
+        {
+          "col_0": "rdidint",
+          "col_1": "The right-hand-side document ID."
+        },
+        {
+          "col_0": "roidint",
+          "col_1": "The right-hand-side object ID."
+        },
+        {
+          "col_0": "rvidint",
+          "col_1": "The left-hand-side viewable ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/assigned' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"d98c1dd4-008f-04b2-e980-0998ecf8427e\"\n         ]'"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/clash/v3/containers/f0f4f36a-ac64-687f-b132-8efe04b22454/tests/c40b4498-1baa-405d-4fe9-423514bbbf10/clashes/assigned?issues=True' \\\n     -X POST \\\n     -H 'Authorization: Bearer <token>' \\\n     -H 'Content-Type: application/json' \\\n     -d '[\n           \"d98c1dd4-008f-04b2-e980-0998ecf8427e\"\n         ]'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"74b70bb8-8802-a1fd-f201-890375a60c8f\",\n    \"clashTestId\": \"21469f89-986a-c194-ae45-cefade1c7bde\",\n    \"issueId\": \"53e6a6c7-5bc9-7b2d-920b-b73efecd8fc1\",\n    \"createdBy\": \"PD23PXGV8V3V\",\n    \"createdOn\": \"2015-10-21T16:32:22Z\",\n    \"clashData\": {\n      \"documents\": [\n        {\n          \"id\": 184,\n          \"urn\": \"urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1\",\n          \"viewableName\": \"Level 1\"\n        }\n      ],\n      \"clashes\": [\n        {\n          \"id\": 184,\n          \"clash\": [\n            212\n          ],\n          \"dist\": 114.1678367952799,\n          \"status\": \"New\"\n        }\n      ],\n      \"clashInstances\": [\n        {\n          \"cid\": 75,\n          \"ldid\": 1,\n          \"loid\": 91,\n          \"lvid\": 69,\n          \"rdid\": 147,\n          \"roid\": 246,\n          \"rvid\": 243\n        }\n      ]\n    }\n  }\n]",
+      "parsed": {
+        "id": "74b70bb8-8802-a1fd-f201-890375a60c8f",
+        "clashTestId": "21469f89-986a-c194-ae45-cefade1c7bde",
+        "issueId": "53e6a6c7-5bc9-7b2d-920b-b73efecd8fc1",
+        "createdBy": "PD23PXGV8V3V",
+        "createdOn": "2015-10-21T16:32:22Z",
+        "clashData": {
+          "documents": [
+            {
+              "id": 184,
+              "urn": "urn:adsk.wipprod:fs.file:vf.jvMF7mrHR7OwG_DToKsJUA?version=1",
+              "viewableName": "Level 1"
+            }
+          ],
+          "clashes": [
+            {
+              "id": 184,
+              "clash": [
+                212
+              ],
+              "dist": 114.1678367952799,
+              "status": "New"
+            }
+          ],
+          "clashInstances": [
+            {
+              "cid": 75,
+              "ldid": 1,
+              "loid": 91,
+              "lvid": 69,
+              "rdid": 147,
+              "roid": 246,
+              "rvid": 243
+            }
+          ]
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

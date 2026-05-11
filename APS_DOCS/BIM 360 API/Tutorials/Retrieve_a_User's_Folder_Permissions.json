@@ -1,0 +1,44 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/document-management/retrieve-user-permissions",
+    "scrapedAt": "2026-05-08T17:49:24.051Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Retrieve a User’s Folder Permissions",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/5a9ac886-0441-44da-a64a-bbea5b1e2ba3/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.hGZHbcx2QHufgVMs_IDFlg/permissions \\\n  -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\"
+    },
+    {
+      "raw": "[\n    {\n        \"subjectId\": \"12ea2c20-1fde-43ad-b4ec-6d4c4ca84994\",\n        \"autodeskId\": \"WDF5NJDPVJUV\",\n        \"name\": \"Tom\",\n        \"email\": \"tom@autodesk.com\",\n        \"userType\": \"PROJECT_MEMBER\",\n        \"subjectStatus\": \"ACTIVE\",\n        \"subjectType\": \"USER\",\n        \"actions\": [\n            \"VIEW\",\n            \"DOWNLOAD\",\n            \"COLLABORATE\"\n        ],\n        \"inheritActions\": [\n            \"VIEW\",\n            \"COLLABORATE\"\n        ]\n    },\n    {\n        \"subjectId\": \"7cd13d3a-1b53-4747-b332-2252d2d19808\",\n        \"autodeskId\": \"28658742\",\n        \"name\": \"Architect\",\n        \"subjectStatus\": \"ACTIVE\",\n        \"subjectType\": \"ROLE\",\n        \"actions\": [],\n        \"inheritActions\": [\n            \"PUBLISH\"\n        ]\n    }\n]"
+    },
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \"https://developer.api.autodesk.com/bim360/admin/v1/projects/5a9ac886-0441-44da-a64a-bbea5b1e2ba3/users/12ea2c20-1fde-43ad-b4ec-6d4c4ca84994\""
+    },
+    {
+      "raw": "{\n    \"id\": \"12ea2c20-1fde-43ad-b4ec-6d4c4ca84994\",\n    \"email\": \"tom@autodesk.com\",\n    \"name\": \"Tom\",\n    \"autodeskId\": \"WDF5NJDPVJUV\",\n    \"companyId\": \"572c7a25-bf4b-4f21-bbe5-ff4a806be56e\",\n    \"roleIds\": [\n        \"7cd13d3a-1b53-4747-b332-2252d2d19808\"\n    ],\n    \"services\": [\n        {\n            \"serviceName\": \"documentManagement\",\n            \"access\": \"member\"\n        }\n    ],\n    \"accessLevels\": {\n        \"accountAdmin\": true,\n        \"projectAdmin\": true,\n        \"executive\": false\n    }\n}",
+      "parsed": {
+        "id": "12ea2c20-1fde-43ad-b4ec-6d4c4ca84994",
+        "email": "tom@autodesk.com",
+        "name": "Tom",
+        "autodeskId": "WDF5NJDPVJUV",
+        "companyId": "572c7a25-bf4b-4f21-bbe5-ff4a806be56e",
+        "roleIds": [
+          "7cd13d3a-1b53-4747-b332-2252d2d19808"
+        ],
+        "services": [
+          {
+            "serviceName": "documentManagement",
+            "access": "member"
+          }
+        ],
+        "accessLevels": {
+          "accountAdmin": true,
+          "projectAdmin": true,
+          "executive": false
+        }
+      }
+    }
+  ]
+}

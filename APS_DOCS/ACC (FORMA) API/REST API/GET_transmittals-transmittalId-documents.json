@@ -1,0 +1,273 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/transmittals-listtransmittaldocuments-GET",
+    "scrapedAt": "2026-05-09T00:08:24.083Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/transmittals/{transmittalId}/documents",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/documents",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/transmittals/v1/projects/{projectId}/transmittals/{transmittalId}/documents"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The Autodesk ID of the user on whose behalf the request is made.\nThis header is required only when using two-legged authentication. It is not needed for three-legged authentication.\nYour application can access only those users who are assigned to it in the SaaS Integrations UI.\nOnly user Autodesk IDs (autodeskId) are supported."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nYou can retrieve the project ID using the Data Management API. For more details, see the Retrieve a Project ID tutorial.\nYou may provide the project ID with or without the b. prefix:\n\nWith prefix: b.657a5565-09b7-48e0-bd03-acacfe42efaf\nWithout prefix: 657a5565-09b7-48e0-bd03-acacfe42efaf"
+        },
+        {
+          "col_0": "transmittalIdstring: UUID",
+          "col_1": "The ID of the transmittal. To find the ID, call GET transmittals."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results to return per page.\nAcceptable values: 1-200.\nDefault value: 20.\nFor example, to limit the response to two results per page, use limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The index from which the response starts returning results.\nDefault value: 0.\nFor example, to skip the first three results, use offset=3."
+        },
+        {
+          "col_0": "sortenum:string",
+          "col_1": "Sorts the document results by a supported field and order.\nBy default, results are sorted in ascending order by name (name asc).\nTo sort in descending order, add desc after the field name.\nFormat: sort=<field> [asc or desc]\nPossible values: name, title, version, lastUpdatedAt, updatedByName.\nExamples:\n\nsort=name asc – sorts documents alphabetically by name.\nsort=lastUpdatedAt desc – sorts documents by last update time (newest first)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the documents included in the transmittal"
+        },
+        {
+          "col_0": "202Accepted",
+          "col_1": "The transmittal has been created and is currently being processed but not ready for review yet. The documents list will be empty."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Operation failed because of bad user input"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Unauthorized error"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The project or transmittal does not exist"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of documents that were included in the transmittal when it was issued."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The URN of the document."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the document."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the document, if provided."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "The title of the document."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "The version number of the document at the time the transmittal was issued."
+        },
+        {
+          "col_0": "fileNamestring",
+          "col_1": "The file name of the document."
+        },
+        {
+          "col_0": "approveStatusobject",
+          "col_1": "The approval status of the file version.\nFor more information, see File Review Statuses documentation."
+        },
+        {
+          "col_0": "labelstring",
+          "col_1": "The customized label of the approval status.\nMax length: 255"
+        },
+        {
+          "col_0": "valueenum:string",
+          "col_1": "The value of the approval status.\nPossible values: APPROVED, REJECTED"
+        },
+        {
+          "col_0": "lastUpdatedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the file was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedByNamestring",
+          "col_1": "The name of the user who last modified the document."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who created the file. For details about the user, call GET user."
+        },
+        {
+          "col_0": "isDeletedboolean",
+          "col_1": "Indicates whether the file is deleted.\ntrue – The file is deleted, either directly or because its parent folder was deleted.\nfalse – The file is not deleted."
+        },
+        {
+          "col_0": "parentFolderUrnstring",
+          "col_1": "The URN of the folder that contains the document."
+        },
+        {
+          "col_0": "folderTypestring",
+          "col_1": "The type of folder that contains the document."
+        },
+        {
+          "col_0": "revisionLabelstring",
+          "col_1": "The revision label assigned to the document."
+        },
+        {
+          "col_0": "storageUrnstring",
+          "col_1": "The storage URN of the document. You can use the storage URN to download the document. For details, see the Download Files tutorial."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "The list of pagination details for the response."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results returned per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before the current page, starting from zero."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of results that match the query, regardless of pagination."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL to retrieve the next page of transmittal documents. If this field is not included, the current page is the last page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "This list of results will be empty."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/documents' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"urn\": \"urn:adsk.wipprod:fs.file:vf.jM1_OeAjRL6OWjKQLR3cMg?version=1\",\n      \"name\": \"Building_Design.pdf\",\n      \"description\": \"This is a pdf of building design\",\n      \"title\": \"building design\",\n      \"version\": 1,\n      \"fileName\": \"Building_Design.pdf\",\n      \"approveStatus\": {\n        \"label\": \"Approved w/ comments.\",\n        \"value\": \"APPROVED\"\n      },\n      \"lastUpdatedAt\": \"2024-10-21T08:05:54.000Z\",\n      \"updatedByName\": \"John Smith\",\n      \"updatedBy\": \"HWUBNU689CRH\",\n      \"isDeleted\": false,\n      \"parentFolderUrn\": \"urn:adsk.wipprod:fs.folder:co.plHRTgMySeK-DIMyDe7aSA\",\n      \"folderType\": \"normal\",\n      \"revisionLabel\": \"432\",\n      \"storageUrn\": \"urn:adsk.objects:os.object:wip.dm.prod?afedb9a6-749c-45cc-9f44-6617cea3a2fd.f3d\"\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 1,\n    \"offset\": 0,\n    \"totalResults\": 10,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/documents?limit=1&offset=1\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "urn": "urn:adsk.wipprod:fs.file:vf.jM1_OeAjRL6OWjKQLR3cMg?version=1",
+            "name": "Building_Design.pdf",
+            "description": "This is a pdf of building design",
+            "title": "building design",
+            "version": 1,
+            "fileName": "Building_Design.pdf",
+            "approveStatus": {
+              "label": "Approved w/ comments.",
+              "value": "APPROVED"
+            },
+            "lastUpdatedAt": "2024-10-21T08:05:54.000Z",
+            "updatedByName": "John Smith",
+            "updatedBy": "HWUBNU689CRH",
+            "isDeleted": false,
+            "parentFolderUrn": "urn:adsk.wipprod:fs.folder:co.plHRTgMySeK-DIMyDe7aSA",
+            "folderType": "normal",
+            "revisionLabel": "432",
+            "storageUrn": "urn:adsk.objects:os.object:wip.dm.prod?afedb9a6-749c-45cc-9f44-6617cea3a2fd.f3d"
+          }
+        ],
+        "pagination": {
+          "limit": 1,
+          "offset": 0,
+          "totalResults": 10,
+          "nextUrl": "https://developer.api.autodesk.com/construction/transmittals/v1/projects/657a5565-09b7-48e0-bd03-acacfe42efaf/transmittals/88c286a3-4100-4251-8d0e-830e7726fc17/documents?limit=1&offset=1"
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"results\": [],\n  \"pagination\": {\n    \"limit\": 1,\n    \"offset\": 0,\n    \"totalResults\": 0,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "results": [],
+        "pagination": {
+          "limit": 1,
+          "offset": 0,
+          "totalResults": 0,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

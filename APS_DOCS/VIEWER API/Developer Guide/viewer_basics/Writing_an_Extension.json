@@ -1,0 +1,38 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/viewer_basics/extensions",
+    "scrapedAt": "2026-05-08T18:42:52.126Z",
+    "category": "Developer Guide/viewer_basics",
+    "apiName": "VIEWER API"
+  },
+  "title": "Writing an Extension",
+  "codeExamples": [
+    {
+      "raw": "<script src=\"https://developer.api.autodesk.com/modelderivative/v2/viewers/7.*/viewer3D.min.js\"></script>\n<script src=\"my-awesome-extension.js\"></script>"
+    },
+    {
+      "raw": "// Content for 'my-awesome-extension.js'\n\nfunction MyAwesomeExtension(viewer, options) {\n  Autodesk.Viewing.Extension.call(this, viewer, options);\n}\n\nMyAwesomeExtension.prototype = Object.create(Autodesk.Viewing.Extension.prototype);\nMyAwesomeExtension.prototype.constructor = MyAwesomeExtension;\n\nMyAwesomeExtension.prototype.load = function() {\n  alert('MyAwesomeExtension is loaded!');\n  return true;\n};\n\nMyAwesomeExtension.prototype.unload = function() {\n  alert('MyAwesomeExtension is now unloaded!');\n  return true;\n};\n\nAutodesk.Viewing.theExtensionManager.registerExtension('MyAwesomeExtension', MyAwesomeExtension);"
+    },
+    {
+      "raw": "var config3d = {\n  ...\n  extensions: ['MyAwesomeExtension'],\n  ...\n};\nvar htmlDiv = document.getElementById('forgeViewer')\nviewer = new Autodesk.Viewing.GuiViewer3D(htmlDiv, config3d);\nviewer.start();\n...\nviewer.loadModel(...);"
+    },
+    {
+      "raw": "<div id=\"forgeViewer\"></div>\n<button id=\"MyAwesomeLockButton\">Lock it!</button>\n<button id=\"MyAwesomeUnlockButton\">Unlock it!</button>"
+    },
+    {
+      "raw": "MyAwesomeExtension.prototype.load = function() {\n  // alert('MyAwesomeExtension is loaded!');\n\n  var viewer = this.viewer;\n\n  var lockBtn = document.getElementById('MyAwesomeLockButton');\n  lockBtn.addEventListener('click', function() {\n    viewer.setNavigationLock(true);\n  });\n\n  var unlockBtn = document.getElementById('MyAwesomeUnlockButton');\n  unlockBtn.addEventListener('click', function() {\n    viewer.setNavigationLock(false);\n  });\n\n  return true;\n};"
+    },
+    {
+      "raw": "function MyAwesomeExtension(viewer, options) {\n  Autodesk.Viewing.Extension.call(this, viewer, options);\n\n  // Preserve \"this\" reference when methods are invoked by event handlers.\n  this.lockViewport = this.lockViewport.bind(this);\n  this.unlockViewport = this.unlockViewport.bind(this);\n}\n\nMyAwesomeExtension.prototype = Object.create(Autodesk.Viewing.Extension.prototype);\nMyAwesomeExtension.prototype.constructor = MyAwesomeExtension;\n\nMyAwesomeExtension.prototype.lockViewport = function() {\n  this.viewer.setNavigationLock(true);\n};\n\nMyAwesomeExtension.prototype.unlockViewport = function() {\n  this.viewer.setNavigationLock(false);\n};\n\nMyAwesomeExtension.prototype.load = function() {\n  // alert('MyAwesomeExtension is loaded!');\n\n  this._lockBtn = document.getElementById('MyAwesomeLockButton');\n  this._lockBtn.addEventListener('click', this.lockViewport);\n\n  this._unlockBtn = document.getElementById('MyAwesomeUnlockButton');\n  this._unlockBtn.addEventListener('click', this.unlockViewport);\n\n  return true;\n};\n\n MyAwesomeExtension.prototype.unload = function() {\n  // alert('MyAwesomeExtension is now unloaded!');\n\n  if (this._lockBtn) {\n    this._lockBtn.removeEventListener('click', this.lockViewport);\n    this._lockBtn = null;\n  }\n\n  if (this._unlockBtn) {\n      this._unlockBtn.removeEventListener('click', this.unlockViewport);\n      this._unlockBtn = null;\n  }\n\n  return true;\n};"
+    },
+    {
+      "raw": "NOP_VIEWER.isExtensionLoaded('MyAwesomeExtension');"
+    },
+    {
+      "raw": "NOP_VIEWER.unloadExtension('MyAwesomeExtension');"
+    },
+    {
+      "raw": "NOP_VIEWER.loadExtension('MyAwesomeExtension');"
+    }
+  ]
+}

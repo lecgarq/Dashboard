@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/advanced_options/aggregated-view",
+    "scrapedAt": "2026-05-08T18:43:25.151Z",
+    "category": "Developer Guide/advanced_options",
+    "apiName": "VIEWER API"
+  },
+  "title": "Using Aggregated View to Load a Model",
+  "codeExamples": [
+    {
+      "raw": "// AggregatedView instance\nvar view = new Autodesk.Viewing.AggregatedView();\n\n// Initialize and load a document.\nAutodesk.Viewing.Initializer(options, function onInitialized() {\n    // Get the Viewer DIV\n    var htmlDiv = document.getElementById('forgeViewer');\n\n    // Initialize the AggregatedView view\n    view.init(htmlDiv, options).then(function () {\n        Autodesk.Viewing.Document.load(documentId, (doc) => {\n            // Set the nodes from the doc\n            var nodes = doc.getRoot().search({ type: 'geometry' });\n            // Load the first bubble node. This assumes that a bubbleNode was successfully found\n            view.setNodes(nodes[0]);\n        }, (errorCode, errorMsg, messages) => {\n            // Do something with the failed document.\n            // ...\n        });\n    });\n});"
+    },
+    {
+      "raw": "const bubbleNodes = [];\n// docs is an array of loaded documents\ndocs.forEach((doc) => {\n    var nodes = doc.getRoot().search({ type: 'geometry' });\n    bubbleNodes.push(nodes[0]);\n});\nview.setNodes(bubbleNodes);"
+    },
+    {
+      "raw": "// Get all of the 3D bubble nodes in a loaded document\nconst nodes3D = doc.docRoot.search({ role: '3d', type: \"geometry\" });\n\n// The switchView function will load the model\nview.switchView(nodes3D[0]);\n\n// Get the model after it is fully loaded\nconst model = await view.getModelAndWait(nodes3D[0]);"
+    },
+    {
+      "raw": "// Get all of the 2D bubble nodes in a loaded document\nconst nodes2D = doc.docRoot.search({ role: '2d', type: \"geometry\" });\n\n// Now lets load two 2D models\n// This will reset the UI, the extensions, the tools and the camera before a new node is loaded\nview.switchView([nodes2D[0], nodes2D[1]]);"
+    },
+    {
+      "raw": "// Unload a model\nview.unload(nodes2D[1]);"
+    },
+    {
+      "raw": "// Unload all of the loaded models\nview.unloadAll();"
+    }
+  ]
+}

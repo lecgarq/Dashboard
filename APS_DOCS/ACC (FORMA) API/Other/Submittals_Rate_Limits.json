@@ -1,0 +1,31 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/submittals-rate-limits",
+    "scrapedAt": "2026-05-08T23:40:20.540Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: Submittals API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Submittals API endpoints combined",
+          "Limit (requests/minute)": "600",
+          "Scope": "Per  API key (APS application ID)"
+        },
+        {
+          "Endpoints": "Submittals API endpoints combined",
+          "Limit (requests/minute)": "600",
+          "Scope": "Per user account"
+        }
+      ]
+    }
+  ]
+}

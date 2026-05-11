@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/developers_guide/about-graphql",
+    "scrapedAt": "2026-05-08T18:14:00.825Z",
+    "category": "Developer Guide",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "About GraphQL",
+  "codeExamples": [
+    {
+      "raw": "query GetHubs {\n  hubs {\n    results {\n      name\n      id\n    }\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"data\": {\n    \"hubs\": {\n      \"results\": [\n\n        {\n          \"name\": \"Test Account\",\n          \"id\": \"b.03f98b13-ec95-461b-b945-765f496165c1\"\n        },\n        {\n          \"name\": \"Construction Records Testing\",\n          \"id\": \"b.768cae14-76b3-4531-9030-25212dab4e48\"\n        }\n      ]\n    }\n  }\n}",
+      "parsed": {
+        "data": {
+          "hubs": {
+            "results": [
+              {
+                "name": "Test Account",
+                "id": "b.03f98b13-ec95-461b-b945-765f496165c1"
+              },
+              {
+                "name": "Construction Records Testing",
+                "id": "b.768cae14-76b3-4531-9030-25212dab4e48"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

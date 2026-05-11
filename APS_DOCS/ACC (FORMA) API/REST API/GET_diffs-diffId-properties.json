@@ -1,0 +1,354 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/index-v2-diff-properties-get",
+    "scrapedAt": "2026-05-09T00:04:33.073Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/:projectId/diffs/:diffId/properties",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/properties",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/index/v2/projects/:projectId/diffs/:diffId/properties"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "json.gz"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-ads-regionenum: string",
+          "col_1": "The region to which your request should be routed. If not set, the request is routed automatically but may incur a small latency increase.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The project ID."
+        },
+        {
+          "col_0": "diffIdstring",
+          "col_1": "The diff ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The response is provided in the [line-delimited JSON streaming format (LDJSON)](https://de.wikipedia.org/wiki/JSON_streaming)\nwith the properties of one object per line."
+        },
+        {
+          "col_0": "303Redirect Method",
+          "col_1": "The response is provided in the [line-delimited JSON streaming format (LDJSON)](https://de.wikipedia.org/wiki/JSON_streaming)\nwith the properties of one object per line."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Response in case of an error."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Wait some time before retrying. The Retry-After header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "lmvIdint",
+          "col_1": "Object database id from the original seed file property database (_objects_id.id)."
+        },
+        {
+          "col_0": "dbIdstring",
+          "col_1": "Property database id (the property database the object originated from)."
+        },
+        {
+          "col_0": "propsobject",
+          "col_1": "property database property keyed values."
+        },
+        {
+          "col_0": "propsHashstring",
+          "col_1": "Hash used to determine whether object properties have changed between different versions."
+        },
+        {
+          "col_0": "propsIgnoredobject",
+          "col_1": "Property database property values that are not considered for property change tracking."
+        },
+        {
+          "col_0": "geomHashstring",
+          "col_1": "Hash used to determine whether the object geometry has changed between different versions."
+        },
+        {
+          "col_0": "bboxMinobject",
+          "col_1": "minimum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "bboxMaxobject",
+          "col_1": "maximum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "viewsarray: string",
+          "col_1": "List of corresponding view IDs in the index manifest that this object is visible in."
+        },
+        {
+          "col_0": "svf2Idint",
+          "col_1": "The stable SVF2 ID of the object."
+        },
+        {
+          "col_0": "lineageIdstring",
+          "col_1": "The lineage ID of the object; the (svf2Id, lineageId)-pair allows to track a specific object across several versions."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The external ID of the object."
+        },
+        {
+          "col_0": "typeenum: string",
+          "col_1": "object change type.\nPossible values: OBJECT_ADDED, OBJECT_REMOVED, OBJECT_CHANGED"
+        },
+        {
+          "col_0": "prevobject",
+          "col_1": "common properties index properties."
+        },
+        {
+          "col_0": "lmvIdint",
+          "col_1": "Object database id from the original seed file property database (_objects_id.id)."
+        },
+        {
+          "col_0": "dbIdstring",
+          "col_1": "Property database id (the property database the object originated from)."
+        },
+        {
+          "col_0": "propsobject",
+          "col_1": "Property database property keyed values."
+        },
+        {
+          "col_0": "propsHashstring",
+          "col_1": "Hash used to determine whether object properties have changed between different versions."
+        },
+        {
+          "col_0": "propsIgnoredobject",
+          "col_1": "Property database property values that are not considered for property change tracking."
+        },
+        {
+          "col_0": "geomHashstring",
+          "col_1": "Hash used to determine whether the object geometry has changed between different versions."
+        },
+        {
+          "col_0": "bboxMinarray: int",
+          "col_1": "minimum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "bboxMaxarray: int",
+          "col_1": "maximum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "viewsarray: string",
+          "col_1": "List of corresponding view IDs in the index manifest that this object is visible in."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "lmvIdint",
+          "col_1": "Object database id from the original seed file property database (_objects_id.id)."
+        },
+        {
+          "col_0": "dbIdstring",
+          "col_1": "Property database id (the property database the object originated from)."
+        },
+        {
+          "col_0": "propsobject",
+          "col_1": "Property database property keyed values."
+        },
+        {
+          "col_0": "propsHashstring",
+          "col_1": "Hash used to determine whether object properties have changed between different versions."
+        },
+        {
+          "col_0": "propsIgnoredobject",
+          "col_1": "Property database property values that are not considered for property change tracking."
+        },
+        {
+          "col_0": "geomHashstring",
+          "col_1": "Hash used to determine whether the object geometry has changed between different versions."
+        },
+        {
+          "col_0": "bboxMinobject",
+          "col_1": "minimum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "bboxMaxobject",
+          "col_1": "maximum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "viewsarray: string",
+          "col_1": "List of corresponding view IDs in the index manifest that this object is visible in."
+        },
+        {
+          "col_0": "svf2Idint",
+          "col_1": "The stable SVF2 ID of the object."
+        },
+        {
+          "col_0": "lineageIdstring",
+          "col_1": "The lineage ID of the object; the (svf2Id, lineageId)-pair allows to track a specific object across several versions."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "The external ID of the object."
+        },
+        {
+          "col_0": "typeenum: string",
+          "col_1": "object change type.\nPossible values: OBJECT_ADDED, OBJECT_REMOVED, OBJECT_CHANGED"
+        },
+        {
+          "col_0": "prevobject",
+          "col_1": "common properties index properties."
+        },
+        {
+          "col_0": "lmvIdint",
+          "col_1": "Object database id from the original seed file property database (_objects_id.id)."
+        },
+        {
+          "col_0": "dbIdstring",
+          "col_1": "Property database id (the property database the object originated from)."
+        },
+        {
+          "col_0": "propsobject",
+          "col_1": "Property database property keyed values."
+        },
+        {
+          "col_0": "propsHashstring",
+          "col_1": "Hash used to determine whether object properties have changed between different versions."
+        },
+        {
+          "col_0": "propsIgnoredobject",
+          "col_1": "Property database property values that are not considered for property change tracking."
+        },
+        {
+          "col_0": "geomHashstring",
+          "col_1": "Hash used to determine whether the object geometry has changed between different versions."
+        },
+        {
+          "col_0": "bboxMinarray: int",
+          "col_1": "minimum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "bboxMaxarray: int",
+          "col_1": "maximum [x, y, z]-coords of the 3D-bbox."
+        },
+        {
+          "col_0": "viewsarray: string",
+          "col_1": "List of corresponding view IDs in the index manifest that this object is visible in."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "errorsarray: object",
+          "col_1": "A set of specific validation errors that need to be fixed."
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "The field which failed validation."
+        },
+        {
+          "col_0": "titlestring",
+          "col_1": "A short title for the error."
+        },
+        {
+          "col_0": "detailstring",
+          "col_1": "A more detailed, human readable description of the error, assuming that this message is not localized and is therefore EN-US. UI consumers can use the error.type value to provide a localized version of this error for presentation."
+        },
+        {
+          "col_0": "typestring",
+          "col_1": "The error code."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/index/v2/projects/cd743656-f130-48bd-96e6-948175313637/diffs/3fe13864aecfe0a5/properties' \\\n     -H 'Authorization: Bearer <token>'"
+    },
+    {
+      "raw": "[\n  {\n    \"type\": \"OBJECT_REMOVED\",\n    \"svf2Id\": \"1510\",\n    \"lineageId\": \"ad425719\",\n    \"externalId\": \"546a5f5b-1aeb-43f9-b1f2-530ebe1e4c4a-0032d24c\",\n    \"lmvId\": null,\n    \"dbId\": null,\n    \"props\": null,\n    \"propsHash\": null,\n    \"prev\": {\n      \"lmvId\": \"182\",\n      \"dbId\": \"be53682a\",\n      \"props\": {\n        \"p10c1a84a\": \"false\",\n        \"p114b1425\": \"false\",\n        \"p121ac73d\": \"Show Original\",\n        \"p153cb174\": \"New Construction\",\n        \"p21b83ee9\": \"1000\",\n        \"p24044fbb\": \"false\",\n        \"p30015eee\": \"Fine\",\n        \"p31561b85\": \"None\",\n        \"p326e867f\": \"71.36222284862842\",\n        \"p345273d1\": \"false\",\n        \"p43766fd1\": \"96\",\n        \"p52413328\": \"By Discipline\",\n        \"p532f0ad6\": \"New Construction\",\n        \"p5eddc473\": \"Revit View\",\n        \"p79f5f88c\": \"LMV\",\n        \"p90dddb61\": \"false\",\n        \"p93e93af5\": \"1\",\n        \"p9ced1273\": \"New Construction\",\n        \"pa5fef29f\": \"all\",\n        \"pa7275c45\": \"-2000279\",\n        \"paea62326\": \"Adjusting\",\n        \"pb940b1a4\": \"Architectural\",\n        \"pc2252206\": \"1/8\\\" = 1'-0\\\"\",\n        \"pd0d53a26\": \"false\",\n        \"pe01bd7ef\": \"None\",\n        \"pe73257b1\": \"Independent\",\n        \"pf2c65ab9\": \"329.87844072436667\",\n        \"pfa32ecb1\": \"Orthographic\",\n        \"pfa463ea8\": \"false\"\n      },\n      \"propsHash\": \"d8d14133\",\n      \"propsIgnored\": null,\n      \"geomHash\": \"ceffb260\",\n      \"bbox\": {\n        \"min\": [\n          \"-43.302825927734375\",\n          \"-58.94974899291992\",\n          \"-5.971645355224609\"\n        ],\n        \"max\": [\n          \"-40.30475997924805\",\n          \"-58.570899963378906\",\n          \"1.0283546447753906\"\n        ]\n      },\n      \"views\": []\n    }\n  },\n  {\n    \"type\": \"OBJECT_CHANGED\",\n    \"svf2Id\": \"757\",\n    \"lineageId\": \"344b06a3\",\n    \"externalId\": \"5466a680-ad75-4568-9ba3-2e48a29f7367-000f1fa9\",\n    \"lmvId\": \"5721\",\n    \"dbId\": \"455c17b4\",\n    \"props\": {\n      \"p00723fa6\": \"Main Model\",\n      \"p01bbdcf2\": \"FIRST FLOOR\",\n      \"p08bc1e88\": \"0\",\n      \"p10f4572e\": \"505.527528165408\",\n      \"p153cb174\": \"CONCESSION/ NATURE STORE 115 [991729]\",\n      \"p188478f2\": \"0\",\n      \"p1d45bc4f\": \"4\",\n      \"p20d8441e\": \"Rooms\",\n      \"p29ff6f58\": \"115\",\n      \"p5264cd49\": \"1\",\n      \"p532f0ad6\": \"New Construction\",\n      \"p562c91d5\": \"8\",\n      \"p5eddc473\": \"Revit Rooms\",\n      \"p6ab86626\": \"FIRST FLOOR\",\n      \"p78f04c1e\": \"99.54644577473422\",\n      \"pa7275c45\": \"-2000160\",\n      \"pb2959cb7\": \"0\",\n      \"pc838ff15\": \"OCCUPANCY\",\n      \"pdf772b6f\": \"CONCESSION/ NATURE STORE\",\n      \"pe2ac2e1d\": \"8\",\n      \"pef87fde6\": \"0\"\n    },\n    \"propsHash\": \"46681c9a\",\n    \"propsIgnored\": {\n      \"p93e93af5\": \"5599\"\n    },\n    \"geomHash\": \"c9f2684f\",\n    \"bbox\": {\n      \"min\": [\n        \"-54.80051040649414\",\n        \"1.0369148254394531\",\n        \"-5.971645355224609\"\n      ],\n      \"max\": [\n        \"-33.66492462158203\",\n        \"31.324600219726562\",\n        \"2.0283546447753906\"\n      ]\n    },\n    \"views\": [\n      \"7ca0051c\"\n    ],\n    \"prev\": {\n      \"lmvId\": \"5721\",\n      \"props\": {\n        \"p10f4572e\": \"504.2436739987414\",\n        \"p78f04c1e\": \"103.79644577473447\"\n      },\n      \"propsHash\": \"8f50272f\",\n      \"propsIgnored\": {\n        \"p93e93af5\": \"5599\"\n      },\n      \"geomHash\": \"70435f8c\",\n      \"bbox\": {\n        \"min\": [\n          \"-54.80051040649414\",\n          \"1.0369148254394531\",\n          \"-5.971645355224609\"\n        ],\n        \"max\": [\n          \"-33.66492462158203\",\n          \"31.324600219726562\",\n          \"2.0283546447753906\"\n        ]\n      },\n      \"views\": [\n        \"7ca0051c\"\n      ]\n    }\n  },\n  {\n    \"type\": \"OBJECT_ADDED\",\n    \"svf2Id\": \"38866\",\n    \"lineageId\": \"344b06a3\",\n    \"externalId\": \"acee946f-3e4f-4f67-9837-4c3fac19de9b-0032d267\",\n    \"lmvId\": \"38816\",\n    \"dbId\": \"455c17b4\",\n    \"props\": {\n      \"p00723fa6\": \"Main Model\",\n      \"p01bbdcf2\": \"FIRST FLOOR\",\n      \"p09faf620\": \"19\\\"H Seat\",\n      \"p13b6b3a0\": \"19\\\"H Seat\",\n      \"p153cb174\": \"Toilet-Commercial-Wall-3D [3330663]\",\n      \"p16233090\": \"0\",\n      \"p20d8441e\": \"Plumbing Fixtures\",\n      \"p30db51f9\": \"Toilet-Commercial-Wall-3D\",\n      \"p36ee6bc3\": \"MEN'S TOILET\",\n      \"p3c57b64e\": \"New Construction\",\n      \"p4fd45709\": \"Porcelain - Ivory\",\n      \"p54217060\": \"D2010110\",\n      \"p5eddc473\": \"Revit Plumbing Fixtures\",\n      \"p63ed81bb\": \"Water Closets - Single\",\n      \"p69a73bfb\": \"1.5833333333333335\",\n      \"p6a81eafd\": \"5842\",\n      \"p75c61d00\": \"Metal - Steel, Polished\",\n      \"p75d0aa84\": \"Laminate - Ivory,Matte\",\n      \"p8d70f1c5\": \"109\",\n      \"p93e93af5\": \"5843\",\n      \"p9482d58a\": \"136\",\n      \"pa7275c45\": \"-2001160\",\n      \"pab5862eb\": \"Undefined\",\n      \"pc8d7966e\": \"0\",\n      \"pcbcd5bb4\": \"0\",\n      \"pe4b74447\": \"4.075315959131618\",\n      \"pe61a57c3\": \"0\",\n      \"pee815a7f\": \"None\",\n      \"pf65f749b\": \"3.2988707985541077\"\n    },\n    \"propsHash\": \"db9bfcdb\",\n    \"propsIgnored\": null,\n    \"geomHash\": \"89981bb6\",\n    \"bbox\": {\n      \"min\": [\n        \"124.14583587646484\",\n        \"10.525434494018555\",\n        \"-5.388311862945557\"\n      ],\n      \"max\": [\n        \"126.5625\",\n        \"12.192100524902344\",\n        \"-3.429264783859253\"\n      ]\n    },\n    \"views\": [\n      \"cf7900d3\",\n      \"7ca0051c\"\n    ],\n    \"prev\": null\n  }\n]"
+    },
+    {
+      "raw": "[\n  {\n    \"type\": \"OBJECT_REMOVED\",\n    \"svf2Id\": \"1510\",\n    \"lineageId\": \"ad425719\",\n    \"externalId\": \"546a5f5b-1aeb-43f9-b1f2-530ebe1e4c4a-0032d24c\",\n    \"lmvId\": null,\n    \"dbId\": null,\n    \"props\": null,\n    \"propsHash\": null,\n    \"prev\": {\n      \"lmvId\": \"182\",\n      \"dbId\": \"be53682a\",\n      \"props\": {\n        \"p10c1a84a\": \"false\",\n        \"p114b1425\": \"false\",\n        \"p121ac73d\": \"Show Original\",\n        \"p153cb174\": \"New Construction\",\n        \"p21b83ee9\": \"1000\",\n        \"p24044fbb\": \"false\",\n        \"p30015eee\": \"Fine\",\n        \"p31561b85\": \"None\",\n        \"p326e867f\": \"71.36222284862842\",\n        \"p345273d1\": \"false\",\n        \"p43766fd1\": \"96\",\n        \"p52413328\": \"By Discipline\",\n        \"p532f0ad6\": \"New Construction\",\n        \"p5eddc473\": \"Revit View\",\n        \"p79f5f88c\": \"LMV\",\n        \"p90dddb61\": \"false\",\n        \"p93e93af5\": \"1\",\n        \"p9ced1273\": \"New Construction\",\n        \"pa5fef29f\": \"all\",\n        \"pa7275c45\": \"-2000279\",\n        \"paea62326\": \"Adjusting\",\n        \"pb940b1a4\": \"Architectural\",\n        \"pc2252206\": \"1/8\\\" = 1'-0\\\"\",\n        \"pd0d53a26\": \"false\",\n        \"pe01bd7ef\": \"None\",\n        \"pe73257b1\": \"Independent\",\n        \"pf2c65ab9\": \"329.87844072436667\",\n        \"pfa32ecb1\": \"Orthographic\",\n        \"pfa463ea8\": \"false\"\n      },\n      \"propsHash\": \"d8d14133\",\n      \"propsIgnored\": null,\n      \"geomHash\": \"ceffb260\",\n      \"bbox\": {\n        \"min\": [\n          \"-43.302825927734375\",\n          \"-58.94974899291992\",\n          \"-5.971645355224609\"\n        ],\n        \"max\": [\n          \"-40.30475997924805\",\n          \"-58.570899963378906\",\n          \"1.0283546447753906\"\n        ]\n      },\n      \"views\": []\n    }\n  },\n  {\n    \"type\": \"OBJECT_CHANGED\",\n    \"svf2Id\": \"757\",\n    \"lineageId\": \"344b06a3\",\n    \"externalId\": \"5466a680-ad75-4568-9ba3-2e48a29f7367-000f1fa9\",\n    \"lmvId\": \"5721\",\n    \"dbId\": \"455c17b4\",\n    \"props\": {\n      \"p00723fa6\": \"Main Model\",\n      \"p01bbdcf2\": \"FIRST FLOOR\",\n      \"p08bc1e88\": \"0\",\n      \"p10f4572e\": \"505.527528165408\",\n      \"p153cb174\": \"CONCESSION/ NATURE STORE 115 [991729]\",\n      \"p188478f2\": \"0\",\n      \"p1d45bc4f\": \"4\",\n      \"p20d8441e\": \"Rooms\",\n      \"p29ff6f58\": \"115\",\n      \"p5264cd49\": \"1\",\n      \"p532f0ad6\": \"New Construction\",\n      \"p562c91d5\": \"8\",\n      \"p5eddc473\": \"Revit Rooms\",\n      \"p6ab86626\": \"FIRST FLOOR\",\n      \"p78f04c1e\": \"99.54644577473422\",\n      \"pa7275c45\": \"-2000160\",\n      \"pb2959cb7\": \"0\",\n      \"pc838ff15\": \"OCCUPANCY\",\n      \"pdf772b6f\": \"CONCESSION/ NATURE STORE\",\n      \"pe2ac2e1d\": \"8\",\n      \"pef87fde6\": \"0\"\n    },\n    \"propsHash\": \"46681c9a\",\n    \"propsIgnored\": {\n      \"p93e93af5\": \"5599\"\n    },\n    \"geomHash\": \"c9f2684f\",\n    \"bbox\": {\n      \"min\": [\n        \"-54.80051040649414\",\n        \"1.0369148254394531\",\n        \"-5.971645355224609\"\n      ],\n      \"max\": [\n        \"-33.66492462158203\",\n        \"31.324600219726562\",\n        \"2.0283546447753906\"\n      ]\n    },\n    \"views\": [\n      \"7ca0051c\"\n    ],\n    \"prev\": {\n      \"lmvId\": \"5721\",\n      \"props\": {\n        \"p10f4572e\": \"504.2436739987414\",\n        \"p78f04c1e\": \"103.79644577473447\"\n      },\n      \"propsHash\": \"8f50272f\",\n      \"propsIgnored\": {\n        \"p93e93af5\": \"5599\"\n      },\n      \"geomHash\": \"70435f8c\",\n      \"bbox\": {\n        \"min\": [\n          \"-54.80051040649414\",\n          \"1.0369148254394531\",\n          \"-5.971645355224609\"\n        ],\n        \"max\": [\n          \"-33.66492462158203\",\n          \"31.324600219726562\",\n          \"2.0283546447753906\"\n        ]\n      },\n      \"views\": [\n        \"7ca0051c\"\n      ]\n    }\n  },\n  {\n    \"type\": \"OBJECT_ADDED\",\n    \"svf2Id\": \"38866\",\n    \"lineageId\": \"344b06a3\",\n    \"externalId\": \"acee946f-3e4f-4f67-9837-4c3fac19de9b-0032d267\",\n    \"lmvId\": \"38816\",\n    \"dbId\": \"455c17b4\",\n    \"props\": {\n      \"p00723fa6\": \"Main Model\",\n      \"p01bbdcf2\": \"FIRST FLOOR\",\n      \"p09faf620\": \"19\\\"H Seat\",\n      \"p13b6b3a0\": \"19\\\"H Seat\",\n      \"p153cb174\": \"Toilet-Commercial-Wall-3D [3330663]\",\n      \"p16233090\": \"0\",\n      \"p20d8441e\": \"Plumbing Fixtures\",\n      \"p30db51f9\": \"Toilet-Commercial-Wall-3D\",\n      \"p36ee6bc3\": \"MEN'S TOILET\",\n      \"p3c57b64e\": \"New Construction\",\n      \"p4fd45709\": \"Porcelain - Ivory\",\n      \"p54217060\": \"D2010110\",\n      \"p5eddc473\": \"Revit Plumbing Fixtures\",\n      \"p63ed81bb\": \"Water Closets - Single\",\n      \"p69a73bfb\": \"1.5833333333333335\",\n      \"p6a81eafd\": \"5842\",\n      \"p75c61d00\": \"Metal - Steel, Polished\",\n      \"p75d0aa84\": \"Laminate - Ivory,Matte\",\n      \"p8d70f1c5\": \"109\",\n      \"p93e93af5\": \"5843\",\n      \"p9482d58a\": \"136\",\n      \"pa7275c45\": \"-2001160\",\n      \"pab5862eb\": \"Undefined\",\n      \"pc8d7966e\": \"0\",\n      \"pcbcd5bb4\": \"0\",\n      \"pe4b74447\": \"4.075315959131618\",\n      \"pe61a57c3\": \"0\",\n      \"pee815a7f\": \"None\",\n      \"pf65f749b\": \"3.2988707985541077\"\n    },\n    \"propsHash\": \"db9bfcdb\",\n    \"propsIgnored\": null,\n    \"geomHash\": \"89981bb6\",\n    \"bbox\": {\n      \"min\": [\n        \"124.14583587646484\",\n        \"10.525434494018555\",\n        \"-5.388311862945557\"\n      ],\n      \"max\": [\n        \"126.5625\",\n        \"12.192100524902344\",\n        \"-3.429264783859253\"\n      ]\n    },\n    \"views\": [\n      \"cf7900d3\",\n      \"7ca0051c\"\n    ],\n    \"prev\": null\n  }\n]"
+    },
+    {
+      "raw": "{\n  \"type\": \"BadInput\",\n  \"title\": \"One or more input values in the request were bad\",\n  \"detail\": \"The following parameters are invalid: containerId\",\n  \"errors\": [\n    {\n      \"field\": \"containerId\",\n      \"title\": \"Invalid parameter\",\n      \"detail\": \"The value 'testing' is not valid.\",\n      \"type\": \"BadInput\"\n    }\n  ]\n}",
+      "parsed": {
+        "type": "BadInput",
+        "title": "One or more input values in the request were bad",
+        "detail": "The following parameters are invalid: containerId",
+        "errors": [
+          {
+            "field": "containerId",
+            "title": "Invalid parameter",
+            "detail": "The value 'testing' is not valid.",
+            "type": "BadInput"
+          }
+        ]
+      }
+    }
+  ]
+}

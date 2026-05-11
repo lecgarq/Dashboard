@@ -1,0 +1,61 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/cost/update-contract-company-and-contact",
+    "scrapedAt": "2026-05-08T23:41:46.293Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Update a Contract’s Company",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts?limit=100&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts?limit=100&offset=0' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n  \"results\": [{\n      \"id\": \"55254a50-44d9-11e9-99d7-79aa05d3109e\",\n      \"...\":\"...\",\n  }],\n  \"pagination\": {\n      \"totalResults\": 1,\n      \"limit\": 100,\n      \"offset\": 0\n  }\n}"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/aade5ed8-f16d-4ec0-9c0a-59f5ff7a2134/projects/18ece8b1-204d-11e8-ad71-d73b169f902a/companies?limit=1&offset=0' -H 'Authorization: Bearer 07YyCEjv3qs8FA7ysntmsuErYXHv'"
+    },
+    {
+      "raw": "[\n    {\n        \"id\": \"fc830fd8-f1ef-4cd6-9163-fb115dc698d7\",\n        \"account_id\": \"aade5ed8-f16d-4ec0-9c0a-59f5ff7a2134\",\n        \"project_id\": \"18ece8b1-204d-11e8-ad71-d73b169f902a\",\n        \"name\": \"Autodesk\",\n        \"trade\": \"Concrete\",\n        \"address_line_1\": \"The Fifth Avenue\",\n        \"address_line_2\": \"#301\",\n        \"city\": \"New York\",\n        \"postal_code\": \"10011\",\n        \"state_or_province\": \"New York\",\n        \"country\": \"United States\",\n        \"phone\": \"(503)623-1525\",\n        \"website_url\": \"http://www.autodesk.com\",\n        \"description\": \"Autodesk, Inc., is a leader in 3D design, engineering and entertainment software.\",\n        \"created_at\": \"2016-05-20T02:24:21.400Z\",\n        \"updated_at\": \"2016-05-20T02:24:21.400Z\",\n        \"erp_id\": \"c79bf096-5a3e-41a4-aaf8-a771ed329047\",\n        \"tax_id\": \"213-73-8867\",\n        \"member_group_id\": \"764893\"\n    }\n]",
+      "parsed": {
+        "id": "fc830fd8-f1ef-4cd6-9163-fb115dc698d7",
+        "account_id": "aade5ed8-f16d-4ec0-9c0a-59f5ff7a2134",
+        "project_id": "18ece8b1-204d-11e8-ad71-d73b169f902a",
+        "name": "Autodesk",
+        "trade": "Concrete",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "New York",
+        "country": "United States",
+        "phone": "(503)623-1525",
+        "website_url": "http://www.autodesk.com",
+        "description": "Autodesk, Inc., is a leader in 3D design, engineering and entertainment software.",
+        "created_at": "2016-05-20T02:24:21.400Z",
+        "updated_at": "2016-05-20T02:24:21.400Z",
+        "erp_id": "c79bf096-5a3e-41a4-aaf8-a771ed329047",
+        "tax_id": "213-73-8867",
+        "member_group_id": "764893"
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/contracts/55254a50-44d9-11e9-99d7-79aa05d3109e' -X 'PATCH' -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' -H 'Content-Type: application/json' -d '{\"companyId\": \"764893\",}'"
+    },
+    {
+      "raw": "{\n  \"id\": \"f6445638-ca68-4e3c-9160-15864de6b818\",\n  \"code\": \"GC-01\",\n  \"name\": \"Site Management Staff\",\n  \"description\": \"Site Management Staff\",\n  \"companyId\": \"764893\",\n  \"type\": \"consultant\",\n  \"...\": \"...\"\n}",
+      "parsed": {
+        "id": "f6445638-ca68-4e3c-9160-15864de6b818",
+        "code": "GC-01",
+        "name": "Site Management Staff",
+        "description": "Site Management Staff",
+        "companyId": "764893",
+        "type": "consultant",
+        "...": "..."
+      }
+    }
+  ]
+}

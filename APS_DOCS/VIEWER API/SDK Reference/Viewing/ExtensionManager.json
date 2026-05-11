@@ -1,0 +1,194 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/ExtensionManager",
+    "scrapedAt": "2026-05-08T18:44:01.255Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "ExtensionManager",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        },
+        {
+          "col_0": "extensionClass*Extension",
+          "col_1": "The Extension-derived class representing the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension was successfully registered."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Extension, null",
+          "description": "The Extension-derived class if one was registered; null otherwise."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension was successfully unregistered."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        },
+        {
+          "col_0": "urlPathOrCallback*string, function",
+          "col_1": "The url from where it needs to be pulled from. Can be a relative or an absolute path. Optionally, this can be a callback function that defers the loading to the client application. Useful for webpack import style loading. Callback must return a promise that resolves when loading is finished."
+        },
+        {
+          "col_0": "dependencies*Array.<string>",
+          "col_1": "Optional list of extension IDs, whose bundles are needed before this extension can be built."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the extension was successfully registered."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": "The string id of the extension."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "url, null",
+          "description": "The url from where to download the extension; null if not download is needed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "resolves when the extension class is ready for usage."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "extensionId*string",
+          "col_1": ""
+        }
+      ]
+    }
+  ]
+}

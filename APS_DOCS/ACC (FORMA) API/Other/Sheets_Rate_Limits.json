@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/sheets-rate-limits",
+    "scrapedAt": "2026-05-08T23:40:27.787Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: Sheets API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All Sheets API endpoints",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per application (specified by client ID)"
+        }
+      ]
+    }
+  ]
+}

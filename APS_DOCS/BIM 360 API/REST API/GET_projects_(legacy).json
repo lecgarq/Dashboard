@@ -1,0 +1,247 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/projects-GET",
+    "scrapedAt": "2026-05-08T17:50:55.775Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/projects?limit=1&offset=0&sort=name",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI（US）",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/accounts/:account_id/projects"
+        },
+        {
+          "col_0": "Method and URI（Legacy）",
+          "col_1": "GET https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/projects"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:read"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorizationyes",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "col_0": "Regionno",
+          "col_1": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account ID of the projects. This corresponds to hub ID in the Data Management API. To convert a hub ID into an account ID you need to remove the “b.\" prefix. For example, a hub ID of b.c8b0c73d-3ae9 translates to an account ID of c8b0c73d-3ae9."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "Response array’s size\nDefault value: 10\nMax limit: 100"
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Offset of response array\nDefault value: 0"
+        },
+        {
+          "col_0": "sortstring",
+          "col_1": "Comma-separated fields to sort by in ascending order\n\nPrepending a field with - sorts in descending order\nInvalid fields and whitespaces will be ignored"
+        },
+        {
+          "col_0": "fieldstring",
+          "col_1": "Comma-separated fields to include in response\n\nid will always be returned\nInvalid fields will be ignored"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The request has succeeded."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Project ID"
+        },
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "Account ID"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the project\nMax length: 255"
+        },
+        {
+          "col_0": "start_datedate",
+          "col_1": "The starting date of a project; must be earlier than end_date\n\nFormat: YYYY-MM-DD"
+        },
+        {
+          "col_0": "end_datedate",
+          "col_1": "The ending date of a project; must be later than start_date\n\nFormat: YYYY-MM-DD"
+        },
+        {
+          "col_0": "project_typestring",
+          "col_1": "The type of project; accepts preconfigured and customized project types\n\nMax length: 255\n\nRefer to the preconfigured project_type list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "valuefloat",
+          "col_1": "Monetary value of the project"
+        },
+        {
+          "col_0": "currencyenum: string",
+          "col_1": "Currency for project value\n\nRefer to the currency list in the Parameters guide."
+        },
+        {
+          "col_0": "statusenum: string",
+          "col_1": "The status of project.\n\nPossible values:\nactive: project is active with at least one project admin added\npending: project has been created but pending becuase no project admin added\ninactive: project is suspended\narchived: project is archived and displayed only in the archived list"
+        },
+        {
+          "col_0": "job_numberstring",
+          "col_1": "Project job number to connect a BIM 360 project to project or job in a financial or ERP system.\n\nMax length: 100"
+        },
+        {
+          "col_0": "address_line_1string",
+          "col_1": "Project address line 1\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_2string",
+          "col_1": "Project address line 2\n\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "City in which project is located\n\nMax length: 255"
+        },
+        {
+          "col_0": "state_or_provinceenum: string",
+          "col_1": "State or province in which project is located\n\nMax length: 255\n\nNote that the state_or_province value depends on the selected country value; see the valid values in the state_or_province list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "postal_codestring",
+          "col_1": "Postal code for the project location\n\nMax length: 255"
+        },
+        {
+          "col_0": "countryenum: string",
+          "col_1": "Country for this project\n\nRefer to the country list in the Parameters guide."
+        },
+        {
+          "col_0": "business_unit_idstring: UUID",
+          "col_1": "The business unit ID of this project"
+        },
+        {
+          "col_0": "timezonestring",
+          "col_1": "Time zone for this project\n\nRefer to the timezone list in the Parameters guide."
+        },
+        {
+          "col_0": "languageenum: string",
+          "col_1": "Language of the project; applicable to the BIM 360 Field service only\n\nPossible values:\nen: English\nde: German"
+        },
+        {
+          "col_0": "construction_typeenum: string",
+          "col_1": "Type of construction\n\nRefer to the construction_type list in the Parameters guide."
+        },
+        {
+          "col_0": "contract_typeenum: string",
+          "col_1": "Contract Type for your project\n\nRefer to the constract_type list in the Parameters guide."
+        },
+        {
+          "col_0": "last_sign_indatetime: ISO 8601",
+          "col_1": "Timestamp of the last sign in, YYYY-MM-DDThh:mm:ss.sssZ format"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/projects?limit=1&offset=0&sort=name' \\\n  -H 'Authorization: Bearer 9ezBnx9Rd5D1xG4KMt6b72T4w0MG'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"aca11a7a-bd17-47cd-ab99-6548d0e6fe25\",\n    \"account_id\": \"e3d5ef8d-5c37-4b9d-925d-1e6d24753ace\",\n    \"name\": \"construction_project\",\n    \"start_date\": \"2015-05-02\",\n    \"end_date\": \"2016-04-03\",\n    \"project_type\": \"office\",\n    \"value\": 3000.0,\n    \"currency\": \"USD\",\n    \"status\": \"pending\",\n    \"job_number\": \"0219-01\",\n    \"address_line_1\": \"The Fifth Avenue\",\n    \"address_line_2\": \"#301\",\n    \"city\": \"New York\",\n    \"state_or_province\": \"New York\",\n    \"postal_code\": \"10011\",\n    \"country\": \"United States\",\n    \"business_unit_id\": \"c17e6837-96cd-4839-868e-051a2ad65d28\",\n    \"timezone\": \"America/New_York\",\n    \"language\": \"en\",\n    \"construction_type\": \"Renovation\",\n    \"contract_type\": \"Design-Bid\",\n    \"last_sign_in\": null,\n    \"created_at\": \"2016-04-05T07:26:20.858Z\",\n    \"updated_at\": \"2016-04-05T07:31:26.290Z\"\n  }\n]",
+      "parsed": {
+        "id": "aca11a7a-bd17-47cd-ab99-6548d0e6fe25",
+        "account_id": "e3d5ef8d-5c37-4b9d-925d-1e6d24753ace",
+        "name": "construction_project",
+        "start_date": "2015-05-02",
+        "end_date": "2016-04-03",
+        "project_type": "office",
+        "value": 3000,
+        "currency": "USD",
+        "status": "pending",
+        "job_number": "0219-01",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "state_or_province": "New York",
+        "postal_code": "10011",
+        "country": "United States",
+        "business_unit_id": "c17e6837-96cd-4839-868e-051a2ad65d28",
+        "timezone": "America/New_York",
+        "language": "en",
+        "construction_type": "Renovation",
+        "contract_type": "Design-Bid",
+        "last_sign_in": null,
+        "created_at": "2016-04-05T07:26:20.858Z",
+        "updated_at": "2016-04-05T07:31:26.290Z"
+      }
+    }
+  ]
+}

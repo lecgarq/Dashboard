@@ -1,0 +1,85 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/folders",
+    "scrapedAt": "2026-05-08T18:15:36.756Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "folders",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "folderId*ID! non-null",
+          "col_1": "The ID of the folder that contains the sub"
+        },
+        {
+          "col_0": "filterFolderFilterInput",
+          "col_1": "Specifies how to filter the content of a folder."
+        },
+        {
+          "col_0": "paginationPaginationInput",
+          "col_1": "Specifies how to split the response into multiple pages."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Folders! non-null",
+          "Description": "Contains a list of folders returned in response to a query."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetFolders($folderId: ID!, $filter: FolderFilterInput, $pagination: PaginationInput) {\n  folders(folderId: $folderId, filter: $filter, pagination: $pagination) {\n    # Folders Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"folderId\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\",\n  \"filter\" : \"<SOME-FOLDERFILTER-INPUT-TYPE-VALUE>\",\n  \"pagination\" : \"<SOME-PAGINATION-INPUT-TYPE-VALUE>\"\n}",
+      "parsed": {
+        "folderId": "<SOME-ID-TYPE-SCALAR-VALUE>",
+        "filter": "<SOME-FOLDERFILTER-INPUT-TYPE-VALUE>",
+        "pagination": "<SOME-PAGINATION-INPUT-TYPE-VALUE>"
+      }
+    },
+    {
+      "raw": "query GetFolders($folderId: ID!) {\n  folders(folderId: $folderId) {\n      results {\n          id\n          name\n          objectCount\n      }\n    }\n }"
+    },
+    {
+      "raw": "{\n  \"folderId\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB\"\n}",
+      "parsed": {
+        "folderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"folders\": {\n          \"results\": [\n              {\n                  \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\",\n                  \"name\": \"Large-models\",\n                  \"objectCount\": 8\n              },\n              {\n                  \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5TWW9LbnlJNVJOU3pmNVBVeWlqNXB3\",\n                  \"name\": \"Small-models\",\n                  \"objectCount\": 4\n              }\n          ]\n      }\n   }\n}",
+      "parsed": {
+        "data": {
+          "folders": {
+            "results": [
+              {
+                "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR",
+                "name": "Large-models",
+                "objectCount": 8
+              },
+              {
+                "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5TWW9LbnlJNVJOU3pmNVBVeWlqNXB3",
+                "name": "Small-models",
+                "objectCount": 4
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

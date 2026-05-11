@@ -1,0 +1,35 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/account-admin",
+    "scrapedAt": "2026-05-08T17:47:36.130Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Create a New Project",
+  "codeExamples": [
+    {
+      "raw": "curl -X POST -H \"Content-Type: application/json\" -H \"Authorization: Bearer 9ezBnx9Rd5D1xG4KMt6b72T4w0MG\" https://developer.api.autodesk.com/hq/v1/accounts/e3d5ef8d-5c37-4b9d-925d-1e6d24753ace/projects -d '\n{\n  \"name\": \"construction_project\",\n  \"service_types\": \"field\",\n  \"start_date\": \"2015-05-02\",\n  \"end_date\": \"2016-04-03\",\n  \"project_type\": \"office\",\n  \"value\": 3000,\n  \"currency\": \"USD\",\n  \"job_number\": \"0219-01\",\n  \"address_line_1\": \"The Fifth Avenue\",\n  \"address_line_2\": \"#301\",\n  \"city\": \"New York\",\n  \"state_or_province\": \"New York\",\n  \"postal_code\": \"10011\",\n  \"country\": \"United States\",\n  \"business_unit_id\": \"c17e6837-96cd-4839-868e-051a2ad65d28\",\n  \"timezone\": \"America/New_York\",\n  \"language\": \"en\",\n  \"construction_type\": \"Renovation\",\n  \"contract_type\": \"Design-Bid\"\n}'",
+      "parsed": {
+        "name": "construction_project",
+        "service_types": "field",
+        "start_date": "2015-05-02",
+        "end_date": "2016-04-03",
+        "project_type": "office",
+        "value": 3000,
+        "currency": "USD",
+        "job_number": "0219-01",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "state_or_province": "New York",
+        "postal_code": "10011",
+        "country": "United States",
+        "business_unit_id": "c17e6837-96cd-4839-868e-051a2ad65d28",
+        "timezone": "America/New_York",
+        "language": "en",
+        "construction_type": "Renovation",
+        "contract_type": "Design-Bid"
+      }
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedNWD",
+    "scrapedAt": "2026-05-08T18:26:49.694Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatSVF2AdvancedNWD",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatSVF2AdvancedNWD : IJobPayloadFormatSVF2Advanced"
+    },
+    {
+      "raw": "public JobPayloadFormatSVF2AdvancedNWD()"
+    },
+    {
+      "raw": "[DataMember(Name = \"autodeskMaterialProperties\", EmitDefaultValue = false)]\npublic bool? AutodeskMaterialProperties { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"basicMaterialProperties\", EmitDefaultValue = false)]\npublic bool? BasicMaterialProperties { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"hiddenObjects\", EmitDefaultValue = false)]\npublic bool? HiddenObjects { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"timelinerProperties\", EmitDefaultValue = false)]\npublic bool? TimelinerProperties { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

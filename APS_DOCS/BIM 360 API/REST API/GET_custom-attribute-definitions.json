@@ -1,0 +1,198 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/document-management-custom-attribute-definitions-GET",
+    "scrapedAt": "2026-05-08T18:00:22.012Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/{project_id}/folders/{folder_id}/custom-attribute-definitions",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.9g7HeA2wRqOxLlgLJ40UGQ/custom-attribute-definitions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/bim360/docs/v1/projects/:project_id/folders/:folder_id/custom-attribute-definitions"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via either a two-legged or three-legged OAuth flow."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "In a two-legged authentication context, the app has access to all users specified by the administrator in the SaaS integrations UI. By providing this header, the API call will be limited to act on behalf of only the user specified."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "project_idstring: UUID",
+          "col_1": "The ID of the project. This corresponds to the project ID in the Data Management API. To convert a project ID in the Data Management API to a project ID in the BIM 360 API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "folder_idstring",
+          "col_1": "The URL-encoded ID (URN) of the folder.\nFor details about how to find the URN, follow the initial steps (1-3) of the Download Files tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The number of results to return in the response. Acceptable values: 1-200. Default value: 10. For example, to limit the response to two custom attributes per page, use limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The item number that you want to begin results from. Default value: 0. For example, to begin the results from item three, use offset=3."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the list of custom attribute definitions."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The project or folder does not exist."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of results."
+        },
+        {
+          "col_0": "idint",
+          "col_1": "The ID of the attribute."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the attribute."
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of attribute. Possible values: string (text field), date, array (drop-list)."
+        },
+        {
+          "col_0": "arrayValuesarray: string",
+          "col_1": "A list of possible values for the attribute. Only relevant for drop-list attributes."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Pagination information when data must be returned page by page."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of results to return in the response."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The item number that the results begin from."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "Total number of results."
+        },
+        {
+          "col_0": "previousUrlstring",
+          "col_1": "The URL for the previous page of results."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL for the next page of results."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.9g7HeA2wRqOxLlgLJ40UGQ/custom-attribute-definitions' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"id\": 1001,\n      \"name\": \"Drawing Stage\",\n      \"type\": \"string\"\n    },\n    {\n      \"id\": 1002,\n      \"name\": \"Publish Date\",\n      \"type\": \"date\"\n    },\n    {\n      \"id\": 1003,\n      \"name\": \"Drawing Type\",\n      \"type\": \"array\",\n      \"arrayValues\": [\n        \"Details\",\n        \"General\",\n        \"Plans\",\n        \"Schedules\"\n      ]\n    },\n    {\n      \"id\": 1004,\n      \"name\": \"Original Number\",\n      \"type\": \"string\"\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 100,\n    \"offset\": 200,\n    \"totalResults\": 500,\n    \"previousUrl\": \"\",\n    \"nextUrl\": \"\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "id": 1001,
+            "name": "Drawing Stage",
+            "type": "string"
+          },
+          {
+            "id": 1002,
+            "name": "Publish Date",
+            "type": "date"
+          },
+          {
+            "id": 1003,
+            "name": "Drawing Type",
+            "type": "array",
+            "arrayValues": [
+              "Details",
+              "General",
+              "Plans",
+              "Schedules"
+            ]
+          },
+          {
+            "id": 1004,
+            "name": "Original Number",
+            "type": "string"
+          }
+        ],
+        "pagination": {
+          "limit": 100,
+          "offset": 200,
+          "totalResults": 500,
+          "previousUrl": "",
+          "nextUrl": ""
+        }
+      }
+    }
+  ]
+}

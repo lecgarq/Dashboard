@@ -1,0 +1,255 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Private/PropDbLoader",
+    "scrapedAt": "2026-05-08T18:48:00.851Z",
+    "category": "SDK Reference/Private",
+    "apiName": "VIEWER API"
+  },
+  "title": "PropDbLoader",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "sharedDbPath*",
+          "col_1": ""
+        },
+        {
+          "col_0": "model*",
+          "col_1": ""
+        },
+        {
+          "col_0": "eventTarget*",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "forceboolean",
+          "col_1": "fetch the attribute definitions afresh (and update the cache)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise ({category: string, dataTypeContext: (string|undefined), description: (string|undefined), flags: number, name: string, precision: number, propertyHash: string}[])",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "The database identifier."
+        },
+        {
+          "col_0": "onSuccessCallbacks#onPropertiesSuccess",
+          "col_1": "Callback for when the properties are fetched."
+        },
+        {
+          "col_0": "onErrorCallbacks#onGenericError",
+          "col_1": "Callback for when the properties are not found or another error occurs."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbId*number",
+          "col_1": "The database identifier."
+        },
+        {
+          "col_0": "onSuccessCallbacks#onPropertiesSuccess",
+          "col_1": "Callback for when the properties are fetched."
+        },
+        {
+          "col_0": "onErrorCallbacks#onGenericError",
+          "col_1": "Callback for when the properties are not found or another error occurs."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "needsExternalIdboolean",
+          "col_1": "If true, we enforce loading of externalIDs if necessary. ExternalIds may significantly increase memory consumption and should only be loaded if unavoidable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIds*Array.<number>",
+          "col_1": "array of object dbIds to return properties for."
+        },
+        {
+          "col_0": "propFilterobject",
+          "col_1": "array of property names to retrieve values for. If empty, all properties are returned."
+        },
+        {
+          "col_0": "onSuccess*function",
+          "col_1": "Callback function for when results are ready."
+        },
+        {
+          "col_0": "onError*function",
+          "col_1": "Callback function for when something went wrong."
+        },
+        {
+          "col_0": "ignoreHiddenboolean",
+          "col_1": "true to ignore hidden properties."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIds*Array.<number>",
+          "col_1": "array of object dbIds to return properties for."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "propFilterArray.<string>",
+          "col_1": "array of property names to retrieve values for. If empty, all properties are returned."
+        },
+        {
+          "col_0": "categoryFilterArray.<string>",
+          "col_1": "array of category names to retrieve values for. If empty, all properties are returned."
+        },
+        {
+          "col_0": "ignoreHiddenboolean",
+          "col_1": "true to ignore hidden properties."
+        },
+        {
+          "col_0": "needsExternalIdboolean",
+          "col_1": "If true, it is ensured that externalId table is loaded before doing the property query."
+        },
+        {
+          "col_0": "onSuccess*function",
+          "col_1": "Callback function for when results are ready."
+        },
+        {
+          "col_0": "onError*function",
+          "col_1": "Callback function for when something went wrong."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIds*Array.<number>",
+          "col_1": "array of object dbIds to return properties for."
+        },
+        {
+          "col_0": "optionsObject",
+          "col_1": ""
+        },
+        {
+          "col_0": "propFilterArray.<string>",
+          "col_1": "array of property names to retrieve values for. If empty, all properties are returned."
+        },
+        {
+          "col_0": "ignoreHiddenboolean",
+          "col_1": "true to ignore hidden properties."
+        },
+        {
+          "col_0": "needsExternalIdboolean",
+          "col_1": "If true, it is ensured that externalId table is loaded before doing the property query."
+        },
+        {
+          "col_0": "onSuccess*function",
+          "col_1": "Callback function for when results are ready."
+        },
+        {
+          "col_0": "onError*function",
+          "col_1": "Callback function for when something went wrong."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "code*function, string",
+          "col_1": "Function takes two arguments, the PropertyDatabase instance and userData."
+        },
+        {
+          "col_0": "userData*",
+          "col_1": "A value that will get passed to the code function when run in the property worker context. it needs to be serializable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise",
+          "description": "Resolves with the return value of user function."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "number",
+          "description": "in the range 0..100"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "function myCustomFunction(pdb, userData) {\n       const dbId = 1;\n       pdb.enumObjectProperties(dbId, function(propId, valueId) {\n             // do stuff\n       });\n       return 42 * userData; // userData will be 2 in this example\n  }\n  executeUserFunction(myCustomFunction, 2).then(function(result) {\n       console.log(result); // result === 84 === 42 * 2\n  })"
+    },
+    {
+      "raw": "await executeUserFunction('function myCustomFunction(pdb, userData) { ... }');"
+    }
+  ]
+}

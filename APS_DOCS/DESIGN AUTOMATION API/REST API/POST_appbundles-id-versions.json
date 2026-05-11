@@ -1,0 +1,275 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/appbundles-id-versions-POST",
+    "scrapedAt": "2026-05-08T17:43:54.024Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "appbundles/:id/versions",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/appbundles/ChangeParams/versions",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/da/us-east/v3/appbundles/:id/versions"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "Name of AppBundle (unqualified)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "engine*string",
+          "col_1": "The actual processing engine that runs the WorkItem job and processes the Activity."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Human readable description of the object."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully create a new version of an AppBundle."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Limit for number of version exceeded."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Could not find the item."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The item version already exist. (this might happen if 2 requests are done in parallel to create the same version)."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Internal error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "uploadParametersobject",
+          "col_1": "The parameters needed to POST an AppBundle."
+        },
+        {
+          "col_0": "endpointURLstring",
+          "col_1": "The URL to upload the AppBundle package to."
+        },
+        {
+          "col_0": "formDataobject",
+          "col_1": "FormData parameters to be used in the body of the AppBundle package upload request.\nMust be followed by a ‘file’ parameter indicating the package file location."
+        },
+        {
+          "col_0": "*string",
+          "col_1": "Type: dictionary<string, *>"
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Name of AppBundle, see the example section."
+        },
+        {
+          "col_0": "enginestring",
+          "col_1": "The actual processing engine that runs the WorkItem job and processes the Activity."
+        },
+        {
+          "col_0": "appbundlesarray: string",
+          "col_1": "A module referenced by an Activity in order to perform specific functions. Typically this is a DLL or some other form of custom code."
+        },
+        {
+          "col_0": "settingsobject",
+          "col_1": "The url/string Settings for a given set of AppBundles."
+        },
+        {
+          "col_0": "*any of",
+          "col_1": "Type: dictionary<string, *>"
+        },
+        {
+          "col_0": "StringSettingobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": ""
+        },
+        {
+          "col_0": "isEnvironmentVariableboolean",
+          "col_1": ""
+        },
+        {
+          "col_0": "UrlSettingobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "urlstring",
+          "col_1": "Url."
+        },
+        {
+          "col_0": "headersobject",
+          "col_1": "Headers."
+        },
+        {
+          "col_0": "*string",
+          "col_1": "Type: dictionary<string, *>"
+        },
+        {
+          "col_0": "verbenum:string",
+          "col_1": "Defines the operation for a parameter. get, put, post, patch imply an HTTP operation on the url in the parameter. read implies that the string value of parameter should be read. get and read imply input parameters all others are output.\nPossible values: get, head, put, post, patch, read"
+        },
+        {
+          "col_0": "multipartsobject",
+          "col_1": "Provide multipart post method to upload the results and multiparts can be empty if there is no “parameter” to provide.\nIt supports Box, Google Drive and Amazon Simple Storage Service (S3) services.\nExamples of using argument “multiparts”:\nBox:\n\n\n“multiparts”:\n{“attributes”: {“name”: “result.txt”, “parent”: {“id”: “xxxxx”}}, “mydata”: “xxxxx”}\n\n\n\nGoogle Drive:\n\n\n“multiparts”:\n{“keys”: {“name”: “result.txt”, “parent” :[“xxxxx”]}}\n\n\n\nAmazon Simple Storage Service (S3):\n\n\n“multiparts”:\n{“key”: “result.txt”, “policy”: “xxxxx”, “x-amz-signature”: “xxxxx”, “x-amz-credential”: “xxxxx”, “x-amz-algorithm”: “AWS4-HMAC-SHA256”, “x-amz-date”: “20190820T000000Z”, “bucket”: “xxxxx”}",
+          "col_2": "“multiparts”:",
+          "col_3": "{“attributes”: {“name”: “result.txt”, “parent”: {“id”: “xxxxx”}}, “mydata”: “xxxxx”}",
+          "col_4": "“multiparts”:",
+          "col_5": "{“keys”: {“name”: “result.txt”, “parent” :[“xxxxx”]}}",
+          "col_6": "“multiparts”:",
+          "col_7": "{“key”: “result.txt”, “policy”: “xxxxx”, “x-amz-signature”: “xxxxx”, “x-amz-credential”: “xxxxx”, “x-amz-algorithm”: “AWS4-HMAC-SHA256”, “x-amz-date”: “20190820T000000Z”, “bucket”: “xxxxx”}"
+        },
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“attributes”: {“name”: “result.txt”, “parent”: {“id”: “xxxxx”}}, “mydata”: “xxxxx”}"
+        },
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“keys”: {“name”: “result.txt”, “parent” :[“xxxxx”]}}"
+        },
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“key”: “result.txt”, “policy”: “xxxxx”, “x-amz-signature”: “xxxxx”, “x-amz-credential”: “xxxxx”, “x-amz-algorithm”: “AWS4-HMAC-SHA256”, “x-amz-date”: “20190820T000000Z”, “bucket”: “xxxxx”}"
+        },
+        {
+          "col_0": "*object",
+          "col_1": "Type: dictionary<string, *>"
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Human readable description of the object."
+        },
+        {
+          "col_0": "versionint",
+          "col_1": "The version created."
+        }
+      ]
+    },
+    {
+      "label": "Box:",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“attributes”: {“name”: “result.txt”, “parent”: {“id”: “xxxxx”}}, “mydata”: “xxxxx”}"
+        }
+      ]
+    },
+    {
+      "label": "Google Drive:",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“keys”: {“name”: “result.txt”, “parent” :[“xxxxx”]}}"
+        }
+      ]
+    },
+    {
+      "label": "Amazon Simple Storage Service (S3):",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "“multiparts”:",
+          "col_1": "{“key”: “result.txt”, “policy”: “xxxxx”, “x-amz-signature”: “xxxxx”, “x-amz-credential”: “xxxxx”, “x-amz-algorithm”: “AWS4-HMAC-SHA256”, “x-amz-date”: “20190820T000000Z”, “bucket”: “xxxxx”}"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/appbundles/ChangeParams/versions' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"engine\": \"Autodesk.Inventor+23\",\n        \"description\": \"Changes parameters in ipt or asm file\"\n      }'",
+      "parsed": {
+        "engine": "Autodesk.Inventor+23",
+        "description": "Changes parameters in ipt or asm file"
+      }
+    },
+    {
+      "raw": "{\n  \"uploadParameters\": {\n    \"endpointURL\": \"https://bucketname.s3.amazonaws.com\",\n    \"formData\": {\n      \"key\": \"apps/myApp\",\n      \"content-type\": \"application/octet-stream\",\n      \"policy\": \"eyJleHBpcmF0aW9uIjoiMjAxOC0wNi0yMVQxMzo...(trimmed)\",\n      \"success_action_status\": \"200\",\n      \"success_action_redirect\": \"\",\n      \"x-amz-signature\": \"800e52d73579387757e1c1cd88762...(trimmed)\",\n      \"x-amz-credential\": \"AKIAIOSFODNN7EXAMPLE/20180621/us-east-1/s3/aws4_request/\",\n      \"x-amz-algorithm\": \"AWS4-HMAC-SHA256\",\n      \"x-amz-date\": \"20180621T091656Z\",\n      \"x-amz-server-side-encryption\": \"AES256\",\n      \"x-amz-security-token\": \"FQoGZXIvYXdzEHYaDDi93QcZJ...(trimmed)\"\n    }\n  },\n  \"id\": \"owner.ChangeParams\",\n  \"engine\": \"Autodesk.Inventor+23\",\n  \"description\": \"Changes parameters in ipt or asm file\",\n  \"version\": 2\n}",
+      "parsed": {
+        "uploadParameters": {
+          "endpointURL": "https://bucketname.s3.amazonaws.com",
+          "formData": {
+            "key": "apps/myApp",
+            "content-type": "application/octet-stream",
+            "policy": "eyJleHBpcmF0aW9uIjoiMjAxOC0wNi0yMVQxMzo...(trimmed)",
+            "success_action_status": "200",
+            "success_action_redirect": "",
+            "x-amz-signature": "800e52d73579387757e1c1cd88762...(trimmed)",
+            "x-amz-credential": "AKIAIOSFODNN7EXAMPLE/20180621/us-east-1/s3/aws4_request/",
+            "x-amz-algorithm": "AWS4-HMAC-SHA256",
+            "x-amz-date": "20180621T091656Z",
+            "x-amz-server-side-encryption": "AES256",
+            "x-amz-security-token": "FQoGZXIvYXdzEHYaDDi93QcZJ...(trimmed)"
+          }
+        },
+        "id": "owner.ChangeParams",
+        "engine": "Autodesk.Inventor+23",
+        "description": "Changes parameters in ipt or asm file",
+        "version": 2
+      }
+    }
+  ]
+}

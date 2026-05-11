@@ -1,0 +1,63 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/ProfileManager",
+    "scrapedAt": "2026-05-08T18:44:34.108Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "ProfileManager",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fileExt*String",
+          "col_1": "file extension to register the profile settings with."
+        },
+        {
+          "col_0": "profileSettings*ProfileSettings, Autodesk.Viewing.Profile",
+          "col_1": "profile settings object or profile instance to register"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fileExt*String",
+          "col_1": "file type"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "fileExt*String",
+          "col_1": "file extension"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Autodesk.Viewing.Profile",
+          "description": "Profile associated with the file extension."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "const profileManager = new Autodesk.Viewing.ProfileManager();\n// or\n// const profileManger = viewer.profileManager;\nconst profileSettings = {\n   name: \"DWF\",\n   settings: {\n       swapBlackAndWhite: true\n   },\n   // ...\n}\n// Registers the specified profile settings for dwf models.\nprofileManager.registerProfile('dwf', profileSettings);\nconst profile = profileManager.getProfile('dwf'); // others: 'default', 'nwc', 'nwd', 'rvt', 'ifc'\nviewer.setProfile(profile);"
+    }
+  ]
+}

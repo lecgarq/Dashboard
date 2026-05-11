@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatOBJ",
+    "scrapedAt": "2026-05-08T18:26:23.169Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatOBJ",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatOBJ : IJobPayloadFormat"
+    },
+    {
+      "raw": "public JobPayloadFormatOBJ()"
+    },
+    {
+      "raw": "[DataMember(Name = \"advanced\", EmitDefaultValue = false)]\npublic JobPayloadFormatAdvancedOBJ Advanced { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = true)]\npublic OutputType Type { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/hubs",
+    "scrapedAt": "2026-05-08T18:15:46.603Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "hubs",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filterHubFilterInput",
+          "col_1": "Specifies how to filter a list of hubs. You can filter by ID or by name."
+        },
+        {
+          "col_0": "paginationPaginationInput",
+          "col_1": "Specifies how to split the response into multiple pages."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Hubs! non-null",
+          "Description": "Contains a list of hubs returned in response to a query.  A hub is a container of projects, shared resources, and users with a common context."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetHubs($filter: HubFilterInput, $pagination: PaginationInput) {\n  hubs(filter: $filter, pagination: $pagination) {\n    # Hubs Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"filter\" : \"<SOME-HUBFILTER-INPUT-TYPE-VALUE>\",\n  \"pagination\" : \"<SOME-PAGINATION-INPUT-TYPE-VALUE>\"\n}",
+      "parsed": {
+        "filter": "<SOME-HUBFILTER-INPUT-TYPE-VALUE>",
+        "pagination": "<SOME-PAGINATION-INPUT-TYPE-VALUE>"
+      }
+    },
+    {
+      "raw": "query GetHubs {\n hubs {\n  results {\n    id\n    name\n    }\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"hubs\": {\n          \"results\": [\n              {\n                  \"id\": \"b.768cae14-76b3-4531-9030-25212dab4e48\",\n                  \"name\": \"Construction Records Testing\"\n              },\n              {\n                  \"id\": \"b.a9c78b5b-a9b4-4e8c-8c68-cbd8da758fc5\",\n                  \"name\": \"FDX EMEA\"\n              }\n          ]\n      }\n   }\n}",
+      "parsed": {
+        "data": {
+          "hubs": {
+            "results": [
+              {
+                "id": "b.768cae14-76b3-4531-9030-25212dab4e48",
+                "name": "Construction Records Testing"
+              },
+              {
+                "id": "b.a9c78b5b-a9b4-4e8c-8c68-cbd8da758fc5",
+                "name": "FDX EMEA"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

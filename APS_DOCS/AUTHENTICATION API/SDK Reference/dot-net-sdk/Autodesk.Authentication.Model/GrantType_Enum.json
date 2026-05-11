@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/dot-net-sdk/Autodesk.Authentication.Model/GrantType",
+    "scrapedAt": "2026-05-08T17:36:52.303Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Enum GrantType",
+  "codeExamples": [
+    {
+      "raw": "[JsonConverter(typeof(StringEnumConverter))]\npublic enum GrantType"
+    }
+  ]
+}

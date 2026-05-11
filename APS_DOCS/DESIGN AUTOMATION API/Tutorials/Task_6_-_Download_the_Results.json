@@ -1,0 +1,83 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/tutorials/3dsmax/task6-download-results",
+    "scrapedAt": "2026-05-08T17:40:25.680Z",
+    "category": "Tutorials",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Task 6 - Download the Results",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "HTTP Request",
+        "Description"
+      ],
+      "rows": [
+        {
+          "HTTP Request": "GET /workitems/{id}",
+          "Description": "Gets the status of a specific WorkItem."
+        },
+        {
+          "HTTP Request": "POST /buckets/{bucketKey}/objects/{objectKey}/signed",
+          "Description": "Creates a signed URL to an object in an OSS bucket."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Attribute",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Attribute": "url",
+          "Description": "The signed S3 URL to download the .zip file."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -i -X GET \\\n    https://developer.api.autodesk.com/da/us-east/v3/workitems/<YOUR_WORKITEM_ID> \\\n    -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n    -H 'Content-Type: application/json' \\\n    -H 'cache-control: no-cache'"
+    },
+    {
+      "raw": "{\n    \"status\": \"success\",\n    \"reportUrl\": \"Some temporary url to download your report file\",\n    \"stats\": {\n        \"timeQueued\": \"2019-06-19T19:29:19.2116634Z\",\n        \"timeDownloadStarted\": \"2019-06-19T19:29:19.8867532Z\",\n        \"timeInstructionsStarted\": \"2019-06-19T19:29:20.1055176Z\",\n        \"timeInstructionsEnded\": \"2019-06-19T19:29:42.4372923Z\",\n        \"timeUploadEnded\": \"2019-06-19T19:29:42.7341647Z\",\n        \"timeFinished\": \"2019-06-19T19:29:42.892238Z\",\n        \"bytesDownloaded\": 56546,\n        \"bytesUploaded\": 97471\n    },\n    \"id\": \"c19fd1a1236541bea1235fae6dcd281b\"\n}",
+      "parsed": {
+        "status": "success",
+        "reportUrl": "Some temporary url to download your report file",
+        "stats": {
+          "timeQueued": "2019-06-19T19:29:19.2116634Z",
+          "timeDownloadStarted": "2019-06-19T19:29:19.8867532Z",
+          "timeInstructionsStarted": "2019-06-19T19:29:20.1055176Z",
+          "timeInstructionsEnded": "2019-06-19T19:29:42.4372923Z",
+          "timeUploadEnded": "2019-06-19T19:29:42.7341647Z",
+          "timeFinished": "2019-06-19T19:29:42.892238Z",
+          "bytesDownloaded": 56546,
+          "bytesUploaded": 97471
+        },
+        "id": "c19fd1a1236541bea1235fae6dcd281b"
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n      'https://developer.api.autodesk.com/oss/v2/buckets/<YOUR_BUCKET_KEY>/objects/<OBJECT_KEY_4_OUTPUT_FILE>/signeds3download'\n      - H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n      - H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n    \"status\": \"complete\",\n    \"url\": \"<SIGNED_DOWNLOAD_URL>\",\n    \"params\": {\n        \"content-type\": \"application/zip\",\n        \"content-disposition\": \"attachment; filename*=utf-8''workingFolder.zip; filename=workingFolder.zip; creation-date=\\\"Thu, 05 Oct 2023 03:54:44 GMT\\\"; modification-date=\\\"Thu, 05 Oct 2023 03:54:45 GMT\\\"; read-date=\\\"Thu, 05 Oct 2023 03:54:45 GMT\\\"; size=76917\"\n    },\n    \"size\": 76917,\n    \"sha1\": \"ff038df8fcbbcb5547e9fcdebea9e2d0a2babfd2\"\n}",
+      "parsed": {
+        "status": "complete",
+        "url": "<SIGNED_DOWNLOAD_URL>",
+        "params": {
+          "content-type": "application/zip",
+          "content-disposition": "attachment; filename*=utf-8''workingFolder.zip; filename=workingFolder.zip; creation-date=\"Thu, 05 Oct 2023 03:54:44 GMT\"; modification-date=\"Thu, 05 Oct 2023 03:54:45 GMT\"; read-date=\"Thu, 05 Oct 2023 03:54:45 GMT\"; size=76917"
+        },
+        "size": 76917,
+        "sha1": "ff038df8fcbbcb5547e9fcdebea9e2d0a2babfd2"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n    '<SIGNED_DOWNLOAD_URL>' \\\n    -o 'SOME/PATH/ON/YOUR/COMPUTER/workingFolder.zip'"
+    }
+  ]
+}

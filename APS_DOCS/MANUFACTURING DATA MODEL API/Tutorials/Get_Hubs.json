@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/getting_started/task1",
+    "scrapedAt": "2026-05-08T18:14:13.906Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Get Hubs",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Query",
+          "Operation": "hubs",
+          "Description": "Retrieve all the hubs that you have access to."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetHubs {\n    hubs {\n        results {\n            id\n            name\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n    \"data\": {\n        \"hubs\": {\n            \"results\": [\n                {\n                    \"id\": \"b.768cae14-76b3-4531-9030-25212dab4e48\",\n                    \"name\": \"Construction Records Testing\"\n                }\n            ]\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "hubs": {
+            "results": [
+              {
+                "id": "b.768cae14-76b3-4531-9030-25212dab4e48",
+                "name": "Construction Records Testing"
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

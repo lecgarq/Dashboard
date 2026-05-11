@@ -1,0 +1,327 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/assets/create-assets-project-settings",
+    "scrapedAt": "2026-05-08T17:47:55.785Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Setup BIM 360 Assets Project Settings",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories?includeUid=true",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Field",
+        "Conditions"
+      ],
+      "rows": [
+        {
+          "Field": "enumValues",
+          "Conditions": "Only valid, and required, for select and multi_select custom attribute data types."
+        },
+        {
+          "Field": "maxLengthOnIngress",
+          "Conditions": "Only valid for text custom attribute data types."
+        },
+        {
+          "Field": "defaultValue",
+          "Conditions": "String for text, date, or select custom attribute data types. Number for numeric custom attribute data types. Boolean for boolean custom attribute data types. Array of strings for multi_select custom attribute data types."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories?includeUid=true' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"name\": \"Electrical\",\n           \"description\": \"Electrical Outlets\",\n           \"parentId\": \"123\"\n         }'",
+      "parsed": {
+        "name": "Electrical",
+        "description": "Electrical Outlets",
+        "parentId": "123"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"124\",\n  \"uid\": \"fc24ff3b-1ad9-4327-a91d-84700bc16a5e\",\n  \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n  \"createdBy\": \"LA7ZL85MU7ML\",\n  \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n  \"updatedBy\": \"LA7ZL85MU7ML\",\n  \"isActive\": true,\n  \"name\": \"Electrical\",\n  \"description\": \"Electrical Outlets\",\n  \"parentId\": \"123\",\n  \"isRoot\": false,\n  \"isLeaf\": true,\n  \"subcategoryIds\": [ ]\n}",
+      "parsed": {
+        "id": "124",
+        "uid": "fc24ff3b-1ad9-4327-a91d-84700bc16a5e",
+        "createdAt": "2020-05-01T06:00:00.000Z",
+        "createdBy": "LA7ZL85MU7ML",
+        "updatedAt": "2020-05-01T06:00:00.000Z",
+        "updatedBy": "LA7ZL85MU7ML",
+        "isActive": true,
+        "name": "Electrical",
+        "description": "Electrical Outlets",
+        "parentId": "123",
+        "isRoot": false,
+        "isLeaf": true,
+        "subcategoryIds": []
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/status-step-sets' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"name\": \"Electrical Status Set\",\n           \"description\": \"For electrical assets\",\n           \"values\": [\n             {\n               \"label\": \"Ordered\",\n               \"description\": \"Electrical asset has been ordered\",\n               \"color\": \"green\"\n             },\n             {\n               \"label\": \"Delivered\",\n               \"description\": \"Electrical asset has been delivered\",\n               \"color\": \"blue\"\n             },\n             {\n               \"label\": \"Installed\",\n               \"description\": \"Electrical asset has been installed\",\n               \"color\": \"red\"\n             }\n           ]\n         }'",
+      "parsed": {
+        "name": "Electrical Status Set",
+        "description": "For electrical assets",
+        "values": [
+          {
+            "label": "Ordered",
+            "description": "Electrical asset has been ordered",
+            "color": "green"
+          },
+          {
+            "label": "Delivered",
+            "description": "Electrical asset has been delivered",
+            "color": "blue"
+          },
+          {
+            "label": "Installed",
+            "description": "Electrical asset has been installed",
+            "color": "red"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"6eb35939-e5fb-453a-98ed-e2e11f326e73\",\n  \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n  \"createdBy\": \"LA7ZL85MU7ML\",\n  \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n  \"updatedBy\": \"LA7ZL85MU7ML\",\n  \"isActive\": true,\n  \"version\": 1,\n  \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n  \"name\": \"Electrical Status Set\",\n  \"description\": \"For electrical assets\",\n  \"isDefault\": false,\n  \"values\": [\n    {\n      \"id\": \"b302d910-b5e3-46ba-81d8-6b6d30406e14\",\n      \"label\": \"Ordered\",\n      \"description\": \"Electrical asset has been ordered\",\n      \"color\": \"green\",\n      \"statusStepSetId\": \"6eb35939-e5fb-453a-98ed-e2e11f326e73\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 2,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"bucket\": \"ordered_1582935184385\"\n    },\n    {\n      \"id\": \"e0484858-1683-42fe-9136-6575e43c8eac\",\n      \"label\": \"Delivered\",\n      \"description\": \"Electrical asset has been delivered\",\n      \"color\": \"blue\",\n      \"statusStepSetId\": \"6eb35939-e5fb-453a-98ed-e2e11f326e73\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 3,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"bucket\": \"delivered_39572949287493\"\n    },\n    {\n      \"id\": \"08ec4809-9280-4573-9255-be8c638707e8\",\n      \"label\": \"Installed\",\n      \"description\": \"Electrical asset has been installed\",\n      \"color\": \"red\",\n      \"statusStepSetId\": \"6eb35939-e5fb-453a-98ed-e2e11f326e73\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 4,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"bucket\": \"installed_927592048492\"\n    }\n  ]\n}",
+      "parsed": {
+        "id": "6eb35939-e5fb-453a-98ed-e2e11f326e73",
+        "createdAt": "2020-05-01T06:00:00.000Z",
+        "createdBy": "LA7ZL85MU7ML",
+        "updatedAt": "2020-05-01T06:00:00.000Z",
+        "updatedBy": "LA7ZL85MU7ML",
+        "isActive": true,
+        "version": 1,
+        "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+        "name": "Electrical Status Set",
+        "description": "For electrical assets",
+        "isDefault": false,
+        "values": [
+          {
+            "id": "b302d910-b5e3-46ba-81d8-6b6d30406e14",
+            "label": "Ordered",
+            "description": "Electrical asset has been ordered",
+            "color": "green",
+            "statusStepSetId": "6eb35939-e5fb-453a-98ed-e2e11f326e73",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 2,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "bucket": "ordered_1582935184385"
+          },
+          {
+            "id": "e0484858-1683-42fe-9136-6575e43c8eac",
+            "label": "Delivered",
+            "description": "Electrical asset has been delivered",
+            "color": "blue",
+            "statusStepSetId": "6eb35939-e5fb-453a-98ed-e2e11f326e73",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 3,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "bucket": "delivered_39572949287493"
+          },
+          {
+            "id": "08ec4809-9280-4573-9255-be8c638707e8",
+            "label": "Installed",
+            "description": "Electrical asset has been installed",
+            "color": "red",
+            "statusStepSetId": "6eb35939-e5fb-453a-98ed-e2e11f326e73",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 4,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "bucket": "installed_927592048492"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories/124/status-step-set/6eb35939-e5fb-453a-98ed-e2e11f326e73' \\\n     -X 'PUT' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT'"
+    },
+    {
+      "raw": "{\n  \"id\": \"4b9382eb-9434-41b5-8ca2-8e81a7a596cf\",\n  \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n  \"createdBy\": \"LA7ZL85MU7ML\",\n  \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n  \"updatedBy\": \"LA7ZL85MU7ML\",\n  \"isActive\": true,\n  \"version\": 5,\n  \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n  \"categoryId\": \"124\",\n  \"statusStepSetId\": \"6eb35939-e5fb-453a-98ed-e2e11f326e73\"\n}",
+      "parsed": {
+        "id": "4b9382eb-9434-41b5-8ca2-8e81a7a596cf",
+        "createdAt": "2020-05-01T06:00:00.000Z",
+        "createdBy": "LA7ZL85MU7ML",
+        "updatedAt": "2020-05-01T06:00:00.000Z",
+        "updatedBy": "LA7ZL85MU7ML",
+        "isActive": true,
+        "version": 5,
+        "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+        "categoryId": "124",
+        "statusStepSetId": "6eb35939-e5fb-453a-98ed-e2e11f326e73"
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/custom-attributes' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"displayName\": \"Voltage\",\n           \"description\": \"Voltage of the electrical asset\",\n           \"enumValues\": [\n             \"110 V\",\n             \"220 V\"\n           ],\n           \"requiredOnIngress\": true,\n           \"defaultValue\": \"110 V\",\n           \"dataType\": \"select\"\n         }'",
+      "parsed": {
+        "displayName": "Voltage",
+        "description": "Voltage of the electrical asset",
+        "enumValues": [
+          "110 V",
+          "220 V"
+        ],
+        "requiredOnIngress": true,
+        "defaultValue": "110 V",
+        "dataType": "select"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n  \"displayName\": \"Voltage\",\n  \"description\": \"Voltage of the electrical asset\",\n  \"enumValues\": [\n    \"110 V\",\n    \"220 V\"\n  ],\n  \"requiredOnIngress\": true,\n  \"defaultValue\": \"110 V\",\n  \"dataType\": \"select\",\n  \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n  \"createdBy\": \"LA7ZL85MU7ML\",\n  \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n  \"updatedBy\": \"LA7ZL85MU7ML\",\n  \"isActive\": true,\n  \"version\": 7,\n  \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n  \"name\": \"ca1\",\n  \"values\": [\n    {\n      \"id\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 8,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"customAttributeId\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n      \"displayName\": \"110 V\"\n    },\n    {\n      \"id\": \"582eac28-f4e4-475d-b38c-fd57997c9cc6\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 9,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"customAttributeId\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n      \"displayName\": \"220 V\"\n    }\n  ]\n}",
+      "parsed": {
+        "id": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+        "displayName": "Voltage",
+        "description": "Voltage of the electrical asset",
+        "enumValues": [
+          "110 V",
+          "220 V"
+        ],
+        "requiredOnIngress": true,
+        "defaultValue": "110 V",
+        "dataType": "select",
+        "createdAt": "2020-05-01T06:00:00.000Z",
+        "createdBy": "LA7ZL85MU7ML",
+        "updatedAt": "2020-05-01T06:00:00.000Z",
+        "updatedBy": "LA7ZL85MU7ML",
+        "isActive": true,
+        "version": 7,
+        "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+        "name": "ca1",
+        "values": [
+          {
+            "id": "fd0e4a00-26df-454e-8fba-e76652aa55b4",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 8,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "customAttributeId": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+            "displayName": "110 V"
+          },
+          {
+            "id": "582eac28-f4e4-475d-b38c-fd57997c9cc6",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 9,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "customAttributeId": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+            "displayName": "220 V"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories/124/custom-attributes/3063f212-6ce9-494e-b749-eb73b4445bf0?includeInherited=true' \\\n     -X 'PUT' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT'"
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"limit\": 25,\n    \"offset\": 0,\n    \"totalResults\": 1\n  },\n  \"results\": [\n    {\n      \"id\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n      \"displayName\": \"Voltage\",\n      \"description\": \"Voltage of the electrical asset\",\n      \"enumValues\": [\n        \"110 V\",\n        \"220 V\"\n      ],\n      \"requiredOnIngress\": true,\n      \"defaultValue\": \"110 V\",\n      \"dataType\": \"select\",\n      \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n      \"createdBy\": \"LA7ZL85MU7ML\",\n      \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n      \"updatedBy\": \"LA7ZL85MU7ML\",\n      \"isActive\": true,\n      \"version\": 7,\n      \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n      \"name\": \"ca1\",\n      \"values\": [\n        {\n          \"id\": \"fd0e4a00-26df-454e-8fba-e76652aa55b4\",\n          \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n          \"createdBy\": \"LA7ZL85MU7ML\",\n          \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n          \"updatedBy\": \"LA7ZL85MU7ML\",\n          \"isActive\": true,\n          \"version\": 8,\n          \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n          \"customAttributeId\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n          \"displayName\": \"110 V\"\n        },\n        {\n          \"id\": \"582eac28-f4e4-475d-b38c-fd57997c9cc6\",\n          \"createdAt\": \"2020-05-01T06:00:00.000Z\",\n          \"createdBy\": \"LA7ZL85MU7ML\",\n          \"updatedAt\": \"2020-05-01T06:00:00.000Z\",\n          \"updatedBy\": \"LA7ZL85MU7ML\",\n          \"isActive\": true,\n          \"version\": 9,\n          \"projectId\": \"f6a1e3b5-abaa-4b01-b33a-5d55f36ba047\",\n          \"customAttributeId\": \"3063f212-6ce9-494e-b749-eb73b4445bf0\",\n          \"displayName\": \"220 V\"\n        }\n      ],\n      \"inheritedFromCategoryId\": \"124\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "limit": 25,
+          "offset": 0,
+          "totalResults": 1
+        },
+        "results": [
+          {
+            "id": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+            "displayName": "Voltage",
+            "description": "Voltage of the electrical asset",
+            "enumValues": [
+              "110 V",
+              "220 V"
+            ],
+            "requiredOnIngress": true,
+            "defaultValue": "110 V",
+            "dataType": "select",
+            "createdAt": "2020-05-01T06:00:00.000Z",
+            "createdBy": "LA7ZL85MU7ML",
+            "updatedAt": "2020-05-01T06:00:00.000Z",
+            "updatedBy": "LA7ZL85MU7ML",
+            "isActive": true,
+            "version": 7,
+            "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+            "name": "ca1",
+            "values": [
+              {
+                "id": "fd0e4a00-26df-454e-8fba-e76652aa55b4",
+                "createdAt": "2020-05-01T06:00:00.000Z",
+                "createdBy": "LA7ZL85MU7ML",
+                "updatedAt": "2020-05-01T06:00:00.000Z",
+                "updatedBy": "LA7ZL85MU7ML",
+                "isActive": true,
+                "version": 8,
+                "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+                "customAttributeId": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+                "displayName": "110 V"
+              },
+              {
+                "id": "582eac28-f4e4-475d-b38c-fd57997c9cc6",
+                "createdAt": "2020-05-01T06:00:00.000Z",
+                "createdBy": "LA7ZL85MU7ML",
+                "updatedAt": "2020-05-01T06:00:00.000Z",
+                "updatedBy": "LA7ZL85MU7ML",
+                "isActive": true,
+                "version": 9,
+                "projectId": "f6a1e3b5-abaa-4b01-b33a-5d55f36ba047",
+                "customAttributeId": "3063f212-6ce9-494e-b749-eb73b4445bf0",
+                "displayName": "220 V"
+              }
+            ],
+            "inheritedFromCategoryId": "124"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/assets/v1/projects/f6a1e3b5-abaa-4b01-b33a-5d55f36ba047/categories/124/relationships' \\\n     -X 'POST' \\\n     -H 'Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT' \\\n     -H 'Content-Type: application/json' \\\n     -d '{\n           \"entities\": [\n             {\n               \"id\": \"214891\",\n               \"type\": \"checklisttemplate\"\n             }\n           ]\n         }'",
+      "parsed": {
+        "entities": [
+          {
+            "id": "214891",
+            "type": "checklisttemplate"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"52d7cecf-9f88-4aa2-b725-a6e09a0bc549\",\n    \"createdOn\": \"2020-05-01T06:00:00.000Z\",\n    \"isReadOnly\": false,\n    \"isService\": false,\n    \"isDeleted\": false,\n    \"entities\": [\n      {\n        \"id\": \"124\",\n        \"type\": \"category\",\n        \"domain\": \"autodesk-bim360-asset\",\n        \"createdOn\": \"2020-05-01T06:00:00.000Z\"\n      },\n      {\n        \"id\": \"214891\",\n        \"type\": \"checklisttemplate\",\n        \"domain\": \"autodesk-bim360-checklist\",\n        \"createdOn\": \"2020-05-01T06:00:00.000Z\"\n      }\n    ]\n  }",
+      "parsed": {
+        "id": "52d7cecf-9f88-4aa2-b725-a6e09a0bc549",
+        "createdOn": "2020-05-01T06:00:00.000Z",
+        "isReadOnly": false,
+        "isService": false,
+        "isDeleted": false,
+        "entities": [
+          {
+            "id": "124",
+            "type": "category",
+            "domain": "autodesk-bim360-asset",
+            "createdOn": "2020-05-01T06:00:00.000Z"
+          },
+          {
+            "id": "214891",
+            "type": "checklisttemplate",
+            "domain": "autodesk-bim360-checklist",
+            "createdOn": "2020-05-01T06:00:00.000Z"
+          }
+        ]
+      }
+    }
+  ]
+}

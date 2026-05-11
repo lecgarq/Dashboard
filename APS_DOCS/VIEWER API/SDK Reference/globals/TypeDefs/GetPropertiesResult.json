@@ -1,0 +1,33 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/GetPropertiesResult",
+    "scrapedAt": "2026-05-08T18:49:26.440Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "GetPropertiesResult",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dbIdnumber",
+          "col_1": "the id passed into getProperties function."
+        },
+        {
+          "col_0": "externalIdstring",
+          "col_1": "an identifier that can be used in the un-translated version of the model. Can be used for desktop application integrations."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The element’s name."
+        },
+        {
+          "col_0": "propertiesArray.<PropertyResult>",
+          "col_1": "list of associated properties"
+        }
+      ]
+    }
+  ]
+}

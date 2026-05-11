@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/basics/thumbnail_generation",
+    "scrapedAt": "2026-05-08T18:21:18.055Z",
+    "category": "Developer Guide/basics",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Generate Thumbnails",
+  "codeExamples": [
+    {
+      "raw": "const rawName = response.headers.get('x-ads-name');\nconst encoding = response.headers.get('x-ads-name-encoding');\n\nconst filename =\n    encoding === 'url-encoded' && rawName !== null\n        ? decodeURIComponent(rawName)\n        : rawName;"
+    },
+    {
+      "raw": "import urllib.parse\n\nraw_name = response.headers.get('x-ads-name')\nencoding = response.headers.get('x-ads-name-encoding')\n\nfilename = (\n    urllib.parse.unquote(raw_name, encoding='utf-8')\n    if encoding == 'url-encoded' and raw_name is not None\n    else raw_name\n)"
+    },
+    {
+      "raw": "string? rawName = null;\nstring? encoding = null;\n\nif (response.Headers.TryGetValues(\"x-ads-name\", out var nameValues))\n    rawName = nameValues.FirstOrDefault();\n\nif (response.Headers.TryGetValues(\"x-ads-name-encoding\", out var encodingValues))\n    encoding = encodingValues.FirstOrDefault();\n\nvar filename =\n    encoding == \"url-encoded\" && rawName is not null\n        ? Uri.UnescapeDataString(rawName)\n        : rawName;"
+    }
+  ]
+}

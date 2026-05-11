@@ -1,0 +1,114 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk",
+    "scrapedAt": "2026-05-08T18:24:50.927Z",
+    "category": "SDK Reference",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": ".NET SDK Reference",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Namespace:",
+          "col_1": "Autodesk.ModelDerivativeApi"
+        },
+        {
+          "col_0": "Assembly:",
+          "col_1": "Autodesk.ModelDerivativeApi.dll"
+        },
+        {
+          "col_0": "Version:",
+          "col_1": "1.0.0"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Operation Category",
+        "Operation",
+        "Method",
+        "HTTP Request"
+      ],
+      "rows": [
+        {
+          "Operation Category": "Derivatives",
+          "Operation": "Fetch Derivative Download URL",
+          "Method": "GetDerivativeUrlAsync",
+          "HTTP Request": "GET /{urn}/manifest/{derivativeUrn}/signedcookies"
+        },
+        {
+          "Operation Category": "Check Derivative Details",
+          "Operation": "HeadCheckDerivativeAsync",
+          "Method": "HEAD /{urn}/manifest/{derivativeUrn}"
+        },
+        {
+          "Operation Category": "Informational",
+          "Operation": "List Supported Formats",
+          "Method": "GetFormatsAsync",
+          "HTTP Request": "GET /formats"
+        },
+        {
+          "Operation Category": "Jobs",
+          "Operation": "Start a Translation Job",
+          "Method": "StartJobAsync",
+          "HTTP Request": "POST /job"
+        },
+        {
+          "Operation Category": "Specify References",
+          "Operation": "SpecifyReferencesAsync",
+          "Method": "POST /{urn}/references"
+        },
+        {
+          "Operation Category": "Manifest",
+          "Operation": "Fetch Manifest",
+          "Method": "GetManifestAsync",
+          "HTTP Request": "GET /{urn}/manifest"
+        },
+        {
+          "Operation Category": "Delete Manifest",
+          "Operation": "DeleteManifestAsync",
+          "Method": "DELETE /{urn}/manifest"
+        },
+        {
+          "Operation Category": "Metadata",
+          "Operation": "List Model Views",
+          "Method": "GetModelViewsAsync",
+          "HTTP Request": "GET /{urn}/metadata"
+        },
+        {
+          "Operation Category": "Fetch Object Tree",
+          "Operation": "GetObjectTreeAsync",
+          "Method": "GET /{urn}/metadata/{modelGuid}"
+        },
+        {
+          "Operation Category": "Fetch All Properties",
+          "Operation": "GetAllPropertiesAsync",
+          "Method": "GET /{urn}/metadata/{modelGuid}/properties"
+        },
+        {
+          "Operation Category": "Fetch Specific Properties",
+          "Operation": "FetchSpecificPropertiesAsync",
+          "Method": "POST /{urn}/metadata/{modelGuid}/properties:query"
+        },
+        {
+          "Operation Category": "Thumbnails",
+          "Operation": "Fetch Thumbnail",
+          "Method": "GetThumbnailAsync",
+          "HTTP Request": "GET /{urn}/thumbnail"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "dotnet add package Autodesk.ModelDerivative"
+    },
+    {
+      "raw": "class ModelDerivative\n{\n    string? token = Environment.GetEnvironmentVariable(\"token\");\n    string? urn = Environment.GetEnvironmentVariable(\"urn\");\n\n    ModelDerivativeClient modelDerivativeClient = null!;\n\n    public void Initialise()\n    {\n        // Instantiate SDK manager as below.\n        // You can also optionally pass configurations, logger, etc.\n        SDKManager sdkManager = SdkManagerBuilder\n            .Create() // Creates SDK Manager Builder itself.\n            .Build();\n\n        // Instantiate ModelDerivativeClient using the created SDK manager\n        modelDerivativeClient = new ModelDerivativeClient(sdkManager);\n    }\n\n    #region Jobs\n    // Post Job\n    public async Task StartJobAsync()\n    {\n        // set output formats\n        List<IJobPayloadFormat> payloadFormats = new List<IJobPayloadFormat>()\n        {\n            // initialising an Svf2 output class will automatically set the type to Svf2.\n            new JobPayloadFormatSVF2()\n            {\n                Views = new List<View>()\n                {\n                    View._2d,\n                    View._3d\n                },\n                Advanced = new JobPayloadFormatSVF2AdvancedRVT()\n                {\n                    GenerateMasterViews = true\n                }\n            },\n\n            // initialising a Thumbnail output class will automatically set the type to Thumbnail.\n            new JobPayloadFormatThumbnail()\n            {\n                Advanced = new JobPayloadFormatAdvancedThumbnail()\n                {\n                    Width = Width.NUMBER_100, // enum changed to only 100\n                    Height = Height.NUMBER_100\n                }\n            }\n        };\n\n        // specify Job details\n        JobPayload Job = new JobPayload()\n        {\n            Input = new JobPayloadInput()\n            {\n                Urn = urn,\n                CompressedUrn = false,\n                RootFilename = \"<fileName>\",\n            },\n            Output = new JobPayloadOutput()\n            {\n                Formats = payloadFormats,\n                // Destination is obsolete. Use the region header instead.\n                // Destination = new JobPayloadOutputDestination() { Region = Region.US } // This will call the respective endpoint - Either US or EMEA. Defaults to US.\n            },\n        };\n\n        // start the translation job\n        try\n        {\n            Job jobResponse = await modelDerivativeClient.StartJobAsync(jobPayload: Job, accessToken: token, region: Region.US);\n            // query for urn, result etc...\n            string jobUrn = jobResponse.Urn;\n            string jobResult = jobResponse.Result;\n        }\n        catch (ModelDerivativeApiException ex)\n        {\n            Console.WriteLine(ex.Message);\n        }\n    }\n}"
+    }
+  ]
+}

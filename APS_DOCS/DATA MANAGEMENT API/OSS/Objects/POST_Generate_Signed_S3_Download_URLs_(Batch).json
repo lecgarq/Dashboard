@@ -1,0 +1,135 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/data/v2/reference/http/buckets-:bucketKey-objects-batchsigneds3download-POST",
+    "scrapedAt": "2026-05-08T16:28:52.375Z",
+    "category": "OSS/Objects"
+  },
+  "title": "oss/v2/buckets/{bucketKey}/objects/batchsigneds3download",
+  "httpMethod": null,
+  "endpointUrl": "/oss/v2/buckets/apptestbucket/objects/batchsigneds3download",
+  "description": null,
+  "requestExample": "curl\n  -X POST\n  -H \"Authorization=Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi\"\n  -H \"Content-Type=application/json;charset=UTF-8\";\n  --data '{\n    \"requests\": [{\n      \"objectKey\": \"someObject.dat\",\n      \"If-Modified-Since\": \"Wed, 15 Jan 2021 00:00:00 GMT\"\n    },{\n      \"objectKey\": \"someOtherObject.pdf\",\n      \"If-None-Match\": \"5ca0855e5758a92dd9ffdaba5fc974c1ae6a0267\"\n    },{\n      \"objectKey\": \"some-invalid-content-object.html\",\n      \"response-content-type\": \"text/html\",\n      \"response-content-disposition\": \"inline\"\n    },{\n      \"objectKey\": \"some-valid-object.text\",\n      \"response-content-type\": \"text\"\n    },{\n      \"objectKey\": \"unmerged-object.json\"\n    }]\n  }'\n  https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/batchsigneds3download\n\ncurl\n  -X POST\n  -H \"Authorization=Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi\"\n  -H \"Content-Type=application/json;charset=UTF-8\";\n  --data '{\n    \"requests\": [{\n      \"objectKey\": \"someObject.dat\",\n      \"If-Modified-Since\": \"Wed, 15 Jan 2021 00:00:00 GMT\"\n    },{\n      \"objectKey\": \"someOtherObject.pdf\",\n      \"If-None-Match\": \"5ca0855e5758a92dd9ffdaba5fc974c1ae6a0267\"\n    },{\n      \"objectKey\": \"some-invalid-content-object.html\",\n      \"response-content-type\": \"text/html\",\n      \"response-content-disposition\": \"inline\"\n    },{\n      \"objectKey\": \"some-valid-object.text\",\n      \"response-content-type\": \"text\"\n    },{\n      \"objectKey\": \"unmerged-object.json\"\n    }]\n  }'\n  https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/batchsigneds3download?public-resource-fallback=true\n\ncurl\n  -X POST\n  -H \"Authorization=Bearer eYeL5gYxAT2j3u9TEerxoJoToNbi\"\n  -H \"Content-Type=application/json;charset=UTF-8\";\n  --data '{\n    \"requests\": [{\n      \"objectKey\": \"someObject.dat\",\n      \"If-Modified-Since\": \"Wed, 15 Jan 2021 00:00:00 GMT\"\n    },{\n      \"objectKey\": \"someOtherObject.pdf\",\n      \"If-None-Match\": \"5ca0855e5758a92dd9ffdaba5fc974c1ae6a0267\"\n    },{\n      \"objectKey\": \"some-invalid-content-object.html\",\n      \"response-content-type\": \"text/html\",\n      \"response-content-disposition\": \"inline\"\n    },{\n      \"objectKey\": \"some-valid-object.text\",\n      \"response-content-type\": \"text\"\n    },{\n      \"objectKey\": \"unmerged-object.json\"\n    }]\n  }'\n  https://developer.api.autodesk.com/oss/v2/buckets/apptestbucket/objects/batchsigneds3download?minutesExpiration=60",
+  "responseExample": "{\n    \"results\": {\n        \"someObject.dat\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"someOtherObject.pdf\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"some-invalid-content-object.html\": {\n            \"status\": \"error\",\n            \"reason\": \"Inline executable content not allowed\",\n            \"params\": {\n                \"content-type\": \"text/html\",\n                \"content-disposition\": \"inline\"\n            }\n        },\n        \"some-valid-object.text\": {\n            \"status\": \"complete\",\n            \"url\": \"https://oss-bucket.s3.amazonaws.com/07ce8529-a8e6-4dac-98c3-95e2d10f19cd/bucket/apptestbucket/object/some-valid-object.text?response-content-disposition=attachment%3B%20filename%3D%22some-valid-object.text%22&response-content-type=text&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=120&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\",\n            \"params\": {\n                \"content-type\": \"text\",\n                \"content-disposition\": \"attachment; filename=\\\"some-valid-object.text\\\"\"\n            },\n            \"size\": 1024334,\n            \"sha1\": \"2ae00660a78c643453fac826f288c774c789de64\"\n        },\n        \"unmerged-object.json\": {\n            \"status\": \"chunked\",\n            \"urls\": {\n                \"0-10747471\": \"https://oss-bucket.s3.amazonaws.com/ead4b508f5a502b9251d16b640128ad83af7e4ba/bucket/apptestbucket/chunk-uuid/uuid-fcdf6275-8789-472f-b811-5472c9262ffc?response-content-disposition=attachment%3B%20filename%3D%22unmerged-object.json%22&response-content-type=application%2Fjson&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=120&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\",\n                \"10747472-19715186\": \"https://oss-bucket.s3.amazonaws.com/ead4b508f5a502b9251d16b640128ad83af7e4ba/bucket/apptestbucket/chunk-uuid/uuid-cc685997-7afa-4dd3-ada3-71390a973bc5?response-content-disposition=attachment%3B%20filename%3D%22unmerged-object.json%22&response-content-type=application%2Fjson&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=120&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\"\n            },\n            \"params\": {\n                \"content-type\": \"application/json\",\n                \"content-disposition\": \"attachment; filename=\\\"unmerged-object.json\\\"\"\n            },\n            \"size\": 19715187\n        }\n    }\n}\n\n{\n    \"results\": {\n        \"someObject.dat\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"someOtherObject.pdf\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"some-invalid-content-object.html\": {\n            \"status\": \"error\",\n            \"reason\": \"Inline executable content not allowed\",\n            \"params\": {\n                \"content-type\": \"text/html\",\n                \"content-disposition\": \"inline\"\n            }\n        },\n        \"some-valid-object.text\": {\n            \"status\": \"complete\",\n            \"url\": \"https://oss-bucket.s3.amazonaws.com/07ce8529-a8e6-4dac-98c3-95e2d10f19cd/bucket/apptestbucket/object/some-valid-object.text?response-content-disposition=attachment%3B%20filename%3D%22some-valid-object.text%22&response-content-type=text&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=120&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\",\n            \"params\": {\n                \"content-type\": \"text\",\n                \"content-disposition\": \"attachment; filename=\\\"some-valid-object.text\\\"\"\n            },\n            \"size\": 1024334,\n            \"sha1\": \"2ae00660a78c643453fac826f288c774c789de64\"\n        },\n        \"unmerged-object.json\": {\n            \"status\": \"fallback\",\n            \"url\": \"http://developer.api.autodesk.com/oss/v2/signedresources/09e24d80-f7ef-4535-8ce7-f08f5c6916f9?region=US\",\n            \"params\": {\n                \"content-type\": \"application/json\",\n                \"content-disposition\": \"attachment; filename=\\\"unmerged-object.json\\\"\"\n            },\n            \"size\": 19715187\n        }\n    }\n}\n\n{\n    \"results\": {\n        \"someObject.dat\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"someOtherObject.pdf\": {\n            \"status\": \"skipped\",\n            \"reason\": \"Not modified\"\n        },\n        \"some-invalid-content-object.html\": {\n            \"status\": \"error\",\n            \"reason\": \"Inline executable content not allowed\",\n            \"params\": {\n                \"content-type\": \"text/html\",\n                \"content-disposition\": \"inline\"\n            }\n        },\n        \"some-valid-object.text\": {\n            \"status\": \"complete\",\n            \"url\": \"https://oss-bucket.s3.amazonaws.com/07ce8529-a8e6-4dac-98c3-95e2d10f19cd/bucket/apptestbucket/object/some-valid-object.text?response-content-disposition=attachment%3B%20filename%3D%22some-valid-object.text%22&response-content-type=text&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\",\n            \"params\": {\n                \"content-type\": \"text\",\n                \"content-disposition\": \"attachment; filename=\\\"some-valid-object.text\\\"\"\n            },\n            \"size\": 1024334,\n            \"sha1\": \"2ae00660a78c643453fac826f288c774c789de64\"\n        },\n        \"unmerged-object.json\": {\n            \"status\": \"chunked\",\n            \"urls\": {\n                \"0-10747471\": \"https://oss-bucket.s3.amazonaws.com/ead4b508f5a502b9251d16b640128ad83af7e4ba/bucket/apptestbucket/chunk-uuid/uuid-fcdf6275-8789-472f-b811-5472c9262ffc?response-content-disposition=attachment%3B%20filename%3D%22unmerged-object.json%22&response-content-type=application%2Fjson&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\",\n                \"10747472-19715186\": \"https://oss-bucket.s3.amazonaws.com/ead4b508f5a502b9251d16b640128ad83af7e4ba/bucket/apptestbucket/chunk-uuid/uuid-cc685997-7afa-4dd3-ada3-71390a973bc5?response-content-disposition=attachment%3B%20filename%3D%22unmerged-object.json%22&response-content-type=application%2Fjson&X-Amz-Security-Token=AWS_TOKEN&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20210120T152914Z&X-Amz-SignedHeaders=host&X-Amz-Expires=3600&X-Amz-Credential=[AMZ CREDENTIAL]&X-Amz-Signature=6c1abf52e7849asignature\"\n            },\n            \"params\": {\n                \"content-type\": \"application/json\",\n                \"content-disposition\": \"attachment; filename=\\\"unmerged-object.json\\\"\"\n            },\n            \"size\": 19715187\n        }\n    }\n}",
+  "responseCodes": [
+    {
+      "col_0": "Method and URI",
+      "col_1": "POST https://developer.api.autodesk.com/oss/v2/buckets/{bucketKey}/objects/batchsigneds3download"
+    },
+    {
+      "col_0": "Authentication Context",
+      "col_1": "App only"
+    },
+    {
+      "col_0": "Required OAuth Scopes",
+      "col_1": "data:read"
+    },
+    {
+      "col_0": "Data Format",
+      "col_1": "JSON"
+    },
+    {
+      "col_0": "Authorization*string",
+      "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow."
+    },
+    {
+      "col_0": "Content-Type*string",
+      "col_1": "Must be application/json"
+    },
+    {
+      "col_0": "bucketKeystring",
+      "col_1": "The bucket key of the bucket that contains the objects you are operating on."
+    },
+    {
+      "col_0": "public-resource-fallbackboolean",
+      "col_1": "Specifies how to return the signed URLs, in case the object was uploaded in chunks, and assembling of chunks is not yet complete.\n\ntrue : Return a single signed OSS URL.\nfalse : (Default) Return multiple signed S3 URLs, where each URL points to a chunk."
+    },
+    {
+      "col_0": "minutesExpirationint",
+      "col_1": "The time window (in minutes) the signed URL will remain usable. Acceptable values = 1-60 minutes. Default = 2 minutes.\nTip: Use the smallest possible time window to minimize exposure of the signed URL."
+    },
+    {
+      "col_0": "requests*array: object",
+      "col_1": "An array where each element is an object containing information needed to generate a signed S3 download URL."
+    },
+    {
+      "col_0": "objectKeystring",
+      "col_1": "The URL-encoded human friendly name of the object to download."
+    },
+    {
+      "col_0": "response-content-typestring",
+      "col_1": "The value of the Content-Type header you want to receive when you download the object using the signed URL. If you do not specify a value, the Content-Type header defaults to the value stored with OSS."
+    },
+    {
+      "col_0": "response-content-dispositionstring",
+      "col_1": "The value of the Content-Disposition header you want to receive when you download the object using the signed URL. If you do not specify a value, the Content-Disposition header defaults to the value stored with OSS."
+    },
+    {
+      "col_0": "response-cache-controlstring",
+      "col_1": "The value of the Cache-Control header you want to receive when you download the object using the signed URL. If you do not specify a value, the Cache-Control header defaults to the value stored with OSS."
+    },
+    {
+      "col_0": "If-None-Matchstring",
+      "col_1": "The last known ETag value of the object. OSS returns the signed URL only if the If-None-Match header differs from the ETag value of the object on S3. If not, it returns a 304 “Not Modified” HTTP status."
+    },
+    {
+      "col_0": "If-Modified-Sincestring",
+      "col_1": "A timestamp in the HTTP date format (Mon, DD Month YYYY HH:MM:SS GMT). A signed URL is returned only if the object has been modified since the specified timestamp. If not, a 304 (Not Modified) HTTP status is returned."
+    },
+    {
+      "col_0": "200OK",
+      "col_1": "The request was successfully processed. The response body will contain objects that indicate the outcome for each object signed URLs were requested for. Objects corresponding to successful request will contain signed URLs. Objects corresponding to failed requests will contain details of the failure."
+    },
+    {
+      "col_0": "400Bad Request",
+      "col_1": "The request could not be processed due to missing or malformed parameters."
+    },
+    {
+      "col_0": "401Unauthorized",
+      "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+    },
+    {
+      "col_0": "403Forbidden",
+      "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+    },
+    {
+      "col_0": "404Not Found",
+      "col_1": "The specified object or bucket does not exist."
+    },
+    {
+      "col_0": "500Internal Server Error",
+      "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+    },
+    {
+      "col_0": "resultsobject",
+      "col_1": "A map of the returned results; each key in the map corresponds to an object key in the batch, and the value includes the results for that object."
+    },
+    {
+      "col_0": "*object",
+      "col_1": "An object that represents the response to a Batch Generate Signed S3 Download URLs operation.\nNote: objectKeyN is a placeholder for the first object key for which the client requested a download signed URL. The attributes within contain the success data / error information for the request for that object. results will contain one such attribute for each requested object in the batch."
+    },
+    {
+      "col_0": "statusenum:string",
+      "col_1": "Indicates the current state of the object requested for download. Possible values are:\n\ncomplete - The object is ready to be downloaded.\nchunked - The object was uploaded in chunks, but assembly of chunks into the final object is still pending. Returned when public-resource-fallback = false in the request.\nfallback - The object was uploaded in chunks, but assembly of chunks into the final object is still pending. Will return an OSS Signed URL instead of a S3 signed URL because public-resource-fallback was set to true in the request.\nskipped - The server has evaluated an If-None-Match or If-Modified-Since parameter in the request and determined that the cached version of the object is still up-to-date.\nerror - There was an error in the request. Review and verify the requested bucketKey, content-type, and content-disposition before you try again."
+    },
+    {
+      "col_0": "urlstring",
+      "col_1": "A S3 signed URL with which to download the object. This attribute is returned when status is complete or fallback; in the latter case, this will return an OSS signed URL, not an S3 signed URL."
+    },
+    {
+      "col_0": "urlsobject",
+      "col_1": "A map of S3 signed URLs, one for each chunk of an unmerged resumable upload. This attribute is returned when status is chunked. The key of each entry is the byte range of the total file which the chunk comprises."
+    },
+    {
+      "col_0": "paramsobject",
+      "col_1": "The values that were requested for the following parameters when requesting the S3 signed URL.\n\nContent-Type\nContent-Disposition\nCache-Control."
+    },
+    {
+      "col_0": "sizeint",
+      "col_1": "The total amount of storage space occupied by the object, in bytes."
+    },
+    {
+      "col_0": "sha1string",
+      "col_1": "A hash value computed from the data of the object, if available."
+    }
+  ]
+}

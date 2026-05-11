@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedOBJAdvanced",
+    "scrapedAt": "2026-05-08T18:25:56.626Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatAdvancedOBJAdvanced",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatAdvancedOBJAdvanced"
+    },
+    {
+      "raw": "public JobPayloadFormatAdvancedOBJAdvanced()"
+    },
+    {
+      "raw": "[DataMember(Name = \"exportFileStructure\", EmitDefaultValue = true)]\npublic ExportFileStructure ExportFileStructure { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"modelGuid\", EmitDefaultValue = false)]\npublic string ModelGuid { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"objectIds\", EmitDefaultValue = false)]\npublic List<int?> ObjectIds { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"unit\", EmitDefaultValue = true)]\npublic Unit Unit { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

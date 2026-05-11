@@ -1,0 +1,182 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/reviews/reviews-query-review-resources",
+    "scrapedAt": "2026-05-08T23:44:47.030Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Inspect a Review",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/reviews/4e609369-e950-4097-b7d3-e6cf1c3c5415/versions?limit=10&offset=0",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/reviews/4e609369-e950-4097-b7d3-e6cf1c3c5415/versions?limit=10&offset=0' \\\n  -X GET \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"name\": \"3rd Floor 3D Models.pdf\",\n      \"urn\": \"urn:adsk.wipprod:fs.file:vf.Vl6kgO55TuWoHy9EbXAAaQ?version=1\",\n      \"itemUrn\": \"urn:adsk.wipprod:dm.lineage:Vl6kgO55TuWoHy9EbXAAaQ\",\n      \"approveStatus\": null,\n      \"reviewContent\": {\n        \"name\": \"3rd Floor 3D Models (shared).pdf\",\n        \"customAttributes\": [{\n          \"id\": 10272,\n          \"type\": \"string\",\n          \"name\": \"Reference Document Number\",\n          \"value\": \"X-3910-3DWA\"\n        }]\n      },\n      \"copiedFileVersionUrn\": null\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 1,\n    \"nextUrl\": \"\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "name": "3rd Floor 3D Models.pdf",
+            "urn": "urn:adsk.wipprod:fs.file:vf.Vl6kgO55TuWoHy9EbXAAaQ?version=1",
+            "itemUrn": "urn:adsk.wipprod:dm.lineage:Vl6kgO55TuWoHy9EbXAAaQ",
+            "approveStatus": null,
+            "reviewContent": {
+              "name": "3rd Floor 3D Models (shared).pdf",
+              "customAttributes": [
+                {
+                  "id": 10272,
+                  "type": "string",
+                  "name": "Reference Document Number",
+                  "value": "X-3910-3DWA"
+                }
+              ]
+            },
+            "copiedFileVersionUrn": null
+          }
+        ],
+        "pagination": {
+          "limit": 10,
+          "offset": 0,
+          "totalResults": 1,
+          "nextUrl": ""
+        }
+      }
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"name\": \"3rd Floor 3D Models.pdf\",\n      \"urn\": \"urn:adsk.wipprod:fs.file:vf.Vl6kgO55TuWoHy9EbXAAaQ?version=1\",\n      \"itemUrn\": \"urn:adsk.wipprod:dm.lineage:Vl6kgO55TuWoHy9EbXAAaQ\",\n      \"approveStatus\": {\n        \"id\": \"f44e623d-f04f-47fe-8195-efc43d1d985b\",\n        \"label\": \"Approved\",\n        \"value\": \"APPROVED\"\n      },\n      \"reviewContent\": {\n        \"name\": \"3rd Floor 3D Models (shared).pdf\",\n        \"customAttributes\": [{\n          \"id\": 10272,\n          \"type\": \"string\",\n          \"name\": \"Reference Document Number\",\n          \"value\": \"X-3910-3DWA\"\n        }]\n      },\n      \"copiedFileVersionUrn\": \"urn:adsk.wipprod:fs.file:vf.JsWkC5LaR-6GGrx2GExVTg?version=1\"\n    },\n    {\n      \"name\": \"4th Floor 3D Models.pdf\",\n      \"urn\": \"urn:adsk.wipprod:fs.file:vf.oYonmqDTS8KXyZ2-tI38-g?version=1\",\n      \"itemUrn\": \"urn:adsk.wipprod:dm.lineage:oYonmqDTS8KXyZ2-tI38-g\",\n      \"approveStatus\": {\n        \"id\": \"b2a3c3b7-4fef-40a4-868b-981b23e7182f\",\n        \"label\": \"Rejected\",\n        \"value\": \"REJECTED\"\n      },\n      \"reviewContent\": {\n        \"name\": \"3rd Floor 3D Models (shared).pdf\",\n        \"customAttributes\": [{\n          \"id\": 10272,\n          \"type\": \"string\",\n          \"name\": \"Reference Document Number\",\n          \"value\": \"X-4270-3DWB\"\n        }]\n      },\n      \"copiedFileVersionUrn\": null\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 2,\n    \"nextUrl\": \"\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "name": "3rd Floor 3D Models.pdf",
+            "urn": "urn:adsk.wipprod:fs.file:vf.Vl6kgO55TuWoHy9EbXAAaQ?version=1",
+            "itemUrn": "urn:adsk.wipprod:dm.lineage:Vl6kgO55TuWoHy9EbXAAaQ",
+            "approveStatus": {
+              "id": "f44e623d-f04f-47fe-8195-efc43d1d985b",
+              "label": "Approved",
+              "value": "APPROVED"
+            },
+            "reviewContent": {
+              "name": "3rd Floor 3D Models (shared).pdf",
+              "customAttributes": [
+                {
+                  "id": 10272,
+                  "type": "string",
+                  "name": "Reference Document Number",
+                  "value": "X-3910-3DWA"
+                }
+              ]
+            },
+            "copiedFileVersionUrn": "urn:adsk.wipprod:fs.file:vf.JsWkC5LaR-6GGrx2GExVTg?version=1"
+          },
+          {
+            "name": "4th Floor 3D Models.pdf",
+            "urn": "urn:adsk.wipprod:fs.file:vf.oYonmqDTS8KXyZ2-tI38-g?version=1",
+            "itemUrn": "urn:adsk.wipprod:dm.lineage:oYonmqDTS8KXyZ2-tI38-g",
+            "approveStatus": {
+              "id": "b2a3c3b7-4fef-40a4-868b-981b23e7182f",
+              "label": "Rejected",
+              "value": "REJECTED"
+            },
+            "reviewContent": {
+              "name": "3rd Floor 3D Models (shared).pdf",
+              "customAttributes": [
+                {
+                  "id": 10272,
+                  "type": "string",
+                  "name": "Reference Document Number",
+                  "value": "X-4270-3DWB"
+                }
+              ]
+            },
+            "copiedFileVersionUrn": null
+          }
+        ],
+        "pagination": {
+          "limit": 10,
+          "offset": 0,
+          "totalResults": 2,
+          "nextUrl": ""
+        }
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/reviews/4e609369-e950-4097-b7d3-e6cf1c3c5415/workflow' \\\n  -X GET \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"id\": \"3f8f0b2d-7b0b-4e4c-928a-87e42c1ff55a\",\n  \"name\": \"Drawing Review Workflow\",\n  \"steps\": [\n    {\n      \"id\": \"INITIATOR\",\n      \"candidates\": [\n        {\n          \"autodeskId\": \"U5XCJQ22TL8G\",\n          \"name\": \"Alex Johnson\"\n        }\n      ]\n    },\n    {\n      \"id\": \"REVIEWER\",\n      \"candidates\": [\n        {\n          \"autodeskId\": \"V6YCJR34AB2D\",\n          \"name\": \"Maria Lee\"\n        }\n      ]\n    },\n    {\n      \"id\": \"APPROVER\",\n      \"candidates\": [\n        {\n          \"autodeskId\": \"W7ZDKE56CF3F\",\n          \"name\": \"Chris Smith\"\n        }\n      ]\n    }\n  ]\n}",
+      "parsed": {
+        "id": "3f8f0b2d-7b0b-4e4c-928a-87e42c1ff55a",
+        "name": "Drawing Review Workflow",
+        "steps": [
+          {
+            "id": "INITIATOR",
+            "candidates": [
+              {
+                "autodeskId": "U5XCJQ22TL8G",
+                "name": "Alex Johnson"
+              }
+            ]
+          },
+          {
+            "id": "REVIEWER",
+            "candidates": [
+              {
+                "autodeskId": "V6YCJR34AB2D",
+                "name": "Maria Lee"
+              }
+            ]
+          },
+          {
+            "id": "APPROVER",
+            "candidates": [
+              {
+                "autodeskId": "W7ZDKE56CF3F",
+                "name": "Chris Smith"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/construction/reviews/v1/projects/9ba6681e-1952-4d54-aac4-9de6d9858dd4/reviews/4e609369-e950-4097-b7d3-e6cf1c3c5415/progress?limit=10&offset=0' \\\n  -X GET \\\n  -H 'x-user-id: U5XCJQ22TL8G' \\\n  -H 'Authorization: Bearer <ACCESS_TOKEN>' \\\n  -H 'Content-Type: application/json'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"stepId\": \"REVIEWER\",\n      \"stepName\": \"Reviewer\",\n      \"claimedBy\": {\n        \"autodeskId\": \"V6YCJR34AB2D\",\n        \"name\": \"Maria Lee\"\n      },\n      \"actionBy\": {\n        \"autodeskId\": \"V6YCJR34AB2D\",\n        \"name\": \"Maria Lee\"\n      },\n      \"status\": \"SUBMITTED\",\n      \"endTime\": \"2025-09-10T12:30:45Z\",\n      \"notes\": \"Reviewed and approved.\",\n      \"candidates\": {\n        \"users\": [\n          {\n            \"autodeskId\": \"V6YCJR34AB2D\",\n            \"name\": \"Maria Lee\"\n          }\n        ]\n      }\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 1,\n    \"nextUrl\": \"\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "stepId": "REVIEWER",
+            "stepName": "Reviewer",
+            "claimedBy": {
+              "autodeskId": "V6YCJR34AB2D",
+              "name": "Maria Lee"
+            },
+            "actionBy": {
+              "autodeskId": "V6YCJR34AB2D",
+              "name": "Maria Lee"
+            },
+            "status": "SUBMITTED",
+            "endTime": "2025-09-10T12:30:45Z",
+            "notes": "Reviewed and approved.",
+            "candidates": {
+              "users": [
+                {
+                  "autodeskId": "V6YCJR34AB2D",
+                  "name": "Maria Lee"
+                }
+              ]
+            }
+          }
+        ],
+        "pagination": {
+          "limit": 10,
+          "offset": 0,
+          "totalResults": 1,
+          "nextUrl": ""
+        }
+      }
+    }
+  ]
+}

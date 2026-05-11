@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedDWG",
+    "scrapedAt": "2026-05-08T18:26:43.181Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatSVF2AdvancedDWG",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatSVF2AdvancedDWG : IJobPayloadFormatSVF2Advanced"
+    },
+    {
+      "raw": "public JobPayloadFormatSVF2AdvancedDWG()"
+    },
+    {
+      "raw": "[DataMember(Name = \"2dviews\", EmitDefaultValue = true)]\npublic Model2dView _2dviews { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

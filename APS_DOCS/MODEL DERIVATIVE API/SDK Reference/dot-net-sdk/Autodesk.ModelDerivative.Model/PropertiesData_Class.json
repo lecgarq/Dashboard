@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/PropertiesData",
+    "scrapedAt": "2026-05-08T18:28:18.475Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class PropertiesData",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class PropertiesData"
+    },
+    {
+      "raw": "public PropertiesData()"
+    },
+    {
+      "raw": "[DataMember(Name = \"collection\", EmitDefaultValue = false)]\npublic List<PropertiesDataCollection> Collection { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"type\", EmitDefaultValue = false)]\npublic string Type { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

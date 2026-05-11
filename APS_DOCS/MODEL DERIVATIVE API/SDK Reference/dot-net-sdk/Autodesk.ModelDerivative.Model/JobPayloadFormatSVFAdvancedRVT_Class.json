@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedRVT",
+    "scrapedAt": "2026-05-08T18:27:12.810Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatSVFAdvancedRVT",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatSVFAdvancedRVT : IJobPayloadFormatSVFAdvanced"
+    },
+    {
+      "raw": "public JobPayloadFormatSVFAdvancedRVT()"
+    },
+    {
+      "raw": "[DataMember(Name = \"extractorVersion\", EmitDefaultValue = true)]\npublic ExtractorVersion ExtractorVersion { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"generateMasterViews\", EmitDefaultValue = false)]\npublic bool? GenerateMasterViews { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"materialMode\", EmitDefaultValue = true)]\npublic MaterialMode MaterialMode { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"2dviews\", EmitDefaultValue = true)]\npublic Model2dView _2dviews { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

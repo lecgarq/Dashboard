@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadMisc",
+    "scrapedAt": "2026-05-08T18:27:26.044Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadMisc",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadMisc"
+    },
+    {
+      "raw": "public JobPayloadMisc()"
+    },
+    {
+      "raw": "[DataMember(Name = \"workflow\", EmitDefaultValue = false)]\npublic string Workflow { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"workflowAttribute\", EmitDefaultValue = false)]\npublic object WorkflowAttribute { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

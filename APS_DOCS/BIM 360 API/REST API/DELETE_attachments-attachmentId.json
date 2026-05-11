@@ -1,0 +1,97 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/rfis-v2-attachments-attachmentId-DELETE",
+    "scrapedAt": "2026-05-08T18:05:56.827Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "attachments/:attachmentId",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments/:attachmentId",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "DELETE https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments/:attachmentId"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring",
+          "col_1": "The ID of the container. Each project is assigned a container that stores all the RFIs for the project. To find the ID, see the Retrieve a Container ID tutorial."
+        },
+        {
+          "col_0": "rfiIdstring",
+          "col_1": "The ID of the RFI."
+        },
+        {
+          "col_0": "attachmentIdstring",
+          "col_1": "The id of the attachment to find (uuid)"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "204No Content",
+          "col_1": "Deleted"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments/:attachmentId' \\\n  -X 'DELETE' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "204 No Content"
+    }
+  ]
+}

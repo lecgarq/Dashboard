@@ -1,0 +1,88 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/mutations/aec_dm_exchange",
+    "scrapedAt": "2026-05-08T18:15:03.563Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Create Exchange Using AEC Data Model Filters",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Mutation",
+          "Operation": "createExchange",
+          "Description": "Creates a data exchange."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "mutation CreateExchange(\n        $filter: String\n        $sourceFileId: String!\n        $targetExchangeName: String!\n        $targetFolderId: String!\n    ) {\n        createExchange(\n            input: {\n                filter: $filter\n                source: { fileId: $sourceFileId }\n                target: { name: $targetExchangeName, folderId: $targetFolderId }\n            }\n        ) {\n            exchange {\n                id\n                name\n                elements {\n                    results {\n                        id\n                        name\n                    }\n                }\n            }\n        }\n    }"
+    },
+    {
+      "raw": "{\n  \"filter\": \"(category=='Windows')\",\n  \"sourceFileId\": \"aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB\",\n  \"targetExchangeName\": \"AEC Filter based Exchange - Category Windows\",\n  \"targetFolderId\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\"\n}",
+      "parsed": {
+        "filter": "(category=='Windows')",
+        "sourceFileId": "aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB",
+        "targetExchangeName": "AEC Filter based Exchange - Category Windows",
+        "targetFolderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"createExchange\": {\n          \"exchange\": {\n              \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ\",\n              \"name\": \"AEC Filter based Exchange - Category Windows\",\n              \"elements\": {\n                  \"results\": [ ]\n                }\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "createExchange": {
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ",
+              "name": "AEC Filter based Exchange - Category Windows",
+              "elements": {
+                "results": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "query GetExchangeStatus($exchangeId: ID!) {\n    getExchangeCreationStatus(exchangeId: $exchangeId) {\n        status\n        versionNumber\n        exchange {\n            id\n            name\n            elements {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ\"\n}",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ"
+      }
+    },
+    {
+      "raw": "{\n    \"data\":{\n        \"getExchangeCreationStatus\":{\n            \"status\":\"COMPLETED\",\n            \"versionNumber\":1,\n            \"exchange\":{\n                \"id\":\"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ\",\n                \"name\":\"AEC Filter based Exchange - Category Windows\",\n                \"elements\":{\n                    \"results\":[\n                        {\n                            \"id\":\"YWVjZX53TGhzYkpOSmVndGM5QlVsaFB6a2xwX0wyQ35CVGJ3enVuSlFRU0wwTVBsbFhNVDZBXzU3YmEy\",\n                            \"name\":\"36\\\" x 48\\\"\"\n                        }\n                    ]\n                }\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "getExchangeCreationStatus": {
+            "status": "COMPLETED",
+            "versionNumber": 1,
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjU1NGEzMGMzLTkxYWMtMzIwNC04NzVmLWM0MDc3ZjJkZDI1YQ",
+              "name": "AEC Filter based Exchange - Category Windows",
+              "elements": {
+                "results": [
+                  {
+                    "id": "YWVjZX53TGhzYkpOSmVndGM5QlVsaFB6a2xwX0wyQ35CVGJ3enVuSlFRU0wwTVBsbFhNVDZBXzU3YmEy",
+                    "name": "36\" x 48\""
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

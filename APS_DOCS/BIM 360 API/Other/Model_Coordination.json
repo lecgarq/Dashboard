@@ -1,0 +1,36 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/overview/field-guide/model-coordination",
+    "scrapedAt": "2026-05-08T17:46:21.235Z",
+    "category": "Other",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Model Coordination Model Sets",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Docs Folder Permission",
+        "Model Set Permission"
+      ],
+      "rows": [
+        {
+          "Docs Folder Permission": "Upload - only",
+          "Model Set Permission": "None"
+        },
+        {
+          "Docs Folder Permission": "View - only",
+          "Model Set Permission": "Model Set Read"
+        },
+        {
+          "Docs Folder Permission": "View + Upload",
+          "Model Set Permission": "Model Set Read"
+        },
+        {
+          "Docs Folder Permission": "View + Upload + Edit + Control",
+          "Model Set Permission": "Model Set Edit"
+        }
+      ]
+    }
+  ]
+}

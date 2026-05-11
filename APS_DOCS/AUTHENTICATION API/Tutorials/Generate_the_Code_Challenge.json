@@ -1,0 +1,32 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/tutorials/code-challenge",
+    "scrapedAt": "2026-05-08T17:35:37.421Z",
+    "category": "Tutorials",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "Generate Code Challenge",
+  "codeExamples": [
+    {
+      "raw": "code_challenge = BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))"
+    },
+    {
+      "raw": "code_verifier=$(openssl rand -base64 60 | tr -d \"\\n\" | tr '/+' '_-' | tr -d '=')\necho \"code_verifier=$code_verifier\"\ncode_challenge=$(printf $code_verifier | shasum -a 256 | head -c 64 | xxd -r -p - | openssl base64 | tr '/+' '_-' | tr -d '=')\necho \"code_challenge=$code_challenge\"\necho \"copied the code_challenge to your clipboard\"\nprintf $code_challenge | pbcopy"
+    },
+    {
+      "raw": "def vGenerateCodeChallengePair() -> tuple:\n  code_verifier = base64.urlsafe_b64encode(os.urandom(40)).decode('utf-8')\n  code_verifier = re.sub('[^a-zA-Z0-9]+', '', code_verifier)\n\n  code_challenge = hashlib.sha256(code_verifier.encode('utf-8')).digest()\n  code_challenge = base64.urlsafe_b64encode(code_challenge).decode('utf-8')\n  code_challenge = code_challenge.replace('=', '')\n\n  return (code_verifier, code_challenge)"
+    },
+    {
+      "raw": "String generateCodeVerifier() throws UnsupportedEncodingException {\n  SecureRandom secureRandom = new SecureRandom();\n  byte[] codeVerifier = new byte[32];\n  secureRandom.nextBytes(codeVerifier);\n  return Base64.getUrlEncoder().withoutPadding().encodeToString(codeVerifier);\n}\n\nString generateCodeChallange(String codeVerifier) throws UnsupportedEncodingException, NoSuchAlgorithmException {\n   byte[] bytes = codeVerifier.getBytes(\"US-ASCII\");\n   MessageDigest messageDigest = MessageDigest.getInstance(\"SHA-256\");\n   messageDigest.update(bytes, 0, bytes.length);\n   byte[] digest = messageDigest.digest();\n   return Base64.getUrlEncoder().withoutPadding().encodeToString(digest);\n}"
+    },
+    {
+      "raw": "var pkce=new Pkce\n{\n  CodeVerifier = CryptoRandom.CreateUniqueId(32)\n};\nusing (var sha256 = SHA256.Create())\n{\n  // Here we create a hash of the code verifier\n  var challengeBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(pkce.CodeVerifier));\n\n  // and produce the \"Code Challenge\" from it by base64Url encoding it.\n  pkce.CodeChallenge = Base64Url.Encode(challengeBytes);\n}"
+    },
+    {
+      "raw": "import (\n  \"crypto/rand\"\n  _ \"crypto/sha256\"\n  \"encoding/base64\"\n\n  digest \"github.com/opencontainers/go-digest\"\n)\n\nconst (\n  size = 32\n)\n\nfunc GenerateCodeVerifier() string {\n  b := make([]byte, size)\n  if _, err := rand.Read(b); err != nil {\n      return \"\"\n  }\n  return base64.URLEncoding.EncodeToString(b)\n}\n\nfunc GenerateCodeChallenge(codeVerifier string) string {\n  byt := []byte(codeVerifier)\n  digestAlg := digest.NewDigest(digest.SHA256, digest.SHA256.Hash())\n  digestByte := digestAlg.Algorithm().FromBytes(byt)\n\n  return base64.URLEncoding.EncodeToString([]byte(digestByte.String()))\n}"
+    },
+    {
+      "raw": "// Dependency: Node.js crypto module\n// https://nodejs.org/api/crypto.html#crypto_crypto\nfunction base64URLEncode(str) {\n  return str.toString('base64')\n      .replace(/\\+/g, '-')\n      .replace(/\\//g, '_')\n      .replace(/=/g, '');\n}\nvar code_verifier = base64URLEncode(crypto.randomBytes(32));\n\n// Dependency: Node.js crypto module\n// https://nodejs.org/api/crypto.html#crypto_crypto\nfunction sha256(buffer) {\n  return crypto.createHash('sha256').update(buffer).digest();\n}\nvar code_challenge = base64URLEncode(sha256(code_verifier));"
+    }
+  ]
+}

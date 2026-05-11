@@ -1,0 +1,392 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/projects-project_id-users-POST",
+    "scrapedAt": "2026-05-08T17:52:17.344Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "projects/:project_id/users",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/users",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI (US)",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v1/accounts/:account_id/projects/:project_id/users"
+        },
+        {
+          "col_0": "Method and URI (Legacy)",
+          "col_1": "POST https://developer.api.autodesk.com/hq/v1/regions/eu/accounts/:account_id/projects/:project_id/users"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "account:write"
+        },
+        {
+          "col_0": "Data Formats",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "HTTP Headers",
+        "Type",
+        "Required",
+        "Description"
+      ],
+      "rows": [
+        {
+          "HTTP Headers": "Authorization",
+          "Type": "string",
+          "Required": "yes",
+          "Description": "Must be Bearer <token>, where <token> is obtained via a two-legged OAuth flow."
+        },
+        {
+          "HTTP Headers": "Content-Type",
+          "Type": "string",
+          "Required": "yes",
+          "Description": "Must be application/json"
+        },
+        {
+          "HTTP Headers": "Region",
+          "Type": "string",
+          "Required": "no",
+          "Description": "Specifies the region where the service is located.                                                                                                        Possible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "The account ID of the project. This corresponds to hub ID in the Data Management API. To convert a hub ID into an account ID you need to remove the “b.\" prefix. For example, a hub ID of b.c8b0c73d-3ae9 translates to an account ID of c8b0c73d-3ae9."
+        },
+        {
+          "col_0": "project_idstring: UUID",
+          "col_1": "The ID of the project. This corresponds to project ID in the Data Management API. To convert a project ID in the Data Management API into a project ID in the BIM 360 API you need to remove the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "role*string",
+          "col_1": "The role of the user in the account.\nMust be project_admin, meaning that the user has Project administration privileges at a service level."
+        },
+        {
+          "col_0": "service_type*enum: string",
+          "col_1": "The service to add a Project Admin to\n\nRefer to the service_type list in the Parameters guide."
+        },
+        {
+          "col_0": "company_id*string: UUID",
+          "col_1": "The user’s default company ID in BIM 360"
+        },
+        {
+          "col_0": "company_namestring",
+          "col_1": "The name of the user’s default company name in BIM 360"
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "User’s email\n\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Default display name\n\nMax length: 255"
+        },
+        {
+          "col_0": "nicknamestring",
+          "col_1": "Nick name for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "first_namestring",
+          "col_1": "User’s first name\n\nMax length: 255"
+        },
+        {
+          "col_0": "last_namestring",
+          "col_1": "User’s last name\n\nMax length: 255"
+        },
+        {
+          "col_0": "uidstring",
+          "col_1": "User’s Autodesk ID"
+        },
+        {
+          "col_0": "image_urlstring",
+          "col_1": "URL for user’s profile image\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_1string",
+          "col_1": "User’s address line 1\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_2string",
+          "col_1": "User’s address line 2\n\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "City in which user is located\n\nMax length: 255"
+        },
+        {
+          "col_0": "state_or_provinceenum: string",
+          "col_1": "State or province in which user is located\n\nMax length: 255\n\nNote that the state_or_province value depends on the selected country value;\nsee the valid values in the state_or_province list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "postal_codestring",
+          "col_1": "Postal code for the user’s location\n\nMax length: 255"
+        },
+        {
+          "col_0": "countryenum: string",
+          "col_1": "Country for this user\n\nRefer to the country list in the Parameters guide."
+        },
+        {
+          "col_0": "phonestring",
+          "col_1": "Contact phone number for the user\n\nMax length: 255"
+        },
+        {
+          "col_0": "companystring",
+          "col_1": "Company information from the Autodesk user profile\n\nMax length: 255\n\nNote that this is different from company in BIM 360."
+        },
+        {
+          "col_0": "job_titlestring",
+          "col_1": "User’s job title\n\nMax length: 255"
+        },
+        {
+          "col_0": "industrystring",
+          "col_1": "Industry information for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "about_mestring",
+          "col_1": "Short description about the user\n\nMax length: 255"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "201Created",
+          "col_1": "A new resource has been successfully created."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "422Unprocessable Entity",
+          "col_1": "The request was unable to be followed due to restrictions."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "User ID"
+        },
+        {
+          "col_0": "account_idstring: UUID",
+          "col_1": "Account ID"
+        },
+        {
+          "col_0": "project_idstring: UUID",
+          "col_1": "Project ID"
+        },
+        {
+          "col_0": "rolestring",
+          "col_1": "The role of the user in the account\nMust be project_admin, meaning that the user has Project administration privileges at a service level."
+        },
+        {
+          "col_0": "statusstring",
+          "col_1": "Status of the user in the system\n\nPossible values:\nactive: user is active and has logged into the system sucessfully\ninactive: user is disabled\npending: user is invited and is yet to accept the invitation"
+        },
+        {
+          "col_0": "service_typeenum: string",
+          "col_1": "The service to add a Project Admin to\n\nRefer to the service_type list in the Parameters guide."
+        },
+        {
+          "col_0": "company_idstring: UUID",
+          "col_1": "The user’s default company ID in BIM 360"
+        },
+        {
+          "col_0": "company_namestring",
+          "col_1": "The name of the user’s default company name in BIM 360"
+        },
+        {
+          "col_0": "last_sign_indatetime: ISO 8601",
+          "col_1": "Timestamp of the last sign in, YYYY-MM-DDThh:mm:ss.sssZ format"
+        },
+        {
+          "col_0": "emailstring",
+          "col_1": "User’s email\n\nMax length: 255"
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Default display name\n\nMax length: 255"
+        },
+        {
+          "col_0": "nicknamestring",
+          "col_1": "Nick name for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "first_namestring",
+          "col_1": "User’s first name\n\nMax length: 255"
+        },
+        {
+          "col_0": "last_namestring",
+          "col_1": "User’s last name\n\nMax length: 255"
+        },
+        {
+          "col_0": "uidstring",
+          "col_1": "User’s Autodesk ID"
+        },
+        {
+          "col_0": "image_urlstring",
+          "col_1": "URL for user’s profile image\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_1string",
+          "col_1": "User’s address line 1\n\nMax length: 255"
+        },
+        {
+          "col_0": "address_line_2string",
+          "col_1": "User’s address line 2\n\nMax length: 255"
+        },
+        {
+          "col_0": "citystring",
+          "col_1": "City in which user is located\n\nMax length: 255"
+        },
+        {
+          "col_0": "state_or_provinceenum: string",
+          "col_1": "State or province in which user is located\n\nMax length: 255\n\nNote that the state_or_province value depends on the selected country value;\nsee the valid values in the state_or_province list in\nthe Parameters guide."
+        },
+        {
+          "col_0": "postal_codestring",
+          "col_1": "Postal code for the user’s location\n\nMax length: 255"
+        },
+        {
+          "col_0": "countryenum: string",
+          "col_1": "Country for this user\n\nRefer to the country list in the Parameters guide."
+        },
+        {
+          "col_0": "phonestring",
+          "col_1": "Contact phone number for the user\n\nMax length: 255"
+        },
+        {
+          "col_0": "companystring",
+          "col_1": "Company information from the Autodesk user profile\n\nMax length: 255\n\nNote that this is different from company in BIM 360."
+        },
+        {
+          "col_0": "job_titlestring",
+          "col_1": "User’s job title\n\nMax length: 255"
+        },
+        {
+          "col_0": "industrystring",
+          "col_1": "Industry information for user\n\nMax length: 255"
+        },
+        {
+          "col_0": "about_mestring",
+          "col_1": "Short description about the user\n\nMax length: 255"
+        },
+        {
+          "col_0": "updated_atdatetime: ISO 8601",
+          "col_1": "Timestamp of the last change to the user, YYYY-MM-DDThh:mm:ss.sssZ format"
+        },
+        {
+          "col_0": "created_atdatetime: ISO 8601",
+          "col_1": "Timestamp of the when the user was created, YYYY-MM-DDThh:mm:ss.sssZ format"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/hq/v1/accounts/9dbb160e-b904-458b-bc5c-ed184687592d/projects/1e4bdc48-1bd7-4a4f-a91f-bd238cce5830/users' \\\n  -X 'POST' \\\n  -H 'Content-Type: application/json'\n  -H 'Authorization: Bearer hW0DvSvGgszPis1Yhot4c8kWW3NG' \\\n  -d '{\n    \"service_type\": \"field\",\n    \"company_id\":\"14e95a5e-02eb-49aa-a39a-447d90544873\",\n    \"email\":\"john.smith@mail.com\",\n    \"nickname\":\"Johnny\",\n    \"first_name\":\"John\",\n    \"last_name\":\"Smith\",\n    \"role\": \"project_admin\",\n    \"image_url\": \"http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png\",\n    \"address_line_1\": \"The Fifth Avenue\",\n    \"address_line_2\": \"#301\",\n    \"city\": \"New York\",\n    \"postal_code\": \"10011\",\n    \"state_or_province\": \"New York\",\n    \"country\": \"United States\",\n    \"phone\": \"(634)329-2353\",\n    \"company\": \"Autodesk\",\n    \"job_title\": \"Software Developer\",\n    \"industry\": \"IT\",\n    \"about_me\": \"Nothing here\"\n  }'",
+      "parsed": {
+        "service_type": "field",
+        "company_id": "14e95a5e-02eb-49aa-a39a-447d90544873",
+        "email": "john.smith@mail.com",
+        "nickname": "Johnny",
+        "first_name": "John",
+        "last_name": "Smith",
+        "role": "project_admin",
+        "image_url": "http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png",
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "New York",
+        "country": "United States",
+        "phone": "(634)329-2353",
+        "company": "Autodesk",
+        "job_title": "Software Developer",
+        "industry": "IT",
+        "about_me": "Nothing here"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"79b51334-1127-4313-a0e1-4986b3e96c47\",\n  \"account_id\": \"9dbb160e-b904-458b-bc5c-ed184687592d\",\n  \"service_type\": \"field\",\n  \"status\": \"pending\",\n  \"role\": \"project_admin\",\n  \"project_id\": \"1e4bdc48-1bd7-4a4f-a91f-bd238cce5830\",\n  \"company_id\": \"14e95a5e-02eb-49aa-a39a-447d90544873\",\n  \"company_name\": \"Autodesk\",\n  \"email\": \"john.smith@mail.com\",\n  \"name\": \"John Smith\",\n  \"nickname\": \"Johnny\",\n  \"first_name\": \"John\",\n  \"last_name\": \"Smith\",\n  \"uid\": \"L9EBJKCGCXBB\",\n  \"image_url\": \"http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png\",\n  \"last_sign_in\": null,\n  \"address_line_1\": \"The Fifth Avenue\",\n  \"address_line_2\": \"#301\",\n  \"city\": \"New York\",\n  \"postal_code\": \"10011\",\n  \"state_or_province\": \"New York\",\n  \"country\": \"United States\",\n  \"phone\": \"(634)329-2353\",\n  \"company\": \"Autodesk\",\n  \"job_title\": \"Software Developer\",\n  \"industry\": \"IT\",\n  \"about_me\": \"Nothing\",\n  \"created_at\": \"2016-04-07T08:45:51.063Z\",\n  \"updated_at\": \"2016-04-07T09:21:06.173Z\"\n}",
+      "parsed": {
+        "id": "79b51334-1127-4313-a0e1-4986b3e96c47",
+        "account_id": "9dbb160e-b904-458b-bc5c-ed184687592d",
+        "service_type": "field",
+        "status": "pending",
+        "role": "project_admin",
+        "project_id": "1e4bdc48-1bd7-4a4f-a91f-bd238cce5830",
+        "company_id": "14e95a5e-02eb-49aa-a39a-447d90544873",
+        "company_name": "Autodesk",
+        "email": "john.smith@mail.com",
+        "name": "John Smith",
+        "nickname": "Johnny",
+        "first_name": "John",
+        "last_name": "Smith",
+        "uid": "L9EBJKCGCXBB",
+        "image_url": "http://static-dc.autodesk.net/etc/designs/v201412151200/autodesk/adsk-design/images/autodesk_header_logo_140x23.png",
+        "last_sign_in": null,
+        "address_line_1": "The Fifth Avenue",
+        "address_line_2": "#301",
+        "city": "New York",
+        "postal_code": "10011",
+        "state_or_province": "New York",
+        "country": "United States",
+        "phone": "(634)329-2353",
+        "company": "Autodesk",
+        "job_title": "Software Developer",
+        "industry": "IT",
+        "about_me": "Nothing",
+        "created_at": "2016-04-07T08:45:51.063Z",
+        "updated_at": "2016-04-07T09:21:06.173Z"
+      }
+    }
+  ]
+}

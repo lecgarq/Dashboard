@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedSTEP",
+    "scrapedAt": "2026-05-08T18:25:59.895Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatAdvancedSTEP",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatAdvancedSTEP"
+    },
+    {
+      "raw": "public JobPayloadFormatAdvancedSTEP()"
+    },
+    {
+      "raw": "[DataMember(Name = \"applicationProtocol\", EmitDefaultValue = true)]\npublic ApplicationProtocol ApplicationProtocol { get; set; }"
+    },
+    {
+      "raw": "[DataMember(Name = \"tolerance\", EmitDefaultValue = false)]\npublic float? Tolerance { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

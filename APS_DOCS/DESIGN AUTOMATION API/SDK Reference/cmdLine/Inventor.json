@@ -1,0 +1,192 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/cmdLine/cmdLine-inventor",
+    "scrapedAt": "2026-05-08T17:45:12.375Z",
+    "category": "SDK Reference/cmdLine",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Inventor Command Line Reference",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Parameter",
+        "Value",
+        "Meaning"
+      ],
+      "rows": [
+        {
+          "Parameter": "/i",
+          "Value": "input_file",
+          "Meaning": "The drawing file path, will be automatically opened by Inventor"
+        },
+        {
+          "Parameter": "/s",
+          "Value": "script_file",
+          "Meaning": "The path to the iLogic script file to be executed"
+        },
+        {
+          "Parameter": "/p",
+          "Value": "(switch, without value)",
+          "Meaning": "Create and activate default project"
+        },
+        {
+          "Parameter": "/al",
+          "Value": "plugin_to_use",
+          "Meaning": "The path to the plugin to be executed by Inventor"
+        },
+        {
+          "Parameter": "/iv",
+          "Value": "(switch, without value)",
+          "Meaning": "Open the input file in invisible mode"
+        },
+        {
+          "Parameter": "/v",
+          "Value": "(switch, without value)",
+          "Meaning": "Not applicable"
+        },
+        {
+          "Parameter": "/isolate",
+          "Value": "registry_root_key user_data_path (two values)",
+          "Meaning": "Not applicable"
+        },
+        {
+          "Parameter": "/h",
+          "Value": "(switch, without value)",
+          "Meaning": "Not applicable"
+        },
+        {
+          "Parameter": "/?",
+          "Value": "(switch, without value)",
+          "Meaning": "Not applicable"
+        },
+        {
+          "Parameter": "/recover",
+          "Value": "(switch, without value)",
+          "Meaning": "Not applicable"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Key",
+        "Value"
+      ],
+      "rows": [
+        {
+          "Key": "“_1”",
+          "Value": "“command”"
+        },
+        {
+          "Key": "“_2”",
+          "Value": "“subcommand”"
+        },
+        {
+          "Key": "“_3”",
+          "Value": "“/customArg1”"
+        },
+        {
+          "Key": "“_4”",
+          "Value": "“value1”"
+        },
+        {
+          "Key": "“_5”",
+          "Value": "“/customSwitch”"
+        },
+        {
+          "Key": "“_6”",
+          "Value": "“/customArg2”"
+        },
+        {
+          "Key": "“_7”",
+          "Value": "“value2a”"
+        },
+        {
+          "Key": "“_8”",
+          "Value": "“value2b”"
+        },
+        {
+          "Key": "“_9”",
+          "Value": "“/additionalValues”"
+        },
+        {
+          "Key": "“_10”",
+          "Value": "“value1,value2,value3”"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Key",
+        "Value"
+      ],
+      "rows": [
+        {
+          "Key": "“customArg1”",
+          "Value": "“value1”"
+        },
+        {
+          "Key": "“customSwitch”",
+          "Value": "“true”"
+        },
+        {
+          "Key": "“customArg2”",
+          "Value": "“value2a value2b”"
+        },
+        {
+          "Key": "“additionalValues”",
+          "Value": "“value1,value2,value3”"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "InventorCoreConsole.exe /s \"custom_script.iLogicVb\""
+    },
+    {
+      "raw": "InventorCoreConsole.exe /al \"plugin_to_use\" /i \"input_file.ipt\""
+    },
+    {
+      "raw": "/i \"input_file\" /al \"plugin_to_use\" /s \"script_file\" /p \\\ncommand subcommand /property val val2 \\\n/verbose /file file.txt /additionalValue1 1"
+    },
+    {
+      "raw": "using Autodesk.Forge.DesignAutomation.Inventor.Utils.Helpers;"
+    },
+    {
+      "raw": "int intValue = nameValueMap.AsInt(\"additionalValue1\")\n// Do something ..."
+    },
+    {
+      "raw": "string strValue = nameValueMap.AsString(\"additionalValue1\")\n// Do something ..."
+    },
+    {
+      "raw": "/i \"input_file\" /al \"plugin_to_use\" /s \"script_file\" /p \\\ncommand subcommand /property val val2 /verbose /file file.txt \\\n/collection 1.33, 2.5, 3.7, 41.5, 133.7, 650.832, 7.145"
+    },
+    {
+      "raw": "double[] doubleCollection = nameValueMap.AsDoubleCollection(\"/collection\");\n\nforeach (double value in doubleCollection)\n{\n    Console.writeLine(value)\n}"
+    },
+    {
+      "raw": "1.33\n2.5\n3.7\n41.5\n133.7\n650.832\n7.145"
+    },
+    {
+      "raw": "/i \"input_file\" /al \"plugin_to_use\" /s \"script_file\" /p \\\ncommand subcommand /property val val2 \\\n/verbose /file file.txt /additionalValue1 TRUE \\\n/additionalValue2 VALUE_TWO"
+    },
+    {
+      "raw": "public enum MyEnum\n{\n    VALUE_ONE,\n    VALUE_TWO,\n    VALUE_THREE,\n    VALUE_FOUR,\n    VALUE_FIVE\n}"
+    },
+    {
+      "raw": "bool boolValue = nameValueMap.AsBool(\"additionalValue1\")\n// boolValue is true\n// Do something ...\n\nMyEnum enumValue = nameValueMap.AsEnum<MyEnum>(\"additionalValue2\")\n// the variable enumValue is set to VALUE_TWO\n// Do something ..."
+    },
+    {
+      "raw": "TryGetValueAs<type>(string index, out type outValue)\n\nGetValueAsCollection<type>(string index)"
+    },
+    {
+      "raw": "$(engine.path)\\\\InventorCoreConsole.exe /al \"$(appbundles[{Constants.Activity.Id}].path)\" \\\n/i \"$(args[{Constants.Parameters.InventorDoc}].path)\" \\\n/customCollection \"$(args[{Constants.Parameters.CollectionParam}].value)\" \\\n/customSwitch \\\n/customArg customValue \\\n/intParam \"$(args[{Constants.Parameters.IntParam}].value)\" \\\n/doubleParam \"$(args[{Constants.Parameters.DoubleParam}].value)\""
+    },
+    {
+      "raw": "bool customSwitch = map.HasKey(\"customSwitch\");\nint intParam = map.AsInt(\"intParam\");\ndouble doubleParam = map.AsDouble(\"doubleParam\");\nvar customCollection = map.AsStringCollection(\"customCollection\");\nvar customArg = map.Item[\"customArg\"];"
+    }
+  ]
+}

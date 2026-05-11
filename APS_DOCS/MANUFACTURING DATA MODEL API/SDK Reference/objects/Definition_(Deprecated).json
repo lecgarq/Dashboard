@@ -1,0 +1,65 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/objects/definition",
+    "scrapedAt": "2026-05-08T18:16:22.580Z",
+    "category": "SDK Reference/objects",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Definition",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*ID! non-null",
+          "col_1": "Identifies the type of Property such as a door height, wall area, etc."
+        },
+        {
+          "col_0": "name*String! non-null",
+          "col_1": "Human readable name for a Property."
+        },
+        {
+          "col_0": "readOnly*Boolean! non-null",
+          "col_1": "Indicates if the Property is editable or not."
+        },
+        {
+          "col_0": "valueTypeString",
+          "col_1": "Indicates the typeof Property value."
+        },
+        {
+          "col_0": "descriptionString",
+          "col_1": "Optional: Detailed description of a Property."
+        },
+        {
+          "col_0": "specificationString",
+          "col_1": "Type for the Property such as a Length, Area, Volume."
+        },
+        {
+          "col_0": "unitsString",
+          "col_1": "Optional: Units for a Property if required by the schema."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Usage",
+        "Used By",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Usage": "Field Of",
+          "Used By": "ReferenceProperty",
+          "Description": "A reference property which describes relationship between elements."
+        },
+        {
+          "Usage": "Field Of",
+          "Used By": "Property",
+          "Description": "Data object that represents property."
+        }
+      ]
+    }
+  ]
+}

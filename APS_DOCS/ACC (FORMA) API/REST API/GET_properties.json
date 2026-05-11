@@ -1,0 +1,191 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/cost-properties-GET",
+    "scrapedAt": "2026-05-08T23:47:55.446Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/containers/{containerId}/properties",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/properties?filter[associationType]=Budget&filter[lastModifiedSince]=2020-03-01T13:00:00Z",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/cost/v1/containers/:containerId/properties"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "filter[name]string",
+          "col_1": "Returns only items with the specified name. For example, filter[name]=Labor.\nMax length: 255"
+        },
+        {
+          "col_0": "filter[associationId]array: string: uuid",
+          "col_1": "The ID of the associated item, for example, the ID of a budget, contract, change order or cost item.\nSeparate multiple IDs with commas, for example, filter[associationId]=id1,id2."
+        },
+        {
+          "col_0": "filter[associationType]string",
+          "col_1": "The type of the associated item.\nPossible values: Budget, Contract, CostItem, FormDefinition, Payment, BudgetPayment, Expense, ExpenseItem.\nFor example, filter[associationType]=Budget."
+        },
+        {
+          "col_0": "filter[lastModifiedSince]string",
+          "col_1": "Returns only items that were modified since the specified date and time, in ISO 8601 format. For example, filter[lastModifiedSince]=2020-03-01T13:00:00Z."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Unique identifier (UUID) of the attribute definition."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Name of a attribute definition.\nMax length: 1024"
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "Type of the attribute definition.\nPossible values: text, multiline, richtext, options, boolean, integer, percent, currency, number, datetime"
+        },
+        {
+          "col_0": "defaultValuestring,null",
+          "col_1": "Default value of the attribute definition."
+        },
+        {
+          "col_0": "positionnumber",
+          "col_1": "The position of the attribute definition as displayed in BIM 360 Cost Management."
+        },
+        {
+          "col_0": "categorystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "defaultVisibilityboolean",
+          "col_1": "A true/false flag to indicate whether this attribute should be shown in the BIM 360 Cost Management or generated documents by default."
+        },
+        {
+          "col_0": "builtInboolean",
+          "col_1": "A true/false flag to indicate whether this is a pre-defined attribute or not."
+        },
+        {
+          "col_0": "componentTemplateIdstring,null",
+          "col_1": "Custom attribute belongs to the component template"
+        },
+        {
+          "col_0": "optionsarray: string,object",
+          "col_1": "List of items for an options type attribute."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/properties?filter[associationType]=Budget&filter[lastModifiedSince]=2020-03-01T13:00:00Z' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "[\n  {\n    \"id\": \"229d3420-9481-11e8-87fb-215990a8aeb3\",\n    \"name\": \"Scope\",\n    \"type\": \"text\",\n    \"defaultValue\": \"tbd\",\n    \"position\": 0,\n    \"category\": \"pco\",\n    \"defaultVisibility\": false,\n    \"builtIn\": true,\n    \"componentTemplateId\": \"229d3420-9481-11e8-87fb-215990a8aeb3\",\n    \"options\": [\n      \"Back Charge\"\n    ]\n  }\n]",
+      "parsed": {
+        "id": "229d3420-9481-11e8-87fb-215990a8aeb3",
+        "name": "Scope",
+        "type": "text",
+        "defaultValue": "tbd",
+        "position": 0,
+        "category": "pco",
+        "defaultVisibility": false,
+        "builtIn": true,
+        "componentTemplateId": "229d3420-9481-11e8-87fb-215990a8aeb3",
+        "options": [
+          "Back Charge"
+        ]
+      }
+    }
+  ]
+}

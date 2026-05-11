@@ -1,0 +1,199 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/rfis-v2-attachments-POST",
+    "scrapedAt": "2026-05-08T18:05:53.451Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "attachments",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "POST https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write data:create"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring",
+          "col_1": "The ID of the container. Each project is assigned a container that stores all the RFIs for the project. To find the ID, see the Retrieve a Container ID tutorial."
+        },
+        {
+          "col_0": "rfiIdstring",
+          "col_1": "The ID of the RFI."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "The name of the attachment.\nMax length: 400"
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The ID (item ID) of the document associated with the RFI. For more details, see the Upload Attachment tutorial.\nMax length: 400"
+        },
+        {
+          "col_0": "urnTypeenum:string",
+          "col_1": "The type of attachment. We currently only support adding attachments from BIM 360 Document Management. Possible value: dm."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "201Created",
+          "col_1": "Created"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the attachment."
+        },
+        {
+          "col_0": "rfiIdstring",
+          "col_1": "The ID of the RFI associated with the attachment."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The timestamp of the date and time the attachment was created, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The last date and time the attachment attributes were updated, in the following format: YYYY-MM-DDThh:mm:ss.sz."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who added the attachment. To check the name of the user, call GET projects/users."
+        },
+        {
+          "col_0": "deletedAtdatetime: ISO 8601",
+          "col_1": "The timestamp of the date and time the attachment was deleted, in the following format: YYYY-MM-DDThh:mm:ss.sz. This is only relevant for deleted attachments."
+        },
+        {
+          "col_0": "deletedBystring",
+          "col_1": "The Autodesk ID of the user who deleted the attachment. To check the name of the user, call GET projects/users. This is only relevant for deleted attachments."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the attachment."
+        },
+        {
+          "col_0": "urlstring",
+          "col_1": "The URL of the storage location for the attachment."
+        },
+        {
+          "col_0": "urnstring",
+          "col_1": "The ID (item ID) of the document associated with the RFI. For more details, see the Upload Attachment tutorial.\nMax length: 400"
+        },
+        {
+          "col_0": "urnTypeenum:string",
+          "col_1": "The type of attachment URN. Possible values:\ndm - for a BIM 360 Document Management file\noss - for a local file"
+        },
+        {
+          "col_0": "attachmentTypeenum:string",
+          "col_1": "The type of attachment.\nPossible values: photo, document"
+        },
+        {
+          "col_0": "permittedActionsobject",
+          "col_1": "A list of actions that are permitted for the current user."
+        },
+        {
+          "col_0": "removeAttachmentboolean",
+          "col_1": "true if the current user can delete the attachment\nfalse if the current user cannot delete the attachment"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/bim360/rfis/v2/containers/:containerId/rfis/:rfiId/attachments' \\\n  -X 'POST' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"name\": \"Photo.png\",\n        \"urn\": \"urn:adsk.wipprod:dm.lineage:1t7QY9-JSxCB0TLh1qMvFQ\",\n        \"urnType\": \"dm\"\n      }'",
+      "parsed": {
+        "name": "Photo.png",
+        "urn": "urn:adsk.wipprod:dm.lineage:1t7QY9-JSxCB0TLh1qMvFQ",
+        "urnType": "dm"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"c911852d-5957-4145-9c8d-e7cfe9d564df\",\n  \"rfiId\": \"0d302fc6-00a5-45ca-a9df-4427b9247c81\",\n  \"createdAt\": \"2018-08-01T08:56:48.699Z\",\n  \"updatedAt\": \"\",\n  \"createdBy\": \"PER8KQPK2JRT\",\n  \"deletedAt\": \"2018-08-01T08:56:48.699Z\",\n  \"deletedBy\": \"PER8KQPK2JRT\",\n  \"name\": \"Photo.png\",\n  \"url\": \"null\",\n  \"urn\": \"urn:adsk.wipprod:dm.lineage:1t7QY9-JSxCB0TLh1qMvFQ\",\n  \"urnType\": \"dm\",\n  \"attachmentType\": \"photo\",\n  \"permittedActions\": {\n    \"removeAttachment\": \"\"\n  }\n}",
+      "parsed": {
+        "id": "c911852d-5957-4145-9c8d-e7cfe9d564df",
+        "rfiId": "0d302fc6-00a5-45ca-a9df-4427b9247c81",
+        "createdAt": "2018-08-01T08:56:48.699Z",
+        "updatedAt": "",
+        "createdBy": "PER8KQPK2JRT",
+        "deletedAt": "2018-08-01T08:56:48.699Z",
+        "deletedBy": "PER8KQPK2JRT",
+        "name": "Photo.png",
+        "url": "null",
+        "urn": "urn:adsk.wipprod:dm.lineage:1t7QY9-JSxCB0TLh1qMvFQ",
+        "urnType": "dm",
+        "attachmentType": "photo",
+        "permittedActions": {
+          "removeAttachment": ""
+        }
+      }
+    }
+  ]
+}

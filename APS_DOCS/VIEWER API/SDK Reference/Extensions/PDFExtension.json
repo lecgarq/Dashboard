@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/PDFExtension",
+    "scrapedAt": "2026-05-08T18:46:58.428Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "PDFExtension",
+  "codeExamples": [
+    {
+      "raw": "// Create Viewer instance and load PDF file on page 1"
+    }
+  ]
+}

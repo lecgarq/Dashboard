@@ -1,0 +1,998 @@
+{
+  "_meta": {
+    "title": "VIEWER API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/developers_guide/overview/",
+    "scrapedAt": "2026-05-08T18:50:45.113Z",
+    "totalPages": 159
+  },
+  "categories": {
+    "Developer Guide": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Interactive Examples",
+        "file": "Developer Guide/Interactive_Examples.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Viewer Basics",
+        "file": "Developer Guide/Viewer_Basics.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Advanced Options",
+        "file": "Developer Guide/Advanced_Options.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Glossary of Terms",
+        "file": "Developer Guide/Glossary_of_Terms.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Developer's Guide",
+        "file": "Developer Guide/Developer's_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/interactive_examples": [
+      {
+        "name": "Controlling Viewer State",
+        "file": "Developer Guide/interactive_examples/Controlling_Viewer_State.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Handling Viewer Events",
+        "file": "Developer Guide/interactive_examples/Handling_Viewer_Events.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Querying Model Properties",
+        "file": "Developer Guide/interactive_examples/Querying_Model_Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Customizing Viewer UI",
+        "file": "Developer Guide/interactive_examples/Customizing_Viewer_UI.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Customizing Viewer Scene",
+        "file": "Developer Guide/interactive_examples/Customizing_Viewer_Scene.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Aggregated View",
+        "file": "Developer Guide/interactive_examples/Aggregated_View.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/viewer_basics": [
+      {
+        "name": "Getting Started",
+        "file": "Developer Guide/viewer_basics/Getting_Started.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reacting to Events",
+        "file": "Developer Guide/viewer_basics/Reacting_to_Events.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Customizing the Toolbar",
+        "file": "Developer Guide/viewer_basics/Customizing_the_Toolbar.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Loading glTF 2.0 Models",
+        "file": "Developer Guide/viewer_basics/Loading_glTF_2.0_Models.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using DiffTool to Compare Models",
+        "file": "Developer Guide/viewer_basics/Using_DiffTool_to_Compare_Models.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Writing an Extension",
+        "file": "Developer Guide/viewer_basics/Writing_an_Extension.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/advanced_options": [
+      {
+        "name": "Adding Custom Geometry",
+        "file": "Developer Guide/advanced_options/Adding_Custom_Geometry.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Querying the Property Database",
+        "file": "Developer Guide/advanced_options/Querying_the_Property_Database.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using Profile APIs",
+        "file": "Developer Guide/advanced_options/Using_Profile_APIs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Adding Custom Geometry with Scene Builder",
+        "file": "Developer Guide/advanced_options/Adding_Custom_Geometry_with_Scene_Builder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Setting Up Edit2D",
+        "file": "Developer Guide/advanced_options/Setting_Up_Edit2D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using the Edit2D Toolset",
+        "file": "Developer Guide/advanced_options/Using_the_Edit2D_Toolset.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Drawing Edit2D Shapes Manually",
+        "file": "Developer Guide/advanced_options/Drawing_Edit2D_Shapes_Manually.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Customizing Edit2D",
+        "file": "Developer Guide/advanced_options/Customizing_Edit2D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Using Aggregated View",
+        "file": "Developer Guide/advanced_options/Using_Aggregated_View.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Selective Loading Using Queries",
+        "file": "Developer Guide/advanced_options/Selective_Loading_Using_Queries.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference": [
+      {
+        "name": "Viewing",
+        "file": "SDK Reference/Viewing.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UI",
+        "file": "SDK Reference/UI.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extensions",
+        "file": "SDK Reference/Extensions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Snapping",
+        "file": "SDK Reference/Snapping.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MeasureCommon",
+        "file": "SDK Reference/MeasureCommon.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Private",
+        "file": "SDK Reference/Private.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ErrorCodes",
+        "file": "SDK Reference/ErrorCodes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProfileSettings",
+        "file": "SDK Reference/ProfileSettings.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Globals",
+        "file": "SDK Reference/Globals.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/Viewing": [
+      {
+        "name": "AggregatedView",
+        "file": "SDK Reference/Viewing/AggregatedView.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AppScreenModeDelegate",
+        "file": "SDK Reference/Viewing/AppScreenModeDelegate.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BubbleNode",
+        "file": "SDK Reference/Viewing/BubbleNode.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "CoordinateSystem",
+        "file": "SDK Reference/Viewing/CoordinateSystem.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Document",
+        "file": "SDK Reference/Viewing/Document.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "EventUtils",
+        "file": "SDK Reference/Viewing/EventUtils.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extension",
+        "file": "SDK Reference/Viewing/Extension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExtensionManager",
+        "file": "SDK Reference/Viewing/ExtensionManager.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FeatureFlags",
+        "file": "SDK Reference/Viewing/FeatureFlags.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FileLoader",
+        "file": "SDK Reference/Viewing/FileLoader.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GuiViewer3D",
+        "file": "SDK Reference/Viewing/GuiViewer3D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "HotkeyManager",
+        "file": "SDK Reference/Viewing/HotkeyManager.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model",
+        "file": "SDK Reference/Viewing/Model.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Navigation",
+        "file": "SDK Reference/Viewing/Navigation.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "NullScreenModeDelegate",
+        "file": "SDK Reference/Viewing/NullScreenModeDelegate.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OverlayManager",
+        "file": "SDK Reference/Viewing/OverlayManager.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Profile",
+        "file": "SDK Reference/Viewing/Profile.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProfileManager",
+        "file": "SDK Reference/Viewing/ProfileManager.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertySet",
+        "file": "SDK Reference/Viewing/PropertySet.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ScreenModeDelegate",
+        "file": "SDK Reference/Viewing/ScreenModeDelegate.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ToolController",
+        "file": "SDK Reference/Viewing/ToolController.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ToolInterface",
+        "file": "SDK Reference/Viewing/ToolInterface.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Viewer3D",
+        "file": "SDK Reference/Viewing/Viewer3D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ViewingUtilities",
+        "file": "SDK Reference/Viewing/ViewingUtilities.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/UI": [
+      {
+        "name": "Button",
+        "file": "SDK Reference/UI/Button.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ComboButton",
+        "file": "SDK Reference/UI/ComboButton.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Control",
+        "file": "SDK Reference/UI/Control.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ControlGroup",
+        "file": "SDK Reference/UI/ControlGroup.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DataTable",
+        "file": "SDK Reference/UI/DataTable.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DockingPanel",
+        "file": "SDK Reference/UI/DockingPanel.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Filterbox",
+        "file": "SDK Reference/UI/Filterbox.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelStructurePanel",
+        "file": "SDK Reference/UI/ModelStructurePanel.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectContextMenu",
+        "file": "SDK Reference/UI/ObjectContextMenu.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyPanel",
+        "file": "SDK Reference/UI/PropertyPanel.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RadioButtonGroup",
+        "file": "SDK Reference/UI/RadioButtonGroup.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SettingsPanel",
+        "file": "SDK Reference/UI/SettingsPanel.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ToolBar",
+        "file": "SDK Reference/UI/ToolBar.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Tree",
+        "file": "SDK Reference/UI/Tree.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/Extensions": [
+      {
+        "name": "AnimationExtension",
+        "file": "SDK Reference/Extensions/AnimationExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BimWalkExtension",
+        "file": "SDK Reference/Extensions/BimWalkExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "CrossFadeEffects",
+        "file": "SDK Reference/Extensions/CrossFadeEffects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DocumentBrowser",
+        "file": "SDK Reference/Extensions/DocumentBrowser.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Edit2DExtension",
+        "file": "SDK Reference/Extensions/Edit2DExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExplodeExtension",
+        "file": "SDK Reference/Extensions/ExplodeExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FullScreenExtension",
+        "file": "SDK Reference/Extensions/FullScreenExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FusionOrbitExtension",
+        "file": "SDK Reference/Extensions/FusionOrbitExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GeolocationExtension",
+        "file": "SDK Reference/Extensions/GeolocationExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GestureDocumentNavigationExtension",
+        "file": "SDK Reference/Extensions/GestureDocumentNavigationExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "glTF",
+        "file": "SDK Reference/Extensions/glTF.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GoHomeExtension",
+        "file": "SDK Reference/Extensions/GoHomeExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "HyperlinkExtension",
+        "file": "SDK Reference/Extensions/HyperlinkExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LayerManagerExtension",
+        "file": "SDK Reference/Extensions/LayerManagerExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MarkupsCore",
+        "file": "SDK Reference/Extensions/MarkupsCore.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MeasureExtension",
+        "file": "SDK Reference/Extensions/MeasureExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MinimapExtension",
+        "file": "SDK Reference/Extensions/MinimapExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelBuilder",
+        "file": "SDK Reference/Extensions/ModelBuilder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelStructureExtension",
+        "file": "SDK Reference/Extensions/ModelStructureExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "NavToolsExtension",
+        "file": "SDK Reference/Extensions/NavToolsExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "NPR",
+        "file": "SDK Reference/Extensions/NPR.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PDFExtension",
+        "file": "SDK Reference/Extensions/PDFExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PopoutExtension",
+        "file": "SDK Reference/Extensions/PopoutExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertiesManagerExtension",
+        "file": "SDK Reference/Extensions/PropertiesManagerExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RollCameraExtension",
+        "file": "SDK Reference/Extensions/RollCameraExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SceneBuilder",
+        "file": "SDK Reference/Extensions/SceneBuilder.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SectionExtension",
+        "file": "SDK Reference/Extensions/SectionExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SnappingExtension",
+        "file": "SDK Reference/Extensions/SnappingExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SplitScreenExtension",
+        "file": "SDK Reference/Extensions/SplitScreenExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ViewCubeUi",
+        "file": "SDK Reference/Extensions/ViewCubeUi.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ViewerSettingsExtension",
+        "file": "SDK Reference/Extensions/ViewerSettingsExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "WireframesExtension",
+        "file": "SDK Reference/Extensions/WireframesExtension.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ZoomWindow",
+        "file": "SDK Reference/Extensions/ZoomWindow.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/Snapping": [
+      {
+        "name": "Snapper",
+        "file": "SDK Reference/Snapping/Snapper.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/MeasureCommon": [
+      {
+        "name": "SnapResult",
+        "file": "SDK Reference/MeasureCommon/SnapResult.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/Private": [
+      {
+        "name": "InstanceTree",
+        "file": "SDK Reference/Private/InstanceTree.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Preferences",
+        "file": "SDK Reference/Private/Preferences.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropDbLoader",
+        "file": "SDK Reference/Private/PropDbLoader.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyDatabase",
+        "file": "SDK Reference/Private/PropertyDatabase.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ViewerPreferences",
+        "file": "SDK Reference/Private/ViewerPreferences.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/globals": [
+      {
+        "name": "Functions",
+        "file": "SDK Reference/globals/Functions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Properties",
+        "file": "SDK Reference/globals/Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Classes",
+        "file": "SDK Reference/globals/Classes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Type Definitions",
+        "file": "SDK Reference/globals/Type_Definitions.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/globals/Functions": [
+      {
+        "name": "GlobalManagerMixin",
+        "file": "SDK Reference/globals/Functions/GlobalManagerMixin.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "cloneHTMLElementsToWrapperElement",
+        "file": "SDK Reference/globals/Functions/cloneHTMLElementsToWrapperElement.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "create",
+        "file": "SDK Reference/globals/Functions/create.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "setViewType",
+        "file": "SDK Reference/globals/Functions/setViewType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "showCompass",
+        "file": "SDK Reference/globals/Functions/showCompass.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "setCompassRotation",
+        "file": "SDK Reference/globals/Functions/setCompassRotation.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/globals/Properties": [
+      {
+        "name": "LMV_VIEWER_VERSION",
+        "file": "SDK Reference/globals/Properties/LMV_VIEWER_VERSION.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LMV_THIRD_PARTY_COOKIE",
+        "file": "SDK Reference/globals/Properties/LMV_THIRD_PARTY_COOKIE.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LMV_VECTOR_PDF",
+        "file": "SDK Reference/globals/Properties/LMV_VECTOR_PDF.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LMV_RASTER_PDF",
+        "file": "SDK Reference/globals/Properties/LMV_RASTER_PDF.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AttributeType",
+        "file": "SDK Reference/globals/Properties/AttributeType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "InitParametersSetting",
+        "file": "SDK Reference/globals/Properties/InitParametersSetting.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/globals/Classes": [
+      {
+        "name": "GlobalManagerProvider",
+        "file": "SDK Reference/globals/Classes/GlobalManagerProvider.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SearchResults",
+        "file": "SDK Reference/globals/Classes/SearchResults.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/globals/TypeDefs": [
+      {
+        "name": "NavToolsConfig",
+        "file": "SDK Reference/globals/TypeDefs/NavToolsConfig.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "InitOptions",
+        "file": "SDK Reference/globals/TypeDefs/InitOptions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GetPropertiesResult",
+        "file": "SDK Reference/globals/TypeDefs/GetPropertiesResult.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertyResult",
+        "file": "SDK Reference/globals/TypeDefs/PropertyResult.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Prefs3D",
+        "file": "SDK Reference/globals/TypeDefs/Prefs3D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Prefs2D",
+        "file": "SDK Reference/globals/TypeDefs/Prefs2D.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Prefs",
+        "file": "SDK Reference/globals/TypeDefs/Prefs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "VIEW_TYPES",
+        "file": "SDK Reference/globals/TypeDefs/VIEW_TYPES.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "FPS_TARGET_MODES",
+        "file": "SDK Reference/globals/TypeDefs/FPS_TARGET_MODES.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Settings",
+        "file": "SDK Reference/globals/TypeDefs/Settings.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extensions",
+        "file": "SDK Reference/globals/TypeDefs/Extensions.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ProfileSettings",
+        "file": "SDK Reference/globals/TypeDefs/ProfileSettings.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "forEachCallback",
+        "file": "SDK Reference/globals/TypeDefs/forEachCallback.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AggregatedResult",
+        "file": "SDK Reference/globals/TypeDefs/AggregatedResult.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Viewer3DExtraScene",
+        "file": "SDK Reference/globals/TypeDefs/Viewer3DExtraScene.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SelectionDef",
+        "file": "SDK Reference/globals/TypeDefs/SelectionDef.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Intersection",
+        "file": "SDK Reference/globals/TypeDefs/Intersection.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "EventHistoryChangedData",
+        "file": "SDK Reference/globals/TypeDefs/EventHistoryChangedData.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Other": [
+      {
+        "name": "v7 Changelog",
+        "file": "Other/v7_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Migration Guide v6 to v7",
+        "file": "Other/Migration_Guide_v6_to_v7.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "v6 Changelog",
+        "file": "Other/v6_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "v5 Changelog",
+        "file": "Other/v5_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "v4 Changelog",
+        "file": "Other/v4_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "v3 Changelog",
+        "file": "Other/v3_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "v2 Changelog",
+        "file": "Other/v2_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Viewer",
+        "file": "Other/Viewer.json",
+        "method": null,
+        "url": null
+      }
+    ]
+  }
+}

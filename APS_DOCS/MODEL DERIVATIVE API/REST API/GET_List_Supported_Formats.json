@@ -1,0 +1,496 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/http/formats-GET",
+    "scrapedAt": "2026-05-08T18:24:08.352Z",
+    "category": "REST API",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "modelderivative/v2/designdata/formats",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/modelderivative/v2/designdata/formats",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/modelderivative/v2/designdata/formats"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "No scopes required"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "If-Modified-Sincestring",
+          "col_1": "Specifies a date in the Day of the week, DD Month YYYY HH:MM:SS GMT format. The response will contain only the formats modified since the specified date and time. If you specify an invalid date, the response will contain all supported formats. If no changes have been made after the specified date, the service returns HTTP status 304, NOT MODIFIED."
+        },
+        {
+          "col_0": "Accept-Encodingstring",
+          "col_1": "A comma separated list of the algorithms you want the response to be encoded in, specified in the order of preference.\nIf you specify gzip or *, content is compressed and returned in gzip format."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "A list of supported formats was successfully retrieved."
+        },
+        {
+          "col_0": "304Not Modified",
+          "col_1": "Supported formats have not changed since the date specified by the If-Modified-Since header."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The server was unable to process the request. The syntax of the request is malformed or the request is missing a required header. Do not repeat the request without fixing the issue. The response body may indicate what is wrong with the request."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The supplied authorization header was not valid or the supplied token scope was not acceptable. Verify authentication and try again."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was successfully validated but lacking the required permissions. Verify your credentials and permissions before you send this request again."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource was not found. Review the request and try again."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server, preventing it from completing your request. Please try again later. If the issue persists, contact the support team for assistance."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "x-ads-app-identifierstring",
+          "col_1": "The service identifier. Comprises of the service name, version, and environment."
+        },
+        {
+          "col_0": "x-ads-startup-timestring",
+          "col_1": "The service startup time, in the following date format: EEE MMM dd HH:mm:ss Z yyyy."
+        },
+        {
+          "col_0": "x-ads-durationstring",
+          "col_1": "The amount of time spent servicing the request, in milliseconds."
+        },
+        {
+          "col_0": "x-ads-troubleshootingstring",
+          "col_1": "Provides information about server failures, if any."
+        },
+        {
+          "col_0": "Last-Modifiedstring",
+          "col_1": "Indicates the date and time (in Day of the week, DD Month YYYY HH:MM:SS GMT format) the supported formats were last modified."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "formatsobject",
+          "col_1": "A dictionary object that contains a collection of key-value pairs, where each pair represents the target file format and the corresponding source file formats."
+        },
+        {
+          "col_0": "*array: string",
+          "col_1": "Key-value pairs. The key is the target file format. The value is an array of source design file formats that can be translated to the specified target file format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl \\\n  --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/formats' \\\n  --header 'Authorization: Bearer eyJh...'"
+    },
+    {
+      "raw": "// Define the URL for the GET request to fetch supported formats\nconst url = 'https://developer.api.autodesk.com/modelderivative/v2/designdata/formats';\n\n// Define the request options, including the HTTP method and headers\nconst options = {\n    method: 'GET',\n    headers: {\n        'Authorization': 'Bearer eyJh...'\n    }\n};\n\n// Make the GET request using the Fetch API\nfetch(url, options)\n    .then(response => response.json())\n    .then(data => console.log(data))\n    .catch(error => console.error('Error:', error));"
+    },
+    {
+      "raw": "// Create a new instance of HttpClient to send HTTP requests\nvar client = new HttpClient();\n\n// Create a new HTTP GET request to the specified URL\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/formats\");\n\n// Add the Authorization header with a Bearer token for authentication\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\n\n// Send the HTTP request asynchronously and get the response\nvar response = await client.SendAsync(request);\n\n// Ensure the response indicates success (status code 200-299)\nresponse.EnsureSuccessStatusCode();\n\n// Read the response content as a string and print it to the console\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "# Import the requests library to handle HTTP requests\nimport requests\n\n# Define the URL for the GET request to fetch supported formats\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/formats\"\n\n# Define the headers, including the Authorization header with a Bearer token for authentication\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace 'eyJh...' with a valid access token\n}\n\n# Make the GET request using the requests library\nresponse = requests.get(url, headers=headers)\n\n# Print the response content (supported formats) to the console\nprint(response.text)"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nDate: Fri, 16 Jun 2023 08:54:37 GMT\nLast-Modified: Tue, Mon, 29 May 2023 07:26:57 GMT\nx-ads-startup-time: Tue Jul 07 07:13:03 UTC 2020\nx-ads-duration: 1 ms\nx-ads-app-identifier: platform-viewing-2023.05.01.321.f6784ca64-production\n\n  {\n      \"formats\": {\n          \"dwg\": [\n              \"f2d\",\n              \"f3d\",\n              \"rvt\",\n              \"slddrw\"\n          ],\n          \"fbx\": [\n              \"f3d\"\n          ],\n          \"ifc\": [\n              \"rvt\"\n          ],\n          \"iges\": [\n              \"f3d\",\n              \"fbx\",\n              \"iam\",\n              \"ipt\",\n              \"wire\"\n          ],\n          \"obj\": [\n              \"asm\",\n              \"f3d\",\n              \"fbx\",\n              \"iam\",\n              \"ipt\",\n              \"neu\",\n              \"prt\",\n              \"sldasm\",\n              \"sldprt\",\n              \"smb\",\n              \"smt\",\n              \"step\",\n              \"stp\",\n              \"stpz\",\n              \"wire\",\n              \"x_b\",\n              \"x_t\",\n              \"asm\\\\.\\\\d+$\",\n              \"neu\\\\.\\\\d+$\",\n              \"prt\\\\.\\\\d+$\"\n          ],\n          \"step\": [\n              \"f3d\",\n              \"fbx\",\n              \"iam\",\n              \"ipt\",\n              \"smb\",\n              \"smt\",\n              \"wire\"\n          ],\n          \"stl\": [\n              \"f3d\",\n              \"fbx\",\n              \"iam\",\n              \"ipt\",\n              \"wire\"\n          ],\n          \"svf\": [\n              \"3dm\",\n              \"3ds\",\n              \"a\",\n              \"asm\",\n              \"axm\",\n              \"brd\",\n              \"catpart\",\n              \"catproduct\",\n              \"cgr\",\n              \"collaboration\",\n              \"dae\",\n              \"ddx\",\n              \"ddz\",\n              \"dgk\",\n              \"dgn\",\n              \"dlv3\",\n              \"dmt\",\n              \"dwf\",\n              \"dwfx\",\n              \"dwg\",\n              \"dwt\",\n              \"dxf\",\n              \"emodel\",\n              \"exp\",\n              \"f3d\",\n              \"fbrd\",\n              \"fbx\",\n              \"fsch\",\n              \"g\",\n              \"gbxml\",\n              \"glb\",\n              \"gltf\",\n              \"iam\",\n              \"idw\",\n              \"ifc\",\n              \"ige\",\n              \"iges\",\n              \"igs\",\n              \"ipt\",\n              \"iwm\",\n              \"jt\",\n              \"max\",\n              \"model\",\n              \"mpf\",\n              \"msr\",\n              \"neu\",\n              \"nwc\",\n              \"nwd\",\n              \"obj\",\n              \"osb\",\n              \"par\",\n              \"pdf\",\n              \"pmlprj\",\n              \"pmlprjz\",\n              \"prt\",\n              \"psm\",\n              \"psmodel\",\n              \"rcc\",\n              \"rcs\",\n              \"rvm\",\n              \"rvt\",\n              \"sab\",\n              \"sat\",\n              \"sch\",\n              \"session\",\n              \"skp\",\n              \"sldasm\",\n              \"sldprt\",\n              \"smb\",\n              \"smt\",\n              \"ste\",\n              \"step\",\n              \"stl\",\n              \"stla\",\n              \"stlb\",\n              \"stp\",\n              \"stpz\",\n              \"vpb\",\n              \"vue\",\n              \"wire\",\n              \"x_b\",\n              \"x_t\",\n              \"xas\",\n              \"xpr\",\n              \"zip\",\n              \"asm\\\\.\\\\d+$\",\n              \"neu\\\\.\\\\d+$\",\n              \"prt\\\\.\\\\d+$\"\n          ],\n          \"svf2\": [\n              \"3dm\",\n              \"3ds\",\n              \"a\",\n              \"asm\",\n              \"axm\",\n              \"brd\",\n              \"catpart\",\n              \"catproduct\",\n              \"cgr\",\n              \"collaboration\",\n              \"dae\",\n              \"ddx\",\n              \"ddz\",\n              \"dgk\",\n              \"dgn\",\n              \"dlv3\",\n              \"dmt\",\n              \"dwf\",\n              \"dwfx\",\n              \"dwg\",\n              \"dwt\",\n              \"dxf\",\n              \"emodel\",\n              \"exp\",\n              \"f3d\",\n              \"fbrd\",\n              \"fbx\",\n              \"fsch\",\n              \"g\",\n              \"gbxml\",\n              \"glb\",\n              \"gltf\",\n              \"iam\",\n              \"idw\",\n              \"ifc\",\n              \"ige\",\n              \"iges\",\n              \"igs\",\n              \"ipt\",\n              \"iwm\",\n              \"jt\",\n              \"max\",\n              \"model\",\n              \"mpf\",\n              \"msr\",\n              \"neu\",\n              \"nwc\",\n              \"nwd\",\n              \"obj\",\n              \"osb\",\n              \"par\",\n              \"pdf\",\n              \"pmlprj\",\n              \"pmlprjz\",\n              \"prt\",\n              \"psm\",\n              \"psmodel\",\n              \"rcc\",\n              \"rcs\",\n              \"rvm\",\n              \"rvt\",\n              \"sab\",\n              \"sat\",\n              \"sch\",\n              \"session\",\n              \"skp\",\n              \"sldasm\",\n              \"sldprt\",\n              \"smb\",\n              \"smt\",\n              \"ste\",\n              \"step\",\n              \"stl\",\n              \"stla\",\n              \"stlb\",\n              \"stp\",\n              \"stpz\",\n              \"vpb\",\n              \"vue\",\n              \"wire\",\n              \"x_b\",\n              \"x_t\",\n              \"xas\",\n              \"xpr\",\n              \"zip\",\n              \"asm\\\\.\\\\d+$\",\n              \"neu\\\\.\\\\d+$\",\n              \"prt\\\\.\\\\d+$\"\n          ],\n          \"thumbnail\": [\n              \"3dm\",\n              \"3ds\",\n              \"a\",\n              \"asm\",\n              \"axm\",\n              \"axmf\",\n              \"brd\",\n              \"catpart\",\n              \"catproduct\",\n              \"cgr\",\n              \"collaboration\",\n              \"dae\",\n              \"ddx\",\n              \"ddz\",\n              \"dgk\",\n              \"dgn\",\n              \"dlv3\",\n              \"dmt\",\n              \"dwf\",\n              \"dwfx\",\n              \"dwg\",\n              \"dwgx\",\n              \"dwt\",\n              \"dxf\",\n              \"emodel\",\n              \"exp\",\n              \"f2d\",\n              \"f3d\",\n              \"fbrd\",\n              \"fbx\",\n              \"flbr\",\n              \"fprj\",\n              \"fsch\",\n              \"g\",\n              \"gbxml\",\n              \"glb\",\n              \"gltf\",\n              \"iam\",\n              \"idw\",\n              \"ifc\",\n              \"ige\",\n              \"iges\",\n              \"igs\",\n              \"ipt\",\n              \"iwm\",\n              \"jt\",\n              \"max\",\n              \"model\",\n              \"mpf\",\n              \"msr\",\n              \"neu\",\n              \"nwc\",\n              \"nwd\",\n              \"obj\",\n              \"osb\",\n              \"par\",\n              \"pdf\",\n              \"pmlprj\",\n              \"pmlprjz\",\n              \"prt\",\n              \"psm\",\n              \"psmodel\",\n              \"rcc\",\n              \"rcs\",\n              \"rva\",\n              \"rvm\",\n              \"rvt\",\n              \"sab\",\n              \"sat\",\n              \"sch\",\n              \"session\",\n              \"skp\",\n              \"sldasm\",\n              \"sldprt\",\n              \"smb\",\n              \"smt\",\n              \"ste\",\n              \"step\",\n              \"stl\",\n              \"stla\",\n              \"stlb\",\n              \"stp\",\n              \"stpz\",\n              \"vpb\",\n              \"vue\",\n              \"wire\",\n              \"x_b\",\n              \"x_t\",\n              \"xas\",\n              \"xpr\",\n              \"zip\",\n              \"asm\\\\.\\\\d+$\",\n              \"neu\\\\.\\\\d+$\",\n              \"prt\\\\.\\\\d+$\"\n          ]\n      }\n  }",
+      "parsed": {
+        "formats": {
+          "dwg": [
+            "f2d",
+            "f3d",
+            "rvt",
+            "slddrw"
+          ],
+          "fbx": [
+            "f3d"
+          ],
+          "ifc": [
+            "rvt"
+          ],
+          "iges": [
+            "f3d",
+            "fbx",
+            "iam",
+            "ipt",
+            "wire"
+          ],
+          "obj": [
+            "asm",
+            "f3d",
+            "fbx",
+            "iam",
+            "ipt",
+            "neu",
+            "prt",
+            "sldasm",
+            "sldprt",
+            "smb",
+            "smt",
+            "step",
+            "stp",
+            "stpz",
+            "wire",
+            "x_b",
+            "x_t",
+            "asm\\.\\d+$",
+            "neu\\.\\d+$",
+            "prt\\.\\d+$"
+          ],
+          "step": [
+            "f3d",
+            "fbx",
+            "iam",
+            "ipt",
+            "smb",
+            "smt",
+            "wire"
+          ],
+          "stl": [
+            "f3d",
+            "fbx",
+            "iam",
+            "ipt",
+            "wire"
+          ],
+          "svf": [
+            "3dm",
+            "3ds",
+            "a",
+            "asm",
+            "axm",
+            "brd",
+            "catpart",
+            "catproduct",
+            "cgr",
+            "collaboration",
+            "dae",
+            "ddx",
+            "ddz",
+            "dgk",
+            "dgn",
+            "dlv3",
+            "dmt",
+            "dwf",
+            "dwfx",
+            "dwg",
+            "dwt",
+            "dxf",
+            "emodel",
+            "exp",
+            "f3d",
+            "fbrd",
+            "fbx",
+            "fsch",
+            "g",
+            "gbxml",
+            "glb",
+            "gltf",
+            "iam",
+            "idw",
+            "ifc",
+            "ige",
+            "iges",
+            "igs",
+            "ipt",
+            "iwm",
+            "jt",
+            "max",
+            "model",
+            "mpf",
+            "msr",
+            "neu",
+            "nwc",
+            "nwd",
+            "obj",
+            "osb",
+            "par",
+            "pdf",
+            "pmlprj",
+            "pmlprjz",
+            "prt",
+            "psm",
+            "psmodel",
+            "rcc",
+            "rcs",
+            "rvm",
+            "rvt",
+            "sab",
+            "sat",
+            "sch",
+            "session",
+            "skp",
+            "sldasm",
+            "sldprt",
+            "smb",
+            "smt",
+            "ste",
+            "step",
+            "stl",
+            "stla",
+            "stlb",
+            "stp",
+            "stpz",
+            "vpb",
+            "vue",
+            "wire",
+            "x_b",
+            "x_t",
+            "xas",
+            "xpr",
+            "zip",
+            "asm\\.\\d+$",
+            "neu\\.\\d+$",
+            "prt\\.\\d+$"
+          ],
+          "svf2": [
+            "3dm",
+            "3ds",
+            "a",
+            "asm",
+            "axm",
+            "brd",
+            "catpart",
+            "catproduct",
+            "cgr",
+            "collaboration",
+            "dae",
+            "ddx",
+            "ddz",
+            "dgk",
+            "dgn",
+            "dlv3",
+            "dmt",
+            "dwf",
+            "dwfx",
+            "dwg",
+            "dwt",
+            "dxf",
+            "emodel",
+            "exp",
+            "f3d",
+            "fbrd",
+            "fbx",
+            "fsch",
+            "g",
+            "gbxml",
+            "glb",
+            "gltf",
+            "iam",
+            "idw",
+            "ifc",
+            "ige",
+            "iges",
+            "igs",
+            "ipt",
+            "iwm",
+            "jt",
+            "max",
+            "model",
+            "mpf",
+            "msr",
+            "neu",
+            "nwc",
+            "nwd",
+            "obj",
+            "osb",
+            "par",
+            "pdf",
+            "pmlprj",
+            "pmlprjz",
+            "prt",
+            "psm",
+            "psmodel",
+            "rcc",
+            "rcs",
+            "rvm",
+            "rvt",
+            "sab",
+            "sat",
+            "sch",
+            "session",
+            "skp",
+            "sldasm",
+            "sldprt",
+            "smb",
+            "smt",
+            "ste",
+            "step",
+            "stl",
+            "stla",
+            "stlb",
+            "stp",
+            "stpz",
+            "vpb",
+            "vue",
+            "wire",
+            "x_b",
+            "x_t",
+            "xas",
+            "xpr",
+            "zip",
+            "asm\\.\\d+$",
+            "neu\\.\\d+$",
+            "prt\\.\\d+$"
+          ],
+          "thumbnail": [
+            "3dm",
+            "3ds",
+            "a",
+            "asm",
+            "axm",
+            "axmf",
+            "brd",
+            "catpart",
+            "catproduct",
+            "cgr",
+            "collaboration",
+            "dae",
+            "ddx",
+            "ddz",
+            "dgk",
+            "dgn",
+            "dlv3",
+            "dmt",
+            "dwf",
+            "dwfx",
+            "dwg",
+            "dwgx",
+            "dwt",
+            "dxf",
+            "emodel",
+            "exp",
+            "f2d",
+            "f3d",
+            "fbrd",
+            "fbx",
+            "flbr",
+            "fprj",
+            "fsch",
+            "g",
+            "gbxml",
+            "glb",
+            "gltf",
+            "iam",
+            "idw",
+            "ifc",
+            "ige",
+            "iges",
+            "igs",
+            "ipt",
+            "iwm",
+            "jt",
+            "max",
+            "model",
+            "mpf",
+            "msr",
+            "neu",
+            "nwc",
+            "nwd",
+            "obj",
+            "osb",
+            "par",
+            "pdf",
+            "pmlprj",
+            "pmlprjz",
+            "prt",
+            "psm",
+            "psmodel",
+            "rcc",
+            "rcs",
+            "rva",
+            "rvm",
+            "rvt",
+            "sab",
+            "sat",
+            "sch",
+            "session",
+            "skp",
+            "sldasm",
+            "sldprt",
+            "smb",
+            "smt",
+            "ste",
+            "step",
+            "stl",
+            "stla",
+            "stlb",
+            "stp",
+            "stpz",
+            "vpb",
+            "vue",
+            "wire",
+            "x_b",
+            "x_t",
+            "xas",
+            "xpr",
+            "zip",
+            "asm\\.\\d+$",
+            "neu\\.\\d+$",
+            "prt\\.\\d+$"
+          ]
+        }
+      }
+    },
+    {
+      "raw": "curl --location 'https://developer.api.autodesk.com/modelderivative/v2/designdata/formats' \\\n  --header 'Authorization: Bearer eyJh...' \\\n  --header 'If-Modified-Since: Sat, 12 Oct 2024 11:15:42 GMT'"
+    },
+    {
+      "raw": "// Define the URL for the GET request to fetch supported formats\nconst url = 'https://developer.api.autodesk.com/modelderivative/v2/designdata/formats';\n\n// Define the request options, including the HTTP method and headers\nconst options = {\n    method: 'GET',\n    headers: {\n        'Authorization': 'Bearer eyJh...',  // Replace with a valid access token\n        'If-Modified-Since': 'Sat, 12 Oct 2024 11:15:42 GMT'  // Specify the date for conditional retrieval\n    }\n};\n\n// Make the GET request using the Fetch API\nfetch(url, options)\n    .then(response => response.json())\n    .then(data => console.log(data))\n    .catch(error => console.error('Error:', error));"
+    },
+    {
+      "raw": "// Create a new instance of HttpClient to send HTTP requests\nvar client = new HttpClient();\n\n// Create a new HTTP GET request to the specified URL\nvar request = new HttpRequestMessage(HttpMethod.Get, \"https://developer.api.autodesk.com/modelderivative/v2/designdata/formats\");\n\n// Add the Authorization header with a Bearer token for authentication\nrequest.Headers.Add(\"Authorization\", \"Bearer eyJh...\");\nrequest.Headers.Add(\"If-Modified-Since\", \"Sat, 12 Oct 2024 11:15:42 GMT\"); // Specify the date for conditional retrieval\n\n// Send the HTTP request asynchronously and get the response\nvar response = await client.SendAsync(request);\n// Ensure the response indicates success (status code 200-299)\nresponse.EnsureSuccessStatusCode();\n// Read the response content as a string and print it to the console\nConsole.WriteLine(await response.Content.ReadAsStringAsync());"
+    },
+    {
+      "raw": "# Import the requests library to handle HTTP requests\nimport requests\n\n# Define the URL for the GET request to fetch supported formats\nurl = \"https://developer.api.autodesk.com/modelderivative/v2/designdata/formats\"\n\n# Define the payload (empty in this case, as no body is required for this GET request)\npayload = {}\n\n# Define the headers, including the Authorization header with a Bearer token for authentication\nheaders = {\n    'Authorization': 'Bearer eyJh...',  # Replace 'eyJh...' with a valid access token\n    'If-Modified-Since': 'Sat, 12 Oct 2024 11:15:42 GMT'  # Specify the date for conditional retrieval\n}\n\n# Make the GET request using the requests library\nresponse = requests.request(\"GET\", url, headers=headers, data=payload)\n\n# Print the response content (supported formats) to the console\nprint(response.text)"
+    },
+    {
+      "raw": "Status Code: 304 Not Modified\nDate: Fri, 16 Jun 2023 09:39:54 GMT\nLast-Modified: Mon, 29 May 2023 07:26:57 GMT\nx-ads-startup-time: Mon Jun 05 04:03:40 UTC 2023\nx-ads-duration: 13 ms\nx-ads-app-identifier: platform-viewing-2023.05.01.321.f6784ca64-production"
+    }
+  ]
+}

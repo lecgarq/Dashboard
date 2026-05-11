@@ -1,0 +1,78 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/SceneBuilder",
+    "scrapedAt": "2026-05-08T18:47:11.691Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "SceneBuilder",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Autodesk.Viewing.Viewer3D",
+          "col_1": "The viewer instance loading the extension"
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Default options used when calling addNewModel"
+        },
+        {
+          "col_0": "conserveMemoryboolean",
+          "col_1": "Set to true to turn on memory conservation mode. In this mode [addMesh()]`Autodesk.Viewing.Extensions.SceneBuilder#addMesh <#fixMe/>`_ is not available because a single mesh is shared among all of the fragments in the model."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "optionsobject",
+          "col_1": "Options combined with the options used  when the extension is loaded with loadExtension(). The combined options are put in the loadOptions property in the object returned by model.getData()."
+        },
+        {
+          "col_0": "conserveMemoryboolean",
+          "col_1": "Set to true to turn on memory conservation mode. In this mode [addMesh()]`Autodesk.Viewing.Extensions.SceneBuilder#addMesh <#fixMe/>`_ is not available because a single mesh is shared among all of the fragments in the model."
+        },
+        {
+          "col_0": "createWireframeboolean",
+          "col_1": "Set to true to turn on edge generation for geometry."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Promise (ModelBuilder)",
+          "description": "A Promise that resolves with a ModelBuilder instance for the new model."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "viewer.loadExtension('Autodesk.Viewing.SceneBuilder');"
+    }
+  ]
+}

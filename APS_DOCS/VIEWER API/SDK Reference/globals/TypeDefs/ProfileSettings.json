@@ -1,0 +1,45 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/globals/TypeDefs/ProfileSettings",
+    "scrapedAt": "2026-05-08T18:49:55.992Z",
+    "category": "SDK Reference/globals/TypeDefs",
+    "apiName": "VIEWER API"
+  },
+  "title": "ProfileSettings",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "namestring",
+          "col_1": "Name of the profile settings."
+        },
+        {
+          "col_0": "labelstring",
+          "col_1": "Optional. An end-user string to use instead of the name."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Optional. A description about the profile."
+        },
+        {
+          "col_0": "settingsSettings",
+          "col_1": "Used by the Profile to apply to the viewer preferences."
+        },
+        {
+          "col_0": "persistentArray.<String>",
+          "col_1": "An array of setting ids to keep in localStorage."
+        },
+        {
+          "col_0": "sharedStorageArray.<String>",
+          "col_1": "An array of setting ids that share the persisted values across profiles."
+        },
+        {
+          "col_0": "extensionsExtensions",
+          "col_1": "Extensions that should or should not be loaded."
+        }
+      ]
+    }
+  ]
+}

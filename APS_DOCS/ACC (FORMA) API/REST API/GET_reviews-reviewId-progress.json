@@ -1,0 +1,274 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/reviews-getreviewprogress-GET",
+    "scrapedAt": "2026-05-08T23:58:56.196Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/reviews/{reviewId}/progress",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/progress?limit=2&offset=10",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/reviews/v1/projects/{projectId}/reviews/{reviewId}/progress"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context optional"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a two-legged access token obtained via a Client Credentials Grant flow, or a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "x-user-idstring",
+          "col_1": "The Autodesk ID of the user on whose behalf the request is made. Use this header to specify which user should be affected by the request. Your application must be configured to act on behalf of that user.\nThis header is only required when using two-legged authentication. It is not needed for three-legged authentication.\nOnly the user’s Autodesk ID (autodeskId) can be accepted."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You can provide the project ID with or without the “b.\" prefix.\n\nExample with prefix: b.563a4c30-e30d-4869-ac02-2a18b6447abe\nExample without prefix: 563a4c30-e30d-4869-ac02-2a18b6447abe"
+        },
+        {
+          "col_0": "reviewIdstring: UUID",
+          "col_1": "The unique ID of the review.\nThis must be the UUID, not the numeric sequence ID shown in the Reviews UI.\nTo find the review ID, call GET reviews."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of review-progress records to return. Valid range: 1–50. Default: 50. For example: limit=2."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The zero-based index of the first record to return. Use with limit for pagination. Default: 0. For example: offset=10."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The review progress was retrieved successfully."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request. The input parameters were invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Authentication failed. Required authentication headers are missing or invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user does not have permission to access this resource."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "Not found. The resource does not exist or is inaccessible."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected server error occurred."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "resultsarray: object",
+          "col_1": "The list of review-progress records, returned in reverse chronological order."
+        },
+        {
+          "col_0": "stepIdstring",
+          "col_1": "The ID of the review step this progress record relates to."
+        },
+        {
+          "col_0": "stepNamestring",
+          "col_1": "The name of the review step this progress record relates to."
+        },
+        {
+          "col_0": "claimedByobject",
+          "col_1": "Information about the user who claimed the step."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the user. To find details about the user, call GET users/:Id."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the user."
+        },
+        {
+          "col_0": "actionByobject",
+          "col_1": "Information about the user recorded when the step status is SUBMITTED or VOID. In the Reviews UI, these statuses occur when a participant submits their decision or when a step is voided."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the user. To find details about the user, call GET users/:Id."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of a user."
+        },
+        {
+          "col_0": "candidatesobject",
+          "col_1": "Information about the users, roles, and companies who are eligible to take the next action in this step."
+        },
+        {
+          "col_0": "rolesarray: object",
+          "col_1": "Project roles that can act in this step."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the role."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the role."
+        },
+        {
+          "col_0": "usersarray: object",
+          "col_1": "Individual users who can act in this step."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the user."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the user."
+        },
+        {
+          "col_0": "companiesarray: object",
+          "col_1": "Companies that can act in this step."
+        },
+        {
+          "col_0": "autodeskIdstring",
+          "col_1": "The Autodesk ID of the company."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the company."
+        },
+        {
+          "col_0": "endTimedatetime: ISO 8601",
+          "col_1": "The date and time when the step ended. This value is set when the step is completed, either by being submitted or voided."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Additional information recorded for this step in the review’s progress."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "The current status of the step. Possible values:\n\nCLAIMED: A user has claimed the step.\nUNCLAIMED: No user has claimed the step.\nSUBMITTED: A user submitted the step (e.g., approved/rejected/custom).\nVOID: The step was voided."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Metadata about the paginated results."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The maximum number of results returned per page."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of results skipped before the current page. Zero-based index."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "The total number of results that match the query, regardless of pagination."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "The URL for the next page of results. If omitted, there are no more pages."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/reviews/v1/projects/563a4c30-e30d-4869-ac02-2a18b6447abe/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/progress?limit=2&offset=10' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"results\": [\n    {\n      \"stepId\": \"Lane_uJtTI3vjaF\",\n      \"stepName\": \"Reviewer\",\n      \"claimedBy\": {\n        \"autodeskId\": \"HWUBNU689CRU\",\n        \"name\": \"James Smith\"\n      },\n      \"actionBy\": {\n        \"autodeskId\": \"HWUBNU689CRU\",\n        \"name\": \"James Smith\"\n      },\n      \"candidates\": {\n        \"roles\": [\n          {\n            \"autodeskId\": \"1473817\",\n            \"name\": \"Architect\"\n          }\n        ],\n        \"users\": [\n          {\n            \"autodeskId\": \"HWUBNU689CRU\",\n            \"name\": \"James Smith\"\n          }\n        ],\n        \"companies\": [\n          {\n            \"autodeskId\": \"26980302\",\n            \"name\": \"Autodesk Co. Ltd.\"\n          }\n        ]\n      },\n      \"endTime\": \"2024-11-19T01:38:27.306Z\",\n      \"notes\": \"Please check all rebar annotations before approving. Include markup if changes are required.\",\n      \"status\": \"CLAIMED\"\n    }\n  ],\n  \"pagination\": {\n    \"limit\": 10,\n    \"offset\": 0,\n    \"totalResults\": 100,\n    \"nextUrl\": \"https://developer.api.autodesk.com/construction/reviews/v1/projects/497f6eca-6276-4993-bfeb-53cbbbba6f08/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/progress?limit=10&offset=10\"\n  }\n}",
+      "parsed": {
+        "results": [
+          {
+            "stepId": "Lane_uJtTI3vjaF",
+            "stepName": "Reviewer",
+            "claimedBy": {
+              "autodeskId": "HWUBNU689CRU",
+              "name": "James Smith"
+            },
+            "actionBy": {
+              "autodeskId": "HWUBNU689CRU",
+              "name": "James Smith"
+            },
+            "candidates": {
+              "roles": [
+                {
+                  "autodeskId": "1473817",
+                  "name": "Architect"
+                }
+              ],
+              "users": [
+                {
+                  "autodeskId": "HWUBNU689CRU",
+                  "name": "James Smith"
+                }
+              ],
+              "companies": [
+                {
+                  "autodeskId": "26980302",
+                  "name": "Autodesk Co. Ltd."
+                }
+              ]
+            },
+            "endTime": "2024-11-19T01:38:27.306Z",
+            "notes": "Please check all rebar annotations before approving. Include markup if changes are required.",
+            "status": "CLAIMED"
+          }
+        ],
+        "pagination": {
+          "limit": 10,
+          "offset": 0,
+          "totalResults": 100,
+          "nextUrl": "https://developer.api.autodesk.com/construction/reviews/v1/projects/497f6eca-6276-4993-bfeb-53cbbbba6f08/reviews/73c8b3ec-eea2-4240-9c69-f9563e2fec0c/progress?limit=10&offset=10"
+        }
+      }
+    }
+  ]
+}

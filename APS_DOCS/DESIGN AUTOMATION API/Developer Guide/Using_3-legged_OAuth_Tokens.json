@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/3-legged-oauth-token-usage",
+    "scrapedAt": "2026-05-08T17:39:10.988Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Using 3-legged OAuth Tokens",
+  "codeExamples": [
+    {
+      "raw": "Das.WorkitemSigner.exe generate mykey.json"
+    },
+    {
+      "raw": "Das.WorkitemSigner.exe export mykey.json mypublickey.json"
+    },
+    {
+      "raw": "curl forgeapps/me -X PATCH -d `{\"publicKey\" : <contents of mypublickey.json>}`"
+    },
+    {
+      "raw": "Das.WorkitemSigner.exe sign mykey.json <ForgeAppNickNameOrId>.PlotToPdf+<Alias>"
+    }
+  ]
+}

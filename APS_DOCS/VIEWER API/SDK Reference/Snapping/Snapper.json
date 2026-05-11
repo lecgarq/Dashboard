@@ -1,0 +1,142 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Snapping/Snapper",
+    "scrapedAt": "2026-05-08T18:47:41.158Z",
+    "category": "SDK Reference/Snapping",
+    "apiName": "VIEWER API"
+  },
+  "title": "Snapper",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Viewer3D",
+          "col_1": "Viewer instance"
+        },
+        {
+          "col_0": "options*object",
+          "col_1": "Configurations for the extension"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true when the tool is active"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "SnapResult",
+          "description": "The snapping status of the last pointer event performed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "true when the last pointer event got snapped."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "result*",
+          "col_1": "Result of Hit Test."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "edge*Object",
+          "col_1": "{a, b} with vertex indices a,b of lineStart/lineEnd vertex"
+        },
+        {
+          "col_0": "geometry*GeometryBuffer",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "THREE.Geometry, THREE.BufferGeometry",
+          "description": "Geometry with simple line"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "face*THREE.BufferGeometry",
+          "col_1": "The geometry"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the any of the faces composing the geometry is curved"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "hitResult*object",
+          "col_1": "a result of a ray intersection."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "Options object."
+        },
+        {
+          "col_0": "enumSegmentsfunction",
+          "col_1": "Enumerates all segments within a given bbox in model-space."
+        }
+      ]
+    }
+  ]
+}

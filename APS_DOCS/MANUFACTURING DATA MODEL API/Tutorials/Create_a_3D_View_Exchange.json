@@ -1,0 +1,124 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/tutorials/mutations/3d_view_based_exchange",
+    "scrapedAt": "2026-05-08T18:15:00.305Z",
+    "category": "Tutorials",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "Create a 3D View Exchange",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Type",
+        "Operation",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Type": "Mutation",
+          "Operation": "createExchange",
+          "Description": "Creates a data exchange."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "mutation CreateExchange(\n      $viewName: String\n      $sourceFileId: String!\n      $targetExchangeName: String!\n      $targetFolderId: String!\n  ) {\n      createExchange(\n          input: {\n              viewName: $viewName\n              source: { fileId: $sourceFileId }\n              target: { name: $targetExchangeName, folderId: $targetFolderId }\n          }\n      ) {\n          exchange {\n              id\n              name\n              elements {\n                  results {\n                      id\n                      name\n                  }\n               }\n            }\n         }\n      }"
+    },
+    {
+      "raw": "{\n  \"viewName\": \"FourWalls_3D\",\n  \"sourceFileId\": \"aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB\",\n  \"targetExchangeName\": \"3D View Category Door Exchange\",\n  \"targetFolderId\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR\"\n}",
+      "parsed": {
+        "viewName": "FourWalls_3D",
+        "sourceFileId": "aXRlbX5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJRfnVybjphZHNrLndpcHByb2Q6ZG0ubGluZWFnZTpCVGJ3enVuSlFRU0wwTVBsbFhNVDZB",
+        "targetExchangeName": "3D View Category Door Exchange",
+        "targetFolderId": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby5ON21kU05TSFR3Nk81dWNualhsSjJR"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"createExchange\": {\n          \"exchange\": {\n              \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg\",\n              \"name\": \"3D View Category Door Exchange\",\n              \"elements\": {\n                  \"results\": [ ]\n                }\n             }\n          }\n       }\n    }",
+      "parsed": {
+        "data": {
+          "createExchange": {
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg",
+              "name": "3D View Category Door Exchange",
+              "elements": {
+                "results": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "query GetExchangeStatus($exchangeId: ID!) {\n    getExchangeCreationStatus(exchangeId: $exchangeId) {\n        status\n        versionNumber\n        exchange {\n            id\n            name\n            elements {\n                results {\n                    id\n                    name\n                }\n            }\n        }\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"exchangeId\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg\"\n}",
+      "parsed": {
+        "exchangeId": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg"
+      }
+    },
+    {
+      "raw": "{\n    \"data\":{\n        \"getExchangeCreationStatus\":{\n            \"status\":\"COMPLETED\",\n            \"versionNumber\":1,\n            \"exchange\":{\n                \"id\":\"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg\",\n                \"name\":\"3D View Category Door Exchange\",\n                \"elements\":{\n                    \"results\":[\n                        {\n                            \"id\":\"6CD2C9602D7D8878069B4F2A52431C4F82F942D3\",\n                            \"name\":\"Level 1\"\n                        },\n                        {\n                            \"id\":\"4E549A13B43C6698D49E44C72A2002217EC1CA0B\",\n                            \"name\":\"36\\\" x 84\\\"\"\n                        },\n                        {\n                            \"id\":\"E700279D3C18E48406E9369085BF3A3D639C3575\",\n                            \"name\":\"New Construction\"\n                        },\n                        {\n                            \"id\":\"383416EBE8CA1023DEB787FF1886B4095FE7448E\",\n                            \"name\":\"Generic - 8\\\"\"\n                        },\n                        {\n                            \"id\":\"43C60B40ACC07FE80F4CED8E42B42B9FABA1E753\",\n                            \"name\":\"Generic - 8\\\"\"\n                        },\n                        {\n                            \"id\":\"FD7385C347BB2C0DE64AD0EABEF420DC43F7F94D\",\n                            \"name\":\"Generic - 8\\\"\"\n                        },\n                        {\n                            \"id\":\"F0DEC8FFB03C0D775D751A7AFB7497A020E5DBC8\",\n                            \"name\":\"36\\\" x 48\\\"\"\n                        },\n                        {\n                            \"id\":\"627E20C02DB930726F6BCADAB32FEE60037D0271\",\n                            \"name\":\"Level 2\"\n                        },\n                        {\n                            \"id\":\"F93A3A5F62A17F598FD8B3CCD18A291962044C1C\",\n                            \"name\":\"Grid Line 1/2\\\"\"\n                        },\n                        {\n                            \"id\":\"EC133AE7A42CA82A4CB7F6F643F722B7DD514F03\",\n                            \"name\":\"Generic - 8\\\"\"\n                        }\n                    ]\n                }\n            }\n        }\n    }\n}",
+      "parsed": {
+        "data": {
+          "getExchangeCreationStatus": {
+            "status": "COMPLETED",
+            "versionNumber": 1,
+            "exchange": {
+              "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfjY0MDJjMzFkLTg4Y2QtM2NjYy05MjY4LTE1ZmUyMmY0ODMwYg",
+              "name": "3D View Category Door Exchange",
+              "elements": {
+                "results": [
+                  {
+                    "id": "6CD2C9602D7D8878069B4F2A52431C4F82F942D3",
+                    "name": "Level 1"
+                  },
+                  {
+                    "id": "4E549A13B43C6698D49E44C72A2002217EC1CA0B",
+                    "name": "36\" x 84\""
+                  },
+                  {
+                    "id": "E700279D3C18E48406E9369085BF3A3D639C3575",
+                    "name": "New Construction"
+                  },
+                  {
+                    "id": "383416EBE8CA1023DEB787FF1886B4095FE7448E",
+                    "name": "Generic - 8\""
+                  },
+                  {
+                    "id": "43C60B40ACC07FE80F4CED8E42B42B9FABA1E753",
+                    "name": "Generic - 8\""
+                  },
+                  {
+                    "id": "FD7385C347BB2C0DE64AD0EABEF420DC43F7F94D",
+                    "name": "Generic - 8\""
+                  },
+                  {
+                    "id": "F0DEC8FFB03C0D775D751A7AFB7497A020E5DBC8",
+                    "name": "36\" x 48\""
+                  },
+                  {
+                    "id": "627E20C02DB930726F6BCADAB32FEE60037D0271",
+                    "name": "Level 2"
+                  },
+                  {
+                    "id": "F93A3A5F62A17F598FD8B3CCD18A291962044C1C",
+                    "name": "Grid Line 1/2\""
+                  },
+                  {
+                    "id": "EC133AE7A42CA82A4CB7F6F643F722B7DD514F03",
+                    "name": "Generic - 8\""
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

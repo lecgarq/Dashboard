@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedIFC",
+    "scrapedAt": "2026-05-08T18:25:46.573Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class JobPayloadFormatAdvancedIFC",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class JobPayloadFormatAdvancedIFC"
+    },
+    {
+      "raw": "public JobPayloadFormatAdvancedIFC()"
+    },
+    {
+      "raw": "[DataMember(Name = \"exportSettingName\", EmitDefaultValue = false)]\npublic string ExportSettingName { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

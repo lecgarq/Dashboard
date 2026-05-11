@@ -1,0 +1,20 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/change_history/changelog_v7",
+    "scrapedAt": "2026-05-08T18:50:18.912Z",
+    "category": "Other",
+    "apiName": "VIEWER API"
+  },
+  "title": "V7 Changelog",
+  "codeExamples": [
+    {
+      "raw": "const options = { /* your Viewer options */ };\nAutodesk.Viewing.FeatureFlags.set('DS_ENDPOINTS', true);\nAutodesk.Viewing.Initializer(options, function() { /* your callback logic */ });"
+    },
+    {
+      "raw": "Autodesk.Viewing.FeatureFlags.set('HIDE_LARGE_MODEL_EXPERIENCE', true);"
+    },
+    {
+      "raw": "var tool = viewer.toolController.getTool('dolly');\n    tool.setDollyDragScale(value); //Drag Speed\n    tool.setDollyScrollScale(value); //Scroll Speed"
+    }
+  ]
+}

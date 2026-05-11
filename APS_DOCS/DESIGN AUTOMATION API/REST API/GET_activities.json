@@ -1,0 +1,117 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/http/activities-GET",
+    "scrapedAt": "2026-05-08T17:42:39.243Z",
+    "category": "REST API",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "activities",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/da/us-east/v3/activities",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/da/us-east/v3/activities"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "app only"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "code:all"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via OAuth"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "pagestring",
+          "col_1": "Access an additional ‘page’ of data when necessary, based on the ‘paginationToken’ returned from a previous invocation."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully get all available Activities."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "Bad request."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Unauthorized"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Unknown error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "paginationTokenstring",
+          "col_1": ""
+        },
+        {
+          "col_0": "dataarray: string",
+          "col_1": ""
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/da/us-east/v3/activities' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"paginationToken\": \"\",\n  \"data\": [\n    \"Autodesk.Nop+Latest\",\n    \"AutoCAD.AcSvfPublish+prod\",\n    \"Revit.RvtIOSandboxTestActivity2018+prod\",\n    \"3dsMax.HelloWorld+Latest\",\n    \"Revit.RvtIOSketchItActivity2018+prod\",\n    \"Inventor.BasicPluginTest+prod\",\n    \"3dsMax.bakeToTexture+Latest\",\n    \"Inventor.iLogic_Volume2020+prod\",\n    \"AutoCAD.AcF2dPublish+prod\",\n    \"AutoCAD.AcLMVPublish+prod\",\n    \"AutoCAD.PlotToPDF+prod\",\n    \"Inventor.Configuration+Beta\",\n    \"Inventor.ChangeParams+prod\"\n  ]\n}",
+      "parsed": {
+        "paginationToken": "",
+        "data": [
+          "Autodesk.Nop+Latest",
+          "AutoCAD.AcSvfPublish+prod",
+          "Revit.RvtIOSandboxTestActivity2018+prod",
+          "3dsMax.HelloWorld+Latest",
+          "Revit.RvtIOSketchItActivity2018+prod",
+          "Inventor.BasicPluginTest+prod",
+          "3dsMax.bakeToTexture+Latest",
+          "Inventor.iLogic_Volume2020+prod",
+          "AutoCAD.AcF2dPublish+prod",
+          "AutoCAD.AcLMVPublish+prod",
+          "AutoCAD.PlotToPDF+prod",
+          "Inventor.Configuration+Beta",
+          "Inventor.ChangeParams+prod"
+        ]
+      }
+    }
+  ]
+}

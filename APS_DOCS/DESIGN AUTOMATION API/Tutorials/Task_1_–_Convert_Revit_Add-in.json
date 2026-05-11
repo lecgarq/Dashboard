@@ -1,0 +1,26 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/tutorials/revit/step1-convert-addin",
+    "scrapedAt": "2026-05-08T17:41:33.830Z",
+    "category": "Tutorials",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Task 1 – Convert Revit Add-in to an Automation API Compatible Add-in",
+  "codeExamples": [
+    {
+      "raw": "using Autodesk.Revit.ApplicationServices;\nusing Autodesk.Revit.DB;\nusing DesignAutomationFramework;"
+    },
+    {
+      "raw": "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n  <RevitAddIns>\n    <AddIn Type=\"DBApplication\">\n      <Name>DeleteWalls</Name>\n      <Assembly>.\\DeleteWalls.dll</Assembly>\n      <AddInId>d7fe1983-8f10-4983-98e2-c3cc332fc978</AddInId>\n      <FullClassName>DeleteWalls.DeleteWallsApp</FullClassName>\n      <Description>\"Deletes Walls\"</Description>\n      <VendorId>Autodesk</VendorId>\n      <VendorDescription>\n      </VendorDescription>\n    </AddIn>\n  </RevitAddIns>"
+    },
+    {
+      "raw": "using Autodesk.Revit.ApplicationServices;\nusing Autodesk.Revit.DB;\nusing DesignAutomationFramework;\nnamespace DeleteWalls\n{\n   [Autodesk.Revit.Attributes.Regeneration(Autodesk.Revit.Attributes.RegenerationOption.Manual)]\n   [Autodesk.Revit.Attributes.Transaction(Autodesk.Revit.Attributes.TransactionMode.Manual)]\n   public class DeleteWallsApp : IExternalDBApplication\n   {\n      public ExternalDBApplicationResult OnStartup(Autodesk.Revit.ApplicationServices.ControlledApplication app)\n      {\n         return ExternalDBApplicationResult.Succeeded;\n      }\n\n      public ExternalDBApplicationResult OnShutdown(Autodesk.Revit.ApplicationServices.ControlledApplication app)\n      {\n         return ExternalDBApplicationResult.Succeeded;\n      }"
+    },
+    {
+      "raw": "public class DeleteWallsApp : IExternalDBApplication\n{\n   public ExternalDBApplicationResult OnStartup(Autodesk.Revit.ApplicationServices.ControlledApplication app)\n   {\n      DesignAutomationBridge.DesignAutomationReadyEvent += HandleDesignAutomationReadyEvent;\n      return ExternalDBApplicationResult.Succeeded;\n   }\n   public void HandleDesignAutomationReadyEvent(object sender, DesignAutomationReadyEventArgs e)\n   {\n      e.Succeeded = true;\n      DeleteAllWalls(e.DesignAutomationData);\n   }"
+    },
+    {
+      "raw": "public static void DeleteAllWalls(DesignAutomationData data)\n{\n   if (data == null) throw new ArgumentNullException(nameof(data));\n\n   Application rvtApp = data.RevitApp;\n   if (rvtApp == null) throw new InvalidDataException(nameof(rvtApp));\n\n   string modelPath = data.FilePath;\n   if (String.IsNullOrWhiteSpace(modelPath)) throw new InvalidDataException(nameof(modelPath));\n\n   Document doc = data.RevitDoc;\n   if (doc == null) throw new InvalidOperationException(\"Could not open document.\");\n\n   using (Transaction transaction = new Transaction(doc))\n   {\n      FilteredElementCollector col = new FilteredElementCollector(doc).OfClass(typeof(Wall));\n      transaction.Start(\"Delete All Walls\");\n      doc.Delete(col.ToElementIds());\n      transaction.Commit();\n   }\n\n   ModelPath path = ModelPathUtils.ConvertUserVisiblePathToModelPath(\"result.rvt\");\n   doc.SaveAs(path, new SaveAsOptions());\n}"
+    }
+  ]
+}

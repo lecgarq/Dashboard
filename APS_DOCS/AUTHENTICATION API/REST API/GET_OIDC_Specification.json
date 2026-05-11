@@ -1,0 +1,107 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/http/openid-GET",
+    "scrapedAt": "2026-05-08T17:35:40.698Z",
+    "category": "REST API",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "OIDC Specification",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/.well-known/openid-configuration",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/.well-known/openid-configuration"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successful request; metadata returned."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Generic internal server error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "issuerstring",
+          "col_1": "Issuer URL"
+        },
+        {
+          "col_0": "authorization_endpointstring",
+          "col_1": "Browser URL to redirect an end user in order to acquire the user’s consent for your app to access the specified resources."
+        },
+        {
+          "col_0": "token_endpointstring",
+          "col_1": "Retrieves a two-legged or three-legged access token."
+        },
+        {
+          "col_0": "userinfo_endpointstring",
+          "col_1": "Retrieves the user information."
+        },
+        {
+          "col_0": "jwks_uristring",
+          "col_1": "Retrieves the list of public keys in the JWKS format."
+        },
+        {
+          "col_0": "revoke_endpointstring",
+          "col_1": "Takes an access token or refresh token and revokes it."
+        },
+        {
+          "col_0": "introspect_endpointstring",
+          "col_1": "Examines an access token including the reference token and returns the status information of the tokens."
+        },
+        {
+          "col_0": "scopes_supportedarray",
+          "col_1": "List of supported scopes"
+        },
+        {
+          "col_0": "response_types_supportedarray",
+          "col_1": "Supported response types"
+        },
+        {
+          "col_0": "response_modes_supportedarray",
+          "col_1": "Supported response modes"
+        },
+        {
+          "col_0": "grant_types_supportedarray",
+          "col_1": "Supported grant types"
+        },
+        {
+          "col_0": "subject_types_supportedarray",
+          "col_1": "Supported subject types"
+        },
+        {
+          "col_0": "id_token_signing_alg_values_supportedarray",
+          "col_1": "Signing algorithm value"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/.well-known/openid-configuration' \\\n     -X 'GET' \\"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\n\n\n{\n \"issuer\": https://developer.api.autodesk.com,\n \"authorization_endpoint\": https://developer.api.autodesk.com/authentication/v2/authorize,\n \"token_endpoint\": https://developer.api.autodesk.com/authentication/v2/token,\n \"userinfo_endpoint\": https://api.userprofile.autodesk.com/userinfo,\n \"jwks_uri\": https://developer.api.autodesk.com/authentication/v2/keys,\n \"revoke_endpoint\": https://developer.api.autodesk.com/authentication/v2/revoke,\n \"introspect_endpoint\": https://developer.api.autodesk.com/authentication/v2/introspect,\n \"scopes_supported\": [\n   \"user-profile:read\",\n   \"user:read\",\n   \"user:write\",\n   \"viewables:read\",\n   \"data:read\",\n   \"data:write\",\n   \"data:create\",\n   \"data:search\",\n   \"bucket:create\",\n   \"bucket:read\",\n   \"bucket:update\",\n   \"bucket:delete\",\n   \"code:all\",\n   \"account:read\",\n   \"account:write\",\n   \"openid\"\n ],\n \"response_types_supported\": [\n   \"code\",\n   \"code id_token\",\n   \"id_token\"\n ],\n \"response_modes_supported\": [\n   \"fragment\",\n   \"form_post\",\n   \"query\"\n ],\n \"grant_types_supported\": [\n   \"authorization_code\",\n   \"client_credentials\",\n   \"refresh_token\"\n ],\n \"subject_types_supported\": [\n   \"public\"\n ],\n \"id_token_signing_alg_values_supported\": [\n   \"RS256\"\n ]\n}"
+    }
+  ]
+}

@@ -1,0 +1,1774 @@
+{
+  "_meta": {
+    "title": "MODEL DERIVATIVE API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/overview/",
+    "scrapedAt": "2026-05-08T18:36:41.663Z",
+    "totalPages": 289
+  },
+  "categories": {
+    "Developer Guide": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "API Basics",
+        "file": "Developer Guide/API_Basics.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GDPR Compliance",
+        "file": "Developer Guide/GDPR_Compliance.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Webhooks",
+        "file": "Developer Guide/Webhooks.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Field Guide",
+        "file": "Developer Guide/Field_Guide.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Supported Translations",
+        "file": "Developer Guide/Supported_Translations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Rate Limits",
+        "file": "Developer Guide/Rate_Limits.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Developer's Guide",
+        "file": "Developer Guide/Developer's_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/basics": [
+      {
+        "name": "About this API",
+        "file": "Developer Guide/basics/About_this_API.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Translate Models",
+        "file": "Developer Guide/basics/Translate_Models.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Prepare Models for Online Viewing",
+        "file": "Developer Guide/basics/Prepare_Models_for_Online_Viewing.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extract Metadata",
+        "file": "Developer Guide/basics/Extract_Metadata.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extract Geometry",
+        "file": "Developer Guide/basics/Extract_Geometry.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Generate Thumbnails",
+        "file": "Developer Guide/basics/Generate_Thumbnails.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/rate-limiting": [
+      {
+        "name": "APS Rate Limits and Quotas",
+        "file": "Developer Guide/rate-limiting/APS_Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Derivative Rate Limits",
+        "file": "Developer Guide/rate-limiting/Model_Derivative_Rate_Limits.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Tutorials": [
+      {
+        "name": "Translate a Source File",
+        "file": "Tutorials/Translate_a_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate Source File",
+        "file": "Tutorials/Task_3_-_Translate_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Download OBJ File",
+        "file": "Tutorials/Task_4_-_Download_OBJ_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Translate a Source File Packaged as a Zip File",
+        "file": "Tutorials/Translate_a_Source_File_Packaged_as_a_Zip_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate Source File",
+        "file": "Tutorials/Task_3_-_Translate_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Download STL File",
+        "file": "Tutorials/Task_4_-_Download_STL_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Translate a Source File that Contains References",
+        "file": "Tutorials/Translate_a_Source_File_that_Contains_References.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source Files to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_Files_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate Source File",
+        "file": "Tutorials/Task_3_-_Translate_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Download STL File",
+        "file": "Tutorials/Task_4_-_Download_STL_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Prepare a File for the Viewer",
+        "file": "Tutorials/Prepare_a_File_for_the_Viewer.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate to SVF2",
+        "file": "Tutorials/Task_3_-_Translate_to_SVF2.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Display Model in the Viewer",
+        "file": "Tutorials/Task_4_-_Display_Model_in_the_Viewer.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extract Metadata From a Source File",
+        "file": "Tutorials/Extract_Metadata_From_a_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate to SVF2",
+        "file": "Tutorials/Task_3_-_Translate_to_SVF2.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Extract Metadata",
+        "file": "Tutorials/Task_4_-_Extract_Metadata.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Extract Geometry From a Source File",
+        "file": "Tutorials/Extract_Geometry_From_a_Source_File.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate to SVF2",
+        "file": "Tutorials/Task_3_-_Translate_to_SVF2.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Extract Metadata",
+        "file": "Tutorials/Task_4_-_Extract_Metadata.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 5 - Extract Geometry",
+        "file": "Tutorials/Task_5_-_Extract_Geometry.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Translate a Revit File, Generating Room and Space Information",
+        "file": "Tutorials/Translate_a_Revit_File,_Generating_Room_and_Space_Information.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "About this Walkthrough",
+        "file": "Tutorials/About_this_Walkthrough.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 1 - Obtain an Access Token",
+        "file": "Tutorials/Task_1_-_Obtain_an_Access_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Task 2 - Upload Source File to OSS",
+        "file": "Tutorials/Task_2_-_Upload_Source_File_to_OSS.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 3 - Translate to SVF2",
+        "file": "Tutorials/Task_3_-_Translate_to_SVF2.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Task 4 - Display Model in the Viewer",
+        "file": "Tutorials/Task_4_-_Display_Model_in_the_Viewer.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "How-to Guide",
+        "file": "Tutorials/How-to_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Other": [
+      {
+        "name": "Code Samples",
+        "file": "Other/Code_Samples.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "REST API Changelog",
+        "file": "Other/REST_API_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": ".NET SDK Changelog",
+        "file": "Other/.NET_SDK_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TypeScript SDK Changelog",
+        "file": "Other/TypeScript_SDK_Changelog.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model Derivative API",
+        "file": "Other/Model_Derivative_API.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "REST API": [
+      {
+        "name": "GET List Supported Formats",
+        "file": "REST API/GET_List_Supported_Formats.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/formats"
+      },
+      {
+        "name": "POST Create Translation Job",
+        "file": "REST API/POST_Create_Translation_Job.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/job"
+      },
+      {
+        "name": "POST Specify References",
+        "file": "REST API/POST_Specify_References.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6anAtYnVja2V0LTI1MDUwMi9zY2lzc29ycy5pYW0=/references"
+      },
+      {
+        "name": "GET Fetch Manifest",
+        "file": "REST API/GET_Fetch_Manifest.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest"
+      },
+      {
+        "name": "DELETE Delete Manifest",
+        "file": "REST API/DELETE_Delete_Manifest.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest"
+      },
+      {
+        "name": "GET Fetch Derivative Download URL",
+        "file": "REST API/GET_Fetch_Derivative_Download_URL.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "HEAD Check Derivative Details",
+        "file": "REST API/HEAD_Check_Derivative_Details.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/manifest/urn%3Aadsk.viewing%3Afs.file%3AdXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA%2Foutput%2F1%2FA5.svf"
+      },
+      {
+        "name": "GET Download Derivative (Deprecated)",
+        "file": "REST API/GET_Download_Derivative_(Deprecated).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET Fetch Thumbnail",
+        "file": "REST API/GET_Fetch_Thumbnail.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET List Model Views",
+        "file": "REST API/GET_List_Model_Views.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/metadata"
+      },
+      {
+        "name": "GET Fetch Object Tree",
+        "file": "REST API/GET_Fetch_Object_Tree.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/metadata/6bfb4886-f2ee-9ccb-8db0-c5c170220c40"
+      },
+      {
+        "name": "GET Fetch All Properties",
+        "file": "REST API/GET_Fetch_All_Properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxkZXJpdmF0aXZlL0E1LnppcA/metadata/4f981e94-8241-4eaf-b08b-cd337c6b8b1f/properties"
+      },
+      {
+        "name": "POST Fetch Specific Properties",
+        "file": "REST API/POST_Fetch_Specific_Properties.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sub2JqZWN0czpvcy5vYmplY3Q6bW9kZWxfZGVyaXZhdGl2ZV9wcm9wX2VuaGFuY2VtZW50X3Rlc3RpbmcvcmFjX2Jhc2ljX3NhbXBsZV9wcm9qZWN0LnJ2dA/metadata/6bfb4886-f2ee-9ccb-8db0-c5c170220c40/properties:query"
+      }
+    ],
+    "SDK Reference": [
+      {
+        "name": ".NET SDK Reference",
+        "file": "SDK Reference/.NET_SDK_Reference.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TypeScript SDK Reference",
+        "file": "SDK Reference/TypeScript_SDK_Reference.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk": [
+      {
+        "name": "Autodesk.ModelDerivative Namespace",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative_Namespace.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Autodesk.ModelDerivative.Model Namespace",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model_Namespace.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative": [
+      {
+        "name": "ModelDerivativeApiException Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative/ModelDerivativeApiException_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelDerivativeClient Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative/ModelDerivativeClient_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ServiceApiException Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative/ServiceApiException_Class.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model": [
+      {
+        "name": "BeginsWith Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/BeginsWith_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Between Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Between_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Contains Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Contains_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DeleteManifest Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/DeleteManifest_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DerivativeDownload Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/DerivativeDownload_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "EqualsTo Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/EqualsTo_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GreaterThan Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/GreaterThan_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Job Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Job_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobAcceptedJobs Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobAcceptedJobs_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayload Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayload_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedDWG Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedDWG_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedIFC Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedIFC_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedIGES Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedIGES_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedOBJ Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedOBJ_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedOBJAdvanced Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedOBJAdvanced_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTEP Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedSTEP_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTL Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedSTL_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTLAdvanced Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedSTLAdvanced_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedThumbnail Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatAdvancedThumbnail_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatDWG Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatDWG_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatIFC Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatIFC_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatIGES Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatIGES_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatOBJ Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatOBJ_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSTEP Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSTEP_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSTL Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSTL_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2 Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedDGN Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedDGN_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedDWG Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedDWG_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedIFC Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedIFC_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedNWD Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedNWD_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedRVT Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedRVT_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedVUE Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVF2AdvancedVUE_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedDGN Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedDGN_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedDWG Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedDWG_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedIFC Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedIFC_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedNWD Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedNWD_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedRVT Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedRVT_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedVUE Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatSVFAdvancedVUE_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatThumbnail Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadFormatThumbnail_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadInput Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadInput_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadMisc Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadMisc_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadOutput Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadOutput_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadOutputDestination Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/JobPayloadOutputDestination_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LessThan Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/LessThan_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Manifest Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Manifest_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ManifestDerivative Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ManifestDerivative_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ManifestResources Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ManifestResources_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MatchId Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/MatchId_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Messages Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Messages_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViews Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ModelViews_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViewsData Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ModelViewsData_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViewsDataMetadata Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ModelViewsDataMetadata_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTree Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ObjectTree_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTreeData Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ObjectTreeData_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTreeDataObjects Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ObjectTreeDataObjects_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Properties Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Properties_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertiesData Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/PropertiesData_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertiesDataCollection Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/PropertiesDataCollection_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificProperties Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecificProperties_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPagination Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecificPropertiesPagination_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPayload Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecificPropertiesPayload_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPayloadPagination Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecificPropertiesPayloadPagination_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferences Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecifyReferences_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferencesPayload Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecifyReferencesPayload_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferencesPayloadReferences Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SpecifyReferencesPayloadReferences_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SupportedFormats Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SupportedFormats_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "IJobPayloadFormat Interface",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/IJobPayloadFormat_Interface.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "IJobPayloadFormatSVF2Advanced Interface",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/IJobPayloadFormatSVF2Advanced_Interface.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "IJobPayloadFormatSVFAdvanced Interface",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/IJobPayloadFormatSVFAdvanced_Interface.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ISpecificPropertiesPayloadQuery Interface",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ISpecificPropertiesPayloadQuery_Interface.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ApplicationProtocol Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ApplicationProtocol_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BuildingStoreys Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/BuildingStoreys_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ConversionMethod Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ConversionMethod_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExportFileStructure Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ExportFileStructure_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExtractorVersion Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/ExtractorVersion_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Format Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Format_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Height Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Height_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hierarchy Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Hierarchy_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MatchIdType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/MatchIdType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MaterialMode Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/MaterialMode_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model2dView Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Model2dView_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OpeningElements Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/OpeningElements_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OutputType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/OutputType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Payload Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Payload_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Region Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Region_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Role Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Role_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SheetType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SheetType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SolidType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SolidType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Spaces Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Spaces_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SurfaceType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SurfaceType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Unit Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Unit_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "View Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/View_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Width Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/Width_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsDerivativeFormat Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/XAdsDerivativeFormat_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsJobStatus Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/XAdsJobStatus_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsRole Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model/XAdsRole_Enum.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk": [
+      {
+        "name": "Classes",
+        "file": "SDK Reference/typescript-sdk/Classes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Enumerations",
+        "file": "SDK Reference/typescript-sdk/Enumerations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Interfaces",
+        "file": "SDK Reference/typescript-sdk/Interfaces.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Type-aliases",
+        "file": "SDK Reference/typescript-sdk/Type-aliases.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/classes": [
+      {
+        "name": "ModelDerivativeApiError",
+        "file": "SDK Reference/typescript-sdk/classes/ModelDerivativeApiError.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelDerivativeClient",
+        "file": "SDK Reference/typescript-sdk/classes/ModelDerivativeClient.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/enumerations": [
+      {
+        "name": "ApplicationProtocol",
+        "file": "SDK Reference/typescript-sdk/enumerations/ApplicationProtocol.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "BuildingStoreys",
+        "file": "SDK Reference/typescript-sdk/enumerations/BuildingStoreys.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ConversionMethod",
+        "file": "SDK Reference/typescript-sdk/enumerations/ConversionMethod.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExportFileStructure",
+        "file": "SDK Reference/typescript-sdk/enumerations/ExportFileStructure.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ExtractorVersion",
+        "file": "SDK Reference/typescript-sdk/enumerations/ExtractorVersion.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Format",
+        "file": "SDK Reference/typescript-sdk/enumerations/Format.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Height",
+        "file": "SDK Reference/typescript-sdk/enumerations/Height.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Hierarchy",
+        "file": "SDK Reference/typescript-sdk/enumerations/Hierarchy.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MatchIdType",
+        "file": "SDK Reference/typescript-sdk/enumerations/MatchIdType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MaterialMode",
+        "file": "SDK Reference/typescript-sdk/enumerations/MaterialMode.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Model2dView",
+        "file": "SDK Reference/typescript-sdk/enumerations/Model2dView.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OpeningElements",
+        "file": "SDK Reference/typescript-sdk/enumerations/OpeningElements.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OutputType",
+        "file": "SDK Reference/typescript-sdk/enumerations/OutputType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Payload",
+        "file": "SDK Reference/typescript-sdk/enumerations/Payload.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Region",
+        "file": "SDK Reference/typescript-sdk/enumerations/Region.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Role",
+        "file": "SDK Reference/typescript-sdk/enumerations/Role.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SheetType",
+        "file": "SDK Reference/typescript-sdk/enumerations/SheetType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SolidType",
+        "file": "SDK Reference/typescript-sdk/enumerations/SolidType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Spaces",
+        "file": "SDK Reference/typescript-sdk/enumerations/Spaces.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SurfaceType",
+        "file": "SDK Reference/typescript-sdk/enumerations/SurfaceType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Unit",
+        "file": "SDK Reference/typescript-sdk/enumerations/Unit.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "View",
+        "file": "SDK Reference/typescript-sdk/enumerations/View.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Width",
+        "file": "SDK Reference/typescript-sdk/enumerations/Width.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsDerivativeFormat",
+        "file": "SDK Reference/typescript-sdk/enumerations/XAdsDerivativeFormat.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsJobStatus",
+        "file": "SDK Reference/typescript-sdk/enumerations/XAdsJobStatus.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsRole",
+        "file": "SDK Reference/typescript-sdk/enumerations/XAdsRole.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/interfaces": [
+      {
+        "name": "BeginsWith",
+        "file": "SDK Reference/typescript-sdk/interfaces/BeginsWith.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Between",
+        "file": "SDK Reference/typescript-sdk/interfaces/Between.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Contains",
+        "file": "SDK Reference/typescript-sdk/interfaces/Contains.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DeleteManifest",
+        "file": "SDK Reference/typescript-sdk/interfaces/DeleteManifest.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "DerivativeDownload",
+        "file": "SDK Reference/typescript-sdk/interfaces/DerivativeDownload.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "EqualsTo",
+        "file": "SDK Reference/typescript-sdk/interfaces/EqualsTo.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GreaterThan",
+        "file": "SDK Reference/typescript-sdk/interfaces/GreaterThan.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Job",
+        "file": "SDK Reference/typescript-sdk/interfaces/Job.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobAcceptedJobs",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobAcceptedJobs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayload",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayload.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormat",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormat.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedDWG",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedDWG.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedIFC",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedIFC.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedIGES",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedIGES.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedOBJ",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedOBJ.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedOBJAdvanced",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedOBJAdvanced.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTEP",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedSTEP.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTL",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedSTL.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedSTLAdvanced",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedSTLAdvanced.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatAdvancedThumbnail",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatAdvancedThumbnail.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatDWG",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatDWG.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatIFC",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatIFC.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatIGES",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatIGES.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatOBJ",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatOBJ.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSTEP",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSTEP.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSTL",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSTL.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2Advanced",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2Advanced.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedDGN",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedDGN.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedDWG",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedDWG.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedIFC",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedIFC.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedNWD",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedNWD.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedRVT",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedRVT.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVF2AdvancedVUE",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVF2AdvancedVUE.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedDGN",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedDGN.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedDWG",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedDWG.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedIFC",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedIFC.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedNWD",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedNWD.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedRVT",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedRVT.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatSVFAdvancedVUE",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedVUE.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadFormatThumbnail",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadFormatThumbnail.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadInput",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadInput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadMisc",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadMisc.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadOutput",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadOutput.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JobPayloadOutputDestination",
+        "file": "SDK Reference/typescript-sdk/interfaces/JobPayloadOutputDestination.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "LessThan",
+        "file": "SDK Reference/typescript-sdk/interfaces/LessThan.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Manifest",
+        "file": "SDK Reference/typescript-sdk/interfaces/Manifest.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ManifestDerivative",
+        "file": "SDK Reference/typescript-sdk/interfaces/ManifestDerivative.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ManifestResources",
+        "file": "SDK Reference/typescript-sdk/interfaces/ManifestResources.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "MatchId",
+        "file": "SDK Reference/typescript-sdk/interfaces/MatchId.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Messages",
+        "file": "SDK Reference/typescript-sdk/interfaces/Messages.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViews",
+        "file": "SDK Reference/typescript-sdk/interfaces/ModelViews.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViewsData",
+        "file": "SDK Reference/typescript-sdk/interfaces/ModelViewsData.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ModelViewsDataMetadata",
+        "file": "SDK Reference/typescript-sdk/interfaces/ModelViewsDataMetadata.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTree",
+        "file": "SDK Reference/typescript-sdk/interfaces/ObjectTree.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTreeData",
+        "file": "SDK Reference/typescript-sdk/interfaces/ObjectTreeData.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ObjectTreeDataObjects",
+        "file": "SDK Reference/typescript-sdk/interfaces/ObjectTreeDataObjects.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Properties",
+        "file": "SDK Reference/typescript-sdk/interfaces/Properties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertiesData",
+        "file": "SDK Reference/typescript-sdk/interfaces/PropertiesData.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "PropertiesDataCollection",
+        "file": "SDK Reference/typescript-sdk/interfaces/PropertiesDataCollection.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Region",
+        "file": "SDK Reference/typescript-sdk/interfaces/Region.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RequestArgs",
+        "file": "SDK Reference/typescript-sdk/interfaces/RequestArgs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RequiredError",
+        "file": "SDK Reference/typescript-sdk/interfaces/RequiredError.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificProperties",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecificProperties.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPagination",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecificPropertiesPagination.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPayload",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecificPropertiesPayload.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPayloadPagination",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecificPropertiesPayloadPagination.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferences",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecifyReferences.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferencesPayload",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecifyReferencesPayload.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecifyReferencesPayloadReferences",
+        "file": "SDK Reference/typescript-sdk/interfaces/SpecifyReferencesPayloadReferences.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SupportedFormats",
+        "file": "SDK Reference/typescript-sdk/interfaces/SupportedFormats.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "XAdsDerivativeFormat",
+        "file": "SDK Reference/typescript-sdk/interfaces/XAdsDerivativeFormat.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/type-aliases": [
+      {
+        "name": "JobPayloadFormatSVFAdvanced",
+        "file": "SDK Reference/typescript-sdk/type-aliases/JobPayloadFormatSVFAdvanced.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "SpecificPropertiesPayloadQuery",
+        "file": "SDK Reference/typescript-sdk/type-aliases/SpecificPropertiesPayloadQuery.json",
+        "method": null,
+        "url": null
+      }
+    ]
+  }
+}

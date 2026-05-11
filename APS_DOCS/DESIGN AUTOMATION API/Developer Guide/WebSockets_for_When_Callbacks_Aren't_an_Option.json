@@ -1,0 +1,53 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/websocket-api",
+    "scrapedAt": "2026-05-08T17:39:07.699Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "WebSockets for When Callbacks Aren’t an Option",
+  "codeExamples": [
+    {
+      "raw": "wscat -c wss://websockets.forgedesignautomation.io"
+    },
+    {
+      "raw": "connected (press CTRL+C to quit)\n>"
+    },
+    {
+      "raw": "> hello\n< {\"action\":\"error\",\"data\":\"Invalid payload. Unexpected character\n  encountered while parsing value: h. Path '', line 0, position 0.\"}"
+    },
+    {
+      "raw": "> { \"action\" : \"post-workitem\", \"data\" : { \"activityId\" :\n  \"Autodesk.Nop+Latest\"}, \"headers\": {\"Authorization\": \"Bearer <your\n  token>\"}}"
+    },
+    {
+      "raw": "< {\"action\":\"status\",\"data\":{\"status\":\"pending\",\"stats\":{\"timeQueued\":\"2021-02-20T16:36:00.5367829Z\"},\"id\":\"6e13bd3b520142f6887e7333b8251e84\"}}",
+      "parsed": {
+        "action": "status",
+        "data": {
+          "status": "pending",
+          "stats": {
+            "timeQueued": "2021-02-20T16:36:00.5367829Z"
+          },
+          "id": "6e13bd3b520142f6887e7333b8251e84"
+        }
+      }
+    },
+    {
+      "raw": "{\"status\":\"success\",\"reportUrl\":\"https://dasprod-store.s3.amazonaws.com/workItem/CokbOqRvp41DVunD7lBO2ciiwJpltTAf/6e13bd3b520142f6887e7333b8251e84/report.txt?AWSAccessKeyId=...\",\"stats\":{\"timeQueued\":\"2021-02-20T16:36:00.655Z\",\"timeDownloadStarted\":\"2021-02-20T16:36:00.7227303Z\",\"timeInstructionsStarted\":\"2021-02-20T16:36:01.1628287Z\",\"timeInstructionsEnded\":\"2021-02-20T16:36:04.4070839Z\",\"timeUploadEnded\":\"2021-02-20T16:36:04.7794786Z\",\"bytesDownloaded\":100,\"bytesUploaded\":100},\"id\":\"6e13bd3b520142f6887e7333b8251e84\"}",
+      "parsed": {
+        "status": "success",
+        "reportUrl": "https://dasprod-store.s3.amazonaws.com/workItem/CokbOqRvp41DVunD7lBO2ciiwJpltTAf/6e13bd3b520142f6887e7333b8251e84/report.txt?AWSAccessKeyId=...",
+        "stats": {
+          "timeQueued": "2021-02-20T16:36:00.655Z",
+          "timeDownloadStarted": "2021-02-20T16:36:00.7227303Z",
+          "timeInstructionsStarted": "2021-02-20T16:36:01.1628287Z",
+          "timeInstructionsEnded": "2021-02-20T16:36:04.4070839Z",
+          "timeUploadEnded": "2021-02-20T16:36:04.7794786Z",
+          "bytesDownloaded": 100,
+          "bytesUploaded": 100
+        },
+        "id": "6e13bd3b520142f6887e7333b8251e84"
+      }
+    }
+  ]
+}

@@ -1,0 +1,361 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/tutorials/takeoff/takeoff-extract-inventory",
+    "scrapedAt": "2026-05-08T23:45:47.356Z",
+    "category": "Tutorials",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Extract the Inventory for a Takeoff Project",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/packages\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 200\n  },\n  \"results\": [\n    {\n      \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n      \"name\": \"Concrete\",\n      \"createdAt\": \"2019-08-24T14:15:22Z\",\n      \"updatedAt\": \"2020-11-11T12:32:45Z\",\n      \"updatedByName\": \"Jane Johnson\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 200
+        },
+        "results": [
+          {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "name": "Concrete",
+            "createdAt": "2019-08-24T14:15:22Z",
+            "updatedAt": "2020-11-11T12:32:45Z",
+            "updatedByName": "Jane Johnson"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/packages/6e330582-ad88-4299-85e6-b749e8dec40d/takeoff-types\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 1000\n  },\n  \"results\": [\n    {\n      \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n      \"name\": \"Foundation Slab\",\n      \"description\": \"Slab in the garage\",\n      \"color\": \"#11ff11\",\n      \"borderColor\": \"#11ff11\",\n      \"shapeType\": \"SQUARE\",\n      \"countMarkerSize\": 1.5,\n      \"tool\": \"DISTANCE\",\n      \"propertyDefinitions\": [\n        {\n          \"name\": \"Height\",\n          \"unitOfMeasure\": \"LF\",\n          \"value\": 2.5,\n          \"valueLocation\": \"INSTANCE_WITH_TAKEOFF_TYPE_DEFAULT\"\n        },\n        {\n          \"name\": \"Width\",\n          \"unitOfMeasure\": \"LF\",\n          \"value\": 1,\n          \"valueLocation\": \"INSTANCE_WITH_TAKEOFF_TYPE_DEFAULT\"\n        }\n      ],\n      \"modelMappings\": [\n        {\n          \"name\": \"Area\",\n          \"mappingExpression\": \"Sill_Height*Width\"\n        }\n      ],\n      \"primaryQuantityDefinition\": {\n        \"classificationCodeOne\": \"037000\",\n        \"classificationCodeTwo\": \"044000\",\n        \"outputName\": \"Exterior Wall\",\n        \"expression\": \"Distance*Width*Height*1.1\",\n        \"unitOfMeasure\": \"CY\"\n      },\n      \"secondaryQuantityDefinitions\": [\n        {\n          \"classificationCodeOne\": \"CustomAreaCode1\",\n          \"classificationCodeTwo\": \"CustomAreaCode2\",\n          \"outputName\": \"Custom Flooring\",\n          \"expression\": \"Distance*Width\",\n          \"unitOfMeasure\": \"SF\"\n        }\n      ],\n      \"createdAt\": \"2019-08-24T14:15:22Z\",\n      \"updatedAt\": \"2020-11-11T12:32:45Z\",\n      \"updatedByName\": \"Jane Johnson\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 1000
+        },
+        "results": [
+          {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "name": "Foundation Slab",
+            "description": "Slab in the garage",
+            "color": "#11ff11",
+            "borderColor": "#11ff11",
+            "shapeType": "SQUARE",
+            "countMarkerSize": 1.5,
+            "tool": "DISTANCE",
+            "propertyDefinitions": [
+              {
+                "name": "Height",
+                "unitOfMeasure": "LF",
+                "value": 2.5,
+                "valueLocation": "INSTANCE_WITH_TAKEOFF_TYPE_DEFAULT"
+              },
+              {
+                "name": "Width",
+                "unitOfMeasure": "LF",
+                "value": 1,
+                "valueLocation": "INSTANCE_WITH_TAKEOFF_TYPE_DEFAULT"
+              }
+            ],
+            "modelMappings": [
+              {
+                "name": "Area",
+                "mappingExpression": "Sill_Height*Width"
+              }
+            ],
+            "primaryQuantityDefinition": {
+              "classificationCodeOne": "037000",
+              "classificationCodeTwo": "044000",
+              "outputName": "Exterior Wall",
+              "expression": "Distance*Width*Height*1.1",
+              "unitOfMeasure": "CY"
+            },
+            "secondaryQuantityDefinitions": [
+              {
+                "classificationCodeOne": "CustomAreaCode1",
+                "classificationCodeTwo": "CustomAreaCode2",
+                "outputName": "Custom Flooring",
+                "expression": "Distance*Width",
+                "unitOfMeasure": "SF"
+              }
+            ],
+            "createdAt": "2019-08-24T14:15:22Z",
+            "updatedAt": "2020-11-11T12:32:45Z",
+            "updatedByName": "Jane Johnson"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/packages/6e330582-ad88-4299-85e6-b749e8dec40d/takeoff-items\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 1000\n  },\n  \"results\": [\n    {\n      \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n      \"takeoffTypeId\": \"b9380176-9ac2-454d-acdd-fdfd988b9702\",\n      \"type\": \"COUNT\",\n      \"objectName\": \"36\\\" x 48\\\"\",\n      \"geometry\": \"<path fill=\\\"none\\\" stroke=\\\"red\\\" d=\\\"M 10,10 h 10 m 0,10 h 10 m 0,10 h 10\\\">\",\n      \"objectId\": 1,\n      \"propertyValues\": [\n        {\n          \"name\": \"Perimeter\",\n          \"unitOfMeasure\": \"LF\",\n          \"source\": \"MEASUREMENT\",\n          \"value\": 3\n        }\n      ],\n      \"primaryQuantity\": {\n        \"outputName\": \"Bedroom Wall\",\n        \"classificationCodeOne\": \"085113\",\n        \"classificationCodeTwo\": \"011223\",\n        \"quantity\": 15,\n        \"unitOfMeasure\": \"EA\"\n      },\n      \"secondaryQuantities\": [\n        {\n          \"outputName\": \"Wall Paint\",\n          \"classificationCodeOne\": \"098732\",\n          \"classificationCodeTwo\": \"011665\",\n          \"quantity\": 45,\n          \"unitOfMeasure\": \"LF\"\n        }\n      ],\n      \"contentView\": {\n        \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n        \"version\": \"urn:adsk.wipstg:fs.file:vf.oeSywgLpSkONo9O6CUZvkQ?version=3\"\n      },\n      \"locationId\": \"ff7f6eb4-6276-4993-bfeb-34cbbbba3a17\",\n      \"createdAt\": \"2019-08-24T14:15:22Z\",\n      \"updatedAt\": \"2020-11-11T12:32:45Z\",\n      \"updatedByName\": \"Jane Johnson\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 1000
+        },
+        "results": [
+          {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "takeoffTypeId": "b9380176-9ac2-454d-acdd-fdfd988b9702",
+            "type": "COUNT",
+            "objectName": "36\" x 48\"",
+            "geometry": "<path fill=\"none\" stroke=\"red\" d=\"M 10,10 h 10 m 0,10 h 10 m 0,10 h 10\">",
+            "objectId": 1,
+            "propertyValues": [
+              {
+                "name": "Perimeter",
+                "unitOfMeasure": "LF",
+                "source": "MEASUREMENT",
+                "value": 3
+              }
+            ],
+            "primaryQuantity": {
+              "outputName": "Bedroom Wall",
+              "classificationCodeOne": "085113",
+              "classificationCodeTwo": "011223",
+              "quantity": 15,
+              "unitOfMeasure": "EA"
+            },
+            "secondaryQuantities": [
+              {
+                "outputName": "Wall Paint",
+                "classificationCodeOne": "098732",
+                "classificationCodeTwo": "011665",
+                "quantity": 45,
+                "unitOfMeasure": "LF"
+              }
+            ],
+            "contentView": {
+              "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+              "version": "urn:adsk.wipstg:fs.file:vf.oeSywgLpSkONo9O6CUZvkQ?version=3"
+            },
+            "locationId": "ff7f6eb4-6276-4993-bfeb-34cbbbba3a17",
+            "createdAt": "2019-08-24T14:15:22Z",
+            "updatedAt": "2020-11-11T12:32:45Z",
+            "updatedByName": "Jane Johnson"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/classification-systems\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 200\n  },\n  \"results\": [\n    {\n      \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n      \"name\": \"Smith Construction Classification\",\n      \"type\": \"CLASSIFICATION_SYSTEM_1\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 200
+        },
+        "results": [
+          {
+            "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+            "name": "Smith Construction Classification",
+            "type": "CLASSIFICATION_SYSTEM_1"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/classification-systems/1a07c80a-3892-40b1-8a2f-3d0b05786d70/classifications\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 10000\n  },\n  \"results\": [\n    {\n      \"code\": \"A1010\",\n      \"parentCode\": null,\n      \"description\": \"Concrete\",\n      \"measurementType\": \"AREA\"\n    },\n    {\n      \"code\": \"A1010.10\",\n      \"parentCode\": \"A1010\",\n      \"description\": \"Sprayed concrete\",\n      \"measurementType\": \"AREA\"\n    },\n    {\n      \"code\": \"A1010.20\",\n      \"parentCode\": \"A1010\",\n      \"description\": \"Foamed concrete\",\n      \"measurementType\": \"AREA\"\n    }\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 10000
+        },
+        "results": [
+          {
+            "code": "A1010",
+            "parentCode": null,
+            "description": "Concrete",
+            "measurementType": "AREA"
+          },
+          {
+            "code": "A1010.10",
+            "parentCode": "A1010",
+            "description": "Sprayed concrete",
+            "measurementType": "AREA"
+          },
+          {
+            "code": "A1010.20",
+            "parentCode": "A1010",
+            "description": "Foamed concrete",
+            "measurementType": "AREA"
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/construction/takeoff/v1/projects/7388a640-3bff-4328-9dc2-aafe62359958/content-views\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 200\n  },\n  \"results\": [\n    [\n      {\n        \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n        \"type\": \"FILE_MODEL\",\n        \"view\": {\n          \"lineageUrn\": \"urn:adsk.wipqa:dm.lineage:TCBw0V-GQX2aAWWSSrhQmQ\",\n          \"viewName\": \"3D\"\n        }\n      },\n      {\n        \"id\": \"95451383-ee38-44da-b06c-2d5266e726d2\",\n        \"type\": \"SHEET\",\n        \"view\": {\n          \"sheetName\": \"A09.05\",\n          \"calibration\": {\n            \"scaleFactor\": 0.987,\n            \"units\": \"FT_AND_FRACTIONAL_IN\"\n          }\n        }\n      }\n    ]\n  ]\n}",
+      "parsed": {
+        "pagination": {
+          "offset": 0,
+          "limit": 200
+        },
+        "results": [
+          [
+            {
+              "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+              "type": "FILE_MODEL",
+              "view": {
+                "lineageUrn": "urn:adsk.wipqa:dm.lineage:TCBw0V-GQX2aAWWSSrhQmQ",
+                "viewName": "3D"
+              }
+            },
+            {
+              "id": "95451383-ee38-44da-b06c-2d5266e726d2",
+              "type": "SHEET",
+              "view": {
+                "sheetName": "A09.05",
+                "calibration": {
+                  "scaleFactor": 0.987,
+                  "units": "FT_AND_FRACTIONAL_IN"
+                }
+              }
+            }
+          ]
+        ]
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/items/urn:adsk.wipprod:dm.lineage:TwJx1922Sq2MsljlLsTYFQ/tip\" \\\n  -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\" \\\n  -H \"Content-Type: application/json\""
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/items/urn:adsk.wipprod:dm.lineage:TwJx1922Sq2MsljlLsTYFQ/tip\"\n    }\n  },\n  \"data\": {\n    \"type\": \"versions\",\n    \"id\": \"urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ?version=1\",\n    \"attributes\": {\n      \"name\": \"Revit2018_rac_advanced_sample_project.rvt\",\n      \"displayName\": \"\",\n      \"createTime\": \"2021-03-26T13:28:02.0000000Z\",\n      \"createUserId\": \"\",\n      \"createUserName\": \"\",\n      \"lastModifiedTime\": \"2021-03-26T13:29:32.0000000Z\",\n      \"lastModifiedUserId\": \"\",\n      \"lastModifiedUserName\": \"\",\n      \"versionNumber\": 1,\n      \"storageSize\": 15532032,\n      \"fileType\": \"rvt\",\n      \"extension\": {\n        \"type\": \"versions:autodesk.bim360:File\",\n        \"version\": \"1.0\",\n        \"schema\": {\n          \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:File-1.0\"\n        },\n        \"data\": {\n          \"processState\": \"PROCESSING_COMPLETE\",\n          \"extractionState\": \"SUCCESS\",\n          \"splittingState\": \"NOT_SPLIT\",\n          \"reviewState\": \"NOT_IN_REVIEW\",\n          \"revisionDisplayLabel\": \"1\",\n          \"sourceFileName\": \"Revit2018_rac_advanced_sample_project.rvt\"\n        }\n      }\n    },\n    \"links\": {\n      \"self\": {\n        \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1\"\n      },\n      \"webView\": {\n        \"href\": \"https://acc.autodesk.com/docs/files/projects/7388a640-3bff-4328-9dc2-aafe62359958?folderUrn=urn%3Aadsk.wipprod%3Afs.folder%3Aco.wmO35siCRE-xcXnxHiIXMA&entityId=urn%3Aadsk.wipprod%3Afs.file%3Avf.TwJx1922Sq2MsljlLsTYFQ%3Fversion%3D1\"\n      }\n    },\n    \"relationships\": {\n      \"item\": {\n        \"data\": {\n          \"type\": \"items\",\n          \"id\": \"urn:adsk.wipprod:dm.lineage:TwJx1922Sq2MsljlLsTYFQ\"\n        },\n        \"links\": {\n          \"related\": {\n            \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/item\"\n          }\n        }\n      },\n      \"links\": {\n        \"links\": {\n          \"self\": {\n            \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/relationships/links\"\n          }\n        }\n      },\n      \"refs\": {\n        \"links\": {\n          \"self\": {\n            \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/relationships/refs\"\n          },\n          \"related\": {\n            \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/refs\"\n          }\n        }\n      },\n      \"downloadFormats\": {\n        \"links\": {\n          \"related\": {\n            \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/downloadFormats\"\n          }\n        }\n      },\n      \"derivatives\": {\n        \"data\": {\n          \"type\": \"derivatives\",\n          \"id\": \"dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x\"\n        },\n        \"meta\": {\n          \"link\": {\n            \"href\": \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x/manifest?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419\"\n          }\n        }\n      },\n      \"thumbnails\": {\n        \"data\": {\n          \"type\": \"thumbnails\",\n          \"id\": \"dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x\"\n        },\n        \"meta\": {\n          \"link\": {\n            \"href\": \"https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x/thumbnail?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419\"\n          }\n        }\n      },\n      \"storage\": {\n        \"data\": {\n          \"type\": \"objects\",\n          \"id\": \"urn:adsk.objects:os.object:wip.dm.prod/7e7dd77f-a436-41d7-8c8d-05bdf1470f08.rvt\"\n        },\n        \"meta\": {\n          \"link\": {\n            \"href\": \"https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/7e7dd77f-a436-41d7-8c8d-05bdf1470f08.rvt?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419\"\n          }\n        }\n      }\n    }\n  }\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/items/urn:adsk.wipprod:dm.lineage:TwJx1922Sq2MsljlLsTYFQ/tip"
+          }
+        },
+        "data": {
+          "type": "versions",
+          "id": "urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ?version=1",
+          "attributes": {
+            "name": "Revit2018_rac_advanced_sample_project.rvt",
+            "displayName": "",
+            "createTime": "2021-03-26T13:28:02.0000000Z",
+            "createUserId": "",
+            "createUserName": "",
+            "lastModifiedTime": "2021-03-26T13:29:32.0000000Z",
+            "lastModifiedUserId": "",
+            "lastModifiedUserName": "",
+            "versionNumber": 1,
+            "storageSize": 15532032,
+            "fileType": "rvt",
+            "extension": {
+              "type": "versions:autodesk.bim360:File",
+              "version": "1.0",
+              "schema": {
+                "href": "https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:File-1.0"
+              },
+              "data": {
+                "processState": "PROCESSING_COMPLETE",
+                "extractionState": "SUCCESS",
+                "splittingState": "NOT_SPLIT",
+                "reviewState": "NOT_IN_REVIEW",
+                "revisionDisplayLabel": "1",
+                "sourceFileName": "Revit2018_rac_advanced_sample_project.rvt"
+              }
+            }
+          },
+          "links": {
+            "self": {
+              "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1"
+            },
+            "webView": {
+              "href": "https://acc.autodesk.com/docs/files/projects/7388a640-3bff-4328-9dc2-aafe62359958?folderUrn=urn%3Aadsk.wipprod%3Afs.folder%3Aco.wmO35siCRE-xcXnxHiIXMA&entityId=urn%3Aadsk.wipprod%3Afs.file%3Avf.TwJx1922Sq2MsljlLsTYFQ%3Fversion%3D1"
+            }
+          },
+          "relationships": {
+            "item": {
+              "data": {
+                "type": "items",
+                "id": "urn:adsk.wipprod:dm.lineage:TwJx1922Sq2MsljlLsTYFQ"
+              },
+              "links": {
+                "related": {
+                  "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/item"
+                }
+              }
+            },
+            "links": {
+              "links": {
+                "self": {
+                  "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/relationships/links"
+                }
+              }
+            },
+            "refs": {
+              "links": {
+                "self": {
+                  "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/relationships/refs"
+                },
+                "related": {
+                  "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/refs"
+                }
+              }
+            },
+            "downloadFormats": {
+              "links": {
+                "related": {
+                  "href": "https://developer.api.autodesk.com/data/v1/projects/b.7388a640-3bff-4328-9dc2-aafe62359958/versions/urn:adsk.wipprod:fs.file:vf.TwJx1922Sq2MsljlLsTYFQ%3Fversion=1/downloadFormats"
+                }
+              }
+            },
+            "derivatives": {
+              "data": {
+                "type": "derivatives",
+                "id": "dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x"
+              },
+              "meta": {
+                "link": {
+                  "href": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x/manifest?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419"
+                }
+              }
+            },
+            "thumbnails": {
+              "data": {
+                "type": "thumbnails",
+                "id": "dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x"
+              },
+              "meta": {
+                "link": {
+                  "href": "https://developer.api.autodesk.com/modelderivative/v2/designdata/dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLlR3SngxOTIyU3EyTXNsamxMc1RZRlE_dmVyc2lvbj0x/thumbnail?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419"
+                }
+              }
+            },
+            "storage": {
+              "data": {
+                "type": "objects",
+                "id": "urn:adsk.objects:os.object:wip.dm.prod/7e7dd77f-a436-41d7-8c8d-05bdf1470f08.rvt"
+              },
+              "meta": {
+                "link": {
+                  "href": "https://developer.api.autodesk.com/oss/v2/buckets/wip.dm.prod/objects/7e7dd77f-a436-41d7-8c8d-05bdf1470f08.rvt?scopes=b360project.7388a640-3bff-4328-9dc2-aafe62359958,O2tenant.10270419"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}

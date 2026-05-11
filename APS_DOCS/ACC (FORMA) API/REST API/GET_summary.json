@@ -1,0 +1,177 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/autospecs-getversionsummary-GET",
+    "scrapedAt": "2026-05-08T23:47:27.142Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/version/{versionId}/submittalsSummary",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/version/:versionId/submittalsSummary",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/autospecs/v1/projects/{projectId}/version/{versionId}/submittalsSummary"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "user context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is obtained via a three-legged OAuth flow."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.” prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "versionIdstring",
+          "col_1": "The AutoSpecs version ID of the project. For information about how to find the version ID, see the first few steps of the Retrieve Submittal Log tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "OK"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "submittalGroupsarray: object",
+          "col_1": "A list of submittal groups."
+        },
+        {
+          "col_0": "submittalGroupTypesarray: object",
+          "col_1": "A list of submittal group types."
+        },
+        {
+          "col_0": "submittalTypeenum:string",
+          "col_1": "The type of submittal. This corresponds to the Submittal type column in the UI.\nPossible values: Test Reports, Shop Drawings, Schedules, Samples, Sample Warranty, Reports, Qualification Data, QUALITY ASSURANCE, Product Data, Performance Data, Mfg. Instructions, Meeting/Conferences, Drawings, Delegated-Design, Certifications, Certificates, Calculations, Attic Stock, Demonstrations, General Warranties, O&M Manuals, Special Warranties, LEED, As-Builts, TESTS AND INSPECTIONS, General, Manufacturers Instructions, Substitutions, Mix Design, Others"
+        },
+        {
+          "col_0": "totalint",
+          "col_1": "The number of submittals for the submittal type."
+        },
+        {
+          "col_0": "submittalGroupenum:string",
+          "col_1": "The submittal group associated with the submittal. This is equivalent to the Submittal group column in the UI.\nPossible values: ACTION AND INFORMATIONAL, CLOSEOUT SUBMITTALS, FIELD QUALITY CONTROL, Mockups, QUALITY ASSURANCE, Tests And Inspections, DIVISION 01 REQUIREMENTS"
+        },
+        {
+          "col_0": "totalint",
+          "col_1": "The number of submittals in the submittal group."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/autospecs/v1/projects/:projectId/version/:versionId/submittalsSummary' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"submittalGroups\": [\n    {\n      \"submittalGroupTypes\": [\n        {\n          \"submittalType\": \"LEED\",\n          \"total\": 2\n        },\n        {\n          \"submittalType\": \"Mfg. Instructions\",\n          \"total\": 1\n        },\n        {\n          \"submittalType\": \"Others\",\n          \"total\": 1\n        },\n        {\n          \"submittalType\": \"Product Data\",\n          \"total\": 3\n        },\n        {\n          \"submittalType\": \"Qualification Data\",\n          \"total\": 1\n        },\n        {\n          \"submittalType\": \"Reports\",\n          \"total\": 1\n        },\n        {\n          \"submittalType\": \"Samples\",\n          \"total\": 1\n        },\n        {\n          \"submittalType\": \"Shop Drawings\",\n          \"total\": 3\n        }\n      ],\n      \"submittalGroup\": \"Action And Informational\",\n      \"total\": 13\n    },\n    {\n      \"submittalGroup\": \"Mockups\",\n      \"total\": 1\n    },\n    {\n      \"submittalGroup\": \"Quality Assurance\",\n      \"total\": 12\n    },\n    {\n      \"submittalGroup\": \"Tests And Inspections\",\n      \"total\": 3\n    }\n  ]\n}",
+      "parsed": {
+        "submittalGroups": [
+          {
+            "submittalGroupTypes": [
+              {
+                "submittalType": "LEED",
+                "total": 2
+              },
+              {
+                "submittalType": "Mfg. Instructions",
+                "total": 1
+              },
+              {
+                "submittalType": "Others",
+                "total": 1
+              },
+              {
+                "submittalType": "Product Data",
+                "total": 3
+              },
+              {
+                "submittalType": "Qualification Data",
+                "total": 1
+              },
+              {
+                "submittalType": "Reports",
+                "total": 1
+              },
+              {
+                "submittalType": "Samples",
+                "total": 1
+              },
+              {
+                "submittalType": "Shop Drawings",
+                "total": 3
+              }
+            ],
+            "submittalGroup": "Action And Informational",
+            "total": 13
+          },
+          {
+            "submittalGroup": "Mockups",
+            "total": 1
+          },
+          {
+            "submittalGroup": "Quality Assurance",
+            "total": 12
+          },
+          {
+            "submittalGroup": "Tests And Inspections",
+            "total": 3
+          }
+        ]
+      }
+    }
+  ]
+}

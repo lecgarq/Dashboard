@@ -1,0 +1,95 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/exchangebyfileurn",
+    "scrapedAt": "2026-05-08T18:15:26.786Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "exchangeByFileUrn",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "externalProjectId*ID! non-null",
+          "col_1": "The external project Id."
+        },
+        {
+          "col_0": "fileUrn*ID! non-null",
+          "col_1": "The Exchange file Id."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Exchange! non-null",
+          "Description": "A specific collection of Elements."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetExchangeByFileUrn($externalProjectId: ID!, $fileUrn: ID!) {\n  exchangeByFileUrn(externalProjectId: $externalProjectId, fileUrn: $fileUrn) {\n    # ExchangeByFileUrn Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"externalProjectId\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\",\n  \"fileUrn\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\"\n}",
+      "parsed": {
+        "externalProjectId": "<SOME-ID-TYPE-SCALAR-VALUE>",
+        "fileUrn": "<SOME-ID-TYPE-SCALAR-VALUE>"
+      }
+    },
+    {
+      "raw": "query GetExchangeByFileUrn($externalProjectId: ID!, $fileUrn: ID!) {\n    exchangeByFileUrn(externalProjectId: $externalProjectId, fileUrn: $fileUrn) {\n      id\n      name\n      elements {\n        results {\n          id\n          name\n        }\n      }\n    }\n  }\n}"
+    },
+    {
+      "raw": "{\n \"externalProjectId\" : \"22a5dc47-ca19-4231-9f3e-157ebd4842ff\",\n \"fileUrn\" : \"urn:adsk.wipprod:fs.file:vf.TtCj4eUwSaSlYnoveo3Znw\"\n}",
+      "parsed": {
+        "externalProjectId": "22a5dc47-ca19-4231-9f3e-157ebd4842ff",
+        "fileUrn": "urn:adsk.wipprod:fs.file:vf.TtCj4eUwSaSlYnoveo3Znw"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"exchangeByFileUrn\": {\n          \"id\": \"ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfmQ5N2Y2MTUxLTZhNTAtMzhjMi1hYmY5LWI0OGYxMDYyNGU5ZQ\",\n          \"name\": \"3D_Architectural_Overall_1791_Objects\",\n          \"elements\": {\n              \"results\": [\n                  {\n                      \"id\": \"034E45FDC11CA33DB6B8D00165C9E5A68C2770C6\",\n                      \"name\": \"Railing__55607\"\n                  },\n                  {\n                      \"id\": \"01A98D866211C82009CACC28C46746B12EFA5F6F\",\n                      \"name\": \"264811\"\n                  },\n                  {\n                      \"id\": \"0BCEFFBD45DCB27A186CE1DFA5E906EE107CF7F2\",\n                      \"name\": \"73704\"\n                  },\n                  {\n                      \"id\": \"068B1135E85D2D8C381CCE33343A682FB0E9AE19\",\n                      \"name\": \"155396\"\n                  },\n                  {\n                      \"id\": \"07A5428127B7E5FB720A96860EC345AD90A74453\",\n                      \"name\": \"396667\"\n                  }\n              ]\n          }\n      }\n   }\n}",
+      "parsed": {
+        "data": {
+          "exchangeByFileUrn": {
+            "id": "ZXhjfnlwdWFzY1NicWlIT0R1R0s4OUkwTHdfTDJDfmQ5N2Y2MTUxLTZhNTAtMzhjMi1hYmY5LWI0OGYxMDYyNGU5ZQ",
+            "name": "3D_Architectural_Overall_1791_Objects",
+            "elements": {
+              "results": [
+                {
+                  "id": "034E45FDC11CA33DB6B8D00165C9E5A68C2770C6",
+                  "name": "Railing__55607"
+                },
+                {
+                  "id": "01A98D866211C82009CACC28C46746B12EFA5F6F",
+                  "name": "264811"
+                },
+                {
+                  "id": "0BCEFFBD45DCB27A186CE1DFA5E906EE107CF7F2",
+                  "name": "73704"
+                },
+                {
+                  "id": "068B1135E85D2D8C381CCE33343A682FB0E9AE19",
+                  "name": "155396"
+                },
+                {
+                  "id": "07A5428127B7E5FB720A96860EC345AD90A74453",
+                  "name": "396667"
+                }
+              ]
+            }
+          }
+        }
+      }
+    }
+  ]
+}

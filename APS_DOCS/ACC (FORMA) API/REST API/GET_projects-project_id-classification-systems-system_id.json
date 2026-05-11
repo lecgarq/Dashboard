@@ -1,0 +1,128 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/takeoff-projects-project_id-classification-systems-system_id-GET",
+    "scrapedAt": "2026-05-09T00:07:27.139Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/classification-systems/{systemId}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/takeoff/v1/projects/{projectId}/classification-systems/{systemId}"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the service is located.\nPossible values: US, EMEA. For the full list of supported regions, see the Regions page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "systemIdstring: UUID",
+          "col_1": "The classification system ID.\nTo find the ID, call GET classification-systems."
+        },
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nThis corresponds to project ID in the Data Management API, and can be specified in the form of “UUID” or b.”UUID”.\nTo learn how to find the project ID, see the Retrieve Forma hub and project ID tutorial."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successfully retrieved the classification system."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters of the requested operation are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is not valid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The requested resource could not be found."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded; wait some time before retrying. The ‘Retry-After’ header might provide the amount of the time to wait."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unknown error occurred on the server."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The classification system ID."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The classification system name.\nMax length: 200"
+        },
+        {
+          "col_0": "typeenum:string",
+          "col_1": "The type of classification system.\nPossible values: CLASSIFICATION_SYSTEM_1, CLASSIFICATION_SYSTEM_2.\nSee the Help documentation for more details about the classification systems."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/takeoff/v1/projects/:projectId/classification-systems/:systemId' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"id\": \"497f6eca-6276-4993-bfeb-53cbbbba6f08\",\n  \"name\": \"Smith Construction Classification\",\n  \"type\": \"CLASSIFICATION_SYSTEM_1\"\n}",
+      "parsed": {
+        "id": "497f6eca-6276-4993-bfeb-53cbbbba6f08",
+        "name": "Smith Construction Classification",
+        "type": "CLASSIFICATION_SYSTEM_1"
+      }
+    }
+  ]
+}

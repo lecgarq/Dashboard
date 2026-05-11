@@ -1,0 +1,233 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/reference/http/cost-time-sheets-id-PATCH",
+    "scrapedAt": "2026-05-08T17:59:03.384Z",
+    "category": "REST API",
+    "apiName": "BIM 360 API"
+  },
+  "title": "v1/containers/{containerId}/time-sheets/{id}",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/9e027d30-9483-11e8-a7ec-7ddae203e404",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PATCH https://developer.api.autodesk.com/cost/v1/containers/:containerId/time-sheets/:id"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        },
+        {
+          "col_0": "regionstring",
+          "col_1": "Specifies the region where the project data resides.\nBy default, the request is routed automatically. However, specifying the region can improve performance by avoiding lookup overhead.\nPossible values: country or region codes such as US or EMEA. For the full list of supported regions, see the Forma Regions page.\nTo verify your project’s region, refer to the Working with BIM 360 Services in Different Regions section on the API Basics page."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the project (the container ID is the same as the project ID). To obtain the project ID, see GET projects."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The timesheet ID. To find the timesheet ID, call GET time-sheets and inspect results.id in the response."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "trackingItemInstanceIdstring,null",
+          "col_1": "The ID of the tracking item instance to which the timesheet will belong. Required if both trackingItemInstanceNumber and budgetCode are omitted from this request. To find the instance ID, call GET performance-tracking-item-instances and inspect results.id in the response."
+        },
+        {
+          "col_0": "trackingItemInstanceNumberstring,null",
+          "col_1": "The user-provided code that represents the tracking item instance to which the timesheet will belong. Required if both trackingItemInstanceId and budgetCode are omitted from this request. To find the instance number, call GET performance-tracking-item-instances and inspect results.number in the response."
+        },
+        {
+          "col_0": "budgetCodestring,null",
+          "col_1": "The code that identifies the budget to which the timesheet belongs. Required if both trackingItemInstanceId and trackingItemInstanceNumber are omitted from this request. To find the budget code, call GET budgets and inspect results.code in the response."
+        },
+        {
+          "col_0": "startDatestring",
+          "col_1": "The first date of the time period covered by the timesheet."
+        },
+        {
+          "col_0": "endDatestring",
+          "col_1": "The last date of the time period covered by the timesheet. This is also the date that the tracked inputQuantity and outputQuantity values are considered to have been reported."
+        },
+        {
+          "col_0": "inputQuantitynumber",
+          "col_1": "The hours worked during the time period covered by the timesheet."
+        },
+        {
+          "col_0": "outputQuantitynumber",
+          "col_1": "The quantity of material used during time period covered by the timesheet."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Success"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The parameters are invalid."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The provided bearer token is invalid."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "Forbidden. The user or service represented by the bearer token does not have permission to perform this operation."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource or endpoint cannot be found."
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the resource."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "Rate limit exceeded. Retry your request after a few minutes."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server."
+        },
+        {
+          "col_0": "503Service Unavailable",
+          "col_1": "Service unavailable."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The ID of the timesheet."
+        },
+        {
+          "col_0": "containerIdstring: UUID",
+          "col_1": "The ID of the cost container for the project to which the timesheet belongs."
+        },
+        {
+          "col_0": "trackingItemInstanceIdstring: UUID",
+          "col_1": "The ID of the tracking item instance to which the timesheet belongs."
+        },
+        {
+          "col_0": "startDatestring",
+          "col_1": "The first date of the time period covered by the timesheet."
+        },
+        {
+          "col_0": "endDatestring",
+          "col_1": "The last date of the time period covered by the timesheet. This is also the date that the tracked inputQuantity and outputQuantity values are considered to have been reported."
+        },
+        {
+          "col_0": "inputQuantitynumber",
+          "col_1": "The hours worked during the time period covered by the timesheet."
+        },
+        {
+          "col_0": "inputUnitstring",
+          "col_1": "The input unit of measurement of the timesheet. Currently this value should always be hr."
+        },
+        {
+          "col_0": "outputQuantitynumber",
+          "col_1": "The quantity of material used during time period covered by the timesheet."
+        },
+        {
+          "col_0": "outputUnitstring",
+          "col_1": "The output unit of measurement of the timesheet."
+        },
+        {
+          "col_0": "creatorIdstring,null",
+          "col_1": "The BIM 360/Forma ID of the user who created the timesheet."
+        },
+        {
+          "col_0": "changedBystring,null",
+          "col_1": "The BIM 360/Forma ID of the user who made the last change to the timesheet."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was created, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time that the item was last updated, in ISO 8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/time-sheets/9e027d30-9483-11e8-a7ec-7ddae203e404' \\\n  -X 'PATCH' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"trackingItemInstanceId\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n        \"trackingItemInstanceNumber\": \"84720010121001FEE-01\",\n        \"budgetCode\": \"84720010121001FEE\",\n        \"startDate\": \"2020-01-06\",\n        \"endDate\": \"2020-01-06\",\n        \"inputQuantity\": \"100\",\n        \"outputQuantity\": \"100\"\n      }'",
+      "parsed": {
+        "trackingItemInstanceId": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "trackingItemInstanceNumber": "84720010121001FEE-01",
+        "budgetCode": "84720010121001FEE",
+        "startDate": "2020-01-06",
+        "endDate": "2020-01-06",
+        "inputQuantity": "100",
+        "outputQuantity": "100"
+      }
+    },
+    {
+      "raw": "{\n  \"id\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n  \"containerId\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n  \"trackingItemInstanceId\": \"1df59db0-9484-11e8-a7ec-7ddae203e404\",\n  \"startDate\": \"2020-01-06\",\n  \"endDate\": \"2020-01-06\",\n  \"inputQuantity\": \"100\",\n  \"inputUnit\": \"hr\",\n  \"outputQuantity\": \"100\",\n  \"outputUnit\": \"cy\",\n  \"creatorId\": \"CED9LVTLHNXV\",\n  \"changedBy\": \"CED9LVTLHNXV\",\n  \"createdAt\": \"2019-01-06T01:24:22.678Z\",\n  \"updatedAt\": \"2019-09-05T01:00:12.989Z\"\n}",
+      "parsed": {
+        "id": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "containerId": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "trackingItemInstanceId": "1df59db0-9484-11e8-a7ec-7ddae203e404",
+        "startDate": "2020-01-06",
+        "endDate": "2020-01-06",
+        "inputQuantity": "100",
+        "inputUnit": "hr",
+        "outputQuantity": "100",
+        "outputUnit": "cy",
+        "creatorId": "CED9LVTLHNXV",
+        "changedBy": "CED9LVTLHNXV",
+        "createdAt": "2019-01-06T01:24:22.678Z",
+        "updatedAt": "2019-09-05T01:00:12.989Z"
+      }
+    }
+  ]
+}

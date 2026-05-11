@@ -1,0 +1,29 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/UI/Filterbox",
+    "scrapedAt": "2026-05-08T18:45:20.083Z",
+    "category": "SDK Reference/UI",
+    "apiName": "VIEWER API"
+  },
+  "title": "Filterbox",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring",
+          "col_1": "The id for this control."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "An optional dictionary of options."
+        },
+        {
+          "col_0": "filterFunctionfunction",
+          "col_1": "Invoked when the text changes, receives 1 string argument."
+        }
+      ]
+    }
+  ]
+}

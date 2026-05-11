@@ -1,0 +1,123 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/HotkeyManager",
+    "scrapedAt": "2026-05-08T18:44:14.330Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "HotkeyManager",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array.<string>",
+          "description": "[“hotkeys”]"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "“hotkeys”"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*string",
+          "col_1": "The id for this hotkey set."
+        },
+        {
+          "col_0": "hotkeys*Array.<Autodesk.Viewing.HotkeyManager~Hotkey>",
+          "col_1": "The list of hotkeys."
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": "An optional dictionary of options for this hotkey set."
+        },
+        {
+          "col_0": "tryUntilSuccessboolean",
+          "col_1": "When true, the onPress callback will be called until it returns true or the hotkey state changes. The onRelease callback will be called until it returns true or until the combination is reengaged. Stops propagation through the stack. Non-blocking."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the hotkeys were successfully pushed."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "id*string",
+          "col_1": "The id associated with the hotkeys."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if the hotkeys were successfully popped."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "event*",
+          "col_1": "Event to handle"
+        },
+        {
+          "col_0": "keyCode*",
+          "col_1": "Key code"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "event*",
+          "col_1": "Event to handle"
+        },
+        {
+          "col_0": "keyCode*",
+          "col_1": "Key code"
+        }
+      ]
+    }
+  ]
+}

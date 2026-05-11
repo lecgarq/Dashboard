@@ -1,0 +1,79 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/http/asymmetrickeys-GET",
+    "scrapedAt": "2026-05-08T17:35:47.142Z",
+    "category": "REST API",
+    "apiName": "AUTHENTICATION API"
+  },
+  "title": "JWKS",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/authentication/v2/keys",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/authentication/v2/keys"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "none"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Successful request; user profile returned."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "Generic internal server error."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "kidstring",
+          "col_1": "Key ID"
+        },
+        {
+          "col_0": "ktystring",
+          "col_1": "Cryptographic algorithm family for the certificate’s Key pair. Valid Value: RSA"
+        },
+        {
+          "col_0": "usestring",
+          "col_1": "The use of the key. Valid Value: sig"
+        },
+        {
+          "col_0": "nstring",
+          "col_1": "RSA modulus value"
+        },
+        {
+          "col_0": "estring",
+          "col_1": "RSA exponent value"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/authentication/v2/keys' \\\n     -X 'GET' \\"
+    },
+    {
+      "raw": "HTTP/1.1 200 OK\nCache-Control: max-age=604800\nContent-length: 438\nContent-Type: application/json;charset=UTF-8\nDate: Thu, 08 Oct 2020 06:09:30 GMT\n\n\n{\n  \"keys\": [\n    {\n      \"kty\": \"RSA\",\n      \"kid\": \"aah541xk44m0V6ZX1H9dTUTvqk1p7yfQ\",\n      \"use\": \"sig\",\n      \"n\": \"ycSJdq-vSSGhbZFuDO94t0zHI7p9ybZBFKTGR6zntx0YduwhxPHP72wdiZgCz88i2w8AhljbKGgn8UrMQtIrVs8JXMmDen_\n           aGsgWoCBIzJc3fc7WSm_kZb0AokVeJio6tPJGFhOJrzSgG2BUktILh0CYWNXS54Qb8EUcrhmo6YOQ5onR3_\n           LLXJ2yOnwHe1FLnZuprav-yNQYMcAvaK9IRwgZWE7Fqt7dFaoiG1K9A_SD0l5rano5CjSrdqBk90pO8Xlju_\n           KXjpeNcPZmEVr3DJBzSfFE__6ss-pagnRe-FMqzYCPOQSo5tqjIzwad4aftnTtZpEQcjpM3L0vP_rriQ\",\n      \"e\": \"AQAB\"\n    },\n\n    {\n     \"kty\" \"RSA\",\n     \"kid\": \"ZqRuqsXaye9vjHU62SdzcstjtCPRdGJ0\",\n     \"use\": \"sig\",\n     \"n\": \"i7ZOaqOmEgqz9RFUkv7mLTWpqwSoiqqTZCVTC7_xWq0w7a4m7l63nDRRsmdfA6S-7UEHbvMHsi9hqBoPdjOSutqeK5FgOhRc_\n     swovMecrooOwNVUBAc0NS4cX5dcrOaqZfJShwF4Nk0ko-EUUbBNM0s2x0j4YvfjXqpIXb_yc7bfyH4H_\n     MGVb4ddgWtqHxdSlqNMMOBDKsjZzlnr8tf20gDnMMjn_f3zNb-zX4p4il0lytStrzGdZXy7ZCBVkvoZmMzg-\n     RIW4tzbPHPYakgNmKYfLibiu6CjV-L6cvS8NHgySeKQ87tlEw8jAuzyUEQjIQl3Rr84wpvvBoT0EtzEBQ\",\n     \"e\": \"AQAB\"\n   }\n   ]\n }"
+    }
+  ]
+}

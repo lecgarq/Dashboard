@@ -1,0 +1,708 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-valuesbatch-update-(New--Beta)-PUT",
+    "scrapedAt": "2026-05-08T23:55:15.736Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v2/projects/{projectId}/forms/{formId}/values:batch-update",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-update",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "PUT https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-update"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:write"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        },
+        {
+          "col_0": "Content-Type*string",
+          "col_1": "Must be application/json"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "formIdstring",
+          "col_1": "The unique identifier of the form.\nUse GET forms to retrieve the form ID."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "excludeFormResponseboolean",
+          "col_1": "Exclude the updated form in the response. Default: false."
+        },
+        {
+          "col_0": "includeNativeFormValuesboolean",
+          "col_1": "Include the form values in the response. Default: false."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "customValuesarray: object",
+          "col_1": "The list of non-tabular fields. Maximum 10 items per request."
+        },
+        {
+          "col_0": "fieldId*string: UUID",
+          "col_1": "The unique identifier of the field."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the field’s notes section. This is relevant for all fields.\nMax length: 8000"
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "The attribute used for updating text value fields, For example, textVal: This is my response!.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. textVal is only relevant for updating text value fields. To verify whether the field you want to update is a text value field, call GET forms and check the field’s valueName.\nMax length: 8000"
+        },
+        {
+          "col_0": "choiceValstring",
+          "col_1": "The attribute used for updating single-select and dropdown fields. For example, choiceVal: Answer 3.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. choiceVal is only relevant for updating single-select and dropdown fields. To verify whether the field you want to update is a single-select or dropdown field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "arrayValarray: string",
+          "col_1": "The attribute used for updating multi-select fields. For example, arrayVal: [\"Answer 1\", \"Answer 2\"].\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. arrayVal is only relevant for updating multi-select fields. To verify whether the field you want to update is a multi-select field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "The attribute used for updating date fields, in the following format (YYYY-MM-DD). For example, \"dateVal\": \"1999-12-31\".\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. dateVal is only relevant for updating date fields. To verify whether the field you want to update is a date field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "The attribute used for updating number fields. For example, \"numberVal\": \"42\".\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. numberVal is only relevant for updating number fields. To verify whether the field you want to update is a number field, call GET forms and check the field’s valueName."
+        },
+        {
+          "col_0": "toggleValenum:string",
+          "col_1": "The attribute used for updating preconfigured fields. For example, “toggleVal”: “Yes”.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. toggleVal is only relevant for updating preconfigured fields. To verify whether the field you want to update is a preconfigured field, call GET forms and check the field’s valueName.\nPossible values: Yes, No, False, True, Minus, Plus, Fail, Pass, NA"
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "The attribute used for updating signature fields.\nEach non-tabular field is assigned a specific value type, which you need to specify when updating the field. svgVal is only relevant for updating signature fields. To verify whether the field you want to update is a signature field, call GET forms and check the field’s valueName.\nThe signature needs to be in SVG format and it needs to be base64 encoded."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "The name of the person who signed the form. By default, it is the name of the logged in user. It is only relevant for signature fields. To update the name you need to use the signature field ID."
+        },
+        {
+          "col_0": "tabularValuesarray: object",
+          "col_1": "The list of tabular fields. Maximum 10 items per request."
+        },
+        {
+          "col_0": "id*string: UUID",
+          "col_1": "Unique identifier for the table row. You need to generate the ID (UUID) for the row."
+        },
+        {
+          "col_0": "schema*string",
+          "col_1": "Table identifier or built-in table alias. For built-in tables, use worklogEntries, materialsEntries, or equipmentEntries. For custom tables, use the table’s schema identifier or fieldId."
+        },
+        {
+          "col_0": "columnsarray: object",
+          "col_1": "The set of values for the columns in the row."
+        },
+        {
+          "col_0": "columnIdstring: UUID",
+          "col_1": "Unique identifier for the column. Either columnId or columnName must be provided, but not both."
+        },
+        {
+          "col_0": "columnNameenum:string",
+          "col_1": "The name of the column to update. Either columnId or columnName must be provided, but not both.\nFor the Work Log table:\ntrade (Crew) - use textVal, timespan (Total hours) - use timespanVal, headcount (workers) - use numberVal, description (work performed) - use textVal\nFor the Equipment table:\nitem (equipment) - use textVal, timespan (Hours used) -  use timespanVal, quantity (Quantity) - use numberVal, description (comment) - use textVal\nFor the Materials table:\nitem (Material) - use textVal, quantity (Quantity) - use numberVal, unit (Unit) - use textVal, description (Comment) - use textVal.\nPossible values: companyId, description, headcount, item, quantity, roleId, timespan, trade, unit"
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "The attribute used for updating number columns. For example, \"numberVal\": \"42\".\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. numberVal is relevant for updating the following columns: headcount (Workers) and quantity (Quantity)."
+        },
+        {
+          "col_0": "integerValint",
+          "col_1": "The attribute used for updating integer columns."
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "The attribute used for updating text value columns.\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. textVal is relevant for updating the following columns: description (Work performed), description (comment), item (Equipment), item (Material), trade (Crew), and unit (Unit).\nNote: When using svgVal for signatures, textVal should contain the name of the person who signed.\nMax length: 8000"
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "Base64 encoded SVG string used for signature fields. When providing a signature, you must also include the signer’s name in textVal."
+        },
+        {
+          "col_0": "arrayValarray: string",
+          "col_1": "Array of strings for dropdown or multi-select answers."
+        },
+        {
+          "col_0": "timespanValnumber",
+          "col_1": "The attribute used for updating time-related columns. Value represents amount of time in milliseconds.\nEach tabular field is assigned a specific value type, which you need to specify when updating the field. timespanVal is relevant for updating the following columns: timespan (Total hours), timespan (Hours used)."
+        },
+        {
+          "col_0": "uidValstring",
+          "col_1": "UUID value for fields that store unique identifiers."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "Date value without timezone."
+        },
+        {
+          "col_0": "timeValstring",
+          "col_1": "Time value without timezone."
+        },
+        {
+          "col_0": "datetimeLocalValstring",
+          "col_1": "Datetime value in local time. When providing this field, you must also include datetimeUtcVal, timezoneVal, and timezoneRulesVal. Optionally include latVal and lngVal for more accurate timezone handling."
+        },
+        {
+          "col_0": "datetimeUtcValstring",
+          "col_1": "Datetime value in UTC. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "timezoneValstring",
+          "col_1": "Timezone identifier. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "timezoneRulesValstring",
+          "col_1": "Timezone rules data. Required when datetimeLocalVal is provided."
+        },
+        {
+          "col_0": "latValnumber",
+          "col_1": "Latitude value. Optional but recommended when using datetime fields for accurate timezone handling during daylight saving transitions."
+        },
+        {
+          "col_0": "lngValnumber",
+          "col_1": "Longitude value. Optional but recommended when using datetime fields for accurate timezone handling during daylight saving transitions."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "The updated Form"
+        },
+        {
+          "col_0": "204No Content",
+          "col_1": "No content (when excludeFormResponse is true)"
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "409Conflict",
+          "col_1": "The request could not be completed due to a conflict with the current state of the target resource"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "formTemplateIdstring: UUID",
+          "col_1": "Unique identifier of template the form belongs to."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Unique identifier of the form."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Current state of the form e.g. inProgress\nPossible values: draft, inReview, submitted, archived"
+        },
+        {
+          "col_0": "formNumint",
+          "col_1": "Unique identifier of form, autoincremental, unique per project."
+        },
+        {
+          "col_0": "formDatestring",
+          "col_1": "Date the Form is created for."
+        },
+        {
+          "col_0": "assigneeIdstring",
+          "col_1": "ID of the entity form is assigned to."
+        },
+        {
+          "col_0": "assigneeTypeenum:string",
+          "col_1": "Type of the entity form is assigned to.\nPossible values: company, role, user"
+        },
+        {
+          "col_0": "dueDatestring",
+          "col_1": "Date the Form is due."
+        },
+        {
+          "col_0": "locationIdstring: UUID",
+          "col_1": "The unique identifier of the Form’s location"
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "User ID that created the Form."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was received and stored on the server. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "userCreatedAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was created on the client device or external system. This may differ from createdAt if the form was created offline and synced later. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Form notes."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Form description."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Form name"
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "When form was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "User ID that last updated the Form."
+        },
+        {
+          "col_0": "weatherIdint",
+          "col_1": "Unique identifier of weather associated with this form."
+        },
+        {
+          "col_0": "lastSubmitterSignaturestring",
+          "col_1": "Signature of the reviewer who last submitted the Form (if applicable). Signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "lastSubmittedBystring",
+          "col_1": "User ID that last submitted the Form."
+        },
+        {
+          "col_0": "lastSubmittedAtdatetime: ISO 8601",
+          "col_1": "When form was last submitted (if applicable), UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "lastReopenedBystring",
+          "col_1": "User ID that re-opened the Form (if applicable)."
+        },
+        {
+          "col_0": "lastStatusChangesobject",
+          "col_1": "Contains the last transition into each status. Since a form can transition between statuses multiple times (e.g., reopened from closed back to inProgress), this shows the most recent transition for each status the form has been in."
+        },
+        {
+          "col_0": "previousStatusstring",
+          "col_1": "The status the form was in before the current status."
+        },
+        {
+          "col_0": "inProgressobject",
+          "col_1": "The last time the form transitioned into inProgress status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "inReviewobject",
+          "col_1": "The last time the form transitioned into inReview status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "closedobject",
+          "col_1": "The last time the form transitioned into closed status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "archivedobject",
+          "col_1": "The last time the form transitioned into archived status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "discardedobject",
+          "col_1": "The last time the form transitioned into discarded status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "nativeFormobject",
+          "col_1": "Native form data including layout and values."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The form’s unique identifier. This is the same value as the top-level form id."
+        },
+        {
+          "col_0": "layoutIdstring: UUID",
+          "col_1": "Unique identifier of the layout."
+        },
+        {
+          "col_0": "versionstring",
+          "col_1": "Semantic version indicating the feature set available for this form’s template. Clients can use this to determine which features are supported. For example, version 13.0 or higher is required for custom tables support. The Forms App typically uses the highest available version."
+        },
+        {
+          "col_0": "layoutInfoobject",
+          "col_1": "Information about the layout of this form."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the layout."
+        },
+        {
+          "col_0": "hasSectionAssigneesboolean",
+          "col_1": "Determines if section assignment is enabled."
+        },
+        {
+          "col_0": "customValuesarray: object",
+          "col_1": "Custom form values for Form."
+        },
+        {
+          "col_0": "fieldIdstring",
+          "col_1": "The unique identifier of the field."
+        },
+        {
+          "col_0": "sectionLabelstring",
+          "col_1": "Name of the section containing this field."
+        },
+        {
+          "col_0": "itemLabelstring",
+          "col_1": "The field’s label or question text."
+        },
+        {
+          "col_0": "valueNameenum:string",
+          "col_1": "Indicates the type of value used for this item.\nPossible values: textVal, toggleVal, arrayVal, numberVal, choiceVal, dateVal, svgVal"
+        },
+        {
+          "col_0": "toggleValenum:string",
+          "col_1": "A boolean like enum value.\nPossible values: Yes, No, False, True, Minus, Plus, Fail, Pass, NA"
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "A text value."
+        },
+        {
+          "col_0": "arrayValstring",
+          "col_1": "Multi select values."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "A numeric value."
+        },
+        {
+          "col_0": "choiceValstring",
+          "col_1": "A single select value."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "A date value."
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "A signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Text for the field’s notes section.\nMax length: 8000"
+        },
+        {
+          "col_0": "pdfFileobject",
+          "col_1": "PDF file information for the form."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Unique identifier of the PDF file."
+        },
+        {
+          "col_0": "fileNamestring",
+          "col_1": "Name of the PDF file."
+        },
+        {
+          "col_0": "pdfUrlstring",
+          "col_1": "URL to download the PDF file."
+        },
+        {
+          "col_0": "lastFetchedAtdatetime: ISO 8601",
+          "col_1": "When form was retrieved from the API, UTC date and time in ISO-8601 format."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-update' \\\n  -X 'PUT' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"customValues\": [\n          {\n            \"fieldId\": \"4f50355e-4e8b-4449-9539-a6beb100ebba\",\n            \"notes\": \"Rain prevented progress\",\n            \"textVal\": \"Everything looks good\",\n            \"choiceVal\": \"Answer 1\",\n            \"arrayVal\": [\n              \"Answer 1\",\n              \"Answer 2\"\n            ],\n            \"dateVal\": \"2020-11-20\",\n            \"numberVal\": 20,\n            \"toggleVal\": \"True\",\n            \"svgVal\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+\",\n            \"name\": \"Jane Doe\"\n          }\n        ],\n        \"tabularValues\": [\n          {\n            \"id\": \"28a31f14-d963-42a3-bf98-d38b73e7aba3\",\n            \"schema\": \"worklogEntries\",\n            \"columns\": [\n              {\n                \"columnId\": \"123e4567-e89b-12d3-a456-426614174000\",\n                \"columnName\": \"quantity\",\n                \"numberVal\": 5,\n                \"integerVal\": 10,\n                \"textVal\": \"Bricks\",\n                \"svgVal\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...\",\n                \"arrayVal\": [\n                  \"Option 1\",\n                  \"Option 2\"\n                ],\n                \"timespanVal\": 21600000,\n                \"uidVal\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"dateVal\": \"2023-06-15\",\n                \"timeVal\": \"14:30:00\",\n                \"datetimeLocalVal\": \"2023-06-15T14:30:00\",\n                \"datetimeUtcVal\": \"2023-06-15T21:30:00Z\",\n                \"timezoneVal\": \"America/Los_Angeles\",\n                \"timezoneRulesVal\": \"2025b\",\n                \"latVal\": 37.7749,\n                \"lngVal\": -122.4194\n              }\n            ]\n          }\n        ]\n      }'",
+      "parsed": {
+        "customValues": [
+          {
+            "fieldId": "4f50355e-4e8b-4449-9539-a6beb100ebba",
+            "notes": "Rain prevented progress",
+            "textVal": "Everything looks good",
+            "choiceVal": "Answer 1",
+            "arrayVal": [
+              "Answer 1",
+              "Answer 2"
+            ],
+            "dateVal": "2020-11-20",
+            "numberVal": 20,
+            "toggleVal": "True",
+            "svgVal": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+",
+            "name": "Jane Doe"
+          }
+        ],
+        "tabularValues": [
+          {
+            "id": "28a31f14-d963-42a3-bf98-d38b73e7aba3",
+            "schema": "worklogEntries",
+            "columns": [
+              {
+                "columnId": "123e4567-e89b-12d3-a456-426614174000",
+                "columnName": "quantity",
+                "numberVal": 5,
+                "integerVal": 10,
+                "textVal": "Bricks",
+                "svgVal": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...",
+                "arrayVal": [
+                  "Option 1",
+                  "Option 2"
+                ],
+                "timespanVal": 21600000,
+                "uidVal": "550e8400-e29b-41d4-a716-446655440000",
+                "dateVal": "2023-06-15",
+                "timeVal": "14:30:00",
+                "datetimeLocalVal": "2023-06-15T14:30:00",
+                "datetimeUtcVal": "2023-06-15T21:30:00Z",
+                "timezoneVal": "America/Los_Angeles",
+                "timezoneRulesVal": "2025b",
+                "latVal": 37.7749,
+                "lngVal": -122.4194
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "{\n  \"formTemplateId\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n  \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n  \"status\": \"draft\",\n  \"formNum\": 1,\n  \"formDate\": \"2020-11-20\",\n  \"assigneeId\": \"fc830fd8-f1ef-4cd6-9163-fb115dc698d7\",\n  \"assigneeType\": \"company\",\n  \"dueDate\": \"2020-11-25\",\n  \"locationId\": \"d14ce3a6-e61b-4ab0-a9be-5acf7b5366df\",\n  \"createdBy\": \"USER123A\",\n  \"createdAt\": \"2019-01-20T12:14:28.000000+00:00\",\n  \"userCreatedAt\": \"2019-01-20T12:14:27.615127+00:00\",\n  \"notes\": \"Form notes\",\n  \"description\": \"Form description\",\n  \"name\": \"Form name\",\n  \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n  \"updatedBy\": \"USER123A\",\n  \"weatherId\": 12345,\n  \"lastSubmitterSignature\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+\",\n  \"lastSubmittedBy\": \"USER123A\",\n  \"lastSubmittedAt\": \"2020-11-20T18:14:27.615127+00:00\",\n  \"lastReopenedBy\": \"USER123A\",\n  \"lastStatusChanges\": {\n    \"previousStatus\": \"inProgress\",\n    \"inProgress\": {\n      \"by\": \"USER123A\",\n      \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n    },\n    \"inReview\": {\n      \"by\": \"USER123A\",\n      \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n    },\n    \"closed\": {\n      \"by\": \"USER123A\",\n      \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n    },\n    \"archived\": {\n      \"by\": \"USER123A\",\n      \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n    },\n    \"discarded\": {\n      \"by\": \"USER123A\",\n      \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n    }\n  },\n  \"nativeForm\": {\n    \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n    \"layoutId\": \"123e4567-e89b-12d3-a456-426614174001\",\n    \"version\": \"13.0\",\n    \"layoutInfo\": {\n      \"description\": \"\",\n      \"hasSectionAssignees\": false\n    },\n    \"customValues\": [\n      {\n        \"fieldId\": \"151eedb2-5be1-4ebc-899d-7ff8eda4d76d\",\n        \"sectionLabel\": \"Observation\",\n        \"itemLabel\": \"Was everyone wearing masks / face protection?\",\n        \"valueName\": \"textVal\",\n        \"toggleVal\": \"Yes\",\n        \"textVal\": \"Yes\",\n        \"arrayVal\": [\n          \"A\",\n          \"B\"\n        ],\n        \"numberVal\": 1,\n        \"choiceVal\": \"A\",\n        \"dateVal\": \"Yes\",\n        \"svgVal\": \"PHN2ZyB4bWxucz0iaHR0cDov...\",\n        \"notes\": \"Observed Masks and Face Protection\"\n      }\n    ]\n  },\n  \"pdfFile\": {\n    \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n    \"fileName\": \"form_report.pdf\",\n    \"pdfUrl\": \"https://example.com/form_report.pdf\"\n  },\n  \"lastFetchedAt\": \"2020-11-20T16:14:27.615127+00:00\"\n}",
+      "parsed": {
+        "formTemplateId": "2f634a22-779d-4930-9f08-8391a41fea05",
+        "id": "932da979-e537-4530-b8aa-18607ac6db37",
+        "status": "draft",
+        "formNum": 1,
+        "formDate": "2020-11-20",
+        "assigneeId": "fc830fd8-f1ef-4cd6-9163-fb115dc698d7",
+        "assigneeType": "company",
+        "dueDate": "2020-11-25",
+        "locationId": "d14ce3a6-e61b-4ab0-a9be-5acf7b5366df",
+        "createdBy": "USER123A",
+        "createdAt": "2019-01-20T12:14:28.000000+00:00",
+        "userCreatedAt": "2019-01-20T12:14:27.615127+00:00",
+        "notes": "Form notes",
+        "description": "Form description",
+        "name": "Form name",
+        "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+        "updatedBy": "USER123A",
+        "weatherId": 12345,
+        "lastSubmitterSignature": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+",
+        "lastSubmittedBy": "USER123A",
+        "lastSubmittedAt": "2020-11-20T18:14:27.615127+00:00",
+        "lastReopenedBy": "USER123A",
+        "lastStatusChanges": {
+          "previousStatus": "inProgress",
+          "inProgress": {
+            "by": "USER123A",
+            "at": "2020-11-20T16:14:27.615127+00:00"
+          },
+          "inReview": {
+            "by": "USER123A",
+            "at": "2020-11-20T16:14:27.615127+00:00"
+          },
+          "closed": {
+            "by": "USER123A",
+            "at": "2020-11-20T16:14:27.615127+00:00"
+          },
+          "archived": {
+            "by": "USER123A",
+            "at": "2020-11-20T16:14:27.615127+00:00"
+          },
+          "discarded": {
+            "by": "USER123A",
+            "at": "2020-11-20T16:14:27.615127+00:00"
+          }
+        },
+        "nativeForm": {
+          "id": "932da979-e537-4530-b8aa-18607ac6db37",
+          "layoutId": "123e4567-e89b-12d3-a456-426614174001",
+          "version": "13.0",
+          "layoutInfo": {
+            "description": "",
+            "hasSectionAssignees": false
+          },
+          "customValues": [
+            {
+              "fieldId": "151eedb2-5be1-4ebc-899d-7ff8eda4d76d",
+              "sectionLabel": "Observation",
+              "itemLabel": "Was everyone wearing masks / face protection?",
+              "valueName": "textVal",
+              "toggleVal": "Yes",
+              "textVal": "Yes",
+              "arrayVal": [
+                "A",
+                "B"
+              ],
+              "numberVal": 1,
+              "choiceVal": "A",
+              "dateVal": "Yes",
+              "svgVal": "PHN2ZyB4bWxucz0iaHR0cDov...",
+              "notes": "Observed Masks and Face Protection"
+            }
+          ]
+        },
+        "pdfFile": {
+          "id": "123e4567-e89b-12d3-a456-426614174000",
+          "fileName": "form_report.pdf",
+          "pdfUrl": "https://example.com/form_report.pdf"
+        },
+        "lastFetchedAt": "2020-11-20T16:14:27.615127+00:00"
+      }
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms/:formId/values:batch-update' \\\n  -X 'PUT' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' \\\n  -H 'Content-Type: application/json' \\\n  -d '{\n        \"customValues\": [\n          {\n            \"fieldId\": \"4f50355e-4e8b-4449-9539-a6beb100ebba\",\n            \"notes\": \"Rain prevented progress\",\n            \"textVal\": \"Everything looks good\",\n            \"choiceVal\": \"Answer 1\",\n            \"arrayVal\": [\n              \"Answer 1\",\n              \"Answer 2\"\n            ],\n            \"dateVal\": \"2020-11-20\",\n            \"numberVal\": 20,\n            \"toggleVal\": \"True\",\n            \"svgVal\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+\",\n            \"name\": \"Jane Doe\"\n          }\n        ],\n        \"tabularValues\": [\n          {\n            \"id\": \"28a31f14-d963-42a3-bf98-d38b73e7aba3\",\n            \"schema\": \"worklogEntries\",\n            \"columns\": [\n              {\n                \"columnId\": \"123e4567-e89b-12d3-a456-426614174000\",\n                \"columnName\": \"quantity\",\n                \"numberVal\": 5,\n                \"integerVal\": 10,\n                \"textVal\": \"Bricks\",\n                \"svgVal\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...\",\n                \"arrayVal\": [\n                  \"Option 1\",\n                  \"Option 2\"\n                ],\n                \"timespanVal\": 21600000,\n                \"uidVal\": \"550e8400-e29b-41d4-a716-446655440000\",\n                \"dateVal\": \"2023-06-15\",\n                \"timeVal\": \"14:30:00\",\n                \"datetimeLocalVal\": \"2023-06-15T14:30:00\",\n                \"datetimeUtcVal\": \"2023-06-15T21:30:00Z\",\n                \"timezoneVal\": \"America/Los_Angeles\",\n                \"timezoneRulesVal\": \"2025b\",\n                \"latVal\": 37.7749,\n                \"lngVal\": -122.4194\n              }\n            ]\n          }\n        ]\n      }'",
+      "parsed": {
+        "customValues": [
+          {
+            "fieldId": "4f50355e-4e8b-4449-9539-a6beb100ebba",
+            "notes": "Rain prevented progress",
+            "textVal": "Everything looks good",
+            "choiceVal": "Answer 1",
+            "arrayVal": [
+              "Answer 1",
+              "Answer 2"
+            ],
+            "dateVal": "2020-11-20",
+            "numberVal": 20,
+            "toggleVal": "True",
+            "svgVal": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+",
+            "name": "Jane Doe"
+          }
+        ],
+        "tabularValues": [
+          {
+            "id": "28a31f14-d963-42a3-bf98-d38b73e7aba3",
+            "schema": "worklogEntries",
+            "columns": [
+              {
+                "columnId": "123e4567-e89b-12d3-a456-426614174000",
+                "columnName": "quantity",
+                "numberVal": 5,
+                "integerVal": 10,
+                "textVal": "Bricks",
+                "svgVal": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...",
+                "arrayVal": [
+                  "Option 1",
+                  "Option 2"
+                ],
+                "timespanVal": 21600000,
+                "uidVal": "550e8400-e29b-41d4-a716-446655440000",
+                "dateVal": "2023-06-15",
+                "timeVal": "14:30:00",
+                "datetimeLocalVal": "2023-06-15T14:30:00",
+                "datetimeUtcVal": "2023-06-15T21:30:00Z",
+                "timezoneVal": "America/Los_Angeles",
+                "timezoneRulesVal": "2025b",
+                "latVal": 37.7749,
+                "lngVal": -122.4194
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "raw": "204 No Content"
+    }
+  ]
+}

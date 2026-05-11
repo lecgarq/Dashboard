@@ -1,0 +1,21 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/inputs/propertyfilterinput",
+    "scrapedAt": "2026-05-08T18:19:06.642Z",
+    "category": "SDK Reference/inputs",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "PropertyFilterInput",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "names*[String!]! non-null",
+          "col_1": "Filter field name. ex: Height."
+        }
+      ]
+    }
+  ]
+}

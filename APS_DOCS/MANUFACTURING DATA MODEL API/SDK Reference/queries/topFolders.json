@@ -1,0 +1,70 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/fdxgraph/v1/reference/queries/topfolders",
+    "scrapedAt": "2026-05-08T18:15:56.429Z",
+    "category": "SDK Reference/queries",
+    "apiName": "MANUFACTURING DATA MODEL API"
+  },
+  "title": "topFolders",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectId*ID! non-null",
+          "col_1": "The ID of the project that contains the folders."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Value Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Value Type": "Folders! non-null",
+          "Description": "Contains a list of folders returned in response to a query."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "query GetTopFolders($projectId: ID!) {\n  topFolders(projectId: $projectId) {\n    # TopFolders Fields\n  }\n}"
+    },
+    {
+      "raw": "{\n  \"projectId\" : \"<SOME-ID-TYPE-SCALAR-VALUE>\"\n}",
+      "parsed": {
+        "projectId": "<SOME-ID-TYPE-SCALAR-VALUE>"
+      }
+    },
+    {
+      "raw": "query GetTopFolders($projectId: ID!) {\n  topFolders(projectId: $projectId) {\n      results {\n          id\n          name\n          objectCount\n      }\n    }\n }"
+    },
+    {
+      "raw": "{\n  \"projectId\": \"cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg\"\n}",
+      "parsed": {
+        "projectId": "cHJvan5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZg"
+      }
+    },
+    {
+      "raw": "{\n  \"data\": {\n      \"topFolders\": {\n          \"results\": [\n              {\n                  \"id\": \"Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB\",\n                  \"name\": \"Project Files\",\n                  \"objectCount\": 7\n              }\n          ]\n      }\n   }\n }",
+      "parsed": {
+        "data": {
+          "topFolders": {
+            "results": [
+              {
+                "id": "Zm9sZH5iLjc2OGNhZTE0LTc2YjMtNDUzMS05MDMwLTI1MjEyZGFiNGU0OH5iLjIyYTVkYzQ3LWNhMTktNDIzMS05ZjNlLTE1N2ViZDQ4NDJmZn51cm46YWRzay53aXBwcm9kOmZzLmZvbGRlcjpjby40U0F5Z29SSFNjZUllVUlySVMtSUxB",
+                "name": "Project Files",
+                "objectCount": 7
+              }
+            ]
+          }
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/faqs",
+    "scrapedAt": "2026-05-08T17:39:56.456Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "FAQs",
+  "codeExamples": [
+    {
+      "raw": "\"InputArguments\": [\n  {\n    \"Resource\": \"{\\\"UserId\\\":null,\n                  \\\"Version\\\":0,\n                  \\\"Resource\\\":\\\"https://s3.amazonaws.com/AutoCAD-Core-Engine-Services/TestDwg/aces_test.dwg\\\",\n                  \\\"LocalFileName\\\":\\\"aces_test.dwg\\\",\n                  \\\"RelatedFiles\\\":[{\\\"UserId\\\":null,\n                                     \\\"Version\\\":0,\n                                     \\\"Resource\\\":\n                                     \\\"https://s3.amazonaws.com/AutoCAD-Core-Engine-Services/TestDwg/aces_test.ctb\\\",\n                                     \\\"LocalFileName\\\":\\\"aces_test.ctb\\\",\n                                     \\\"RelatedFiles\\\":[]}\n                                   ]}\",\n    \"Name\": \"HostDwg\",\n    \"ResourceKind\": \"RemoteFileResource\"\n   }\n],"
+    }
+  ]
+}

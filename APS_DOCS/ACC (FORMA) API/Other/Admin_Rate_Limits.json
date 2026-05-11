@@ -1,0 +1,46 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/rate-limits/admin-rate-limits",
+    "scrapedAt": "2026-05-08T23:39:34.068Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma: Hub Admin API Rate Limits",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All GET endpoints with construction/admin in the base URL",
+          "Limit (requests/minute)": "600",
+          "Scope": "Per application (client ID) across all construction/admin  GET endpoints"
+        },
+        {
+          "Endpoints": "All POST/PATCH/DELETE/PUT endpoints with construction/admin in the base URL",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per application (client ID) across all construction/admin  POST/PATCH/DELETE/PUT endpoints"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Endpoints",
+        "Limit (requests/minute)",
+        "Scope"
+      ],
+      "rows": [
+        {
+          "Endpoints": "All endpoints with hq in the base URL",
+          "Limit (requests/minute)": "100",
+          "Scope": "Per application (client ID) across all hq endpoints"
+        }
+      ]
+    }
+  ]
+}

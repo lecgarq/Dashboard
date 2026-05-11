@@ -1,0 +1,340 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Viewing/ToolController",
+    "scrapedAt": "2026-05-08T18:44:43.973Z",
+    "category": "SDK Reference/Viewing",
+    "apiName": "VIEWER API"
+  },
+  "title": "ToolController",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewerImpl*object",
+          "col_1": "The viewer implementation object."
+        },
+        {
+          "col_0": "viewerApi*object",
+          "col_1": "The viewer api object."
+        },
+        {
+          "col_0": "autocam*object",
+          "col_1": "The Autocam interface object."
+        },
+        {
+          "col_0": "utilities*object",
+          "col_1": "The ViewingUtilities object."
+        },
+        {
+          "col_0": "defaultHandler*object",
+          "col_1": "The default event handling tool."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tool*object",
+          "col_1": "The tool to be registered."
+        },
+        {
+          "col_0": "onStateChanged*function",
+          "col_1": "callback to be called when disabling the tool through the modality map"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tool*object",
+          "col_1": "The tool to be deregistered."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "The tool name to look up."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "The tool registered under the given name or undefined if not found."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The tool name to look up."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "string",
+          "description": "The tool name to look up."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array",
+          "description": "list of tools in the tool stack"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolName*string",
+          "col_1": "Name of the tool"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolName*string",
+          "col_1": "The name of the tool to be activated."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if activation was successful."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "toolName*string",
+          "col_1": "The name of the tool to be deactivated."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "True if deactivation was successful."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "Array",
+          "description": "List of all registered tool names."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "tool*object",
+          "col_1": "The tool to be registered as the default."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "The tool to be registered as the default."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "state*boolean",
+          "col_1": "The state of the controller lock."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "The previous state of the lock (this may be used to restore the lock to it’s previous state)."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "boolean",
+          "description": "The state of the lock."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "cmdEvent*object",
+          "col_1": "Event generated by CMD key"
+        },
+        {
+          "col_0": "eventType*string",
+          "col_1": "Event type"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "isEnabled*boolean",
+          "col_1": ""
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "map*object",
+          "col_1": "Object describing each tool’s modality with other tools."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "returns a copy of the tool modality."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "tool name"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "type",
+        "description"
+      ],
+      "rows": [
+        {
+          "type": "object",
+          "description": "an object describing the tool’s modality map."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "name*string",
+          "col_1": "Tool name that is associated with the modality map."
+        },
+        {
+          "col_0": "map*object",
+          "col_1": "Object containing the name of the tool as the key and a boolean that describes if the tool can be enabled or disabled."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "// When enabling the measure tool the explode, bimwalk and section tools will be disabled.\n// When enabling the section tool the pan tool will be disabled.\ntoolController.setModalityMap({\n    measure: { explode: false, bimwalk: false, section: false },\n    section: { pan: false }\n});"
+    }
+  ]
+}

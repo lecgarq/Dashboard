@@ -1,0 +1,302 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-get-table-values-GET",
+    "scrapedAt": "2026-05-08T23:55:26.699Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v1/projects/{projectId}/forms/{formId}/table/{fieldId}/values",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms/:formId/table/:fieldId/values",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms/:formId/table/:fieldId/values"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        },
+        {
+          "col_0": "formIdstring",
+          "col_1": "The unique identifier of the form.\nUse GET forms to retrieve the form ID."
+        },
+        {
+          "col_0": "fieldIdstring",
+          "col_1": "The table’s schema identifier (UUID). This corresponds to the schema and fieldId fields returned in each row of the response.\nFor built-in tables, use the following UUIDs:\n- Work Log: 6c8055d5-1301-46f6-9d18-8a2a208a277e\n- Materials: 2adf5ad9-d9d3-ee42-6fd8-015c34ce474d\n- Equipment: 8af6c450-dd2a-32ae-0090-5493a9cc884e\nFor custom tables, the schema identifier can be found in the section detail. Use GET section to retrieve the section, then look for schema fields on table section items."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records to skip before returning the result records. Defaults to 0. Increase this value in subsequent requests to continue getting results when the number of records exceeds the requested limit."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of records to return in a single request. Can be a number between 1 and 50. Defaults to 50."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Table values from the form."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found. This is returned when the form does not exist, the fieldId does not correspond to a valid table in the form’s layout, or the user does not have access to the form."
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataarray: object",
+          "col_1": "List of table rows."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Unique identifier for this table row. Each column value in the columns array references this ID via its formValueId field."
+        },
+        {
+          "col_0": "tableenum:string",
+          "col_1": "Built-in table identifier. If it is not provided, the table will be a custom table identified by the schema field.\nPossible values: worklogEntries, materialsEntries, equipmentEntries"
+        },
+        {
+          "col_0": "schemastring: UUID",
+          "col_1": "The table’s schema identifier (UUID). This is the legacy field name, retained for backwards compatibility. Use fieldId for new integrations.\nThis value corresponds to the fieldId path parameter used to query this table."
+        },
+        {
+          "col_0": "fieldIdstring: UUID",
+          "col_1": "The table’s schema identifier (UUID). This is the preferred field name that matches the fieldId path parameter.\nHistorically, tables were identified by a field called schema, which caused confusion with database schema concepts. The fieldId field provides a clearer name while schema is retained for backwards compatibility. Both fields contain the same UUID value."
+        },
+        {
+          "col_0": "rankint",
+          "col_1": "The sort order in the table."
+        },
+        {
+          "col_0": "deletedboolean",
+          "col_1": "Whether the table row has been deleted or not."
+        },
+        {
+          "col_0": "columnsarray: object",
+          "col_1": "The list of cell values in this row. Each item represents the value at the intersection of this row and a specific column (i.e., a table cell). Each cell contains formValueId (matching this row’s id) and columnId (identifying which column)."
+        },
+        {
+          "col_0": "formValueIdstring: UUID",
+          "col_1": "The row identifier (matches the parent TabularValueRow.id). This is repeated in each cell to enable independent cell storage and sparse table support. Think of it as the ‘rowId’ portion of a cell’s coordinate."
+        },
+        {
+          "col_0": "columnIdstring: UUID",
+          "col_1": "The column identifier from the form’s layout. Think of it as the ‘columnId’ portion of a cell’s coordinate. This corresponds to the uid of a column in the table’s columns array in the section detail.\nUse GET section to retrieve the section and find column definitions with their uid, columnKey, label, and columnType."
+        },
+        {
+          "col_0": "columnNamestring",
+          "col_1": "The name (columnKey) of the column. For built-in tables, this is one of the predefined column keys (e.g., trade, headcount, description). For custom tables, this is the user-defined column key."
+        },
+        {
+          "col_0": "textValstring",
+          "col_1": "Text value."
+        },
+        {
+          "col_0": "numberValnumber",
+          "col_1": "Number value."
+        },
+        {
+          "col_0": "integerValint",
+          "col_1": "Integer value."
+        },
+        {
+          "col_0": "arrayValarray: string",
+          "col_1": "Array value."
+        },
+        {
+          "col_0": "timespanValint",
+          "col_1": "Amount of time in milliseconds."
+        },
+        {
+          "col_0": "svgValstring",
+          "col_1": "SVG value."
+        },
+        {
+          "col_0": "uidValstring",
+          "col_1": "UUID value."
+        },
+        {
+          "col_0": "datetimeLocalValstring",
+          "col_1": "Datetime value in local time."
+        },
+        {
+          "col_0": "datetimeUtcValstring",
+          "col_1": "Datetime value in UTC."
+        },
+        {
+          "col_0": "timezoneValstring",
+          "col_1": "Timezone identifier."
+        },
+        {
+          "col_0": "timezoneRulesValstring",
+          "col_1": "Timezone rules data."
+        },
+        {
+          "col_0": "lngValnumber",
+          "col_1": "Longitude value."
+        },
+        {
+          "col_0": "latValnumber",
+          "col_1": "Latitude value."
+        },
+        {
+          "col_0": "dateValstring",
+          "col_1": "Date without timezone."
+        },
+        {
+          "col_0": "timeValstring",
+          "col_1": "Time without timezone."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date when the table row was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "User ID that last updated the table row."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Request pagination information."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Number of items skipped."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Number of items returned per page."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "Total number of items that can be returned."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "URL for the next page of items. Next page url is null on the last page."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v1/projects/:projectId/forms/:formId/table/:fieldId/values' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"id\": \"28a31f14-d963-42a3-bf98-d38b73e7aba3\",\n      \"table\": \"worklogEntries\",\n      \"schema\": \"6c8055d5-1301-46f6-9d18-8a2a208a277e\",\n      \"fieldId\": \"6c8055d5-1301-46f6-9d18-8a2a208a277e\",\n      \"rank\": 1,\n      \"deleted\": false,\n      \"columns\": [\n        {\n          \"formValueId\": \"550e8400-e29b-41d4-a716-446655440001\",\n          \"columnId\": \"123e4567-e89b-12d3-a456-426614174000\",\n          \"columnName\": \"trade\",\n          \"textVal\": \"Plumber\",\n          \"numberVal\": 42.5,\n          \"integerVal\": 10,\n          \"arrayVal\": [\n            \"Option 1\",\n            \"Option 2\"\n          ],\n          \"timespanVal\": 21600000,\n          \"svgVal\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...\",\n          \"uidVal\": \"550e8400-e29b-41d4-a716-446655440000\",\n          \"datetimeLocalVal\": \"2023-06-15T14:30:00\",\n          \"datetimeUtcVal\": \"2023-06-15T21:30:00Z\",\n          \"timezoneVal\": \"America/Los_Angeles\",\n          \"timezoneRulesVal\": \"\",\n          \"lngVal\": -122.4194,\n          \"latVal\": 37.7749,\n          \"dateVal\": \"2023-06-15\",\n          \"timeVal\": \"14:30:00\"\n        }\n      ],\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"updatedBy\": \"USER123A\"\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "id": "28a31f14-d963-42a3-bf98-d38b73e7aba3",
+            "table": "worklogEntries",
+            "schema": "6c8055d5-1301-46f6-9d18-8a2a208a277e",
+            "fieldId": "6c8055d5-1301-46f6-9d18-8a2a208a277e",
+            "rank": 1,
+            "deleted": false,
+            "columns": [
+              {
+                "formValueId": "550e8400-e29b-41d4-a716-446655440001",
+                "columnId": "123e4567-e89b-12d3-a456-426614174000",
+                "columnName": "trade",
+                "textVal": "Plumber",
+                "numberVal": 42.5,
+                "integerVal": 10,
+                "arrayVal": [
+                  "Option 1",
+                  "Option 2"
+                ],
+                "timespanVal": 21600000,
+                "svgVal": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+...",
+                "uidVal": "550e8400-e29b-41d4-a716-446655440000",
+                "datetimeLocalVal": "2023-06-15T14:30:00",
+                "datetimeUtcVal": "2023-06-15T21:30:00Z",
+                "timezoneVal": "America/Los_Angeles",
+                "timezoneRulesVal": "",
+                "lngVal": -122.4194,
+                "latVal": 37.7749,
+                "dateVal": "2023-06-15",
+                "timeVal": "14:30:00"
+              }
+            ],
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "updatedBy": "USER123A"
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

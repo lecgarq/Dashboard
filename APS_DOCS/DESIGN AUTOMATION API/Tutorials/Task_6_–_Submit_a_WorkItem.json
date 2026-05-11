@@ -1,0 +1,110 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/tutorials/inventor/task6-post-workitem",
+    "scrapedAt": "2026-05-08T17:41:20.838Z",
+    "category": "Tutorials",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Task 6 – Submit a WorkItem",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "HTTP Request",
+        "Description"
+      ],
+      "rows": [
+        {
+          "HTTP Request": "POST /workitems",
+          "Description": "Creates a new WorkItem and queues it for processing."
+        },
+        {
+          "HTTP Request": "GET /workitems/{id}",
+          "Description": "Gets the status of a specific WorkItem."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Attribute",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Attribute": "status",
+          "Description": "Indicates if execution is pending, successful, failed or cancelled."
+        },
+        {
+          "Attribute": "reportUrl",
+          "Description": "The URL to get the report log for this WorkItem’s execution."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -X POST \\\n  'https://developer.api.autodesk.com/da/us-east/v3/workitems' \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>' \\\n  -d '{\n          \"activityId\": \"<YOUR_APP_NICKNAME>.ChangeParamActivity+my_current_version\",\n          \"arguments\": {\n                  \"InventorDoc\": {\n                          \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY_4_INPUT_FILE>\",\n              \"verb\": \"get\",\n              \"headers\": {\n                  \"Authorization\": \"Bearer <YOUR_ACCESS_TOKEN>\"\n              }\n                  },\n                  \"InventorParams\": {\n                          \"url\": \"data:application/json,{\\\"height\\\":\\\"16 in\\\", \\\"width\\\":\\\"10 in\\\"}\"\n                  },\n                  \"OutputIpt\": {\n                          \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<RESIZED_IPT_FILENAME>\",\n                          \"verb\": \"put\",\n              \"headers\": {\n                  \"Authorization\": \"Bearer <YOUR_ACCESS_TOKEN>\"\n              }\n                  },\n                  \"OutputBmp\": {\n                          \"url\": \"urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<GENERATED_BMP_FILENAME>\",\n                          \"verb\": \"put\",\n              \"headers\": {\n                  \"Authorization\": \"Bearer <YOUR_ACCESS_TOKEN>\"\n              }\n          }\n          }\n  }'",
+      "parsed": {
+        "activityId": "<YOUR_APP_NICKNAME>.ChangeParamActivity+my_current_version",
+        "arguments": {
+          "InventorDoc": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<OBJECT_KEY_4_INPUT_FILE>",
+            "verb": "get",
+            "headers": {
+              "Authorization": "Bearer <YOUR_ACCESS_TOKEN>"
+            }
+          },
+          "InventorParams": {
+            "url": "data:application/json,{\"height\":\"16 in\", \"width\":\"10 in\"}"
+          },
+          "OutputIpt": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<RESIZED_IPT_FILENAME>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <YOUR_ACCESS_TOKEN>"
+            }
+          },
+          "OutputBmp": {
+            "url": "urn:adsk.objects:os.object:<YOUR_BUCKET_KEY>/<GENERATED_BMP_FILENAME>",
+            "verb": "put",
+            "headers": {
+              "Authorization": "Bearer <YOUR_ACCESS_TOKEN>"
+            }
+          }
+        }
+      }
+    },
+    {
+      "raw": "{\n    \"status\": \"pending\",\n    \"stats\": {\n        \"timeQueued\": \"2023-09-27T08:52:30.7161306Z\"\n    },\n    \"id\": \"<YOUR_WORKITEM_ID>\"\n}",
+      "parsed": {
+        "status": "pending",
+        "stats": {
+          "timeQueued": "2023-09-27T08:52:30.7161306Z"
+        },
+        "id": "<YOUR_WORKITEM_ID>"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  'https://developer.api.autodesk.com/da/us-east/v3/workitems/<YOUR_WORKITEM_ID> \\\n  -H 'Content-Type: application/json' \\\n  -H 'Authorization: Bearer <YOUR_ACCESS_TOKEN>'"
+    },
+    {
+      "raw": "{\n    \"status\": \"success\",\n    \"reportUrl\": \"https://dasprod-store.s3.amazonaws.com/workItem/<YOUR_APP_NICKNAME>/<YOUR_WORKITEM_ID>/report.txt?..(Truncated)\",\n    \"stats\": {\n        \"timeQueued\": \"2023-09-27T08:52:30.7161306Z\",\n        \"timeDownloadStarted\": \"2023-09-27T08:52:30.882113Z\",\n        \"timeInstructionsStarted\": \"2023-09-27T08:52:31.6418619Z\",\n        \"timeInstructionsEnded\": \"2023-09-27T08:52:55.0320553Z\",\n        \"timeUploadEnded\": \"2023-09-27T08:52:55.4675607Z\",\n        \"timeFinished\": \"2023-09-27T08:52:55.9182974Z\",\n        \"bytesDownloaded\": 134691,\n        \"bytesUploaded\": 360182\n    },\n    \"id\": \"<YOUR_WORKITEM_ID>\"\n}",
+      "parsed": {
+        "status": "success",
+        "reportUrl": "https://dasprod-store.s3.amazonaws.com/workItem/<YOUR_APP_NICKNAME>/<YOUR_WORKITEM_ID>/report.txt?..(Truncated)",
+        "stats": {
+          "timeQueued": "2023-09-27T08:52:30.7161306Z",
+          "timeDownloadStarted": "2023-09-27T08:52:30.882113Z",
+          "timeInstructionsStarted": "2023-09-27T08:52:31.6418619Z",
+          "timeInstructionsEnded": "2023-09-27T08:52:55.0320553Z",
+          "timeUploadEnded": "2023-09-27T08:52:55.4675607Z",
+          "timeFinished": "2023-09-27T08:52:55.9182974Z",
+          "bytesDownloaded": 134691,
+          "bytesUploaded": 360182
+        },
+        "id": "<YOUR_WORKITEM_ID>"
+      }
+    }
+  ]
+}

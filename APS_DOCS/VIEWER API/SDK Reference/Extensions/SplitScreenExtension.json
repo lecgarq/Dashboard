@@ -1,0 +1,34 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/viewer/v7/reference/Extensions/SplitScreenExtension",
+    "scrapedAt": "2026-05-08T18:47:21.620Z",
+    "category": "SDK Reference/Extensions",
+    "apiName": "VIEWER API"
+  },
+  "title": "SplitScreenExtension",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "viewer*Viewer3D",
+          "col_1": "Viewer instance"
+        },
+        {
+          "col_0": "optionsobject",
+          "col_1": ""
+        },
+        {
+          "col_0": "viewportsArray.<?Autodesk.Viewing.Extensions.SplitScreenExtension~modelFilterFunction>",
+          "col_1": "Filter functions that returns true for models to be rendered for the viewport at that index. Falsy values render everything."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "var options = {"
+    }
+  ]
+}

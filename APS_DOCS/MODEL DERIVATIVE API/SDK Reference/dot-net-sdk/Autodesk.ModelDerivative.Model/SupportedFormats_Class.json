@@ -1,0 +1,23 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/SupportedFormats",
+    "scrapedAt": "2026-05-08T18:28:47.786Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Class SupportedFormats",
+  "codeExamples": [
+    {
+      "raw": "[DataContract]\npublic class SupportedFormats"
+    },
+    {
+      "raw": "public SupportedFormats()"
+    },
+    {
+      "raw": "[DataMember(Name = \"formats\", EmitDefaultValue = false)]\npublic Dictionary<string, List<string>> Formats { get; set; }"
+    },
+    {
+      "raw": "public override string ToString()"
+    }
+  ]
+}

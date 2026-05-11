@@ -1,0 +1,378 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/engine-lifecycle",
+    "scrapedAt": "2026-05-08T17:39:14.199Z",
+    "category": "Developer Guide",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Engine Lifecycle Policy",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Engine alias",
+        "Initial release date",
+        "Deprecation date",
+        "Removal date"
+      ],
+      "rows": [
+        {
+          "Engine alias": "Autodesk.3dsMax.2020",
+          "Initial release date": "March 30, 2019",
+          "Deprecation date": "March 29, 2023",
+          "Removal date": "March 29, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2021",
+          "Initial release date": "March 30, 2020",
+          "Deprecation date": "March 29, 2024",
+          "Removal date": "March 29, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2022",
+          "Initial release date": "March 30, 2021",
+          "Deprecation date": "March 29, 2025",
+          "Removal date": "March 29, 2027"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2023",
+          "Initial release date": "March 30, 2022",
+          "Deprecation date": "March 29, 2026",
+          "Removal date": "March 29, 2028"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2024",
+          "Initial release date": "March 30, 2023",
+          "Deprecation date": "March 29, 2027",
+          "Removal date": "March 29, 2029"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2025",
+          "Initial release date": "March 30, 2024",
+          "Deprecation date": "March 29, 2028",
+          "Removal date": "March 29, 2030"
+        },
+        {
+          "Engine alias": "Autodesk.3dsMax.2026",
+          "Initial release date": "March 30, 2025",
+          "Deprecation date": "March 29, 2029",
+          "Removal date": "March 29, 2031"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Engine alias",
+        "Initial release date",
+        "Deprecation date",
+        "Removal date"
+      ],
+      "rows": [
+        {
+          "Engine alias": "Autodesk.AutoCAD.20_1",
+          "Initial release date": "March 30, 2015",
+          "Deprecation date": "March 29, 2019",
+          "Removal date": "October 30, 2023*"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.21",
+          "Initial release date": "March 30, 2016",
+          "Deprecation date": "March 29, 2020",
+          "Removal date": "October 30, 2023*"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.22",
+          "Initial release date": "March 30, 2017",
+          "Deprecation date": "March 29, 2021",
+          "Removal date": "October 30, 2023"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.23",
+          "Initial release date": "March 30, 2018",
+          "Deprecation date": "March 29, 2022",
+          "Removal date": "March 29, 2024"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.23_1",
+          "Initial release date": "March 30, 2019",
+          "Deprecation date": "March 29, 2023",
+          "Removal date": "March 29, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.24",
+          "Initial release date": "March 30, 2020",
+          "Deprecation date": "March 29, 2024",
+          "Removal date": "March 29, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.24_1",
+          "Initial release date": "March 30, 2021",
+          "Deprecation date": "March 29, 2025",
+          "Removal date": "March 29, 2027"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.24_2",
+          "Initial release date": "March 30, 2022",
+          "Deprecation date": "March 29, 2026",
+          "Removal date": "March 29, 2028"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.24_3",
+          "Initial release date": "March 30, 2023",
+          "Deprecation date": "March 29, 2027",
+          "Removal date": "March 29, 2029"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.25_0",
+          "Initial release date": "March 30, 2024",
+          "Deprecation date": "March 29, 2028",
+          "Removal date": "March 29, 2030"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.25_1",
+          "Initial release date": "March 30, 2025",
+          "Deprecation date": "March 29, 2029",
+          "Removal date": "March 29, 2031"
+        },
+        {
+          "Engine alias": "Autodesk.AutoCAD.26_0",
+          "Initial release date": "March 30, 2026",
+          "Deprecation date": "March 29, 2030",
+          "Removal date": "March 29, 2032"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Engine alias",
+        "Initial release date",
+        "Deprecation date",
+        "Removal date"
+      ],
+      "rows": [
+        {
+          "Engine alias": "Autodesk.Fusion+2505_00",
+          "Initial release date": "November 04, 2024",
+          "Deprecation date": "February 10, 2025",
+          "Removal date": "March 24, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2506_00",
+          "Initial release date": "January 27, 2025",
+          "Deprecation date": "April 07, 2025",
+          "Removal date": "June 07, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2601_00",
+          "Initial release date": "March 24, 2025",
+          "Deprecation date": "June 02, 2025",
+          "Removal date": "July 14, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2602_00",
+          "Initial release date": "May 19, 2025",
+          "Deprecation date": "July 28, 2025",
+          "Removal date": "September 08, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2603_00",
+          "Initial release date": "July 14, 2025",
+          "Deprecation date": "September 22, 2025",
+          "Removal date": "November 03, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2604_00",
+          "Initial release date": "September 9, 2025",
+          "Deprecation date": "November 18, 2025",
+          "Removal date": "December 30, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2605_00",
+          "Initial release date": "November 4, 2025",
+          "Deprecation date": "January 13, 2026",
+          "Removal date": "February 24, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2606_00",
+          "Initial release date": "January 21, 2026",
+          "Deprecation date": "March 03, 2026",
+          "Removal date": "May 05, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2701_00",
+          "Initial release date": "March 3, 2026",
+          "Deprecation date": "April 28, 2026",
+          "Removal date": "June 29, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+2702_00",
+          "Initial release date": "April 14, 2026",
+          "Deprecation date": "June 13, 2026",
+          "Removal date": "July 04, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Fusion+Latest",
+          "Initial release date": "November 04, 2024",
+          "Deprecation date": "never",
+          "Removal date": "never"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Engine alias",
+        "Initial release date",
+        "Deprecation date",
+        "Removal date"
+      ],
+      "rows": [
+        {
+          "Engine alias": "Autodesk.Inventor.2018",
+          "Initial release date": "March 30, 2017",
+          "Deprecation date": "March 29, 2021",
+          "Removal date": "October 30, 2023"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2019",
+          "Initial release date": "March 30, 2018",
+          "Deprecation date": "March 29, 2022",
+          "Removal date": "March 29, 2024"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2020",
+          "Initial release date": "March 30, 2019",
+          "Deprecation date": "March 29, 2023",
+          "Removal date": "March 29, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2021",
+          "Initial release date": "March 30, 2020",
+          "Deprecation date": "March 29, 2024",
+          "Removal date": "March 29, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2022",
+          "Initial release date": "March 30, 2021",
+          "Deprecation date": "March 29, 2025",
+          "Removal date": "March 29, 2027"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2023",
+          "Initial release date": "March 30, 2022",
+          "Deprecation date": "March 29, 2026",
+          "Removal date": "March 29, 2028"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2024",
+          "Initial release date": "March 30, 2023",
+          "Deprecation date": "March 29, 2027",
+          "Removal date": "March 29, 2029"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2025",
+          "Initial release date": "March 30, 2024",
+          "Deprecation date": "March 29, 2028",
+          "Removal date": "March 29, 2030"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2025_Net8",
+          "Initial release date": "March 30, 2024",
+          "Deprecation date": "March 29, 2028",
+          "Removal date": "March 29, 2030"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2026",
+          "Initial release date": "March 30, 2025",
+          "Deprecation date": "March 29, 2029",
+          "Removal date": "March 29, 2031"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.2027",
+          "Initial release date": "March 25, 2026",
+          "Deprecation date": "March 29, 2030",
+          "Removal date": "March 29, 2032"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.22",
+          "Initial release date": "March 30, 2017",
+          "Deprecation date": "March 29, 2021",
+          "Removal date": "October 30, 2023"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.23",
+          "Initial release date": "March 30, 2018",
+          "Deprecation date": "March 29, 2022",
+          "Removal date": "March 29, 2024"
+        },
+        {
+          "Engine alias": "Autodesk.Inventor.24",
+          "Initial release date": "March 30, 2019",
+          "Deprecation date": "March 29, 2023",
+          "Removal date": "March 29, 2025"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [
+        "Engine alias",
+        "Initial release date",
+        "Deprecation date",
+        "Removal date"
+      ],
+      "rows": [
+        {
+          "Engine alias": "Autodesk.Revit.2019",
+          "Initial release date": "March 30, 2018",
+          "Deprecation date": "March 29, 2022",
+          "Removal date": "September 29, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2020",
+          "Initial release date": "March 30, 2019",
+          "Deprecation date": "March 29, 2023",
+          "Removal date": "September 29, 2025"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2021",
+          "Initial release date": "March 30, 2020",
+          "Deprecation date": "March 29, 2024",
+          "Removal date": "March 29, 2026"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2022",
+          "Initial release date": "March 30, 2021",
+          "Deprecation date": "March 29, 2025",
+          "Removal date": "March 29, 2027"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2023",
+          "Initial release date": "March 30, 2022",
+          "Deprecation date": "March 29, 2026",
+          "Removal date": "March 29, 2028"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2024",
+          "Initial release date": "March 30, 2023",
+          "Deprecation date": "March 29, 2027",
+          "Removal date": "March 29, 2029"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2025",
+          "Initial release date": "April 5, 2024",
+          "Deprecation date": "April 5, 2028",
+          "Removal date": "April 5, 2030"
+        },
+        {
+          "Engine alias": "Autodesk.Revit.2026",
+          "Initial release date": "March 31, 2025",
+          "Deprecation date": "March 29, 2029",
+          "Removal date": "March 29, 2031"
+        }
+      ]
+    }
+  ]
+}

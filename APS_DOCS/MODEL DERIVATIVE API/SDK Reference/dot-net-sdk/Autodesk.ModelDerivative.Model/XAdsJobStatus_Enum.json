@@ -1,0 +1,14 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/dot-net-sdk/Autodesk.ModelDerivative.Model/XAdsJobStatus",
+    "scrapedAt": "2026-05-08T18:30:23.342Z",
+    "category": "SDK Reference/dot-net-sdk/Autodesk.ModelDerivative.Model",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Enum XAdsJobStatus",
+  "codeExamples": [
+    {
+      "raw": "[JsonConverter(typeof(StringEnumConverter))]\npublic enum XAdsJobStatus"
+    }
+  ]
+}

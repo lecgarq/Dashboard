@@ -1,0 +1,191 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/developers_guide/basics/geometry_extraction",
+    "scrapedAt": "2026-05-08T18:21:14.755Z",
+    "category": "Developer Guide/basics",
+    "apiName": "MODEL DERIVATIVE API"
+  },
+  "title": "Extract Geometry",
+  "codeExamples": [
+    {
+      "raw": "{\n    \"data\": {\n        \"type\": \"objects\",\n        \"objects\": [\n            {\n                \"objectid\": 1,\n                \"name\": \"Stapler\",\n                \"objects\": [\n                    {\n                        \"objectid\": 2,\n                        \"name\": \"Stapler\",\n                        \"objects\": [\n                            {\n                                \"objectid\": 3,\n                                \"name\": \"Bottom:1\",\n                                \"objects\": [\n                                    {\n                                        \"objectid\": 4,\n                                        \"name\": \"Bottom - Back:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 5,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 6,\n                                        \"name\": \"Bottom - Front:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 7,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 8,\n                                        \"name\": \"Lower Mount:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 9,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 10,\n                                        \"name\": \"Spring:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 11,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 12,\n                                        \"name\": \"Bottom - Anvil:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 13,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    }\n                                ]\n                            },\n                            {\n                                \"objectid\": 14,\n                                \"name\": \"Upper:1\",\n                                \"objects\": [\n                                    {\n                                        \"objectid\": 15,\n                                        \"name\": \"Upper - Back:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 16,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 17,\n                                        \"name\": \"Upper - Front:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 18,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 19,\n                                        \"name\": \"Channel - Spring Clip:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 20,\n                                                \"name\": \"Solid1\"\n                                            }\n                                        ]\n                                    },\n                                    {\n                                        \"objectid\": 21,\n                                        \"name\": \"Channel:1\",\n                                        \"objects\": [\n                                            {\n                                                \"objectid\": 22,\n                                                \"name\": \"Channel - Base:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 23,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            },\n                                            {\n                                                \"objectid\": 24,\n                                                \"name\": \"Channel - Pusher:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 25,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            },\n                                            {\n                                                \"objectid\": 26,\n                                                \"name\": \"Channel - Cover:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 27,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            },\n                                            {\n                                                \"objectid\": 28,\n                                                \"name\": \"Channel - Hinge Pin:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 29,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            },\n                                            {\n                                                \"objectid\": 30,\n                                                \"name\": \"Staples:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 31,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            },\n                                            {\n                                                \"objectid\": 32,\n                                                \"name\": \"Channel - Bumper:1\",\n                                                \"objects\": [\n                                                    {\n                                                        \"objectid\": 33,\n                                                        \"name\": \"Solid1\"\n                                                    }\n                                                ]\n                                            }\n                                        ]\n                                    }\n                                ]\n                            }\n                        ]\n                    }\n                ]\n            }\n        ]\n    }\n}",
+      "parsed": {
+        "data": {
+          "type": "objects",
+          "objects": [
+            {
+              "objectid": 1,
+              "name": "Stapler",
+              "objects": [
+                {
+                  "objectid": 2,
+                  "name": "Stapler",
+                  "objects": [
+                    {
+                      "objectid": 3,
+                      "name": "Bottom:1",
+                      "objects": [
+                        {
+                          "objectid": 4,
+                          "name": "Bottom - Back:1",
+                          "objects": [
+                            {
+                              "objectid": 5,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 6,
+                          "name": "Bottom - Front:1",
+                          "objects": [
+                            {
+                              "objectid": 7,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 8,
+                          "name": "Lower Mount:1",
+                          "objects": [
+                            {
+                              "objectid": 9,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 10,
+                          "name": "Spring:1",
+                          "objects": [
+                            {
+                              "objectid": 11,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 12,
+                          "name": "Bottom - Anvil:1",
+                          "objects": [
+                            {
+                              "objectid": 13,
+                              "name": "Solid1"
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "objectid": 14,
+                      "name": "Upper:1",
+                      "objects": [
+                        {
+                          "objectid": 15,
+                          "name": "Upper - Back:1",
+                          "objects": [
+                            {
+                              "objectid": 16,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 17,
+                          "name": "Upper - Front:1",
+                          "objects": [
+                            {
+                              "objectid": 18,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 19,
+                          "name": "Channel - Spring Clip:1",
+                          "objects": [
+                            {
+                              "objectid": 20,
+                              "name": "Solid1"
+                            }
+                          ]
+                        },
+                        {
+                          "objectid": 21,
+                          "name": "Channel:1",
+                          "objects": [
+                            {
+                              "objectid": 22,
+                              "name": "Channel - Base:1",
+                              "objects": [
+                                {
+                                  "objectid": 23,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            },
+                            {
+                              "objectid": 24,
+                              "name": "Channel - Pusher:1",
+                              "objects": [
+                                {
+                                  "objectid": 25,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            },
+                            {
+                              "objectid": 26,
+                              "name": "Channel - Cover:1",
+                              "objects": [
+                                {
+                                  "objectid": 27,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            },
+                            {
+                              "objectid": 28,
+                              "name": "Channel - Hinge Pin:1",
+                              "objects": [
+                                {
+                                  "objectid": 29,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            },
+                            {
+                              "objectid": 30,
+                              "name": "Staples:1",
+                              "objects": [
+                                {
+                                  "objectid": 31,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            },
+                            {
+                              "objectid": 32,
+                              "name": "Channel - Bumper:1",
+                              "objects": [
+                                {
+                                  "objectid": 33,
+                                  "name": "Solid1"
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,464 @@
+{
+  "_meta": {
+    "title": "AUTHENTICATION API — Reference Index",
+    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/http/",
+    "scrapedAt": "2026-05-08T17:38:16.824Z",
+    "totalPages": 71
+  },
+  "categories": {
+    "Developer Guide": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "API Basics",
+        "file": "Developer Guide/API_Basics.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Application Types",
+        "file": "Developer Guide/Application_Types.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Field Guide",
+        "file": "Developer Guide/Field_Guide.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Scopes",
+        "file": "Developer Guide/Scopes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Asymmetric Signing",
+        "file": "Developer Guide/Asymmetric_Signing.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Error Handling",
+        "file": "Developer Guide/Error_Handling.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Rate Limits",
+        "file": "Developer Guide/Rate_Limits.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/App-types": [
+      {
+        "name": "Overview",
+        "file": "Developer Guide/App-types/Overview.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Traditional Web App",
+        "file": "Developer Guide/App-types/Traditional_Web_App.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Desktop, Mobile & Single Page Web App",
+        "file": "Developer Guide/App-types/Desktop,_Mobile_&_Single_Page_Web_App.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Server-to-Server App",
+        "file": "Developer Guide/App-types/Server-to-Server_App.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Developer Guide/rate-limiting": [
+      {
+        "name": "APS Rate Limits and Quotas",
+        "file": "Developer Guide/rate-limiting/APS_Rate_Limits_and_Quotas.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Authentication Rate Limits",
+        "file": "Developer Guide/rate-limiting/Authentication_Rate_Limits.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Tutorials": [
+      {
+        "name": "Create an App",
+        "file": "Tutorials/Create_an_App.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Get a 2-Legged Token",
+        "file": "Tutorials/Get_a_2-Legged_Token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Get a 3-Legged Token with Authorization Code Grant",
+        "file": "Tutorials/Get_a_3-Legged_Token_with_Authorization_Code_Grant.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Get a 3-Legged Token with Authorization Code Grant (PKCE)",
+        "file": "Tutorials/Get_a_3-Legged_Token_with_Authorization_Code_Grant_(PKCE).json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Get a 3-Legged Token with Authorization Code Grant (PKCE) for Public Clients",
+        "file": "Tutorials/Get_a_3-Legged_Token_with_Authorization_Code_Grant_(PKCE)_for_Public_Clients.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Get a 3-Legged Token with Authorization Code Grant (PKCE) for Private Clients",
+        "file": "Tutorials/Get_a_3-Legged_Token_with_Authorization_Code_Grant_(PKCE)_for_Private_Clients.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "Get an ID Token",
+        "file": "Tutorials/Get_an_ID_Token.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Generate the Code Challenge",
+        "file": "Tutorials/Generate_the_Code_Challenge.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "REST API": [
+      {
+        "name": "GET OIDC Specification",
+        "file": "REST API/GET_OIDC_Specification.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/.well-known/openid-configuration"
+      },
+      {
+        "name": "GET authorize",
+        "file": "REST API/GET_authorize.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GET JWKS",
+        "file": "REST API/GET_JWKS.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/keys"
+      },
+      {
+        "name": "GET logout",
+        "file": "REST API/GET_logout.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "POST token",
+        "file": "REST API/POST_token.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/token"
+      },
+      {
+        "name": "POST introspect",
+        "file": "REST API/POST_introspect.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/introspect"
+      },
+      {
+        "name": "POST revoke",
+        "file": "REST API/POST_revoke.json",
+        "method": "GET",
+        "url": "https://developer.api.autodesk.com/authentication/v2/revoke"
+      },
+      {
+        "name": "GET users/@me",
+        "file": "REST API/GET_users-@me.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference": [
+      {
+        "name": ".NET SDK Reference",
+        "file": "SDK Reference/.NET_SDK_Reference.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TypeScript SDK Reference",
+        "file": "SDK Reference/TypeScript_SDK_Reference.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk": [
+      {
+        "name": "Autodesk.Authentication Namespace",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication_Namespace.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Autodesk.Authentication.Model Namespace",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model_Namespace.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk/Autodesk.Authentication": [
+      {
+        "name": "AuthenticationApiException Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication/AuthenticationApiException_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AuthenticationClient Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication/AuthenticationClient_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ServiceApiException Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication/ServiceApiException_Class.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model": [
+      {
+        "name": "IntrospectToken Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/IntrospectToken_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Jwks Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/Jwks_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JwksKey Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/JwksKey_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OidcSpec Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/OidcSpec_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ThreeLeggedToken Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/ThreeLeggedToken_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TwoLeggedToken Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/TwoLeggedToken_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfo Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/UserInfo_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfoAddress Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/UserInfoAddress_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfoSocialUserinfoList Class",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/UserInfoSocialUserinfoList_Class.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "GrantType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/GrantType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ResponseType Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/ResponseType_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Scopes Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/Scopes_Enum.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TokenTypeHint Enum",
+        "file": "SDK Reference/dot-net-sdk/Autodesk.Authentication.Model/TokenTypeHint_Enum.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk": [
+      {
+        "name": "Classes",
+        "file": "SDK Reference/typescript-sdk/Classes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Enumerations",
+        "file": "SDK Reference/typescript-sdk/Enumerations.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Interfaces",
+        "file": "SDK Reference/typescript-sdk/Interfaces.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/classes": [
+      {
+        "name": "AuthenticationApiError",
+        "file": "SDK Reference/typescript-sdk/classes/AuthenticationApiError.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "AuthenticationClient",
+        "file": "SDK Reference/typescript-sdk/classes/AuthenticationClient.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/enumerations": [
+      {
+        "name": "GrantType",
+        "file": "SDK Reference/typescript-sdk/enumerations/GrantType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ResponseType",
+        "file": "SDK Reference/typescript-sdk/enumerations/ResponseType.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Scopes",
+        "file": "SDK Reference/typescript-sdk/enumerations/Scopes.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TokenTypeHint",
+        "file": "SDK Reference/typescript-sdk/enumerations/TokenTypeHint.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "SDK Reference/typescript-sdk/interfaces": [
+      {
+        "name": "IntrospectToken",
+        "file": "SDK Reference/typescript-sdk/interfaces/IntrospectToken.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Jwks",
+        "file": "SDK Reference/typescript-sdk/interfaces/Jwks.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "JwksKey",
+        "file": "SDK Reference/typescript-sdk/interfaces/JwksKey.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "OidcSpec",
+        "file": "SDK Reference/typescript-sdk/interfaces/OidcSpec.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "RequestArgs",
+        "file": "SDK Reference/typescript-sdk/interfaces/RequestArgs.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "ThreeLeggedToken",
+        "file": "SDK Reference/typescript-sdk/interfaces/ThreeLeggedToken.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "TwoLeggedToken",
+        "file": "SDK Reference/typescript-sdk/interfaces/TwoLeggedToken.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfo",
+        "file": "SDK Reference/typescript-sdk/interfaces/UserInfo.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfoAddress",
+        "file": "SDK Reference/typescript-sdk/interfaces/UserInfoAddress.json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "UserInfoSocialUserinfoList",
+        "file": "SDK Reference/typescript-sdk/interfaces/UserInfoSocialUserinfoList.json",
+        "method": null,
+        "url": null
+      }
+    ],
+    "Other": [
+      {
+        "name": "Authentication (OAuth)",
+        "file": "Other/Authentication_(OAuth).json",
+        "method": null,
+        "url": null
+      },
+      {
+        "name": "Reference Guide",
+        "file": "Other/Reference_Guide.json",
+        "method": null,
+        "url": null
+      }
+    ]
+  }
+}

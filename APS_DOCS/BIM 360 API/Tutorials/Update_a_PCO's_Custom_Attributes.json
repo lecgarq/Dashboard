@@ -1,0 +1,25 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/cost/cost-update-custom-attribute",
+    "scrapedAt": "2026-05-08T17:48:41.629Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Update a PCO’s Custom Attributes",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco?limit=100&offset=0&include=attributes",
+  "codeExamples": [
+    {
+      "raw": "curl 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/change-orders/pco?limit=100&offset=0&include=attributes' -H 'Authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0'"
+    },
+    {
+      "raw": "{\n        \"results\": [{\n        \"id\": \"1a53c5c0-61b6-11e8-b4c8-f7f2ad363daa\",\n        \"number\": \"0001\",\n        \"name\": \"Revised Entrance Layout\",\n        \"scope\": \"out\",\n        \"type\": \"\",\n        \"description\": \"\",\n        \"note\": \"\",\n        \"...\": \"...\",\n        \"createdAt\": \"2018-05-27T13:58:58.844Z\",\n        \"updatedAt\": \"2018-12-26T05:40:42.665Z\",\n        \"properties\": [{\n            \"name\": \"Revised Substantial Completion\",\n            \"value\": \"2020-6-1\",\n            \"propertyDefinitionId\": \"9240df60-61b5-11e8-9d14-7f96380922a0\",\n            \"...\": \"...\",\n        }]\n    }],\n    \"pagination\": {\n        \"totalResults\": 1,\n        \"limit\": 100,\n        \"offset\": 0\n    }\n}"
+    },
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/cost/v1/containers/e94b9bc8-1775-4d76-9b1d-c613e120ccff/property-values:batch-update' -X 'POST' -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a' -H 'Content-Type: application/json' \\\n-d '[{associationId: \"55254a50-44d9-11e9-99d7-79aa05d3109e\", associationType: \"FormInstance\", propertyDefinitionId: \"9240df60-61b5-11e8-9d14-7f96380922a0\", value: \"2020-06-16T16:00:00.000Z\"}]'"
+    },
+    {
+      "raw": "[{\n      \"name\": \"Revised Substantial Completion\",\n      \"value\": \"2020-06-16T16:00:00.000Z\",\n      \"propertyDefinitionId\": \"9240df60-61b5-11e8-9d14-7f96380922a0\",\n  \"...\": \"...\",\n}]"
+    }
+  ]
+}

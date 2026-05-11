@@ -1,0 +1,465 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/forms-forms-(New--Beta)-GET",
+    "scrapedAt": "2026-05-08T23:55:01.911Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "v2/projects/{projectId}/forms",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "offsetint",
+          "col_1": "The number of records to skip before returning the result records. Defaults to 0. Increase this value in subsequent requests to continue getting results when the number of records exceeds the requested limit."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "The number of records to return in a single request. Can be a number between 1 and 50. Defaults to 50."
+        },
+        {
+          "col_0": "idsarray: string",
+          "col_1": "An array of Form IDs to retrieve."
+        },
+        {
+          "col_0": "formDateMinstring",
+          "col_1": "Return Forms with formDate at or after specified date."
+        },
+        {
+          "col_0": "formDateMaxstring",
+          "col_1": "Return Forms with formDate at or before specified date."
+        },
+        {
+          "col_0": "updatedAfterdatetime: ISO 8601",
+          "col_1": "Return Forms updated at or after a specified time."
+        },
+        {
+          "col_0": "updatedBeforedatetime: ISO 8601",
+          "col_1": "Return Forms updated at or before a specified time."
+        },
+        {
+          "col_0": "templateIdstring",
+          "col_1": "Return Forms on template with given ID."
+        },
+        {
+          "col_0": "statusesarray: string",
+          "col_1": "Return Forms with given statuses."
+        },
+        {
+          "col_0": "sortstring",
+          "col_1": "A string that specifies how to sort returned objects. The string provides a valid name (formDate, updatedAt, status, formNum, description, dueDate, templateName, createdByName, updatedByName) with an optional direction, either asc (ascending) or desc (descending). The string may contain multiple comma-separated expressions (max of 3) for secondary sorts. The default sort order is asc if not provided.\nExample: updatedAt desc,formNum asc"
+        },
+        {
+          "col_0": "searchstring",
+          "col_1": "Search for forms containing the exact match of the specified text."
+        },
+        {
+          "col_0": "locationIdsarray: string",
+          "col_1": "A sequence of location IDs. Each returned objects must/will be associated with one of the locations specified by the IDs."
+        },
+        {
+          "col_0": "includeSubLocationsboolean",
+          "col_1": "Include forms associated with sublocations of the specified locationIds."
+        },
+        {
+          "col_0": "includearray: string",
+          "col_1": "Include the specified extra fields. You can specify multiple values by repeating the parameter (e.g., include=sublocations&include=layoutInfo). Possible values: sublocations, inactiveFormTemplates, layoutInfo."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "Forms in project at specified page."
+        },
+        {
+          "col_0": "400Bad Request",
+          "col_1": "The request could not be understood by the server due to malformed syntax or missing request header"
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "The request was not accepted because it lacked valid authentication credentials"
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The request was not accepted because the client is authenticated, but is not authorized to access the target resource"
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The resource cannot be found"
+        },
+        {
+          "col_0": "429Too Many Requests",
+          "col_1": "The request could not be completed due to the rate limit of the target resource"
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "The request could not be completed due to an internal server error"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "dataarray: object",
+          "col_1": "List of forms in the project."
+        },
+        {
+          "col_0": "formTemplateIdstring: UUID",
+          "col_1": "Unique identifier of template the form belongs to."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "Unique identifier of the form."
+        },
+        {
+          "col_0": "statusenum:string",
+          "col_1": "Current state of the form e.g. inProgress\nPossible values: draft, inReview, submitted, archived"
+        },
+        {
+          "col_0": "formNumint",
+          "col_1": "Unique identifier of form, autoincremental, unique per project."
+        },
+        {
+          "col_0": "formDatestring",
+          "col_1": "Date the Form is created for."
+        },
+        {
+          "col_0": "assigneeIdstring",
+          "col_1": "ID of the entity form is assigned to."
+        },
+        {
+          "col_0": "assigneeTypeenum:string",
+          "col_1": "Type of the entity form is assigned to.\nPossible values: company, role, user"
+        },
+        {
+          "col_0": "dueDatestring",
+          "col_1": "Date the Form is due."
+        },
+        {
+          "col_0": "locationIdstring: UUID",
+          "col_1": "The unique identifier of the Form’s location"
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "User ID that created the Form."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was received and stored on the server. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "userCreatedAtdatetime: ISO 8601",
+          "col_1": "Timestamp when the form was created on the client device or external system. This may differ from createdAt if the form was created offline and synced later. UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "notesstring",
+          "col_1": "Form notes."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "Form description."
+        },
+        {
+          "col_0": "namestring",
+          "col_1": "Form name"
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "When form was last updated, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "User ID that last updated the Form."
+        },
+        {
+          "col_0": "weatherIdint",
+          "col_1": "Unique identifier of weather associated with this form."
+        },
+        {
+          "col_0": "lastSubmitterSignaturestring",
+          "col_1": "Signature of the reviewer who last submitted the Form (if applicable). Signature value (base64 encoded SVG)."
+        },
+        {
+          "col_0": "lastSubmittedBystring",
+          "col_1": "User ID that last submitted the Form."
+        },
+        {
+          "col_0": "lastSubmittedAtdatetime: ISO 8601",
+          "col_1": "When form was last submitted (if applicable), UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "lastReopenedBystring",
+          "col_1": "User ID that re-opened the Form (if applicable)."
+        },
+        {
+          "col_0": "lastStatusChangesobject",
+          "col_1": "Contains the last transition into each status. Since a form can transition between statuses multiple times (e.g., reopened from closed back to inProgress), this shows the most recent transition for each status the form has been in."
+        },
+        {
+          "col_0": "previousStatusstring",
+          "col_1": "The status the form was in before the current status."
+        },
+        {
+          "col_0": "inProgressobject",
+          "col_1": "The last time the form transitioned into inProgress status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "inReviewobject",
+          "col_1": "The last time the form transitioned into inReview status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "closedobject",
+          "col_1": "The last time the form transitioned into closed status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "archivedobject",
+          "col_1": "The last time the form transitioned into archived status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "discardedobject",
+          "col_1": "The last time the form transitioned into discarded status."
+        },
+        {
+          "col_0": "bystring",
+          "col_1": "User ID who made the status change."
+        },
+        {
+          "col_0": "atstring",
+          "col_1": "When the status change occurred, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "nativeFormobject",
+          "col_1": "Native form data including layout information. To retrieve form field values, use the GET custom values endpoint."
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The form’s unique identifier. This is the same value as the top-level form id."
+        },
+        {
+          "col_0": "layoutIdstring: UUID",
+          "col_1": "Unique identifier of the layout."
+        },
+        {
+          "col_0": "versionstring",
+          "col_1": "Semantic version indicating the feature set available for this form’s template. Clients can use this to determine which features are supported. For example, version 13.0 or higher is required for custom tables support. The Forms App typically uses the highest available version."
+        },
+        {
+          "col_0": "layoutInfoobject",
+          "col_1": "Information about the layout of this form."
+        },
+        {
+          "col_0": "descriptionstring",
+          "col_1": "The description of the layout."
+        },
+        {
+          "col_0": "hasSectionAssigneesboolean",
+          "col_1": "Determines if section assignment is enabled."
+        },
+        {
+          "col_0": "pdfFileobject",
+          "col_1": "PDF file information for the form."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "Unique identifier of the PDF file."
+        },
+        {
+          "col_0": "fileNamestring",
+          "col_1": "Name of the PDF file."
+        },
+        {
+          "col_0": "pdfUrlstring",
+          "col_1": "URL to download the PDF file."
+        },
+        {
+          "col_0": "lastFetchedAtdatetime: ISO 8601",
+          "col_1": "When form was retrieved from the API, UTC date and time in ISO-8601 format."
+        },
+        {
+          "col_0": "paginationobject",
+          "col_1": "Request pagination information."
+        },
+        {
+          "col_0": "offsetint",
+          "col_1": "Number of items skipped."
+        },
+        {
+          "col_0": "limitint",
+          "col_1": "Number of items returned per page."
+        },
+        {
+          "col_0": "totalResultsint",
+          "col_1": "Total number of items that can be returned."
+        },
+        {
+          "col_0": "nextUrlstring",
+          "col_1": "URL for the next page of items. Next page url is null on the last page."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/forms/v2/projects/:projectId/forms' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"data\": [\n    {\n      \"formTemplateId\": \"2f634a22-779d-4930-9f08-8391a41fea05\",\n      \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n      \"status\": \"draft\",\n      \"formNum\": 1,\n      \"formDate\": \"2020-11-20\",\n      \"assigneeId\": \"fc830fd8-f1ef-4cd6-9163-fb115dc698d7\",\n      \"assigneeType\": \"company\",\n      \"dueDate\": \"2020-11-25\",\n      \"locationId\": \"d14ce3a6-e61b-4ab0-a9be-5acf7b5366df\",\n      \"createdBy\": \"USER123A\",\n      \"createdAt\": \"2019-01-20T12:14:28.000000+00:00\",\n      \"userCreatedAt\": \"2019-01-20T12:14:27.615127+00:00\",\n      \"notes\": \"Form notes\",\n      \"description\": \"Form description\",\n      \"name\": \"Form name\",\n      \"updatedAt\": \"2020-11-20T16:14:27.615127+00:00\",\n      \"updatedBy\": \"USER123A\",\n      \"weatherId\": 12345,\n      \"lastSubmitterSignature\": \"PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+\",\n      \"lastSubmittedBy\": \"USER123A\",\n      \"lastSubmittedAt\": \"2020-11-20T18:14:27.615127+00:00\",\n      \"lastReopenedBy\": \"USER123A\",\n      \"lastStatusChanges\": {\n        \"previousStatus\": \"inProgress\",\n        \"inProgress\": {\n          \"by\": \"USER123A\",\n          \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n        },\n        \"inReview\": {\n          \"by\": \"USER123A\",\n          \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n        },\n        \"closed\": {\n          \"by\": \"USER123A\",\n          \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n        },\n        \"archived\": {\n          \"by\": \"USER123A\",\n          \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n        },\n        \"discarded\": {\n          \"by\": \"USER123A\",\n          \"at\": \"2020-11-20T16:14:27.615127+00:00\"\n        }\n      },\n      \"nativeForm\": {\n        \"id\": \"932da979-e537-4530-b8aa-18607ac6db37\",\n        \"layoutId\": \"123e4567-e89b-12d3-a456-426614174001\",\n        \"version\": \"13.0\",\n        \"layoutInfo\": {\n          \"description\": \"\",\n          \"hasSectionAssignees\": false\n        }\n      },\n      \"pdfFile\": {\n        \"id\": \"123e4567-e89b-12d3-a456-426614174000\",\n        \"fileName\": \"form_report.pdf\",\n        \"pdfUrl\": \"https://example.com/form_report.pdf\"\n      },\n      \"lastFetchedAt\": \"2020-11-20T16:14:27.615127+00:00\"\n    }\n  ],\n  \"pagination\": {\n    \"offset\": 0,\n    \"limit\": 50,\n    \"totalResults\": 1,\n    \"nextUrl\": null\n  }\n}",
+      "parsed": {
+        "data": [
+          {
+            "formTemplateId": "2f634a22-779d-4930-9f08-8391a41fea05",
+            "id": "932da979-e537-4530-b8aa-18607ac6db37",
+            "status": "draft",
+            "formNum": 1,
+            "formDate": "2020-11-20",
+            "assigneeId": "fc830fd8-f1ef-4cd6-9163-fb115dc698d7",
+            "assigneeType": "company",
+            "dueDate": "2020-11-25",
+            "locationId": "d14ce3a6-e61b-4ab0-a9be-5acf7b5366df",
+            "createdBy": "USER123A",
+            "createdAt": "2019-01-20T12:14:28.000000+00:00",
+            "userCreatedAt": "2019-01-20T12:14:27.615127+00:00",
+            "notes": "Form notes",
+            "description": "Form description",
+            "name": "Form name",
+            "updatedAt": "2020-11-20T16:14:27.615127+00:00",
+            "updatedBy": "USER123A",
+            "weatherId": 12345,
+            "lastSubmitterSignature": "PHN2ZyBoZWlnaHQ9IjIwMCIgd2lkdGg9IjUwMCI+PHBvbHlsaW5lIHBvaW50cz0iMjAsMjAgNDAsMjUgNjAsNDAgODAsMTIwIDEyMCwxNDAgMjAwLDE4MCIgc3R5bGU9ImZpbGw6bm9uZTtzdHJva2U6YmxhY2s7c3Ryb2tlLXdpZHRoOjMiIC8+PC9zdmc+",
+            "lastSubmittedBy": "USER123A",
+            "lastSubmittedAt": "2020-11-20T18:14:27.615127+00:00",
+            "lastReopenedBy": "USER123A",
+            "lastStatusChanges": {
+              "previousStatus": "inProgress",
+              "inProgress": {
+                "by": "USER123A",
+                "at": "2020-11-20T16:14:27.615127+00:00"
+              },
+              "inReview": {
+                "by": "USER123A",
+                "at": "2020-11-20T16:14:27.615127+00:00"
+              },
+              "closed": {
+                "by": "USER123A",
+                "at": "2020-11-20T16:14:27.615127+00:00"
+              },
+              "archived": {
+                "by": "USER123A",
+                "at": "2020-11-20T16:14:27.615127+00:00"
+              },
+              "discarded": {
+                "by": "USER123A",
+                "at": "2020-11-20T16:14:27.615127+00:00"
+              }
+            },
+            "nativeForm": {
+              "id": "932da979-e537-4530-b8aa-18607ac6db37",
+              "layoutId": "123e4567-e89b-12d3-a456-426614174001",
+              "version": "13.0",
+              "layoutInfo": {
+                "description": "",
+                "hasSectionAssignees": false
+              }
+            },
+            "pdfFile": {
+              "id": "123e4567-e89b-12d3-a456-426614174000",
+              "fileName": "form_report.pdf",
+              "pdfUrl": "https://example.com/form_report.pdf"
+            },
+            "lastFetchedAt": "2020-11-20T16:14:27.615127+00:00"
+          }
+        ],
+        "pagination": {
+          "offset": 0,
+          "limit": 50,
+          "totalResults": 1,
+          "nextUrl": null
+        }
+      }
+    }
+  ]
+}

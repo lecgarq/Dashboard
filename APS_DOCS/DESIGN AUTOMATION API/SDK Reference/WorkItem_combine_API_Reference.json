@@ -1,0 +1,17 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/reference/combinator",
+    "scrapedAt": "2026-05-08T17:44:59.419Z",
+    "category": "SDK Reference",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "WorkItem Combine API Reference",
+  "codeExamples": [
+    {
+      "raw": "{\n    \"parts\" : [\n        // an array of WorkItem payloads\n    ],\n    \"combinator\": {\n        // a WorkItem payload for an activity with variable arguments\n    }\n}"
+    },
+    {
+      "raw": "{\n  \"parts\": [\n      {\n          \"activityId\" : \"AutoCAD.PlotToPdf+prod\",\n          \"arguments\" {\n              \"HostDwg\": {\n                  \"url\": \"http://sample.com/drawing1.dwg\",\n              },\n              \"Result\" : {\n                  \"url\": \"das://intermediate/page1.pdf\" //specifies an intermediate file called \"page1.pdf\"\n              }\n          }\n      },\n      {\n          \"activityId\" : \"AutoCAD.PlotToPdf+prod\",\n          \"arguments\" {\n              \"HostDwg\": {\n                  \"url\": \"http://sample.com/drawing2.dwg\",\n              },\n              \"Result\" : {\n                  \"url\": \"das://intermediate/page2.pdf\" //specifies an intermediate file called \"page2.pdf\"\n              }\n          }\n      }\n  ],\n  \"combinator\":{\n      \"activityId\" : \"AutoCAD.CombinePdf+prod\",\n      \"arguments\" {\n          \"Parameters\": { // non-variable input argument that is supplied explicitly\n              \"url\" : \"http://sample.com/some.json\"\n          },\n          \"Result\" : {\n              \"url\": \"http://sample.com/final.pdf\",\n              \"verb\": \"put\"\n          }\n      }\n  }\n}"
+    }
+  ]
+}

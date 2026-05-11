@@ -1,0 +1,51 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/overview/field-guide/assets",
+    "scrapedAt": "2026-05-08T23:38:19.566Z",
+    "category": "Other",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "Forma Assets API Field Guide",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Name",
+        "Required Value?",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Name": "Category",
+          "Required Value?": "Yes",
+          "Description": "A single category from the project’s category tree (described later)."
+        },
+        {
+          "Name": "Status",
+          "Required Value?": "Yes",
+          "Description": "A single status from the status set provided by the asset’s category. Examples might include “Ordered” and “Installed.”"
+        },
+        {
+          "Name": "Client Asset ID",
+          "Required Value?": "Yes",
+          "Description": "A display name for the asset such as “220V outlet.” This is not a unique ID, and shouldn’t be confused with the asset ID, which is unique. In the English version of the Assets user interface and assets export, this attribute is labeled “Name”."
+        },
+        {
+          "Name": "Description",
+          "Required Value?": "No",
+          "Description": "A full text description of the asset such as “Conference desk Ethernet port.”"
+        },
+        {
+          "Name": "Barcode",
+          "Required Value?": "No",
+          "Description": "A string that lists a bar code value that may be assigned to the asset. It’s a string that uses whatever format your bar code system supports."
+        },
+        {
+          "Name": "Location ID",
+          "Required Value?": "No",
+          "Description": "A single location from a locations tree defined for the project. This tree is created and maintained by the Locations service, and the Locations API returns location values to be used for this attribute. An example of a location that reveals its full location hierarchy is San Leandro campus > 357 Bernoulli Drive > 4th floor > Meeting Room Gamma."
+        }
+      ]
+    }
+  ]
+}

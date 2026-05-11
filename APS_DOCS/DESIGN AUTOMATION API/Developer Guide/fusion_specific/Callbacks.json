@@ -1,0 +1,56 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/design-automation/v3/developers_guide/fusion_specific/callbacks",
+    "scrapedAt": "2026-05-08T17:39:53.173Z",
+    "category": "Developer Guide/fusion_specific",
+    "apiName": "DESIGN AUTOMATION API"
+  },
+  "title": "Callbacks",
+  "tables": [
+    {
+      "label": "",
+      "headers": [
+        "Parameter",
+        "Type",
+        "Description"
+      ],
+      "rows": [
+        {
+          "Parameter": "filename",
+          "Type": "String",
+          "Description": "Filename of the OnDemand input parameter as specified in the Activity"
+        },
+        {
+          "Parameter": "suffix",
+          "Type": "String",
+          "Description": "Optional query string parameters to append to the URL defined in the WorkItem"
+        },
+        {
+          "Parameter": "headers",
+          "Type": "String",
+          "Description": "HTTP call headers"
+        },
+        {
+          "Parameter": "responseFile",
+          "Type": "String",
+          "Description": "The filename for saving the downloaded OnDemand file"
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "result = adsk.OnProgress(\"Progress message\");"
+    },
+    {
+      "raw": "{\n        \"id\": \"taskID\",\n        \"progress\": \"Progress message\"\n}",
+      "parsed": {
+        "id": "taskID",
+        "progress": "Progress message"
+      }
+    },
+    {
+      "raw": "result, message = adsk.getOnDemandFile(\"filename\", \"suffix\", \"headers\", \"responseFile\")"
+    }
+  ]
+}

@@ -1,0 +1,480 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/acc/v1/reference/http/submittals-metadata-GET",
+    "scrapedAt": "2026-05-09T00:06:13.040Z",
+    "category": "REST API",
+    "apiName": "c:\\LECG\\Dashboard\\APS_DOCS\\ACC (FORMA) API"
+  },
+  "title": "projects/{projectId}/metadata",
+  "httpMethod": "GET",
+  "endpointUrl": "https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/metadata",
+  "tables": [
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Method and URI",
+          "col_1": "GET https://developer.api.autodesk.com/construction/submittals/v2/projects/:projectId/metadata"
+        },
+        {
+          "col_0": "Authentication Context",
+          "col_1": "User context required"
+        },
+        {
+          "col_0": "Required OAuth Scopes",
+          "col_1": "data:read"
+        },
+        {
+          "col_0": "Data Format",
+          "col_1": "JSON"
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "Authorization*string",
+          "col_1": "Must be Bearer <token>, where <token> is a three-legged access token obtained via an Authorization Code flow or a Secure Service Account (SSA) flow.\nThe SSA flow is designed for headless server-to-server operations. While it functions like a two-legged flow (no user interaction), it is classified as three-legged because it preserves user context."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "projectIdstring: UUID",
+          "col_1": "The ID of the project.\nUse the Data Management API to retrieve the project ID. For more information, see the Retrieve a Project ID tutorial. You need to convert the project ID into a project ID for the Forma API by removing the “b.\" prefix. For example, a project ID of b.a4be0c34a-4ab7 translates to a project ID of a4be0c34a-4ab7."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "200OK",
+          "col_1": "A successfully retrieved submittal project’s metadata."
+        },
+        {
+          "col_0": "401Unauthorized",
+          "col_1": "Invalid or missing authorization header. Verify the Bearer token and try again."
+        },
+        {
+          "col_0": "403Forbidden",
+          "col_1": "The user is not authorized to perform this action."
+        },
+        {
+          "col_0": "404Not Found",
+          "col_1": "The specified resource was not found."
+        },
+        {
+          "col_0": "500Internal Server Error",
+          "col_1": "An unexpected error occurred on the server while processing the request."
+        }
+      ]
+    },
+    {
+      "label": "",
+      "headers": [],
+      "rows": [
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The unique identifier (UUID) for the metadata object."
+        },
+        {
+          "col_0": "submittalRolesarray: object",
+          "col_1": "A list of submittal roles within the project."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the submittal role."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the submittal role."
+        },
+        {
+          "col_0": "attachmentUrnTypesarray: object",
+          "col_1": "A list of attachment URN types."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the attachment URN type."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the attachment URN type."
+        },
+        {
+          "col_0": "itemTypesarray: object",
+          "col_1": "A list of submittal item types. This is the same as calling GET item-types"
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The internal, globally unique identifier (UUID) for the item type."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The name of the submittal item type."
+        },
+        {
+          "col_0": "platformIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "isActiveboolean",
+          "col_1": "true: (default) if the submittal item type has not been deleted.\nfalse: if the submittal item type has been deleted."
+        },
+        {
+          "col_0": "isInUseboolean",
+          "col_1": "true: if the submittal item type is currently associated with a submittal item.\nfalse: if the submittal item type is not currently associated with a submittal item."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the submittal item type."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The date and time when the submittal item type was originally created."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the submittal item type was last updated."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who last updated the submittal item type."
+        },
+        {
+          "col_0": "adminMappingsSubmittalRolesarray: object",
+          "col_1": "A list of admin mappings for submittal roles."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the submittal role."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the submittal role."
+        },
+        {
+          "col_0": "userTypesarray: object",
+          "col_1": "Types of users, such as individual users, companies, and roles."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the user type."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the user type."
+        },
+        {
+          "col_0": "statusesarray: object",
+          "col_1": "A list of statuses representing different stages of a submittal item."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the status."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the status."
+        },
+        {
+          "col_0": "responsesarray: object",
+          "col_1": "A list of responses.This is the same as calling GET responses"
+        },
+        {
+          "col_0": "idstring: UUID",
+          "col_1": "The internal, globally unique identifier (UUID) for the response."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The content of the response."
+        },
+        {
+          "col_0": "platformIdstring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "isActiveboolean",
+          "col_1": "true: if the response was not deleted.\nfalse: if the response was deleted."
+        },
+        {
+          "col_0": "categoryIdstring",
+          "col_1": "The type of response. Possible values: 1 (Approved), 2 (Revise and submit), 3 (Rejected)."
+        },
+        {
+          "col_0": "isApprovalboolean",
+          "col_1": "true: settings this response for a submittal item means an approval.\nfalse: settings this response for a submittal item means dis-approval.\nThis attribute is taken from the related categoryId"
+        },
+        {
+          "col_0": "isInUseboolean",
+          "col_1": "true: if the response is currently associated with a submittal item.\nfalse: if the response is not currently associated with a submittal item."
+        },
+        {
+          "col_0": "createdBystring",
+          "col_1": "The Autodesk ID of the user who created the response."
+        },
+        {
+          "col_0": "createdAtdatetime: ISO 8601",
+          "col_1": "The time and date when the response was created."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The time and date when the response was last updated."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user who last updated the response."
+        },
+        {
+          "col_0": "attachmentCategoriesarray: object",
+          "col_1": "A list of attachment categories."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the attachment category."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the attachment category."
+        },
+        {
+          "col_0": "attachmentTypesarray: object",
+          "col_1": "A list of attachment types."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique identifier for the attachment type."
+        },
+        {
+          "col_0": "keystring",
+          "col_1": "Not relevant"
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the attachment type."
+        },
+        {
+          "col_0": "isManagerMappingDefinedboolean",
+          "col_1": "true: if there is at least one manager mapping in the project.\nfalse: if there are no manager mappings in the project."
+        },
+        {
+          "col_0": "noPackagesInProjectboolean",
+          "col_1": "true: if there are no packages in the project.\nfalse: if there are packages in the project."
+        },
+        {
+          "col_0": "noItemsInProjectboolean",
+          "col_1": "true: if there are no submittal items in the project.\nfalse: if there are submittal items in the project."
+        },
+        {
+          "col_0": "responseCategoriesarray: object",
+          "col_1": "A list of categories for responses to submittals."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The unique ID for the response category."
+        },
+        {
+          "col_0": "valuestring",
+          "col_1": "The display name of the category as shown in the UI."
+        },
+        {
+          "col_0": "isApprovalboolean",
+          "col_1": "true: if this option is for an approved submittal response.\nfalse: if this option is for other-typed submittal responses."
+        },
+        {
+          "col_0": "defaultValuesobject",
+          "col_1": "An object containing the default values for various settings and configurations in the project."
+        },
+        {
+          "col_0": "watchersarray: object",
+          "col_1": "A list of project watchers, who can be individual users, roles, or companies."
+        },
+        {
+          "col_0": "idstring",
+          "col_1": "The Autodesk ID of the watcher. The watcher can be a user (autodeskId), role (memberGroupId), or company (memberGroupId).\nTo find details about users, call GET users, to find details about companies, call GET companies. Note that we do not currently support finding details about roles for a project."
+        },
+        {
+          "col_0": "userTypeobject",
+          "col_1": "The type of watcher assigned to the submittal item.\nPossible values:\n\n1 (user)\n2 (company)\n3 (role)"
+        },
+        {
+          "col_0": "managerstring",
+          "col_1": "The Autodesk ID of the user who is assigned as the manager."
+        },
+        {
+          "col_0": "reviewTimeint",
+          "col_1": "The number of days remaining until the review due date."
+        },
+        {
+          "col_0": "updatedAtdatetime: ISO 8601",
+          "col_1": "The date and time when the response was last updated, in ISO 8601 format."
+        },
+        {
+          "col_0": "updatedBystring",
+          "col_1": "The Autodesk ID of the user that last updated the response."
+        },
+        {
+          "col_0": "customIdentifierSequenceTypeenum:string",
+          "col_1": "The custom numbering sequence type for the current project. Possible values: 1 (Global sequence), 2 (Spec sequence)."
+        }
+      ]
+    }
+  ],
+  "codeExamples": [
+    {
+      "raw": "curl -v 'https://developer.api.autodesk.com/construction/submittals/v2/projects/9eae7d59-1469-4389-bfb2-4114e2ba5545/metadata' \\\n  -H 'Authorization: Bearer AuIPTf4KYLTYGVnOHQ0cuolwCW2a'"
+    },
+    {
+      "raw": "{\n  \"id\": \"e8302552-fc5a-42ac-ba4b-e9de9760c356\",\n  \"submittalRoles\": [\n    {\n      \"id\": \"4\",\n      \"key\": \"admin\",\n      \"value\": \"Admin\"\n    }\n  ],\n  \"attachmentUrnTypes\": [\n    {\n      \"id\": \"2\",\n      \"key\": \"dm\",\n      \"value\": \"DM\"\n    }\n  ],\n  \"itemTypes\": [\n    {\n      \"id\": \"5bab7f9b-61cf-45bc-8bce-f88ddd9d380e\",\n      \"key\": \"my-type\",\n      \"value\": \"Attic Stock\",\n      \"platformId\": \"attic stock\",\n      \"isActive\": true,\n      \"isInUse\": true,\n      \"createdBy\": \"WD43ZJGKDFLFH\",\n      \"createdAt\": \"2018-02-01T12:09:24.198466Z\",\n      \"updatedAt\": \"2018-02-01T12:09:24.198466Z\",\n      \"updatedBy\": \"WD43ZJGKDFLFH\"\n    }\n  ],\n  \"adminMappingsSubmittalRoles\": [\n    {\n      \"id\": \"4\",\n      \"key\": \"admin\",\n      \"value\": \"Admin\"\n    }\n  ],\n  \"userTypes\": [\n    {\n      \"id\": \"2\",\n      \"key\": \"company\",\n      \"value\": \"Company\"\n    }\n  ],\n  \"statuses\": [\n    {\n      \"id\": \"2\",\n      \"key\": \"open\",\n      \"value\": \"Open\"\n    }\n  ],\n  \"responses\": [\n    {\n      \"id\": \"5bab7f9b-61cf-45bc-8bce-f88ddd9d380e\",\n      \"key\": \"my response\",\n      \"value\": \"Approved\",\n      \"platformId\": \"approved\",\n      \"isActive\": false,\n      \"categoryId\": \"1\",\n      \"isApproval\": false,\n      \"isInUse\": false,\n      \"createdBy\": \"WD43ZJGKDFLFH\",\n      \"createdAt\": \"2018-02-01T12:09:24.198466Z\",\n      \"updatedAt\": \"2018-02-01T12:09:24.198466Z\",\n      \"updatedBy\": \"WD43ZJGKDFLFH\"\n    }\n  ],\n  \"attachmentCategories\": [\n    {\n      \"id\": \"2\",\n      \"key\": \"for_review\",\n      \"value\": \"For Review\"\n    }\n  ],\n  \"attachmentTypes\": [\n    {\n      \"id\": \"2\",\n      \"key\": \"photo\",\n      \"value\": \"Photo\"\n    }\n  ],\n  \"isManagerMappingDefined\": false,\n  \"noPackagesInProject\": false,\n  \"noItemsInProject\": false,\n  \"responseCategories\": [\n    {\n      \"id\": \"1\",\n      \"value\": \"Approved\",\n      \"isApproval\": \"true\"\n    }\n  ],\n  \"defaultValues\": {\n    \"watchers\": [\n      {\n        \"id\": \"224356\",\n        \"userType\": \"2\"\n      },\n      {\n        \"id\": \"3522614\",\n        \"userType\": \"3\"\n      }\n    ],\n    \"manager\": \"WD43ZJGKDFLFH\",\n    \"reviewTime\": 7,\n    \"updatedAt\": \"2018-02-01T12:09:24.198466Z\",\n    \"updatedBy\": \"WD43ZJGKDFLFH\"\n  },\n  \"customIdentifierSequenceType\": \"1\"\n}",
+      "parsed": {
+        "id": "e8302552-fc5a-42ac-ba4b-e9de9760c356",
+        "submittalRoles": [
+          {
+            "id": "4",
+            "key": "admin",
+            "value": "Admin"
+          }
+        ],
+        "attachmentUrnTypes": [
+          {
+            "id": "2",
+            "key": "dm",
+            "value": "DM"
+          }
+        ],
+        "itemTypes": [
+          {
+            "id": "5bab7f9b-61cf-45bc-8bce-f88ddd9d380e",
+            "key": "my-type",
+            "value": "Attic Stock",
+            "platformId": "attic stock",
+            "isActive": true,
+            "isInUse": true,
+            "createdBy": "WD43ZJGKDFLFH",
+            "createdAt": "2018-02-01T12:09:24.198466Z",
+            "updatedAt": "2018-02-01T12:09:24.198466Z",
+            "updatedBy": "WD43ZJGKDFLFH"
+          }
+        ],
+        "adminMappingsSubmittalRoles": [
+          {
+            "id": "4",
+            "key": "admin",
+            "value": "Admin"
+          }
+        ],
+        "userTypes": [
+          {
+            "id": "2",
+            "key": "company",
+            "value": "Company"
+          }
+        ],
+        "statuses": [
+          {
+            "id": "2",
+            "key": "open",
+            "value": "Open"
+          }
+        ],
+        "responses": [
+          {
+            "id": "5bab7f9b-61cf-45bc-8bce-f88ddd9d380e",
+            "key": "my response",
+            "value": "Approved",
+            "platformId": "approved",
+            "isActive": false,
+            "categoryId": "1",
+            "isApproval": false,
+            "isInUse": false,
+            "createdBy": "WD43ZJGKDFLFH",
+            "createdAt": "2018-02-01T12:09:24.198466Z",
+            "updatedAt": "2018-02-01T12:09:24.198466Z",
+            "updatedBy": "WD43ZJGKDFLFH"
+          }
+        ],
+        "attachmentCategories": [
+          {
+            "id": "2",
+            "key": "for_review",
+            "value": "For Review"
+          }
+        ],
+        "attachmentTypes": [
+          {
+            "id": "2",
+            "key": "photo",
+            "value": "Photo"
+          }
+        ],
+        "isManagerMappingDefined": false,
+        "noPackagesInProject": false,
+        "noItemsInProject": false,
+        "responseCategories": [
+          {
+            "id": "1",
+            "value": "Approved",
+            "isApproval": "true"
+          }
+        ],
+        "defaultValues": {
+          "watchers": [
+            {
+              "id": "224356",
+              "userType": "2"
+            },
+            {
+              "id": "3522614",
+              "userType": "3"
+            }
+          ],
+          "manager": "WD43ZJGKDFLFH",
+          "reviewTime": 7,
+          "updatedAt": "2018-02-01T12:09:24.198466Z",
+          "updatedBy": "WD43ZJGKDFLFH"
+        },
+        "customIdentifierSequenceType": "1"
+      }
+    }
+  ]
+}

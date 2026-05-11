@@ -1,0 +1,217 @@
+{
+  "_meta": {
+    "source": "https://aps.autodesk.com/en/docs/bim360/v1/tutorials/document-management/export-pdf-from-docs-s3",
+    "scrapedAt": "2026-05-08T17:49:20.816Z",
+    "category": "Tutorials",
+    "apiName": "BIM 360 API"
+  },
+  "title": "Export PDF Files from BIM 360 Document Management (new)",
+  "httpMethod": "GET",
+  "endpointUrl": "https://autodesk-360-translation-storage.s3.amazonaws.com/dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFkaCXVzLWVhc3QtMSJIMEYCIQDNNbuZoazvwW76c8hUdKythQhpfmixh2AviJuykqwbxAIhAIM1ciB8MQj5FXAQMEnP2lVdraat6%2BU5XcH3rBAdLqUhKtsECLL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMMjM3ODgyMTcyOTEyIgwzc1S4pCpcQPPqfQkqrwQOC9D39XsK8QpayEEZz5jLC69LO6qdMbs7mUJru5F%2Bx0VV0TXxy1vYjqdfH1SHCwW05FA8czaT40oYKmDcVDRV9iVBrxDNbYxuqS0rBK5CeOfzUQAlsl%2FHgFS%2BQ6p4ca5r2dOgG7fOics1ZLz5goqB7eRP7h27KGnGgcFmsZ4mcHlCBSrDz56hppqJfe%2BLoobZbcxkNvlTvMHH2XeXe5TsyMQWkpIT1qwEJnyMV2IlhBy6Inr%2FXCic5ID3H5NJKw9sI9W3ZhLL2nC9w791jjmxNnQAF624G38jC7pE9fN4vdHeytG27ajW291g9Z28ph%2BwK711ZAxXXM5jyApN6IcRI7ZT%2FmeqNwK3tf0JYjaWMY9flsi%2BgOc9Age7U%2FYl9gpPWokv94A4RTpZgaIoDcnPZRjOFhaKlqc%2FPRhfhU82fIchm2ajDUpJxU2R2NLpMcYQrdQwIpvdKskwr%2Bdv0ueQVOCCYy4OSmUSUN1uLvo9xuaevrakvtEw93jHAsrxBeBsiBFIrWYRSYRRxbp%2FWu%2FykQun1%2B35ny5m0aaDjMxSf3MFekcZlycFRTQ10rlsuWM1s9%2BhLpXylNngzG3vHdGkW2bz9OP517BlnXWhY2P34BY%2BoAYR1osK8FBKK4odoSzaysmsi8akSHooHCTHCE2cW%2BBOVpP%2BO2INmJeS9tVkBqVweYfABSDq0SPcS19wIOoErm2S05pJEFWxJsyh%2B4m2YcmKgrq4883NBU4R6eNKMOfYsZcGOqgBZ59tHFFtRgH8HKVbbDAqkt8RxlyxhjhY6d1rixsLsUtJcPcZP%2FZZmV51SH3rGTfg0cMCEHUH1UMQOQCwXPhJq8VQcI6Wyz7ywNuiWwUiC7%2B2ekEAnKrUwfVyLtI0u1ntG4inL9eYVmM%2BO6w7Es2XjCz%2FHms3q1HEHK26rWukyk18TO118virTD7%2BAwU4otL8D5tlV0OLH8t6D%2B%2FwZN3q0Baxj1zbsFlo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20220805T023429Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIATOYXB4XYG76TKVPE%2F20220805%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=b7cdd11b4ad70051d652bf9f0fa7e49e24b08c800f71211c495d53db2c0509d8",
+  "codeExamples": [
+    {
+      "raw": "curl -X GET -H \"Authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT\"\n            \"https://developer.api.autodesk.com/project/v1/hubs/b.cGVyc29uYWw6cGUyOWNjZjMy/projects/b.cGVyc29uYWw6d2l/topFolders\""
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"data\": [\n    {\n      \"type\": \"folders\",\n      \"id\": \"urn:adsk.wipprod:fs.folder:co.BJU3PTc4Sd2CmXM492XUiA\",\n      \"attributes\": {\n        \"name\": \"Plans\",\n        \"displayName\": \"Plans\",\n        \"createTime\": \"2017-07-17T13:06:56.0000000Z\",\n        \"createUserId\": \"\",\n        \"createUserName\": \"\",\n        \"lastModifiedTime\": \"2017-09-24T07:46:08.0000000Z\",\n        \"lastModifiedUserId\": \"X9WYLGPNCHSL\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"objectCount\": 4,\n        \"hidden\": false,\n        \"extension\": {\n          \"type\": \"folders:autodesk.bim360:Folder\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/folders:autodesk.bim360:Folder-1.0\"\n          },\n          \"data\": {\n            \"visibleTypes\": [\n              \"items:autodesk.bim360:Document\"\n            ],\n            \"actions\": [\n              \"CONVERT\"\n              \"SPLIT\",\n              \"OCR\"\n            ],\n            \"allowedTypes\": [\n              \"items:autodesk.bim360:File\",\n              \"folders:autodesk.bim360:Folder\"\n              \"items:autodesk.bim360:Document\",\n              \"items:autodesk.bim360:TitleBlock\",\n              \"items:autodesk.bim360:ReviewDocument\"\n            ]\n          }\n        }\n      }\n    }\n  ]\n}"
+    },
+    {
+      "raw": "curl -X GET https://developer.api.autodesk.com/data/v1/projects/b.cGVyc29uYWw6d2l/folders/urn%3Aadsk.wipprod%3Afs.folder%3Aco.BJU3PTc4Sd2CmXM492XUiA/contents\n     -H 'authorization: Bearer nFRJxzCD8OOUr7hzBwbr06D76zAT'"
+    },
+    {
+      "raw": "{\n  \"jsonapi\": {\n    \"version\": \"1.0\"\n  },\n  \"links\": {\n    \"self\": {\n      \"href\": \"https://developer.api.autodesk.com/data/v1/projects/b.94d60d03-1e8c-4f32-b146-dd3173e655d8/folders/urn:adsk.wipprod:fs.folder:co.hTcJTDRzTQCnxySVOg6avQ/contents\"\n    }\n  },\n  \"data\": [\n    {\n      \"type\": \"items\",\n      \"id\": \"urn:adsk.wipprod:dm.lineage:Ww95QMRfTSCJfbSdVat6FQ\",\n      \"attributes\": {\n        \"displayName\": \"A-101 FLOOR PLANS\",\n        \"lastModifiedTime\": \"2017-09-24T07:46:08.0000000Z\",\n        \"lastModifiedUserId\": \"X9WYLGPNCHSL\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"lastModifiedTime\": \"2017-08-25T08:59:04.0000000Z\",\n        \"lastModifiedUserId\": \"200906020304322\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"hidden\": false,\n        \"extension\": {\n          \"type\": \"items:autodesk.bim360:Document\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/items:autodesk.bim360:Document-1.0\"\n          },\n          \"data\": {\n            \"sourceFileName\": \"floors.pdf\"\n          }\n        }\n      },\n      \"relationships\": {\n        \"tip\": {\n          \"data\": {\n            \"type\": \"versions\",\n            \"id\": \"urn:adsk.wipprod:fs.file:vf.Ww95QMRfTSCJfbSdVat6FQ?version=1\"\n          }\n        }\n      }\n    },\n    {\n      \"type\": \"items\",\n      \"id\": \"urn:adsk.wipprod:dm.lineage:15Rg8B38Qp-SEu6HzXlTNg\",\n      \"attributes\": {\n        \"displayName\": \"A-102 FLOOR PLANS\",\n        \"createTime\": \"2017-08-25T08:58:57.0000000Z\",\n        \"createUserId\": \"200906020304322\",\n        \"createUserName\": \"John Smith\",\n        \"lastModifiedTime\": \"2017-08-25T08:59:04.0000000Z\",\n        \"lastModifiedUserId\": \"200906020304322\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"hidden\": false,\n        \"extension\": {\n          \"type\": \"items:autodesk.bim360:Document\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/items:autodesk.bim360:Document-1.0\"\n          },\n          \"data\": {\n            \"sourceFileName\": \"floors.pdf\"\n          }\n        }\n      },\n      \"relationships\": {\n        \"tip\": {\n          \"data\": {\n            \"type\": \"versions\",\n            \"id\": \"urn:adsk.wipprod:fs.file:vf.15Rg8B38Qp-SEu6HzXlTNg?version=1\"\n          }\n        }\n      }\n    }\n  ],\n  \"included\": [\n    {\n      \"type\": \"versions\",\n      \"id\": \"urn:adsk.wipprod:fs.file:vf.Ww95QMRfTSCJfbSdVat6FQ?version=1\",\n      \"attributes\": {\n        \"name\": \"A-101 FLOOR PLANS\",\n        \"displayName\": \"A-101 FLOOR PLANS\",\n        \"createTime\": \"2017-08-25T08:58:57.0000000Z\",\n        \"createUserId\": \"200906020304322\",\n        \"createUserName\": \"John Smith\",\n        \"lastModifiedTime\": \"2017-08-25T08:59:05.0000000Z\",\n        \"lastModifiedUserId\": \"200906020304322\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"versionNumber\": 1,\n        \"extension\": {\n          \"type\": \"versions:autodesk.bim360:Document\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:Document-1.0\"\n          },\n          \"data\": {\n            \"processState\": \"PROCESSING_COMPLETE\",\n            \"viewableId\": \"1\",\n            \"viewableGuid\": \"d45af981-3086-4145-a952-cbee9a7e7e78\",\n            \"viewableName\": \"1\",\n            \"viewableOrder\": 1,\n            \"sourceFileName\": \"floors.pdf\"\n          }\n        }\n      }\n    },\n    {\n      \"type\": \"versions\",\n      \"id\": \"urn:adsk.wipprod:fs.file:vf.15Rg8B38Qp-SEu6HzXlTNg?version=1\",\n      \"attributes\": {\n        \"name\": \"A-102 FLOOR PLANS\",\n        \"displayName\": \"A-102 FLOOR PLANS\",\n        \"createTime\": \"2017-08-25T08:58:57.0000000Z\",\n        \"createUserId\": \"200906020304322\",\n        \"createUserName\": \"John Smith\",\n        \"lastModifiedTime\": \"2017-08-25T08:59:05.0000000Z\",\n        \"lastModifiedUserId\": \"200906020304322\",\n        \"lastModifiedUserName\": \"John Smith\",\n        \"versionNumber\": 1,\n        \"extension\": {\n          \"type\": \"versions:autodesk.bim360:Document\",\n          \"version\": \"1.0\",\n          \"schema\": {\n            \"href\": \"https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:Document-1.0\"\n          },\n          \"data\": {\n            \"processState\": \"PROCESSING_COMPLETE\",\n            \"viewableId\": \"2\",\n            \"viewableGuid\": \"faf6ab96-6cf0-4b3b-9da5-fd5bb3bde9e3\",\n            \"viewableName\": \"2\",\n            \"viewableOrder\": 2,\n            \"sourceFileName\": \"floors.pdf\"\n          }\n        }\n      }\n    }\n  ]\n}",
+      "parsed": {
+        "jsonapi": {
+          "version": "1.0"
+        },
+        "links": {
+          "self": {
+            "href": "https://developer.api.autodesk.com/data/v1/projects/b.94d60d03-1e8c-4f32-b146-dd3173e655d8/folders/urn:adsk.wipprod:fs.folder:co.hTcJTDRzTQCnxySVOg6avQ/contents"
+          }
+        },
+        "data": [
+          {
+            "type": "items",
+            "id": "urn:adsk.wipprod:dm.lineage:Ww95QMRfTSCJfbSdVat6FQ",
+            "attributes": {
+              "displayName": "A-101 FLOOR PLANS",
+              "lastModifiedTime": "2017-08-25T08:59:04.0000000Z",
+              "lastModifiedUserId": "200906020304322",
+              "lastModifiedUserName": "John Smith",
+              "hidden": false,
+              "extension": {
+                "type": "items:autodesk.bim360:Document",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/items:autodesk.bim360:Document-1.0"
+                },
+                "data": {
+                  "sourceFileName": "floors.pdf"
+                }
+              }
+            },
+            "relationships": {
+              "tip": {
+                "data": {
+                  "type": "versions",
+                  "id": "urn:adsk.wipprod:fs.file:vf.Ww95QMRfTSCJfbSdVat6FQ?version=1"
+                }
+              }
+            }
+          },
+          {
+            "type": "items",
+            "id": "urn:adsk.wipprod:dm.lineage:15Rg8B38Qp-SEu6HzXlTNg",
+            "attributes": {
+              "displayName": "A-102 FLOOR PLANS",
+              "createTime": "2017-08-25T08:58:57.0000000Z",
+              "createUserId": "200906020304322",
+              "createUserName": "John Smith",
+              "lastModifiedTime": "2017-08-25T08:59:04.0000000Z",
+              "lastModifiedUserId": "200906020304322",
+              "lastModifiedUserName": "John Smith",
+              "hidden": false,
+              "extension": {
+                "type": "items:autodesk.bim360:Document",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/items:autodesk.bim360:Document-1.0"
+                },
+                "data": {
+                  "sourceFileName": "floors.pdf"
+                }
+              }
+            },
+            "relationships": {
+              "tip": {
+                "data": {
+                  "type": "versions",
+                  "id": "urn:adsk.wipprod:fs.file:vf.15Rg8B38Qp-SEu6HzXlTNg?version=1"
+                }
+              }
+            }
+          }
+        ],
+        "included": [
+          {
+            "type": "versions",
+            "id": "urn:adsk.wipprod:fs.file:vf.Ww95QMRfTSCJfbSdVat6FQ?version=1",
+            "attributes": {
+              "name": "A-101 FLOOR PLANS",
+              "displayName": "A-101 FLOOR PLANS",
+              "createTime": "2017-08-25T08:58:57.0000000Z",
+              "createUserId": "200906020304322",
+              "createUserName": "John Smith",
+              "lastModifiedTime": "2017-08-25T08:59:05.0000000Z",
+              "lastModifiedUserId": "200906020304322",
+              "lastModifiedUserName": "John Smith",
+              "versionNumber": 1,
+              "extension": {
+                "type": "versions:autodesk.bim360:Document",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:Document-1.0"
+                },
+                "data": {
+                  "processState": "PROCESSING_COMPLETE",
+                  "viewableId": "1",
+                  "viewableGuid": "d45af981-3086-4145-a952-cbee9a7e7e78",
+                  "viewableName": "1",
+                  "viewableOrder": 1,
+                  "sourceFileName": "floors.pdf"
+                }
+              }
+            }
+          },
+          {
+            "type": "versions",
+            "id": "urn:adsk.wipprod:fs.file:vf.15Rg8B38Qp-SEu6HzXlTNg?version=1",
+            "attributes": {
+              "name": "A-102 FLOOR PLANS",
+              "displayName": "A-102 FLOOR PLANS",
+              "createTime": "2017-08-25T08:58:57.0000000Z",
+              "createUserId": "200906020304322",
+              "createUserName": "John Smith",
+              "lastModifiedTime": "2017-08-25T08:59:05.0000000Z",
+              "lastModifiedUserId": "200906020304322",
+              "lastModifiedUserName": "John Smith",
+              "versionNumber": 1,
+              "extension": {
+                "type": "versions:autodesk.bim360:Document",
+                "version": "1.0",
+                "schema": {
+                  "href": "https://developer.api.autodesk.com/schema/v1/versions/versions:autodesk.bim360:Document-1.0"
+                },
+                "data": {
+                  "processState": "PROCESSING_COMPLETE",
+                  "viewableId": "2",
+                  "viewableGuid": "faf6ab96-6cf0-4b3b-9da5-fd5bb3bde9e3",
+                  "viewableName": "2",
+                  "viewableOrder": 2,
+                  "sourceFileName": "floors.pdf"
+                }
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.15Rg8B38Qp-SEu6HzXlTNg%3Fversion%3D1/exports \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n  -H 'content-type: application/json'"
+    },
+    {
+      "raw": "{\n  \"id\":\"225eb2fb-d5b0-44c9-a50a-2c792d833f2e\",\n  \"status\":\"committed\"\n}",
+      "parsed": {
+        "id": "225eb2fb-d5b0-44c9-a50a-2c792d833f2e",
+        "status": "committed"
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.15Rg8B38Qp-SEu6HzXlTNg%3Fversion%3D1/exports \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n  -H 'content-type: application/json'\n  -d '{\"includeMarkups\": true}'",
+      "parsed": {
+        "includeMarkups": true
+      }
+    },
+    {
+      "raw": "{\n  \"id\":\"345eb2fb-d5b0-44c9-a50a-2c792d833f3f\",\n  \"status\":\"committed\"\n}",
+      "parsed": {
+        "id": "345eb2fb-d5b0-44c9-a50a-2c792d833f3f",
+        "status": "committed"
+      }
+    },
+    {
+      "raw": "curl -X POST \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.15Rg8B38Qp-SEu6HzXlTNg%3Fversion%3D1/exports \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n  -H 'content-type: application/json' \\\n  -d '{\"includeHyperlinks\": true}'",
+      "parsed": {
+        "includeHyperlinks": true
+      }
+    },
+    {
+      "raw": "{\n  \"id\":\"455eb2fb-d5b0-44c9-a50a-2c792d833f4g\",\n  \"status\":\"committed\"\n}",
+      "parsed": {
+        "id": "455eb2fb-d5b0-44c9-a50a-2c792d833f4g",
+        "status": "committed"
+      }
+    },
+    {
+      "raw": "curl -X GET \\\n  https://developer.api.autodesk.com/bim360/docs/v1/projects/c0337487-5b66-422b-a284-c273b424af54/versions/urn%3Aadsk.wipprod%3Afs.file%3Avf.15Rg8B38Qp-SEu6HzXlTNg%3Fversion%3D1/exports/225eb2fb-d5b0-44c9-a50a-2c792d833f2e \\\n  -H 'authorization: Bearer eyJhbGciOiJIUzI1NiIsImtpZCI6Imp3dF9zeW1tZXRyaWNfa2V5In0' \\\n  -H 'content-type: application/json'"
+    },
+    {
+      "raw": "{\n  \"id\":\"433d07ec-32a2-44eb-a5eb-b41090bfe932\",\n  \"status\":\"completed\",\n  \"data\":{\n    \"versionUrn\":\"dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnBmM2ZyVTBnVFphT290S1hnMmgxRnc_dmVyc2lvbj0x\",\n    \"resourceId\":\"urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnBmM2ZyVTBnVFphT290S1hnMmgxRnc_dmVyc2lvbj0x/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf\",\n    \"signedUrl\":\"https://autodesk-360-translation-storage.s3.amazonaws.com/dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFkaCXVzLWVhc3QtMSJIMEYCIQDNNbuZoazvwW76c8hUdKythQhpfmixh2AviJuykqwbxAIhAIM1ciB8MQj5FXAQMEnP2lVdraat6%2BU5XcH3rBAdLqUhKtsECLL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMMjM3ODgyMTcyOTEyIgwzc1S4pCpcQPPqfQkqrwQOC9D39XsK8QpayEEZz5jLC69LO6qdMbs7mUJru5F%2Bx0VV0TXxy1vYjqdfH1SHCwW05FA8czaT40oYKmDcVDRV9iVBrxDNbYxuqS0rBK5CeOfzUQAlsl%2FHgFS%2BQ6p4ca5r2dOgG7fOics1ZLz5goqB7eRP7h27KGnGgcFmsZ4mcHlCBSrDz56hppqJfe%2BLoobZbcxkNvlTvMHH2XeXe5TsyMQWkpIT1qwEJnyMV2IlhBy6Inr%2FXCic5ID3H5NJKw9sI9W3ZhLL2nC9w791jjmxNnQAF624G38jC7pE9fN4vdHeytG27ajW291g9Z28ph%2BwK711ZAxXXM5jyApN6IcRI7ZT%2FmeqNwK3tf0JYjaWMY9flsi%2BgOc9Age7U%2FYl9gpPWokv94A4RTpZgaIoDcnPZRjOFhaKlqc%2FPRhfhU82fIchm2ajDUpJxU2R2NLpMcYQrdQwIpvdKskwr%2Bdv0ueQVOCCYy4OSmUSUN1uLvo9xuaevrakvtEw93jHAsrxBeBsiBFIrWYRSYRRxbp%2FWu%2FykQun1%2B35ny5m0aaDjMxSf3MFekcZlycFRTQ10rlsuWM1s9%2BhLpXylNngzG3vHdGkW2bz9OP517BlnXWhY2P34BY%2BoAYR1osK8FBKK4odoSzaysmsi8akSHooHCTHCE2cW%2BBOVpP%2BO2INmJeS9tVkBqVweYfABSDq0SPcS19wIOoErm2S05pJEFWxJsyh%2B4m2YcmKgrq4883NBU4R6eNKMOfYsZcGOqgBZ59tHFFtRgH8HKVbbDAqkt8RxlyxhjhY6d1rixsLsUtJcPcZP%2FZZmV51SH3rGTfg0cMCEHUH1UMQOQCwXPhJq8VQcI6Wyz7ywNuiWwUiC7%2B2ekEAnKrUwfVyLtI0u1ntG4inL9eYVmM%2BO6w7Es2XjCz%2FHms3q1HEHK26rWukyk18TO118virTD7%2BAwU4otL8D5tlV0OLH8t6D%2B%2FwZN3q0Baxj1zbsFlo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20220805T023429Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIATOYXB4XYG76TKVPE%2F20220805%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=b7cdd11b4ad70051d652bf9f0fa7e49e24b08c800f71211c495d53db2c0509d8\"\n  }\n}",
+      "parsed": {
+        "id": "433d07ec-32a2-44eb-a5eb-b41090bfe932",
+        "status": "completed",
+        "data": {
+          "versionUrn": "dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnBmM2ZyVTBnVFphT290S1hnMmgxRnc_dmVyc2lvbj0x",
+          "resourceId": "urn:adsk.viewing:fs.file:dXJuOmFkc2sud2lwcHJvZDpmcy5maWxlOnZmLnBmM2ZyVTBnVFphT290S1hnMmgxRnc_dmVyc2lvbj0x/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf",
+          "signedUrl": "https://autodesk-360-translation-storage.s3.amazonaws.com/dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFkaCXVzLWVhc3QtMSJIMEYCIQDNNbuZoazvwW76c8hUdKythQhpfmixh2AviJuykqwbxAIhAIM1ciB8MQj5FXAQMEnP2lVdraat6%2BU5XcH3rBAdLqUhKtsECLL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMMjM3ODgyMTcyOTEyIgwzc1S4pCpcQPPqfQkqrwQOC9D39XsK8QpayEEZz5jLC69LO6qdMbs7mUJru5F%2Bx0VV0TXxy1vYjqdfH1SHCwW05FA8czaT40oYKmDcVDRV9iVBrxDNbYxuqS0rBK5CeOfzUQAlsl%2FHgFS%2BQ6p4ca5r2dOgG7fOics1ZLz5goqB7eRP7h27KGnGgcFmsZ4mcHlCBSrDz56hppqJfe%2BLoobZbcxkNvlTvMHH2XeXe5TsyMQWkpIT1qwEJnyMV2IlhBy6Inr%2FXCic5ID3H5NJKw9sI9W3ZhLL2nC9w791jjmxNnQAF624G38jC7pE9fN4vdHeytG27ajW291g9Z28ph%2BwK711ZAxXXM5jyApN6IcRI7ZT%2FmeqNwK3tf0JYjaWMY9flsi%2BgOc9Age7U%2FYl9gpPWokv94A4RTpZgaIoDcnPZRjOFhaKlqc%2FPRhfhU82fIchm2ajDUpJxU2R2NLpMcYQrdQwIpvdKskwr%2Bdv0ueQVOCCYy4OSmUSUN1uLvo9xuaevrakvtEw93jHAsrxBeBsiBFIrWYRSYRRxbp%2FWu%2FykQun1%2B35ny5m0aaDjMxSf3MFekcZlycFRTQ10rlsuWM1s9%2BhLpXylNngzG3vHdGkW2bz9OP517BlnXWhY2P34BY%2BoAYR1osK8FBKK4odoSzaysmsi8akSHooHCTHCE2cW%2BBOVpP%2BO2INmJeS9tVkBqVweYfABSDq0SPcS19wIOoErm2S05pJEFWxJsyh%2B4m2YcmKgrq4883NBU4R6eNKMOfYsZcGOqgBZ59tHFFtRgH8HKVbbDAqkt8RxlyxhjhY6d1rixsLsUtJcPcZP%2FZZmV51SH3rGTfg0cMCEHUH1UMQOQCwXPhJq8VQcI6Wyz7ywNuiWwUiC7%2B2ekEAnKrUwfVyLtI0u1ntG4inL9eYVmM%2BO6w7Es2XjCz%2FHms3q1HEHK26rWukyk18TO118virTD7%2BAwU4otL8D5tlV0OLH8t6D%2B%2FwZN3q0Baxj1zbsFlo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20220805T023429Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIATOYXB4XYG76TKVPE%2F20220805%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=b7cdd11b4ad70051d652bf9f0fa7e49e24b08c800f71211c495d53db2c0509d8"
+        }
+      }
+    },
+    {
+      "raw": "curl -X 'GET' -v 'https://autodesk-360-translation-storage.s3.amazonaws.com/dXJuOmFkc2sud2lwcWE6ZnMuZmlsZTp2Zi5wZjNmclUwZ1RaYU9vdEtYZzJoMUZ3P3ZlcnNpb249MQ/output/qXP_ZA5_3EqJoq5zqvnLHA/h8YAl4KMcEe9-L5SaEXY6A.pdf?X-Amz-Security-Token=IQoJb3JpZ2luX2VjEFkaCXVzLWVhc3QtMSJIMEYCIQDNNbuZoazvwW76c8hUdKythQhpfmixh2AviJuykqwbxAIhAIM1ciB8MQj5FXAQMEnP2lVdraat6%2BU5XcH3rBAdLqUhKtsECLL%2F%2F%2F%2F%2F%2F%2F%2F%2F%2FwEQABoMMjM3ODgyMTcyOTEyIgwzc1S4pCpcQPPqfQkqrwQOC9D39XsK8QpayEEZz5jLC69LO6qdMbs7mUJru5F%2Bx0VV0TXxy1vYjqdfH1SHCwW05FA8czaT40oYKmDcVDRV9iVBrxDNbYxuqS0rBK5CeOfzUQAlsl%2FHgFS%2BQ6p4ca5r2dOgG7fOics1ZLz5goqB7eRP7h27KGnGgcFmsZ4mcHlCBSrDz56hppqJfe%2BLoobZbcxkNvlTvMHH2XeXe5TsyMQWkpIT1qwEJnyMV2IlhBy6Inr%2FXCic5ID3H5NJKw9sI9W3ZhLL2nC9w791jjmxNnQAF624G38jC7pE9fN4vdHeytG27ajW291g9Z28ph%2BwK711ZAxXXM5jyApN6IcRI7ZT%2FmeqNwK3tf0JYjaWMY9flsi%2BgOc9Age7U%2FYl9gpPWokv94A4RTpZgaIoDcnPZRjOFhaKlqc%2FPRhfhU82fIchm2ajDUpJxU2R2NLpMcYQrdQwIpvdKskwr%2Bdv0ueQVOCCYy4OSmUSUN1uLvo9xuaevrakvtEw93jHAsrxBeBsiBFIrWYRSYRRxbp%2FWu%2FykQun1%2B35ny5m0aaDjMxSf3MFekcZlycFRTQ10rlsuWM1s9%2BhLpXylNngzG3vHdGkW2bz9OP517BlnXWhY2P34BY%2BoAYR1osK8FBKK4odoSzaysmsi8akSHooHCTHCE2cW%2BBOVpP%2BO2INmJeS9tVkBqVweYfABSDq0SPcS19wIOoErm2S05pJEFWxJsyh%2B4m2YcmKgrq4883NBU4R6eNKMOfYsZcGOqgBZ59tHFFtRgH8HKVbbDAqkt8RxlyxhjhY6d1rixsLsUtJcPcZP%2FZZmV51SH3rGTfg0cMCEHUH1UMQOQCwXPhJq8VQcI6Wyz7ywNuiWwUiC7%2B2ekEAnKrUwfVyLtI0u1ntG4inL9eYVmM%2BO6w7Es2XjCz%2FHms3q1HEHK26rWukyk18TO118virTD7%2BAwU4otL8D5tlV0OLH8t6D%2B%2FwZN3q0Baxj1zbsFlo&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Date=20220805T023429Z&X-Amz-SignedHeaders=host&X-Amz-Expires=300&X-Amz-Credential=ASIATOYXB4XYG76TKVPE%2F20220805%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Signature=b7cdd11b4ad70051d652bf9f0fa7e49e24b08c800f71211c495d53db2c0509d8'"
+    },
+    {
+      "raw": "Status Code: 200 OK\nContent-Type:application/pdf\nContent-Length:90616\nEtag:8370fe54955cb4d7ab9967c7933c8210\n\nwith chunked content body"
+    }
+  ]
+}
