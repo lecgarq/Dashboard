@@ -1,7 +1,7 @@
 ---
 phase: 03-activity-pipeline
 verified: 2026-05-11T22:05:00Z
-status: passed
+status: human_needed
 score: 22/22 must-haves verified (code-level); UAT deferred until APS Data Connector access is provisioned (see external_blocker)
 external_blocker:
   issue: "APS client_id boQ3IUTZHC5... receives HTTP 403 'This clientId is not authorized to perform the operation' from both Data Connector POST /requests and GET /jobs"
