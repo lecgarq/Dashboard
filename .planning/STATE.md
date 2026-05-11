@@ -1,15 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: — ACC Extraction Completion
-current_phase: Phase 3 — Activity Pipeline (4/4 plans complete)
-status: completed
-last_updated: "2026-05-11T22:39:05.107Z"
+milestone: v2.0
+milestone_name: Folders + Folder-Role Permissions
+current_phase: Phase 4 — Folders + Folder-Role Permissions (1/7 plans complete)
+status: in_progress
+last_updated: "2026-05-11T23:42:32Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 19
+  completed_plans: 13
 ---
 
 # Session State
@@ -20,9 +20,9 @@ See: .planning/PROJECT.md
 
 ## Position
 
-**Milestone:** v2.0 — ACC Extraction Completion
-**Current phase:** Phase 3 — Activity Pipeline (4/4 plans complete)
-**Status:** Milestone complete
+**Milestone:** v2.0 — Folders + Folder-Role Permissions
+**Current phase:** Phase 4 — Folders + Folder-Role Permissions (1/7 plans complete)
+**Status:** In progress — Plan 04-01 complete
 
 ## Session Log
 
@@ -35,6 +35,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 3 plan 02 complete (streaming ZIP ingest pipeline + Stage-2 cron + accActivity tRPC router with 3 procedures; ACTV-01/02/03/04/05 server-side contracts shipped). Stopped at: Plan 03-02 complete; push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires it as a 30-min cron job.
 - 2026-05-11: Phase 3 plan 03 complete (UsersDirectoryClient File Activity grouped header + 250ms hover prefetch + 4 cells; DashboardSidePanel UserActivityBody with 4 type-section drill-down + filter bar + per-section infinite pagination; SelectedFinding extended with kind=userActivity; ACTV-03/05 UI shipped). Stopped at: Plan 03-03 complete; ready for Plan 03-04 (RecentlyAdded WHO-added-WHOM + SyncFreshnessPill amber state).
 - 2026-05-11: Phase 3 plan 04 complete (RecentlyAdded row list with stacked invitee/inviter avatars + (+N others) hover popover + click-inviter filter pill + relaxed-window query; SyncFreshnessPill amber/Partial state for Deep-Sync-ingest failure via getSyncFreshness extension; ACTV-04 marked done). Stopped at: Plan 03-04 complete — Phase 3 fully shipped. Push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires the 30-min cron; first ingest validates the row list + amber pill.
+- 2026-05-11: Phase 4 plan 01 complete (pure permission-mapping module; FLDR-03 satisfied). lib/acc/permissionMapping.ts exports PermTier union + TIER_DEFINITIONS (6 tiers high→low) + mapActions(). 14 Vitest tests pass (TDD RED→GREEN). Stopped at: Plan 04-01 complete; ready for Plan 04-02.
 
 ## Decisions
 
@@ -69,6 +70,16 @@ See: .planning/PROJECT.md
 - **03-04:** Partial-success detection in `getSyncFreshness` parses the `rowsByFile={"project":N,"admin":M}` JSON the Stage-2 cron writes into `SyncMeta('deep').lastError` — no migration needed. Partial = exactly one CSV ingested zero rows; both-zero treated as green (empty export window).
 - **03-04:** Quick-Sync amber/failed paths take precedence over ingest amber in `SyncFreshnessPill` — single visible status, no double-amber confusion.
 - **03-04:** "See all" link reuses `setSelected({kind:'day'})` (existing side-panel handler) as a stub with `data-testid="recently-added-see-all"`. A richer `kind:'invitations'` body is Phase 5 work.
+- **04-01:** TIER_DEFINITIONS ordered Full Controller → View Only; first tier with all actions present in input wins (round-down semantics via ordered iteration).
+- **04-01:** extended=true means at least one KNOWN input action is NOT in the matched tier's required set — distinct from unknownActions which tracks unrecognised strings.
+- **04-01:** tier=null returned (no throw) when input is empty or contains only unknown actions.
+- **04-01:** Upload Only tier = {PUBLISH} only; inputs with VIEW+DOWNLOAD+COLLABORATE+PUBLISH match View+Download+Upload first (higher in iteration order).
+
+## Accumulated Context
+
+### Roadmap Evolution
+
+- Phase 6 added: 3D spherical graph with gravity at 120fps
 
 ## Performance Metrics
 
@@ -79,4 +90,5 @@ See: .planning/PROJECT.md
 | 03    | 02   | ~5 min   | 3     | 6     | 2026-05-11 |
 | 03    | 03   | ~4 min   | 2     | 3     | 2026-05-11 |
 | 03    | 04   | ~5 min   | 3     | 3     | 2026-05-11 |
+| 04    | 01   | ~2 min   | 2     | 2     | 2026-05-11 |
 

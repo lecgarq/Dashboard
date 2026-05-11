@@ -56,7 +56,7 @@ Per `HOW_TO_Extract_All_Files_and_Folders.md` and `HOW_TO_Extract_Folder_Role_Pe
 
 - [ ] **FLDR-01**: Folder tree extracted per project via Data Management API (`b.` prefix preserved); BFS crawl with `pLimit(5)` per project; folders persisted in `AccFolder` with full path, parent reference, and folder URN as primary key.
 - [ ] **FLDR-02**: Folder-role permissions extracted via `/bim360/docs/v1/projects/:id/folders/:urn/permissions` and persisted in `AccFolderPermission`; `subjectType === "ROLE"` filter applied at ingest.
-- [ ] **FLDR-03**: Permission `actions` arrays mapped to UI permission types (View Only / View+Download / Upload Only / View+Download+Upload / View+Download+Upload+Edit / Full Controller) with unit tests covering all 6 documented combinations.
+- [x] **FLDR-03**: Permission `actions` arrays mapped to UI permission types (View Only / View+Download / Upload Only / View+Download+Upload / View+Download+Upload+Edit / Full Controller) with unit tests covering all 6 documented combinations.
 - [ ] **FLDR-04**: Folder-role permissions widget added as 10th dashboard widget — interactive matrix (folder × role) with hover detail, click-to-drill, cross-widget selection spotlighting (interactivity contract enforced).
 - [ ] **FLDR-05**: Members-assigned-count per role-on-folder computed and exposed (e.g., role assigned to folder but zero members in role → flagged as orphan).
 
