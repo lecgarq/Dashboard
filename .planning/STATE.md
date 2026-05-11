@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v2.0
 milestone_name: ACC Extraction Completion
 current_phase: 02
-status: Phase 2 in progress (3/4 plans complete)
-last_updated: "2026-05-11T17:40:00.000Z"
+status: Phase 2 complete (4/4 plans); v2.0 milestone done
+last_updated: "2026-05-11T17:45:00.000Z"
 progress:
   total_phases: 1
   completed_phases: 1
@@ -13,7 +13,7 @@ progress:
 phase_02:
   current_plan: 04
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Session State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md
 
 **Milestone:** v2.0 — ACC Extraction Completion
 **Current phase:** Phase 2 — Core Extraction (Members, Projects, Roles)
-**Status:** Phase 1 complete (2026-05-11); ready to plan/execute Phase 2
+**Status:** Phase 2 complete (4/4 plans); v2.0 milestone closed (2026-05-11). Production cutover live: every Railway deploy now runs real Quick Sync via release.cjs -> tsx -> quick-sync-extraction.ts.
 
 ## Session Log
 
@@ -34,6 +34,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 2 plan 01 complete (project extraction scaffold; PROJ-01, PROJ-02 marked done)
 - 2026-05-11: Phase 2 plan 02 complete (hub role extraction; ROLE-01 marked done)
 - 2026-05-11: Phase 2 plan 03 complete (per-project members + roles; MEM-01..05, ROLE-02, ROLE-03 marked done)
+- 2026-05-11: Phase 2 plan 04 complete (production cutover — cache writer + main() entry + release.cjs wired; MEM-06 marked done). v2.0 milestone closed.
 
 ## Decisions
 
@@ -47,3 +48,13 @@ See: .planning/PROJECT.md
 - **02-03:** `MemberAggregator` (Map<lowercased-email, entry>) is threaded through `runPerProjectFanOut` so plan 02-04 reads a single union map for `accMemberCache` dual-write — no second pass needed.
 - **02-03:** `lastSignInPresent` uses key-presence (hasOwnProperty), not value check, so explicit `null` lastSignIn does not false-positive as dropped `?fields=`.
 - **02-03:** Product alias map limited to documentManagement/fieldManagement/costManagement per RESEARCH Open Question 3; other product keys pass through unchanged.
+- **02-04:** `buildCacheBlob` return-type annotation `: BulkAccUser` is the compile-time safety net for Pitfall 2 (silent zero-nodes if cache shape drifts). Round-trip test (`buildAccGraphSnapshot` consumes synthetic blob) pins runtime compatibility.
+- **02-04:** Cache writer is additive-only (no row deletion for absent emails) — Phase 2 partial failures leave yesterday's cache intact; the v1.0 dashboard keeps rendering. Stale rows tolerable; missing rows would zero the graph.
+- **02-04:** v2.0 writes `companyRole: null` and `isAccountAdmin: false` for all users (HQ v1 prefetch deferred). Existing UI treats null companyRole as "Unspecified"; `bulkAccSummary` defaults isAccountAdmin to false on legacy rows.
+- **02-04:** Rule 1 type fix: widened `ProjectFindFirst.apsHubId` in `lib/server/acc-helpers.ts` to `string | null` to match Prisma's actual return type. Helper's runtime null-check already handled the case; the type was tighter than reality and blocked typechecking `runQuickSync(prisma)`.
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Tasks | Files | Date       |
+| ----- | ---- | -------- | ----- | ----- | ---------- |
+| 02    | 04   | ~4 min   | 3     | 5     | 2026-05-11 |

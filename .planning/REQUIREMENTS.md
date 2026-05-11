@@ -33,7 +33,7 @@ Full parity with `HOW_TO_Extract_Project_Members.md`. The load-bearing extractio
 - [x] **MEM-03**: Each member's full `products` array persisted with per-module access tier (administrator / member / none) for: Docs, Design Collaboration, Model Coordination, Build, AutoSpecs, Insight, Cost, Project Administration.
 - [x] **MEM-04**: Each member's `accessLevels.projectAdmin` and `accessLevels.executive` flags persisted distinctly from HQ-level account-admin status.
 - [x] **MEM-05**: Per-project role assignments persisted in `AccProjectRole` (many-to-many: member × project × role).
-- [ ] **MEM-06**: Existing `accMemberCache` continues to be written during the dual-existence window so the live dashboard never breaks mid-deploy.
+- [x] **MEM-06**: Existing `accMemberCache` continues to be written during the dual-existence window so the live dashboard never breaks mid-deploy.
 
 ### Project Info
 

@@ -85,3 +85,27 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
   2. Add a smoke test (Playwright or unit) that loads the Cosmos backend, lets it cool, and asserts `getSimulationAlpha() < 0.005 && !isSimulationRunning()` — would have caught this in CI.
   3. On cosmos.gl version bumps, manually diff the relevant Graph getters' docs against this adapter.
 - **Tracking:** Non-blocking; the immediate bug is fixed in `5b14ae9` and UAT-confirmed.
+
+---
+
+## 2026-05-11 — Phase 02 Plan 04 (Production Cutover — Quick Sync wired)
+
+### TD-009: HQ v1 prefetch deferred — companyRole + isAccountAdmin written as null/false
+- **Location:** `lib/acc/quick-sync-extraction.ts` `buildCacheBlob`
+- **What's deferred:** v2.0 Quick Sync writes `companyRole: null` and `isAccountAdmin: false` for every cached user. The v1.0 `bulkAccSync` flow fetched these from the HQ v1 `/users` endpoint; v2.0 skipped HQ v1 prefetch to keep extraction project-centric and within the 5-min Railway release timeout.
+- **User-visible impact:** Existing UI already handles `null` companyRole as "Unspecified". `bulkAccSummary` defaults `isAccountAdmin` to `false` on legacy rows, so the change is invisible to consumers — but the "Account Admin" filter pill in the user graph will no longer light up for genuine hub admins until HQ v1 prefetch is reintroduced.
+- **Resolution path:** Add an HQ v1 prefetch step inside `runQuickSync` (before `runPerProjectFanOut`) that calls `fetchHqUsers` against `/hq/v1/accounts/:id/users`, builds an `email -> { companyRole, role }` map, and threads it into `buildCacheBlob` so the two fields can be backfilled. Trade-off: adds ~5-15s to Quick Sync depending on hub size.
+- **Tracking:** Non-blocking. Phase 2 success criteria do not require these two fields populated for v2.0.
+
+### TD-010: AccProjectMember / AccProjectRole have no soft-delete pass
+- **Location:** `lib/acc/quick-sync-extraction.ts` `extractAndPersistProjectData`
+- **What's missing:** Plan 02-03 implemented soft-delete for `AccProject` (set-difference against `freshIds`) but not for `AccProjectMember` or `AccProjectRole`. When a member is removed from a project or a member-role link is revoked, the corresponding row remains in the database forever.
+- **User-visible impact:** Cosmos graph will continue to render edges for stale member-project relationships. Magnitude depends on member churn rate at the hub.
+- **Resolution path:** Inside `extractAndPersistProjectData`, after upserting all fresh members, collect their IDs and run `prisma.accProjectMember.updateMany({ where: { projectId, id: { notIn: freshMemberIds }, status: 'active' }, data: { status: 'inactive' } })`. Similar pattern for `AccProjectRole` member links. Defer until a churn-rate measurement justifies the cost.
+- **Tracking:** Non-blocking. Could be picked up in v2.x CLN bucket.
+
+### TD-011: Per-project failure rate alert threshold not implemented
+- **Location:** `lib/acc/quick-sync-extraction.ts` CLI entry guard
+- **What's missing:** RESEARCH.md Decision 2 specified ">10% project failure rate triggers alert". Current implementation exits 0 on partial failures regardless of count — only fatal exceptions (auth, accountId resolution, DB connection) propagate non-zero. Operators only learn about systemic failures by reading `[quick-sync] complete in {Xs} — {N} projects, {M} users, {K} project failures` log lines.
+- **Resolution path:** After `runQuickSync` returns, compare `failCount / projectCount > 0.10` and exit non-zero (or write a degraded status to `SyncMeta.lastError`) when the threshold trips. release.cjs would then fire the existing Resend alert.
+- **Tracking:** Non-blocking. First-pass production observation needed to decide whether 10% is the right threshold.
