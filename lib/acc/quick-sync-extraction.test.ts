@@ -203,6 +203,7 @@ describe("extractAndPersistHubRoles", () => {
   beforeEach(() => {
     vi.restoreAllMocks();
     vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "warn").mockImplementation(() => {});
   });
 
   afterEach(() => {
@@ -246,6 +247,32 @@ describe("extractAndPersistHubRoles", () => {
     // Returned roles match the upsert input for downstream consumption (plan 02-03)
     expect(roles).toHaveLength(3);
     expect(roles[0]).toEqual({ id: "r1", name: "Architect", memberCount: 5 });
+  });
+
+  it("treats a missing hub role endpoint as optional", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(JSON.stringify({ detail: "The requested resource does not exist." }), {
+          status: 404,
+          statusText: "Not Found",
+        }),
+      ),
+    );
+
+    const upsert = vi.fn(async (_args: unknown) => ({}));
+    const prisma = { accRole: { upsert } };
+
+    await expect(
+      extractAndPersistHubRoles(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        prisma as any,
+        "acct-xyz",
+        "token",
+      ),
+    ).resolves.toEqual([]);
+
+    expect(upsert).not.toHaveBeenCalled();
   });
 });
 
@@ -462,6 +489,55 @@ describe("extractAndPersistProjectData role linking", () => {
       args.some((a) => typeof a === "string" && a.includes("GhostRole")),
     );
     expect(warnedAboutGhost).toBe(true);
+  });
+
+  it("continues member extraction when project role endpoint is missing", async () => {
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async (url: string) => {
+        if (url.includes("/industry_roles")) {
+          return new Response(JSON.stringify({ detail: "The requested resource does not exist." }), {
+            status: 404,
+            statusText: "Not Found",
+          });
+        }
+        if (url.includes("/users")) {
+          return jsonResponse({
+            results: [
+              {
+                autodeskId: "u1",
+                name: "Alice",
+                email: "alice@example.com",
+                status: "active",
+                roles: [{ name: "Architect" }],
+              },
+            ],
+          });
+        }
+        throw new Error(`Unexpected URL: ${url}`);
+      }),
+    );
+
+    const prisma = buildPrismaMock();
+    const aggregator: MemberAggregator = new Map();
+
+    await expect(
+      extractAndPersistProjectData(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        prisma as any,
+        "acct",
+        { id: "p1", name: "Project 1" },
+        "tok",
+        aggregator,
+      ),
+    ).resolves.toBeUndefined();
+
+    expect(prisma.accProjectMember.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.accProjectRole.upsert).not.toHaveBeenCalled();
+    expect(aggregator.get("alice@example.com")?.perProject[0]?.roleNames).toEqual(["Architect"]);
+    expect(warn).toHaveBeenCalled();
   });
 });
 

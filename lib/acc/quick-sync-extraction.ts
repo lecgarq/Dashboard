@@ -207,6 +207,10 @@ export async function fetchHubRoles(
   return mapped;
 }
 
+function isMissingRoleEndpointError(error: unknown): boolean {
+  return error instanceof IntegrationError && error.status === 404;
+}
+
 /**
  * Fetch hub roles and upsert each into AccRole.
  *
@@ -221,7 +225,16 @@ export async function extractAndPersistHubRoles(
   accountId: string,
   accessToken: string,
 ): Promise<HubRole[]> {
-  const roles = await fetchHubRoles(accountId, accessToken);
+  let roles: HubRole[];
+  try {
+    roles = await fetchHubRoles(accountId, accessToken);
+  } catch (error) {
+    if (!isMissingRoleEndpointError(error)) throw error;
+    console.warn(
+      `[quick-sync] hub roles unavailable for account ${accountId}; continuing without hub role prefetch.`,
+    );
+    return [];
+  }
   const now = new Date();
   for (const role of roles) {
     await prisma.accRole.upsert({
@@ -487,7 +500,16 @@ export async function extractAndPersistProjectData(
   aggregator: MemberAggregator,
 ): Promise<void> {
   // ---- Step A: roles first (so member.roles[] names resolve to IDs) ----
-  const projectRoles = await fetchProjectRoles(accountId, project.id, accessToken);
+  let projectRoles: ProjectRole[];
+  try {
+    projectRoles = await fetchProjectRoles(accountId, project.id, accessToken);
+  } catch (error) {
+    if (!isMissingRoleEndpointError(error)) throw error;
+    console.warn(
+      `[quick-sync] project ${project.id}: role endpoint unavailable; continuing with member data only.`,
+    );
+    projectRoles = [];
+  }
 
   const now = new Date();
 
