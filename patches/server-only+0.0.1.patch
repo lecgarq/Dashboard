@@ -1,0 +1,14 @@
+diff --git a/node_modules/server-only/index.js b/node_modules/server-only/index.js
+index e480b5c..a6228ae 100644
+--- a/node_modules/server-only/index.js
++++ b/node_modules/server-only/index.js
+@@ -1,4 +1,5 @@
+-throw new Error(
+-  "This module cannot be imported from a Client Component module. " +
+-    "It should only be used from a Server Component."
+-);
++// Patched by patch-package — runtime no-op so CLI scripts (e.g. scripts/release.cjs
++// → tsx → lib/server/*.ts) can import this guard module without crashing under
++// plain Node. Next.js still swaps this for empty.js via the "react-server" condition
++// at build time, so client-bundle isolation is preserved.
++module.exports = {};

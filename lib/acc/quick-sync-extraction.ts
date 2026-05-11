@@ -37,7 +37,6 @@ export interface RawProject {
 
 const ACC_ADMIN_V1_BASE = "https://developer.api.autodesk.com/construction/admin/v1";
 const PROJECT_PAGE_SIZE = 100;
-const PROJECT_FIELDS = "id,name,type,jobNumber,accountId,createdAt,status";
 
 // ---------------------------------------------------------------------------
 // Pagination
@@ -61,7 +60,7 @@ export async function fetchAllProjects(
   while (true) {
     const url =
       `${ACC_ADMIN_V1_BASE}/accounts/${accountId}/projects` +
-      `?limit=${PROJECT_PAGE_SIZE}&offset=${offset}&fields=${PROJECT_FIELDS}`;
+      `?limit=${PROJECT_PAGE_SIZE}&offset=${offset}`;
 
     const response = await fetchWithRetry(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -896,17 +895,18 @@ export async function runQuickSync(
 // fatal exception (auth, accountId resolution, db connection) exits non-zero.
 if (require.main === module) {
   (async () => {
-    const { PrismaClient } = await import("@prisma/client");
-    const prisma = new PrismaClient();
+    // Use the project's shared Prisma singleton — Prisma 7 requires a driver adapter
+    // (PrismaPg), and server/db.ts already wires that up plus pooled/direct URL selection.
+    const { db } = await import("@/server/db");
     try {
-      await runQuickSync(prisma);
+      await runQuickSync(db);
       process.exit(0);
     } catch (err) {
       console.error("[quick-sync] fatal:", err instanceof Error ? err.message : err);
       if (err instanceof Error && err.stack) console.error(err.stack);
       process.exit(1);
     } finally {
-      await prisma.$disconnect().catch(() => {});
+      await db.$disconnect().catch(() => {});
     }
   })();
 }

@@ -109,3 +109,37 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 - **What's missing:** RESEARCH.md Decision 2 specified ">10% project failure rate triggers alert". Current implementation exits 0 on partial failures regardless of count — only fatal exceptions (auth, accountId resolution, DB connection) propagate non-zero. Operators only learn about systemic failures by reading `[quick-sync] complete in {Xs} — {N} projects, {M} users, {K} project failures` log lines.
 - **Resolution path:** After `runQuickSync` returns, compare `failCount / projectCount > 0.10` and exit non-zero (or write a degraded status to `SyncMeta.lastError`) when the threshold trips. release.cjs would then fire the existing Resend alert.
 - **Tracking:** Non-blocking. First-pass production observation needed to decide whether 10% is the right threshold.
+
+---
+
+## 2026-05-11 — Phase 02 first-run discovery (gap-closure 02.1 candidates)
+
+### TD-012: AccRole schema doesn't match ACC API — no hub-master roles endpoint exists
+- **Surfaced:** First real CLI run of `runQuickSync` against production (2026-05-11). After 1,143 projects were successfully upserted to `AccProject`, `extractAndPersistHubRoles` failed with `404 The requested resource does not exist`.
+- **Root cause:** Plan 02-02 was built on a non-existent endpoint. Probing confirmed:
+  - `GET /hq/v1/accounts/:id/users` → 200 (auth/scope/accountId all correct)
+  - `GET /hq/v1/accounts/:id/roles` → 404 (path doesn't exist)
+  - `GET /hq/v2/accounts/:id/industry_roles` → 404 (path doesn't exist)
+  - `GET /hq/v2/accounts/:id/projects/:pid/industry_roles` → 200 (real endpoint, but **per-project, with project-scoped IDs**)
+- **Architectural implication:** ACC has no hub-master role list. Two projects each have their own `id` for "Architect" — role IDs are project-scoped. ROLE-01's "hub-master AccRole as ID source-of-truth" is not achievable with the real API.
+- **Affected production code:** `lib/server/acc-admin.ts` `fetchAccHubRoles` (line 387) and `server/routers/users.ts` `syncHubRoles` mutation (line 1350) both hit the same non-existent URL — they have never worked. Likely never called.
+- **Resolution paths (decide in 02.1):**
+  1. Compound key: make AccRole `(projectId, id)` natural key. Closest to ACC's data model.
+  2. Name-dedupe: collect unique role names across projects, synthesize hub IDs, lose per-project ID provenance.
+  3. Accept project-scoped rows: keep `id` as PK (it's globally unique because GUID), let two "Architect" rows coexist. Simplest; semantic of "AccRole" changes.
+- **Tracking:** Blocks AccRole / AccProjectRole / AccProjectMember population. AccProject is unaffected and already populated in prod.
+
+### TD-013: Vitest mocks hid three CLI-only bugs in Phase 02 plan verification
+- **Surfaced:** Same first-run as TD-012. Three separate bugs in `lib/acc/quick-sync-extraction.ts` (CLI entry) that vitest never executed:
+  1. `import "server-only"` chain crashed under plain Node — fixed via `patches/server-only+0.0.1.patch` (runtime no-op; Next.js bundle behavior preserved via `react-server` condition swap to empty.js).
+  2. `new PrismaClient()` with no args — Prisma 7 requires a driver adapter (`PrismaPg`). Fixed by importing the shared `db` singleton from `server/db.ts`.
+  3. `fields=id,name,type,jobNumber,accountId,createdAt,status` query parameter sent to ACC Admin v1 — endpoint doesn't support `fields=` projection (that's a Data Management API convention). Removed.
+- **Process gap:** Plan 02-04's verification gate stopped at `tsc --noEmit + vitest`. Vitest mocked Prisma and the network, so the real `require.main === module` CLI path was never executed. A single `node --env-file=.env.test ./node_modules/tsx/dist/cli.mjs lib/acc/quick-sync-extraction.ts` smoke run (against a staging DB or `--dry-run`) would have caught all three.
+- **Resolution path:** Add "CLI smoke-run against staging DB" as a mandatory verification step for any plan that ships a CLI entry. Codify in `.gsd/templates/PLAN.md` or equivalent.
+- **Tracking:** Non-blocking for code, blocking for process. Worth raising before next phase with a CLI entry.
+
+### TD-014: `lib/server/acc-admin.ts` `fetchAccHubRoles` is dead code pointing at a 404 endpoint
+- **Location:** `lib/server/acc-admin.ts:382` + `server/routers/users.ts:1350` `syncHubRoles` mutation.
+- **What's wrong:** Hits `GET /hq/v1/accounts/:id/roles` which returns 404. The mutation was likely never invoked in production; the helper was likely never tested live.
+- **Resolution path:** When 02.1 reworks AccRole, either delete `fetchAccHubRoles` + `syncHubRoles` or rewrite them to fan out per-project industry_roles like the new extractor will.
+- **Tracking:** Non-blocking until 02.1 cleanup.
