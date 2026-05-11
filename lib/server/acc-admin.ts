@@ -52,7 +52,7 @@ let loggedRawShape = false;
 
 // Retry on 429 (quota/rate limit) with either the server-provided Retry-After or
 // exponential backoff. Up to 4 attempts. Everything else returns the first response.
-async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 4): Promise<Response> {
+export async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 4): Promise<Response> {
   let attempt = 0;
   while (true) {
     const res = await fetch(url, init);
@@ -111,8 +111,11 @@ async function fetchAccPaged(
   return JSON.parse(raw) as { pagination: { totalResults: number; limit: number }; results: Record<string, unknown>[] };
 }
 
-// Fetches a HQ v1 user list endpoint → plain array
-async function fetchHqUsers(
+// Fetches a HQ v1 or v2 plain-array endpoint → plain array.
+// Despite the legacy name, this is the correct fetcher for any APS endpoint
+// that returns a top-level JSON array (HQ v1 /users, HQ v2 /industry_roles, etc.).
+// Do NOT use fetchAccPaged for these — that helper expects { pagination, results }.
+export async function fetchHqUsers(
   url: string,
   accessToken: string,
   signal?: AbortSignal
