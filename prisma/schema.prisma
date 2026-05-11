@@ -354,8 +354,8 @@ model LodFamily {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  embedding  LodEmbedding?
-  graphNode  LodGraphNode?
+  embedding LodEmbedding?
+  graphNode LodGraphNode?
 
   @@index([finalCategory])
   @@index([lodLabel])
@@ -410,7 +410,7 @@ model AccMemberCache {
 
 model AccHubRoleCache {
   id       String   @id @default("singleton")
-  roles    Json     // AccHubRole[]
+  roles    Json // AccHubRole[]
   syncedAt DateTime @updatedAt
 }
 
@@ -428,4 +428,139 @@ model AccGraphLayoutCache {
   projectCount  Int      @default(0)
   nodeIds       String[] @default([])
   updatedAt     DateTime @updatedAt
+}
+
+// ============ MODULE: ACC V2.0 RELATIONAL LAYER ============
+
+model AccProject {
+  id        String             @id // APS project ID (no b. prefix — Construction Admin)
+  accountId String
+  name      String
+  jobNumber String?
+  type      String?
+  status    String             @default("active") // active | inactive
+  createdAt DateTime?
+  updatedAt DateTime           @updatedAt
+  members   AccProjectMember[]
+  roles     AccProjectRole[]
+  folders   AccFolder[]
+
+  @@index([accountId])
+  @@index([status])
+}
+
+model AccProjectMember {
+  id           String           @id @default(cuid())
+  projectId    String
+  project      AccProject       @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  autodeskId   String
+  email        String
+  name         String
+  status       String // active | pending | deleted
+  companyName  String?
+  phone        String?
+  addedOn      DateTime?
+  lastSignIn   DateTime?
+  projectAdmin Boolean          @default(false)
+  executive    Boolean          @default(false)
+  products     Json // per-module tier map
+  syncedAt     DateTime
+  roles        AccProjectRole[]
+
+  @@unique([projectId, autodeskId])
+  @@index([email])
+  @@index([projectId])
+  @@index([autodeskId])
+}
+
+model AccRole {
+  id           String           @id // APS role ID
+  accountId    String
+  name         String
+  memberCount  Int              @default(0)
+  syncedAt     DateTime
+  projectRoles AccProjectRole[]
+
+  @@index([accountId])
+}
+
+model AccProjectRole {
+  id                      String            @id @default(cuid())
+  projectId               String
+  project                 AccProject        @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  roleId                  String
+  role                    AccRole           @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  memberId                String?
+  member                  AccProjectMember? @relation(fields: [memberId], references: [id], onDelete: SetNull)
+  docsAccessLevel         String?
+  projectAdminAccessLevel String?
+
+  @@unique([projectId, roleId, memberId])
+  @@index([projectId])
+  @@index([roleId])
+}
+
+model AccFolder {
+  id          String                @id // folder URN (with b. prefix — Data Management)
+  projectId   String
+  project     AccProject            @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  parentId    String?
+  name        String
+  fullPath    String?
+  syncedAt    DateTime
+  permissions AccFolderPermission[]
+
+  @@index([projectId])
+  @@index([parentId])
+}
+
+model AccFolderPermission {
+  id       String    @id @default(cuid())
+  folderId String
+  folder   AccFolder @relation(fields: [folderId], references: [id], onDelete: Cascade)
+  roleId   String
+  actions  String[] // raw APS actions array
+  permType String // View Only | View+Download | Upload Only | etc.
+  syncedAt DateTime
+
+  @@unique([folderId, roleId])
+  @@index([folderId])
+}
+
+model AccActivity {
+  id         String   @id @default(cuid())
+  autodeskId String
+  projectId  String?
+  action     String
+  service    String?
+  tool       String?
+  details    String?
+  createdAt  DateTime
+
+  @@index([autodeskId, createdAt(sort: Desc)])
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([action])
+}
+
+model AccDataConnectorJob {
+  id            String    @id @default(cuid())
+  requestId     String    @unique // APS Data Connector requestId
+  status        String    @default("pending") // pending | running | success | failed
+  serviceGroups String[]
+  dateRange     String?
+  startedAt     DateTime  @default(now())
+  completedAt   DateTime?
+  downloadUrl   String?
+  errorMessage  String?
+
+  @@index([status])
+  @@index([startedAt])
+}
+
+model SyncMeta {
+  id         String    @id // "quick" | "deep"
+  lastRunAt  DateTime?
+  lastStatus String? // success | failed | skipped
+  lastError  String?
+  updatedAt  DateTime  @updatedAt
 }
