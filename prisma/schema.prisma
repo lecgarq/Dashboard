@@ -364,10 +364,11 @@ model LodFamily {
 }
 
 model LodEmbedding {
-  id       String    @id @default(cuid())
-  familyId String    @unique
-  family   LodFamily @relation(fields: [familyId], references: [id], onDelete: Cascade)
+  id       String                      @id @default(cuid())
+  familyId String                      @unique
+  family   LodFamily                   @relation(fields: [familyId], references: [id], onDelete: Cascade)
   vector   Float[]
+  pgvector Unsupported("vector(768)")? // managed by raw SQL migration 20260416011500_fix_lod_search_foundation; HNSW index 20260416182000
 
   @@index([familyId])
 }
