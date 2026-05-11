@@ -18,6 +18,8 @@ import { workspaceRouter } from "./workspace";
 import { accSyncRouter } from "./acc-sync";
 import { accActivityRouter } from "./acc-activity";
 import { accFoldersRouter } from "./acc-folders";
+import { accMembersRouter } from "./acc-members";
+import { accGraphRouter } from "./acc-graph";
 
 export const appRouter = router({
   project: projectRouter,
@@ -39,6 +41,8 @@ export const appRouter = router({
   accSync: accSyncRouter,
   accActivity: accActivityRouter,
   accFolders: accFoldersRouter,
+  accMembers: accMembersRouter,
+  accGraph: accGraphRouter,
 });
 
 export type AppRouter = typeof appRouter;

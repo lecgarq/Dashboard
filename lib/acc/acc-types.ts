@@ -38,4 +38,20 @@ export interface BulkAccUser {
    * `addedOn === null` deterministically rather than guessing between null vs undefined.
    */
   addedOn: string | null;
+
+  // ─── Phase 5 v2.0 enriched fields ─────────────────────────────────────────
+  // Populated by `accMembers.enrichedUsers` merged in DashboardClient. All
+  // optional (?) to avoid breaking existing consumers that don't call the new
+  // procedure. Graceful degradation: undefined → feature absent for that user.
+
+  /** Aggregated status from AccProjectMember (any "active" project → "active"). */
+  aggregatedStatus?: "active" | "pending" | "deleted";
+  /** True if projectAdmin on ANY project (from AccProjectMember). */
+  projectAdmin?: boolean;
+  /** True if executive on ANY project (from AccProjectMember). */
+  executive?: boolean;
+  /** Company display name from AccProjectMember (first non-null across projects). */
+  companyName?: string | null;
+  /** Distinct ACC per-project role names across all active projects. */
+  perProjectRoleNames?: string[];
 }

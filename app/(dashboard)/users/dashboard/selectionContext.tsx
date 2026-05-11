@@ -37,6 +37,11 @@ export type SelectedFinding =
   | { kind: "admin"; email: string }
   | { kind: "day"; dateIso: string; emails: string[] }
   | { kind: "userActivity"; email: string }
+  // Phase 5.1 — Wave 5.1 additions
+  /** GRAPH-04 + DASH matrix fallback: folder node clicked or folder row selected */
+  | { kind: "folder"; folderUrn: string }
+  /** GRAPH-03: toolbar/legend admin-tier clicked — spotlights matching users */
+  | { kind: "adminTier"; tier: "hub" | "project" | "executive" }
   | null;
 
 interface SelectionContextValue {
@@ -80,6 +85,13 @@ function isSelectionValid(
     case "day":
     case "userActivity":
       return true;
+    case "adminTier":
+      // adminTier is always valid — it's a stable tier category, not a finding reference
+      return true;
+    case "folder":
+      // folder is valid when folderUrn is non-empty.
+      // Phase 5.3 will own the join-against-real-folders refinement.
+      return selected.folderUrn.length > 0;
   }
 }
 

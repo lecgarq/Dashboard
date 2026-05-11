@@ -36,6 +36,12 @@ export function DashboardClient() {
     staleTime: 300_000,
     retry: false,
   });
+  // Phase 5.1: enriched v2.0 data (projectAdmin, executive, companyName, perProjectRoleNames).
+  // Runs in parallel with bulkAccSummary. Merged on email below (additive — no bulkAccSummary edits).
+  const enrichedQuery = trpc.accMembers.enrichedUsers.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
   const workspaceQuery = trpc.workspace.getDirectory.useQuery(undefined, {
     staleTime: 60 * 60 * 1000,
     retry: false,
@@ -49,7 +55,27 @@ export function DashboardClient() {
     setOrder(arrayMove(order, fromIdx, toIdx));
   }
 
-  const users = (usersQuery.data ?? []) as BulkAccUser[];
+  // Merge enriched v2.0 fields into BulkAccUser array. enrichedUsers runs in parallel and
+  // may still be loading on first render — undefined fields degrade gracefully.
+  const users = React.useMemo<BulkAccUser[]>(() => {
+    const base = (usersQuery.data ?? []) as BulkAccUser[];
+    const enriched = enrichedQuery.data;
+    if (!enriched || enriched.length === 0) return base;
+    const enrichMap = new Map(enriched.map((e) => [e.email.toLowerCase(), e]));
+    return base.map((u) => {
+      const e = enrichMap.get(u.email.toLowerCase());
+      if (!e) return u;
+      return {
+        ...u,
+        aggregatedStatus: e.aggregatedStatus,
+        projectAdmin: e.projectAdmin,
+        executive: e.executive,
+        companyName: e.companyName,
+        perProjectRoleNames: e.perProjectRoleNames,
+      };
+    });
+  }, [usersQuery.data, enrichedQuery.data]);
+
   // Workspace error → empty list; CoverageDonutWidget renders an inline empty state.
   const workspaceEmails = workspaceQuery.data?.emails ?? [];
 

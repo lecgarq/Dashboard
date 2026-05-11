@@ -98,6 +98,10 @@ function selectedKey(s: NonNullable<SelectedFinding>): string {
       return `day:${s.dateIso}`;
     case "userActivity":
       return `userActivity:${s.email}`;
+    case "folder":
+      return `folder:${s.folderUrn}`;
+    case "adminTier":
+      return `adminTier:${s.tier}`;
     default: {
       const _exhaust: never = s;
       return _exhaust;
@@ -135,6 +139,10 @@ function PanelBody({
       return <DayBody dateIso={selected.dateIso} emails={selected.emails} users={users} />;
     case "userActivity":
       return <UserActivityBody email={selected.email} users={users} />;
+    case "folder":
+      return <FolderBody folderUrn={selected.folderUrn} />;
+    case "adminTier":
+      return <AdminTierBody tier={selected.tier} users={users} />;
     default: {
       const _exhaust: never = selected;
       return _exhaust;
@@ -914,6 +922,95 @@ function RoleBody({
         <Section title="Projects">
           <ChipList items={projects} />
         </Section>
+      </div>
+    </>
+  );
+}
+
+/* ─── Phase 5.1 stubs ────────────────────────────────────────────────────── */
+
+/**
+ * GRAPH-04 / DASH matrix folder body — stub.
+ * Full body: Task 4 (Phase 4 GO) or Wave 5.3 (DASH matrix fallback).
+ * Contract: keeps the runtime panel closed-loop so kind="folder" never crashes.
+ */
+function FolderBody({ folderUrn }: { folderUrn: string }) {
+  const { clear } = useSelection();
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">Folder</SheetTitle>
+        <SheetDescription className="font-mono text-xs break-all">{folderUrn}</SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-4 pb-6">
+        <div className="rounded-md border bg-muted/30 p-4 text-sm text-muted-foreground">
+          <p className="font-medium text-foreground mb-1">Folder: {folderUrn}</p>
+          <p>
+            Full folder detail panel wired in Task 4 (Phase 4 GO) or via DASH matrix in Wave 5.3.
+          </p>
+        </div>
+        <button
+          onClick={clear}
+          className="self-start text-xs text-primary hover:underline"
+        >
+          Close
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
+ * GRAPH-03 admin-tier body — lists users in the selected tier.
+ * Tier: "hub" | "project" | "executive"
+ */
+function AdminTierBody({
+  tier,
+  users,
+}: {
+  tier: "hub" | "project" | "executive";
+  users: BulkAccUser[];
+}) {
+  const { clear } = useSelection();
+
+  const tierLabel = tier === "hub" ? "Hub admin" : tier === "project" ? "Project admin" : "Executive";
+  const tierGlyph = tier === "hub" ? "★" : tier === "project" ? "◆" : "◯";
+
+  const matchingEmails = useMemo(() => {
+    return users
+      .filter((u) => {
+        if (tier === "hub") return u.isAccountAdmin === true;
+        if (tier === "project") return !u.isAccountAdmin && u.projectAdmin === true;
+        if (tier === "executive") return !u.isAccountAdmin && !u.projectAdmin && u.executive === true;
+        return false;
+      })
+      .map((u) => u.email);
+  }, [tier, users]);
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="pr-8">
+          {tierGlyph} {tierLabel}s
+        </SheetTitle>
+        <SheetDescription>
+          {matchingEmails.length} user{matchingEmails.length === 1 ? "" : "s"} in this tier
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-4 pb-6">
+        <Section title="Members">
+          <MembersTable
+            emails={matchingEmails}
+            users={users}
+            csvName={`admin-tier-${tier}.csv`}
+          />
+        </Section>
+        <button
+          onClick={clear}
+          className="self-start text-xs text-primary hover:underline"
+        >
+          Close
+        </button>
       </div>
     </>
   );
