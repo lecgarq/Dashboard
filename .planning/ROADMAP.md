@@ -160,8 +160,8 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 1. Foundation: Schema + Sync Orchestration  | v2.0      | 4/4            | Complete    | 2026-05-11 |
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/4            | Plans drafted | —      |
 | 3. Activity Pipeline                        | v2.0      | 0/4            | Plans drafted | —       |
-| 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Blocked on Phase 1+2 | — |
-| 5. UI Enrichment Waves                      | v2.0      | 0/?            | Blocked on Phase 2  | — |
+| 4. Folders & Folder-Role Permissions        | v2.0      | 0/?            | Directory ready — plan pending | — |
+| 5. UI Enrichment Waves                      | v2.0      | 0/?            | Directory ready — gated on Phase 4 GO/NO-GO | — |
 
 Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–24 plans across v2.0.
 
