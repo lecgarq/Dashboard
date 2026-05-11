@@ -432,3 +432,290 @@ export async function fetchProjectRoles(
   return mapped;
 }
 
+// ---------------------------------------------------------------------------
+// Aggregator + per-project fan-out
+// ---------------------------------------------------------------------------
+
+/**
+ * One per-project occurrence of a member, accumulated across all projects.
+ * Plan 02-04 reads `MemberAggregator` at the end of the run and assembles
+ * the `accMemberCache` JSON blob from it.
+ */
+export interface MemberAggregatorPerProject {
+  projectId: string;
+  projectName: string;
+  status: string;
+  projectAdmin: boolean;
+  executive: boolean;
+  products: Record<string, ProductTier>;
+  roleNames: string[];
+  addedOn: string | null;
+  lastSignIn: string | null;
+  companyName: string | null;
+  phone: string | null;
+}
+
+export interface MemberAggregatorEntry {
+  email: string; // lowercased
+  autodeskId: string;
+  name: string;
+  perProject: MemberAggregatorPerProject[];
+}
+
+/** Key = lowercased email. */
+export type MemberAggregator = Map<string, MemberAggregatorEntry>;
+
+/**
+ * Per-project extraction: fetch industry roles → upsert AccRole rows + default
+ * AccProjectRole "unassigned" rows → fetch members → upsert AccProjectMember +
+ * resolve member.roles[] names to role IDs via the per-project name map.
+ *
+ * APPENDS each member occurrence to `aggregator`. Does NOT return anything —
+ * the caller threads the same aggregator through every project so plan 02-04
+ * can read the union at the end.
+ *
+ * Throws on per-project failures so `runPerProjectFanOut` can catch + log them
+ * (skip-and-continue, RESEARCH Decision 1).
+ */
+export async function extractAndPersistProjectData(
+  prisma: PrismaClient,
+  accountId: string,
+  project: { id: string; name: string },
+  accessToken: string,
+  aggregator: MemberAggregator,
+): Promise<void> {
+  // ---- Step A: roles first (so member.roles[] names resolve to IDs) ----
+  const projectRoles = await fetchProjectRoles(accountId, project.id, accessToken);
+
+  const now = new Date();
+
+  // A.1: upsert any AccRole rows we haven't seen at hub level.
+  for (const role of projectRoles) {
+    await prisma.accRole.upsert({
+      where: { id: role.id },
+      create: {
+        id: role.id,
+        accountId,
+        name: role.name,
+        memberCount: 0,
+        syncedAt: now,
+      },
+      update: { name: role.name, syncedAt: now },
+    });
+  }
+
+  // A.2: lowercased name → role map for cross-casing matches.
+  const roleNameToId = new Map<string, ProjectRole>(
+    projectRoles.map((r) => [r.name.toLowerCase(), r]),
+  );
+
+  // A.3: persist default access levels even when no member is linked yet.
+  //
+  // Prisma's generated `projectId_roleId_memberId` compound where rejects a
+  // null in `memberId` because compound-unique keys require all components to
+  // be non-null at the query level. Use findFirst + create/update fallback.
+  for (const role of projectRoles) {
+    const existing = await prisma.accProjectRole.findFirst({
+      where: {
+        projectId: project.id,
+        roleId: role.id,
+        memberId: null,
+      },
+      select: { id: true },
+    });
+    if (existing) {
+      await prisma.accProjectRole.update({
+        where: { id: existing.id },
+        data: {
+          docsAccessLevel: role.docsAccessLevel,
+          projectAdminAccessLevel: role.projectAdminAccessLevel,
+        },
+      });
+    } else {
+      await prisma.accProjectRole.create({
+        data: {
+          projectId: project.id,
+          roleId: role.id,
+          memberId: null,
+          docsAccessLevel: role.docsAccessLevel,
+          projectAdminAccessLevel: role.projectAdminAccessLevel,
+        },
+      });
+    }
+  }
+
+  // ---- Step B: members ----
+  const { members, lastSignInPresent } = await fetchProjectMembers(
+    project.id,
+    accessToken,
+  );
+  if (!lastSignInPresent && members.length > 0) {
+    console.warn(
+      `[quick-sync] project ${project.id}: lastSignIn field absent from response — ?fields= may have been dropped`,
+    );
+  }
+
+  // ---- Step C: per-member upsert + role link + aggregator append ----
+  for (const raw of members) {
+    if (!raw || typeof raw !== "object") continue;
+    if (!raw.autodeskId || !raw.email) {
+      console.warn(
+        `[quick-sync] project ${project.id}: skipping member with missing autodeskId/email`,
+      );
+      continue;
+    }
+
+    const email = raw.email.toLowerCase();
+    const autodeskId = raw.autodeskId;
+    const name = raw.name ?? email;
+    const status = raw.status ?? "active";
+    const companyName = raw.companyName ?? null;
+    const phone =
+      typeof raw.phone === "string"
+        ? raw.phone
+        : raw.phone && typeof raw.phone === "object"
+          ? (raw.phone.number ?? null)
+          : null;
+    const addedOn = raw.addedOn ? new Date(raw.addedOn) : null;
+    const lastSignIn = raw.lastSignIn ? new Date(raw.lastSignIn) : null;
+    const projectAdmin = raw.accessLevels?.projectAdmin ?? false;
+    const executive = raw.accessLevels?.executive ?? false;
+    const products = normalizeProducts(raw.products);
+
+    const saved = await prisma.accProjectMember.upsert({
+      where: {
+        projectId_autodeskId: { projectId: project.id, autodeskId },
+      },
+      create: {
+        projectId: project.id,
+        autodeskId,
+        email,
+        name,
+        status,
+        companyName,
+        phone,
+        addedOn,
+        lastSignIn,
+        projectAdmin,
+        executive,
+        products,
+        syncedAt: now,
+      },
+      update: {
+        email,
+        name,
+        status,
+        companyName,
+        phone,
+        addedOn,
+        lastSignIn,
+        projectAdmin,
+        executive,
+        products,
+        syncedAt: now,
+      },
+    });
+
+    // Link member to each named role on the project.
+    const rawRoles = Array.isArray(raw.roles) ? raw.roles : [];
+    for (const r of rawRoles) {
+      if (!r || typeof r !== "object" || !r.name) continue;
+      const resolved = roleNameToId.get(r.name.toLowerCase());
+      if (!resolved) {
+        console.warn(
+          `[quick-sync] project ${project.id}: unresolved role name "${r.name}" on member ${email}`,
+        );
+        continue;
+      }
+      await prisma.accProjectRole.upsert({
+        where: {
+          projectId_roleId_memberId: {
+            projectId: project.id,
+            roleId: resolved.id,
+            memberId: saved.id,
+          },
+        },
+        create: {
+          projectId: project.id,
+          roleId: resolved.id,
+          memberId: saved.id,
+          docsAccessLevel: resolved.docsAccessLevel,
+          projectAdminAccessLevel: resolved.projectAdminAccessLevel,
+        },
+        update: {
+          docsAccessLevel: resolved.docsAccessLevel,
+          projectAdminAccessLevel: resolved.projectAdminAccessLevel,
+        },
+      });
+    }
+
+    // Aggregator append (plan 02-04 consumer contract).
+    let entry = aggregator.get(email);
+    if (!entry) {
+      entry = { email, autodeskId, name, perProject: [] };
+      aggregator.set(email, entry);
+    }
+    entry.perProject.push({
+      projectId: project.id,
+      projectName: project.name,
+      status,
+      projectAdmin,
+      executive,
+      products,
+      roleNames: rawRoles.map((r) => r.name),
+      addedOn: addedOn ? addedOn.toISOString() : null,
+      lastSignIn: lastSignIn ? lastSignIn.toISOString() : null,
+      companyName,
+      phone,
+    });
+  }
+
+  console.log(
+    `[quick-sync] project ${project.id} (${project.name}): ${members.length} members, ${projectRoles.length} roles`,
+  );
+}
+
+/**
+ * Fan out `extractAndPersistProjectData` across `projects` at `pLimit(5)`.
+ *
+ * Skip-and-continue: a failure in one project is caught + logged + recorded in
+ * `failures` so the run continues. Matches v1.0 bulkAccSync pattern
+ * (RESEARCH Decision 1).
+ */
+export async function runPerProjectFanOut(
+  prisma: PrismaClient,
+  accountId: string,
+  projects: Array<{ id: string; name: string }>,
+  accessToken: string,
+): Promise<{
+  aggregator: MemberAggregator;
+  failCount: number;
+  failures: Array<{ projectId: string; error: string }>;
+}> {
+  const aggregator: MemberAggregator = new Map();
+  const failures: Array<{ projectId: string; error: string }> = [];
+  const limit = pLimit(5);
+
+  await Promise.all(
+    projects.map((p) =>
+      limit(async () => {
+        try {
+          await extractAndPersistProjectData(
+            prisma,
+            accountId,
+            p,
+            accessToken,
+            aggregator,
+          );
+        } catch (err) {
+          const msg = err instanceof Error ? err.message : String(err);
+          console.warn(`[quick-sync] project ${p.id} failed:`, msg);
+          failures.push({ projectId: p.id, error: msg });
+        }
+      }),
+    ),
+  );
+
+  return { aggregator, failCount: failures.length, failures };
+}
+
