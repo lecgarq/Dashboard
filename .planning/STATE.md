@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 3 — Activity Pipeline (3/4 plans complete)
-status: executing
-last_updated: "2026-05-11T21:59:00.000Z"
+current_phase: Phase 3 — Activity Pipeline (4/4 plans complete)
+status: phase-complete
+last_updated: "2026-05-11T22:02:00.000Z"
 progress:
   total_phases: 3
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
-  completed_plans: 11
+  completed_plans: 12
   current_phase_plans: 4
-  current_phase_completed_plans: 3
+  current_phase_completed_plans: 4
 ---
 
 # Session State
@@ -23,8 +23,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — ACC Extraction Completion
-**Current phase:** Phase 3 — Activity Pipeline (3/4 plans complete)
-**Status:** In progress — Wave 2 plan 03 shipped (File Activity grouped header + hover prefetch + drill-down sheet on UsersDirectoryClient; UserActivityBody reusable across DashboardSidePanel and local Sheet). Plan 04 (RecentlyAdded WHO-added-WHOM) is the last remaining plan.
+**Current phase:** Phase 3 — Activity Pipeline (4/4 plans complete)
+**Status:** Phase 3 complete — all 4 plans shipped. Pending operator action: push deploy branch to Railway so scripts/deep-sync-ingest.cjs lands; wire it as a 30-min cron. First ingest will validate the listInvitations row list + getSyncFreshness ingest rollup.
 
 ## Session Log
 
@@ -36,6 +36,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 3 plan 01 complete (AccActivity v2 schema + UnresolvedAttribution + unzipper/csv-parse deps + migration applied; ACTV-01/02/04 schema foundation done).
 - 2026-05-11: Phase 3 plan 02 complete (streaming ZIP ingest pipeline + Stage-2 cron + accActivity tRPC router with 3 procedures; ACTV-01/02/03/04/05 server-side contracts shipped). Stopped at: Plan 03-02 complete; push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires it as a 30-min cron job.
 - 2026-05-11: Phase 3 plan 03 complete (UsersDirectoryClient File Activity grouped header + 250ms hover prefetch + 4 cells; DashboardSidePanel UserActivityBody with 4 type-section drill-down + filter bar + per-section infinite pagination; SelectedFinding extended with kind=userActivity; ACTV-03/05 UI shipped). Stopped at: Plan 03-03 complete; ready for Plan 03-04 (RecentlyAdded WHO-added-WHOM + SyncFreshnessPill amber state).
+- 2026-05-11: Phase 3 plan 04 complete (RecentlyAdded row list with stacked invitee/inviter avatars + (+N others) hover popover + click-inviter filter pill + relaxed-window query; SyncFreshnessPill amber/Partial state for Deep-Sync-ingest failure via getSyncFreshness extension; ACTV-04 marked done). Stopped at: Plan 03-04 complete — Phase 3 fully shipped. Push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires the 30-min cron; first ingest validates the row list + amber pill.
 
 ## Decisions
 
@@ -65,6 +66,11 @@ See: .planning/PROJECT.md
 - [Phase 03]: 03-03: Hover-prefetch activation is sticky — once activated by 250ms-debounced hover, FileActivityCell keeps useQuery enabled for the rest of the session. Prevents re-firing on mouse back-and-forth; pairs with 5min staleTime.
 - [Phase 03]: 03-03: Section count badges show cumulative-rows-loaded + '+' suffix when hasNextPage (e.g. '25+'). Avoids a separate count query per section per filter change. CONTEXT permits either approach.
 - [Phase 03]: 03-03: Sub-column header sort by file-activity timestamp deferred to LIST-03 in Phase 5. Reason: full-list sort requires all rows to have data, which they don't until hovered; broader LIST-03 scope owns this.
+- **03-04:** Heatmap NOT visually filtered when inviterFilter is active — CONTEXT.md does not require it; keeps the heatmap as an unchanged at-a-glance view (matches 04.1 widget contract). Only the row list below the heatmap respects the inviter filter.
+- **03-04:** No avatar images — `AccProjectMember` has no `avatarUrl`/`imageUrl`/`profilePicture` column (verified via grep). Stacked-avatar UI uses initials with email-local-part fallback, matching `AdminAccessWidget.initialsOf`.
+- **03-04:** Partial-success detection in `getSyncFreshness` parses the `rowsByFile={"project":N,"admin":M}` JSON the Stage-2 cron writes into `SyncMeta('deep').lastError` — no migration needed. Partial = exactly one CSV ingested zero rows; both-zero treated as green (empty export window).
+- **03-04:** Quick-Sync amber/failed paths take precedence over ingest amber in `SyncFreshnessPill` — single visible status, no double-amber confusion.
+- **03-04:** "See all" link reuses `setSelected({kind:'day'})` (existing side-panel handler) as a stub with `data-testid="recently-added-see-all"`. A richer `kind:'invitations'` body is Phase 5 work.
 
 ## Performance Metrics
 
@@ -73,5 +79,6 @@ See: .planning/PROJECT.md
 | 02    | 04   | ~4 min   | 3     | 5     | 2026-05-11 |
 | 03    | 01   | ~15 min  | 3     | 4     | 2026-05-11 |
 | 03    | 02   | ~5 min   | 3     | 6     | 2026-05-11 |
-| Phase 03 P03 | ~4 min | 2 tasks | 3 files |
+| 03    | 03   | ~4 min   | 2     | 3     | 2026-05-11 |
+| 03    | 04   | ~5 min   | 3     | 3     | 2026-05-11 |
 

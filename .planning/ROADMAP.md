@@ -76,10 +76,10 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 **Requirements:** ACTV-01..05 (5)
 
 **Plans:** 4 plans
-- [ ] 03-01-PLAN.md — Wave 0: deps install + Prisma migration (AccActivity v2 + UnresolvedAttribution)
-- [ ] 03-02-PLAN.md — Wave 1: streaming ingest pipeline + Stage-2 cron + accActivity tRPC router
-- [ ] 03-03-PLAN.md — Wave 2: user-list File Activity columns + DashboardSidePanel drill-down
-- [ ] 03-04-PLAN.md — Wave 2: RecentlyAddedWidget WHO-added-WHOM + SyncFreshnessPill amber/Partial
+- [x] 03-01-PLAN.md — Wave 0: deps install + Prisma migration (AccActivity v2 + UnresolvedAttribution)
+- [x] 03-02-PLAN.md — Wave 1: streaming ingest pipeline + Stage-2 cron + accActivity tRPC router
+- [x] 03-03-PLAN.md — Wave 2: user-list File Activity columns + DashboardSidePanel drill-down
+- [x] 03-04-PLAN.md — Wave 2: RecentlyAddedWidget WHO-added-WHOM + SyncFreshnessPill amber/Partial
 
 **Success criteria:**
 - Data Connector ZIP downloaded via signed S3 URL with NO Authorization header (APS quirk per `HOW_TO_Extract_Activity_Logs.md`).
