@@ -1,19 +1,15 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: ACC Extraction Completion
-current_phase: 02
-status: Phase 2 complete (4/4 plans); v2.0 milestone done
-last_updated: "2026-05-11T17:45:00.000Z"
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
+current_phase: Phase 2 — Core Extraction (Members, Projects, Roles)
+status: completed
+last_updated: "2026-05-11T17:50:08.253Z"
 progress:
-  total_phases: 1
-  completed_phases: 1
-  total_plans: 4
-  completed_plans: 4
-phase_02:
-  current_plan: 04
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 8
+  completed_plans: 8
 ---
 
 # Session State
@@ -26,7 +22,7 @@ See: .planning/PROJECT.md
 
 **Milestone:** v2.0 — ACC Extraction Completion
 **Current phase:** Phase 2 — Core Extraction (Members, Projects, Roles)
-**Status:** Phase 2 complete (4/4 plans); v2.0 milestone closed (2026-05-11). Production cutover live: every Railway deploy now runs real Quick Sync via release.cjs -> tsx -> quick-sync-extraction.ts.
+**Status:** Milestone complete
 
 ## Session Log
 
