@@ -32,8 +32,8 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 **Success criteria:**
 - All 8 new Prisma models (`AccProject`, `AccProjectMember`, `AccRole`, `AccProjectRole`, `AccFolder`, `AccFolderPermission`, `AccActivity`, `AccDataConnectorJob`) exist with documented composite indexes; migration applied on dev + Railway.
 - Two distinct projectId helpers (`getAccountId` strips `b.`, `getProjectIdForDM` preserves `b.`) shipped with unit tests; existing callers audited.
-- Quick Sync button triggers REST extractions synchronously with progress feedback (extraction code is a Phase 2 deliverable — this phase wires the shell).
-- Deep Sync button submits a Data Connector job, persists `AccDataConnectorJob` row, returns immediately with `jobId`.
+- Quick Sync runs from the Railway deploy/pre-deploy command and writes persistent `SyncMeta` status (extraction code is a Phase 2 deliverable; this phase wires the shell).
+- Deep Sync runs from Railway cron, submits a Data Connector job, persists `AccDataConnectorJob` row, and returns immediately with `jobId` in logs/status storage.
 - Deep Sync status survives Railway container restart (UI polls Postgres, not memory).
 - Double-submit prevention enforced server-side.
 

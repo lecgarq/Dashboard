@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
 status: unknown
-last_updated: "2026-05-11T16:01:34.854Z"
+last_updated: "2026-05-11T16:53:39.552Z"
 progress:
   total_phases: 1
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 2
+  completed_plans: 4
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-08 after v1.0 shipped)
 
 ## Current Position
 
-Phase: v2.0 Phase 1 — Foundation: Schema + Sync Orchestration (IN PROGRESS)
-Plan: 2/4 complete (01-01, 01-02 shipped; 01-03, 01-04 next)
-Status: Schema layer landed. AccActivity composite DESC indexes from day one. SCHEMA-01 + SCHEMA-02 complete.
-Last activity: 2026-05-11 — Plan 01-01 executed (2 tasks, 4 min). Migration `20260511155810_acc_v2_foundation` applied to dev DB; Prisma client regenerated.
+Phase: v2.0 Phase 1 — Foundation: Schema + Sync Orchestration (COMPLETE 2026-05-11)
+Plan: 4/4 complete (01-01, 01-02, 01-03, 01-04 shipped)
+Status: Phase 1 backend foundation closed. SCHEMA-01, SCHEMA-02, SCHEMA-03, SYNC-03 complete. SYNC-01/02/04 intentionally deferred (Phase 01 amendment: backend-only, no Quick/Deep Sync trigger UI).
+Last activity: 2026-05-11 — Plan 01-04 executed (3 tasks, ~2 min). accSync tRPC router + Sidebar SyncFreshnessPill shipped; SYNC-03 visibility closed; restart-survival verified.
 
-Progress: [██░░░░░░░░] 20% (1/5 phases — Phase 1 at 2/4 plans)
+Progress: [████░░░░░░] 20% (Phase 1 of v2.0 complete; Phases 2–5 next)
 
 ## Performance Metrics
 
@@ -69,6 +69,8 @@ Progress: [██░░░░░░░░] 20% (1/5 phases — Phase 1 at 2/4 pl
 | Phase 04.1 P04 | 25min | 2 tasks | 6 files |
 | Phase 01-foundation-schema-sync P02 | 1m 30s | 3 tasks | 3 files |
 | Phase 01-foundation-schema-sync P01 | 4min | 2 tasks | 3 files |
+| Phase 01-foundation-schema-sync P04 | 2 min | 3 tasks | 4 files |
+| Phase 01-foundation-schema-sync P03 | ~2h | 4 tasks | 14 files |
 
 ## Accumulated Context
 
@@ -146,6 +148,7 @@ Recent decisions affecting current work:
 - [Phase 01-foundation-schema-sync]: Plan 01-02: resolveAccountIdForRouter() local wrapper in users.ts maps helper plain Error to TRPCError({ code: PRECONDITION_FAILED }) — replaces prior UNAUTHORIZED code (config-missing is a precondition, not auth)
 - [Phase 01-foundation-schema-sync]: Plan 01-01: Generated migration via 'prisma migrate diff' (not 'migrate dev') to bypass pre-existing LodEmbedding.pgvector drift — preserves additive-only invariant
 - [Phase 01-foundation-schema-sync]: Plan 01-01: Prisma 7.8.0 emits 'createdAt' DESC correctly for @@index([..., createdAt(sort: Desc)]) — Pitfall 3 did not materialize, no manual SQL edit needed
+- [Phase 01-foundation-schema-sync]: Plan 01-04: accSync tRPC router (getSyncFreshness + getActiveDeepSyncJob) reads SyncMeta + AccDataConnectorJob directly from Postgres — no in-memory cache, so SYNC-03 status survives Railway container restarts. Pill freshness = max(quick.lastRunAt, deep.lastSuccessCompletedAt); polling cadence 15s active / 5min idle.
 
 ### Roadmap Evolution
 
@@ -171,5 +174,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-11
-Stopped at: Completed 01-01-PLAN.md — SCHEMA-01 + SCHEMA-02 shipped (9 ACC v2.0 models in prisma/schema.prisma; migration `20260511155810_acc_v2_foundation` applied to dev DB with AccActivity composite DESC indexes from day one; zero DROP/RENAME). Phase 1 now at 2/4 plans (01-01 + 01-02). Next: plan 01-03 (sync orchestration).
-Resume file: .planning/phases/01-foundation-schema-sync/01-03-PLAN.md (next plan)
+Stopped at: Completed 01-04-PLAN.md — SYNC-03 visibility shipped (accSync tRPC router with getSyncFreshness + getActiveDeepSyncJob reading SyncMeta + AccDataConnectorJob; Sidebar bottom SyncFreshnessPill with adaptive 15s/5min refetch and collapsed-state dot). Phase 1 of v2.0 now COMPLETE at 4/4 plans (01-01, 01-02, 01-03, 01-04). Working tree contains uncommitted user polish to SyncFreshnessPill.tsx (glassmorphic styling + animated glow) — NOT part of 01-04 committed scope; tracked in 01-04-SUMMARY "Open items". Next: Phase 2 — Core Extraction (MEM / PROJ / ROLE).
+Resume file: none — start Phase 2 planning via `/gsd:plan-phase 02`.

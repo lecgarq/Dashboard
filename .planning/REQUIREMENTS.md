@@ -19,9 +19,11 @@ Establish the relational data layer that every other category depends on.
 
 Two-button sync model — REST is fast (Quick Sync), Data Connector is async (Deep Sync).
 
+> **Active Phase 01 amendment (2026-05-11):** the original "two-button" wording below is retained for traceability, but Phase 01 implementation is backend-only. Quick Sync runs from the Railway deploy/pre-deploy command, Deep Sync runs from Railway cron, and the UI only shows read-only freshness status in existing sidebar chrome. Do not add Quick Sync or Deep Sync trigger buttons during Phase 01.
+
 - [ ] **SYNC-01**: User can trigger a Quick Sync (REST extractions: members, projects, roles, folders, folder-permissions, last sign-in, recently-added) from the existing ACC sync surface. Runs synchronously with progress feedback; dual-writes to `accMemberCache` AND new tables during transition.
 - [ ] **SYNC-02**: User can trigger a Deep Sync (Data Connector activity log) which submits an APS bulk extraction job, returns immediately with a `jobId`, and persists state in `AccDataConnectorJob`.
-- [ ] **SYNC-03**: User can see Deep Sync job status (pending / running / success / failed) — UI polls a tRPC query every 5–30 seconds; status survives Railway container restarts.
+- [x] **SYNC-03**: User can see Deep Sync job status (pending / running / success / failed) — UI polls a tRPC query every 5–30 seconds; status survives Railway container restarts.
 - [ ] **SYNC-04**: System prevents double-submit of Deep Sync (locked while a job is in-flight) and surfaces failure reasons clearly.
 
 ### Members Matrix Enrichment
