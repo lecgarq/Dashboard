@@ -7,13 +7,17 @@
  *      - 5-minute hard timeout watchdog (CONTEXT-locked)
  *      - Phase 1: NO-OP body. Just upserts SyncMeta('quick') with success.
  *      - Phase 2 will fill in real extraction logic.
- *   3. On any error in the Quick Sync step:
+ *   3. Graph cache rebuild (`npx tsx scripts/rebuild-graph.ts`):
+ *      - Recoverable. Failure here logs + alerts but does NOT fail the deploy
+ *        (old graph cache keeps serving; can be retried on next deploy).
+ *   4. On any error in the Quick Sync step:
  *      - Best-effort upsert SyncMeta('quick') with lastStatus='failed' + lastError
  *      - Best-effort raw-fetch Resend alert to luis.ecorteg@gmail.com
  *      - process.exit(1) so the deploy fails (old container keeps serving)
  *
  * Pure CommonJS — cannot require TS modules (lib/server/email.ts, lib/server/acc-helpers.ts).
  * The Resend alert is inlined as a duplicate of `sendSyncFailureAlert` for CJS-callability.
+ * The graph rebuild lives in a TS entry (scripts/rebuild-graph.ts) and is invoked via tsx.
  */
 
 const { spawnSync } = require("child_process");
@@ -178,6 +182,24 @@ async function main() {
     await recordFailure(errorMessage);
     await sendFailureAlertRaw("quick", errorMessage);
     process.exit(1);
+  }
+
+  // Step 3: graph cache rebuild (recoverable — logs on failure, never fails the deploy)
+  console.log("[release] Running ACC graph cache rebuild...");
+  const rebuild = spawnSync("npx", ["tsx", "scripts/rebuild-graph.ts"], {
+    stdio: "inherit",
+    timeout: 5 * 60 * 1000,
+    shell: process.platform === "win32",
+  });
+  if (rebuild.status !== 0) {
+    const reason = rebuild.error
+      ? `tsx invocation failed: ${rebuild.error.message}`
+      : `Graph rebuild exited ${rebuild.status} (recoverable — old cache still serving).`;
+    console.warn("[release]", reason);
+    // Fire-and-forget alert; never block the deploy on alerting.
+    sendFailureAlertRaw("quick", `Graph cache rebuild failed during release (deploy succeeded, cache may be stale): ${reason}`).catch(() => {});
+  } else {
+    console.log("[release] Graph cache rebuild complete.");
   }
 }
 
