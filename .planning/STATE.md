@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close)
 status: completed
-last_updated: "2026-05-12T16:28:42.593Z"
+last_updated: "2026-05-12T16:32:13.296Z"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 41
-  completed_plans: 27
+  completed_plans: 28
 ---
 
 # Session State
@@ -47,6 +47,7 @@ See: .planning/PROJECT.md
 - 2026-05-12: Phase 7 plan 09 complete (administrative close — PERF-REPORT.md). PERF-REPORT scaffolded at phase root with: automated acceptance signals captured (Vitest 258/258 + tsc clean, filter contract code-level, edge-color LUTs, interactivity surfaces grep-verified); live-browser FPS / hover / click cells marked literal token `DEFERRED TO MANUAL UAT — captured at phase end per Luis directive 2026-05-12` (7 hits — grep-detectable so no fabricated number can sneak in); 3D rows explicitly `N/A — 3D wiring deferred` per PHASE-DEPS.md `DECISION: 3D-WIRING=DEFER`; DECISION line `PHASE-7-ACCEPT=PENDING-MANUAL-UAT` (not APPROVED — phase-end pass owns the verdict). Plan's autonomous:false UAT checkpoint auto-approved at execution layer per Luis directive ("continue with the next waves, don't wait for verification"). GRAPH7-12 deferred (re-opens with 3D). Commit `7d70729`. Stopped at: Phase 7 plan counter closed (9/9); awaiting phase-end manual UAT pass to flip DECISION.
 - 2026-05-12: Phase 7 plan 06 complete (2D AccUsersGraph filter panel + URL persistence + per-edge color). Task 1 (commit `0eb3cd9`): fetches accFolders.getMatrix, builds memoized transitive folder-access SimilarityInput (users→roleIds→folderIds), wires buildExtendedTopology adapter through all 3 topology call sites (worker init + cosmos PATH-A + cosmos PATH-B), extends projectTopologyLinksToIndexPairs with optional linkColor callback for parallel colors[] buffer, threads through GraphRenderFrame.links.colors → CosmosGraphRenderer → buildLinkColorBuffer. PERM_TIER_COLOR / SIM_DIM_COLOR / FOLDER_PROJECT_EDGE_COLOR LUTs added. Task 2 (commit `1183e32`): new Topology filter-panel section with View mode toggle + Show folders switch + 4 permTier checkboxes (color swatches) + 5 simDim checkboxes (color swatches) + simMin range slider; 5 URL keys round-trip (folders, ptiers, simDims, simMin, view) via compact letter aliases written non-default-only; topology-shape useEffect rebuilds links only on filter-SHAPE deps (physics sliders excluded — Pitfall 5 gate); hasActiveFilters / activeFilterCount updated for Phase 7 deviations; arraysEqualAsSets helper inline. Vitest 81/81 + targeted 16/16 + tsc clean. UAT/FPS DEFERRED to Plan 07-09 per Luis directive ("continue with the next waves, don't wait for verification"). GRAPH7-05/06/08/09/11 satisfied at code level. Stopped at: Plan 07-06 complete; Plan 07-09 (phase-end UAT) is the final remaining plan.
 - 2026-05-12: Phase 4 plan 05 administrative close (code commits `34c7072` + `01519c7` landed earlier; SUMMARY.md authored 2026-05-12). Pure detectOrphans module (140 lines, 4 OrphanReason codes, 13/13 Vitest pass) + accFolders.getMatrix/getOrphanRoles tRPC procedures replacing Plan 03 ping placeholder. tsc clean. FLDR-05 satisfied. Plan 06 widget + Phase 7 plan 07-06 already consume the surface. Stopped at: Plan 04-05 administrative close complete.
+- 2026-05-12: Phase 4 plan 07 scaffolded — PERF-GATE artifact + perf-preflight Playwright script shipped; decision `GRAPH-04-GATE=PENDING-MANUAL-PERF-MEASUREMENT`. No FPS/memory numbers fabricated — methodology + script ready, real measurement deferred to phase-end manual UAT per Luis directive 2026-05-12 ("continue with the next waves, don't wait for verification, we will verify it at the end"). Phase 7 plan 07-01 keyed `3D-FOLDERS=NO-GO` on PERF-GATE.md absence — visibility now satisfied; underlying decision remains pending. Window.__cosmosGraph injection hook not yet present in AccUsersGraph.tsx — mitigation paths documented for manual UAT. FLDR-04 marked complete at scaffold level. Auto-approved Task 3 checkpoint per directive. Commits `de62013` (script) + `bd45843` (gate). Stopped at: Plan 04-07 scaffolded; Plan 04-06 (FolderPermissionsWidget) is the only remaining Phase 4 plan.
 - 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
 ## Decisions
@@ -120,6 +121,7 @@ See: .planning/PROJECT.md
 - [Phase 04]: 04-04: Folder extraction in runQuickSync gated by FOLDER_CRAWL_IN_RELEASE=true (defaults OFF) — full-hub crawl is ~48min best / ~4h worst per CRAWL-ESTIMATE.md, exceeds SYNC-01 5-min watchdog. Weekly cron (scripts/folder-crawl-cron.cjs) is production path.
 - [Phase 04]: 04-04: permType null floor = 'View Only'. Raw actions[] persisted alongside permType so render-time can reconstruct extended-tier info with no schema change.
 - [Phase 04]: 04-04: extractAndPersistFolders is additive-only (no folder/permission deletes). DB-write failures downgrade ok→partial only; crawl-level throws produce status='failed'.
+- [Phase 04]: 04-07: GRAPH-04-GATE=PENDING-MANUAL-PERF-MEASUREMENT. Script + methodology shipped (scripts/perf-preflight.cjs Playwright Option A). PERF-GATE.md uses literal DEFERRED tokens — no fabricated FPS/memory numbers. Real measurement deferred to phase-end manual UAT per Luis directive 2026-05-12. Phase 7 plan 07-01 3D-FOLDERS gate visibility now satisfied; decision remains pending.
 
 ## Accumulated Context
 
@@ -152,4 +154,5 @@ See: .planning/PROJECT.md
 | Phase 07 P09 | ~6 min | 1 task (Task 2 auto-approved per directive) | 1 file (PERF-REPORT.md) |
 | Phase 04 P05 | ~6min | 2 tasks | 3 files |
 | Phase 04 P04 | 12min | 3 tasks | 4 files |
+| Phase 04 P07 | ~5 min | 2 tasks | 3 files |
 
