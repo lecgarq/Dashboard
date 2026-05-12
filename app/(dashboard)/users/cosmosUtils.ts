@@ -307,39 +307,75 @@ export function buildLinkColorBuffer(
  *
  * Pure for unit testing — no DOM access, deterministic ordering.
  */
-export function projectTopologyLinksToIndexPairs(
-  topologyLinks: readonly { source: string; target: string }[],
+export interface ProjectedLinks {
+  sources: Int32Array;
+  targets: Int32Array;
+  /**
+   * Optional parallel array of hex color strings, length === sources.length.
+   * Phase 7 Plan 07-06: present when the caller supplies `options.linkColor`
+   * — drives Cosmos `setLinkColors` via `buildLinkColorBuffer({ perEdgeColors })`.
+   */
+  colors?: string[];
+}
+
+export function projectTopologyLinksToIndexPairs<
+  L extends { source: string; target: string }
+>(
+  topologyLinks: readonly L[],
   nodeIndexById: ReadonlyMap<string, number>,
-): { sources: Int32Array; targets: Int32Array } {
-  const visibleSourcesByHub = new Map<string, number[]>();
+  options?: { linkColor?: (link: L) => string | undefined },
+): ProjectedLinks {
+  // Map hub → ordered (sourceIndex, originating-link). Capturing the
+  // originating link lets us derive a per-projected-pair color downstream.
+  const entriesByHub = new Map<string, Array<{ idx: number; link: L }>>();
   for (const link of topologyLinks) {
-    const index = nodeIndexById.get(link.source) ?? -1;
-    if (index < 0) continue;
-    const entries = visibleSourcesByHub.get(link.target) ?? [];
-    entries.push(index);
-    visibleSourcesByHub.set(link.target, entries);
+    const idx = nodeIndexById.get(link.source) ?? -1;
+    if (idx < 0) continue;
+    const list = entriesByHub.get(link.target) ?? [];
+    list.push({ idx, link });
+    entriesByHub.set(link.target, list);
   }
 
   const seen = new Set<string>();
   const sources: number[] = [];
   const targets: number[] = [];
-  for (const indices of visibleSourcesByHub.values()) {
-    const ordered = [...new Set(indices)].sort((a, b) => a - b);
+  const wantColors = !!options?.linkColor;
+  const colors: string[] = [];
+  const fallbackColor = "#9CA3AF"; // matches buildLinkColorBuffer default
+  for (const entries of entriesByHub.values()) {
+    // De-dupe by sourceIndex while keeping the originating link reference.
+    const seenIdx = new Set<number>();
+    const ordered: Array<{ idx: number; link: L }> = [];
+    for (const e of entries) {
+      if (seenIdx.has(e.idx)) continue;
+      seenIdx.add(e.idx);
+      ordered.push(e);
+    }
+    ordered.sort((a, b) => a.idx - b.idx);
     for (let i = 1; i < ordered.length; i++) {
-      const s = ordered[i - 1];
-      const t = ordered[i];
-      const key = `${s}:${t}`;
+      const a = ordered[i - 1];
+      const b = ordered[i];
+      const key = `${a.idx}:${b.idx}`;
       if (seen.has(key)) continue;
       seen.add(key);
-      sources.push(s);
-      targets.push(t);
+      sources.push(a.idx);
+      targets.push(b.idx);
+      if (wantColors) {
+        // Use the link feeding the "right" endpoint of this projected pair so
+        // adjacent chain links can carry different colors (e.g. mixed permTiers
+        // around the same hub).
+        const c = options?.linkColor?.(b.link) ?? options?.linkColor?.(a.link) ?? fallbackColor;
+        colors.push(c);
+      }
     }
   }
 
-  return {
+  const out: ProjectedLinks = {
     sources: new Int32Array(sources),
     targets: new Int32Array(targets),
   };
+  if (wantColors) out.colors = colors;
+  return out;
 }
 
 /**

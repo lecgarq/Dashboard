@@ -43,9 +43,39 @@ import {
   computeTopologySeedPositions,
   DEFAULT_GRAPH_CONTROLS,
   DEFAULT_PHYSICS_CONFIG,
+  type AccTopologyExtensions,
+  type AccTopologyGraph,
+  type AccTopologyLink,
   type GraphControlSettings,
   type PhysicsConfig,
 } from "./accGraphOrganicLayout";
+import type { SimilarityInput, SimilarityDim } from "@/lib/acc/userSimilarity";
+import type { FolderHubInputRow } from "@/lib/acc/folderHubCollapse";
+
+// ─── Phase 7 Plan 07-06: per-edge color LUTs ────────────────────────────────
+// Plan calls these out by hex value; keep them centralized so the filter
+// panel legend, edge color buffer, and any future overlay agree.
+const PERM_TIER_COLOR: Record<"view" | "upload" | "edit" | "control", string> = {
+  view: "#9CA3AF",
+  upload: "#A78BFA",
+  edit: "#FBBF24",
+  control: "#F87171",
+};
+const SIM_DIM_COLOR: Record<SimilarityDim, string> = {
+  "folder-access": "#5EEAD4",
+  roles: "#60A5FA",
+  projects: "#F472B6",
+  company: "#A3E635",
+  "admin-tier": "#FB923C",
+};
+const FOLDER_PROJECT_EDGE_COLOR = "#94A3B8"; // neutral container slate
+
+function colorForTopologyLink(link: AccTopologyLink): string | undefined {
+  if (link.kind === "role-folder" && link.permTier) return PERM_TIER_COLOR[link.permTier];
+  if (link.kind === "user-similarity" && link.dimension) return SIM_DIM_COLOR[link.dimension];
+  if (link.kind === "folder-project") return FOLDER_PROJECT_EDGE_COLOR;
+  return undefined; // fall back to renderer default
+}
 
 interface UserNode extends PhysicsNode {
   kind: "user";
@@ -438,7 +468,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const isDraggingNodeRef = useRef(false);
   const draggedNodeIdxRef = useRef(-1);
   const pendingFiltersRef = useRef<GraphFilters | null>(null);
-  const linksRef = useRef<{ sources: Int32Array; targets: Int32Array }>({
+  // Phase 7 Plan 07-06: `colors` is the per-projected-link hex string array
+  // (length === sources.length) when populated by the main-thread cosmos
+  // projection paths. Worker-posted links don't carry colors today —
+  // CosmosGraphRenderer falls back to the uniform default in that path.
+  const linksRef = useRef<{ sources: Int32Array; targets: Int32Array; colors?: string[] }>({
     sources: new Int32Array(0),
     targets: new Int32Array(0),
   });
@@ -595,6 +629,129 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
   );
 
+  // Phase 7 Plan 07-06: folder permission matrix for folder hubs + role-folder
+  // edges. Stale-while-revalidate over the long staleTime — folder permissions
+  // change rarely, and the snapshot is recrawled weekly per Plan 04-02.
+  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
+    staleTime: 600_000,
+    retry: false,
+  });
+
+  // Phase 7 Plan 07-06: build SimilarityInput from `users` prop + folder matrix.
+  // Resolves transitive user→roleIds→folderIds once per data refresh (Pitfall 2 +
+  // Open Question 1 in 07-RESEARCH). Memoized so physics-slider changes don't
+  // re-trigger the (potentially O(n×rolesPerUser)) folder resolution.
+  const similarityInput = useMemo<SimilarityInput | null>(() => {
+    if (!users.length) return null;
+    const folderRows = folderMatrixQuery.data?.rows ?? [];
+    // Index: roleId → distinct folderIds reachable via any permission row.
+    const folderIdsByRole = new Map<string, Set<string>>();
+    for (const row of folderRows) {
+      let set = folderIdsByRole.get(row.roleId);
+      if (!set) {
+        set = new Set<string>();
+        folderIdsByRole.set(row.roleId, set);
+      }
+      set.add(row.folderId);
+    }
+    const built: SimilarityInput["users"] = users.map((u) => {
+      // Collect distinct roleIds across all this user's projects.
+      const roleIds = new Set<string>();
+      const projectIds = new Set<string>();
+      for (const p of u.projects ?? []) {
+        if (p.id) projectIds.add(p.id);
+        for (const r of p.roles ?? []) {
+          if (r) roleIds.add(r);
+        }
+      }
+      // Transitive folder access: union of folderIds for each role this user has.
+      const folderIds = new Set<string>();
+      for (const rid of roleIds) {
+        const set = folderIdsByRole.get(rid);
+        if (set) for (const fid of set) folderIds.add(fid);
+      }
+      // Admin tier collapse (matches AccTopologyExtensions consumer expectations).
+      const adminTier: "hub" | "project" | "executive" | null = u.isAccountAdmin
+        ? "hub"
+        : u.projectAdmin
+          ? "project"
+          : u.executive
+            ? "executive"
+            : null;
+      return {
+        id: u.email, // user node id is email (graphNodeToSimNode)
+        company: u.companyName ?? null,
+        adminTier,
+        roleIds: [...roleIds],
+        projectIds: [...projectIds],
+        folderIds: [...folderIds],
+      };
+    });
+    return { users: built };
+  }, [users, folderMatrixQuery.data]);
+
+  // Folder rows reshaped to FolderHubInputRow — pure structural mapping; no
+  // server import needed at runtime since the query data already conforms.
+  const folderHubRows = useMemo<FolderHubInputRow[] | undefined>(() => {
+    const rows = folderMatrixQuery.data?.rows;
+    if (!rows) return undefined;
+    return rows.map<FolderHubInputRow>((r) => ({
+      folderId: r.folderId,
+      folderPath: r.folderPath,
+      projectId: r.projectId,
+      roleId: r.roleId,
+      permType: r.permType,
+    }));
+  }, [folderMatrixQuery.data]);
+
+  // Stable refs so non-React closures (worker init, rAF, cosmos PATH-A/B)
+  // see the latest extensions without being re-bound to memoized values.
+  const similarityInputRef = useRef<SimilarityInput | null>(null);
+  const folderHubRowsRef = useRef<FolderHubInputRow[] | undefined>(undefined);
+  similarityInputRef.current = similarityInput;
+  folderHubRowsRef.current = folderHubRows;
+
+  /**
+   * Phase 7 Plan 07-06: single entry point for building the extended topology
+   * with current filter shape applied. Keeps the 3 call sites (worker init,
+   * cosmos PATH-A, cosmos PATH-B) in sync and ensures the physics sliders
+   * never trigger a similarity recompute (Pitfall 5 — this function is only
+   * invoked from topology rebuild paths, not from slider scrub).
+   */
+  const buildExtendedTopology = useCallback(
+    (rawNodes: readonly { id: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
+      const f = filtersRef.current;
+      const extensions: AccTopologyExtensions = {
+        // showFolders=false → emit no folder hubs / role-folder / folder-project edges.
+        folderMatrix: f.showFolders ? folderHubRowsRef.current : undefined,
+        similarityInput: similarityInputRef.current,
+        similarityDims: new Set<SimilarityDim>(f.simDims as readonly SimilarityDim[]),
+        simMin: f.simMin,
+      };
+      const topology = buildAccTopologyGraph(rawNodes, extensions);
+
+      // Edge-level filtering (Plan 07-06 Task 2 step 5):
+      //  - drop role-folder where permTier not in selected tiers
+      //  - drop user-similarity where dimension not in selected sims
+      //  - view=user-only: drop everything except user-similarity edges
+      const permTierSet = new Set<string>(f.permTiers);
+      const simDimSet = new Set<string>(f.simDims);
+      const userOnly = f.viewMode === "user-only";
+      const filteredLinks = topology.links.filter((link) => {
+        if (userOnly && link.kind !== "user-similarity") return false;
+        if (link.kind === "role-folder") {
+          return !!link.permTier && permTierSet.has(link.permTier);
+        }
+        if (link.kind === "user-similarity") {
+          return !!link.dimension && simDimSet.has(link.dimension);
+        }
+        return true;
+      });
+      return { ...topology, links: filteredLinks };
+    },
+    [],
+  );
+
   const rebuildGraph = trpc.users.rebuildAccGraphCache.useMutation();
 
   const markGraphDirty = useCallback(() => {
@@ -637,7 +794,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     layoutSessionRef.current++;
 
     const visibleIndices = new Uint32Array(visibleNodeIdxRef.current);
-    const topology = buildAccTopologyGraph(nodes);
+    // Phase 7 Plan 07-06: extended topology (folder hubs + similarity edges,
+    // filtered by current filter shape). Physics sliders never call this path.
+    const topology = buildExtendedTopology(nodes);
     const positionsForWorker = new Float32Array(posRef.current);
 
     // Build cluster IDs from each user's primary role.
@@ -1154,10 +1313,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // this, Cosmos receives 0 springs and the simulation collapses
           // (Sim α: 0.000, grey canvas — observed during 25k-node verification).
           if (nodesRef.current.length > 0 && nodeIndexMapRef.current.size > 0) {
-            const topology = buildAccTopologyGraph(nodesRef.current);
+            // Phase 7 Plan 07-06: extended topology + per-edge color buffer.
+            const topology = buildExtendedTopology(nodesRef.current);
             linksRef.current = projectTopologyLinksToIndexPairs(
               topology.links,
               nodeIndexMapRef.current,
+              { linkColor: colorForTopologyLink },
             );
             if (perfHudEnabled) {
               console.log("[02-05-DEBUG] cosmos-create.then: PATH-A built links sources=", linksRef.current.sources.length,
@@ -1549,8 +1710,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       // this, simulationLinkSpring has nothing to act on, the simulation collapses
       // to alpha=0 immediately, and the canvas renders empty (TD-005 follow-up bug
       // surfaced during 25k-node verification).
-      const topology = buildAccTopologyGraph(rawNodes);
-      const projected = projectTopologyLinksToIndexPairs(topology.links, nodeIndexMap);
+      // Phase 7 Plan 07-06: extended topology + per-edge color buffer.
+      const topology = buildExtendedTopology(rawNodes);
+      const projected = projectTopologyLinksToIndexPairs(topology.links, nodeIndexMap, {
+        linkColor: colorForTopologyLink,
+      });
       linksRef.current = projected;
       if (perfHudEnabled) {
         console.log("[02-05-DEBUG] data-load: PATH-B built links topology=", topology.links.length,

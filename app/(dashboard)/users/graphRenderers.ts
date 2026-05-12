@@ -55,7 +55,13 @@ export interface GraphRenderFrame {
   positions: Float32Array;
   nodeIndexMap: ReadonlyMap<string, number>;
   userIndices?: Uint32Array;
-  links?: { sources: Int32Array; targets: Int32Array };
+  /**
+   * `colors` (Phase 7 Plan 07-06): optional parallel hex color strings, length
+   * === sources.length. When present and on the Cosmos backend, drives
+   * setLinkColors via `buildLinkColorBuffer({ perEdgeColors })`. Canvas2D
+   * ignores it (the 2D edge renderer doesn't paint per-edge color today).
+   */
+  links?: { sources: Int32Array; targets: Int32Array; colors?: ReadonlyArray<string> };
   selectedNodeId: string | null;
   selectedNodeIndex: number;
   highlightSet: ReadonlySet<number>;
@@ -774,7 +780,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     if (frame.links && linkCount !== this.lastLinkCount) {
       this.graph.setLinks(buildLinkBuffer(frame.links));
-      this.graph.setLinkColors(buildLinkColorBuffer(linkCount));
+      // Phase 7 Plan 07-06: per-edge color override when colors array is
+      // present (main-thread projection path). Worker-posted links lack
+      // `colors` → uniform gray fallback (back-compat).
+      const perEdgeColors =
+        frame.links.colors && frame.links.colors.length === linkCount
+          ? frame.links.colors
+          : undefined;
+      this.graph.setLinkColors(buildLinkColorBuffer(linkCount, { perEdgeColors }));
       this.lastLinkCount = linkCount;
       this.lastLinkUploadAt = Date.now();
       needsRender = true;
