@@ -63,9 +63,11 @@ const providers: any[] = [
     issuer: "https://developer.api.autodesk.com",
     authorization: {
       url: "https://developer.api.autodesk.com/authentication/v2/authorize",
-      params: { 
-        scope: "openid data:read viewables:read user:read account:read", 
-        response_type: "code" 
+      params: {
+        // data:create is required for POST /data-connector/v1/.../requests
+        // (Data Connector mandates 3-legged user-context auth, not 2-legged client_credentials)
+        scope: "openid data:read data:create viewables:read user:read account:read",
+        response_type: "code"
       },
     },
     token: "https://developer.api.autodesk.com/authentication/v2/token",
