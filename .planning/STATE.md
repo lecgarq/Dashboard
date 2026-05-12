@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 7 — User-only Graph Topology (6/9 plans complete; 07-08 deferred)
+current_phase: Phase 7 — User-only Graph Topology (7/9 plans complete; 07-07 + 07-08 deferred)
 status: executing
-last_updated: "2026-05-12T16:30:00.000Z"
+last_updated: "2026-05-12T16:45:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 41
-  completed_plans: 22
+  completed_plans: 23
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
-**Current phase:** Phase 7 — User-only Graph Topology (5/9 plans complete)
-**Status:** In progress — Plan 07-08 deferred-complete per Wave-0 gate `DECISION: 3D-WIRING=DEFER` (PHASE-DEPS.md). No sphere3d/* files on disk; stub SUMMARY shipped citing gate + re-activation condition. Phase 7 ships 2D only. GRAPH7-05/06/08/09 remain 2D-only at the phase level. Plan 07-06 (2D filter panel UI) still unblocked and next.
+**Current phase:** Phase 7 — User-only Graph Topology (7/9 plans complete; 07-07 + 07-08 deferred)
+**Status:** In progress — Plans 07-07 AND 07-08 both deferred-complete per Wave-0 gate `DECISION: 3D-WIRING=DEFER` (PHASE-DEPS.md). No sphere3d/* files on disk; stub SUMMARYs shipped citing gate + re-activation condition. Phase 7 ships 2D only. GRAPH7-01..11 remain 2D-only at the phase level for the 3D facet. Plan 07-06 (2D filter panel UI) still unblocked and next.
 
 ## Session Log
 
@@ -42,6 +42,7 @@ See: .planning/PROJECT.md
 - 2026-05-12: Phase 7 plan 02 complete (pure depth-N folder-collapse module + Vitest 7-case coverage). `lib/acc/folderHubCollapse.ts` exports `collapseFoldersToDepth(rows, maxDepth=2)` + `CollapsedFolder` + `FolderHubInputRow` with UNION-on-(roleId,permType), dedupe, `maxDepth=Infinity` escape hatch, cross-project isolation. Zero Prisma/React deps. GRAPH7-01 satisfied at code level — phase-setup follow-up: register GRAPH7-* in REQUIREMENTS.md (not yet present). Stopped at: Plan 07-02 complete; Plan 07-05 (2D hub wiring) unblocked.
 - 2026-05-12: Phase 7 plan 04 complete (GraphFilters + FilterableNode + nodeMatchesFilters extended with 5 Phase 7 dimensions). New type exports: PermTierKey, SimilarityDimKey, ViewMode, GraphNodeKind. DEFAULT_FILTERS canonical defaults: folders ON, all 4 tiers, all 5 sim dims, simMin=2, viewMode=multi. nodeMatchesFilters gains 2 cheap short-circuit gates (user-only + showFolders) placed FIRST. permTiers/simDims/simMin are edge-level filters — applied in adapter (Plan 07-05), NOT here. AccUsersGraph.readFiltersFromUrl now spreads DEFAULT_FILTERS so URL-restore picks up new defaults (Rule 3 fix). 50/50 Vitest pass. GRAPH7-06, GRAPH7-09, FILT-EXT satisfied at code level. Stopped at: Plan 07-04 complete; Wave 2 (Plans 07-05 + 07-06) unblocked.
 - 2026-05-12: Phase 7 plan 03 complete (pure user-similarity module + Vitest 9-case coverage). `lib/acc/userSimilarity.ts` exports `computeSimilarityEdges(input, enabledDims, minShared=2)` + `SimilarityDim` + `SimilarityEdge` + `SimilarityInput` + `SIMILARITY_DIMS`. Bucketed indexing — Map<attrValue, userIds[]> per dimension, then pair-count within shared buckets only (no O(n²) outer scan). Canonical pair order (userA<userB) for natural dedupe. 5 dimensions: folder-access, roles, projects, company, admin-tier. Null company/adminTier excluded from buckets. Perf smoke (500 users × 10 roles, all dims) well under 500ms. Zero Prisma/React deps. GRAPH7-04, GRAPH7-05 satisfied at code level — REQUIREMENTS.md does not yet track GRAPH7-* IDs (phase-setup follow-up, same as 07-02). Stopped at: Plan 07-03 complete; Plan 07-04 (filter additions) is next gate.
+- 2026-05-12: Phase 7 plan 07 DEFERRED-COMPLETE (3D topology wiring). PHASE-DEPS.md records `DECISION: 3D-WIRING=DEFER` — plan's own PRECONDITION clause triggers stub-SUMMARY path. Zero source-code changes (sphere3d/* directory absent; Phase 6 has 0/10 SUMMARYs shipped). Intended targets (topologyAdapter, filterAdapter, EdgesLines, NodesPoints) all not modified. GRAPH7-01/02/03/04/06/10/11 stay 2D-only at phase level for the 3D facet. Commit `3fe33cc` ships the stub. Re-activation trigger: any Phase 6 SUMMARY → re-probe gate → if flips to PROCEED, re-run from Task 2. Stopped at: Plan 07-07 deferred.
 - 2026-05-12: Phase 7 plan 08 DEFERRED-COMPLETE (3D filter panel extension). PHASE-DEPS.md records `DECISION: 3D-WIRING=DEFER`; no `app/(dashboard)/users/sphere3d/` files on disk (Phase 6 plan 06-08 not shipped). Stub SUMMARY written per plan precondition citing gate + 3 affected files + re-activation condition (all 5 sphere3d/* files present + gate flips to PROCEED). Zero source-code changes. GRAPH7-05/06/08/09 stay 2D-only at phase level — 3D parity re-opens when Phase 6 ships. Stopped at: Plan 07-08 stubbed; Plan 07-06 (2D filter panel UI) next.
 - 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
@@ -105,6 +106,7 @@ See: .planning/PROJECT.md
 - [Phase 07]: 07-05: resolveRenderNodeColor + FOLDER_NODE_COLOR ('#5EEAD4') centralized in graphRenderers.ts — both Canvas2D draw loop and cosmosUtils.buildNodeColorBuffer route through it so neither backend can forget the Pitfall 4 folder override.
 - [Phase 07]: 07-05: PERM_TIER_LUT defaults unknown PermType to 'view' (least-privilege rendering) instead of throwing — defends against APS adding a new tier without crashing the adapter.
 - [Phase 07]: 07-05: buildLinkColorBuffer kept zero-arg-compatible —  at graphRenderers.ts:759 unchanged; perEdgeColors override is opt-in via the new options bag.
+- [Phase 07]: 07-07: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires Phase 6 SUMMARYs landing → re-probe of PHASE-DEPS.md → gate flip to PROCEED → re-run from Task 2. GRAPH7-01/02/03/04/06/10/11 stay 2D-only at phase level for the 3D facet.
 - [Phase 07]: 07-08: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires all 5 sphere3d/* files on disk AND gate flip to PROCEED. GRAPH7-05/06/08/09 stay 2D-only at phase level.
 
 ## Accumulated Context
@@ -132,5 +134,6 @@ See: .planning/PROJECT.md
 | Phase 07 P02 | ~4 min | 2 tasks | 2 files |
 | Phase 07 P03 | ~3 min | 2 tasks | 2 files |
 | Phase 07 P05 | ~10 min | 3 tasks | 4 files |
+| Phase 07 P07 | ~1 min | 1 task (stub) | 1 file (SUMMARY only — DEFERRED) |
 | Phase 07 P08 | ~2 min | 1 task (stub) | 1 file (SUMMARY only — DEFERRED) |
 
