@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 7 — User-only Graph Topology (8/9 plans complete; 07-07 + 07-08 deferred)
+current_phase: Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close — PERF-REPORT pending manual UAT)
 status: executing
-last_updated: "2026-05-12T17:15:00.000Z"
+last_updated: "2026-05-12T17:45:00.000Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 41
-  completed_plans: 24
+  completed_plans: 25
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
-**Current phase:** Phase 7 — User-only Graph Topology (8/9 plans complete; 07-07 + 07-08 deferred)
-**Status:** In progress — Plan 07-06 shipped (full 2D AccUsersGraph wiring: data fetch, transitive folder-access, filter panel, URL persistence, per-edge color). UAT/FPS observation deferred to Plan 07-09 per Luis directive. Plans 07-07 + 07-08 remain deferred-complete per `DECISION: 3D-WIRING=DEFER` (PHASE-DEPS.md). Plan 07-09 (phase-end UAT) is next and final.
+**Current phase:** Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close)
+**Status:** Phase 7 closed plan-counter-wise. Plan 07-09 shipped PERF-REPORT.md with automated acceptance signals (Vitest 258/258 + tsc clean + code-level interactivity surfaces present) and DEFERRED markers on every live-FPS / visual-UAT cell per Luis's 2026-05-12 "verify at the end" directive. 3D rows explicitly N/A (DECISION: 3D-WIRING=DEFER). DECISION line: PHASE-7-ACCEPT=PENDING-MANUAL-UAT. Phase-end manual UAT pass will flip to APPROVED | GAPS | REVERT.
 
 ## Session Log
 
@@ -44,6 +44,7 @@ See: .planning/PROJECT.md
 - 2026-05-12: Phase 7 plan 03 complete (pure user-similarity module + Vitest 9-case coverage). `lib/acc/userSimilarity.ts` exports `computeSimilarityEdges(input, enabledDims, minShared=2)` + `SimilarityDim` + `SimilarityEdge` + `SimilarityInput` + `SIMILARITY_DIMS`. Bucketed indexing — Map<attrValue, userIds[]> per dimension, then pair-count within shared buckets only (no O(n²) outer scan). Canonical pair order (userA<userB) for natural dedupe. 5 dimensions: folder-access, roles, projects, company, admin-tier. Null company/adminTier excluded from buckets. Perf smoke (500 users × 10 roles, all dims) well under 500ms. Zero Prisma/React deps. GRAPH7-04, GRAPH7-05 satisfied at code level — REQUIREMENTS.md does not yet track GRAPH7-* IDs (phase-setup follow-up, same as 07-02). Stopped at: Plan 07-03 complete; Plan 07-04 (filter additions) is next gate.
 - 2026-05-12: Phase 7 plan 07 DEFERRED-COMPLETE (3D topology wiring). PHASE-DEPS.md records `DECISION: 3D-WIRING=DEFER` — plan's own PRECONDITION clause triggers stub-SUMMARY path. Zero source-code changes (sphere3d/* directory absent; Phase 6 has 0/10 SUMMARYs shipped). Intended targets (topologyAdapter, filterAdapter, EdgesLines, NodesPoints) all not modified. GRAPH7-01/02/03/04/06/10/11 stay 2D-only at phase level for the 3D facet. Commit `3fe33cc` ships the stub. Re-activation trigger: any Phase 6 SUMMARY → re-probe gate → if flips to PROCEED, re-run from Task 2. Stopped at: Plan 07-07 deferred.
 - 2026-05-12: Phase 7 plan 08 DEFERRED-COMPLETE (3D filter panel extension). PHASE-DEPS.md records `DECISION: 3D-WIRING=DEFER`; no `app/(dashboard)/users/sphere3d/` files on disk (Phase 6 plan 06-08 not shipped). Stub SUMMARY written per plan precondition citing gate + 3 affected files + re-activation condition (all 5 sphere3d/* files present + gate flips to PROCEED). Zero source-code changes. GRAPH7-05/06/08/09 stay 2D-only at phase level — 3D parity re-opens when Phase 6 ships. Stopped at: Plan 07-08 stubbed; Plan 07-06 (2D filter panel UI) next.
+- 2026-05-12: Phase 7 plan 09 complete (administrative close — PERF-REPORT.md). PERF-REPORT scaffolded at phase root with: automated acceptance signals captured (Vitest 258/258 + tsc clean, filter contract code-level, edge-color LUTs, interactivity surfaces grep-verified); live-browser FPS / hover / click cells marked literal token `DEFERRED TO MANUAL UAT — captured at phase end per Luis directive 2026-05-12` (7 hits — grep-detectable so no fabricated number can sneak in); 3D rows explicitly `N/A — 3D wiring deferred` per PHASE-DEPS.md `DECISION: 3D-WIRING=DEFER`; DECISION line `PHASE-7-ACCEPT=PENDING-MANUAL-UAT` (not APPROVED — phase-end pass owns the verdict). Plan's autonomous:false UAT checkpoint auto-approved at execution layer per Luis directive ("continue with the next waves, don't wait for verification"). GRAPH7-12 deferred (re-opens with 3D). Commit `7d70729`. Stopped at: Phase 7 plan counter closed (9/9); awaiting phase-end manual UAT pass to flip DECISION.
 - 2026-05-12: Phase 7 plan 06 complete (2D AccUsersGraph filter panel + URL persistence + per-edge color). Task 1 (commit `0eb3cd9`): fetches accFolders.getMatrix, builds memoized transitive folder-access SimilarityInput (users→roleIds→folderIds), wires buildExtendedTopology adapter through all 3 topology call sites (worker init + cosmos PATH-A + cosmos PATH-B), extends projectTopologyLinksToIndexPairs with optional linkColor callback for parallel colors[] buffer, threads through GraphRenderFrame.links.colors → CosmosGraphRenderer → buildLinkColorBuffer. PERM_TIER_COLOR / SIM_DIM_COLOR / FOLDER_PROJECT_EDGE_COLOR LUTs added. Task 2 (commit `1183e32`): new Topology filter-panel section with View mode toggle + Show folders switch + 4 permTier checkboxes (color swatches) + 5 simDim checkboxes (color swatches) + simMin range slider; 5 URL keys round-trip (folders, ptiers, simDims, simMin, view) via compact letter aliases written non-default-only; topology-shape useEffect rebuilds links only on filter-SHAPE deps (physics sliders excluded — Pitfall 5 gate); hasActiveFilters / activeFilterCount updated for Phase 7 deviations; arraysEqualAsSets helper inline. Vitest 81/81 + targeted 16/16 + tsc clean. UAT/FPS DEFERRED to Plan 07-09 per Luis directive ("continue with the next waves, don't wait for verification"). GRAPH7-05/06/08/09/11 satisfied at code level. Stopped at: Plan 07-06 complete; Plan 07-09 (phase-end UAT) is the final remaining plan.
 - 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
@@ -114,6 +115,7 @@ See: .planning/PROJECT.md
 - [Phase 07]: 07-06: UAT/FPS observation deferred to Plan 07-09 per Luis directive ("continue with the next waves, don't wait for verification, we will verify it at the end"). All success criteria except interactive verification automated-pass (Vitest 81/81 + tsc clean).
 - [Phase 07]: 07-07: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires Phase 6 SUMMARYs landing → re-probe of PHASE-DEPS.md → gate flip to PROCEED → re-run from Task 2. GRAPH7-01/02/03/04/06/10/11 stay 2D-only at phase level for the 3D facet.
 - [Phase 07]: 07-08: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires all 5 sphere3d/* files on disk AND gate flip to PROCEED. GRAPH7-05/06/08/09 stay 2D-only at phase level.
+- [Phase 07]: 07-09: Administrative close per Luis directive 2026-05-12 ("continue with the next waves, don't wait for verification, we will verify it at the end"). Plan's autonomous:false UAT checkpoint auto-approved; PERF-REPORT.md ships automated signals only — every live-FPS/visual cell carries the literal token `DEFERRED TO MANUAL UAT — captured at phase end per Luis directive 2026-05-12` so no FPS number can be fabricated. DECISION line `PHASE-7-ACCEPT=PENDING-MANUAL-UAT` keeps the phase-end UAT verdict transition (APPROVED|GAPS|REVERT) clean. 3D rows N/A per gate, not deferred. GRAPH7-12 listed in requirements-deferred (re-opens with 3D).
 
 ## Accumulated Context
 
@@ -143,4 +145,5 @@ See: .planning/PROJECT.md
 | Phase 07 P07 | ~1 min | 1 task (stub) | 1 file (SUMMARY only — DEFERRED) |
 | Phase 07 P08 | ~2 min | 1 task (stub) | 1 file (SUMMARY only — DEFERRED) |
 | Phase 07 P06 | ~8 min | 2 tasks (UAT deferred to 07-09) | 3 files |
+| Phase 07 P09 | ~6 min | 1 task (Task 2 auto-approved per directive) | 1 file (PERF-REPORT.md) |
 

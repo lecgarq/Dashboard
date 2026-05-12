@@ -198,7 +198,7 @@ Plans:
 **Goal:** Extend BOTH 2D AccUsersGraph and 3D Sphere3DGraph with: (1) folder hubs (depth-2 collapsed) + role↔folder edges colored by 4 permission tiers, (2) user↔user attribute-similarity edges across 5 parallel dimensions (folder-access, roles, projects, company, admin-tier), and (3) a "user-only" view-mode toggle. Reuses `accFoldersRouter.getMatrix` verbatim — no new tRPC, no Prisma migration. 3D folder hubs gated on Phase 4 GRAPH-04 GO; 3D wiring overall gated on Phase 6 sphere3d/* artifacts existing (Wave-0 gate in 07-01).
 **Requirements**: GRAPH7-01..12 (derived from CONTEXT — Phase 7 has no roadmap-assigned REQ-IDs)
 **Depends on:** Phase 6 (3D); Phase 4 GRAPH-04 perf-gate (3D folder hubs only)
-**Plans:** 8/9 plans executed (07-07 + 07-08 deferred-complete per 3D-WIRING gate)
+**Plans:** 9/9 plans executed (07-07 + 07-08 deferred-complete per 3D-WIRING gate; 07-09 administrative close — PERF-REPORT.md shipped, manual UAT verdict pending)
 
 Plans:
 - [x] 07-01-PLAN.md — Wave 0 gate: probe Phase 6 sphere3d/* + Phase 4 GRAPH-04 GO/NO-GO → PHASE-DEPS.md
@@ -209,7 +209,7 @@ Plans:
 - [x] 07-06-PLAN.md — Wave 3: 2D AccUsersGraph filter panel + URL persistence + per-edge color buffer (UAT/FPS deferred to 07-09)
 - [x] 07-07-PLAN.md — Wave 3: 3D sphere3d adapters — DEFERRED per 3D-WIRING gate (stub SUMMARY only)
 - [x] 07-08-PLAN.md — Wave 3: 3D filterUrl.ts + Sphere3DFilterPanel.tsx — DEFERRED per 3D-WIRING gate (stub SUMMARY only)
-- [ ] 07-09-PLAN.md — Wave 4: PERF-REPORT.md + Luis UAT acceptance checkpoint
+- [x] 07-09-PLAN.md — Wave 4: PERF-REPORT.md shipped (administrative close per Luis directive; live-FPS/visual UAT deferred to phase-end manual pass; DECISION: PHASE-7-ACCEPT=PENDING-MANUAL-UAT)
 
 ---
 
