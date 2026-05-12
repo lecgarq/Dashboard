@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 7 — User-only Graph Topology (3/9 plans complete)
+current_phase: Phase 7 — User-only Graph Topology (4/9 plans complete)
 status: executing
 last_updated: "2026-05-12T15:51:06.017Z"
 progress:
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
-**Current phase:** Phase 7 — User-only Graph Topology (3/9 plans complete)
-**Status:** In progress — Plan 07-03 complete; computeSimilarityEdges pure module + folderHubCollapse + Wave-0 gate done. Wave 1 plan 07-04 (filter additions) is the next gate; Plan 07-05 (2D wiring) unblocks once 07-04 lands.
+**Current phase:** Phase 7 — User-only Graph Topology (4/9 plans complete)
+**Status:** In progress — Plan 07-04 complete; GraphFilters extended with 5 Phase 7 dimensions (showFolders, permTiers, simDims, simMin, viewMode). Wave 1 done. Plan 07-05 (2D adapter wiring) + 07-06 (filter panel UI) unblocked.
 
 ## Session Log
 
@@ -40,6 +40,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 4 plan 02 complete (BFS folder-crawl library + Vitest tests + dry-run script + CRAWL-ESTIMATE.md from 13/1143-project sample; FLDR-01, FLDR-02 marked done). Luis-approved **WEEKLY** cadence + **skip-archived-in-flight** scope (no soft-delete of ~526 archived projects; fast-fail 403 path handles them). Locks Plan 04-04 cron schedule at weekly. Stopped at: Plan 04-02 complete; Wave 2 unblocked (Plans 04-04 + 04-05).
 - 2026-05-12: Phase 7 plan 01 complete (Wave-0 dependency gate). Probed disk: 0/5 sphere3d/* files, 0/10 Phase 6 SUMMARYs, no Phase 4 GRAPH-04 perf-gate. Emitted PHASE-DEPS.md with DECISION: 3D-WIRING=DEFER + 3D-FOLDERS=NO-GO. Phase 7 ships 2D only; plans 07-07 + 07-08 must stub. Stopped at: Plan 07-01 complete; Wave 1 of Phase 7 unblocked (plans 07-02/03/04 already have RED test commits in tree from earlier scaffolding).
 - 2026-05-12: Phase 7 plan 02 complete (pure depth-N folder-collapse module + Vitest 7-case coverage). `lib/acc/folderHubCollapse.ts` exports `collapseFoldersToDepth(rows, maxDepth=2)` + `CollapsedFolder` + `FolderHubInputRow` with UNION-on-(roleId,permType), dedupe, `maxDepth=Infinity` escape hatch, cross-project isolation. Zero Prisma/React deps. GRAPH7-01 satisfied at code level — phase-setup follow-up: register GRAPH7-* in REQUIREMENTS.md (not yet present). Stopped at: Plan 07-02 complete; Plan 07-05 (2D hub wiring) unblocked.
+- 2026-05-12: Phase 7 plan 04 complete (GraphFilters + FilterableNode + nodeMatchesFilters extended with 5 Phase 7 dimensions). New type exports: PermTierKey, SimilarityDimKey, ViewMode, GraphNodeKind. DEFAULT_FILTERS canonical defaults: folders ON, all 4 tiers, all 5 sim dims, simMin=2, viewMode=multi. nodeMatchesFilters gains 2 cheap short-circuit gates (user-only + showFolders) placed FIRST. permTiers/simDims/simMin are edge-level filters — applied in adapter (Plan 07-05), NOT here. AccUsersGraph.readFiltersFromUrl now spreads DEFAULT_FILTERS so URL-restore picks up new defaults (Rule 3 fix). 50/50 Vitest pass. GRAPH7-06, GRAPH7-09, FILT-EXT satisfied at code level. Stopped at: Plan 07-04 complete; Wave 2 (Plans 07-05 + 07-06) unblocked.
 - 2026-05-12: Phase 7 plan 03 complete (pure user-similarity module + Vitest 9-case coverage). `lib/acc/userSimilarity.ts` exports `computeSimilarityEdges(input, enabledDims, minShared=2)` + `SimilarityDim` + `SimilarityEdge` + `SimilarityInput` + `SIMILARITY_DIMS`. Bucketed indexing — Map<attrValue, userIds[]> per dimension, then pair-count within shared buckets only (no O(n²) outer scan). Canonical pair order (userA<userB) for natural dedupe. 5 dimensions: folder-access, roles, projects, company, admin-tier. Null company/adminTier excluded from buckets. Perf smoke (500 users × 10 roles, all dims) well under 500ms. Zero Prisma/React deps. GRAPH7-04, GRAPH7-05 satisfied at code level — REQUIREMENTS.md does not yet track GRAPH7-* IDs (phase-setup follow-up, same as 07-02). Stopped at: Plan 07-03 complete; Plan 07-04 (filter additions) is next gate.
 
 ## Decisions
@@ -93,6 +94,11 @@ See: .planning/PROJECT.md
 - [Phase 07]: 07-01: 3D-WIRING=DEFER + 3D-FOLDERS=NO-GO recorded in PHASE-DEPS.md. Zero sphere3d/* files, zero Phase 6 SUMMARYs, no Phase 4 GRAPH-04 perf gate — Phase 7 ships 2D only.
 - [Phase 07]: 07-02: Structural input type (FolderHubInputRow) instead of importing FolderMatrixRow — keeps module pure (no @/server). Group key includes projectId so cross-project identical paths never merge. maxDepth=Infinity handled by depth ≤ maxDepth branch, no special case.
 - [Phase 07]: 07-03: Bucketed indexing (Map<attrValue, userIds[]>) per dim, then pair-count within shared buckets only — avoids O(n^2) outer scan. Pure module, zero non-pure deps; folder-access dim accepts pre-resolved folderIds[] per user (caller owns user->role->folder resolution per RESEARCH Pitfall 2).
+- [Phase 07]: 07-04: SimilarityDimKey kept local to accGraphFilters.ts (not re-exported from lib/acc/userSimilarity.SimilarityDim) — avoids a client-import→server-module type-only cycle. TODO comment flags drift risk.
+- [Phase 07]: 07-04: permTiers / simDims / simMin documented as EDGE-level filters applied in adapter (Plan 07-05), NOT in nodeMatchesFilters. Keeps node-level predicate cheap and orthogonal to edge filtering.
+- [Phase 07]: 07-04: FilterableNode.kind made OPTIONAL with `?? "user"` fallback so the thousands of existing SimNode/UserNode call sites typecheck without literal-narrowing changes.
+- [Phase 07]: 07-04: Phase 7 kind gates placed FIRST in nodeMatchesFilters — cheapest short-circuit; avoids running 7 downstream array comparisons for a non-user node in user-only view.
+- [Phase 07]: 07-04 (Rule 3): AccUsersGraph.readFiltersFromUrl object-literal didn't spread DEFAULT_FILTERS → TS2739 after GraphFilters widened. Fix: prepend `...DEFAULT_FILTERS` to the returned literal so all future GraphFilters extensions auto-propagate to URL-restored filters.
 
 ## Accumulated Context
 
@@ -113,6 +119,7 @@ See: .planning/PROJECT.md
 | 04    | 01   | ~2 min   | 2     | 2     | 2026-05-11 |
 | 04    | 03   | ~8 min   | 2     | 4     | 2026-05-11 |
 | 04    | 02   | ~25 min  | 4     | 5     | 2026-05-11 |
+| 07    | 04   | ~2 min   | 2     | 3     | 2026-05-12 |
 | Phase 05 P5.1 | ~14 min | 4 tasks | 16 files |
 | Phase 07 P01 | ~3 min | 1 tasks | 2 files |
 | Phase 07 P02 | ~4 min | 2 tasks | 2 files |
