@@ -54,6 +54,12 @@ import {
 import type { SimilarityInput, SimilarityDim } from "@/lib/acc/userSimilarity";
 import type { FolderHubInputRow } from "@/lib/acc/folderHubCollapse";
 
+// Off-switch for Phase 7 topology additions (folder hubs, similarity edges,
+// per-edge color buffer, Topology filter section, folder matrix query). Set
+// false until the positional-only redesign lands — similarity/permTiers must
+// influence node CLUSTERING, not be drawn as edges.
+const PHASE_7_TOPOLOGY_ENABLED = false;
+
 // ─── Phase 7 Plan 07-06: per-edge color LUTs ────────────────────────────────
 // Plan calls these out by hex value; keep them centralized so the filter
 // panel legend, edge color buffer, and any future overlay agree.
@@ -723,6 +729,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
     staleTime: 600_000,
     retry: false,
+    enabled: PHASE_7_TOPOLOGY_ENABLED,
   });
 
   // Phase 7 Plan 07-06: build SimilarityInput from `users` prop + folder matrix.
@@ -808,6 +815,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
    */
   const buildExtendedTopology = useCallback(
     (rawNodes: readonly { id: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
+      if (!PHASE_7_TOPOLOGY_ENABLED) {
+        return buildAccTopologyGraph(rawNodes);
+      }
       const f = filtersRef.current;
       const extensions: AccTopologyExtensions = {
         // showFolders=false → emit no folder hubs / role-folder / folder-project edges.
@@ -1869,6 +1879,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // Also depends on folderHubRows / similarityInput so the topology refreshes
   // once the folder matrix query resolves.
   useEffect(() => {
+    if (!PHASE_7_TOPOLOGY_ENABLED) return;
     if (!isReady) return;
     const nodes = nodesRef.current;
     if (!nodes.length) return;
@@ -2597,7 +2608,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 />
               )}
 
-              {/* ─── Phase 7 Plan 07-06: topology dimensions ──────────────── */}
+              {/* ─── Phase 7 Plan 07-06: topology dimensions (DISABLED until positional-only redesign) ──────────────── */}
+              {PHASE_7_TOPOLOGY_ENABLED && (
               <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                   Topology
@@ -2710,6 +2722,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   />
                 </label>
               </div>
+              )}
             </div>
           </div>
         )}

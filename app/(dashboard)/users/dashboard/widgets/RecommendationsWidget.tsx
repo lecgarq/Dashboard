@@ -145,6 +145,7 @@ export function RecommendationsWidget({
   // Phase 4 Plan 6 — orphan role findings (carry-forward; Phase 5 DASH skips this).
   const orphanRolesQuery = trpc.accFolders.getOrphanRoles.useQuery(undefined, {
     staleTime: 5 * 60_000,
+    enabled: false,
   });
   const severityColor = useSeverityColor();
   const accent = useDashboardAccent();

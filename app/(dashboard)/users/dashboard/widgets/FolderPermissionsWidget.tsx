@@ -96,7 +96,7 @@ export function FolderPermissionsWidget(_props: WidgetCommonProps) {
   // ─── Data fetch ───────────────────────────────────────────────────────────
   const matrixQuery = trpc.accFolders.getMatrix.useQuery(
     { projectIds: inboundProjectId ? [inboundProjectId] : undefined },
-    { staleTime: 5 * 60_000 },
+    { staleTime: 5 * 60_000, enabled: false },
   );
 
   // ─── Filter state ─────────────────────────────────────────────────────────
