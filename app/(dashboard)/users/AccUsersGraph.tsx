@@ -7,6 +7,8 @@ import { cn } from "@/lib/core/utils";
 import {
   nodeMatchesFilters,
   type GraphFilters,
+  type PermTierKey,
+  type SimilarityDimKey,
   DEFAULT_FILTERS,
 } from "./accGraphFilters";
 import { trpc } from "@/lib/core/trpc";
@@ -270,6 +272,36 @@ function loadSavedView(): { x: number; y: number; scale: number } {
   return { x: 0.5, y: 0.5, scale: 600 };
 }
 
+// ─── Phase 7 Plan 07-06: URL codec for the 5 new filter keys ────────────────
+// Compact letter aliases keep the query-string short (the URL is the share
+// surface; visible non-default state should be readable at a glance).
+const PERM_TIER_TO_LETTER: Record<PermTierKey, string> = {
+  view: "v",
+  upload: "u",
+  edit: "e",
+  control: "c",
+};
+const LETTER_TO_PERM_TIER: Record<string, PermTierKey> = {
+  v: "view",
+  u: "upload",
+  e: "edit",
+  c: "control",
+};
+const SIM_DIM_TO_LETTER: Record<SimilarityDimKey, string> = {
+  "folder-access": "fa",
+  roles: "r",
+  projects: "p",
+  company: "c",
+  "admin-tier": "a",
+};
+const LETTER_TO_SIM_DIM: Record<string, SimilarityDimKey> = {
+  fa: "folder-access",
+  r: "roles",
+  p: "projects",
+  c: "company",
+  a: "admin-tier",
+};
+
 function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
   const adminRaw = params.get("admin") ?? "";
   const adminAccess: GraphFilters["adminAccess"] = (["all", "admin", "non-admin"] as const).includes(
@@ -283,6 +315,37 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
   const companyRolesRaw = params.get("croles") ?? "";
   const projRolesRaw = params.get("proles") ?? "";
 
+  // Phase 7 Plan 07-06: 5 new keys (folders, ptiers, simDims, simMin, view).
+  // Absent → use DEFAULT_FILTERS value (everything ON, multi view).
+  const foldersRaw = params.get("folders");
+  const showFolders = foldersRaw === null ? DEFAULT_FILTERS.showFolders : foldersRaw !== "false";
+
+  const ptiersRaw = params.get("ptiers");
+  const permTiers: PermTierKey[] = ptiersRaw === null
+    ? DEFAULT_FILTERS.permTiers
+    : ptiersRaw
+        .split(",")
+        .map((letter) => LETTER_TO_PERM_TIER[letter])
+        .filter((v): v is PermTierKey => !!v);
+
+  const simDimsRaw = params.get("simDims");
+  const simDims: SimilarityDimKey[] = simDimsRaw === null
+    ? DEFAULT_FILTERS.simDims
+    : simDimsRaw
+        .split(",")
+        .map((letter) => LETTER_TO_SIM_DIM[letter])
+        .filter((v): v is SimilarityDimKey => !!v);
+
+  const simMinRaw = params.get("simMin");
+  const simMinParsed = simMinRaw === null ? NaN : parseInt(simMinRaw, 10);
+  const simMin = Number.isFinite(simMinParsed) && simMinParsed >= 1 && simMinParsed <= 5
+    ? simMinParsed
+    : DEFAULT_FILTERS.simMin;
+
+  const viewRaw = params.get("view");
+  const viewMode: GraphFilters["viewMode"] =
+    viewRaw === "user-only" || viewRaw === "multi" ? viewRaw : DEFAULT_FILTERS.viewMode;
+
   return {
     ...DEFAULT_FILTERS, // Phase 7: pick up showFolders/permTiers/simDims/simMin/viewMode defaults
     roles: rolesRaw ? rolesRaw.split(",").filter(Boolean) : [],
@@ -293,7 +356,20 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
     dateFrom: params.get("from") ?? "",
     dateTo: params.get("to") ?? "",
     perProjectRoles: projRolesRaw ? projRolesRaw.split(",").filter(Boolean) : [],
+    // Phase 7 keys — overwrite the DEFAULT_FILTERS spread above when URL is present
+    showFolders,
+    permTiers,
+    simDims,
+    simMin,
+    viewMode,
   };
+}
+
+function arraysEqualAsSets<T extends string>(a: readonly T[], b: readonly T[]): boolean {
+  if (a.length !== b.length) return false;
+  const set = new Set<T>(a);
+  for (const v of b) if (!set.has(v)) return false;
+  return true;
 }
 
 function writeFiltersToUrl(
@@ -309,6 +385,18 @@ function writeFiltersToUrl(
   if (filters.dateTo) qs.set("to", filters.dateTo);
   if (filters.adminAccess !== "all") qs.set("admin", filters.adminAccess);
   if (filters.perProjectRoles.length > 0) qs.set("proles", filters.perProjectRoles.join(","));
+  // Phase 7 Plan 07-06: 5 new keys — only write when non-default to keep URLs clean.
+  if (filters.showFolders !== DEFAULT_FILTERS.showFolders) {
+    qs.set("folders", filters.showFolders ? "true" : "false");
+  }
+  if (!arraysEqualAsSets(filters.permTiers, DEFAULT_FILTERS.permTiers)) {
+    qs.set("ptiers", filters.permTiers.map((t) => PERM_TIER_TO_LETTER[t]).join(","));
+  }
+  if (!arraysEqualAsSets(filters.simDims, DEFAULT_FILTERS.simDims)) {
+    qs.set("simDims", filters.simDims.map((d) => SIM_DIM_TO_LETTER[d]).join(","));
+  }
+  if (filters.simMin !== DEFAULT_FILTERS.simMin) qs.set("simMin", String(filters.simMin));
+  if (filters.viewMode !== DEFAULT_FILTERS.viewMode) qs.set("view", filters.viewMode);
   const qsStr = qs.toString();
   router.replace(`${pathname}${qsStr ? `?${qsStr}` : ""}`, { scroll: false });
 }
@@ -1772,6 +1860,48 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     return () => clearTimeout(fadeTimer);
   }, [filters, rebuildVisibleIndices, resetStability]);
 
+  // Phase 7 Plan 07-06: rebuild topology when filter SHAPE changes (showFolders,
+  // permTiers, simDims, simMin, viewMode). Visibility-only filter changes go
+  // through rebuildVisibleIndices in the effect above and don't touch the
+  // topology link buffer. Memoization key per Pitfall 5 — physics sliders
+  // (separation/cluster) are NOT in the dep array, so slider scrub never
+  // triggers a similarity recompute.
+  // Also depends on folderHubRows / similarityInput so the topology refreshes
+  // once the folder matrix query resolves.
+  useEffect(() => {
+    if (!isReady) return;
+    const nodes = nodesRef.current;
+    if (!nodes.length) return;
+    // Worker path: rebuild + re-init worker with the new topology.
+    if (organicWorkerRef.current && !usePhysicsRef.current) {
+      restartOrganicLayout("reflow");
+      return;
+    }
+    // GPU-physics path (cosmos): rebuild link projection inline.
+    if (usePhysicsRef.current && cosmosRendererRef.current && nodeIndexMapRef.current.size > 0) {
+      const topology = buildExtendedTopology(nodes);
+      linksRef.current = projectTopologyLinksToIndexPairs(
+        topology.links,
+        nodeIndexMapRef.current,
+        { linkColor: colorForTopologyLink },
+      );
+      // Force the renderer to repaint links with the new buffer next frame.
+      markGraphDirty();
+    }
+  }, [
+    filters.showFolders,
+    filters.permTiers,
+    filters.simDims,
+    filters.simMin,
+    filters.viewMode,
+    folderHubRows,
+    similarityInput,
+    isReady,
+    restartOrganicLayout,
+    buildExtendedTopology,
+    markGraphDirty,
+  ]);
+
   // URL persistence: write non-default filter values to query params (debounced).
   // Skip the very first call so the initial mount seed doesn't echo back.
   const isFirstUrlWriteRef = useRef(true);
@@ -2245,6 +2375,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     });
   }, [graphQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const phase7TopologyActive =
+    filters.showFolders !== DEFAULT_FILTERS.showFolders ||
+    !arraysEqualAsSets(filters.permTiers, DEFAULT_FILTERS.permTiers) ||
+    !arraysEqualAsSets(filters.simDims, DEFAULT_FILTERS.simDims) ||
+    filters.simMin !== DEFAULT_FILTERS.simMin ||
+    filters.viewMode !== DEFAULT_FILTERS.viewMode;
+
   const hasActiveFilters =
     filters.roles.length > 0 ||
     filters.lastAddedBuckets.length > 0 ||
@@ -2253,7 +2390,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     filters.companyRoles.length > 0 ||
     !!filters.dateFrom ||
     !!filters.dateTo ||
-    filters.perProjectRoles.length > 0;
+    filters.perProjectRoles.length > 0 ||
+    phase7TopologyActive;
 
   // activeFilterCount: number of filter dimensions that are non-default.
   // Used by plan 04's "Showing X of Y" header and "Clear all" button.
@@ -2265,7 +2403,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     (filters.companyRoles.length > 0 ? 1 : 0) +
     (filters.dateFrom ? 1 : 0) +
     (filters.dateTo ? 1 : 0) +
-    (filters.perProjectRoles.length > 0 ? 1 : 0);
+    (filters.perProjectRoles.length > 0 ? 1 : 0) +
+    // Phase 7 — count the whole topology section as one dimension when any
+    // sub-control deviates from default; keeps the badge readable.
+    (phase7TopologyActive ? 1 : 0);
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
   const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
 
@@ -2455,6 +2596,120 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   maxVisible={Infinity}
                 />
               )}
+
+              {/* ─── Phase 7 Plan 07-06: topology dimensions ──────────────── */}
+              <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-2">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
+                  Topology
+                </span>
+
+                {/* View mode toggle */}
+                <ToggleFilterControl
+                  label="View mode"
+                  value={filters.viewMode}
+                  options={[
+                    { value: "multi", label: "Multi" },
+                    { value: "user-only", label: "User-only" },
+                  ]}
+                  onChange={(value) =>
+                    setFilters((current) => ({
+                      ...current,
+                      viewMode: value as GraphFilters["viewMode"],
+                    }))
+                  }
+                />
+
+                {/* Show folders toggle */}
+                <label className="flex items-center justify-between gap-2 cursor-pointer">
+                  <span className="text-[10px] text-gray-600">Show folders</span>
+                  <input
+                    type="checkbox"
+                    checked={filters.showFolders}
+                    onChange={(e) =>
+                      setFilters((current) => ({ ...current, showFolders: e.target.checked }))
+                    }
+                    className="h-3.5 w-3.5"
+                  />
+                </label>
+
+                {/* Permission tiers (role-folder edge colors) */}
+                <div className="space-y-0.5">
+                  <span className="text-[10px] text-gray-500">Permission tiers</span>
+                  {(["view", "upload", "edit", "control"] as const).map((tier) => (
+                    <label key={tier} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.permTiers.includes(tier)}
+                        onChange={() =>
+                          setFilters((current) => ({
+                            ...current,
+                            permTiers: current.permTiers.includes(tier)
+                              ? current.permTiers.filter((t) => t !== tier)
+                              : [...current.permTiers, tier],
+                          }))
+                        }
+                        className="h-3 w-3"
+                      />
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: PERM_TIER_COLOR[tier] }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-[10px] text-gray-700 capitalize">{tier}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Similarity dimensions (user-similarity edge colors) */}
+                <div className="space-y-0.5">
+                  <span className="text-[10px] text-gray-500">Similarity dimensions</span>
+                  {(
+                    ["folder-access", "roles", "projects", "company", "admin-tier"] as const
+                  ).map((dim) => (
+                    <label key={dim} className="flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={filters.simDims.includes(dim)}
+                        onChange={() =>
+                          setFilters((current) => ({
+                            ...current,
+                            simDims: current.simDims.includes(dim)
+                              ? current.simDims.filter((d) => d !== dim)
+                              : [...current.simDims, dim],
+                          }))
+                        }
+                        className="h-3 w-3"
+                      />
+                      <span
+                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        style={{ background: SIM_DIM_COLOR[dim] }}
+                        aria-hidden="true"
+                      />
+                      <span className="text-[10px] text-gray-700">{dim}</span>
+                    </label>
+                  ))}
+                </div>
+
+                {/* Similarity-min slider */}
+                <label className="flex flex-col gap-1">
+                  <span className="flex items-center justify-between text-[10px] text-gray-500">
+                    <span>Min shared attributes</span>
+                    <span className="font-semibold text-gray-700">{filters.simMin}</span>
+                  </span>
+                  <input
+                    type="range"
+                    min={1}
+                    max={5}
+                    step={1}
+                    value={filters.simMin}
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value, 10) || 1;
+                      setFilters((current) => ({ ...current, simMin: value }));
+                    }}
+                    className="w-full"
+                  />
+                </label>
+              </div>
             </div>
           </div>
         )}
