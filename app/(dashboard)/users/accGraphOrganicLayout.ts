@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  collapseFoldersToDepth,
+  type FolderHubInputRow,
+} from "@/lib/acc/folderHubCollapse";
+import {
+  computeSimilarityEdges,
+  type SimilarityDim,
+  type SimilarityInput,
+} from "@/lib/acc/userSimilarity";
+import type { PermTierKey, SimilarityDimKey } from "./accGraphFilters";
+
 export interface OrganicLayoutNode {
   id: string;
   email: string;
@@ -35,8 +46,12 @@ export interface GraphControlSettings {
   motion: number;
 }
 
-export type AccTopologyHubKind = "project" | "role" | "module" | "access" | "user";
-export type AccTopologyLinkKind = AccTopologyHubKind;
+export type AccTopologyHubKind = "project" | "role" | "module" | "access" | "user" | "folder";
+export type AccTopologyLinkKind =
+  | AccTopologyHubKind
+  | "role-folder"
+  | "folder-project"
+  | "user-similarity";
 
 export interface AccTopologyVisibleNode {
   id: string;
@@ -53,6 +68,30 @@ export interface AccTopologyLink {
   source: string;
   target: string;
   kind: AccTopologyLinkKind;
+  /** Set only for role-folder links — 4-tier collapse of the source PermType. */
+  permTier?: PermTierKey;
+  /** Set only for user-similarity links — which dimension produced the edge. */
+  dimension?: SimilarityDimKey;
+  /** Set only for user-similarity links — shared-attribute count from computeSimilarityEdges. */
+  weight?: number;
+}
+
+/**
+ * 6-tier APS PermType → 4-tier UI bucket (view | upload | edit | control).
+ * Exported so renderers / legends reuse the exact same collapse.
+ * Unknown / unmapped strings default to "view" (least privilege rendering).
+ */
+const PERM_TIER_LUT: Record<string, PermTierKey> = {
+  "View Only": "view",
+  "View+Download": "view",
+  "Upload Only": "upload",
+  "View+Download+Upload": "upload",
+  "View+Download+Upload+Edit": "edit",
+  "Full Controller": "control",
+};
+
+export function collapsePermTierKey(permType: string): PermTierKey {
+  return PERM_TIER_LUT[permType] ?? "view";
 }
 
 export interface AccTopologyGraph {
@@ -168,7 +207,27 @@ function addUniqueSortedValues(values: readonly string[], target: Set<string>): 
   }
 }
 
-export function buildAccTopologyGraph(nodes: readonly OrganicLayoutNode[]): AccTopologyGraph {
+/**
+ * Optional Phase 7 inputs for `buildAccTopologyGraph`. All fields default to
+ * undefined/null so existing callers that only pass `nodes` continue to work.
+ */
+export interface AccTopologyExtensions {
+  /** Raw folder-permission rows (e.g. from `accFoldersRouter.getMatrix`). */
+  folderMatrix?: ReadonlyArray<FolderHubInputRow>;
+  /** Pre-resolved similarity input (users + their attributes). */
+  similarityInput?: SimilarityInput | null;
+  /** Enabled similarity dimensions. Empty/undefined = no similarity edges emitted. */
+  similarityDims?: ReadonlySet<SimilarityDim>;
+  /** Minimum shared-attribute count for an edge to land. Defaults to 2. */
+  simMin?: number;
+  /** Folder collapse depth. Defaults to 2 (per Phase 7 RESEARCH). */
+  folderDepth?: number;
+}
+
+export function buildAccTopologyGraph(
+  nodes: readonly OrganicLayoutNode[],
+  extensions: AccTopologyExtensions = {},
+): AccTopologyGraph {
   const visibleNodes = nodes.map((node, index) => ({ id: node.id, index }));
   const hiddenById = new Map<string, AccTopologyHiddenNode>();
   const linkKeys = new Set<string>();
@@ -184,12 +243,21 @@ export function buildAccTopologyGraph(nodes: readonly OrganicLayoutNode[]): AccT
     return id;
   };
 
-  const addLink = (source: string, target: string | null, kind: AccTopologyLinkKind): void => {
+  const addLink = (
+    source: string,
+    target: string | null,
+    kind: AccTopologyLinkKind,
+    extras?: { permTier?: PermTierKey; dimension?: SimilarityDimKey; weight?: number },
+  ): void => {
     if (!target) return;
     const key = `${source}->${target}:${kind}`;
     if (linkKeys.has(key)) return;
     linkKeys.add(key);
-    links.push({ source, target, kind });
+    const link: AccTopologyLink = { source, target, kind };
+    if (extras?.permTier !== undefined) link.permTier = extras.permTier;
+    if (extras?.dimension !== undefined) link.dimension = extras.dimension;
+    if (extras?.weight !== undefined) link.weight = extras.weight;
+    links.push(link);
   };
 
   for (const node of nodes) {
@@ -207,6 +275,61 @@ export function buildAccTopologyGraph(nodes: readonly OrganicLayoutNode[]): AccT
     addUniqueSortedValues(node.modules ?? [], modules);
     for (const moduleName of [...modules].sort((a, b) => a.localeCompare(b))) {
       addLink(node.id, addHub("module", moduleName), "module");
+    }
+  }
+
+  // ─── Phase 7: folder hubs + role-folder permission edges ────────────────────
+  if (extensions.folderMatrix && extensions.folderMatrix.length > 0) {
+    const collapsed = collapseFoldersToDepth(
+      extensions.folderMatrix,
+      extensions.folderDepth ?? 2,
+    );
+    for (const folder of collapsed) {
+      // Folder hubs use their deterministic id directly (already namespaced by
+      // `collapseFoldersToDepth` to avoid cross-project collisions). We bypass
+      // `addHub`'s normalization so the id matches the renderer's expectation
+      // ("hub:folder:<encoded>").
+      const folderHubId = `hub:folder:${encodeURIComponent(folder.id)}`;
+      if (!hiddenById.has(folderHubId)) {
+        hiddenById.set(folderHubId, {
+          id: folderHubId,
+          kind: "folder",
+          label: folder.name || folder.fullPath || folder.id,
+        });
+      }
+      const projectHubId = addHub("project", folder.projectId, folder.projectId);
+      if (projectHubId) {
+        addLink(folderHubId, projectHubId, "folder-project");
+      }
+      for (const perm of folder.permissions) {
+        const roleHubId = addHub("role", perm.roleId);
+        if (!roleHubId) continue;
+        addLink(roleHubId, folderHubId, "role-folder", {
+          permTier: collapsePermTierKey(perm.permType),
+        });
+      }
+    }
+  }
+
+  // ─── Phase 7: user-similarity edges ─────────────────────────────────────────
+  // Kept regardless of viewMode — viewMode is a render-time visibility filter,
+  // not a data filter (Pattern 3 from RESEARCH).
+  if (
+    extensions.similarityInput &&
+    extensions.similarityInput.users.length >= 2 &&
+    extensions.similarityDims &&
+    extensions.similarityDims.size > 0
+  ) {
+    const simEdges = computeSimilarityEdges(
+      extensions.similarityInput,
+      extensions.similarityDims,
+      extensions.simMin ?? 2,
+    );
+    for (const edge of simEdges) {
+      addLink(edge.userA, edge.userB, "user-similarity", {
+        dimension: edge.dimension as SimilarityDimKey,
+        weight: edge.sharedCount,
+      });
     }
   }
 
