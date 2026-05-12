@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { downloadCsv } from "@/lib/acc/csvExport";
+import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
   DuplicateRoleFinding,
@@ -37,6 +38,19 @@ const W = 600;
 const H = 360;
 const CENTER_GUTTER = 16;
 
+interface OrphanRoleFinding {
+  projectId: string;
+  projectName: string;
+  roleId: string;
+  roleName: string;
+  /** Representative folder for click → side panel drilldown */
+  representativeFolderId: string;
+  representativeFolderPath: string;
+  permType: string;
+  actions: string[];
+  orphanReasons: string[];
+}
+
 type Leaf =
   | {
       _kind: "junk";
@@ -53,6 +67,15 @@ type Leaf =
       _value: number;
       _title: string;
       _data: DuplicateRoleFinding;
+    }
+  | {
+      // Phase 4 Plan 6 — orphan role finding (carry-forward; Phase 5 DASH MUST NOT re-build)
+      _kind: "orphan-role";
+      _id: string;
+      _severity: Severity;
+      _value: number;
+      _title: string;
+      _data: OrphanRoleFinding;
     };
 
 type PositionedLeaf = Leaf & {
@@ -118,12 +141,48 @@ export function RecommendationsWidget({
 }) {
   const findings = useFindings();
   const { selected, setSelected } = useSelection();
+
+  // Phase 4 Plan 6 — orphan role findings (carry-forward; Phase 5 DASH skips this).
+  const orphanRolesQuery = trpc.accFolders.getOrphanRoles.useQuery(undefined, {
+    staleTime: 5 * 60_000,
+  });
   const severityColor = useSeverityColor();
   const accent = useDashboardAccent();
   const transition = useTransition(BUBBLE_SPRING);
   const { getOpacity, bind, hoveredId } = useHoverSpotlight();
   const [focusIndex, setFocusIndex] = useState<number>(-1);
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Build orphan-role findings: one per (projectId, roleId) with role_zero_members.
+  const orphanLeaves = useMemo<Leaf[]>(() => {
+    const rows = orphanRolesQuery.data?.rows ?? [];
+    // Group rows that have 'role_zero_members' into a unique (projectId, roleId) finding.
+    const byKey = new Map<string, OrphanRoleFinding>();
+    for (const r of rows) {
+      if (!r.orphanReasons.includes("role_zero_members")) continue;
+      const key = `${r.projectId}::${r.roleId}`;
+      if (byKey.has(key)) continue;
+      byKey.set(key, {
+        projectId: r.projectId,
+        projectName: r.projectName,
+        roleId: r.roleId,
+        roleName: r.roleName,
+        representativeFolderId: r.folderId,
+        representativeFolderPath: r.folderPath,
+        permType: r.permType,
+        actions: r.actions,
+        orphanReasons: r.orphanReasons,
+      });
+    }
+    return Array.from(byKey.values()).map<Leaf>((f) => ({
+      _kind: "orphan-role" as const,
+      _id: `${f.projectId}::${f.roleId}`,
+      _severity: "MEDIUM" as Severity,
+      _value: 1,
+      _title: `${f.roleName} has zero members on ${f.projectName} folders`,
+      _data: f,
+    }));
+  }, [orphanRolesQuery.data]);
 
   // Build leaves once per findings change.
   const leaves = useMemo<{ junk: Leaf[]; duplicate: Leaf[] }>(() => {
@@ -135,16 +194,20 @@ export function RecommendationsWidget({
       _title: j.role,
       _data: j,
     }));
-    const duplicate: Leaf[] = findings.duplicateRoles.map((d) => ({
-      _kind: "duplicate" as const,
-      _id: `${d.roleA}|${d.roleB}`,
-      _severity: "MEDIUM" as Severity,
-      _value: Math.max(1, d.affectedMembers.length),
-      _title: `${d.roleA} ↔ ${d.roleB}`,
-      _data: d,
-    }));
+    const duplicate: Leaf[] = [
+      ...findings.duplicateRoles.map<Leaf>((d) => ({
+        _kind: "duplicate" as const,
+        _id: `${d.roleA}|${d.roleB}`,
+        _severity: "MEDIUM" as Severity,
+        _value: Math.max(1, d.affectedMembers.length),
+        _title: `${d.roleA} ↔ ${d.roleB}`,
+        _data: d,
+      })),
+      // Orphan roles share the right-half cluster alongside duplicates (both are "review" findings).
+      ...orphanLeaves,
+    ];
     return { junk, duplicate };
-  }, [findings]);
+  }, [findings, orphanLeaves]);
 
   // Pack two halves (deterministic per Pitfall (b) in plan).
   const positioned = useMemo<PositionedLeaf[]>(() => {
@@ -176,8 +239,23 @@ export function RecommendationsWidget({
   function handleSelect(leaf: PositionedLeaf) {
     if (leaf._kind === "junk") {
       setSelected({ kind: "junk", finding: leaf._data });
-    } else {
+    } else if (leaf._kind === "duplicate") {
       setSelected({ kind: "duplicate", finding: leaf._data });
+    } else {
+      // orphan-role → open folder-permission side panel with representative folder.
+      const d = leaf._data;
+      setSelected({
+        kind: "folderPermission",
+        folderId: d.representativeFolderId,
+        folderPath: d.representativeFolderPath,
+        roleId: d.roleId,
+        roleName: d.roleName,
+        projectId: d.projectId,
+        projectName: d.projectName,
+        permType: d.permType,
+        actions: d.actions,
+        orphanReasons: d.orphanReasons,
+      });
     }
   }
 
@@ -219,6 +297,12 @@ export function RecommendationsWidget({
         selected.finding.roleB === leaf._data.roleB
       );
     }
+    if (selected.kind === "folderPermission" && leaf._kind === "orphan-role") {
+      return (
+        selected.projectId === leaf._data.projectId &&
+        selected.roleId === leaf._data.roleId
+      );
+    }
     return false;
   }
 
@@ -249,6 +333,17 @@ export function RecommendationsWidget({
           Members: j.affectedMembers.length,
           Modules: modules,
           SuggestedAction: junkSuggestedAction(j),
+        };
+      }
+      if (leaf._kind === "orphan-role") {
+        const o = leaf._data;
+        return {
+          Type: "OrphanRole",
+          Severity: "MEDIUM" as Severity,
+          Roles: `${o.roleName} (${o.projectName})`,
+          Members: 0,
+          Modules: "",
+          SuggestedAction: `Remove role '${o.roleName}' folder permissions on '${o.projectName}' — role has zero members in project`,
         };
       }
       const d = leaf._data;
@@ -348,7 +443,9 @@ export function RecommendationsWidget({
             const memberCount =
               leaf._kind === "junk"
                 ? leaf._data.affectedMembers.length
-                : leaf._data.affectedMembers.length;
+                : leaf._kind === "duplicate"
+                  ? leaf._data.affectedMembers.length
+                  : 0; // orphan-role: zero members by definition
             return (
               <g
                 key={id}
