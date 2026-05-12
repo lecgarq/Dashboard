@@ -179,17 +179,37 @@ Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–
 **Goal:** Replace the 2D Cosmos.gl graph in the Users dashboard with a 3D volumetric sphere held together by per-cluster gravity wells, rendered at a 120fps frame-budget (≤8ms/frame) on Chrome + Safari + Firefox. r3f + drei + GPUComputationRenderer; GPU picking; deterministic-replay mode for Playwright; full removal of cosmos.gl + d3-force + patch-package.
 **Requirements**: GRAPH3D-01..12 (derived from CONTEXT — no v2.0 REQ-IDs)
 **Depends on:** Phase 5
-**Plans:** 1/3 plans executed
+**Plans:** 1/10 plans executed
 
 Plans:
 - [ ] 06-01-PLAN.md — Install r3f/drei/seedrandom + scaffold Sphere3DGraph + SphereCanvas + replay mode helper
 - [ ] 06-02-PLAN.md — TDD pure math: radialEncoding + clusterAssignment (Vitest)
 - [ ] 06-03-PLAN.md — Topology + filter adapters: GPU edge buffers + visibility hook
-- [ ] 06-04-PLAN.md — GPGPU PhysicsCompute: GPUComputationRenderer + cluster-gravity + edge-spring shaders
-- [ ] 06-05-PLAN.md — NodesPoints + EdgesLines render layer (single draw call each, alpha-attribute filter fade)
-- [ ] 06-06-PLAN.md — Camera + GPU picking + auto-rotate + camera-tween + billboard LOD labels
-- [ ] 06-07-PLAN.md — Compose final Sphere3DGraph + replay harness + Playwright E2E suite
-- [ ] 06-08-PLAN.md — Mount swap in UsersDirectoryClient + cosmos.gl/d3-force removal cascade + cross-browser UAT (checkpoint)
+- [ ] 06-04-PLAN.md — GPGPU PhysicsCompute: GPUComputationRenderer + cluster-gravity + edge-spring + outward-drift shaders
+- [ ] 06-05-PLAN.md — NodesPoints + EdgesLines render layer (single draw call each, alpha-attribute filter fade, aVisible streamed to physics)
+- [ ] 06-06-PLAN.md — GPU picking: GpuPicker + PickPoints + pick shaders (PickApi onReady channel)
+- [ ] 06-07-PLAN.md — Camera (OrbitControls + dolly-into-ball) + CameraTween + AutoRotate + Billboard LOD labels (REQUIRED, no fallback) + positionMirror
+- [ ] 06-08-PLAN.md — Lift filter panel + URL persistence into sphere3d/filterUrl.ts + Sphere3DFilterPanel.tsx
+- [ ] 06-09-PLAN.md — Compose final Sphere3DGraph + replayHarness + Playwright E2E (≥10 tests × 3 browsers, all un-skipped)
+- [ ] 06-10-PLAN.md — Mount swap in UsersDirectoryClient + cosmos.gl/d3-force removal cascade + cross-browser UAT (checkpoint)
+
+### Phase 7: User-only graph topology with folder access and attribute-similarity edges
+
+**Goal:** Extend BOTH 2D AccUsersGraph and 3D Sphere3DGraph with: (1) folder hubs (depth-2 collapsed) + role↔folder edges colored by 4 permission tiers, (2) user↔user attribute-similarity edges across 5 parallel dimensions (folder-access, roles, projects, company, admin-tier), and (3) a "user-only" view-mode toggle. Reuses `accFoldersRouter.getMatrix` verbatim — no new tRPC, no Prisma migration. 3D folder hubs gated on Phase 4 GRAPH-04 GO; 3D wiring overall gated on Phase 6 sphere3d/* artifacts existing (Wave-0 gate in 07-01).
+**Requirements**: GRAPH7-01..12 (derived from CONTEXT — Phase 7 has no roadmap-assigned REQ-IDs)
+**Depends on:** Phase 6 (3D); Phase 4 GRAPH-04 perf-gate (3D folder hubs only)
+**Plans:** 9 plans
+
+Plans:
+- [ ] 07-01-PLAN.md — Wave 0 gate: probe Phase 6 sphere3d/* + Phase 4 GRAPH-04 GO/NO-GO → PHASE-DEPS.md
+- [ ] 07-02-PLAN.md — Wave 1 TDD: lib/acc/folderHubCollapse.ts (depth-N collapse with UNION semantics)
+- [ ] 07-03-PLAN.md — Wave 1 TDD: lib/acc/userSimilarity.ts (5-dimension parallel edges, bucketed indexing)
+- [ ] 07-04-PLAN.md — Wave 1 TDD: extend accGraphFilters.ts (showFolders/permTiers/simDims/simMin/viewMode + nodeMatchesFilters)
+- [ ] 07-05-PLAN.md — Wave 2: 2D topology adapter wiring (accGraphOrganicLayout + graphRenderers + cosmosUtils + tests)
+- [ ] 07-06-PLAN.md — Wave 3: 2D AccUsersGraph filter panel + URL persistence + per-edge color buffer + UAT checkpoint
+- [ ] 07-07-PLAN.md — Wave 3: 3D sphere3d adapters (topology + filter + EdgesLines LUT + NodesPoints folder color) — conditional on 07-01 gate
+- [ ] 07-08-PLAN.md — Wave 3: 3D filterUrl.ts + Sphere3DFilterPanel.tsx additions — conditional on 07-01 gate
+- [ ] 07-09-PLAN.md — Wave 4: PERF-REPORT.md + Luis UAT acceptance checkpoint
 
 ---
 
