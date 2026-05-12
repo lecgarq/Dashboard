@@ -607,11 +607,9 @@ function deriveTarget(details: string | null): string {
 export function UserActivityBody({
   email,
   users,
-  chrome = "sheet",
 }: {
   email: string;
   users: BulkAccUser[];
-  chrome?: "sheet" | "inline";
 }) {
   const emailLower = email.toLowerCase();
   const user = useMemo(
@@ -660,17 +658,10 @@ export function UserActivityBody({
 
   return (
     <>
-      {chrome === "sheet" ? (
-        <SheetHeader>
-          <SheetTitle className="truncate pr-8">Activity: {headerName}</SheetTitle>
-          <SheetDescription className="truncate">{email}</SheetDescription>
-        </SheetHeader>
-      ) : (
-        <div className="border-b px-4 py-3">
-          <h2 className="truncate text-sm font-semibold">Activity: {headerName}</h2>
-          <p className="truncate text-xs text-muted-foreground">{email}</p>
-        </div>
-      )}
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">Activity: {headerName}</SheetTitle>
+        <SheetDescription className="truncate">{email}</SheetDescription>
+      </SheetHeader>
       <div className="flex flex-1 min-h-0 flex-col gap-4 overflow-y-auto px-4 pb-6">
         {/* Filter bar */}
         <div className="sticky top-0 z-10 -mx-4 flex flex-wrap items-center gap-2 border-b bg-background/95 px-4 py-2 backdrop-blur">

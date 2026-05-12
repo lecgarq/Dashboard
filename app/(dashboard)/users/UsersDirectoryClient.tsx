@@ -846,7 +846,7 @@ function ActivityAuditPanel({
 
       <section className="min-h-0 rounded-xl border border-border bg-card">
         {activeEmail ? (
-          <UserActivityBody email={activeEmail} users={users} chrome="inline" />
+          <UserActivityBody email={activeEmail} users={users} />
         ) : (
           <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
             Select a user to inspect activity.
