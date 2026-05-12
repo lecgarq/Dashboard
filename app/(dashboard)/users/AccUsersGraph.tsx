@@ -2,7 +2,7 @@
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
-import { Check, ChevronLeft, ChevronRight, Filter, RotateCcw } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, Filter, RotateCcw, Search } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import {
   nodeMatchesFilters,
@@ -53,12 +53,22 @@ import {
 } from "./accGraphOrganicLayout";
 import type { SimilarityInput, SimilarityDim } from "@/lib/acc/userSimilarity";
 import type { FolderHubInputRow } from "@/lib/acc/folderHubCollapse";
+import {
+  ACC_GRAPH_MODE_STORAGE_KEY,
+  DEFAULT_ACC_GRAPH_MODE,
+  filterTopologyForGraphMode,
+  isAccGraphMode,
+  type AccGraphMode,
+} from "./accGraphModes";
 
-// Off-switch for Phase 7 topology additions (folder hubs, similarity edges,
-// per-edge color buffer, Topology filter section, folder matrix query). Set
+// Investigative topology modes. Users is the default, while access hubs and
+// folder permissions are opt-in.
 // false until the positional-only redesign lands — similarity/permTiers must
-// influence node CLUSTERING, not be drawn as edges.
-const PHASE_7_TOPOLOGY_ENABLED = false;
+const GRAPH_MODE_LABEL: Record<AccGraphMode, string> = {
+  users: "Users",
+  "access-hubs": "Access Hubs",
+  "folder-permissions": "Folder Permissions",
+};
 
 // ─── Phase 7 Plan 07-06: per-edge color LUTs ────────────────────────────────
 // Plan calls these out by hex value; keep them centralized so the filter
@@ -212,6 +222,64 @@ function graphNodeToSimNode(node: AccGraphNode): SimNode {
     y: node.y,
     vx: node.vx,
     vy: node.vy,
+  };
+}
+
+function roleColor(role: string | undefined): string {
+  const palette = [
+    "#2563EB", "#16A34A", "#DC2626", "#9333EA", "#D97706",
+    "#0891B2", "#4F46E5", "#BE123C", "#0F766E", "#7C3AED",
+  ];
+  if (!role) return "#64748B";
+  let hash = 0;
+  for (let i = 0; i < role.length; i++) {
+    hash = role.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  return palette[Math.abs(hash) % palette.length];
+}
+
+function dateBucket(raw: string | Date | null | undefined): string {
+  if (!raw) return "";
+  const value = raw instanceof Date ? raw.toISOString() : raw;
+  const match = value.match(/^(\d{4}-\d{2})/);
+  return match?.[1] ?? "";
+}
+
+function accUserToSimNode(user: BulkAccUser, index: number): SimNode {
+  const email = user.email.toLowerCase();
+  const firstProject = user.projects?.[0];
+  const roles = [...new Set(user.allRoles ?? [])].sort((a, b) => a.localeCompare(b));
+  const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
+  return {
+    kind: "user",
+    id: email,
+    email,
+    name: user.name || user.email,
+    projectId: firstProject?.id,
+    projectName: firstProject?.name,
+    found: user.found,
+    hasNoProjects: user.hasNoProjects,
+    isAdmin: (user.adminCount ?? 0) > 0 || user.isAccountAdmin === true || user.projectAdmin === true,
+    projectCount: user.projectCount,
+    roles,
+    modules,
+    color: roleColor(roles[0]),
+    lastAddedBucket: dateBucket(user.addedOn),
+    individualAccess: roles.length > 0 || modules.length > 0,
+    companyRole: user.companyRole ?? null,
+    lastSignIn: user.lastSignIn ?? null,
+    label: user.name || user.email,
+    degree: 0,
+    perProjectRoleNames: user.perProjectRoleNames,
+    aggregatedStatus: user.aggregatedStatus,
+    projectAdmin: user.projectAdmin,
+    executive: user.executive,
+    isAccountAdmin: user.isAccountAdmin,
+    companyName: user.companyName,
+    x: 0.5 + (index % 11) * 0.001,
+    y: 0.5 + (index % 13) * 0.001,
+    vx: 0,
+    vy: 0,
   };
 }
 
@@ -594,12 +662,27 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     hiddenNodeCount: 0,
   });
   const [filters, setFilters] = useState<GraphFilters>(() => readFiltersFromUrl(searchParams));
+  const [graphMode, setGraphModeState] = useState<AccGraphMode>(() => {
+    if (typeof window === "undefined") return DEFAULT_ACC_GRAPH_MODE;
+    const saved = localStorage.getItem(ACC_GRAPH_MODE_STORAGE_KEY);
+    return isAccGraphMode(saved) ? saved : DEFAULT_ACC_GRAPH_MODE;
+  });
+  const graphModeRef = useRef<AccGraphMode>(graphMode);
+  const [graphSearch, setGraphSearch] = useState("");
+  const graphSearchRef = useRef("");
   const [visibleCount, setVisibleCount] = useState(0);
   // UI-03: filter panel collapse state. When collapsed, the panel renders as
   // a thin (44px) icon rail; when expanded, it renders at 240px alongside the
   // graph canvas. Default open at first paint; auto-collapses when the detail
   // panel opens at narrow viewports (see effect below).
   const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
+
+  useEffect(() => {
+    graphModeRef.current = graphMode;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ACC_GRAPH_MODE_STORAGE_KEY, graphMode);
+    }
+  }, [graphMode]);
 
   // UI-03: auto-collapse the filter panel when the detail panel opens AND the
   // viewport is ≤1280px. At wider viewports both panels fit alongside a
@@ -729,7 +812,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
     staleTime: 600_000,
     retry: false,
-    enabled: PHASE_7_TOPOLOGY_ENABLED,
+    enabled: graphMode === "folder-permissions",
   });
 
   // Phase 7 Plan 07-06: build SimilarityInput from `users` prop + folder matrix.
@@ -774,7 +857,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             ? "executive"
             : null;
       return {
-        id: u.email, // user node id is email (graphNodeToSimNode)
+        id: u.email.toLowerCase(),
         company: u.companyName ?? null,
         adminTier,
         roleIds: [...roleIds],
@@ -815,13 +898,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
    */
   const buildExtendedTopology = useCallback(
     (rawNodes: readonly { id: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
-      if (!PHASE_7_TOPOLOGY_ENABLED) {
-        return buildAccTopologyGraph(rawNodes);
-      }
       const f = filtersRef.current;
+      const mode = graphModeRef.current;
       const extensions: AccTopologyExtensions = {
         // showFolders=false → emit no folder hubs / role-folder / folder-project edges.
-        folderMatrix: f.showFolders ? folderHubRowsRef.current : undefined,
+        folderMatrix: mode === "folder-permissions" && f.showFolders ? folderHubRowsRef.current : undefined,
         similarityInput: similarityInputRef.current,
         similarityDims: new Set<SimilarityDim>(f.simDims as readonly SimilarityDim[]),
         simMin: f.simMin,
@@ -834,9 +915,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       //  - view=user-only: drop everything except user-similarity edges
       const permTierSet = new Set<string>(f.permTiers);
       const simDimSet = new Set<string>(f.simDims);
-      const userOnly = f.viewMode === "user-only";
       const filteredLinks = topology.links.filter((link) => {
-        if (userOnly && link.kind !== "user-similarity") return false;
         if (link.kind === "role-folder") {
           return !!link.permTier && permTierSet.has(link.permTier);
         }
@@ -845,7 +924,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         }
         return true;
       });
-      return { ...topology, links: filteredLinks };
+      return filterTopologyForGraphMode({ ...topology, links: filteredLinks }, mode);
     },
     [],
   );
@@ -934,10 +1013,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const rebuildVisibleIndices = useCallback(() => {
     const nodes = nodesRef.current;
     const filters = filtersRef.current;
+    const query = graphSearchRef.current;
     const userIndices: number[] = [];
     const visibleIndices: number[] = [];
     const visibleSet = new Set<number>();
     for (let i = 0; i < nodes.length; i++) {
+      if (query) {
+        const haystack = `${nodes[i].name} ${nodes[i].email}`.toLowerCase();
+        if (!haystack.includes(query)) continue;
+      }
       if (nodeMatchesFilters(nodes[i], filters)) {
         userIndices.push(i);
         visibleIndices.push(i);
@@ -964,6 +1048,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     postVisibilityToWorker();
     markGraphDirty();
   }, [markGraphDirty, rebuildGrid, postVisibilityToWorker]);
+
+  useEffect(() => {
+    graphSearchRef.current = graphSearch.trim().toLowerCase();
+    rebuildVisibleIndices();
+  }, [graphSearch, rebuildVisibleIndices]);
 
   const scheduleGraphControlUpdate = useCallback((key: keyof GraphControlSettings, value: number) => {
     const nextControls = { ...graphControlsRef.current, [key]: value };
@@ -1152,7 +1241,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     });
   }, []);
 
-  const setGraphMode = useCallback((mode: GraphDisplayMode) => {
+  const setGraphDisplay = useCallback((mode: GraphDisplayMode) => {
     setGraphDisplayMode(mode);
     writeGraphDisplayMode(mode);
     if (mode === "3d") {
@@ -1216,6 +1305,17 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     }
     markGraphDirty();
   }, [markGraphDirty]);
+
+  const setTopologyMode = useCallback((mode: AccGraphMode) => {
+    setGraphModeState(mode);
+    setFilters((current) => ({
+      ...current,
+      showFolders: mode === "folder-permissions",
+      viewMode: mode === "users" ? "user-only" : "multi",
+    }));
+    forceRenderUntilRef.current = performance.now() + 1200;
+    resetStability();
+  }, [resetStability]);
 
   const resetActiveView = useCallback(() => {
     if (renderBackend === "three3d") {
@@ -1704,27 +1804,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     setIsReady(false);
 
-    const graph = graphQuery.data;
-    if (!graph?.hit) {
-      nodesRef.current = [];
-      seedPosRef.current = new Float32Array(0);
-      posRef.current = new Float32Array(0);
-      nodeIndexMapRef.current = new Map();
-      instIdxRef.current = new Uint32Array(0);
-      visibleNodeIdxRef.current = new Uint32Array(0);
-      visibleIndexSetRef.current = new Set();
-      setVisibleCount(0);
-      setIsReady(false);
-      markGraphDirty();
-      return;
-    }
-
-    const rawNodes = (graph.nodes as AccGraphNode[])
-      .map(graphNodeToSimNode);
-    if (
-      graph.nodeIds.length !== rawNodes.length ||
-      !orderedNodeIdsMatch(graph.nodeIds, rawNodes)
-    ) {
+    const rawNodes = users
+      .filter((user) => user.found || user.projectCount > 0 || user.hasNoProjects)
+      .map(accUserToSimNode);
+    if (rawNodes.length === 0) {
       nodesRef.current = [];
       seedPosRef.current = new Float32Array(0);
       posRef.current = new Float32Array(0);
@@ -1759,8 +1842,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       }
     }
     nodesRef.current = rawNodes;
-    const cachedPositions = readPrecomputedPositions(graph.positions, rawNodes.length * 2);
-    const hasCachedPositions = Array.isArray(graph.positions) && (graph.positions as unknown[]).length > 0;
+    const cachedPositions = null;
+    const hasCachedPositions = false;
     const cacheIsCorrupt = hasCachedPositions && cachedPositions === null;
     if (cacheIsCorrupt) {
       localStorage.setItem("acc-graph-cache-corrupt", "true");
@@ -1825,10 +1908,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       console.log("[02-05-DEBUG] data-load: PATH-B SKIPPED — usePhysicsRef=", usePhysicsRef.current,
         "cosmosRenderer=", !!cosmosRendererRef.current);
     }
-    if (lastAutoFitHashRef.current !== graph.dataHash) {
+    const graphDataHash = `${graphMode}:${rawNodes.map((node) => node.id).join("|")}`;
+    if (lastAutoFitHashRef.current !== graphDataHash) {
       zoomToFit({ immediate: true });
-      lastAutoFitHashRef.current = graph.dataHash;
-      localStorage.setItem("acc-graph-data-hash", graph.dataHash);
+      lastAutoFitHashRef.current = graphDataHash;
+      localStorage.setItem("acc-graph-data-hash", graphDataHash);
       // Data changed — discard saved view so user sees the new full graph
       localStorage.removeItem("acc-graph-view");
     }
@@ -1836,7 +1920,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     isRefreshingRef.current = false;
     setIsReady(true);
     markGraphDirty();
-  }, [users, graphQuery.data, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
+  }, [users, graphMode, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -1879,7 +1963,6 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   // Also depends on folderHubRows / similarityInput so the topology refreshes
   // once the folder matrix query resolves.
   useEffect(() => {
-    if (!PHASE_7_TOPOLOGY_ENABLED) return;
     if (!isReady) return;
     const nodes = nodesRef.current;
     if (!nodes.length) return;
@@ -1905,6 +1988,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     filters.simDims,
     filters.simMin,
     filters.viewMode,
+    graphMode,
     folderHubRows,
     similarityInput,
     isReady,
@@ -2312,8 +2396,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   }, [markGraphDirty]);
 
   const totalInstances = useMemo(
-    () => graphQuery.data?.stats.totalProjectInstances ?? users.reduce((sum, user) => sum + (user.found ? user.projects.length : 0), 0),
-    [graphQuery.data?.stats.totalProjectInstances, users],
+    () => users.filter((user) => user.found || user.projectCount > 0 || user.hasNoProjects).length,
+    [users],
   );
   const filterOptions = useMemo(() => {
     const roleCount = new Map<string, number>();
@@ -2321,23 +2405,20 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const moduleCount = new Map<string, number>();
     const companyRoleCount = new Map<string, number>();
 
-    const nodes = graphQuery.data?.hit ? (graphQuery.data.nodes as AccGraphNode[]) : [];
-    for (const node of nodes) {
-      if (node.kind !== "instance") continue;
-
-      for (const role of node.roles ?? []) {
+    for (const user of users) {
+      for (const role of user.allRoles ?? []) {
         roleCount.set(role, (roleCount.get(role) ?? 0) + 1);
       }
 
-      const lastAddedBucket = node.lastAddedBucket || "Unknown";
+      const lastAddedBucket = dateBucket(user.addedOn) || "Unknown";
       lastAddedCount.set(lastAddedBucket, (lastAddedCount.get(lastAddedBucket) ?? 0) + 1);
 
-      for (const mod of node.modules ?? []) {
+      for (const mod of user.allModules ?? []) {
         moduleCount.set(mod, (moduleCount.get(mod) ?? 0) + 1);
       }
 
       // companyRole: null maps to "Unspecified" bucket
-      const crBucket = (node as { companyRole?: string | null }).companyRole ?? "Unspecified";
+      const crBucket = user.companyRole ?? "Unspecified";
       companyRoleCount.set(crBucket, (companyRoleCount.get(crBucket) ?? 0) + 1);
     }
 
@@ -2361,10 +2442,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       .sort((a, b) => a.label.localeCompare(b.label));
 
     return { roles, lastAddedBuckets, moduleOptions, companyRoleOptions };
-  }, [graphQuery.data]);
+  }, [users]);
 
   useEffect(() => {
-    if (!graphQuery.data) return;
     setFilters(prev => {
       const validRoles = new Set(filterOptions.roles.map(o => o.value));
       const validModules = new Set(filterOptions.moduleOptions.map(o => o.value));
@@ -2384,14 +2464,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       }
       return { ...prev, roles: nextRoles, disabledModules: nextDisabledModules, lastAddedBuckets: nextBuckets, companyRoles: nextCompanyRoles };
     });
-  }, [graphQuery.data]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filterOptions]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phase7TopologyActive =
     filters.showFolders !== DEFAULT_FILTERS.showFolders ||
     !arraysEqualAsSets(filters.permTiers, DEFAULT_FILTERS.permTiers) ||
     !arraysEqualAsSets(filters.simDims, DEFAULT_FILTERS.simDims) ||
     filters.simMin !== DEFAULT_FILTERS.simMin ||
-    filters.viewMode !== DEFAULT_FILTERS.viewMode;
+    filters.viewMode !== DEFAULT_FILTERS.viewMode ||
+    graphMode !== DEFAULT_ACC_GRAPH_MODE;
 
   const hasActiveFilters =
     filters.roles.length > 0 ||
@@ -2419,7 +2500,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     // sub-control deviates from default; keeps the badge readable.
     (phase7TopologyActive ? 1 : 0);
   const displayVisibleCount = isReady ? visibleCount : totalInstances;
-  const graphCacheNeedsBuild = !!users.length && graphQuery.isSuccess && !graphQuery.data?.hit;
+  const graphCacheNeedsBuild = false;
 
   const renderCanvasClass = cn(
     "absolute inset-0 block w-full h-full",
@@ -2485,7 +2566,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Filters</p>
                 {activeFilterCount > 0 && (
                   <button
-                    onClick={() => setFilters(DEFAULT_FILTERS)}
+                    onClick={() => {
+                      setFilters(DEFAULT_FILTERS);
+                      setTopologyMode(DEFAULT_ACC_GRAPH_MODE);
+                    }}
                     className="inline-flex items-center gap-1 px-2 py-1 rounded-md border border-gray-300 bg-white text-[11px] font-medium text-gray-700 hover:bg-gray-100 hover:border-gray-400 transition-colors"
                   >
                     <span aria-hidden="true">×</span>
@@ -2609,7 +2693,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               )}
 
               {/* ─── Phase 7 Plan 07-06: topology dimensions (DISABLED until positional-only redesign) ──────────────── */}
-              {PHASE_7_TOPOLOGY_ENABLED && (
+              {graphMode === "folder-permissions" && (
               <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
                   Topology
@@ -2748,6 +2832,43 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         className="flex-1 relative overflow-hidden"
         style={{ background: GRAPH_BACKGROUND, minWidth: 0 }}
       >
+        <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100%-7rem)] flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur">
+          <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
+            {(["users", "access-hubs", "folder-permissions"] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setTopologyMode(mode)}
+                className={cn(
+                  "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                  graphMode === mode
+                    ? "bg-gray-900 text-white"
+                    : "text-gray-500 hover:text-gray-900",
+                )}
+              >
+                {GRAPH_MODE_LABEL[mode]}
+              </button>
+            ))}
+          </div>
+          <label className="flex h-7 min-w-[180px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 text-[11px] text-gray-500">
+            <Search size={12} className="shrink-0" />
+            <input
+              value={graphSearch}
+              onChange={(event) => setGraphSearch(event.currentTarget.value)}
+              placeholder="Search users"
+              className="min-w-0 flex-1 bg-transparent text-gray-800 outline-none placeholder:text-gray-400"
+            />
+          </label>
+          <button
+            type="button"
+            onClick={resetActiveView}
+            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 text-[11px] font-medium text-gray-600 transition-colors hover:bg-gray-100 hover:text-gray-900"
+          >
+            <RotateCcw size={12} />
+            Reset View
+          </button>
+        </div>
+
         {perfHudEnabled && (
           <div
             className="absolute top-2 right-2 z-50 pointer-events-none rounded-md bg-black/55 text-white px-2 py-1.5 leading-tight font-mono"
@@ -2849,7 +2970,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           </div>
         )}
 
-        {graphQuery.isError && (
+        {graphQuery.isError && !isReady && nodesRef.current.length === 0 && (
           <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-[#F8F7F4]/80 backdrop-blur-sm">
             <span className="text-sm font-semibold text-gray-900 text-center px-6">
               Could not load graph data.
@@ -2914,7 +3035,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             <p className="text-base font-semibold text-gray-800">No users match these filters</p>
             <p className="text-sm text-gray-500 mt-1">Try adjusting your filters to see results</p>
             <button
-              onClick={() => setFilters(DEFAULT_FILTERS)}
+              onClick={() => {
+                setFilters(DEFAULT_FILTERS);
+                setTopologyMode(DEFAULT_ACC_GRAPH_MODE);
+              }}
               className="mt-4 px-4 py-2 rounded-lg bg-gray-900 text-white text-sm font-semibold shadow-sm hover:bg-gray-700 transition-colors"
             >
               Clear filters
@@ -2924,7 +3048,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
         <div className="absolute top-3 right-3 z-10">
           <div className="text-[10px] text-gray-400 pr-1 text-right">
-            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} instances - {motionMetric.linkCount.toLocaleString()} springs - {renderBackend === "three3d" ? "orbit / pan / zoom" : "scroll to zoom - drag to pan"}
+            {displayVisibleCount.toLocaleString()} of {totalInstances.toLocaleString()} users - {GRAPH_MODE_LABEL[graphMode]} - {renderBackend === "three3d" ? "orbit / pan / zoom" : "scroll to zoom - drag to pan"}
           </div>
         </div>
 
@@ -2934,7 +3058,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           <div className="flex items-center rounded-md border border-gray-200 bg-white p-0.5">
             <button
               type="button"
-              onClick={() => setGraphMode("2d")}
+              onClick={() => setGraphDisplay("2d")}
               className={cn(
                 "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                 graphDisplayMode === "2d"
@@ -2946,7 +3070,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             </button>
             <button
               type="button"
-              onClick={() => setGraphMode("3d")}
+              onClick={() => setGraphDisplay("3d")}
               className={cn(
                 "rounded px-1.5 py-0.5 text-[10px] font-medium transition-colors",
                 graphDisplayMode === "3d"

@@ -437,8 +437,8 @@ describe("GRAPH-01: perProjectRoles AND-intersection", () => {
 // ─────────────────────────────────────────────────────────────────────────────
 
 describe("Phase 7 filter dimensions", () => {
-  it("DEFAULT_FILTERS.showFolders === true", () => {
-    expect(DEFAULT_FILTERS.showFolders).toBe(true);
+  it("DEFAULT_FILTERS.showFolders === false", () => {
+    expect(DEFAULT_FILTERS.showFolders).toBe(false);
   });
 
   it("DEFAULT_FILTERS.permTiers deep-equals all four permission tiers", () => {
@@ -459,8 +459,8 @@ describe("Phase 7 filter dimensions", () => {
     expect(DEFAULT_FILTERS.simMin).toBe(2);
   });
 
-  it("DEFAULT_FILTERS.viewMode === 'multi'", () => {
-    expect(DEFAULT_FILTERS.viewMode).toBe("multi");
+  it("DEFAULT_FILTERS.viewMode === 'user-only'", () => {
+    expect(DEFAULT_FILTERS.viewMode).toBe("user-only");
   });
 
   it("hides folder kind when showFolders=false", () => {

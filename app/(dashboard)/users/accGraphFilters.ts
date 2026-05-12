@@ -74,11 +74,11 @@ export const DEFAULT_FILTERS: GraphFilters = {
   dateTo: "",
   perProjectRoles: [],
   // Phase 7 defaults — everything ON, full multi-view, minimum 2 shared attrs.
-  showFolders: true,
+  showFolders: false,
   permTiers: ["view", "upload", "edit", "control"],
   simDims: ["folder-access", "roles", "projects", "company", "admin-tier"],
   simMin: 2,
-  viewMode: "multi",
+  viewMode: "user-only",
 };
 
 /** Minimal shape required by nodeMatchesFilters — matches the SimNode/UserNode fields it reads. */

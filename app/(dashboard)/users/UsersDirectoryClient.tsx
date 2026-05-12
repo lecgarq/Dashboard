@@ -36,6 +36,11 @@ import {
   Copy,
   Check,
   ExternalLink,
+  Activity,
+  UserPlus,
+  Database,
+  CheckCircle2,
+  CircleDashed,
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import { AccProfileSection } from "./AccProfileSection";
@@ -75,6 +80,7 @@ interface LocalDirectoryUser {
 
 type GroupByField = "none" | "department" | "jobTitle" | "costCenter";
 type ViewMode = "grid" | "list";
+type UsersTab = "directory" | "analysis" | "audit" | "graph";
 
 
 
@@ -660,13 +666,202 @@ function ActiveFilterPill({
   );
 }
 
+function CoveragePill({
+  label,
+  available,
+  loading,
+}: {
+  label: string;
+  available: boolean;
+  loading?: boolean;
+}) {
+  const Icon = loading ? CircleDashed : available ? CheckCircle2 : AlertCircle;
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium",
+        loading
+          ? "border-border bg-card text-muted-foreground"
+          : available
+            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500"
+            : "border-amber-500/25 bg-amber-500/10 text-amber-500",
+      )}
+    >
+      <Icon size={12} className={cn("shrink-0", loading && "animate-spin")} />
+      {label}
+    </span>
+  );
+}
+
+function DataCoverageStrip({
+  coverage,
+}: {
+  coverage: Array<{ label: string; available: boolean; loading?: boolean }>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2">
+      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+        <Database size={12} />
+        Data Coverage
+      </span>
+      <div className="h-4 w-px bg-border/60" />
+      {coverage.map((item) => (
+        <CoveragePill key={item.label} {...item} />
+      ))}
+    </div>
+  );
+}
+
+function ActivityAuditPanel({
+  users,
+  invitations,
+  invitationsLoading,
+  selectedEmail,
+  onSelectEmail,
+}: {
+  users: BulkAccUser[];
+  invitations: Array<{
+    inviteeEmail: string | null;
+    inviteeName: string | null;
+    primary: {
+      createdAt: Date | string;
+      inviterName: string | null;
+      inviterEmail: string | null;
+      inviteeEmail: string | null;
+    };
+    others: unknown[];
+  }>;
+  invitationsLoading: boolean;
+  selectedEmail: string | null;
+  onSelectEmail: (email: string) => void;
+}) {
+  const [query, setQuery] = useState("");
+  const searchableUsers = useMemo(() => {
+    const q = normalize(query);
+    return users
+      .filter((user) => user.found)
+      .filter((user) => {
+        if (!q) return true;
+        return normalize(`${user.name ?? ""} ${user.email}`).includes(q);
+      })
+      .slice(0, 80);
+  }, [users, query]);
+
+  const recentUsers = useMemo(
+    () => users
+      .filter((user) => user.addedOn)
+      .sort((a, b) => String(b.addedOn).localeCompare(String(a.addedOn)))
+      .slice(0, 12),
+    [users],
+  );
+
+  const activeEmail = selectedEmail ?? searchableUsers[0]?.email ?? recentUsers[0]?.email ?? null;
+
+  return (
+    <div className="grid min-h-[620px] grid-cols-1 gap-4 xl:grid-cols-[360px_minmax(0,1fr)]">
+      <aside className="flex min-h-0 flex-col gap-4">
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Activity size={15} className="text-primary" />
+            <h2 className="text-sm font-semibold">Activity Audit</h2>
+          </div>
+          <div className="relative">
+            <Search size={13} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={query}
+              onChange={(event) => setQuery(event.currentTarget.value)}
+              placeholder="Find a user"
+              className="h-9 pl-8 text-sm"
+            />
+          </div>
+          <div className="mt-3 max-h-72 space-y-1 overflow-y-auto pr-1">
+            {searchableUsers.map((user) => (
+              <button
+                key={user.email}
+                onClick={() => onSelectEmail(user.email)}
+                className={cn(
+                  "w-full rounded-lg px-2.5 py-2 text-left transition-colors",
+                  activeEmail === user.email ? "bg-primary/10 text-primary" : "hover:bg-muted",
+                )}
+              >
+                <p className="truncate text-xs font-semibold">{user.name || user.email}</p>
+                <p className="truncate text-[11px] text-muted-foreground">{user.email}</p>
+              </button>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-xl border border-border bg-card p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <UserPlus size={15} className="text-primary" />
+            <h2 className="text-sm font-semibold">Who Added Whom</h2>
+          </div>
+          {invitationsLoading ? (
+            <p className="text-xs text-muted-foreground">Loading invitations...</p>
+          ) : invitations.length === 0 ? (
+            <p className="text-xs text-muted-foreground">No recent invitation activity found.</p>
+          ) : (
+            <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+              {invitations.slice(0, 20).map((item) => {
+                const created = item.primary.createdAt instanceof Date
+                  ? item.primary.createdAt
+                  : new Date(item.primary.createdAt);
+                const invitee = item.inviteeName || item.inviteeEmail || "Unknown invitee";
+                const inviter = item.primary.inviterName || item.primary.inviterEmail || "Unknown inviter";
+                return (
+                  <div key={`${item.primary.inviteeEmail ?? invitee}:${created.toISOString()}`} className="rounded-lg bg-muted/40 p-2">
+                    <p className="text-xs font-medium">{invitee}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      Added by {inviter} · {formatDistanceToNowStrict(created, { addSuffix: true })}
+                      {item.others.length > 0 ? ` · +${item.others.length} others` : ""}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </section>
+
+        {recentUsers.length > 0 && (
+          <section className="rounded-xl border border-border bg-card p-4">
+            <h2 className="mb-3 text-sm font-semibold">Recently Added</h2>
+            <div className="space-y-1">
+              {recentUsers.map((user) => (
+                <button
+                  key={user.email}
+                  onClick={() => onSelectEmail(user.email)}
+                  className="w-full rounded-lg px-2 py-1.5 text-left hover:bg-muted"
+                >
+                  <p className="truncate text-xs font-medium">{user.name || user.email}</p>
+                  <p className="text-[11px] text-muted-foreground">{String(user.addedOn).slice(0, 10)}</p>
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+      </aside>
+
+      <section className="min-h-0 rounded-xl border border-border bg-card">
+        {activeEmail ? (
+          <UserActivityBody email={activeEmail} users={users} />
+        ) : (
+          <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
+            Select a user to inspect activity.
+          </div>
+        )}
+      </section>
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // Main Component
 // ---------------------------------------------------------------------------
 
 export function UsersDirectoryClient() {
-  const [activeTab, setActiveTab] = useState<"general" | "analysis" | "graph">("general");
+  const [activeTab, setActiveTab] = useState<UsersTab>("directory");
   const [selectedPersonEmail, setSelectedPersonEmail] = useState<string | null>(null);
+  const [auditEmail, setAuditEmail] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<OrgPerson | null>(null);
@@ -750,7 +945,35 @@ export function UsersDirectoryClient() {
     staleTime: 300_000,
     retry: false,
   });
-  const accSummary = accSummaryRaw as BulkAccUser[];
+  const { data: enrichedUsers = [], isLoading: enrichedLoading } = trpc.accMembers.enrichedUsers.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
+  const invitationsQuery = trpc.accActivity.listInvitations.useQuery(
+    { windowDays: 90, limit: 100 },
+    { staleTime: 300_000, retry: false },
+  );
+  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
+    staleTime: 600_000,
+    retry: false,
+  });
+  const accSummary = useMemo<BulkAccUser[]>(() => {
+    const base = accSummaryRaw as BulkAccUser[];
+    if (!enrichedUsers.length) return base;
+    const enrichMap = new Map(enrichedUsers.map((user) => [user.email.toLowerCase(), user]));
+    return base.map((user) => {
+      const enriched = enrichMap.get(user.email.toLowerCase());
+      if (!enriched) return user;
+      return {
+        ...user,
+        aggregatedStatus: enriched.aggregatedStatus,
+        projectAdmin: enriched.projectAdmin,
+        executive: enriched.executive,
+        companyName: enriched.companyName,
+        perProjectRoleNames: enriched.perProjectRoleNames,
+      };
+    });
+  }, [accSummaryRaw, enrichedUsers]);
 
   const {
     data: directoryData,
@@ -868,7 +1091,7 @@ export function UsersDirectoryClient() {
 
   // Auto-open modal for user navigated from Graph tab
   useEffect(() => {
-    if (!selectedPersonEmail || activeTab !== "general") return;
+    if (!selectedPersonEmail || activeTab !== "directory") return;
     const person = people.find((p) => p.email === selectedPersonEmail);
     if (person) {
       setSelectedPerson(person);
@@ -904,6 +1127,40 @@ export function UsersDirectoryClient() {
     }
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [accSummary]);
+
+  const coverage = useMemo(() => {
+    const hasProjectMembers = accSummary.some((user) => user.found);
+    const hasRoles = accSummary.some((user) => (user.allRoles?.length ?? 0) > 0);
+    const hasLastSignIn = accSummary.some((user) => !!user.lastSignIn);
+    const hasRecentAdditions =
+      accSummary.some((user) => !!user.addedOn) ||
+      (invitationsQuery.data?.invitations.length ?? 0) > 0;
+    return [
+      { label: "Project Members", available: hasProjectMembers, loading: !accSummaryRaw.length && isLoading },
+      { label: "Roles", available: hasRoles, loading: enrichedLoading },
+      { label: "Last Sign-In", available: hasLastSignIn, loading: !accSummaryRaw.length && isLoading },
+      {
+        label: "Activity Logs",
+        available: (invitationsQuery.data?.invitations.length ?? 0) > 0,
+        loading: invitationsQuery.isLoading,
+      },
+      {
+        label: "Folder Permissions",
+        available: (folderMatrixQuery.data?.rows.length ?? 0) > 0,
+        loading: folderMatrixQuery.isLoading,
+      },
+      { label: "Recent Additions", available: hasRecentAdditions, loading: invitationsQuery.isLoading },
+    ];
+  }, [
+    accSummary,
+    accSummaryRaw.length,
+    enrichedLoading,
+    folderMatrixQuery.data,
+    folderMatrixQuery.isLoading,
+    invitationsQuery.data,
+    invitationsQuery.isLoading,
+    isLoading,
+  ]);
 
   const hasActiveFilters = !!(
     filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
@@ -1053,7 +1310,7 @@ export function UsersDirectoryClient() {
           </div>
           <div>
             <h1 className="text-xl font-bold text-foreground tracking-tight">
-              Organization Directory
+              Users
             </h1>
             <p className="text-xs text-muted-foreground">
               {isLoading
@@ -1075,7 +1332,8 @@ export function UsersDirectoryClient() {
           </div>
         </div>
 
-        {/* View toggle + Group by */}
+        {/* Directory view controls */}
+        {activeTab === "directory" && (
         <div className="flex items-center gap-2">
           <Select
             value={groupBy}
@@ -1117,68 +1375,67 @@ export function UsersDirectoryClient() {
             </button>
           </div>
         </div>
+        )}
       </div>
 
       {/* Tab switcher */}
       <div className={cn("flex items-center gap-1 border-b border-border/40 pb-0 shrink-0", activeTab === "graph" && "px-6")}>
-        <button
-          onClick={() => setActiveTab("general")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
-            activeTab === "general"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          General
-        </button>
-        <button
-          onClick={() => setActiveTab("analysis")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
-            activeTab === "analysis"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          ACC Analysis
-        </button>
-        <button
-          onClick={() => setActiveTab("graph")}
-          className={cn(
-            "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px flex items-center gap-1.5",
-            activeTab === "graph"
-              ? "border-primary text-primary"
-              : "border-transparent text-muted-foreground hover:text-foreground"
-          )}
-        >
-          ACC Users Graph
-          <span className="text-[9px] font-semibold px-1 py-0.5 rounded bg-primary/15 text-primary leading-none">
-            v1
-          </span>
-        </button>
+        {([
+          ["directory", "Directory"],
+          ["analysis", "Access Analysis"],
+          ["audit", "Activity Audit"],
+          ["graph", "Spatial Graph"],
+        ] as const).map(([tab, label]) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={cn(
+              "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
+              activeTab === tab
+                ? "border-primary text-primary"
+                : "border-transparent text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {label}
+          </button>
+        ))}
       </div>
 
-      {/* ACC Analysis tab */}
+      <div className={cn("shrink-0", activeTab === "graph" && "px-6")}>
+        <DataCoverageStrip coverage={coverage} />
+      </div>
+
+      {/* Access Analysis tab */}
       {activeTab === "analysis" && (
         <AccAnalysisPanel users={mergedAccUsers} />
       )}
 
-      {/* ACC Users Graph tab */}
+      {/* Activity Audit tab */}
+      {activeTab === "audit" && (
+        <ActivityAuditPanel
+          users={mergedAccUsers}
+          invitations={invitationsQuery.data?.invitations ?? []}
+          invitationsLoading={invitationsQuery.isLoading}
+          selectedEmail={auditEmail}
+          onSelectEmail={setAuditEmail}
+        />
+      )}
+
+      {/* Spatial Graph tab */}
       {activeTab === "graph" && (
         <div className="flex-1 min-h-0 pt-4">
           <AccUsersGraph
             users={mergedAccUsers}
             onSelectUser={(email) => {
               setSelectedPersonEmail(email);
-              setActiveTab("general");
+              setActiveTab("directory");
             }}
           />
         </div>
       )}
 
       {/* General tab content: search bar, filters, directory listing */}
-      {activeTab === "general" && (
+      {activeTab === "directory" && (
       <>
       <div className="flex flex-col gap-2">
         <div className="relative">
