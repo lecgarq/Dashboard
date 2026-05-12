@@ -198,12 +198,12 @@ Plans:
 **Goal:** Extend BOTH 2D AccUsersGraph and 3D Sphere3DGraph with: (1) folder hubs (depth-2 collapsed) + role↔folder edges colored by 4 permission tiers, (2) user↔user attribute-similarity edges across 5 parallel dimensions (folder-access, roles, projects, company, admin-tier), and (3) a "user-only" view-mode toggle. Reuses `accFoldersRouter.getMatrix` verbatim — no new tRPC, no Prisma migration. 3D folder hubs gated on Phase 4 GRAPH-04 GO; 3D wiring overall gated on Phase 6 sphere3d/* artifacts existing (Wave-0 gate in 07-01).
 **Requirements**: GRAPH7-01..12 (derived from CONTEXT — Phase 7 has no roadmap-assigned REQ-IDs)
 **Depends on:** Phase 6 (3D); Phase 4 GRAPH-04 perf-gate (3D folder hubs only)
-**Plans:** 9 plans
+**Plans:** 3/9 plans executed
 
 Plans:
-- [ ] 07-01-PLAN.md — Wave 0 gate: probe Phase 6 sphere3d/* + Phase 4 GRAPH-04 GO/NO-GO → PHASE-DEPS.md
-- [ ] 07-02-PLAN.md — Wave 1 TDD: lib/acc/folderHubCollapse.ts (depth-N collapse with UNION semantics)
-- [ ] 07-03-PLAN.md — Wave 1 TDD: lib/acc/userSimilarity.ts (5-dimension parallel edges, bucketed indexing)
+- [x] 07-01-PLAN.md — Wave 0 gate: probe Phase 6 sphere3d/* + Phase 4 GRAPH-04 GO/NO-GO → PHASE-DEPS.md
+- [x] 07-02-PLAN.md — Wave 1 TDD: lib/acc/folderHubCollapse.ts (depth-N collapse with UNION semantics)
+- [x] 07-03-PLAN.md — Wave 1 TDD: lib/acc/userSimilarity.ts (5-dimension parallel edges, bucketed indexing)
 - [ ] 07-04-PLAN.md — Wave 1 TDD: extend accGraphFilters.ts (showFolders/permTiers/simDims/simMin/viewMode + nodeMatchesFilters)
 - [ ] 07-05-PLAN.md — Wave 2: 2D topology adapter wiring (accGraphOrganicLayout + graphRenderers + cosmosUtils + tests)
 - [ ] 07-06-PLAN.md — Wave 3: 2D AccUsersGraph filter panel + URL persistence + per-edge color buffer + UAT checkpoint
