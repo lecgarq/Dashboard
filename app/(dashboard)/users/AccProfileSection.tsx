@@ -18,10 +18,17 @@ import {
   Activity,
   CheckCircle2,
   XCircle,
+  AlertTriangle,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
+import {
+  inferUserFolderPermissions,
+  type InferredUserFolderPermission,
+  type SpatialBulkAccUser,
+  type SpatialFolderPermissionRow,
+} from "@/lib/acc/accUserSpatialProfile";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -353,12 +360,93 @@ type AccProfileData = {
   projects?: ProjectData[];
 };
 
+function UserFolderPermissionsSection({
+  permissions,
+  loading,
+}: {
+  permissions: InferredUserFolderPermission[];
+  loading: boolean;
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, InferredUserFolderPermission[]>();
+    for (const permission of permissions) {
+      const key = permission.projectName || permission.projectId;
+      const list = map.get(key) ?? [];
+      list.push(permission);
+      map.set(key, list);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [permissions]);
+
+  return (
+    <div className="space-y-2 rounded-xl border border-border/30 bg-muted/5 p-4">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide flex items-center gap-1.5">
+          <FolderOpen size={12} className="text-teal-500" />
+          Folder Permissions
+        </p>
+        {permissions.length > 0 && (
+          <span className="text-[11px] font-semibold text-primary">
+            {permissions.length} inferred
+          </span>
+        )}
+      </div>
+
+      {loading ? (
+        <p className="text-xs text-muted-foreground">Loading folder permissions...</p>
+      ) : permissions.length === 0 ? (
+        <p className="text-xs text-muted-foreground">
+          No role-based folder permissions matched this user's project roles.
+        </p>
+      ) : (
+        <div className="max-h-64 space-y-3 overflow-y-auto pr-1 custom-scrollbar">
+          {grouped.map(([projectName, rows]) => (
+            <div key={projectName} className="space-y-1.5">
+              <p className="text-xs font-semibold text-foreground">{projectName}</p>
+              {rows.map((row) => (
+                <div
+                  key={`${row.projectId}:${row.folderId}:${row.roleId}`}
+                  className="rounded-lg border border-border/30 bg-card/80 p-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-medium text-foreground">
+                        {row.folderPath || "(root)"}
+                      </p>
+                      <p className="truncate text-[11px] text-muted-foreground">
+                        via {row.grantedByProjectRole}
+                      </p>
+                    </div>
+                    <Badge variant="secondary" className="shrink-0 text-[10px] capitalize">
+                      {row.permissionKey}
+                    </Badge>
+                  </div>
+                  {row.orphanReasons.length > 0 && (
+                    <div className="mt-1.5 flex items-center gap-1.5 text-[11px] text-amber-500">
+                      <AlertTriangle size={11} />
+                      <span>{row.orphanReasons.join(", ")}</span>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function AccProfileFull({
   data,
   onRefresh,
+  folderPermissions,
+  folderPermissionsLoading,
 }: {
   data: AccProfileData;
   onRefresh: () => void;
+  folderPermissions: InferredUserFolderPermission[];
+  folderPermissionsLoading: boolean;
 }) {
   const projects = data.projects ?? [];
   const [searchQuery, setSearchQuery] = useState("");
@@ -511,6 +599,11 @@ function AccProfileFull({
       )}
 
       {/* ── Search + Filter + Sort ── */}
+      <UserFolderPermissionsSection
+        permissions={folderPermissions}
+        loading={folderPermissionsLoading}
+      />
+
       {projects.length > 3 && (
         <div className="space-y-3 p-4 rounded-xl bg-muted/5 border border-border/20">
           {/* Search bar */}
@@ -642,6 +735,55 @@ export function AccProfileSection({ email }: { email: string }) {
       { staleTime: 5 * 60 * 1000, retry: false }
     );
 
+  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
+    staleTime: 600_000,
+    retry: false,
+    enabled: data?.found === true,
+  });
+
+  const folderPermissions = useMemo(() => {
+    if (data?.found !== true) return [];
+    const profile = data as Partial<AccProfileData>;
+    const projects = (data.projects ?? []).map((project) => ({
+      id: project.id,
+      name: project.name,
+      status: project.status,
+      isAdmin: project.isAdmin,
+      roles: project.roles ?? [],
+      modules: project.modules ?? [],
+    }));
+    const spatialUser: SpatialBulkAccUser = {
+      email,
+      name: data.name ?? email,
+      found: true,
+      projectCount: projects.length,
+      activeCount: projects.filter((project) => project.status === "active").length,
+      adminCount: projects.filter((project) => project.isAdmin).length,
+      hasNoProjects: projects.length === 0,
+      syncedAt: data.syncedAt,
+      allRoles: Array.from(new Set(projects.flatMap((project) => project.roles))),
+      allModules: Array.from(new Set(projects.flatMap((project) => project.modules))),
+      projects,
+      companyRole: profile.role ?? null,
+      lastSignIn: null,
+      isAccountAdmin: profile.role === "account_admin",
+      addedOn: profile.addedOn ?? null,
+      companyName: profile.company ?? null,
+    };
+    const rows: SpatialFolderPermissionRow[] = (folderMatrixQuery.data?.rows ?? []).map((row) => ({
+      folderId: row.folderId,
+      folderPath: row.folderPath,
+      projectId: row.projectId,
+      projectName: row.projectName,
+      roleId: row.roleId,
+      roleName: row.roleName,
+      permType: row.permType,
+      actions: row.actions,
+      orphanReasons: row.orphanReasons,
+    }));
+    return inferUserFolderPermissions(spatialUser, rows);
+  }, [data, email, folderMatrixQuery.data]);
+
   function handleRefresh() {
     setForceRefresh(true);
     utils.users.getAccProfile
@@ -730,6 +872,8 @@ export function AccProfileSection({ email }: { email: string }) {
       <AccProfileFull
         data={data as AccProfileData}
         onRefresh={handleRefresh}
+        folderPermissions={folderPermissions}
+        folderPermissionsLoading={folderMatrixQuery.isLoading}
       />
     );
   }

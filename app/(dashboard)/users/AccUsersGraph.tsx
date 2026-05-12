@@ -31,7 +31,6 @@ import {
 } from "./accGraph3d";
 import {
   isWebGL2Available,
-  buildClusterIdsFromNodes,
   controlsToSimulationConfig,
   pointInPolygon,
   projectTopologyLinksToIndexPairs,
@@ -53,6 +52,10 @@ import {
 } from "./accGraphOrganicLayout";
 import type { SimilarityInput, SimilarityDim } from "@/lib/acc/userSimilarity";
 import type { FolderHubInputRow } from "@/lib/acc/folderHubCollapse";
+import {
+  buildAccUserSpatialProfile,
+  type SpatialFolderPermissionRow,
+} from "@/lib/acc/accUserSpatialProfile";
 import {
   ACC_GRAPH_MODE_STORAGE_KEY,
   DEFAULT_ACC_GRAPH_MODE,
@@ -123,6 +126,8 @@ interface UserNode extends PhysicsNode {
   executive?: boolean;
   isAccountAdmin?: boolean;
   companyName?: string | null;
+  spatialClusterKey?: string;
+  spatialPermissionKeys?: string[];
 }
 
 type SimNode = UserNode;
@@ -199,6 +204,36 @@ function orderedNodeIdsMatch(cachedIds: readonly string[] | null | undefined, no
   return true;
 }
 
+function buildSpatialClusterIds(nodes: readonly SimNode[]): (number | undefined)[] {
+  const clusterIds: (number | undefined)[] = new Array(nodes.length);
+  const keyToCluster = new Map<string, number>();
+  let nextCluster = 0;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const key = nodes[i].spatialClusterKey || nodes[i].roles?.[0] || "";
+    if (!key) {
+      clusterIds[i] = undefined;
+      continue;
+    }
+    let cid = keyToCluster.get(key);
+    if (cid === undefined) {
+      cid = nextCluster++;
+      keyToCluster.set(key, cid);
+    }
+    clusterIds[i] = cid;
+  }
+
+  return clusterIds;
+}
+
+function spatialClusterIdsToWorkerArray(clusterIds: readonly (number | undefined)[]): Int32Array {
+  const workerClusterIds = new Int32Array(clusterIds.length);
+  for (let i = 0; i < clusterIds.length; i++) {
+    workerClusterIds[i] = clusterIds[i] ?? -1;
+  }
+  return workerClusterIds;
+}
+
 function graphNodeToSimNode(node: AccGraphNode): SimNode {
   return {
     kind: "user",
@@ -245,9 +280,14 @@ function dateBucket(raw: string | Date | null | undefined): string {
   return match?.[1] ?? "";
 }
 
-function accUserToSimNode(user: BulkAccUser, index: number): SimNode {
+function accUserToSimNode(
+  user: BulkAccUser,
+  index: number,
+  folderRows: readonly SpatialFolderPermissionRow[],
+): SimNode {
   const email = user.email.toLowerCase();
   const firstProject = user.projects?.[0];
+  const profile = buildAccUserSpatialProfile(user, folderRows);
   const roles = [...new Set(user.allRoles ?? [])].sort((a, b) => a.localeCompare(b));
   const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
   return {
@@ -263,8 +303,8 @@ function accUserToSimNode(user: BulkAccUser, index: number): SimNode {
     projectCount: user.projectCount,
     roles,
     modules,
-    color: roleColor(roles[0]),
-    lastAddedBucket: dateBucket(user.addedOn),
+    color: roleColor(profile.colorKey),
+    lastAddedBucket: profile.dimensions.addedBucket,
     individualAccess: roles.length > 0 || modules.length > 0,
     companyRole: user.companyRole ?? null,
     lastSignIn: user.lastSignIn ?? null,
@@ -276,6 +316,8 @@ function accUserToSimNode(user: BulkAccUser, index: number): SimNode {
     executive: user.executive,
     isAccountAdmin: user.isAccountAdmin,
     companyName: user.companyName,
+    spatialClusterKey: profile.clusterKey,
+    spatialPermissionKeys: profile.dimensions.permissionKeys,
     x: 0.5 + (index % 11) * 0.001,
     y: 0.5 + (index % 13) * 0.001,
     vx: 0,
@@ -812,8 +854,22 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
     staleTime: 600_000,
     retry: false,
-    enabled: graphMode === "folder-permissions",
+    enabled: users.length > 0,
   });
+
+  const spatialFolderRows = useMemo<SpatialFolderPermissionRow[]>(() => {
+    return (folderMatrixQuery.data?.rows ?? []).map((row) => ({
+      folderId: row.folderId,
+      folderPath: row.folderPath,
+      projectId: row.projectId,
+      projectName: row.projectName,
+      roleId: row.roleId,
+      roleName: row.roleName,
+      permType: row.permType,
+      actions: row.actions,
+      orphanReasons: row.orphanReasons,
+    }));
+  }, [folderMatrixQuery.data]);
 
   // Phase 7 Plan 07-06: build SimilarityInput from `users` prop + folder matrix.
   // Resolves transitive user→roleIds→folderIds once per data refresh (Pitfall 2 +
@@ -976,18 +1032,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     const topology = buildExtendedTopology(nodes);
     const positionsForWorker = new Float32Array(posRef.current);
 
-    // Build cluster IDs from each user's primary role.
-    // Cluster slider in worker pulls nodes with the same id toward a shared centroid.
-    const clusterIds = new Int32Array(nodes.length);
-    const roleToCluster = new Map<string, number>();
-    let nextCluster = 0;
-    for (let i = 0; i < nodes.length; i++) {
-      const role = nodes[i].roles?.[0] ?? "";
-      if (!role) { clusterIds[i] = -1; continue; }
-      let cid = roleToCluster.get(role);
-      if (cid === undefined) { cid = nextCluster++; roleToCluster.set(role, cid); }
-      clusterIds[i] = cid;
-    }
+    // Build cluster IDs from extracted ACC profile dimensions.
+    // Cluster slider pulls nodes with the same spatial profile key together.
+    const clusterIds = spatialClusterIdsToWorkerArray(buildSpatialClusterIds(nodes));
 
     worker.postMessage(
       {
@@ -1504,7 +1551,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             console.log("[02-05-DEBUG] cosmos-create.then: SKIPPED setInitialPositions — posRef empty");
           }
           // Cluster ids are stable for the dataset — strength is sliderized.
-          const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "role");
+          const clusterIds = buildSpatialClusterIds(nodesRef.current);
           if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
           // CRITICAL: project topology links on the main thread because the
           // worker (which normally posts to linksRef) is gated off here. Without
@@ -1806,7 +1853,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     const rawNodes = users
       .filter((user) => user.found || user.projectCount > 0 || user.hasNoProjects)
-      .map(accUserToSimNode);
+      .map((user, index) => accUserToSimNode(user, index, spatialFolderRows));
     if (rawNodes.length === 0) {
       nodesRef.current = [];
       seedPosRef.current = new Float32Array(0);
@@ -1881,7 +1928,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (posRef.current.length > 0) {
         cosmosRendererRef.current.setInitialPositions(posRef.current);
       }
-      const clusterIds = buildClusterIdsFromNodes(rawNodes, "role");
+      const clusterIds = buildSpatialClusterIds(rawNodes);
       if (clusterIds.length > 0) {
         cosmosRendererRef.current.setPointClusters(clusterIds);
       }
@@ -1920,7 +1967,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     isRefreshingRef.current = false;
     setIsReady(true);
     markGraphDirty();
-  }, [users, graphMode, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
+  }, [users, graphMode, spatialFolderRows, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
 
   useEffect(() => {
     filtersRef.current = filters;
