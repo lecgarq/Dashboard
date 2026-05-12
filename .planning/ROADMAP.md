@@ -215,3 +215,18 @@ Plans:
 
 _v1.0 milestone shipped 2026-05-08. Detailed phase content archived in `.planning/milestones/`._
 _v2.0 roadmap drafted 2026-05-11 from REQUIREMENTS.md (41 reqs)._
+
+### Phase 07.1: Positional-only similarity redesign + filter UI reshape (INSERTED)
+
+**Goal:** Convert the 5 user↔user similarity dimensions and 4 permission tiers from visible parallel edges/ribbons into positional clustering forces (similarity) and node-level visuals (tiers via pie-glyphs). Reshape filter UI: 'Topology' -> 'Clustering' with per-dim 0-1 strength sliders, 'User-only view' promoted to top-level toggle, tier swatches double as on-screen legend. 2D AccUsersGraph only; 3D Sphere3DGraph parity deferred to follow-up phase. Flip the gate flag at app/(dashboard)/users/AccUsersGraph.tsx:69 from false to true.
+**Requirements**: GRAPH71-01..20 (derived from CONTEXT/RESEARCH — Phase 7.1 has no roadmap-assigned REQ-IDs)
+**Depends on:** Phase 7
+**Plans:** 6 plans
+
+Plans:
+- [ ] 07.1-01-PLAN.md — Wave 1 TDD: lib/acc/similarityForceModel.ts (pure force-link buffer composer) + Top-K perf spike -> TOPK-PERF.md
+- [ ] 07.1-02-PLAN.md — Wave 1 TDD: lib/acc/userMaxPermTier.ts + lib/acc/pieGlyphRaster.ts (pure modules for node-level tier filter + pie-glyph LUT)
+- [ ] 07.1-03-PLAN.md — Wave 1 TDD: extend accGraphFilters.ts (simStr + maxPermTier node-level filter)
+- [ ] 07.1-04-PLAN.md — Wave 2: adapter + renderer two-channel rewire (accGraphOrganicLayout drops similarity links + emits forceLinks; CosmosGraphRenderer setForceLinkChannel/updateForceLinkStrengths; cosmosUtils buildLinkStrengthBuffer)
+- [ ] 07.1-05-PLAN.md — Wave 3: AccUsersGraph UI reshape (Clustering section, promoted user-only toggle, pie-glyph wiring, simStr URL round-trip, hot-path strength update, flip line 69 gate)
+- [ ] 07.1-06-PLAN.md — Wave 4: phase-end manual UAT checkpoint -> UAT.md DECISION line (Luis on Railway prod)
