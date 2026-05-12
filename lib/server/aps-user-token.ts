@@ -10,7 +10,9 @@ const APS_TOKEN_URL =
   "https://developer.api.autodesk.com/authentication/v2/token";
 const APS_REFRESH_BUFFER_SEC = 5 * 60;
 const DEFAULT_AUTODESK_SCOPES =
-  "openid data:read viewables:read user:read account:read";
+  // data:create is required for POST /data-connector/v1/.../requests
+  // (Data Connector requires 3-legged user-context auth — see server/auth.ts).
+  "openid data:read data:create viewables:read user:read account:read";
 
 type AutodeskAccountRecord = {
   id: string;
