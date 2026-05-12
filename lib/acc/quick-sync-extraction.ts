@@ -15,6 +15,7 @@ import { fetchHqUsers, fetchWithRetry } from "@/lib/server/acc-admin";
 import { IntegrationError } from "@/lib/server/integration-errors";
 import { getAccountId } from "@/lib/server/acc-helpers";
 import { get2LeggedAutodeskToken } from "@/lib/server/aps-user-token";
+import { extractAndPersistFolders } from "./folderCrawl";
 import type { BulkAccUser, BulkAccProject } from "./acc-types";
 
 // ---------------------------------------------------------------------------
@@ -913,6 +914,62 @@ export async function runQuickSync(
   );
 
   await writeMemberCacheFromAggregator(prisma, aggregator, new Date());
+
+  // ---- Folder extraction (FLDR-01, FLDR-02) ---------------------------------
+  // Gated by FOLDER_CRAWL_IN_RELEASE=true because the full-hub crawl is
+  // estimated at ~48 min best-case / ~4 h worst-case (CRAWL-ESTIMATE.md),
+  // which exceeds the 5-minute release watchdog (SYNC-01). The weekly cron
+  // (scripts/folder-crawl-cron.cjs) owns the production crawl by default;
+  // this gate exists only for explicit operator opt-in or local dev runs.
+  if (process.env.FOLDER_CRAWL_IN_RELEASE === "true") {
+    console.log(
+      `[quick-sync] FOLDER_CRAWL_IN_RELEASE=true — running folder extraction across ${activeProjects.length} projects`,
+    );
+    const hubRow = await prisma.project.findFirst({ select: { apsHubId: true } });
+    const hubId = hubRow?.apsHubId ?? null;
+    if (!hubId) {
+      console.warn(
+        "[quick-sync] folder extraction skipped: Project.apsHubId not configured",
+      );
+    } else {
+      const folderLimit = pLimit(5);
+      const folderResults = await Promise.all(
+        activeProjects.map((p) =>
+          folderLimit(() =>
+            extractAndPersistFolders(
+              prisma,
+              hubId,
+              { id: p.id, accountId, name: p.name },
+              accessToken,
+            ).catch((err: unknown) => {
+              const msg = err instanceof Error ? err.message : String(err);
+              console.error(
+                `[quick-sync] folder extraction failed for ${p.name}: ${msg}`,
+              );
+              return {
+                folderCount: 0,
+                permissionCount: 0,
+                status: "failed" as const,
+              };
+            }),
+          ),
+        ),
+      );
+      const totalFolders = folderResults.reduce((s, r) => s + r.folderCount, 0);
+      const totalPerms = folderResults.reduce(
+        (s, r) => s + r.permissionCount,
+        0,
+      );
+      const failedFolders = folderResults.filter((r) => r.status === "failed").length;
+      console.log(
+        `[quick-sync] folders=${totalFolders} perms=${totalPerms} failed=${failedFolders} across ${activeProjects.length} projects`,
+      );
+    }
+  } else {
+    console.log(
+      "[quick-sync] folder extraction skipped (set FOLDER_CRAWL_IN_RELEASE=true to enable; default is weekly cron via scripts/folder-crawl-cron.cjs)",
+    );
+  }
 
   const durationMs = Date.now() - startedAt.getTime();
   console.log(
