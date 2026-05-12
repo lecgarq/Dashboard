@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 7 — User-only Graph Topology (4/9 plans complete)
+current_phase: Phase 7 — User-only Graph Topology (5/9 plans complete)
 status: executing
-last_updated: "2026-05-12T15:51:06.017Z"
+last_updated: "2026-05-12T15:59:59.227Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 41
-  completed_plans: 20
+  completed_plans: 21
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
-**Current phase:** Phase 7 — User-only Graph Topology (4/9 plans complete)
-**Status:** In progress — Plan 07-04 complete; GraphFilters extended with 5 Phase 7 dimensions (showFolders, permTiers, simDims, simMin, viewMode). Wave 1 done. Plan 07-05 (2D adapter wiring) + 07-06 (filter panel UI) unblocked.
+**Current phase:** Phase 7 — User-only Graph Topology (5/9 plans complete)
+**Status:** In progress — Plan 07-05 complete; 2D topology adapter emits folder hubs + role-folder/folder-project/user-similarity edges; resolveRenderNodeColor defends Pitfall 4; buildLinkColorBuffer accepts perEdgeColors. Wave 2 half done. Plan 07-06 (filter panel UI) unblocked.
 
 ## Session Log
 
@@ -42,6 +42,7 @@ See: .planning/PROJECT.md
 - 2026-05-12: Phase 7 plan 02 complete (pure depth-N folder-collapse module + Vitest 7-case coverage). `lib/acc/folderHubCollapse.ts` exports `collapseFoldersToDepth(rows, maxDepth=2)` + `CollapsedFolder` + `FolderHubInputRow` with UNION-on-(roleId,permType), dedupe, `maxDepth=Infinity` escape hatch, cross-project isolation. Zero Prisma/React deps. GRAPH7-01 satisfied at code level — phase-setup follow-up: register GRAPH7-* in REQUIREMENTS.md (not yet present). Stopped at: Plan 07-02 complete; Plan 07-05 (2D hub wiring) unblocked.
 - 2026-05-12: Phase 7 plan 04 complete (GraphFilters + FilterableNode + nodeMatchesFilters extended with 5 Phase 7 dimensions). New type exports: PermTierKey, SimilarityDimKey, ViewMode, GraphNodeKind. DEFAULT_FILTERS canonical defaults: folders ON, all 4 tiers, all 5 sim dims, simMin=2, viewMode=multi. nodeMatchesFilters gains 2 cheap short-circuit gates (user-only + showFolders) placed FIRST. permTiers/simDims/simMin are edge-level filters — applied in adapter (Plan 07-05), NOT here. AccUsersGraph.readFiltersFromUrl now spreads DEFAULT_FILTERS so URL-restore picks up new defaults (Rule 3 fix). 50/50 Vitest pass. GRAPH7-06, GRAPH7-09, FILT-EXT satisfied at code level. Stopped at: Plan 07-04 complete; Wave 2 (Plans 07-05 + 07-06) unblocked.
 - 2026-05-12: Phase 7 plan 03 complete (pure user-similarity module + Vitest 9-case coverage). `lib/acc/userSimilarity.ts` exports `computeSimilarityEdges(input, enabledDims, minShared=2)` + `SimilarityDim` + `SimilarityEdge` + `SimilarityInput` + `SIMILARITY_DIMS`. Bucketed indexing — Map<attrValue, userIds[]> per dimension, then pair-count within shared buckets only (no O(n²) outer scan). Canonical pair order (userA<userB) for natural dedupe. 5 dimensions: folder-access, roles, projects, company, admin-tier. Null company/adminTier excluded from buckets. Perf smoke (500 users × 10 roles, all dims) well under 500ms. Zero Prisma/React deps. GRAPH7-04, GRAPH7-05 satisfied at code level — REQUIREMENTS.md does not yet track GRAPH7-* IDs (phase-setup follow-up, same as 07-02). Stopped at: Plan 07-03 complete; Plan 07-04 (filter additions) is next gate.
+- 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
 ## Decisions
 
@@ -99,6 +100,10 @@ See: .planning/PROJECT.md
 - [Phase 07]: 07-04: FilterableNode.kind made OPTIONAL with `?? "user"` fallback so the thousands of existing SimNode/UserNode call sites typecheck without literal-narrowing changes.
 - [Phase 07]: 07-04: Phase 7 kind gates placed FIRST in nodeMatchesFilters — cheapest short-circuit; avoids running 7 downstream array comparisons for a non-user node in user-only view.
 - [Phase 07]: 07-04 (Rule 3): AccUsersGraph.readFiltersFromUrl object-literal didn't spread DEFAULT_FILTERS → TS2739 after GraphFilters widened. Fix: prepend `...DEFAULT_FILTERS` to the returned literal so all future GraphFilters extensions auto-propagate to URL-restored filters.
+- [Phase 07]: 07-05: Folder hub IDs use raw 'hub:folder:<encoded(folder.id)>' bypassing normalizeHubValue — collapseFoldersToDepth already produces project-scoped deterministic IDs; normalizing would corrupt path separators.
+- [Phase 07]: 07-05: resolveRenderNodeColor + FOLDER_NODE_COLOR ('#5EEAD4') centralized in graphRenderers.ts — both Canvas2D draw loop and cosmosUtils.buildNodeColorBuffer route through it so neither backend can forget the Pitfall 4 folder override.
+- [Phase 07]: 07-05: PERM_TIER_LUT defaults unknown PermType to 'view' (least-privilege rendering) instead of throwing — defends against APS adding a new tier without crashing the adapter.
+- [Phase 07]: 07-05: buildLinkColorBuffer kept zero-arg-compatible —  at graphRenderers.ts:759 unchanged; perEdgeColors override is opt-in via the new options bag.
 
 ## Accumulated Context
 
@@ -124,4 +129,5 @@ See: .planning/PROJECT.md
 | Phase 07 P01 | ~3 min | 1 tasks | 2 files |
 | Phase 07 P02 | ~4 min | 2 tasks | 2 files |
 | Phase 07 P03 | ~3 min | 2 tasks | 2 files |
+| Phase 07 P05 | ~10 min | 3 tasks | 4 files |
 
