@@ -1338,31 +1338,35 @@ export const usersRouter = router({
   // Hub role definitions — roles that exist in ACC regardless of assignment
   // -------------------------------------------------------------------------
 
+  // Reads from AccRole + AccProjectRole — populated per-project by the Quick Sync
+  // path (TD-012 resolution: ACC has no hub-master roles endpoint, role rows are
+  // accumulated from per-project /industry_roles responses).
   getHubRoles: adminProcedure.query(async ({ ctx }) => {
-    const cached = await ctx.db.accHubRoleCache.findUnique({ where: { id: "singleton" } });
-    if (!cached) return { roles: [] as { id: string; name: string; memberCount: number }[], syncedAt: null };
-    return {
-      roles: cached.roles as { id: string; name: string; memberCount: number }[],
-      syncedAt: cached.syncedAt,
-    };
-  }),
-
-  syncHubRoles: adminProcedure.mutation(async ({ ctx }) => {
-    let accessToken: string;
-    try {
-      accessToken = await get2LeggedAutodeskToken();
-    } catch (error) {
-      throw toAccRouterError(error, "ACC Admin API: APS app credentials are not configured.");
-    }
-    const accountId = await resolveAccountIdForRouter(ctx.db);
-    const { fetchAccHubRoles } = await import("@/lib/server/acc-admin");
-    const roles = await fetchAccHubRoles(accountId, accessToken);
-    await ctx.db.accHubRoleCache.upsert({
-      where: { id: "singleton" },
-      create: { id: "singleton", roles },
-      update: { roles },
+    const roles = await ctx.db.accRole.findMany({
+      select: { id: true, name: true, syncedAt: true },
+      orderBy: { name: "asc" },
     });
-    return { count: roles.length, roles };
+    if (roles.length === 0) {
+      return { roles: [] as { id: string; name: string; memberCount: number }[], syncedAt: null };
+    }
+    const counts = await ctx.db.accProjectRole.groupBy({
+      by: ["roleId"],
+      where: { memberId: { not: null } },
+      _count: { memberId: true },
+    });
+    const countByRole = new Map(counts.map((c) => [c.roleId, c._count.memberId]));
+    const syncedAt = roles.reduce<Date>(
+      (latest, r) => (r.syncedAt > latest ? r.syncedAt : latest),
+      roles[0].syncedAt,
+    );
+    return {
+      roles: roles.map((r) => ({
+        id: r.id,
+        name: r.name,
+        memberCount: countByRole.get(r.id) ?? 0,
+      })),
+      syncedAt,
+    };
   }),
 
 });

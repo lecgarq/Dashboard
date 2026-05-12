@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Search, ChevronDown, ChevronRight, Users, ShieldCheck, Briefcase, RefreshCw, AlertTriangle, Ghost } from "lucide-react";
+import { Search, ChevronDown, ChevronRight, Users, ShieldCheck, Briefcase, AlertTriangle, Ghost } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -87,9 +87,6 @@ export function AccRolesTab({
   );
 
   const hubRolesQuery = trpc.users.getHubRoles.useQuery(undefined, { staleTime: 5 * 60_000 });
-  const syncHubRoles = trpc.users.syncHubRoles.useMutation({
-    onSuccess: () => hubRolesQuery.refetch(),
-  });
 
   const { unassignedRoles, deletedRoles } = useMemo(() => {
     const hubRoles = hubRolesQuery.data?.roles ?? [];
@@ -129,14 +126,6 @@ export function AccRolesTab({
         {hubRolesQuery.data?.roles.length ? (
           <StatPill icon={<Briefcase size={15} />} label="Hub Roles Total" value={hubRolesQuery.data.roles.length} color="#f59e0b" />
         ) : null}
-        <button
-          onClick={() => syncHubRoles.mutate()}
-          disabled={syncHubRoles.isPending}
-          className="flex items-center gap-1.5 text-xs text-amber-400 hover:text-amber-300 border border-amber-500/20 rounded-lg px-3 py-1.5 bg-amber-500/5 hover:bg-amber-500/10 transition-all disabled:opacity-50 ml-auto"
-        >
-          <RefreshCw size={12} className={syncHubRoles.isPending ? "animate-spin" : ""} />
-          {syncHubRoles.isPending ? "Syncing..." : "Sync Hub Roles"}
-        </button>
       </div>
 
       {/* Deleted roles warning */}

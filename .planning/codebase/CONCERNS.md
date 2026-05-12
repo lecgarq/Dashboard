@@ -6,12 +6,6 @@ This document captures known concerns, technical debt, scaling limits, fragile a
 
 ## Blocking Issues
 
-### GAP-002 / TD-012 — AccRole schema mismatch
-- **Where:** `prisma/schema.prisma` (AccRole, AccProjectRole, AccProjectMember), `lib/acc/acc-sync.ts`
-- **Problem:** No hub-master roles endpoint exists on the ACC/APS API. Current schema assumes one, blocking population of `AccRole` / `AccProjectRole` / `AccProjectMember`.
-- **Impact:** Role-based filtering and role-aware similarity dims cannot be fully populated.
-- **Next step:** Phase 02.1 decision between (a) compound-key roles, (b) name-dedupe roles, or (c) project-scoped roles only.
-
 ### APS Data Connector provisioning
 - **Where:** External (Autodesk APS app config + ACC Account Admin)
 - **Problem:** Production APS `client_id` is not authorized for the Data Connector API. ZIP-export ingest (`lib/acc/ingestActivityZip.ts`) cannot run in prod.

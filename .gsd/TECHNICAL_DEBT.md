@@ -114,7 +114,7 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 
 ## 2026-05-11 — Phase 02 first-run discovery (gap-closure 02.1 candidates)
 
-### TD-012: AccRole schema doesn't match ACC API — no hub-master roles endpoint exists
+### TD-012: AccRole schema doesn't match ACC API — no hub-master roles endpoint exists [RESOLVED 2026-05-12]
 - **Surfaced:** First real CLI run of `runQuickSync` against production (2026-05-11). After 1,143 projects were successfully upserted to `AccProject`, `extractAndPersistHubRoles` failed with `404 The requested resource does not exist`.
 - **Root cause:** Plan 02-02 was built on a non-existent endpoint. Probing confirmed:
   - `GET /hq/v1/accounts/:id/users` → 200 (auth/scope/accountId all correct)
@@ -122,12 +122,8 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
   - `GET /hq/v2/accounts/:id/industry_roles` → 404 (path doesn't exist)
   - `GET /hq/v2/accounts/:id/projects/:pid/industry_roles` → 200 (real endpoint, but **per-project, with project-scoped IDs**)
 - **Architectural implication:** ACC has no hub-master role list. Two projects each have their own `id` for "Architect" — role IDs are project-scoped. ROLE-01's "hub-master AccRole as ID source-of-truth" is not achievable with the real API.
-- **Affected production code:** `lib/server/acc-admin.ts` `fetchAccHubRoles` (line 387) and `server/routers/users.ts` `syncHubRoles` mutation (line 1350) both hit the same non-existent URL — they have never worked. Likely never called.
-- **Resolution paths (decide in 02.1):**
-  1. Compound key: make AccRole `(projectId, id)` natural key. Closest to ACC's data model.
-  2. Name-dedupe: collect unique role names across projects, synthesize hub IDs, lose per-project ID provenance.
-  3. Accept project-scoped rows: keep `id` as PK (it's globally unique because GUID), let two "Architect" rows coexist. Simplest; semantic of "AccRole" changes.
-- **Tracking:** Blocks AccRole / AccProjectRole / AccProjectMember population. AccProject is unaffected and already populated in prod.
+- **Resolution (2026-05-12):** Adopted **project-scoped only** (option 3). The Quick Sync per-project path in `lib/acc/quick-sync-extraction.ts` (`fetchProjectRoles` + per-project upsert) already populates `AccRole` opportunistically from real APS responses, keyed by the APS-returned role GUID. Two roles named "Architect" in different projects coexist as distinct rows — `AccRole.accountId` now means "first hub seen", not "hub-master source-of-truth". `getHubRoles` rewired to read from `AccRole` + `AccProjectRole` aggregate counts. Dead `fetchAccHubRoles`, `syncHubRoles`, and the "Sync Hub Roles" UI button removed.
+- **Tracking:** Closed. `AccRole`/`AccProjectRole`/`AccProjectMember` populate correctly via Quick Sync.
 
 ### TD-013: Vitest mocks hid three CLI-only bugs in Phase 02 plan verification
 - **Surfaced:** Same first-run as TD-012. Three separate bugs in `lib/acc/quick-sync-extraction.ts` (CLI entry) that vitest never executed:
@@ -138,8 +134,5 @@ Tracks known sub-optimal implementations, scaling concerns, and known workaround
 - **Resolution path:** Add "CLI smoke-run against staging DB" as a mandatory verification step for any plan that ships a CLI entry. Codify in `.gsd/templates/PLAN.md` or equivalent.
 - **Tracking:** Non-blocking for code, blocking for process. Worth raising before next phase with a CLI entry.
 
-### TD-014: `lib/server/acc-admin.ts` `fetchAccHubRoles` is dead code pointing at a 404 endpoint
-- **Location:** `lib/server/acc-admin.ts:382` + `server/routers/users.ts:1350` `syncHubRoles` mutation.
-- **What's wrong:** Hits `GET /hq/v1/accounts/:id/roles` which returns 404. The mutation was likely never invoked in production; the helper was likely never tested live.
-- **Resolution path:** When 02.1 reworks AccRole, either delete `fetchAccHubRoles` + `syncHubRoles` or rewrite them to fan out per-project industry_roles like the new extractor will.
-- **Tracking:** Non-blocking until 02.1 cleanup.
+### TD-014: `lib/server/acc-admin.ts` `fetchAccHubRoles` is dead code pointing at a 404 endpoint [RESOLVED 2026-05-12]
+- **Resolution (2026-05-12):** Deleted alongside TD-012 fix. `fetchAccHubRoles` removed from `lib/server/acc-admin.ts`, `syncHubRoles` mutation removed from `server/routers/users.ts`, and the "Sync Hub Roles" button + `RefreshCw` import removed from `app/(dashboard)/users/AccRolesTab.tsx`. The `AccHubRoleCache` table is left in place (no migration) — dead but harmless; can be dropped in a future schema cleanup.
