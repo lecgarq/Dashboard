@@ -36,6 +36,30 @@ export interface FolderOnlyOrphan {
 
 export const accFoldersRouter = router({
   /**
+   * Lightweight coverage signal for the Users data strip.
+   * `getMatrix` remains the detailed role-folder-permission view.
+   */
+  getCoverage: protectedProcedure.query(async ({ ctx }) => {
+    const [folderCount, permissionCount, crawlStatuses] = await Promise.all([
+      ctx.db.accFolder.count(),
+      ctx.db.accFolderPermission.count(),
+      ctx.db.accProject.groupBy({
+        by: ["folderCrawlStatus"],
+        _count: { _all: true },
+      }),
+    ]);
+
+    return {
+      folderCount,
+      permissionCount,
+      crawlStatuses: crawlStatuses.map((row) => ({
+        status: row.folderCrawlStatus,
+        count: row._count._all,
+      })),
+    };
+  }),
+
+  /**
    * Returns flat rows for the folder permissions matrix.
    * One row per (folderId, roleId) permission entry.
    */

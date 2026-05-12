@@ -30,6 +30,27 @@ const CATEGORY_ENUM = z.enum([
 
 export const accActivityRouter = router({
   /**
+   * Lightweight coverage signal for the Users data strip.
+   * This answers "do activity logs exist at all?" separately from the
+   * invitation-only audit widget.
+   */
+  getCoverage: protectedProcedure.query(async ({ ctx }) => {
+    const [totalRows, attributedRows, invitationRows] = await Promise.all([
+      ctx.db.accActivity.count(),
+      ctx.db.accActivity.count({ where: { userEmail: { not: null } } }),
+      ctx.db.accActivity.count({
+        where: { rawAction: { in: [...INVITATION_ACTIONS] } },
+      }),
+    ]);
+
+    return {
+      totalRows,
+      attributedRows,
+      invitationRows,
+    };
+  }),
+
+  /**
    * ACTV-03: lazy per-user file-activity timestamps.
    *
    * Strategy: 4 parallel findFirst queries, one per file category, each picking

@@ -670,14 +670,17 @@ function CoveragePill({
   label,
   available,
   loading,
+  detail,
 }: {
   label: string;
   available: boolean;
   loading?: boolean;
+  detail?: string;
 }) {
   const Icon = loading ? CircleDashed : available ? CheckCircle2 : AlertCircle;
   return (
     <span
+      title={detail}
       className={cn(
         "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium",
         loading
@@ -696,7 +699,7 @@ function CoveragePill({
 function DataCoverageStrip({
   coverage,
 }: {
-  coverage: Array<{ label: string; available: boolean; loading?: boolean }>;
+  coverage: Array<{ label: string; available: boolean; loading?: boolean; detail?: string }>;
 }) {
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2">
@@ -953,7 +956,11 @@ export function UsersDirectoryClient() {
     { windowDays: 90, limit: 100 },
     { staleTime: 300_000, retry: false },
   );
-  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
+  const activityCoverageQuery = trpc.accActivity.getCoverage.useQuery(undefined, {
+    staleTime: 300_000,
+    retry: false,
+  });
+  const folderCoverageQuery = trpc.accFolders.getCoverage.useQuery(undefined, {
     staleTime: 600_000,
     retry: false,
   });
@@ -1132,6 +1139,10 @@ export function UsersDirectoryClient() {
     const hasProjectMembers = accSummary.some((user) => user.found);
     const hasRoles = accSummary.some((user) => (user.allRoles?.length ?? 0) > 0);
     const hasLastSignIn = accSummary.some((user) => !!user.lastSignIn);
+    const activityRows = activityCoverageQuery.data?.totalRows ?? 0;
+    const attributedActivityRows = activityCoverageQuery.data?.attributedRows ?? 0;
+    const folderCount = folderCoverageQuery.data?.folderCount ?? 0;
+    const permissionCount = folderCoverageQuery.data?.permissionCount ?? 0;
     const hasRecentAdditions =
       accSummary.some((user) => !!user.addedOn) ||
       (invitationsQuery.data?.invitations.length ?? 0) > 0;
@@ -1141,22 +1152,26 @@ export function UsersDirectoryClient() {
       { label: "Last Sign-In", available: hasLastSignIn, loading: !accSummaryRaw.length && isLoading },
       {
         label: "Activity Logs",
-        available: (invitationsQuery.data?.invitations.length ?? 0) > 0,
-        loading: invitationsQuery.isLoading,
+        available: activityRows > 0,
+        loading: activityCoverageQuery.isLoading,
+        detail: `${activityRows.toLocaleString()} activity rows, ${attributedActivityRows.toLocaleString()} matched to users`,
       },
       {
         label: "Folder Permissions",
-        available: (folderMatrixQuery.data?.rows.length ?? 0) > 0,
-        loading: folderMatrixQuery.isLoading,
+        available: permissionCount > 0,
+        loading: folderCoverageQuery.isLoading,
+        detail: `${permissionCount.toLocaleString()} permission rows across ${folderCount.toLocaleString()} folders`,
       },
       { label: "Recent Additions", available: hasRecentAdditions, loading: invitationsQuery.isLoading },
     ];
   }, [
+    activityCoverageQuery.data,
+    activityCoverageQuery.isLoading,
     accSummary,
     accSummaryRaw.length,
     enrichedLoading,
-    folderMatrixQuery.data,
-    folderMatrixQuery.isLoading,
+    folderCoverageQuery.data,
+    folderCoverageQuery.isLoading,
     invitationsQuery.data,
     invitationsQuery.isLoading,
     isLoading,
