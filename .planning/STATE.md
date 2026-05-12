@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close)
-status: completed
-last_updated: "2026-05-12T16:36:31.329Z"
+status: planning
+last_updated: "2026-05-12T16:37:36.317Z"
 progress:
   total_phases: 7
   completed_phases: 5
@@ -22,7 +22,7 @@ See: .planning/PROJECT.md
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
 **Current phase:** Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close)
-**Status:** Milestone complete
+**Status:** Ready to plan
 
 ## Session Log
 
