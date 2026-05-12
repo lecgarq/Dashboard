@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Download, ChevronDown, ChevronRight, AlertCircle } from "lucide-react";
+import { Download, ChevronDown, ChevronRight, AlertCircle, AlertTriangle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +39,7 @@ import type {
   Severity,
 } from "@/lib/acc/dashboardAnalytics";
 import { useSelection, type SelectedFinding } from "./selectionContext";
+import { mapActions } from "@/lib/acc/permissionMapping";
 
 /**
  * Phase 4 Plan 8 — Right-side drill-down panel (DASH-10).
@@ -102,6 +103,8 @@ function selectedKey(s: NonNullable<SelectedFinding>): string {
       return `folder:${s.folderUrn}`;
     case "adminTier":
       return `adminTier:${s.tier}`;
+    case "folderPermission":
+      return `folderPerm:${s.folderId}::${s.roleId}`;
     default: {
       const _exhaust: never = s;
       return _exhaust;
@@ -143,6 +146,8 @@ function PanelBody({
       return <FolderBody folderUrn={selected.folderUrn} />;
     case "adminTier":
       return <AdminTierBody tier={selected.tier} users={users} />;
+    case "folderPermission":
+      return <FolderPermissionBody data={selected} />;
     default: {
       const _exhaust: never = selected;
       return _exhaust;
@@ -964,6 +969,99 @@ function FolderBody({ folderUrn }: { folderUrn: string }) {
  * GRAPH-03 admin-tier body — lists users in the selected tier.
  * Tier: "hub" | "project" | "executive"
  */
+/**
+ * Phase 4 Plan 6 — Folder permission cell drilldown body.
+ * Mirrors UserActivityBody precedent (Phase 3) — body exported so it could be
+ * mounted elsewhere if needed; currently only the dashboard kind="folderPermission"
+ * branch consumes it.
+ */
+const ORPHAN_REASON_LABEL: Record<string, string> = {
+  role_zero_members: "Role has zero members in this project",
+  permission_missing_folder: "Permission references a folder that no longer exists",
+  root_only_zero_members: "Role granted only at root; project has zero members",
+  folder_no_permissions: "Folder has no role permissions",
+};
+
+export function FolderPermissionBody({
+  data,
+}: {
+  data: {
+    folderId: string;
+    folderPath: string;
+    roleId: string;
+    roleName: string;
+    projectId: string;
+    projectName: string;
+    permType: string;
+    actions: string[];
+    orphanReasons: string[];
+  };
+}) {
+  const mapped = useMemo(() => mapActions(data.actions), [data.actions]);
+  const extended = mapped.extended;
+
+  return (
+    <>
+      <SheetHeader>
+        <SheetTitle className="truncate pr-8">{data.projectName}</SheetTitle>
+        <SheetDescription className="font-mono text-xs break-all">
+          {data.folderPath || "(root)"}
+        </SheetDescription>
+      </SheetHeader>
+      <div className="flex flex-1 min-h-0 flex-col gap-5 overflow-y-auto px-4 pb-6">
+        <Section title="Role">
+          <p className="text-sm font-medium">{data.roleName || "(folder-level)"}</p>
+        </Section>
+
+        <Section title="Permission tier">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-semibold">{data.permType || "—"}</span>
+            {extended && (
+              <Badge variant="secondary" className="text-[10px]">
+                extended
+              </Badge>
+            )}
+          </div>
+        </Section>
+
+        <Section title="Raw actions">
+          <ChipList items={data.actions} />
+        </Section>
+
+        {data.orphanReasons.length > 0 && (
+          <Section title="Orphan reasons">
+            <div className="flex flex-col gap-1.5">
+              {data.orphanReasons.map((reason) => (
+                <div
+                  key={reason}
+                  className="flex items-start gap-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-2 text-xs"
+                >
+                  <AlertTriangle className="size-3.5 shrink-0 text-amber-500" />
+                  <span>{ORPHAN_REASON_LABEL[reason] ?? reason}</span>
+                </div>
+              ))}
+              {data.orphanReasons.includes("role_zero_members") && (
+                <button
+                  data-testid="folder-perm-view-role"
+                  className="self-start text-xs text-primary hover:underline"
+                  // TODO: navigate to user list filtered to this role
+                  onClick={() => {
+                    /* role view stub — Phase 5 LIST integration */
+                  }}
+                >
+                  View role in user list →
+                </button>
+              )}
+            </div>
+          </Section>
+        )}
+
+        <RawData value={data} />
+      </div>
+    </>
+  );
+}
+
 function AdminTierBody({
   tier,
   users,

@@ -42,6 +42,19 @@ export type SelectedFinding =
   | { kind: "folder"; folderUrn: string }
   /** GRAPH-03: toolbar/legend admin-tier clicked — spotlights matching users */
   | { kind: "adminTier"; tier: "hub" | "project" | "executive" }
+  // Phase 4 Plan 6 — folder permission matrix cell drilldown
+  | {
+      kind: "folderPermission";
+      folderId: string;
+      folderPath: string;
+      roleId: string;
+      roleName: string;
+      projectId: string;
+      projectName: string;
+      permType: string;
+      actions: string[];
+      orphanReasons: string[];
+    }
   | null;
 
 interface SelectionContextValue {
@@ -92,6 +105,10 @@ function isSelectionValid(
       // folder is valid when folderUrn is non-empty.
       // Phase 5.3 will own the join-against-real-folders refinement.
       return selected.folderUrn.length > 0;
+    case "folderPermission":
+      // Phase 4 Plan 6 — mirrors role/admin treatment (RESEARCH Pitfall 6):
+      // folder permission references don't go stale like findings.
+      return true;
   }
 }
 
