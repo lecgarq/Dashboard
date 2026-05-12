@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 7 — User-only Graph Topology (2/9 plans complete)
+current_phase: Phase 7 — User-only Graph Topology (3/9 plans complete)
 status: executing
 last_updated: "2026-05-12T15:51:06.017Z"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 41
-  completed_plans: 19
+  completed_plans: 20
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology
-**Current phase:** Phase 7 — User-only Graph Topology (2/9 plans complete)
-**Status:** In progress — Plan 07-02 complete; pure folder-hub collapse module ready for Plan 07-05 (2D wiring); 07-07 deferred per PHASE-DEPS.
+**Current phase:** Phase 7 — User-only Graph Topology (3/9 plans complete)
+**Status:** In progress — Plan 07-03 complete; computeSimilarityEdges pure module + folderHubCollapse + Wave-0 gate done. Wave 1 plan 07-04 (filter additions) is the next gate; Plan 07-05 (2D wiring) unblocks once 07-04 lands.
 
 ## Session Log
 
@@ -40,6 +40,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 4 plan 02 complete (BFS folder-crawl library + Vitest tests + dry-run script + CRAWL-ESTIMATE.md from 13/1143-project sample; FLDR-01, FLDR-02 marked done). Luis-approved **WEEKLY** cadence + **skip-archived-in-flight** scope (no soft-delete of ~526 archived projects; fast-fail 403 path handles them). Locks Plan 04-04 cron schedule at weekly. Stopped at: Plan 04-02 complete; Wave 2 unblocked (Plans 04-04 + 04-05).
 - 2026-05-12: Phase 7 plan 01 complete (Wave-0 dependency gate). Probed disk: 0/5 sphere3d/* files, 0/10 Phase 6 SUMMARYs, no Phase 4 GRAPH-04 perf-gate. Emitted PHASE-DEPS.md with DECISION: 3D-WIRING=DEFER + 3D-FOLDERS=NO-GO. Phase 7 ships 2D only; plans 07-07 + 07-08 must stub. Stopped at: Plan 07-01 complete; Wave 1 of Phase 7 unblocked (plans 07-02/03/04 already have RED test commits in tree from earlier scaffolding).
 - 2026-05-12: Phase 7 plan 02 complete (pure depth-N folder-collapse module + Vitest 7-case coverage). `lib/acc/folderHubCollapse.ts` exports `collapseFoldersToDepth(rows, maxDepth=2)` + `CollapsedFolder` + `FolderHubInputRow` with UNION-on-(roleId,permType), dedupe, `maxDepth=Infinity` escape hatch, cross-project isolation. Zero Prisma/React deps. GRAPH7-01 satisfied at code level — phase-setup follow-up: register GRAPH7-* in REQUIREMENTS.md (not yet present). Stopped at: Plan 07-02 complete; Plan 07-05 (2D hub wiring) unblocked.
+- 2026-05-12: Phase 7 plan 03 complete (pure user-similarity module + Vitest 9-case coverage). `lib/acc/userSimilarity.ts` exports `computeSimilarityEdges(input, enabledDims, minShared=2)` + `SimilarityDim` + `SimilarityEdge` + `SimilarityInput` + `SIMILARITY_DIMS`. Bucketed indexing — Map<attrValue, userIds[]> per dimension, then pair-count within shared buckets only (no O(n²) outer scan). Canonical pair order (userA<userB) for natural dedupe. 5 dimensions: folder-access, roles, projects, company, admin-tier. Null company/adminTier excluded from buckets. Perf smoke (500 users × 10 roles, all dims) well under 500ms. Zero Prisma/React deps. GRAPH7-04, GRAPH7-05 satisfied at code level — REQUIREMENTS.md does not yet track GRAPH7-* IDs (phase-setup follow-up, same as 07-02). Stopped at: Plan 07-03 complete; Plan 07-04 (filter additions) is next gate.
 
 ## Decisions
 
