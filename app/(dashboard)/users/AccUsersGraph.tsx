@@ -254,6 +254,7 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
   const projRolesRaw = params.get("proles") ?? "";
 
   return {
+    ...DEFAULT_FILTERS, // Phase 7: pick up showFolders/permTiers/simDims/simMin/viewMode defaults
     roles: rolesRaw ? rolesRaw.split(",").filter(Boolean) : [],
     lastAddedBuckets: [], // not persisted to URL — volatile derived state
     adminAccess,
