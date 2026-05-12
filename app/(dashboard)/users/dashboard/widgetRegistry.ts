@@ -9,6 +9,7 @@ import { OutlierCombosWidget } from "./widgets/OutlierCombosWidget";
 import { RoleRelationshipFlowWidget } from "./widgets/RoleRelationshipFlowWidget";
 import { RecentlyAddedWidget } from "./widgets/RecentlyAddedWidget";
 import { AdminAccessWidget } from "./widgets/AdminAccessWidget";
+import { FolderPermissionsWidget } from "./widgets/FolderPermissionsWidget";
 
 /**
  * Phase 4 Plan 5 — Widget Registry.
@@ -55,6 +56,7 @@ export const WIDGETS = {
   flow:            { component: RoleRelationshipFlowWidget,  title: "Role Relationships", span: "col-span-2" },
   recent:          { component: RecentlyAddedWidget,         title: "Recently Added",     span: "col-span-1" },
   admins:          { component: AdminAccessWidget,           title: "Account Admins",     span: "col-span-1" },
+  folderPermissions: { component: FolderPermissionsWidget,   title: "Folder Permissions", span: "col-span-2" },
 } as const satisfies Record<string, WidgetSpec>;
 
 /**
@@ -78,6 +80,7 @@ export const DEFAULT_ORDER = [
   "flow",
   "recent",
   "admins",
+  "folderPermissions",
 ] as const satisfies readonly (keyof typeof WIDGETS)[];
 
 export type WidgetId = keyof typeof WIDGETS;
