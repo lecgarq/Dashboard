@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 4 — Folders + Folder-Role Permissions (4/7 plans complete)
 status: executing
-last_updated: "2026-05-11T23:59:30Z"
+last_updated: "2026-05-12T15:50:35.295Z"
 progress:
-  total_phases: 6
+  total_phases: 7
   completed_phases: 3
-  total_plans: 30
-  completed_plans: 16
+  total_plans: 41
+  completed_plans: 18
 ---
 
 # Session State
@@ -38,6 +38,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 4 plan 01 complete (pure permission-mapping module; FLDR-03 satisfied). lib/acc/permissionMapping.ts exports PermTier union + TIER_DEFINITIONS (6 tiers high→low) + mapActions(). 14 Vitest tests pass (TDD RED→GREEN). Stopped at: Plan 04-01 complete; ready for Plan 04-02.
 - 2026-05-11: Phase 4 plan 03 complete (AccProject.folderCrawlStatus additive migration 20260511234124 applied + accFoldersRouter scaffold registered under key 'accFolders'; FLDR-01 marked done). Migration is NOT NULL DEFAULT 'never' — safe for Railway deploy on existing rows. Stopped at: Plan 04-03 complete; Wave 1 groundwork done. Ready for Wave 2 (Plans 04/05/06).
 - 2026-05-11: Phase 4 plan 02 complete (BFS folder-crawl library + Vitest tests + dry-run script + CRAWL-ESTIMATE.md from 13/1143-project sample; FLDR-01, FLDR-02 marked done). Luis-approved **WEEKLY** cadence + **skip-archived-in-flight** scope (no soft-delete of ~526 archived projects; fast-fail 403 path handles them). Locks Plan 04-04 cron schedule at weekly. Stopped at: Plan 04-02 complete; Wave 2 unblocked (Plans 04-04 + 04-05).
+- 2026-05-12: Phase 7 plan 01 complete (Wave-0 dependency gate). Probed disk: 0/5 sphere3d/* files, 0/10 Phase 6 SUMMARYs, no Phase 4 GRAPH-04 perf-gate. Emitted PHASE-DEPS.md with DECISION: 3D-WIRING=DEFER + 3D-FOLDERS=NO-GO. Phase 7 ships 2D only; plans 07-07 + 07-08 must stub. Stopped at: Plan 07-01 complete; Wave 1 of Phase 7 unblocked (plans 07-02/03/04 already have RED test commits in tree from earlier scaffolding).
 
 ## Decisions
 
@@ -87,12 +88,15 @@ See: .planning/PROJECT.md
 - **04-02:** Hub-scale surprise — DB has 1,143 active AccProjects; ~46% return APS 403 ("Project is not active"). Accepted via skip-archived-in-flight scope decision rather than a defensive soft-delete pass.
 - [Phase 05-5.1]: isAccountAdmin not on AccProjectMember; enrichedUsers omits it, AdminTierBody reads from BulkAccUser.isAccountAdmin directly
 - [Phase 05-5.1]: GRAPH-04 CASE 3: Phase 4 in-flight at execution time; user decision pending at Task 5 checkpoint
+- [Phase 07]: 07-01: 3D-WIRING=DEFER + 3D-FOLDERS=NO-GO recorded in PHASE-DEPS.md. Zero sphere3d/* files, zero Phase 6 SUMMARYs, no Phase 4 GRAPH-04 perf gate — Phase 7 ships 2D only.
+- [Phase 07]: 07-02: Structural input type (FolderHubInputRow) instead of importing FolderMatrixRow — keeps module pure (no @/server). Group key includes projectId so cross-project identical paths never merge. maxDepth=Infinity handled by depth ≤ maxDepth branch, no special case.
 
 ## Accumulated Context
 
 ### Roadmap Evolution
 
 - Phase 6 added: 3D spherical graph with gravity at 120fps
+- Phase 7 added: User-only graph topology with folder access and attribute-similarity edges
 
 ## Performance Metrics
 
@@ -107,4 +111,6 @@ See: .planning/PROJECT.md
 | 04    | 03   | ~8 min   | 2     | 4     | 2026-05-11 |
 | 04    | 02   | ~25 min  | 4     | 5     | 2026-05-11 |
 | Phase 05 P5.1 | ~14 min | 4 tasks | 16 files |
+| Phase 07 P01 | ~3 min | 1 tasks | 2 files |
+| Phase 07 P02 | ~4 min | 2 tasks | 2 files |
 
