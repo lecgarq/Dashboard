@@ -15,8 +15,10 @@
  * data — the CALLER is responsible for skipping any DB writes.
  */
 
+import type { PrismaClient } from "@prisma/client";
 import pLimit from "p-limit";
 import { fetchWithRetry } from "@/lib/server/acc-admin";
+import { mapActions } from "@/lib/acc/permissionMapping";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -295,5 +297,192 @@ export async function crawlProjectFolders(
     durationMs: Date.now() - startedAt,
     status,
     ...(reason ? { reason } : {}),
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Persistence wrapper (Plan 04-04)
+// ---------------------------------------------------------------------------
+//
+// Thin DB-writing wrapper around `crawlProjectFolders`. Imported by:
+//   - lib/acc/quick-sync-extraction.ts (release path, env-gated)
+//   - scripts/folder-crawl-cron.cjs    (Railway weekly cron)
+//
+// Persistence contract (per Plan 04-04 interfaces section):
+//   - AccFolder.upsert by URN id (additive — folders not seen this pass are NOT deleted)
+//   - AccFolderPermission.upsert by (folderId, roleId) compound unique
+//   - permType computed via mapActions(actions).tier ?? "View Only" (null floor)
+//   - AccProject.folderCrawlStatus written per project after each crawl completes
+// ---------------------------------------------------------------------------
+
+const PERSIST_BATCH_SIZE = 50;
+const PERSIST_CONCURRENCY = 5;
+
+export interface ExtractAndPersistResult {
+  folderCount: number;
+  permissionCount: number;
+  status: "ok" | "partial" | "failed";
+}
+
+/**
+ * Crawl all folders + role permissions for a single project and persist them
+ * to AccFolder / AccFolderPermission. Updates AccProject.folderCrawlStatus.
+ *
+ * Additive-only: folders or permissions no longer present in APS are NOT
+ * deleted. Matches the Phase 2 MemberAggregator pattern (stale rows tolerable;
+ * missing rows would zero the matrix).
+ *
+ * @param prisma       PrismaClient
+ * @param hubId        APS hub ID with b. prefix (from Project.apsHubId)
+ * @param project      AccProject row { id, accountId, name } — id stored WITHOUT b. prefix
+ * @param accessToken  2-legged APS token
+ */
+export async function extractAndPersistFolders(
+  prisma: PrismaClient,
+  hubId: string,
+  project: { id: string; accountId: string; name: string },
+  accessToken: string,
+): Promise<ExtractAndPersistResult> {
+  const startedAt = Date.now();
+
+  // AccProject.id is stored WITHOUT the b. prefix (Construction Admin format).
+  // Data Management endpoints need the b.-prefixed form; permissions need bare UUID.
+  const projectIdForDM = `b.${project.id}`;
+  const projectIdForPerms = project.id.replace(/^b\./, "");
+
+  let crawl: FolderCrawlResult;
+  try {
+    crawl = await crawlProjectFolders(
+      hubId,
+      projectIdForDM,
+      projectIdForPerms,
+      accessToken,
+      { dryRun: false, pLimitConcurrency: PERSIST_CONCURRENCY },
+    );
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[folder-crawl] project=${project.name} crawl threw: ${msg}`,
+    );
+    await prisma.accProject
+      .update({ where: { id: project.id }, data: { folderCrawlStatus: "failed" } })
+      .catch((updateErr: unknown) => {
+        console.error(
+          `[folder-crawl] failed to mark project ${project.id} folderCrawlStatus=failed:`,
+          updateErr instanceof Error ? updateErr.message : updateErr,
+        );
+      });
+    return { folderCount: 0, permissionCount: 0, status: "failed" };
+  }
+
+  const now = new Date();
+  const writeLimit = pLimit(PERSIST_CONCURRENCY);
+
+  // ---- Upsert folders in batches ------------------------------------------
+  let folderWriteFailed = false;
+  for (let i = 0; i < crawl.folders.length; i += PERSIST_BATCH_SIZE) {
+    const batch = crawl.folders.slice(i, i + PERSIST_BATCH_SIZE);
+    await Promise.all(
+      batch.map((folder) =>
+        writeLimit(async () => {
+          try {
+            await prisma.accFolder.upsert({
+              where: { id: folder.id },
+              create: {
+                id: folder.id,
+                projectId: project.id,
+                parentId: folder.parentId,
+                name: folder.name,
+                fullPath: folder.fullPath,
+                syncedAt: now,
+              },
+              update: {
+                projectId: project.id,
+                parentId: folder.parentId,
+                name: folder.name,
+                fullPath: folder.fullPath,
+                syncedAt: now,
+              },
+            });
+          } catch (err) {
+            folderWriteFailed = true;
+            console.error(
+              `[folder-crawl] folder upsert failed (project=${project.name} id=${folder.id}):`,
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }),
+      ),
+    );
+  }
+
+  // ---- Upsert permissions in batches --------------------------------------
+  let permWriteFailed = false;
+  for (let i = 0; i < crawl.permissions.length; i += PERSIST_BATCH_SIZE) {
+    const batch = crawl.permissions.slice(i, i + PERSIST_BATCH_SIZE);
+    await Promise.all(
+      batch.map((perm) =>
+        writeLimit(async () => {
+          const permType = mapActions(perm.actions).tier ?? "View Only";
+          try {
+            await prisma.accFolderPermission.upsert({
+              where: {
+                folderId_roleId: { folderId: perm.folderId, roleId: perm.roleId },
+              },
+              create: {
+                folderId: perm.folderId,
+                roleId: perm.roleId,
+                actions: perm.actions,
+                permType,
+                syncedAt: now,
+              },
+              update: {
+                actions: perm.actions,
+                permType,
+                syncedAt: now,
+              },
+            });
+          } catch (err) {
+            permWriteFailed = true;
+            console.error(
+              `[folder-crawl] permission upsert failed (folder=${perm.folderId} role=${perm.roleId}):`,
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }),
+      ),
+    );
+  }
+
+  // ---- Compute final status ------------------------------------------------
+  let status: "ok" | "partial" | "failed" = crawl.status;
+  if (folderWriteFailed || permWriteFailed) {
+    // Downgrade ok → partial when any DB write failed; leave partial/failed unchanged.
+    if (status === "ok") status = "partial";
+  }
+
+  // ---- Update project crawl status ----------------------------------------
+  try {
+    await prisma.accProject.update({
+      where: { id: project.id },
+      data: { folderCrawlStatus: status },
+    });
+  } catch (err) {
+    console.error(
+      `[folder-crawl] failed to update folderCrawlStatus for ${project.id}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  const durationMs = Date.now() - startedAt;
+  console.log(
+    `[folder-crawl] project=${project.name} folders=${crawl.folders.length} ` +
+      `perms=${crawl.permissions.length} status=${status} duration=${durationMs}ms`,
+  );
+
+  return {
+    folderCount: crawl.folders.length,
+    permissionCount: crawl.permissions.length,
+    status,
   };
 }
