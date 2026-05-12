@@ -1,20 +1,238 @@
 /**
- * accFolders tRPC router — Wave 1 scaffold (Phase 04 Plan 03).
+ * accFolders tRPC router — Phase 04 Plan 05 (Wave 2).
  *
- * Placeholder router so Plan 06 widget and any client component can bind
- * against a real router key today. Plan 05 will add:
- *   - getMatrix: folder × role permission matrix for a project
- *   - getOrphanRoles: roles with no folder-level grants
- *   - getProjectFolderTree: full folder hierarchy for a project
+ * Procedures:
+ *   - getMatrix:      flat (folder × role × permission) rows enriched with
+ *                     project/role names + crawl status + orphanReasons[].
+ *   - getOrphanRoles: convenience — same data filtered to rows with ≥1
+ *                     orphanReason. Used by the Plan 06 Recommendations widget.
+ *
+ * Pure orphan-detection logic lives in `lib/acc/orphanDetection.ts` so it
+ * stays unit-testable independently of tRPC.
  */
 
+import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
+import { detectOrphans, type OrphanReason } from "@/lib/acc/orphanDetection";
+import type { PermTier } from "@/lib/acc/permissionMapping";
+
+export interface FolderMatrixRow {
+  folderId: string;
+  folderPath: string;
+  projectId: string;
+  projectName: string;
+  projectCrawlStatus: string; // never | ok | partial | failed
+  roleId: string;
+  roleName: string;
+  permType: PermTier | string;
+  actions: string[];
+  orphanReasons: OrphanReason[];
+}
+
+export interface FolderOnlyOrphan {
+  folderId: string;
+  reasons: OrphanReason[];
+}
 
 export const accFoldersRouter = router({
-  // Placeholder so the router is callable from the client even before Plan 05.
-  // Plan 05 will add: getMatrix, getOrphanRoles, getProjectFolderTree
-  ping: protectedProcedure.query(async () => {
-    return { ok: true, ts: new Date().toISOString() };
+  /**
+   * Returns flat rows for the folder permissions matrix.
+   * One row per (folderId, roleId) permission entry.
+   */
+  getMatrix: protectedProcedure
+    .input(z.object({ projectIds: z.array(z.string()).optional() }).optional())
+    .query(async ({ ctx, input }) => {
+      const projectFilter = input?.projectIds?.length
+        ? { projectId: { in: input.projectIds } }
+        : {};
+
+      const [folders, permissions, roleCounts, projectMemberCounts, projects, roles] =
+        await Promise.all([
+          ctx.db.accFolder.findMany({
+            where: projectFilter,
+            select: {
+              id: true,
+              projectId: true,
+              parentId: true,
+              fullPath: true,
+              name: true,
+            },
+          }),
+          ctx.db.accFolderPermission.findMany({
+            where: { folder: projectFilter },
+            select: {
+              folderId: true,
+              roleId: true,
+              actions: true,
+              permType: true,
+              folder: { select: { projectId: true } },
+            },
+          }),
+          ctx.db.accProjectRole.groupBy({
+            by: ["projectId", "roleId"],
+            where: { memberId: { not: null } },
+            _count: { memberId: true },
+          }),
+          ctx.db.accProjectMember.groupBy({
+            by: ["projectId"],
+            _count: { id: true },
+          }),
+          ctx.db.accProject.findMany({
+            where: { status: "active" },
+            select: { id: true, name: true, folderCrawlStatus: true },
+          }),
+          ctx.db.accRole.findMany({ select: { id: true, name: true } }),
+        ]);
+
+      const orphanMap = detectOrphans({
+        folders: folders.map((f) => ({
+          id: f.id,
+          projectId: f.projectId,
+          parentId: f.parentId,
+          fullPath: f.fullPath,
+        })),
+        permissions: permissions.map((p) => ({
+          folderId: p.folderId,
+          roleId: p.roleId,
+          permType: p.permType,
+          actions: p.actions,
+        })),
+        projectRoles: roleCounts.map((r) => ({
+          projectId: r.projectId,
+          roleId: r.roleId,
+          memberCount: r._count.memberId,
+        })),
+        projectMembers: projectMemberCounts.map((m) => ({
+          projectId: m.projectId,
+          memberCount: m._count.id,
+        })),
+      });
+
+      const projectById = new Map(projects.map((p) => [p.id, p]));
+      const roleById = new Map(roles.map((r) => [r.id, r]));
+      const folderById = new Map(folders.map((f) => [f.id, f]));
+
+      const rows: FolderMatrixRow[] = permissions.map((p) => {
+        const projectId = p.folder.projectId;
+        const folder = folderById.get(p.folderId);
+        return {
+          folderId: p.folderId,
+          folderPath: folder?.fullPath ?? "",
+          projectId,
+          projectName: projectById.get(projectId)?.name ?? "",
+          projectCrawlStatus: projectById.get(projectId)?.folderCrawlStatus ?? "never",
+          roleId: p.roleId,
+          roleName: roleById.get(p.roleId)?.name ?? p.roleId,
+          permType: p.permType,
+          actions: p.actions,
+          orphanReasons: orphanMap.get(`${p.folderId}::${p.roleId}`) ?? [],
+        };
+      });
+
+      const folderOnlyOrphans: FolderOnlyOrphan[] = Array.from(orphanMap.entries())
+        .filter(([k]) => k.endsWith("::"))
+        .map(([k, reasons]) => ({ folderId: k.slice(0, -2), reasons }));
+
+      return {
+        rows,
+        folderOnlyOrphans,
+        projectCrawlStatuses: projects,
+      };
+    }),
+
+  /**
+   * Convenience procedure: returns only the rows that have ≥1 orphan reason,
+   * plus all folder-level orphans (folders with no permissions at all).
+   */
+  getOrphanRoles: protectedProcedure.query(async ({ ctx }) => {
+    const [folders, permissions, roleCounts, projectMemberCounts, projects, roles] =
+      await Promise.all([
+        ctx.db.accFolder.findMany({
+          select: {
+            id: true,
+            projectId: true,
+            parentId: true,
+            fullPath: true,
+            name: true,
+          },
+        }),
+        ctx.db.accFolderPermission.findMany({
+          select: {
+            folderId: true,
+            roleId: true,
+            actions: true,
+            permType: true,
+            folder: { select: { projectId: true } },
+          },
+        }),
+        ctx.db.accProjectRole.groupBy({
+          by: ["projectId", "roleId"],
+          where: { memberId: { not: null } },
+          _count: { memberId: true },
+        }),
+        ctx.db.accProjectMember.groupBy({
+          by: ["projectId"],
+          _count: { id: true },
+        }),
+        ctx.db.accProject.findMany({
+          where: { status: "active" },
+          select: { id: true, name: true, folderCrawlStatus: true },
+        }),
+        ctx.db.accRole.findMany({ select: { id: true, name: true } }),
+      ]);
+
+    const orphanMap = detectOrphans({
+      folders: folders.map((f) => ({
+        id: f.id,
+        projectId: f.projectId,
+        parentId: f.parentId,
+        fullPath: f.fullPath,
+      })),
+      permissions: permissions.map((p) => ({
+        folderId: p.folderId,
+        roleId: p.roleId,
+        permType: p.permType,
+        actions: p.actions,
+      })),
+      projectRoles: roleCounts.map((r) => ({
+        projectId: r.projectId,
+        roleId: r.roleId,
+        memberCount: r._count.memberId,
+      })),
+      projectMembers: projectMemberCounts.map((m) => ({
+        projectId: m.projectId,
+        memberCount: m._count.id,
+      })),
+    });
+
+    const projectById = new Map(projects.map((p) => [p.id, p]));
+    const roleById = new Map(roles.map((r) => [r.id, r]));
+    const folderById = new Map(folders.map((f) => [f.id, f]));
+
+    const rows: FolderMatrixRow[] = permissions
+      .map((p) => {
+        const projectId = p.folder.projectId;
+        const folder = folderById.get(p.folderId);
+        return {
+          folderId: p.folderId,
+          folderPath: folder?.fullPath ?? "",
+          projectId,
+          projectName: projectById.get(projectId)?.name ?? "",
+          projectCrawlStatus: projectById.get(projectId)?.folderCrawlStatus ?? "never",
+          roleId: p.roleId,
+          roleName: roleById.get(p.roleId)?.name ?? p.roleId,
+          permType: p.permType,
+          actions: p.actions,
+          orphanReasons: orphanMap.get(`${p.folderId}::${p.roleId}`) ?? [],
+        };
+      })
+      .filter((r) => r.orphanReasons.length > 0);
+
+    const folderOnlyOrphans: FolderOnlyOrphan[] = Array.from(orphanMap.entries())
+      .filter(([k]) => k.endsWith("::"))
+      .map(([k, reasons]) => ({ folderId: k.slice(0, -2), reasons }));
+
+    return { rows, folderOnlyOrphans };
   }),
 });
 
