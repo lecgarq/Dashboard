@@ -431,3 +431,64 @@ describe("GRAPH-01: perProjectRoles AND-intersection", () => {
     expect(nodeMatchesFilters(node, filters)).toBe(false);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// 7. Phase 7 filter dimensions (GRAPH7-06, GRAPH7-09, FILT-EXT)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("Phase 7 filter dimensions", () => {
+  it("DEFAULT_FILTERS.showFolders === true", () => {
+    expect(DEFAULT_FILTERS.showFolders).toBe(true);
+  });
+
+  it("DEFAULT_FILTERS.permTiers deep-equals all four permission tiers", () => {
+    expect(DEFAULT_FILTERS.permTiers).toEqual(["view", "upload", "edit", "control"]);
+  });
+
+  it("DEFAULT_FILTERS.simDims deep-equals all five similarity dimensions", () => {
+    expect(DEFAULT_FILTERS.simDims).toEqual([
+      "folder-access",
+      "roles",
+      "projects",
+      "company",
+      "admin-tier",
+    ]);
+  });
+
+  it("DEFAULT_FILTERS.simMin === 2", () => {
+    expect(DEFAULT_FILTERS.simMin).toBe(2);
+  });
+
+  it("DEFAULT_FILTERS.viewMode === 'multi'", () => {
+    expect(DEFAULT_FILTERS.viewMode).toBe("multi");
+  });
+
+  it("hides folder kind when showFolders=false", () => {
+    const node = makeNode({ kind: "folder" });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, showFolders: false })
+    ).toBe(false);
+  });
+
+  it("viewMode='user-only' hides any non-user kind (project)", () => {
+    const node = makeNode({ kind: "project" });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, viewMode: "user-only" })
+    ).toBe(false);
+  });
+
+  it("viewMode='user-only' keeps user kind visible", () => {
+    const node = makeNode({ kind: "user" });
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, viewMode: "user-only" })
+    ).toBe(true);
+  });
+
+  it("legacy nodes without kind field are treated as kind='user' (backward compat)", () => {
+    // No `kind` property — should be treated as user, so user-only viewMode keeps it visible.
+    const node = makeNode();
+    expect(
+      nodeMatchesFilters(node, { ...DEFAULT_FILTERS, viewMode: "user-only" })
+    ).toBe(true);
+  });
+});
