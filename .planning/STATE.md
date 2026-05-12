@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 7 — User-only Graph Topology (9/9 plans complete; 07-07 + 07-08 deferred-complete; 07-09 administrative close)
 status: completed
-last_updated: "2026-05-12T16:26:11.475Z"
+last_updated: "2026-05-12T16:28:42.593Z"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 41
-  completed_plans: 26
+  completed_plans: 27
 ---
 
 # Session State
@@ -117,6 +117,9 @@ See: .planning/PROJECT.md
 - [Phase 07]: 07-07: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires Phase 6 SUMMARYs landing → re-probe of PHASE-DEPS.md → gate flip to PROCEED → re-run from Task 2. GRAPH7-01/02/03/04/06/10/11 stay 2D-only at phase level for the 3D facet.
 - [Phase 07]: 07-08: DEFERRED — plan precondition triggered (DECISION: 3D-WIRING=DEFER). Stub SUMMARY shipped; no source-code changes. Re-activation requires all 5 sphere3d/* files on disk AND gate flip to PROCEED. GRAPH7-05/06/08/09 stay 2D-only at phase level.
 - [Phase 07]: 07-09: Administrative close per Luis directive 2026-05-12 ("continue with the next waves, don't wait for verification, we will verify it at the end"). Plan's autonomous:false UAT checkpoint auto-approved; PERF-REPORT.md ships automated signals only — every live-FPS/visual cell carries the literal token `DEFERRED TO MANUAL UAT — captured at phase end per Luis directive 2026-05-12` so no FPS number can be fabricated. DECISION line `PHASE-7-ACCEPT=PENDING-MANUAL-UAT` keeps the phase-end UAT verdict transition (APPROVED|GAPS|REVERT) clean. 3D rows N/A per gate, not deferred. GRAPH7-12 listed in requirements-deferred (re-opens with 3D).
+- [Phase 04]: 04-04: Folder extraction in runQuickSync gated by FOLDER_CRAWL_IN_RELEASE=true (defaults OFF) — full-hub crawl is ~48min best / ~4h worst per CRAWL-ESTIMATE.md, exceeds SYNC-01 5-min watchdog. Weekly cron (scripts/folder-crawl-cron.cjs) is production path.
+- [Phase 04]: 04-04: permType null floor = 'View Only'. Raw actions[] persisted alongside permType so render-time can reconstruct extended-tier info with no schema change.
+- [Phase 04]: 04-04: extractAndPersistFolders is additive-only (no folder/permission deletes). DB-write failures downgrade ok→partial only; crawl-level throws produce status='failed'.
 
 ## Accumulated Context
 
@@ -148,4 +151,5 @@ See: .planning/PROJECT.md
 | Phase 07 P06 | ~8 min | 2 tasks (UAT deferred to 07-09) | 3 files |
 | Phase 07 P09 | ~6 min | 1 task (Task 2 auto-approved per directive) | 1 file (PERF-REPORT.md) |
 | Phase 04 P05 | ~6min | 2 tasks | 3 files |
+| Phase 04 P04 | 12min | 3 tasks | 4 files |
 
