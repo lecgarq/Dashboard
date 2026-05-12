@@ -101,9 +101,9 @@ Each requirement is referenced by its REQ-ID — see [REQUIREMENTS.md](REQUIREME
 
 **Requirements:** FLDR-01..05 (5). Plus produces the GO/NO-GO artifact consumed by GRAPH-04 in Phase 5.
 
-**Plans:** 3/7 plans executed
+**Plans:** 4/7 plans executed
 - [x] 04-01-PLAN.md — Wave 1 TDD: permissionMapping.ts + 6-tier unit tests + 3 edge cases (FLDR-03)
-- [ ] 04-02-PLAN.md — Wave 1: folderCrawl.ts BFS+pLimit library + dry-run script → CRAWL-ESTIMATE.md checkpoint (FLDR-01, FLDR-02)
+- [x] 04-02-PLAN.md — Wave 1: folderCrawl.ts BFS+pLimit library + dry-run script → CRAWL-ESTIMATE.md checkpoint (FLDR-01, FLDR-02) — **Luis-approved WEEKLY cadence + skip-archived-in-flight scope**
 - [x] 04-03-PLAN.md — Wave 1: AccProject.folderCrawlStatus migration + accFolders tRPC scaffold (FLDR-01)
 - [ ] 04-04-PLAN.md — Wave 2: extractAndPersistFolders wiring into Quick Sync + cron script per approved cadence (FLDR-01, FLDR-02)
 - [ ] 04-05-PLAN.md — Wave 2: orphanDetection module + accFolders.getMatrix/getOrphanRoles procedures (FLDR-05)
@@ -169,7 +169,7 @@ Phases 3, 4, 5 can begin once Phase 2 lands. Phase 5's graph-node folder integra
 | 1. Foundation: Schema + Sync Orchestration  | v2.0      | 4/4            | Complete    | 2026-05-11 |
 | 2. Core Extraction: Members, Projects, Roles | v2.0     | 0/4            | Plans drafted | —      |
 | 3. Activity Pipeline                        | v2.0      | 0/4            | Plans drafted | —       |
-| 4. Folders & Folder-Role Permissions        | v2.0      | 3/7            | In Progress | — |
+| 4. Folders & Folder-Role Permissions        | v2.0      | 4/7            | In Progress | — |
 | 5. UI Enrichment Waves                      | 1/3 | In Progress|  | — |
 
 Plan counts (`?`) finalized at plan-phase time per phase. Estimated total: 18–24 plans across v2.0.

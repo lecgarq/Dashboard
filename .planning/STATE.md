@@ -2,14 +2,14 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 4 — Folders + Folder-Role Permissions (3/7 plans complete)
+current_phase: Phase 4 — Folders + Folder-Role Permissions (4/7 plans complete)
 status: executing
-last_updated: "2026-05-11T23:59:04.142Z"
+last_updated: "2026-05-11T23:59:30Z"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 30
-  completed_plans: 15
+  completed_plans: 16
 ---
 
 # Session State
@@ -21,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions
-**Current phase:** Phase 4 — Folders + Folder-Role Permissions (3/7 plans complete)
-**Status:** In progress — Plan 04-03 complete
+**Current phase:** Phase 4 — Folders + Folder-Role Permissions (4/7 plans complete)
+**Status:** In progress — Plan 04-02 complete; Wave 2 unblocked (04-04 + 04-05)
 
 ## Session Log
 
@@ -37,6 +37,7 @@ See: .planning/PROJECT.md
 - 2026-05-11: Phase 3 plan 04 complete (RecentlyAdded row list with stacked invitee/inviter avatars + (+N others) hover popover + click-inviter filter pill + relaxed-window query; SyncFreshnessPill amber/Partial state for Deep-Sync-ingest failure via getSyncFreshness extension; ACTV-04 marked done). Stopped at: Plan 03-04 complete — Phase 3 fully shipped. Push deploy branch to origin so Railway picks up scripts/deep-sync-ingest.cjs and operator wires the 30-min cron; first ingest validates the row list + amber pill.
 - 2026-05-11: Phase 4 plan 01 complete (pure permission-mapping module; FLDR-03 satisfied). lib/acc/permissionMapping.ts exports PermTier union + TIER_DEFINITIONS (6 tiers high→low) + mapActions(). 14 Vitest tests pass (TDD RED→GREEN). Stopped at: Plan 04-01 complete; ready for Plan 04-02.
 - 2026-05-11: Phase 4 plan 03 complete (AccProject.folderCrawlStatus additive migration 20260511234124 applied + accFoldersRouter scaffold registered under key 'accFolders'; FLDR-01 marked done). Migration is NOT NULL DEFAULT 'never' — safe for Railway deploy on existing rows. Stopped at: Plan 04-03 complete; Wave 1 groundwork done. Ready for Wave 2 (Plans 04/05/06).
+- 2026-05-11: Phase 4 plan 02 complete (BFS folder-crawl library + Vitest tests + dry-run script + CRAWL-ESTIMATE.md from 13/1143-project sample; FLDR-01, FLDR-02 marked done). Luis-approved **WEEKLY** cadence + **skip-archived-in-flight** scope (no soft-delete of ~526 archived projects; fast-fail 403 path handles them). Locks Plan 04-04 cron schedule at weekly. Stopped at: Plan 04-02 complete; Wave 2 unblocked (Plans 04-04 + 04-05).
 
 ## Decisions
 
@@ -77,6 +78,13 @@ See: .planning/PROJECT.md
 - **04-01:** Upload Only tier = {PUBLISH} only; inputs with VIEW+DOWNLOAD+COLLABORATE+PUBLISH match View+Download+Upload first (higher in iteration order).
 - **04-03:** Migration timestamp 20260511234124; additive NOT NULL DEFAULT 'never' — existing AccProject rows get 'never' with no backfill step needed.
 - **04-03:** accFoldersRouter intentionally contains only ping placeholder; Plan 05 owns getMatrix/getOrphanRoles/getProjectFolderTree. Scaffold-first prevents Plans 05+06 from blocking each other.
+- **04-02:** Cadence = WEEKLY (Luis-approved 2026-05-11). 13/1143-project sample too small to commit to nightly; weekly gives headroom for the real distribution. Locks Plan 04-04 cron schedule at weekly — easy to flip to nightly later by changing only the Railway cron schedule.
+- **04-02:** Scope = SKIP ARCHIVED IN-FLIGHT. Do NOT soft-delete ~526 archived projects in AccProject; let the fast-fail 403 path (~200ms/project, ~105s total per crawl) handle them. Soft-delete from a 13-project sample is a one-way risky operation; fast-fail surfaces drift cleanly as a side effect.
+- **04-02:** folderCrawl.ts is PURE (no Prisma). dryRun param signals intent only — caller (Plan 04-04 extractAndPersistFolders wrapper) owns persistence. Keeps the library testable with mocked fetch.
+- **04-02:** BFS with explicit queue (not recursion) — defends against deep folder trees blowing Node's stack. pLimit(5) per project caps concurrent APS folder-contents fetches.
+- **04-02:** ROLE filter applied at parse boundary (subjectType==='ROLE'), not at query time — USER permissions never enter memory beyond the parse loop.
+- **04-02:** Soft cap = 5min warn-once; hard cap = 15min abort with status='partial', reason='hard_cap_exceeded'. Per-project failures continue with whatever was crawled.
+- **04-02:** Hub-scale surprise — DB has 1,143 active AccProjects; ~46% return APS 403 ("Project is not active"). Accepted via skip-archived-in-flight scope decision rather than a defensive soft-delete pass.
 - [Phase 05-5.1]: isAccountAdmin not on AccProjectMember; enrichedUsers omits it, AdminTierBody reads from BulkAccUser.isAccountAdmin directly
 - [Phase 05-5.1]: GRAPH-04 CASE 3: Phase 4 in-flight at execution time; user decision pending at Task 5 checkpoint
 
@@ -97,5 +105,6 @@ See: .planning/PROJECT.md
 | 03    | 04   | ~5 min   | 3     | 3     | 2026-05-11 |
 | 04    | 01   | ~2 min   | 2     | 2     | 2026-05-11 |
 | 04    | 03   | ~8 min   | 2     | 4     | 2026-05-11 |
+| 04    | 02   | ~25 min  | 4     | 5     | 2026-05-11 |
 | Phase 05 P5.1 | ~14 min | 4 tasks | 16 files |
 
