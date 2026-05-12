@@ -11,7 +11,7 @@ import {
 const DIMMED_USER_COLOR = "#9CA3AF";
 
 export interface GraphRenderNode {
-  kind: "user" | "project" | "role" | "module";
+  kind: "user" | "project" | "role" | "module" | "folder";
   id: string;
   color: string;
   radius?: number;
@@ -19,6 +19,22 @@ export interface GraphRenderNode {
   label?: string;
   /** Connection count — used as priority key for the 200-cap collision pass. */
   degree?: number;
+}
+
+/**
+ * Phase 7 GRAPH7-11 / Pitfall 4: folder hubs must read as "container," not "actor,"
+ * so they bypass the project/role/module palette (`getCategoryColor`) and render as
+ * a fixed neutral teal. This helper is the single source of truth for that override
+ * — Canvas2D and Cosmos backends both call it before painting.
+ */
+export const FOLDER_NODE_COLOR = "#5EEAD4"; // teal-300
+
+export function resolveRenderNodeColor(node: GraphRenderNode): string {
+  // Pitfall 4: branch on kind=folder BEFORE any palette/hash-based resolver.
+  // The caller has already stuffed `node.color` from `getCategoryColor` in the
+  // general case; folder hubs override to the neutral teal regardless of input.
+  if (node.kind === "folder") return FOLDER_NODE_COLOR;
+  return node.color;
 }
 
 export interface GraphRenderView {
@@ -204,7 +220,7 @@ export class CanvasGraphRenderer implements GraphRenderer {
     }
 
     const hasSelection = frame.selectedNodeIndex >= 0;
-    const selectedColor = hasSelection ? frame.nodes[frame.selectedNodeIndex].color : null;
+    const selectedColor = hasSelection ? resolveRenderNodeColor(frame.nodes[frame.selectedNodeIndex]) : null;
     const dimBatches = new Map<string, [number, number][]>();
     const brightBatches = new Map<string, [number, number][]>();
     const sameUserCoords: [number, number][] = [];
@@ -226,9 +242,11 @@ export class CanvasGraphRenderer implements GraphRenderer {
       }
 
       const target = hasSelection && !frame.highlightSet.has(index) ? dimBatches : brightBatches;
-      const list = target.get(node.color) ?? [];
+      // Phase 7 Pitfall 4: folder kind bypasses the per-node palette color.
+      const nodeColor = resolveRenderNodeColor(node);
+      const list = target.get(nodeColor) ?? [];
       list.push([nx, ny]);
-      target.set(node.color, list);
+      target.set(nodeColor, list);
     }
 
     const normalRadius = 3 / view.scale;

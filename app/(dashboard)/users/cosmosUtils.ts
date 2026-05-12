@@ -1,6 +1,7 @@
 "use client";
 
 import type { GraphRenderNode } from "./graphRenderers";
+import { resolveRenderNodeColor } from "./graphRenderers";
 
 /**
  * Convert a hex color string (#RRGGBB) to normalized [r, g, b] floats (0.0–1.0).
@@ -47,7 +48,8 @@ export function isWebGL2Available(): boolean {
 export function buildNodeColorBuffer(nodes: readonly GraphRenderNode[]): Float32Array {
   const buf = new Float32Array(nodes.length * 4);
   for (let i = 0; i < nodes.length; i++) {
-    const [r, g, b] = hexToRGBNorm(nodes[i].color);
+    // Phase 7 Pitfall 4: folder kind overrides node.color with neutral teal.
+    const [r, g, b] = hexToRGBNorm(resolveRenderNodeColor(nodes[i]));
     buf[i * 4 + 0] = r;
     buf[i * 4 + 1] = g;
     buf[i * 4 + 2] = b;
@@ -225,21 +227,69 @@ export function buildClusterIdsFromNodes(
 }
 
 /**
- * Build a Float32Array of per-link RGBA values for Cosmos setLinkColors().
- * Phase 2 scope: uniform gray for all edges (single edge type in current data).
- * Multi-type edge color variation per REND-03 is deferred to a future phase when
- * the data model supports multiple relationship types.
+ * Convert "#RRGGBB" (or "#RRGGBBAA") to normalized [r, g, b, a] in 0..1.
+ * Falls back to the muted halftone gray (#9CA3AF @ 25%) on parse error.
+ * Used by `buildLinkColorBuffer` to support per-edge color overrides.
  */
-export function buildLinkColorBuffer(linkCount: number): Float32Array {
-  const buf = new Float32Array(linkCount * 4);
-  // Subtle warm gray — #9CA3AF at 25% opacity for a halftone feel matching Canvas 2D
-  const r = 0.612, g = 0.639, b = 0.686, a = 0.25;
-  for (let i = 0; i < linkCount; i++) {
-    buf[i * 4 + 0] = r;
-    buf[i * 4 + 1] = g;
-    buf[i * 4 + 2] = b;
-    buf[i * 4 + 3] = a;
+export function hexToRgba01(hex: string): [number, number, number, number] {
+  const cleaned = hex.replace("#", "");
+  if (cleaned.length === 6 || cleaned.length === 8) {
+    const r = parseInt(cleaned.slice(0, 2), 16) / 255;
+    const g = parseInt(cleaned.slice(2, 4), 16) / 255;
+    const b = parseInt(cleaned.slice(4, 6), 16) / 255;
+    const a = cleaned.length === 8 ? parseInt(cleaned.slice(6, 8), 16) / 255 : 0.25;
+    if (!isNaN(r) && !isNaN(g) && !isNaN(b) && !isNaN(a)) return [r, g, b, a];
   }
+  if (cleaned.length === 3) {
+    const r = parseInt(cleaned[0] + cleaned[0], 16) / 255;
+    const g = parseInt(cleaned[1] + cleaned[1], 16) / 255;
+    const b = parseInt(cleaned[2] + cleaned[2], 16) / 255;
+    return [r, g, b, 0.25];
+  }
+  return [0.612, 0.639, 0.686, 0.25];
+}
+
+/**
+ * Build a Float32Array of per-link RGBA values for Cosmos setLinkColors().
+ *
+ * - No options / `perEdgeColors` omitted → uniform gray (legacy behavior;
+ *   Phase 2 default, untouched for back-compat with existing call sites).
+ * - `defaultColor` provided → uniform fill from that color.
+ * - `perEdgeColors` provided → one color per edge. Length MUST equal `count`;
+ *   shorter arrays leave the tail at the default gray, longer arrays are
+ *   silently truncated. Phase 7 Plan 07-06 uses this to drive edge color by
+ *   permTier or similarity dimension at render time.
+ */
+export function buildLinkColorBuffer(
+  count: number,
+  options?: { defaultColor?: string; perEdgeColors?: ReadonlyArray<string> },
+): Float32Array {
+  const buf = new Float32Array(count * 4);
+
+  // Default = muted halftone gray (#9CA3AF @ 25% opacity).
+  const [dr, dg, db, da] = options?.defaultColor
+    ? hexToRgba01(options.defaultColor)
+    : [0.612, 0.639, 0.686, 0.25];
+
+  for (let i = 0; i < count; i++) {
+    buf[i * 4 + 0] = dr;
+    buf[i * 4 + 1] = dg;
+    buf[i * 4 + 2] = db;
+    buf[i * 4 + 3] = da;
+  }
+
+  if (options?.perEdgeColors && options.perEdgeColors.length > 0) {
+    const overrides = options.perEdgeColors;
+    const lim = Math.min(count, overrides.length);
+    for (let i = 0; i < lim; i++) {
+      const [r, g, b, a] = hexToRgba01(overrides[i]);
+      buf[i * 4 + 0] = r;
+      buf[i * 4 + 1] = g;
+      buf[i * 4 + 2] = b;
+      buf[i * 4 + 3] = a;
+    }
+  }
+
   return buf;
 }
 
