@@ -45,6 +45,7 @@ const KNOWN_ACTIONS = new Set([
   "DOWNLOAD",
   "COLLABORATE",
   "PUBLISH",
+  "PUBLISH_MARKUP",
   "EDIT",
   "CONTROL",
 ]);

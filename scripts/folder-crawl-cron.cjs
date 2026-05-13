@@ -49,6 +49,22 @@ function logErr(...args) {
   console.error(`[folder-crawl-cron ${ts()}]`, ...args);
 }
 
+function parseProjectStatuses() {
+  const raw = (process.env.FOLDER_CRAWL_STATUSES || "never,partial,failed").trim();
+  const statuses = raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return statuses.length > 0 ? statuses : ["never", "partial", "failed"];
+}
+
+function parsePositiveInt(name) {
+  const raw = process.env[name] && process.env[name].trim();
+  if (!raw) return undefined;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value > 0 ? value : undefined;
+}
+
 function createPrisma() {
   const { PrismaClient } = require("@prisma/client");
   const { PrismaPg } = require("@prisma/adapter-pg");
@@ -112,12 +128,21 @@ async function main() {
     log("Token acquired.");
 
     // ── Active projects ───────────────────────────────────────────────────
+    const crawlStatuses = parseProjectStatuses();
+    const projectLimit = parsePositiveInt("FOLDER_CRAWL_LIMIT");
     const projects = await prisma.accProject.findMany({
-      where: { status: "active" },
-      select: { id: true, name: true },
+      where: {
+        status: "active",
+        folderCrawlStatus: { in: crawlStatuses },
+      },
+      select: { id: true, name: true, folderCrawlStatus: true },
       orderBy: { name: "asc" },
+      ...(projectLimit ? { take: projectLimit } : {}),
     });
-    log(`Found ${projects.length} active AccProject(s).`);
+    log(
+      `Found ${projects.length} active AccProject(s) with folderCrawlStatus in ` +
+        `[${crawlStatuses.join(", ")}]${projectLimit ? ` (limit ${projectLimit})` : ""}.`
+    );
     if (projects.length === 0) {
       log("No active projects; nothing to do.");
       return;
