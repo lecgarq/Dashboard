@@ -1624,13 +1624,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // role/module-hub link springs that were leaving the layout chaotic.
           const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "project");
           if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
-          // 2026-05-13: STATIC layout path. computeTopologySeedPositions
-          // emits a project-clustered final layout (sunflower of project
-          // centroids + per-node jitter). Stop the cosmos force sim
-          // immediately so it doesn't churn the static positions — at
-          // 24k nodes the force sim could only manage ~1fps on the Intel
-          // iGPU. Frozen, the GPU just renders at native zoom/pan fps.
-          renderer.freezeSimulation();
+          // Static seed positions (project-clustered sunflower) + reduced
+          // topology (user/access hubs dropped) give cosmos's force sim a
+          // much easier starting point. The sim runs but converges fast
+          // because the seed is already approximately correct.
+          // freezeSimulation() was attempted earlier but cosmos.gl beta.9
+          // resets positions when enableSimulation is toggled, so freezing
+          // mid-data-load produces an empty canvas. Letting the sim run
+          // from a good seed is the working compromise.
           // CRITICAL: project topology links on the main thread because the
           // worker (which normally posts to linksRef) is gated off here. Without
           // this, Cosmos receives 0 springs and the simulation collapses
