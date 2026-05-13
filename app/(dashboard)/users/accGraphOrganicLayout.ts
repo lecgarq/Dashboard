@@ -405,6 +405,27 @@ export function buildAccTopologyGraph(
   };
 }
 
+/**
+ * Compute a project-clustered static layout.
+ *
+ * 2026-05-13: rewritten from a generic golden-angle sunflower (treating all
+ * nodes equally) into a two-tier layout for the (user, project) instance
+ * topology. The static layout is the FINAL layout — the GPU force sim is
+ * disabled in the renderer so positions stay put. At 24k nodes the Intel
+ * iGPU could not converge a force simulation in reasonable time (~1fps);
+ * static placement is instant and stays interactive at full zoom/pan.
+ *
+ * Layout:
+ *   1. Collect unique projects (null projectId → "no-project" bucket).
+ *   2. Assign each project a centroid on a golden-angle sunflower so
+ *      projects are spread roughly uniformly around the unit square.
+ *   3. Place each instance node at its project's centroid plus a
+ *      deterministic per-node jitter — instances cluster tightly around
+ *      the project centroid, with enough offset that overlapping users
+ *      remain individually clickable.
+ *
+ * Pure / deterministic — same inputs → same Float32Array, byte-identical.
+ */
 export function computeTopologySeedPositions(
   nodes: readonly OrganicLayoutNode[],
   cachedPositions?: Float32Array | readonly number[] | null,
@@ -421,14 +442,59 @@ export function computeTopologySeedPositions(
   }
 
   const positions = new Float32Array(expectedLength);
+  if (nodes.length === 0) return positions;
+
+  // Step 1: enumerate projects in stable order (first appearance wins).
+  const NO_PROJECT = "::no-project::";
+  const projectOrder: string[] = [];
+  const projectIndex = new Map<string, number>();
+  for (const node of nodes) {
+    const key = node.projectId || NO_PROJECT;
+    if (!projectIndex.has(key)) {
+      projectIndex.set(key, projectOrder.length);
+      projectOrder.push(key);
+    }
+  }
+
+  // Step 2: assign each project a centroid on a golden-angle sunflower.
+  // Output coords live in [0,1]² with a comfortable inset so jitter+labels
+  // never spill off the canvas edge.
+  const projectCount = projectOrder.length;
   const goldenAngle = Math.PI * (3 - Math.sqrt(5));
+  const sunflowerRadius = 0.42; // max distance from (0.5, 0.5) center
+  const centroids = new Float64Array(projectCount * 2);
+  for (let p = 0; p < projectCount; p++) {
+    const t = projectCount <= 1 ? 0 : (p + 0.5) / projectCount;
+    const radius = Math.sqrt(t) * sunflowerRadius;
+    const angle = p * goldenAngle;
+    centroids[p * 2] = 0.5 + Math.cos(angle) * radius;
+    centroids[p * 2 + 1] = 0.5 + Math.sin(angle) * radius;
+  }
+
+  // Step 3: place each instance at its project centroid + per-node jitter.
+  // Jitter radius scales down with project size so dense projects don't
+  // overrun their neighbors. featureAnchor returns a deterministic 2D
+  // offset in [-~0.48, ~0.48]² which we shrink to a small local cloud.
+  const projectMemberCounts = new Map<string, number>();
+  for (const node of nodes) {
+    const key = node.projectId || NO_PROJECT;
+    projectMemberCounts.set(key, (projectMemberCounts.get(key) ?? 0) + 1);
+  }
+
   for (let i = 0; i < nodes.length; i++) {
-    const jitter = featureAnchor(nodes[i].id, "topology-seed");
-    const t = nodes.length <= 1 ? 0 : (i + 0.5) / nodes.length;
-    const radius = Math.sqrt(t) * 0.36;
-    const angle = i * goldenAngle;
-    positions[i * 2] = clampUnit(0.5 + Math.cos(angle) * radius + jitter.x * 0.02);
-    positions[i * 2 + 1] = clampUnit(0.5 + Math.sin(angle) * radius + jitter.y * 0.02);
+    const node = nodes[i];
+    const key = node.projectId || NO_PROJECT;
+    const pIdx = projectIndex.get(key)!;
+    const cx = centroids[pIdx * 2];
+    const cy = centroids[pIdx * 2 + 1];
+    const members = projectMemberCounts.get(key) ?? 1;
+    // Jitter radius: grows with sqrt(members) so a 100-member project
+    // gets a ~10× larger local cloud than a 1-member project, but
+    // clamped so even huge projects don't bleed into their neighbors.
+    const jitterScale = Math.min(0.06, 0.012 + Math.sqrt(members) * 0.0035);
+    const j = featureAnchor(node.id, "instance-jitter");
+    positions[i * 2] = clampUnit(cx + j.x * jitterScale);
+    positions[i * 2 + 1] = clampUnit(cy + j.y * jitterScale);
   }
   return positions;
 }

@@ -1574,7 +1574,14 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       activeRendererRef.current = canvasRenderer;
       setIsCosmosLoading(true);
 
-      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: true }).then(({ renderer }) => {
+      // 2026-05-13: physics disabled. The (user, project) instance topology
+      // produces ~24k nodes which the Intel iGPU could not force-simulate
+      // above ~1fps. computeTopologySeedPositions now emits a project-
+      // clustered static layout (sunflower of project centroids + per-node
+      // jitter) which is the FINAL layout — no sim needed, instant render,
+      // 60fps zoom/pan. Luis directive 2026-05-13: "Skip physics — use
+      // precomputed static layout".
+      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: false }).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
           if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create: renderer=null (init failed)");
