@@ -1306,13 +1306,30 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   }, [mosaicCoordinator, mosaicSelection, cosmosCanvasReady]);
 
   // Task 4: Apply the alpha mask to the cosmos color buffer whenever a new mask
-  // arrives (alphaMaskVersion increments inside setAlphaMask). Reads current
-  // nodesRef and cosmosRendererRef — no stale closure risk since both are refs.
+  // arrives (alphaMaskVersion increments inside setAlphaMask).
+  //
+  // The handle's nodeIds is the authoritative index space (captured at cosmos
+  // init time). If the users prop changes later, nodesRef diverges from the
+  // handle's nodeIds — so we size the color buffer from the HANDLE, not from
+  // nodesRef.current, to guarantee mask/colors alignment.
+  //
+  // TODO(perf): the base color buffer is rebuilt every selection (~390KB at
+  // 24k nodes). Cache it in a ref after init and copy-mutate per change.
   useEffect(() => {
     const renderer = cosmosRendererRef.current;
     const mask = alphaBufRef.current;
-    if (!renderer || !mask || nodesRef.current.length === 0) return;
-    const colors = buildNodeColorBuffer(nodesRef.current);
+    const handle = cosmosCanvasHandleRef.current;
+    if (!renderer || !mask || !handle || handle.nodeIds.length === 0) return;
+    // Build colors from the same nodes the handle captured. If users changed,
+    // nodesRef may have a different length — find the corresponding nodes by
+    // index up to the handle's known length to keep alignment.
+    const nodesForColors = nodesRef.current.slice(0, handle.nodeIds.length);
+    if (nodesForColors.length !== handle.nodeIds.length) {
+      // Index space drifted (e.g. users prop changed). Skip this paint cycle;
+      // the next handle reinstall will reset alignment.
+      return;
+    }
+    const colors = buildNodeColorBuffer(nodesForColors);
     for (let i = 0; i < mask.length && i * 4 + 3 < colors.length; i++) {
       colors[i * 4 + 3] *= mask[i];
     }
