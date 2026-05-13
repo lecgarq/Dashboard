@@ -1328,13 +1328,20 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
   /**
    * Freeze the simulation in place — used for the static (precomputed)
-   * layout path. Stops cosmos's internal force sim so the positions we
-   * pushed via setInitialPositions become the final positions. The
-   * GPU renderer keeps drawing (zoom/pan still work at native fps).
+   * layout path. Flips `enableSimulation` off via setConfigPartial so
+   * cosmos's force computation is permanently halted. Calling graph.stop()
+   * alone is insufficient — cosmos automatically restarts the sim whenever
+   * new data flows in (setLinks, setPointPositions, etc.), so the only
+   * durable freeze is to disable the simulation at the config level.
+   * The GPU renderer keeps drawing (zoom/pan still work at native fps).
    */
   freezeSimulation(): void {
     if (!this.graph) return;
-    try { this.graph.stop?.(); } catch { /* ignore */ }
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.graph as any).setConfigPartial?.({ enableSimulation: false });
+      this.graph.stop?.();
+    } catch { /* ignore */ }
   }
 
   /**
