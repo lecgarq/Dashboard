@@ -46,9 +46,10 @@ describe("buildAccTopologyGraph", () => {
     const second = buildAccTopologyGraph([...nodes].reverse());
 
     expect(first.hiddenNodes.map((node) => node.id)).toEqual(second.hiddenNodes.map((node) => node.id));
+    // 2026-05-13: access (admin/member) and user hubs dropped from the
+    // (user, project) instance topology — they were undoing the fan-out
+    // (user hub = clique magnet) and over-clustering (access = 2 buckets).
     expect(first.hiddenNodes.map((node) => node.id)).toEqual([
-      "hub:access:admin",
-      "hub:access:member",
       "hub:module:build",
       "hub:module:docs",
       "hub:project:project-1",
@@ -56,8 +57,6 @@ describe("buildAccTopologyGraph", () => {
       "hub:role:architect",
       "hub:role:modeler",
       "hub:role:reviewer",
-      "hub:user:a%40example.com",
-      "hub:user:b%40example.com",
     ]);
   });
 
@@ -73,8 +72,10 @@ describe("buildAccTopologyGraph", () => {
     expect(linkKeys.has(`${sourceA}->hub:role:reviewer:role`)).toBe(true);
     expect(linkKeys.has(`${sourceA}->hub:module:docs:module`)).toBe(true);
     expect(linkKeys.has(`${sourceA}->hub:module:build:module`)).toBe(true);
-    expect(linkKeys.has(`${sourceA}->hub:access:admin:access`)).toBe(true);
-    expect(linkKeys.has(`${sourceA}->hub:user:a%40example.com:user`)).toBe(true);
+    // Access and user hubs intentionally dropped in the instance topology
+    // (see hidden-hubs test for rationale).
+    expect(graph.links.some((link) => link.kind === "access")).toBe(false);
+    expect(graph.links.some((link) => link.kind === "user")).toBe(false);
     expect(graph.links.some((link) => String(link.kind) === "semantic")).toBe(false);
     expect(graph.links.some((link) => String(link.kind) === "lastAdded")).toBe(false);
   });

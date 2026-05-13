@@ -275,10 +275,20 @@ export function buildAccTopologyGraph(
     links.push(link);
   };
 
+  // (user, project) instance topology (2026-05-13):
+  //   - Project hub: kept. THE dominant attractor — instances cluster by
+  //     their project, which is the whole point of the new model.
+  //   - Access hub (admin/member): DROPPED. A 2-bucket hub at 24k node
+  //     scale pulls everything into 2 super-clumps and adds no signal.
+  //   - User hub (one node per email): DROPPED. It acted as a clique
+  //     magnet — every instance of a user linked to the same user-hub
+  //     node, which collapsed instances back together and defeated the
+  //     fan-out. Replaced by the same-person chain (low-weight, visible)
+  //     below.
+  //   - Role / Module hubs: kept as secondary structure. Instances with
+  //     the same role in different projects gain a weak shared neighbor.
   for (const node of nodes) {
     addLink(node.id, addHub("project", node.projectId || node.projectName || "No project", node.projectName || node.projectId || "No project"), "project");
-    addLink(node.id, addHub("access", node.isAdmin ? "admin" : "member", node.isAdmin ? "Admin" : "Member"), "access");
-    addLink(node.id, addHub("user", node.email, node.name || node.email), "user");
 
     const roles = new Set<string>();
     addUniqueSortedValues(node.roles ?? [], roles);
