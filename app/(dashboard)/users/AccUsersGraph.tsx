@@ -311,12 +311,10 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
     companyName: user.companyName,
   };
 
-  // Filter to active projects only — archived/inactive projects on the
-  // BulkAccUser blob can balloon the instance count by 5-10× (one user
-  // commonly has 20+ historical projects across years of tenure). Only
-  // active projects represent current access surface, which is what the
-  // graph is meant to visualize.
-  const projects = (user.projects ?? []).filter((p) => p.status === "active");
+  // All projects (active + archived) per Luis 2026-05-13: "i need the user
+  // node instances i dont mind if its 23549 nodes showing". Historical
+  // project access is part of the picture he wants.
+  const projects = user.projects ?? [];
   if (projects.length === 0) {
     const roles = baseAllRoles;
     const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
