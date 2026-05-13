@@ -188,6 +188,7 @@ export function controlsToSimulationConfig(
 export interface ClusterableNode {
   roles?: readonly string[];
   modules?: readonly string[];
+  projectId?: string;
 }
 
 /**
@@ -197,21 +198,30 @@ export interface ClusterableNode {
  * - `clusterKey: "role"` uses the first entry of `node.roles` (matches the
  *   primary-role coloring used in AccUsersGraph).
  * - `clusterKey: "module"` uses the first entry of `node.modules`.
+ * - `clusterKey: "project"` uses `node.projectId` directly (one cluster per
+ *   project). This is the (user, project) instance topology mode added
+ *   2026-05-13 so cosmos's native cluster force does the per-project
+ *   grouping instead of relying on weak link springs to many small hubs.
  *
  * Pure for unit testing — no DOM access, no module-level state, deterministic
  * ordering (assignment order = first-seen).
  */
 export function buildClusterIdsFromNodes(
   nodes: readonly ClusterableNode[],
-  clusterKey: "role" | "module",
+  clusterKey: "role" | "module" | "project",
 ): (number | undefined)[] {
   const lookup = new Map<string, number>();
   let nextId = 0;
   const ids: (number | undefined)[] = new Array(nodes.length);
   for (let i = 0; i < nodes.length; i++) {
     const node = nodes[i];
-    const candidates = clusterKey === "role" ? node.roles : node.modules;
-    const key = candidates && candidates.length > 0 ? candidates[0] : undefined;
+    let key: string | undefined;
+    if (clusterKey === "project") {
+      key = node.projectId;
+    } else {
+      const candidates = clusterKey === "role" ? node.roles : node.modules;
+      key = candidates && candidates.length > 0 ? candidates[0] : undefined;
+    }
     if (!key) {
       ids[i] = undefined;
       continue;

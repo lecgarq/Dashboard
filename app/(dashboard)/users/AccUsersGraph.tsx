@@ -1617,7 +1617,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
             console.log("[02-05-DEBUG] cosmos-create.then: SKIPPED setInitialPositions — posRef empty");
           }
           // Cluster ids are stable for the dataset — strength is sliderized.
-          const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "role");
+          // Cluster by PROJECT (2026-05-13 (user, project) instance topology):
+          // each instance lives in exactly one project, so cluster=projectId
+          // groups all instances of the same project around a shared centroid
+          // via cosmos's native cluster force. Far stronger than the dropped
+          // role/module-hub link springs that were leaving the layout chaotic.
+          const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "project");
           if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
           // CRITICAL: project topology links on the main thread because the
           // worker (which normally posts to linksRef) is gated off here. Without
@@ -1994,7 +1999,9 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       if (posRef.current.length > 0) {
         cosmosRendererRef.current.setInitialPositions(posRef.current);
       }
-      const clusterIds = buildClusterIdsFromNodes(rawNodes, "role");
+      // Cluster by project — see commentary at the cosmos-create path
+      // above for rationale.
+      const clusterIds = buildClusterIdsFromNodes(rawNodes, "project");
       if (clusterIds.length > 0) {
         cosmosRendererRef.current.setPointClusters(clusterIds);
       }
