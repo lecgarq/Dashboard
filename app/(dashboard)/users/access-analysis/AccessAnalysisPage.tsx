@@ -3,6 +3,8 @@
 import { AccessAnalysisProvider } from "./AccessAnalysisContext";
 import { TimeWindowSelector } from "./TimeWindowSelector";
 import { KpiStrip } from "./KpiStrip";
+import { AccessEventsChart } from "./AccessEventsChart";
+import { HybridAnalyticsSurface } from "./HybridAnalyticsSurface";
 
 export function AccessAnalysisPage() {
   return (
@@ -16,7 +18,8 @@ export function AccessAnalysisPage() {
           <TimeWindowSelector />
         </header>
         <KpiStrip />
-        {/* AccessEventsChart in Task 4.2; ChangeStreamCards in Phase 5; DirectoryAccordion in Phase 6 */}
+        <AccessEventsChart />
+        <HybridAnalyticsSurface />
       </div>
     </AccessAnalysisProvider>
   );
