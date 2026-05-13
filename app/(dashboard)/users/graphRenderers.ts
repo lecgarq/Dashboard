@@ -523,6 +523,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
   private lastSelectedIndex = -1;
   // Cached visible set: used by setVisibleIndices to avoid redundant size-buffer rebuilds.
   private lastVisibleSet: ReadonlySet<number> | null = null;
+  // 07.1 Task 3: when true, draw() suppresses sim-advancing render() calls and
+  // re-warm hooks (setSimulationConfig, link-arrival reheat) so the layout
+  // stays frozen at the warmup snapshot. We do NOT toggle enableSimulation
+  // via setConfigPartial — that has been observed to reset position textures
+  // in cosmos.gl beta.9 (see freezeSimulation comments + commit 25cc871).
+  private paused = false;
   onNodeSelectCallback: ((index: number | null) => void) | null = null;
 
   private constructor(graph: unknown) {
@@ -617,6 +623,12 @@ export class CosmosGraphRenderer implements GraphRenderer {
           // Re-heat so neighbors visibly react during the drag. start()+render()
           // pairing is required because once alpha cools below ALPHA_MIN the
           // sim flag flips to false and render() alone won't resume forces.
+          // 07.1 Task 3: skip reheat when paused (frozen layout — drag still
+          // moves the picked node since cosmos handles that internally).
+          if (renderer.paused) {
+            try { renderer.graph?.render?.(0); } catch { /* ignore */ }
+            return;
+          }
           try { renderer.graph?.start?.(0.3); } catch { /* ignore */ }
           try { renderer.graph?.render?.(0.3); } catch { /* ignore */ }
         };
@@ -624,6 +636,10 @@ export class CosmosGraphRenderer implements GraphRenderer {
           // Reheat strongly so the released node is pulled back toward its
           // physics equilibrium by surrounding repulsion + link springs,
           // rather than sitting wherever it was dropped.
+          if (renderer.paused) {
+            try { renderer.graph?.render?.(0); } catch { /* ignore */ }
+            return;
+          }
           try { renderer.graph?.start?.(1.0); } catch { /* ignore */ }
           try { renderer.graph?.render?.(1.0); } catch { /* ignore */ }
         };
@@ -800,8 +816,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
         // CRITICAL: pair start(alpha) + render(alpha). render() alone won't
         // resume forces after a previous end() flipped isSimulationRunning
         // to false. See setSimulationConfig comment for the full rationale.
-        try { this.graph.start?.(1.0); } catch { /* ignore */ }
-        try { this.graph.render?.(1.0); } catch { /* ignore */ }
+        // 07.1 Task 3: when paused (post-warmup freeze) skip the reheat so
+        // late-arriving links don't restart the simulation.
+        if (!this.paused) {
+          try { this.graph.start?.(1.0); } catch { /* ignore */ }
+          try { this.graph.render?.(1.0); } catch { /* ignore */ }
+        } else {
+          try { this.graph.render?.(0); } catch { /* ignore */ }
+        }
       }
     } else if (
       // Edge-render-during-drag fix: Cosmos retains stale link spatial structure
@@ -849,7 +871,15 @@ export class CosmosGraphRenderer implements GraphRenderer {
     // (this also covers the case where points/colors/sizes upload but no link
     // arrival happens to trigger the render(1.0) re-warm above).
     if (needsRender) {
-      this.graph.render();
+      // 07.1 Task 3: when paused, render(0) draws without advancing the sim.
+      // Per cosmos.gl v3, render() alone (no alpha) advances using the current
+      // store.alpha — which could be nonzero if anything reheated. Forcing 0
+      // here keeps the layout pinned to its snapshot.
+      if (this.paused) {
+        this.graph.render(0);
+      } else {
+        this.graph.render();
+      }
     }
 
     if (isFirstLoad && !this.usePhysics) {
@@ -1265,8 +1295,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
       //     alone is insufficient to re-arm the simulation after end().
       // Both are required: start() flips the run flag, render() spins the loop
       // so the running flag gets observed by per-frame force passes.
-      this.graph.start?.(0.3);
-      this.graph.render?.(0.3);
+      // 07.1 Task 3: skip the reheat when paused — the freeze contract is that
+      // no further sim advance happens regardless of config writes.
+      if (!this.paused) {
+        this.graph.start?.(0.3);
+        this.graph.render?.(0.3);
+      } else {
+        this.graph.render?.(0);
+      }
     } catch {
       /* swallow — partial config rejected by graph; next applyer will retry */
     }
@@ -1350,6 +1386,58 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.graph as any).fitView?.(250, 0.1, false);
     } catch { /* ignore */ }
+  }
+
+  /**
+   * 07.1 Task 3: Pause the simulation WITHOUT toggling enableSimulation.
+   *
+   * Earlier attempts to freeze via setConfigPartial({ enableSimulation: false })
+   * (see freezeSimulation above) caused cosmos.gl beta.9 to reset its position
+   * textures → blank canvas. Commit 25cc871 dropped that call entirely. This
+   * helper takes a different approach:
+   *   - graph.stop() flips isSimulationRunning=false but leaves config + textures alone
+   *   - this.paused = true makes draw() pass alpha=0 to subsequent render() calls
+   *     and suppresses the link-arrival / setSimulationConfig reheats
+   *
+   * Caller is expected to have already installed the desired positions via
+   * setFrozenPositions() so the very next render(0) draws the frozen layout.
+   */
+  pauseSim(): void {
+    if (!this.graph) return;
+    this.paused = true;
+    try { this.graph.stop?.(); } catch { /* ignore */ }
+    try { this.graph.render?.(0); } catch { /* ignore */ }
+    try { this.graph.fitView?.(250); } catch { /* ignore */ }
+  }
+
+  /** 07.1 Task 3: read current point positions as a Float32Array (Cosmos space). */
+  getPointPositionsFloat32(): Float32Array | null {
+    if (!this.graph) return null;
+    try {
+      const arr = (this.graph as { getPointPositions?: () => ArrayLike<number> }).getPointPositions?.();
+      if (!arr) return null;
+      return arr instanceof Float32Array ? arr : Float32Array.from(arr as ArrayLike<number>);
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * 07.1 Task 3: install frozen positions in Cosmos space (already scaled —
+   * no re-scaling). Pass-through to setPointPositions with dontRescale=true.
+   */
+  setFrozenPositions(xy: Float32Array): void {
+    if (!this.graph) return;
+    try {
+      // cosmos.gl's setPointPositions(positions, dontRescale)
+      (this.graph as { setPointPositions?: (xy: Float32Array, dontRescale?: boolean) => void })
+        .setPointPositions?.(xy, true);
+    } catch { /* ignore */ }
+  }
+
+  /** True iff pauseSim() has been called. */
+  isPaused(): boolean {
+    return this.paused;
   }
 
   /**

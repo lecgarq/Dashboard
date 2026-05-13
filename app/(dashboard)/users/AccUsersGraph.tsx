@@ -60,6 +60,18 @@ import {
   isAccGraphMode,
   type AccGraphMode,
 } from "./accGraphModes";
+import {
+  isAnalyticsSelectionEmpty,
+  nodeMatchesAnalyticsSelection,
+  type GraphAnalyticsSelection,
+} from "./access-analysis/mosaicSelections";
+import { getDuckDbClient, canInitializeDuckDbInBrowser } from "./access-analysis/duckdbClient";
+import {
+  ensurePositionsSchema,
+  hashNodeSet,
+  loadCachedPositions,
+  savePositions,
+} from "./access-analysis/positionsCache";
 
 // Investigative topology modes. Users is the default, while access hubs and
 // folder permissions are opt-in.
@@ -119,6 +131,80 @@ function colorForTopologyLink(link: AccTopologyLink): string | undefined {
   if (link.kind === "folder-project") return FOLDER_PROJECT_EDGE_COLOR;
   if (link.kind === "same-person") return SAME_PERSON_EDGE_COLOR;
   return undefined; // fall back to renderer default
+}
+
+/**
+ * 07.1 Task 3: Load cached positions for the current node set from DuckDB, or
+ * — if no cache hit — let cosmos warm up for `warmupMs` and snapshot the result.
+ *
+ * Returns the positions in Cosmos space (already scaled), so the caller can
+ * install them via renderer.setFrozenPositions(...) and then call
+ * renderer.pauseSim() to permanently halt the simulation.
+ *
+ * NEVER throws — DuckDB or cosmos failures fall back to a "warm up + use live
+ * positions" path without caching, so the graph still renders.
+ */
+async function loadOrComputePositions(
+  renderer: CosmosGraphRenderer,
+  nodeIds: string[],
+  warmupMs: number,
+  onWarmupTick: () => void,
+): Promise<{ xy: Float32Array; fromCache: boolean } | null> {
+  if (nodeIds.length === 0) return null;
+  const setHash = hashNodeSet(nodeIds);
+
+  // Cache read — best effort. If DuckDB isn't available (SSR, worker init
+  // failure, etc.) we silently fall through to the warmup path.
+  if (canInitializeDuckDbInBrowser()) {
+    try {
+      const { connection } = await getDuckDbClient();
+      await ensurePositionsSchema(connection);
+      const cached = await loadCachedPositions(connection, setHash, nodeIds);
+      if (cached) {
+        return { xy: cached, fromCache: true };
+      }
+    } catch (err) {
+      console.warn("[positions-cache] read failed, falling through to warmup", err);
+    }
+  }
+
+  // Warmup phase — pump onWarmupTick() each frame so the rAF loop stays dirty
+  // and Cosmos's force-directed sim actually advances. We resolve after
+  // warmupMs milliseconds.
+  await new Promise<void>((resolve) => {
+    const start = performance.now();
+    const tick = () => {
+      onWarmupTick();
+      if (performance.now() - start >= warmupMs) {
+        resolve();
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
+
+  const live = renderer.getPointPositionsFloat32();
+  if (!live || live.length !== nodeIds.length * 2) {
+    // Cosmos hasn't laid out the expected node count yet — give up and let
+    // the caller continue without freezing. The graph will still render
+    // (sim keeps running) but won't be cached.
+    return null;
+  }
+  const xy = live instanceof Float32Array ? new Float32Array(live) : Float32Array.from(live);
+
+  // Cache write — best effort, never block the freeze path.
+  if (canInitializeDuckDbInBrowser()) {
+    try {
+      const { connection } = await getDuckDbClient();
+      await ensurePositionsSchema(connection);
+      await savePositions(connection, setHash, nodeIds, xy);
+    } catch (err) {
+      console.warn("[positions-cache] write failed, freezing without cache", err);
+    }
+  }
+
+  return { xy, fromCache: false };
 }
 
 interface UserNode extends PhysicsNode {
@@ -197,6 +283,7 @@ type OrganicWorkerMessage =
 export interface AccUsersGraphProps {
   users: BulkAccUser[];
   onSelectUser?: (email: string) => void;
+  analyticsSelection?: GraphAnalyticsSelection | null;
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
@@ -587,7 +674,7 @@ function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32
   return positions;
 }
 
-export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
+export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }: AccUsersGraphProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
@@ -624,6 +711,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const centroidRef = useRef({ x: 0.5, y: 0.5 });
   const needsRenderRef = useRef(true);
   const filtersRef = useRef<GraphFilters>(DEFAULT_FILTERS);
+  const analyticsSelectionRef = useRef<GraphAnalyticsSelection | null>(analyticsSelection);
   const hasActiveFiltersRef = useRef(false);
   const graphControlsRef = useRef<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const threeCameraMovingRef = useRef(false);
@@ -1126,6 +1214,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
   const rebuildVisibleIndices = useCallback(() => {
     const nodes = nodesRef.current;
     const filters = filtersRef.current;
+    const analytics = analyticsSelectionRef.current;
     const query = graphSearchRef.current;
     const userIndices: number[] = [];
     const visibleIndices: number[] = [];
@@ -1135,7 +1224,10 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         const haystack = `${nodes[i].name} ${nodes[i].email}`.toLowerCase();
         if (!haystack.includes(query)) continue;
       }
-      if (nodeMatchesFilters(nodes[i], filters)) {
+      if (
+        nodeMatchesFilters(nodes[i], filters) &&
+        nodeMatchesAnalyticsSelection(nodes[i], analytics)
+      ) {
         userIndices.push(i);
         visibleIndices.push(i);
         visibleSet.add(i);
@@ -1166,6 +1258,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     graphSearchRef.current = graphSearch.trim().toLowerCase();
     rebuildVisibleIndices();
   }, [graphSearch, rebuildVisibleIndices]);
+
+  useEffect(() => {
+    analyticsSelectionRef.current = analyticsSelection;
+    rebuildVisibleIndices();
+    cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
+    markGraphDirty();
+  }, [analyticsSelection, rebuildVisibleIndices, markGraphDirty]);
 
   const scheduleGraphControlUpdate = useCallback((key: keyof GraphControlSettings, value: number) => {
     const nextControls = { ...graphControlsRef.current, [key]: value };
@@ -1653,6 +1752,38 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           }
           // Apply the current slider values immediately so visit-after-reload picks up persisted state.
           renderer.setSimulationConfig(controlsToSimulationConfig(graphControlsRef.current));
+
+          // 07.1 Task 3: warmup → snapshot → freeze. At ~24k (user, project)
+          // instance nodes the iGPU runs the live sim at 1 FPS. Instead, let
+          // cosmos run hot for ~2s so the project-cluster force can settle the
+          // layout, then snapshot positions to DuckDB and pause the sim. Cached
+          // positions are restored on subsequent loads (same node set hash) so
+          // we skip warmup entirely.
+          const orderedIds = nodesRef.current.map((n) => n.id);
+          void loadOrComputePositions(
+            renderer,
+            orderedIds,
+            2000,
+            () => { markGraphDirty(); },
+          ).then((result) => {
+            if (disposed) return;
+            if (!result) {
+              if (perfHudEnabled) console.log("[02-05-DEBUG] loadOrComputePositions: null result (no freeze)");
+              return;
+            }
+            if (perfHudEnabled) {
+              console.log("[02-05-DEBUG] loadOrComputePositions: fromCache=", result.fromCache,
+                "xy.length=", result.xy.length);
+            }
+            // Install positions (already in Cosmos space — pass dontRescale=true)
+            // and pause the simulation. After this point, draw() will pass
+            // alpha=0 to render() and reheat hooks are gated off.
+            renderer.setFrozenPositions(result.xy);
+            renderer.pauseSim();
+            markGraphDirty();
+          }).catch((err) => {
+            console.warn("[positions-cache] loadOrComputePositions threw", err);
+          });
         }
 
         // Wire click selection to side panel
@@ -2059,7 +2190,8 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       filters.disabledModules.length > 0 ||
       filters.companyRoles.length > 0 ||
       !!filters.dateFrom ||
-      !!filters.dateTo;
+      !!filters.dateTo ||
+      !isAnalyticsSelectionEmpty(analyticsSelectionRef.current);
 
     // Drag-defer guard: if a node drag is in progress, store the pending filter
     // change and apply it after pointerup clears isDraggingNodeRef.
@@ -2611,6 +2743,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     !!filters.dateFrom ||
     !!filters.dateTo ||
     filters.perProjectRoles.length > 0 ||
+    !isAnalyticsSelectionEmpty(analyticsSelection) ||
     phase7TopologyActive;
 
   // activeFilterCount: number of filter dimensions that are non-default.
@@ -2624,6 +2757,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     (filters.dateFrom ? 1 : 0) +
     (filters.dateTo ? 1 : 0) +
     (filters.perProjectRoles.length > 0 ? 1 : 0) +
+    (!isAnalyticsSelectionEmpty(analyticsSelection) ? 1 : 0) +
     // Phase 7 — count the whole topology section as one dimension when any
     // sub-control deviates from default; keeps the badge readable.
     (phase7TopologyActive ? 1 : 0);
