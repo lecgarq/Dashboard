@@ -1574,14 +1574,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
       activeRendererRef.current = canvasRenderer;
       setIsCosmosLoading(true);
 
-      // 2026-05-13: physics disabled. The (user, project) instance topology
-      // produces ~24k nodes which the Intel iGPU could not force-simulate
-      // above ~1fps. computeTopologySeedPositions now emits a project-
-      // clustered static layout (sunflower of project centroids + per-node
-      // jitter) which is the FINAL layout — no sim needed, instant render,
-      // 60fps zoom/pan. Luis directive 2026-05-13: "Skip physics — use
-      // precomputed static layout".
-      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: false }).then(({ renderer }) => {
+      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: true }).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
           if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create: renderer=null (init failed)");
@@ -1631,6 +1624,13 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
           // role/module-hub link springs that were leaving the layout chaotic.
           const clusterIds = buildClusterIdsFromNodes(nodesRef.current, "project");
           if (clusterIds.length > 0) renderer.setPointClusters(clusterIds);
+          // 2026-05-13: STATIC layout path. computeTopologySeedPositions
+          // emits a project-clustered final layout (sunflower of project
+          // centroids + per-node jitter). Stop the cosmos force sim
+          // immediately so it doesn't churn the static positions — at
+          // 24k nodes the force sim could only manage ~1fps on the Intel
+          // iGPU. Frozen, the GPU just renders at native zoom/pan fps.
+          renderer.freezeSimulation();
           // CRITICAL: project topology links on the main thread because the
           // worker (which normally posts to linksRef) is gated off here. Without
           // this, Cosmos receives 0 springs and the simulation collapses

@@ -1327,6 +1327,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
   }
 
   /**
+   * Freeze the simulation in place — used for the static (precomputed)
+   * layout path. Stops cosmos's internal force sim so the positions we
+   * pushed via setInitialPositions become the final positions. The
+   * GPU renderer keeps drawing (zoom/pan still work at native fps).
+   */
+  freezeSimulation(): void {
+    if (!this.graph) return;
+    try { this.graph.stop?.(); } catch { /* ignore */ }
+  }
+
+  /**
    * Hide nodes excluded by the active filter set via zero-size points.
    *
    * Cosmos.gl has no per-node visibility flag; the supported pattern is to set
