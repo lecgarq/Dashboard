@@ -122,7 +122,13 @@ async function pollApsJob(requestId, accountId, accessToken) {
     throw new Error(`APS GET /jobs failed: HTTP ${res.status} ${raw}`);
   }
   // Some APS responses wrap in { jobs: [...] }, others return an array.
-  const jobs = Array.isArray(json) ? json : Array.isArray(json.jobs) ? json.jobs : [];
+  const jobs = Array.isArray(json)
+    ? json
+    : Array.isArray(json.jobs)
+      ? json.jobs
+      : Array.isArray(json.results)
+        ? json.results
+        : [];
   return { jobs, raw: json };
 }
 
@@ -134,7 +140,9 @@ async function pollApsJob(requestId, accountId, accessToken) {
  */
 function reduceJobStatus(jobs) {
   if (jobs.length === 0) return "running";
-  const norm = jobs.map((j) => String(j.status || j.state || "").toLowerCase());
+  const norm = jobs.map((j) =>
+    String(j.completionStatus || j.status || j.state || "").toLowerCase()
+  );
   if (norm.some((s) => s === "failed" || s === "cancelled" || s === "canceled" || s === "error")) {
     return "failed";
   }
@@ -150,6 +158,50 @@ function extractDownloadUrls(jobs) {
     const url = j.downloadUrl || j.download_url || j.url;
     if (url) urls.push({ jobApsId: j.id || j.jobId || null, url });
   }
+  return urls;
+}
+
+async function resolveDownloadUrls(jobs, accountId, accessToken) {
+  const urls = extractDownloadUrls(jobs);
+  if (urls.length > 0) return urls;
+
+  for (const job of jobs) {
+    const jobApsId = job.id || job.jobId;
+    if (!jobApsId) continue;
+
+    const listingRes = await fetch(
+      `${DATA_CONNECTOR_BASE}/accounts/${accountId}/jobs/${jobApsId}/data-listing`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const listingRaw = await listingRes.text();
+    let listingJson;
+    try { listingJson = listingRaw ? JSON.parse(listingRaw) : {}; } catch { listingJson = {}; }
+    if (!listingRes.ok) {
+      throw new Error(`APS GET /jobs/${jobApsId}/data-listing failed: HTTP ${listingRes.status} ${listingRaw}`);
+    }
+
+    const files = Array.isArray(listingJson)
+      ? listingJson
+      : Array.isArray(listingJson.results)
+        ? listingJson.results
+        : [];
+    const zipFile = files.find((file) => String(file.name || "").endsWith(".zip"));
+    if (!zipFile?.name) continue;
+
+    const dataRes = await fetch(
+      `${DATA_CONNECTOR_BASE}/accounts/${accountId}/jobs/${jobApsId}/data/${encodeURIComponent(zipFile.name)}`,
+      { headers: { Authorization: `Bearer ${accessToken}` } }
+    );
+    const dataRaw = await dataRes.text();
+    let dataJson;
+    try { dataJson = dataRaw ? JSON.parse(dataRaw) : {}; } catch { dataJson = {}; }
+    if (!dataRes.ok) {
+      throw new Error(`APS GET /jobs/${jobApsId}/data/${zipFile.name} failed: HTTP ${dataRes.status} ${dataRaw}`);
+    }
+    const url = dataJson.signedUrl || dataJson.downloadUrl || dataJson.url;
+    if (url) urls.push({ jobApsId, url });
+  }
+
   return urls;
 }
 
@@ -210,7 +262,7 @@ async function processCandidate(row, ctx) {
   }
 
   // APS reports success → ingest each downloadable job.
-  const urls = extractDownloadUrls(poll.jobs);
+  const urls = await resolveDownloadUrls(poll.jobs, accountId, accessToken);
   if (urls.length === 0) {
     log(`Request ${row.requestId} reports success but exposes no downloadUrl; skipping.`);
     return { decision: "no-download-url", row };
@@ -233,7 +285,7 @@ async function processCandidate(row, ctx) {
   let unresolvedTotal = 0;
 
   try {
-    for (const { url } of urls) {
+    for (const { jobApsId, url } of urls) {
       let result;
       try {
         result = await ingestActivityZip(url, prisma, row.id);
@@ -243,8 +295,10 @@ async function processCandidate(row, ctx) {
         if (/\b403\b/.test(msg)) {
           log(`Got 403 on signed URL; re-polling APS for fresh URL…`);
           const repoll = await pollApsJob(row.requestId, accountId, accessToken);
-          const fresh = extractDownloadUrls(repoll.jobs);
-          const freshUrl = fresh[urls.indexOf({ url })]?.url || fresh.find((u) => u.url !== url)?.url;
+          const fresh = await resolveDownloadUrls(repoll.jobs, accountId, accessToken);
+          const freshUrl =
+            fresh.find((u) => u.jobApsId === jobApsId && u.url !== url)?.url ||
+            fresh.find((u) => u.url !== url)?.url;
           if (!freshUrl) throw err;
           result = await ingestActivityZip(freshUrl, prisma, row.id);
         } else {

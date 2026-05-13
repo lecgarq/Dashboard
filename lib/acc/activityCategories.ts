@@ -24,16 +24,24 @@ const MAP: Record<string, ActivityCategory> = {
   "File Viewed": "view",
   "Document Viewed": "view",
   "File Downloaded": "view",
+  "view-entity": "view",
+  "view-existing-review": "view",
+  "download-entity": "view",
   // File events — upload bucket
   "File Uploaded": "upload",
   "Document Version Created": "upload",
+  "upload-entity": "upload",
   // File events — edit bucket
   "File Edited": "edit",
   "Markup Created": "edit",
   "Comment Added": "edit",
+  "edit-office-file": "edit",
+  "lock-entity": "edit",
+  "unlock-entity": "edit",
   // File events — delete bucket
   "File Deleted": "delete",
   "File Restored": "delete",
+  "delete-entity": "delete",
   // Member events
   "Member Added": "memberEvent",
   "User Invited": "memberEvent",
@@ -58,10 +66,24 @@ export const FILE_CATEGORIES: ReadonlySet<ActivityCategory> = new Set([
 /** Reverse map: category → raw action strings. Used by tRPC procedures to
  *  build SQL `rawAction IN (...)` filters from a categories[] input. */
 export const CATEGORY_TO_RAW_ACTIONS: Record<ActivityCategory, readonly string[]> = {
-  view: ["File Viewed", "Document Viewed", "File Downloaded"],
-  upload: ["File Uploaded", "Document Version Created"],
-  edit: ["File Edited", "Markup Created", "Comment Added"],
-  delete: ["File Deleted", "File Restored"],
+  view: [
+    "File Viewed",
+    "Document Viewed",
+    "File Downloaded",
+    "view-entity",
+    "view-existing-review",
+    "download-entity",
+  ],
+  upload: ["File Uploaded", "Document Version Created", "upload-entity"],
+  edit: [
+    "File Edited",
+    "Markup Created",
+    "Comment Added",
+    "edit-office-file",
+    "lock-entity",
+    "unlock-entity",
+  ],
+  delete: ["File Deleted", "File Restored", "delete-entity"],
   memberEvent: ["Member Added", "User Invited", "Project Member Added"],
   projectEvent: ["Project Created", "Project Updated"],
   // "other" deliberately empty — it's the unmapped catch-all; build the IN-list

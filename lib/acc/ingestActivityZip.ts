@@ -18,7 +18,12 @@ import { parse } from "csv-parse";
 
 const BATCH = 500; // Pitfall 3: do NOT raise — Railway container memory.
 
-const TARGET_CSVS = new Set(["project_activities.csv", "admin_activities.csv"]);
+const LEGACY_TARGET_CSVS = new Set(["project_activities.csv", "admin_activities.csv"]);
+const USER_LOOKUP_CSVS = new Set(["admin_users.csv"]);
+
+function isActivityCsv(filename: string): boolean {
+  return LEGACY_TARGET_CSVS.has(filename) || /(?:^|_)activities\.csv$/i.test(filename);
+}
 
 export interface IngestResult {
   rowsByFile: Record<string, number>;
@@ -51,8 +56,8 @@ function mapCsvRow(row: CsvRow, sourceFile: "project" | "admin"): MappedRow | nu
   // APS_DOCS/HOW TO/HOW_TO_Extract_Activity_Logs.md + Phase 1 ingest research).
   // Defensive: accept both snake_case and camelCase variants.
   const autodeskId =
-    row.user_id ?? row.userId ?? row.actor_id ?? row.actorId ?? "";
-  const rawAction = row.action ?? row.action_type ?? row.actionType ?? "";
+    row.user_id ?? row.userId ?? row.actor_id ?? row.actorId ?? row.created_by ?? "";
+  const rawAction = row.action ?? row.action_type ?? row.actionType ?? row.activity_verb ?? "";
   const createdAtRaw =
     row.created_at ?? row.createdAt ?? row.timestamp ?? row.event_time ?? "";
 
@@ -65,7 +70,7 @@ function mapCsvRow(row: CsvRow, sourceFile: "project" | "admin"): MappedRow | nu
     return null;
   }
 
-  const rawProjectId = row.project_id ?? row.projectId ?? "";
+  const rawProjectId = row.project_id ?? row.projectId ?? row.bim360_project_id ?? "";
   // Admin rows lack projectId; sentinel "" keeps the @@unique dedup live
   // (Postgres treats NULL != NULL in unique constraints).
   const projectId = sourceFile === "admin" ? "" : rawProjectId || "";
@@ -80,7 +85,13 @@ function mapCsvRow(row: CsvRow, sourceFile: "project" | "admin"): MappedRow | nu
     rawAction,
     service: row.service ?? row.service_name ?? null,
     tool: row.tool ?? row.tool_name ?? null,
-    details: row.details ?? row.description ?? null,
+    details:
+      row.details ??
+      row.description ??
+      row.object_display_name ??
+      row.target_display_name ??
+      row.object_file_name ??
+      null,
     sourceFile,
     createdAt,
   };
@@ -92,7 +103,8 @@ function mapCsvRow(row: CsvRow, sourceFile: "project" | "admin"): MappedRow | nu
  */
 async function enrichEmails(
   rows: MappedRow[],
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  zipUserEmailById?: ReadonlyMap<string, string>
 ): Promise<void> {
   // Only look up rows that don't already have an email from the CSV.
   const idsToLookup = new Set<string>();
@@ -101,15 +113,37 @@ async function enrichEmails(
   }
   if (idsToLookup.size === 0) return;
 
+  const idToEmail = new Map<string, string>();
+  for (const id of idsToLookup) {
+    const email = zipUserEmailById?.get(id);
+    if (email) idToEmail.set(id, email);
+  }
+
   const members = await prisma.accProjectMember.findMany({
     where: { autodeskId: { in: Array.from(idsToLookup) } },
     select: { autodeskId: true, email: true },
   });
 
-  const idToEmail = new Map<string, string>();
   for (const m of members) {
     if (m.email && !idToEmail.has(m.autodeskId)) {
       idToEmail.set(m.autodeskId, m.email.toLowerCase());
+    }
+  }
+
+  const unresolvedIds = Array.from(idsToLookup).filter((id) => !idToEmail.has(id));
+  if (unresolvedIds.length > 0) {
+    const cachedMembers = await prisma.accMemberCache.findMany({
+      select: { email: true, data: true },
+    });
+    const unresolved = new Set(unresolvedIds);
+    for (const member of cachedMembers) {
+      if (!member.email || !member.data || typeof member.data !== "object") continue;
+      const autodeskId = (member.data as Record<string, unknown>).autodeskId;
+      if (typeof autodeskId === "string" && unresolved.has(autodeskId)) {
+        idToEmail.set(autodeskId, member.email.toLowerCase());
+        unresolved.delete(autodeskId);
+        if (unresolved.size === 0) break;
+      }
     }
   }
 
@@ -128,7 +162,8 @@ async function enrichEmails(
 async function ingestCsvEntry(
   entry: NodeJS.ReadableStream,
   sourceFile: "project" | "admin",
-  prisma: PrismaClient
+  prisma: PrismaClient,
+  zipUserEmailById: ReadonlyMap<string, string>
 ): Promise<number> {
   const parser = parse({
     columns: true,
@@ -146,7 +181,7 @@ async function ingestCsvEntry(
     if (buffer.length === 0) return;
     const slice = buffer;
     buffer = [];
-    await enrichEmails(slice, prisma);
+    await enrichEmails(slice, prisma, zipUserEmailById);
     await prisma.accActivity.createMany({
       data: slice,
       skipDuplicates: true,
@@ -182,6 +217,51 @@ async function ingestCsvEntry(
   return totalRows;
 }
 
+async function loadZipUserEmailMap(downloadUrl: string): Promise<Map<string, string>> {
+  const res = await fetch(downloadUrl);
+  if (!res.ok || !res.body) {
+    throw new Error(
+      `[ingestActivityZip] Signed S3 GET failed while loading user map: HTTP ${res.status}`
+    );
+  }
+
+  const emailsById = new Map<string, string>();
+  const directory = Readable.fromWeb(res.body as never).pipe(
+    unzipper.Parse({ forceStream: true })
+  );
+
+  for await (const entryUnknown of directory as AsyncIterable<unknown>) {
+    const entry = entryUnknown as {
+      path: string;
+      type: string;
+      autodrain: () => void;
+    } & NodeJS.ReadableStream;
+
+    const filename = entry.path.split("/").pop() ?? entry.path;
+    if (entry.type !== "File" || !USER_LOOKUP_CSVS.has(filename)) {
+      entry.autodrain();
+      continue;
+    }
+
+    const parser = parse({
+      columns: true,
+      bom: true,
+      relax_column_count: true,
+      trim: true,
+      skip_empty_lines: true,
+    });
+    entry.pipe(parser);
+
+    for await (const row of parser as AsyncIterable<CsvRow>) {
+      const autodeskId = row.autodesk_id ?? row.autodeskId ?? row.id ?? "";
+      const email = row.email?.toLowerCase();
+      if (autodeskId && email) emailsById.set(autodeskId, email);
+    }
+  }
+
+  return emailsById;
+}
+
 /**
  * Download a signed S3 ZIP from APS Data Connector and ingest both target CSVs.
  *
@@ -194,6 +274,8 @@ export async function ingestActivityZip(
   prisma: PrismaClient,
   jobId: string
 ): Promise<IngestResult> {
+  const zipUserEmailById = await loadZipUserEmailMap(downloadUrl);
+
   // Bare fetch — no Authorization header. APS signed URLs return 403 with any
   // Authorization header attached (HOW_TO_Extract_Activity_Logs.md + RESEARCH Pitfall 2).
   const res = await fetch(downloadUrl);
@@ -227,17 +309,18 @@ export async function ingestActivityZip(
 
     const filename = entry.path.split("/").pop() ?? entry.path;
 
-    if (entry.type !== "File" || !TARGET_CSVS.has(filename)) {
+    if (entry.type !== "File" || !isActivityCsv(filename)) {
       entry.autodrain();
       continue;
     }
 
     const sourceFile: "project" | "admin" = filename.startsWith("admin")
+      || filename.includes("admin_activities")
       ? "admin"
       : "project";
 
     try {
-      const inserted = await ingestCsvEntry(entry, sourceFile, prisma);
+      const inserted = await ingestCsvEntry(entry, sourceFile, prisma, zipUserEmailById);
       counts[filename] = (counts[filename] ?? 0) + inserted;
       console.log(
         `[ingestActivityZip] job ${jobId} ${filename}: processed ${inserted} rows`
