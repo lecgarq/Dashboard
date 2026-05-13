@@ -1341,6 +1341,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       (this.graph as any).setConfigPartial?.({ enableSimulation: false });
       this.graph.stop?.();
+      // Force an immediate render + fit-view so cosmos draws the static
+      // positions without waiting for a sim tick (it never gets one now).
+      // Without this, the canvas stays blank because cosmos auto-fits only
+      // after a few sim frames on first render.
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.graph as any).render?.(0);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (this.graph as any).fitView?.(250, 0.1, false);
     } catch { /* ignore */ }
   }
 
