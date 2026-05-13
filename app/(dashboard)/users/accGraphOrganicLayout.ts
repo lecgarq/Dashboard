@@ -320,15 +320,21 @@ export function buildAccTopologyGraph(
     extensions.similarityDims &&
     extensions.similarityDims.size > 0
   ) {
+    // Phase 7 emitted parallel edges from computeSimilarityEdges with raw
+    // sharedCount weights. Phase 07.1 keeps the call surface so the topology
+    // graph still emits these legacy edges, but uses the new normalized
+    // score field — `simMin` is no longer a count threshold on this path
+    // (it's applied at the top-K layout layer in Wave 3). Threshold here is
+    // a fixed small score so near-zero noise pairs drop out.
     const simEdges = computeSimilarityEdges(
       extensions.similarityInput,
       extensions.similarityDims,
-      extensions.simMin ?? 2,
+      0.01,
     );
     for (const edge of simEdges) {
       addLink(edge.userA, edge.userB, "user-similarity", {
         dimension: edge.dimension as SimilarityDimKey,
-        weight: edge.sharedCount,
+        weight: edge.score,
       });
     }
   }

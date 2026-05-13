@@ -80,11 +80,13 @@ const PERM_TIER_COLOR: Record<"view" | "upload" | "edit" | "control", string> = 
   control: "#F87171",
 };
 const SIM_DIM_COLOR: Record<SimilarityDim, string> = {
-  "folder-access": "#5EEAD4",
-  roles: "#60A5FA",
-  projects: "#F472B6",
-  company: "#A3E635",
-  "admin-tier": "#FB923C",
+  "project-members": "#60A5FA",     // blue
+  "roles": "#A78BFA",               // purple
+  "folder-permissions": "#5EEAD4",  // teal
+  "activity-logs": "#FBBF24",       // amber
+  "data-coverage": "#94A3B8",       // slate
+  "last-sign-in": "#34D399",        // emerald
+  "recent-additions": "#F472B6",    // pink
 };
 const FOLDER_PROJECT_EDGE_COLOR = "#94A3B8"; // neutral container slate
 
@@ -848,21 +850,19 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         const set = folderIdsByRole.get(rid);
         if (set) for (const fid of set) folderIds.add(fid);
       }
-      // Admin tier collapse (matches AccTopologyExtensions consumer expectations).
-      const adminTier: "hub" | "project" | "executive" | null = u.isAccountAdmin
-        ? "hub"
-        : u.projectAdmin
-          ? "project"
-          : u.executive
-            ? "executive"
-            : null;
+      // Phase 07.1: activityFileIds, coverageFlags, lastSignIn, addedAt are populated
+      // by the enrichedUsers tRPC procedure (Wave 3 of the 2D redesign plan).
+      // Until that lands, these stay empty/null and contribute zero to clustering —
+      // graph degrades gracefully to 3-dim similarity (project / role / folder).
       return {
         id: u.email.toLowerCase(),
-        company: u.companyName ?? null,
-        adminTier,
         roleIds: [...roleIds],
         projectIds: [...projectIds],
         folderIds: [...folderIds],
+        activityFileIds: [],
+        coverageFlags: [],
+        lastSignIn: null,
+        addedAt: null,
       };
     });
     return { users: built };

@@ -117,12 +117,20 @@ describe("Phase 7 topology extensions", () => {
     expect(graph.links.some((l) => l.kind === "folder-project" || l.kind === "role-folder")).toBe(false);
   });
 
-  it("emits user-similarity edges with dimension + weight from similarityInput", () => {
+  it("emits user-similarity edges with dimension + normalized score from similarityInput", () => {
+    const baseUser = {
+      activityFileIds: [] as readonly string[],
+      coverageFlags: [] as readonly string[],
+      lastSignIn: null as number | null,
+      addedAt: null as number | null,
+      projectIds: [] as readonly string[],
+      folderIds: [] as readonly string[],
+    };
     const similarityInput: SimilarityInput = {
       users: [
-        { id: "user-a", company: null, adminTier: null, roleIds: ["r1", "r2"], projectIds: [], folderIds: [] },
-        { id: "user-b", company: null, adminTier: null, roleIds: ["r1", "r2"], projectIds: [], folderIds: [] },
-        { id: "user-c", company: null, adminTier: null, roleIds: ["r1", "r2"], projectIds: [], folderIds: [] },
+        { id: "user-a", roleIds: ["r1", "r2"], ...baseUser },
+        { id: "user-b", roleIds: ["r1", "r2"], ...baseUser },
+        { id: "user-c", roleIds: ["r1", "r2"], ...baseUser },
       ],
     };
     const dims = new Set<SimilarityDim>(["roles"]);
@@ -134,11 +142,12 @@ describe("Phase 7 topology extensions", () => {
     });
 
     const simLinks = graph.links.filter((l) => l.kind === "user-similarity");
-    // 3 users × 2 shared roles → 3 pairs (a-b, a-c, b-c), each weight=2.
+    // 3 users × 2 shared roles → 3 pairs (a-b, a-c, b-c).
+    // Phase 07.1: weight is the normalized score, which is |∩|/min(|A|,|B|) = 2/2 = 1.0.
     expect(simLinks).toHaveLength(3);
     for (const link of simLinks) {
       expect(link.dimension).toBe("roles");
-      expect(link.weight).toBe(2);
+      expect(link.weight).toBeCloseTo(1.0, 5);
     }
   });
 
