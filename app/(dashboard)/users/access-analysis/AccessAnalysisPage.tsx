@@ -1,15 +1,18 @@
 "use client";
 
 import { AccessAnalysisProvider } from "./AccessAnalysisContext";
+import { MosaicCoordinatorProvider } from "./MosaicCoordinatorContext";
 import { TimeWindowSelector } from "./TimeWindowSelector";
 import { KpiStrip } from "./KpiStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
 import { ChangeStreamCard } from "./ChangeStreamCard";
 import { DirectoryAccordion } from "./DirectoryAccordion";
 import { CHANGE_STREAMS } from "@/lib/acc/accessAnalysisTypes";
+import { HybridAnalyticsSurface } from "./HybridAnalyticsSurface";
 
 export function AccessAnalysisPage() {
   return (
+    <MosaicCoordinatorProvider>
     <AccessAnalysisProvider>
       <div className="flex flex-col gap-6 p-4">
         <header className="flex items-start justify-between gap-4">
@@ -25,7 +28,9 @@ export function AccessAnalysisPage() {
           {CHANGE_STREAMS.map((s) => <ChangeStreamCard key={s} stream={s} />)}
         </div>
         <DirectoryAccordion />
+        <HybridAnalyticsSurface />
       </div>
     </AccessAnalysisProvider>
+    </MosaicCoordinatorProvider>
   );
 }
