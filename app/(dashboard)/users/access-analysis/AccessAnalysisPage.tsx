@@ -4,7 +4,6 @@ import { AccessAnalysisProvider } from "./AccessAnalysisContext";
 import { TimeWindowSelector } from "./TimeWindowSelector";
 import { KpiStrip } from "./KpiStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
-import { HybridAnalyticsSurface } from "./HybridAnalyticsSurface";
 
 export function AccessAnalysisPage() {
   return (
@@ -19,7 +18,6 @@ export function AccessAnalysisPage() {
         </header>
         <KpiStrip />
         <AccessEventsChart />
-        <HybridAnalyticsSurface />
       </div>
     </AccessAnalysisProvider>
   );
