@@ -39,5 +39,8 @@ describe("MosaicCoordinatorProvider", () => {
     expect(() => renderHook(() => useMosaicCoordinator())).toThrow(
       /MosaicCoordinatorProvider/,
     );
+    expect(() => renderHook(() => useMosaicSelection())).toThrow(
+      /MosaicCoordinatorProvider/,
+    );
   });
 });
