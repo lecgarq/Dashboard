@@ -4,6 +4,7 @@ import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import {
   Coordinator,
   Selection,
+  coordinator as setActiveCoordinator,
   type ArrowQueryRequest,
   type Connector,
   type ExecQueryRequest,
@@ -54,6 +55,12 @@ export function MosaicCoordinatorProvider({
       }
       const connector: Connector = { query: runQuery };
       c.databaseConnector(connector);
+      // CRITICAL: install `c` as the module-level singleton. vgplot's
+      // `vg.plot()` and `vg.from()` self-register their MosaicClients with
+      // whatever coordinator the singleton returns at construction time.
+      // Without this, histograms register against an unconfigured default
+      // coordinator and queries silently never reach DuckDB.
+      setActiveCoordinator(c);
       if (!cancelled) setCoordinator(c);
     })().catch((err) => {
       console.error("[Mosaic] coordinator init failed:", err);
