@@ -117,7 +117,7 @@ describe("Phase 7 topology extensions", () => {
     expect(graph.links.some((l) => l.kind === "folder-project" || l.kind === "role-folder")).toBe(false);
   });
 
-  it("emits user-similarity edges with dimension + normalized score from similarityInput", () => {
+  it("emits user-similarity force links via topKNeighbors driven by simStr", () => {
     const baseUser = {
       activityFileIds: [] as readonly string[],
       coverageFlags: [] as readonly string[],
@@ -133,22 +133,107 @@ describe("Phase 7 topology extensions", () => {
         { id: "user-c", roleIds: ["r1", "r2"], ...baseUser },
       ],
     };
-    const dims = new Set<SimilarityDim>(["roles"]);
+    const simStr = new Map<SimilarityDim, number>([["roles", 1]]);
 
     const graph = buildAccTopologyGraph(nodes, {
       similarityInput,
-      similarityDims: dims,
-      simMin: 2,
+      simStr,
+      simMin: 1,
+      topK: 20,
     });
 
     const simLinks = graph.links.filter((l) => l.kind === "user-similarity");
-    // 3 users × 2 shared roles → 3 pairs (a-b, a-c, b-c).
-    // Phase 07.1: weight is the normalized score, which is |∩|/min(|A|,|B|) = 2/2 = 1.0.
+    // 3 users, all pairwise similar → 3 undirected pairs (a-b, a-c, b-c).
+    // topKNeighbors returns directed lists; the layout canonicalizes to one
+    // edge per pair. force = simStr[roles] * pairSimilarity = 1 * 1 = 1.0.
     expect(simLinks).toHaveLength(3);
     for (const link of simLinks) {
       expect(link.dimension).toBe("roles");
       expect(link.weight).toBeCloseTo(1.0, 5);
     }
+  });
+
+  it("emits NO user-similarity links when simStr is undefined", () => {
+    const baseUser = {
+      activityFileIds: [] as readonly string[],
+      coverageFlags: [] as readonly string[],
+      lastSignIn: null as number | null,
+      addedAt: null as number | null,
+      projectIds: [] as readonly string[],
+      folderIds: [] as readonly string[],
+    };
+    const similarityInput: SimilarityInput = {
+      users: [
+        { id: "user-a", roleIds: ["r1"], ...baseUser },
+        { id: "user-b", roleIds: ["r1"], ...baseUser },
+      ],
+    };
+
+    const graph = buildAccTopologyGraph(nodes, { similarityInput });
+    expect(graph.links.filter((l) => l.kind === "user-similarity")).toHaveLength(0);
+  });
+
+  it("emits NO user-similarity links when simStr is all-zero", () => {
+    const baseUser = {
+      activityFileIds: [] as readonly string[],
+      coverageFlags: [] as readonly string[],
+      lastSignIn: null as number | null,
+      addedAt: null as number | null,
+      projectIds: [] as readonly string[],
+      folderIds: [] as readonly string[],
+    };
+    const similarityInput: SimilarityInput = {
+      users: [
+        { id: "user-a", roleIds: ["r1"], ...baseUser },
+        { id: "user-b", roleIds: ["r1"], ...baseUser },
+      ],
+    };
+    const simStr = new Map<SimilarityDim, number>([["roles", 0]]);
+
+    const graph = buildAccTopologyGraph(nodes, { similarityInput, simStr });
+    expect(graph.links.filter((l) => l.kind === "user-similarity")).toHaveLength(0);
+  });
+
+  it("caps user-similarity links per user via topK", () => {
+    const baseUser = {
+      activityFileIds: [] as readonly string[],
+      coverageFlags: [] as readonly string[],
+      lastSignIn: null as number | null,
+      addedAt: null as number | null,
+      projectIds: [] as readonly string[],
+      folderIds: [] as readonly string[],
+    };
+    // 5 users all pairwise similar → 10 undirected pairs at unlimited K.
+    // With topK=1 each user keeps only its top neighbor; canonicalization
+    // dedupes reciprocals so the resulting pair count is at most 5 (and
+    // typically lower as ties resolve to a smaller spanning set).
+    const similarityInput: SimilarityInput = {
+      users: ["a", "b", "c", "d", "e"].map((id) => ({
+        id,
+        roleIds: ["r1"],
+        ...baseUser,
+      })),
+    };
+    const simStr = new Map<SimilarityDim, number>([["roles", 1]]);
+
+    const fullGraph = buildAccTopologyGraph(nodes, {
+      similarityInput,
+      simStr,
+      simMin: 1,
+      topK: 20,
+    });
+    const cappedGraph = buildAccTopologyGraph(nodes, {
+      similarityInput,
+      simStr,
+      simMin: 1,
+      topK: 1,
+    });
+
+    const fullSim = fullGraph.links.filter((l) => l.kind === "user-similarity");
+    const cappedSim = cappedGraph.links.filter((l) => l.kind === "user-similarity");
+    expect(fullSim).toHaveLength(10); // C(5,2)
+    expect(cappedSim.length).toBeLessThanOrEqual(5);
+    expect(cappedSim.length).toBeLessThan(fullSim.length);
   });
 
   it("collapsePermTierKey maps 6-tier APS PermType -> 4-tier UI bucket", () => {

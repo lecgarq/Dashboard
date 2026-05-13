@@ -445,14 +445,20 @@ describe("Phase 7 filter dimensions", () => {
     expect(DEFAULT_FILTERS.permTiers).toEqual(["view", "upload", "edit", "control"]);
   });
 
-  it("DEFAULT_FILTERS.simDims deep-equals all five similarity dimensions", () => {
+  it("DEFAULT_FILTERS.simDims deep-equals all seven Phase 07.1 clustering dimensions", () => {
     expect(DEFAULT_FILTERS.simDims).toEqual([
-      "folder-access",
+      "project-members",
       "roles",
-      "projects",
-      "company",
-      "admin-tier",
+      "folder-permissions",
+      "activity-logs",
+      "data-coverage",
+      "last-sign-in",
+      "recent-additions",
     ]);
+  });
+
+  it("DEFAULT_FILTERS.simStr defaults to seven 1.0 weights (one per clustering dim)", () => {
+    expect(DEFAULT_FILTERS.simStr).toEqual([1, 1, 1, 1, 1, 1, 1]);
   });
 
   it("DEFAULT_FILTERS.simMin === 2", () => {

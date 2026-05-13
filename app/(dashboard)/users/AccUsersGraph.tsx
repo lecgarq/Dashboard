@@ -63,7 +63,6 @@ import {
 
 // Investigative topology modes. Users is the default, while access hubs and
 // folder permissions are opt-in.
-// false until the positional-only redesign lands — similarity/permTiers must
 const GRAPH_MODE_LABEL: Record<AccGraphMode, string> = {
   users: "Users",
   "access-hubs": "Access Hubs",
@@ -110,7 +109,10 @@ const FOLDER_PROJECT_EDGE_COLOR = "#94A3B8"; // neutral container slate
 
 function colorForTopologyLink(link: AccTopologyLink): string | undefined {
   if (link.kind === "role-folder" && link.permTier) return PERM_TIER_COLOR[link.permTier];
-  if (link.kind === "user-similarity" && link.dimension) return SIM_DIM_COLOR[link.dimension];
+  // Phase 07.1: user-similarity links exert clustering force only; they must
+  // never render. Returning a fully transparent stroke keeps the spring force
+  // active while hiding the edge visually (memory feedback_similarity_positional_only).
+  if (link.kind === "user-similarity") return "rgba(0,0,0,0)";
   if (link.kind === "folder-project") return FOLDER_PROJECT_EDGE_COLOR;
   return undefined; // fall back to renderer default
 }
@@ -939,27 +941,33 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
     (rawNodes: readonly { id: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
       const f = filtersRef.current;
       const mode = graphModeRef.current;
+
+      // Phase 07.1: simStr (number[7] indexed by SIM_DIM_KEYS_ORDERED) becomes
+      // the per-dim weight Map consumed by topKNeighbors. A dim with 0 strength
+      // is effectively disabled — no `simDims` enable-set needed anymore.
+      const simStrMap = new Map<SimilarityDim, number>();
+      for (let i = 0; i < SIM_DIM_KEYS_ORDERED.length; i++) {
+        simStrMap.set(SIM_DIM_KEYS_ORDERED[i], f.simStr[i] ?? 0);
+      }
+
       const extensions: AccTopologyExtensions = {
         // showFolders=false → emit no folder hubs / role-folder / folder-project edges.
         folderMatrix: mode === "folder-permissions" && f.showFolders ? folderHubRowsRef.current : undefined,
         similarityInput: similarityInputRef.current,
-        similarityDims: new Set<SimilarityDim>(f.simDims as readonly SimilarityDim[]),
+        simStr: simStrMap,
         simMin: f.simMin,
+        topK: 20,
       };
       const topology = buildAccTopologyGraph(rawNodes, extensions);
 
-      // Edge-level filtering (Plan 07-06 Task 2 step 5):
+      // Edge-level filtering (Phase 07.1):
       //  - drop role-folder where permTier not in selected tiers
-      //  - drop user-similarity where dimension not in selected sims
-      //  - view=user-only: drop everything except user-similarity edges
+      //  - user-similarity edges always kept (force-only, alpha-0); simStr=0
+      //    already prunes disabled dims upstream in topKNeighbors
       const permTierSet = new Set<string>(f.permTiers);
-      const simDimSet = new Set<string>(f.simDims);
       const filteredLinks = topology.links.filter((link) => {
         if (link.kind === "role-folder") {
           return !!link.permTier && permTierSet.has(link.permTier);
-        }
-        if (link.kind === "user-similarity") {
-          return !!link.dimension && simDimSet.has(link.dimension);
         }
         return true;
       });

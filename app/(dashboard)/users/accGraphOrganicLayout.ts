@@ -5,7 +5,7 @@ import {
   type FolderHubInputRow,
 } from "@/lib/acc/folderHubCollapse";
 import {
-  computeSimilarityEdges,
+  topKNeighbors,
   type SimilarityDim,
   type SimilarityInput,
 } from "@/lib/acc/userSimilarity";
@@ -216,10 +216,17 @@ export interface AccTopologyExtensions {
   folderMatrix?: ReadonlyArray<FolderHubInputRow>;
   /** Pre-resolved similarity input (users + their attributes). */
   similarityInput?: SimilarityInput | null;
-  /** Enabled similarity dimensions. Empty/undefined = no similarity edges emitted. */
+  /** Enabled similarity dimensions. Empty/undefined = no similarity edges emitted.
+   *  Phase 07.1: kept for transition; `simStr` now controls per-dim weight directly. */
   similarityDims?: ReadonlySet<SimilarityDim>;
-  /** Minimum shared-attribute count for an edge to land. Defaults to 2. */
+  /** Phase 07.1: per-dim strength multiplier (0..1). Missing keys treated as 0
+   *  (dim disabled). When undefined OR all values are 0, no user-similarity
+   *  links are emitted. */
+  simStr?: ReadonlyMap<SimilarityDim, number>;
+  /** Minimum number of contributing dimensions for a pair to count. Defaults to 0. */
   simMin?: number;
+  /** Top-K most-similar neighbors retained per user. Defaults to 20. */
+  topK?: number;
   /** Folder collapse depth. Defaults to 2 (per Phase 7 RESEARCH). */
   folderDepth?: number;
 }
@@ -311,31 +318,36 @@ export function buildAccTopologyGraph(
     }
   }
 
-  // ─── Phase 7: user-similarity edges ─────────────────────────────────────────
+  // ─── Phase 07.1: user-similarity force links (top-K) ────────────────────────
   // Kept regardless of viewMode — viewMode is a render-time visibility filter,
   // not a data filter (Pattern 3 from RESEARCH).
+  //
+  // These links are emitted with a transparent stroke (rgba(0,0,0,0)) by
+  // `colorForTopologyLink` in AccUsersGraph — they exert spring force on the
+  // cosmos.gl layout but never render. Similarity is positional ONLY (see
+  // memory feedback_similarity_positional_only).
+  const simStr = extensions.simStr;
+  const hasAnyStrength = simStr ? [...simStr.values()].some((v) => v > 0) : false;
   if (
     extensions.similarityInput &&
     extensions.similarityInput.users.length >= 2 &&
-    extensions.similarityDims &&
-    extensions.similarityDims.size > 0
+    simStr &&
+    hasAnyStrength
   ) {
-    // Phase 7 emitted parallel edges from computeSimilarityEdges with raw
-    // sharedCount weights. Phase 07.1 keeps the call surface so the topology
-    // graph still emits these legacy edges, but uses the new normalized
-    // score field — `simMin` is no longer a count threshold on this path
-    // (it's applied at the top-K layout layer in Wave 3). Threshold here is
-    // a fixed small score so near-zero noise pairs drop out.
-    const simEdges = computeSimilarityEdges(
-      extensions.similarityInput,
-      extensions.similarityDims,
-      0.01,
-    );
-    for (const edge of simEdges) {
-      addLink(edge.userA, edge.userB, "user-similarity", {
-        dimension: edge.dimension as SimilarityDimKey,
-        weight: edge.score,
-      });
+    const k = extensions.topK ?? 20;
+    const simMin = extensions.simMin ?? 0;
+    const neighbors = topKNeighbors(extensions.similarityInput, simStr, simMin, k);
+    // topKNeighbors returns directed lists; canonicalize (a < b) before addLink
+    // so reciprocal neighbors collapse to a single undirected edge per pair.
+    for (const [userId, list] of neighbors) {
+      for (const n of list) {
+        const a = userId < n.neighborId ? userId : n.neighborId;
+        const b = userId < n.neighborId ? n.neighborId : userId;
+        addLink(a, b, "user-similarity", {
+          dimension: n.dominantDim as SimilarityDimKey | undefined,
+          weight: n.force,
+        });
+      }
     }
   }
 
