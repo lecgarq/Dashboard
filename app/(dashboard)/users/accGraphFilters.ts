@@ -17,11 +17,23 @@
 
 export type PermTierKey = "view" | "upload" | "edit" | "control";
 export type SimilarityDimKey =
-  | "folder-access"
+  | "project-members"
   | "roles"
-  | "projects"
-  | "company"
-  | "admin-tier";
+  | "folder-permissions"
+  | "activity-logs"
+  | "data-coverage"
+  | "last-sign-in"
+  | "recent-additions";
+
+export const SIMILARITY_DIM_KEYS: readonly SimilarityDimKey[] = [
+  "project-members",
+  "roles",
+  "folder-permissions",
+  "activity-logs",
+  "data-coverage",
+  "last-sign-in",
+  "recent-additions",
+] as const;
 export type ViewMode = "multi" | "user-only";
 export type GraphNodeKind =
   | "user"
@@ -56,9 +68,14 @@ export interface GraphFilters {
   showFolders: boolean;
   /** Permission tier include-list for folder-access edges. Applied in adapter, NOT here. */
   permTiers: PermTierKey[];
-  /** Similarity-dimension include-list for similarity edges. Applied in adapter, NOT here. */
+  /** Similarity-dimension include-list. Applied in topology adapter + layout. */
   simDims: SimilarityDimKey[];
-  /** Minimum shared-attribute count for a similarity edge. Applied in adapter, NOT here. */
+  /**
+   * Phase 07.1: per-dim strength multipliers in [0, 1], parallel to
+   * SIMILARITY_DIM_KEYS. Length must be 7. Defaults to all 1.0.
+   */
+  simStr: number[];
+  /** Minimum count of contributing dims for a pair to feed clustering force. */
   simMin: number;
   /** "multi" = show user + project + role + folder etc.; "user-only" = users only. */
   viewMode: ViewMode;
@@ -73,10 +90,19 @@ export const DEFAULT_FILTERS: GraphFilters = {
   dateFrom: "",
   dateTo: "",
   perProjectRoles: [],
-  // Phase 7 defaults — everything ON, full multi-view, minimum 2 shared attrs.
+  // Phase 07.1 defaults — all 7 clustering dims ON at full strength, simMin=2.
   showFolders: false,
   permTiers: ["view", "upload", "edit", "control"],
-  simDims: ["folder-access", "roles", "projects", "company", "admin-tier"],
+  simDims: [
+    "project-members",
+    "roles",
+    "folder-permissions",
+    "activity-logs",
+    "data-coverage",
+    "last-sign-in",
+    "recent-additions",
+  ],
+  simStr: [1, 1, 1, 1, 1, 1, 1],
   simMin: 2,
   viewMode: "user-only",
 };

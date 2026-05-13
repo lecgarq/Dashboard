@@ -364,18 +364,22 @@ const LETTER_TO_PERM_TIER: Record<string, PermTierKey> = {
   c: "control",
 };
 const SIM_DIM_TO_LETTER: Record<SimilarityDimKey, string> = {
-  "folder-access": "fa",
-  roles: "r",
-  projects: "p",
-  company: "c",
-  "admin-tier": "a",
+  "project-members": "pm",
+  "roles": "r",
+  "folder-permissions": "fp",
+  "activity-logs": "al",
+  "data-coverage": "dc",
+  "last-sign-in": "ls",
+  "recent-additions": "ra",
 };
 const LETTER_TO_SIM_DIM: Record<string, SimilarityDimKey> = {
-  fa: "folder-access",
+  pm: "project-members",
   r: "roles",
-  p: "projects",
-  c: "company",
-  a: "admin-tier",
+  fp: "folder-permissions",
+  al: "activity-logs",
+  dc: "data-coverage",
+  ls: "last-sign-in",
+  ra: "recent-additions",
 };
 
 function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
@@ -414,9 +418,21 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
 
   const simMinRaw = params.get("simMin");
   const simMinParsed = simMinRaw === null ? NaN : parseInt(simMinRaw, 10);
-  const simMin = Number.isFinite(simMinParsed) && simMinParsed >= 1 && simMinParsed <= 5
+  const simMin = Number.isFinite(simMinParsed) && simMinParsed >= 0 && simMinParsed <= 7
     ? simMinParsed
     : DEFAULT_FILTERS.simMin;
+
+  // Phase 07.1: simStr is a 7-element float array, comma-separated. Each value
+  // is clamped to [0, 1]. Length mismatch or non-finite values → fall back to
+  // defaults (all 1.0). Read but absent → defaults.
+  const simStrRaw = params.get("simStr");
+  let simStr: number[] = DEFAULT_FILTERS.simStr;
+  if (simStrRaw !== null) {
+    const parts = simStrRaw.split(",").map(Number);
+    if (parts.length === 7 && parts.every((n) => Number.isFinite(n))) {
+      simStr = parts.map((n) => Math.max(0, Math.min(1, n)));
+    }
+  }
 
   const viewRaw = params.get("view");
   const viewMode: GraphFilters["viewMode"] =
@@ -436,6 +452,7 @@ function readFiltersFromUrl(params: URLSearchParams): GraphFilters {
     showFolders,
     permTiers,
     simDims,
+    simStr,
     simMin,
     viewMode,
   };
@@ -472,6 +489,10 @@ function writeFiltersToUrl(
     qs.set("simDims", filters.simDims.map((d) => SIM_DIM_TO_LETTER[d]).join(","));
   }
   if (filters.simMin !== DEFAULT_FILTERS.simMin) qs.set("simMin", String(filters.simMin));
+  // Phase 07.1: simStr only written when at least one value differs from default 1.0.
+  if (filters.simStr.some((v, i) => v !== DEFAULT_FILTERS.simStr[i])) {
+    qs.set("simStr", filters.simStr.map((v) => v.toString()).join(","));
+  }
   if (filters.viewMode !== DEFAULT_FILTERS.viewMode) qs.set("view", filters.viewMode);
   const qsStr = qs.toString();
   router.replace(`${pathname}${qsStr ? `?${qsStr}` : ""}`, { scroll: false });
@@ -2760,7 +2781,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                 <div className="space-y-0.5">
                   <span className="text-[10px] text-gray-500">Similarity dimensions</span>
                   {(
-                    ["folder-access", "roles", "projects", "company", "admin-tier"] as const
+                    [
+                      "project-members",
+                      "roles",
+                      "folder-permissions",
+                      "activity-logs",
+                      "data-coverage",
+                      "last-sign-in",
+                      "recent-additions",
+                    ] as const
                   ).map((dim) => (
                     <label key={dim} className="flex items-center gap-1.5 cursor-pointer">
                       <input
