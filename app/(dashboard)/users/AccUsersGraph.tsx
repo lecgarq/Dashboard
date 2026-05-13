@@ -311,7 +311,12 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
     companyName: user.companyName,
   };
 
-  const projects = user.projects ?? [];
+  // Filter to active projects only — archived/inactive projects on the
+  // BulkAccUser blob can balloon the instance count by 5-10× (one user
+  // commonly has 20+ historical projects across years of tenure). Only
+  // active projects represent current access surface, which is what the
+  // graph is meant to visualize.
+  const projects = (user.projects ?? []).filter((p) => p.status === "active");
   if (projects.length === 0) {
     const roles = baseAllRoles;
     const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
@@ -1011,12 +1016,15 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         similarityInput: similarityInputRef.current,
         simStr: simStrMap,
         simMin: f.simMin,
-        // Loosened from 20 → 8 on 2026-05-13 per Luis visual feedback: at hub
-        // scale with all 7 dims at simStr=1, topK=20 collapsed the colored
-        // users into a tight central clump. 8 keeps clusters visible without
-        // overwhelming the layout. If clumps return after pie-glyph rendering
-        // lands, halve link force at the addLink site in accGraphOrganicLayout.
-        topK: 8,
+        // Disabled (topK: 0) on 2026-05-13 alongside the (user, project)
+        // instance redesign — Phase 07.1 similarity springs were computed
+        // user-level but now apply across 24k instance nodes, producing
+        // ~60k springs that prevent the layout from converging. Project
+        // membership (the project-link edges already in the topology) is
+        // the dominant clustering force in the new model; similarity
+        // becomes a follow-up slice that needs per-instance recompute
+        // anyway. Set back to 8-20 once that lands.
+        topK: 0,
       };
       const topology = buildAccTopologyGraph(rawNodes, extensions);
 

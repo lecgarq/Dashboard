@@ -307,16 +307,18 @@ export function buildAccTopologyGraph(
     if (bucket) bucket.push(node.id);
     else idsByUser.set(uid, [node.id]);
   }
+  // Chain (not clique) — sort instance ids and link each to the next one in
+  // sequence. For a user on N projects: N-1 same-person links instead of
+  // (N choose 2). At N=20 that's 19 vs 190; the original clique formulation
+  // produced ~230k links across the dataset and overwhelmed the simulation
+  // (Luis 2026-05-13: "everything is wrong and weird"). A chain still gives
+  // a connected component per user — same-person can be eye-traced by
+  // following the gray thread.
   for (const ids of idsByUser.values()) {
     if (ids.length < 2) continue;
-    for (let i = 0; i < ids.length; i++) {
-      for (let j = i + 1; j < ids.length; j++) {
-        // Canonical (a < b) ordering keeps the link key stable regardless of
-        // input order, so dedupe via linkKeys works as expected.
-        const a = ids[i] < ids[j] ? ids[i] : ids[j];
-        const b = ids[i] < ids[j] ? ids[j] : ids[i];
-        addLink(a, b, "same-person");
-      }
+    const sorted = [...ids].sort();
+    for (let i = 0; i < sorted.length - 1; i++) {
+      addLink(sorted[i], sorted[i + 1], "same-person");
     }
   }
 
