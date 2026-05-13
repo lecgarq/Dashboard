@@ -88,6 +88,24 @@ const SIM_DIM_COLOR: Record<SimilarityDim, string> = {
   "last-sign-in": "#34D399",        // emerald
   "recent-additions": "#F472B6",    // pink
 };
+const SIM_DIM_LABEL: Record<SimilarityDim, string> = {
+  "project-members": "Project Members",
+  "roles": "Roles",
+  "folder-permissions": "Folder Permissions",
+  "activity-logs": "Activity Logs",
+  "data-coverage": "Data Coverage",
+  "last-sign-in": "Last Sign-In",
+  "recent-additions": "Recent Additions",
+};
+const SIM_DIM_KEYS_ORDERED: readonly SimilarityDim[] = [
+  "project-members",
+  "roles",
+  "folder-permissions",
+  "activity-logs",
+  "data-coverage",
+  "last-sign-in",
+  "recent-additions",
+];
 const FOLDER_PROJECT_EDGE_COLOR = "#94A3B8"; // neutral container slate
 
 function colorForTopologyLink(link: AccTopologyLink): string | undefined {
@@ -2717,7 +2735,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
               {graphMode === "folder-permissions" && (
               <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2 space-y-2">
                 <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">
-                  Topology
+                  Clustering
                 </span>
 
                 {/* View mode toggle */}
@@ -2777,21 +2795,11 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                   ))}
                 </div>
 
-                {/* Similarity dimensions (user-similarity edge colors) */}
-                <div className="space-y-0.5">
-                  <span className="text-[10px] text-gray-500">Similarity dimensions</span>
-                  {(
-                    [
-                      "project-members",
-                      "roles",
-                      "folder-permissions",
-                      "activity-logs",
-                      "data-coverage",
-                      "last-sign-in",
-                      "recent-additions",
-                    ] as const
-                  ).map((dim) => (
-                    <label key={dim} className="flex items-center gap-1.5 cursor-pointer">
+                {/* Clustering dimensions — checkbox + per-dim strength slider */}
+                <div className="space-y-1">
+                  <span className="text-[10px] text-gray-500">Clustering dimensions</span>
+                  {SIM_DIM_KEYS_ORDERED.map((dim, idx) => (
+                    <div key={dim} className="flex items-center gap-1.5">
                       <input
                         type="checkbox"
                         checked={filters.simDims.includes(dim)}
@@ -2803,33 +2811,57 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
                               : [...current.simDims, dim],
                           }))
                         }
-                        className="h-3 w-3"
+                        className="h-3 w-3 shrink-0"
                       />
                       <span
-                        className="inline-block h-2.5 w-2.5 rounded-full"
+                        className="inline-block h-2.5 w-2.5 rounded-full shrink-0"
                         style={{ background: SIM_DIM_COLOR[dim] }}
                         aria-hidden="true"
                       />
-                      <span className="text-[10px] text-gray-700">{dim}</span>
-                    </label>
+                      <span className="text-[10px] text-gray-700 flex-1 truncate" title={SIM_DIM_LABEL[dim]}>
+                        {SIM_DIM_LABEL[dim]}
+                      </span>
+                      <input
+                        type="range"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={filters.simStr[idx] ?? 1}
+                        onChange={(e) => {
+                          const v = parseFloat(e.target.value);
+                          setFilters((current) => {
+                            const next = [...current.simStr];
+                            next[idx] = Number.isFinite(v) ? Math.max(0, Math.min(1, v)) : 1;
+                            return { ...current, simStr: next };
+                          });
+                        }}
+                        className="w-16"
+                      />
+                      <span className="w-7 text-[10px] tabular-nums text-gray-600 text-right">
+                        {(filters.simStr[idx] ?? 1).toFixed(2)}
+                      </span>
+                    </div>
                   ))}
                 </div>
 
-                {/* Similarity-min slider */}
+                {/* Minimum contributing dims gate */}
                 <label className="flex flex-col gap-1">
                   <span className="flex items-center justify-between text-[10px] text-gray-500">
-                    <span>Min shared attributes</span>
+                    <span>Minimum similarity</span>
                     <span className="font-semibold text-gray-700">{filters.simMin}</span>
                   </span>
                   <input
                     type="range"
-                    min={1}
-                    max={5}
+                    min={0}
+                    max={7}
                     step={1}
                     value={filters.simMin}
                     onChange={(e) => {
-                      const value = parseInt(e.target.value, 10) || 1;
-                      setFilters((current) => ({ ...current, simMin: value }));
+                      const value = parseInt(e.target.value, 10);
+                      setFilters((current) => ({
+                        ...current,
+                        simMin: Number.isFinite(value) ? Math.max(0, Math.min(7, value)) : 2,
+                      }));
                     }}
                     className="w-full"
                   />
