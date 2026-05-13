@@ -15,7 +15,9 @@
  * (already non-optional there since Plan 02-04).
  */
 
+import { z } from "zod";
 import { router, protectedProcedure } from "../trpc";
+import { windowToDateRange } from "@/lib/acc/timelineBucketing";
 
 type RawMember = {
   email: string;
@@ -127,4 +129,56 @@ export const accMembersRouter = router({
     });
     return aggregateByEmail(members);
   }),
+
+  /**
+   * KPI strip data: members, access changes, active admins, stale members.
+   * Returns absolute values + deltas vs the prior equivalent window.
+   * Active-admins and stale-members deltas ship as 0 (no historical snapshots yet).
+   */
+  getKpiSummary: protectedProcedure
+    .input(z.object({ window: z.enum(["30d", "90d", "1y", "all"]) }))
+    .query(async ({ ctx, input }) => {
+      const range = windowToDateRange(input.window);
+      const priorRange = {
+        start: new Date(range.start.getTime() - (range.end.getTime() - range.start.getTime())),
+        end: range.start,
+      };
+
+      const members = await ctx.db.accMemberCache.count();
+      const membersAtStart = await ctx.db.accMemberCache.count({
+        where: { createdAt: { lte: range.start } },
+      });
+
+      const accessChanges = await ctx.db.accActivity.count({
+        where: { createdAt: { gte: range.start, lte: range.end } },
+      });
+      const priorAccessChanges = await ctx.db.accActivity.count({
+        where: { createdAt: { gte: priorRange.start, lte: priorRange.end } },
+      });
+
+      const adminRows = await ctx.db.$queryRawUnsafe<{ count: number }[]>(
+        `SELECT COUNT(DISTINCT email)::int AS count FROM "AccMemberCache" WHERE (data->>'projectAdmin')::boolean = true OR (data->>'accountAdmin')::boolean = true`,
+      );
+      const activeAdmins = adminRows[0]?.count ?? 0;
+
+      const staleRows = await ctx.db.$queryRawUnsafe<{ count: number }[]>(
+        `SELECT COUNT(*)::int AS count FROM "AccMemberCache" mc WHERE NOT EXISTS (SELECT 1 FROM "AccActivity" a WHERE LOWER(a."userEmail") = LOWER(mc.email) AND a."createdAt" >= $1 AND a."createdAt" <= $2)`,
+        range.start,
+        range.end,
+      );
+      const staleMembers = staleRows[0]?.count ?? 0;
+
+      const earliest = await ctx.db.accActivity.findFirst({
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true },
+      });
+
+      return {
+        members: { value: members, delta: members - membersAtStart },
+        accessChanges: { value: accessChanges, delta: accessChanges - priorAccessChanges },
+        activeAdmins: { value: activeAdmins, delta: 0 },
+        staleMembers: { value: staleMembers, delta: 0 },
+        dataEarliestEvent: earliest?.createdAt.toISOString() ?? null,
+      };
+    }),
 });
