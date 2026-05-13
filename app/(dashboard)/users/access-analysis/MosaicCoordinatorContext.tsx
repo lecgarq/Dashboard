@@ -91,3 +91,19 @@ export function useMosaicSelection(): Selection {
   }
   return v.selection;
 }
+
+/**
+ * Optional variant — returns null when called outside MosaicCoordinatorProvider.
+ * Use this in components (e.g. AccUsersGraph) that may be rendered both inside
+ * and outside the provider tree (e.g. legacy UsersDirectoryClient path).
+ */
+export function useMosaicCoordinatorOptional(): Coordinator | null {
+  return useContext(Ctx)?.coordinator ?? null;
+}
+
+/**
+ * Optional variant — returns null when called outside MosaicCoordinatorProvider.
+ */
+export function useMosaicSelectionOptional(): Selection | null {
+  return useContext(Ctx)?.selection ?? null;
+}

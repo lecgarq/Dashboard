@@ -72,6 +72,15 @@ import {
   loadCachedPositions,
   savePositions,
 } from "./access-analysis/positionsCache";
+import {
+  CosmosCanvasClient,
+  type CosmosCanvasHandle,
+} from "./access-analysis/CosmosCanvasClient";
+import {
+  useMosaicCoordinatorOptional,
+  useMosaicSelectionOptional,
+} from "./access-analysis/MosaicCoordinatorContext";
+import { buildNodeColorBuffer } from "./cosmosUtils";
 
 // Investigative topology modes. Users is the default, while access hubs and
 // folder permissions are opt-in.
@@ -786,6 +795,18 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   // CosmosGraphRenderer.create(...).then(...) resolves. Previously the polling
   // effect bailed silently when isReady flipped before init completed.
   const [cosmosReady, setCosmosReady] = useState(false);
+
+  // Task 4: Mosaic alpha-mask plumbing. Optional hooks degrade gracefully when
+  // AccUsersGraph is rendered outside MosaicCoordinatorProvider (legacy
+  // UsersDirectoryClient path). cosmosCanvasReady increments after the init
+  // .then() installs the handle; alphaMaskVersion increments each time a new
+  // mask arrives, triggering the color-reupload effect.
+  const mosaicCoordinator = useMosaicCoordinatorOptional();
+  const mosaicSelection = useMosaicSelectionOptional();
+  const [cosmosCanvasReady, setCosmosCanvasReady] = useState(0);
+  const [alphaMaskVersion, setAlphaMaskVersion] = useState(0);
+  const alphaBufRef = useRef<Float32Array | null>(null);
+  const cosmosCanvasHandleRef = useRef<CosmosCanvasHandle | null>(null);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
   const [pickMode, setPickMode] = useState(false);
   const pickModeRef = useRef(false);
@@ -1265,6 +1286,40 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
     cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
     markGraphDirty();
   }, [analyticsSelection, rebuildVisibleIndices, markGraphDirty]);
+
+  // Task 4: Register the CosmosCanvasClient with the Mosaic coordinator.
+  // Runs when the coordinator becomes available AND after the init .then()
+  // installs the handle (cosmosCanvasReady increments). Skipped gracefully
+  // when running outside MosaicCoordinatorProvider (mosaicCoordinator === null).
+  useEffect(() => {
+    if (!mosaicCoordinator || !mosaicSelection) return;
+    const handle = cosmosCanvasHandleRef.current;
+    if (!handle) return;
+    const client = new CosmosCanvasClient({
+      handle,
+      selection: mosaicSelection,
+      sourceTable: "user_projects",
+    });
+    mosaicCoordinator.connect(client);
+    return () => mosaicCoordinator.disconnect(client);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mosaicCoordinator, mosaicSelection, cosmosCanvasReady]);
+
+  // Task 4: Apply the alpha mask to the cosmos color buffer whenever a new mask
+  // arrives (alphaMaskVersion increments inside setAlphaMask). Reads current
+  // nodesRef and cosmosRendererRef — no stale closure risk since both are refs.
+  useEffect(() => {
+    const renderer = cosmosRendererRef.current;
+    const mask = alphaBufRef.current;
+    if (!renderer || !mask || nodesRef.current.length === 0) return;
+    const colors = buildNodeColorBuffer(nodesRef.current);
+    for (let i = 0; i < mask.length && i * 4 + 3 < colors.length; i++) {
+      colors[i * 4 + 3] *= mask[i];
+    }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    (renderer as any).graph?.setPointColors?.(colors);
+    markGraphDirty();
+  }, [alphaMaskVersion, cosmosCanvasReady, markGraphDirty]);
 
   const scheduleGraphControlUpdate = useCallback((key: keyof GraphControlSettings, value: number) => {
     const nextControls = { ...graphControlsRef.current, [key]: value };
@@ -1783,6 +1838,16 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
             // Auto-fit only on a fresh warmup — cache-hit restores keep the
             // user's previous pan/zoom (positions are stable across reloads).
             if (!result.fromCache) renderer.fitFrozenView(250);
+            // Task 4: install the CosmosCanvasHandle so the Mosaic client can
+            // push alpha masks. orderedIds is captured in this .then() closure.
+            cosmosCanvasHandleRef.current = {
+              nodeIds: orderedIds,
+              setAlphaMask: (mask: Float32Array) => {
+                alphaBufRef.current = mask;
+                setAlphaMaskVersion((v) => v + 1);
+              },
+            };
+            setCosmosCanvasReady((v) => v + 1);
             markGraphDirty();
           }).catch((err) => {
             console.warn("[positions-cache] loadOrComputePositions threw", err);
