@@ -17,6 +17,13 @@ import {
   INVITATION_ACTIONS,
   type ActivityCategory,
 } from "@/lib/acc/activityCategories";
+import {
+  windowToDateRange,
+  pickBinSize,
+  generateBuckets,
+  bucketStart,
+} from "@/lib/acc/timelineBucketing";
+import { pickHeadlineEvent, type RankableEvent } from "@/lib/acc/headlineEventPicker";
 
 const CATEGORY_ENUM = z.enum([
   "view",
@@ -325,6 +332,124 @@ export const accActivityRouter = router({
       );
 
       return { invitations };
+    }),
+
+  /**
+   * Returns time-binned counts of access-change events for the hero chart.
+   * Classifies each AccActivity row into one of four streams based on rawAction
+   * + details.newRole, then bins into day/week/month buckets.
+   */
+  getTimeline: protectedProcedure
+    .input(
+      z.object({
+        window: z.enum(["30d", "90d", "1y", "all"]),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const { window } = input;
+      const range = windowToDateRange(window);
+      const bin = pickBinSize(window);
+
+      const rows = await ctx.db.accActivity.findMany({
+        where: { createdAt: { gte: range.start, lte: range.end } },
+        select: { rawAction: true, createdAt: true, details: true, sourceFile: true },
+      });
+
+      function classify(row: { rawAction: string; sourceFile: string | null; details: unknown }): "membership" | "permission" | "project" | "admin" | null {
+        const a = (row.rawAction || "").toLowerCase();
+        const d = (row.details ?? {}) as Record<string, unknown>;
+        const newRoleRaw = String(d.newRole ?? d.new_role ?? "");
+        const isAdminGrant = a.includes("role") && /admin/i.test(newRoleRaw);
+        if (isAdminGrant) return "admin";
+        if (a.startsWith("role.") || a.startsWith("permission.")) return "permission";
+        if (a.startsWith("project.member")) return "project";
+        if (a.startsWith("user.")) return "membership";
+        return null;
+      }
+
+      const buckets = generateBuckets(range.start, range.end, bin);
+      const bucketMap = new Map<string, { membership: number; permission: number; project: number; admin: number }>();
+      for (const b of buckets) bucketMap.set(b.toISOString(), { membership: 0, permission: 0, project: 0, admin: 0 });
+
+      for (const row of rows) {
+        const stream = classify(row);
+        if (!stream) continue;
+        const key = bucketStart(row.createdAt, bin).toISOString();
+        const slot = bucketMap.get(key);
+        if (slot) slot[stream]++;
+      }
+
+      const points = Array.from(bucketMap.entries()).map(([bucket, counts]) => ({
+        bucket,
+        ...counts,
+      }));
+      points.sort((a, b) => a.bucket.localeCompare(b.bucket));
+
+      const earliest = await ctx.db.accActivity.findFirst({
+        orderBy: { createdAt: "asc" },
+        select: { createdAt: true },
+      });
+
+      return {
+        points,
+        bin,
+        dataEarliestEvent: earliest?.createdAt.toISOString() ?? null,
+      };
+    }),
+
+  /**
+   * Returns the single highest-impact event for a given stream in the time window,
+   * formatted as a HeadlineEvent. Used by the ChangeStreamCard drill-downs.
+   */
+  getHeadlineEvent: protectedProcedure
+    .input(
+      z.object({
+        window: z.enum(["30d", "90d", "1y", "all"]),
+        stream: z.enum(["membership", "permission", "project", "admin"]),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const range = windowToDateRange(input.window);
+
+      const rows = await ctx.db.accActivity.findMany({
+        where: { createdAt: { gte: range.start, lte: range.end } },
+        select: {
+          rawAction: true,
+          createdAt: true,
+          details: true,
+          sourceFile: true,
+          autodeskId: true,
+          userEmail: true,
+          projectId: true,
+        },
+      });
+
+      function classify(row: typeof rows[number]): "membership" | "permission" | "project" | "admin" | null {
+        const a = (row.rawAction || "").toLowerCase();
+        const d = (row.details ?? {}) as Record<string, unknown>;
+        const newRoleRaw = String(d.newRole ?? d.new_role ?? "");
+        const isAdminGrant = a.includes("role") && /admin/i.test(newRoleRaw);
+        if (isAdminGrant) return "admin";
+        if (a.startsWith("role.") || a.startsWith("permission.")) return "permission";
+        if (a.startsWith("project.member")) return "project";
+        if (a.startsWith("user.")) return "membership";
+        return null;
+      }
+
+      const streamRows = rows.filter((r) => classify(r) === input.stream);
+      const rankable: RankableEvent[] = streamRows.map((r) => {
+        const d = (r.details ?? {}) as Record<string, unknown>;
+        return {
+          rawAction: r.rawAction,
+          newRole: ((d.newRole ?? d.new_role) as string | null) ?? null,
+          occurredAt: r.createdAt,
+          subjectEmail: r.userEmail,
+          subjectAutodeskId: r.autodeskId,
+          projectId: r.projectId || null,
+        };
+      });
+
+      return pickHeadlineEvent(rankable, input.stream, range.start, range.end);
     }),
 });
 
