@@ -675,17 +675,14 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
   /**
    * Select a node by index (or clear selection with null).
-   * Uses v3 selectPointByIndex API with adjacent point highlighting.
-   * Called by onPointClick / onBackgroundClick callbacks and by AccUsersGraph.tsx.
+   * cosmos.gl beta.9 removed the selectPointByIndex/unselectPoints API,
+   * so this is currently a no-op stub — selection is tracked via
+   * onNodeSelectCallback and any visual highlight has to come from the
+   * caller (e.g. recoloring via setPointColors). Keeping the method so
+   * existing call sites stay valid and the canvas doesn't crash on click.
    */
-  selectNode(index: number | null): void {
-    if (!this.graph) return;
-    if (index === null) {
-      this.graph.unselectPoints();
-    } else {
-      // selectAdjacentPoints=true highlights connected nodes — matches Canvas 2D highlightSet behavior
-      this.graph.selectPointByIndex(index, true);
-    }
+  selectNode(_index: number | null): void {
+    return;
   }
 
   // Scale factor: organic layout outputs [0,1] normalized; Cosmos space is now

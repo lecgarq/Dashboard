@@ -956,7 +956,12 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
         similarityInput: similarityInputRef.current,
         simStr: simStrMap,
         simMin: f.simMin,
-        topK: 20,
+        // Loosened from 20 → 8 on 2026-05-13 per Luis visual feedback: at hub
+        // scale with all 7 dims at simStr=1, topK=20 collapsed the colored
+        // users into a tight central clump. 8 keeps clusters visible without
+        // overwhelming the layout. If clumps return after pie-glyph rendering
+        // lands, halve link force at the addLink site in accGraphOrganicLayout.
+        topK: 8,
       };
       const topology = buildAccTopologyGraph(rawNodes, extensions);
 
