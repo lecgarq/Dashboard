@@ -1407,7 +1407,21 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.paused = true;
     try { this.graph.stop?.(); } catch { /* ignore */ }
     try { this.graph.render?.(0); } catch { /* ignore */ }
-    try { this.graph.fitView?.(250); } catch { /* ignore */ }
+    // Viewport ops (fitView) are the caller's responsibility — pauseSim
+    // is simulation control only. The .then() block in the warmup helper
+    // calls fitFrozenView() explicitly when a freshly-frozen layout
+    // should be auto-fitted.
+  }
+
+  /**
+   * Convenience: fit the camera to the current static positions. Safe to
+   * call after pauseSim() / setFrozenPositions(). Separate from pauseSim
+   * because not every freeze caller wants a viewport reset (e.g. cache-
+   * hit restores want to preserve the previous user-pan/zoom).
+   */
+  fitFrozenView(durationMs = 250): void {
+    if (!this.graph) return;
+    try { this.graph.fitView?.(durationMs); } catch { /* ignore */ }
   }
 
   /** 07.1 Task 3: read current point positions as a Float32Array (Cosmos space). */

@@ -1780,6 +1780,9 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
             // alpha=0 to render() and reheat hooks are gated off.
             renderer.setFrozenPositions(result.xy);
             renderer.pauseSim();
+            // Auto-fit only on a fresh warmup — cache-hit restores keep the
+            // user's previous pan/zoom (positions are stable across reloads).
+            if (!result.fromCache) renderer.fitFrozenView(250);
             markGraphDirty();
           }).catch((err) => {
             console.warn("[positions-cache] loadOrComputePositions threw", err);
