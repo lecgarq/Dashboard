@@ -106,6 +106,9 @@ const SIM_DIM_KEYS_ORDERED: readonly SimilarityDim[] = [
   "recent-additions",
 ];
 const FOLDER_PROJECT_EDGE_COLOR = "#94A3B8"; // neutral container slate
+// Same-person links connecting (user, project) instances of the same user.
+// Very faint so the cross-project tracking signal doesn't dominate the canvas.
+const SAME_PERSON_EDGE_COLOR = "rgba(100,116,139,0.15)";
 
 function colorForTopologyLink(link: AccTopologyLink): string | undefined {
   if (link.kind === "role-folder" && link.permTier) return PERM_TIER_COLOR[link.permTier];
@@ -114,12 +117,17 @@ function colorForTopologyLink(link: AccTopologyLink): string | undefined {
   // active while hiding the edge visually (memory feedback_similarity_positional_only).
   if (link.kind === "user-similarity") return "rgba(0,0,0,0)";
   if (link.kind === "folder-project") return FOLDER_PROJECT_EDGE_COLOR;
+  if (link.kind === "same-person") return SAME_PERSON_EDGE_COLOR;
   return undefined; // fall back to renderer default
 }
 
 interface UserNode extends PhysicsNode {
   kind: "user";
   email: string;
+  /** Canonical user identifier shared by all (user, project) instances of the
+   *  same person. Equals lowercased email. Used by the same-person link pass
+   *  in buildAccTopologyGraph to group instances visually. */
+  userId: string;
   name: string;
   projectId?: string;
   projectName?: string;
@@ -225,6 +233,7 @@ function graphNodeToSimNode(node: AccGraphNode): SimNode {
   return {
     kind: "user",
     id: node.id,
+    userId: node.email.toLowerCase(),
     email: node.email,
     name: node.name,
     projectId: node.projectId,
@@ -267,42 +276,88 @@ function dateBucket(raw: string | Date | null | undefined): string {
   return match?.[1] ?? "";
 }
 
-function accUserToSimNode(user: BulkAccUser, index: number): SimNode {
+/**
+ * Expand one ACC user into one node per (user, project) instance.
+ *
+ * Topology rule (2026-05-13, Luis): a user on N projects produces N visible
+ * instance nodes. Each instance carries project-local roles/modules/admin
+ * flag, with user-level metadata (company, lastSignIn, accountAdmin) cloned
+ * across all of that user's instances. Instances are tied back together by
+ * `userId` and connected with visible "same-person" links emitted in
+ * buildAccTopologyGraph.
+ *
+ * Users with no projects (hasNoProjects=true) produce exactly one orphan
+ * instance with no projectId so they still appear on the graph.
+ */
+function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[] {
   const email = user.email.toLowerCase();
-  const firstProject = user.projects?.[0];
-  const roles = [...new Set(user.allRoles ?? [])].sort((a, b) => a.localeCompare(b));
-  const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
-  return {
-    kind: "user",
-    id: email,
+  const baseAllRoles = [...new Set(user.allRoles ?? [])].sort((a, b) => a.localeCompare(b));
+  const userLevelFields = {
+    kind: "user" as const,
+    userId: email,
     email,
     name: user.name || user.email,
-    projectId: firstProject?.id,
-    projectName: firstProject?.name,
     found: user.found,
     hasNoProjects: user.hasNoProjects,
-    isAdmin: (user.adminCount ?? 0) > 0 || user.isAccountAdmin === true || user.projectAdmin === true,
     projectCount: user.projectCount,
-    roles,
-    modules,
-    color: roleColor(roles[0]),
     lastAddedBucket: dateBucket(user.addedOn),
-    individualAccess: roles.length > 0 || modules.length > 0,
     companyRole: user.companyRole ?? null,
     lastSignIn: user.lastSignIn ?? null,
-    label: user.name || user.email,
-    degree: 0,
     perProjectRoleNames: user.perProjectRoleNames,
     aggregatedStatus: user.aggregatedStatus,
     projectAdmin: user.projectAdmin,
     executive: user.executive,
     isAccountAdmin: user.isAccountAdmin,
     companyName: user.companyName,
-    x: 0.5 + (index % 11) * 0.001,
-    y: 0.5 + (index % 13) * 0.001,
-    vx: 0,
-    vy: 0,
   };
+
+  const projects = user.projects ?? [];
+  if (projects.length === 0) {
+    const roles = baseAllRoles;
+    const modules = [...new Set(user.allModules ?? [])].sort((a, b) => a.localeCompare(b));
+    return [{
+      ...userLevelFields,
+      id: email,
+      projectId: undefined,
+      projectName: undefined,
+      isAdmin: user.isAccountAdmin === true || user.projectAdmin === true,
+      roles,
+      modules,
+      color: roleColor(roles[0]),
+      individualAccess: roles.length > 0 || modules.length > 0,
+      label: user.name || user.email,
+      degree: 0,
+      x: 0.5 + (userIndex % 11) * 0.001,
+      y: 0.5 + (userIndex % 13) * 0.001,
+      vx: 0,
+      vy: 0,
+    }];
+  }
+
+  return projects.map((proj, projIndex): SimNode => {
+    const roles = [...new Set(proj.roles ?? [])].sort((a, b) => a.localeCompare(b));
+    const modules = [...new Set(proj.modules ?? [])].sort((a, b) => a.localeCompare(b));
+    // Seed positions: spread instances of the same user slightly so the
+    // physics has room to pull them apart instead of starting stacked.
+    const seedOffset = (projIndex + 1) * 0.003;
+    return {
+      ...userLevelFields,
+      id: `${email}::${proj.id}`,
+      projectId: proj.id,
+      projectName: proj.name,
+      isAdmin: proj.isAdmin || user.isAccountAdmin === true,
+      roles,
+      modules,
+      color: roleColor(roles[0] ?? baseAllRoles[0]),
+      individualAccess: roles.length > 0 || modules.length > 0,
+      label: user.name || user.email,
+      degree: 0,
+      x: 0.5 + (userIndex % 11) * 0.001 + seedOffset,
+      y: 0.5 + (userIndex % 13) * 0.001 + seedOffset,
+      vx: 0,
+      vy: 0,
+    };
+  });
 }
 
 function getViewportSize(container: HTMLDivElement | null): { width: number; height: number } {
@@ -938,7 +993,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
    * invoked from topology rebuild paths, not from slider scrub).
    */
   const buildExtendedTopology = useCallback(
-    (rawNodes: readonly { id: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
+    (rawNodes: readonly { id: string; userId?: string; email: string; name: string; projectId?: string; projectName?: string; isAdmin: boolean; roles: string[]; lastAddedBucket: string; modules: string[] }[]): AccTopologyGraph => {
       const f = filtersRef.current;
       const mode = graphModeRef.current;
 
@@ -1858,7 +1913,7 @@ export function AccUsersGraph({ users, onSelectUser }: AccUsersGraphProps) {
 
     const rawNodes = users
       .filter((user) => user.found || user.projectCount > 0 || user.hasNoProjects)
-      .map(accUserToSimNode);
+      .flatMap(accUserToInstanceNodes);
     if (rawNodes.length === 0) {
       nodesRef.current = [];
       seedPosRef.current = new Float32Array(0);

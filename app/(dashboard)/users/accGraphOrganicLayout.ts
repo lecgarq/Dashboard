@@ -13,6 +13,10 @@ import type { PermTierKey, SimilarityDimKey } from "./accGraphFilters";
 
 export interface OrganicLayoutNode {
   id: string;
+  /** Canonical user id shared across all (user, project) instances of the
+   *  same person. Optional for back-compat with tests / older callers; when
+   *  absent the same-person link pass falls back to `email`. */
+  userId?: string;
   email: string;
   name: string;
   projectId?: string;
@@ -51,7 +55,11 @@ export type AccTopologyLinkKind =
   | AccTopologyHubKind
   | "role-folder"
   | "folder-project"
-  | "user-similarity";
+  | "user-similarity"
+  // (user, project) topology (2026-05-13): visible thin gray link connecting
+  // every pair of instance nodes that share the same userId. Lets you eye-track
+  // a single person across the projects they appear in.
+  | "same-person";
 
 export interface AccTopologyVisibleNode {
   id: string;
@@ -282,6 +290,33 @@ export function buildAccTopologyGraph(
     addUniqueSortedValues(node.modules ?? [], modules);
     for (const moduleName of [...modules].sort((a, b) => a.localeCompare(b))) {
       addLink(node.id, addHub("module", moduleName), "module");
+    }
+  }
+
+  // ─── (user, project) topology: same-person links (2026-05-13) ───────────────
+  // Group every node by its canonical userId (email lowercased) and emit a
+  // visible link between each pair of instances belonging to the same person.
+  // A user on N projects produces (N choose 2) links — for N=9 that's 36
+  // links per user, which is comfortable at hub scale. Renderer paints these
+  // very faint so the graph reads as "person across projects" without noise.
+  const idsByUser = new Map<string, string[]>();
+  for (const node of nodes) {
+    const uid = node.userId ?? node.email;
+    if (!uid) continue;
+    const bucket = idsByUser.get(uid);
+    if (bucket) bucket.push(node.id);
+    else idsByUser.set(uid, [node.id]);
+  }
+  for (const ids of idsByUser.values()) {
+    if (ids.length < 2) continue;
+    for (let i = 0; i < ids.length; i++) {
+      for (let j = i + 1; j < ids.length; j++) {
+        // Canonical (a < b) ordering keeps the link key stable regardless of
+        // input order, so dedupe via linkKeys works as expected.
+        const a = ids[i] < ids[j] ? ids[i] : ids[j];
+        const b = ids[i] < ids[j] ? ids[j] : ids[i];
+        addLink(a, b, "same-person");
+      }
     }
   }
 
