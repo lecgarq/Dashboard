@@ -4,6 +4,8 @@ import { AccessAnalysisProvider } from "./AccessAnalysisContext";
 import { TimeWindowSelector } from "./TimeWindowSelector";
 import { KpiStrip } from "./KpiStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
+import { ChangeStreamCard } from "./ChangeStreamCard";
+import { CHANGE_STREAMS } from "@/lib/acc/accessAnalysisTypes";
 
 export function AccessAnalysisPage() {
   return (
@@ -18,6 +20,9 @@ export function AccessAnalysisPage() {
         </header>
         <KpiStrip />
         <AccessEventsChart />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {CHANGE_STREAMS.map((s) => <ChangeStreamCard key={s} stream={s} />)}
+        </div>
       </div>
     </AccessAnalysisProvider>
   );
