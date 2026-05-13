@@ -28,7 +28,11 @@ describe("MosaicCoordinatorProvider", () => {
     const selHook = renderHook(() => useMosaicSelection(), { wrapper });
 
     await act(async () => {
-      await Promise.resolve();
+      // Drain microtasks AND the next macrotask so the deferred setCoordinator
+      // (which awaits getDuckDbClient before flipping state) has fired. A bare
+      // `await Promise.resolve()` flushes one microtask tick only and can pass
+      // on a still-null coordinator.
+      await new Promise((resolve) => setTimeout(resolve, 0));
     });
 
     expect(coordHook.result.current).not.toBeNull();

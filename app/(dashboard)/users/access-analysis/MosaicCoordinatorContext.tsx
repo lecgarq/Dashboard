@@ -1,7 +1,15 @@
 "use client";
 
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { Coordinator, Selection, type Connector } from "@uwdata/mosaic-core";
+import {
+  Coordinator,
+  Selection,
+  type ArrowQueryRequest,
+  type Connector,
+  type ExecQueryRequest,
+  type JSONQueryRequest,
+} from "@uwdata/mosaic-core";
+import type { Table } from "@uwdata/flechette";
 import { getDuckDbClient } from "./duckdbClient";
 
 interface MosaicContextValue {
@@ -24,21 +32,27 @@ export function MosaicCoordinatorProvider({
     const c = new Coordinator();
     (async () => {
       const { connection } = await getDuckDbClient();
-      const connector: Connector = {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        query: async (query: any): Promise<any> => {
-          if (query.type === "exec") {
-            await connection.query(query.sql);
-            return undefined;
-          }
-          const result = await connection.query(query.sql);
-          if (query.type === "json") {
-            return result.toArray();
-          }
-          // arrow (default) — DuckDB-Wasm returns an Arrow Table
-          return result;
-        },
-      };
+      // Overloads expose precise per-request-type returns to consumers;
+      // the implementation signature is widened to `Promise<unknown>` so
+      // the structural assignment to `Connector` checks against the
+      // overload list, not the implementation's union return.
+      async function runQuery(req: ArrowQueryRequest): Promise<Table>;
+      async function runQuery(req: ExecQueryRequest): Promise<void>;
+      async function runQuery(req: JSONQueryRequest): Promise<Record<string, unknown>[]>;
+      async function runQuery(
+        req: ArrowQueryRequest | ExecQueryRequest | JSONQueryRequest,
+      ): Promise<unknown> {
+        if (req.type === "exec") {
+          await connection.query(req.sql);
+          return undefined;
+        }
+        const result = await connection.query(req.sql);
+        if (req.type === "json") {
+          return result.toArray() as Record<string, unknown>[];
+        }
+        return result as unknown as Table;
+      }
+      const connector: Connector = { query: runQuery };
       c.databaseConnector(connector);
       if (!cancelled) setCoordinator(c);
     })().catch((err) => {
