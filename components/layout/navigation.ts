@@ -8,7 +8,6 @@ import {
   Kanban,
   Zap,
   Cpu,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,8 +23,7 @@ export type NavigationItem = {
 
 export const MODULE_NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/users", label: "Users", icon: Users, group: "Organization" },
-  { href: "/users/dashboard", label: "Access Analysis", icon: PieChart, group: "Organization" },
+  { href: "/users", label: "Access Analysis", icon: PieChart, group: "Organization" },
   { href: "/clash-detection", label: "Clash Detection", icon: Zap, module: "clash", group: "Wiki Bar" },
   { href: "/sim-automation", label: "Sim Automation", icon: Cpu, module: "sim", group: "Wiki Bar" },
   { href: "/families", label: "Familias Parametricas", icon: Building2, module: "families", group: "Familias Parametricas" },
