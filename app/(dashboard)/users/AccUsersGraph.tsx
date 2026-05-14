@@ -1844,10 +1844,6 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
           // topology (user/access hubs dropped) give cosmos's force sim a
           // much easier starting point. The sim runs but converges fast
           // because the seed is already approximately correct.
-          // freezeSimulation() was attempted earlier but cosmos.gl beta.9
-          // resets positions when enableSimulation is toggled, so freezing
-          // mid-data-load produces an empty canvas. Letting the sim run
-          // from a good seed is the working compromise.
           // CRITICAL: project topology links on the main thread because the
           // worker (which normally posts to linksRef) is gated off here. Without
           // this, Cosmos receives 0 springs and the simulation collapses

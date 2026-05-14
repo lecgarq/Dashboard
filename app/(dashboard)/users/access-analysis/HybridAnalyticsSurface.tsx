@@ -19,7 +19,6 @@ import {
 } from "./analyticsQueries";
 import { isAnalyticsSelectionEmpty, selectionFromFacet, type GraphAnalyticsSelection } from "./mosaicSelections";
 import type { GraphFolderPermissionRow } from "./graphTables";
-import { VgplotFacetChart } from "./VgplotFacetChart";
 import { HistogramPanel } from "./HistogramPanel";
 
 function toFolderRows(rawRows: readonly unknown[] | undefined): GraphFolderPermissionRow[] {
@@ -63,28 +62,6 @@ function AnalyticsStrip({ users, state }: { users: BulkAccUser[]; state: Analyti
       <Metric icon={Database} label="Projects" value={projects} detail={state.status === "ready" ? "DuckDB" : "local"} />
       <Metric icon={Activity} label="Similarity edges" value={state.similarityDimensions.reduce((sum, row) => sum + row.value, 0)} detail="7 dimensions" />
     </div>
-  );
-}
-
-function ChartPanel({
-  title,
-  rows,
-  selection,
-  onSelect,
-}: {
-  title: string;
-  rows: ChartDatum[];
-  selection: GraphAnalyticsSelection | null;
-  onSelect: (row: ChartDatum) => void;
-}) {
-  return (
-    <section className="min-h-[150px] rounded-md border bg-card p-3">
-      <div className="mb-3 flex items-center justify-between gap-2">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        <Badge variant="outline" className="text-[10px]">{rows.length}</Badge>
-      </div>
-      <VgplotFacetChart rows={rows} selection={selection} onSelect={onSelect} />
-    </section>
   );
 }
 
@@ -153,7 +130,7 @@ export function HybridAnalyticsSurface() {
         </div>
         {queryState.diagnostic && <p className="rounded-sm bg-amber-500/10 p-2 text-xs text-amber-700">{queryState.diagnostic}</p>}
         <AnalyticsStrip users={users} state={queryState} />
-        {queryState.status === "ready" ? (
+        {queryState.status === "ready" && (
           <HistogramPanel
             title="Project Membership"
             table="user_projects"
@@ -161,10 +138,8 @@ export function HybridAnalyticsSurface() {
             groupLabel="users per project"
             topN={20}
           />
-        ) : (
-          <ChartPanel title="Project Membership" rows={queryState.projectMembership} selection={activeSelection} onSelect={selectRow} />
         )}
-        {queryState.status === "ready" ? (
+        {queryState.status === "ready" && (
           <HistogramPanel
             title="Role Distribution"
             table="user_projects"
@@ -172,10 +147,8 @@ export function HybridAnalyticsSurface() {
             groupLabel="users per role"
             topN={20}
           />
-        ) : (
-          <ChartPanel title="Role Distribution" rows={queryState.roleDistribution} selection={activeSelection} onSelect={selectRow} />
         )}
-        {queryState.status === "ready" ? (
+        {queryState.status === "ready" && (
           <HistogramPanel
             title="Activity Recency"
             table="user_activity_buckets"
@@ -184,10 +157,8 @@ export function HybridAnalyticsSurface() {
             aggregator="countDistinctUser"
             topN={4}
           />
-        ) : (
-          <ChartPanel title="Activity Recency" rows={queryState.activityRecency} selection={activeSelection} onSelect={selectRow} />
         )}
-        {queryState.status === "ready" ? (
+        {queryState.status === "ready" && (
           <HistogramPanel
             title="Folder Permission Tiers"
             table="folder_permissions"
@@ -195,10 +166,8 @@ export function HybridAnalyticsSurface() {
             aggregator="count"
             topN={6}
           />
-        ) : (
-          <ChartPanel title="Folder Permission Tiers" rows={queryState.folderPermissionTiers} selection={activeSelection} onSelect={selectRow} />
         )}
-        {queryState.status === "ready" ? (
+        {queryState.status === "ready" && (
           <HistogramPanel
             title="Similarity Dimensions"
             table="similarity_edges"
@@ -206,8 +175,6 @@ export function HybridAnalyticsSurface() {
             aggregator="count"
             topN={5}
           />
-        ) : (
-          <ChartPanel title="Similarity Dimensions" rows={queryState.similarityDimensions} selection={activeSelection} onSelect={selectRow} />
         )}
       </aside>
 
