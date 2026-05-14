@@ -1515,16 +1515,19 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
         setPolygonSelection(next);
         markGraphDirty();
         // Task 7: Publish a Mosaic SelectionClause so histograms + canvas alpha
-        // mask crossfilter to just the lassoed nodes. node_id in the DuckDB
-        // user_projects table is concat(user_id, '::', project_id) while
-        // node.id in JS is `instance:email:project_id` — we reconstruct the
-        // DuckDB form by matching on `'instance:' || user_id || ':' || project_id`.
+        // mask crossfilter to just the lassoed nodes. node.id format at runtime
+        // is `${email}::${project_id}` (double colon, no prefix — see
+        // accUserToInstanceNodes:452). user_projects.user_id stores the email
+        // (set as userId in accUserToInstanceNodes:401), so the SQL match is
+        // `user_id || '::' || project_id`. (The `instance:email:project_id`
+        // form in lib/acc/graphSnapshot.ts is a different code path that does
+        // not feed the cosmos canvas.)
         if (mosaicSelection) {
           const lassoedIds = matchedIndices
             .map((i) => nodesRef.current[i]?.id)
             .filter((id): id is string => !!id);
           if (lassoedIds.length > 0) {
-            const field = sql`'instance:' || user_id || ':' || project_id`;
+            const field = sql`user_id || '::' || project_id`;
             const value = lassoedIds.map((id) => [id]);
             const clause = clausePoints([field], value, { source: lassoSourceRef.current });
             mosaicSelection.update(clause);
@@ -1548,7 +1551,7 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
     // crossfilter intersect resolver, restoring full opacity to all nodes.
     if (mosaicSelection) {
       const clause = clausePoints(
-        [sql`'instance:' || user_id || ':' || project_id`],
+        [sql`user_id || '::' || project_id`],
         null,
         { source: lassoSourceRef.current },
       );
