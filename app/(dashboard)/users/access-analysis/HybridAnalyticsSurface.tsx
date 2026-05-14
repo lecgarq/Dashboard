@@ -164,10 +164,51 @@ export function HybridAnalyticsSurface() {
         ) : (
           <ChartPanel title="Project Membership" rows={queryState.projectMembership} selection={activeSelection} onSelect={selectRow} />
         )}
-        <ChartPanel title="Role Distribution" rows={queryState.roleDistribution} selection={activeSelection} onSelect={selectRow} />
-        <ChartPanel title="Folder Permission Tiers" rows={queryState.folderPermissionTiers} selection={activeSelection} onSelect={selectRow} />
-        <ChartPanel title="Activity Recency" rows={queryState.activityRecency} selection={activeSelection} onSelect={selectRow} />
-        <ChartPanel title="Similarity Dimensions" rows={queryState.similarityDimensions} selection={activeSelection} onSelect={selectRow} />
+        {queryState.status === "ready" ? (
+          <HistogramPanel
+            title="Role Distribution"
+            table="user_projects"
+            groupBy="role_id"
+            groupLabel="users per role"
+            topN={20}
+          />
+        ) : (
+          <ChartPanel title="Role Distribution" rows={queryState.roleDistribution} selection={activeSelection} onSelect={selectRow} />
+        )}
+        {queryState.status === "ready" ? (
+          <HistogramPanel
+            title="Activity Recency"
+            table="user_activity_buckets"
+            groupBy="bucket"
+            groupLabel="users by recency"
+            aggregator="countDistinctUser"
+            topN={4}
+          />
+        ) : (
+          <ChartPanel title="Activity Recency" rows={queryState.activityRecency} selection={activeSelection} onSelect={selectRow} />
+        )}
+        {queryState.status === "ready" ? (
+          <HistogramPanel
+            title="Folder Permission Tiers"
+            table="folder_permissions"
+            groupBy="perm_tier"
+            aggregator="count"
+            topN={6}
+          />
+        ) : (
+          <ChartPanel title="Folder Permission Tiers" rows={queryState.folderPermissionTiers} selection={activeSelection} onSelect={selectRow} />
+        )}
+        {queryState.status === "ready" ? (
+          <HistogramPanel
+            title="Similarity Dimensions"
+            table="similarity_edges"
+            groupBy="dimension"
+            aggregator="count"
+            topN={5}
+          />
+        ) : (
+          <ChartPanel title="Similarity Dimensions" rows={queryState.similarityDimensions} selection={activeSelection} onSelect={selectRow} />
+        )}
       </aside>
 
       <main className="min-h-0">
