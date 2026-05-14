@@ -80,6 +80,12 @@ import {
   useMosaicCoordinatorOptional,
   useMosaicSelectionOptional,
 } from "./access-analysis/MosaicCoordinatorContext";
+import {
+  ClusterAnnotations,
+  computeCentroidsFromMemory,
+  type ClusterCentroid,
+  type ClusterMemberRow,
+} from "./access-analysis/clusterAnnotations";
 import { buildNodeColorBuffer } from "./cosmosUtils";
 
 // Investigative topology modes. Users is the default, while access hubs and
@@ -805,6 +811,9 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   const mosaicSelection = useMosaicSelectionOptional();
   const [cosmosCanvasReady, setCosmosCanvasReady] = useState(0);
   const [alphaMaskVersion, setAlphaMaskVersion] = useState(0);
+  const [centroids, setCentroids] = useState<ClusterCentroid[]>([]);
+  // Incremented on each pan/zoom frame to reposition the annotation overlay.
+  const [annotationTick, setAnnotationTick] = useState(0);
   const alphaBufRef = useRef<Float32Array | null>(null);
   const cosmosCanvasHandleRef = useRef<CosmosCanvasHandle | null>(null);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
@@ -1866,6 +1875,25 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
             };
             setCosmosCanvasReady((v) => v + 1);
             markGraphDirty();
+            // Task 6: fetch cluster centroids from DuckDB for the annotation overlay.
+            getDuckDbClient().then(({ connection }) =>
+              connection.query(`
+                SELECT
+                  concat(up.user_id, '::', up.project_id) AS node_id,
+                  up.project_id                           AS cluster,
+                  up.project_name                         AS label,
+                  p.x,
+                  p.y
+                FROM user_projects up
+                JOIN positions p ON p.node_id = concat(up.user_id, '::', up.project_id)
+              `)
+            ).then((result) => {
+              if (disposed) return;
+              const rows = result.toArray() as ClusterMemberRow[];
+              setCentroids(computeCentroidsFromMemory(rows, 3));
+            }).catch((err) => {
+              console.warn("[cluster-annotations] centroid fetch failed:", err);
+            });
           }).catch((err) => {
             console.warn("[positions-cache] loadOrComputePositions threw", err);
           });
@@ -1913,6 +1941,8 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
               setHoveredNode(null);
               markGraphDirty();
             },
+            // Task 6: reposition cluster annotation labels on every pan/zoom frame.
+            onZoom: () => { setAnnotationTick((t) => t + 1); },
           });
         }
 
@@ -3598,6 +3628,23 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
             )}
             aria-hidden="true"
           />
+          {/* Task 6: project-name labels at cluster centroids. Hidden when not
+              on the cosmos backend. annotationTick in the key forces useMemo
+              to recompute worldToScreen positions on each pan/zoom frame. */}
+          {renderBackend === "cosmos" && centroids.length > 0 && (
+            <ClusterAnnotations
+              key={`ann-${annotationTick}`}
+              centroids={centroids}
+              worldToScreen={(x, y) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const cosmosGraph = (cosmosRendererRef.current as any)?.graph as import("@cosmos.gl/graph").Graph | undefined;
+                const t = cosmosGraph?.spaceToScreenPosition?.([x, y]);
+                return t ? { sx: t[0], sy: t[1] } : { sx: -9999, sy: -9999 };
+              }}
+              width={getViewportSize(containerRef.current).width}
+              height={getViewportSize(containerRef.current).height}
+            />
+          )}
         </div>
         {/* 02-04: Lasso overlay. When lassoActive it captures pointer events
             (suspending pan/zoom on the underlying canvas) and renders the
