@@ -80,6 +80,8 @@ import {
   useMosaicCoordinatorOptional,
   useMosaicSelectionOptional,
 } from "./access-analysis/MosaicCoordinatorContext";
+import { clausePoints } from "@uwdata/mosaic-core";
+import { sql } from "@uwdata/mosaic-sql";
 import {
   ClusterAnnotations,
   computeCentroidsFromMemory,
@@ -825,6 +827,10 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   const [lassoActive, setLassoActive] = useState(false);
   const lassoActiveRef = useRef(false);
   const lassoPathRef = useRef<number[]>([]);
+  // Task 7: Stable ClauseSource object for Mosaic lasso clauses. Using a
+  // ref-captured object ensures successive lasso updates REPLACE the prior
+  // clause (same source identity) rather than stacking as separate clauses.
+  const lassoSourceRef = useRef<{ reset?: () => void }>({});
   const [lassoPath, setLassoPath] = useState<number[]>([]);
   // Selection summary set by Task 3 (Polygon-close → selection → side panel).
   const [polygonSelection, setPolygonSelection] = useState<{
@@ -1508,6 +1514,22 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
         polygonSelectionRef.current = next;
         setPolygonSelection(next);
         markGraphDirty();
+        // Task 7: Publish a Mosaic SelectionClause so histograms + canvas alpha
+        // mask crossfilter to just the lassoed nodes. node_id in the DuckDB
+        // user_projects table is concat(user_id, '::', project_id) while
+        // node.id in JS is `instance:email:project_id` — we reconstruct the
+        // DuckDB form by matching on `'instance:' || user_id || ':' || project_id`.
+        if (mosaicSelection) {
+          const lassoedIds = matchedIndices
+            .map((i) => nodesRef.current[i]?.id)
+            .filter((id): id is string => !!id);
+          if (lassoedIds.length > 0) {
+            const field = sql`'instance:' || user_id || ':' || project_id`;
+            const value = lassoedIds.map((id) => [id]);
+            const clause = clausePoints([field], value, { source: lassoSourceRef.current });
+            mosaicSelection.update(clause);
+          }
+        }
       }
     }
     // Exit lasso mode regardless of selection success — single-shot tool.
@@ -1515,13 +1537,24 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
     setLassoActive(false);
     lassoPathRef.current = [];
     setLassoPath([]);
-  }, [markGraphDirty]);
+  }, [markGraphDirty, mosaicSelection]);
 
   const clearPolygonSelection = useCallback(() => {
     polygonSelectionRef.current = null;
     setPolygonSelection(null);
     markGraphDirty();
-  }, [markGraphDirty]);
+    // Task 7: Clear the lasso SelectionClause so the Mosaic Selection removes
+    // the lasso filter slot. Passing null value resets the clause in the
+    // crossfilter intersect resolver, restoring full opacity to all nodes.
+    if (mosaicSelection) {
+      const clause = clausePoints(
+        [sql`'instance:' || user_id || ':' || project_id`],
+        null,
+        { source: lassoSourceRef.current },
+      );
+      mosaicSelection.update(clause);
+    }
+  }, [markGraphDirty, mosaicSelection]);
 
   const handlePhysicsChange = useCallback((key: keyof PhysicsConfig, value: number) => {
     setCosmosPhysics(prev => {
