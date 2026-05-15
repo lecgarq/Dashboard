@@ -2,6 +2,20 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
+current_phase: Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending Luis)
+status: completed
+last_updated: "2026-05-15T19:17:34.100Z"
+progress:
+  total_phases: 9
+  completed_phases: 6
+  total_plans: 55
+  completed_plans: 38
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
 current_phase: Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending)
 status: phase-complete-pending-manual-uat
 last_updated: "2026-05-15T19:09:00.000Z"
@@ -22,7 +36,7 @@ See: .planning/PROJECT.md
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology / v4.0 — DC pipeline
 **Current phase:** Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending Luis)
-**Status:** All 8 plans shipped code + docs. Final gate = Luis runs UAT.md checklist on his PC (install schtasks, trigger first run, verify pill+badges, run wipe+repopulate, replace DECISION line). DECISION currently PHASE-8-ACCEPT=PENDING-MANUAL-UAT.
+**Status:** Milestone complete
 
 ## Session Log
 
