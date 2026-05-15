@@ -4,6 +4,31 @@ Operational reference for the APS Data Connector (DC) daily ingest pipeline. Aud
 
 ---
 
+## Required Environment Variables
+
+All four variables below are **required**. If any are missing, the orchestrator writes an `AccDcIngestRun` row with `status='failed'` and `errorMessage='Missing required env var(s) for discovery: ...'`, and the `SyncFreshnessPill` turns amber/red within 36 hours.
+
+| Variable | Value | Purpose |
+|----------|-------|---------|
+| `LUIS_ACC_USER_ID` | `e3657018-3f2f-4fd2-9d22-8d92f19c3324` | APS user UUID for Luis. Used by cold-start project discovery to call `/accounts/{id}/users/{userId}/projects` |
+| `APS_HUB_ID` (or `ACC_ACCOUNT_ID`) | Your APS account/hub UUID | Hub identifier for the Admin v1 discovery endpoint |
+| `APS_CLIENT_ID` | Your app's client ID | Used for the 2-leg `client_credentials` token that powers discovery (distinct from the 3-leg user token used for DC submission) |
+| `APS_CLIENT_SECRET` | Your app's client secret | Used with `APS_CLIENT_ID` to fetch the 2-leg discovery token |
+
+**Failure mode:** Missing any of the above → `AccDcIngestRun` row written with `status='failed'` and `errorMessage='Missing required env var(s) for discovery: <list of missing vars>'`. The `SyncFreshnessPill` escalates to amber/red within ~36 hours (two missed runs). Fix by adding the missing variable to your `.env` / Task Scheduler environment and re-running.
+
+### Cold-start behaviour
+
+On the first run when `AccDcBackfillProgress` is empty (e.g. after a fresh DB provisioning), the orchestrator queries APS Admin v1 for all projects where the configured user (`LUIS_ACC_USER_ID`) is Project Admin.
+
+**Important:** The server-side `filter[accessLevel]=projectAdmin` query parameter is misleading — it returns projects where the user has `projectAdmin` OR `projectMember` access. The pipeline filters **locally** on `accessLevels.projectAdmin === true` to ensure only genuinely admin projects are seeded.
+
+After local filtering, the orchestrator upserts each newly-discovered project into `AccDcBackfillProgress` with `newProjectFlag=true`, which gives them priority scheduling via `planDailySlice` (DC8-13). The same run then immediately proceeds to plan and execute the daily slice — so the first run after cold-start produces real activity data, not a silent 0-slice success.
+
+Subsequent runs perform the same discovery step to detect newly-added admin projects (DC8-13 incremental discovery). Since the discovery call is only 1-2 HTTP requests, this overhead is negligible compared to the DC submission + polling flow.
+
+---
+
 ## 1. What this pipeline does
 
 Every night the dashboard pulls fresh permission and activity data from Autodesk Construction Cloud (ACC) using the **APS Data Connector (DC) API**. DC is the only Autodesk endpoint that exposes the granular CSV exports we need (project members, role assignments, folder permissions, file activity per module).
