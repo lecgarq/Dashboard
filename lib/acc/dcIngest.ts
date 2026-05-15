@@ -1,0 +1,898 @@
+/**
+ * dcIngest — Phase 8 Wave-2 daily orchestrator (plan 08-06).
+ *
+ * Composes the Wave-1 pure libraries with the APS HTTP protocol extracted
+ * from `scripts/dc-ingest-where-i-admin.cjs` (the proven 470-line reference
+ * impl). One call to `runDcIngest(prisma)` performs:
+ *
+ *   1. Kill-switch gate (DC8-10)             — `.dc-ingest.disabled` at repo root
+ *   2. Stale-lock guard                       — reclaim status='running' rows >60min old
+ *   3. Open AccDcIngestRun row                — status='running'
+ *   4. Plan slice via planDailySlice          — yesterday-UTC bound
+ *   5. Refresh 3-leg APS token                — lib/server/aps-oauth.refreshUserToken
+ *   6. Per-Slice POST /requests               — dcSubmit() w/ retries + 504 handling
+ *   7. Poll each request                      — reduceJobsStatus() exponential backoff
+ *   8. Per-job /data-listing + per-file       — bare fetch(signedUrl), NO auth header (Pitfall 1)
+ *      stream → ingestActivityCsv             — for activities_*_activities.csv files
+ *      buffer → ingestAdminSnapshot           — for admin_*.csv files (Wave-1 plan 08-05)
+ *   9. applySliceCompletion + upsert          — per project, per Slice
+ *  10. Newly-detected projects (DC8-13)       — admin_projects.csv -> AccDcBackfillProgress upsert
+ *  11. Finalize AccDcIngestRun row            — status + metrics + diff + unknownModulesSeen
+ *
+ * Quota exhaustion (HTTP 429 from APS) -> mark run 'quota-exceeded' and exit
+ * cleanly so the next-day run resumes (DC8-11). All non-quota failures land
+ * in status='failed' or 'quarantined' (assertNoAnomalies throw).
+ *
+ * Requirements: DC8-07/08/10/11/12/13.
+ */
+import fs from 'node:fs';
+import path from 'node:path';
+import { Readable } from 'node:stream';
+import type { PrismaClient } from '@prisma/client';
+
+import { refreshUserToken } from '@/lib/server/aps-oauth';
+import {
+  planDailySlice,
+  applySliceCompletion,
+  type ProjectProgress,
+  type Slice,
+} from '@/lib/acc/dcProgressiveBackfill';
+import {
+  ingestActivityCsv,
+  parseModuleFromFilename,
+  KNOWN_MODULES,
+  ACTIVITY_FILE_RE,
+} from '@/lib/acc/dcActivityCsvIngest';
+import {
+  ingestAdminSnapshot,
+  ADMIN_CSV_ALLOWLIST,
+  type AdminFileSource,
+} from '@/lib/acc/dcAdminCsvIngest';
+import {
+  AnomalyError,
+  type PreviousRunMetrics,
+} from '@/lib/acc/dcAnomalyChecks';
+
+// ---------------------------------------------------------------------------
+// Public types
+// ---------------------------------------------------------------------------
+
+export type RunStatus =
+  | 'success'
+  | 'partial'
+  | 'quota-exceeded'
+  | 'quarantined'
+  | 'failed'
+  | 'killed'
+  | 'skipped';
+
+export interface RunResult {
+  ingestRunId: string | null;
+  status: RunStatus;
+  startedAt: Date;
+  endedAt: Date;
+  sliceWindowStart: Date | null;
+  sliceWindowEnd: Date | null;
+  projectsProcessed: number;
+  rowsByModule: Record<string, number>;
+  rowsByAdminCsv: Record<string, number>;
+  quotaUsed: number;
+  diffSummary: {
+    usersAdded: number;
+    usersRemoved: number;
+    projectsAdded: number;
+    projectsRemoved: number;
+  } | null;
+  unknownModulesSeen: string[];
+  errorMessage: string | null;
+}
+
+// ---------------------------------------------------------------------------
+// Constants — from scripts/dc-ingest-where-i-admin.cjs
+// ---------------------------------------------------------------------------
+
+const APS_DC_BASE = 'https://developer.api.autodesk.com/data-connector/v1';
+const POLL_INTERVAL_MS = 30_000;
+const POLL_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour per slice
+const SERVICE_GROUPS = ['activities', 'admin'];
+const STALE_LOCK_MIN = 60;
+
+const DC_USER_EMAIL =
+  process.env.DC_USER_EMAIL?.trim() || 'luis.cortes@hermosillo.com';
+
+// ---------------------------------------------------------------------------
+// Kill-switch
+// ---------------------------------------------------------------------------
+
+const KILL_SWITCH_FILENAME = '.dc-ingest.disabled';
+
+export function isKillSwitchActive(repoRoot: string): boolean {
+  try {
+    return fs.existsSync(path.join(repoRoot, KILL_SWITCH_FILENAME));
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// APS protocol primitives — extracted from dc-ingest-where-i-admin.cjs
+// Exported as `__apsProtocol` for test injection.
+// ---------------------------------------------------------------------------
+
+export class QuotaExceededError extends Error {
+  constructor(message = 'APS Data Connector daily quota exceeded (HTTP 429)') {
+    super(message);
+    this.name = 'QuotaExceededError';
+  }
+}
+
+interface DcSubmitOpts {
+  accountId: string;
+  userToken: string;
+  projectIds: string[];
+  startDate: Date;
+  endDate: Date;
+  description: string;
+}
+
+async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
+  const body = {
+    description: opts.description,
+    scheduleInterval: 'ONE_TIME',
+    effectiveFrom: new Date().toISOString(),
+    serviceGroups: SERVICE_GROUPS,
+    dateRange: 'CUSTOM',
+    startDate: opts.startDate.toISOString(),
+    endDate: opts.endDate.toISOString(),
+    projectIdList: opts.projectIds,
+  };
+  const maxAttempts = 4;
+  let lastErr: string | null = null;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const res = await fetch(
+      `${APS_DC_BASE}/accounts/${opts.accountId}/requests`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${opts.userToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(body),
+      },
+    );
+    if (res.status === 429) {
+      throw new QuotaExceededError();
+    }
+    const text = await res.text();
+    let json: unknown;
+    try {
+      json = JSON.parse(text);
+    } catch {
+      json = text;
+    }
+    if (res.ok) {
+      const j = json as { id?: string; requestId?: string };
+      const requestId = j.id ?? j.requestId;
+      if (!requestId) throw new Error(`POST /requests OK but no id in response`);
+      return requestId;
+    }
+    const summary =
+      typeof json === 'string'
+        ? json.slice(0, 200)
+        : JSON.stringify(json).slice(0, 200);
+    if (res.status >= 500 && res.status < 600 && attempt < maxAttempts) {
+      const backoffSec = Math.pow(2, attempt) * 5; // 10/20/40/80
+      // eslint-disable-next-line no-console
+      console.warn(
+        `[dcIngest] POST /requests ${res.status} (attempt ${attempt}/${maxAttempts}); retry in ${backoffSec}s. ${summary}`,
+      );
+      await sleep(backoffSec * 1000);
+      lastErr = `${res.status}: ${summary}`;
+      continue;
+    }
+    throw new Error(`POST /requests ${res.status}: ${summary}`);
+  }
+  throw new Error(
+    `POST /requests gave up after ${maxAttempts} attempts. Last: ${lastErr}`,
+  );
+}
+
+interface DcJob {
+  id: string;
+  status?: string;
+  completionStatus?: string;
+}
+
+async function dcPollJobs(
+  accountId: string,
+  userToken: string,
+  requestId: string,
+): Promise<DcJob[]> {
+  const res = await fetch(
+    `${APS_DC_BASE}/accounts/${accountId}/requests/${requestId}/jobs`,
+    { headers: { Authorization: `Bearer ${userToken}` } },
+  );
+  if (res.status === 429) throw new QuotaExceededError();
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = text;
+  }
+  if (!res.ok) {
+    throw new Error(
+      `GET /jobs ${res.status}: ${
+        typeof json === 'string'
+          ? json.slice(0, 200)
+          : JSON.stringify(json).slice(0, 200)
+      }`,
+    );
+  }
+  const j = json as { results?: DcJob[]; jobs?: DcJob[] };
+  return j.results ?? j.jobs ?? (Array.isArray(json) ? (json as DcJob[]) : []);
+}
+
+function reduceJobsStatus(jobs: DcJob[]): 'pending' | 'running' | 'success' | 'failed' {
+  if (jobs.length === 0) return 'pending';
+  const norm = jobs.map((j) => ({
+    status: String(j.status ?? '').toLowerCase(),
+    completionStatus: String(j.completionStatus ?? '').toLowerCase(),
+  }));
+  if (norm.some((j) => /fail|cancel|error/.test(j.completionStatus))) {
+    return 'failed';
+  }
+  if (
+    norm.every(
+      (j) => j.status === 'complete' && j.completionStatus === 'success',
+    )
+  ) {
+    return 'success';
+  }
+  return 'running';
+}
+
+interface DcDataFile {
+  name: string;
+  downloadUrl?: string;
+}
+
+async function dcDataListing(
+  accountId: string,
+  userToken: string,
+  jobId: string,
+): Promise<DcDataFile[]> {
+  const res = await fetch(
+    `${APS_DC_BASE}/accounts/${accountId}/jobs/${jobId}/data-listing`,
+    { headers: { Authorization: `Bearer ${userToken}` } },
+  );
+  if (res.status === 429) throw new QuotaExceededError();
+  const text = await res.text();
+  let json: unknown;
+  try {
+    json = JSON.parse(text);
+  } catch {
+    json = text;
+  }
+  if (!res.ok) {
+    throw new Error(`GET /data-listing ${res.status}: ${text.slice(0, 200)}`);
+  }
+  const j = json as { results?: DcDataFile[] };
+  return Array.isArray(json) ? (json as DcDataFile[]) : j.results ?? [];
+}
+
+async function dcSignedUrl(
+  accountId: string,
+  userToken: string,
+  jobId: string,
+  name: string,
+): Promise<string> {
+  const res = await fetch(
+    `${APS_DC_BASE}/accounts/${accountId}/jobs/${jobId}/data/${encodeURIComponent(name)}`,
+    { headers: { Authorization: `Bearer ${userToken}` } },
+  );
+  if (res.status === 429) throw new QuotaExceededError();
+  const json = (await res.json()) as {
+    url?: string;
+    signedUrl?: string;
+    downloadUrl?: string;
+  };
+  if (!res.ok) {
+    throw new Error(`GET /data/${name} ${res.status}`);
+  }
+  const url = json.url ?? json.signedUrl ?? json.downloadUrl;
+  if (!url) throw new Error(`No signed URL in response for ${name}`);
+  return url;
+}
+
+async function fetchSignedUrlAsStream(
+  signedUrl: string,
+): Promise<NodeJS.ReadableStream> {
+  // Pitfall 1: NO Authorization header on the signed-URL fetch.
+  const res = await fetch(signedUrl);
+  if (!res.ok) {
+    throw new Error(`Signed URL fetch ${res.status}`);
+  }
+  if (!res.body) {
+    throw new Error('Signed URL response had no body');
+  }
+  // Node 20+ supports Readable.fromWeb on undici streams.
+  return Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]);
+}
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+// Pitfall 6: APS rejects punctuation in description; alnum + space + dash.
+function safeDescription(raw: string): string {
+  return raw.replace(/[^a-zA-Z0-9 -]/g, '-').slice(0, 200);
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+function yesterdayUtc(): Date {
+  const now = new Date();
+  const utcToday = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  // End-of-yesterday-UTC (1ms before today UTC midnight).
+  return new Date(utcToday.getTime() - 1);
+}
+
+function newProjectProgress(
+  projectId: string,
+  projectCreatedAt: Date,
+): ProjectProgress {
+  return {
+    projectId,
+    earliestCovered: null,
+    latestCovered: null,
+    projectCreatedAt,
+    newProjectFlag: true,
+  };
+}
+
+async function loadProjectProgress(
+  prisma: PrismaClient,
+): Promise<ProjectProgress[]> {
+  const rows = await prisma.accDcBackfillProgress.findMany();
+  return rows.map((r) => ({
+    projectId: r.projectId,
+    earliestCovered: r.earliestCovered,
+    latestCovered: r.latestCovered,
+    projectCreatedAt: r.projectCreatedAt,
+    newProjectFlag: r.newProjectFlag,
+  }));
+}
+
+async function loadPreviousRunMetrics(
+  prisma: PrismaClient,
+): Promise<PreviousRunMetrics | null> {
+  const prev = await prisma.accDcIngestRun.findFirst({
+    where: { status: 'success' },
+    orderBy: { startedAt: 'desc' },
+  });
+  if (!prev) return null;
+  // Snapshot user/project counts at the time of the LAST successful run by
+  // reading the current AccDcUser / AccDcProject counts (they were set by
+  // that run's snapshot transaction; nothing between successful runs mutates them).
+  const [userCount, projectCount] = await Promise.all([
+    prisma.accDcUser.count(),
+    prisma.accDcProject.count(),
+  ]);
+  return {
+    userCount,
+    projectCount,
+    rowsByAdminCsv:
+      (prev.rowsByAdminCsv as Record<string, number> | null) ?? {},
+  };
+}
+
+function emptyResult(
+  status: RunStatus,
+  startedAt: Date,
+  errorMessage: string | null = null,
+): RunResult {
+  return {
+    ingestRunId: null,
+    status,
+    startedAt,
+    endedAt: new Date(),
+    sliceWindowStart: null,
+    sliceWindowEnd: null,
+    projectsProcessed: 0,
+    rowsByModule: {},
+    rowsByAdminCsv: {},
+    quotaUsed: 0,
+    diffSummary: null,
+    unknownModulesSeen: [],
+    errorMessage,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Main orchestrator
+// ---------------------------------------------------------------------------
+
+export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
+  const startedAt = new Date();
+
+  // 1. Kill-switch
+  if (isKillSwitchActive(process.cwd())) {
+    return emptyResult('killed', startedAt);
+  }
+
+  // 2. Stale-lock guard
+  const concurrent = await prisma.accDcIngestRun.findFirst({
+    where: { status: 'running' },
+    orderBy: { startedAt: 'desc' },
+  });
+  if (concurrent) {
+    const ageMin = (Date.now() - concurrent.startedAt.getTime()) / 60_000;
+    if (ageMin < STALE_LOCK_MIN) {
+      return emptyResult(
+        'skipped',
+        startedAt,
+        `Concurrent run ${concurrent.id} in flight (age=${ageMin.toFixed(1)}min)`,
+      );
+    }
+    // Reclaim
+    await prisma.accDcIngestRun.update({
+      where: { id: concurrent.id },
+      data: {
+        status: 'failed',
+        endedAt: new Date(),
+        errorMessage: `Reclaimed stale run (age=${ageMin.toFixed(1)}min)`,
+      },
+    });
+  }
+
+  // 3. Open run row
+  const run = await prisma.accDcIngestRun.create({
+    data: {
+      status: 'running',
+      rowsByModule: {},
+      rowsByAdminCsv: {},
+    },
+  });
+
+  // 4. Plan slice
+  const progress = await loadProjectProgress(prisma);
+  const yesterday = yesterdayUtc();
+  const plan = planDailySlice(progress, yesterday);
+
+  if (plan.slices.length === 0) {
+    // Nothing to do — fully backfilled.
+    const endedAt = new Date();
+    await prisma.accDcIngestRun.update({
+      where: { id: run.id },
+      data: {
+        status: 'success',
+        endedAt,
+        sliceWindowStart: null,
+        sliceWindowEnd: yesterday,
+        projectsProcessed: 0,
+        rowsByModule: {},
+        rowsByAdminCsv: {},
+        quotaUsed: 0,
+      },
+    });
+    return {
+      ingestRunId: run.id,
+      status: 'success',
+      startedAt,
+      endedAt,
+      sliceWindowStart: null,
+      sliceWindowEnd: yesterday,
+      projectsProcessed: 0,
+      rowsByModule: {},
+      rowsByAdminCsv: {},
+      quotaUsed: 0,
+      diffSummary: null,
+      unknownModulesSeen: [],
+      errorMessage: null,
+    };
+  }
+
+  // 5+. Execute the plan against APS.
+  return executePlan(prisma, run.id, plan.slices, startedAt, yesterday);
+}
+
+async function executePlan(
+  prisma: PrismaClient,
+  ingestRunId: string,
+  slices: Slice[],
+  startedAt: Date,
+  yesterday: Date,
+): Promise<RunResult> {
+  const rawHubId = process.env.APS_HUB_ID?.trim();
+  if (!rawHubId) {
+    return finalize(prisma, ingestRunId, startedAt, {
+      status: 'failed',
+      errorMessage: 'APS_HUB_ID env var not set',
+      sliceWindowStart: null,
+      sliceWindowEnd: yesterday,
+    });
+  }
+  const accountId = rawHubId.replace(/^b\./, '');
+
+  let userToken: string;
+  try {
+    userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+  } catch (err) {
+    return finalize(prisma, ingestRunId, startedAt, {
+      status: 'failed',
+      errorMessage: `Token refresh failed: ${(err as Error).message}`,
+      sliceWindowStart: null,
+      sliceWindowEnd: yesterday,
+    });
+  }
+
+  const rowsByModule: Record<string, number> = {};
+  const adminBuffer = new Map<string, AdminFileSource>();
+  const unknownModulesSet = new Set<string>();
+  const completedSlices: Slice[] = [];
+  let quotaUsed = 0;
+  let projectsProcessedSet = new Set<string>();
+
+  let sliceWindowStart: Date | null = null;
+  let sliceWindowEnd: Date | null = null;
+
+  // Process each slice in sequence (rate-limit conservative; mirrors the
+  // reference impl). Quota errors short-circuit cleanly.
+  for (const slice of slices) {
+    if (sliceWindowStart === null || slice.start < sliceWindowStart) {
+      sliceWindowStart = slice.start;
+    }
+    if (sliceWindowEnd === null || slice.end > sliceWindowEnd) {
+      sliceWindowEnd = slice.end;
+    }
+
+    let requestId: string;
+    try {
+      // Refresh token before each submit (cheap if still fresh).
+      userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+      const description = safeDescription(
+        `dc-ingest ${ingestRunId} ${slice.reason} ${slice.projectIds.length}p`,
+      );
+      requestId = await dcSubmit({
+        accountId,
+        userToken,
+        projectIds: slice.projectIds,
+        startDate: slice.start,
+        endDate: slice.end,
+        description,
+      });
+      quotaUsed += 1;
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        return finalize(prisma, ingestRunId, startedAt, {
+          status: 'quota-exceeded',
+          errorMessage: err.message,
+          rowsByModule,
+          quotaUsed,
+          unknownModulesSeen: [...unknownModulesSet],
+          projectsProcessed: projectsProcessedSet.size,
+          sliceWindowStart,
+          sliceWindowEnd,
+        });
+      }
+      // Non-quota submit failure -> mark partial + continue with NEXT slice.
+      // eslint-disable-next-line no-console
+      console.error(`[dcIngest] Submit failed for slice: ${(err as Error).message}`);
+      continue;
+    }
+
+    // Poll
+    const pollStart = Date.now();
+    let jobs: DcJob[] = [];
+    let pollErr: string | null = null;
+    while (Date.now() - pollStart < POLL_TIMEOUT_MS) {
+      try {
+        userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+        jobs = await dcPollJobs(accountId, userToken, requestId);
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          return finalize(prisma, ingestRunId, startedAt, {
+            status: 'quota-exceeded',
+            errorMessage: err.message,
+            rowsByModule,
+            quotaUsed,
+            unknownModulesSeen: [...unknownModulesSet],
+            projectsProcessed: projectsProcessedSet.size,
+            sliceWindowStart,
+            sliceWindowEnd,
+          });
+        }
+        pollErr = (err as Error).message;
+        await sleep(POLL_INTERVAL_MS);
+        continue;
+      }
+      const status = reduceJobsStatus(jobs);
+      if (status === 'success') break;
+      if (status === 'failed') {
+        pollErr = 'APS reported job failure';
+        break;
+      }
+      await sleep(POLL_INTERVAL_MS);
+    }
+    if (reduceJobsStatus(jobs) !== 'success') {
+      // eslint-disable-next-line no-console
+      console.error(
+        `[dcIngest] Slice failed (${pollErr ?? 'poll timeout'}); skipping.`,
+      );
+      continue;
+    }
+
+    // Per-job: data-listing -> per-file download
+    for (const job of jobs) {
+      if (String(job.completionStatus).toLowerCase() !== 'success') continue;
+      let files: DcDataFile[];
+      try {
+        userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+        files = await dcDataListing(accountId, userToken, job.id);
+      } catch (err) {
+        if (err instanceof QuotaExceededError) {
+          return finalize(prisma, ingestRunId, startedAt, {
+            status: 'quota-exceeded',
+            errorMessage: err.message,
+            rowsByModule,
+            quotaUsed,
+            unknownModulesSeen: [...unknownModulesSet],
+            projectsProcessed: projectsProcessedSet.size,
+            sliceWindowStart,
+            sliceWindowEnd,
+          });
+        }
+        // eslint-disable-next-line no-console
+        console.error(`[dcIngest] data-listing failed: ${(err as Error).message}`);
+        continue;
+      }
+
+      for (const f of files) {
+        try {
+          userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+          const signed =
+            f.downloadUrl ?? (await dcSignedUrl(accountId, userToken, job.id, f.name));
+          const stream = await fetchSignedUrlAsStream(signed);
+
+          if (ACTIVITY_FILE_RE.test(f.name)) {
+            const moduleName = parseModuleFromFilename(f.name);
+            if (moduleName && !KNOWN_MODULES.has(moduleName)) {
+              unknownModulesSet.add(moduleName);
+            }
+            // Activity rows are an event stream — skipDuplicates handles dedup.
+            // NOT inside the admin-snapshot transaction.
+            const result = await ingestActivityCsv(
+              prisma as unknown as Parameters<typeof ingestActivityCsv>[0],
+              {
+                filename: f.name,
+                csvStream: stream,
+                ingestRunId,
+                emailLookup: new Map<string, string>(),
+              },
+            );
+            if (result.module) {
+              rowsByModule[result.module] =
+                (rowsByModule[result.module] ?? 0) + result.rowsInserted;
+            }
+            if (result.unknownModule) unknownModulesSet.add(result.unknownModule);
+          } else if (
+            ADMIN_CSV_ALLOWLIST.some((e) => e.filename === f.name)
+          ) {
+            adminBuffer.set(f.name, { filename: f.name, csvStream: stream });
+          } else {
+            // Unknown — log + skip
+            // eslint-disable-next-line no-console
+            console.warn(`[dcIngest] Unknown file "${f.name}" — skipped`);
+            // Drain the stream so the underlying socket can close.
+            stream.resume?.();
+          }
+        } catch (err) {
+          if (err instanceof QuotaExceededError) {
+            return finalize(prisma, ingestRunId, startedAt, {
+              status: 'quota-exceeded',
+              errorMessage: err.message,
+              rowsByModule,
+              quotaUsed,
+              unknownModulesSeen: [...unknownModulesSet],
+              projectsProcessed: projectsProcessedSet.size,
+              sliceWindowStart,
+              sliceWindowEnd,
+            });
+          }
+          // eslint-disable-next-line no-console
+          console.error(`[dcIngest] Download/ingest ${f.name} failed: ${(err as Error).message}`);
+        }
+      }
+    }
+
+    completedSlices.push(slice);
+    for (const pid of slice.projectIds) projectsProcessedSet.add(pid);
+  }
+
+  // 9. Admin snapshot transaction (atomic across all 16 tables).
+  let rowsByAdminCsv: Record<string, number> = {};
+  let diffSummary: RunResult['diffSummary'] = null;
+  if (adminBuffer.size > 0) {
+    const previous = await loadPreviousRunMetrics(prisma);
+    try {
+      const snapshot = await ingestAdminSnapshot(
+        prisma,
+        [...adminBuffer.values()],
+        ingestRunId,
+        previous,
+      );
+      rowsByAdminCsv = snapshot.rowsByAdminCsv;
+      diffSummary = snapshot.diffSummary;
+    } catch (err) {
+      if (err instanceof AnomalyError) {
+        return finalize(prisma, ingestRunId, startedAt, {
+          status: 'quarantined',
+          errorMessage: `Anomaly detected — admin snapshot rolled back: ${err.message}`,
+          rowsByModule,
+          quotaUsed,
+          unknownModulesSeen: [...unknownModulesSet],
+          projectsProcessed: projectsProcessedSet.size,
+          sliceWindowStart,
+          sliceWindowEnd,
+        });
+      }
+      return finalize(prisma, ingestRunId, startedAt, {
+        status: 'failed',
+        errorMessage: `Admin snapshot failed: ${(err as Error).message}`,
+        rowsByModule,
+        quotaUsed,
+        unknownModulesSeen: [...unknownModulesSet],
+        projectsProcessed: projectsProcessedSet.size,
+        sliceWindowStart,
+        sliceWindowEnd,
+      });
+    }
+  }
+
+  // 10. Apply slice completion -> upsert AccDcBackfillProgress
+  for (const slice of completedSlices) {
+    for (const projectId of slice.projectIds) {
+      const prev = await prisma.accDcBackfillProgress.findUnique({
+        where: { projectId },
+      });
+      // Resolve nullable AccDcProject.createdAt -> earliest known activity ts.
+      let projectCreatedAt: Date | null = null;
+      if (prev) {
+        projectCreatedAt = prev.projectCreatedAt;
+      } else {
+        const proj = await prisma.accDcProject.findUnique({
+          where: { id: projectId },
+          select: { createdAt: true },
+        });
+        projectCreatedAt = proj?.createdAt ?? null;
+        if (projectCreatedAt === null) {
+          const earliestActivity = await prisma.accActivity.findFirst({
+            where: { projectId },
+            orderBy: { createdAt: 'asc' },
+            select: { createdAt: true },
+          });
+          projectCreatedAt = earliestActivity?.createdAt ?? slice.start;
+        }
+      }
+      const seed = prev
+        ? ({
+            projectId,
+            earliestCovered: prev.earliestCovered,
+            latestCovered: prev.latestCovered,
+            projectCreatedAt: prev.projectCreatedAt,
+            newProjectFlag: prev.newProjectFlag,
+          } as ProjectProgress)
+        : newProjectProgress(projectId, projectCreatedAt);
+      const next = applySliceCompletion(seed, slice);
+      await prisma.accDcBackfillProgress.upsert({
+        where: { projectId },
+        create: {
+          projectId,
+          earliestCovered: next.earliestCovered,
+          latestCovered: next.latestCovered,
+          projectCreatedAt: next.projectCreatedAt,
+          newProjectFlag: next.newProjectFlag,
+        },
+        update: {
+          earliestCovered: next.earliestCovered,
+          latestCovered: next.latestCovered,
+          projectCreatedAt: next.projectCreatedAt,
+          newProjectFlag: next.newProjectFlag,
+        },
+      });
+    }
+  }
+
+  // 11. Newly-detected projects (DC8-13)
+  const allDcProjects = await prisma.accDcProject.findMany({
+    select: { id: true, createdAt: true },
+  });
+  const knownProgress = new Set(
+    (await prisma.accDcBackfillProgress.findMany({ select: { projectId: true } })).map(
+      (r) => r.projectId,
+    ),
+  );
+  for (const p of allDcProjects) {
+    if (knownProgress.has(p.id)) continue;
+    const floor = p.createdAt ?? yesterday;
+    await prisma.accDcBackfillProgress.create({
+      data: {
+        projectId: p.id,
+        projectCreatedAt: floor,
+        newProjectFlag: true,
+      },
+    });
+  }
+
+  const status: RunStatus =
+    completedSlices.length === slices.length ? 'success' : 'partial';
+  return finalize(prisma, ingestRunId, startedAt, {
+    status,
+    rowsByModule,
+    rowsByAdminCsv,
+    diffSummary,
+    quotaUsed,
+    unknownModulesSeen: [...unknownModulesSet],
+    projectsProcessed: projectsProcessedSet.size,
+    sliceWindowStart,
+    sliceWindowEnd,
+  });
+}
+
+interface FinalizePatch {
+  status: RunStatus;
+  errorMessage?: string;
+  rowsByModule?: Record<string, number>;
+  rowsByAdminCsv?: Record<string, number>;
+  diffSummary?: RunResult['diffSummary'];
+  quotaUsed?: number;
+  unknownModulesSeen?: string[];
+  projectsProcessed?: number;
+  sliceWindowStart?: Date | null;
+  sliceWindowEnd?: Date | null;
+}
+
+async function finalize(
+  prisma: PrismaClient,
+  ingestRunId: string,
+  startedAt: Date,
+  patch: FinalizePatch,
+): Promise<RunResult> {
+  const endedAt = new Date();
+  await prisma.accDcIngestRun.update({
+    where: { id: ingestRunId },
+    data: {
+      status: patch.status,
+      endedAt,
+      sliceWindowStart: patch.sliceWindowStart ?? null,
+      sliceWindowEnd: patch.sliceWindowEnd ?? null,
+      projectsProcessed: patch.projectsProcessed ?? 0,
+      rowsByModule: patch.rowsByModule ?? {},
+      rowsByAdminCsv: patch.rowsByAdminCsv ?? {},
+      quotaUsed: patch.quotaUsed ?? 0,
+      diffSummary: patch.diffSummary ?? undefined,
+      unknownModulesSeen: patch.unknownModulesSeen ?? [],
+      errorMessage: patch.errorMessage ?? null,
+    },
+  });
+  return {
+    ingestRunId,
+    status: patch.status,
+    startedAt,
+    endedAt,
+    sliceWindowStart: patch.sliceWindowStart ?? null,
+    sliceWindowEnd: patch.sliceWindowEnd ?? null,
+    projectsProcessed: patch.projectsProcessed ?? 0,
+    rowsByModule: patch.rowsByModule ?? {},
+    rowsByAdminCsv: patch.rowsByAdminCsv ?? {},
+    quotaUsed: patch.quotaUsed ?? 0,
+    diffSummary: patch.diffSummary ?? null,
+    unknownModulesSeen: patch.unknownModulesSeen ?? [],
+    errorMessage: patch.errorMessage ?? null,
+  };
+}
