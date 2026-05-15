@@ -31,6 +31,7 @@ import { Readable } from 'node:stream';
 import type { PrismaClient } from '@prisma/client';
 
 import { refreshUserToken } from '@/lib/server/aps-oauth';
+import { discoverAdminProjects, get2LegToken } from '@/lib/acc/dcProjectDiscovery';
 import {
   planDailySlice,
   applySliceCompletion,
@@ -459,13 +460,91 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     },
   });
 
-  // 4. Plan slice
-  const progress = await loadProjectProgress(prisma);
+  // 4. Discovery (runs on every call — cheap, 1-2 requests + local filter).
+  //    Fail-fast guard: all four env vars must be present before any APS call.
+  const accountId = (process.env.APS_HUB_ID || process.env.ACC_ACCOUNT_ID)?.trim();
+  const userId = process.env.LUIS_ACC_USER_ID?.trim();
+  const clientId = process.env.APS_CLIENT_ID?.trim();
+  const clientSecret = process.env.APS_CLIENT_SECRET?.trim();
+
+  const missingVars: string[] = [];
+  if (!accountId) missingVars.push('APS_HUB_ID/ACC_ACCOUNT_ID');
+  if (!userId) missingVars.push('LUIS_ACC_USER_ID');
+  if (!clientId) missingVars.push('APS_CLIENT_ID');
+  if (!clientSecret) missingVars.push('APS_CLIENT_SECRET');
+
+  if (missingVars.length > 0) {
+    const errorMessage = `Missing required env var(s) for discovery: ${missingVars.join(', ')}`;
+    await prisma.accDcIngestRun.update({
+      where: { id: run.id },
+      data: { status: 'failed', endedAt: new Date(), errorMessage },
+    });
+    return emptyResult('failed', startedAt, errorMessage);
+  }
+
+  // Fetch 2-leg token for Admin v1 discovery (distinct from 3-leg DC token).
+  let token2Leg: string;
+  try {
+    token2Leg = await get2LegToken(clientId!, clientSecret!);
+  } catch (err) {
+    const errorMessage = `2-leg token fetch failed: ${(err as Error).message}`;
+    await prisma.accDcIngestRun.update({
+      where: { id: run.id },
+      data: { status: 'failed', endedAt: new Date(), errorMessage },
+    });
+    return emptyResult('failed', startedAt, errorMessage);
+  }
+
+  // Discover projects where userId is an actual Project Admin.
+  let adminProjects: Awaited<ReturnType<typeof discoverAdminProjects>>;
+  try {
+    adminProjects = await discoverAdminProjects({
+      accountId: accountId!.replace(/^b\./, ''),
+      userId: userId!,
+      token2Leg,
+    });
+  } catch (err) {
+    const errorMessage = `Discovery failed: ${(err as Error).message}`;
+    await prisma.accDcIngestRun.update({
+      where: { id: run.id },
+      data: { status: 'failed', endedAt: new Date(), errorMessage },
+    });
+    return emptyResult('failed', startedAt, errorMessage);
+  }
+
+  // Seed AccDcBackfillProgress for any newly-discovered admin project.
+  const existing = await loadProjectProgress(prisma);
+  const knownIds = new Set(existing.map((p) => p.projectId));
+  const newOnes = adminProjects.filter((p) => !knownIds.has(p.id));
+
+  for (const p of newOnes) {
+    await prisma.accDcBackfillProgress.upsert({
+      where: { projectId: p.id },
+      create: {
+        projectId: p.id,
+        projectCreatedAt: new Date(p.createdAt),
+        newProjectFlag: true,
+        earliestCovered: null,
+        latestCovered: null,
+      },
+      update: {}, // do not overwrite existing progress on incremental runs
+    });
+  }
+
+  // eslint-disable-next-line no-console
+  console.log(
+    `[dcIngest] discovery: ${adminProjects.length} admin projects; ${newOnes.length} newly seeded`,
+  );
+
+  // Re-load progress so cold start (empty table) has rows to plan against.
+  const progress = newOnes.length > 0 ? await loadProjectProgress(prisma) : existing;
+
+  // 5. Plan slice
   const yesterday = yesterdayUtc();
   const plan = planDailySlice(progress, yesterday);
 
   if (plan.slices.length === 0) {
-    // Nothing to do — fully backfilled.
+    // Nothing to do — fully backfilled (or still no admin projects).
     const endedAt = new Date();
     await prisma.accDcIngestRun.update({
       where: { id: run.id },
@@ -497,7 +576,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     };
   }
 
-  // 5+. Execute the plan against APS.
+  // 6+. Execute the plan against APS.
   return executePlan(prisma, run.id, plan.slices, startedAt, yesterday);
 }
 
