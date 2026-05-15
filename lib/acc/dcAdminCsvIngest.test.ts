@@ -276,7 +276,7 @@ describe('ingestAdminSnapshot — anomaly check', () => {
     await ingestAdminSnapshot(prisma, allSixteenFiles(), 'run-1', null);
 
     expect(assertNoAnomaliesMock).toHaveBeenCalledTimes(1);
-    const callArgs = assertNoAnomaliesMock.mock.calls[0];
+    const callArgs = assertNoAnomaliesMock.mock.calls[0] as unknown as unknown[];
     // Args: (tx, previous, thresholds, currentRowsByAdminCsv)
     const currentRows = callArgs[3] as Record<string, number>;
     expect(currentRows).toBeDefined();
