@@ -41,7 +41,7 @@ One-time setup. Run from an **elevated PowerShell** prompt (right-click PowerShe
 
 ```powershell
 # Run from elevated PowerShell prompt (Right-click PowerShell -> Run as Administrator)
-$action   = New-ScheduledTaskAction -Execute 'pwsh.exe' -Argument '-File "C:\LECG\Dashboard\scripts\dc-daily-cron.ps1"'
+$action   = New-ScheduledTaskAction -Execute 'powershell.exe' -Argument '-NoProfile -ExecutionPolicy Bypass -File "C:\LECG\Dashboard\scripts\dc-daily-cron.ps1"'
 $trigger  = New-ScheduledTaskTrigger -Daily -At '3:00am'
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries
 Register-ScheduledTask -TaskName 'LECG-DC-Daily-Ingest' `
