@@ -211,6 +211,23 @@ Plans:
 - [x] 07-08-PLAN.md — Wave 3: 3D filterUrl.ts + Sphere3DFilterPanel.tsx — DEFERRED per 3D-WIRING gate (stub SUMMARY only)
 - [x] 07-09-PLAN.md — Wave 4: PERF-REPORT.md shipped (administrative close per Luis directive; live-FPS/visual UAT deferred to phase-end manual pass; DECISION: PHASE-7-ACCEPT=PENDING-MANUAL-UAT)
 
+### Phase 8: DC per-module ingest + permission CSVs
+
+**Goal:** Replace the legacy single-file Data Connector activity ingest with a pipeline that handles the real 2-year backfill schema (9 per-module activities_<module>_activities.csv files), ingest the 15+ admin/permission CSVs into new AccDc* parallel tables via transactional full-replace snapshots, generalize the promote script (no hardcoded request ID), and re-establish daily ingest cadence on Windows Task Scheduler. Distinctive design: progressive breadth-first backfill (30-day slice across ALL admin projects daily; window slides backward to per-project creation date). Wipe + re-ingest the 2,507 legacy AccActivity rows. Extend Phase 3 SyncFreshnessPill to surface DC ingest status + click-to-reauth on token failure. Module badge chips on File Activity widget rows.
+**Requirements**: DC8-01..DC8-17 (derived from CONTEXT — Phase 8 has no roadmap-assigned REQ-IDs)
+**Depends on:** Phase 7
+**Plans:** 8 plans
+
+Plans:
+- [ ] 08-01-PLAN.md — Wave 0: Prisma migration (16 AccDc* + AccDcIngestRun + AccDcBackfillProgress) + 6 Vitest stub files
+- [ ] 08-02-PLAN.md — Wave 1 TDD: lib/acc/dcKnownBots.ts + lib/acc/dcAnomalyChecks.ts (pure)
+- [ ] 08-03-PLAN.md — Wave 1 TDD: lib/acc/dcProgressiveBackfill.ts (distinctive state machine)
+- [ ] 08-04-PLAN.md — Wave 1 TDD: lib/acc/dcActivityCsvIngest.ts (per-module ingest + 10th-module guard)
+- [ ] 08-05-PLAN.md — Wave 2: lib/acc/dcAdminCsvIngest.ts (16-CSV transactional snapshot)
+- [ ] 08-06-PLAN.md — Wave 2: lib/acc/dcIngest.ts orchestrator + scripts/dc-daily-ingest.cjs + dc-daily-cron.ps1 extension
+- [ ] 08-07-PLAN.md — Wave 3: accSync tRPC + SyncFreshnessPill extension + module badge + legacy wipe script
+- [ ] 08-08-PLAN.md — Wave 4: RUNBOOK.md + manual UAT checkpoint (scheduler install + wipe + DECISION line)
+
 ---
 
 _v1.0 milestone shipped 2026-05-08. Detailed phase content archived in `.planning/milestones/`._
