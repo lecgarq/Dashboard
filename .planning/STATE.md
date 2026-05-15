@@ -2,7 +2,7 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 8 — DC per-module ingest + permission CSVs (1/8 plans complete)
+current_phase: Phase 8 — DC per-module ingest + permission CSVs (3/8 plans complete)
 status: executing
 last_updated: "2026-05-15T18:21:46.179Z"
 progress:
@@ -10,20 +10,6 @@ progress:
   completed_phases: 5
   total_plans: 55
   completed_plans: 33
----
-
----
-gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: — ACC Extraction Completion
-current_phase: Phase 8 — DC per-module ingest + permission CSVs (1/8 plans complete)
-status: executing
-last_updated: "2026-05-15T18:14:00Z"
-progress:
-  total_phases: 9
-  completed_phases: 5
-  total_plans: 55
-  completed_plans: 31
 ---
 
 # Session State
@@ -35,8 +21,8 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology / v4.0 — DC pipeline
-**Current phase:** Phase 8 — DC per-module ingest + permission CSVs (1/8 plans complete)
-**Status:** Executing — Wave 0 done, Wave 1 unblocked
+**Current phase:** Phase 8 — DC per-module ingest + permission CSVs (3/8 plans complete)
+**Status:** Executing — Wave 1 in flight (08-03 done; 08-02 parallel; 08-04 + 08-05 still in Wave 1)
 
 ## Session Log
 
@@ -65,6 +51,7 @@ See: .planning/PROJECT.md
 - 2026-05-12: Phase 4 plan 07 scaffolded — PERF-GATE artifact + perf-preflight Playwright script shipped; decision `GRAPH-04-GATE=PENDING-MANUAL-PERF-MEASUREMENT`. No FPS/memory numbers fabricated — methodology + script ready, real measurement deferred to phase-end manual UAT per Luis directive 2026-05-12 ("continue with the next waves, don't wait for verification, we will verify it at the end"). Phase 7 plan 07-01 keyed `3D-FOLDERS=NO-GO` on PERF-GATE.md absence — visibility now satisfied; underlying decision remains pending. Window.__cosmosGraph injection hook not yet present in AccUsersGraph.tsx — mitigation paths documented for manual UAT. FLDR-04 marked complete at scaffold level. Auto-approved Task 3 checkpoint per directive. Commits `de62013` (script) + `bd45843` (gate). Stopped at: Plan 04-07 scaffolded; Plan 04-06 (FolderPermissionsWidget) is the only remaining Phase 4 plan.
 - 2026-05-15: Phase 8 plan 01 complete (Wave-0 dependency gate). Schema foundation: 18 Prisma models added (16 AccDc* permission snapshot tables + AccDcIngestRun + AccDcBackfillProgress) — `prisma validate` clean, migration `20260516000000_acc_dc_tables` generated via `prisma migrate diff --to-schema` (legacy `--to-schema-datamodel` removed in @prisma/client v7.8.0), hand-filtered to AccDc* statements only (18 CREATE TABLE + 6 CREATE INDEX, zero ALTER/DROP), applied via `prisma migrate deploy`. Runtime verification on dev DB: `prisma.accDcIngestRun.count()=0` + 3 sibling tables = 0 (tables exist, empty). 6 RED Vitest stubs scaffolded (dcKnownBots/dcAnomalyChecks/dcActivityCsvIngest/dcProgressiveBackfill/dcAdminCsvIngest/dcIngest) — each `expect.fail('NOT YET IMPLEMENTED — Wave-1 plan 08-XX ships ...')` so Wave-1 sees real RED, can't accidentally land green-by-skip. Zero FKs across the 18 tables per CONTEXT (orphans tolerated; DC wins on conflict); composite @@id on join tables matches CSV natural keys for deterministic re-ingest. AccDcProject.createdAt nullable — Wave-1 plan 08-03 must defend with "earliest known activity timestamp" fallback. DC8-05/08/11 satisfied at schema level. Commits `af37a72` (schema) + `8203344` (migration) + `6a5d20a` (RED stubs). Stopped at: Plan 08-01 complete; Wave 1 (plans 08-02, 08-03, 08-04, 08-05) unblocked.
 - 2026-05-15: Phase 8 plan 02 complete (Wave-1 — bot filter + anomaly checks). 2 pure modules TDD-built RED→GREEN: `lib/acc/dcKnownBots.ts` (36 lines, 6 bootstrap bot names + isBotActor predicate, 9/9 Vitest) satisfies DC8-02; `lib/acc/dcAnomalyChecks.ts` (108 lines, AnomalyError + DEFAULT_THRESHOLDS{maxUserDropPct:10,maxProjectDropPct:5,requireAllAdminCsvs:true,requireNonZeroInsert:true} + assertNoAnomalies(tx, previous, thresholds, currentRowsByAdminCsv?), 7/7 Vitest) satisfies DC8-09. Both modules pure — no Prisma runtime import (anomaly checks uses `import type` only), no fetch, no fs. Mocked Prisma.TransactionClient via vi.fn for unit testing. previous=null returns silent (cold-start safe); guard `if (previous.userCount > 0)` defends against divide-by-zero. Wave-2 hand-off: plan 08-04 imports isBotActor at parse boundary; plan 08-05 calls assertNoAnomalies inside `prisma.$transaction` to roll back bad snapshots. Commits `25c5187` (RED bots) + `88216a5` (GREEN bots) + `d5f9986` (RED anomaly) + `b87290c` (GREEN anomaly). Stopped at: Plan 08-02 complete; Wave 2 (08-04, 08-05) unblocked once 08-03 also lands.
+- 2026-05-15: Phase 8 plan 03 complete (Wave-1 — progressive backfill state machine). Pure `lib/acc/dcProgressiveBackfill.ts` (196 lines) exports `planDailySlice(projects, yesterdayUtc)` + `applySliceCompletion(prev, slice)` + constants `PROJECT_BATCH_LIMIT=50` / `SLICE_DAYS=30` / `OVERLAP_DAYS=1` + types `ProjectProgress` / `Slice` / `SliceReason` / `DailyPlan`. TDD RED→GREEN: 15/15 Vitest covering empty/new-project/fully-backfilled/backward/floor-clamp/at-floor/forward/combined/50-batch/51-spill/mixed-windows/applySliceCompletion×3. Algorithm per RESEARCH Pattern 1: per-project derive (new=30d window; backward=max(earliest-30d, createdAt) when <earliest; forward=[latest-1d,yesterday] when latest<yesterday) → bucket by `${start.toISOString()}|${end.toISOString()}|${reason}` insertion-order Map → chunk each bucket into Slices ≤50 projectIds. Module pure: zero `@prisma/client` / `node:fs` / `fetch(` matches. Rule 1 deviation caught pre-commit: forward-gate uses pre-overlap `latestCovered<yesterday` (strict) NOT post-overlap `forwardStart<yesterday` — otherwise fully-current projects would burn 1 quota/day forever (5/15 tests failed first GREEN attempt; recovered intent from plan task 1 case 3). Module surface declares ProjectProgress.projectCreatedAt as non-nullable; plan 08-06 caller MUST resolve nullable AccDcProject.createdAt to "earliest known activity timestamp" before invoke (per 08-01 SUMMARY warning). DC8-07/11/13 satisfied at code level. Commits `5ba5989` (RED) + `68bd1ae` (GREEN). Stopped at: Plan 08-03 complete; Wave 2 (08-04, 08-05) now fully unblocked (08-02 + 08-03 both done).
 - 2026-05-15: Phase 8 added + context gathered via `/gsd:discuss-phase 8`. CONTEXT.md captures ~25 decisions across 4 discussed areas (activity module scope, permission data destination, backfill depth + cadence, legacy + visibility) plus 2 extra rounds (PII/validation/auth-fail/new-projects, then cron-health/run-duration/runbook/export). Distinctive design: **progressive breadth-first backfill** (Luis-originated) — daily 30-day slice across ALL admin projects in parallel; window slides backward day by day until each project reaches its creation date. Pipeline lands all 9 activity modules + all 15+ admin/permission CSVs into new `AccDc*` parallel tables (full-replace transactional snapshots, DC wins on conflict, companies promoted to first-class entities). Scheduled via Windows Task Scheduler @ 03:00 local; visibility via extended Phase 3 SyncFreshnessPill; 2,507 legacy AccActivity rows wiped + re-ingested. Stopped at: Phase 8 CONTEXT.md ready; next is `/gsd:plan-phase 8`.
 - 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
