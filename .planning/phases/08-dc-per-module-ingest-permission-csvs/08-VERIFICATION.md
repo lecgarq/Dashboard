@@ -1,8 +1,21 @@
 ---
 phase: 08-dc-per-module-ingest-permission-csvs
 verified: 2026-05-15T00:00:00Z
-status: human_needed
-score: 17/17 code-side must-haves verified; 5 manual-UAT checks awaiting Luis
+updated: 2026-05-15T21:05:00Z
+status: gaps_found
+score: 17/17 code-side must-haves verified; 1 runtime gap discovered during manual UAT (cold-start project discovery)
+gaps:
+  - id: DC8-GAP-01
+    title: "Cold-start project discovery missing from dcIngest orchestrator"
+    severity: blocker
+    discovered_during: "Manual UAT first-run attempt 2026-05-15"
+    symptom: "Orchestrator on cold start (AccDcBackfillProgress empty) returns 0 slices and exits status=success having processed nothing. Naive bootstrap from all 1,143 active AccProjects causes 100% APS 403 'Invalid user access level' because 3-leg auth only authorizes projects where Luis is Project Admin."
+    root_cause: "lib/acc/dcIngest.ts loadProjectProgress() only reads AccDcBackfillProgress and assumes it is pre-populated with admin-scoped projects. No plan in Phase 8 owned the discovery step; the legacy script scripts/dc-ingest-where-i-admin.cjs has the correct logic (call APS Admin v1 /accounts/{id}/users/{userId}/projects with 2-leg token, filter locally on accessLevels.projectAdmin === true) but it was never integrated into the new pipeline."
+    files_implicated:
+      - lib/acc/dcIngest.ts (loadProjectProgress + cold-start path around line 358 + line 463)
+      - scripts/dc-ingest-where-i-admin.cjs (reference implementation, lines 128-147)
+    fix_direction: "Add a discovery step to the orchestrator: when AccDcBackfillProgress is empty, call APS Admin v1 user-projects with 2-leg token, filter to projectAdmin=true, seed AccDcBackfillProgress with newProjectFlag=true. Requires LUIS_ACC_USER_ID env var (already present per legacy script). Should also handle the steady-state case where new admin projects appear (incremental discovery)."
+    blocks: "Scheduled task at 03:00 will fire nightly and silently do nothing until this is fixed."
 human_verification:
   - test: "Install Windows Task Scheduler entry on Luis's PC"
     expected: "Get-ScheduledTask -TaskName 'LECG-DC-Daily-Ingest' returns the task; Start-ScheduledTask succeeds"
