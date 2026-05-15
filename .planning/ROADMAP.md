@@ -216,7 +216,7 @@ Plans:
 **Goal:** Replace the legacy single-file Data Connector activity ingest with a pipeline that handles the real 2-year backfill schema (9 per-module activities_<module>_activities.csv files), ingest the 15+ admin/permission CSVs into new AccDc* parallel tables via transactional full-replace snapshots, generalize the promote script (no hardcoded request ID), and re-establish daily ingest cadence on Windows Task Scheduler. Distinctive design: progressive breadth-first backfill (30-day slice across ALL admin projects daily; window slides backward to per-project creation date). Wipe + re-ingest the 2,507 legacy AccActivity rows. Extend Phase 3 SyncFreshnessPill to surface DC ingest status + click-to-reauth on token failure. Module badge chips on File Activity widget rows.
 **Requirements**: DC8-01..DC8-17 (derived from CONTEXT — Phase 8 has no roadmap-assigned REQ-IDs)
 **Depends on:** Phase 7
-**Plans:** 6/8 plans executed
+**Plans:** 9/9 plans complete
 
 Plans:
 - [x] 08-01-PLAN.md — Wave 0: Prisma migration (16 AccDc* + AccDcIngestRun + AccDcBackfillProgress) + 6 Vitest stub files
