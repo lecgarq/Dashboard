@@ -582,3 +582,199 @@ model SyncMeta {
   lastError  String?
   updatedAt  DateTime  @updatedAt
 }
+
+// ============ ACC DATA CONNECTOR SNAPSHOT (Phase 8) ============
+// Parallel snapshot tables hydrated by daily DC ingest. No FKs (orphans tolerated
+// per CONTEXT decision). DC wins on conflict with live-API tables (AccProjectMember).
+
+model AccDcUser {
+  id          String    @id
+  email       String?
+  name        String?
+  status      String?
+  companyId   String?
+  autodeskId  String?
+  lastSignIn  DateTime?
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@index([email])
+  @@index([companyId])
+}
+
+model AccDcCompany {
+  id          String   @id
+  name        String
+  hubId       String?
+  ingestRunId String
+  ingestedAt  DateTime
+}
+
+model AccDcProject {
+  id          String    @id
+  accountId   String
+  name        String
+  jobNumber   String?
+  status      String?
+  type        String?
+  createdAt   DateTime? // floor for progressive backfill
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@index([accountId])
+}
+
+model AccDcAccount {
+  id          String   @id
+  name        String
+  region      String?
+  ingestRunId String
+  ingestedAt  DateTime
+}
+
+model AccDcBusinessUnit {
+  id          String   @id
+  name        String
+  accountId   String?
+  ingestRunId String
+  ingestedAt  DateTime
+}
+
+model AccDcRole {
+  id          String   @id
+  name        String
+  accountId   String?
+  ingestRunId String
+  ingestedAt  DateTime
+}
+
+model AccDcProjectUser {
+  projectId   String
+  userId      String
+  status      String?
+  addedOn     DateTime?
+  lastSignIn  DateTime?
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, userId])
+  @@index([userId])
+}
+
+model AccDcProjectUserRole {
+  projectId   String
+  userId      String
+  roleId      String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, userId, roleId])
+}
+
+model AccDcProjectUserProduct {
+  projectId   String
+  userId      String
+  productKey  String
+  accessLevel String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, userId, productKey])
+}
+
+model AccDcProjectUserCompany {
+  projectId   String
+  userId      String
+  companyId   String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, userId, companyId])
+}
+
+model AccDcProjectUserService {
+  projectId   String
+  userId      String
+  serviceKey  String
+  accessLevel String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, userId, serviceKey])
+}
+
+model AccDcProjectRole {
+  projectId   String
+  roleId      String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, roleId])
+}
+
+model AccDcProjectProduct {
+  projectId   String
+  productKey  String
+  accessLevel String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, productKey])
+}
+
+model AccDcProjectCompany {
+  projectId   String
+  companyId   String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, companyId])
+}
+
+model AccDcProjectService {
+  projectId   String
+  serviceKey  String
+  accessLevel String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([projectId, serviceKey])
+}
+
+model AccDcAccountService {
+  accountId   String
+  serviceKey  String
+  accessLevel String
+  ingestRunId String
+  ingestedAt  DateTime
+
+  @@id([accountId, serviceKey])
+}
+
+model AccDcIngestRun {
+  id                 String    @id @default(cuid())
+  startedAt          DateTime  @default(now())
+  endedAt            DateTime?
+  status             String
+  sliceWindowStart   DateTime?
+  sliceWindowEnd     DateTime?
+  projectsProcessed  Int       @default(0)
+  rowsByModule       Json
+  rowsByAdminCsv     Json
+  quotaUsed          Int       @default(0)
+  diffSummary        Json?
+  unknownModulesSeen String[]  @default([])
+  errorMessage       String?
+
+  @@index([startedAt(sort: Desc)])
+  @@index([status])
+}
+
+model AccDcBackfillProgress {
+  projectId        String    @id
+  earliestCovered  DateTime?
+  latestCovered    DateTime?
+  projectCreatedAt DateTime
+  newProjectFlag   Boolean   @default(false)
+  updatedAt        DateTime  @updatedAt
+}
