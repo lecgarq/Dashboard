@@ -30,7 +30,41 @@ import {
 import { format, parseISO, formatDistanceToNowStrict } from "date-fns";
 import { downloadCsv } from "@/lib/acc/csvExport";
 import { trpc } from "@/lib/core/trpc";
+import { cn } from "@/lib/core/utils";
 import { categorize, type ActivityCategory } from "@/lib/acc/activityCategories";
+
+// Phase 08-07 / DC8-16 — module badge color map, mirrored from
+// UsersDirectoryClient.tsx (canonical home; duplicated here to avoid a
+// circular import since UsersDirectoryClient already pulls UserActivityBody
+// from this file via next/dynamic).
+const MODULE_BADGE_COLORS_LOCAL: Record<string, string> = {
+  docs: "bg-blue-100 text-blue-800",
+  issues: "bg-red-100 text-red-800",
+  submittals: "bg-amber-100 text-amber-800",
+  rfis: "bg-emerald-100 text-emerald-800",
+  sheets: "bg-indigo-100 text-indigo-800",
+  admin: "bg-slate-100 text-slate-700",
+  cost: "bg-purple-100 text-purple-800",
+  assets: "bg-teal-100 text-teal-800",
+  bridge: "bg-orange-100 text-orange-800",
+};
+
+function ActivityModuleBadge({ service }: { service: string | null | undefined }) {
+  if (!service) return null;
+  const className =
+    MODULE_BADGE_COLORS_LOCAL[service.toLowerCase()] ?? "bg-slate-200 text-slate-700";
+  return (
+    <span
+      className={cn(
+        "inline-block px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wide shrink-0 mr-1.5 align-middle",
+        className
+      )}
+      title={`Source module: ${service}`}
+    >
+      {service}
+    </span>
+  );
+}
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type {
   DuplicateRoleFinding,
@@ -829,6 +863,7 @@ function ActivitySection({
                 className="text-xs leading-snug text-foreground"
                 title={created.toISOString()}
               >
+                <ActivityModuleBadge service={row.service} />
                 <span className="font-medium">{actionLabel(row.rawAction)}</span>
                 <span className="text-muted-foreground"> → </span>
                 <span>{deriveTarget(row.details)}</span>

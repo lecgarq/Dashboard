@@ -1,9 +1,12 @@
 "use client";
 
-import { useMemo, useState, useTransition, useCallback, useRef, useEffect } from "react";
+import dynamic from "next/dynamic";
+import { useMemo, useState, useCallback, useRef, useEffect } from "react";
+import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { trpc } from "@/lib/core/trpc";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Select,
   SelectContent,
@@ -43,16 +46,42 @@ import {
   CircleDashed,
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
-import { AccProfileSection } from "./AccProfileSection";
-import { AccAnalysisPanel, type BulkAccUser } from "./AccAnalysisPanel";
-import { AccUsersGraph } from "./AccUsersGraph";
+import type { BulkAccUser } from "@/lib/acc/acc-types";
+import type { AccUsersGraphProps } from "./AccUsersGraph";
+import {
+  mapFallbackDirectoryToOrgPeople,
+  mergeAccSummaryWithEnrichment,
+  mergePeopleWithAccSummary,
+} from "./useMergedAccUsers";
+import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
 import { moduleLabel } from "@/lib/acc/modules";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
   Sheet,
   SheetContent,
 } from "@/components/ui/sheet";
-import { UserActivityBody } from "./dashboard/DashboardSidePanel";
+
+const AccProfileSection = dynamic<{ email: string }>(
+  () => import("./AccProfileSection").then((m) => m.AccProfileSection),
+  { ssr: false, loading: () => <div className="mt-5 h-24 rounded-xl bg-muted/20" /> },
+);
+
+const AccAnalysisPanel = dynamic<{ users: BulkAccUser[] }>(
+  () => import("./AccAnalysisPanel").then((m) => m.AccAnalysisPanel),
+  { ssr: false, loading: () => <div className="h-80 rounded-xl border bg-card animate-pulse" /> },
+);
+
+const AccUsersGraph = dynamic<AccUsersGraphProps>(
+  () => import("./AccUsersGraph").then((m) => m.AccUsersGraph),
+  { ssr: false, loading: () => <div className="h-[680px] rounded-xl border bg-card animate-pulse" /> },
+);
+
+const UserActivityBody = dynamic<{ email: string; users: BulkAccUser[] }>(
+  () => import("./dashboard/DashboardSidePanel").then((m) => m.UserActivityBody),
+  { ssr: false, loading: () => <div className="h-80 rounded-xl bg-muted/20 animate-pulse" /> },
+);
+
+const DIRECTORY_RENDER_BATCH = 160;
 
 // ---------------------------------------------------------------------------
 // Types
@@ -193,6 +222,52 @@ const FILE_ACTIVITY_COLUMNS: ReadonlyArray<{ key: FileActivityKey; label: string
   { key: "lastEdit", label: "Edit" },
   { key: "lastDelete", label: "Delete" },
 ];
+
+// ---------------------------------------------------------------------------
+// Module badge (Phase 08-07 / DC8-16)
+// ---------------------------------------------------------------------------
+//
+// Every File Activity row carries `service` once Phase 8 ingest has run (one
+// of the 9 KNOWN_MODULES from lib/acc/dcActivityCsvIngest.ts). The badge is a
+// tiny inline chip rendered at the start of each activity row so the user can
+// see at a glance which ACC module produced the event (Docs / Issues / RFIs /
+// etc.) without reading the action label.
+//
+// Color hint mirrors the 6-step tier ramp from Phase 4 06 — distinct hue per
+// module, low-saturation backgrounds with high-contrast text.
+//
+// Exported for reuse by DashboardSidePanel.UserActivityBody (the actual row
+// rendering site).
+export const MODULE_BADGE_COLORS: Record<string, string> = {
+  docs: "bg-blue-100 text-blue-800",
+  issues: "bg-red-100 text-red-800",
+  submittals: "bg-amber-100 text-amber-800",
+  rfis: "bg-emerald-100 text-emerald-800",
+  sheets: "bg-indigo-100 text-indigo-800",
+  admin: "bg-slate-100 text-slate-700",
+  cost: "bg-purple-100 text-purple-800",
+  assets: "bg-teal-100 text-teal-800",
+  bridge: "bg-orange-100 text-orange-800",
+};
+
+export function ModuleBadge({ service }: { service: string | null | undefined }) {
+  if (!service) return null;
+  // Lookup keyed by row.service (DC8-16) — falls back to neutral slate for
+  // any future / unmapped module name so we never crash on novel surfaces.
+  const className =
+    MODULE_BADGE_COLORS[service.toLowerCase()] ?? "bg-slate-200 text-slate-700";
+  return (
+    <span
+      className={cn(
+        "inline-block px-1.5 py-0.5 text-[10px] font-medium rounded uppercase tracking-wide shrink-0",
+        className
+      )}
+      title={`Source module: ${service}`}
+    >
+      {service}
+    </span>
+  );
+}
 
 /**
  * Reads from React Query cache only — does NOT fire a query. This honors
@@ -609,6 +684,77 @@ function PersonRow({
   );
 }
 
+/**
+ * Window-virtualized list of PersonRows. Only ~20 rows live in the DOM at any
+ * time; the rest occupy reserved height so the document scrollHeight is correct.
+ * Saved ~5000+ DOM nodes when the directory accordion expands at hub scale.
+ */
+function PersonRowList({
+  list,
+  accSummaryMap,
+  activatedEmails,
+  onPersonClick,
+  onHoverEnter,
+  onHoverLeave,
+  onActivityCellClick,
+}: {
+  list: OrgPerson[];
+  accSummaryMap: Map<string, BulkAccUser>;
+  activatedEmails: Set<string>;
+  onPersonClick: (p: OrgPerson) => void;
+  onHoverEnter: (email: string) => void;
+  onHoverLeave: (email: string) => void;
+  onActivityCellClick: (email: string) => void;
+}) {
+  const parentRef = useRef<HTMLDivElement>(null);
+  // Force re-render once parentRef mounts so scrollMargin picks up its offsetTop.
+  const [, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const virtualizer = useWindowVirtualizer({
+    count: list.length,
+    estimateSize: () => 72,
+    overscan: 8,
+    scrollMargin: parentRef.current?.offsetTop ?? 0,
+  });
+
+  return (
+    <div
+      ref={parentRef}
+      style={{ position: "relative", height: virtualizer.getTotalSize() }}
+    >
+      {virtualizer.getVirtualItems().map((vi) => {
+        const person = list[vi.index];
+        return (
+          <div
+            key={person.resourceName}
+            data-index={vi.index}
+            ref={virtualizer.measureElement}
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              width: "100%",
+              transform: `translateY(${vi.start - virtualizer.options.scrollMargin}px)`,
+              paddingBottom: 6,
+            }}
+          >
+            <PersonRow
+              person={person}
+              accSummary={accSummaryMap.get(person.email)}
+              onClick={() => onPersonClick(person)}
+              activityActive={activatedEmails.has(person.email)}
+              onHoverEnter={() => onHoverEnter(person.email)}
+              onHoverLeave={() => onHoverLeave(person.email)}
+              onActivityCellClick={() => onActivityCellClick(person.email)}
+            />
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function CollapsibleGroup({
   label,
   count,
@@ -877,6 +1023,12 @@ export function UsersDirectoryClient() {
   const [filterAccProject, setFilterAccProject] = useState<string | null>(null);
   const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
   const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
+  const [directoryRenderLimit, setDirectoryRenderLimit] = useState(DIRECTORY_RENDER_BATCH);
+  const [perfLoggingEnabled] = useState(() => {
+    if (typeof window === "undefined") return false;
+    const params = new URLSearchParams(window.location.search);
+    return params.has("usersPerf") || localStorage.getItem("users-perf") === "1";
+  });
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
   // ACTV-03: per-row hover-prefetch state. activatedEmails tracks rows whose
@@ -954,7 +1106,7 @@ export function UsersDirectoryClient() {
   });
   const invitationsQuery = trpc.accActivity.listInvitations.useQuery(
     { windowDays: 90, limit: 100 },
-    { staleTime: 300_000, retry: false },
+    { staleTime: 300_000, retry: false, enabled: activeTab === "audit" },
   );
   const activityCoverageQuery = trpc.accActivity.getCoverage.useQuery(undefined, {
     staleTime: 300_000,
@@ -965,21 +1117,7 @@ export function UsersDirectoryClient() {
     retry: false,
   });
   const accSummary = useMemo<BulkAccUser[]>(() => {
-    const base = accSummaryRaw as BulkAccUser[];
-    if (!enrichedUsers.length) return base;
-    const enrichMap = new Map(enrichedUsers.map((user) => [user.email.toLowerCase(), user]));
-    return base.map((user) => {
-      const enriched = enrichMap.get(user.email.toLowerCase());
-      if (!enriched) return user;
-      return {
-        ...user,
-        aggregatedStatus: enriched.aggregatedStatus,
-        projectAdmin: enriched.projectAdmin,
-        executive: enriched.executive,
-        companyName: enriched.companyName,
-        perProjectRoleNames: enriched.perProjectRoleNames,
-      };
-    });
+    return mergeAccSummaryWithEnrichment(accSummaryRaw as BulkAccUser[], enrichedUsers);
   }, [accSummaryRaw, enrichedUsers]);
 
   const {
@@ -1004,16 +1142,7 @@ export function UsersDirectoryClient() {
       return directoryData.people ?? [];
     }
 
-    return (fallbackDirectory as LocalDirectoryUser[]).map((user) => ({
-      resourceName: user.id,
-      displayName: user.name ?? user.email,
-      email: user.email,
-      photoUrl: user.image ?? null,
-      department: user.department ?? null,
-      jobTitle: user.jobTitle ?? null,
-      phoneNumber: null,
-      costCenter: null,
-    }));
+    return mapFallbackDirectoryToOrgPeople(fallbackDirectory as LocalDirectoryUser[]);
   }, [directoryData, fallbackDirectory]);
 
   const isLoading = !people.length && isDirectoryLoading && isFallbackLoading;
@@ -1232,6 +1361,62 @@ export function UsersDirectoryClient() {
     });
   }, [filtered, groupBy]);
 
+  useEffect(() => {
+    setDirectoryRenderLimit(DIRECTORY_RENDER_BATCH);
+  }, [
+    debouncedSearch,
+    filterDept,
+    filterJobTitle,
+    filterCostCenter,
+    filterNoProjects,
+    filterAccProject,
+    filterAccRole,
+    filterAccModule,
+    groupBy,
+    viewMode,
+  ]);
+
+  const visibleFiltered = useMemo(
+    () => filtered.slice(0, directoryRenderLimit),
+    [filtered, directoryRenderLimit],
+  );
+
+  const visibleGroups = useMemo(
+    () => groups ? limitGroupedItems(groups, directoryRenderLimit) : null,
+    [groups, directoryRenderLimit],
+  );
+
+  const renderedDirectoryCount = visibleGroups ? countGroupedItems(visibleGroups) : visibleFiltered.length;
+  const hasMoreDirectoryRows = renderedDirectoryCount < filtered.length;
+
+  useEffect(() => {
+    if (!perfLoggingEnabled) return;
+    const frame = requestAnimationFrame(() => {
+      const memory = "memory" in performance
+        ? (performance as Performance & { memory?: { usedJSHeapSize?: number } }).memory
+        : undefined;
+      console.debug("[UsersPerf]", {
+        activeTab,
+        people: people.length,
+        filtered: filtered.length,
+        renderedDirectoryCount,
+        directoryRenderLimit,
+        accUsers: mergedAccUsers.length,
+        heapMB: memory?.usedJSHeapSize ? Math.round(memory.usedJSHeapSize / 1024 / 1024) : null,
+      });
+      performance.mark(`users-tab-render:${activeTab}:${renderedDirectoryCount}`);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [
+    activeTab,
+    directoryRenderLimit,
+    filtered.length,
+    mergedAccUsers.length,
+    people.length,
+    perfLoggingEnabled,
+    renderedDirectoryCount,
+  ]);
+
   // Stats
   const stats = useMemo(() => ({
     total: people.length,
@@ -1281,18 +1466,15 @@ export function UsersDirectoryClient() {
               <span />
             </div>
           </div>
-          {list.map((person) => (
-            <PersonRow
-              key={person.resourceName}
-              person={person}
-              accSummary={accSummaryMap.get(person.email)}
-              onClick={() => setSelectedPerson(person)}
-              activityActive={activatedEmails.has(person.email)}
-              onHoverEnter={() => handleRowHoverEnter(person.email)}
-              onHoverLeave={() => handleRowHoverLeave(person.email)}
-              onActivityCellClick={() => openActivitySheet(person.email)}
-            />
-          ))}
+          <PersonRowList
+            list={list}
+            accSummaryMap={accSummaryMap}
+            activatedEmails={activatedEmails}
+            onPersonClick={setSelectedPerson}
+            onHoverEnter={handleRowHoverEnter}
+            onHoverLeave={handleRowHoverLeave}
+            onActivityCellClick={openActivitySheet}
+          />
         </div>
       );
     }
@@ -1726,21 +1908,34 @@ export function UsersDirectoryClient() {
       {/* Results */}
       {!isLoading && (
         <>
-          {groups ? (
+          {visibleGroups ? (
             <div className="space-y-6">
-              {groups.map(([label, members]) => (
+              {visibleGroups.map(([label, members]) => (
                 <CollapsibleGroup
                   key={label}
                   label={label}
                   count={members.length}
-                  defaultOpen={groups.length <= 8}
+                  defaultOpen={visibleGroups.length <= 8}
                 >
                   {renderPeople(members)}
                 </CollapsibleGroup>
               ))}
             </div>
           ) : (
-            renderPeople(filtered)
+            renderPeople(visibleFiltered)
+          )}
+
+          {hasMoreDirectoryRows && (
+            <div className="flex items-center justify-center pt-4">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setDirectoryRenderLimit((limit) => limit + DIRECTORY_RENDER_BATCH)}
+              >
+                Show {Math.min(DIRECTORY_RENDER_BATCH, filtered.length - renderedDirectoryCount).toLocaleString()} more
+              </Button>
+            </div>
           )}
 
           {filtered.length === 0 && !error && (
