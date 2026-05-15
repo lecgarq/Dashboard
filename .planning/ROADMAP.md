@@ -222,7 +222,7 @@ Plans:
 - [ ] 08-01-PLAN.md — Wave 0: Prisma migration (16 AccDc* + AccDcIngestRun + AccDcBackfillProgress) + 6 Vitest stub files
 - [ ] 08-02-PLAN.md — Wave 1 TDD: lib/acc/dcKnownBots.ts + lib/acc/dcAnomalyChecks.ts (pure)
 - [ ] 08-03-PLAN.md — Wave 1 TDD: lib/acc/dcProgressiveBackfill.ts (distinctive state machine)
-- [ ] 08-04-PLAN.md — Wave 1 TDD: lib/acc/dcActivityCsvIngest.ts (per-module ingest + 10th-module guard)
+- [x] 08-04-PLAN.md — Wave 1 TDD: lib/acc/dcActivityCsvIngest.ts (per-module ingest + 10th-module guard)
 - [ ] 08-05-PLAN.md — Wave 2: lib/acc/dcAdminCsvIngest.ts (16-CSV transactional snapshot)
 - [ ] 08-06-PLAN.md — Wave 2: lib/acc/dcIngest.ts orchestrator + scripts/dc-daily-ingest.cjs + dc-daily-cron.ps1 extension
 - [ ] 08-07-PLAN.md — Wave 3: accSync tRPC + SyncFreshnessPill extension + module badge + legacy wipe script
