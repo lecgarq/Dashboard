@@ -2,7 +2,21 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: — ACC Extraction Completion
-current_phase: Phase 8 — DC per-module ingest + permission CSVs (3/8 plans complete)
+current_phase: Phase 8 — DC per-module ingest + permission CSVs (5/8 plans complete)
+status: executing
+last_updated: "2026-05-15T18:32:18.021Z"
+progress:
+  total_phases: 9
+  completed_phases: 5
+  total_plans: 55
+  completed_plans: 36
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
+current_phase: Phase 8 — DC per-module ingest + permission CSVs (5/8 plans complete)
 status: executing
 last_updated: "2026-05-15T18:21:46.179Z"
 progress:
@@ -21,7 +35,7 @@ See: .planning/PROJECT.md
 ## Position
 
 **Milestone:** v2.0 — Folders + Folder-Role Permissions / v3.0 — Graph Topology / v4.0 — DC pipeline
-**Current phase:** Phase 8 — DC per-module ingest + permission CSVs (3/8 plans complete)
+**Current phase:** Phase 8 — DC per-module ingest + permission CSVs (5/8 plans complete)
 **Status:** Executing — Wave 1 in flight (08-03 done; 08-02 parallel; 08-04 + 08-05 still in Wave 1)
 
 ## Session Log
@@ -53,6 +67,7 @@ See: .planning/PROJECT.md
 - 2026-05-15: Phase 8 plan 02 complete (Wave-1 — bot filter + anomaly checks). 2 pure modules TDD-built RED→GREEN: `lib/acc/dcKnownBots.ts` (36 lines, 6 bootstrap bot names + isBotActor predicate, 9/9 Vitest) satisfies DC8-02; `lib/acc/dcAnomalyChecks.ts` (108 lines, AnomalyError + DEFAULT_THRESHOLDS{maxUserDropPct:10,maxProjectDropPct:5,requireAllAdminCsvs:true,requireNonZeroInsert:true} + assertNoAnomalies(tx, previous, thresholds, currentRowsByAdminCsv?), 7/7 Vitest) satisfies DC8-09. Both modules pure — no Prisma runtime import (anomaly checks uses `import type` only), no fetch, no fs. Mocked Prisma.TransactionClient via vi.fn for unit testing. previous=null returns silent (cold-start safe); guard `if (previous.userCount > 0)` defends against divide-by-zero. Wave-2 hand-off: plan 08-04 imports isBotActor at parse boundary; plan 08-05 calls assertNoAnomalies inside `prisma.$transaction` to roll back bad snapshots. Commits `25c5187` (RED bots) + `88216a5` (GREEN bots) + `d5f9986` (RED anomaly) + `b87290c` (GREEN anomaly). Stopped at: Plan 08-02 complete; Wave 2 (08-04, 08-05) unblocked once 08-03 also lands.
 - 2026-05-15: Phase 8 plan 03 complete (Wave-1 — progressive backfill state machine). Pure `lib/acc/dcProgressiveBackfill.ts` (196 lines) exports `planDailySlice(projects, yesterdayUtc)` + `applySliceCompletion(prev, slice)` + constants `PROJECT_BATCH_LIMIT=50` / `SLICE_DAYS=30` / `OVERLAP_DAYS=1` + types `ProjectProgress` / `Slice` / `SliceReason` / `DailyPlan`. TDD RED→GREEN: 15/15 Vitest covering empty/new-project/fully-backfilled/backward/floor-clamp/at-floor/forward/combined/50-batch/51-spill/mixed-windows/applySliceCompletion×3. Algorithm per RESEARCH Pattern 1: per-project derive (new=30d window; backward=max(earliest-30d, createdAt) when <earliest; forward=[latest-1d,yesterday] when latest<yesterday) → bucket by `${start.toISOString()}|${end.toISOString()}|${reason}` insertion-order Map → chunk each bucket into Slices ≤50 projectIds. Module pure: zero `@prisma/client` / `node:fs` / `fetch(` matches. Rule 1 deviation caught pre-commit: forward-gate uses pre-overlap `latestCovered<yesterday` (strict) NOT post-overlap `forwardStart<yesterday` — otherwise fully-current projects would burn 1 quota/day forever (5/15 tests failed first GREEN attempt; recovered intent from plan task 1 case 3). Module surface declares ProjectProgress.projectCreatedAt as non-nullable; plan 08-06 caller MUST resolve nullable AccDcProject.createdAt to "earliest known activity timestamp" before invoke (per 08-01 SUMMARY warning). DC8-07/11/13 satisfied at code level. Commits `5ba5989` (RED) + `68bd1ae` (GREEN). Stopped at: Plan 08-03 complete; Wave 2 (08-04, 08-05) now fully unblocked (08-02 + 08-03 both done).
 - 2026-05-15: Phase 8 added + context gathered via `/gsd:discuss-phase 8`. CONTEXT.md captures ~25 decisions across 4 discussed areas (activity module scope, permission data destination, backfill depth + cadence, legacy + visibility) plus 2 extra rounds (PII/validation/auth-fail/new-projects, then cron-health/run-duration/runbook/export). Distinctive design: **progressive breadth-first backfill** (Luis-originated) — daily 30-day slice across ALL admin projects in parallel; window slides backward day by day until each project reaches its creation date. Pipeline lands all 9 activity modules + all 15+ admin/permission CSVs into new `AccDc*` parallel tables (full-replace transactional snapshots, DC wins on conflict, companies promoted to first-class entities). Scheduled via Windows Task Scheduler @ 03:00 local; visibility via extended Phase 3 SyncFreshnessPill; 2,507 legacy AccActivity rows wiped + re-ingested. Stopped at: Phase 8 CONTEXT.md ready; next is `/gsd:plan-phase 8`.
+- 2026-05-15: Phase 8 plan 05 complete (Wave-2 — transactional 16-CSV admin/permission snapshot). `lib/acc/dcAdminCsvIngest.ts` (~340 lines) + `dcAdminCsvIngest.test.ts` (12/12 GREEN). `ADMIN_CSV_ALLOWLIST` = 16 explicit entries (no greedy `admin_*.csv` glob; Pitfall 11 defense). `ingestAdminSnapshot(prisma, files, ingestRunId, previous)` opens `prisma.$transaction({ isolationLevel: Prisma.TransactionIsolationLevel.Serializable, timeout: 5min, maxWait: 30s })`, captures `prevUserIds`/`prevProjectIds` via findMany BEFORE deletes, iterates ALL_LIST in declared order issuing deleteMany({}) + batched createMany (500/batch) per CSV (header-only → createMany([]) for shape consistency), captures post-state, computes diff summary via Set difference (`{usersAdded, usersRemoved, projectsAdded, projectsRemoved}`), then invokes `assertNoAnomalies(tx, previous, {...DEFAULT_THRESHOLDS, requireAllAdminCsvs:true}, rowsByAdminCsv)` → throw rolls back ALL 16 tables. Unknown filenames logged via console.warn + listed in `skippedFiles[]`. Bot filter NOT applied (admin CSVs are entity snapshots, not event streams). 16 per-CSV mappers convert snake_case APS columns → camelCase Prisma fields per schema.prisma; `required()`/`nullable()`/`toDateOrNull()` helpers inline; `AdminCsvParseError` surfaces parse failures with filename context. Context7 isolation-level verification deferred per Luis directive — single-writer scenario (only this script writes AccDc* tables, only at 03:00 local) makes 40001 serialization-failure noise unrealistic; fallback path `ReadCommitted` + `pg_advisory_xact_lock` documented in SUMMARY. Rule 1 deviation caught at typecheck: vitest mock arg-tuple typed `[]` blocked `[3]` index → cast `callArgs as unknown[]` (test-only fix, rolled into Task 2 commit `3c213cd`). DC8-05 + DC8-06 satisfied at code level (REQUIREMENTS.md doesn't yet track DC8-* IDs — same phase-setup gap noted by 08-02 for DC8-09 + 08-03 for DC8-07/11/13). Hand-off: plan 08-06 orchestrator calls `ingestAdminSnapshot(prisma, adminFiles, ingestRunId, previousMetrics)`. Sibling 08-04 ran in parallel without file collision. Commits `fe93cde` (RED) + `3c213cd` (GREEN). Stopped at: Plan 08-05 complete; Wave 3 (08-06 orchestrator) unblocked once 08-04 also lands.
 - 2026-05-12: Phase 7 plan 05 complete (2D topology adapter wiring). `buildAccTopologyGraph` now accepts `AccTopologyExtensions = { folderMatrix, similarityInput, similarityDims, simMin, folderDepth }` and emits folder hubs + folder-project + role-folder (permTier-tagged via `collapsePermTierKey` 6→4-tier LUT) + user-similarity edges (dimension + weight). `AccTopologyHubKind` += `'folder'`; `AccTopologyLink` gains optional `permTier`, `dimension`, `weight`. `GraphRenderNode.kind` += `'folder'`; `resolveRenderNodeColor` + `FOLDER_NODE_COLOR` (`#5EEAD4` teal-300) centralize the Pitfall-4 override — both Canvas2D draw loop and `cosmosUtils.buildNodeColorBuffer` route through it. `buildLinkColorBuffer` extended with optional `{ defaultColor, perEdgeColors }` for Plan 07-06 to drive edge color from filter state; `hexToRgba01` helper added. 8/8 Vitest pass (3 existing topology + 5 new Phase 7). 0 tsc errors. GRAPH7-01/02/03/04/11 satisfied at code level — REQUIREMENTS.md still doesn't track GRAPH7-* IDs (same phase-setup follow-up). Stopped at: Plan 07-05 complete; Plan 07-06 (filter panel UI) unblocked.
 
 ## Decisions
@@ -140,6 +155,7 @@ See: .planning/PROJECT.md
 - [Phase 08]: 08-02: dcAnomalyChecks uses `import type { Prisma }` only — module stays pure at runtime, no Prisma client init in test path. Mocked tx via `vi.fn().mockResolvedValue(N)` covers count() calls without DB spin-up.
 - [Phase 08]: 08-02: currentRowsByAdminCsv parameter OPTIONAL on assertNoAnomalies — only required to evaluate requireNonZeroInsert/requireAllAdminCsvs gates. user/project drop checks always run when previous != null.
 - [Phase 08]: 08-03: planDailySlice() pure module ships forward-gate fix — uses pre-overlap latestCovered<yesterday (strict) to avoid burning 1 quota/day on fully-current projects. OVERLAP_DAYS still rewinds the start when forward fires. ProjectProgress.projectCreatedAt is non-nullable on the module surface; plan 08-06 caller MUST resolve nullable AccDcProject.createdAt to earliest known activity timestamp before invoke. Bucket key includes reason to prevent semantic-mix collisions. 15/15 Vitest GREEN, 196 lines, zero Prisma/fs/fetch. DC8-07/11/13 satisfied at code level.
+- [Phase 08]: 08-05: ingestAdminSnapshot ships Serializable isolation level (Prisma.TransactionIsolationLevel.Serializable) per RESEARCH Pattern 2; Context7 verification deferred per Luis directive (single-writer scenario - no 40001 risk). 5min timeout + 30s maxWait. ADMIN_CSV_ALLOWLIST=16 explicit entries (no greedy admin_*.csv glob; Pitfall 11). assertNoAnomalies invoked AFTER all 16 deleteMany+createMany so currentRowsByAdminCsv reflects actual ingest. Diff summary computed via id-set difference (findMany before deletes + findMany after creates). 12/12 vitest GREEN; tsc clean. Hand-off: plan 08-06 calls ingestAdminSnapshot(prisma, adminFiles, ingestRunId, previousMetrics).
 
 ## Accumulated Context
 
@@ -180,4 +196,6 @@ See: .planning/PROJECT.md
 | Phase 08 P01 | 7min | 3 tasks | 8 files |
 | Phase 08 P02 | ~7 min | 2 tasks | 4 files |
 | Phase 08 P03 | 4min | 2 tasks | 2 files |
+| Phase 08 P04 | 3min | 2 tasks | 2 files |
+| Phase 08 P05 | 8 min | 2 tasks | 2 files |
 
