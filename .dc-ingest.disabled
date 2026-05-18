@@ -1,0 +1,15 @@
+Disabled 2026-05-18 by Luis + Claude.
+
+Reason: AccActivity ingestRunId schema drift (lib/acc/dcActivityCsvIngest.ts:169 writes
+a column that doesn't exist in prisma/schema.prisma AccActivity model).
+Every activity insert throws; error is swallowed by dcIngest.ts:992-994; runs report
+status=success with zero rows. Compound effect: 2026-05-13 → today activity gap.
+
+Re-enable AFTER:
+  1. AccActivity gets `ingestRunId String` column + migration
+  2. Slice-loop error handler converts to hard abort (no more silent skip)
+  3. Backward-slice admin snapshot is skipped (separate bug — quarantine path)
+  4. Progress rows reset (all 428 → NULL/newProjectFlag=true)
+  5. Test run inserts >0 rows for `submittals` or `docs`
+
+See: docs/superpowers/specs/2026-05-18-dc-backward-backfill-fix-design.md (pending)
