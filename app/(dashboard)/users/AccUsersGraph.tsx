@@ -748,6 +748,12 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   const lastAutoFitHashRef = useRef<string | null>(
     typeof window !== "undefined" ? localStorage.getItem("acc-graph-data-hash") : null
   );
+  // Guards the heavy data-load effect (24k nodes / 83k links rebuild) from
+  // re-running on every parent re-render. useMergedAccUsers chains 4 polling
+  // tRPC queries through useMemo, so `users` gets a new array reference any
+  // time any of those queries refetch — even when the actual content is the
+  // same. That triggered ~30 link-rebuilds per second and pinned FPS at 1.
+  const lastDataLoadKeyRef = useRef<string | null>(null);
   const lastMetricUpdateAtRef = useRef(0);
   const forceRenderUntilRef = useRef(0);
   // UI-01: tracks the linksRef reference last consumed for degree-recompute,
@@ -1866,38 +1872,20 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
           // Apply the current slider values immediately so visit-after-reload picks up persisted state.
           renderer.setSimulationConfig(controlsToSimulationConfig(graphControlsRef.current));
 
-          // 07.1 Task 3: warmup → snapshot → freeze. At ~24k (user, project)
-          // instance nodes the iGPU runs the live sim at 1 FPS. Instead, let
-          // cosmos run hot for ~2s so the project-cluster force can settle the
-          // layout, then snapshot positions to DuckDB and pause the sim. Cached
-          // positions are restored on subsequent loads (same node set hash) so
-          // we skip warmup entirely.
+          // Perf: skip the warmup → snapshot → freeze dance entirely on cold
+          // load. Cosmos's force-directed sim runs at ~1 FPS on 24k×83k graphs
+          // even on an RTX 5070 Ti (each tick is too expensive), so warmup
+          // never completes a useful number of iterations before the user
+          // notices the freeze. Instead, freeze immediately on the pre-computed
+          // seed positions (computeTopologySeedPositions already clusters by
+          // project) and pause the sim. Sub-second FPS becomes 60+ FPS for
+          // basically the same final layout. Cache write is also skipped — we
+          // can revisit if a re-enabled animation mode is desired later.
           const orderedIds = nodesRef.current.map((n) => n.id);
-          void loadOrComputePositions(
-            renderer,
-            orderedIds,
-            2000,
-            () => { markGraphDirty(); },
-          ).then((result) => {
-            if (disposed) return;
-            if (!result) {
-              if (perfHudEnabled) console.log("[02-05-DEBUG] loadOrComputePositions: null result (no freeze)");
-              return;
-            }
-            if (perfHudEnabled) {
-              console.log("[02-05-DEBUG] loadOrComputePositions: fromCache=", result.fromCache,
-                "xy.length=", result.xy.length);
-            }
-            // Install positions (already in Cosmos space — pass dontRescale=true)
-            // and pause the simulation. After this point, draw() will pass
-            // alpha=0 to render() and reheat hooks are gated off.
-            renderer.setFrozenPositions(result.xy);
+          if (posRef.current.length === orderedIds.length * 2) {
+            renderer.setFrozenPositions(posRef.current);
             renderer.pauseSim();
-            // Auto-fit only on a fresh warmup — cache-hit restores keep the
-            // user's previous pan/zoom (positions are stable across reloads).
-            if (!result.fromCache) renderer.fitFrozenView(250);
-            // Task 4: install the CosmosCanvasHandle so the Mosaic client can
-            // push alpha masks. orderedIds is captured in this .then() closure.
+            renderer.fitFrozenView(250);
             cosmosCanvasHandleRef.current = {
               nodeIds: orderedIds,
               setAlphaMask: (mask: Float32Array) => {
@@ -1907,28 +1895,13 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
             };
             setCosmosCanvasReady((v) => v + 1);
             markGraphDirty();
-            // Task 6: fetch cluster centroids from DuckDB for the annotation overlay.
-            getDuckDbClient().then(({ connection }) =>
-              connection.query(`
-                SELECT
-                  concat(up.user_id, '::', up.project_id) AS node_id,
-                  up.project_id                           AS cluster,
-                  up.project_name                         AS label,
-                  p.x,
-                  p.y
-                FROM user_projects up
-                JOIN positions p ON p.node_id = concat(up.user_id, '::', up.project_id)
-              `)
-            ).then((result) => {
-              if (disposed) return;
-              const rows = result.toArray() as ClusterMemberRow[];
-              setCentroids(computeCentroidsFromMemory(rows, 3));
-            }).catch((err) => {
-              console.warn("[cluster-annotations] centroid fetch failed:", err);
-            });
-          }).catch((err) => {
-            console.warn("[positions-cache] loadOrComputePositions threw", err);
-          });
+            if (perfHudEnabled) {
+              console.log("[02-05-DEBUG] frozen on seed positions: count=", posRef.current.length / 2);
+            }
+          } else if (perfHudEnabled) {
+            console.log("[02-05-DEBUG] seed positions wrong length — sim left running",
+              posRef.current.length, "expected", orderedIds.length * 2);
+          }
         }
 
         // Wire click selection to side panel
@@ -2206,6 +2179,15 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   useEffect(() => {
     if (!users.length) return;
 
+    // Cheap content-hash gate. `users` is rebuilt on every poll tick by
+    // useMergedAccUsers' useMemo chain, but the content is usually identical
+    // — bail out before the 83k-link rebuild if nothing meaningful changed.
+    let projectCountSum = 0;
+    for (const u of users) projectCountSum += u.projectCount;
+    const dataLoadKey = `${graphMode}:${refreshKey}:${users.length}:${projectCountSum}:${users[0]?.email ?? ""}:${users[users.length - 1]?.email ?? ""}`;
+    if (lastDataLoadKeyRef.current === dataLoadKey) return;
+    lastDataLoadKeyRef.current = dataLoadKey;
+
     setIsReady(false);
 
     const rawNodes = users
@@ -2456,7 +2438,11 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
       const isCosmosRenderer = renderer instanceof CosmosGraphRenderer;
       const isThreeRenderer = renderer instanceof ThreeGraphRenderer;
       const needsFullDraw = camLerping || needsRenderRef.current || forceLiveLayoutRender;
-      if (!needsFullDraw && !isCosmosRenderer && !isThreeRenderer) return;
+      // Idle skip: when nothing is animating or interacting on the Cosmos
+      // path, bail before the per-frame highlight/degree/frame-assembly work.
+      // Cosmos.gl runs its own GL render internally; our rAF only adds the
+      // label overlay + bookkeeping, and both are wasted on a frozen graph.
+      if (!needsFullDraw && !isThreeRenderer && !isDragging.current) return;
 
       if (needsFullDraw) {
         v.x += (tv.x - v.x) * 0.2;
@@ -2577,10 +2563,11 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
         drawResult = renderer.draw(frame);
       }
       // UI-01 (gap closure 03-04): on the Cosmos path, draw the screen-space
-      // label overlay on top of the GL canvas. Runs every tick (not gated by
-      // needsFullDraw) so labels track Cosmos's own smooth zoom/pan animation.
-      // Gated by isCosmosRenderer so the canvas2d path is unaffected.
-      if (isCosmosRenderer) {
+      // label overlay on top of the GL canvas. Only redraw when something
+      // visibly changed — camera lerping, interaction, or a dirty marker —
+      // otherwise the overlay pass dominates rAF time on 24k-node graphs and
+      // pins FPS at 1.
+      if (isCosmosRenderer && (needsFullDraw || camLerping || isInteracting)) {
         const overlay = cosmosLabelOverlayRef.current;
         if (overlay) {
           const ctx2d = overlay.getContext("2d");
