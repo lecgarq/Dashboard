@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
@@ -13,6 +13,7 @@ import {
 } from "./accGraphFilters";
 import { trpc } from "@/lib/core/trpc";
 import { moduleLabel } from "@/lib/acc/modules";
+import { collapseFoldersToDepth } from "@/lib/acc/folderHubCollapse";
 import type { AccGraphNode } from "@/lib/acc/graphSnapshot";
 import {
   CanvasGraphRenderer,
@@ -42,6 +43,7 @@ import { adminTierFor, adminTierShapeEnum } from "./adminTierShape";
 import {
   buildAccTopologyGraph,
   computeCentroid,
+  computeBlobSeedPositions,
   computeTopologySeedPositions,
   DEFAULT_GRAPH_CONTROLS,
   DEFAULT_PHYSICS_CONFIG,
@@ -89,6 +91,25 @@ import {
   type ClusterMemberRow,
 } from "./access-analysis/clusterAnnotations";
 import { buildNodeColorBuffer } from "./cosmosUtils";
+import type {
+  FileActivity,
+  FilterOption,
+  PhysicsNode,
+  SidePanelState,
+  SimNode,
+  UserNode,
+} from "./accGraphTypes";
+import {
+  CompanyRoleFilter,
+  FilterMenu,
+  LegendDot,
+  ModuleToggle,
+  SidePanel,
+  SliderControl,
+  ToggleFilterControl,
+  UserTooltip,
+  fmtRelative,
+} from "./accGraphParts";
 
 // Investigative topology modes. Users is the default, while access hubs and
 // folder permissions are opt-in.
@@ -224,53 +245,13 @@ async function loadOrComputePositions(
   return { xy, fromCache: false };
 }
 
-interface UserNode extends PhysicsNode {
-  kind: "user";
-  email: string;
-  /** Canonical user identifier shared by all (user, project) instances of the
-   *  same person. Equals lowercased email. Used by the same-person link pass
-   *  in buildAccTopologyGraph to group instances visually. */
-  userId: string;
-  name: string;
-  projectId?: string;
-  projectName?: string;
-  found: boolean;
-  hasNoProjects: boolean;
-  isAdmin: boolean;
-  projectCount: number;
-  roles: string[];
-  modules: string[];
-  color: string;
-  lastAddedBucket: string;
-  individualAccess: boolean;
-  companyRole: string | null;
-  lastSignIn: string | null;
-  // UI-01: optional label + degree consumed by the Canvas2D late-zoom label pass.
-  // Populated alongside the render-node assembly; safe to leave undefined.
-  label?: string;
-  degree?: number;
-  // Phase 5.1 enriched fields (from accMembers.enrichedUsers, may be undefined)
-  perProjectRoleNames?: string[];
-  aggregatedStatus?: "active" | "pending" | "deleted";
-  projectAdmin?: boolean;
-  executive?: boolean;
-  isAccountAdmin?: boolean;
-  companyName?: string | null;
-}
-
-type SimNode = UserNode;
-
-interface PhysicsNode {
-  id: string;
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-}
-
-interface SidePanelState {
-  node: SimNode;
-}
+// Domain that identifies internal staff. Everyone else is treated as an
+// external collaborator and rendered in a muted color. Easy to swap to an
+// env var if the org migrates domains.
+const INTERNAL_EMAIL_DOMAIN = "hermosillo.com";
+// Muted neutral for external collaborators — distinct enough from any role
+// color to read as "external" at a glance, dim enough to let internals pop.
+const EXTERNAL_NODE_COLOR = "#9CA3AF"; // tailwind gray-400
 
 interface SpatialGrid {
   size: number;
@@ -278,12 +259,7 @@ interface SpatialGrid {
 }
 
 // GraphFilters interface and nodeMatchesFilters are imported from ./accGraphFilters
-
-interface FilterOption {
-  value: string;
-  label: string;
-  count: number;
-}
+// UserNode, PhysicsNode, SimNode, SidePanelState, FilterOption, FileActivity → ./accGraphTypes
 
 type OrganicWorkerMessage =
   | {
@@ -301,6 +277,27 @@ export interface AccUsersGraphProps {
   users: BulkAccUser[];
   onSelectUser?: (email: string) => void;
   analyticsSelection?: GraphAnalyticsSelection | null;
+  /**
+   * Seed layout:
+   *  - "topology" (default): Fibonacci-sunflower of project centroids, tight
+   *     within-project jitter. Useful when the structure should be readable.
+   *  - "blob": chaotic-blob mode for the spatial-graph route — projects
+   *     scattered randomly, large per-node jitter, no visible cluster shapes.
+   */
+  layoutMode?: "topology" | "blob";
+  /**
+   * Folder permission matrix rows (output of trpc.accFolders.getMatrix).
+   * Used by the blob layout to cluster users whose (project, role) combos
+   * grant access to similar folder hubs — captures functional teams.
+   * Optional; without it, the folder axis simply contributes nothing.
+   */
+  folderRows?: ReadonlyArray<{
+    folderId: string;
+    folderPath: string;
+    projectId: string;
+    roleId: string;
+    permType: string;
+  }>;
 }
 
 const GRAPH_BACKGROUND = "#F8F7F4";
@@ -393,9 +390,37 @@ function dateBucket(raw: string | Date | null | undefined): string {
  * Users with no projects (hasNoProjects=true) produce exactly one orphan
  * instance with no projectId so they still appear on the graph.
  */
-function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[] {
+/**
+ * Compute the set of folder-hub IDs reachable from a given (projectId,
+ * roleIds) combo, using the precomputed (projectId::roleId) → Set<hubId>
+ * lookup. Returns a sorted array so two users with identical access produce
+ * an identical hash signature for the blob layout.
+ */
+function computeAccessibleFolderHubs(
+  projectId: string | undefined,
+  roles: readonly string[],
+  lookup: ReadonlyMap<string, ReadonlySet<string>> | null,
+): string[] {
+  if (!projectId || !lookup || roles.length === 0) return [];
+  const hubs = new Set<string>();
+  for (const role of roles) {
+    const set = lookup.get(`${projectId}::${role}`);
+    if (!set) continue;
+    for (const hub of set) hubs.add(hub);
+  }
+  return [...hubs].sort();
+}
+
+function accUserToInstanceNodes(
+  user: BulkAccUser,
+  userIndex: number,
+  folderLookup: ReadonlyMap<string, ReadonlySet<string>> | null = null,
+): SimNode[] {
   const email = user.email.toLowerCase();
   const baseAllRoles = [...new Set(user.allRoles ?? [])].sort((a, b) => a.localeCompare(b));
+  // Externals: anything not under the internal domain. Computed once per user
+  // so all that user's project instances share the flag.
+  const isExternal = !email.endsWith(`@${INTERNAL_EMAIL_DOMAIN}`);
   const userLevelFields = {
     kind: "user" as const,
     userId: email,
@@ -430,7 +455,7 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
       isAdmin: user.isAccountAdmin === true || user.projectAdmin === true,
       roles,
       modules,
-      color: roleColor(roles[0]),
+      color: isExternal ? EXTERNAL_NODE_COLOR : roleColor(roles[0]),
       individualAccess: roles.length > 0 || modules.length > 0,
       label: user.name || user.email,
       degree: 0,
@@ -438,6 +463,8 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
       y: 0.5 + (userIndex % 13) * 0.001,
       vx: 0,
       vy: 0,
+      accessibleFolderHubs: [], // no project = no folder access
+      isExternal,
     }];
   }
 
@@ -455,7 +482,7 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
       isAdmin: proj.isAdmin || user.isAccountAdmin === true,
       roles,
       modules,
-      color: roleColor(roles[0] ?? baseAllRoles[0]),
+      color: isExternal ? EXTERNAL_NODE_COLOR : roleColor(roles[0] ?? baseAllRoles[0]),
       individualAccess: roles.length > 0 || modules.length > 0,
       label: user.name || user.email,
       degree: 0,
@@ -463,6 +490,8 @@ function accUserToInstanceNodes(user: BulkAccUser, userIndex: number): SimNode[]
       y: 0.5 + (userIndex % 13) * 0.001 + seedOffset,
       vx: 0,
       vy: 0,
+      accessibleFolderHubs: computeAccessibleFolderHubs(proj.id, roles, folderLookup),
+      isExternal,
     };
   });
 }
@@ -691,10 +720,32 @@ function readPrecomputedPositions(raw: unknown, expectedLength: number): Float32
   return positions;
 }
 
-export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }: AccUsersGraphProps) {
+export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null, layoutMode = "topology", folderRows }: AccUsersGraphProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Build (projectId::roleId) → Set<folderHubId> once per folderRows change.
+  // Used by accUserToInstanceNodes to enrich each instance with the folder
+  // hubs reachable via its assigned role(s), which the blob layout uses as a
+  // strong "functional team" clustering signal.
+  const folderLookup = useMemo<ReadonlyMap<string, ReadonlySet<string>> | null>(() => {
+    if (!folderRows || folderRows.length === 0) return null;
+    const lookup = new Map<string, Set<string>>();
+    const collapsed = collapseFoldersToDepth(folderRows, 2);
+    for (const folder of collapsed) {
+      for (const perm of folder.permissions) {
+        const key = `${folder.projectId}::${perm.roleId}`;
+        let set = lookup.get(key);
+        if (!set) {
+          set = new Set();
+          lookup.set(key, set);
+        }
+        set.add(folder.id);
+      }
+    }
+    return lookup;
+  }, [folderRows]);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const canvas2dRef = useRef<HTMLCanvasElement>(null);
@@ -822,6 +873,8 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   const [centroids, setCentroids] = useState<ClusterCentroid[]>([]);
   // Incremented on each pan/zoom frame to reposition the annotation overlay.
   const [annotationTick, setAnnotationTick] = useState(0);
+  // rAF gate for setAnnotationTick — see onZoom handler below for rationale.
+  const annotationRafRef = useRef<number>(0);
   const alphaBufRef = useRef<Float32Array | null>(null);
   const cosmosCanvasHandleRef = useRef<CosmosCanvasHandle | null>(null);
   const [graphControls, setGraphControls] = useState<GraphControlSettings>(DEFAULT_GRAPH_CONTROLS);
@@ -900,6 +953,26 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   });
   const graphModeRef = useRef<AccGraphMode>(graphMode);
   const [graphSearch, setGraphSearch] = useState("");
+  const [searchFocused, setSearchFocused] = useState(false);
+  // Autocomplete: dedup users by email, return top 8 case-insensitive matches.
+  // Recomputed only when the input or the user list change.
+  const searchSuggestions = useMemo(() => {
+    const q = graphSearch.trim().toLowerCase();
+    if (!q) return [] as { name: string; email: string }[];
+    const matches: { name: string; email: string }[] = [];
+    const seen = new Set<string>();
+    for (const user of users) {
+      const key = user.email.toLowerCase();
+      if (seen.has(key)) continue;
+      const name = user.name || "";
+      if (`${name} ${user.email}`.toLowerCase().includes(q)) {
+        seen.add(key);
+        matches.push({ name, email: user.email });
+        if (matches.length >= 8) break;
+      }
+    }
+    return matches;
+  }, [graphSearch, users]);
   const graphSearchRef = useRef("");
   const [visibleCount, setVisibleCount] = useState(0);
   // UI-03: filter panel collapse state. When collapsed, the panel renders as
@@ -1299,6 +1372,11 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   useEffect(() => {
     graphSearchRef.current = graphSearch.trim().toLowerCase();
     rebuildVisibleIndices();
+    // Search changes alter the visible set — push it to cosmos so excluded
+    // points get zero-sized (analyticsSelection and filters effects do this;
+    // search forgot, so typing in the search box updated state but did
+    // nothing visible on the canvas).
+    cosmosRendererRef.current?.setVisibleIndices(visibleIndexSetRef.current);
   }, [graphSearch, rebuildVisibleIndices]);
 
   useEffect(() => {
@@ -1796,7 +1874,12 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
       activeRendererRef.current = canvasRenderer;
       setIsCosmosLoading(true);
 
-      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: true }).then(({ renderer }) => {
+      // Disable GPU physics: at 24k nodes the cosmos simulation can't converge
+      // (alpha pinned at 1.0), pegging the main thread dispatching GPU work
+      // every frame and starving React + the sidebar. Route through the
+      // d3-force worker instead — it converges in finite time off the main
+      // thread and cosmos becomes a pure renderer fed converged positions.
+      void CosmosGraphRenderer.create(cosmosContainer, fallBackToCanvas, { usePhysics: false }).then(({ renderer }) => {
         if (disposed) { renderer?.destroy(); return; }
         if (!renderer) {
           if (perfHudEnabled) console.log("[02-05-DEBUG] cosmos-create: renderer=null (init failed)");
@@ -1947,7 +2030,17 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
               markGraphDirty();
             },
             // Task 6: reposition cluster annotation labels on every pan/zoom frame.
-            onZoom: () => { setAnnotationTick((t) => t + 1); },
+            // rAF-batched: in worker-positions mode cosmos fires onZoom on every
+            // setPointPositions rescale (per-frame during convergence), which
+            // synchronously re-entered setState and tripped React's max-update
+            // depth guard. One tick per animation frame is plenty for label repos.
+            onZoom: () => {
+              if (annotationRafRef.current !== 0) return;
+              annotationRafRef.current = requestAnimationFrame(() => {
+                annotationRafRef.current = 0;
+                setAnnotationTick((t) => t + 1);
+              });
+            },
           });
         }
 
@@ -2192,7 +2285,7 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
 
     const rawNodes = users
       .filter((user) => user.found || user.projectCount > 0 || user.hasNoProjects)
-      .flatMap(accUserToInstanceNodes);
+      .flatMap((user, index) => accUserToInstanceNodes(user, index, folderLookup));
     if (rawNodes.length === 0) {
       nodesRef.current = [];
       seedPosRef.current = new Float32Array(0);
@@ -2238,7 +2331,9 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
       localStorage.removeItem("acc-graph-cache-corrupt");
       setPositionCacheCorrupt(false);
     }
-    seedPosRef.current = computeTopologySeedPositions(rawNodes, cachedPositions);
+    seedPosRef.current = layoutMode === "blob"
+      ? computeBlobSeedPositions(rawNodes)
+      : computeTopologySeedPositions(rawNodes, cachedPositions);
     posRef.current = new Float32Array(seedPosRef.current);
     centroidRef.current = computeCentroid(seedPosRef.current);
 
@@ -2308,7 +2403,7 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
     isRefreshingRef.current = false;
     setIsReady(true);
     markGraphDirty();
-  }, [users, graphMode, refreshKey, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
+  }, [users, graphMode, refreshKey, folderLookup, rebuildVisibleIndices, rebuildGrid, zoomToFit, markGraphDirty, restartOrganicLayout]);
 
   useEffect(() => {
     filtersRef.current = filters;
@@ -2838,6 +2933,22 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
     return { roles, lastAddedBuckets, moduleOptions, companyRoleOptions };
   }, [users]);
 
+  // Content-based signature: filterOptions is a fresh object every parent
+  // render (upstream `users` reference isn't stable), so depending on its
+  // identity made this effect fire every render and trip React's
+  // max-update-depth guard. The signature only changes when the *set* of valid
+  // values actually changes — which is the only thing this effect cares about.
+  const filterOptionsSig = useMemo(
+    () =>
+      [
+        ...filterOptions.roles.map((o) => `r:${o.value}`),
+        ...filterOptions.moduleOptions.map((o) => `m:${o.value}`),
+        ...filterOptions.lastAddedBuckets.map((o) => `b:${o.value}`),
+        ...filterOptions.companyRoleOptions.map((o) => `c:${o.value}`),
+      ].join("|"),
+    [filterOptions],
+  );
+
   useEffect(() => {
     setFilters(prev => {
       const validRoles = new Set(filterOptions.roles.map(o => o.value));
@@ -2858,7 +2969,7 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
       }
       return { ...prev, roles: nextRoles, disabledModules: nextDisabledModules, lastAddedBuckets: nextBuckets, companyRoles: nextCompanyRoles };
     });
-  }, [filterOptions]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [filterOptionsSig]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const phase7TopologyActive =
     filters.showFolders !== DEFAULT_FILTERS.showFolders ||
@@ -2940,22 +3051,27 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
         </button>
         {!isFilterCollapsed && (
           <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-2">
-            <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
-              <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Layout</p>
-              <SliderControl
-                label="Separation"
-                value={graphControls.spacing}
-                onChange={(v) => scheduleGraphControlUpdate("spacing", v)}
-              />
-              <SliderControl
-                label="Cluster"
-                value={graphControls.clusterStrength}
-                onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)}
-              />
-              <p className="text-[10px] text-gray-400 leading-tight pt-1">
-                Separation = how far apart nodes sit. Cluster: 0 = organic, 100 = grouped by role.
-              </p>
-            </div>
+            {/* Layout sliders: hidden in blob mode — positions are computed
+                deterministically from feature anchors, not a tunable simulation,
+                so Separation / Cluster sliders have no effect. */}
+            {layoutMode !== "blob" && (
+              <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-gray-400">Layout</p>
+                <SliderControl
+                  label="Separation"
+                  value={graphControls.spacing}
+                  onChange={(v) => scheduleGraphControlUpdate("spacing", v)}
+                />
+                <SliderControl
+                  label="Cluster"
+                  value={graphControls.clusterStrength}
+                  onChange={(v) => scheduleGraphControlUpdate("clusterStrength", v)}
+                />
+                <p className="text-[10px] text-gray-400 leading-tight pt-1">
+                  Separation = how far apart nodes sit. Cluster: 0 = organic, 100 = grouped by role.
+                </p>
+              </div>
+            )}
             <div className="bg-white/95 backdrop-blur-sm border border-gray-200 rounded-xl p-3 shadow-sm space-y-2">
               {/* Filter panel header: count summary + clear-all */}
               <div className="flex items-center justify-between">
@@ -3251,32 +3367,68 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
         style={{ background: GRAPH_BACKGROUND, minWidth: 0 }}
       >
         <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100%-7rem)] flex-wrap items-center gap-2 rounded-xl border border-gray-200 bg-white/90 px-2.5 py-2 shadow-sm backdrop-blur">
-          <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
-            {(["users", "access-hubs", "folder-permissions"] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setTopologyMode(mode)}
-                className={cn(
-                  "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
-                  graphMode === mode
-                    ? "bg-gray-900 text-white"
-                    : "text-gray-500 hover:text-gray-900",
-                )}
-              >
-                {GRAPH_MODE_LABEL[mode]}
-              </button>
-            ))}
+          {/* Topology mode switcher: hidden in blob mode — the master spatial
+              graph already integrates roles, modules, access, project, folder
+              permissions and 8 other axes into a single positional signal. */}
+          {layoutMode !== "blob" && (
+            <div className="flex items-center rounded-lg border border-gray-200 bg-white p-0.5">
+              {(["users", "access-hubs", "folder-permissions"] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setTopologyMode(mode)}
+                  className={cn(
+                    "rounded-md px-2 py-1 text-[11px] font-medium transition-colors",
+                    graphMode === mode
+                      ? "bg-gray-900 text-white"
+                      : "text-gray-500 hover:text-gray-900",
+                  )}
+                >
+                  {GRAPH_MODE_LABEL[mode]}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="relative">
+            <label className="flex h-7 min-w-[180px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 text-[11px] text-gray-500">
+              <Search size={12} className="shrink-0" />
+              <input
+                value={graphSearch}
+                onChange={(event) => setGraphSearch(event.currentTarget.value)}
+                onFocus={() => setSearchFocused(true)}
+                // Delay so a click on a suggestion can fire before blur kills the dropdown.
+                onBlur={() => setTimeout(() => setSearchFocused(false), 120)}
+                placeholder="Search users"
+                className="min-w-0 flex-1 bg-transparent text-gray-800 outline-none placeholder:text-gray-400"
+              />
+            </label>
+            {searchFocused && searchSuggestions.length > 0 && (
+              <ul className="absolute left-0 top-[calc(100%+4px)] z-40 max-h-64 w-[260px] overflow-y-auto rounded-lg border border-gray-200 bg-white py-1 shadow-md">
+                {searchSuggestions.map((suggestion) => (
+                  <li key={suggestion.email}>
+                    <button
+                      type="button"
+                      // mousedown fires before the input's blur — keeps the dropdown
+                      // alive long enough for the click to register.
+                      onMouseDown={(event) => {
+                        event.preventDefault();
+                        setGraphSearch(suggestion.email);
+                        setSearchFocused(false);
+                      }}
+                      className="flex w-full flex-col items-start gap-0 px-3 py-1.5 text-left hover:bg-gray-50"
+                    >
+                      <span className="truncate text-[11px] font-medium text-gray-900">
+                        {suggestion.name || suggestion.email}
+                      </span>
+                      {suggestion.name && (
+                        <span className="truncate text-[10px] text-gray-500">{suggestion.email}</span>
+                      )}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
           </div>
-          <label className="flex h-7 min-w-[180px] items-center gap-1.5 rounded-lg border border-gray-200 bg-white px-2 text-[11px] text-gray-500">
-            <Search size={12} className="shrink-0" />
-            <input
-              value={graphSearch}
-              onChange={(event) => setGraphSearch(event.currentTarget.value)}
-              placeholder="Search users"
-              className="min-w-0 flex-1 bg-transparent text-gray-800 outline-none placeholder:text-gray-400"
-            />
-          </label>
           <button
             type="button"
             onClick={resetActiveView}
@@ -3821,529 +3973,3 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null }
   );
 }
 
-// FILT-03: iOS-style module toggle — single toggle row
-// Renders ON/OFF text alongside the switch so the state is unambiguous without
-// relying on color alone. Disabled modules render the label struck-through.
-function ModuleToggle({ label, enabled, onToggle }: { label: string; enabled: boolean; onToggle: () => void }) {
-  return (
-    <div className="flex items-center justify-between gap-2 py-0.5">
-      <span
-        className={cn(
-          "text-[11px] truncate max-w-[120px]",
-          enabled ? "text-gray-700" : "text-gray-400 line-through",
-        )}
-      >
-        {label}
-      </span>
-      <div className="flex items-center gap-1.5 shrink-0">
-        <span
-          className={cn(
-            "text-[9px] font-semibold tracking-wide w-6 text-right",
-            enabled ? "text-emerald-600" : "text-gray-400",
-          )}
-        >
-          {enabled ? "ON" : "OFF"}
-        </span>
-        <button
-          role="switch"
-          aria-checked={enabled}
-          onClick={onToggle}
-          className={cn(
-            "relative inline-flex h-4 w-7 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200",
-            enabled ? "bg-emerald-500" : "bg-gray-300",
-          )}
-        >
-          <span
-            className={cn(
-              "pointer-events-none inline-block h-3 w-3 rounded-full shadow transform transition-transform duration-200",
-              enabled ? "translate-x-3 bg-white" : "translate-x-0 bg-gray-50",
-            )}
-          />
-        </button>
-      </div>
-    </div>
-  );
-}
-
-// DATA-01: companyRole multi-select rendered as a dropdown popover.
-// Click the trigger to open; click outside or press Escape to dismiss.
-// Selecting an option keeps the panel open so the user can multi-select.
-function CompanyRoleFilter({ options, selected, onToggle }: {
-  options: FilterOption[];
-  selected: string[];
-  onToggle: (value: string) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const [search, setSearch] = useState("");
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onMouseDown = (event: MouseEvent) => {
-      if (!containerRef.current?.contains(event.target as Node)) setOpen(false);
-    };
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("mousedown", onMouseDown);
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.removeEventListener("mousedown", onMouseDown);
-      document.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
-
-  const filtered = options.filter((o) =>
-    o.label.toLowerCase().includes(search.toLowerCase())
-  );
-  const triggerLabel =
-    selected.length === 0
-      ? "All roles"
-      : `${selected.length} role${selected.length === 1 ? "" : "s"} selected`;
-
-  return (
-    <div className="min-w-0 space-y-1">
-      <span className="block text-[10px] font-semibold uppercase tracking-wide text-gray-500">Company Role</span>
-      <div ref={containerRef} className="relative">
-        <button
-          type="button"
-          onClick={() => setOpen((v) => !v)}
-          aria-haspopup="listbox"
-          aria-expanded={open}
-          className={cn(
-            "w-full flex items-center justify-between gap-2 px-2 py-1.5 rounded-lg border text-[11px] transition-colors",
-            open
-              ? "border-gray-400 bg-white"
-              : "border-gray-200 bg-white hover:bg-gray-50",
-          )}
-        >
-          <span className={cn("truncate", selected.length === 0 ? "text-gray-500" : "text-gray-800 font-medium")}>
-            {triggerLabel}
-          </span>
-          <span className={cn("text-[10px] text-gray-500 transition-transform", open && "rotate-180")}>▾</span>
-        </button>
-        {open && (
-          <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-lg border border-gray-200 bg-white shadow-lg p-2 space-y-1.5">
-            <input
-              type="text"
-              placeholder="Search roles..."
-              value={search}
-              onChange={(e) => setSearch(e.currentTarget.value)}
-              autoFocus
-              className="h-6 w-full rounded-md border border-gray-200 bg-white px-2 text-[10px] text-gray-700 outline-none focus:border-gray-400"
-            />
-            <div className="max-h-48 overflow-y-auto space-y-0.5 pr-0.5">
-              {filtered.length === 0 ? (
-                <span className="block px-1 py-1 text-[10px] text-gray-400">No matching roles</span>
-              ) : (
-                filtered.map((option) => {
-                  const active = selected.includes(option.value);
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => onToggle(option.value)}
-                      className={cn(
-                        "w-full flex items-center justify-between gap-1 px-2 py-0.5 rounded text-left text-[10px] transition-colors",
-                        active
-                          ? "bg-gray-900 text-white"
-                          : "text-gray-600 hover:bg-gray-100",
-                      )}
-                    >
-                      <span className="truncate">{option.label}</span>
-                      <span className={cn("shrink-0 text-[9px] font-mono", active ? "opacity-70" : "text-gray-400")}>
-                        {option.count}
-                      </span>
-                    </button>
-                  );
-                })
-              )}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function SliderControl({
-  label,
-  value,
-  onChange,
-}: {
-  label: string;
-  value: number;
-  onChange: (value: number) => void;
-}) {
-  return (
-    <label className="flex min-w-0 items-center gap-2 rounded-lg border border-gray-200 bg-white/80 px-2 py-1">
-      <span className="w-20 shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-      <input
-        type="range"
-        min={0}
-        max={100}
-        step={1}
-        value={value}
-        onChange={(event) => onChange(Number(event.currentTarget.value))}
-        className="min-w-0 flex-1 accent-gray-900"
-        aria-label={label}
-      />
-      <span className="w-7 shrink-0 rounded bg-gray-100 px-1 py-0.5 text-right text-[10px] font-semibold tabular-nums text-gray-900">
-        {value}
-      </span>
-    </label>
-  );
-}
-
-function FilterMenu({
-  label,
-  options,
-  selected,
-  onToggle,
-  query,
-  onQueryChange,
-  placeholder,
-  maxVisible = 6,
-}: {
-  label: string;
-  options: FilterOption[];
-  selected: string[];
-  onToggle: (value: string) => void;
-  query?: string;
-  onQueryChange?: (value: string) => void;
-  placeholder?: string;
-  maxVisible?: number;
-}) {
-  const shownOptions = options.slice(0, maxVisible);
-  return (
-    <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2">
-      <div className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-        {selected.length > 0 && (
-          <span className="rounded-full bg-gray-100 px-1.5 py-0.5 text-[9px] font-medium text-gray-600">
-            {selected.length}
-          </span>
-        )}
-      </div>
-      {onQueryChange && (
-        <input
-          value={query ?? ""}
-          onChange={(event) => onQueryChange(event.currentTarget.value)}
-          placeholder={placeholder}
-          className="mb-1.5 h-6 w-full rounded-md border border-gray-200 bg-white px-2 text-[10px] text-gray-700 outline-none focus:border-gray-400"
-        />
-      )}
-      <div className="flex max-h-24 flex-wrap gap-1 overflow-y-auto pr-0.5">
-        {shownOptions.length === 0 ? (
-          <span className="text-[10px] text-gray-400">No options</span>
-        ) : (
-          shownOptions.map((option) => {
-            const active = selected.includes(option.value);
-            return (
-              <button
-                key={option.value}
-                onClick={() => onToggle(option.value)}
-                title={option.label}
-                className={cn(
-                  "max-w-full truncate rounded-md border px-1.5 py-0.5 text-[10px] font-medium transition-colors",
-                  active
-                    ? "border-gray-900 bg-gray-900 text-white"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
-                )}
-              >
-                {option.label}
-                <span className={active ? "ml-1 opacity-70" : "ml-1 text-gray-400"}>{option.count}</span>
-              </button>
-            );
-          })
-        )}
-        {options.length > shownOptions.length && (
-          <span className="self-center text-[10px] text-gray-400">+{options.length - shownOptions.length}</span>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function ToggleFilterControl({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { value: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="min-w-0 rounded-lg border border-gray-200 bg-white/80 p-2">
-      <div className="mb-1.5">
-        <span className="text-[10px] font-semibold uppercase tracking-wide text-gray-500">{label}</span>
-      </div>
-      <div className="flex gap-1">
-        {options.map((option) => (
-          <button
-            key={option.value}
-            onClick={() => onChange(option.value)}
-            className={cn(
-              "flex-1 rounded-md border px-1.5 py-1 text-[10px] font-medium transition-colors",
-              value === option.value
-                ? "border-gray-900 bg-gray-900 text-white"
-                : "border-gray-200 bg-white text-gray-600 hover:border-gray-400 hover:text-gray-900",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function LegendDot({ color, label }: { color: string; label: string }) {
-  return (
-    <div className="flex items-center gap-1.5 text-[10px] text-gray-500">
-      <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: color }} />
-      {label}
-    </div>
-  );
-}
-
-/** Format a Date or ISO string as a relative time (e.g. "3 days ago") */
-function fmtRelative(dt: Date | string | null | undefined): string {
-  if (!dt) return "—";
-  try {
-    const d = dt instanceof Date ? dt : new Date(dt);
-    const diff = Date.now() - d.getTime();
-    const days = Math.floor(diff / 86_400_000);
-    if (days < 1) return "Today";
-    if (days === 1) return "Yesterday";
-    if (days < 30) return `${days}d ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months}mo ago`;
-    return `${Math.floor(months / 12)}y ago`;
-  } catch {
-    return "—";
-  }
-}
-
-type FileActivity = {
-  lastView: Date | null;
-  lastUpload: Date | null;
-  lastEdit: Date | null;
-  lastDelete: Date | null;
-} | null;
-
-function UserTooltip({
-  node,
-  fileActivity,
-  fileActivityLoading,
-}: {
-  node: UserNode;
-  fileActivity: FileActivity;
-  fileActivityLoading: boolean;
-}) {
-  // Derive display status: prefer aggregated status from v2.0 data, fall back to isAdmin badge
-  const statusPill = node.aggregatedStatus ?? null;
-  const statusColor =
-    statusPill === "active" ? "bg-emerald-50 text-emerald-700 border-emerald-200"
-    : statusPill === "pending" ? "bg-amber-50 text-amber-700 border-amber-200"
-    : statusPill === "deleted" ? "bg-red-50 text-red-600 border-red-200"
-    : null;
-
-  // Last file activity: pick the most recent across all categories
-  const lastFileAt = fileActivity
-    ? ([fileActivity.lastView, fileActivity.lastUpload, fileActivity.lastEdit, fileActivity.lastDelete]
-        .filter((d): d is Date => d != null) as Date[])
-        .map((d) => new Date(d))
-        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null
-    : null;
-
-  return (
-    <div className="space-y-1.5 min-w-[180px]">
-      {/* Name + email */}
-      <p className="text-xs font-semibold text-gray-900 leading-tight">{node.name || node.email}</p>
-      <p className="text-[10px] text-gray-500 break-all">{node.email}</p>
-
-      {/* Status pill (text, never bare color) */}
-      {statusPill && statusColor && (
-        <span className={cn("inline-flex items-center px-1.5 py-0.5 rounded-full border text-[9px] font-semibold", statusColor)}>
-          {statusPill.charAt(0).toUpperCase() + statusPill.slice(1)}
-        </span>
-      )}
-
-      {/* Company name */}
-      {(node.companyName ?? node.companyRole) && (
-        <p className="text-[10px] text-gray-600 font-medium truncate">
-          {node.companyName ?? node.companyRole}
-        </p>
-      )}
-
-      {/* Access level badges (text + color — color is NEVER the sole signal) */}
-      {(node.isAccountAdmin || node.projectAdmin || node.executive) && (
-        <div className="flex flex-wrap gap-1 pt-0.5">
-          {node.isAccountAdmin && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-yellow-50 text-yellow-700 border border-yellow-200 font-semibold">
-              Hub Admin
-            </span>
-          )}
-          {node.projectAdmin && !node.isAccountAdmin && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-semibold">
-              Project Admin
-            </span>
-          )}
-          {node.executive && !node.isAccountAdmin && !node.projectAdmin && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-purple-50 text-purple-700 border border-purple-200 font-semibold">
-              Executive
-            </span>
-          )}
-          {node.isAdmin && !node.isAccountAdmin && !node.projectAdmin && !node.executive && (
-            <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 font-semibold">
-              Admin Access
-            </span>
-          )}
-        </div>
-      )}
-      {!node.isAccountAdmin && !node.projectAdmin && !node.executive && node.isAdmin && (
-        <p className="text-[9px] text-emerald-600 font-semibold">Admin Access</p>
-      )}
-
-      {/* Last sign-in */}
-      {node.lastSignIn && (
-        <p className="text-[9px] text-gray-400">
-          Sign-in: {fmtRelative(node.lastSignIn)}
-        </p>
-      )}
-
-      {/* Last file activity (lazy — shown only when loaded) */}
-      {fileActivityLoading ? (
-        <p className="text-[9px] text-gray-400 animate-pulse">File activity…</p>
-      ) : lastFileAt ? (
-        <p className="text-[9px] text-gray-400">
-          File activity: {fmtRelative(lastFileAt)}
-        </p>
-      ) : null}
-
-      {/* Roles (capped at 4) */}
-      {node.roles.length > 0 && (
-        <div className="flex flex-wrap gap-1 pt-0.5">
-          {node.roles.slice(0, 4).map((r) => (
-            <span key={r} className="text-[9px] px-1.5 py-0.5 rounded bg-violet-50 text-violet-700 border border-violet-200 font-medium">
-              {r}
-            </span>
-          ))}
-          {node.roles.length > 4 && <span className="text-[9px] text-gray-400">+{node.roles.length - 4}</span>}
-        </div>
-      )}
-
-      {node.individualAccess && <p className="text-[9px] text-sky-600 font-semibold">Individual Access Config</p>}
-    </div>
-  );
-}
-
-function SidePanel({
-  state,
-  onClose,
-}: {
-  state: SidePanelState;
-  onClose: () => void;
-}) {
-  const node = state.node;
-  const title = node.name || node.email;
-
-  return (
-    <div className="w-full h-full bg-white/95 backdrop-blur-sm rounded-xl border border-gray-200 p-4 flex flex-col gap-3 overflow-y-auto shadow-lg">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <h3 className="text-sm font-semibold text-gray-900 leading-snug">{title}</h3>
-          <p className="text-[11px] text-gray-400 break-all mt-0.5">{node.email}</p>
-        </div>
-        <button onClick={onClose} className="shrink-0 text-gray-400 hover:text-gray-700 transition-colors text-lg leading-none mt-0.5">&times;</button>
-      </div>
-
-      <div className="space-y-3">
-        {!node.found && (
-          <p className="text-[11px] text-gray-400 italic bg-gray-50 rounded-lg px-2 py-1.5">
-            Not yet synced to ACC.
-          </p>
-        )}
-        {node.found && node.hasNoProjects && (
-          <p className="text-[11px] text-amber-600 bg-amber-50 rounded-lg px-2 py-1.5">
-            Synced but no projects assigned.
-          </p>
-        )}
-
-        <div className="flex flex-wrap gap-1.5">
-          {node.isAdmin && <Tag color="emerald">Admin Access</Tag>}
-          {node.individualAccess && <Tag color="gray">Individual Access</Tag>}
-        </div>
-
-        {node.projectName && (
-          <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Project</p>
-            <p className="text-[11px] text-gray-700 font-medium">{node.projectName}</p>
-          </div>
-        )}
-        {!node.projectName && node.projectCount > 0 && (
-          <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Projects</p>
-            <p className="text-[11px] text-gray-700">{node.projectCount} project{node.projectCount > 1 ? "s" : ""}</p>
-          </div>
-        )}
-
-        {node.lastAddedBucket && (
-          <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1">Added</p>
-            <p className="text-[11px] text-gray-700">{node.lastAddedBucket}</p>
-          </div>
-        )}
-
-        {node.roles.length > 0 && (
-          <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Roles</p>
-            <div className="flex flex-wrap gap-1">
-              {node.roles.map((role) => (
-                <span
-                  key={role}
-                  className="text-[10px] px-1.5 py-0.5 rounded-md bg-violet-50 text-violet-700 border border-violet-200"
-                >
-                  {role}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {node.modules.length > 0 && (
-          <div>
-            <p className="text-[10px] font-medium text-gray-400 uppercase tracking-wider mb-1.5">Modules</p>
-            <div className="flex flex-wrap gap-1">
-              {node.modules.map((moduleName) => (
-                <span
-                  key={moduleName}
-                  className="text-[10px] px-1.5 py-0.5 rounded-md bg-sky-50 text-sky-700 border border-sky-200"
-                >
-                  {moduleLabel(moduleName)}
-                </span>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Tag({ color, children }: { color: "emerald" | "amber" | "gray"; children: React.ReactNode }) {
-  const styles = {
-    emerald: "bg-emerald-50 text-emerald-700 border-emerald-200",
-    amber: "bg-amber-50 text-amber-700 border-amber-200",
-    gray: "bg-gray-100 text-gray-600 border-gray-200",
-  };
-
-  return (
-    <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border ${styles[color]}`}>
-      {children}
-    </span>
-  );
-}
