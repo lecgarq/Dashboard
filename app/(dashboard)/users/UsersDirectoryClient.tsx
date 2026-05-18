@@ -58,6 +58,14 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { AccUsersGraphProps } from "./AccUsersGraph";
 import {
   mapFallbackDirectoryToOrgPeople,
@@ -1163,6 +1171,9 @@ export function UsersDirectoryClient() {
   const [filterAccProject, setFilterAccProject] = useState<string | null>(null);
   const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
   const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
+  // Phase 09 LIST-01 / LIST-02 — Status multi-select + Project Admin binary
+  const [statusFilter, setStatusFilter] = useState<AggregatedStatus[]>([]);
+  const [projectAdminFilter, setProjectAdminFilter] = useState<boolean>(false);
   // LIST-04: informational tier label paired with filterAccModule when the user click-throughs
   // from the side panel's Module Access section. Row-predicate fallback is module-only because
   // BulkAccUser.allModules has no per-project tier — tier is surfaced in the ActiveFilterPill chip
@@ -1453,7 +1464,8 @@ export function UsersDirectoryClient() {
 
   const hasActiveFilters = !!(
     filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
-    filterAccProject || filterAccRole || filterAccModule
+    filterAccProject || filterAccRole || filterAccModule ||
+    statusFilter.length > 0 || projectAdminFilter
   );
 
   // Filter + search
@@ -1478,13 +1490,29 @@ export function UsersDirectoryClient() {
         if (filterAccRole && !summary.allRoles?.includes(filterAccRole)) return false;
         if (filterAccModule && !summary.allModules?.includes(filterAccModule)) return false;
       }
-      
+
+      // Phase 09 LIST-01: status multi-select facet
+      if (statusFilter.length > 0) {
+        const summary = accSummaryMap.get(p.email);
+        const rowStatus: AggregatedStatus =
+          summary?.aggregatedStatus ??
+          reduceMemberStatus(summary?.projects?.map((proj) => proj.status) ?? []);
+        if (!statusFilter.includes(rowStatus)) return false;
+      }
+
+      // Phase 09 LIST-02: project-admin binary facet
+      if (projectAdminFilter) {
+        const summary = accSummaryMap.get(p.email);
+        if (summary?.projectAdmin !== true) return false;
+      }
+
       // Search bar (free text + field scoped)
       return matchesPerson(p, freeText, fieldFilters);
     });
   }, [
-    people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter, 
-    filterNoProjects, filterAccProject, filterAccRole, filterAccModule, accSummaryMap
+    people, debouncedSearch, filterDept, filterJobTitle, filterCostCenter,
+    filterNoProjects, filterAccProject, filterAccRole, filterAccModule,
+    statusFilter, projectAdminFilter, accSummaryMap
   ]);
 
   // Grouped data
@@ -1928,7 +1956,10 @@ export function UsersDirectoryClient() {
           {accModules.length > 0 && (
             <Select
               value={filterAccModule ?? "__all__"}
-              onValueChange={(v) => setFilterAccModule(v === "__all__" ? null : v)}
+              onValueChange={(v) => {
+                setFilterAccModule(v === "__all__" ? null : v);
+                setFilterAccModuleTier(null);
+              }}
             >
               <SelectTrigger className="h-7 w-auto min-w-[130px] text-[11px] bg-card border-border gap-1">
                 <LayoutGrid size={11} className="shrink-0 text-muted-foreground" />

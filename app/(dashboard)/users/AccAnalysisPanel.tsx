@@ -17,9 +17,12 @@ type SubTab = "overview" | "roles" | "compaction";
 export function AccAnalysisPanel({
   users,
   onSelectUser: onViewProfile,
+  onApplyModuleFilter,
 }: {
   users: BulkAccUser[];
   onSelectUser?: (email: string) => void;
+  /** LIST-04: forwarded to AccUserSidePanel so Module Access clicks can filter the directory. */
+  onApplyModuleFilter?: (moduleKey: string, tier: string) => void;
 }) {
   const [subTab, setSubTab] = useState<SubTab>("overview");
 
@@ -92,6 +95,7 @@ export function AccAnalysisPanel({
         candidate={sidePanelCandidate}
         onClose={closeSidePanel}
         onViewProfile={onViewProfile ? (email) => { closeSidePanel(); onViewProfile(email); } : undefined}
+        onApplyModuleFilter={onApplyModuleFilter}
       />
     </div>
   );
