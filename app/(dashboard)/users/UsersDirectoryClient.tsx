@@ -1545,6 +1545,8 @@ export function UsersDirectoryClient() {
     filterAccProject,
     filterAccRole,
     filterAccModule,
+    statusFilter,
+    projectAdminFilter,
     groupBy,
     viewMode,
   ]);
@@ -1607,6 +1609,8 @@ export function UsersDirectoryClient() {
     setFilterAccRole(null);
     setFilterAccModule(null);
     setFilterAccModuleTier(null);
+    setStatusFilter([]);
+    setProjectAdminFilter(false);
     handleSearchChange("");
   }
 
@@ -1976,6 +1980,68 @@ export function UsersDirectoryClient() {
             </Select>
           )}
 
+          {/* Phase 09 LIST-01 — Status multi-select facet */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className="h-7 px-2.5 text-[11px] gap-1 bg-card border-border"
+              >
+                <CheckCircle2 size={11} className="shrink-0 text-muted-foreground" />
+                Status
+                {statusFilter.length > 0 && (
+                  <Badge variant="secondary" className="ml-1 h-4 px-1 text-[10px]">
+                    {statusFilter.length}
+                  </Badge>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="start">
+              <DropdownMenuLabel className="text-[11px]">User status</DropdownMenuLabel>
+              <DropdownMenuSeparator />
+              {(["active", "pending", "deleted"] as AggregatedStatus[]).map((s) => (
+                <DropdownMenuCheckboxItem
+                  key={s}
+                  checked={statusFilter.includes(s)}
+                  onCheckedChange={(checked) => {
+                    setStatusFilter((prev) =>
+                      checked ? [...prev, s] : prev.filter((x) => x !== s),
+                    );
+                  }}
+                  onSelect={(e) => e.preventDefault()}
+                >
+                  {STATUS_PILL_LABEL[s]}
+                </DropdownMenuCheckboxItem>
+              ))}
+              {statusFilter.length > 0 && (
+                <>
+                  <DropdownMenuSeparator />
+                  <button
+                    onClick={() => setStatusFilter([])}
+                    className="w-full text-left px-2 py-1.5 text-[11px] text-primary hover:bg-accent rounded-sm"
+                  >
+                    Clear status filter
+                  </button>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Phase 09 LIST-02 — Project Admin binary facet */}
+          <button
+            onClick={() => setProjectAdminFilter((prev) => !prev)}
+            className={cn(
+              "inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all",
+              projectAdminFilter
+                ? "border-primary/60 bg-primary/15 text-primary"
+                : "border-border bg-transparent text-muted-foreground hover:border-primary/40 hover:text-primary",
+            )}
+          >
+            <ShieldCheck size={11} className="shrink-0" />
+            Project Admin only
+          </button>
+
           {/* ACC "No Projects" filter chip — only visible when there is cache data */}
           {noProjectsCount > 0 && (
             <button
@@ -2055,6 +2121,23 @@ export function UsersDirectoryClient() {
                   setFilterAccModule(null);
                   setFilterAccModuleTier(null);
                 }}
+              />
+            )}
+            {statusFilter.map((s) => (
+              <ActiveFilterPill
+                key={s}
+                label="Status"
+                value={STATUS_PILL_LABEL[s]}
+                onClear={() =>
+                  setStatusFilter((prev) => prev.filter((x) => x !== s))
+                }
+              />
+            ))}
+            {projectAdminFilter && (
+              <ActiveFilterPill
+                label="Admin"
+                value="Project Admin only"
+                onClear={() => setProjectAdminFilter(false)}
               />
             )}
           </div>
