@@ -131,6 +131,39 @@ export const accMembersRouter = router({
   }),
 
   /**
+   * Phase 09 LIST-04: lazy per-user products fetch for the side-panel
+   * Module Access section.
+   *
+   * Returns one row per (active) project the user is a member of, carrying the
+   * raw `products` JSON straight from `AccProjectMember`. The client side
+   * uses `parseProductsJson()` (lib/acc/productsTierMap.ts) to convert each
+   * row into `ProductTier[]` — keeping the parse/validation logic in one place
+   * and matching the LIST-04 lock (no raw JSON rendering, unknown modules surfaced).
+   *
+   * Filter to `project.status === "active"` per the soft-delete contract (PROJ-02);
+   * deleted projects must not pollute Module Access. NEVER promote this onto
+   * `BulkAccUser`/`enrichedUsers` (RESEARCH Anti-Pattern — products payload can be
+   * ~projectCount × 1KB per row).
+   */
+  getProductsForUser: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ ctx, input }) => {
+      const email = input.email.toLowerCase();
+      const rows = await ctx.db.accProjectMember.findMany({
+        where: { email, project: { status: "active" } },
+        select: {
+          products: true,
+          project: { select: { id: true, name: true } },
+        },
+      });
+      return rows.map((r) => ({
+        projectId: r.project.id,
+        projectName: r.project.name,
+        products: r.products,
+      }));
+    }),
+
+  /**
    * KPI strip data: members, access changes, active admins, stale members.
    * Returns absolute values + deltas vs the prior equivalent window.
    * Active-admins and stale-members deltas ship as 0 (no historical snapshots yet).
