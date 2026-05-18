@@ -44,9 +44,20 @@ import {
   Database,
   CheckCircle2,
   CircleDashed,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
+import {
+  reduceMemberStatus,
+  type AggregatedStatus,
+} from "@/lib/acc/accStatusReduction";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import type { AccUsersGraphProps } from "./AccUsersGraph";
 import {
   mapFallbackDirectoryToOrgPeople,
@@ -66,7 +77,10 @@ const AccProfileSection = dynamic<{ email: string }>(
   { ssr: false, loading: () => <div className="mt-5 h-24 rounded-xl bg-muted/20" /> },
 );
 
-const AccAnalysisPanel = dynamic<{ users: BulkAccUser[] }>(
+const AccAnalysisPanel = dynamic<{
+  users: BulkAccUser[];
+  onApplyModuleFilter?: (moduleKey: string, tier: string) => void;
+}>(
   () => import("./AccAnalysisPanel").then((m) => m.AccAnalysisPanel),
   { ssr: false, loading: () => <div className="h-80 rounded-xl border bg-card animate-pulse" /> },
 );
@@ -541,6 +555,104 @@ function PersonDetailModal({
   );
 }
 
+// ---------------------------------------------------------------------------
+// Phase 09 LIST-01 / LIST-02 — Status + Admin pills
+//
+// Pill text is load-bearing (CONTEXT lock) — color is decoration only. Each
+// pill is rendered as a <button type="button"> for keyboard / screen-reader
+// access; Tooltip provides DASH-18 hover detail. Click handlers are wired by
+// the parent (Task 3) so T1 ships purely visual markup.
+// ---------------------------------------------------------------------------
+
+const STATUS_PILL_LABEL: Record<AggregatedStatus, string> = {
+  active: "Active",
+  pending: "Pending",
+  deleted: "Deleted",
+};
+
+const STATUS_PILL_CLASS: Record<AggregatedStatus, string> = {
+  active: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
+  pending: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
+  deleted: "bg-muted text-muted-foreground border border-border",
+};
+
+/**
+ * Aggregated status pill (LIST-01). Renders a button-wrapped Badge whose
+ * label is the canonical AggregatedStatus literal. When status is undefined
+ * (enrichedUsers still in flight) renders a low-opacity skeleton badge.
+ */
+function StatusPill({
+  status,
+  onClick,
+}: {
+  status: AggregatedStatus | undefined;
+  onClick?: (status: AggregatedStatus) => void;
+}) {
+  if (status === undefined) {
+    return (
+      <Badge variant="outline" className="opacity-50 text-[10px] px-1.5 py-0">
+        …
+      </Badge>
+    );
+  }
+  const label = STATUS_PILL_LABEL[status];
+  const klass = STATUS_PILL_CLASS[status];
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label={`Filter by status: ${label}`}
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.(status);
+          }}
+          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        >
+          <Badge className={cn("text-[10px] px-2 py-0", klass)}>{label}</Badge>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        Aggregated across all projects
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * Inline Project-Admin pill (LIST-02). Only rendered when projectAdmin is
+ * strictly true (any-project admin aggregation already handled by
+ * enrichedUsers).
+ */
+function AdminPill({ onClick }: { onClick?: () => void }) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <button
+          type="button"
+          aria-label="Filter to project admins only"
+          onClick={(e) => {
+            e.stopPropagation();
+            onClick?.();
+          }}
+          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
+        >
+          <Badge
+            variant="default"
+            className="ml-2 text-[10px] px-1.5 py-0 gap-1"
+          >
+            <ShieldCheck size={9} />
+            Admin
+          </Badge>
+        </button>
+      </TooltipTrigger>
+      <TooltipContent side="top">
+        Project Admin on at least one project
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
 /** Small ACC project count badge shown on person cards/rows */
 function AccBadge({ summary }: { summary: BulkAccUser | undefined }) {
   if (!summary) return null;
@@ -632,6 +744,8 @@ function PersonRow({
   onHoverEnter,
   onHoverLeave,
   onActivityCellClick,
+  onStatusPillClick,
+  onAdminPillClick,
 }: {
   person: OrgPerson;
   accSummary?: BulkAccUser;
@@ -640,7 +754,21 @@ function PersonRow({
   onHoverEnter: () => void;
   onHoverLeave: () => void;
   onActivityCellClick: () => void;
+  onStatusPillClick?: (status: AggregatedStatus) => void;
+  onAdminPillClick?: () => void;
 }) {
+  // LIST-01: prefer canonical aggregatedStatus; fall back to client reducer
+  // only when the enrichedUsers query hasn't returned yet AND the summary
+  // happens to surface a raw status list (today it does not — keeps shape
+  // future-proof). When both are absent we render the skeleton variant by
+  // passing undefined to <StatusPill />.
+  const rowStatus: AggregatedStatus | undefined =
+    accSummary?.aggregatedStatus ??
+    (accSummary?.projects && accSummary.projects.length > 0
+      ? reduceMemberStatus(accSummary.projects.map((p) => p.status))
+      : undefined);
+  const isProjectAdmin = accSummary?.projectAdmin === true;
+
   return (
     <div
       onMouseEnter={onHoverEnter}
@@ -649,9 +777,12 @@ function PersonRow({
       onClick={onClick}
     >
       <PersonAvatar person={person} size="sm" />
-      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 items-center">
+      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 items-center">
         <div className="min-w-0">
-          <p className="text-sm font-semibold text-foreground truncate">{person.displayName}</p>
+          <p className="text-sm font-semibold text-foreground truncate flex items-center">
+            <span className="truncate">{person.displayName}</span>
+            {isProjectAdmin && <AdminPill onClick={onAdminPillClick} />}
+          </p>
           <p className="text-[11px] text-muted-foreground truncate">{person.email}</p>
         </div>
         <div className="min-w-0 text-xs text-muted-foreground truncate">
@@ -665,6 +796,9 @@ function PersonRow({
         </div>
         <div className="min-w-0 text-xs text-muted-foreground truncate">
           {person.phoneNumber || <span className="text-muted-foreground/30">--</span>}
+        </div>
+        <div className="min-w-0">
+          <StatusPill status={rowStatus} onClick={onStatusPillClick} />
         </div>
         {FILE_ACTIVITY_COLUMNS.map((col) => (
           <div key={col.key} className="min-w-0">
@@ -697,6 +831,8 @@ function PersonRowList({
   onHoverEnter,
   onHoverLeave,
   onActivityCellClick,
+  onStatusPillClick,
+  onAdminPillClick,
 }: {
   list: OrgPerson[];
   accSummaryMap: Map<string, BulkAccUser>;
@@ -705,6 +841,8 @@ function PersonRowList({
   onHoverEnter: (email: string) => void;
   onHoverLeave: (email: string) => void;
   onActivityCellClick: (email: string) => void;
+  onStatusPillClick?: (status: AggregatedStatus) => void;
+  onAdminPillClick?: () => void;
 }) {
   const parentRef = useRef<HTMLDivElement>(null);
   // Force re-render once parentRef mounts so scrollMargin picks up its offsetTop.
@@ -747,6 +885,8 @@ function PersonRowList({
               onHoverEnter={() => onHoverEnter(person.email)}
               onHoverLeave={() => onHoverLeave(person.email)}
               onActivityCellClick={() => onActivityCellClick(person.email)}
+              onStatusPillClick={onStatusPillClick}
+              onAdminPillClick={onAdminPillClick}
             />
           </div>
         );
@@ -1023,6 +1163,11 @@ export function UsersDirectoryClient() {
   const [filterAccProject, setFilterAccProject] = useState<string | null>(null);
   const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
   const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
+  // LIST-04: informational tier label paired with filterAccModule when the user click-throughs
+  // from the side panel's Module Access section. Row-predicate fallback is module-only because
+  // BulkAccUser.allModules has no per-project tier — tier is surfaced in the ActiveFilterPill chip
+  // for user intent transparency. Documented in 09-03 SUMMARY trade-offs.
+  const [filterAccModuleTier, setFilterAccModuleTier] = useState<string | null>(null);
   const [directoryRenderLimit, setDirectoryRenderLimit] = useState(DIRECTORY_RENDER_BATCH);
   const [perfLoggingEnabled] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -1433,8 +1578,22 @@ export function UsersDirectoryClient() {
     setFilterAccProject(null);
     setFilterAccRole(null);
     setFilterAccModule(null);
+    setFilterAccModuleTier(null);
     handleSearchChange("");
   }
+
+  // LIST-04: side-panel Module Access click-through → narrow the directory by module.
+  // Tier is captured as informational chip metadata (per-tier predicate not feasible without
+  // per-project tier on the row; documented trade-off in 09-03 SUMMARY).
+  const handleApplyModuleFilterFromSidePanel = useCallback(
+    (moduleKey: string, tier: string) => {
+      setFilterAccModule(moduleKey);
+      setFilterAccModuleTier(tier || null);
+      // Side panel stays open intentionally so the user can see the directory facet take effect
+      // behind it. Closing it would obscure the cause-and-effect signal.
+    },
+    [],
+  );
 
   function renderPeople(list: OrgPerson[]) {
     if (viewMode === "list") {
@@ -1442,18 +1601,20 @@ export function UsersDirectoryClient() {
         <div className="space-y-1.5">
           {/* Two-row grouped header — top row spans "File Activity" across 4 sub-columns */}
           <div className="hidden lg:block">
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_2.8fr_auto] gap-3 px-4 pt-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_2.8fr_auto] gap-3 px-4 pt-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
               <span>Name</span>
               <span>Department</span>
               <span>Job Title</span>
               <span>Cost Center</span>
               <span>Phone</span>
+              <span>Status</span>
               <span className="text-center border-b border-border/30 pb-0.5">
                 File Activity
               </span>
               <span>ACC</span>
             </div>
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+              <span />
               <span />
               <span />
               <span />
@@ -1494,6 +1655,7 @@ export function UsersDirectoryClient() {
   }
 
   return (
+    <TooltipProvider delayDuration={150}>
     <div className={cn(
       activeTab === "graph"
         ? "flex h-full w-full flex-col"
@@ -1604,7 +1766,10 @@ export function UsersDirectoryClient() {
 
       {/* Access Analysis tab */}
       {activeTab === "analysis" && (
-        <AccAnalysisPanel users={mergedAccUsers} />
+        <AccAnalysisPanel
+          users={mergedAccUsers}
+          onApplyModuleFilter={handleApplyModuleFilterFromSidePanel}
+        />
       )}
 
       {/* Activity Audit tab */}
@@ -1848,8 +2013,17 @@ export function UsersDirectoryClient() {
             {filterAccModule && (
               <ActiveFilterPill
                 label="Module"
-                value={moduleLabel(filterAccModule)}
-                onClear={() => setFilterAccModule(null)}
+                value={
+                  filterAccModuleTier
+                    ? `${moduleLabel(filterAccModule)} (Tier: ${
+                        filterAccModuleTier.charAt(0).toUpperCase() + filterAccModuleTier.slice(1)
+                      })`
+                    : moduleLabel(filterAccModule)
+                }
+                onClear={() => {
+                  setFilterAccModule(null);
+                  setFilterAccModuleTier(null);
+                }}
               />
             )}
           </div>
@@ -1990,5 +2164,6 @@ export function UsersDirectoryClient() {
       </>
       )}
     </div>
+    </TooltipProvider>
   );
 }
