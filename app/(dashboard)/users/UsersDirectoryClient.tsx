@@ -6,6 +6,7 @@ import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import { trpc } from "@/lib/core/trpc";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -73,6 +74,7 @@ import {
   mergePeopleWithAccSummary,
 } from "./useMergedAccUsers";
 import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
+import { useVisibleRowEmails } from "./useVisibleRowEmails";
 import { moduleLabel } from "@/lib/acc/modules";
 import { formatDistanceToNowStrict } from "date-fns";
 import {
@@ -357,6 +359,64 @@ function FileActivityCell({
     >
       {formatDistanceToNowStrict(date, { addSuffix: true })}
     </button>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// LIST-03 (display path): Last File Activity cell
+//
+// Renders a single "max-of-buckets" relative timestamp fed by
+// `accActivity.getLastFileActivityBatch`. The actual batch query lives on the
+// parent (UsersDirectoryClient root) — this component receives the lookup map
+// already keyed by lowercased email and decides which of three states to
+// render: skeleton (not yet fetched), em-dash + tooltip (null = no activity),
+// or relative timestamp (ISO string).
+//
+// Anti-pattern guard (RESEARCH Pitfall 1): NEVER read from
+// `BulkAccUser.lastFileActivity` — that field does not exist and adding it
+// would violate ACTV-03 by eager-loading activity onto the bulk payload.
+// ---------------------------------------------------------------------------
+
+function LastFileActivityCell({
+  email,
+  activityByEmail,
+}: {
+  email: string;
+  activityByEmail: Record<string, string | null> | undefined;
+}) {
+  const lookup = email.toLowerCase();
+  const value = activityByEmail ? activityByEmail[lookup] : undefined;
+
+  // Pending: parent's batch query has not yet returned a value for this row.
+  if (activityByEmail === undefined || value === undefined) {
+    return <Skeleton className="h-4 w-20" />;
+  }
+
+  // Empty: server returned null — user has no file activity in the window.
+  if (value === null) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <span
+            aria-label="No activity in 90d"
+            className="text-muted-foreground/50 text-[11px] tabular-nums"
+          >
+            —
+          </span>
+        </TooltipTrigger>
+        <TooltipContent>No activity in 90d</TooltipContent>
+      </Tooltip>
+    );
+  }
+
+  const date = new Date(value);
+  return (
+    <span
+      className="text-foreground text-[11px] tabular-nums truncate"
+      title={date.toISOString()}
+    >
+      {formatDistanceToNowStrict(date, { addSuffix: true })}
+    </span>
   );
 }
 
@@ -754,6 +814,8 @@ function PersonRow({
   onActivityCellClick,
   onStatusPillClick,
   onAdminPillClick,
+  rowRef,
+  activityByEmail,
 }: {
   person: OrgPerson;
   accSummary?: BulkAccUser;
@@ -764,6 +826,11 @@ function PersonRow({
   onActivityCellClick: () => void;
   onStatusPillClick?: (status: AggregatedStatus) => void;
   onAdminPillClick?: () => void;
+  // LIST-03 (display path): optional viewport-tracking ref + batch lookup.
+  // Both are undefined for the legacy/card render path; the list path wires
+  // them through from useVisibleRowEmails + getLastFileActivityBatch.
+  rowRef?: (el: HTMLElement | null) => void;
+  activityByEmail?: Record<string, string | null>;
 }) {
   // LIST-01: prefer canonical aggregatedStatus; fall back to client reducer
   // only when the enrichedUsers query hasn't returned yet AND the summary
@@ -779,13 +846,14 @@ function PersonRow({
 
   return (
     <div
+      ref={rowRef}
       onMouseEnter={onHoverEnter}
       onMouseLeave={onHoverLeave}
       className="group/row w-full flex items-center gap-4 px-4 py-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:shadow-sm transition-all duration-150 cursor-pointer"
       onClick={onClick}
     >
       <PersonAvatar person={person} size="sm" />
-      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 items-center">
+      <div className="min-w-0 flex-1 grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_1fr_auto] gap-3 items-center">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground truncate flex items-center">
             <span className="truncate">{person.displayName}</span>
@@ -818,6 +886,12 @@ function PersonRow({
             />
           </div>
         ))}
+        <div className="min-w-0">
+          <LastFileActivityCell
+            email={person.email}
+            activityByEmail={activityByEmail}
+          />
+        </div>
         <div className="shrink-0">
           <AccBadge summary={accSummary} />
         </div>
@@ -864,6 +938,22 @@ function PersonRowList({
     scrollMargin: parentRef.current?.offsetTop ?? 0,
   });
 
+  // LIST-03 (display path): lazy "Last File Activity" column. The hook
+  // returns the set of currently-visible row emails; the batch query is
+  // keyed on that set and re-fires when the visible window changes. The
+  // batch procedure is the ONLY new server hit per scroll — N+1 forbidden
+  // (RESEARCH Pitfall 2).
+  const { visibleEmails, registerRow } = useVisibleRowEmails();
+  const { data: activityByEmail } =
+    trpc.accActivity.getLastFileActivityBatch.useQuery(
+      { emails: visibleEmails.slice(0, 200) },
+      {
+        enabled: visibleEmails.length > 0,
+        staleTime: 300_000,
+        placeholderData: (prev) => prev,
+      },
+    );
+
   return (
     <div
       ref={parentRef}
@@ -871,11 +961,17 @@ function PersonRowList({
     >
       {virtualizer.getVirtualItems().map((vi) => {
         const person = list[vi.index];
+        const registerRefForEmail = registerRow(person.email);
         return (
           <div
             key={person.resourceName}
             data-index={vi.index}
-            ref={virtualizer.measureElement}
+            ref={(el) => {
+              // Compose tanstack-virtual's measureElement with the visibility
+              // observer's ref. Both must observe the same outer wrapper.
+              virtualizer.measureElement(el);
+              registerRefForEmail(el);
+            }}
             style={{
               position: "absolute",
               top: 0,
@@ -895,6 +991,7 @@ function PersonRowList({
               onActivityCellClick={() => onActivityCellClick(person.email)}
               onStatusPillClick={onStatusPillClick}
               onAdminPillClick={onAdminPillClick}
+              activityByEmail={activityByEmail}
             />
           </div>
         );
@@ -1663,7 +1760,7 @@ export function UsersDirectoryClient() {
         <div className="space-y-1.5">
           {/* Two-row grouped header — top row spans "File Activity" across 4 sub-columns */}
           <div className="hidden lg:block">
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_2.8fr_auto] gap-3 px-4 pt-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_2.8fr_1fr_auto] gap-3 px-4 pt-2 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
               <span>Name</span>
               <span>Department</span>
               <span>Job Title</span>
@@ -1673,9 +1770,10 @@ export function UsersDirectoryClient() {
               <span className="text-center border-b border-border/30 pb-0.5">
                 File Activity
               </span>
+              <span>Last File Activity</span>
               <span>ACC</span>
             </div>
-            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
+            <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_1fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
               <span />
               <span />
               <span />
@@ -1686,6 +1784,7 @@ export function UsersDirectoryClient() {
               <span className="text-muted-foreground/80">Upload</span>
               <span className="text-muted-foreground/80">Edit</span>
               <span className="text-muted-foreground/80">Delete</span>
+              <span />
               <span />
             </div>
           </div>
