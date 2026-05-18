@@ -1241,6 +1241,36 @@ export function UsersDirectoryClient() {
     [activateEmail],
   );
 
+  // Phase 09 LIST-01 / LIST-02 — pill click handlers (Task 3).
+  //
+  // Status pill: replace selection — clicking a single status sets the filter
+  // to ONLY that status; clicking the same pill again clears the status
+  // filter entirely. Facet-reduction IS the spotlight (CONTEXT lock).
+  //
+  // Admin pill: toggle the projectAdmin binary facet on/off (CONTEXT
+  // discretion recommendation).
+  //
+  // Both handlers scroll the (window-virtualized) directory list back to
+  // the top so the user sees the reduced result set from row 0.
+  const scrollDirectoryToTop = useCallback(() => {
+    if (typeof window !== "undefined") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+  }, []);
+  const handleStatusPillClick = useCallback(
+    (status: AggregatedStatus) => {
+      setStatusFilter((prev) =>
+        prev.length === 1 && prev[0] === status ? [] : [status],
+      );
+      scrollDirectoryToTop();
+    },
+    [scrollDirectoryToTop],
+  );
+  const handleAdminPillClick = useCallback(() => {
+    setProjectAdminFilter((prev) => !prev);
+    scrollDirectoryToTop();
+  }, [scrollDirectoryToTop]);
+
   // Cleanup all hover timers on unmount
   useEffect(() => {
     const timers = hoverTimers.current;
@@ -1667,6 +1697,8 @@ export function UsersDirectoryClient() {
             onHoverEnter={handleRowHoverEnter}
             onHoverLeave={handleRowHoverLeave}
             onActivityCellClick={openActivitySheet}
+            onStatusPillClick={handleStatusPillClick}
+            onAdminPillClick={handleAdminPillClick}
           />
         </div>
       );
