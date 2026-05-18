@@ -4,6 +4,20 @@ milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending Luis)
 status: completed
+last_updated: "2026-05-18T15:52:22.425Z"
+progress:
+  total_phases: 12
+  completed_phases: 6
+  total_plans: 61
+  completed_plans: 42
+---
+
+---
+gsd_state_version: 1.0
+milestone: v1.0
+milestone_name: — ACC Extraction Completion
+current_phase: Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending Luis)
+status: completed
 last_updated: "2026-05-18T15:48:57.157Z"
 progress:
   total_phases: 12
@@ -226,6 +240,9 @@ See: .planning/PROJECT.md
 - [Phase 08]: Fail-fast env-var guard writes status=failed row rather than silent skip
 - [Phase 08]: get2LegToken co-located in dcProjectDiscovery.ts (not aps-oauth.ts — 3-leg only)
 - [Phase 09]: 09-03: LIST-04 Module Access section shipped — top-level summary tier + per-project deviations + unknown-module warnings, click-through narrows directory by module (tier informational due to BulkAccUser.allModules tier-less; documented partial-LIST-04 trade-off)
+- [Phase 09-v2.0-list-wave-gap-closure]: 09-02: shadcn Badge + Tailwind class composition for Active/Pending/Deleted/Admin pills (no Badge variant extension)
+- [Phase 09-v2.0-list-wave-gap-closure]: 09-02: DropdownMenu+DropdownMenuCheckboxItem idiom for Status multi-select; binary pill-button for Project Admin (matches No-ACC-Projects toggle)
+- [Phase 09-v2.0-list-wave-gap-closure]: 09-02: scroll-to-top via window.scrollTo since useWindowVirtualizer scrolls the window (no virtualizer-ref plumbing)
 
 ## Accumulated Context
 
@@ -276,4 +293,5 @@ See: .planning/PROJECT.md
 | Phase 08 P09 | 12 | 3 tasks | 6 files |
 | Phase 09-v2.0-list-wave-gap-closure P01 | 15min | 3 tasks | 10 files |
 | Phase 09 P03 | 5min | 2 tasks | 3 files |
+| Phase 09-v2.0-list-wave-gap-closure P02 | 8min | 3 tasks | 1 files |
 
