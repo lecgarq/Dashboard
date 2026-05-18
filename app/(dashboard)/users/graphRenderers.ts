@@ -1025,14 +1025,13 @@ export class CosmosGraphRenderer implements GraphRenderer {
     ctx.textBaseline = "alphabetic";
 
     // Zoom-relative font scaling: pow(cosmosZoom, 0.2) — a very gentle
-    // ramp anchored at zoom=1 → scale=1.0 (so fit-zoom keeps the
-    // original 12/13px). The flat exponent keeps mid-range zoom growth
-    // subtle; the [0.85, 1.4] clamp enforces a hard ~18px ceiling at
-    // deep zoom-in (z>=6) and an ~11px floor at deep zoom-out (z<=0.3)
-    // so labels are always legible without ever dominating the viewport.
+    // ramp anchored at zoom=1 → scale=1.0. The [0.85, 1.2] clamp keeps
+    // labels from ever dominating the viewport: max ~13px override /
+    // ~12px normal at deep zoom-in, min ~9px at deep zoom-out (below
+    // the cutoff guards below — labels hide instead of becoming illegible).
     const zoomScale = Math.max(
       0.85,
-      Math.min(1.4, Math.pow(cosmosZoom, 0.2)),
+      Math.min(1.2, Math.pow(cosmosZoom, 0.2)),
     );
 
     const margin = 50;
@@ -1178,19 +1177,20 @@ export class CosmosGraphRenderer implements GraphRenderer {
       ctx.fillText(text, cx, cy - padY);
     };
 
-    // Override labels: full opacity, bypass collision, but register AABBs.
-    // Dark slate pill + white text + weight 700 — visually distinct from
-    // cloud labels at a glance.
-    const overrideFontPx = Math.round(13 * zoomScale);
-    const overrideOffsetY = Math.round(10 * zoomScale);
+    // Override labels (hover / selected / same-user isolation): semi-transparent
+    // slate pill + white text + medium weight. Subtler than the previous 700-weight
+    // near-opaque pill so the highlighted user-instance cluster doesn't shout
+    // over the rest of the graph.
+    const overrideFontPx = Math.round(11 * zoomScale);
+    const overrideOffsetY = Math.round(8 * zoomScale);
     ctx.globalAlpha = 1;
-    ctx.font = `700 ${overrideFontPx}px ui-sans-serif, system-ui, sans-serif`;
+    ctx.font = `600 ${overrideFontPx}px ui-sans-serif, system-ui, sans-serif`;
     {
-      const padX = 5;
-      const padY = 3;
+      const padX = 4;
+      const padY = 2;
       for (const c of overrideCandidates) {
         if (drawnCount >= MAX_LABELS) break;
-        if (overrideFontPx < 10) continue;
+        if (overrideFontPx < 9) continue;
         const textWidth = ctx.measureText(c.label).width;
         const aabbW = textWidth + padX * 2;
         const aabbH = overrideFontPx + padY * 2;
@@ -1205,11 +1205,11 @@ export class CosmosGraphRenderer implements GraphRenderer {
           c.sy - overrideOffsetY,
           c.label,
           overrideFontPx,
-          "rgba(15, 23, 42, 0.95)",
+          "rgba(15, 23, 42, 0.78)",
           "#ffffff",
           padX,
           padY,
-          5,
+          4,
         );
         drawnAabbs.push(aabb);
         drawnCount++;
@@ -1217,15 +1217,15 @@ export class CosmosGraphRenderer implements GraphRenderer {
     }
 
     if (opacity > 0 && drawnCount < MAX_LABELS) {
-      const normalFontPx = Math.round(12 * zoomScale * densityScale);
-      const normalOffsetY = Math.round(9 * zoomScale);
+      const normalFontPx = Math.round(10 * zoomScale * densityScale);
+      const normalOffsetY = Math.round(8 * zoomScale);
       ctx.globalAlpha = opacity;
-      ctx.font = `600 ${normalFontPx}px ui-sans-serif, system-ui, sans-serif`;
-      const padX = 4;
-      const padY = 2;
+      ctx.font = `500 ${normalFontPx}px ui-sans-serif, system-ui, sans-serif`;
+      const padX = 3;
+      const padY = 1;
       for (const c of normalCandidates) {
         if (drawnCount >= MAX_LABELS) break;
-        if (normalFontPx < 10) continue;
+        if (normalFontPx < 9) continue;
         const textWidth = ctx.measureText(c.label).width;
         const aabbW = textWidth + padX * 2;
         const aabbH = normalFontPx + padY * 2;
@@ -1248,11 +1248,11 @@ export class CosmosGraphRenderer implements GraphRenderer {
           c.sy - normalOffsetY,
           c.label,
           normalFontPx,
-          "rgba(255, 255, 255, 0.92)",
+          "rgba(255, 255, 255, 0.82)",
           "#0f172a",
           padX,
           padY,
-          4,
+          3,
         );
         drawnAabbs.push(aabb);
         drawnCount++;
