@@ -164,8 +164,13 @@ export const accActivityRouter = router({
    */
   usersOrderedByLastFileActivity: protectedProcedure
     .input(
+      // NOTE (09-04 Rule 3 deviation): the input field is named `order` rather
+      // than `direction` because `@trpc/react-query` reserves the key
+      // `direction` for bidirectional infinite-query pagination (see
+      // `ReservedInfiniteQueryKeys` in @trpc/react-query). Using `direction`
+      // here makes the procedure unusable from `useInfiniteQuery` callers.
       z.object({
-        direction: z.enum(["asc", "desc"]).default("desc"),
+        order: z.enum(["asc", "desc"]).default("desc"),
         cursor: z
           .object({ lastActivity: z.string(), email: z.string() })
           .optional(),
@@ -174,7 +179,7 @@ export const accActivityRouter = router({
     )
     .query(async ({ ctx, input }) => {
       const fileActions = [...FILE_RAW_ACTIONS];
-      const direction = input.direction;
+      const direction = input.order;
 
       // Build the HAVING clause as a Prisma.sql fragment so cursor parameters
       // are bound safely. Direction is injected via Prisma.raw because it's

@@ -46,6 +46,9 @@ import {
   CheckCircle2,
   CircleDashed,
   ShieldCheck,
+  ArrowUp,
+  ArrowDown,
+  Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -1271,6 +1274,13 @@ export function UsersDirectoryClient() {
   // Phase 09 LIST-01 / LIST-02 — Status multi-select + Project Admin binary
   const [statusFilter, setStatusFilter] = useState<AggregatedStatus[]>([]);
   const [projectAdminFilter, setProjectAdminFilter] = useState<boolean>(false);
+  // Phase 09-04 LIST-03 (sort path): server-side sort by max(file activity).
+  // `active=false` means default directory ordering; first click activates DESC.
+  // Cycle: off -> desc -> asc -> off.
+  const [activitySort, setActivitySort] = useState<{
+    active: boolean;
+    direction: "asc" | "desc";
+  }>({ active: false, direction: "desc" });
   // LIST-04: informational tier label paired with filterAccModule when the user click-throughs
   // from the side panel's Module Access section. Row-predicate fallback is module-only because
   // BulkAccUser.allModules has no per-project tier — tier is surfaced in the ActiveFilterPill chip
@@ -1367,6 +1377,60 @@ export function UsersDirectoryClient() {
     setProjectAdminFilter((prev) => !prev);
     scrollDirectoryToTop();
   }, [scrollDirectoryToTop]);
+
+  // Phase 09-04 LIST-03 (sort path): three-state header click cycle.
+  // off -> desc -> asc -> off. Decoupled from display-path batch query.
+  const handleActivitySortClick = useCallback(() => {
+    setActivitySort((prev) => {
+      if (!prev.active) return { active: true, direction: "desc" };
+      if (prev.direction === "desc") return { active: true, direction: "asc" };
+      return { active: false, direction: "desc" };
+    });
+    scrollDirectoryToTop();
+  }, [scrollDirectoryToTop]);
+
+  // Phase 09-04 LIST-03 (sort path): paginated server-side sort. KEPT
+  // INTENTIONALLY SEPARATE from the batch display query (Pitfall 6 — sharing
+  // would double server load on every sort toggle).
+  const sortInfiniteQuery =
+    trpc.accActivity.usersOrderedByLastFileActivity.useInfiniteQuery(
+      { order: activitySort.direction, limit: 200 },
+      {
+        enabled: activitySort.active,
+        getNextPageParam: (lastPage) => lastPage.nextCursor ?? undefined,
+        staleTime: 60_000,
+      },
+    );
+
+  // Auto-fetch all pages while sort is active. Defensive cap: 50 pages
+  // (200 * 50 = 10k users) — directory user count is far below this in
+  // practice but the ceiling prevents runaway recursion on a bad cursor.
+  const sortPageCountRef = useRef(0);
+  useEffect(() => {
+    if (!activitySort.active) {
+      sortPageCountRef.current = 0;
+      return;
+    }
+    if (sortInfiniteQuery.isFetching) return;
+    if (!sortInfiniteQuery.hasNextPage) return;
+    if (sortPageCountRef.current >= 50) return;
+    sortPageCountRef.current += 1;
+    void sortInfiniteQuery.fetchNextPage();
+  }, [
+    activitySort.active,
+    sortInfiniteQuery.isFetching,
+    sortInfiniteQuery.hasNextPage,
+    sortInfiniteQuery,
+  ]);
+
+  const orderedActivityEmails = useMemo<string[]>(() => {
+    if (!activitySort.active) return [];
+    return (
+      sortInfiniteQuery.data?.pages.flatMap((p) =>
+        p.rows.map((r) => r.email.toLowerCase()),
+      ) ?? []
+    );
+  }, [activitySort.active, sortInfiniteQuery.data]);
 
   // Cleanup all hover timers on unmount
   useEffect(() => {
@@ -1642,12 +1706,35 @@ export function UsersDirectoryClient() {
     statusFilter, projectAdminFilter, accSummaryMap
   ]);
 
+  // Phase 09-04 LIST-03 (sort path): reorder rows by server-supplied sequence.
+  // Users with no file activity at all (not present in orderedActivityEmails)
+  // are appended alphabetically by email — RESEARCH Open Q3 / CONTEXT lock
+  // "empty rows always last regardless of asc/desc".
+  const displayRows = useMemo<OrgPerson[]>(() => {
+    if (!activitySort.active) return filtered;
+    const orderMap = new Map<string, number>();
+    orderedActivityEmails.forEach((e, i) => orderMap.set(e, i));
+    const inSort: OrgPerson[] = [];
+    const remainder: OrgPerson[] = [];
+    for (const row of filtered) {
+      if (orderMap.has(row.email.toLowerCase())) inSort.push(row);
+      else remainder.push(row);
+    }
+    inSort.sort(
+      (a, b) =>
+        (orderMap.get(a.email.toLowerCase()) ?? 0) -
+        (orderMap.get(b.email.toLowerCase()) ?? 0),
+    );
+    remainder.sort((a, b) => a.email.localeCompare(b.email));
+    return [...inSort, ...remainder];
+  }, [activitySort.active, orderedActivityEmails, filtered]);
+
   // Grouped data
   const groups = useMemo(() => {
     if (groupBy === "none") return null;
 
     const map = new Map<string, OrgPerson[]>();
-    for (const person of filtered) {
+    for (const person of displayRows) {
       const key = (person[groupBy] as string | null) || "Not specified";
       const arr = map.get(key) ?? [];
       arr.push(person);
@@ -1659,7 +1746,7 @@ export function UsersDirectoryClient() {
       if (b === "Not specified") return -1;
       return a.localeCompare(b);
     });
-  }, [filtered, groupBy]);
+  }, [displayRows, groupBy]);
 
   useEffect(() => {
     setDirectoryRenderLimit(DIRECTORY_RENDER_BATCH);
@@ -1679,8 +1766,8 @@ export function UsersDirectoryClient() {
   ]);
 
   const visibleFiltered = useMemo(
-    () => filtered.slice(0, directoryRenderLimit),
-    [filtered, directoryRenderLimit],
+    () => displayRows.slice(0, directoryRenderLimit),
+    [displayRows, directoryRenderLimit],
   );
 
   const visibleGroups = useMemo(
@@ -1770,7 +1857,32 @@ export function UsersDirectoryClient() {
               <span className="text-center border-b border-border/30 pb-0.5">
                 File Activity
               </span>
-              <span>Last File Activity</span>
+              <button
+                type="button"
+                onClick={handleActivitySortClick}
+                aria-label={
+                  "Sort by last file activity, " +
+                  (activitySort.active ? activitySort.direction : "inactive")
+                }
+                className={cn(
+                  "inline-flex items-center gap-1 text-left uppercase tracking-wider font-medium transition-colors hover:text-foreground",
+                  activitySort.active && "text-foreground",
+                )}
+              >
+                Last File Activity
+                {activitySort.active && activitySort.direction === "desc" && (
+                  <ArrowDown size={11} aria-hidden />
+                )}
+                {activitySort.active && activitySort.direction === "asc" && (
+                  <ArrowUp size={11} aria-hidden />
+                )}
+                {activitySort.active && sortInfiniteQuery.isFetching && (
+                  <Loader2
+                    className="size-3 animate-spin shrink-0"
+                    aria-hidden
+                  />
+                )}
+              </button>
               <span>ACC</span>
             </div>
             <div className="grid grid-cols-[1.5fr_1fr_1fr_1fr_0.8fr_0.8fr_0.7fr_0.7fr_0.7fr_0.7fr_1fr_auto] gap-3 px-4 py-1 pl-[68px] text-[10px] uppercase tracking-wider text-muted-foreground/60 font-medium">
