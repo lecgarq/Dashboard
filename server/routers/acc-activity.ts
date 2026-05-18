@@ -11,12 +11,28 @@
  */
 
 import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import {
   CATEGORY_TO_RAW_ACTIONS,
   INVITATION_ACTIONS,
   type ActivityCategory,
 } from "@/lib/acc/activityCategories";
+
+/**
+ * Phase 09 LIST-03: file-action raw strings used by the BATCH and SORT procedures.
+ *
+ * Single source of truth derived from `CATEGORY_TO_RAW_ACTIONS` so any future
+ * additions to the 4 file buckets (view/upload/edit/delete) automatically flow
+ * into both `getLastFileActivityBatch` (display) and `usersOrderedByLastFileActivity`
+ * (sort). DO NOT inline another array literal — Pitfall 6 (sort/display drift).
+ */
+const FILE_RAW_ACTIONS: readonly string[] = [
+  ...CATEGORY_TO_RAW_ACTIONS.view,
+  ...CATEGORY_TO_RAW_ACTIONS.upload,
+  ...CATEGORY_TO_RAW_ACTIONS.edit,
+  ...CATEGORY_TO_RAW_ACTIONS.delete,
+];
 import {
   windowToDateRange,
   pickBinSize,
@@ -93,6 +109,120 @@ export const accActivityRouter = router({
         lastEdit: e?.createdAt ?? null,
         lastDelete: d?.createdAt ?? null,
       };
+    }),
+
+  /**
+   * Phase 09 LIST-03 display path: aggregated last-file-activity timestamp per email
+   * for a batch of visible rows. Feeds the lazy IntersectionObserver column in
+   * `UsersDirectoryClient.tsx`.
+   *
+   * Returns `Record<email, ISO string | null>` — every input email is guaranteed
+   * to be a key in the response (missing rows → `null`) so the UI can switch
+   * cleanly on `undefined` (loading) vs `null` (no activity).
+   *
+   * Cap: 200 emails per call (Pitfall 2 defense — server enforces what the
+   * IntersectionObserver hook should already respect).
+   */
+  getLastFileActivityBatch: protectedProcedure
+    .input(z.object({ emails: z.array(z.string().email()).max(200) }))
+    .query(async ({ ctx, input }) => {
+      const lowered = input.emails.map((e) => e.toLowerCase());
+      const out: Record<string, string | null> = {};
+      for (const e of lowered) out[e] = null;
+      if (lowered.length === 0) return out;
+
+      const rows = await ctx.db.accActivity.groupBy({
+        by: ["userEmail"],
+        where: {
+          userEmail: { in: lowered },
+          rawAction: { in: [...FILE_RAW_ACTIONS] },
+        },
+        _max: { createdAt: true },
+      });
+      for (const r of rows) {
+        if (r.userEmail) {
+          out[r.userEmail.toLowerCase()] = r._max.createdAt?.toISOString() ?? null;
+        }
+      }
+      return out;
+    }),
+
+  /**
+   * Phase 09 LIST-03 sort path: server-side ordered list of users by last
+   * file-activity timestamp. Paginated via a compound `(MAX(createdAt), email)`
+   * cursor so writes during pagination don't cause row skips/dupes
+   * (RESEARCH Open Question 2).
+   *
+   * NULLS LAST regardless of direction — users with no file activity appear at
+   * the tail in both ASC and DESC orderings (CONTEXT discretion lock; empty rows
+   * always last). NOTE: this procedure only returns users with ≥1 file-activity
+   * row. Consumer plan 09-04 is responsible for appending the zero-activity
+   * `BulkAccUser` remainder in stable secondary order (RESEARCH Open Question 3).
+   *
+   * Kept INTENTIONALLY SEPARATE from `getLastFileActivityBatch` (Pitfall 6:
+   * sharing one procedure for both sort + display doubles server load).
+   */
+  usersOrderedByLastFileActivity: protectedProcedure
+    .input(
+      z.object({
+        direction: z.enum(["asc", "desc"]).default("desc"),
+        cursor: z
+          .object({ lastActivity: z.string(), email: z.string() })
+          .optional(),
+        limit: z.number().int().min(1).max(500).default(200),
+      }),
+    )
+    .query(async ({ ctx, input }) => {
+      const fileActions = [...FILE_RAW_ACTIONS];
+      const direction = input.direction;
+
+      // Build the HAVING clause as a Prisma.sql fragment so cursor parameters
+      // are bound safely. Direction is injected via Prisma.raw because it's
+      // constrained to the enum above (no SQL injection vector).
+      const orderDir = Prisma.raw(direction === "desc" ? "DESC" : "ASC");
+      const cursorTs = input.cursor ? new Date(input.cursor.lastActivity) : null;
+      const cursorEmail = input.cursor ? input.cursor.email.toLowerCase() : null;
+
+      // For DESC: rows must come "after" the cursor in DESC order, meaning
+      //   MAX(createdAt) < $ts  OR  (MAX(createdAt) = $ts AND LOWER(userEmail) > $email)
+      // For ASC: mirrored.
+      const havingClause: Prisma.Sql =
+        cursorTs && cursorEmail
+          ? direction === "desc"
+            ? Prisma.sql`HAVING MAX("createdAt") < ${cursorTs} OR (MAX("createdAt") = ${cursorTs} AND LOWER("userEmail") > ${cursorEmail})`
+            : Prisma.sql`HAVING MAX("createdAt") > ${cursorTs} OR (MAX("createdAt") = ${cursorTs} AND LOWER("userEmail") > ${cursorEmail})`
+          : Prisma.empty;
+
+      const sql = Prisma.sql`
+        SELECT LOWER("userEmail") AS email, MAX("createdAt") AS "lastActivity"
+        FROM "AccActivity"
+        WHERE "userEmail" IS NOT NULL
+          AND "rawAction" = ANY(${fileActions})
+        GROUP BY LOWER("userEmail")
+        ${havingClause}
+        ORDER BY MAX("createdAt") ${orderDir} NULLS LAST, LOWER("userEmail") ASC
+        LIMIT ${input.limit}
+      `;
+
+      const rawRows = await ctx.db.$queryRaw<
+        { email: string; lastActivity: Date | null }[]
+      >(sql);
+
+      const rows = rawRows.map((r) => ({
+        email: r.email,
+        lastActivity: r.lastActivity ? r.lastActivity.toISOString() : null,
+      }));
+
+      let nextCursor: { lastActivity: string; email: string } | null = null;
+      if (rows.length === input.limit) {
+        const last = rows[rows.length - 1];
+        // Only emit a cursor when the tail row has a non-null timestamp; once we
+        // hit NULLS LAST tail the next page would be empty anyway.
+        if (last.lastActivity) {
+          nextCursor = { lastActivity: last.lastActivity, email: last.email };
+        }
+      }
+      return { rows, nextCursor };
     }),
 
   /**
