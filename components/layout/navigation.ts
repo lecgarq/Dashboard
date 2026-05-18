@@ -6,8 +6,10 @@ import {
   Ruler,
   Settings,
   Kanban,
+  RefreshCw,
   Zap,
   Cpu,
+  Network,
   type LucideIcon,
 } from "lucide-react";
 
@@ -24,6 +26,8 @@ export type NavigationItem = {
 export const MODULE_NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Dashboard", icon: LayoutDashboard },
   { href: "/users", label: "Access Analysis", icon: PieChart, group: "Organization" },
+  { href: "/users/spatial-graph", label: "Spatial Graph", icon: Network, group: "Organization" },
+  { href: "/sync-center", label: "Sync Center", icon: RefreshCw, group: "Organization" },
   { href: "/clash-detection", label: "Clash Detection", icon: Zap, module: "clash", group: "Wiki Bar" },
   { href: "/sim-automation", label: "Sim Automation", icon: Cpu, module: "sim", group: "Wiki Bar" },
   { href: "/families", label: "Familias Parametricas", icon: Building2, module: "families", group: "Familias Parametricas" },
