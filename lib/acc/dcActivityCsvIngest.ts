@@ -131,7 +131,23 @@ export async function ingestActivityCsv(
 
   input.csvStream.pipe(parser);
 
+  // 2026-05-18 diagnostic: log the column set + first-row sample of every parsed
+  // CSV. We just shipped a fix for ingestRunId schema drift (Bug A) but the probe
+  // still inserted zero rows, which suggests a second silent failure mode — most
+  // likely that DC renamed columns in the new 30-day-window schema and every row
+  // hits the !autodeskId/!rawAction/!createdAtRaw guard. This log answers it
+  // definitively next run without burning quota on speculation. Remove once Bug D
+  // is diagnosed and the column-name list at lines 135/143/144 is updated.
+  let diagnosticLogged = false;
+
   for await (const raw of parser as AsyncIterable<CsvRow>) {
+    if (!diagnosticLogged) {
+      diagnosticLogged = true;
+      // eslint-disable-next-line no-console
+      console.log(
+        `[dcActivityCsvIngest:diagnostic] file=${input.filename} columns=${JSON.stringify(Object.keys(raw))} sample=${JSON.stringify(raw).slice(0, 500)}`,
+      );
+    }
     const autodeskId = raw.autodesk_id ?? raw.autodeskId ?? raw.user_id ?? raw.userId ?? '';
     const name = raw.user_name ?? raw.userName ?? raw.name ?? null;
 

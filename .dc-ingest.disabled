@@ -1,15 +1,28 @@
-Disabled 2026-05-18 by Luis + Claude.
+Disabled 2026-05-18 (FOURTH re-arm; auto-deletion mystery still unresolved).
 
-Reason: AccActivity ingestRunId schema drift (lib/acc/dcActivityCsvIngest.ts:169 writes
-a column that doesn't exist in prisma/schema.prisma AccActivity model).
-Every activity insert throws; error is swallowed by dcIngest.ts:992-994; runs report
-status=success with zero rows. Compound effect: 2026-05-13 → today activity gap.
+Today's outcome:
+  - Bug A (ingestRunId schema drift) FIXED + migration applied (commit b3f25bd)
+  - Bug B/C edits in dcIngest.ts in-tree but uncommitted
+  - Bug D (CSV column-name drift) DISCOVERED but NOT yet diagnosed
+  - Diagnostic log added to dcActivityCsvIngest.ts (commit pending) — will print
+    actual column names on first parsed row of every CSV
+  - All today's quota burned (APS enforced 429 on final attempt — local counter
+    said 23/25 but APS refused submit at "0 used" run, meaning real consumption
+    was higher than DB tracked)
 
-Re-enable AFTER:
-  1. AccActivity gets `ingestRunId String` column + migration
-  2. Slice-loop error handler converts to hard abort (no more silent skip)
-  3. Backward-slice admin snapshot is skipped (separate bug — quarantine path)
-  4. Progress rows reset (all 428 → NULL/newProjectFlag=true)
-  5. Test run inserts >0 rows for `submittals` or `docs`
+DO NOT DELETE THIS FILE before tomorrow's diagnostic run produces column names.
+If you wake up before 10:00 UTC and this file is gone, recreate it manually
+or rename scripts/dc-daily-ingest.cjs to scripts/dc-daily-ingest.cjs.off as a
+fallback kill mechanism.
 
-See: docs/superpowers/specs/2026-05-18-dc-backward-backfill-fix-design.md (pending)
+Tomorrow's workflow (2026-05-19, fresh 25/25 quota at 00:00 UTC):
+  1. Verify .dc-ingest.disabled is still present (if not, see fallback above)
+  2. Remove kill switch
+  3. Run: node --env-file=.env scripts/dc-daily-ingest.cjs
+  4. grep '[dcActivityCsvIngest:diagnostic]' on the log to see column names
+  5. Update dcActivityCsvIngest.ts:135/143/144 with real column names
+  6. Remove diagnostic log
+  7. Re-probe; verify AccActivity row count grows
+
+Spec: docs/superpowers/specs/2026-05-18-dc-ingest-drift-recovery-design.md
+Memory: project_phase09_dc_ingest_drift, project_dc_kill_switch_autodelete
