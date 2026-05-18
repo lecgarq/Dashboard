@@ -74,10 +74,10 @@ Per `HOW_TO_Extract_Activity_Logs.md`, `HOW_TO_Extract_Last_User_File_Activity.m
 
 Existing user list/table surfaces gain new columns and filter facets.
 
-- [ ] **LIST-01**: `status` column added to user list with values active / pending / deleted; corresponding filter facet (extends FILT cascade).
-- [ ] **LIST-02**: `accessLevels.projectAdmin` indicator visible in user list and filter facet.
-- [ ] **LIST-03**: Last file activity date column added to user list; values lazy-loaded post initial render to avoid blocking first paint.
-- [ ] **LIST-04**: Side-panel detail view shows full per-module `products` access tier (administrator/member/none) with module icons.
+- [x] **LIST-01**: `status` column added to user list with values active / pending / deleted; corresponding filter facet (extends FILT cascade).
+- [x] **LIST-02**: `accessLevels.projectAdmin` indicator visible in user list and filter facet.
+- [x] **LIST-03**: Last file activity date column added to user list; values lazy-loaded post initial render to avoid blocking first paint.
+- [x] **LIST-04**: Side-panel detail view shows full per-module `products` access tier (administrator/member/none) with module icons.
 
 ### Spatial Graph Enrichments
 
