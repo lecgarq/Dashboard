@@ -268,6 +268,17 @@ Plans:
 - Sub-column SORT contract enforced on the lazy file-activity column shipped by Phase 3 (03-03 deferred this to LIST-03).
 - DashboardSidePanel renders the full per-module `products` tier with module icons (administrator / member / none).
 
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 09-01-PLAN.md — tRPC procedures (getLastFileActivityBatch, usersOrderedByLastFileActivity, getProductsForUser) + pure helpers (accStatusReduction, productsTierMap) + EXPLAIN ANALYZE artifact
+- [ ] 09-02-PLAN.md — LIST-01 + LIST-02: Status column + Admin pill + multi-select Status facet + binary Project Admin facet in UsersDirectoryClient
+- [ ] 09-03-PLAN.md — LIST-04: Module Access section (top-level + deviations + unknown-module warnings + click-through) in AccUserSidePanel
+- [ ] 09-04-PLAN.md — LIST-03: Lazy Last File Activity column (IntersectionObserver hook + getLastFileActivityBatch) + server-side sort header with spinner + empty-row append
+- [ ] 09-05-PLAN.md — Manual UAT checkpoint (Luis flips DECISION line in 09-UAT.md)
+
+
 **Pre-flight risks:**
 - 2026-05-13 Cosmograph/Mosaic + user-project-instances pivot may have moved some surfaces; plan-phase research must confirm the user-list view is still the right home for these fields.
 
