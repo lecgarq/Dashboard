@@ -8,7 +8,7 @@ const { auth } = NextAuth(authConfig);
 
 const configuredAuthOrigins = new Set(getConfiguredAuthOrigins());
 
-const PUBLIC_PATHS = ["/login", "/register", "/unauthorized", "/forgot-password", "/reset-password", "/api/health"];
+const PUBLIC_PATHS = ["/login", "/register", "/unauthorized", "/forgot-password", "/reset-password", "/api/health", "/duckdb-wasm/"];
 
 const MODULE_ROUTES: Record<string, string> = {
   "/families": "families",

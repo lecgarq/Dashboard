@@ -67,18 +67,24 @@ function AnalyticsStrip({ users, state }: { users: BulkAccUser[]; state: Analyti
 
 export function HybridAnalyticsSurface() {
   const { users, loading } = useMergedAccUsers();
-  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, { staleTime: 600_000, retry: false });
+  const folderMatrixQuery = trpc.accFolders.getMatrix.useQuery(undefined, {
+    staleTime: 600_000,
+    retry: false,
+    enabled: users.length > 0,
+  });
   const folderRows = toFolderRows(folderMatrixQuery.data?.rows);
   const [selection, setSelection] = useState<GraphAnalyticsSelection | null>(null);
   const [queryState, setQueryState] = useState<AnalyticsQueryState>(EMPTY_ANALYTICS_QUERY_STATE);
 
-  // Warm DuckDB-Wasm immediately. The WASM bundle + worker download + DB instantiate
-  // overlaps with bulkAccSummary network time instead of running serially after it.
+  // Warm DuckDB-Wasm once users start arriving — overlaps WASM/worker init with
+  // the tail of bulkAccSummary instead of firing the 5MB WASM download on first
+  // click while the graph still has no data to render.
   useEffect(() => {
+    if (!users.length) return;
     if (canInitializeDuckDbInBrowser()) {
       void getDuckDbClient().catch(() => {});
     }
-  }, []);
+  }, [users.length]);
 
   useEffect(() => {
     let cancelled = false;
@@ -180,7 +186,14 @@ export function HybridAnalyticsSurface() {
 
       <main className="min-h-0">
         <div className="h-full min-h-[680px] overflow-hidden rounded-md border bg-card">
-          <AccUsersGraph users={users} analyticsSelection={activeSelection} />
+          {loading || users.length === 0 ? (
+            <div className="flex h-full min-h-[680px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+              <div className="h-2 w-32 animate-pulse rounded bg-muted" />
+              <p>{loading ? "Loading authorized ACC data…" : "No ACC users available"}</p>
+            </div>
+          ) : (
+            <AccUsersGraph users={users} analyticsSelection={activeSelection} />
+          )}
         </div>
       </main>
     </section>

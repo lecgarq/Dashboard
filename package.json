@@ -26,7 +26,7 @@
     "yjs:server": "node scripts/yjs-server.mjs",
     "start:prod": "node scripts/start-router.cjs",
     "knip": "knip",
-    "postinstall": "prisma generate && patch-package"
+    "postinstall": "prisma generate && patch-package && node scripts/copy-duckdb-wasm.cjs"
   },
   "dependencies": {
     "@aps_sdk/authentication": "^1.0.1",

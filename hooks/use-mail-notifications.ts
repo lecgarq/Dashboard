@@ -39,8 +39,8 @@ export function useMailNotifications(enabled: boolean) {
     { maxResults: 10 },
     {
       enabled,
-      refetchInterval: isWindowVisible ? 15000 : 60000,
-      staleTime: isWindowVisible ? 10000 : 55000,
+      refetchInterval: isWindowVisible ? 60000 : 300000,
+      staleTime: isWindowVisible ? 55000 : 290000,
       refetchOnWindowFocus: true,
     }
   );

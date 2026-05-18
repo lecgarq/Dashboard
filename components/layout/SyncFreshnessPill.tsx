@@ -19,7 +19,7 @@ type PillState = {
 
 const ACTIVE_REFETCH_MS = 15_000;       // SYNC-03: 5-30s window while deep sync in flight
 const IDLE_REFETCH_MS = 5 * 60_000;     // Idle cadence — pill is informational, not real-time
-const ACTIVE_POLL_MS = 15_000;          // Cadence for checking "is a deep sync running?"
+const ACTIVE_POLL_MS = 60_000;          // Cadence for checking "is a deep sync running?" — 60s plenty for an informational pill
 const DC_REFETCH_MS = 5 * 60_000;       // Phase 08-07: DC ingest status refresh cadence
 
 /**

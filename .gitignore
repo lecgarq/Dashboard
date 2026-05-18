@@ -52,3 +52,6 @@ texti.env
 # temp / dump files
 /tmp/
 /prisma/dev.db
+
+# self-hosted DuckDB-Wasm assets (copied by scripts/copy-duckdb-wasm.cjs in postinstall)
+/public/duckdb-wasm/
