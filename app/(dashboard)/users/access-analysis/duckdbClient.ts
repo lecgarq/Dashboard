@@ -34,7 +34,11 @@ export async function getDuckDbClient(): Promise<BrowserDuckDbClient> {
       },
     } as const;
     const bundle = await duckdb.selectBundle(SELF_HOSTED_BUNDLES);
-    const workerUrl = URL.createObjectURL(new Blob([`importScripts("${bundle.mainWorker}");`], { type: "text/javascript" }));
+    // bundle.mainWorker is a root-relative path like "/duckdb-wasm/...". Inside
+    // the worker's blob:-scoped global, importScripts() cannot resolve a relative
+    // URL — it must be absolute. Anchor it to the current page origin.
+    const absoluteWorkerUrl = new URL(bundle.mainWorker!, window.location.origin).toString();
+    const workerUrl = URL.createObjectURL(new Blob([`importScripts("${absoluteWorkerUrl}");`], { type: "text/javascript" }));
     const worker = new Worker(workerUrl);
     const logger = new duckdb.ConsoleLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
