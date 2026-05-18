@@ -111,6 +111,11 @@ describe('ingestActivityCsv', () => {
     expect(created.length).toBe(3);
     for (const row of created) {
       expect(row.service).toBe('docs');
+      // 2026-05-18 Bug A regression check: ingestRunId must be set on every
+      // inserted row. The writer was already setting it, but until migration
+      // 20260518190000_acc_activity_ingest_run_id added the DB column, every
+      // createMany threw silently. Asserting here pins the writer's contract.
+      expect(row.ingestRunId).toBe('run-1');
     }
   });
 

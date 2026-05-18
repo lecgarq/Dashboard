@@ -538,14 +538,16 @@ model AccActivity {
   service    String?
   tool       String?
   details    String?
-  sourceFile String   @default("project") // "project" | "admin" — distinguishes project_activities.csv from admin_activities.csv
-  createdAt  DateTime
+  sourceFile  String   @default("project") // "project" | "admin" — distinguishes project_activities.csv from admin_activities.csv
+  ingestRunId String? // FK-like to AccDcIngestRun.id; nullable because rows written before 2026-05-18 schema fix pre-date this column
+  createdAt   DateTime
 
-  @@unique([autodeskId, rawAction, createdAt, projectId]) // dedup key for createMany({ skipDuplicates: true })
+  @@unique([autodeskId, rawAction, createdAt, projectId]) // dedup key for createMany({ skipDuplicates: true }) — intentionally run-agnostic
   @@index([autodeskId, createdAt(sort: Desc)])
   @@index([userEmail, createdAt(sort: Desc)]) // drives ACTV-03 lazy per-user file activity query
   @@index([projectId, createdAt(sort: Desc)])
   @@index([rawAction])
+  @@index([ingestRunId]) // forensic lookup: "which run inserted these rows?"
 }
 
 model UnresolvedAttribution {
