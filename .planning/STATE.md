@@ -4,12 +4,12 @@ milestone: v1.0
 milestone_name: — ACC Extraction Completion
 current_phase: Phase 8 — DC per-module ingest + permission CSVs (8/8 plans complete; manual UAT pending Luis)
 status: completed
-last_updated: "2026-05-18T15:52:22.425Z"
+last_updated: "2026-05-18T16:05:08.923Z"
 progress:
   total_phases: 12
   completed_phases: 6
   total_plans: 61
-  completed_plans: 42
+  completed_plans: 43
 ---
 
 ---
@@ -243,6 +243,7 @@ See: .planning/PROJECT.md
 - [Phase 09-v2.0-list-wave-gap-closure]: 09-02: shadcn Badge + Tailwind class composition for Active/Pending/Deleted/Admin pills (no Badge variant extension)
 - [Phase 09-v2.0-list-wave-gap-closure]: 09-02: DropdownMenu+DropdownMenuCheckboxItem idiom for Status multi-select; binary pill-button for Project Admin (matches No-ACC-Projects toggle)
 - [Phase 09-v2.0-list-wave-gap-closure]: 09-02: scroll-to-top via window.scrollTo since useWindowVirtualizer scrolls the window (no virtualizer-ref plumbing)
+- [Phase 09-v2.0-list-wave-gap-closure]: Renamed usersOrderedByLastFileActivity input field direction -> order to dodge @trpc/react-query ReservedInfiniteQueryKeys collision
 
 ## Accumulated Context
 
@@ -294,4 +295,5 @@ See: .planning/PROJECT.md
 | Phase 09-v2.0-list-wave-gap-closure P01 | 15min | 3 tasks | 10 files |
 | Phase 09 P03 | 5min | 2 tasks | 3 files |
 | Phase 09-v2.0-list-wave-gap-closure P02 | 8min | 3 tasks | 1 files |
+| Phase 09-v2.0-list-wave-gap-closure P04 | 9 min | 3 tasks | 4 files |
 
