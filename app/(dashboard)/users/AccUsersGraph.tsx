@@ -2034,11 +2034,18 @@ export function AccUsersGraph({ users, onSelectUser, analyticsSelection = null, 
             // setPointPositions rescale (per-frame during convergence), which
             // synchronously re-entered setState and tripped React's max-update
             // depth guard. One tick per animation frame is plenty for label repos.
+            //
+            // markGraphDirty here so the screen-space label overlay redraws
+            // during Cosmos-driven pan/zoom (mouse wheel, two-finger trackpad).
+            // Without this, the rAF idle-skip from the 1 FPS fix leaves stale
+            // label positions/sizes on the overlay — labels drift behind their
+            // nodes, flicker, or disappear until the next interaction.
             onZoom: () => {
               if (annotationRafRef.current !== 0) return;
               annotationRafRef.current = requestAnimationFrame(() => {
                 annotationRafRef.current = 0;
                 setAnnotationTick((t) => t + 1);
+                markGraphDirty();
               });
             },
           });
