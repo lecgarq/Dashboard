@@ -247,3 +247,62 @@ Plans:
 - [ ] 07.1-04-PLAN.md — Wave 2: adapter + renderer two-channel rewire (accGraphOrganicLayout drops similarity links + emits forceLinks; CosmosGraphRenderer setForceLinkChannel/updateForceLinkStrengths; cosmosUtils buildLinkStrengthBuffer)
 - [ ] 07.1-05-PLAN.md — Wave 3: AccUsersGraph UI reshape (Clustering section, promoted user-only toggle, pie-glyph wiring, simStr URL round-trip, hot-path strength update, flip line 69 gate)
 - [ ] 07.1-06-PLAN.md — Wave 4: phase-end manual UAT checkpoint -> UAT.md DECISION line (Luis on Railway prod)
+
+---
+
+### v2.0 Gap Closure Phases (added 2026-05-18 per /gsd:plan-milestone-gaps from v2.0-MILESTONE-AUDIT.md)
+
+> These phases close the 9 unsatisfied v2.0 requirements (originally planned as Phase 5 sub-waves that were never executed). They keep the v2.0 milestone alive alongside the Phase 6/7/7.1/8 successor work that has shifted toward v2.5.
+
+#### Phase 09: v2.0 LIST wave — gap closure
+
+**Goal:** Close LIST-01..04 by enriching the user-list surface with status + projectAdmin + last-file-activity sort contract + per-module products tier in the side panel. Supersedes the never-executed `5.2-list-wave-PLAN.md` draft.
+
+**Requirements:** LIST-01, LIST-02, LIST-03, LIST-04 (4)
+**Gap Closure:** Closes v2.0 audit gaps for Wave 5.2 (LIST).
+**Depends on:** Phase 3 (file activity tRPC), Phase 2 (member status / projectAdmin fields).
+
+**Success criteria:**
+- `status` column (active / pending / deleted) ships on UsersDirectoryClient with a corresponding FILT facet.
+- `accessLevels.projectAdmin` indicator visible on rows + filter facet exposes it.
+- Sub-column SORT contract enforced on the lazy file-activity column shipped by Phase 3 (03-03 deferred this to LIST-03).
+- DashboardSidePanel renders the full per-module `products` tier with module icons (administrator / member / none).
+
+**Pre-flight risks:**
+- 2026-05-13 Cosmograph/Mosaic + user-project-instances pivot may have moved some surfaces; plan-phase research must confirm the user-list view is still the right home for these fields.
+
+#### Phase 10: v2.0 Phase-4 PERF-GATE measurement + GRAPH-04 ship-decision
+
+**Goal:** Close GRAPH-04 by actually running the Phase 4 perf pre-flight (PERF-GATE.md currently reads `Measured: _DEFERRED TO MANUAL UAT_`), recording a real GO/NO-GO with FPS + GPU heap numbers at 1x/2x/5x node counts, and shipping the conditional folder-node integration in the graph if GO (or logging the contingency contract if NO-GO).
+
+**Requirements:** GRAPH-04 (1)
+**Gap Closure:** Closes v2.0 audit gap "PERF-GATE measurement deferred"; also retires Phase 4 tech-debt items (no `window.__cosmosGraph` hook, no formal VERIFICATION.md).
+**Depends on:** Phase 4 (FolderPermissionsWidget + perf-preflight harness already shipped).
+
+**Success criteria:**
+- AccUsersGraph exposes `window.__cosmosGraph` in dev so `scripts/perf-preflight.cjs` measures real frames.
+- PERF-GATE.md updated with measured FPS + GPU heap at 1x / 2x / 5x; DECISION line says GO or NO-GO.
+- If GO: folder nodes ship as 5th node kind in AccUsersGraph (hidden by default, filter-panel toggle).
+- If NO-GO: contingency contract logged in PERF-GATE.md; FolderPermissionsWidget remains dashboard-only.
+- Formal Phase 4 VERIFICATION.md added as a side effect (re-verifier run against FLDR-01..05).
+
+**Pre-flight risks:**
+- 5x node count on 2D Cosmos.gl may not be reachable in browser without harness adjustments; have a fallback measurement strategy ready.
+
+#### Phase 11: v2.0 DASH wave — gap closure
+
+**Goal:** Close DASH-14..17 by enriching the existing Access Analysis dashboard widgets. Supersedes the never-executed `5.3-dash-wave-PLAN.md` draft. Orphan-role finding (part of DASH-15) was partial-shipped in Phase 4 as carry-forward — only the stale-invite half remains.
+
+**Requirements:** DASH-14, DASH-15, DASH-16, DASH-17 (4)
+**Gap Closure:** Closes v2.0 audit gaps for Wave 5.3 (DASH). DASH-18 (interactivity contract) already satisfied on shipped widgets — applies as UAT gate to every widget touched here.
+**Depends on:** Phase 2 (member fields), Phase 3 (activity), Phase 4 (folders crawled).
+
+**Success criteria:**
+- KpiStrip gains pending-invite count + project-admin count + folders-crawled tiles.
+- RecommendationsWidget gains "stale invite" finding (status=pending older than 30 days); orphan-role finding already shipped via Phase 4.
+- AdminConstellation extended to 3 tiers (hub admin / project admin / executive) with distinct ring colors + hover breakdown.
+- RolesModulesHeatmap rows distinguish hub-master vs per-project assignment counts; cell hover shows contributing projects.
+- DASH-18 interactivity contract (hover detail / click-through / cross-widget spotlight) enforced on every modified widget.
+
+**Pre-flight risks:**
+- AdminConstellation 3-tier extension may collide with the Cosmograph/Mosaic redesign visual language; plan-phase research must confirm the 3-tier ring visual still fits.

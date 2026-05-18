@@ -146,9 +146,11 @@ Populated 2026-05-11 from ROADMAP.md.
 | ROLE-01..03   | v2.0 Phase 2 — Core Extraction | Completed |
 | ACTV-01..05   | v2.0 Phase 3 — Activity Pipeline | Pending |
 | FLDR-01..05   | v2.0 Phase 4 — Folders (perf-gated) | Pending |
-| LIST-01..04   | v2.0 Phase 5 — UI Enrichment Waves | Pending |
-| GRAPH-01..04  | v2.0 Phase 5 — UI Enrichment Waves (GRAPH-04 conditional on Phase 4 GO) | Pending |
-| DASH-14..18   | v2.0 Phase 5 — UI Enrichment Waves | Pending |
+| LIST-01..04   | v2.0 Phase 09 — LIST wave gap closure (was Phase 5.2) | Pending |
+| GRAPH-01..03  | v2.0 Phase 5.1 — UI Enrichment Waves (Graph wave) | Completed |
+| GRAPH-04      | v2.0 Phase 10 — PERF-GATE measurement + ship-decision (was Phase 4/5.1 conditional) | Pending |
+| DASH-14..17   | v2.0 Phase 11 — DASH wave gap closure (was Phase 5.3) | Pending |
+| DASH-18       | v2.0 Phase 5.1 — UI Enrichment Waves (interactivity contract) | Completed |
 
 **Coverage:**
 - v2.0 requirements: 41 total
