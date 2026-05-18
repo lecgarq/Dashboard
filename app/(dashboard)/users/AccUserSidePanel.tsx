@@ -1,11 +1,228 @@
 "use client";
 
-import { useEffect } from "react";
-import { X, ExternalLink } from "lucide-react";
+import { useEffect, useMemo } from "react";
+import { X, ExternalLink, AlertTriangle, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/core/utils";
+import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type { CompactionCandidate } from "@/lib/acc/compactionAnalysis";
 import { moduleLabel } from "@/lib/acc/modules";
+import { parseProductsJson, type ProductTier } from "@/lib/acc/productsTierMap";
+import { Badge } from "@/components/ui/badge";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+
+// Tier priority for tie-breaking when computing the "across all projects" summary tier.
+// Order: administrator > member > none > other (passthrough strings).
+const TIER_PRIORITY: Record<string, number> = {
+  administrator: 3,
+  member: 2,
+  none: 1,
+};
+
+function tierBadgeVariant(tier: string): "default" | "secondary" | "outline" {
+  if (tier === "administrator") return "default";
+  if (tier === "member") return "secondary";
+  return "outline";
+}
+
+interface ModuleAggregate {
+  moduleKey: string;
+  label: string;
+  summaryTier: string;
+  summaryTierLabel: string;
+  isUnknownModule: boolean;
+  deviations: Array<{
+    projectId: string;
+    projectName: string;
+    tier: string;
+    tierLabel: string;
+  }>;
+}
+
+function aggregateModuleAccess(
+  productsRows: ReadonlyArray<{ projectId: string; projectName: string; products: unknown }>,
+): ModuleAggregate[] {
+  // Parse each project's products → ProductTier[]
+  const parsedByProject = productsRows.map((row) => ({
+    projectId: row.projectId,
+    projectName: row.projectName,
+    tiers: parseProductsJson(row.products),
+  }));
+
+  // Map<moduleKey, { tierCounts, perProject, label, isUnknownModule }>
+  const moduleMap = new Map<
+    string,
+    {
+      label: string;
+      isUnknownModule: boolean;
+      tierCounts: Map<string, number>;
+      perProject: Array<{
+        projectId: string;
+        projectName: string;
+        tier: string;
+        tierLabel: string;
+      }>;
+    }
+  >();
+
+  for (const { projectId, projectName, tiers } of parsedByProject) {
+    for (const t of tiers) {
+      let entry = moduleMap.get(t.module);
+      if (!entry) {
+        entry = {
+          label: t.label,
+          isUnknownModule: t.isUnknownModule,
+          tierCounts: new Map(),
+          perProject: [],
+        };
+        moduleMap.set(t.module, entry);
+      }
+      const tierStr = String(t.tier);
+      entry.tierCounts.set(tierStr, (entry.tierCounts.get(tierStr) ?? 0) + 1);
+      entry.perProject.push({
+        projectId,
+        projectName,
+        tier: tierStr,
+        tierLabel: t.tierLabel,
+      });
+    }
+  }
+
+  const result: ModuleAggregate[] = [];
+  for (const [moduleKey, entry] of moduleMap.entries()) {
+    // Highest-count tier wins; tie broken by TIER_PRIORITY (administrator > member > none > other).
+    let summaryTier = "";
+    let summaryCount = -1;
+    let summaryPriority = -1;
+    for (const [tier, count] of entry.tierCounts.entries()) {
+      const priority = TIER_PRIORITY[tier] ?? 0;
+      if (
+        count > summaryCount ||
+        (count === summaryCount && priority > summaryPriority)
+      ) {
+        summaryTier = tier;
+        summaryCount = count;
+        summaryPriority = priority;
+      }
+    }
+    const summaryEntry = entry.perProject.find((p) => p.tier === summaryTier);
+    const summaryTierLabel = summaryEntry?.tierLabel ?? summaryTier;
+    const deviations = entry.perProject.filter((p) => p.tier !== summaryTier);
+    result.push({
+      moduleKey,
+      label: entry.label,
+      summaryTier,
+      summaryTierLabel,
+      isUnknownModule: entry.isUnknownModule,
+      deviations,
+    });
+  }
+  // Stable display order: known modules first, then unknown; alphabetical within each group.
+  result.sort((a, b) => {
+    if (a.isUnknownModule !== b.isUnknownModule) return a.isUnknownModule ? 1 : -1;
+    return a.label.localeCompare(b.label);
+  });
+  return result;
+}
+
+function ModuleAccessSkeleton() {
+  return (
+    <div className="space-y-2">
+      {[0, 1, 2, 3].map((i) => (
+        <div key={i} className="h-8 rounded-lg bg-muted/40 animate-pulse" />
+      ))}
+    </div>
+  );
+}
+
+interface ModuleAccessSectionProps {
+  email: string;
+  onApplyModuleFilter?: (moduleKey: string, tier: string) => void;
+}
+
+function ModuleAccessSection({ email, onApplyModuleFilter }: ModuleAccessSectionProps) {
+  const { data: productsRows, isLoading } = trpc.accMembers.getProductsForUser.useQuery(
+    { email },
+    { enabled: !!email, staleTime: 300_000 },
+  );
+
+  const aggregated = useMemo<ModuleAggregate[]>(() => {
+    if (!productsRows || productsRows.length === 0) return [];
+    return aggregateModuleAccess(productsRows);
+  }, [productsRows]);
+
+  const handleClick = (mod: ModuleAggregate) => {
+    if (onApplyModuleFilter) onApplyModuleFilter(mod.moduleKey, mod.summaryTier);
+  };
+
+  return (
+    <div>
+      {/* Native <details> avoids introducing a new shadcn Collapsible primitive (CONTEXT lock). */}
+      <details open className="group">
+        <summary className="cursor-pointer list-none flex items-center justify-between gap-2 py-1 select-none">
+          <span className="text-xs font-semibold text-foreground">Module Access</span>
+          <ChevronDown size={12} className="text-muted-foreground transition-transform group-open:rotate-0 -rotate-90" />
+        </summary>
+        <div className="mt-2 space-y-1.5">
+          {isLoading ? <ModuleAccessSkeleton /> : null}
+          {!isLoading && (!productsRows || productsRows.length === 0 || aggregated.length === 0) ? (
+            <p className="text-xs text-muted-foreground">No module assignments.</p>
+          ) : null}
+          {!isLoading && aggregated.length > 0 ? (
+            <TooltipProvider delayDuration={150}>
+              {aggregated.map((mod) => (
+                <button
+                  key={mod.moduleKey}
+                  type="button"
+                  onClick={() => handleClick(mod)}
+                  className="w-full text-left rounded-lg border border-border/30 bg-card/60 hover:bg-card hover:border-border/60 px-3 py-2 transition-all"
+                >
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {mod.isUnknownModule ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <AlertTriangle className="size-3.5 text-amber-500 shrink-0" />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span className="text-xs">Unknown module from APS</span>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null}
+                    <span className="text-xs font-medium text-foreground">{mod.label}</span>
+                    <Badge
+                      variant={tierBadgeVariant(mod.summaryTier)}
+                      className="text-[10px] px-1.5 py-0"
+                    >
+                      {mod.summaryTierLabel}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">across all projects</span>
+                  </div>
+                  {mod.deviations.length > 0 ? (
+                    <ul className="ml-4 mt-1 space-y-0.5 text-[11px] text-muted-foreground">
+                      {mod.deviations.map((d) => (
+                        <li key={d.projectId} className="flex items-center gap-1.5 flex-wrap">
+                          <span>except</span>
+                          <span className="font-medium text-foreground/80 truncate max-w-[180px]">{d.projectName}</span>
+                          <span>:</span>
+                          <Badge
+                            variant={tierBadgeVariant(d.tier)}
+                            className="text-[10px] px-1.5 py-0"
+                          >
+                            {d.tierLabel}
+                          </Badge>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </button>
+              ))}
+            </TooltipProvider>
+          ) : null}
+        </div>
+      </details>
+    </div>
+  );
+}
 
 const FLAG_META = {
   "junk-role": { label: "Junk Role", cls: "text-amber-400 bg-amber-500/10 border-amber-500/20" },
@@ -19,9 +236,14 @@ interface AccUserSidePanelProps {
   candidate?: CompactionCandidate;
   onClose: () => void;
   onViewProfile?: (email: string) => void;
+  /**
+   * LIST-04 click-through: emits module+tier when a row in the Module Access section is clicked.
+   * Consumer is responsible for narrowing the directory list (CONTEXT lock: facet-reduction is the spotlight).
+   */
+  onApplyModuleFilter?: (moduleKey: string, tier: string) => void;
 }
 
-export function AccUserSidePanel({ user, candidate, onClose, onViewProfile }: AccUserSidePanelProps) {
+export function AccUserSidePanel({ user, candidate, onClose, onViewProfile, onApplyModuleFilter }: AccUserSidePanelProps) {
   useEffect(() => {
     if (!user) return;
     const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
@@ -155,6 +377,14 @@ export function AccUserSidePanel({ user, candidate, onClose, onViewProfile }: Ac
                     </div>
                   )}
                 </>
+              )}
+
+              {/* LIST-04: Module Access section — clean append, expanded by default, never renders raw JSON. */}
+              {user.email && (
+                <ModuleAccessSection
+                  email={user.email}
+                  onApplyModuleFilter={onApplyModuleFilter}
+                />
               )}
 
               {user.projects.length > 0 && (
