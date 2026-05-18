@@ -6,6 +6,7 @@ import {
   buildNodeSizeBuffer,
   buildLinkBuffer,
   buildLinkColorBuffer,
+  buildLinkHighlightColorBuffer,
 } from "./cosmosUtils";
 
 const DIMMED_USER_COLOR = "#9CA3AF";
@@ -519,6 +520,10 @@ export class CosmosGraphRenderer implements GraphRenderer {
   // Cached base color buffer — rebuilt on node-count change, reused while only
   // selection state changes so setPointColors during clicks does not re-hex-parse.
   private baseColorBuffer: Float32Array | null = null;
+  // Pristine per-link RGBA buffer, captured the last time setLinkColors was called
+  // with no selection active. Used to dim/restore link alphas when isolation toggles
+  // without re-running the per-edge color projection.
+  private baseLinkColorBuffer: Float32Array | null = null;
   private lastSameUserSet: ReadonlySet<number> | null = null;
   private lastSelectedIndex = -1;
   // Cached visible set: used by setVisibleIndices to avoid redundant size-buffer rebuilds.
@@ -800,7 +805,8 @@ export class CosmosGraphRenderer implements GraphRenderer {
         frame.links.colors && frame.links.colors.length === linkCount
           ? frame.links.colors
           : undefined;
-      this.graph.setLinkColors(buildLinkColorBuffer(linkCount, { perEdgeColors }));
+      this.baseLinkColorBuffer = buildLinkColorBuffer(linkCount, { perEdgeColors });
+      this.graph.setLinkColors(this.baseLinkColorBuffer);
       this.lastLinkCount = linkCount;
       this.lastLinkUploadAt = Date.now();
       needsRender = true;
@@ -843,13 +849,17 @@ export class CosmosGraphRenderer implements GraphRenderer {
 
     // Same-user highlight: when selection or same-user set changes, rebuild the
     // per-node color buffer from the cached baseColorBuffer and re-upload. When
-    // there is no selection, restore base colors.
+    // there is no selection, restore base colors. Links are dimmed in lockstep
+    // so the highlighted user-instance cluster reads as the only lit subgraph.
     const selectionChanged = frame.selectedNodeIndex !== this.lastSelectedIndex;
     const sameUserSetChanged = frame.sameUserHighlightSet !== this.lastSameUserSet;
     if ((selectionChanged || sameUserSetChanged) && this.baseColorBuffer && nodeCount > 0) {
-      if (frame.selectedNodeIndex < 0 || frame.sameUserHighlightSet.size === 0) {
+      if (frame.selectedNodeIndex < 0) {
         // Restore base colors — pass a copy so Cosmos retains a stable buffer.
         this.graph.setPointColors(new Float32Array(this.baseColorBuffer));
+        if (this.baseLinkColorBuffer) {
+          this.graph.setLinkColors(new Float32Array(this.baseLinkColorBuffer));
+        }
       } else {
         const selectedColor = frame.nodes[frame.selectedNodeIndex]?.color ?? null;
         const buf = buildNodeHighlightColorBuffer(
@@ -857,8 +867,19 @@ export class CosmosGraphRenderer implements GraphRenderer {
           this.baseColorBuffer,
           frame.sameUserHighlightSet,
           selectedColor,
+          frame.selectedNodeIndex,
         );
         this.graph.setPointColors(buf);
+        if (this.baseLinkColorBuffer && frame.links && linkCount > 0) {
+          const linkBuf = buildLinkHighlightColorBuffer(
+            this.baseLinkColorBuffer,
+            frame.links.sources,
+            frame.links.targets,
+            frame.sameUserHighlightSet,
+            frame.selectedNodeIndex,
+          );
+          this.graph.setLinkColors(linkBuf);
+        }
       }
       this.lastSelectedIndex = frame.selectedNodeIndex;
       this.lastSameUserSet = frame.sameUserHighlightSet;
@@ -1539,6 +1560,7 @@ export class CosmosGraphRenderer implements GraphRenderer {
     this.lastLinkUploadAt = 0;
     this.gpuRendererString = null;
     this.baseColorBuffer = null;
+    this.baseLinkColorBuffer = null;
     this.lastSameUserSet = null;
     this.lastSelectedIndex = -1;
     this.lastVisibleSet = null;

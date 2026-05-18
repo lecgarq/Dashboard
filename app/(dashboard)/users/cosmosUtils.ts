@@ -3,6 +3,12 @@
 import type { GraphRenderNode } from "./graphRenderers";
 import { resolveRenderNodeColor } from "./graphRenderers";
 
+// Isolation dim levels for the Cosmos WebGL path. Canvas2D uses globalAlpha
+// = 0.10; on WebGL with AA the equivalent perceived weight lands around 0.12.
+// Links sit lower so the highlighted user-instance cluster reads first.
+const NODE_DIM_ALPHA = 0.12;
+const LINK_DIM_ALPHA = 0.05;
+
 /**
  * Convert a hex color string (#RRGGBB) to normalized [r, g, b] floats (0.0–1.0).
  * Handles both 6-digit and shorthand formats. Falls back to gray on parse error.
@@ -70,12 +76,17 @@ export function buildNodeHighlightColorBuffer(
   baseColors: Float32Array,
   sameUserSet: ReadonlySet<number>,
   selectedColor: string | null,
+  selectedIndex: number,
 ): Float32Array {
-  if (!selectedColor || sameUserSet.size === 0) {
+  if (!selectedColor || selectedIndex < 0) {
     return new Float32Array(baseColors);
   }
   const out = new Float32Array(baseColors);
+  // Dim every node first; alpha is the 4th channel of each RGBA quad.
+  for (let i = 3; i < out.length; i += 4) out[i] = NODE_DIM_ALPHA;
+
   const [r, g, b] = hexToRGBNorm(selectedColor);
+  // Brighten same-user instances in the selected node's color.
   for (const idx of sameUserSet) {
     if (idx < 0 || idx >= nodes.length) continue;
     const off = idx * 4;
@@ -83,6 +94,47 @@ export function buildNodeHighlightColorBuffer(
     out[off + 1] = g;
     out[off + 2] = b;
     out[off + 3] = 1.0;
+  }
+  // The selected node is excluded from sameUserSet by buildHighlightSet —
+  // restore it explicitly so it doesn't stay dim.
+  if (selectedIndex < nodes.length) {
+    const off = selectedIndex * 4;
+    out[off + 0] = r;
+    out[off + 1] = g;
+    out[off + 2] = b;
+    out[off + 3] = 1.0;
+  }
+  return out;
+}
+
+/**
+ * Return a copy of `baseColors` with links dimmed unless an endpoint belongs to
+ * the highlight set (same-user instances ∪ {selectedIndex}). When no selection
+ * is active (selectedIndex < 0), the base buffer is returned unchanged.
+ *
+ * Pure for unit testing — no DOM access, no module-level state.
+ */
+export function buildLinkHighlightColorBuffer(
+  baseColors: Float32Array,
+  sources: Int32Array,
+  targets: Int32Array,
+  sameUserSet: ReadonlySet<number>,
+  selectedIndex: number,
+): Float32Array {
+  if (selectedIndex < 0) return new Float32Array(baseColors);
+  const out = new Float32Array(baseColors);
+  const count = sources.length;
+  for (let i = 0; i < count; i++) {
+    const s = sources[i];
+    const t = targets[i];
+    const incidentToHighlight =
+      s === selectedIndex ||
+      t === selectedIndex ||
+      sameUserSet.has(s) ||
+      sameUserSet.has(t);
+    if (!incidentToHighlight) {
+      out[i * 4 + 3] = LINK_DIM_ALPHA;
+    }
   }
   return out;
 }
