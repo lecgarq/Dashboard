@@ -74,11 +74,11 @@ Plans:
   3. Drawing a lasso on the canvas produces a `selectedNodeIds[]` array and a pie chart renders below (or beside) the graph showing breakdown by role and permission tier for the selection
   4. Clicking a node dims all other nodes to 0.15 alpha; the hovered node surfaces a tooltip with name, email, project, role, last sign-in, and activity count
   5. Moving any dimension slider 0→100 causes the graph to visibly re-cluster toward that dimension's axis direction with continuous, monotonic animation — no jump, no mode switch
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 04-01: GraphInteractions.tsx — filter, search, click-isolate, hover tooltip, lasso overlay
-- [ ] 04-02: Dimension slider UI (SliderContext, per-dim 0–100 sliders, 2D/3D toggle) + SelectionBridge.tsx (lasso→DuckDB→pie chart)
+- [ ] 04-01-PLAN.md — interactionTypes + featureSnapshot + usePredicateEngine + LassoOverlay + NodeTooltip + GraphInteractions wrapper + GraphCanvas2D/3D event primitives (INTR-01..05)
+- [ ] 04-02-PLAN.md — SliderContext + FilterContext + SelectionContext + Toolbar + SliderSidebar + SelectionPanel (DuckDB role+tier pies) + RightPanelStack + AccessAnalysisShell composition (INTR-06, INTR-07, ANLY-01, ANLY-02)
 
 ## Progress
 
