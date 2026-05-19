@@ -58,11 +58,11 @@ Plans:
   2. Switching from 2D to 3D via the mode prop does not remount the component — nodes remain at their last positions with no jump, no flash, and no re-layout
   3. 3D orbit controls work: user can rotate and zoom; node positions are the same (x, y, z) as the settled simulation
   4. Smooth animations during slider drag — no node popping, no flash between frames
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 03-01: GraphCanvas.tsx — 2D render via react-force-graph-2d, alpha mask, nodeCanvasObject
-- [ ] 03-02: 2D/3D mode switch — shared graphData reference, no remount, position continuity
+- [ ] 03-01-PLAN.md — GraphCanvas.tsx + GraphCanvas2D.tsx (cosmos.gl frozen mode) + useGraphRafLoop + REND-01/04/05 tests
+- [ ] 03-02-PLAN.md — GraphCanvas3D.tsx (three.js InstancedMesh + OrbitControls) + 2D/3D visibility-swap mode switch + REND-02/03 tests
 
 ### Phase 4: Interactions + Analytics Bridge
 **Goal**: All user-facing interactions (filter, search, click-isolate, hover, lasso, sliders, 2D/3D toggle) update only the alpha mask or slider state — never positions — and a lasso selection produces a populated pie chart breakdown
@@ -89,5 +89,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Data + Math Foundation | 2/2 | Complete   | 2026-05-19 |
 | 2. Physics Layer | 2/2 | Complete   | 2026-05-19 |
-| 3. Render Layer | 0/2 | Not started | - |
+| 3. Render Layer | 0/2 | Planned | - |
 | 4. Interactions + Analytics Bridge | 0/2 | Not started | - |
