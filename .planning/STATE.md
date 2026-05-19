@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: unknown
-last_updated: "2026-05-19T22:45:19.590Z"
+last_updated: "2026-05-19T17:33:00Z"
 progress:
-  total_phases: 3
+  total_phases: 4
   completed_phases: 3
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 8
+  completed_plans: 7
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 3 of 4 (Render Layer) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE (03-02)
-Status: Phase 3 complete — GraphCanvas3D + mode transitions + 12 tests green; ready for Phase 4 (Interactions)
-Last activity: 2026-05-19 — Phase 3 plan 02: GraphCanvas3D.tsx + GraphCanvas.tsx updated + GraphCanvas3D.test.ts (12 tests)
+Phase: 4 of 4 (Interactions + Analytics Bridge) — IN PROGRESS
+Plan: 1 of 2 in current phase — COMPLETE (04-01)
+Status: 04-01 complete — interaction layer (predicate engine + lasso + tooltip + cosmos/three event wiring) shipped; 135 access-analysis tests green; ready for 04-02 chrome
+Last activity: 2026-05-19 — Phase 4 plan 01: usePredicateEngine + LassoOverlay + NodeTooltip + GraphInteractions + featureSnapshot + Canvas handle extensions + 15 new assertions
 
-Progress: [███████░░░] 75% (6/6 plans complete across phases 1-3; Phase 4 pending)
+Progress: [████████░░] 88% (7/8 plans complete across phases 1-4)
 
 ## Performance Metrics
 
@@ -67,6 +67,19 @@ Recent decisions affecting current work:
 - **lastMaskVersionRef initialized at loop start** to physics.maskVersion to prevent spurious onMaskChange on first tick.
 - **graph.ready Promise guard** in GraphCanvas2D protects against cosmos.gl async init queue limit (Pitfall 3).
 - **Plain object ref `{ current: div }`** used in tests instead of createRef — React 19 makes `current` non-configurable.
+
+### Decisions Made in Phase 04 Plan 01
+
+- **Single predicate engine pattern locked.** One usePredicateEngine effect ≡ one physics.setMask call; collapses filter/search/lasso/drill/isolate into one channel. Verified by source-level grep (PHYS-04 invariant — zero sim symbols inside usePredicateEngine.ts).
+- **forwardRef on GraphCanvas** exposing discriminated `GraphCanvasHandle = { mode: "2d", handle } | { mode: "3d", handle }` — picked over cloneElement injection for cleaner ref ownership in GraphInteractions.
+- **Ref-indirect event handlers (cosmos.gl + three.js).** Both renderers use `handlersRef.current = h` via setEventHandlers; cosmos.gl config is set once at construction and never re-issued (Pitfall 5).
+- **three.js hover raycast is rAF-coalesced** (Pitfall 6): pointermove writes pendingEvent; raycast runs at most once per frame against the InstancedMesh.
+- **LassoOverlay disabled in 3D for v1** — only rendered when `mode==='2d' && lassoActive`. Lasso path stored in useRef[<number[]>]() not React state (anti-pattern: pointer events fire 60+Hz).
+- **NodeTooltip uses createPortal to document.body** + fixed positioning; viewport-clamped. Radix Tooltip primitive does not fit (no DOM anchor for canvas-rendered nodes).
+- **Search debounce 100ms via local useDebounced hook** inside GraphInteractions — deterministic for tests, simpler than useDeferredValue.
+- **DuckDB BigInt→Number cast pattern** (featureSnapshot.ts): activity_count + last_signin_days normalized to Number on read (Pitfall 2).
+- **Activity buckets: None=0, Low=1-10, Med=11-100, High=101+; signin buckets <7d/<30d/<90d/>90d** — defaults per RESEARCH Open Q#2.
+- **Test infrastructure deviations (tests-only):** HTMLCanvasElement.getContext mock + own-property offsetX/Y synthesis on Event objects for jsdom pointer test path.
 
 ### Decisions Made in Phase 03 Plan 02
 
@@ -110,7 +123,7 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-19
-Stopped at: Completed 03-02-PLAN.md — GraphCanvas3D.tsx + GraphCanvas.tsx updated + 12 tests; REND-02 amended; Phase 3 complete; ready for Phase 4 (Interactions)
+Stopped at: Completed 04-01-PLAN.md — usePredicateEngine + LassoOverlay + NodeTooltip + GraphInteractions + featureSnapshot + Canvas handle extensions; 15 new assertions; 135 access-analysis tests green; ready for Phase 4 plan 02 (chrome)
 Resume file: None
 
 ## Session Continuity

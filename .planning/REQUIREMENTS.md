@@ -40,11 +40,11 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Interactions
 
-- [ ] **INTR-01**: Real-time filter — togglable dimension filters update alphaMask immediately, position state preserved
-- [ ] **INTR-02**: Real-time search — text input highlights matching nodes (focus + halo); position state preserved
-- [ ] **INTR-03**: Click-isolate — clicking a node dims everything else via alphaMask
-- [ ] **INTR-04**: Hover detail — hovering surfaces tooltip with node feature snapshot
-- [ ] **INTR-05**: Lasso tool — freehand polygon selection over the canvas → returns `selectedNodeIds[]`
+- [x] **INTR-01**: Real-time filter — togglable dimension filters update alphaMask immediately, position state preserved
+- [x] **INTR-02**: Real-time search — text input highlights matching nodes (focus + halo); position state preserved
+- [x] **INTR-03**: Click-isolate — clicking a node dims everything else via alphaMask
+- [x] **INTR-04**: Hover detail — hovering surfaces tooltip with node feature snapshot
+- [x] **INTR-05**: Lasso tool — freehand polygon selection over the canvas → returns `selectedNodeIds[]`
 - [ ] **INTR-06**: Dimension sliders UI — one slider per dimension with 0–100 range and live value readout
 - [ ] **INTR-07**: 2D / 3D toggle button — single click switches mode
 
@@ -113,11 +113,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | REND-03 | Phase 3 | Complete |
 | REND-04 | Phase 3 | Complete |
 | REND-05 | Phase 3 | Complete |
-| INTR-01 | Phase 4 | Pending |
-| INTR-02 | Phase 4 | Pending |
-| INTR-03 | Phase 4 | Pending |
-| INTR-04 | Phase 4 | Pending |
-| INTR-05 | Phase 4 | Pending |
+| INTR-01 | Phase 4 | Complete |
+| INTR-02 | Phase 4 | Complete |
+| INTR-03 | Phase 4 | Complete |
+| INTR-04 | Phase 4 | Complete |
+| INTR-05 | Phase 4 | Complete |
 | INTR-06 | Phase 4 | Pending |
 | INTR-07 | Phase 4 | Pending |
 | ANLY-01 | Phase 4 | Pending |
