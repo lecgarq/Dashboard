@@ -16,11 +16,11 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Math
 
-- [ ] **MATH-01**: Semantic seed positioning function — `f(node_features, weights) → (x, y, z)` with deterministic output for fixed inputs
-- [ ] **MATH-02**: Dimension axes distributed evenly: `angle_d = (d / D) × 2π`; each dimension has its own seed contribution
-- [ ] **MATH-03**: Slider composition formula `finalTarget(node) = Σ(u_d × f_d(node) × s_d) / Σ(s_d)` — multiple sliders compose, not modal
-- [ ] **MATH-04**: Slider semantics: 0 = pure organic (repulsion-only); 100 = full clustering on that dimension; intermediate values blend continuously and monotonically
-- [ ] **MATH-05**: Math layer is pure TypeScript with no React, no DOM, no engine dependency — independently unit-testable with Vitest
+- [x] **MATH-01**: Semantic seed positioning function — `f(node_features, weights) → (x, y, z)` with deterministic output for fixed inputs
+- [x] **MATH-02**: Dimension axes distributed evenly: `angle_d = (d / D) × 2π`; each dimension has its own seed contribution
+- [x] **MATH-03**: Slider composition formula `finalTarget(node) = Σ(u_d × f_d(node) × s_d) / Σ(s_d)` — multiple sliders compose, not modal
+- [x] **MATH-04**: Slider semantics: 0 = pure organic (repulsion-only); 100 = full clustering on that dimension; intermediate values blend continuously and monotonically
+- [x] **MATH-05**: Math layer is pure TypeScript with no React, no DOM, no engine dependency — independently unit-testable with Vitest
 
 ### Physics
 
@@ -98,11 +98,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | DATA-02 | Phase 1 | Pending |
 | DATA-03 | Phase 1 | Pending |
 | DATA-04 | Phase 1 | Pending |
-| MATH-01 | Phase 1 | Pending |
-| MATH-02 | Phase 1 | Pending |
-| MATH-03 | Phase 1 | Pending |
-| MATH-04 | Phase 1 | Pending |
-| MATH-05 | Phase 1 | Pending |
+| MATH-01 | Phase 1 | Complete |
+| MATH-02 | Phase 1 | Complete |
+| MATH-03 | Phase 1 | Complete |
+| MATH-04 | Phase 1 | Complete |
+| MATH-05 | Phase 1 | Complete |
 | PHYS-01 | Phase 2 | Pending |
 | PHYS-02 | Phase 2 | Pending |
 | PHYS-03 | Phase 2 | Pending |

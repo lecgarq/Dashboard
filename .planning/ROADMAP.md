@@ -12,7 +12,7 @@ The Access Analysis internals are rebuilt from scratch following a strict six-la
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data + Math Foundation** - Pure TypeScript data and math layers with full Vitest coverage — no UI, no engine
+- [x] **Phase 1: Data + Math Foundation** - Pure TypeScript data and math layers with full Vitest coverage — no UI, no engine
 - [ ] **Phase 2: Physics Layer** - d3-force-3d simulation wired to math layer output; freeze-on-rest confirmed; named force mutation verified
 - [ ] **Phase 3: Render Layer** - GraphCanvas consuming Float32Array positions; 2D canvas rendering; seamless 2D/3D mode switch
 - [ ] **Phase 4: Interactions + Analytics Bridge** - Filter, search, click-isolate, lasso, slider UI, and lasso-to-pie-chart wired
@@ -31,8 +31,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — dataLayer.ts + Arrow build + DuckDB nodes table + positions cache z/slider key extension
-- [ ] 01-02-PLAN.md — mathLayer.ts pure semantic-seed kernel + Vitest invariants + fast-check monotonicity + purity assertion
+- [x] 01-01-PLAN.md — dataLayer.ts + Arrow build + DuckDB nodes table + positions cache z/slider key extension
+- [x] 01-02-PLAN.md — mathLayer.ts pure semantic-seed kernel + Vitest invariants + fast-check monotonicity + purity assertion
 
 ### Phase 2: Physics Layer
 **Goal**: The physics layer drives d3-force-3d with named per-dimension forces, freezes positions on settle, and never restarts the simulation on filter or search events
@@ -86,7 +86,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data + Math Foundation | 0/2 | Not started | - |
+| 1. Data + Math Foundation | 2/2 | Complete | 2026-05-19 |
 | 2. Physics Layer | 0/1 | Not started | - |
 | 3. Render Layer | 0/2 | Not started | - |
 | 4. Interactions + Analytics Bridge | 0/2 | Not started | - |

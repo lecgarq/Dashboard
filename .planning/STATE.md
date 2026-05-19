@@ -10,28 +10,28 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 ## Current Position
 
 Phase: 1 of 4 (Data + Math Foundation)
-Plan: 0 of 2 in current phase
-Status: Ready to plan
-Last activity: 2026-05-19 — Roadmap created (4 phases, 28 v1 requirements mapped)
+Plan: 2 of 2 in current phase
+Status: Phase 1 complete — all plans executed
+Last activity: 2026-05-19 — Phase 1 complete: dataLayer + mathLayer built, tested, committed
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [██░░░░░░░░] 20% (2/2 Phase 1 plans complete)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 0
-- Average duration: —
-- Total execution time: —
+- Total plans completed: 2
+- Average duration: ~15 min
+- Total execution time: ~30 min
 
 **By Phase:**
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 01-data-math-foundation | 2 | ~30 min | ~15 min |
 
 **Recent Trend:**
-- Last 5 plans: none yet
-- Trend: —
+- Last 5 plans: 01-01 (dataLayer), 01-02 (mathLayer)
+- Trend: On track
 
 *Updated after each plan completion*
 
@@ -47,6 +47,13 @@ Recent decisions affecting current work:
 - Sliders: Additive blend formula `Σ(u_d × f_d × s_d) / Σ(s_d)` — not normalized to fixed budget; avoids slider-stealing.
 - Filter/search: Alpha mask only — simulation NEVER restarts on filter.
 
+### Decisions Made This Session
+
+- **R = 300 world units** for seed positions (mathLayer.ts R_DEFAULT). Parameterized via `options.radius` for override.
+- **z = 0 at seed time.** Physics layer handles z depth in 3D mode.
+- **Monotonicity observable axis** (RESEARCH Open Question #2 resolved): sweep activity slider 0→1 with recency fixed at 1; distance from pure-recency endpoint (0, R) is monotonically non-decreasing.
+- **Forbidden-term purity check** catches all mentions in JSDoc — mathLayer.ts comments must not contain the terms "react", "d3-force", "three", etc.
+
 ### Pending Todos
 
 None yet.
@@ -60,5 +67,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-19
-Stopped at: Roadmap created — ready to plan Phase 1
+Stopped at: Completed 01-02-PLAN.md — Phase 1 fully done; ready to begin Phase 2 (Physics Layer)
 Resume file: None
