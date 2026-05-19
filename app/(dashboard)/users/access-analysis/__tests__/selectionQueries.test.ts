@@ -44,8 +44,8 @@ describe("aggregateSelectionByRole", () => {
 
   it("escapes single quotes and casts BigInt values to Number", async () => {
     mockRows = [
-      { label: "admin", value: 5n },
-      { label: "viewer", value: 2n },
+      { label: "admin", value: BigInt(5) },
+      { label: "viewer", value: BigInt(2) },
     ];
     const out = await aggregateSelectionByRole([
       "a::p1",
