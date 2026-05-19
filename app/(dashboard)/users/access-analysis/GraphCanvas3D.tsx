@@ -18,6 +18,14 @@ import { useEffect, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { PhysicsLayer } from "./physicsLayer";
+import type { GraphEventHandlers } from "./interactionTypes";
+
+// Noop handlers — Phase 4-01 Task 2 ref-indirection (Pitfall 5 + Pitfall 6).
+const NOOP_HANDLERS: GraphEventHandlers = {
+  onPointClick: () => {},
+  onPointHover: () => {},
+  onPointHoverEnd: () => {},
+};
 
 // ---------------------------------------------------------------------------
 // Handle interface (exposed via onHandleReady)
@@ -36,6 +44,11 @@ export interface GraphCanvas3DHandle {
   setBackground(color: string): void;
   /** Expose camera so GraphCanvas can tween position during mode transitions. */
   getCamera(): THREE.PerspectiveCamera;
+  /**
+   * Install click/hover handlers via ref-indirection (Phase 4-01 Task 2).
+   * No lasso primitives in 3D — v1 defers polygon selection to 2D mode only.
+   */
+  setEventHandlers(h: GraphEventHandlers): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -188,6 +201,65 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     }
 
     // -----------------------------------------------------------------------
+    // Phase 4-01 Task 2 — Raycaster click/hover wiring (RESEARCH Pattern 4 + Pitfall 6)
+    // - pointerdown/click → instanceId via Raycaster.intersectObject(mesh)
+    // - pointermove → rAF-coalesced raycast (skip if no new event since last frame)
+    // - Ref-indirect handlers (Pitfall 5) — no setConfig-style resets
+    // - No lasso primitives in 3D — deferred to v2
+    // -----------------------------------------------------------------------
+
+    const handlersRef: { current: GraphEventHandlers } = { current: NOOP_HANDLERS };
+    const raycaster = new THREE.Raycaster();
+    const ndc = new THREE.Vector2();
+
+    function ndcFromPointerEvent(e: PointerEvent | MouseEvent): void {
+      const rect = canvas.getBoundingClientRect();
+      ndc.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      ndc.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+    }
+
+    function pickAtNdc(): number | null {
+      raycaster.setFromCamera(ndc, camera);
+      const hits = raycaster.intersectObject(mesh, false);
+      if (hits.length === 0) return null;
+      const id = hits[0].instanceId;
+      return typeof id === "number" ? id : null;
+    }
+
+    const onClickHandler = (e: MouseEvent): void => {
+      ndcFromPointerEvent(e);
+      const i = pickAtNdc();
+      handlersRef.current.onPointClick(i ?? undefined);
+    };
+    canvas.addEventListener("click", onClickHandler);
+
+    // pointermove with rAF coalescing — at most one raycast per frame (Pitfall 6).
+    let pendingMoveEvent: PointerEvent | null = null;
+    let moveRafId: number | null = null;
+    const processPendingMove = (): void => {
+      moveRafId = null;
+      const e = pendingMoveEvent;
+      pendingMoveEvent = null;
+      if (!e) return;
+      const rect = canvas.getBoundingClientRect();
+      ndcFromPointerEvent(e);
+      const i = pickAtNdc();
+      if (i !== null) {
+        const screen: [number, number] = [e.clientX - rect.left, e.clientY - rect.top];
+        handlersRef.current.onPointHover(i, screen);
+      } else {
+        handlersRef.current.onPointHoverEnd();
+      }
+    };
+    const onPointerMove = (e: PointerEvent): void => {
+      pendingMoveEvent = e;
+      if (moveRafId === null) {
+        moveRafId = requestAnimationFrame(processPendingMove);
+      }
+    };
+    canvas.addEventListener("pointermove", onPointerMove);
+
+    // -----------------------------------------------------------------------
     // Self-driving rAF (OrbitControls damping requires per-frame controls.update())
     // -----------------------------------------------------------------------
 
@@ -234,6 +306,10 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         scene.background = new THREE.Color(color);
       },
       getCamera: () => camera,
+      // Phase 4-01 Task 2 — ref-indirection (Pitfall 5). No config re-issue ever.
+      setEventHandlers: (h: GraphEventHandlers) => {
+        handlersRef.current = h;
+      },
     };
 
     props.onHandleReady(handle);
@@ -245,6 +321,9 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     return () => {
       mounted = false;
       cancelAnimationFrame(rafId);
+      if (moveRafId !== null) cancelAnimationFrame(moveRafId);
+      canvas.removeEventListener("click", onClickHandler);
+      canvas.removeEventListener("pointermove", onPointerMove);
       resizeObserver.disconnect();
       container.removeChild(canvas);
       renderer.dispose();

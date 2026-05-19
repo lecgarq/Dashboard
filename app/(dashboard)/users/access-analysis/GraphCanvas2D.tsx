@@ -26,6 +26,15 @@ import { useEffect, useRef, type RefObject } from "react";
 // TS6 note: useRef<T | null> returns RefObject<T | null>; we accept both variants.
 import { Graph } from "@cosmos.gl/graph";
 import type { PhysicsLayer } from "./physicsLayer";
+import type { GraphEventHandlers } from "./interactionTypes";
+
+// Noop handlers — installed at mount; replaced via setEventHandlers ref-indirection
+// (Phase 4-01 Task 2 + RESEARCH Pitfall 5).
+const NOOP_HANDLERS: GraphEventHandlers = {
+  onPointClick: () => {},
+  onPointHover: () => {},
+  onPointHoverEnd: () => {},
+};
 
 // ---------------------------------------------------------------------------
 // Public handle — exposed to GraphCanvas.tsx via onHandleReady
@@ -49,6 +58,21 @@ export interface GraphCanvas2DHandle {
    * @param rgba - RGBA Float32Array(n*4) with values in [0,1]
    */
   setColors(rgba: Float32Array): void;
+  /**
+   * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
+   * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
+   */
+  setEventHandlers(h: GraphEventHandlers): void;
+  /**
+   * Polygon hit-test against current node positions. Path MUST be in cosmos.gl
+   * SPACE coordinates — callers convert from screen via screenToSpace per point.
+   * Returns [] if the graph isn't ready yet (logs a single warn).
+   */
+  findPointsInPolygon(spacePath: [number, number][]): number[];
+  /** Canvas-local screen pixels → cosmos.gl space coords. */
+  screenToSpace(screenXY: [number, number]): [number, number];
+  /** Cosmos.gl space coords → canvas-local screen pixels. */
+  spaceToScreen(spaceXY: [number, number]): [number, number];
 }
 
 // ---------------------------------------------------------------------------
@@ -79,6 +103,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   const xy2Ref = useRef<Float32Array | null>(null);
   // Stable ref to the cosmos.gl graph instance for reactive effects
   const graphRef = useRef<Graph | null>(null);
+  // Phase 4-01 — ref-indirect event handlers (Pitfall 5: never re-issue config).
+  const handlersRef = useRef<GraphEventHandlers>(NOOP_HANDLERS);
+  // Warn-once guard for early findPointsInPolygon calls (Pitfall 7).
+  const warnedNotReadyRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // Mount effect: initialize cosmos.gl Graph in frozen mode (REND-01, Pattern 1)
@@ -109,7 +137,35 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         fitViewDelay: 250,
         fitViewPadding: 0.1,
         pixelRatio: window.devicePixelRatio,
-      });
+        // -- Phase 4-01 event wiring (ref-indirect — Pitfall 5) --------------
+        // cosmos.gl reads config once at construction; we route through handlersRef
+        // so React closure updates take effect without setConfigPartial calls.
+        onClick: (
+          index: number | undefined,
+          _pointPosition?: [number, number],
+          _event?: MouseEvent,
+        ) => {
+          handlersRef.current.onPointClick(index);
+        },
+        onPointMouseOver: (
+          index: number,
+          pointPosition: [number, number],
+          _event?: MouseEvent,
+          _isHighlighted?: boolean,
+          _isOutlined?: boolean,
+        ) => {
+          // cosmos returns space coords; convert to screen for tooltip placement
+          const screen = (
+            g as unknown as {
+              spaceToScreenPosition: (xy: [number, number]) => [number, number];
+            }
+          ).spaceToScreenPosition(pointPosition);
+          handlersRef.current.onPointHover(index, screen);
+        },
+        onPointMouseOut: () => {
+          handlersRef.current.onPointHoverEnd();
+        },
+      } as Parameters<typeof Graph>[1]);
 
       // If cosmos.gl v3 exposes graph.ready as a Promise, await it before
       // pushing data (Pitfall 3 — queue limit reached on early calls).
@@ -181,6 +237,49 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         setColors(rgba: Float32Array): void {
           g!.setPointColors(rgba);
           g!.render();
+        },
+
+        // ---- Phase 4-01 Task 2 primitives ---------------------------------
+
+        setEventHandlers(h: GraphEventHandlers): void {
+          // Ref-indirection (Pitfall 5): replace the closure target only.
+          // Never call setConfig / setConfigPartial for handler updates.
+          handlersRef.current = h;
+        },
+
+        findPointsInPolygon(spacePath: [number, number][]): number[] {
+          const gAny = g as unknown as {
+            findPointsInPolygon?: (path: [number, number][]) => number[];
+            isReady?: boolean;
+          };
+          // Pitfall 7 — cosmos init queue limit: bail with [] if not ready yet.
+          if (!gAny.findPointsInPolygon || gAny.isReady === false) {
+            if (!warnedNotReadyRef.current) {
+              warnedNotReadyRef.current = true;
+              // eslint-disable-next-line no-console
+              console.warn(
+                "GraphCanvas2D.findPointsInPolygon called before graph.ready — returning []",
+              );
+            }
+            return [];
+          }
+          return gAny.findPointsInPolygon(spacePath) ?? [];
+        },
+
+        screenToSpace(screenXY: [number, number]): [number, number] {
+          return (
+            g as unknown as {
+              screenToSpacePosition: (xy: [number, number]) => [number, number];
+            }
+          ).screenToSpacePosition(screenXY);
+        },
+
+        spaceToScreen(spaceXY: [number, number]): [number, number] {
+          return (
+            g as unknown as {
+              spaceToScreenPosition: (xy: [number, number]) => [number, number];
+            }
+          ).spaceToScreenPosition(spaceXY);
         },
       });
     })();

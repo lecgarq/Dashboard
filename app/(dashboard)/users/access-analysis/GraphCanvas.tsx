@@ -18,12 +18,25 @@
  * - 3D → 2D: 400ms z-flatten animation via requestAnimationFrame
  */
 
-import React, { useEffect, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
 import { useTheme } from "next-themes";
 import type { PhysicsLayer } from "./physicsLayer";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { GraphCanvas3D, type GraphCanvas3DHandle } from "./GraphCanvas3D";
 import { useGraphRafLoop } from "./useGraphRafLoop";
+
+// ---------------------------------------------------------------------------
+// Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
+// ---------------------------------------------------------------------------
+
+/**
+ * Discriminated handle: GraphInteractions reads `mode` to pick the active
+ * underlying renderer (2D = cosmos.gl, 3D = three.js). Lasso primitives are
+ * only valid on the 2D variant.
+ */
+export type GraphCanvasHandle =
+  | { mode: "2d"; handle: GraphCanvas2DHandle | null }
+  | { mode: "3d"; handle: GraphCanvas3DHandle | null };
 
 // ---------------------------------------------------------------------------
 // Public props interface (REND-04 locked contract — from CONTEXT.md)
@@ -59,7 +72,8 @@ export interface GraphCanvasProps {
 // Component
 // ---------------------------------------------------------------------------
 
-export function GraphCanvas(props: GraphCanvasProps): React.JSX.Element {
+export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
+  function GraphCanvas(props, ref): React.JSX.Element {
   const { resolvedTheme } = useTheme();
   const bg =
     props.backgroundColor ??
@@ -68,6 +82,16 @@ export function GraphCanvas(props: GraphCanvasProps): React.JSX.Element {
   // Handle refs for each renderer
   const handle2D = useRef<GraphCanvas2DHandle | null>(null);
   const handle3D = useRef<GraphCanvas3DHandle | null>(null);
+
+  // Phase 4-01 Task 2 — expose discriminated handle to GraphInteractions
+  useImperativeHandle(
+    ref,
+    (): GraphCanvasHandle =>
+      props.mode === "2d"
+        ? { mode: "2d", handle: handle2D.current }
+        : { mode: "3d", handle: handle3D.current },
+    [props.mode],
+  );
 
   // Container refs for the two canvas slots (always mounted — visibility swap pattern)
   const container2DRef = useRef<HTMLDivElement | null>(null);
@@ -236,4 +260,5 @@ export function GraphCanvas(props: GraphCanvasProps): React.JSX.Element {
       </div>
     </div>
   );
-}
+  },
+);
