@@ -1,219 +1,183 @@
 # Technology Stack
 
-**Analysis Date:** 2026-05-12
+**Analysis Date:** 2026-05-19
 
 ## Languages
 
 **Primary:**
-- TypeScript 6.0.3 - Full codebase (server and client)
-- JavaScript/JSX - React components and Next.js
-- Python - Development utilities (dev stack, LOD engine, migrations)
+- JavaScript/TypeScript ES2017+ - Full application (frontend, backend, scripts)
+- Python 3.x - LOD (Level of Detail) engine and development orchestration
 
 **Secondary:**
-- CommonJS - Legacy scripts (postgres-local.js, start-router.cjs, migrate-lod-data.cjs)
+- SQL/PostgreSQL dialect - Database queries via Prisma
+- WASM (WebAssembly) - DuckDB browser runtime (`@duckdb/duckdb-wasm`)
 
 ## Runtime
 
 **Environment:**
-- Node.js 22+ (strict minimum per `package.json` engines)
-- Next.js 16.2.6 (full-stack framework)
+- Node.js >= 22 (enforced in `package.json` engines)
 
 **Package Manager:**
-- npm (default, version 10+)
-- Lockfile: `package-lock.json` (present)
+- npm (lockfile: `package-lock.json` present)
 
 ## Frameworks
 
 **Core:**
-- Next.js 16.2.6 - Full-stack React framework with API routes
-- React 19.2.6 - UI library
-- React DOM 19.2.6 - DOM rendering
-
-**State & Data:**
-- @tanstack/react-query 5.100.10 - Client data fetching & caching
-- @trpc/client 11.17.0 - Type-safe RPC client
-- @trpc/react-query 11.17.0 - React Query adapter for tRPC
-- @trpc/server 11.17.0 - Type-safe RPC server
+- Next.js 16.2.6 - Full-stack React framework (app router, API routes, middleware)
+- React 19.2.6 - Component library
+- TypeScript 6.0.3 - Type safety
 
 **Database & ORM:**
-- Prisma 7.8.0 - ORM with schema migrations
-- @prisma/client 7.8.0 - Generated client
-- @prisma/adapter-pg 7.8.0 - PostgreSQL connection pooling via PrismaPg
-- pg 8.20.0 - Native PostgreSQL driver
+- Prisma 7.8.0 - ORM with migrations
+- PostgreSQL 18 - Primary database (local development, production via Railway/localhost)
+- @prisma/adapter-pg 7.8.0 - Connection pooling and edge adaptime support
 
 **Authentication:**
-- next-auth 5.0.0-beta.31 - OAuth & credential-based auth
-- @auth/prisma-adapter 2.11.2 - NextAuth + Prisma integration
-- bcryptjs 3.0.3 - Password hashing
+- NextAuth 5.0.0-beta.31 - Session management and OAuth delegation
+- @auth/prisma-adapter 2.11.2 - Prisma + NextAuth integration
 
-**Real-time Collaboration:**
-- yjs 13.6.30 - CRDT library for collaborative editing
-- @hocuspocus/server 4.0.0 - WebSocket server for Yjs sync
-- @hocuspocus/provider 4.0.0 - Client provider
-- @hocuspocus/extension-database 4.0.0 - Yjs persistence via database
-- @hocuspocus/extension-logger 4.0.0 - Hocuspocus logging
-- ws 8.20.0 - WebSocket implementation
+**API Layer:**
+- tRPC 11.17.0 (@trpc/client, @trpc/server, @trpc/react-query) - End-to-end type-safe API
+- Server Actions (Next.js experimental) - Form submissions and mutations
 
-**Rich Text Editing:**
-- @tiptap/react 3.23.1 - React editor component
-- @tiptap/starter-kit 3.23.1 - Default extensions bundle
-- @tiptap/core 3.23.1 - Core editor logic
-- @tiptap/extension-collaboration 3.23.1 - Yjs collaboration
-- @tiptap/extension-collaboration-caret 3.23.1 - Remote cursor awareness
-- @tiptap/extension-* (11 other extensions) - Link, image, list, table, underline, etc.
-- @tiptap/y-tiptap 3.0.3 - Yjs binding for tiptap
-- tiptap-extension-resize-image 1.4.0 - Custom image resizing
+**Real-Time Collaboration:**
+- Yjs 13.6.30 - Conflict-free replicated data type for shared editing
+- @hocuspocus/server 4.0.0 - WebSocket collaboration server
+- @hocuspocus/extension-database 4.0.0 - Persistent Yjs document storage
+- @hocuspocus/extension-logger 4.0.0 - Server logging
+- Tiptap 3.23.1 (core + React + extensions) - Rich-text collaborative editor
 
-**Visualization & Graphs:**
-- @cosmos.gl/graph 3.0.0-beta.9 - WebGL 3D graph visualization with force simulation
-- three 0.184.0 - 3D graphics (underlying cosmos.gl dependency)
-- d3-force 3.0.0 - Force-directed layout algorithm
-- d3-hierarchy 3.1.2 - Hierarchical layout
-- d3-scale 4.0.2 - Scale functions
-- d3-scale-chromatic 3.1.0 - Color scales
-- d3-time 3.1.0 - Time handling
-- d3-time-format 4.1.0 - Time formatting
-- @xyflow/react 12.10.2 - Interactive graph/diagram editor
-
-**Data Visualization:**
-- @nivo/bar 0.99.0 - Bar charts
-- @nivo/core 0.99.0 - Nivo core
-- @nivo/pie 0.99.0 - Pie charts
-- echarts 6.0.0 - Complex interactive charts
-- echarts-for-react 3.0.6 - React wrapper for ECharts
-
-**File Handling:**
-- xlsx 0.20.3 - Excel file parsing and generation (via CDN)
-- csv-parse 6.2.1 - CSV parsing
-- unzipper 0.12.3 - ZIP extraction
-- react-pdf 10.4.1 - PDF rendering in React
+**Data Visualization & Analytics:**
+- @cosmos.gl/graph 3.0.0-beta.9 - 3D force-directed graph rendering
+- @uwdata/mosaic-core 0.25.0 - Interactive query coordinator
+- @uwdata/mosaic-sql 0.25.0 - SQL query generation
+- @uwdata/vgplot 0.25.0 - Declarative grammar for visualizations
+- @duckdb/duckdb-wasm 1.33.1-dev45.0 - In-browser SQL analytics (self-hosted bundles)
+- d3 modules (d3-force, d3-scale, d3-scale-chromatic, d3-time, d3-time-format, d3-hierarchy) 3.x - Data manipulation and scales
+- ECharts 6.0.0 + echarts-for-react 3.0.6 - Business chart library
+- Nivo 0.99.0 (@nivo/bar, @nivo/pie, @nivo/stream, @nivo/core) - Data visualization
+- Three.js 0.184.0 - 3D graphics (used with Cosmos)
+- Framer Motion 12.38.0 - Animation library
 
 **UI & Styling:**
-- Tailwind CSS 4.3.0 - Utility-first CSS framework
-- tailwindcss-postcss 4.3.0 - PostCSS support
+- Tailwind CSS 4.3.0 - Utility-first CSS
+- Radix UI 1.4.3 - Accessible component primitives
+- Shadcn/ui 4.7.0 - Pre-built Tailwind + Radix components
+- Lucide React 1.14.0 - Icon library
+- Sonner 2.0.7 - Toast notifications
+- clsx 2.1.1 - Conditional className builder
+- tailwind-merge 3.6.0 - Tailwind conflict resolution
+
+**Data Handling & Formats:**
+- Apache Arrow 17.0.0 - Columnar data format (for Mosaic/DuckDB results)
+- csv-parse 6.2.1 - CSV parsing
+- XLSX 0.20.3 - Excel workbook reading/writing
+- react-pdf 10.4.1 - PDF viewer component
+- Unzipper 0.12.3 - ZIP file extraction (for bulk exports)
+
+**Form & Validation:**
+- Zod 4.4.3 - Runtime schema validation
+
+**Network & Real-Time:**
+- ws 8.20.0 - WebSocket client library (Yjs, Hocuspocus)
+- @tanstack/react-query 5.100.10 - Server state management
+- SuperJSON 2.2.6 - Extended JSON serialization (for tRPC, complex types)
+
+**File Uploading:**
+- UploadThing 7.7.4 + @uploadthing/react 7.3.3 - Managed file upload service
+
+**Text & Date Utilities:**
+- date-fns 4.1.0 - Date formatting and manipulation
+
+**Algorithms & Utilities:**
+- p-limit 7.3.0 - Concurrency control (batch parallel operations)
 - class-variance-authority 0.7.1 - Component variant management
-- clsx 2.1.1 - Conditional className utility
-- radix-ui 1.4.3 - Headless UI components
-- lucide-react 1.14.0 - Icon library
-- framer-motion 12.38.0 - Animation library
-- sonner 2.0.7 - Toast notifications
-- next-themes 0.4.6 - Theme switching (light/dark)
-- tw-animate-css 1.4.0 - Additional Tailwind animations
+- bcryptjs 3.0.3 - Password hashing
+- stream-json 2.1.0 - Streaming JSON parsing (for large datasets)
 
-**Drag & Drop:**
-- @dnd-kit/core 6.3.1 - Headless drag-drop library
-- @dnd-kit/sortable 10.0.0 - Sortable preset
-- @dnd-kit/utilities 3.2.2 - DND Kit utilities
-
-**Virtualization:**
-- @tanstack/react-virtual 3.13.24 - Virtual scrolling for large lists
-
-**File Upload:**
-- uploadthing 7.7.4 - File upload service
-- @uploadthing/react 7.3.3 - React component integration
-
-**Utilities & Serialization:**
-- superjson 2.2.6 - JSON serialization with extra types
-- zod 4.4.3 - Schema validation & TypeScript inference
-- date-fns 4.1.0 - Date utilities
-- p-limit 7.3.0 - Promise concurrency limiting
-
-**External API SDKs:**
-- @aps_sdk/authentication 1.0.1 - Autodesk APS authentication
-- @aps_sdk/model-derivative 1.2.1 - APS model viewer & translation
-- @aps_sdk/oss 1.3.3 - APS Object Storage Service (file uploads)
-- googleapis 171.4.0 - Google APIs (Gmail, Sheets, Drive, Calendar, Forms, Chat)
-- openai 6.37.0 - OpenAI API for generative descriptions
-- playwright 1.59.1 - Browser automation (testing/scraping)
-
-**Server Utilities:**
-- server-only 0.0.1 - Marks modules as server-only to prevent client bundling
-- tsx 4.21.0 - TypeScript execution for Node.js
-
-**Caching & Messaging:**
-- @upstash/redis 1.38.0 - Redis client for Upstash platform
-
-## Testing
-
-**Test Framework:**
-- vitest 4.1.6 - Vite-based test runner (faster than Jest)
-- jsdom 29.1.1 - DOM environment for testing
+**Testing:**
+- Vitest 4.1.6 - Unit test runner (Vite-based, .test.ts files)
 - @testing-library/react 16.3.2 - React component testing utilities
-- vite 8.0.12 - Build tool used by vitest
+- JSDOM 29.1.1 - DOM emulation for Node.js
+- Playwright 1.59.1 - E2E browser testing
 
-## Build & Dev Tools
+**Build & Dev Tools:**
+- Next.js build system (Webpack under the hood per next.config.ts)
+- Tailwind CSS PostCSS 4.3.0 - CSS processing
+- Sass 1.99.0 - SCSS support
+- ESLint 10.3.0 - Linting
+- Knip 6.12.2 - Dead code analysis
+- tsx 4.21.0 - TypeScript execution (for Node.js scripts)
+- patch-package 8.0.1 - Runtime patching of dependencies
+- vite 8.0.12 - Build tool (for design system or preview)
 
-**Build System:**
-- Next.js built-in webpack 5 (configured in `next.config.ts`)
+**Mobile & Desktop:**
+- Electron 42.1.0 - Desktop app shell
+- @dnd-kit (core, sortable, utilities) 6.3+ - Drag-and-drop library
+- @xyflow/react 12.10.2 - Node-based graph editor
 
-**Development Servers:**
-- next dev --webpack - Development server with hot reload
-- python scripts/run_dev_stack.py - Local dev stack orchestration (postgres, yjs, next)
+**Google Workspace Integration:**
+- googleapis 171.4.0 - Google APIs (Sheets, Drive, Gmail, Chat, Calendar, Directory)
+- @google-cloud/local-auth - Local OAuth flow for Google service account
+- google-auth-library - Token refresh and JWT validation
 
-**Package Management Tools:**
-- patch-package 8.0.1 - Apply patches to node_modules (used in postinstall)
-- knip 6.12.2 - Unused file/export detector
-- @ngrok/ngrok 1.7.0 - Secure tunneling for local dev
+**AI/LLM:**
+- OpenAI 6.37.0 - Chat completions API (for Revit family descriptions and analysis)
 
-**Linting & Formatting:**
-- eslint 10.3.0 - JavaScript linting
-- eslint-config-next 16.2.6 - Next.js ESLint config
-- sass 1.99.0 - SCSS support
-- @tailwindcss/postcss 4.3.0 - PostCSS Tailwind plugin
-- postcss 8.5.14 - CSS transformation (with overrides in package.json)
-
-**Type Checking:**
-- TypeScript 6.0.3 - TypeScript compiler
+**Caching & Sessions:**
+- @upstash/redis 1.38.0 - Serverless Redis client (APS search caching)
 
 ## Configuration
 
 **Environment:**
-- `.env` file present - Contains API keys and database URLs
-- `texti.env` - Additional test environment setup
-- Configuration read at runtime via `process.env.*`
+- `.env` file required (see `.env.example`)
+- Key env vars:
+  - Database: `DATABASE_URL`, `DIRECT_URL` (PostgreSQL connection strings)
+  - Auth: `NEXTAUTH_SECRET`, `AUTH_SECRET`, `BETTER_AUTH_SECRET`
+  - Google OAuth: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SHEETS_ID`
+  - Google Service Account: `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY`
+  - APS/Autodesk: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, `APS_CALLBACK_URL`, `APS_SCOPES`
+  - OpenAI: `OPENAI_API_KEY`, `OPENAI_MODEL`
+  - UploadThing: `UPLOADTHING_SECRET`, `UPLOADTHING_APP_ID`, `UPLOADTHING_TOKEN`
+  - Resend (email): `RESEND_API_KEY`, `RESEND_EMAIL`
+  - Redis: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
+  - Feature flags: `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` (Phase redesign toggle)
 
 **Build Configuration:**
-- `tsconfig.json` - TypeScript configuration (ES2017 target, strict mode)
-- `eslint.config.mjs` - Flat config format (ignores .next, node_modules, etc.)
-- `vitest.config.ts` - Test environment: node, globals enabled
-- `vitest.setup.ts` - Global test setup file
-- `postcss.config.mjs` - PostCSS with Tailwind
-- `components.json` - shadcn UI configuration
-- `next.config.ts` - Next.js webpack, image, and server configuration
-- `prisma.config.ts` - Optional Prisma config wrapper
+- `next.config.ts` - Webpack aliases for DuckDB, bundle timeouts, server action origin allowlists
+- `tsconfig.json` - TS compiler options, path aliases (`@/*` → root)
+- `vitest.config.ts` - Unit test config
+- `eslint.config.mjs` - Linting rules
+- `postcss.config.mjs` - CSS processing pipeline
 
-**Docker:**
-- `Dockerfile` - Multi-stage build using Node 22-bookworm-slim
-- `Dockerfile.yjs` - Separate container for Yjs server
-- `.dockerignore` - Excludes unnecessary files from image
-
-**Database:**
-- PostgreSQL (adapter via @prisma/adapter-pg)
-- Prisma schema: `prisma/schema.prisma`
-- Migrations: auto-tracked in `prisma/migrations/`
+**Database Pooling:**
+- Configurable via env: `PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`
+- Default: prod (max=5, idle=120s), dev (max=10, idle=10s)
 
 ## Platform Requirements
 
 **Development:**
 - Node.js >= 22
-- PostgreSQL (local via `db:start` or remote via DATABASE_URL)
-- Python 3.x (for development scripts)
-- Optional: ngrok for tunneling
+- Python 3.x (for `scripts/run_dev_stack.py`, LOD engine)
+- PostgreSQL 18 (local install under `.local/postgresql18/`)
+- npm package manager
+- Recommended: VSCode with TypeScript support
 
 **Production:**
-- Node.js 22
-- PostgreSQL (Railway or self-hosted)
-- Upstash Redis (for caching)
-- Autodesk APS (for BIM model access)
-- Google APIs (OAuth, Sheets, Gmail, Drive, Calendar, Forms, Chat)
-- OpenAI API (for generative descriptions)
-- Uploadthing (for file hosting)
-- Docker capable environment (Railway or any OCI-compliant runtime)
+- Node.js >= 22
+- PostgreSQL 18 (hosted or containerized)
+- Autodesk Platform Services (APS) credentials (OAuth 3-leg)
+- Google Cloud credentials (OAuth 2-leg + service account)
+- Upstash Redis (optional, for caching)
+- UploadThing credentials (file storage)
+- OpenAI API key (optional, for AI features)
+- Resend or Gmail (email delivery)
 
-**Deployment:**
-- Railway.app (primary) - Dockerfile deployed via git push
-- Environment variables managed per environment
+**Deployment Target:**
+- Railway (retired as of 2026-05-13, trial expired)
+- Local development: Node.js server on Windows Task Scheduler (luis's PC, port 3000)
+- Docker support (Dockerfile, Dockerfile.yjs for Hocuspocus server)
 
 ---
 
-*Stack analysis: 2026-05-12*
+*Stack analysis: 2026-05-19*

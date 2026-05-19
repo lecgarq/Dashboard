@@ -1,154 +1,135 @@
-# Directory Structure
-
-**Analysis Date:** 2026-05-12
+# Codebase Structure
 
 ## Top-Level Layout
 
 ```
-Dashboard/
-├── app/                # Next.js App Router (routes, layouts, API)
-├── components/         # React components (organized by domain)
-├── lib/                # Business logic, utilities, integrations
-├── server/             # tRPC routers, server actions, db client, auth
-├── prisma/             # Schema, migrations, seed
-├── services/           # Cron/background workers (Railway services)
-├── adapters/           # External system adapters
-├── hooks/              # React hooks
-├── scripts/            # Dev tooling, migrations, utilities
-├── public/             # Static assets
-├── types/              # Shared TypeScript types
-├── docs/               # Project documentation
-├── APS_DOCS/           # Autodesk APS reference docs
-├── patches/            # patch-package overrides (cosmos.gl, server-only)
-├── .planning/          # GSD planning artifacts (roadmap, phases, codebase map)
-├── .gsd/               # GSD framework files (TECHNICAL_DEBT.md, etc.)
-└── .claude/            # Claude Code settings, hooks, scheduled tasks
+C:/LECG/Dashboard/
+├── app/                  # Next.js App Router (routes + pages + RSC)
+│   ├── (auth)/           # Auth route group (sign-in, etc.)
+│   ├── (dashboard)/      # Authenticated dashboard route group
+│   └── api/              # REST endpoints + tRPC HTTP handler
+├── server/               # Server-only code (tRPC + actions + auth + db)
+│   ├── routers/          # tRPC routers (one per domain)
+│   ├── actions/          # Server actions
+│   ├── auth.ts           # NextAuth config
+│   ├── db.ts             # Prisma client + Postgres pool
+│   └── trpc.ts           # tRPC procedure builders
+├── lib/                  # Shared domain logic + utilities
+│   ├── acc/              # Autodesk ACC ingest, graph, analytics
+│   ├── client/           # Client-only helpers
+│   ├── core/             # Core domain types
+│   ├── events/           # Event bus / pub-sub
+│   ├── google/           # Google Drive / Gmail integration
+│   ├── modules/          # Feature modules
+│   ├── server/           # Server-only helpers
+│   ├── shared/           # Isomorphic helpers
+│   ├── trello/           # Trello integration
+│   └── wiki/             # Internal wiki helpers
+├── components/           # React components (organized by feature)
+│   ├── auth/             # Auth UI
+│   ├── clash/            # Clash detection UI
+│   ├── dashboard/        # Dashboard shell + nav
+│   ├── exam/             # Exam mode
+│   ├── families/         # Revit families browser
+│   ├── layout/           # Layout primitives
+│   ├── lod/              # LOD checker
+│   ├── modules/          # Module-scoped widgets
+│   ├── projects/         # Project pickers, etc.
+│   ├── providers/        # Context providers
+│   ├── sync-center/      # Sync status panel
+│   ├── tasks/            # Task UI
+│   ├── theme/            # Theme switcher
+│   ├── trello/           # Trello UI
+│   └── ui/               # shadcn/ui primitives
+├── prisma/               # Prisma schema + migrations
+├── scripts/              # CLI scripts (CJS/MJS/TS/Python/PowerShell)
+├── APS_DOCS/             # Autodesk Platform Services reference (vendored docs)
+├── docs/                 # Internal architecture docs + specs
+├── electron/             # Electron desktop wrapper
+├── adapters/             # External-system adapters
+├── hooks/                # Reusable React hooks
+├── public/               # Static assets
+├── patches/              # patch-package patches
+└── services/             # Python sidecar services (e.g. lod-engine)
 ```
+
+## Route Groups (Next.js App Router)
+
+`app/(dashboard)/` — main authenticated app:
+- `account/` — user account
+- `clash-detection/` — clash UI
+- `exam/` — exam mode
+- `families/` — Revit families
+- `home/` — landing
+- `lod-checker/` — LOD checks
+- `settings/`
+- `sim-automation/`
+- `sync-center/` — ACC sync status
+- `tasks/`
+- `trello/`
+- `users/` — user directory + access analysis (heavy graph UI)
+  - `access-analysis/` — Cosmograph + DuckDB/Mosaic redesign target
 
 ## Key Locations
 
-### Routes & Pages — `app/`
-- `app/(auth)/` — Sign-in / sign-out route group (no layout chrome)
-- `app/(dashboard)/` — Authenticated dashboard route group
-  - `app/(dashboard)/users/` — User-graph experience (AccUsersGraph, AccProfileSection, cosmosUtils)
-  - `app/(dashboard)/projects/` — Project pages
-  - `app/(dashboard)/clash/` — Clash detection UI
-  - `app/(dashboard)/tasks/`, `app/(dashboard)/exam/`, `app/(dashboard)/families/`, etc.
-- `app/api/` — Next.js Route Handlers (auth callbacks, webhooks, tRPC entrypoint)
-  - `app/api/trpc/[trpc]/route.ts` — tRPC fetch adapter
-  - `app/api/auth/[...nextauth]/` — NextAuth handler
-  - `app/api/webhooks/` — Trello, clash, sim webhooks
-- `app/layout.tsx` — Root layout (providers, theme, fonts)
-- `app/page.tsx` — Landing page
-
-### Components — `components/`
-Organized by domain rather than by component type.
-- `components/ui/` — shadcn/radix primitives (button, dialog, tabs, popover, …)
-- `components/auth/` — Login/session UI
-- `components/dashboard/` — Cross-feature dashboard chrome (sidebar, header, widgets)
-- `components/clash/` — Clash review widgets
-- `components/projects/` — Project list / detail components
-- `components/tasks/`, `components/exam/`, `components/families/`, `components/lod/`, `components/modules/`, `components/trello/`, `components/wiki/`
-- `components/layout/` — Page-level layout primitives
-- `components/providers/` — Context providers (Theme, TRPC, QueryClient)
-- `components/theme/` — Theme switching
-
-### Business Logic — `lib/`
-Heavy domain logic lives here; routers stay thin.
-- `lib/acc/` — Autodesk Construction Cloud domain
-  - Sync (`acc-sync.ts`, `quick-sync-extraction.ts`, `ingestActivityZip.ts`)
-  - Graph (`graphSimulation.ts`, `graphSnapshot.ts`, `accUserSpatialProfile.ts`)
-  - Similarity (`userSimilarity.ts`, `nameSimilarity.ts`, `attributeInviter.ts`)
-  - Folder topology (`folderCrawl.ts`, `folderHubCollapse.ts`, `compactionAnalysis.ts`)
-  - Analytics (`activeUserTiers.ts`, `dashboardAnalytics.ts`, `orphanDetection.ts`, `kpi.ts`)
-  - Permissions (`permissionMapping.ts`, `activityCategories.ts`)
-  - I/O (`csvExport.ts`)
-- `lib/google/` — Google APIs (Gmail, Sheets, Drive, Calendar, Forms, Chat)
-- `lib/trello/` — Trello integration
-- `lib/wiki/` — Wiki/notes domain
-- `lib/modules/` — Module registry
-- `lib/events/` — Event bus / pub-sub
-- `lib/server/` — Server-only helpers (marked with `server-only`)
-- `lib/client/` — Client-only helpers
-- `lib/shared/` — Isomorphic helpers (safe on both sides)
-- `lib/core/` — Cross-cutting core utilities
-- `lib/redis.ts` — Upstash Redis client
-- `lib/auth-env.ts` — Auth env-var helpers
-
-### Server — `server/`
-- `server/routers/` — tRPC routers (one file per domain)
-  - `root.ts` — Aggregates all routers into `appRouter`
-  - `users.ts`, `project.ts`, `tasks.ts`, `clash.ts`, `exam.ts`, `families.ts`, `lod.ts`, `gmail.ts`, `calendar.ts`, `chat.ts`, `trello.ts`, `sim.ts`, `kpi.ts`, `workspace.ts`, `search.ts`, `module-router.ts`
-  - ACC: `acc-sync.ts`, `acc-folders.ts`, `acc-graph.ts`, `acc-members.ts`, `acc-activity.ts`, `aps-search.ts`
-- `server/actions/` — Next.js Server Actions
-- `server/auth.ts` — NextAuth config (providers, callbacks)
-- `server/db.ts` — Prisma client singleton
-- `server/trpc.ts` — tRPC context, procedures (publicProcedure, protectedProcedure)
-
-### Database — `prisma/`
-- `prisma/schema.prisma` — Single-file schema (ACC, auth, modules, tasks, exam, families, LOD, clash, sim)
-- `prisma/migrations/` — Auto-tracked SQL migrations
-- `prisma/seed.ts` — Optional seed script
-
-### Background Workers — `services/`
-- Cron jobs (Quick Sync, folder crawl, etc.) run as separate Railway services
-- Triggered by `railway.cron.toml`, `railway.yjs.toml`, `railway.submitter.toml`
-
-### Planning & Process — `.planning/`, `.gsd/`
-- `.planning/STATE.md` — Current project state (live)
-- `.planning/ROADMAP.md` — Milestone & phase plan
-- `.planning/phases/<phase>/` — Per-phase PLAN.md, RESEARCH.md, SUMMARY.md
-- `.planning/codebase/` — This codebase map
-- `.gsd/TECHNICAL_DEBT.md` — Active tech debt log
+| Concern | Location |
+|---|---|
+| tRPC routers (domain APIs) | `server/routers/*.ts` (acc-activity, acc-folders, acc-graph, acc-members, acc-sync, aps-search, calendar, chat, clash, exam, families, gmail, kpi, lod, project, search, sim, tasks, trello, users, workspace) |
+| Root tRPC router | `server/routers/root.ts` |
+| tRPC HTTP handler | `app/api/trpc/[trpc]/route.ts` |
+| NextAuth config | `server/auth.ts`, `auth.config.ts` |
+| Prisma schema | `prisma/schema.prisma` |
+| Database client | `server/db.ts` |
+| ACC ingest engine | `lib/acc/dcIngest.ts` (~1239 lines), `lib/acc/dcActivityCsvIngest.ts`, `lib/acc/dcAdminCsvIngest.ts` |
+| ACC graph rendering | `app/(dashboard)/users/AccUsersGraph.tsx` (~4242 lines) |
+| User directory | `app/(dashboard)/users/UsersDirectoryClient.tsx` (~2526 lines) |
+| Scheduled jobs (Windows) | `scripts/dc-daily-cron.ps1`, `scripts/dc-daily-ingest.cjs` |
+| Local Postgres helper | `scripts/postgres-local.js` |
+| Dev stack runner | `scripts/run_dev_stack.py` |
+| Electron entry | `electron/main.cjs` |
+| APS reference docs | `APS_DOCS/` (read-only vendor docs) |
 
 ## Naming Conventions
 
-**Files:**
-- React components: `PascalCase.tsx` (e.g. `AccUsersGraph.tsx`, `FolderPermissionsWidget.tsx`)
-- Hooks: `camelCase.ts` starting with `use` (e.g. `useCosmosGraph.ts`)
-- Libs / domain modules: `camelCase.ts` (e.g. `userSimilarity.ts`, `folderCrawl.ts`)
-- tRPC routers: `kebab-or-camelCase.ts` matching domain (e.g. `acc-sync.ts`, `users.ts`)
-- Tests: colocated `<source>.test.ts` (e.g. `userSimilarity.test.ts`)
-- Route groups: `(group)` parens; private folders: `_folder` underscore
-- Config: `*.config.ts` / `*.config.mjs`
+- **Files:** kebab-case for routes (`acc-activity.ts`), PascalCase for React components (`AccUsersGraph.tsx`), camelCase for utility modules (`dcIngest.ts`, `csvExport.ts`).
+- **Tests:** co-located, `*.test.ts` / `*.test.tsx` next to the module under test.
+- **tRPC routers:** one file per domain in `server/routers/`, named after the domain (`users.ts`, `kpi.ts`).
+- **Scripts:** prefix by purpose — `dc-*` for Data Connector, `check-*` for diagnostics, `fix-*` for one-off repairs.
+- **Route groups:** parenthesized folders (`(auth)`, `(dashboard)`) don't affect URL paths.
 
-**Symbols:**
-- Components, types, enums: `PascalCase`
-- Functions, variables, hooks: `camelCase`
-- Constants: `SCREAMING_SNAKE_CASE` for env-derived / module-level constants
-- Prisma models: `PascalCase` singular (e.g. `AccUser`, `AccProjectMember`)
-- Feature flags / env keys: `SCREAMING_SNAKE_CASE` (e.g. `FOLDER_CRAWL_IN_RELEASE`)
+## Where Domain Logic Lives
 
-**tRPC procedures:**
-- Queries: noun phrases (`listProjects`, `getProfile`, `usersForGraph`)
-- Mutations: verb phrases (`createTask`, `runQuickSync`, `assignRole`)
+- **ACC / Autodesk Data Connector pipeline:** `lib/acc/` (ingest, normalization, analytics) + `server/routers/acc-*.ts` (API surface) + `scripts/dc-*` (CLI/cron drivers)
+- **User access analysis graph:** `app/(dashboard)/users/access-analysis/` (DuckDB/Mosaic/Cosmograph redesign in progress)
+- **Auth + identity:** `server/auth.ts` + `lib/auth-env.ts` + Prisma adapter
+- **Background jobs:** Windows Task Scheduler → `.ps1` → `.cjs` (Railway cron config retained in `railway.cron.toml` but unused since trial expired)
 
-## Where to Add New Code
+## APS_DOCS Layout
 
-| Adding…                                 | Goes in…                                  |
-|-----------------------------------------|-------------------------------------------|
-| New page                                | `app/(dashboard)/<feature>/page.tsx`      |
-| New API webhook                         | `app/api/webhooks/<name>/route.ts`        |
-| New tRPC procedure                      | Existing `server/routers/<domain>.ts`     |
-| New tRPC router                         | New `server/routers/<domain>.ts` + register in `root.ts` |
-| New ACC analysis                        | `lib/acc/<analysis>.ts` + `.test.ts`      |
-| New cross-domain shared util            | `lib/shared/<util>.ts`                    |
-| New server-only helper                  | `lib/server/<helper>.ts` (with `server-only` import) |
-| New React component                     | `components/<domain>/<Component>.tsx`     |
-| New shadcn primitive                    | `components/ui/<primitive>.tsx`           |
-| New Prisma model                        | `prisma/schema.prisma` + `npx prisma migrate dev` |
-| New background job                      | `services/<job>.ts` + matching `railway.<job>.toml` |
-| New phase plan                          | `.planning/phases/<NN-name>/`             |
+Vendored Autodesk Platform Services reference. Read-only, used by humans + AI when implementing APS integrations.
 
-## Special Directories
+```
+APS_DOCS/
+├── APS_MASTER_REFERENCE.md          # Top-level index
+├── ACC (FORMA) API/                 # ACC REST API (_index.json, REST API/, Tutorials/, Other/)
+├── APS_REFERENCE/                   # General APS reference
+├── AUTHENTICATION API/              # OAuth 2-leg + 3-leg flows
+├── BIM 360 API/                     # Legacy BIM 360 endpoints
+├── DATA MANAGEMENT API/             # Hubs, projects, folders, items
+├── DESIGN AUTOMATION API/
+├── HOW TO/                          # Task-specific recipes
+│   ├── HOW_TO_Extract_Activity_Logs.md
+│   ├── HOW_TO_Extract_All_Files_and_Folders.md
+│   ├── HOW_TO_Extract_All_Roles.md
+│   ├── HOW_TO_Extract_Folder_Role_Permissions.md
+│   ├── HOW_TO_Extract_Last_Sign_In.md
+│   ├── HOW_TO_Extract_Last_User_File_Activity.md
+│   ├── HOW_TO_Extract_Project_Info.md
+│   ├── HOW_TO_Extract_Project_Members.md
+│   └── HOW_TO_Extract_Recent_User_Additions.md
+├── MANUFACTURING DATA MODEL API/
+├── MODEL DERIVATIVE API/
+└── VIEWER API/
+```
 
-- `(auth)`, `(dashboard)` — Next.js route groups (no URL segment)
-- `app/api/` — Server-side route handlers (NOT page routes)
-- `patches/` — `patch-package` overrides applied via `postinstall`
-- `scratch/`, `tmp/`, `400` — Local scratch space (not shipped)
-- `.next/` — Build artifacts (gitignored)
-- `APS_DOCS/` — Reference docs from Autodesk, not source
-
----
-
-*Structure analysis: 2026-05-12*
+When implementing APS-facing code, consult `APS_DOCS/HOW TO/` first — these are recipe-grade and reflect what actually works against the live API.
