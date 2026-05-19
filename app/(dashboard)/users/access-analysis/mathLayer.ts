@@ -2,7 +2,7 @@
  * mathLayer.ts — Pure deterministic semantic-seed math layer.
  *
  * PURITY CONTRACT (MATH-05): This file has ZERO import lines.
- * All types are declared inline. No React, no DOM, no engine, no I/O.
+ * All types are declared inline. No UI framework, no DOM, no engine, no I/O.
  *
  * Formula (MATH-03):
  *   finalTarget(node) = Σ_d (u_d × f_d(node) × s_d) / Σ_d (s_d)
@@ -59,7 +59,7 @@ export interface DimensionDescriptor {
 // Constants
 // ---------------------------------------------------------------------------
 
-const R_DEFAULT = 300; // World units — matches d3-force-3d defaults (CONTEXT decision)
+const R_DEFAULT = 300; // World units — matches force-graph engine defaults (CONTEXT decision)
 
 // ---------------------------------------------------------------------------
 // Public function
