@@ -26,7 +26,7 @@ function makeInMemoryConn(): AsyncDuckDBConnection {
     if (!colMatch) return [];
     const cols = colMatch[1].split(",").map((c) => c.trim());
 
-    const valuesSection = sql.replace(/^.*?VALUES\s*/si, "");
+    const valuesSection = sql.slice(sql.toUpperCase().indexOf("VALUES") + 6).trimStart();
     const rowMatches = [...valuesSection.matchAll(/\(([^)]+)\)/g)];
     return rowMatches.map((m) => {
       const parts = m[1].split(",").map((s) => s.trim().replace(/^'(.*)'$/, "$1"));
@@ -49,7 +49,7 @@ function makeInMemoryConn(): AsyncDuckDBConnection {
         if (!tables[tbl]) {
           tables[tbl] = [];
           // Extract column names from schema
-          const colDefs = s.match(/\(([^;]+)\)/s)?.[1] ?? "";
+          const colDefs = s.slice(s.indexOf("(") + 1, s.lastIndexOf(")"));
           columns[tbl] = colDefs
             .split(",")
             .map((def) => def.trim().split(/\s+/)[0])
