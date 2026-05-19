@@ -4,6 +4,7 @@ export interface PositionRow {
   node_id: string;
   x: number;
   y: number;
+  z: number;
 }
 
 /**
@@ -25,13 +26,13 @@ export function hashNodeSet(ids: readonly string[]): string {
   return h.toString(16).padStart(8, "0");
 }
 
-export function packPositions(ids: readonly string[], xy: Float32Array): PositionRow[] {
-  if (xy.length !== ids.length * 2) {
-    throw new Error(`packPositions: xy length ${xy.length} != 2 * ids.length ${ids.length}`);
+export function packPositions(ids: readonly string[], xyz: Float32Array): PositionRow[] {
+  if (xyz.length !== ids.length * 3) {
+    throw new Error(`packPositions: xyz length ${xyz.length} != 3 * ids.length ${ids.length}`);
   }
   const rows: PositionRow[] = new Array(ids.length);
   for (let i = 0; i < ids.length; i++) {
-    rows[i] = { node_id: ids[i], x: xy[i * 2], y: xy[i * 2 + 1] };
+    rows[i] = { node_id: ids[i], x: xyz[i * 3], y: xyz[i * 3 + 1], z: xyz[i * 3 + 2] };
   }
   return rows;
 }
@@ -42,14 +43,51 @@ export function unpackPositions(
 ): Float32Array | null {
   const map = new Map<string, PositionRow>();
   for (const row of rows) map.set(row.node_id, row);
-  const xy = new Float32Array(ids.length * 2);
+  const xyz = new Float32Array(ids.length * 3);
   for (let i = 0; i < ids.length; i++) {
     const row = map.get(ids[i]);
     if (!row) return null;
-    xy[i * 2] = row.x;
-    xy[i * 2 + 1] = row.y;
+    xyz[i * 3] = row.x;
+    xyz[i * 3 + 1] = row.y;
+    xyz[i * 3 + 2] = row.z;
   }
-  return xy;
+  return xyz;
+}
+
+/**
+ * Slider-aware cache key: FNV-1a over sorted node ids + quantized slider values.
+ * Quantizes slider values to 2 decimal places before hashing to avoid cache
+ * poisoning from float drift (Pitfall 4).
+ *
+ * Filter changes (alpha masks) do NOT invalidate the key — only slider/node changes do.
+ */
+export function hashNodeSetAndSliders(
+  ids: readonly string[],
+  sliders: Readonly<Record<string, number>>,
+): string {
+  const sortedIds = [...ids].sort();
+  const sortedSliderKeys = Object.keys(sliders).sort();
+  let h = 0x811c9dc5;
+
+  const mix = (s: string) => {
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    h ^= 0x0a;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  };
+
+  for (const id of sortedIds) mix(id);
+  mix("|"); // domain separator between id-set and slider-set
+  for (const k of sortedSliderKeys) {
+    mix(k);
+    // Quantize to 2 decimals: slider UI is 0..1 with 2dp sufficient (Pitfall 4)
+    const q = Math.round((sliders[k] ?? 0) * 100) / 100;
+    mix(q.toString());
+  }
+
+  return h.toString(16).padStart(8, "0");
 }
 
 const SCHEMA_SQL = `
@@ -57,7 +95,8 @@ const SCHEMA_SQL = `
     node_id TEXT PRIMARY KEY,
     set_hash TEXT NOT NULL,
     x REAL NOT NULL,
-    y REAL NOT NULL
+    y REAL NOT NULL,
+    z REAL NOT NULL
   );
   CREATE INDEX IF NOT EXISTS positions_set_hash_idx ON positions(set_hash);
 `;
@@ -75,7 +114,7 @@ export async function loadCachedPositions(
   ids: readonly string[],
 ): Promise<Float32Array | null> {
   const result = await conn.query(
-    `SELECT node_id, x, y FROM positions WHERE set_hash = '${setHash.replace(/'/g, "''")}'`,
+    `SELECT node_id, x, y, z FROM positions WHERE set_hash = '${setHash.replace(/'/g, "''")}'`,
   );
   const rows = result.toArray() as PositionRow[];
   if (rows.length !== ids.length) return null;
@@ -86,10 +125,10 @@ export async function savePositions(
   conn: AsyncDuckDBConnection,
   setHash: string,
   ids: readonly string[],
-  xy: Float32Array,
+  xyz: Float32Array,
 ): Promise<void> {
   await conn.query(`DELETE FROM positions WHERE set_hash = '${setHash.replace(/'/g, "''")}'`);
-  const rows = packPositions(ids, xy);
+  const rows = packPositions(ids, xyz);
   // Batch insert chunked to avoid exceeding the statement size limit.
   const CHUNK = 1000;
   for (let i = 0; i < rows.length; i += CHUNK) {
@@ -97,11 +136,11 @@ export async function savePositions(
     const values = slice
       .map(
         (r) =>
-          `('${r.node_id.replace(/'/g, "''")}', '${setHash}', ${r.x}, ${r.y})`,
+          `('${r.node_id.replace(/'/g, "''")}', '${setHash}', ${r.x}, ${r.y}, ${r.z})`,
       )
       .join(",");
     await conn.query(
-      `INSERT INTO positions (node_id, set_hash, x, y) VALUES ${values}`,
+      `INSERT INTO positions (node_id, set_hash, x, y, z) VALUES ${values}`,
     );
   }
 }
