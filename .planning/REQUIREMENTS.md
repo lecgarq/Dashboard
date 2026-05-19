@@ -32,7 +32,7 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Render
 
-- [ ] **REND-01**: 2D mode via `react-force-graph-2d` v1.29.1 with custom `nodeCanvasObject` for size/color/opacity
+- [ ] **REND-01**: 2D mode via @cosmos.gl/graph v3 (WebGL, GPU) running in frozen mode (enableSimulation: false). Per-node RGBA colors via setPointColors. Alpha mask expressed via highlightedPointIndices + pointGreyoutOpacity: 0.15. (Supersedes the prior react-force-graph-2d v1.29.1 spec — replaced 2026-05-19 per CONTEXT.md.)
 - [ ] **REND-02**: 3D mode via `react-force-graph-3d` v1.29.1 with orbit controls
 - [ ] **REND-03**: Seamless 2D ↔ 3D switch: same `graphData` object reference, position continuity preserved (no jump, no remount jitter)
 - [ ] **REND-04**: GraphCanvas component receives only `Float32Array positions`, `Float32Array alphaMask`, and `mode: "2d"|"3d"` — no slider values, no feature data inside the component
@@ -84,7 +84,7 @@ Deferred to future release. Tracked but not in current roadmap.
 | Undo history for interactions | Out of demo scope |
 | Tutorial overlays | Out of demo scope |
 | UMAP / t-SNE pre-processing | Math layer formula is the layout; no ML reduction step |
-| Cosmograph / cosmos.gl | Disqualified by research — 2D-only, no runtime force-weight mutation API |
+| Cosmograph / cosmos.gl simulation | cosmos.gl is used as 2D renderer in frozen mode (enableSimulation: false); its runtime force-weight mutation API is not used |
 | Manual cluster annotations | All clustering driven by sliders + data; no manual override |
 | Mobile / responsive layout | Desktop demo only |
 | Re-platforming to cloud / Railway | Localhost only via Task Scheduler |
