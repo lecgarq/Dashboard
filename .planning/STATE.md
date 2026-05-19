@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: in_progress
-last_updated: "2026-05-19T19:15:22Z"
+last_updated: "2026-05-19T19:29:31Z"
 progress:
   total_phases: 4
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
+  completed_plans: 4
 ---
 
 # Project State
@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 2 of 4 (Physics Layer)
-Plan: 1 of 2 in current phase
-Status: Phase 2 plan 01 complete — physicsLayer.ts + d3-force-3d shim built; ready for plan 02-02 (tests)
-Last activity: 2026-05-19 — Phase 2 plan 01: physicsLayer.ts + d3-force-3d.d.ts + d3-force-3d@3.0.6 installed
+Phase: 2 of 4 (Physics Layer) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE
+Status: Phase 2 complete — physicsLayer.ts + tests (PHYS-01..05) green; ready for Phase 3 (render layer)
+Last activity: 2026-05-19 — Phase 2 plan 02: physicsLayer.test.ts + physicsLayer.purity.test.ts (16 tests)
 
-Progress: [███░░░░░░░] 30% (3/4 plans complete across all phases)
+Progress: [█████░░░░░] 50% (4/4 plans complete in phases 1-2; phases 3-4 remaining)
 
 ## Performance Metrics
 
@@ -41,7 +41,7 @@ Progress: [███░░░░░░░] 30% (3/4 plans complete across all ph
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 01-data-math-foundation | 2 | ~30 min | ~15 min |
-| 02-physics-layer | 1 | ~3 min | ~3 min |
+| 02-physics-layer | 2 | ~13 min | ~6.5 min |
 
 **Recent Trend:**
 - Last 5 plans: 01-01 (dataLayer), 01-02 (mathLayer), 02-01 (physicsLayer)
@@ -75,6 +75,10 @@ Recent decisions affecting current work:
 - **d3-force-3d.d.ts co-located** with physicsLayer.ts — no tsconfig.json change needed; Next.js include paths cover the directory.
 - **Cache-miss seed uses alpha(0.3).restart()** — satisfies PHYS-02 invariant (never bare restart()) even at initial construction.
 - **PHYS-04 two-bus invariant structurally enforced** — setMask has zero references to sim, manyBody, or any d3 symbol.
+- **Partial vi.mock of d3-force-3d** (02-02): wraps real exports to capture sim+manyBody refs in tests; no _unsafe_internals needed in production code.
+- **d3-force-3d arity guard** (02-02): sim.force() wrapper must use arguments.length; passing origForce(name, undefined) with 2 args silently removes the force in d3.
+- **force.strength()() double-call** (02-02): d3-force-3d strength getter returns constant() accessor, not the number; must call .strength()() to get value.
+- **No-reheat test uses cache-hit path** (02-02): cache-hit sets frozen=true from construction; more reliable than re-freezing a cache-miss sim mid-test.
 
 ### Pending Todos
 
@@ -89,5 +93,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-19
-Stopped at: Completed 02-01-PLAN.md — physicsLayer.ts + d3-force-3d shim built; ready for 02-02 (tests)
+Stopped at: Completed 02-02-PLAN.md — physicsLayer PHYS-01..05 tests green; Phase 2 complete; ready for Phase 3
 Resume file: None
