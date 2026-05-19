@@ -53,6 +53,10 @@ Recent decisions affecting current work:
 - **z = 0 at seed time.** Physics layer handles z depth in 3D mode.
 - **Monotonicity observable axis** (RESEARCH Open Question #2 resolved): sweep activity slider 0→1 with recency fixed at 1; distance from pure-recency endpoint (0, R) is monotonically non-decreasing.
 - **Forbidden-term purity check** catches all mentions in JSDoc — mathLayer.ts comments must not contain the terms "react", "d3-force", "three", etc.
+- **DuckDB tests use vi.mock not real WASM** — jsdom has no real Worker; all DuckDB-touching tests in repo use mocks. Established pattern for data layer tests.
+- **positionsCache xyz breaking change** — packPositions/unpackPositions now use stride-3 (xyz) not stride-2 (xy). Phase 2 physics callers must allocate Float32Array(n*3).
+- **INTERNAL_DOMAINS default is lecg.com** (exact match). Luis to confirm subdomains during Phase 2.
+- **moduleWeights are uniform 1/N in Phase 1** — deferred to DC CSV join for real per-module activity weights.
 
 ### Pending Todos
 

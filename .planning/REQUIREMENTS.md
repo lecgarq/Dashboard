@@ -9,10 +9,10 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Data
 
-- [ ] **DATA-01**: Node table built from existing tRPC sources (AccProjectMember + AccActivity + AccFolderPermission) — one row per `(email, projectId)` instance
-- [ ] **DATA-02**: Feature columns wired: activity count, last sign-in age, role IDs, folder permission tier, isAdmin, isExternal, module IDs
-- [ ] **DATA-03**: DuckDB-WASM materializes the node table client-side for fast filtering/aggregation
-- [ ] **DATA-04**: Position cache survives filter changes (positions never recomputed when only filter changes)
+- [x] **DATA-01**: Node table built from existing tRPC sources (AccProjectMember + AccActivity + AccFolderPermission) — one row per `(email, projectId)` instance
+- [x] **DATA-02**: Feature columns wired: activity count, last sign-in age, role IDs, folder permission tier, isAdmin, isExternal, module IDs
+- [x] **DATA-03**: DuckDB-WASM materializes the node table client-side for fast filtering/aggregation
+- [x] **DATA-04**: Position cache survives filter changes (positions never recomputed when only filter changes)
 
 ### Math
 
@@ -94,10 +94,10 @@ Deferred to future release. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 1 | Pending |
-| DATA-02 | Phase 1 | Pending |
-| DATA-03 | Phase 1 | Pending |
-| DATA-04 | Phase 1 | Pending |
+| DATA-01 | Phase 1 | Complete |
+| DATA-02 | Phase 1 | Complete |
+| DATA-03 | Phase 1 | Complete |
+| DATA-04 | Phase 1 | Complete |
 | MATH-01 | Phase 1 | Complete |
 | MATH-02 | Phase 1 | Complete |
 | MATH-03 | Phase 1 | Complete |
