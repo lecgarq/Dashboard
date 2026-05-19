@@ -33,7 +33,7 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 ### Render
 
 - [x] **REND-01**: 2D mode via @cosmos.gl/graph v3 (WebGL, GPU) running in frozen mode (enableSimulation: false). Per-node RGBA colors via setPointColors. Alpha mask expressed via highlightedPointIndices + pointGreyoutOpacity: 0.15. (Supersedes the prior react-force-graph-2d v1.29.1 spec — replaced 2026-05-19 per CONTEXT.md.)
-- [ ] **REND-02**: 3D mode via `react-force-graph-3d` v1.29.1 with orbit controls
+- [ ] **REND-02**: 3D mode via three.js r184 InstancedMesh (SphereGeometry low-poly) + OrbitControls (unconstrained: enableDamping=true, autoRotate=false, no polar clamp). Camera auto-fits to node bounding box on initial 3D entry. Per-instance RGBA via vertexColors=true + InstancedBufferAttribute. (Supersedes prior react-force-graph-3d spec — replaced 2026-05-19 per CONTEXT.md and RESEARCH Open Question #2: cosmograph has no 3D mode; three.js is the implementation.)
 - [ ] **REND-03**: Seamless 2D ↔ 3D switch: same `graphData` object reference, position continuity preserved (no jump, no remount jitter)
 - [x] **REND-04**: GraphCanvas component receives only `Float32Array positions`, `Float32Array alphaMask`, and `mode: "2d"|"3d"` — no slider values, no feature data inside the component
 - [x] **REND-05**: Smooth animations during slider drag (no flash, no popping, no jitter)
