@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data + Math Foundation** - Pure TypeScript data and math layers with full Vitest coverage — no UI, no engine
 - [x] **Phase 2: Physics Layer** - d3-force-3d simulation wired to math layer output; freeze-on-rest confirmed; named force mutation verified (completed 2026-05-19)
-- [ ] **Phase 3: Render Layer** - GraphCanvas consuming Float32Array positions; 2D canvas rendering; seamless 2D/3D mode switch
+- [x] **Phase 3: Render Layer** - GraphCanvas consuming Float32Array positions; 2D canvas rendering; seamless 2D/3D mode switch (completed 2026-05-19)
 - [ ] **Phase 4: Interactions + Analytics Bridge** - Filter, search, click-isolate, lasso, slider UI, and lasso-to-pie-chart wired
 
 ## Phase Details
@@ -89,5 +89,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |-------|----------------|--------|-----------|
 | 1. Data + Math Foundation | 2/2 | Complete   | 2026-05-19 |
 | 2. Physics Layer | 2/2 | Complete   | 2026-05-19 |
-| 3. Render Layer | 1/2 | In Progress|  |
+| 3. Render Layer | 2/2 | Complete   | 2026-05-19 |
 | 4. Interactions + Analytics Bridge | 0/2 | Not started | - |

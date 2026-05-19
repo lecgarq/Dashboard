@@ -5,10 +5,10 @@ milestone_name: milestone
 status: unknown
 last_updated: "2026-05-19T19:34:34.427Z"
 progress:
-  total_phases: 2
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
+  total_phases: 4
+  completed_phases: 3
+  total_plans: 6
+  completed_plans: 6
 ---
 
 # Project State
@@ -18,16 +18,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-05-19)
 
 **Core value:** The Access Analysis spatial graph reveals how people relate to projects through real math on real data — not vibes, not patches.
-**Current focus:** Phase 2 — Physics Layer
+**Current focus:** Phase 3 — Render Layer (COMPLETE)
 
 ## Current Position
 
-Phase: 3 of 4 (Render Layer) — IN PROGRESS
-Plan: 1 of 2 in current phase — COMPLETE (03-01)
-Status: Phase 3 plan 01 complete — GraphCanvas, GraphCanvas2D, useGraphRafLoop, 8 tests green; ready for Plan 03-02 (3D layer)
-Last activity: 2026-05-19 — Phase 3 plan 01: GraphCanvas.tsx + GraphCanvas2D.tsx + useGraphRafLoop.ts + 8 tests
+Phase: 3 of 4 (Render Layer) — COMPLETE
+Plan: 2 of 2 in current phase — COMPLETE (03-02)
+Status: Phase 3 complete — GraphCanvas3D + mode transitions + 12 tests green; ready for Phase 4 (Interactions)
+Last activity: 2026-05-19 — Phase 3 plan 02: GraphCanvas3D.tsx + GraphCanvas.tsx updated + GraphCanvas3D.test.ts (12 tests)
 
-Progress: [█████▌░░░░] 55% (5/6 plans complete across phases 1-3; 1 plan in phase 3 remaining)
+Progress: [███████░░░] 75% (6/6 plans complete across phases 1-3; Phase 4 pending)
 
 ## Performance Metrics
 
@@ -68,6 +68,16 @@ Recent decisions affecting current work:
 - **graph.ready Promise guard** in GraphCanvas2D protects against cosmos.gl async init queue limit (Pitfall 3).
 - **Plain object ref `{ current: div }`** used in tests instead of createRef — React 19 makes `current` non-configurable.
 
+### Decisions Made in Phase 03 Plan 02
+
+- **REND-02 amended**: three.js r184 InstancedMesh + OrbitControls (cosmograph has no 3D mode; replaced 2026-05-19).
+- **easeInOutCubic for 600ms tilt** (2D→3D) — smooth symmetrical entry; easeOutCubic for 400ms flatten (3D→2D) — snappy return.
+- **Per-instance alpha baked into RGB color** (not material.opacity) — MeshBasicMaterial.opacity is global; per-node dim requires color × 0.15.
+- **ResizeObserver stubbed in tests** — not in jsdom; fixed with `vi.stubGlobal("ResizeObserver", FakeResizeObserver)`.
+- **ES6 class mocks for three.js** — `vi.fn().mockImplementation()` arrow functions cannot be called with `new`; must use class syntax in vi.mock factory.
+- **GraphCanvas3D always-mounted** — unconditional render inside visibility-toggled container3DRef; no `{mode === '3d' && ...}` conditional.
+- **Phase 3 COMPLETE**: GraphCanvas + GraphCanvas2D + GraphCanvas3D + useGraphRafLoop + 20 total tests; REND-01 through REND-05 addressed.
+
 ### Decisions Made This Session
 
 - **R = 300 world units** for seed positions (mathLayer.ts R_DEFAULT). Parameterized via `options.radius` for override.
@@ -93,9 +103,15 @@ None yet.
 
 ### Blockers/Concerns
 
-- Phase 3 risk: 2D/3D shared graphData object reference behavior under project's node count (~500–6000) is not benchmarked. Prototype the switch mechanism early in Phase 3.
+- Phase 3 risk (RESOLVED): CSS visibility swap + always-mounted pattern confirmed working; no context loss on mode switch.
 - Phase 4 risk: Lasso canvas-to-graph-space coordinate transform under pan/zoom is MEDIUM confidence (community gist). Validate immediately in 04-01.
 - DuckDB-WASM main-thread blocking: duckdbClient.ts warmup pattern should be audited for DuckDBSharedWorker during Phase 1.
+
+## Session Continuity
+
+Last session: 2026-05-19
+Stopped at: Completed 03-02-PLAN.md — GraphCanvas3D.tsx + GraphCanvas.tsx updated + 12 tests; REND-02 amended; Phase 3 complete; ready for Phase 4 (Interactions)
+Resume file: None
 
 ## Session Continuity
 
