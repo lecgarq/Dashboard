@@ -46,6 +46,49 @@ export function featureValueForDim(
 }
 
 /**
+ * Pure variant of the predicate logic used by usePredicateEngine. Exported so
+ * the chrome (04-02 AccessAnalysisShell) can compute the still-visible subset
+ * of a lasso selection without mutating any mask. This MUST stay in sync with
+ * the predicate body inside usePredicateEngine below.
+ *
+ * Returns the subset of `lassoSelection` whose nodes pass the current
+ * filter + search gates. `isolatedNodeIndex` and `drillDown` deliberately do
+ * NOT participate here — visibility is driven by global gates only; drill-down
+ * narrows the pie post-hoc.
+ */
+export function filterSelectionByPredicate(
+  lassoSelection: ReadonlySet<number> | null,
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  activeFilters: Readonly<Record<string, ReadonlySet<string>>>,
+  searchQuery: string,
+): ReadonlySet<number> | null {
+  if (!lassoSelection) return null;
+  const q = searchQuery.toLowerCase();
+  const next = new Set<number>();
+  for (const i of lassoSelection) {
+    const f = features[i];
+    if (!f) continue;
+    let ok = true;
+    for (const [dim, allowed] of Object.entries(activeFilters)) {
+      if (allowed.size === 0) continue;
+      const v = featureValueForDim(f, dim);
+      if (!allowed.has(v)) {
+        ok = false;
+        break;
+      }
+    }
+    if (!ok) continue;
+    if (q) {
+      const hitsName = f.nameLower.startsWith(q);
+      const hitsEmail = f.emailLower.startsWith(q);
+      if (!hitsName && !hitsEmail) continue;
+    }
+    next.add(i);
+  }
+  return next;
+}
+
+/**
  * Recompute the alpha-mask predicate whenever any input changes and push it via
  * physics.setMask. The mask is overwrite semantics — one predicate replaces all
  * prior masks (Phase 2 PHYS-04 contract).
