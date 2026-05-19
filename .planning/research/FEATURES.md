@@ -1,267 +1,477 @@
-# Feature Research
+# Feature Landscape
 
-**Domain:** ACC extraction enrichment — surfacing v2.0 API data into existing user list / spatial graph / dashboard surfaces
-**Researched:** 2026-05-08
-**Confidence:** HIGH (APS HOW_TO docs are ground truth; existing codebase is directly readable; feature placement decisions are based on actual component boundaries)
-
----
-
-## Scope Constraint (Do Not Violate)
-
-All features below surface into **existing surfaces only**: user list (`UsersDirectoryClient`), spatial graph (`AccUsersGraph`), and Access Analysis dashboard (`DashboardClient` + 9 widgets). No new tabs, pages, or views. This constraint is enforced at every feature below.
+**Domain:** Multi-dimensional spatial graph visualization — user × project access-analysis
+**Researched:** 2026-05-19
+**Overall confidence:** HIGH — Cosmograph API verified against live docs; d3-force and sigma.js verified via official sources; architecture alignment verified against `.planning/research/ARCHITECTURE.md`
 
 ---
 
-## Feature Landscape
+## Context: What This Feature Map Is For
 
-### Table Stakes (Users Expect These)
+This document maps every graph visualization feature the Access Analysis slice needs. Features are categorized by necessity (table stakes vs differentiator vs anti-feature), sized by implementation complexity (S/M/L), and cross-referenced to the six-layer architecture already decided in `ARCHITECTURE.md`.
 
-Features that complete the extraction layer or make existing surfaces coherent with the new data. Missing these = the v2.0 milestone ships incomplete.
+The architecture already resolves the hardest structural question: math lives in `mathLayer.ts`, rendering in `GraphCanvas.tsx`, interactions in `GraphInteractions.tsx`. Features below map cleanly into that structure without violating its layer contracts.
 
-| Feature | Where It Surfaces | Why Expected | Complexity | Dependencies |
-|---------|-------------------|--------------|------------|--------------|
-| **Members matrix: `status` field visible** (`"active"` / `"pending"` / `"deleted"`) | User list column + side panel | Users who see a "pending" member in ACC Admin UI expect to see the same status here; without it the list feels wrong for orgs with invited-but-not-joined users | S | Members matrix extraction |
-| **Members matrix: `companyName` field** (per-project company, not hub-level companyRole) | User list column + side panel | `companyRole` already exists but is hub-level; project-level `companyName` is what the ACC Members tab shows; missing it creates an obvious gap | S | Members matrix extraction |
-| **Members matrix: `addedOn` already exists; verify it comes from project endpoint** | User list (existing), dashboard RecentlyAdded widget | Currently sourced from HQ v1 `created_at`; the project-member endpoint exposes `addedOn` natively and supports `sort=addedOn desc`; source switch needed for per-project accuracy | S | Members matrix extraction |
-| **Members matrix: full `products` array** (per-module access: `"administrator"` / `"member"` / `"none"`) | Side panel module detail; filter facets | Users cannot currently see per-module access level — only whether a module is present. "I'm in Build as admin vs member" is a real permission distinction managers check | M | Members matrix extraction; Prisma schema for `ProjectMemberProduct` join table |
-| **Members matrix: `accessLevels.projectAdmin` + `accessLevels.executive`** | User list badge; side panel; filter facet | `isAccountAdmin` exists (hub-level). Per-project admin is different and currently not exposed. The ACC Members tab shows this distinction prominently — users expect it | S | Members matrix extraction |
-| **Last sign-in enriched to project-level** (currently HQ v1 hub-wide; project endpoint returns `lastSignIn` per project-user) | User list sortable column; side panel; ActiveUserTiers widget | ActiveUserTiers widget already bucketes by `lastSignIn` — but that is hub-level. Project-level last-sign-in is more accurate for per-project dormancy analysis | M | Construction Admin API `?fields=lastSignIn` per project fetch |
-| **`phone.number` stored and shown** | Side panel only | The ACC Members tab shows phone; PMs use it to contact members; it belongs in the side panel as contact info | S | Members matrix extraction |
-| **Project info: `type`, `jobNumber`, `createdAt`** stored in Prisma `Project` table | Side panel project list; graph project node tooltip | Currently the graph shows project IDs/names only. Adding type and job number completes the project node's identity | S | Project info extraction; Prisma `Project` table |
-| **Hub roles extracted** (HQ v2 `industry_roles` master list) | Filter facet on graph; dashboard heatmap rows | Currently roles come through user-level data; hub master list enables reliable de-duplication and consistent naming across projects | S | Hub roles extraction; Prisma `Role` table |
-| **Per-project industry roles** (construction admin v2 per-project roles with `services.document_management.access_level`) | Dashboard RolesModulesHeatmap enrichment; side panel per-project role detail | Hub roles and project roles diverge — a role named "Architect" may have different default module access per project. The heatmap currently shows hub-level role patterns | M | Hub roles + per-project roles extraction; Prisma `Role` table with project FK |
-| **WHO-added attribution in RecentlyAdded widget** | Dashboard RecentlyAdded widget (existing) | The widget currently shows WHEN someone was added (90-day heatmap). The milestone locks in "who added them" — users drilling down on a day expect to see "added by Bob Smith"; the side panel today shows no attribution | M | Activity log extraction (Data Connector); join `admin_activities.csv` `Member Added` events to `addedOn` dates |
-| **Manual sync trigger with job-status surface** | User list sync button (existing pattern) | Data Connector jobs are async (minutes to hours); users need to see "job running / success / failed" rather than a spinner that times out | M | Backend job status tracking; tRPC subscription or polling endpoint |
-
-### Differentiators (High-Value Polish)
-
-Features that make v2.0 genuinely more useful than the v1.0 dashboard — not just filling in blank columns.
-
-| Feature | Where It Surfaces | Value Proposition | Complexity | Dependencies |
-|---------|-------------------|--------------------|------------|--------------|
-| **Folder tree in graph: folder nodes as 5th node type** | Spatial graph | Adds the "where can this person go in the file system?" dimension. A PM can trace: User → Role → Folder node → what permissions that implies. No other general-purpose BIM dashboard exposes this | L | Folder tree extraction (recursive DM API); Prisma `Folder` table; perf feasibility phase **must complete first** |
-| **Folder-role permissions widget (10th dashboard widget)** — matrix of Folder × Role with permission level cell | Dashboard (adds 10th widget to grid) | Shows "which roles have Full Controller vs View-Only on which folders" across projects. Currently there is no folder-permissions surface anywhere in the dashboard. This is the primary new analytical insight of v2.0 | L | Folder extraction + folder-role permissions extraction; both Prisma tables complete; **depends on folder tree extraction** |
-| **Per-module access level as a filter facet** — filter graph by `administrator` / `member` / `none` per product key | Spatial graph filter panel (extends existing FILT-03 module toggle) | FILT-03 only shows which modules a user has; it does not distinguish admins from members. "Show me only module admins for Build" is a real PM diagnostic | M | Full `products` array in members matrix (see table stakes above) |
-| **`accessLevels.projectAdmin` as a filter facet** | Spatial graph filter panel (extends existing filter panel) | Adds per-project admin filtering distinct from the existing `isAccountAdmin` (hub-level) filter. "Show me all users who are project admins on any project" | S | `accessLevels` in members matrix |
-| **Last file activity column + side-panel detail** — most recent file action (action type + file name + date) per user | User list sortable column; side panel "last activity" section | Bridges "last sign-in" (which only tells you they logged in) with "did they actually do file work". Answers "is this person active in the BIM process or just an account holder?" | M | Activity log extraction (Data Connector); `project_activities.csv` parsed for file actions; depends on activity log extraction completing first |
-| **RecentlyAdded widget: admin attribution in drill-down** — clicking a day cell shows "added by [Admin Name]" for each member | Dashboard RecentlyAdded widget (existing, click-to-drill-down already exists via SelectionContext) | Turns the heatmap from "how many added" into an audit trail. PMs can answer "who is adding contractors to our projects without approval?" | M | WHO-added attribution (table stakes above); activity log extraction |
-| **`status` as a filter facet** — filter user list and graph by `active` / `pending` / `deleted` | User list filter; graph filter panel | Lets PMs clean up invited-but-never-joined users without opening ACC Admin | S | `status` in members matrix (table stakes above) |
-| **KpiStrip enrichment** — add "pending invites" and "project admins" counts to the existing KPI strip | Dashboard KpiStrip widget (existing) | Two new KPI tiles computed from `status === "pending"` count and `accessLevels.projectAdmin` count; costs are negligible since the data already arrives via members matrix extraction | S | `status` + `accessLevels` in members matrix |
-| **AdminConstellation widget enrichment** — distinguish hub admins vs project admins in the existing constellation layout | Dashboard AdminConstellation widget (existing, currently shows `isAccountAdmin` only) | With `accessLevels.projectAdmin` available, the constellation can add a second tier: hub admin (center) vs project admin (ring) vs executive (outer ring). Three-tier radial layout is immediately more informative | M | `accessLevels` in members matrix; project-admin data per user |
-| **Hub role vs per-project role color-coded in graph** — second role dimension without adding a second node type | Spatial graph edge coloring | Currently all role edges are a single color. With hub roles vs project-specific role variants, edge color can encode "this is the hub master role" vs "this is a project override". Adds signal without node-count explosion | M | Hub roles + per-project roles in Prisma; graph rebuild to consume role source field |
-
-### Anti-Features (Explicitly Excluded)
-
-| Anti-Feature | Why It Looks Tempting | Why It Is Excluded | What to Do Instead |
-|--------------|----------------------|--------------------|--------------------|
-| **Activity Log view / dedicated activity page** | Activity data is rich; a timeline view seems valuable | Milestone explicitly prohibits new tabs/pages/views. An activity log page is a product feature of its own and would balloon scope | Surface last-file-activity as a column in user list and as a side-panel section only |
-| **Folder permissions as a new page/view** | Folder × Role × Project matrix is complex enough to want its own page | Same prohibition as above; also the matrix is manageable as a 10th dashboard widget scoped to the selected project | Add as a dashboard widget with project-selector toggle |
-| **Folder nodes for files (not just folders)** | File-level graph would show "which user touched which file" | File count per project can be in the tens of thousands; adding file nodes would make the graph unintelligible and trigger the exact node-count explosion that excluded folder nodes in v1.0. Files in the graph are always an anti-feature | Show file names in side-panel activity section only (text, not nodes) |
-| **Real-time / automatic activity sync** | "The dashboard should update when someone is added" | Data Connector is async (minutes to hours job latency); there is no push API for activities. Auto-sync would require a background scheduler, queue, and cost unpredictable Autodesk API consumption | Manual sync trigger with job-status indicator; user controls when to pull |
-| **Permission editing** | "Add a button to change folder permissions from the dashboard" | Read-only architecture is a locked constraint. Write operations require ACC Admin API write scopes + audit logging + optimistic UI rollback — a separate product concern | Link to ACC Admin Console for all write operations |
-| **Per-user per-folder permission graph** | "Show me every folder a user can access" | Each user × folder × permission triple would produce millions of graph edges for a hub with deep folder trees; this is the exact problem excluded in v1.0 ("multiplies node count unmanageably") | Show per-user folder access as a text list in the side panel only |
-| **Phone number as a filter facet** | Phone data is in the members matrix | Phone is a contact detail, not an analytical dimension. Filtering by phone number is never a PM use case | Side panel only — contact info, not filter |
-| **`executive` access level as a separate graph node** | `accessLevels.executive` is in the API response | "Executive" is an access flag, not a separate identity. Making it a graph node creates confusion with Role nodes. It belongs as a badge on the User node | Display as badge in side panel; include in filter facet as a checkbox alongside `projectAdmin` |
-| **D3-hierarchy tree for folder visualization** | d3-hierarchy is already a dependency (`d3-hierarchy` in PROJECT.md stack) | The spatial graph uses Cosmos.gl (WebGL). Mixing a D3 SVG tree inside a Cosmos canvas frame defeats the GPU renderer and creates z-index conflicts | Folder nodes enter the Cosmos graph as the 5th node type; d3-hierarchy is only used for the folder-role permissions widget layout if needed |
-| **Automated "who added whom" email notifications** | Attribution data makes it feel like an audit system | This is a dashboard, not a notification service. Email delivery adds SMTP/SendGrid, subscription management, and GDPR surface area | Surface attribution in the RecentlyAdded widget drill-down only |
+**Scale context:** One node per (user, project). At LECG: ~50–200 users × ~10–30 projects = 500–6000 nodes. Every feature below is evaluated at this scale, not at millions-of-nodes scale (that's Graphistry's problem, not ours).
 
 ---
 
-## Feature Dependencies
+## Table Stakes
+
+Features without which the demo fails or the graph feels like every other force-directed demo.
+
+---
+
+### TS-1: Stable Node Positioning (No Jitter / No Flash)
+
+**Why expected:** Every prior attempt broke here. Nodes that jitter, flash on filter, or jump on slider change signal a broken implementation to any viewer.
+**Complexity:** M
+**Architecture layer:** `physicsLayer.ts`
+**How it works in this architecture:**
+- `freeze-on-rest` pattern: once the simulation settles (`isSettled=true`), `currentPositions` are cached to DuckDB-WASM `positions` table keyed by `hashNodeSet(nodeIds)`
+- Filter/search events apply an alpha mask only — they never touch positions or restart the simulation (Pattern 3 from ARCHITECTURE.md)
+- Slider changes re-warm the physics from the current frozen positions, not from scratch
+**Failure mode if skipped:** Demo unusable. Cannot un-skip.
+**Dependencies:** Requires freeze-on-rest cache (TS-2), requires alpha mask pattern (TS-5).
+
+---
+
+### TS-2: Freeze-on-Rest Position Cache
+
+**Why expected:** Without position persistence, every filter toggle causes full re-layout. This was the most-complained-about bug in the previous iteration.
+**Complexity:** S
+**Architecture layer:** `physicsLayer.ts` → DuckDB-WASM `positions` view
+**How it works:**
+- On `isSettled=true`, serialize `currentPositions: Float32Array` and write to DuckDB
+- Key: `hashNodeSet(nodeIds)` — deterministic hash of the current active node set
+- On filter toggle: restore frozen positions from cache, apply new alpha mask
+- On slider change: restore frozen positions as starting point, re-warm with new `targetPositions`
+**Existing pattern:** `positionsCache.ts` partial scaffolding already exists in `access-analysis/`
+**Dependencies:** None. This is foundational.
+
+---
+
+### TS-3: Real-Time Filtering — Dim / Hide Without Re-layout
+
+**Why expected:** Users must be able to narrow to a project, a role tier, or an external/internal dimension and see the graph respond immediately without losing spatial context.
+**Complexity:** S
+**Architecture layer:** `GraphInteractions.tsx` → `alphaMask: Float32Array`
+**UX contract:**
+- Filtered-out nodes: `alphaMask[i] = 0.15` (dimmed but spatially present, ghost)
+- Filtered-in nodes: `alphaMask[i] = 1.0`
+- Zero simulation restart on filter event
+- DuckDB query: `SELECT DISTINCT node_id FROM user_projects WHERE <filter>` — executes in <20ms at 6000 nodes
+**Filter facets to expose (minimum for demo):**
+1. Project (by projectId)
+2. Role tier (admin / member / view-only)
+3. External vs internal user
+4. Activity level (active in last 30/90/180 days)
+**Dependencies:** TS-2 (frozen positions). Independently testable from physics layer.
+
+---
+
+### TS-4: Real-Time Search — Highlight + Focus Without Re-layout
+
+**Why expected:** If a user wants to find "Martinez" in a 200-node graph, they type and expect instant highlight. Nodes that move during a search are disorienting.
+**Complexity:** S
+**Architecture layer:** `GraphInteractions.tsx` → `alphaMask: Float32Array`
+**UX contract:**
+- Matching nodes: `alphaMask[i] = 1.0`, zoom-to-fit of matching bounding box via `Cosmograph.fitView()` or equivalent
+- Non-matching nodes: `alphaMask[i] = 0.15` (dim but present)
+- Match logic: case-insensitive substring against `user_id` (email) and display name
+- Zero simulation restart on search event
+- On search clear: restore full alpha mask, return to previous zoom
+**Dependencies:** TS-2 (frozen positions), TS-3 (alpha mask already built).
+
+---
+
+### TS-5: Alpha Mask as the One Interaction Primitive
+
+**Why expected:** This is the architecture's core contract, not a feature the user sees — but without it, every interaction feature regresses to the "restart physics" anti-pattern.
+**Complexity:** S
+**Architecture layer:** `GraphCanvas.tsx` input contract
+**How it works:**
+- `alphaMask: Float32Array` with one float per node, range [0.0, 1.0]
+- `GraphCanvas.tsx` uses it for node opacity only — no positional meaning
+- Cosmograph exposes `pointGreyoutOpacity` for non-selected points; a custom alpha mask overrides per-node opacity where the engine supports it. Where it does not (Cosmos.gl GPU path), the mask maps to the engine's point selection/greyout API
+**Dependencies:** None. Must be established before TS-3, TS-4, DIF-5.
+
+---
+
+### TS-6: Dimension Sliders — Continuous Blend Math (0 = Organic / 100 = Clustered)
+
+**Why expected:** This is the core UX bet of the entire redesign. Sliders that feel like mode-switching (snap from one layout to another) will feel broken. Sliders that produce smooth, continuous position blending will feel like a professional tool.
+**Complexity:** M
+**Architecture layer:** `mathLayer.ts` → `physicsLayer.ts`
+**The math contract (verbatim from ARCHITECTURE.md):**
 
 ```
-[Members matrix extraction — Construction Admin /projects/:id/users]
-    └──required by──> [status field in user list]
-    └──required by──> [companyName in side panel]
-    └──required by──> [full products array + access levels]
-    └──required by──> [addedOn source correction]
-    └──required by──> [phone in side panel]
-    └──required by──> [per-module access level filter facet]
-    └──required by──> [accessLevels.projectAdmin filter + badge]
-    └──required by──> [KpiStrip "pending invites" + "project admins" tiles]
-    └──required by──> [AdminConstellation 3-tier enrichment]
+Let D = number of active dimension sliders
+Let s_d = slider value for dimension d ∈ [0, 1]   (UI 0-100 mapped to 0.0-1.0)
+Let f_d(node) = feature score for dimension d ∈ [0, 1]  (normalized feature column)
+Let angle_d = (d / D) * 2π   — evenly distributed seed directions on a circle
 
-[Project info extraction — Construction Admin /accounts/:id/projects]
-    └──required by──> [Project node tooltip enrichment in graph]
-    └──required by──> [type + jobNumber in side panel project list]
+Seed direction for dim d: u_d = (cos(angle_d), sin(angle_d))
+Contribution from dim d: t_d(node) = u_d × f_d(node) × s_d
 
-[Hub roles extraction — HQ v2 /accounts/:id/industry_roles]
-    └──required by──> [Per-project roles extraction]
-    └──required by──> [Hub vs project role color encoding in graph]
-    └──required by──> [RolesModulesHeatmap row enrichment]
-
-[Per-project roles extraction — HQ v2 /accounts/:id/projects/:id/industry_roles]
-    └──required by──> [Hub vs project role distinction in graph]
-    └──required by──> [per-project role detail in side panel]
-    └──requires──> [Hub roles extraction] (hub roles define the master dictionary)
-
-[Folder tree extraction — DM API recursive topFolders + folder contents]
-    └──BLOCKS──> [Folder nodes in spatial graph]
-    └──BLOCKS──> [Folder-role permissions widget (10th widget)]
-    └──required by──> [Folder-role permissions extraction]
-    └──PERF RISK: must complete feasibility verification before committing to integration phases]
-
-[Folder-role permissions extraction — BIM360 Docs /projects/:id/folders/:urn/permissions]
-    └──required by──> [Folder-role permissions widget]
-    └──requires──> [Folder tree extraction]
-    └──requires──> [Hub roles extraction] (permission rows reference role IDs)
-
-[Activity log extraction — Data Connector POST /accounts/:id/requests (async job)]
-    └──required by──> [Last file activity column in user list]
-    └──required by──> [Last file activity in side panel]
-    └──required by──> [WHO-added attribution in RecentlyAdded widget]
-    └──ASYNC CONSTRAINT: job can take minutes to hours; sync trigger UI must handle job lifecycle]
-
-[Last sign-in enrichment — Construction Admin ?fields=lastSignIn per project]
-    └──required by──> [Project-level lastSignIn in side panel]
-    └──required by──> [ActiveUserTiers widget accuracy improvement]
-    └──note: hub-level lastSignIn already exists; this adds per-project granularity]
+finalTarget(node) = Σ_d(t_d) / max(Σ_d(s_d), ε)
 ```
 
-### Dependency Notes
-
-- **Folder tree is the critical path blocker.** Folder nodes in the graph AND the folder-role permissions widget both depend on folder tree extraction completing successfully. If perf feasibility shows that full folder trees exceed the Cosmos.gl node budget, both features must be scoped down (e.g., top-level folders only, or folder nodes shown only when a user is selected). This feasibility question **must be answered in a dedicated research/prototype phase before committing to either dependent integration phase.**
-
-- **Activity log is Data Connector async.** Every feature that consumes activity data (last file activity, WHO-added attribution) depends on a POST → poll → download → parse pipeline with non-deterministic latency. The sync trigger UI must surface job state (queued / running / succeeded / failed) before the data is usable. This is a UX dependency, not just a data dependency.
-
-- **Members matrix is the foundation for most user-list and dashboard enrichments.** Nearly every table-stakes feature above comes from a single endpoint (`/construction/admin/v1/projects/:id/users`). The Prisma schema design for `ProjectMember`, `ProjectMemberRole`, and `ProjectMemberProduct` must be done correctly once — rushing this schema creates migration debt that ripples through all downstream features.
-
-- **Per-project roles require hub roles first.** Hub role IDs are the canonical identifier. Per-project role data references hub role IDs; without the hub master list, per-project role names cannot be de-duplicated across projects.
-
-- **`addedOn` source correction has a UX risk.** The current `addedOn` is from HQ v1 `created_at` (hub join date). The project endpoint's `addedOn` is the project-specific join date — these will differ for users who were in the hub before joining a specific project. The RecentlyAdded widget must be updated to distinguish "added to hub" vs "added to project" or it will confuse users who see dates change after the sync.
-
----
-
-## Folder-Graph Performance Risk Assessment
-
-**This section is required reading before any folder-graph phase is committed.**
-
-The v1.0 out-of-scope rationale was: "grafting it onto user↔project↔role graph multiplies node count unmanageably." The v2.0 decision reverses this — but the concern is valid and quantifiable.
-
-**The numbers:**
-
-For a hub with N projects, each with an average F folders:
-- Existing node count: ~25,559 (users + projects + roles + modules, documented in PROJECT.md)
-- Folder nodes added: N × F (example: 50 projects × 80 folders average = 4,000 folder nodes)
-- Folder-permission edges added: N × F × avg_roles_per_folder (example: 4,000 × 3 = 12,000 edges)
-- Cosmos.gl GPU budget: empirically stable at 25,559 nodes with current beta.8; 30,000 nodes is untested territory
-
-**The risk is MEDIUM-to-HIGH:**
-
-Cosmos.gl 3.0.0-beta.8 has been validated at 25,559 nodes. Adding 4,000 folder nodes puts the graph at ~30,000 nodes — likely acceptable. But if the hub has 100+ projects with deep nested folder trees (200+ folders each), the total can reach 50,000–80,000 nodes, which is unknown territory.
-
-**Required feasibility check before committing folder-graph integration:**
-
-1. Count actual folder depth and breadth for the production hub (run the DM API recursive script against the real data; log folder counts per project)
-2. Test Cosmos.gl 3.0.0-beta.8 with a synthetic 35,000-node graph (add synthetic folder nodes to the existing snapshot) and confirm 60fps is maintained
-3. Establish a node budget cap (e.g., "folder nodes only shown when filtering to ≤5 projects" or "top-2-levels of folders only")
-
-**Recommendation:** Dedicate Phase 5.x (or earliest post-extraction phase) explicitly to folder-graph feasibility. Do not combine folder-tree extraction phase with folder-graph integration phase. Extract first, count, test, then integrate.
+**UX contracts:**
+- All sliders at 0 → organic/diffuse mode: physics runs as free repulsion-only sim from last frozen positions
+- One slider at 100 → nodes cluster along that dimension's axis by feature strength
+- Two sliders at 50 each → continuous blend, nodes pulled toward both axes simultaneously; no jump, no mode switch
+- Slider move → re-compute `targetPositions` → re-warm physics from frozen positions at low alpha → settle to new arrangement
+**Slider UI specs:**
+- Each slider labeled with dim name and feature mapping (e.g. "Activity" → activityCount normalized)
+- Range: 0–100 with integer steps
+- Debounce: 50ms before re-warm (prevents per-frame re-layout during drag)
+- Minimum 4 dims for demo: Activity, Permission Tier, Recency (last sign-in), Admin
+**Dependencies:** TS-2 (frozen positions as starting point for re-warm). Requires Vitest unit tests (Pattern 1 from ARCHITECTURE.md).
 
 ---
 
-## Surface Placement Summary
+### TS-7: Slider Composition UX Contract (Multiple Sliders Active Simultaneously)
 
-| Feature | User List | Graph | Dashboard Widget |
-|---------|-----------|-------|-----------------|
-| `status` field | Column + filter | Filter facet | KpiStrip (pending count) |
-| `companyName` | Column | Node tooltip | — |
-| `phone.number` | Side panel only | — | — |
-| Full `products` array (admin/member/none) | Side panel module detail | Filter facet (FILT-03 extension) | RolesModulesHeatmap enrichment |
-| `accessLevels.projectAdmin` | Badge column | Filter facet | KpiStrip tile; AdminConstellation 2nd tier |
-| `accessLevels.executive` | Side panel badge | — | AdminConstellation 3rd tier |
-| `addedOn` (source corrected) | Existing column | — | RecentlyAdded (existing widget) |
-| Project `type` + `jobNumber` | Side panel project list | Project node tooltip | — |
-| Hub + per-project industry roles | — | Role edge color distinction | RolesModulesHeatmap row enrichment |
-| Folder nodes (5th node type) | — | Graph nodes (PERF RISK) | — |
-| Folder-role permissions | — | — | 10th widget (FolderRoleMatrix) |
-| Last sign-in (project-level) | Sortable column | — | ActiveUserTiers (accuracy) |
-| Last file activity | Sortable column | — | Side panel "last activity" section |
-| WHO-added attribution | — | — | RecentlyAdded drill-down (existing SelectionContext) |
-| Activity log job status | Sync button status | — | — |
+**Why expected:** If two sliders fight each other and produce confusing layouts, the user cannot make sense of the graph. The composition must be perceptually correct.
+**Complexity:** M (same layer as TS-6, but the UX contract is its own testable surface)
+**Architecture layer:** `mathLayer.ts`
+**Composition math verified:**
+- Normalization by `Σ(s_d)` means total canvas spread is preserved regardless of how many sliders are active — canvas does not collapse to a point when all sliders are at 50
+- Evenly distributed axis angles `(d/D)×2π` means multiple active sliders pull in maximally-different directions — users can read each dimension's spatial axis independently
+- A slider at 0 contributes zero force — setting it to 0 is the same as removing the dimension, no discontinuity
+**UX validation test:** With two sliders both at 100, all nodes should form two visible clusters pulled to opposite sides of the canvas. Moving one slider from 100 to 0 smoothly resolves the graph to a single-axis layout. This must be demoed live.
+**Dependencies:** TS-6. Must share the same `computeTargetPositions()` function — not a separate code path.
 
 ---
 
-## MVP Definition for v2.0
+### TS-8: Hover Detail Panel
 
-### Ship With (v2.0 Core)
-
-These complete the extraction layer and enrich existing surfaces. No new surfaces.
-
-- [ ] **Members matrix full extraction** — `status`, `companyName`, `phone`, `products`, `accessLevels`, `addedOn` — the data foundation for nearly every other feature
-- [ ] **Prisma schema** — `Project`, `ProjectMember`, `ProjectMemberRole`, `ProjectMemberProduct`, `Role`, `Folder`, `FolderPermission`, `ActivityEvent` tables with proper indexes
-- [ ] **Hub + per-project roles extraction** — enables RolesModulesHeatmap enrichment and graph role-edge distinction
-- [ ] **Project info extraction** — `type`, `jobNumber`, `createdAt` for project nodes
-- [ ] **Last sign-in enriched** — project-level, feeds corrected ActiveUserTiers
-- [ ] **`status` + `accessLevels.projectAdmin` surfaced** — user list columns + filter facets
-- [ ] **Full products array in side panel** — administrator/member/none per module
-- [ ] **KpiStrip enriched** — pending count + project admin count tiles
-- [ ] **Manual sync trigger with job-status UI** — prerequisite for activity log features
-- [ ] **Activity log extraction** (Data Connector async pipeline) — required for WHO-added and last-file-activity
-- [ ] **WHO-added attribution in RecentlyAdded widget** — milestone lock-in requirement
-- [ ] **Last file activity column + side panel section** — bridges sign-in vs file engagement gap
-
-### Ship Only If Folder Feasibility Passes
-
-- [ ] **Folder tree extraction + Prisma `Folder` table** — must run feasibility prototype first
-- [ ] **Folder-role permissions widget (10th widget)** — depends on folder tree
-- [ ] **Folder nodes in graph** — depends on folder tree + perf budget confirmed
-
-### Future (v2.x)
-
-- [ ] **AdminConstellation 3-tier enrichment** — hub admin / project admin / executive rings — nice-to-have, non-blocking
-- [ ] **Hub vs project role color encoding in graph** — adds signal but requires graph rebuild; defer if extraction phases run long
+**Why expected:** Clicking through a graph with no context about what each node is defeats the purpose.
+**Complexity:** S
+**Architecture layer:** `GraphCanvas.tsx` → `onNodeHover` callback → tooltip component
+**Fields to show on hover:**
+- Display name + email
+- Project name
+- Role(s)
+- Last sign-in (relative: "3 days ago")
+- Activity count (last 90 days)
+- Permission tier label (Admin / Folder Editor / View-only)
+**Implementation:** Floating div positioned at cursor, populated from the `NodeFeatures` row for the hovered node ID (already in memory from dataLayer)
+**Dependencies:** TS-3 (node IDs must be stable). No physics dependency.
 
 ---
 
-## Feature Prioritization Matrix
+### TS-9: Click-Isolate (Node + Neighbors)
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Members matrix full extraction (Prisma schema) | HIGH | HIGH | P1 |
-| `status` + `accessLevels.projectAdmin` in user list | HIGH | LOW | P1 |
-| Full products array (admin/member/none) in side panel | HIGH | MEDIUM | P1 |
-| Hub + per-project roles extraction | HIGH | MEDIUM | P1 |
-| Last sign-in enriched (project-level) | HIGH | MEDIUM | P1 |
-| Manual sync trigger + job status UI | HIGH | MEDIUM | P1 |
-| Activity log extraction pipeline | HIGH | HIGH | P1 |
-| WHO-added attribution in RecentlyAdded widget | MEDIUM | MEDIUM | P1 |
-| Last file activity column + side panel | MEDIUM | MEDIUM | P1 |
-| Project info extraction (`type`, `jobNumber`) | MEDIUM | LOW | P1 |
-| KpiStrip enrichment (pending + project admin tiles) | MEDIUM | LOW | P2 |
-| Per-module access level filter facet (FILT-03 extension) | MEDIUM | MEDIUM | P2 |
-| `status` filter facet | MEDIUM | LOW | P2 |
-| `phone.number` in side panel | LOW | LOW | P2 |
-| Folder tree extraction (after feasibility) | HIGH | HIGH | P2 |
-| Folder-role permissions widget (10th widget) | HIGH | HIGH | P2 |
-| Folder nodes in graph (after perf confirmed) | HIGH | HIGH | P2 |
-| AdminConstellation 3-tier enrichment | MEDIUM | MEDIUM | P3 |
-| Hub vs project role color in graph | LOW | MEDIUM | P3 |
+**Why expected:** For a user asking "who works with Martinez on Project Alpha?", click-isolate is the minimum viable exploration flow.
+**Complexity:** S
+**Architecture layer:** `GraphInteractions.tsx`
+**UX contract:**
+- Single click on node: dim all other nodes to 0.15 alpha; clicked node + same-project neighbors = 1.0
+- Click on background: restore full alpha mask
+- Does NOT restart simulation or move positions
+**"Neighbors" definition:** Nodes sharing the same `project_id` as the clicked node (since we have no visible edges; similarity is positional-only per memory `feedback_similarity_positional_only.md`)
+**Dependencies:** TS-5 (alpha mask), TS-2 (frozen positions must be preserved).
 
-**Priority key:**
-- P1: Required to call v2.0 complete
-- P2: Conditional (folder features: gate on feasibility; others: add after extraction phases)
-- P3: v2.x, non-blocking
+---
+
+### TS-10: Lasso Selection → Node Set
+
+**Why expected:** Without selection, the graph is read-only. Lasso is the entry point to all downstream analytics.
+**Complexity:** M
+**Architecture layer:** `GraphCanvas.tsx` → `onLassoEnd(nodeIds[])` → `SelectionBridge.tsx`
+**Engine support verified:** Cosmograph exposes `selectPointsInPolygon()` and `onPolygonSelected()` callback (HIGH confidence, verified against cosmograph.app/docs-lib/api 2026-02-doc). Method formerly called "lasso", renamed to "polygon selection" with lasso kept as deprecated alias.
+**UX contract:**
+- Hold Shift (or dedicated lasso button in toolbar) to activate lasso mode
+- Draw rect or polygon on canvas
+- Engine fires `onPolygonSelected()` with selected point indices
+- Map indices → `nodeIds[]` → emit `selectedNodeIds` up to `AccessAnalysisPage`
+- Selected nodes: alpha = 1.0; non-selected: alpha = 0.15 (visual feedback of selection)
+- Clear selection: click background
+**Dependencies:** TS-5 (alpha mask for visual feedback), TS-2 (positions unchanged during lasso).
+
+---
+
+## Differentiators
+
+Features that make this graph feel like a professional analysis tool, not a force-directed demo.
+
+---
+
+### DIF-1: Semantic Seed Positioning (Deterministic Initial Layout from Tabular Features)
+
+**Why valuable:** Most force-directed graphs initialize with random positions and produce different layouts each run. A graph that opens with positions already reflecting data semantics (active users toward one quadrant, admins toward another) is immediately interpretable, not a hairball users have to mentally decode each time.
+**Complexity:** M
+**Architecture layer:** `mathLayer.ts` — `seedPositions(features[], dims[]) → Vec3[]`
+**How it works:**
+- On first mount (no cached positions), compute `seedPositions` using feature columns only
+- This is the same math as `computeTargetPositions` but with sliders set to a "soft default" (e.g. s_activity=0.4, s_permission=0.3, all others 0) instead of all-zero
+- d3-force supports `simulation.randomSource()` with a seeded LCG for deterministic initial placement (HIGH confidence, verified from d3-force official docs)
+- Cosmograph equivalent: pre-set `x`, `y` coordinates on each point before simulation start
+- Result: same data → same initial layout, every time. Users develop spatial memory.
+**UX contract:**
+- First load: graph opens with positions reflecting default seed configuration
+- User adjusts sliders: smooth continuous blend from seed to fully-clustered
+- Re-open next session: same initial layout (restored from positionsCache if available, else re-seeded)
+**Dependencies:** TS-6 (slider math), TS-2 (cache takes precedence over re-seeding).
+
+---
+
+### DIF-2: Lasso → Pie Chart Downstream Analytics
+
+**Why valuable:** Lasso selection without downstream analytics is just node-counting. The pie chart turns a spatial selection into a statistical breakdown — "I selected this cluster: here's what roles it contains."
+**Complexity:** M
+**Architecture layer:** `SelectionBridge.tsx` → DuckDB query → `PieChartWidget`
+**How it works:**
+- `SelectionBridge` receives `selectedNodeIds: string[]` from lasso or click-isolate
+- DuckDB query: `SELECT project_id, role_tier, COUNT(*) FROM user_projects WHERE node_id IN (...) GROUP BY project_id, role_tier`
+- Results → `ChartDatum[]` → rendered as pie or donut chart in analytics panel
+- Chart updates in real-time as user changes lasso region
+**Pie breakdown dimensions (selectable via chart control):**
+1. By project (which projects are in this cluster?)
+2. By role tier (admin / member / view-only breakdown)
+3. By internal vs external user
+4. By activity level bucket (active / dormant / inactive)
+**Dependencies:** TS-10 (lasso selection). DuckDB views must already be populated (TS-1 via dataLayer). Completely isolated from physics — bridge reads DuckDB only.
+
+---
+
+### DIF-3: 2D Spatial ↔ 3D Orbit Switching with Position Continuity
+
+**Why valuable:** 2D is better for lasso and annotation reading. 3D is better for visualizing dense clusters as depth-separated clouds. A toggle that preserves positions (rather than resetting) lets users use both modes as complementary views of the same spatial truth.
+**Complexity:** L
+**Architecture layer:** `GraphCanvas.tsx` — `mode: "2d" | "3d"` prop
+**How it works (from ARCHITECTURE.md):**
+- 2D mode: render (x, y) from `Float32Array positions`, z = 0
+- 3D mode: same (x, y) + z computed from a secondary feature column (e.g. `lastSignInMs` normalized to [-1, 1] range) or from a third simulation axis if engine supports it
+- Switch does NOT remount the canvas — `mode` prop change only; engine receives updated coordinate array
+- Engine must support coordinate injection without position reset
+**Engine constraint:** Cosmograph (Cosmos.gl) is 2D-only by architecture. If 3D orbit is required for demo, `react-force-graph-3d` (Three.js + d3-force-3d) is the alternative. The architecture's `GraphCanvas.tsx` abstraction allows engine swap without affecting other layers.
+**Complexity driver:** The "L" rating reflects that 3D adds a new coordinate axis that must be fed through `mathLayer.ts`, `physicsLayer.ts`, and `GraphCanvas.tsx`. The position continuity contract is achievable but requires care: on switch 2D→3D, inject (x, y, featureZ) into the 3D engine; on switch 3D→2D, read back (x, y) and pass to 2D engine.
+**Risk:** If Cosmograph remains the engine, 3D is not available natively. The recommendation is: ship 2D first (for the demo), gate 3D as a follow-up milestone with engine re-evaluation.
+**Dependencies:** TS-6 (positions must carry 3-component vectors), DIF-1 (semantic seed must include z-axis assignment). Not required for demo.
+
+---
+
+### DIF-4: Cluster Annotations — Hulls, Labels, Color Bands
+
+**Why valuable:** A graph of 500+ nodes without cluster boundaries is a spatial puzzle. Convex hull overlays + cluster labels turn the spatial arrangement into a readable map ("this region is Project Alpha admins").
+**Complexity:** M
+**Architecture layer:** SVG overlay on top of `GraphCanvas.tsx` canvas
+**How it works:**
+- Cluster membership derived from feature columns (e.g. `project_id` = cluster, or `role_tier` = cluster)
+- On settled positions: compute convex hull for each cluster using `d3-polygon` (convexHull)
+- Render hull as filled SVG `<path>` with low-opacity fill + colored stroke
+- Cluster label positioned at hull centroid
+- Hulls update only on position settle — never on every tick (performance)
+- Color: each project gets a hue from a discrete palette; role-tier clusters use lightness variation
+**Cluster modes (switchable):**
+1. Cluster by project (default)
+2. Cluster by role tier
+3. Cluster by company/external vs internal
+**Dependencies:** TS-1 (stable positions), TS-6 (sliders drive where clusters form). Hulls are a post-physics rendering concern — no physics dependency.
+
+---
+
+### DIF-5: Confidence / Weight Visualization — Node Size and Opacity by Feature Strength
+
+**Why valuable:** All nodes rendered at the same size treat a user with 1 activity the same as a user with 500 activities. Visual weight encoding encodes the data before the user reads any label.
+**Complexity:** S
+**Architecture layer:** `GraphCanvas.tsx` — driven by `NodeFeatures` metadata columns
+**Encoding scheme:**
+- Node size: `activityCount` normalized → `pointSizeRange [2, 12]px` (Cosmograph: `pointSizeBy` column config)
+- Node base opacity: `lastSignInMs` recency → more recent = more opaque (partially overridden by `alphaMask`)
+- Node color: categorical by project (Cosmograph: `pointColorBy` column)
+- Halo / glow: reserved for "admin" flag — admin nodes get a subtle ring (CSS/SVG layer outside canvas)
+**Cosmograph API:** `pointSizeBy`, `pointColorBy`, `pointOpacity`, `pointGreyoutOpacity` are all documented configuration options (HIGH confidence, verified).
+**Dependencies:** dataLayer must expose the feature columns as Cosmograph `data` columns. No physics dependency.
+
+---
+
+### DIF-6: Multi-Select via Keyboard + Click
+
+**Why valuable:** Lasso is the primary selection tool, but power users want to build a selection by clicking individual nodes while holding Shift.
+**Complexity:** S
+**Architecture layer:** `GraphInteractions.tsx`
+**UX contract:**
+- Shift + click: add node to current selection (accumulate `selectedNodeIds[]`)
+- Shift + click on selected node: remove from selection
+- Escape: clear selection
+- Selection drives same `SelectionBridge` as lasso
+**Dependencies:** TS-10 (lasso and multi-select share `selectedNodeIds[]` state). TS-9 (click-isolate must be mode-switched off when multi-select is active — cannot both be active simultaneously).
+
+---
+
+### DIF-7: Toolbar with Mode Controls (Lasso / Pan / Zoom / 3D toggle)
+
+**Why valuable:** Mode controls signal to the user that this is an interactive exploration tool, not a static graph image. Without an explicit toolbar, lasso mode is undiscoverable.
+**Complexity:** S
+**Architecture layer:** UI component, outside graph layers
+**Controls:**
+1. Pan mode (default): drag to pan
+2. Lasso mode: drag draws selection polygon
+3. Reset view: `fitView()` call
+4. 2D / 3D toggle (if DIF-3 is shipped)
+5. Slider panel toggle (collapse/expand the dimension sliders)
+**Dependencies:** TS-10 (lasso), DIF-3 (3D toggle). Toolbar itself is trivial; its value is discoverability.
+
+---
+
+## Anti-Features
+
+Things explicitly NOT to build in this milestone.
+
+---
+
+### AF-1: Visible Similarity Edges
+
+**What it is:** Drawing edges between nodes based on the similarity score computed in `userSimilarity.ts`.
+**Why it's an anti-feature:** Explicitly ruled out by memory `feedback_similarity_positional_only.md`. Similarity dimensions drive position and clustering — they NEVER render as visible edges or nodes. Drawing them would violate the core design contract.
+**What to do instead:** Similarity is expressed through node proximity. Nodes with high mutual similarity end up spatially close when the relevant sliders are active. The spatial arrangement IS the similarity visualization.
+
+---
+
+### AF-2: Manual Sync / Refresh UI
+
+**What it is:** "Sync All" button, "Refresh" button, stale-cache banner in the graph UI.
+**Why it's an anti-feature:** Memory `feedback_no_manual_sync_ui.md` — sync is fully automatic via Windows Task Scheduler. Adding manual sync buttons implies fragility and creates a UX expectation that the user manages data freshness manually.
+**What to do instead:** Show "last updated: X hours ago" as passive metadata. No action required.
+
+---
+
+### AF-3: Graph-Level Undo / History
+
+**What it is:** Ctrl+Z to undo a filter, a lasso, or a slider position.
+**Why it's an anti-feature:** History state is expensive to maintain across the physics/interaction/selection stack. There is no user story that requires it. The cost/benefit is negative at this scale and deadline.
+**What to do instead:** All state is immediately reversible without undo: clear lasso (click background), reset slider (drag to 0), clear filter (click facet again). No history needed.
+
+---
+
+### AF-4: Link / Edge Rendering Between (user, project) Nodes
+
+**What it is:** Drawing explicit graph edges (lines) between node pairs.
+**Why it's an anti-feature:** The topology is one-node-per-(user, project). There is no meaningful "link" between two (user, project) instances — they are independent data points. Drawing edges would require fabricating a relationship that does not exist in the schema. This is also a Cosmos.gl anti-pattern: the engine is optimized for point clouds, not dense edge meshes.
+**What to do instead:** Cluster-by-project hull annotations (DIF-4) visually group nodes that share a project without fabricating links.
+
+---
+
+### AF-5: Server-Side Physics Calculation
+
+**What it is:** Running force simulation on the Node.js server and streaming positions to the client.
+**Why it's an anti-feature:** tRPC queries inside the physics tick loop cause network latency in the animation loop (Anti-Pattern 5 in ARCHITECTURE.md). All physics runs client-side in `physicsLayer.ts`. Data is loaded into DuckDB-WASM at mount — slider changes trigger CPU-only recalculation.
+**What to do instead:** Client-side physics with WebGL GPU acceleration (Cosmograph/Cosmos.gl path) or WebWorker offloading if main-thread jank appears.
+
+---
+
+### AF-6: Embedded Legend / Tutorial Overlays
+
+**What it is:** On-graph legend boxes, tour tooltips, or instruction overlays within the graph canvas.
+**Why it's an anti-feature:** This is an internal tool for a small team (Luis + direct reports). Adding tutorial overlays optimized for first-time external users wastes build time and clutters the UI.
+**What to do instead:** Clear slider labels, dim/highlight behavior, and the hover tooltip are self-evident to the audience. Documentation can live in the dashboard's existing help surface, not in the graph.
+
+---
+
+### AF-7: UMAP / t-SNE Pre-Processing on Node Data
+
+**What it is:** Running dimensionality reduction algorithms (UMAP, t-SNE, PCA) on node feature vectors as a pre-processing step, using their embedding coordinates as initial positions.
+**Why it's an anti-feature:** UMAP/t-SNE require a Python or WebAssembly runtime (significant bundle cost), take 1–30 seconds to converge at 6000 nodes, and produce positions that cannot be continuously blended against sliders. The slider-composition math in `mathLayer.ts` is explicitly designed as a lightweight alternative that runs in <15ms on the client.
+**What to do instead:** The semantic seed positioning (DIF-1) achieves the same "data-grounded starting layout" goal without the compute overhead or the toolchain dependency.
+
+---
+
+## Feature Dependencies Map
+
+```
+TS-2 (freeze-on-rest)
+  └─ TS-1 (stable positioning)
+  └─ TS-3 (filter without re-layout)
+  └─ TS-4 (search without re-layout)
+  └─ TS-6 (slider re-warm from frozen)
+  └─ DIF-1 (seed takes precedence over cache)
+
+TS-5 (alpha mask primitive)
+  └─ TS-3 (filter → alpha mask)
+  └─ TS-4 (search → alpha mask)
+  └─ TS-9 (click-isolate → alpha mask)
+  └─ TS-10 (lasso selection → alpha mask feedback)
+
+TS-6 (slider math)
+  └─ TS-7 (multi-slider composition — same function)
+  └─ DIF-1 (semantic seed — same function with default weights)
+  └─ DIF-3 (3D needs third axis from slider math)
+
+TS-10 (lasso → nodeIds)
+  └─ DIF-2 (lasso → pie chart via SelectionBridge)
+  └─ DIF-6 (multi-select — shared selectedNodeIds[])
+
+DIF-4 (cluster hulls) depends on TS-1 (stable positions), TS-6 (sliders determine clusters)
+DIF-5 (node size/opacity encoding) depends on dataLayer feature columns — no physics dep
+DIF-7 (toolbar) depends on TS-10, DIF-3
+
+TS-8 (hover tooltip) — no physics dep, standalone
+TS-9 (click-isolate) — depends on TS-5 only
+DIF-6 (multi-select) — depends on TS-10, TS-9 (mode-switch conflict resolution)
+```
+
+---
+
+## MVP Recommendation (Demo 2026-05-19 19:00)
+
+**Must ship (demo fails without these):**
+1. TS-1 — Stable positioning (no jitter)
+2. TS-2 — Freeze-on-rest cache
+3. TS-3 — Filter → alpha mask (no re-layout)
+4. TS-4 — Search → alpha mask + zoom-to-match
+5. TS-5 — Alpha mask primitive (architectural prerequisite)
+6. TS-6 + TS-7 — Dimension sliders with continuous-blend math
+7. TS-8 — Hover tooltip
+8. TS-9 — Click-isolate
+9. TS-10 — Lasso selection
+
+**Ship for demo if time allows:**
+- DIF-2 — Lasso → pie chart (highest visual impact, M complexity, needed for "demo" framing)
+- DIF-5 — Node size/opacity by activity (S complexity, pure config in Cosmograph)
+- DIF-4 — Cluster hull overlays (M complexity, requires d3-polygon post-physics)
+- DIF-1 — Semantic seed positioning (M complexity, makes first-load immediately readable)
+
+**Defer post-demo:**
+- DIF-3 — 2D↔3D switching (L complexity, engine-choice implications)
+- DIF-6 — Multi-select via keyboard (S, but not in demo script)
+- DIF-7 — Toolbar (S, but toolbar without 3D toggle is less valuable)
+
+**Never ship (anti-features stand):**
+- AF-1 through AF-7 — all explicitly ruled out
+
+---
+
+## Slider Composition: UX Contract Summary
+
+This is the most novel feature of the graph. Its UX contract needs to be explicit enough to test.
+
+| Slider State | Expected Behavior | Visual Signal |
+|---|---|---|
+| All sliders at 0 | Organic/diffuse: free repulsion, no attraction target | Loose cloud, nodes spread by repulsion |
+| One slider at 100 | Single-axis clustering: nodes pull toward dim's seed direction proportional to feature score | Clear gradient along one axis |
+| Two sliders at 50 each | Continuous dual-axis blend: nodes pulled in two directions simultaneously | Two loosely-separated groups with overlap zone |
+| Two sliders at 100 each | Strong dual-axis clustering | Two distinct clusters at opposite canvas edges |
+| Slider dragged from 0 to 100 | Smooth continuous motion of all nodes, no jump, no mode switch | Camera-ready animation |
+| Slider set to 0 on active dim | Smooth removal of that axis's contribution | No discontinuity; other dims remain |
+
+**Test gate:** All rows above must pass as Vitest unit tests on `computeTargetPositions()` output before physics layer integration begins.
 
 ---
 
 ## Sources
 
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Project_Members.md` — members matrix endpoint, products array schema, accessLevels schema, addedOn field — HIGH confidence (ground truth)
-- `APS_DOCS/HOW TO/HOW_TO_Extract_All_Files_and_Folders.md` — DM API recursive folder extraction; topFolders endpoint; pagination — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Folder_Role_Permissions.md` — BIM360 Docs permissions endpoint; actions-to-permission-type mapping — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Activity_Logs.md` — Data Connector async pipeline; CSV schema; job lifecycle — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Last_Sign_In.md` — HQ v1 hub-level AND Construction Admin project-level lastSignIn; `?fields=` query param required — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Last_User_File_Activity.md` — derives from activity log; file action types; per-user max timestamp strategy — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Recent_User_Additions.md` — `addedOn` sort; WHO-added via activity log `Member Added` / `User Invited` events — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_All_Roles.md` — HQ v2 hub master roles; per-project industry roles; services.document_management.access_level — HIGH confidence
-- `APS_DOCS/HOW TO/HOW_TO_Extract_Project_Info.md` — Construction Admin projects list; type, jobNumber, createdAt fields — HIGH confidence
-- `lib/acc/acc-types.ts` — existing `BulkAccUser` interface; current fields; what is already plumbed — HIGH confidence (live codebase)
-- `app/(dashboard)/users/dashboard/widgets/RecentlyAddedWidget.tsx` — SelectionContext click pattern; current data inputs; CSV export columns — HIGH confidence
-- `app/(dashboard)/users/AccUsersGraph.tsx` — `UserNode` interface; existing node fields; filter system — HIGH confidence
-- `.planning/milestones/v1.0-REQUIREMENTS.md` — what shipped; DASH-01..13 coverage; existing widget capabilities — HIGH confidence
-- `.planning/PROJECT.md` — v2.0 locked decisions; out-of-scope list; constraint on no new tabs/pages — HIGH confidence
-
----
-*Feature research for: v2.0 ACC Extraction Completion — enriching existing user list / graph / dashboard*
-*Researched: 2026-05-08*
+- Cosmograph API reference (HIGH confidence): https://cosmograph.app/docs-lib/api/interfaces/CosmographConfig/ (verified 2026-05-19, doc date Feb 2026)
+- Cosmograph methods (HIGH confidence): https://cosmograph.app/docs-lib/api/classes/Cosmograph/ (verified 2026-05-19)
+- Cosmos.gl GitHub (HIGH confidence): https://github.com/cosmosgl/graph
+- d3-force simulation docs (HIGH confidence): https://d3js.org/d3-force/simulation — seeded LCG, phyllotaxis init, randomSource() confirmed
+- d3-force determinism discussion (MEDIUM): https://github.com/d3/d3-force/issues/121
+- sigma.js 3.0 status (MEDIUM): https://www.ouestware.com/2024/03/21/sigma-js-3-0-en/ — lasso is planned as satellite package, not core
+- ARCHITECTURE.md (HIGH): `.planning/research/ARCHITECTURE.md` — slider composition math, layer contracts, anti-patterns
+- PROJECT.md (HIGH): `.planning/PROJECT.md` — topology, constraints, out-of-scope decisions
+- Memory: `feedback_similarity_positional_only.md` — similarity dims are positional only, never edges
+- Memory: `feedback_no_manual_sync_ui.md` — no manual sync UI
+- Memory: `project_cosmos_alpha_inversion.md` — Cosmos.gl v3 alpha inversion gotcha (affects physicsLayer tick math)

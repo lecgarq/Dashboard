@@ -1,427 +1,388 @@
-# Pitfalls Research
+# Domain Pitfalls: Multi-Dimensional Spatial Graph
 
-**Domain:** ACC Extraction Completion — adding Data Connector async jobs, recursive folder crawl, folder-role permissions, activity log all-time retention, and folder nodes in Cosmos.gl graph to an existing dashboard with bulkAccSync + accMemberCache + working 25k-node graph
-**Researched:** 2026-05-08
-**Confidence:** HIGH — grounded in all 9 HOW_TO docs (scraped APS docs), v1.0 PITFALLS.md, STATE.md accumulated context, and PROJECT.md locked decisions
+**Domain:** Force-directed spatial graph with continuous-blend dimension sliders, 2D/3D mode, lasso+pie, Cosmos.gl v3, DuckDB-WASM, React
+**Researched:** 2026-05-19
+**Project:** LECG Access Analysis Redesign
 
----
-
-## TOP THREE — Read These First
-
-The three pitfalls below have the highest probability of causing a phase rewrite or production incident. Each has its own full section below.
-
-| # | Name | Why Top Three |
-|---|------|---------------|
-| 1 | b.-prefix contradiction between Construction Admin API and Data Management API | Silent 401/403 that looks like auth failure; already bit v1.0 in a different form; now has a NEW direction (DM API needs it, CA API strips it) |
-| 2 | Data Connector job pattern: inline await will timeout the Railway function | Default Next.js timeout is 300s; Data Connector jobs take minutes to hours; inline polling guarantees a 5-minute cliff |
-| 3 | Folder nodes in graph without pre-flight perf gate | Node count is unknown until you actually crawl; discovering the Cosmos.gl cliff in a late phase means graph work is thrown away |
+These pitfalls are drawn from three sources: (1) the documented failure history in this codebase (`.planning/codebase/CONCERNS.md`, `AccUsersGraph.tsx`), (2) cosmos.gl/cosmosgl release notes and GitHub issues, and (3) broader force-directed graph and React WebGL community findings. Each pitfall maps to a phase or architectural layer.
 
 ---
 
 ## Critical Pitfalls
 
-### Pitfall 1: b.-prefix Contradiction — Construction Admin API vs Data Management API
+Mistakes that cause rewrites or major regressions.
 
-**What goes wrong:**
-The `b.` prefix is required in opposite directions depending on which API family you are calling. The Data Management API (folder crawl, folder contents, top folders) requires the full `b.`-prefixed projectId. The Construction Admin API (project users, project list, folder permissions) requires the bare UUID with `b.` stripped. If you use one stripping pattern for all APS calls, you will get 401s or 404s on exactly the wrong half of your v2.0 extraction pipeline.
+---
 
-The v1.0 codebase established `getAccountId(db)` to strip `b.` from the hub ID for ACC Admin API calls. That pattern is correct for hub-level calls. It does NOT apply to projectId values passed to the Data Management API (top folders, folder contents, folder search).
+### Pitfall C-1: Physics State Coupled to Filter/Render State
 
-Concrete from HOW_TO_Extract_All_Files_and_Folders.md: "In the Data Management API, your Project ID must retain the `b.` prefix!"
-Concrete from HOW_TO_Extract_Project_Members.md: "The `:projectId` is WITHOUT the `b.` prefix."
-Concrete from HOW_TO_Extract_Folder_Role_Permissions.md: The folder permissions endpoint uses `projectId.replace('b.', '')`, but the folder crawl above it uses the raw `projectId` with `b.` intact.
+**What goes wrong:** Filter changes (hide a user, toggle a project) trigger a full layout recompute — the simulation restarts from scratch, positions flash, jitter, or reset to random. This was the proximate cause of the prior AccUsersGraph rewrite mandate.
 
-**Why it happens:**
-The APS platform was built across different product eras (BIM 360, HQ, Construction Admin, Data Management). Each API family has its own convention. A developer looking at the existing `getAccountId` helper will assume the stripping pattern is universal and apply it to projectId values for folder crawl calls — which silently breaks them.
+**Why it happens:** The natural React pattern is: filter changes → new nodes array → pass to graph component → graph re-initializes. Most graph wrappers (react-force-graph, early Cosmos integration) treat a new nodes prop as a full re-mount. The simulation does not distinguish "same topology, fewer visible nodes" from "brand new graph."
 
-**How to avoid:**
-- Create two distinct helper shapes: `getAccountId(db)` (strips `b.` from hub, for CA/HQ endpoints) and `getProjectIdForDM(rawProjectId)` (returns raw with `b.` intact, for Data Management endpoints). Name them so the distinction is obvious.
-- Code-review rule: Every new APS call must be tagged with which API family it belongs to. DM API = keep `b.`. CA/HQ API = strip `b.`.
-- Add a comment at the top of every router file that touches multiple API families listing the convention.
-- Unit test: call each helper with a `b.`-prefixed string and assert the correct output.
+**Consequences:** Every filter toggle costs 2-5 seconds of jitter. Users perceive the graph as broken. Alpha/warmup tricks get bolted on top, creating the patch stack. The codebase already has `loadOrComputePositions` + `hashNodeSet` + `positionsCache` as a symptom of this — all workaround infrastructure.
 
 **Warning signs:**
-- Data Management folder crawl returns 404 for a projectId that definitely exists
-- Construction Admin user list returns 401 when hub-level calls work fine
-- The two failures appear at different extraction steps and are mistaken for auth/scope issues
+- You add a `warmupMs` parameter to anything.
+- You write a `hashNodeSet` function to decide when to skip re-layout.
+- You find yourself storing positions in DuckDB to avoid re-running the sim.
+- Filter changes cause the graph to flash white or jump to center.
 
-**Phase to address:**
-Phase 1 (extraction foundation) — before any folder crawl, permission fetch, or member matrix work. Establish the two helpers and the naming convention before a single data extraction function is written.
+**Prevention:**
+- Separate topology (which nodes/links exist) from visibility (which are shown). The sim runs on the full topology. Filtering sets `pointOpacity` / `pointSize` to 0 for hidden nodes — it never changes the node/link arrays passed to Cosmos.
+- In Cosmos.gl v3, use `graph.setPointColors()` and `graph.setPointSizes()` for filter state. Never call `graph.setPointPositions()` or re-pass `points` on a filter change.
+- Lock positions before filtering: call `graph.pause()` once layout converges; after that, filtering is purely a color/size buffer update.
+
+**Phase:** Layout engine layer (Phase 1 of any rewrite). Must be the architectural foundation — everything else builds on this.
 
 ---
 
-### Pitfall 2: Data Connector Job Pattern — Inline Polling Guarantees a 5-Minute Cliff
+### Pitfall C-2: Inverted Alpha Semantics in Cosmos.gl v3
 
-**What goes wrong:**
-HOW_TO_Extract_Activity_Logs.md shows a `while (!downloadUrl) { await sleep(60000); ... }` loop. If this pattern is implemented inside a tRPC mutation or a Next.js Route Handler, it will hit Railway's function timeout (Next.js default is 300 seconds = 5 minutes). Data Connector jobs for a large hub (all-time retention) can take 10–60 minutes. The server action silently times out, the job finishes on the APS side, but the client never receives the download URL and the activity data is never persisted.
+**What goes wrong:** `graph.getSimulationAlpha()` returns `1 - progress`. At simulation start, it returns ~1.0, dropping toward 0.0 as the sim converges — the **opposite** of d3-force's alpha, which starts high and decays. Code written against d3 intuition (`alpha < 0.01` means "converged") reads as `getSimulationAlpha() < 0.01`, which is **never true at start and always true when converged**. Dim/highlight animations tied to this value invert or never fire.
 
-Additionally: if the user triggers Sync twice (double-click, re-visit), two concurrent job requests are submitted to APS. There is no idempotency key in the Data Connector API. Two separate jobs will run, the first to finish writes its data, the second overwrites it — with no collision detection.
+**Why it happens:** Cosmos.gl renamed the internal concept: their "alpha" is "how much energy is left." But v3's public API surface exposes `getSimulationAlpha()` which maps to 1 - internal progress — confirmed by memory `project_cosmos_alpha_inversion` and verified against cosmosgl release notes.
 
-**Why it happens:**
-The HOW_TO example script is correct for a standalone Node.js script. It is not designed for a server-side function with an HTTP timeout. The polling loop that looks fine in a script becomes a reliability bomb in a web server context.
-
-**How to avoid:**
-- Pattern: persistent job table in Prisma + client polling. The tRPC mutation only submits the job (`POST /requests`) and records `{ requestId, status: "pending", submittedAt }` in a `DataConnectorJob` table. A separate tRPC query (`getJobStatus`) polls the APS jobs endpoint on demand and updates the row. The client polls `getJobStatus` every 30 seconds with a visible progress surface.
-- Download and parse in a separate async step triggered when job status becomes `success`. Stream the ZIP using Node.js `stream` pipeline so multi-GB files are not buffered entirely in RAM.
-- Lock against double-submit: before creating a new job, check for an existing `pending` or `running` row in `DataConnectorJob` for the same `accountId`. If one exists, return its status to the client instead of creating a second request.
-- Surface failed jobs explicitly: store `status: "failed"` and `errorMessage` in the table; show an actionable error in the sync UI with a manual retry button.
+**Consequences:** Highlight-on-hover dims the graph permanently. Lasso selection highlights the wrong set. "Simulation done" detection fires on frame 1 instead of after convergence.
 
 **Warning signs:**
-- Railway logs show the sync mutation completing with no error, but activity data never appears in the database
-- The client shows "Sync complete" but the activity log widget shows zero rows
-- Two concurrent jobs both return `success` and the activity table has duplicate rows from overlapping date ranges
+- Labels or dim effects are inverted (everything dark on load, everything bright after settle).
+- `onSimulationTick` callbacks that use alpha to gate effects trigger at the wrong time.
+- "isSimulationRunning" logic reads backwards.
 
-**Phase to address:**
-Phase 1 (extraction foundation) or a dedicated Phase 2 (Data Connector sync engine). Must be designed before any activity log features are built on top of it, because the storage schema depends on the async job model.
+**Prevention:**
+```typescript
+// CORRECT: alpha approaches 0 as sim converges (1 - progress pattern)
+const isConverged = graph.getSimulationAlpha() < 0.05;
+
+// WRONG (d3-force intuition):
+// const isConverged = graph.getSimulationAlpha() < 0.01; // fires immediately
+```
+Add a single constant: `const COSMOS_CONVERGED_THRESHOLD = 0.05` and document the inversion. Never inline the comparison without a comment.
+
+**Phase:** Simulation control layer. Verify on day one before any alpha-gated logic is written.
 
 ---
 
-### Pitfall 3: Folders in Graph — Discovering the Node-Count Cliff in a Late Phase
+### Pitfall C-3: Seed Positions Ignored — All-D3-Force Default
 
-**What goes wrong:**
-PROJECT.md explicitly flags this as HIGH RISK: "Folders enter spatial graph (override) — perf will be validated in research." The v1.0 exclusion rationale was "node count multiplies unmanageably." A typical ACC hub has dozens of projects, each with hundreds of folders and subfolders. If a hub has 50 projects × 200 folders each = 10,000 folder nodes added to an existing 25,559-node graph = 35,000+ nodes. Cosmos.gl 3.0.0-beta.8 has handled 25k nodes, but performance at 35k-50k is unverified. If this is discovered in a late phase (after the Prisma folder schema, folder crawl sync, and dashboard widgets are built), throwing away the graph work is extremely expensive.
+**What goes wrong:** The graph engine is initialized without providing semantic seed positions, so every node starts at `(random, random)` within the simulation space. Force-directed physics then converges to a local energy minimum that has no relationship to the actual user-project structure. The result looks "random" because it is — the layout reflects graph connectivity, not the business dimensions (activity level, permission tier, last sign-in) that the sliders are meant to express.
 
-**Why it happens:**
-Folder nodes feel like "just more nodes" — the graph already handles 25k, so 10k more should be fine. But Cosmos.gl typed-array uploads scale with node count. The GPU simulation step cost is O(n) per tick. WebGL context memory is finite. The cliff might be at 30k, 40k, or 50k — it is unknown. The only way to know is to run it.
+**Why it happens:** It is easier to pass `nodes` and let physics run than to precompute seed coordinates. The d3-force/Cosmos default works visually for small graphs with clear community structure. For this project's heterogeneous user-project instances, connectivity alone produces misleading clusters.
 
-**How to avoid:**
-- Make the perf pre-flight the first deliverable of the folder-graph phase, not the last. Steps: (1) crawl one representative project and count its folders, (2) extrapolate total folder count for the hub, (3) instantiate Cosmos.gl with `existingNodes + folderCount` synthetic nodes and measure FPS + GPU memory, (4) gate the rest of folder-graph work on a clear pass threshold (60fps at full node count).
-- Design the folder node layer as opt-in by default (hidden, toggled on). This means even if perf is borderline, users can disable folder nodes for a clean view. Never add folder nodes to the initial render without a hide-by-default toggle.
-- Filter folder nodes by project before adding to graph: only load folders for projects currently in the filter selection. This bounds the worst case to a single project's folder tree rather than all projects simultaneously.
-- If perf fails at full-hub scale, fall back to a project-scoped folder view (show folders only when exactly one project is selected in the filter panel) — document this as the contingency in the phase plan.
+**Consequences:** Clusters look arbitrary. Slider changes (e.g. "increase Activity dimension") don't produce visible movement because physics starts from a position that already "settled" without the dimensional guidance. Users conclude the sliders are broken.
 
 **Warning signs:**
-- Cosmos.gl `setPointPositions` call duration spikes above 16ms after folder nodes are added
-- GPU memory usage in Chrome DevTools → Performance → GPU Memory exceeds 500MB
-- Physics simulation FPS drops below 30 when folder toggle is enabled
-- The `cosmosReady` flag takes more than 3 seconds to fire after adding folder nodes
+- Changing a slider from 0 to 100 produces subtle jitter rather than a visible cluster migration.
+- Reloading the page produces a visually different layout each time.
+- You add a `seed` parameter to the RNG but positions still feel arbitrary.
 
-**Phase to address:**
-A dedicated perf-feasibility phase before any folder-graph rendering work. Do not implement folder node rendering until this phase produces a verified GO decision.
+**Prevention:**
+- Compute semantic seed positions before handing data to the graph engine. For this project: place nodes using a weighted combination of the DC parameters (activity count, permission tier, last-sign-in recency) mapped to 2D coordinates.
+- Pass seeds via `graph.setPointPositions(seeds, { dontRescale: true })` before calling `graph.start()`. This sets the starting positions; physics then refines from there.
+- The seed coordinate space must match the simulation space. Cosmos will auto-rescale if `rescalePositions: true` is set, but this overwrites your intentional geometry. Verify by logging `graph.getPointPositionsFloat32()` before and after `start()`.
+
+**Phase:** Math/seed layer. Must be defined before engine selection is locked.
 
 ---
 
-### Pitfall 4: accMemberCache → AccProjectMember Table Cutover Without Breaking Existing Dashboard
+### Pitfall C-4: Slider State Coupled to Physics State (The Patch Stack Attractor)
 
-**What goes wrong:**
-The existing dashboard (DASH-01..13, all 9 widgets) reads from `accMemberCache.data` — a JSON blob on a single Prisma row. v2.0 will migrate this to real `AccProjectMember`, `AccFolder`, `AccActivity`, etc. tables. If the cutover is done in a single migration that drops `accMemberCache` and replaces all reads simultaneously, any in-flight dashboard request during the Railway deploy will return empty data or throw Prisma errors. The user will see a blank Access Analysis dashboard in production for the duration of the deploy restart.
+**What goes wrong:** Each slider (Activity, Roles, Permissions, ...) triggers a physics config change: `graph.setConfig({ repulsion: newVal })`. The sim restarts (or receives a new alpha kick), positions scramble, and the user watches the graph re-settle after every slider move. With 11 sliders, any interaction produces visible chaos.
 
-Additionally: `accMemberCache` had partial data for some fields. `BulkAccUser.addedOn` was normalized from `created_at` in Phase 04-access-analysis P02. `BulkAccUser.lastSignIn` was aliased from `last_sign_in || last_activity || lastSignIn` (field name unverified live). Backfilling the new Prisma tables from the JSON cache will inherit these partial values — users who were in the old cache with `addedOn: null` will still have null in the new table unless a re-sync is triggered.
+**Why it happens:** The temptation is to map slider → physics parameter directly. This is the minimum-viable implementation, so it always gets built first. Then patches get added: debounce, pause/unpause guards, "warmup then freeze" — each patch adds coupling surface.
 
-**Why it happens:**
-Big-bang schema migrations feel cleaner than dual-read paths. But Railway deploys have a brief period where the new code is running against a database that may still have the old schema, or the old code is running against the new schema.
-
-**How to avoid:**
-- Dual-existence window: keep `accMemberCache` readable during v2.0 and introduce the new tables in an additive migration (no drops). The new sync path writes to both `accMemberCache` AND the new tables during a transition phase. Dashboard reads switch to the new tables only after the first v2.0 sync has populated them (detected by a `syncedAt` timestamp on a `SyncState` table row).
-- Backfill strategy: after the first v2.0 sync, run a one-time migration script that upserts `addedOn` / `lastSignIn` into `AccProjectMember` from the new API data (not from the stale cache). Backfilling from the cache is acceptable for `addedOn` if the API data is unavailable, but `lastSignIn` must come from the Construction Admin API `?fields=lastSignIn` query (see Pitfall 5 below).
-- Never drop `accMemberCache` until at least one successful v2.0 sync has been verified in production and the dashboard shows correct data from the new tables.
+**Consequences:** Sliders fight each other (moving Slider A kicks the sim, moving Slider B before it converges produces a sum of two restarts). Layout state becomes path-dependent: the final position depends on which sliders were moved in which order, not on the declared dimensional weights. This is the documented "patches stacking on patches" failure from the project brief.
 
 **Warning signs:**
-- Post-deploy: Access Analysis dashboard shows 0 users or Prisma query throws `PrismaClientKnownRequestError: table not found`
-- `addedOn` values are uniformly null in the new `AccProjectMember` table after migration
-- The sync button shows "complete" but the new tables are empty
+- You add debounce to a slider handler.
+- You add a `useRef` that tracks "last layout config hash" to avoid redundant restarts.
+- Changing two sliders in quick succession produces different layouts than changing them one at a time.
+- You find yourself adding a `setTimeout` before calling `graph.pause()`.
 
-**Phase to address:**
-Phase 1 (schema foundation). The Prisma migration strategy must be designed before any new tables are created, so the dual-existence pattern is built in from day one.
+**Prevention:**
+- Decouple slider state from the physics sim entirely. Sliders define weights for a **position computation function** — not physics parameters.
+- Architecture: `sliderWeights → computeSeedPositions(weights, dcData) → graph.setPointPositions(newSeeds)`. The sim is paused (frozen) after initial warmup; slider changes compute new target positions and animate them via `graph.setPointPositions()` directly, bypassing force physics.
+- If physics must be used (for organic refinement), only re-kick alpha for the specific nodes whose positions changed significantly. Never restart the full sim from a slider change.
+
+**Phase:** Math layer + slider composition layer. Must be architected before any slider UI is wired.
 
 ---
 
-### Pitfall 5: lastSignIn Requires Explicit ?fields= Parameter and Returns a Different Field Name Per API
+### Pitfall C-5: `setPointPositions` Coordinate Rescaling Silently Corrupts Semantic Seeds
 
-**What goes wrong:**
-There are two entirely different ways to get `lastSignIn` depending on which API you call, and they use different field names:
+**What goes wrong:** Cosmos.gl v3 (and v2.1+) auto-rescales coordinates to fit within the simulation space when `rescalePositions: true` (config default varies by version). Semantic seeds computed in screen/data space get uniformly scaled — which preserves relative positions — but if any seeds fall outside the simulation boundary, the rescaling distorts the intended geometry.
 
-- HQ v1 (`/hq/v1/accounts/:accountId/users`): field name is `last_sign_in` (snake_case), returned by default
-- Construction Admin v1 (`/construction/admin/v1/projects/:projectId/users`): field name is `lastSignIn` (camelCase), NOT returned by default — requires `?fields=name,email,lastSignIn` in the URL
+**Why it happens:** The simulation space is a fixed 2D rectangle (roughly -1 to 1 normalized, or a pixel-based box). Seeds derived from data features (e.g. activity count 0→1000 mapped to x) may span a much wider range. Cosmos detects the out-of-bounds condition and clamps/rescales.
 
-The existing v1.0 code aliases `last_sign_in || last_activity || lastSignIn` because the field name was unverified live (STATE.md: "field names unverified live; diagnostic log will confirm on next sync"). If the Construction Admin endpoint is called without the `?fields=` parameter, `lastSignIn` will be absent from the response object entirely — it will not be null, it will be missing. A `user.lastSignIn ?? null` coalesces this to null silently, making it appear that all project-level users have never signed in.
-
-**Why it happens:**
-HOW_TO_Extract_Last_Sign_In.md documents this clearly: "Crucial Note: When using the new Admin API, you must explicitly request the `lastSignIn` field by appending `?fields=name,email,lastSignIn` to your URL." Developers copying the URL from an existing call that does not include `?fields=` will miss this.
-
-**How to avoid:**
-- Build the `?fields=` parameter into the Construction Admin user fetch function as a non-optional constant. Never call this endpoint without it.
-- The function signature should have `fields` hardcoded, not passed as a parameter that could be omitted.
-- Verify at sync time: log a warning if a user row from Construction Admin has `lastSignIn` property absent (vs. present-but-null) — absence indicates the `?fields=` param was dropped.
-- At the Prisma write boundary, distinguish `null` (user has never signed in) from `undefined` (field was not requested) — reject the write if `lastSignIn` is `undefined` so the bug is caught immediately rather than stored as null.
+**Consequences:** Nodes that should be far apart (high activity vs. zero activity) are placed close together after rescaling. The dimensional geometry is compressed. Sliders appear to have weak effect.
 
 **Warning signs:**
-- All users in the new `AccProjectMember` table have `lastSignIn: null` after a full sync
-- The Last Sign-In column in the user list shows "Never" for every user including ones known to be active
-- No `lastSignIn` key appears in the raw API response JSON logged during sync
+- Nodes cluster toward the center despite varied seed values.
+- `graph.getPointPositionsFloat32()` returns values in a much smaller range than the seeds you passed.
+- Disabling `rescalePositions` causes nodes to disappear (they're outside the viewport).
 
-**Phase to address:**
-Phase 1 (extraction foundation) — the Construction Admin user fetch function must include the `?fields=` parameter from its first implementation.
+**Prevention:**
+```typescript
+// Map seeds to [-0.8, 0.8] normalized space before passing to Cosmos:
+const norm = (v: number, min: number, max: number) => 
+  -0.8 + (v - min) / (max - min) * 1.6;
+
+// Then pass with dontRescale to prevent double-transformation:
+graph.setPointPositions(normalizedSeeds, { dontRescale: true });
+```
+Verify seed range at the math layer before integration with the engine.
+
+**Phase:** Math/seed layer. Verify immediately after first engine integration test.
 
 ---
 
-### Pitfall 6: Folder Permission actions Array — Wrong Mapping to UI Permission Type
+### Pitfall C-6: 2D↔3D Switch Causes Position Discontinuity and Camera Disorientation
 
-**What goes wrong:**
-HOW_TO_Extract_Folder_Role_Permissions.md documents a 6-level mapping from the `actions` array to UI permission type labels. The mapping is order-dependent and easy to implement incorrectly. Specifically:
+**What goes wrong:** Switching from 2D to 3D (or back) reassigns the `z` coordinate — either setting all z=0 (losing depth) or randomly distributing z (nodes teleport). The camera resets to default position. The user loses spatial context and has to re-orient after every mode switch.
 
-- `["VIEW", "COLLABORATE"]` → View Only (no download)
-- `["VIEW", "DOWNLOAD", "COLLABORATE"]` → View / Download
-- `["PUBLISH"]` → Upload Only (no view)
-- `["PUBLISH", "VIEW", "DOWNLOAD", "COLLABORATE"]` → View / Download + Upload
-- `["PUBLISH", "VIEW", "DOWNLOAD", "COLLABORATE", "EDIT"]` → + Edit
-- `["PUBLISH", "VIEW", "DOWNLOAD", "COLLABORATE", "EDIT", "CONTROL"]` → Full Controller
+**Why it happens:** 2D and 3D graph engines are typically separate components (e.g. `ForceGraph2D` vs `ForceGraph3D` in react-force-graph). Switching components unmounts/remounts, discarding position state. Even within a single engine, the z-axis projection is not preserved across mode changes.
 
-A naive implementation that checks `includes("EDIT")` without checking for `CONTROL` first will classify "Full Controller" as "View/Download/Upload/Edit". An implementation that checks `includes("DOWNLOAD")` without checking for `PUBLISH` first will classify "Upload Only" as "View/Download".
-
-The HOW_TO example script shows the correct cascade (CONTROL first, then EDIT, then PUBLISH+VIEW, etc.) but it is easy to reorder when writing fresh.
-
-Additionally, `subjectType` must be filtered to `"ROLE"` — the same endpoint returns user-specific and group-specific permissions as well. Forgetting the filter bloats the permission table with non-role entries.
-
-**Why it happens:**
-The `actions` array is a set, not an ordered list. Membership-check logic invites bugs when the cascade priority is not obvious. The `CONTROL` vs `EDIT` ambiguity is the most common failure.
-
-**How to avoid:**
-- Implement as a pure function with an exhaustive test: given each of the 6 documented actions arrays, assert the correct label. Include edge cases: empty array, single-action array, unknown action.
-- The cascade must check `CONTROL` before `EDIT`, `PUBLISH+VIEW` before `PUBLISH` alone, `DOWNLOAD` only inside the `PUBLISH+VIEW` branch.
-- Store the raw `actions` array in Prisma alongside the computed label so the label can be recomputed if the mapping logic changes.
-- Always filter `subjectType === "ROLE"` before processing.
+**Consequences:** Users perceive the 2D and 3D views as showing different graphs. The switch feels broken. Adding a fade-transition mask does not solve the underlying position discontinuity — it just hides the flash.
 
 **Warning signs:**
-- Full Controller folders show as "View/Download/Upload/Edit" in the dashboard
-- Upload-Only folders show as "View/Download"
-- The permissions table has user-level permission rows (subject emails instead of role names)
+- You add a CSS transition or opacity fade to mask the switch.
+- You store positions in a ref and try to restore them after re-mount.
+- The camera position resets to `(0, 0, defaultDistance)` after every mode toggle.
 
-**Phase to address:**
-Phase that implements folder-role permissions extraction. Add the exhaustive unit test before the UI consumes the label.
+**Prevention:**
+- Maintain a single canonical `positions: Float32Array` (x,y pairs) in the math layer, outside the graph engine.
+- On 2D→3D: project 2D positions to 3D by setting `z = 0` for all nodes. Preserve x and y exactly.
+- On 3D→2D: project back by discarding z. Store the last 3D camera state and restore it on next 3D switch.
+- Use a single graph engine that supports both modes if possible (react-force-graph's `numDimensions` prop, or Cosmos with a 3D extension) rather than two separate components.
+- Camera: compute the bounding box of node positions and frame the camera to contain all nodes after any mode switch. Never reset to a hardcoded default.
+
+**Phase:** Engine selection and 2D/3D bridge layer.
 
 ---
 
-### Pitfall 7: Activity Log All-Time Retention — No Prune Strategy Means Table Size Grows Unboundedly
+### Pitfall C-7: Modularity/Community Detection Lying About Cluster Structure
 
-**What goes wrong:**
-PROJECT.md decision: "Activity log retained all-time (no prune)." The `project_activities.csv` from Data Connector can be massive — a large hub with years of history may have millions of rows. Each sync run that uses a broad `dateRange` or `CUSTOM` with wide bounds will re-download and attempt to upsert all rows. Without an upsert-by-primary-key strategy, duplicate rows accumulate. Without indexes, queries against this table degrade from O(log n) to O(n) as the table grows.
+**What goes wrong:** A community detection algorithm (Louvain, greedy modularity) is run on the graph edges, colors are assigned by detected community, and the layout appears to show natural clusters. In practice, force-directed layouts are mathematically equivalent to modularity optimization — the "clusters" the algorithm finds are the same clusters that the physics already creates. Coloring by computed community on top of a force-directed layout is circular and tells the user nothing new.
 
-Additionally: the all-time retention decision was made without a stated upper bound on storage cost. On Railway's PostgreSQL, storage is metered. A 10-million-row activity table with `varchar` columns for `action`, `details`, `service`, `tool` could reach several gigabytes.
+**Why it happens:** Community detection is the obvious next step after a force layout "looks like it has clusters." The algorithm is easy to run, the colors look convincing, and the demo reads well. The conceptual error is invisible.
 
-**Why it happens:**
-"Retain all-time" is the correct audit/compliance decision. The failure is implementing it without the index strategy and upsert pattern that make it survivable.
-
-**How to avoid:**
-- Primary key on `(external_id)` from the CSV — each activity row has a unique ID in the Data Connector output. Use this as the upsert key to prevent duplicates on re-sync.
-- Composite indexes required at schema creation: `(user_id, created_at)` for per-user timeline queries, `(project_id, created_at)` for per-project activity. Add a partial index `WHERE action IN (...)` on the file-action subset used by "last file activity per user."
-- Store `action` as an enum or a reference FK to an `ActivityAction` lookup table — not as a raw string column. This bounds the carriage values, prevents typo variants from appearing as distinct rows, and halves storage for high-cardinality action columns.
-- First sync should use a bounded date range (e.g., last 12 months) to validate the pipeline, then expand to all-time in a follow-up sync. Never first-sync all-time on an unknown-size hub.
-- Add a `DataConnectorSync` table row recording rows imported per run, so growth rate is visible before it becomes a problem.
+**Consequences:** Users trust cluster labels that reflect graph connectivity (which edges exist), not the business dimensions they care about (which projects are functionally similar, which users have overlapping access). Cluster labels get named ("Engineering team?") based on visual proximity that may be spurious.
 
 **Warning signs:**
-- The activity table has duplicate rows with the same timestamp and user for the same action
-- Dashboard widget queries against the activity table take more than 500ms on a 1-year dataset
-- Railway storage dashboard shows the database growing faster than 100MB per week
+- Cluster colors are computed from edge structure after layout, not from the DC parameters.
+- Cluster labels change when you add/remove a single user (instability of modularity at small N).
+- The same cluster boundary appears regardless of which slider dimensions are active.
 
-**Phase to address:**
-Schema foundation phase (index strategy must be in the initial migration) and Data Connector sync phase (upsert pattern + bounded first sync).
+**Prevention:**
+- In this project: clusters are **dimensional groupings**, not detected communities. A cluster is "users with high activity in Docs module" — defined by the DC parameters, not by graph edges.
+- Color nodes by their dimensional bucket (e.g. high/mid/low on the primary active slider), not by a post-hoc community detection result.
+- If community detection is used at all, run it on the DC feature vectors (k-means on the parameter space), not on the graph edge topology.
 
----
-
-### Pitfall 8: Recursive Folder Crawl — Quadratic+ API Calls Without Batching
-
-**What goes wrong:**
-HOW_TO_Extract_All_Files_and_Folders.md shows a `scanFolder` function that makes one API call per folder. If a project has 200 folders, that is 200 sequential API calls per project. With 50 projects, that is 10,000 calls just to build the folder tree — before adding the per-folder permissions call from HOW_TO_Extract_Folder_Role_Permissions.md. The permissions call doubles it: 20,000 calls total, sequential, each waiting on the previous. At APS rate limits (varies, typically 60–300 req/min per token), this is 1–5 hours of sync time. The Data Connector approach cannot replace this because folder permissions are not in the Data Connector CSV.
-
-**Why it happens:**
-The HOW_TO example is correct as a demonstration script. It is not designed for production scale. A developer implementing it literally will not notice the problem until they run it against the real hub.
-
-**How to avoid:**
-- Concurrent crawl with a concurrency limiter: `pLimit(5)` for folder contents calls, `pLimit(3)` for permissions calls (tighter, as permissions calls are heavier). Never serial.
-- Cache the folder tree between syncs. Only re-crawl folders where the project's `updatedAt` timestamp has changed (check via Construction Admin project list). Most projects will not have new folders on each sync.
-- Do NOT fetch folder permissions for every folder on every sync. Fetch permissions only for folders whose tree entry does not exist in Prisma OR whose `updatedAt` changed. Incremental permissions sync.
-- The permission fetch loop (one call per folder) is the real bottleneck, not the crawl. Prioritize getting it behind a cache.
-- Add a hard ceiling: if folder count exceeds N (e.g., 5,000), log a warning and skip the permissions fetch for that project, marking it with `permissionsSyncStatus: "skipped_too_large"`.
-
-**Warning signs:**
-- Folder sync takes more than 5 minutes for a single project
-- APS returns 429 responses during folder crawl
-- The sync UI shows "running" for over 30 minutes with no progress update
-
-**Phase to address:**
-Folder crawl phase — the concurrency pattern must be established before the first production sync attempt.
+**Phase:** Math layer / cluster annotation layer. Must be decided before any cluster coloring is implemented.
 
 ---
 
-### Pitfall 9: CSV Rows Stuffed Directly into Prisma Without Normalization
-
-**What goes wrong:**
-Data Connector produces CSV files. The temptation is to parse the CSV and `createMany` the rows directly into a flat Prisma table that mirrors the CSV columns. This works for a prototype but creates several problems:
-
-- `action` values are free-text strings ("Member Added", "Document Viewed", "File Uploaded") — typo variants from different ACC product generations will appear as distinct rows with no ability to normalize retroactively
-- `user_id` in the CSV is an Autodesk user ID — not the email address used elsewhere in the schema. Without a join table or a lookup step, the activity table is disconnected from the `AccProjectMember` table
-- `project_id` in the CSV uses the bare UUID format (no `b.` prefix) — different from the format in the Data Management API (see Pitfall 1)
-- Empty `details` fields for some action types — NULL vs empty-string inconsistency if not normalized at write boundary
-
-**How to avoid:**
-- Normalize `action` to an enum at ingest. Maintain a canonical mapping of all documented action strings to enum values. Unknown strings map to `UNKNOWN` rather than being stored verbatim.
-- Resolve `user_id` to the `AccProjectMember.id` FK at ingest. If no match exists (user in activity log but not in member table), create a minimal `AccProjectMember` row and mark it `syncStatus: "partial"`.
-- Store the raw CSV `user_id` string as a secondary column for debugging, separate from the FK.
-- Coerce empty strings to NULL at the write boundary for all nullable text columns.
-
-**Warning signs:**
-- `SELECT DISTINCT action FROM acc_activities` returns dozens of variants including "Member Added", "member added", "Member added" as separate values
-- Activity log widget shows users as "Unknown" because `user_id` was never resolved
-- Cross-joins between `acc_activities` and `acc_project_members` return empty results
-
-**Phase to address:**
-Data Connector sync phase — the ingest normalization layer must be built before any rows are written to the database.
+## Moderate Pitfalls
 
 ---
 
-## Technical Debt Patterns
+### Pitfall M-1: React Re-Render Storms Triggering Layout Reset
 
-| Shortcut | Immediate Benefit | Long-term Cost | When Acceptable |
-|----------|-------------------|----------------|-----------------|
-| Inline `while` poll loop for Data Connector job in a tRPC mutation | Works in dev with short jobs | Times out on Railway for all-time extractions; silent failure | Never — use persistent job table + client polling from day one |
-| Drop `accMemberCache` immediately when new tables are ready | Cleaner schema | Dashboard breaks during Railway deploy window | Never — maintain dual-read until first v2.0 sync confirmed in production |
-| Fetch folder permissions on every sync for every folder | Always fresh | 10k+ API calls per sync; hours of runtime | Acceptable only for a single-project test run; production must use incremental/cached |
-| Store `action` column as raw CSV string | No enum mapping work | Cannot group/query by action type; typo variants proliferate | Never for production schema — enum or FK lookup required |
-| Single sync mutex without a job table | Simple to implement | No retry, no progress, no concurrent-request protection | Never — the job table is the minimum viable safety net |
-| Apply `b.` strip universally across all APS API calls | One pattern to remember | DM API calls break silently returning 404 | Never — the direction of strip is API-family-specific and must be explicit |
+**What goes wrong:** A React state update (tooltip hover, filter dropdown, search input) triggers a re-render of the component tree that contains the graph engine. The engine receives new props, detects a "data change," and restarts the simulation. Documented in react-force-graph issue #226: even `useMemo` on the nodes array doesn't prevent this if the memo dependency chain includes any frequently-changing state.
 
----
+**Prevention:**
+- The graph engine must live in a `useRef` (not in React state). Mount once; communicate via imperative API calls (`graph.setPointColors()`, `graph.setPointSizes()`), not prop updates.
+- Wrap the canvas element in a stable `div` with a constant key. Never let React unmount/remount the canvas.
+- Tooltip and UI state must live in a sibling subtree, not in an ancestor of the graph canvas.
+- Warning sign: you find yourself adding `key={stableId}` to the graph component to prevent re-mounts that shouldn't happen.
 
-## Integration Gotchas
-
-| Integration | Common Mistake | Correct Approach |
-|-------------|----------------|------------------|
-| Data Management API — folder crawl | Stripping `b.` from projectId (following the CA/HQ pattern) | Keep `b.` prefix for all Data Management API calls; create `getProjectIdForDM()` helper that returns the raw prefixed ID |
-| Construction Admin API — project users | Forgetting `?fields=name,email,lastSignIn` | Hardcode the fields parameter in the fetch function; never call this endpoint without it |
-| Data Connector — signed S3 download URL | Adding `Authorization: Bearer ...` header to the download request | The download URL is a pre-signed S3 URL; it must be fetched with NO auth headers (the signature IS the auth) |
-| Data Connector — job submission | Calling `POST /requests` synchronously inside a server action | Only submit the job ID; persist it to a `DataConnectorJob` table; poll from the client |
-| HQ v1 vs Construction Admin v1 | Assuming `last_sign_in` (HQ snake_case) equals `lastSignIn` (CA camelCase) | Treat them as distinct fields; CA requires explicit `?fields=` opt-in |
-| Folder permissions — `subjectType` | Processing all permission entries without filtering | Always filter `subjectType === "ROLE"` before persisting; user-level and group-level permissions are also in the response |
-| Activity CSV — `user_id` | Assuming it matches any existing ID in the codebase | It is a raw Autodesk platform user ID; must be resolved to `AccProjectMember` via a separate users.csv join table from the same ZIP |
-| HQ v2 industry roles | Using `accountId` with `b.` prefix | HQ v2 `industry_roles` endpoints require bare UUID (strip `b.`) — same as HQ v1 and CA patterns |
-| Construction Admin — project list | Using `project.id` directly for DM API calls | `project.id` from CA is already bare UUID; prefix it back with `b.` before passing to DM endpoints |
+**Phase:** React integration layer (Phase 1 architecture).
 
 ---
 
-## Performance Traps
+### Pitfall M-2: DuckDB-WASM Queried Inside Render or Effect Without Worker Isolation
 
-| Trap | Symptoms | Prevention | When It Breaks |
-|------|----------|------------|----------------|
-| Serial recursive folder crawl | Sync takes 1+ hours for a 50-project hub | `pLimit(5)` concurrent folder content fetches; `pLimit(3)` for permissions | >20 projects with >100 folders each |
-| Per-folder permissions fetch on every sync | API quota exhausted (429s) mid-sync | Incremental: only fetch permissions for changed/new folders; cache `permissionsUpdatedAt` per folder row | >200 folders in any single project |
-| Cosmos.gl graph with all hub folders added eagerly | FPS drops below 30; GPU memory > 500MB | Pre-flight node count check; hide folders by default; project-filter bound | >10,000 folder nodes total |
-| ZIP download buffered entirely in memory | Railway dyno OOM kill during large hub sync | Stream the ZIP using Node.js `stream.pipeline` to disk or directly to unzip | ZIP > 500MB (large hubs, all-time data) |
-| Activity table queries with no index | Dashboard activity widgets take 2-10 seconds | Composite indexes on `(user_id, created_at)` and `(project_id, created_at)` in initial migration | >500,000 rows in activity table |
-| All-time Data Connector job as first sync | Job takes hours; no progress feedback | First sync uses bounded date range (last 3 months); expand to all-time only after pipeline validation | Any first sync without a date bound |
-| `pLimit(3)` from v1.0 applied to new concurrent folder+permission+member calls | APS returns 429 across multiple extraction types simultaneously | Per-extraction-type concurrency limiters; total in-flight cap across all types | Hub growth beyond 30 projects |
+**What goes wrong:** A `useEffect` or event handler calls `await duckdbConnection.query(sql)` synchronously on the main thread. For small datasets this is fast. At scale (full DC backfill: 46 CSV files × 2 years), a query blocks the main thread for 200-800ms — the graph freezes, animations stutter, and the browser reports a long task.
 
----
+**Why it happens:** The DuckDB-WASM client is async and "feels" non-blocking because it returns a Promise. But WASM execution is not automatically threaded — without SharedArrayBuffer + Web Workers, it runs on the main thread.
 
-## Security Mistakes
+**Prevention:**
+- Run DuckDB-WASM in a dedicated Web Worker. Use `@duckdb/duckdb-wasm`'s `AsyncDuckDB` with `DuckDBSharedWorker` or `DuckDBWorkerModule`.
+- The positions cache (`positionsCache.ts`) already uses DuckDB — verify it runs in the worker, not on the main thread.
+- Warning sign: the graph animation stutters exactly when a filter dropdown closes (the query fires on close).
+- Use `performance.mark` around DuckDB queries in dev to measure main-thread time.
 
-| Mistake | Risk | Prevention |
-|---------|------|------------|
-| Passing the Data Connector signed S3 URL to the client | Client can download raw activity CSV directly, bypassing all dashboard access controls | Download, unzip, and parse on the server only; never return the download URL in a tRPC response |
-| Storing raw Data Connector ZIP file path in Prisma | ZIP contains all hub member emails, project names, and activity details — if accessible via a guessable path, data is fully exposed | Parse and discard the ZIP in a single streaming pass; never persist it to disk in a publicly accessible location |
-| Folder permission data (which roles can access which folders) readable by non-admin dashboard users | Exposes internal project permission structure to unauthorized parties | Gate all new v2.0 tRPC procedures on `adminProcedure`; folder/permission/activity data is as sensitive as member data |
-| `getAccountId` helper reused for Data Management API calls | Returns a stripped ID that will silently call the wrong project | Separate helpers by API family; the shared helper's name and signature should make its scope explicit |
+**Phase:** DuckDB/data layer. Verify before demo; fix before production.
 
 ---
 
-## UX Pitfalls
+### Pitfall M-3: Lasso Selection State Desync with Graph Node State
 
-| Pitfall | User Impact | Better Approach |
-|---------|-------------|-----------------|
-| Adding folder nodes to graph without a hide-by-default toggle | First-render shock — user opens the graph and it has 10k new nodes cluttering the view | Folders hidden by default; prominent toggle in filter panel; persist toggle state in localStorage alongside other filter params |
-| Showing sync progress as a spinner with no sub-status | User cannot tell if the sync is at "submitting job," "waiting for Data Connector," "downloading ZIP," or "parsing CSV" | Four-state progress indicator: Submitting → Waiting → Downloading → Importing; each state is a distinct DB status on the `DataConnectorSync` row |
-| Filter facet explosion: adding a filter for every new v2.0 field | Filter panel becomes unusable with 15+ facets | Add only three new filter facets maximum: folder (project-scoped), last active date, and activity count. All other new fields surface in the user side panel on click, not as filter facets. |
-| Widget count growing from 9 to 13+ without layout consideration | Dashboard feels crowded; existing DnD widget order breaks for users with saved layouts | Do not add new top-level widgets; enrich existing widgets (e.g., KPI widget shows last-sync timestamp; RecentlyAdded widget shows admin attribution from activity log). New data surfaces as drill-down content, not new widgets. |
-| Interactivity regression: new v2.0 graphical widgets added without hover/click/cross-selection | User feedback memory explicitly flags static graphics as a regression vs. lists | All v2.0 widget additions must follow feedback_widget_interactivity.md contract: hover detail panels, click-through to side panel, cross-widget selection spotlighting. Non-negotiable. |
-| Sync button enabled during an in-flight job | User triggers second sync, Data Connector creates a second job, data imports twice or overwrites | Disable the sync button while any `DataConnectorJob` row is `pending` or `running`; show job status inline |
+**What goes wrong:** The lasso captures node indices at selection time. If the node array is re-ordered or re-filtered after the lasso fires, the indices no longer map to the original nodes. The pie chart shows data for the wrong users.
 
----
+**Why it happens:** `selectPointsInPolygon` in Cosmos returns indices into the current point array. If the array is mutated (e.g. filtered nodes removed from the array), the same index resolves to a different node.
 
-## "Looks Done But Isn't" Checklist
+**Prevention:**
+- Never use array index as node identity. Maintain a stable `nodeId → arrayIndex` map. When lasso returns indices, resolve them to nodeIds immediately using the current map.
+- Keep the full node array stable (filter via opacity/size, not by removing elements from the array). Then lasso indices are always valid.
+- Pie chart recomputation must be triggered only by an explicit user action (lasso release, not by filter state changes).
 
-- [ ] **b.-prefix for DM API calls:** Every call to `project/v1/hubs/:hubId/projects/:projectId/topFolders` and `data/v1/projects/:projectId/folders/...` uses a `b.`-prefixed projectId. Run `grep -r "topFolders\|folders/" server/` and verify no `.replace('b.', '')` precedes these calls.
-- [ ] **`?fields=lastSignIn` on Construction Admin user calls:** Run `grep -r "construction/admin/v1/projects" server/` and verify every hit includes `fields=` in the URL or in query params.
-- [ ] **Data Connector download URL — no auth header:** The fetch that downloads the S3 URL must not include an `Authorization` header. Verify the download fetch uses `fetch(downloadUrl)` with no custom headers.
-- [ ] **Job table + client polling wired before first sync test:** The `DataConnectorJob` table must exist in the schema and the poll query must be implemented before any real sync is run against the APS endpoint.
-- [ ] **Folder node toggle defaults to hidden:** Open the graph after a v2.0 sync that populated folders. Verify folders are not visible until the toggle is explicitly enabled.
-- [ ] **Activity table indexes exist:** Run `\d acc_activities` in psql and verify both composite indexes (`user_id, created_at` and `project_id, created_at`) are present before the first all-time sync.
-- [ ] **`accMemberCache` still readable after v2.0 migration:** Deploy the v2.0 schema migration and immediately load the Access Analysis dashboard. Verify it shows existing data from the cache, not an empty state.
-- [ ] **Folder permissions `subjectType` filter applied:** Query `SELECT DISTINCT subject_type FROM acc_folder_permissions` after first sync. If non-"ROLE" subject types appear, the filter was not applied at ingest.
-- [ ] **action column is an enum/FK, not raw string:** `SELECT DISTINCT action FROM acc_activities` after first sync must return only known enum values; no lowercase variants, no "Unknown" variants beyond the explicit UNKNOWN sentinel.
-- [ ] **`adminProcedure` gate on all new v2.0 routes:** `grep -r "folderPermissions\|accActivity\|dataConnector\|folderTree" server/` — every hit must be inside an `adminProcedure`.
-- [ ] **Pre-flight perf test passed before folder-graph rendering begins:** The GO decision for folders-in-graph must be recorded in the phase summary. No folder-graph rendering code may ship without a documented FPS + GPU memory result.
-- [ ] **New widgets pass interactivity check:** Per feedback_widget_interactivity.md — every new or reskinned widget must have hover detail, click-through to side panel, and cross-widget selection wired before declaring done.
+**Phase:** Lasso + pie integration layer.
 
 ---
 
-## Recovery Strategies
+### Pitfall M-4: Label Overlay Perf Degrading at Scale
 
-| Pitfall | Recovery Cost | Recovery Steps |
-|---------|---------------|----------------|
-| Data Connector job timed out, data never imported | MEDIUM | Add the `DataConnectorJob` table, re-trigger sync; the APS job result is available for 24h via the same `requestId` — query it and retry the download step without re-submitting the job |
-| `accMemberCache` dropped before v2.0 sync confirmed | HIGH | Restore from Railway PostgreSQL backup (Railway retains 7-day backups by default); re-deploy previous schema migration |
-| Folder crawl hit APS rate limit mid-sync | LOW | Add `pLimit` + exponential backoff; re-run sync; folder table has upsert-on-id so partial runs do not duplicate |
-| Cosmos.gl FPS cliff hit after folder nodes added | HIGH | Enable project-filter gate immediately (only show folders for selected project); remove all-projects folder display; document as known constraint; perf pre-flight should have caught this — it means the pre-flight phase was skipped |
-| Activity table full of duplicate rows | MEDIUM | Add unique constraint on `external_id`; run deduplication query `DELETE FROM acc_activities WHERE id NOT IN (SELECT MIN(id) FROM acc_activities GROUP BY external_id)`; re-sync will then upsert cleanly |
-| `lastSignIn` all-null after sync | LOW | Verify `?fields=lastSignIn` is in the Construction Admin URL; add the field and re-sync; the field update is non-destructive — it only fills in nulls |
-| b.-prefix wrong direction on a new endpoint | LOW | Error is always 401 or 404 with a clear resource-not-found message; trace to the endpoint, apply the correct helper, re-test |
+**What goes wrong:** A Canvas 2D overlay (drawn via `requestAnimationFrame`) is used to render node labels on top of the WebGL Cosmos canvas. At every frame, the overlay clears and redraws all visible labels. With 300+ nodes at full zoom, this produces a measurable FPS drop — the overlay redraw alone can cost 8-15ms per frame.
 
----
+**Why it happens:** The naive approach is to draw all labels every frame. This worked with fewer nodes. The `AccUsersGraph` already implements a label overlay (`ClusterAnnotations`) — the pattern is known to be performance-sensitive.
 
-## V1.0 Carry-Forward Assessment
+**Prevention:**
+- Only draw labels for nodes within the current viewport.
+- Apply a zoom-gated threshold: below a zoom level, show no labels; above it, show the N nearest to the viewport center.
+- Cache the label bounding boxes; only redraw the overlay when zoom or pan changes, not on every rAF tick.
+- The existing `pow(zoom, 0.2)` clamped font-size curve (UAT-approved 2026-05-08, per memory `project_label_polish_curve`) should be preserved.
+- Warning sign: Chrome DevTools shows the overlay canvas as the top frame-time consumer.
 
-### TD-006 (Slider Feel) and TD-007 (Canvas2D Vestigial)
-
-**TD-006:** v2.0 does not touch the Cosmos.gl physics slider code path. Slider feel (separation range, organic-vs-cluster transition) is unaffected by adding new node types (folders) to the graph — the simulation parameters apply globally. TD-006 remains deferred unless the folder perf pre-flight reveals that physics parameter changes are needed to maintain 60fps with additional nodes.
-
-**TD-007:** v2.0 does not require resolving Canvas2D branch removal. The folder node rendering path will be implemented via the existing Cosmos.gl `setPointPositions` / `setPointColors` typed-array API — the same GPU path used for user and project nodes. TD-007 cleanup (removing the Canvas2D dead code) should be bundled with a standalone cleanup phase rather than forced into v2.0 scope.
-
-**Interaction risk:** If the Cosmos.gl folder node implementation requires modifying `CosmosGraphRenderer` deeply enough that it touches the `drawLabelOverlay` / `labelOverrideIndices` path (Phase 03-04 work), the developer must not accidentally reinstate the Canvas2D forward-projection dual-path scaffolding that was isolated in TD-007. The existing `GraphRenderer` interface boundary should be sufficient protection — implement folder nodes as data changes (`setPointPositions` calls), not renderer architecture changes.
-
-### Widget Interactivity (feedback_widget_interactivity.md)
-
-v2.0 adds new data to existing widgets and may introduce new visual treatments for folder-permission data. The user explicitly flagged Phase 04.1 as "not interactive enough" before approving. This feedback is directly binding for v2.0 widget additions:
-
-- Any widget enrichment that adds folder-permission data (e.g., adding a permission-tier breakdown to the heatmap) must include hover detail panels showing the full permission actions array, not just the computed label.
-- The "Admin Attribution" insight (who added which user, from activity log) surfaces in the RecentlyAdded widget as an enrichment — it must be clickable (opens side panel showing the admin's full activity, cross-selecting their node in the graph), not just a static "Added by: Bob" badge.
-- The folder node toggle in the graph is itself a UX interaction — the reveal animation, the node color differentiation, and the click-to-show-permissions side panel behavior all need to be designed as first-class interactions, not afterthoughts.
+**Phase:** Rendering / label layer.
 
 ---
 
-## Pitfall-to-Phase Mapping
+### Pitfall M-5: WebGL Context Not Disposed on Component Unmount
 
-| Pitfall | Prevention Phase | Verification |
-|---------|------------------|--------------|
-| b.-prefix contradiction (DM vs CA API) | Phase 1: Extraction Foundation | Unit test both helpers with b.-prefixed input; grep audit of all DM API call sites |
-| Data Connector inline polling timeout | Phase 1 or Phase 2: Sync Engine | DataConnectorJob table present in schema; poll mutation returns job ID, not result |
-| Folder nodes perf cliff | Dedicated perf-feasibility phase before folder-graph rendering | GO decision recorded in phase summary with FPS + GPU memory numbers |
-| accMemberCache → new tables cutover | Phase 1: Schema Foundation | Deploy migration; dashboard loads from cache; first v2.0 sync populates new tables; cache not dropped |
-| lastSignIn missing ?fields= | Phase 1: Extraction Foundation | Unit test CA user fetch function; verify fields= is hardcoded; post-sync null-check |
-| Folder permission actions mapping | Folder permissions extraction phase | Exhaustive unit test covering all 6 documented action combinations |
-| Activity log unbounded growth | Phase 1: Schema Foundation | Migration includes composite indexes; upsert on external_id; bounded first-sync |
-| Recursive folder crawl quadratic calls | Folder crawl phase | pLimit applied; cache check implemented; permissions only for changed folders |
-| CSV rows without normalization | Data Connector sync phase | action column is enum; user_id resolved to FK; empty strings coerced to NULL |
-| Widget interactivity regression | Any phase adding/modifying widgets | Per feedback_widget_interactivity.md: hover detail + click-through + cross-selection verified in dev |
-| TD-007 Canvas2D path accidentally reinstated | Folder graph rendering phase | Grep for Canvas2D dual-path scaffolding after implementing folder nodes |
+**What goes wrong:** Navigating away from the graph route leaves an active WebGL context. Returning creates a second context. Browsers cap WebGL contexts at 8-16 per page (Chrome: 16). After several navigations, the browser forcibly loses older contexts, causing a black canvas or CONTEXT_LOST_WEBGL error.
+
+**Prevention:**
+- Call `graph.destroy()` (Cosmos API) in the React cleanup function of the `useEffect` that mounts the engine.
+- If using Three.js: call `renderer.dispose()` + `geometry.dispose()` + `texture.dispose()` explicitly.
+- Warning sign: returning to the graph route after navigating away shows a black or blank canvas.
+
+**Phase:** Engine integration layer.
+
+---
+
+### Pitfall M-6: Continuous Slider Blend — Non-Monotonic UX from Naive Weight Normalization
+
+**What goes wrong:** Eleven sliders each produce a weight. Weights are summed and normalized so the total dimensional pull sums to 1.0. When one slider is raised from 0 to 100, it dilutes all other sliders' contributions — the clusters driven by other dimensions visually shrink even though those sliders didn't move. Users perceive this as sliders interfering with each other, not as mathematically correct normalization.
+
+**Prevention:**
+- Use unnormalized additive blending, not normalized. Each slider's contribution is additive to the position vector, not a fraction of a fixed total force budget.
+- Formula: `position = basePosition + Σ(weight_i * dimensionAxis_i * sliderValue_i / 100)`, not `position = Σ((weight_i / Σweights) * dimensionAxis_i)`.
+- Test: raising Slider A from 0 to 100 should visibly increase clustering along Dimension A's axis. Other sliders at constant settings should produce constant, unchanging cluster geometry for their dimensions.
+- Warning sign: setting one slider to 100 and all others to 50 produces a completely different layout than all sliders at 50. This is the normalization interference symptom.
+
+**Phase:** Math / slider composition layer. Must be unit-tested with Vitest before integration.
+
+---
+
+### Pitfall M-7: `rescalePositions` and Simulation Space Size Mismatch After `setPointPositions`
+
+**What goes wrong:** After the first layout is computed, a slider change calls `graph.setPointPositions(newSeeds)`. If `rescalePositions` is `true` (the config-level default), Cosmos rescales the new positions to fit the simulation space — which may produce a different scale factor than the previous positions. Nodes appear to jump scale between slider states.
+
+**Prevention:**
+- Set `rescalePositions: false` globally.
+- Pre-normalize all seed positions to the simulation space manually (see Pitfall C-5).
+- Always pass `{ dontRescale: true }` to `setPointPositions()` calls.
+
+**Phase:** Math/seed layer + engine integration.
+
+---
+
+## Minor Pitfalls
+
+---
+
+### Pitfall m-1: Cosmos.gl v3 Async Init — Method Calls Before `graph.isReady`
+
+**What goes wrong:** Cosmos.gl v3's constructor returns synchronously but the underlying WebGL device initializes asynchronously. Calling `graph.setPointPositions()` or `graph.start()` before `await graph.ready` silently queues the calls — but if the component has re-rendered and the graph ref has changed in the meantime, the queued calls execute against a stale instance.
+
+**Prevention:**
+- Always `await graph.ready` before any API call.
+- Store the graph instance in a `useRef`; after `await ready`, check the ref still points to the same instance before calling methods.
+
+**Phase:** Engine initialization layer.
+
+---
+
+### Pitfall m-2: `getSimulationAlpha()` / `getTrackedPointPositionsMap()` Return Stale Values During Pause
+
+**What goes wrong:** After calling `graph.pause()`, `getTrackedPointPositionsMap()` returns a `ReadonlyMap` (changed in v2.4.0). Code that stored a reference to the returned Map and then mutated it directly fails silently in v2.4+.
+
+**Prevention:**
+- Always snapshot: `const snapshot = new Map(graph.getTrackedPointPositionsMap())`.
+- Do not cache the Map reference across frames.
+
+**Phase:** Layout snapshot / cache layer.
+
+---
+
+### Pitfall m-3: DuckDB-WASM Cold Start Blocking First Render
+
+**What goes wrong:** The first query to DuckDB-WASM on a cold tab compiles the WASM module, initializes the worker, and loads any registered Parquet files. This can take 1-3 seconds. If the positions cache read is on the critical path before the graph renders, the canvas is blank for several seconds on first load.
+
+**Prevention:**
+- Initiate DuckDB warmup in a non-blocking background effect on route mount, not inline with graph initialization.
+- Render the graph with default/random positions immediately; replace with cached positions once DuckDB resolves.
+- The existing `canInitializeDuckDbInBrowser()` gate is a good pattern — extend it to also fire a background warmup call early.
+
+**Phase:** Data layer / cold-start path.
+
+---
+
+### Pitfall m-4: Lasso Polygon Accumulates with Stale Graph Transform
+
+**What goes wrong:** The lasso polygon is drawn in screen space. The graph engine applies its own pan/zoom transform. If the canvas has been panned or zoomed after a previous lasso, the screen-space polygon from the new lasso maps to different graph-space coordinates than intended.
+
+**Prevention:**
+- Always convert lasso screen coordinates to graph-space coordinates using the engine's current transform before calling `graph.selectPointsInPolygon()`.
+- In Cosmos, the correct pattern is to pass screen-space polygon directly to the API — Cosmos handles the transform internally. Verify this is still true in the version in use; the API changed between v1 and v2.
+
+**Phase:** Lasso integration layer.
+
+---
+
+### Pitfall m-5: Similarity Edges Accidentally Rendered as Visible Edges
+
+**What goes wrong:** User-similarity links (kind: `"user-similarity"`) are used for clustering force only. If a code path passes all links to the engine without filtering by kind, similarity edges render as visible lines — making the graph look like a fully-connected hairball.
+
+**This already happened** in the prior implementation (enforced via `rgba(0,0,0,0)` color hack in `colorForTopologyLink()`).
+
+**Prevention:**
+- Do not pass similarity links to the rendering engine at all. Pass them only to the physics/force computation.
+- If the engine requires a single links array for both physics and rendering, set their color to fully transparent AND their width to 0, not just transparent color (transparent lines still consume GPU draw calls).
+- Add a Vitest test that asserts `linkKind !== 'user-similarity'` for every entry in the rendered link array.
+
+**Phase:** Engine integration / link layer.
+
+---
+
+## Phase-Specific Warnings
+
+| Phase Topic | Likely Pitfall | Mitigation |
+|-------------|---------------|------------|
+| Engine selection | Choosing Cosmos without verifying scale at user×project node count | Benchmark with N=500+ nodes before committing |
+| Seed position math | Seeds ignored or rescaled away | Normalize to [-0.8, 0.8] sim space; verify via `getPointPositionsFloat32()` |
+| Slider composition | Normalized weights cause interference | Use additive blend, unit-test with Vitest |
+| Filter wiring | Full re-layout on filter change | Filter via opacity/size only; never mutate node array |
+| 2D↔3D bridge | Position discontinuity on switch | Single canonical Float32Array outside the engine |
+| Label overlay | FPS drop at scale | Viewport-gated rendering, zoom threshold |
+| Lasso + pie | Index desync after re-filter | Resolve indices to nodeIds immediately on lasso release |
+| DuckDB positions cache | Cold start blocking render | Background warmup, render immediately with fallback positions |
+| Cosmos init | Method calls before `graph.isReady` | Always `await graph.ready` before any API call |
+| Cluster coloring | Post-hoc community detection lying about structure | Color by DC parameter buckets, not edge-topology communities |
+| WebGL cleanup | Context leak on route navigation | `graph.destroy()` in useEffect cleanup |
+| Cosmos alpha | `getSimulationAlpha()` inversion | Document the `1 - progress` semantic; use named constant for threshold |
 
 ---
 
 ## Sources
 
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Activity_Logs.md` — Data Connector job pattern, signed S3 URL, no-auth-header note, poll loop example
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_All_Files_and_Folders.md` — b.-prefix note for DM API ("must retain the b. prefix"), recursive crawl pattern
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Folder_Role_Permissions.md` — actions array mapping, subjectType filter, three-API combination requirement
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Last_Sign_In.md` — Crucial Note: ?fields= required for Construction Admin; HQ v1 field name = last_sign_in vs CA camelCase lastSignIn
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Project_Members.md` — projectId WITHOUT b. for Construction Admin
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Recent_User_Additions.md` — activity log action string variants: "Member Added", "User Invited", "Project Member Added"
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Last_User_File_Activity.md` — action string variants: "File Uploaded", "Document Viewed", etc.
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_All_Roles.md` — HQ v2 industry_roles endpoint uses bare accountId (no b.)
-- `C:\LECG\Dashboard\APS_DOCS\HOW TO\HOW_TO_Extract_Project_Info.md` — Construction Admin project list; accountId without b.
-- `C:\LECG\Dashboard\.planning\research\v1.0\PITFALLS.md` — v1.0 pitfalls: b.-prefix (Pitfall 4), ACC sync concurrency (Pitfall 6), tRPC timeout risk (Pitfall 6)
-- `C:\LECG\Dashboard\.planning\STATE.md` — accumulated context: lastSignIn alias caveat, TD-006/TD-007 open state, getAccountId pattern established, Phase 04-access-analysis field decisions
-- `C:\LECG\Dashboard\.planning\PROJECT.md` — v2.0 locked decisions, HIGH RISK flag on folder-graph, all-time activity retention, manual sync only
-- `C:\Users\luis.cortes\.claude\projects\C--LECG-Dashboard\memory\feedback_widget_interactivity.md` — interactivity requirement binding for all v2.0 widget additions
-
----
-*Pitfalls research for: ACC Extraction Completion — v2.0 (folder crawl, Data Connector, permissions, graph folders, schema migration)*
-*Researched: 2026-05-08*
+- cosmosgl/graph releases: https://github.com/cosmosgl/graph/releases (HIGH confidence — official changelog)
+- cosmosgl/graph issues: https://github.com/cosmosgl/graph/issues (MEDIUM confidence — open issues)
+- react-force-graph issue #226 (re-render on node color change): https://github.com/vasturiano/react-force-graph/issues/226 (MEDIUM confidence)
+- "Modularity clustering is force-directed layout" (Noack 2009): https://arxiv.org/pdf/0807.4052 (HIGH confidence — peer-reviewed)
+- DuckDB-WASM + React main-thread blocking: https://medium.com/@hadiyolworld007/react-duckdb-wasm-at-60-fps-a00cafad3271 (MEDIUM confidence — community article, 2025)
+- SVG vs Canvas vs WebGL label performance: https://dev.to/vitalf/svg-vs-canvas-vs-webgl-for-diagram-viewers-tradeoffs-bottlenecks-and-how-to-measure-34n7 (MEDIUM confidence)
+- Codebase history: `.planning/codebase/CONCERNS.md`, `AccUsersGraph.tsx`, and memory notes (HIGH confidence — first-party evidence of actual failures)
+- Cosmos alpha inversion: memory `project_cosmos_alpha_inversion` (HIGH confidence — confirmed in prior development cycle)
