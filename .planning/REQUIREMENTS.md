@@ -32,11 +32,11 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Render
 
-- [ ] **REND-01**: 2D mode via @cosmos.gl/graph v3 (WebGL, GPU) running in frozen mode (enableSimulation: false). Per-node RGBA colors via setPointColors. Alpha mask expressed via highlightedPointIndices + pointGreyoutOpacity: 0.15. (Supersedes the prior react-force-graph-2d v1.29.1 spec — replaced 2026-05-19 per CONTEXT.md.)
+- [x] **REND-01**: 2D mode via @cosmos.gl/graph v3 (WebGL, GPU) running in frozen mode (enableSimulation: false). Per-node RGBA colors via setPointColors. Alpha mask expressed via highlightedPointIndices + pointGreyoutOpacity: 0.15. (Supersedes the prior react-force-graph-2d v1.29.1 spec — replaced 2026-05-19 per CONTEXT.md.)
 - [ ] **REND-02**: 3D mode via `react-force-graph-3d` v1.29.1 with orbit controls
 - [ ] **REND-03**: Seamless 2D ↔ 3D switch: same `graphData` object reference, position continuity preserved (no jump, no remount jitter)
-- [ ] **REND-04**: GraphCanvas component receives only `Float32Array positions`, `Float32Array alphaMask`, and `mode: "2d"|"3d"` — no slider values, no feature data inside the component
-- [ ] **REND-05**: Smooth animations during slider drag (no flash, no popping, no jitter)
+- [x] **REND-04**: GraphCanvas component receives only `Float32Array positions`, `Float32Array alphaMask`, and `mode: "2d"|"3d"` — no slider values, no feature data inside the component
+- [x] **REND-05**: Smooth animations during slider drag (no flash, no popping, no jitter)
 
 ### Interactions
 
@@ -108,11 +108,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | PHYS-03 | Phase 2 | Complete |
 | PHYS-04 | Phase 2 | Complete |
 | PHYS-05 | Phase 2 | Complete |
-| REND-01 | Phase 3 | Pending |
+| REND-01 | Phase 3 | Complete |
 | REND-02 | Phase 3 | Pending |
 | REND-03 | Phase 3 | Pending |
-| REND-04 | Phase 3 | Pending |
-| REND-05 | Phase 3 | Pending |
+| REND-04 | Phase 3 | Complete |
+| REND-05 | Phase 3 | Complete |
 | INTR-01 | Phase 4 | Pending |
 | INTR-02 | Phase 4 | Pending |
 | INTR-03 | Phase 4 | Pending |

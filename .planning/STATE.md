@@ -22,12 +22,12 @@ See: .planning/PROJECT.md (updated 2026-05-19)
 
 ## Current Position
 
-Phase: 2 of 4 (Physics Layer) — COMPLETE
-Plan: 2 of 2 in current phase — COMPLETE
-Status: Phase 2 complete — physicsLayer.ts + tests (PHYS-01..05) green; ready for Phase 3 (render layer)
-Last activity: 2026-05-19 — Phase 2 plan 02: physicsLayer.test.ts + physicsLayer.purity.test.ts (16 tests)
+Phase: 3 of 4 (Render Layer) — IN PROGRESS
+Plan: 1 of 2 in current phase — COMPLETE (03-01)
+Status: Phase 3 plan 01 complete — GraphCanvas, GraphCanvas2D, useGraphRafLoop, 8 tests green; ready for Plan 03-02 (3D layer)
+Last activity: 2026-05-19 — Phase 3 plan 01: GraphCanvas.tsx + GraphCanvas2D.tsx + useGraphRafLoop.ts + 8 tests
 
-Progress: [█████░░░░░] 50% (4/4 plans complete in phases 1-2; phases 3-4 remaining)
+Progress: [█████▌░░░░] 55% (5/6 plans complete across phases 1-3; 1 plan in phase 3 remaining)
 
 ## Performance Metrics
 
@@ -44,7 +44,7 @@ Progress: [█████░░░░░] 50% (4/4 plans complete in phases 1-2
 | 02-physics-layer | 2 | ~13 min | ~6.5 min |
 
 **Recent Trend:**
-- Last 5 plans: 01-01 (dataLayer), 01-02 (mathLayer), 02-01 (physicsLayer)
+- Last 5 plans: 01-01 (dataLayer), 01-02 (mathLayer), 02-01 (physicsLayer), 02-02 (physicsLayer tests), 03-01 (GraphCanvas 2D)
 - Trend: On track
 
 *Updated after each plan completion*
@@ -60,6 +60,13 @@ Recent decisions affecting current work:
 - Topology: One node per (user, project) — not collapsed per user.
 - Sliders: Additive blend formula `Σ(u_d × f_d × s_d) / Σ(s_d)` — not normalized to fixed budget; avoids slider-stealing.
 - Filter/search: Alpha mask only — simulation NEVER restarts on filter.
+
+### Decisions Made in Phase 03 Plan 01
+
+- **REND-01 amended**: cosmos.gl v3 frozen mode replaces react-force-graph-2d v1.29.1 per CONTEXT.md 2026-05-19.
+- **lastMaskVersionRef initialized at loop start** to physics.maskVersion to prevent spurious onMaskChange on first tick.
+- **graph.ready Promise guard** in GraphCanvas2D protects against cosmos.gl async init queue limit (Pitfall 3).
+- **Plain object ref `{ current: div }`** used in tests instead of createRef — React 19 makes `current` non-configurable.
 
 ### Decisions Made This Session
 
@@ -93,5 +100,5 @@ None yet.
 ## Session Continuity
 
 Last session: 2026-05-19
-Stopped at: Completed 02-02-PLAN.md — physicsLayer PHYS-01..05 tests green; Phase 2 complete; ready for Phase 3
+Stopped at: Completed 03-01-PLAN.md — GraphCanvas + GraphCanvas2D + useGraphRafLoop + 8 tests; REND-01 amended; ready for Phase 3 Plan 02
 Resume file: None
