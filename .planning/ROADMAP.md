@@ -46,7 +46,7 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — d3-force-3d install + types shim + physicsLayer.ts factory (named forces, slider mapping, freeze-on-rest)
+- [x] 02-01-PLAN.md — d3-force-3d install + types shim + physicsLayer.ts factory (named forces, slider mapping, freeze-on-rest)
 - [ ] 02-02-PLAN.md — physicsLayer Vitest suite (PHYS-01..05 invariants + tick counter + slider sweep) + purity test
 
 ### Phase 3: Render Layer
@@ -88,6 +88,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data + Math Foundation | 2/2 | Complete   | 2026-05-19 |
-| 2. Physics Layer | 0/1 | Not started | - |
+| 2. Physics Layer | 1/2 | In progress | - |
 | 3. Render Layer | 0/2 | Not started | - |
 | 4. Interactions + Analytics Bridge | 0/2 | Not started | - |

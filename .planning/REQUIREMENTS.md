@@ -24,11 +24,11 @@ Scope locked for the 2026-05-19 19:00 demo. Each maps to exactly one roadmap pha
 
 ### Physics
 
-- [ ] **PHYS-01**: d3-force-3d simulation with named per-dimension forces (`simulation.force("dim-activity")`, etc.)
-- [ ] **PHYS-02**: Slider changes call `force.strength()` + `d3ReheatSimulation()` — never a full restart
-- [ ] **PHYS-03**: `max(slider_values)` drives engine params (alpha, alphaDecay, repulsion, attraction) continuously
-- [ ] **PHYS-04**: Filter, search, and lasso events do NOT touch the simulation — they only mutate an alphaMask Float32Array
-- [ ] **PHYS-05**: Positions freeze to position cache when alpha settles
+- [x] **PHYS-01**: d3-force-3d simulation with named per-dimension forces (`simulation.force("dim-activity")`, etc.)
+- [x] **PHYS-02**: Slider changes call `force.strength()` + `d3ReheatSimulation()` — never a full restart
+- [x] **PHYS-03**: `max(slider_values)` drives engine params (alpha, alphaDecay, repulsion, attraction) continuously
+- [x] **PHYS-04**: Filter, search, and lasso events do NOT touch the simulation — they only mutate an alphaMask Float32Array
+- [x] **PHYS-05**: Positions freeze to position cache when alpha settles
 
 ### Render
 
@@ -103,11 +103,11 @@ Deferred to future release. Tracked but not in current roadmap.
 | MATH-03 | Phase 1 | Complete |
 | MATH-04 | Phase 1 | Complete |
 | MATH-05 | Phase 1 | Complete |
-| PHYS-01 | Phase 2 | Pending |
-| PHYS-02 | Phase 2 | Pending |
-| PHYS-03 | Phase 2 | Pending |
-| PHYS-04 | Phase 2 | Pending |
-| PHYS-05 | Phase 2 | Pending |
+| PHYS-01 | Phase 2 | Complete |
+| PHYS-02 | Phase 2 | Complete |
+| PHYS-03 | Phase 2 | Complete |
+| PHYS-04 | Phase 2 | Complete |
+| PHYS-05 | Phase 2 | Complete |
 | REND-01 | Phase 3 | Pending |
 | REND-02 | Phase 3 | Pending |
 | REND-03 | Phase 3 | Pending |
