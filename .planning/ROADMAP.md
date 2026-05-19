@@ -28,11 +28,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `mathLayer.ts` exports `computeTargetPositions(features[], sliders[]) → Float32Array` with zero React or engine imports — `import` graph is verifiable in terminal
   3. Vitest unit tests confirm: slider = 0 contributes zero to position, slider = 1 contributes full, two sliders blend additively and monotonically
   4. Position cache schema exists in DuckDB-WASM and survives a filter change without invalidation (positions keyed by `hashNodeSet(nodeIds)`)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: dataLayer.ts — Arrow table build + DuckDB-WASM registration
-- [ ] 01-02: mathLayer.ts — seed positioning + slider composition + Vitest suite
+- [ ] 01-01-PLAN.md — dataLayer.ts + Arrow build + DuckDB nodes table + positions cache z/slider key extension
+- [ ] 01-02-PLAN.md — mathLayer.ts pure semantic-seed kernel + Vitest invariants + fast-check monotonicity + purity assertion
 
 ### Phase 2: Physics Layer
 **Goal**: The physics layer drives d3-force-3d with named per-dimension forces, freezes positions on settle, and never restarts the simulation on filter or search events
