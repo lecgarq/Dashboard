@@ -43,10 +43,11 @@ Plans:
   2. After simulation settles, the position Float32Array is frozen to the DuckDB-WASM positions cache and does not change when a filter event fires
   3. A filter event only mutates the `alphaMask Float32Array` — the simulation tick counter does not increment after the mask update
   4. `max(sliderValues)` continuously drives alpha, alphaDecay, repulsion, and attraction — observable by logging physics params across a 0→1 slider sweep
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 02-01: physicsLayer.ts — named forces, slider→physics param mapping, freeze-on-rest
+- [ ] 02-01-PLAN.md — d3-force-3d install + types shim + physicsLayer.ts factory (named forces, slider mapping, freeze-on-rest)
+- [ ] 02-02-PLAN.md — physicsLayer Vitest suite (PHYS-01..05 invariants + tick counter + slider sweep) + purity test
 
 ### Phase 3: Render Layer
 **Goal**: GraphCanvas.tsx renders nodes at their Float32Array positions in 2D and switches to 3D orbit view on a prop change — with no math inside the component and no positional discontinuity on mode switch
