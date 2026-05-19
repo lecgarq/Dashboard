@@ -54,6 +54,9 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
     if (!opts.enabled) return;
 
     let rafId: number;
+    // Initialize lastMaskVersion to the current physics version on loop start.
+    // This prevents a spurious onMaskChange fire on the very first tick.
+    lastMaskVersionRef.current = opts.physics.maskVersion;
 
     function tick(): void {
       rafId = requestAnimationFrame(tick);
