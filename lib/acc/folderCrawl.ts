@@ -52,7 +52,7 @@ export interface FolderCrawlResult {
   folders: RawFolder[];
   permissions: RawFolderPermission[];
   durationMs: number;
-  status: "ok" | "partial" | "failed";
+  status: "ok" | "partial" | "failed" | "inaccessible";
   reason?: string;
 }
 
@@ -65,6 +65,8 @@ export interface CrawlOptions {
   hardCapMs?: number;
   /** Maximum concurrent APS requests per project (default: 5) */
   pLimitConcurrency?: number;
+  /** Fetch a fresh APS access token when a long crawl outlives the current token. */
+  refreshAccessToken?: () => Promise<string>;
 }
 
 // ---------------------------------------------------------------------------
@@ -87,6 +89,15 @@ interface ApsFolder {
 
 function folderName(f: ApsFolder): string {
   return f.attributes?.displayName ?? f.attributes?.name ?? f.id;
+}
+
+function isProjectAccessFailure(message: string): boolean {
+  return /topFolders fetch failed \((403|404)\)/.test(message);
+}
+
+function isExpiredAccessTokenFailure(message: string): boolean {
+  return /\(401\)/.test(message)
+    && (/AUTH-006/.test(message) || /invalid or expired/i.test(message));
 }
 
 async function fetchTopFolders(
@@ -179,14 +190,28 @@ export async function crawlProjectFolders(
   const softCapMs = options.softCapMs ?? 5 * 60_000;   // 5 min
   const hardCapMs = options.hardCapMs ?? 15 * 60_000;  // 15 min
   const limit = pLimit(options.pLimitConcurrency ?? 5);
+  let currentAccessToken = accessToken;
 
   const folders: RawFolder[] = [];
-  let status: "ok" | "partial" | "failed" = "ok";
+  let status: "ok" | "partial" | "failed" | "inaccessible" = "ok";
   let reason: string | undefined;
   let softCapWarned = false;
 
   // BFS queue — starts with a synthetic "root" sentinel to trigger topFolders fetch
   const queue: QueueItem[] = [{ folderId: "root", parentId: null, parentPath: "", isRoot: true }];
+
+  async function withFreshToken<T>(operation: (token: string) => Promise<T>): Promise<T> {
+    try {
+      return await operation(currentAccessToken);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!options.refreshAccessToken || !isExpiredAccessTokenFailure(msg)) {
+        throw err;
+      }
+      currentAccessToken = await options.refreshAccessToken();
+      return operation(currentAccessToken);
+    }
+  }
 
   while (queue.length > 0) {
     // ── Time budget check ──────────────────────────────────────────────────
@@ -218,21 +243,30 @@ export async function crawlProjectFolders(
           try {
             if (item.isRoot) {
               // Fetch top-level folders for this project
-              const topFolders = await fetchTopFolders(hubId, projectIdForDM, accessToken);
+            const topFolders = await withFreshToken((token) =>
+              fetchTopFolders(hubId, projectIdForDM, token)
+            );
               // Return child queue items (top folders have no parent)
               return { parent: null, children: topFolders, parentPath: "" };
             }
 
             // Fetch sub-folders of a known folder
-            const subFolders = await fetchFolderContents(projectIdForDM, item.folderId, accessToken);
+          const subFolders = await withFreshToken((token) =>
+            fetchFolderContents(projectIdForDM, item.folderId, token)
+          );
             return { parent: item, children: subFolders, parentPath: item.parentPath };
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error(
               `[folder-crawl] Fetch failed for folder ${item.folderId} (project ${projectIdForDM}): ${msg}`,
             );
-            status = "partial";
-            reason = reason ?? "fetch_error";
+            if (item.isRoot && isProjectAccessFailure(msg)) {
+              status = "inaccessible";
+              reason = "project_access_denied";
+            } else {
+              status = "partial";
+              reason = reason ?? "fetch_error";
+            }
             return { parent: item.isRoot ? null : item, children: [], parentPath: item.parentPath };
           }
         }),
@@ -265,7 +299,9 @@ export async function crawlProjectFolders(
           return [];
         }
         try {
-          const raw = await fetchFolderPermissions(projectIdForPerms, folder.id, accessToken);
+        const raw = await withFreshToken((token) =>
+          fetchFolderPermissions(projectIdForPerms, folder.id, token)
+        );
           // Filter to ROLE entries only — USER permissions are out of scope
           return raw
             .filter((p) => p.subjectType === "ROLE" && p.subjectId)
@@ -316,12 +352,21 @@ export async function crawlProjectFolders(
 // ---------------------------------------------------------------------------
 
 const PERSIST_BATCH_SIZE = 50;
-const PERSIST_CONCURRENCY = 5;
+const PERSIST_CONCURRENCY = readPositiveEnvInt("FOLDER_CRAWL_REQUEST_CONCURRENCY", 5);
+
+function readPositiveEnvInt(name: string, fallback: number): number;
+function readPositiveEnvInt(name: string, fallback: undefined): number | undefined;
+function readPositiveEnvInt(name: string, fallback: number | undefined): number | undefined {
+  const raw = process.env[name]?.trim();
+  if (!raw) return fallback;
+  const value = Number.parseInt(raw, 10);
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
 
 export interface ExtractAndPersistResult {
   folderCount: number;
   permissionCount: number;
-  status: "ok" | "partial" | "failed";
+  status: "ok" | "partial" | "failed" | "inaccessible";
 }
 
 /**
@@ -342,6 +387,7 @@ export async function extractAndPersistFolders(
   hubId: string,
   project: { id: string; accountId: string; name: string },
   accessToken: string,
+  options: { refreshAccessToken?: () => Promise<string> } = {},
 ): Promise<ExtractAndPersistResult> {
   const startedAt = Date.now();
 
@@ -357,7 +403,13 @@ export async function extractAndPersistFolders(
       projectIdForDM,
       projectIdForPerms,
       accessToken,
-      { dryRun: false, pLimitConcurrency: PERSIST_CONCURRENCY },
+      {
+        dryRun: false,
+        pLimitConcurrency: PERSIST_CONCURRENCY,
+        softCapMs: readPositiveEnvInt("FOLDER_CRAWL_SOFT_CAP_MS", undefined),
+        hardCapMs: readPositiveEnvInt("FOLDER_CRAWL_HARD_CAP_MS", undefined),
+        refreshAccessToken: options.refreshAccessToken,
+      },
     );
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -455,7 +507,7 @@ export async function extractAndPersistFolders(
   }
 
   // ---- Compute final status ------------------------------------------------
-  let status: "ok" | "partial" | "failed" = crawl.status;
+  let status: "ok" | "partial" | "failed" | "inaccessible" = crawl.status;
   if (folderWriteFailed || permWriteFailed) {
     // Downgrade ok → partial when any DB write failed; leave partial/failed unchanged.
     if (status === "ok") status = "partial";
@@ -484,5 +536,144 @@ export async function extractAndPersistFolders(
     folderCount: crawl.folders.length,
     permissionCount: crawl.permissions.length,
     status,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Permissions-only recovery pass (2026-05-19)
+// ---------------------------------------------------------------------------
+//
+// Use case: a project that hit the hard cap during Phase 1 (folder discovery)
+// wrote its folders to AccFolder but never started Phase 2 (permissions) — so
+// it sits in `folderCrawlStatus=partial` with zero rows in AccFolderPermission.
+// This skips Phase 1 entirely (re-using already-persisted folders) and runs
+// only the per-folder permissions fetch + upsert. Faster than re-crawling
+// AND immune to the Phase-1 budget exhaustion that caused the partial in the
+// first place.
+//
+// Re-running on a project with permissions already in the DB is safe: the
+// (folderId, roleId) upsert refreshes syncedAt and overwrites permType.
+// ---------------------------------------------------------------------------
+
+export interface PermissionsOnlyResult {
+  folderCount: number;
+  permissionCount: number;
+  permissionFetchFailures: number;
+  status: "ok" | "partial" | "failed";
+  durationMs: number;
+}
+
+export async function recoverPermissionsForExistingFolders(
+  prisma: PrismaClient,
+  project: { id: string; name: string },
+  accessToken: string,
+  options: { refreshAccessToken?: () => Promise<string> } = {},
+): Promise<PermissionsOnlyResult> {
+  const startedAt = Date.now();
+  const projectIdForPerms = project.id.replace(/^b\./, "");
+  let currentToken = accessToken;
+
+  async function withFreshToken<T>(op: (t: string) => Promise<T>): Promise<T> {
+    try {
+      return await op(currentToken);
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!options.refreshAccessToken || !isExpiredAccessTokenFailure(msg)) throw err;
+      currentToken = await options.refreshAccessToken();
+      return op(currentToken);
+    }
+  }
+
+  const folders = await prisma.accFolder.findMany({
+    where: { projectId: project.id },
+    select: { id: true },
+  });
+
+  if (folders.length === 0) {
+    console.log(`[perms-recover] project=${project.name} has no AccFolder rows — nothing to do.`);
+    return { folderCount: 0, permissionCount: 0, permissionFetchFailures: 0, status: "ok", durationMs: 0 };
+  }
+
+  console.log(`[perms-recover] project=${project.name} folders=${folders.length} — fetching permissions…`);
+
+  const fetchLimit = pLimit(PERSIST_CONCURRENCY);
+  let fetchFailures = 0;
+
+  const perFolderResults = await Promise.all(
+    folders.map((f) =>
+      fetchLimit(async () => {
+        try {
+          const raw = await withFreshToken((t) => fetchFolderPermissions(projectIdForPerms, f.id, t));
+          return raw
+            .filter((p) => p.subjectType === "ROLE" && p.subjectId)
+            .map<RawFolderPermission>((p) => ({
+              folderId: f.id,
+              roleId: p.subjectId!,
+              actions: Array.isArray(p.actions) ? p.actions : [],
+            }));
+        } catch (err) {
+          fetchFailures += 1;
+          const msg = err instanceof Error ? err.message : String(err);
+          console.error(`[perms-recover] fetch failed (folder=${f.id}): ${msg}`);
+          return [];
+        }
+      }),
+    ),
+  );
+
+  const permissions = perFolderResults.flat();
+  const now = new Date();
+  const writeLimit = pLimit(PERSIST_CONCURRENCY);
+  let writeFailures = 0;
+
+  for (let i = 0; i < permissions.length; i += PERSIST_BATCH_SIZE) {
+    const batch = permissions.slice(i, i + PERSIST_BATCH_SIZE);
+    await Promise.all(
+      batch.map((perm) =>
+        writeLimit(async () => {
+          const permType = mapActions(perm.actions).tier ?? "View Only";
+          try {
+            await prisma.accFolderPermission.upsert({
+              where: { folderId_roleId: { folderId: perm.folderId, roleId: perm.roleId } },
+              create: { folderId: perm.folderId, roleId: perm.roleId, actions: perm.actions, permType, syncedAt: now },
+              update: { actions: perm.actions, permType, syncedAt: now },
+            });
+          } catch (err) {
+            writeFailures += 1;
+            console.error(
+              `[perms-recover] upsert failed (folder=${perm.folderId} role=${perm.roleId}):`,
+              err instanceof Error ? err.message : err,
+            );
+          }
+        }),
+      ),
+    );
+  }
+
+  // Status: ok if everything succeeded; partial if any fetch OR write failed.
+  // We don't downgrade to "failed" because folders are still intact.
+  const status: "ok" | "partial" = fetchFailures > 0 || writeFailures > 0 ? "partial" : "ok";
+
+  try {
+    await prisma.accProject.update({ where: { id: project.id }, data: { folderCrawlStatus: status } });
+  } catch (err) {
+    console.error(
+      `[perms-recover] failed to update folderCrawlStatus for ${project.id}:`,
+      err instanceof Error ? err.message : err,
+    );
+  }
+
+  const durationMs = Date.now() - startedAt;
+  console.log(
+    `[perms-recover] project=${project.name} folders=${folders.length} perms=${permissions.length} ` +
+      `fetchFailures=${fetchFailures} writeFailures=${writeFailures} status=${status} duration=${durationMs}ms`,
+  );
+
+  return {
+    folderCount: folders.length,
+    permissionCount: permissions.length,
+    permissionFetchFailures: fetchFailures,
+    status,
+    durationMs,
   };
 }
