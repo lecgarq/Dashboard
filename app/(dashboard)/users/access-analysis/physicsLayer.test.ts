@@ -461,10 +461,10 @@ describe("PHYS-05: Freeze-on-rest — 'end' event triggers savePositions then si
     expect(mockSavePositions, "savePositions must be called exactly once").toHaveBeenCalledTimes(1);
 
     // PHYS-05: savePositions called with a Float32Array of length n*3
-    const callArgs = mockSavePositions.mock.calls[0];
-    const passedXyz = callArgs[3]; // savePositions(connection, cacheKey, nodeIds, xyz)
+    const callArgs = mockSavePositions.mock.calls[0] as unknown[];
+    const passedXyz = callArgs[3] as Float32Array | undefined; // savePositions(connection, cacheKey, nodeIds, xyz)
     expect(passedXyz, "positions arg must be Float32Array").toBeInstanceOf(Float32Array);
-    expect(passedXyz.length, "positions must have length n*3").toBe(n * 3);
+    expect(passedXyz?.length, "positions must have length n*3").toBe(n * 3);
   });
 
   it("sim.stop() is called by the end handler (observable via spy on sim.stop)", async () => {

@@ -82,6 +82,12 @@ export interface PhysicsLayer {
   /** Monotonic version counter; incremented by setMask only — never by simulation ticks */
   readonly maskVersion: number;
   /**
+   * True once the simulation has settled (frozen) or positions were restored
+   * from cache. The render layer reads this to perform a one-shot rescale/fit
+   * to the settled spread (positions can extend far beyond the seed range).
+   */
+  readonly frozen: boolean;
+  /**
    * Update ALL slider strengths at once.
    * Recalculates alphaDecay, manyBody.strength, and reheat alpha atomically (PHYS-02, PHYS-03).
    */
@@ -126,6 +132,29 @@ const VELOCITY_DECAY = 0.4;
 /** Linear interpolation clamped to [a, b]. */
 function lerp(a: number, b: number, t: number): number {
   return a + (b - a) * Math.min(1, Math.max(0, t));
+}
+
+/**
+ * Target half-extent for the settled layout. forceManyBody repulsion has no
+ * containment, so the raw spread grows unbounded with node count (~±7500 for
+ * ~17k nodes). Normalizing the frozen layout into a fixed cube keeps both the
+ * 2D (cosmos spaceSize) and 3D (fixed sphere radius) renderers in a sane scale.
+ */
+const LAYOUT_HALF_EXTENT = 350;
+
+/** Scale settled node positions in-place so the largest coordinate ≈ halfExtent. */
+function normalizeNodePositions(nodes: SimNode[], halfExtent: number): void {
+  let maxAbs = 0;
+  for (const nd of nodes) {
+    maxAbs = Math.max(maxAbs, Math.abs(nd.x ?? 0), Math.abs(nd.y ?? 0), Math.abs(nd.z ?? 0));
+  }
+  if (maxAbs <= 0) return;
+  const s = halfExtent / maxAbs;
+  for (const nd of nodes) {
+    if (nd.x != null) nd.x *= s;
+    if (nd.y != null) nd.y *= s;
+    if (nd.z != null) nd.z *= s;
+  }
 }
 
 // ---- Factory -------------------------------------------------------------
@@ -192,6 +221,9 @@ export async function createPhysicsLayer(
   // to avoid render-race (Pitfall 5 in RESEARCH).
   sim.on("end", async () => {
     frozen = true; // set synchronously so render loop sees it immediately
+    // Containment: the simulation has no centering force, so normalize the
+    // settled spread into a fixed cube before snapshotting/caching.
+    normalizeNodePositions(nodes, LAYOUT_HALF_EXTENT);
     // Pack positions synchronously into snapshot (Pitfall 5 guard).
     const xyz = new Float32Array(nodes.length * 3);
     for (let i = 0; i < nodes.length; i++) {
@@ -245,6 +277,10 @@ export async function createPhysicsLayer(
 
     get maskVersion(): number {
       return _maskVersion;
+    },
+
+    get frozen(): boolean {
+      return frozen;
     },
 
     // PHYS-02 + PHYS-03: Update all slider strengths + engine params atomically, then reheat.

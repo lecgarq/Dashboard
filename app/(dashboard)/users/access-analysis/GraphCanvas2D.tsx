@@ -107,6 +107,10 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   const handlersRef = useRef<GraphEventHandlers>(NOOP_HANDLERS);
   // Warn-once guard for early findPointsInPolygon calls (Pitfall 7).
   const warnedNotReadyRef = useRef(false);
+  // One-shot guard: rescale + fit the view once the layout settles. The seed
+  // range (~[-1,1]) is tiny vs the settled spread (can be thousands of units),
+  // so the init-time fit is stale until we re-fit to the frozen positions.
+  const fittedRef = useRef(false);
 
   // ---------------------------------------------------------------------------
   // Mount effect: initialize cosmos.gl Graph in frozen mode (REND-01, Pattern 1)
@@ -165,7 +169,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         onPointMouseOut: () => {
           handlersRef.current.onPointHoverEnd();
         },
-      } as Parameters<typeof Graph>[1]);
+      } as any);
 
       // If cosmos.gl v3 exposes graph.ready as a Promise, await it before
       // pushing data (Pitfall 3 — queue limit reached on early calls).
@@ -213,6 +217,22 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             xy2[i * 2] = xyz[i * 3];
             xy2[i * 2 + 1] = xyz[i * 3 + 1];
           }
+          if (props.physics.frozen) {
+            // Layout settled. Rescale cosmos to the settled spread (which can far
+            // exceed spaceSize) and frame it ONCE. Positions are static now, so we
+            // must NOT keep pushing — a dontRescale=true push would re-apply the
+            // raw out-of-space coordinates and undo the fit.
+            if (!fittedRef.current) {
+              fittedRef.current = true;
+              g!.setPointPositions(xy2, false);
+              (g as unknown as { fitView?: (d?: number, p?: number) => void }).fitView?.(0);
+              g!.render();
+            }
+            return;
+          }
+          // Still animating: arm a fresh fit for the next settle (e.g. after a
+          // slider change reheats the simulation).
+          fittedRef.current = false;
           // dontRescale=true on tick calls — prevents per-frame coordinate jitter (Pitfall 2)
           g!.setPointPositions(xy2, true);
           g!.render();

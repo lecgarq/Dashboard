@@ -156,6 +156,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // Handle implementation
     // -----------------------------------------------------------------------
 
+    let fitted3D = false;
     function pumpPositions3D(xyz: Float32Array): void {
       for (let i = 0; i < n; i++) {
         dummy.position.set(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]);
@@ -163,6 +164,17 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         mesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      // One-shot camera fit once the layout settles — the seed scale (~[-1,1])
+      // is tiny vs the settled spread, so the initial camera pose leaves nodes
+      // out of frame until we re-fit. Re-armed whenever the simulation reheats.
+      if (props.physics.frozen) {
+        if (!fitted3D) {
+          fitted3D = true;
+          fitView();
+        }
+      } else {
+        fitted3D = false;
+      }
     }
 
     function applyAlphaMask3D(mask: Float32Array): void {
