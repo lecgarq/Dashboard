@@ -5,6 +5,24 @@ export interface BulkAccProject {
   isAdmin: boolean;
   roles: string[];
   modules: string[];
+  /** AccProject.folderCrawlStatus for this project: "ok" | "never" | "partial" | "failed" | "inaccessible". */
+  crawlStatus?: string;
+}
+
+export interface PermissionContext {
+  projectId: string;
+  folderId: string;
+  folderPath: string;
+  /** Raw APS value, e.g. "View Only" | "View+Download+Upload+Edit" | "Full Controller". */
+  permType: string;
+  /** Normalized rank: "view" | "download" | "upload" | "edit" | "control". */
+  permissionTier: string;
+  /** Raw APS actions array if available. */
+  actions: string[];
+  /** Folder-crawl status for the owning project. */
+  crawlStatus: string;
+  /** The role that granted this permission (permissions attach to roles, not users directly). */
+  roleId: string;
 }
 
 export interface BulkAccUser {
@@ -54,4 +72,20 @@ export interface BulkAccUser {
   companyName?: string | null;
   /** Distinct ACC per-project role names across all active projects. */
   perProjectRoleNames?: string[];
+
+  // ─── Phase access-graph enriched fields ───────────────────────────────────
+  /** DC company affiliation (firm), not the free-text job title. */
+  firmId?: string | null;
+  firmName?: string | null;
+  /** AccDcUser.status — account status, NOT recent activity. */
+  accountStatus?: "active" | "inactive" | null;
+  /**
+   * Folder-permission crawl coverage for THIS user, aggregated across their projects:
+   * "known"   = all their projects are folder-crawled
+   * "partial" = some crawled, some not
+   * "unknown" = none crawled
+   */
+  permissionCoverage?: "known" | "partial" | "unknown";
+  /** Raw contextual permission facts (one per user-role-folder grant). Empty when uncrawled. */
+  permissionContexts?: PermissionContext[];
 }
