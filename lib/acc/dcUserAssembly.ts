@@ -1,4 +1,4 @@
-import type { BulkAccUser } from "./acc-types";
+import type { BulkAccUser, PermissionContext } from "./acc-types";
 
 export interface DcAssemblyInput {
   users: { id: string; email: string | null; name: string | null; status: string | null; companyId: string | null; lastSignIn?: string | null }[];
@@ -8,6 +8,16 @@ export interface DcAssemblyInput {
   companies: { id: string; name: string }[];
   roleNames: Record<string, string>;
   projectMeta: Record<string, { name: string; status: string; crawlStatus: string }>;
+  folderPermissions?: { folderId: string; roleId: string; permType: string; actions: string[]; projectId: string; folderPath: string }[];
+}
+
+export function normalizePermTier(permType: string): string {
+  const p = permType.toLowerCase();
+  if (p.includes("full") || p.includes("control")) return "control";
+  if (p.includes("edit")) return "edit";
+  if (p.includes("upload")) return "upload";
+  if (p.includes("download")) return "download";
+  return "view";
 }
 
 /** BulkAccUser extended with DC-only derived fields not yet on the shared type. */
@@ -35,13 +45,27 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
     membersByUser.set(pu.userId, set);
   }
 
-  // Build "userId::projectId" → set of resolved role names
+  // Build "userId::projectId" → set of resolved role names (display names)
   const rolesByUserProject = new Map<string, Set<string>>();
+  // Build "userId::projectId" → set of RAW roleIds (for joining folder permissions)
+  const rawRolesByUserProject = new Map<string, Set<string>>();
   for (const r of input.projectUserRoles) {
     const k = `${r.userId}::${r.projectId}`;
     const set = rolesByUserProject.get(k) ?? new Set<string>();
     set.add(input.roleNames[r.roleId] ?? r.roleId);
     rolesByUserProject.set(k, set);
+    const rawSet = rawRolesByUserProject.get(k) ?? new Set<string>();
+    rawSet.add(r.roleId);
+    rawRolesByUserProject.set(k, rawSet);
+  }
+
+  // Index folder permissions by "projectId::roleId" for fast lookup
+  const folderPermsByProjectRole = new Map<string, { folderId: string; roleId: string; permType: string; actions: string[]; projectId: string; folderPath: string }[]>();
+  for (const fp of input.folderPermissions ?? []) {
+    const k = `${fp.projectId}::${fp.roleId}`;
+    const arr = folderPermsByProjectRole.get(k) ?? [];
+    arr.push(fp);
+    folderPermsByProjectRole.set(k, arr);
   }
 
   // Build "userId::projectId" → product entries
@@ -82,6 +106,29 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
     const adminCount = projects.filter((p) => p.isAdmin).length;
     const activeCount = projects.filter((p) => p.status?.toLowerCase() === "active").length;
 
+    // Build permission contexts: only for projects with crawlStatus "ok" or "partial"
+    const permissionContexts: PermissionContext[] = [];
+    for (const pid of projectIds) {
+      const meta = input.projectMeta[pid] ?? { name: pid, status: "unknown", crawlStatus: "never" };
+      if (meta.crawlStatus !== "ok" && meta.crawlStatus !== "partial") continue;
+      const rawRoleIds = rawRolesByUserProject.get(`${u.id}::${pid}`) ?? new Set<string>();
+      for (const rawRoleId of rawRoleIds) {
+        const grants = folderPermsByProjectRole.get(`${pid}::${rawRoleId}`) ?? [];
+        for (const fp of grants) {
+          permissionContexts.push({
+            projectId: fp.projectId,
+            folderId: fp.folderId,
+            folderPath: fp.folderPath,
+            permType: fp.permType,
+            permissionTier: normalizePermTier(fp.permType),
+            actions: fp.actions,
+            crawlStatus: meta.crawlStatus,
+            roleId: rawRoleId,
+          });
+        }
+      }
+    }
+
     out.push({
       // ── Required BulkAccUser fields ──────────────────────────────────────
       email: u.email ?? email,
@@ -106,6 +153,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
       lastSignIn: u.lastSignIn ?? null,
       // ── DC-only extension ────────────────────────────────────────────────
       isExternal: email.length > 0 ? !email.endsWith("@lecg.com") : true,
+      permissionContexts,
     });
   }
 
