@@ -74,6 +74,8 @@ export interface BulkAccUser {
   perProjectRoleNames?: string[];
 
   // ─── Phase access-graph enriched fields ───────────────────────────────────
+  /** True if the user is external (non-@lecg.com email). Heuristic, not extracted. */
+  isExternal?: boolean;
   /** DC company affiliation (firm), not the free-text job title. */
   firmId?: string | null;
   firmName?: string | null;
