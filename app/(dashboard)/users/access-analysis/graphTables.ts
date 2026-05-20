@@ -119,6 +119,9 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
     added_on: timestampMillis(user.addedOn),
     aggregated_status: user.aggregatedStatus ?? "",
     company_name: user.companyName ?? "",
+    firm_name: user.firmName ?? "",
+    account_status: user.accountStatus ?? "",
+    permission_coverage: user.permissionCoverage ?? "unknown",
   }));
 
   const projectRows = input.users.flatMap((user) => {
@@ -184,6 +187,9 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
       added_on: usersRows.map((row) => row.added_on),
       aggregated_status: usersRows.map((row) => row.aggregated_status),
       company_name: usersRows.map((row) => row.company_name),
+      firm_name: usersRows.map((row) => row.firm_name),
+      account_status: usersRows.map((row) => row.account_status),
+      permission_coverage: usersRows.map((row) => row.permission_coverage),
     }),
     userProjects: tableFromArrays({
       user_id: projectRows.map((row) => row.user_id),

@@ -45,6 +45,9 @@ function mkFeatures(n: number): NodeFeatureSnapshot[] {
     signinBucket: "<30d" as const,
     activityCountRaw: 1,
     lastSignInRel: "today",
+    permissionCoverage: "unknown" as const,
+    firmName: "",
+    accountStatus: "",
   }));
 }
 

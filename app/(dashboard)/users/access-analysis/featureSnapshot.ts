@@ -61,6 +61,9 @@ interface RawFeatureRow {
   is_external: bigint | number | boolean | null;
   activity_count: bigint | number | null;
   last_signin_days: bigint | number | null;
+  firm_name: string | null;
+  account_status: string | null;
+  permission_coverage: string | null;
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -109,7 +112,10 @@ export async function buildFeatureSnapshot(
       CASE
         WHEN MAX(u.last_sign_in) IS NULL THEN NULL
         ELSE CAST((epoch_ms(now()) - MAX(u.last_sign_in)) / 86400000 AS INTEGER)
-      END                                                                AS last_signin_days
+      END                                                                AS last_signin_days,
+      COALESCE(ANY_VALUE(u.firm_name), '')                               AS firm_name,
+      COALESCE(ANY_VALUE(u.account_status), '')                          AS account_status,
+      COALESCE(ANY_VALUE(u.permission_coverage), 'unknown')              AS permission_coverage
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id
@@ -148,6 +154,9 @@ export async function buildFeatureSnapshot(
       signinBucket: bucketSignin(signinDays),
       activityCountRaw: activityCount,
       lastSignInRel: formatRel(signinDays),
+      permissionCoverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
+      firmName: String(r.firm_name ?? ""),
+      accountStatus: String(r.account_status ?? ""),
     });
   }
 
@@ -164,6 +173,9 @@ export async function buildFeatureSnapshot(
     signinBucket: ">90d",
     activityCountRaw: 0,
     lastSignInRel: "Never",
+    permissionCoverage: "unknown",
+    firmName: "",
+    accountStatus: "",
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));

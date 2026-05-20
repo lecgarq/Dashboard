@@ -96,6 +96,9 @@ describe("buildGraphArrowTables", () => {
       "added_on",
       "aggregated_status",
       "company_name",
+      "firm_name",
+      "account_status",
+      "permission_coverage",
     ]);
   });
 

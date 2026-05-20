@@ -23,6 +23,9 @@ interface FakeRow {
   is_external: bigint | number | boolean | null;
   activity_count: bigint | number | null;
   last_signin_days: bigint | number | null;
+  firm_name: string | null;
+  account_status: string | null;
+  permission_coverage: string | null;
 }
 
 let mockRows: FakeRow[] = [];
@@ -137,6 +140,35 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
     });
   });
 
+  it("surfaces firmName, accountStatus, permissionCoverage from mocked row", async () => {
+    mockRows = [
+      makeRow({
+        user_id: "u1",
+        project_id: "p1",
+        firm_name: "ACME Corp",
+        account_status: "active",
+        permission_coverage: "known",
+      }),
+    ];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u1::p1"] });
+    expect(f!.firmName).toBe("ACME Corp");
+    expect(f!.accountStatus).toBe("active");
+    expect(f!.permissionCoverage).toBe("known");
+  });
+
+  it("fallback for unknown nodeId yields permissionCoverage:'unknown', firmName:'', accountStatus:''", async () => {
+    mockRows = [makeRow({ user_id: "known", project_id: "p", activity_count: 5n })];
+    const result = await buildFeatureSnapshot({
+      nodeIds: ["known::p", "ghost::missing"],
+    });
+    expect(result[1]).toMatchObject({
+      nodeId: "ghost::missing",
+      permissionCoverage: "unknown",
+      firmName: "",
+      accountStatus: "",
+    });
+  });
+
   it("pre-lowercases nameLower and emailLower for prefix matching", async () => {
     mockRows = [
       makeRow({
@@ -166,5 +198,8 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     is_external: over.is_external ?? false,
     activity_count: over.activity_count ?? 0n,
     last_signin_days: over.last_signin_days ?? null,
+    firm_name: over.firm_name ?? null,
+    account_status: over.account_status ?? null,
+    permission_coverage: over.permission_coverage ?? null,
   };
 }

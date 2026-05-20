@@ -29,6 +29,9 @@ function mkFeatures(): NodeFeatureSnapshot[] {
       signinBucket: "<7d",
       activityCountRaw: 200,
       lastSignInRel: "today",
+      permissionCoverage: "known" as const,
+      firmName: "",
+      accountStatus: "active",
     },
     {
       nodeId: "u2::p1",
@@ -42,6 +45,9 @@ function mkFeatures(): NodeFeatureSnapshot[] {
       signinBucket: "<30d",
       activityCountRaw: 3,
       lastSignInRel: "10d ago",
+      permissionCoverage: "unknown" as const,
+      firmName: "",
+      accountStatus: "",
     },
   ];
 }

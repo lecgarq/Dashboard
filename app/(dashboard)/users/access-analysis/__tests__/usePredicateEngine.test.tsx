@@ -34,6 +34,9 @@ function mkFeature(over: Partial<NodeFeatureSnapshot> & { nodeId: string }): Nod
     signinBucket: over.signinBucket ?? "<30d",
     activityCountRaw: over.activityCountRaw ?? 5,
     lastSignInRel: over.lastSignInRel ?? "5d ago",
+    permissionCoverage: over.permissionCoverage ?? "unknown",
+    firmName: over.firmName ?? "",
+    accountStatus: over.accountStatus ?? "",
   };
 }
 

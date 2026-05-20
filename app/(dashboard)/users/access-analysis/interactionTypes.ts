@@ -44,6 +44,12 @@ export interface NodeFeatureSnapshot {
   activityCountRaw: number;
   /** Pre-formatted relative last sign-in string for the tooltip ("3d ago"). */
   lastSignInRel: string;
+  /** "known" | "partial" | "unknown" — folder-permission crawl coverage for this node. */
+  permissionCoverage: "known" | "partial" | "unknown";
+  /** DC firm/company name, or "" if none. */
+  firmName: string;
+  /** "active" | "inactive" | "" — account status (NOT recent activity). */
+  accountStatus: string;
 }
 
 /**
