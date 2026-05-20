@@ -102,6 +102,7 @@ function Harness(props: {
       onIsolate={props.onIsolate}
       lassoSelection={null}
       drillDown={null}
+      rendererReady={1}
     >
       <div data-testid="graph-children" />
     </GraphInteractions>

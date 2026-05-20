@@ -18,7 +18,7 @@
  * - 3D → 2D: 400ms z-flatten animation via requestAnimationFrame
  */
 
-import React, { forwardRef, useEffect, useImperativeHandle, useRef } from "react";
+import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import type { PhysicsLayer } from "./physicsLayer";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "./GraphCanvas2D";
@@ -66,6 +66,13 @@ export interface GraphCanvasProps {
   width?: number;
   /** Optional explicit height. Defaults to container clientHeight. */
   height?: number;
+  /**
+   * Fired when an underlying renderer's imperative handle becomes available
+   * (cosmos.gl 2D / three.js 3D init is async). Lets the interaction layer
+   * (re)install event handlers once the handle exists — without this the parent
+   * captures a null handle and hover/click/lasso never wire up.
+   */
+  onRendererReady?: () => void;
 }
 
 // ---------------------------------------------------------------------------
@@ -83,6 +90,10 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   const handle2D = useRef<GraphCanvas2DHandle | null>(null);
   const handle3D = useRef<GraphCanvas3DHandle | null>(null);
 
+  // Bumped when an async renderer handle is assigned so the imperative handle
+  // below recomputes with the live handle (not the null captured at mount).
+  const [readyTick, setReadyTick] = useState(0);
+
   // Phase 4-01 Task 2 — expose discriminated handle to GraphInteractions
   useImperativeHandle(
     ref,
@@ -90,7 +101,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
       props.mode === "2d"
         ? { mode: "2d", handle: handle2D.current }
         : { mode: "3d", handle: handle3D.current },
-    [props.mode],
+    // readyTick: recompute once the async cosmos.gl/three.js handle lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [props.mode, readyTick],
   );
 
   // Container refs for the two canvas slots (always mounted — visibility swap pattern)
@@ -232,6 +245,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           backgroundColor={bg}
           onHandleReady={(h) => {
             handle2D.current = h;
+            setReadyTick((t) => t + 1);
+            props.onRendererReady?.();
           }}
         />
       </div>
@@ -255,6 +270,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           backgroundColor={bg}
           onHandleReady={(h) => {
             handle3D.current = h;
+            setReadyTick((t) => t + 1);
+            props.onRendererReady?.();
           }}
         />
       </div>

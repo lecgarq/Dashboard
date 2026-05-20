@@ -1,3 +1,4 @@
+import path from "node:path";
 import type { NextConfig } from "next";
 import {
   getConfiguredAuthHosts,
@@ -20,7 +21,13 @@ const allowedDevOrigins = Array.from(
   ])
 );
 
+const emptyDuckDbNodeModule = path.resolve(process.cwd(), "lib/client/emptyDuckDbNode.ts");
+const duckDbBrowserModule = path.resolve(process.cwd(), "node_modules/@duckdb/duckdb-wasm/dist/duckdb-browser.mjs");
+
 const nextConfig: NextConfig = {
+  // Allow an isolated build dir (e.g. the e2e dev server uses .next-e2e) so it
+  // never clobbers the .next that a concurrently running prod server reads.
+  ...(process.env.NEXT_DIST_DIR ? { distDir: process.env.NEXT_DIST_DIR } : {}),
   allowedDevOrigins,
   images: {
     remotePatterns: [
@@ -34,6 +41,13 @@ const nextConfig: NextConfig = {
     removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
   },
   webpack: (config, { isServer }) => {
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      "@duckdb/duckdb-wasm$": duckDbBrowserModule,
+      "@duckdb/duckdb-wasm/dist/duckdb-node": emptyDuckDbNodeModule,
+      "@duckdb/duckdb-wasm/dist/duckdb-node.cjs": emptyDuckDbNodeModule,
+    };
+
     if (!isServer) {
       // Give tunnel proxy more time to serve chunks before ChunkLoadError
       config.output.chunkLoadTimeout = 60000;

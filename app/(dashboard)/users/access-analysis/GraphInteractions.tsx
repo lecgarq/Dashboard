@@ -25,6 +25,7 @@ import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { usePredicateEngine } from "./usePredicateEngine";
 import { LassoOverlay } from "./LassoOverlay";
 import { NodeTooltip } from "./NodeTooltip";
+import { setInteractionTestState } from "./graphTestBridge";
 
 export interface GraphInteractionsProps {
   physics: PhysicsLayer;
@@ -44,6 +45,13 @@ export interface GraphInteractionsProps {
   // ---- Click-isolate -----------------------------------------------------
   isolatedNodeIndex: number | null;
   onIsolate: (i: number | null) => void;
+
+  /**
+   * Increments when the underlying renderer handle becomes available. Used to
+   * re-run the event-handler wiring effect once cosmos.gl/three.js finish their
+   * async init (the handle is null at mount).
+   */
+  rendererReady: number;
 
   // ---- Lasso selection set (mirrored from 04-02 SelectionPanel) ---------
   lassoSelection: ReadonlySet<number> | null;
@@ -77,6 +85,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     onIsolate,
     lassoSelection,
     drillDown,
+    rendererReady,
     children,
   } = props;
 
@@ -114,9 +123,18 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
       },
     };
     handle.setEventHandlers(handlers);
+    // Test-only: expose the SAME production handlers so the bridge's fallback
+    // hover/click path invokes them directly (no separate fake path).
+    setInteractionTestState({ handlers });
     // No cleanup needed — handlersRef inside the handle simply gets replaced on
     // the next mount or remains noop on unmount.
-  }, [graphRef, mode]);
+    // rendererReady: re-run once the async renderer handle exists.
+  }, [graphRef, mode, rendererReady]);
+
+  // Test-only: mirror hover/tooltip state into the observation bridge.
+  useEffect(() => {
+    setInteractionTestState({ hoveredIndex, tooltipAnchor });
+  }, [hoveredIndex, tooltipAnchor]);
 
   // ---- Escape closes isolate ---------------------------------------
   useEffect(() => {

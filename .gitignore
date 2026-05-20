@@ -15,7 +15,13 @@
 
 # next.js
 /.next/
+/.next-e2e/
 /out/
+
+# playwright e2e
+/playwright/.auth/
+/playwright-report/
+/test-results/
 
 # production
 /build
@@ -30,6 +36,12 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
+*.err.log
+*.out.log
+/logs/
+log-console.txt
+yjs-logs*.txt
 
 # env files (can opt-in for committing if needed)
 .env*
@@ -52,6 +64,17 @@ texti.env
 # temp / dump files
 /tmp/
 /prisma/dev.db
+.tmp-*.txt
+/400
+/.cleanup-quarantine/
+/scratch/
+/scripts/_rollback/
+/.playwright-mcp/
+*.py[cod]
+__pycache__/
+/*.png
+/PROBLEM*.png
+/Screenshot*.png
 
 # self-hosted DuckDB-Wasm assets (copied by scripts/copy-duckdb-wasm.cjs in postinstall)
 /public/duckdb-wasm/

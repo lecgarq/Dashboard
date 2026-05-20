@@ -7,6 +7,8 @@
   },
   "scripts": {
     "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
     "dev": "python scripts/run_dev_stack.py",
     "dev:next": "node scripts/patch-env.js && next dev --webpack -H 0.0.0.0 --port 3000",
     "dev:restart": "node scripts/patch-env.js && python scripts/run_dev_stack.py --port 3000",
@@ -129,6 +131,7 @@
   },
   "devDependencies": {
     "@ngrok/ngrok": "^1.7.0",
+    "@playwright/test": "^1.59.1",
     "@tailwindcss/postcss": "^4.3.0",
     "@testing-library/react": "^16.3.2",
     "@types/bcryptjs": "^2.4.6",

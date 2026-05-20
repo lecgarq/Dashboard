@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
 import { Toolbar } from "./Toolbar";
@@ -33,9 +34,12 @@ import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
+import { installGraphTestBridge, setShellTestState } from "./graphTestBridge";
 import { createPhysicsLayer, type PhysicsLayer, type SimNode, type TargetArrays } from "./physicsLayer";
 import { getDuckDbClient } from "./duckdbClient";
-import { GRAPH_ANALYTICS_SOURCE_TABLES } from "./graphSql";
+import { buildGraphArrowTables } from "./graphTables";
+import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
+import { ensurePositionsSchema } from "./positionsCache";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
@@ -95,6 +99,25 @@ function ShellBody({
   const { activeFilters, searchQuery, drillDown } = useFilters();
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
 
+  // Bumped when the cosmos.gl/three.js handle finishes async init so the
+  // interaction layer can (re)wire hover/click/lasso against a live handle.
+  const [rendererReady, setRendererReady] = useState(0);
+
+  // Test-only: install + feed the observation bridge (no-op unless the flag is set).
+  useEffect(() => {
+    installGraphTestBridge();
+  }, []);
+  useEffect(() => {
+    setShellTestState({
+      physics,
+      features,
+      graphRef,
+      mode,
+      selection: lassoSelection,
+      isolated: isolatedNodeIndex,
+    });
+  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex]);
+
   const visibleSubset = useMemo<ReadonlySet<number> | null>(
     () => filterSelectionByPredicate(lassoSelection, features, activeFilters, searchQuery),
     [lassoSelection, features, activeFilters, searchQuery],
@@ -139,12 +162,14 @@ function ShellBody({
             onIsolate={setIsolated}
             lassoSelection={lassoSelection}
             drillDown={drillDown}
+            rendererReady={rendererReady}
           >
             <GraphCanvas
               ref={graphRef}
               physics={physics}
               nodeColors={nodeColors}
               mode={mode}
+              onRendererReady={() => setRendererReady((v) => v + 1)}
             />
           </GraphInteractions>
         </div>
@@ -162,6 +187,11 @@ function ShellBody({
 // ---------------------------------------------------------------------------
 
 export function AccessAnalysisShell(): React.JSX.Element {
+  const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
+    staleTime: 600_000,
+  });
+  const users = bulkUsersQuery.data;
+
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);
   const [physics, setPhysics] = useState<PhysicsLayer | null>(null);
   const [mode, setMode] = useState<"2d" | "3d">("2d");
@@ -171,10 +201,33 @@ export function AccessAnalysisShell(): React.JSX.Element {
   const graphRef = useRef<GraphCanvasHandle | null>(null);
 
   useEffect(() => {
+    if (!users) return;
     let cancelled = false;
     let createdPhysics: PhysicsLayer | null = null;
     (async () => {
       try {
+        // WS2: the redesigned graph owns its own data lifecycle. Register the
+        // graph_* DuckDB tables from the DC snapshot (accDcGraph.bulkUsers)
+        // before any reader query runs. Similarity/folder tables stay empty
+        // here; the WS2 edge-computation step populates them next.
+        const { connection } = await getDuckDbClient();
+        if (cancelled) return;
+        const tables = await buildGraphArrowTables({
+          users,
+          similarityInput: null,
+          topology: null,
+          folderRows: [],
+        });
+        if (cancelled) return;
+        await registerGraphArrowTables(connection, tables);
+        if (cancelled) return;
+
+        // The positions cache table must exist before createPhysicsLayer reads
+        // it (loadCachedPositions/savePositions assume the schema). As the render
+        // integrator, the shell owns this init — idempotent CREATE IF NOT EXISTS.
+        await ensurePositionsSchema(connection);
+        if (cancelled) return;
+
         const nodeIds = await loadNodeIds();
         if (cancelled) return;
         const snapshot = await buildFeatureSnapshot({ nodeIds });
@@ -233,7 +286,15 @@ export function AccessAnalysisShell(): React.JSX.Element {
       cancelled = true;
       createdPhysics?.dispose();
     };
-  }, []);
+  }, [users]);
+
+  if (bulkUsersQuery.isError) {
+    return (
+      <div className="flex h-full items-center justify-center p-8 text-sm text-muted-foreground">
+        Failed to load access data: {bulkUsersQuery.error.message}
+      </div>
+    );
+  }
 
   if (error) {
     return (
@@ -243,10 +304,10 @@ export function AccessAnalysisShell(): React.JSX.Element {
     );
   }
 
-  if (!features || !physics) {
+  if (!users || !features || !physics) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        Loading graph data…
+        {!users ? "Loading access data…" : "Loading graph data…"}
       </div>
     );
   }
