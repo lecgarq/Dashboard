@@ -26,8 +26,9 @@ export default defineConfig({
   use: {
     baseURL: BASE_URL,
     storageState: "./playwright/.auth/storageState.json",
-    trace: "retain-on-failure",
-    screenshot: "only-on-failure",
+    // Always emit a trace + auto screenshots as proof artifacts (not just on failure).
+    trace: "on",
+    screenshot: "on",
     video: "off",
     viewport: { width: 1600, height: 1000 },
   },

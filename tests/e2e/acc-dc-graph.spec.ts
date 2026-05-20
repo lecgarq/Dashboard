@@ -1,4 +1,16 @@
-import { test, expect, type Page } from "@playwright/test";
+import { test, expect, type Page, type TestInfo } from "@playwright/test";
+
+/**
+ * Current DC snapshot size (accDcGraph.bulkUsers → one node per user×project).
+ * Asserted exactly per the verification standard; bump this if the dataset changes.
+ */
+const EXPECTED_NODE_COUNT = 16_934;
+
+/** Capture a full-page screenshot and attach it to the HTML report as a proof artifact. */
+async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
+  const body = await page.screenshot({ fullPage: false });
+  await testInfo.attach(name, { body, contentType: "image/png" });
+}
 
 /**
  * Step 1 verification — DC graph layout + renderer fitting.
@@ -80,13 +92,13 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await gotoGraph(page);
   });
 
-  test("2D renders all nodes with finite positions", async ({ page }) => {
+  test("2D renders all nodes with finite positions", async ({ page }, testInfo) => {
     const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
     // eslint-disable-next-line no-console
     console.log(`[2D] node count=${stats.count} maxAbs=${stats.maxAbs.toFixed(1)} anyNaN=${stats.anyNaN}`);
 
     expect(stats.anyNaN, "no NaN node positions").toBe(false);
-    expect(stats.count, "graph has the full DC node set").toBeGreaterThan(10_000);
+    expect(stats.count, "2D graph renders the exact DC node set").toBe(EXPECTED_NODE_COUNT);
     expect(stats.maxAbs, "layout is non-degenerate (spread out)").toBeGreaterThan(1);
 
     const counts = await page.evaluate(() => ({
@@ -95,13 +107,14 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
       mode: window.__ACC_GRAPH_TEST__!.getMode(),
     }));
     expect(counts.mode).toBe("2d");
-    expect(counts.rendered).toBe(stats.count);
-    expect(counts.features).toBe(stats.count);
+    expect(counts.rendered).toBe(EXPECTED_NODE_COUNT);
+    expect(counts.features).toBe(EXPECTED_NODE_COUNT);
 
     await expect(page.locator("canvas").first()).toBeVisible();
+    await proofShot(page, testInfo, "after-2d-load");
   });
 
-  test("3D renders a non-empty, finite, centered cloud", async ({ page }) => {
+  test("3D renders a non-empty, finite, centered cloud", async ({ page }, testInfo) => {
     await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
@@ -114,7 +127,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     );
 
     expect(stats.anyNaN, "no NaN positions in 3D").toBe(false);
-    expect(stats.count).toBeGreaterThan(10_000);
+    expect(stats.count, "3D cloud holds the full node set").toBe(EXPECTED_NODE_COUNT);
     expect(stats.maxAbs, "cloud has volume").toBeGreaterThan(1);
     // "Centered": centroid sits near the origin relative to the cloud half-extent.
     const centerOffset = Math.hypot(...stats.center);
@@ -122,9 +135,16 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
     // three.js renders into a (second) canvas; at least one canvas is present.
     expect(await page.locator("canvas").count()).toBeGreaterThan(0);
+    await proofShot(page, testInfo, "after-3d-load");
   });
 
-  test("hover shows tooltip backed by firm / account-status / permission-coverage", async ({ page }) => {
+  // NOTE: cosmos.gl's WebGL hover hit-test does NOT reliably fire from synthetic
+  // Playwright mouse movement (the GPU picking pass is decoupled from DOM pointer
+  // events). We attempt a real mouse hover first; if the tooltip doesn't appear we
+  // fall back to the bridge's simulateHover, which invokes the SAME production
+  // onPointHover closure cosmos.gl itself calls — so the assertion still covers the
+  // real handler path, only the pixel-level hit-test is bypassed.
+  test("hover shows tooltip backed by firm / account-status / permission-coverage", async ({ page }, testInfo) => {
     const nodeId = await page.evaluate(
       () => window.__ACC_GRAPH_TEST__!.getCentermostNodeId() ?? window.__ACC_GRAPH_TEST__!.getFirstNodeId(),
     );
@@ -159,9 +179,10 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(typeof tip.feature!.firmName).toBe("string");
     expect(typeof tip.feature!.accountStatus).toBe("string");
     expect(["known", "partial", "unknown"]).toContain(tip.feature!.permissionCoverage);
+    await proofShot(page, testInfo, "after-tooltip");
   });
 
-  test("click isolates a node (user-detail panel) and Escape clears it", async ({ page }) => {
+  test("click isolates a node (user-detail panel) and Escape clears it", async ({ page }, testInfo) => {
     const nodeId = await page.evaluate(
       () => window.__ACC_GRAPH_TEST__!.getCentermostNodeId() ?? window.__ACC_GRAPH_TEST__!.getFirstNodeId(),
     );
@@ -181,13 +202,14 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "user-detail");
     await expect(page.getByTestId("user-detail-panel")).toBeVisible();
     expect(await isolated()).not.toBeNull();
+    await proofShot(page, testInfo, "after-click-isolate");
 
     await page.keyboard.press("Escape");
     await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "sliders");
     expect(await isolated()).toBeNull();
   });
 
-  test("applying a filter dims non-matching nodes", async ({ page }) => {
+  test("applying a filter dims non-matching nodes", async ({ page }, testInfo) => {
     const before = await page.evaluate(() => ({
       dimmed: window.__ACC_GRAPH_TEST__!.getDimmedNodeCount(),
       lit: window.__ACC_GRAPH_TEST__!.getHighlightedNodeCount(),
@@ -215,18 +237,18 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(after.dimmed).toBeGreaterThan(0);
     expect(after.lit).toBeGreaterThan(0);
     expect(after.lit).toBeLessThan(before.lit);
+    await proofShot(page, testInfo, "after-filter");
 
-    // Clear all → fully lit again. dispatchEvent (not a positional click): the
-    // fixed ThemeToggle overlaps the top-right corner where clear-all sits, so a
-    // coordinate click lands on the toggle. Dispatching invokes the real onClick.
+    // Clear all → fully lit again. A real positional click must work now that the
+    // ThemeToggle no longer overlaps the toolbar's clear-all link.
     await page.keyboard.press("Escape"); // close popover
-    await page.getByTestId("toolbar-clear-all").dispatchEvent("click");
+    await page.getByTestId("toolbar-clear-all").click();
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount() === 0, undefined, {
       timeout: 15_000,
     });
   });
 
-  test("search highlights matching nodes and dims the rest", async ({ page }) => {
+  test("search highlights matching nodes and dims the rest", async ({ page }, testInfo) => {
     const prefix = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getSampleSearchPrefix());
     expect(prefix, "a searchable name prefix exists").toBeTruthy();
 
@@ -251,6 +273,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(res.lit).toBeGreaterThan(0);
     expect(res.dimmed).toBeGreaterThan(0);
     expect(res.lit + res.dimmed).toBe(total);
+    await proofShot(page, testInfo, "after-search");
 
     await page.getByTestId("toolbar-search").fill("");
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount() === 0, undefined, {
@@ -258,7 +281,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     });
   });
 
-  test("lasso drag selects nodes and renders the selection pie panel", async ({ page }) => {
+  test("lasso drag selects nodes and renders the selection pie panel", async ({ page }, testInfo) => {
     await page.getByTestId("toolbar-lasso").click();
     const overlay = page.getByTestId("lasso-overlay");
     await expect(overlay).toHaveAttribute("data-active", "true");
@@ -294,5 +317,6 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // Pie/donut charts render as SVGs inside the selection panel.
     await expect(page.locator('[data-testid="selection-panel"] svg').first()).toBeVisible({ timeout: 15_000 });
     expect(await page.locator('[data-testid="selection-panel"] svg path').count()).toBeGreaterThan(0);
+    await proofShot(page, testInfo, "after-lasso");
   });
 });
