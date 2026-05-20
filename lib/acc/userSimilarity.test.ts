@@ -26,11 +26,16 @@ function user(
     coverageFlags: overrides.coverageFlags ?? [],
     lastSignIn: overrides.lastSignIn ?? null,
     addedAt: overrides.addedAt ?? null,
+    isAdmin: overrides.isAdmin,
+    isExternal: overrides.isExternal,
+    companyRole: "companyRole" in overrides ? overrides.companyRole : undefined,
+    moduleIds: overrides.moduleIds,
+    firmId: "firmId" in overrides ? overrides.firmId : undefined,
   };
 }
 
 describe("SIMILARITY_DIMS", () => {
-  it("has exactly 7 entries in the Phase 07.1 model", () => {
+  it("has twelve entries (Phase 07.1 base + 4 axes 2026-05-18 + firm-affiliation 2026-05-20)", () => {
     expect(SIMILARITY_DIMS).toEqual([
       "project-members",
       "roles",
@@ -39,7 +44,43 @@ describe("SIMILARITY_DIMS", () => {
       "data-coverage",
       "last-sign-in",
       "recent-additions",
+      "admin-tier",
+      "internal-external",
+      "company-role",
+      "module-mix",
+      "firm-affiliation",
     ]);
+  });
+});
+
+describe("pairSimilarity — binary + new axes", () => {
+  it("admin-tier: same admin status returns 1, mismatch returns 0", () => {
+    const a = user("a", { isAdmin: true });
+    const b = user("b", { isAdmin: true });
+    const c = user("c", { isAdmin: false });
+    expect(pairSimilarity(a, b, "admin-tier")).toBe(1);
+    expect(pairSimilarity(a, c, "admin-tier")).toBe(0);
+  });
+
+  it("internal-external: missing flag treated as internal (false)", () => {
+    const a = user("a", {});
+    const b = user("b", {});
+    expect(pairSimilarity(a, b, "internal-external")).toBe(1);
+  });
+
+  it("company-role: null vs null clusters as the 'Unspecified' bucket", () => {
+    const a = user("a", { companyRole: null });
+    const b = user("b", { companyRole: null });
+    const c = user("c", { companyRole: "PM" });
+    expect(pairSimilarity(a, b, "company-role")).toBe(1);
+    expect(pairSimilarity(a, c, "company-role")).toBe(0);
+  });
+
+  it("module-mix: set-overlap on moduleIds, normalized by min size", () => {
+    const a = user("a", { moduleIds: ["docs", "build", "cost"] });
+    const b = user("b", { moduleIds: ["docs", "build"] });
+    // 2 shared / min(3, 2) = 1.0
+    expect(pairSimilarity(a, b, "module-mix")).toBeCloseTo(1.0, 5);
   });
 });
 
@@ -229,6 +270,35 @@ describe("computeSimilarityEdges — backward-compat surface", () => {
     expect(
       computeSimilarityEdges({ users: [] }, ALL_DIMS, 0.01),
     ).toEqual([]);
+  });
+});
+
+describe("firm-affiliation dim", () => {
+  const mk = (o: Partial<SimilarityUser>): SimilarityUser => ({
+    id: "x",
+    projectIds: [],
+    roleIds: [],
+    folderIds: [],
+    activityFileIds: [],
+    coverageFlags: [],
+    lastSignIn: null,
+    addedAt: null,
+    ...o,
+  });
+
+  it("is registered", () =>
+    expect(SIMILARITY_DIMS).toContain("firm-affiliation"));
+
+  it("scores 1 for same firm, 0 for different/missing", () => {
+    expect(
+      pairSimilarity(mk({ firmId: "c1" }), mk({ firmId: "c1" }), "firm-affiliation"),
+    ).toBe(1);
+    expect(
+      pairSimilarity(mk({ firmId: "c1" }), mk({ firmId: "c2" }), "firm-affiliation"),
+    ).toBe(0);
+    expect(
+      pairSimilarity(mk({ firmId: null }), mk({ firmId: null }), "firm-affiliation"),
+    ).toBe(0);
   });
 });
 

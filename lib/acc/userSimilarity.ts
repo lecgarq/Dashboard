@@ -24,7 +24,12 @@ export type SimilarityDim =
   | "activity-logs"
   | "data-coverage"
   | "last-sign-in"
-  | "recent-additions";
+  | "recent-additions"
+  | "admin-tier"
+  | "internal-external"
+  | "company-role"
+  | "module-mix"
+  | "firm-affiliation";
 
 export const SIMILARITY_DIMS: readonly SimilarityDim[] = [
   "project-members",
@@ -34,6 +39,12 @@ export const SIMILARITY_DIMS: readonly SimilarityDim[] = [
   "data-coverage",
   "last-sign-in",
   "recent-additions",
+  "admin-tier",
+  "internal-external",
+  "company-role",
+  "module-mix",
+  // firm-affiliation: default strength 0 until WS2 anti-clique rules — see spec §4a
+  "firm-affiliation",
 ] as const;
 
 export interface SimilarityUser {
@@ -45,6 +56,15 @@ export interface SimilarityUser {
   coverageFlags: readonly string[];
   lastSignIn: number | null;
   addedAt: number | null;
+  /** Binary axis dims (added 2026-05-18): exact match → 1, mismatch → 0. */
+  isAdmin?: boolean;
+  isExternal?: boolean;
+  /** Company role / job title bucket. Null treated as a distinct "unspecified" bucket. */
+  companyRole?: string | null;
+  /** ACC module ids the user touches — set-overlap dim. */
+  moduleIds?: readonly string[];
+  /** Company/firm identifier. Null treated as no-match (NOT a shared "unknown" bucket). */
+  firmId?: string | null;
 }
 
 export interface SimilarityInput {
@@ -96,6 +116,23 @@ export function pairSimilarity(
       return temporalDecay(a.lastSignIn, b.lastSignIn);
     case "recent-additions":
       return temporalDecay(a.addedAt, b.addedAt);
+    case "admin-tier":
+      // Binary axis: same admin status = full pull. Undefined treated as non-admin
+      // so missing data degrades to the "non-admin vs non-admin" bucket.
+      return (!!a.isAdmin) === (!!b.isAdmin) ? 1 : 0;
+    case "internal-external":
+      return (!!a.isExternal) === (!!b.isExternal) ? 1 : 0;
+    case "company-role":
+      // Null/undefined company role becomes its own "Unspecified" bucket so
+      // users without a title still cluster with each other.
+      return (a.companyRole ?? null) === (b.companyRole ?? null) ? 1 : 0;
+    case "module-mix":
+      return setOverlap(a.moduleIds ?? [], b.moduleIds ?? []);
+    case "firm-affiliation":
+      // Same firm = 1, but treat missing firm as no-match (NOT a shared "unknown" bucket)
+      // so large "no firm" groups do not form cliques. Default OFF: caller strength is 0
+      // until WS2 defines anti-clique rules.
+      return a.firmId != null && a.firmId === b.firmId ? 1 : 0;
   }
 }
 
