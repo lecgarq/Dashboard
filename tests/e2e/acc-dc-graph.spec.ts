@@ -70,6 +70,7 @@ type Bridge = {
   };
   getBrightEdgeCount(): number;
   getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
+  getRendererState(): { renderLinks: boolean; linkCount: number } | null;
 };
 
 declare global {
@@ -342,6 +343,15 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(stats.distinctUsersWithEdges).toBeGreaterThan(0);
 
     expect(await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount())).toBe(0);
+
+    // Render guard: edges must be SET in cosmos AND link rendering enabled — the
+    // data-only checks above pass even if renderLinks is false, so assert the
+    // effective renderer state to catch a silent renderLinks regression.
+    const render = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getRendererState());
+    expect(render, "2D renderer state available").toBeTruthy();
+    expect(render!.renderLinks, "cosmos link rendering is enabled").toBe(true);
+    expect(render!.linkCount, "links are set to match the edge count").toBe(stats.count);
+
     await proofShot(page, testInfo, "after-edges");
   });
 

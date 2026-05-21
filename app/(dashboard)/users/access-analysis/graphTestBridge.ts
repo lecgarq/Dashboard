@@ -158,6 +158,7 @@ export interface GraphTestApi {
   };
   getBrightEdgeCount(): number;
   getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
+  getRendererState(): { renderLinks: boolean; linkCount: number } | null;
   simulateHover(nodeId: string): boolean;
   simulateHoverEnd(): void;
   simulateClick(nodeId: string): boolean;
@@ -341,6 +342,11 @@ function buildApi(): GraphTestApi {
       let expectedBrightCount = 0;
       for (const e of d.edges) if (e.userId === userId) expectedBrightCount++;
       return { nodeId: d.edges[0].sourceNodeId, userId, expectedBrightCount };
+    },
+    getRendererState() {
+      const root = shell.graphRef?.current;
+      if (!root || root.mode !== "2d" || !root.handle) return null;
+      return root.handle.getRenderState();
     },
     simulateHover(nodeId) {
       const i = nodeIndexOf(nodeId);

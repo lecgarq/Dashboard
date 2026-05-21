@@ -62,6 +62,8 @@ export interface GraphCanvas2DHandle {
   setLinks(links: Float32Array): void;
   /** Replace per-link RGBA colors (0–1). Length must equal (links.length/2)*4. */
   setLinkColors(rgba: Float32Array): void;
+  /** Test/diagnostic: effective cosmos link-render config + number of links set. */
+  getRenderState(): { renderLinks: boolean; linkCount: number };
   /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
@@ -113,6 +115,9 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   const graphRef = useRef<Graph | null>(null);
   // Phase 4-01 — ref-indirect event handlers (Pitfall 5: never re-issue config).
   const handlersRef = useRef<GraphEventHandlers>(NOOP_HANDLERS);
+  // Number of links last handed to cosmos (links.length / 2). Read by the test
+  // bridge's render guard to assert edges are actually set + rendered.
+  const linkCountRef = useRef(0);
   // Warn-once guard for early findPointsInPolygon calls (Pitfall 7).
   const warnedNotReadyRef = useRef(false);
   // One-shot guard: rescale + fit the view once the layout settles. The seed
@@ -136,7 +141,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // CRITICAL config flags (Pattern 1 from RESEARCH):
       // - enableSimulation: false  → frozen mode; cosmos.gl never drives physics
       // - transitionDuration: 0   → no GPU tweens; rAF drives all animation (REND-05)
-      // - renderLinks: false       → zero edges (CONTEXT.md locked decision)
+      // - renderLinks: true        → draws same-user footprint edges (WS2; link colors precomputed)
       // - pointGreyoutOpacity: 0.15 → matches DIM_ALPHA from CosmosCanvasClient.ts
       g = new Graph(div, {
         enableSimulation: false,
@@ -216,6 +221,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       }
       if (props.links && props.links.length > 0) {
         (g as unknown as { setLinks: (l: Float32Array) => void }).setLinks(props.links);
+        linkCountRef.current = props.links.length / 2;
         if (props.linkColors) {
           if (
             process.env.NODE_ENV !== "production" &&
@@ -281,6 +287,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setLinks(links: Float32Array): void {
           (g as unknown as { setLinks: (l: Float32Array) => void })!.setLinks(links);
+          linkCountRef.current = links.length / 2;
           g!.render();
         },
 
@@ -295,6 +302,15 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           }
           (g as unknown as { setLinkColors: (c: Float32Array) => void })!.setLinkColors(rgba);
           g!.render();
+        },
+
+        getRenderState(): { renderLinks: boolean; linkCount: number } {
+          // Read the EFFECTIVE cosmos config so a renderLinks regression is caught.
+          const cfg = (g as unknown as { config?: { renderLinks?: boolean } }).config;
+          return {
+            renderLinks: cfg?.renderLinks === true,
+            linkCount: linkCountRef.current,
+          };
         },
 
         // ---- Phase 4-01 Task 2 primitives ---------------------------------

@@ -40,6 +40,7 @@ function mkGraphHandle(matched: number[]): GraphCanvas2DHandle {
     spaceToScreen: vi.fn(([x, y]: [number, number]) => [x, y] as [number, number]),
     setLinks: vi.fn(),
     setLinkColors: vi.fn(),
+    getRenderState: vi.fn(() => ({ renderLinks: true, linkCount: 0 })),
   };
 }
 

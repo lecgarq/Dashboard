@@ -86,6 +86,7 @@ function Harness(props: {
       spaceToScreen: vi.fn((xy) => xy),
       setLinks: vi.fn(),
       setLinkColors: vi.fn(),
+      getRenderState: vi.fn(() => ({ renderLinks: true, linkCount: 0 })),
     };
     graphRef.current = { mode: "2d", handle: fakeHandle2D };
   }

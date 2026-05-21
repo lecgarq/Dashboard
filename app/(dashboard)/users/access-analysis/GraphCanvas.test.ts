@@ -145,7 +145,8 @@ describe("GraphCanvas2D — REND-01 frozen-mode initialization", () => {
 
     expect(_capturedConfig).not.toBeNull();
     expect(_capturedConfig.enableSimulation).toBe(false);
-    expect(_capturedConfig.renderLinks).toBe(false);
+    // WS2: link rendering is enabled to draw same-user footprint edges.
+    expect(_capturedConfig.renderLinks).toBe(true);
     expect(_capturedConfig.transitionDuration).toBe(0);
     expect(_capturedConfig.pointGreyoutOpacity).toBe(0.15);
     expect(_capturedConfig.backgroundColor).toBe("#09090B");
