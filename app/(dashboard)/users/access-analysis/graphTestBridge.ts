@@ -158,7 +158,13 @@ export interface GraphTestApi {
   };
   getBrightEdgeCount(): number;
   getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
-  getRendererState(): { renderLinks: boolean; linkCount: number } | null;
+  getRendererState(): {
+    renderLinks: boolean;
+    linkCount: number;
+    hasLineGeometry?: boolean;
+    positionAttributeLength?: number;
+    colorAttributeLength?: number;
+  } | null;
   simulateHover(nodeId: string): boolean;
   simulateHoverEnd(): void;
   simulateClick(nodeId: string): boolean;
@@ -345,7 +351,7 @@ function buildApi(): GraphTestApi {
     },
     getRendererState() {
       const root = shell.graphRef?.current;
-      if (!root || root.mode !== "2d" || !root.handle) return null;
+      if (!root || !root.handle) return null;
       return root.handle.getRenderState();
     },
     simulateHover(nodeId) {
