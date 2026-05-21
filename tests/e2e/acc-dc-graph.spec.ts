@@ -70,7 +70,13 @@ type Bridge = {
   };
   getBrightEdgeCount(): number;
   getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
-  getRendererState(): { renderLinks: boolean; linkCount: number } | null;
+  getRendererState(): {
+    renderLinks: boolean;
+    linkCount: number;
+    hasLineGeometry?: boolean;
+    positionAttributeLength?: number;
+    colorAttributeLength?: number;
+  } | null;
 };
 
 declare global {
@@ -353,6 +359,51 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(render!.linkCount, "links are set to match the edge count").toBe(stats.count);
 
     await proofShot(page, testInfo, "after-edges");
+  });
+
+  test("3D edges: link layer is rendered with buffers matching the edge count", async ({ page }, testInfo) => {
+    const edgeCount = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeStats().count);
+    expect(edgeCount, "graph has same-user edges").toBeGreaterThan(0);
+
+    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
+      timeout: 20_000,
+    });
+
+    const render = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getRendererState());
+    expect(render, "3D renderer state available").toBeTruthy();
+    expect(render!.renderLinks, "3D line layer is rendered").toBe(true);
+    expect(render!.linkCount, "link count matches edge count").toBe(edgeCount);
+    expect(render!.positionAttributeLength, "position buffer is edges*2*3").toBe(edgeCount * 2 * 3);
+    expect(render!.colorAttributeLength, "color buffer is edges*2*3").toBe(edgeCount * 2 * 3);
+
+    await proofShot(page, testInfo, "after-edges-3d");
+  });
+
+  test("3D edges: isolating a multi-project user brightens exactly their footprint", async ({ page }, testInfo) => {
+    const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample());
+    expect(sample, "a multi-project user exists").toBeTruthy();
+    expect(sample!.expectedBrightCount, "sample user has >=1 edge").toBeGreaterThan(0);
+
+    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
+      timeout: 20_000,
+    });
+
+    expect(await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount())).toBe(0);
+
+    await page.evaluate((id) => window.__ACC_GRAPH_TEST__!.simulateClick(id), sample!.nodeId);
+    await page.waitForFunction(
+      (expected) => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount() === expected,
+      sample!.expectedBrightCount,
+      { timeout: 15_000 },
+    );
+    await proofShot(page, testInfo, "after-edge-isolate-3d");
+
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount() === 0, undefined, {
+      timeout: 15_000,
+    });
   });
 
   test("isolating a multi-project user brightens exactly their footprint edges", async ({ page }, testInfo) => {
