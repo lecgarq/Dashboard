@@ -190,3 +190,81 @@ describe("buildFeatureTargets", () => {
     expect(Object.keys(targets)).toEqual(["role"]);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Volumetric distribution — anchors must occupy a 3D volume, not a flat ring.
+// (Visual requirement: organic neuronal network, not a disc/ring seen in 3D.)
+// ---------------------------------------------------------------------------
+
+function axisStats(out: Float32Array, axis: 0 | 1 | 2) {
+  const vals: number[] = [];
+  for (let i = 0; i < out.length / 3; i++) vals.push(out[i * 3 + axis]);
+  const min = Math.min(...vals);
+  const max = Math.max(...vals);
+  const mean = vals.reduce((a, b) => a + b, 0) / vals.length;
+  const variance = vals.reduce((a, b) => a + (b - mean) ** 2, 0) / vals.length;
+  return { min, max, range: max - min, std: Math.sqrt(variance) };
+}
+
+describe("computeDimensionTarget volumetric distribution", () => {
+  // 16 distinct categories → 16 anchors, one node each (anchor cloud == node cloud).
+  const manyCategories = Array.from({ length: 16 }, (_, i) =>
+    feature({ role: `R${i}` }),
+  );
+  const out = computeDimensionTarget(manyCategories, "role");
+
+  it("uses all three axes (every axis has spread)", () => {
+    expect(axisStats(out, 0).range).toBeGreaterThan(0.1);
+    expect(axisStats(out, 1).range).toBeGreaterThan(0.1);
+    expect(axisStats(out, 2).range).toBeGreaterThan(0.1);
+  });
+
+  it("has a non-trivial z range (zRange > 0)", () => {
+    expect(axisStats(out, 2).range).toBeGreaterThan(0);
+  });
+
+  it("z spread is not negligible vs x/y spread (not a flat disc)", () => {
+    const x = axisStats(out, 0).range;
+    const y = axisStats(out, 1).range;
+    const z = axisStats(out, 2).range;
+    expect(z).toBeGreaterThanOrEqual(0.4 * Math.max(x, y));
+  });
+
+  it("is not effectively planar — smallest axial spread is a real fraction of the largest", () => {
+    const sx = axisStats(out, 0).std;
+    const sy = axisStats(out, 1).std;
+    const sz = axisStats(out, 2).std;
+    const minStd = Math.min(sx, sy, sz);
+    const maxStd = Math.max(sx, sy, sz);
+    expect(minStd / maxStd).toBeGreaterThan(0.3);
+  });
+
+  it("places two distinct categories at anchors differing in x, y AND z", () => {
+    const eps = 1e-4;
+    // R0 → sorted index 0; R8 → sorted index 8 (sort is lexicographic: R0,R1,...)
+    const a0 = 0;
+    const a8 = manyCategories.findIndex((f) => f.role === "R8");
+    expect(Math.abs(out[a0 * 3] - out[a8 * 3])).toBeGreaterThan(eps);
+    expect(Math.abs(out[a0 * 3 + 1] - out[a8 * 3 + 1])).toBeGreaterThan(eps);
+    expect(Math.abs(out[a0 * 3 + 2] - out[a8 * 3 + 2])).toBeGreaterThan(eps);
+  });
+
+  it("clusters same-category nodes nearer than different-category nodes in 3D", () => {
+    const features = [
+      feature({ role: "A" }),
+      feature({ role: "B" }),
+      feature({ role: "A" }),
+    ];
+    const o = computeDimensionTarget(features, "role");
+    const same = dist3(o, 0, 2); // both "A"
+    const cross = dist3(o, 0, 1); // "A" vs "B"
+    expect(same).toBeLessThan(cross);
+    expect(same).toBe(0);
+  });
+
+  it("is deterministic and finite for the volumetric layout", () => {
+    const again = computeDimensionTarget(manyCategories, "role");
+    expect(Array.from(out)).toEqual(Array.from(again));
+    expect(isFiniteArray(out)).toBe(true);
+  });
+});

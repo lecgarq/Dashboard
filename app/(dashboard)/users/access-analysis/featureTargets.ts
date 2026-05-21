@@ -13,11 +13,21 @@
  * nodes that share a categorical value (same role, same project, …) converge to a
  * shared anchor and form real clusters.
  *
+ * ANCHOR DISTRIBUTION — VOLUMETRIC, NOT A RING
+ * ============================================
+ * Distinct category values for a dimension are placed using a **spherical Fibonacci
+ * (sunflower-on-sphere) distribution** combined with a deterministic **layered
+ * radius**, so anchors fill a 3D volume rather than lying on a flat XY ring or a
+ * thin spherical shell. This gives the layout visible depth on all three axes — the
+ * "organic neuronal network" target — instead of a disc/ring viewed in 3D. The z
+ * component is structurally meaningful (derived from the same even angular sweep),
+ * never random jitter.
+ *
  * The anchoring concept is ported (not copied) from the donor blob layout in
- * `accGraphOrganicLayout.ts` (`computeBlobSeedPositions`). Instead of hashing each
- * value to an arbitrary point, distinct values for a dimension are spread evenly
- * around a ring — this guarantees deterministic output AND visible separation
- * between categories regardless of how the source strings happen to hash.
+ * `accGraphOrganicLayout.ts` (`computeBlobSeedPositions`); the donor anchors in 2D,
+ * this module lifts the idea into 3D volume. Even, sorted assignment guarantees
+ * deterministic output AND visible separation between categories regardless of how
+ * the source strings happen to hash.
  *
  * NOTE: this module is additive and intentionally UNWIRED. P1 will replace
  * `makeEmptyTargets` in the shell with `buildFeatureTargets`.
@@ -48,15 +58,22 @@ export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = [
 ];
 
 /**
- * Ring radius for anchor placement. The absolute scale is irrelevant — the
- * physics layer normalizes the settled spread into a fixed cube
- * (`LAYOUT_HALF_EXTENT`). What matters is the RELATIVE separation between
- * category anchors, so a unit ring is sufficient.
+ * Outer anchor radius. The absolute scale is irrelevant — the physics layer
+ * normalizes the settled spread into a fixed cube (`LAYOUT_HALF_EXTENT`). What
+ * matters is the RELATIVE separation between category anchors.
  */
-const RING_RADIUS = 1;
+const ANCHOR_RADIUS = 1;
 
-/** Mild out-of-plane tilt so the layout reads as 3D (not a flat disc) in 3D mode. */
-const Z_TILT = 0.3;
+/** Golden angle (radians) — the spacing that makes a spherical Fibonacci set even. */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ≈ 2.39996323
+
+/** Fractional part of the golden ratio — drives deterministic radial layering. */
+const INV_GOLDEN = 0.6180339887498949;
+
+/** Innermost radial layer as a fraction of ANCHOR_RADIUS (fills volume, not a shell). */
+const LAYER_MIN = 0.55;
+/** Radial layer span (max layer = LAYER_MIN + LAYER_SPAN). */
+const LAYER_SPAN = 0.45;
 
 // ---------------------------------------------------------------------------
 // Categorical extraction — maps a snapshot to the string value for a dimension.
@@ -101,16 +118,44 @@ function distinctSortedCategories(
 }
 
 /**
+ * Volumetric anchor for the i-th of `count` categories.
+ *
+ * Direction: spherical Fibonacci (even coverage of the sphere of directions).
+ * Magnitude: deterministic layered radius in [LAYER_MIN, LAYER_MIN+LAYER_SPAN]
+ *            so anchors occupy a 3D volume rather than a single shell.
+ */
+function volumetricAnchor(
+  i: number,
+  count: number,
+  radius: number,
+): [number, number, number] {
+  if (count <= 1) return [0, 0, 0];
+  // Even latitude sweep in (-1, 1): structurally meaningful y (not jitter).
+  const yUnit = 1 - (2 * (i + 0.5)) / count;
+  const rxy = Math.sqrt(Math.max(0, 1 - yUnit * yUnit));
+  const theta = GOLDEN_ANGLE * i;
+  // Layered radius — value-stable, irrational step spreads layers without bias.
+  const layer = LAYER_MIN + LAYER_SPAN * ((i * INV_GOLDEN) % 1);
+  const r = radius * layer;
+  return [
+    Math.cos(theta) * rxy * r,
+    yUnit * r,
+    Math.sin(theta) * rxy * r,
+  ];
+}
+
+/**
  * Compute stride-3 [x,y,z,...] target positions for ONE dimension.
  *
- * Distinct category values are spread evenly around a ring; every node is placed
- * at its category's anchor. Same category → identical anchor; different
- * categories → angularly separated anchors. Output length is `features.length * 3`.
+ * Distinct category values are placed on a volumetric spherical-Fibonacci set;
+ * every node is placed at its category's anchor. Same category → identical anchor;
+ * different categories → separated in 3D distance. Output length is
+ * `features.length * 3`.
  */
 export function computeDimensionTarget(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   dim: TargetDimensionId,
-  radius: number = RING_RADIUS,
+  radius: number = ANCHOR_RADIUS,
 ): Float32Array {
   const out = new Float32Array(features.length * 3);
   if (features.length === 0) return out;
@@ -121,22 +166,15 @@ export function computeDimensionTarget(
   for (let i = 0; i < count; i++) indexOf.set(categories[i], i);
 
   // Precompute one anchor per category (avoids recomputing trig per node).
-  const anchorX = new Float32Array(count);
-  const anchorY = new Float32Array(count);
-  const anchorZ = new Float32Array(count);
-  for (let i = 0; i < count; i++) {
-    const angle = count <= 1 ? 0 : (i / count) * Math.PI * 2;
-    anchorX[i] = Math.cos(angle) * radius;
-    anchorY[i] = Math.sin(angle) * radius;
-    // Deterministic, value-stable tilt derived from the same angle.
-    anchorZ[i] = count <= 1 ? 0 : Math.cos(angle * 2) * radius * Z_TILT;
-  }
+  const anchors: Array<[number, number, number]> = new Array(count);
+  for (let i = 0; i < count; i++) anchors[i] = volumetricAnchor(i, count, radius);
 
   for (let n = 0; n < features.length; n++) {
     const idx = indexOf.get(categoryValue(features[n], dim)) ?? 0;
-    out[n * 3] = anchorX[idx];
-    out[n * 3 + 1] = anchorY[idx];
-    out[n * 3 + 2] = anchorZ[idx];
+    const a = anchors[idx];
+    out[n * 3] = a[0];
+    out[n * 3 + 1] = a[1];
+    out[n * 3 + 2] = a[2];
   }
   return out;
 }
@@ -148,7 +186,7 @@ export function computeDimensionTarget(
 export function buildFeatureTargets(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   dims: readonly TargetDimensionId[] = TARGET_DIMENSIONS,
-  radius: number = RING_RADIUS,
+  radius: number = ANCHOR_RADIUS,
 ): TargetArrays {
   const out: TargetArrays = {};
   const n = features.length;
