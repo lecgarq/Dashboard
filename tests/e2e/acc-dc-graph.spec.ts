@@ -60,6 +60,16 @@ type Bridge = {
   getHighlightedNodeCount(): number;
   simulateHover(id: string): boolean;
   simulateClick(id: string): boolean;
+  getEdgeStats(): {
+    count: number;
+    selfEdges: number;
+    duplicates: number;
+    danglingEndpoints: number;
+    malformedNodeIds: number;
+    distinctUsersWithEdges: number;
+  };
+  getBrightEdgeCount(): number;
+  getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
 };
 
 declare global {
@@ -318,5 +328,48 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await expect(page.locator('[data-testid="selection-panel"] svg').first()).toBeVisible({ timeout: 15_000 });
     expect(await page.locator('[data-testid="selection-panel"] svg path').count()).toBeGreaterThan(0);
     await proofShot(page, testInfo, "after-lasso");
+  });
+
+  test("same-user edges are well-formed and rendered", async ({ page }, testInfo) => {
+    const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeStats());
+    // eslint-disable-next-line no-console
+    console.log(`[edges] count=${stats.count} selfEdges=${stats.selfEdges} dup=${stats.duplicates} dangling=${stats.danglingEndpoints} usersWithEdges=${stats.distinctUsersWithEdges}`);
+
+    expect(stats.count, "graph has same-user edges").toBeGreaterThan(0);
+    expect(stats.selfEdges, "no self-edges").toBe(0);
+    expect(stats.duplicates, "no duplicate edges").toBe(0);
+    expect(stats.danglingEndpoints, "all endpoints reference real nodes").toBe(0);
+    expect(stats.distinctUsersWithEdges).toBeGreaterThan(0);
+
+    expect(await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount())).toBe(0);
+    await proofShot(page, testInfo, "after-edges");
+  });
+
+  test("isolating a multi-project user brightens exactly their footprint edges", async ({ page }, testInfo) => {
+    const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample());
+    expect(sample, "a multi-project user exists").toBeTruthy();
+    expect(sample!.expectedBrightCount, "sample user has >=1 edge").toBeGreaterThan(0);
+
+    const local = await page.evaluate((id) => window.__ACC_GRAPH_TEST__!.getNodeScreenPosition(id), sample!.nodeId);
+    expect(local).toBeTruthy();
+    const box = await canvasBox(page);
+    await page.mouse.move(box.x + local!.x, box.y + local!.y, { steps: 4 });
+    await page.mouse.click(box.x + local!.x, box.y + local!.y);
+
+    if ((await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getIsolatedNodeId())) === null) {
+      await page.evaluate((id) => window.__ACC_GRAPH_TEST__!.simulateClick(id), sample!.nodeId);
+    }
+
+    await page.waitForFunction(
+      (expected) => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount() === expected,
+      sample!.expectedBrightCount,
+      { timeout: 15_000 },
+    );
+    await proofShot(page, testInfo, "after-edge-isolate");
+
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount() === 0, undefined, {
+      timeout: 15_000,
+    });
   });
 });
