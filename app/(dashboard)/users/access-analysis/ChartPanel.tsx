@@ -2,9 +2,9 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { chartColor } from "./chartColors";
+import { chartColor, type ChartRole } from "./chartColors";
 
-export type InsightSeverity = "good" | "watch" | "risk" | "info";
+export type InsightSeverity = Extract<ChartRole, "good" | "watch" | "risk" | "info">;
 
 export interface ChartPanelProps {
   title: string;
