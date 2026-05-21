@@ -58,6 +58,10 @@ export interface GraphCanvas2DHandle {
    * @param rgba - RGBA Float32Array(n*4) with values in [0,1]
    */
   setColors(rgba: Float32Array): void;
+  /** Replace the link set (flat [s,t,...] index pairs). */
+  setLinks(links: Float32Array): void;
+  /** Replace per-link RGBA colors (0–1). Length must equal (links.length/2)*4. */
+  setLinkColors(rgba: Float32Array): void;
   /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
@@ -88,6 +92,10 @@ export interface GraphCanvas2DProps {
   nodeColors: Float32Array;
   /** Per-node size in world units. Optional. */
   nodeSizes?: Float32Array;
+  /** Flat cosmos link buffer [s0,t0,s1,t1,...]; same point-index space as positions. */
+  links?: Float32Array;
+  /** Per-link RGBA (0–1) buffer, length = links.length/2*4. */
+  linkColors?: Float32Array;
   /** Theme-driven canvas background color (e.g. '#09090B' for dark zinc). */
   backgroundColor: string;
   /** Called once when the cosmos.gl graph is initialized and ready to receive data. */
@@ -133,7 +141,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       g = new Graph(div, {
         enableSimulation: false,
         transitionDuration: 0,
-        renderLinks: false,
+        renderLinks: true,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
@@ -206,6 +214,18 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       if (props.nodeSizes) {
         g.setPointSizes(props.nodeSizes);
       }
+      if (props.links && props.links.length > 0) {
+        (g as unknown as { setLinks: (l: Float32Array) => void }).setLinks(props.links);
+        if (props.linkColors) {
+          if (
+            process.env.NODE_ENV !== "production" &&
+            props.linkColors.length !== (props.links.length / 2) * 4
+          ) {
+            throw new Error("GraphCanvas2D: linkColors length must equal (links/2)*4");
+          }
+          (g as unknown as { setLinkColors: (c: Float32Array) => void }).setLinkColors(props.linkColors);
+        }
+      }
       g.render();
 
       // Expose the handle to the parent (GraphCanvas.tsx via onHandleReady) ----------
@@ -256,6 +276,24 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setColors(rgba: Float32Array): void {
           g!.setPointColors(rgba);
+          g!.render();
+        },
+
+        setLinks(links: Float32Array): void {
+          (g as unknown as { setLinks: (l: Float32Array) => void })!.setLinks(links);
+          g!.render();
+        },
+
+        setLinkColors(rgba: Float32Array): void {
+          if (process.env.NODE_ENV !== "production") {
+            for (let i = 0; i < rgba.length; i++) {
+              const v = rgba[i];
+              if (!Number.isFinite(v) || v < 0 || v > 1) {
+                throw new Error(`GraphCanvas2D.setLinkColors: value out of [0,1]: ${v}`);
+              }
+            }
+          }
+          (g as unknown as { setLinkColors: (c: Float32Array) => void })!.setLinkColors(rgba);
           g!.render();
         },
 
