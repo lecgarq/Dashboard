@@ -34,6 +34,8 @@ import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
+import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
+import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
 import { installGraphTestBridge, setShellTestState } from "./graphTestBridge";
 import { createPhysicsLayer, type PhysicsLayer, type SimNode, type TargetArrays } from "./physicsLayer";
 import { getDuckDbClient } from "./duckdbClient";
@@ -123,6 +125,16 @@ function ShellBody({
     [lassoSelection, features, activeFilters, searchQuery],
   );
 
+  const edgeData = useMemo(() => deriveSameUserEdges(features.map((f) => f.nodeId)), [features]);
+  const edges: SameUserEdge[] = edgeData.edges;
+  const links = useMemo(() => toCosmosLinks(edges), [edges]);
+  const baseLinkColors = useMemo(() => {
+    const colors = computeLinkEmphasisColors(edges, new Set());
+    assertLinkArrays(edges.length, links, colors);
+    return colors;
+  }, [edges, links]);
+  // Task 5 will push edgeData + node count to the test bridge (setEdgeTestState).
+
   // Constant white colors as a safe default — render layer accepts any RGBA buffer.
   const nodeColors = useMemo<Float32Array>(() => {
     const arr = new Float32Array(features.length * 4);
@@ -163,6 +175,7 @@ function ShellBody({
             lassoSelection={lassoSelection}
             drillDown={drillDown}
             rendererReady={rendererReady}
+            edges={edges}
           >
             <GraphCanvas
               ref={graphRef}
@@ -170,6 +183,8 @@ function ShellBody({
               nodeColors={nodeColors}
               mode={mode}
               onRendererReady={() => setRendererReady((v) => v + 1)}
+              links={links}
+              linkColors={baseLinkColors}
             />
           </GraphInteractions>
         </div>

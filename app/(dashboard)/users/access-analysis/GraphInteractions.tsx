@@ -17,7 +17,7 @@
  * remasking 10k nodes on every keystroke).
  */
 
-import { useEffect, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { PhysicsLayer } from "./physicsLayer";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { GraphCanvasHandle } from "./GraphCanvas";
@@ -26,6 +26,8 @@ import { usePredicateEngine } from "./usePredicateEngine";
 import { LassoOverlay } from "./LassoOverlay";
 import { NodeTooltip } from "./NodeTooltip";
 import { setInteractionTestState } from "./graphTestBridge";
+import { parseNodeId, type SameUserEdge } from "./sameUserEdges";
+import { computeLinkEmphasisColors } from "./linkEmphasis";
 
 export interface GraphInteractionsProps {
   physics: PhysicsLayer;
@@ -52,6 +54,8 @@ export interface GraphInteractionsProps {
    * async init (the handle is null at mount).
    */
   rendererReady: number;
+  /** Same-user edges (cosmos index space) for link emphasis. */
+  edges: SameUserEdge[];
 
   // ---- Lasso selection set (mirrored from 04-02 SelectionPanel) ---------
   lassoSelection: ReadonlySet<number> | null;
@@ -86,6 +90,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     lassoSelection,
     drillDown,
     rendererReady,
+    edges,
     children,
   } = props;
 
@@ -159,6 +164,32 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     drillDown,
     isolatedNodeIndex,
   });
+
+  // Union of users in focus: hovered ∪ isolated ∪ lasso selection.
+  const activeUserIds = useMemo(() => {
+    const s = new Set<string>();
+    const add = (idx: number | null): void => {
+      if (idx == null) return;
+      const f = features[idx];
+      if (!f) return;
+      const p = parseNodeId(f.nodeId);
+      if (p) s.add(p.userId);
+    };
+    add(hoveredIndex);
+    add(isolatedNodeIndex);
+    if (lassoSelection) for (const i of lassoSelection) add(i);
+    return s;
+  }, [hoveredIndex, isolatedNodeIndex, lassoSelection, features]);
+
+  // Push per-link emphasis colors to the 2D renderer on any focus change.
+  useEffect(() => {
+    const root = graphRef.current;
+    const handle = root && root.mode === "2d" ? root.handle : null;
+    if (!handle) return;
+    handle.setLinkColors(computeLinkEmphasisColors(edges, activeUserIds));
+    // Task 5 will push countBrightEdges(...) to the test bridge.
+    // rendererReady: re-apply once the async handle exists.
+  }, [edges, activeUserIds, graphRef, mode, rendererReady]);
 
   // ---- 2D-only lasso overlay ---------------------------------------
   const graph2DHandle: GraphCanvas2DHandle | null =

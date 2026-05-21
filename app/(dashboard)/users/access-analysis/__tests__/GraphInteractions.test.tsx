@@ -84,6 +84,8 @@ function Harness(props: {
       findPointsInPolygon: vi.fn(() => []),
       screenToSpace: vi.fn((xy) => xy),
       spaceToScreen: vi.fn((xy) => xy),
+      setLinks: vi.fn(),
+      setLinkColors: vi.fn(),
     };
     graphRef.current = { mode: "2d", handle: fakeHandle2D };
   }
@@ -103,6 +105,7 @@ function Harness(props: {
       lassoSelection={null}
       drillDown={null}
       rendererReady={1}
+      edges={[]}
     >
       <div data-testid="graph-children" />
     </GraphInteractions>

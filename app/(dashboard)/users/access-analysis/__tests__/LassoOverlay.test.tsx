@@ -38,6 +38,8 @@ function mkGraphHandle(matched: number[]): GraphCanvas2DHandle {
     findPointsInPolygon: vi.fn(() => matched),
     screenToSpace: vi.fn(([x, y]: [number, number]) => [x * 2, y * 2] as [number, number]),
     spaceToScreen: vi.fn(([x, y]: [number, number]) => [x, y] as [number, number]),
+    setLinks: vi.fn(),
+    setLinkColors: vi.fn(),
   };
 }
 

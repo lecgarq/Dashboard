@@ -66,6 +66,10 @@ export interface GraphCanvasProps {
   width?: number;
   /** Optional explicit height. Defaults to container clientHeight. */
   height?: number;
+  /** Flat cosmos link buffer for the 2D renderer. */
+  links?: Float32Array;
+  /** Initial per-link RGBA colors for the 2D renderer. */
+  linkColors?: Float32Array;
   /**
    * Fired when an underlying renderer's imperative handle becomes available
    * (cosmos.gl 2D / three.js 3D init is async). Lets the interaction layer
@@ -243,6 +247,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           nodeColors={props.nodeColors}
           nodeSizes={props.nodeSizes}
           backgroundColor={bg}
+          links={props.links}
+          linkColors={props.linkColors}
           onHandleReady={(h) => {
             handle2D.current = h;
             setReadyTick((t) => t + 1);
