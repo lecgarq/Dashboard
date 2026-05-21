@@ -181,12 +181,13 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     return s;
   }, [hoveredIndex, isolatedNodeIndex, lassoSelection, features]);
 
-  // Push per-link emphasis colors to the 2D renderer on any focus change.
+  // Push per-link emphasis colors to the active renderer (2D or 3D) on focus change.
+  // Both handles accept the same per-link RGBA buffer; the 3D handle premultiplies
+  // alpha into vertex RGB internally. brightCount is mirrored to the bridge in all modes.
   useEffect(() => {
-    const root = graphRef.current;
-    const handle = root && root.mode === "2d" ? root.handle : null;
-    if (!handle) return;
-    handle.setLinkColors(computeLinkEmphasisColors(edges, activeUserIds));
+    const handle = graphRef.current?.handle ?? null;
+    const rgba = computeLinkEmphasisColors(edges, activeUserIds);
+    if (handle) handle.setLinkColors(rgba);
     setEdgeTestState({ brightCount: countBrightEdges(edges, activeUserIds) });
     // rendererReady: re-apply once the async handle exists.
   }, [edges, activeUserIds, graphRef, mode, rendererReady]);
