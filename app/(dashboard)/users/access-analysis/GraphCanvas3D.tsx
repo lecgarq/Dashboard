@@ -49,6 +49,18 @@ export interface GraphCanvas3DHandle {
    * No lasso primitives in 3D — v1 defers polygon selection to 2D mode only.
    */
   setEventHandlers(h: GraphEventHandlers): void;
+  /** Replace the link set (flat [s,t,...] index pairs). Rebuilds line geometry. */
+  setLinks(links: Float32Array): void;
+  /** Replace per-link RGBA (0–1, length = links/2*4). Premultiplied into vertex RGB. */
+  setLinkColors(rgba: Float32Array): void;
+  /** Test/diagnostic: derived 3D edge render state. */
+  getRenderState(): {
+    renderLinks: boolean;
+    linkCount: number;
+    hasLineGeometry: boolean;
+    positionAttributeLength: number;
+    colorAttributeLength: number;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -61,6 +73,10 @@ export interface GraphCanvas3DProps {
   nodeColors: Float32Array;
   nodeSizes?: Float32Array;
   backgroundColor: string;
+  /** Flat link buffer [s0,t0,s1,t1,...] in node-index space. */
+  links?: Float32Array;
+  /** Initial per-link RGBA (0–1). Length = links.length/2*4. */
+  linkColors?: Float32Array;
   onHandleReady: (h: GraphCanvas3DHandle) => void;
 }
 
@@ -141,6 +157,15 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // We keep a local copy of the current base colors so applyAlphaMask can re-multiply
     let currentNodeColors = props.nodeColors;
 
+    // Edge (LineSegments) state — built lazily when links are present.
+    let currentXyz: Float32Array = initialXyz;
+    let edgeLines: THREE.LineSegments | null = null;
+    let edgeGeometry: THREE.BufferGeometry | null = null;
+    let edgePositions: Float32Array | null = null; // edges*2*3
+    let edgeColors: Float32Array | null = null;     // edges*2*3
+    let edgeLinkIndices: Float32Array | null = null; // flat [s,t,...]
+    let edgeCount = 0;
+
     function loadColors(rgba: Float32Array): void {
       for (let i = 0; i < n; i++) {
         instanceColorData[i * 3]     = rgba[i * 4];
@@ -151,6 +176,12 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     }
 
     loadColors(currentNodeColors);
+
+    // Initial edge load (mirrors the 2D init block; built once, edge set is static).
+    if (props.links && props.links.length > 0) {
+      buildEdges(props.links);
+      if (props.linkColors) applyEdgeColors(props.linkColors);
+    }
 
     // -----------------------------------------------------------------------
     // Handle implementation
@@ -164,6 +195,8 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         mesh.setMatrixAt(i, dummy.matrix);
       }
       mesh.instanceMatrix.needsUpdate = true;
+      currentXyz = xyz;
+      writeEdgePositions(xyz);
       // One-shot camera fit once the layout settles — the seed scale (~[-1,1])
       // is tiny vs the settled spread, so the initial camera pose leaves nodes
       // out of frame until we re-fit. Re-armed whenever the simulation reheats.
@@ -185,6 +218,75 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         instanceColorData[i * 3 + 2] = currentNodeColors[i * 4 + 2] * lit;
       }
       mesh.instanceColor!.needsUpdate = true;
+    }
+
+    function buildEdges(links: Float32Array): void {
+      if (edgeLines) {
+        scene.remove(edgeLines);
+        edgeGeometry?.dispose();
+        (edgeLines.material as THREE.Material).dispose();
+        edgeLines = null;
+        edgeGeometry = null;
+      }
+      edgeLinkIndices = links;
+      edgeCount = links.length / 2;
+      if (edgeCount === 0) {
+        edgePositions = null;
+        edgeColors = null;
+        return;
+      }
+      edgePositions = new Float32Array(edgeCount * 2 * 3);
+      edgeColors = new Float32Array(edgeCount * 2 * 3);
+      edgeGeometry = new THREE.BufferGeometry();
+      edgeGeometry.setAttribute("position", new THREE.BufferAttribute(edgePositions, 3));
+      edgeGeometry.setAttribute("color", new THREE.BufferAttribute(edgeColors, 3));
+      const edgeMaterial = new THREE.LineBasicMaterial({
+        vertexColors: true,
+        transparent: true,
+        opacity: 1, // alpha is baked into RGB (§5) — MUST stay 1, no double-attenuation
+        depthWrite: false,
+      });
+      edgeLines = new THREE.LineSegments(edgeGeometry, edgeMaterial);
+      edgeLines.frustumCulled = false;
+      edgeLines.renderOrder = -1; // draw behind the node spheres
+      scene.add(edgeLines);
+      writeEdgePositions(currentXyz);
+    }
+
+    function writeEdgePositions(xyz: Float32Array): void {
+      if (!edgeGeometry || !edgePositions || !edgeLinkIndices || edgeCount === 0) return;
+      for (let e = 0; e < edgeCount; e++) {
+        const s = edgeLinkIndices[e * 2];
+        const t = edgeLinkIndices[e * 2 + 1];
+        const so = s * 3;
+        const to = t * 3;
+        const o = e * 6;
+        edgePositions[o] = xyz[so];
+        edgePositions[o + 1] = xyz[so + 1];
+        edgePositions[o + 2] = xyz[so + 2];
+        edgePositions[o + 3] = xyz[to];
+        edgePositions[o + 4] = xyz[to + 1];
+        edgePositions[o + 5] = xyz[to + 2];
+      }
+      (edgeGeometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
+    }
+
+    function applyEdgeColors(rgba: Float32Array): void {
+      if (!edgeGeometry || !edgeColors || edgeCount === 0) return;
+      for (let e = 0; e < edgeCount; e++) {
+        const a = rgba[e * 4 + 3];
+        const pr = rgba[e * 4] * a;
+        const pg = rgba[e * 4 + 1] * a;
+        const pb = rgba[e * 4 + 2] * a;
+        const o = e * 6;
+        edgeColors[o] = pr;
+        edgeColors[o + 1] = pg;
+        edgeColors[o + 2] = pb;
+        edgeColors[o + 3] = pr;
+        edgeColors[o + 4] = pg;
+        edgeColors[o + 5] = pb;
+      }
+      (edgeGeometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
     }
 
     // -----------------------------------------------------------------------
@@ -322,6 +424,20 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       setEventHandlers: (h: GraphEventHandlers) => {
         handlersRef.current = h;
       },
+      setLinks: (links: Float32Array) => {
+        buildEdges(links);
+        writeEdgePositions(currentXyz);
+      },
+      setLinkColors: (rgba: Float32Array) => {
+        applyEdgeColors(rgba);
+      },
+      getRenderState: () => ({
+        renderLinks: edgeLines !== null && edgeLines.visible === true && edgeCount > 0,
+        linkCount: edgeCount,
+        hasLineGeometry: edgeGeometry !== null,
+        positionAttributeLength: edgePositions ? edgePositions.length : 0,
+        colorAttributeLength: edgeColors ? edgeColors.length : 0,
+      }),
     };
 
     props.onHandleReady(handle);
@@ -341,6 +457,11 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       renderer.dispose();
       geometry.dispose();
       material.dispose();
+      if (edgeLines) {
+        scene.remove(edgeLines);
+        edgeGeometry?.dispose();
+        (edgeLines.material as THREE.Material).dispose();
+      }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

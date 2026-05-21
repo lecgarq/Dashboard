@@ -43,6 +43,7 @@ const _capturedInstancedMeshes: any[] = [];
 const _capturedMatrixWrites: Array<{ i: number; pos: [number, number, number] }> = [];
 let _capturedControls: any = null;
 let _webglRendererConstructorCount = 0;
+const _capturedLineSegments: any[] = [];
 
 // ---------------------------------------------------------------------------
 // Mock @cosmos.gl/graph (needed for GraphCanvas → GraphCanvas2D)
@@ -160,6 +161,7 @@ vi.mock("three", async () => {
   class MockScene {
     background: any = null;
     add(_obj: any) {}
+    remove(_obj: any) {}
   }
 
   class MockPerspectiveCamera {
@@ -227,6 +229,49 @@ vi.mock("three", async () => {
     constructor(_src?: string) {}
   }
 
+  class FakeBufferAttribute {
+    array: Float32Array;
+    itemSize: number;
+    needsUpdate = false;
+    constructor(array: Float32Array, itemSize: number) {
+      this.array = array;
+      this.itemSize = itemSize;
+    }
+  }
+
+  class MockBufferGeometry {
+    attributes: Record<string, FakeBufferAttribute> = {};
+    setAttribute(name: string, attr: FakeBufferAttribute) {
+      this.attributes[name] = attr;
+      return this;
+    }
+    dispose() {}
+  }
+
+  class MockLineBasicMaterial {
+    vertexColors = false;
+    transparent = false;
+    opacity = 1;
+    depthWrite = true;
+    constructor(opts?: any) {
+      if (opts) Object.assign(this, opts);
+    }
+    dispose() {}
+  }
+
+  class MockLineSegments {
+    geometry: any;
+    material: any;
+    visible = true;
+    frustumCulled = true;
+    renderOrder = 0;
+    constructor(geometry: any, material: any) {
+      this.geometry = geometry;
+      this.material = material;
+      _capturedLineSegments.push(this);
+    }
+  }
+
   return {
     ...actual,
     WebGLRenderer: MockWebGLRenderer,
@@ -241,6 +286,10 @@ vi.mock("three", async () => {
     Matrix4: FakeMatrix4,
     Vector3: FakeVector3,
     Box3: FakeBox3,
+    BufferGeometry: MockBufferGeometry,
+    BufferAttribute: FakeBufferAttribute,
+    LineSegments: MockLineSegments,
+    LineBasicMaterial: MockLineBasicMaterial,
   };
 });
 
@@ -316,6 +365,7 @@ beforeEach(async () => {
   _capturedMatrixWrites.length = 0;
   _capturedControls = null;
   _webglRendererConstructorCount = 0;
+  _capturedLineSegments.length = 0;
 
   // Dynamic import after mocks are set up
   const mod3D = await import("./GraphCanvas3D");
@@ -679,5 +729,115 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     vi.useRealTimers();
     rafSpy.mockRestore();
     cancelSpy.mockRestore();
+  });
+
+  // Test 13: setLinks builds one LineSegments with correctly sized buffers
+  it("Test 13: edges — links prop builds LineSegments with edges*2*3 buffers", () => {
+    const physics = makeFakePhysics(2);
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        links: new Float32Array([0, 1]), // one edge: node0 -> node1
+        linkColors: new Float32Array([0.62, 0.72, 0.93, 0.1]),
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+
+    const rs = handle!.getRenderState();
+    expect(rs.renderLinks).toBe(true);
+    expect(rs.linkCount).toBe(1);
+    expect(rs.hasLineGeometry).toBe(true);
+    expect(rs.positionAttributeLength).toBe(6); // 1 edge * 2 verts * 3
+    expect(rs.colorAttributeLength).toBe(6);
+    expect(_capturedLineSegments.length).toBe(1);
+    expect(_capturedLineSegments[0].material.opacity).toBe(1); // MUST stay 1
+  });
+
+  // Test 14: edge endpoints follow node xyz (raw, no y-flip) on pushPositions
+  it("Test 14: edges — endpoints rewritten from the same xyz as nodes", () => {
+    const physics = makeFakePhysics(2); // node0 (0,0,0), node1 (10,20,30)
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        links: new Float32Array([0, 1]),
+        linkColors: new Float32Array([0.62, 0.72, 0.93, 0.1]),
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+
+    const posAttr = _capturedLineSegments[0].geometry.attributes.position;
+    // Initial write uses physics seed positions: node0 (0,0,0), node1 (10,20,30)
+    expect(Array.from(posAttr.array)).toEqual([0, 0, 0, 10, 20, 30]);
+
+    handle!.pushPositions(new Float32Array([100, 200, 300, 400, 500, 600]));
+    expect(Array.from(posAttr.array)).toEqual([100, 200, 300, 400, 500, 600]);
+    expect(posAttr.needsUpdate).toBe(true);
+  });
+
+  // Test 15: setLinkColors premultiplies alpha into RGB on both vertices
+  it("Test 15: edges — setLinkColors premultiplies alpha into per-vertex RGB", () => {
+    const physics = makeFakePhysics(2);
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        links: new Float32Array([0, 1]),
+        linkColors: new Float32Array([0.62, 0.72, 0.93, 0.1]),
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+
+    // bright: rgb * 0.85
+    handle!.setLinkColors(new Float32Array([0.62, 0.72, 0.93, 0.85]));
+    const colorAttr = _capturedLineSegments[0].geometry.attributes.color;
+    const v = Array.from(colorAttr.array) as number[];
+    // both vertices identical, each channel = channel * alpha
+    expect(v[0]).toBeCloseTo(0.62 * 0.85, 5);
+    expect(v[1]).toBeCloseTo(0.72 * 0.85, 5);
+    expect(v[2]).toBeCloseTo(0.93 * 0.85, 5);
+    expect(v[3]).toBeCloseTo(0.62 * 0.85, 5);
+    expect(v[4]).toBeCloseTo(0.72 * 0.85, 5);
+    expect(v[5]).toBeCloseTo(0.93 * 0.85, 5);
+    expect(colorAttr.needsUpdate).toBe(true);
+  });
+
+  // Test 16: no links → no LineSegments, renderLinks false
+  it("Test 16: edges — absent links leaves renderLinks false", () => {
+    const physics = makeFakePhysics(2);
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+
+    const rs = handle!.getRenderState();
+    expect(rs.renderLinks).toBe(false);
+    expect(rs.linkCount).toBe(0);
+    expect(rs.hasLineGeometry).toBe(false);
+    expect(_capturedLineSegments.length).toBe(0);
   });
 });
