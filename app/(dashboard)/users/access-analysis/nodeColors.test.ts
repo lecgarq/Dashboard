@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   COLOR_MODES,
+  COLOR_MODE_LABELS,
   categoryForColor,
   buildNodeColors,
   type ColorMode,
@@ -63,6 +64,19 @@ describe("categoryForColor", () => {
   it("uses stable placeholders for missing tier / status", () => {
     expect(categoryForColor(feature({ permTier: null }), "tier")).toBe("(none)");
     expect(categoryForColor(feature({ accountStatus: "" }), "status")).toBe("(unknown)");
+  });
+});
+
+describe("color mode metadata", () => {
+  it("leads with external (the default mode)", () => {
+    expect(COLOR_MODES[0]).toBe("external");
+  });
+
+  it("provides a non-empty label for every mode", () => {
+    for (const mode of COLOR_MODES) {
+      expect(COLOR_MODE_LABELS[mode]).toBeTruthy();
+      expect(typeof COLOR_MODE_LABELS[mode]).toBe("string");
+    }
   });
 });
 

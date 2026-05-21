@@ -19,6 +19,7 @@ import { DimensionFilterPopover } from "./DimensionFilterPopover";
 import { DIMENSIONS, type DimensionId } from "./SliderContext";
 import { useFilters } from "./FilterContext";
 import { featureValueForDim } from "./usePredicateEngine";
+import { COLOR_MODES, COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 /** Fixed bucket order for the two numeric dims. */
@@ -34,6 +35,10 @@ export interface ToolbarProps {
   onModeChange: (m: "2d" | "3d") => void;
   lassoActive: boolean;
   onLassoToggle: () => void;
+  // Optional so existing harnesses can mount the Toolbar without the color
+  // controls; the shell always supplies both, so production is fully wired.
+  colorMode?: ColorMode;
+  onColorModeChange?: (m: ColorMode) => void;
 }
 
 export function Toolbar({
@@ -42,6 +47,8 @@ export function Toolbar({
   onModeChange,
   lassoActive,
   onLassoToggle,
+  colorMode = "external",
+  onColorModeChange,
 }: ToolbarProps): React.JSX.Element {
   const {
     activeFilters,
@@ -141,6 +148,23 @@ export function Toolbar({
       >
         Lasso
       </button>
+
+      <label className="flex items-center gap-1.5 text-sm text-muted-foreground">
+        <span className="hidden sm:inline">Color</span>
+        <select
+          value={colorMode}
+          onChange={(e) => onColorModeChange?.(e.target.value as ColorMode)}
+          aria-label="Color nodes by"
+          data-testid="toolbar-color-mode"
+          className="rounded-md border bg-background px-2 py-1.5 text-sm text-foreground focus:border-blue-500 focus:outline-none"
+        >
+          {COLOR_MODES.map((m) => (
+            <option key={m} value={m}>
+              {COLOR_MODE_LABELS[m]}
+            </option>
+          ))}
+        </select>
+      </label>
 
       <div
         role="group"

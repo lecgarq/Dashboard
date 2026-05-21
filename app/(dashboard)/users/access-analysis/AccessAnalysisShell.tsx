@@ -34,6 +34,7 @@ import {
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
+import { buildNodeColors, type ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
@@ -93,6 +94,15 @@ function ShellBody({
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
 
+  // Phase 4: semantic node coloring. Default "external" (internal vs external) —
+  // the clearest at-a-glance security signal. Dimming stays a MASK concern, so
+  // the color buffer keeps alpha=1 and never encodes selection/filter state.
+  const [colorMode, setColorMode] = useState<ColorMode>("external");
+  const nodeColors = useMemo<Float32Array>(
+    () => buildNodeColors(features, colorMode),
+    [features, colorMode],
+  );
+
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
     installGraphTestBridge();
@@ -105,8 +115,10 @@ function ShellBody({
       mode,
       selection: lassoSelection,
       isolated: isolatedNodeIndex,
+      colorMode,
+      nodeColors,
     });
-  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex]);
+  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors]);
 
   const visibleSubset = useMemo<ReadonlySet<number> | null>(
     () => filterSelectionByPredicate(lassoSelection, features, activeFilters, searchQuery),
@@ -125,18 +137,6 @@ function ShellBody({
     setEdgeTestState({ derive: edgeData, nodeCount: features.length });
   }, [edgeData, features.length]);
 
-  // Constant white colors as a safe default — render layer accepts any RGBA buffer.
-  const nodeColors = useMemo<Float32Array>(() => {
-    const arr = new Float32Array(features.length * 4);
-    for (let i = 0; i < features.length; i++) {
-      arr[i * 4 + 0] = 0.62;
-      arr[i * 4 + 1] = 0.72;
-      arr[i * 4 + 2] = 0.93;
-      arr[i * 4 + 3] = 1;
-    }
-    return arr;
-  }, [features.length]);
-
   return (
     <div className="flex h-full flex-col">
       <Toolbar
@@ -145,6 +145,8 @@ function ShellBody({
         onModeChange={setMode}
         lassoActive={lassoActive}
         onLassoToggle={() => setLassoActive(!lassoActive)}
+        colorMode={colorMode}
+        onColorModeChange={setColorMode}
       />
       <div className="relative flex flex-1">
         <div className="relative flex-1">

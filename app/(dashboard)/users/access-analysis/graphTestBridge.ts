@@ -24,6 +24,7 @@ import type { GraphEventHandlers, NodeFeatureSnapshot } from "./interactionTypes
 import type { DeriveResult } from "./sameUserEdges";
 import { computeAxisRanges, computeClusteringRatio } from "./layoutStats";
 import { categoryValue, type TargetDimensionId } from "./featureTargets";
+import type { ColorMode } from "./nodeColors";
 
 export function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
@@ -38,6 +39,9 @@ interface ShellState {
   mode: "2d" | "3d";
   selection: ReadonlySet<number> | null;
   isolated: number | null;
+  /** Active semantic color mode + the live RGBA buffer fed to BOTH renderers. */
+  colorMode: ColorMode;
+  nodeColors: Float32Array | null;
 }
 
 interface InteractionState {
@@ -54,6 +58,8 @@ const shell: ShellState = {
   mode: "2d",
   selection: null,
   isolated: null,
+  colorMode: "external",
+  nodeColors: null,
 };
 
 const interaction: InteractionState = {
@@ -146,6 +152,14 @@ export interface GraphTestApi {
     sameMean: number;
     crossMean: number;
     sampledPairs: number;
+  };
+  getColorMode(): ColorMode;
+  getColorStats(): {
+    length: number;
+    nodeCount: number;
+    allAlphaOne: boolean;
+    distinctColors: number;
+    signature: number;
   };
   getNodeIndex(nodeId: string): number;
   getFirstNodeId(): string | null;
@@ -254,6 +268,32 @@ function buildApi(): GraphTestApi {
       const xyz = shell.physics.getPositions();
       const cats = shell.features.map((f) => categoryValue(f, dim));
       return computeClusteringRatio(xyz, cats);
+    },
+    getColorMode() {
+      return shell.colorMode;
+    },
+    getColorStats() {
+      const buf = shell.nodeColors;
+      if (!buf) {
+        return { length: 0, nodeCount: 0, allAlphaOne: true, distinctColors: 0, signature: 0 };
+      }
+      const n = buf.length / 4;
+      let allAlphaOne = true;
+      const seen = new Set<number>();
+      // FNV-1a over 8-bit-quantized RGB → stable signature immune to float noise
+      // that changes iff the rendered colors change (proves a mode switch took).
+      let sig = 0x811c9dc5;
+      for (let i = 0; i < n; i++) {
+        const r = Math.round(buf[i * 4] * 255);
+        const g = Math.round(buf[i * 4 + 1] * 255);
+        const b = Math.round(buf[i * 4 + 2] * 255);
+        if (buf[i * 4 + 3] !== 1) allAlphaOne = false;
+        seen.add((r << 16) | (g << 8) | b);
+        sig = (Math.imul(sig ^ r, 0x01000193) >>> 0);
+        sig = (Math.imul(sig ^ g, 0x01000193) >>> 0);
+        sig = (Math.imul(sig ^ b, 0x01000193) >>> 0);
+      }
+      return { length: buf.length, nodeCount: n, allAlphaOne, distinctColors: seen.size, signature: sig >>> 0 };
     },
     getNodeIndex(nodeId) {
       return nodeIndexOf(nodeId);

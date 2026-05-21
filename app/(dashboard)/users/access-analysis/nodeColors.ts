@@ -29,7 +29,17 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 export type ColorMode = "role" | "tier" | "status" | "external";
 
-export const COLOR_MODES: readonly ColorMode[] = ["role", "tier", "status", "external"];
+// "external" leads — it is the default color mode (the clearest at-a-glance
+// security signal: who is internal vs an outside collaborator).
+export const COLOR_MODES: readonly ColorMode[] = ["external", "role", "tier", "status"];
+
+/** Human-readable labels for the Toolbar color-mode selector. */
+export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
+  external: "Internal / External",
+  role: "Role",
+  tier: "Permission tier",
+  status: "Account status",
+};
 
 /** The categorical value used to pick a color for the given mode. */
 export function categoryForColor(f: NodeFeatureSnapshot, mode: ColorMode): string {

@@ -53,6 +53,14 @@ type Bridge = {
     crossMean: number;
     sampledPairs: number;
   };
+  getColorMode(): string;
+  getColorStats(): {
+    length: number;
+    nodeCount: number;
+    allAlphaOne: boolean;
+    distinctColors: number;
+    signature: number;
+  };
   getFirstNodeId(): string | null;
   getCentermostNodeId(): string | null;
   getNodeScreenPosition(id: string): { x: number; y: number } | null;
@@ -219,6 +227,70 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(Number.isFinite(score), "clustering score stays finite").toBe(true);
     await expect(page.locator("canvas").first()).toBeVisible();
     await proofShot(page, testInfo, "after-project-slider");
+  });
+
+  test("color mode swaps the node color buffer, with 2D/3D parity (smoke)", async ({ page }, testInfo) => {
+    // SMOKE — the color MATH is proven in nodeColors.test.ts. Here we confirm the
+    // selector swaps the live RGBA buffer fed to BOTH renderers: alpha stays 1
+    // (dimming is mask-only), length tracks the node set, and the buffer signature
+    // changes deterministically across modes. No freeze wait (bridge read only).
+    const initial = await page.evaluate(() => ({
+      mode: window.__ACC_GRAPH_TEST__!.getColorMode(),
+      stats: window.__ACC_GRAPH_TEST__!.getColorStats(),
+    }));
+    // eslint-disable-next-line no-console
+    console.log(
+      `[color] default=${initial.mode} len=${initial.stats.length} distinct=${initial.stats.distinctColors} sig=${initial.stats.signature}`,
+    );
+    expect(initial.mode, "default color mode is internal/external").toBe("external");
+    expect(initial.stats.length, "RGBA buffer is nodeCount*4").toBe(EXPECTED_NODE_COUNT * 4);
+    expect(initial.stats.nodeCount).toBe(EXPECTED_NODE_COUNT);
+    expect(initial.stats.allAlphaOne, "alpha stays 1 (dimming is mask-only)").toBe(true);
+    // internal/external is a 2-class dimension, so it yields 1 or 2 colors. On the
+    // current DC snapshot every user is the same class, so it is monochrome (1) —
+    // the recolor proof below uses role mode, which has many categories.
+    expect(initial.stats.distinctColors, "internal/external yields 1–2 colors").toBeGreaterThanOrEqual(1);
+    expect(initial.stats.distinctColors, "internal/external is at most 2 categories").toBeLessThanOrEqual(2);
+
+    // Switch to role → buffer must change deterministically, stay valid, more colors.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "role");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "role", undefined, {
+      timeout: 15_000,
+    });
+    const role = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    // eslint-disable-next-line no-console
+    console.log(`[color] role len=${role.length} distinct=${role.distinctColors} sig=${role.signature}`);
+    expect(role.length, "buffer length unchanged across modes").toBe(EXPECTED_NODE_COUNT * 4);
+    expect(role.allAlphaOne, "alpha still 1 after recolor").toBe(true);
+    expect(role.signature, "role coloring differs from external").not.toBe(initial.stats.signature);
+    expect(role.distinctColors, "role has multiple categories").toBeGreaterThan(2);
+    await expect(page.locator("canvas").first(), "2D still renders after recolor").toBeVisible();
+
+    // Parity: the SAME buffer feeds the 3D renderer — switching to 3D leaves the
+    // color signature identical, and 3D still renders.
+    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
+      timeout: 20_000,
+    });
+    const stats3d = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    expect(stats3d.signature, "3D shares the 2D color buffer (parity)").toBe(role.signature);
+    expect(await page.locator("canvas").count(), "3D canvas present").toBeGreaterThan(0);
+    await proofShot(page, testInfo, "after-color-3d");
+
+    // Back to 2D + external → deterministic return to the original signature.
+    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "2D" }).click();
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "2d", undefined, {
+      timeout: 20_000,
+    });
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "external");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "external", undefined, {
+      timeout: 15_000,
+    });
+    const back = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    expect(back.signature, "recoloring is deterministic (external → role → external)").toBe(
+      initial.stats.signature,
+    );
+    await proofShot(page, testInfo, "after-color-mode");
   });
 
   test("3D renders a non-empty, finite, centered cloud", async ({ page }, testInfo) => {
