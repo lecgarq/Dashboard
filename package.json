@@ -6,7 +6,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "test": "vitest run",
+    "test": "vitest run --exclude \"**/tests/e2e/**\"",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
     "dev": "python scripts/run_dev_stack.py",
