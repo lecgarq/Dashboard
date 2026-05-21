@@ -26,6 +26,7 @@ import { Toolbar } from "./Toolbar";
 import { RightPanelStack } from "./RightPanelStack";
 import {
   CONTROLS_STORAGE_KEY,
+  DEFAULT_VALUES,
   DIMENSIONS,
   SliderProvider,
   type DimensionId,
@@ -239,8 +240,11 @@ export function AccessAnalysisShell(): React.JSX.Element {
 
         // Seed initial sliders from persisted controls so physics resumes the
         // user's last view immediately on reload (mirrors SliderContext hydration).
+        // P1.1: default to the organic profile (normalized 0..1) so the first
+        // settle is structural. localStorage (if present) overrides per-dim below,
+        // mirroring SliderContext hydration so UI and physics stay in lockstep.
         let initialSliders: Record<string, number> = Object.fromEntries(
-          DIMENSIONS.map((d) => [d.id, 0]),
+          DIMENSIONS.map((d) => [d.id, (DEFAULT_VALUES[d.id] ?? 0) / 100]),
         );
         try {
           if (typeof window !== "undefined") {

@@ -22,6 +22,8 @@ import type { PhysicsLayer } from "./physicsLayer";
 import type { GraphCanvasHandle } from "./GraphCanvas";
 import type { GraphEventHandlers, NodeFeatureSnapshot } from "./interactionTypes";
 import type { DeriveResult } from "./sameUserEdges";
+import { computeAxisRanges, computeClusteringRatio } from "./layoutStats";
+import { categoryValue, type TargetDimensionId } from "./featureTargets";
 
 export function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
@@ -132,6 +134,19 @@ export interface GraphTestApi {
     center: [number, number, number];
     maxAbs: number;
   };
+  getLayoutStats(): {
+    nodeCount: number;
+    xRange: number;
+    yRange: number;
+    zRange: number;
+    anyNaN: boolean;
+  };
+  getClusteringScore(dim: TargetDimensionId): {
+    ratio: number;
+    sameMean: number;
+    crossMean: number;
+    sampledPairs: number;
+  };
   getNodeIndex(nodeId: string): number;
   getFirstNodeId(): string | null;
   getCentermostNodeId(): string | null;
@@ -225,6 +240,20 @@ function buildApi(): GraphTestApi {
       }
       if (n > 0) out.center = [sx / n, sy / n, sz / n];
       return out;
+    },
+    getLayoutStats() {
+      if (!shell.physics) {
+        return { nodeCount: 0, xRange: 0, yRange: 0, zRange: 0, anyNaN: false };
+      }
+      return computeAxisRanges(shell.physics.getPositions());
+    },
+    getClusteringScore(dim) {
+      if (!shell.physics || shell.features.length === 0) {
+        return { ratio: 1, sameMean: 0, crossMean: 0, sampledPairs: 0 };
+      }
+      const xyz = shell.physics.getPositions();
+      const cats = shell.features.map((f) => categoryValue(f, dim));
+      return computeClusteringRatio(xyz, cats);
     },
     getNodeIndex(nodeId) {
       return nodeIndexOf(nodeId);

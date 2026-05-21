@@ -58,11 +58,17 @@ export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = [
 ];
 
 /**
- * Outer anchor radius. The absolute scale is irrelevant — the physics layer
- * normalizes the settled spread into a fixed cube (`LAYOUT_HALF_EXTENT`). What
- * matters is the RELATIVE separation between category anchors.
+ * Outer anchor radius. The absolute scale is irrelevant to the FINAL view — the
+ * physics layer normalizes the settled spread into a fixed cube
+ * (`LAYOUT_HALF_EXTENT`). What matters is the anchor separation RELATIVE to the
+ * many-body repulsion cloud: anchors must sit far enough apart that same-category
+ * nodes actually converge instead of being smeared across the repulsion-driven
+ * spread. At radius 1 the repulsion cloud (~10³ units for ~10⁴ nodes) completely
+ * swamps the anchors → no clustering (a globe). 16000 is empirically large enough
+ * for same-category convergence to win (see physicsClustering.test.ts), while the
+ * post-settle normalization keeps the rendered/edge coordinates bounded.
  */
-const ANCHOR_RADIUS = 1;
+const ANCHOR_RADIUS = 16000;
 
 /** Golden angle (radians) — the spacing that makes a spherical Fibonacci set even. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ≈ 2.39996323

@@ -15,6 +15,7 @@ import { useEffect } from "react";
 import type { PhysicsLayer } from "../physicsLayer";
 import {
   CONTROLS_STORAGE_KEY,
+  DEFAULT_VALUES,
   DIMENSIONS,
   SliderProvider,
   useSliders,
@@ -44,6 +45,35 @@ function makeWrapper(physics: PhysicsLayer): React.FC<{ children: React.ReactNod
     return <SliderProvider physics={physics}>{children}</SliderProvider>;
   };
 }
+
+describe("SliderContext — organic default profile (P1.1)", () => {
+  it("ships a structural default profile (project/role/tier first, activity/signin weak)", () => {
+    expect(DEFAULT_VALUES).toEqual({
+      role: 25,
+      tier: 15,
+      project: 35,
+      isExternal: 10,
+      activity: 5,
+      signin: 5,
+    });
+  });
+
+  it("renders the default profile on first commit (no slider movement required)", () => {
+    const { physics } = mkPhysics();
+    let firstValues: Record<string, number> | null = null;
+    function Reader(): null {
+      const s = useSliders();
+      if (firstValues === null) firstValues = { ...s.values };
+      return null;
+    }
+    render(
+      <SliderProvider physics={physics}>
+        <Reader />
+      </SliderProvider>,
+    );
+    expect(firstValues).toEqual(DEFAULT_VALUES);
+  });
+});
 
 describe("SliderContext — rAF coalescing + reset + persistence", () => {
   it("setSliderValue(50) on 'activity' pushes physics.updateSliders with activity = 0.5", async () => {
@@ -82,7 +112,7 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     expect(last.role).toBeCloseTo(0.75, 6);
   });
 
-  it("resetAll pushes immediate all-zeros updateSliders", async () => {
+  it("resetAll restores the default profile immediately (not a globe)", async () => {
     const { physics, updateSliders } = mkPhysics();
     const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
 
@@ -99,8 +129,9 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
     expect(updateSliders).toHaveBeenCalledTimes(1);
     const args = updateSliders.mock.calls[0][0] as Record<string, number>;
+    // Reset returns to the organic DEFAULT profile (normalized 0..1), not zeros.
     for (const dim of DIMENSIONS) {
-      expect(args[dim.id]).toBe(0);
+      expect(args[dim.id]).toBeCloseTo(DEFAULT_VALUES[dim.id] / 100, 6);
     }
   });
 
@@ -175,8 +206,9 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     );
 
     expect(firstValues).not.toBeNull();
-    // First committed render shows defaults — NOT the persisted 99 — confirming
-    // the hydration only happens via useEffect (client-only) on the second pass.
-    expect(firstValues!.activity).toBe(0);
+    // First committed render shows the DEFAULT profile — NOT the persisted 99 —
+    // confirming hydration only happens via useEffect (client-only) on pass two.
+    expect(firstValues!.activity).toBe(DEFAULT_VALUES.activity);
+    expect(firstValues!.activity).not.toBe(99);
   });
 });

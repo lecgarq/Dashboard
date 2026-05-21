@@ -212,9 +212,28 @@ export async function createPhysicsLayer(
       );
   }
 
+  // P1.1: apply slider strengths + engine params to the live simulation. Shared by
+  // construction (so the FIRST settle is organic) and updateSliders. PHYSICS-bus
+  // only — never touches alpha/restart or the mask bus. Returns max(sliderValues).
+  function applySliderForces(values: Record<string, number>): number {
+    const maxSlider = Math.max(0, ...Object.values(values));
+    for (const [dimId, sv] of Object.entries(values)) {
+      const str = sv * STRENGTH_AT_ONE;
+      (sim.force(`${dimId}-x`) as ReturnType<typeof forceX> | null)?.strength(str);
+      (sim.force(`${dimId}-y`) as ReturnType<typeof forceY> | null)?.strength(str);
+      (sim.force(`${dimId}-z`) as ReturnType<typeof forceZ> | null)?.strength(str);
+    }
+    manyBody.strength(lerp(REPULSION_ZERO, REPULSION_ONE, maxSlider));
+    sim.alphaDecay(lerp(DECAY_ZERO, DECAY_ONE, maxSlider));
+    return maxSlider;
+  }
+
   let frozen = false;
   let prevMax = 0;
   let _sliders: Record<string, number> = { ...initialSliders };
+  // P1.1: seed the simulation with the initial profile so the FIRST settle already
+  // expresses structure (volumetric clusters), not a featureless repulsion globe.
+  prevMax = applySliderForces(_sliders);
 
   // PHYS-05: Register "end" handler BEFORE cache check (ensures it fires if sim runs).
   // Handler packs positions synchronously into Float32Array BEFORE the async save
@@ -286,25 +305,10 @@ export async function createPhysicsLayer(
     // PHYS-02 + PHYS-03: Update all slider strengths + engine params atomically, then reheat.
     updateSliders(values: Record<string, number>): void {
       _sliders = { ...values };
-      const maxSlider = Math.max(0, ...Object.values(values));
-
-      // PHYS-03: Compute engine params from max(sliderValues).
+      // PHYS-01 + PHYS-03: set per-dim strengths + engine params atomically (shared
+      // with construction via applySliderForces). Returns max(sliderValues).
+      const maxSlider = applySliderForces(values);
       const newAlpha = Math.min(maxSlider, ALPHA_MAX_REHEAT);
-      const newDecay = lerp(DECAY_ZERO, DECAY_ONE, maxSlider);
-      const newRepulsion = lerp(REPULSION_ZERO, REPULSION_ONE, maxSlider);
-
-      // PHYS-01: Mutate each named force's strength for this dimension.
-      for (const [dimId, sv] of Object.entries(values)) {
-        const str = sv * STRENGTH_AT_ONE;
-        // Use type assertion — force() may return null for unknown names (safe: dimNames defines valid keys).
-        (sim.force(`${dimId}-x`) as ReturnType<typeof forceX> | null)?.strength(str);
-        (sim.force(`${dimId}-y`) as ReturnType<typeof forceY> | null)?.strength(str);
-        (sim.force(`${dimId}-z`) as ReturnType<typeof forceZ> | null)?.strength(str);
-      }
-
-      // PHYS-03: Mutate engine params atomically BEFORE reheat.
-      manyBody.strength(newRepulsion);
-      sim.alphaDecay(newDecay);
 
       // No-reheat optimization: skip if frozen and delta < threshold (prevents scroll-wheel thrashing).
       // Reference: CONTEXT.md line 32.

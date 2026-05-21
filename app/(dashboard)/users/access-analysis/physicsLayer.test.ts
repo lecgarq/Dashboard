@@ -499,6 +499,39 @@ describe("PHYS-05: Freeze-on-rest — 'end' event triggers savePositions then si
     // PHYS-05: sim.stop() must have been called at least once by the "end" handler
     expect(stopCallCount, "sim.stop() must be called by the end handler").toBeGreaterThan(0);
   });
+
+  it("normalizes the settled spread to LAYOUT_HALF_EXTENT (≈350) before caching", async () => {
+    // The e2e suite only smoke-checks finite/non-runaway coordinates (it does NOT
+    // wait for freeze). The strong invariant — the "end" handler rescales the raw
+    // ANCHOR_RADIUS-scale spread (~16000) down into a fixed cube — lives HERE,
+    // deterministically. Seed two far-apart anchors (±16000) so the pre-freeze
+    // spread far exceeds 350; after freeze the packed snapshot must have maxAbs≈350.
+    const n = 6;
+    const dimNames = ["dim-a"];
+    const nodeIds = Array.from({ length: n }, (_, i) => `n${i}`);
+    const nodes: SimNode[] = Array.from({ length: n }, (_, i) => ({ id: `n${i}`, index: i }));
+    const x = new Float32Array(n);
+    for (let i = 0; i < n; i++) x[i] = i % 2 === 0 ? 16000 : -16000;
+    const targets: TargetArrays = {
+      "dim-a": { x, y: new Float32Array(n), z: new Float32Array(n) },
+    };
+    // slider=1 → forceX pulls nodes toward the ±16000 anchors (spread ≫ 350).
+    await createPhysicsLayer(nodeIds, nodes, targets, dimNames, { "dim-a": 1 });
+    const sim = _capturedSim;
+
+    sim.tick(300);
+    await new Promise((r) => setTimeout(r, 10));
+    await flushMicrotasks();
+
+    expect(mockSavePositions, "end handler must persist once").toHaveBeenCalledTimes(1);
+    const xyz = mockSavePositions.mock.calls[0][3] as Float32Array;
+    let maxAbs = 0;
+    for (const v of xyz) maxAbs = Math.max(maxAbs, Math.abs(v));
+    // normalizeNodePositions scales so the largest |coordinate| == halfExtent.
+    expect(maxAbs, "settled spread normalized to LAYOUT_HALF_EXTENT").toBeCloseTo(350, 0);
+    // And it must NOT remain at the raw anchor scale.
+    expect(maxAbs, "raw ANCHOR_RADIUS spread was rescaled down").toBeLessThan(2000);
+  });
 });
 
 // =============================================================================
@@ -639,5 +672,53 @@ describe("No-reheat optimization: skip alpha().restart() when frozen and delta <
     // delta = |0.5 - 0| = 0.5 >> SKIP_THRESHOLD → must reheat even when frozen
     physics.updateSliders({ "dim-activity": 0.5, "dim-recency": 0 });
     expect(restartCallCount, "large delta must trigger restart even when frozen").toBeGreaterThan(0);
+  });
+});
+
+// =============================================================================
+// P1.1: Initial sliders applied at construction (organic default layout)
+// The very first settle must use the profile forces so the default loaded state
+// is volumetric/clustered, not a repulsion globe the user must "fix" with sliders.
+// =============================================================================
+
+describe("P1.1: initial sliders applied at construction", () => {
+  const STRENGTH_AT_ONE = 0.1;
+
+  it("sets per-dim force strengths from non-zero initialSliders before any updateSliders", async () => {
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(4);
+    await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0.5,
+      "dim-recency": 0.25,
+    });
+    const sim = _capturedSim;
+    sim.stop();
+
+    expect(sim.force("dim-activity-x").strength()()).toBeCloseTo(0.5 * STRENGTH_AT_ONE, 6);
+    expect(sim.force("dim-activity-y").strength()()).toBeCloseTo(0.5 * STRENGTH_AT_ONE, 6);
+    expect(sim.force("dim-recency-z").strength()()).toBeCloseTo(0.25 * STRENGTH_AT_ONE, 6);
+  });
+
+  it("sets alphaDecay from max(initialSliders) so the first settle runs long enough to form structure", async () => {
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(4);
+    await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0.5,
+      "dim-recency": 0.25,
+    });
+    const sim = _capturedSim;
+    sim.stop();
+    // lerp(DECAY_ZERO=0.1, DECAY_ONE=0.02, max=0.5) = 0.06
+    expect(sim.alphaDecay()).toBeCloseTo(0.06, 6);
+  });
+
+  it("preserves the globe fallback when initialSliders are all 0 (strengths 0, fast decay)", async () => {
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(4);
+    await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const sim = _capturedSim;
+    sim.stop();
+    expect(sim.force("dim-activity-x").strength()()).toBe(0);
+    expect(sim.alphaDecay()).toBeCloseTo(0.1, 6);
   });
 });

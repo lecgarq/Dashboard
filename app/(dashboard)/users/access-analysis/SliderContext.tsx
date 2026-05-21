@@ -40,13 +40,20 @@ export type DimensionId = (typeof DIMENSIONS)[number]["id"];
 // Shared storage key — FilterContext writes to the same JSON blob.
 export const CONTROLS_STORAGE_KEY = "lecg.access-analysis.controls.v1";
 
-const DEFAULT_VALUES: Record<DimensionId, number> = {
-  role: 0,
-  tier: 0,
-  project: 0,
-  isExternal: 0,
-  activity: 0,
-  signin: 0,
+/**
+ * Organic default layout profile (P1.1). Non-zero so the graph loads as a
+ * volumetric, clustered network — NOT a globe the user must "fix" with sliders.
+ * Structural dimensions lead (project > role > tier > external); activity/signin
+ * are weak so account-state nudges position without dominating clustering.
+ * The shell seeds physics with the SAME values so UI and physics state agree.
+ */
+export const DEFAULT_VALUES: Record<DimensionId, number> = {
+  role: 25,
+  tier: 15,
+  project: 35,
+  isExternal: 10,
+  activity: 5,
+  signin: 5,
 };
 
 // ---------------------------------------------------------------------------

@@ -40,6 +40,19 @@ type Bridge = {
     center: [number, number, number];
     maxAbs: number;
   };
+  getLayoutStats(): {
+    nodeCount: number;
+    xRange: number;
+    yRange: number;
+    zRange: number;
+    anyNaN: boolean;
+  };
+  getClusteringScore(dim: string): {
+    ratio: number;
+    sameMean: number;
+    crossMean: number;
+    sampledPairs: number;
+  };
   getFirstNodeId(): string | null;
   getCentermostNodeId(): string | null;
   getNodeScreenPosition(id: string): { x: number; y: number } | null;
@@ -91,7 +104,30 @@ async function gotoGraph(page: Page): Promise<void> {
   await page.waitForFunction(() => !!window.__ACC_GRAPH_TEST__?.isReady(), undefined, {
     timeout: 120_000,
   });
-  // Wait for the layout to settle so screen coordinates are stable for hit-testing.
+  // SMOKE gate: proceed as soon as the graph is visibly rendered with VALID
+  // positions — do NOT block on a perfect physics freeze. Waiting for a full
+  // settle here runs once per test (beforeEach) and adds minutes to the suite;
+  // the clustering MATH is proven deterministically in physicsClustering.test.ts.
+  // Tests that drive a REAL positional mouse opt into waitForFreeze() instead.
+  await page.waitForFunction(
+    () => {
+      const b = window.__ACC_GRAPH_TEST__;
+      if (!b) return false;
+      const s = b.getPositionsStats();
+      return s.count > 0 && !s.anyNaN && s.maxAbs > 1;
+    },
+    undefined,
+    { timeout: 90_000 },
+  );
+}
+
+/**
+ * Opt-in stabilization for tests that read a node's screen pixel and drive the
+ * REAL mouse to it (hover, click-isolate, 2D edge-isolate). Only these need the
+ * layout frozen so spaceToScreen() coordinates stop moving between read + click.
+ * Smoke/regression tests that observe state through the bridge must NOT call this.
+ */
+async function waitForFreeze(page: Page): Promise<void> {
   await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getFrozen() === true, undefined, {
     timeout: 90_000,
   });
@@ -131,6 +167,60 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-2d-load");
   });
 
+  test("default layout loads volumetric with finite, non-runaway positions", async ({ page }, testInfo) => {
+    // Smoke/regression only — proven deterministically elsewhere:
+    //   - clustering MATH (ratios)            → physicsClustering.test.ts
+    //   - post-freeze normalization to ≈350   → physicsLayer.test.ts
+    // This is a NO-FREEZE gate, so coordinates are still at the raw ANCHOR_RADIUS
+    // scale (~16000); we only assert the real 16,934-node graph loads, is
+    // volumetric with depth, has no NaN, and has not exploded to runaway values.
+    const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
+    // eslint-disable-next-line no-console
+    console.log(
+      `[layout default] n=${stats.nodeCount} x=${stats.xRange.toFixed(1)} y=${stats.yRange.toFixed(1)} z=${stats.zRange.toFixed(1)} anyNaN=${stats.anyNaN}`,
+    );
+    expect(stats.anyNaN, "no NaN positions").toBe(false);
+    expect(stats.nodeCount, "renders the full DC node set").toBe(EXPECTED_NODE_COUNT);
+    expect(stats.xRange, "x spread").toBeGreaterThan(1);
+    expect(stats.yRange, "y spread").toBeGreaterThan(1);
+    expect(stats.zRange, "z spread (depth)").toBeGreaterThan(1);
+    // Meaningful depth — not a flat disc.
+    expect(stats.zRange).toBeGreaterThan(0.2 * Math.max(stats.xRange, stats.yRange));
+
+    // Coordinates are finite and non-runaway pre-freeze: anyNaN already rules out
+    // NaN/Infinity; assert the spread is non-degenerate yet far below a
+    // force-explosion ceiling (~6× ANCHOR_RADIUS). The exact post-freeze
+    // normalization to LAYOUT_HALF_EXTENT is asserted in physicsLayer.test.ts.
+    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    expect(pos.anyNaN, "coordinates are finite (no NaN/Infinity)").toBe(false);
+    expect(pos.maxAbs, "layout is non-degenerate").toBeGreaterThan(1);
+    expect(pos.maxAbs, "no runaway/exploding coordinates").toBeLessThan(100_000);
+    await proofShot(page, testInfo, "after-default-layout");
+  });
+
+  test("moving the project slider does not crash the graph (smoke)", async ({ page }, testInfo) => {
+    // SMOKE only — clustering math is proven in physicsClustering.test.ts. Here we
+    // just confirm a real slider interaction keeps the graph valid (no NaN, full
+    // node set, finite clustering score). We do NOT wait for a full re-settle or a
+    // target ratio — that would add minutes of physical settling to the suite.
+    const thumb = page.getByLabel("Project thumb");
+    await thumb.focus();
+    await page.keyboard.press("End"); // Radix slider: End → max (100)
+
+    // Let the rAF-coalesced slider→physics push apply; do NOT wait for full freeze.
+    await page.waitForTimeout(1_500);
+
+    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("project").ratio);
+    // eslint-disable-next-line no-console
+    console.log(`[slider smoke] anyNaN=${pos.anyNaN} count=${pos.count} score=${score.toFixed(3)}`);
+    expect(pos.anyNaN, "no NaN after slider change").toBe(false);
+    expect(pos.count, "node set intact after slider change").toBe(EXPECTED_NODE_COUNT);
+    expect(Number.isFinite(score), "clustering score stays finite").toBe(true);
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await proofShot(page, testInfo, "after-project-slider");
+  });
+
   test("3D renders a non-empty, finite, centered cloud", async ({ page }, testInfo) => {
     await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
@@ -162,6 +252,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   // onPointHover closure cosmos.gl itself calls — so the assertion still covers the
   // real handler path, only the pixel-level hit-test is bypassed.
   test("hover shows tooltip backed by firm / account-status / permission-coverage", async ({ page }, testInfo) => {
+    await waitForFreeze(page); // real-mouse hit-test needs stable screen coordinates
     const nodeId = await page.evaluate(
       () => window.__ACC_GRAPH_TEST__!.getCentermostNodeId() ?? window.__ACC_GRAPH_TEST__!.getFirstNodeId(),
     );
@@ -200,6 +291,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("click isolates a node (user-detail panel) and Escape clears it", async ({ page }, testInfo) => {
+    await waitForFreeze(page); // real-mouse hit-test needs stable screen coordinates
     const nodeId = await page.evaluate(
       () => window.__ACC_GRAPH_TEST__!.getCentermostNodeId() ?? window.__ACC_GRAPH_TEST__!.getFirstNodeId(),
     );
@@ -299,6 +391,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("lasso drag selects nodes and renders the selection pie panel", async ({ page }, testInfo) => {
+    await waitForFreeze(page); // screen-space drag needs the fitted, stable view
     await page.getByTestId("toolbar-lasso").click();
     const overlay = page.getByTestId("lasso-overlay");
     await expect(overlay).toHaveAttribute("data-active", "true");
@@ -407,6 +500,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("isolating a multi-project user brightens exactly their footprint edges", async ({ page }, testInfo) => {
+    await waitForFreeze(page); // real-mouse hit-test needs stable screen coordinates
     const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample());
     expect(sample, "a multi-project user exists").toBeTruthy();
     expect(sample!.expectedBrightCount, "sample user has >=1 edge").toBeGreaterThan(0);
@@ -434,3 +528,4 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     });
   });
 });
+
