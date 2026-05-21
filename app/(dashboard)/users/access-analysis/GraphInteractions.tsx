@@ -25,9 +25,9 @@ import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { usePredicateEngine } from "./usePredicateEngine";
 import { LassoOverlay } from "./LassoOverlay";
 import { NodeTooltip } from "./NodeTooltip";
-import { setInteractionTestState } from "./graphTestBridge";
+import { setInteractionTestState, setEdgeTestState } from "./graphTestBridge";
 import { parseNodeId, type SameUserEdge } from "./sameUserEdges";
-import { computeLinkEmphasisColors } from "./linkEmphasis";
+import { computeLinkEmphasisColors, countBrightEdges } from "./linkEmphasis";
 
 export interface GraphInteractionsProps {
   physics: PhysicsLayer;
@@ -187,7 +187,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     const handle = root && root.mode === "2d" ? root.handle : null;
     if (!handle) return;
     handle.setLinkColors(computeLinkEmphasisColors(edges, activeUserIds));
-    // Task 5 will push countBrightEdges(...) to the test bridge.
+    setEdgeTestState({ brightCount: countBrightEdges(edges, activeUserIds) });
     // rendererReady: re-apply once the async handle exists.
   }, [edges, activeUserIds, graphRef, mode, rendererReady]);
 

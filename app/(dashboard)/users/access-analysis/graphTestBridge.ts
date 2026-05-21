@@ -21,6 +21,7 @@
 import type { PhysicsLayer } from "./physicsLayer";
 import type { GraphCanvasHandle } from "./GraphCanvas";
 import type { GraphEventHandlers, NodeFeatureSnapshot } from "./interactionTypes";
+import type { DeriveResult } from "./sameUserEdges";
 
 export function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
@@ -67,6 +68,19 @@ export function setShellTestState(patch: Partial<ShellState>): void {
 export function setInteractionTestState(patch: Partial<InteractionState>): void {
   if (!isGraphTestEnabled()) return;
   Object.assign(interaction, patch);
+}
+
+interface EdgeState {
+  derive: DeriveResult | null;
+  nodeCount: number;
+  brightCount: number;
+}
+
+const edgeState: EdgeState = { derive: null, nodeCount: 0, brightCount: 0 };
+
+export function setEdgeTestState(patch: Partial<EdgeState>): void {
+  if (!isGraphTestEnabled()) return;
+  Object.assign(edgeState, patch);
 }
 
 // ---- Helpers ---------------------------------------------------------------
@@ -134,6 +148,16 @@ export interface GraphTestApi {
   getDimmedNodeCount(): number;
   getHighlightedNodeCount(): number;
   getMaskVersion(): number;
+  getEdgeStats(): {
+    count: number;
+    selfEdges: number;
+    duplicates: number;
+    danglingEndpoints: number;
+    malformedNodeIds: number;
+    distinctUsersWithEdges: number;
+  };
+  getBrightEdgeCount(): number;
+  getEdgeSample(): { nodeId: string; userId: string; expectedBrightCount: number } | null;
   simulateHover(nodeId: string): boolean;
   simulateHoverEnd(): void;
   simulateClick(nodeId: string): boolean;
@@ -276,6 +300,47 @@ function buildApi(): GraphTestApi {
     },
     getMaskVersion() {
       return shell.physics?.maskVersion ?? -1;
+    },
+    getEdgeStats() {
+      const d = edgeState.derive;
+      if (!d) {
+        return { count: 0, selfEdges: 0, duplicates: 0, danglingEndpoints: 0, malformedNodeIds: 0, distinctUsersWithEdges: 0 };
+      }
+      const n = edgeState.nodeCount;
+      let selfEdges = 0;
+      let danglingEndpoints = 0;
+      const seenPairs = new Set<string>();
+      let duplicates = 0;
+      for (const e of d.edges) {
+        if (e.sourceIndex === e.targetIndex) selfEdges++;
+        if (e.sourceIndex < 0 || e.sourceIndex >= n || e.targetIndex < 0 || e.targetIndex >= n) {
+          danglingEndpoints++;
+        }
+        const a = Math.min(e.sourceIndex, e.targetIndex);
+        const b = Math.max(e.sourceIndex, e.targetIndex);
+        const key = `${a}-${b}`;
+        if (seenPairs.has(key)) duplicates++;
+        else seenPairs.add(key);
+      }
+      return {
+        count: d.edges.length,
+        selfEdges,
+        duplicates,
+        danglingEndpoints,
+        malformedNodeIds: d.malformedCount,
+        distinctUsersWithEdges: d.distinctUsersWithEdges,
+      };
+    },
+    getBrightEdgeCount() {
+      return edgeState.brightCount;
+    },
+    getEdgeSample() {
+      const d = edgeState.derive;
+      if (!d || d.edges.length === 0) return null;
+      const userId = d.edges[0].userId;
+      let expectedBrightCount = 0;
+      for (const e of d.edges) if (e.userId === userId) expectedBrightCount++;
+      return { nodeId: d.edges[0].sourceNodeId, userId, expectedBrightCount };
     },
     simulateHover(nodeId) {
       const i = nodeIndexOf(nodeId);

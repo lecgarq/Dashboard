@@ -36,7 +36,7 @@ import { buildFeatureSnapshot } from "./featureSnapshot";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
-import { installGraphTestBridge, setShellTestState } from "./graphTestBridge";
+import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { createPhysicsLayer, type PhysicsLayer, type SimNode, type TargetArrays } from "./physicsLayer";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
@@ -133,7 +133,9 @@ function ShellBody({
     assertLinkArrays(edges.length, links, colors);
     return colors;
   }, [edges, links]);
-  // Task 5 will push edgeData + node count to the test bridge (setEdgeTestState).
+  useEffect(() => {
+    setEdgeTestState({ derive: edgeData, nodeCount: features.length });
+  }, [edgeData, features.length]);
 
   // Constant white colors as a safe default — render layer accepts any RGBA buffer.
   const nodeColors = useMemo<Float32Array>(() => {
