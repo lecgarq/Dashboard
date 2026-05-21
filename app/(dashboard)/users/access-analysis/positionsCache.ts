@@ -1,5 +1,15 @@
 import type { AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 
+/**
+ * Cache-key namespace for the layout algorithm. Bump this whenever the meaning of
+ * cached positions changes so stale entries are never reused.
+ *
+ * "feature-targets-v1": positions are now produced by volumetric feature-anchored
+ * targets (featureTargets.ts) instead of the legacy all-zero "globe" targets.
+ * Mixing this into every position hash invalidates the old globe positions.
+ */
+export const LAYOUT_VERSION = "feature-targets-v1";
+
 export interface PositionRow {
   node_id: string;
   x: number;
@@ -15,6 +25,11 @@ export interface PositionRow {
 export function hashNodeSet(ids: readonly string[]): string {
   const sorted = [...ids].sort();
   let h = 0x811c9dc5;
+  // Namespace by layout version so stale globe positions never collide.
+  for (let i = 0; i < LAYOUT_VERSION.length; i++) {
+    h ^= LAYOUT_VERSION.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
   for (const id of sorted) {
     for (let i = 0; i < id.length; i++) {
       h ^= id.charCodeAt(i);
@@ -78,6 +93,9 @@ export function hashNodeSetAndSliders(
     h = Math.imul(h, 0x01000193) >>> 0;
   };
 
+  // Namespace by layout version so stale globe positions never collide.
+  mix(LAYOUT_VERSION);
+  mix("|");
   for (const id of sortedIds) mix(id);
   mix("|"); // domain separator between id-set and slider-set
   for (const k of sortedSliderKeys) {

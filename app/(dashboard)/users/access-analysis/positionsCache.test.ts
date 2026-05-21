@@ -7,6 +7,7 @@ import {
   ensurePositionsSchema,
   savePositions,
   loadCachedPositions,
+  LAYOUT_VERSION,
 } from "./positionsCache";
 import type { AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
 
@@ -218,5 +219,71 @@ describe("hashNodeSetAndSliders", () => {
     const k2 = hashNodeSetAndSliders(ids, sliders);
 
     expect(k2).toBe(k1);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Layout-version namespacing — forces invalidation of stale "globe" positions
+// written before featureTargets (all-zero-target) layouts existed.
+// ---------------------------------------------------------------------------
+
+/** Replica of the pre-version FNV-1a algorithm (no LAYOUT_VERSION mixed in). */
+function versionlessHashAndSliders(
+  ids: readonly string[],
+  sliders: Readonly<Record<string, number>>,
+): string {
+  const sortedIds = [...ids].sort();
+  const sortedSliderKeys = Object.keys(sliders).sort();
+  let h = 0x811c9dc5;
+  const mix = (s: string) => {
+    for (let i = 0; i < s.length; i++) {
+      h ^= s.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    h ^= 0x0a;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  };
+  for (const id of sortedIds) mix(id);
+  mix("|");
+  for (const k of sortedSliderKeys) {
+    mix(k);
+    const q = Math.round((sliders[k] ?? 0) * 100) / 100;
+    mix(q.toString());
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+/** Replica of the pre-version FNV-1a algorithm for hashNodeSet. */
+function versionlessHashSet(ids: readonly string[]): string {
+  const sorted = [...ids].sort();
+  let h = 0x811c9dc5;
+  for (const id of sorted) {
+    for (let i = 0; i < id.length; i++) {
+      h ^= id.charCodeAt(i);
+      h = Math.imul(h, 0x01000193) >>> 0;
+    }
+    h ^= 0x0a;
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+describe("layout-version cache namespacing", () => {
+  it("exposes a non-empty LAYOUT_VERSION", () => {
+    expect(typeof LAYOUT_VERSION).toBe("string");
+    expect(LAYOUT_VERSION.length).toBeGreaterThan(0);
+  });
+
+  it("hashNodeSetAndSliders no longer collides with the pre-version key (stale globe positions invalidated)", () => {
+    const ids = ["user1::proj1", "user2::proj2"];
+    const sliders = { role: 0, project: 0 };
+    expect(hashNodeSetAndSliders(ids, sliders)).not.toBe(
+      versionlessHashAndSliders(ids, sliders),
+    );
+  });
+
+  it("hashNodeSet no longer collides with the pre-version key", () => {
+    const ids = ["user1::proj1", "user2::proj2"];
+    expect(hashNodeSet(ids)).not.toBe(versionlessHashSet(ids));
   });
 });

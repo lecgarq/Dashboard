@@ -37,7 +37,8 @@ import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
-import { createPhysicsLayer, type PhysicsLayer, type SimNode, type TargetArrays } from "./physicsLayer";
+import { createPhysicsLayer, type PhysicsLayer, type SimNode } from "./physicsLayer";
+import { buildFeatureTargets } from "./featureTargets";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
@@ -59,20 +60,6 @@ async function loadNodeIds(): Promise<string[]> {
   const table = await connection.query(sql);
   const rows = table.toArray() as Array<{ node_id: string }>;
   return rows.map((r) => String(r.node_id));
-}
-
-/** Build empty per-dim target arrays (all zeros). Physics layer drives forces
- * via slider strengths only — chrome can introduce real per-dim targets later. */
-function makeEmptyTargets(n: number, dimNames: readonly string[]): TargetArrays {
-  const out: TargetArrays = {};
-  for (const d of dimNames) {
-    out[d] = {
-      x: new Float32Array(n),
-      y: new Float32Array(n),
-      z: new Float32Array(n),
-    };
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -278,7 +265,10 @@ export function AccessAnalysisShell(): React.JSX.Element {
 
         const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
         const dimNames = DIMENSIONS.map((d) => d.id);
-        const targets = makeEmptyTargets(nodeIds.length, dimNames);
+        // Volumetric feature-anchored targets (P1) replace the former all-zero
+        // targets that produced the globe. `snapshot` is aligned to `nodeIds`,
+        // so target index === physics node index.
+        const targets = buildFeatureTargets(snapshot);
         const layer = await createPhysicsLayer(
           nodeIds,
           nodes,
