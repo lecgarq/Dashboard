@@ -840,4 +840,12 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     expect(rs.hasLineGeometry).toBe(false);
     expect(_capturedLineSegments.length).toBe(0);
   });
+
+  // Test 17: GraphCanvas forwards links + linkColors to BOTH renderers.
+  // The 2D block already forwards these, so assert the occurrence count is 2
+  // (one for GraphCanvas2D, one for GraphCanvas3D) — distinguishes the new wiring.
+  it("Test 17: GraphCanvas passes links/linkColors props to GraphCanvas3D", () => {
+    expect((CANVAS_SRC.match(/links=\{props\.links\}/g) ?? []).length).toBe(2);
+    expect((CANVAS_SRC.match(/linkColors=\{props\.linkColors\}/g) ?? []).length).toBe(2);
+  });
 });

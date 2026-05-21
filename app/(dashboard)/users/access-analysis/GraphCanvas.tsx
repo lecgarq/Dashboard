@@ -274,6 +274,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           nodeColors={props.nodeColors}
           nodeSizes={props.nodeSizes}
           backgroundColor={bg}
+          links={props.links}
+          linkColors={props.linkColors}
           onHandleReady={(h) => {
             handle3D.current = h;
             setReadyTick((t) => t + 1);
