@@ -68,8 +68,12 @@ describe("categoryForColor", () => {
 });
 
 describe("color mode metadata", () => {
-  it("leads with external (the default mode)", () => {
-    expect(COLOR_MODES[0]).toBe("external");
+  it("leads with role (the default mode)", () => {
+    expect(COLOR_MODES[0]).toBe("role");
+  });
+
+  it("still exposes external as a selectable mode", () => {
+    expect(COLOR_MODES).toContain("external");
   });
 
   it("provides a non-empty label for every mode", () => {

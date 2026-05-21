@@ -94,10 +94,12 @@ function ShellBody({
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
 
-  // Phase 4: semantic node coloring. Default "external" (internal vs external) —
-  // the clearest at-a-glance security signal. Dimming stays a MASK concern, so
-  // the color buffer keeps alpha=1 and never encodes selection/filter state.
-  const [colorMode, setColorMode] = useState<ColorMode>("external");
+  // Phase 4: semantic node coloring. Default "role" — it yields many distinct
+  // colors so the graph looks meaningfully encoded at first load ("external" is
+  // monochrome when every user is the same internal/external class). Dimming
+  // stays a MASK concern, so the color buffer keeps alpha=1 and never encodes
+  // selection/filter state.
+  const [colorMode, setColorMode] = useState<ColorMode>("role");
   const nodeColors = useMemo<Float32Array>(
     () => buildNodeColors(features, colorMode),
     [features, colorMode],

@@ -242,29 +242,38 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     console.log(
       `[color] default=${initial.mode} len=${initial.stats.length} distinct=${initial.stats.distinctColors} sig=${initial.stats.signature}`,
     );
-    expect(initial.mode, "default color mode is internal/external").toBe("external");
+    expect(initial.mode, "default color mode is role (visually informative)").toBe("role");
     expect(initial.stats.length, "RGBA buffer is nodeCount*4").toBe(EXPECTED_NODE_COUNT * 4);
     expect(initial.stats.nodeCount).toBe(EXPECTED_NODE_COUNT);
     expect(initial.stats.allAlphaOne, "alpha stays 1 (dimming is mask-only)").toBe(true);
-    // internal/external is a 2-class dimension, so it yields 1 or 2 colors. On the
-    // current DC snapshot every user is the same class, so it is monochrome (1) —
-    // the recolor proof below uses role mode, which has many categories.
-    expect(initial.stats.distinctColors, "internal/external yields 1–2 colors").toBeGreaterThanOrEqual(1);
-    expect(initial.stats.distinctColors, "internal/external is at most 2 categories").toBeLessThanOrEqual(2);
+    // role has many categories → the graph loads meaningfully colored, not monochrome.
+    expect(initial.stats.distinctColors, "role splits into many colors").toBeGreaterThan(2);
 
-    // Switch to role → buffer must change deterministically, stay valid, more colors.
+    // Switch to external → buffer must change, stay valid; a 2-class dim yields
+    // 1–2 colors (monochrome on the current all-internal snapshot). Still selectable.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "external");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "external", undefined, {
+      timeout: 15_000,
+    });
+    const external = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    // eslint-disable-next-line no-console
+    console.log(`[color] external len=${external.length} distinct=${external.distinctColors} sig=${external.signature}`);
+    expect(external.length, "buffer length unchanged across modes").toBe(EXPECTED_NODE_COUNT * 4);
+    expect(external.allAlphaOne, "alpha still 1 after recolor").toBe(true);
+    expect(external.signature, "external coloring differs from role").not.toBe(initial.stats.signature);
+    expect(external.distinctColors, "internal/external yields 1–2 colors").toBeGreaterThanOrEqual(1);
+    expect(external.distinctColors, "internal/external is at most 2 categories").toBeLessThanOrEqual(2);
+    await expect(page.locator("canvas").first(), "2D still renders after recolor").toBeVisible();
+
+    // Back to role → deterministic return to the original signature (role → external → role).
     await page.selectOption('[data-testid="toolbar-color-mode"]', "role");
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "role", undefined, {
       timeout: 15_000,
     });
-    const role = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
-    // eslint-disable-next-line no-console
-    console.log(`[color] role len=${role.length} distinct=${role.distinctColors} sig=${role.signature}`);
-    expect(role.length, "buffer length unchanged across modes").toBe(EXPECTED_NODE_COUNT * 4);
-    expect(role.allAlphaOne, "alpha still 1 after recolor").toBe(true);
-    expect(role.signature, "role coloring differs from external").not.toBe(initial.stats.signature);
-    expect(role.distinctColors, "role has multiple categories").toBeGreaterThan(2);
-    await expect(page.locator("canvas").first(), "2D still renders after recolor").toBeVisible();
+    const back = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    expect(back.signature, "recoloring is deterministic (role → external → role)").toBe(
+      initial.stats.signature,
+    );
 
     // Parity: the SAME buffer feeds the 3D renderer — switching to 3D leaves the
     // color signature identical, and 3D still renders.
@@ -273,23 +282,8 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
       timeout: 20_000,
     });
     const stats3d = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
-    expect(stats3d.signature, "3D shares the 2D color buffer (parity)").toBe(role.signature);
+    expect(stats3d.signature, "3D shares the 2D color buffer (parity)").toBe(back.signature);
     expect(await page.locator("canvas").count(), "3D canvas present").toBeGreaterThan(0);
-    await proofShot(page, testInfo, "after-color-3d");
-
-    // Back to 2D + external → deterministic return to the original signature.
-    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "2D" }).click();
-    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "2d", undefined, {
-      timeout: 20_000,
-    });
-    await page.selectOption('[data-testid="toolbar-color-mode"]', "external");
-    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "external", undefined, {
-      timeout: 15_000,
-    });
-    const back = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
-    expect(back.signature, "recoloring is deterministic (external → role → external)").toBe(
-      initial.stats.signature,
-    );
     await proofShot(page, testInfo, "after-color-mode");
   });
 

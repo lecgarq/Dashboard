@@ -58,7 +58,7 @@ const shell: ShellState = {
   mode: "2d",
   selection: null,
   isolated: null,
-  colorMode: "external",
+  colorMode: "role",
   nodeColors: null,
 };
 

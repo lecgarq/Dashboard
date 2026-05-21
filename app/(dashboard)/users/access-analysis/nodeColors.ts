@@ -29,9 +29,11 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 export type ColorMode = "role" | "tier" | "status" | "external";
 
-// "external" leads — it is the default color mode (the clearest at-a-glance
-// security signal: who is internal vs an outside collaborator).
-export const COLOR_MODES: readonly ColorMode[] = ["external", "role", "tier", "status"];
+// "role" leads — it is the default color mode: it yields many distinct colors so
+// the graph looks meaningfully encoded at first load. ("external" stays available
+// but is monochrome on datasets where every user is the same internal/external
+// class, so it is not the default.)
+export const COLOR_MODES: readonly ColorMode[] = ["role", "tier", "status", "external"];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {

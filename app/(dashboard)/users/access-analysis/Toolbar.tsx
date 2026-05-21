@@ -47,7 +47,7 @@ export function Toolbar({
   onModeChange,
   lassoActive,
   onLassoToggle,
-  colorMode = "external",
+  colorMode = "role",
   onColorModeChange,
 }: ToolbarProps): React.JSX.Element {
   const {
