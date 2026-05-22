@@ -11,16 +11,7 @@ import { tableFromArrays } from "apache-arrow";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { getDuckDbClient } from "./duckdbClient";
 import { ensurePositionsSchema } from "./positionsCache";
-
-/**
- * Internal domain allowlist. Users whose email domain is in this set are
- * considered internal (isExternal = 0).
- *
- * TODO: Confirm with Luis whether subdomains (e.g. sub.lecg.com) should be
- * treated as internal. Default v1: exact match on the part after "@".
- * See RESEARCH.md Open Question #4.
- */
-export const INTERNAL_DOMAINS = new Set<string>(["lecg.com"]);
+import { classifyAffiliation } from "./internalDomains";
 
 /**
  * One row per (email, projectId) instance — the fundamental unit of the graph.
@@ -41,7 +32,7 @@ export interface NormalizedNodeRow {
   recencyNorm: number;
   /** 1 if project-level admin, else 0 */
   isAdmin: number;
-  /** 1 if email domain not in INTERNAL_DOMAINS, else 0 */
+  /** 1 if affiliation is "external"; 0 for internal OR unknown (P1 — see internalDomains.ts) */
   isExternal: number;
   /** Deduped, non-empty role ids for this (user, project) */
   roleIds: string[];
@@ -60,7 +51,8 @@ export interface NormalizedNodeRow {
  *
  * Activity normalization: log1p(activeCount) → min-max across all rows.
  * Recency normalization: 1 - min(ageDays/90, 1); null lastSignIn → 0.
- * isExternal: domain (after @, lowercase) NOT in INTERNAL_DOMAINS → 1.
+ * isExternal: 1 when classifyAffiliation(email) === "external"; internal and
+ * unknown (missing/malformed email) both map to 0 (P1 — see internalDomains.ts).
  */
 export function normalize(users: BulkAccUser[]): NormalizedNodeRow[] {
   const now = Date.now();
@@ -83,8 +75,7 @@ export function normalize(users: BulkAccUser[]): NormalizedNodeRow[] {
   const rows: NormalizedNodeRow[] = [];
   for (const u of users) {
     const emailLower = u.email.toLowerCase();
-    const domain = emailLower.split("@")[1] ?? "";
-    const isExternal = INTERNAL_DOMAINS.has(domain) ? 0 : 1;
+    const isExternal = classifyAffiliation(emailLower) === "external" ? 1 : 0;
 
     const lastSignIn = u.lastSignIn ?? null;
     const ageDays = lastSignIn

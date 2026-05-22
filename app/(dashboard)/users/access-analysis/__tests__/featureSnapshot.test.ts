@@ -77,9 +77,9 @@ describe("bucketSignin boundaries", () => {
 describe("buildFeatureSnapshot — Task 1 contract", () => {
   it("preserves cosmos index order; length === input.nodeIds.length", async () => {
     mockRows = [
-      makeRow({ user_id: "a", project_id: "p1", activity_count: 0n }),
-      makeRow({ user_id: "b", project_id: "p2", activity_count: 5n }),
-      makeRow({ user_id: "c", project_id: "p3", activity_count: 150n }),
+      makeRow({ user_id: "a", project_id: "p1", activity_count: BigInt(0) }),
+      makeRow({ user_id: "b", project_id: "p2", activity_count: BigInt(5) }),
+      makeRow({ user_id: "c", project_id: "p3", activity_count: BigInt(150) }),
     ];
     // Intentionally reorder the requested cosmos ids — output MUST follow this order.
     const requested = ["c::p3", "a::p1", "b::p2"];
@@ -91,10 +91,10 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
 
   it("buckets activity at the documented boundaries (0, 1, 11, 101)", async () => {
     mockRows = [
-      makeRow({ user_id: "u0", project_id: "p", activity_count: 0n }),
-      makeRow({ user_id: "u1", project_id: "p", activity_count: 1n }),
-      makeRow({ user_id: "u11", project_id: "p", activity_count: 11n }),
-      makeRow({ user_id: "u101", project_id: "p", activity_count: 101n }),
+      makeRow({ user_id: "u0", project_id: "p", activity_count: BigInt(0) }),
+      makeRow({ user_id: "u1", project_id: "p", activity_count: BigInt(1) }),
+      makeRow({ user_id: "u11", project_id: "p", activity_count: BigInt(11) }),
+      makeRow({ user_id: "u101", project_id: "p", activity_count: BigInt(101) }),
     ];
     const ids = ["u0::p", "u1::p", "u11::p", "u101::p"];
     const result = await buildFeatureSnapshot({ nodeIds: ids });
@@ -109,8 +109,8 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
       makeRow({
         user_id: "x",
         project_id: "p",
-        activity_count: 42n,
-        last_signin_days: 5n,
+        activity_count: BigInt(42),
+        last_signin_days: BigInt(5),
       }),
     ];
     const [f] = await buildFeatureSnapshot({ nodeIds: ["x::p"] });
@@ -123,7 +123,7 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
   });
 
   it("returns the safe fallback for unknown nodeIds (Pitfall 2 — no undefined)", async () => {
-    mockRows = [makeRow({ user_id: "known", project_id: "p", activity_count: 5n })];
+    mockRows = [makeRow({ user_id: "known", project_id: "p", activity_count: BigInt(5) })];
     const result = await buildFeatureSnapshot({
       nodeIds: ["known::p", "ghost::missing"],
     });
@@ -157,7 +157,7 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
   });
 
   it("fallback for unknown nodeId yields permissionCoverage:'unknown', firmName:'', accountStatus:''", async () => {
-    mockRows = [makeRow({ user_id: "known", project_id: "p", activity_count: 5n })];
+    mockRows = [makeRow({ user_id: "known", project_id: "p", activity_count: BigInt(5) })];
     const result = await buildFeatureSnapshot({
       nodeIds: ["known::p", "ghost::missing"],
     });
@@ -184,6 +184,37 @@ describe("buildFeatureSnapshot — Task 1 contract", () => {
   });
 });
 
+// ---- Affiliation derived from email (P1 internalDomains) ------------------
+
+describe("affiliation derived from email domain", () => {
+  it("hermosillo.com → internal, isExternal false", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "a@hermosillo.com" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.affiliation).toBe("internal");
+    expect(f!.isExternal).toBe(false);
+  });
+
+  it("gmail.com → external, isExternal true", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "a@gmail.com" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.affiliation).toBe("external");
+    expect(f!.isExternal).toBe(true);
+  });
+
+  it("malformed email → unknown, isExternal false (not auto-external)", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "bademail" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.affiliation).toBe("unknown");
+    expect(f!.isExternal).toBe(false);
+  });
+
+  it("unknown nodeId fallback → affiliation 'unknown'", async () => {
+    const result = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(result[0]!.affiliation).toBe("unknown");
+    expect(result[0]!.isExternal).toBe(false);
+  });
+});
+
 // ---- Helpers --------------------------------------------------------------
 
 function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string }): FakeRow {
@@ -196,7 +227,7 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     role_display: over.role_display ?? "Member",
     perm_tier: over.perm_tier ?? null,
     is_external: over.is_external ?? false,
-    activity_count: over.activity_count ?? 0n,
+    activity_count: over.activity_count ?? BigInt(0),
     last_signin_days: over.last_signin_days ?? null,
     firm_name: over.firm_name ?? null,
     account_status: over.account_status ?? null,

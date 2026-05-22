@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { normalize, materializeNodes, INTERNAL_DOMAINS, type NormalizedNodeRow } from "./dataLayer";
+import { normalize, materializeNodes, type NormalizedNodeRow } from "./dataLayer";
+import { INTERNAL_DOMAINS } from "./internalDomains";
 import { hashNodeSetAndSliders } from "./positionsCache";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
@@ -170,10 +171,20 @@ describe("DATA-02: feature columns — all six families populated", () => {
     expect(row.isAdmin).toBe(1);
   });
 
-  it("isExternal = 0 for lecg.com user (INTERNAL_DOMAINS)", () => {
-    expect(INTERNAL_DOMAINS.has("lecg.com")).toBe(true);
-    const [row] = normalize(fixture);
+  it("isExternal = 0 for hermosillo.com user (internal)", () => {
+    expect(INTERNAL_DOMAINS).toContain("hermosillo.com");
+    const [row] = normalize([makeUser({ email: "alice@hermosillo.com" })]);
     expect(row.isExternal).toBe(0);
+  });
+
+  it("isExternal = 0 for unknown/malformed email (NOT auto-external)", () => {
+    const [row] = normalize([makeUser({ email: "bademail" })]);
+    expect(row.isExternal).toBe(0);
+  });
+
+  it("legacy lecg.com user is now external (lecg.com no longer internal)", () => {
+    const [row] = normalize([makeUser({ email: "alice@lecg.com" })]);
+    expect(row.isExternal).toBe(1);
   });
 
   it("roleIds are deduped", () => {

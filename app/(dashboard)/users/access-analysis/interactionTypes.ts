@@ -34,8 +34,14 @@ export interface NodeFeatureSnapshot {
   role: string;
   /** Permission tier (e.g. "view" / "edit"); null when folder_permissions has no row. */
   permTier: string | null;
-  /** External user flag (email outside INTERNAL_DOMAINS). */
+  /** External user flag (email outside INTERNAL_DOMAINS). Equals `affiliation === "external"`. */
   isExternal: boolean;
+  /**
+   * Three-way affiliation by email domain — "internal" (hermosillo.com),
+   * "external", or "unknown" (missing/malformed email). Optional for backward
+   * compatibility; set by buildFeatureSnapshot. See internalDomains.ts.
+   */
+  affiliation?: "internal" | "external" | "unknown";
   /** Coarse activity bucket — None / Low / Med / High per Phase 4 RESEARCH Open Q#2. */
   activityBucket: "None" | "Low" | "Med" | "High";
   /** Coarse last-sign-in bucket — <7d / <30d / <90d / >90d. */

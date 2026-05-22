@@ -13,6 +13,7 @@
 
 import { getDuckDbClient } from "./duckdbClient";
 import { GRAPH_ANALYTICS_SOURCE_TABLES } from "./graphSql";
+import { classifyAffiliation } from "./internalDomains";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---- Bucketing helpers (RESEARCH Open Q#2 — defaults) ---------------------
@@ -58,7 +59,6 @@ interface RawFeatureRow {
   role_display: string | null;
   perm_tier: string | null;
   // BigInt-prone columns — cast immediately on read (Pitfall 2)
-  is_external: bigint | number | boolean | null;
   activity_count: bigint | number | null;
   last_signin_days: bigint | number | null;
   firm_name: string | null;
@@ -104,10 +104,9 @@ export async function buildFeatureSnapshot(
       COALESCE(up.project_name, up.project_id)                           AS project_name,
       COALESCE(up.role_id, '(no role)')                                  AS role_display,
       ANY_VALUE(fp.perm_tier)                                            AS perm_tier,
-      CASE
-        WHEN LOWER(COALESCE(up.email, u.email, '')) LIKE '%@lecg.com'    THEN FALSE
-        ELSE TRUE
-      END                                                                AS is_external,
+      -- Affiliation (internal/external/unknown) is derived in JS from 'email'
+      -- via internalDomains.classifyAffiliation — not in SQL — so the rule lives
+      -- in one place and unknown/malformed emails are not mislabeled external.
       COALESCE(MAX(u.active_count), 0)                                   AS activity_count,
       CASE
         WHEN MAX(u.last_sign_in) IS NULL THEN NULL
@@ -139,8 +138,10 @@ export async function buildFeatureSnapshot(
       r.last_signin_days === null || r.last_signin_days === undefined
         ? null
         : Number(r.last_signin_days);
-    const isExternal =
-      typeof r.is_external === "boolean" ? r.is_external : Number(r.is_external ?? 1) !== 0;
+    // Affiliation derived from email domain (internalDomains.ts). unknown -> not
+    // external for P1 (isExternal stays a boolean; 3-way weighting is a later phase).
+    const affiliation = classifyAffiliation(email);
+    const isExternal = affiliation === "external";
 
     map.set(id, {
       nodeId: id,
@@ -150,6 +151,7 @@ export async function buildFeatureSnapshot(
       role: (r.role_display ?? "(no role)").toString(),
       permTier: r.perm_tier === null || r.perm_tier === undefined ? null : String(r.perm_tier),
       isExternal,
+      affiliation,
       activityBucket: bucketActivity(activityCount),
       signinBucket: bucketSignin(signinDays),
       activityCountRaw: activityCount,
@@ -169,6 +171,7 @@ export async function buildFeatureSnapshot(
     role: "(no role)",
     permTier: null,
     isExternal: false,
+    affiliation: "unknown",
     activityBucket: "None",
     signinBucket: ">90d",
     activityCountRaw: 0,
