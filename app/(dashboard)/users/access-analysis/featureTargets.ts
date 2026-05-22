@@ -35,24 +35,20 @@
 
 import type { TargetArrays } from "./physicsLayer";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import { getDimension, MULTI_HOT_DIMENSION_IDS, type DimensionId } from "./dimensionRegistry";
 
 // ---------------------------------------------------------------------------
 // Dimensions — mirror the SliderContext DIMENSIONS ids so P1 wiring is 1:1.
 // ---------------------------------------------------------------------------
 
-export type TargetDimensionId =
-  | "role"
-  | "tier"
-  | "project"
-  | "isExternal"
-  | "activity"
-  | "signin";
+// Runtime layout dims are the registry runtime view — single source of truth.
+export type TargetDimensionId = DimensionId;
 
 export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = [
+  "project",
   "role",
   "tier",
-  "project",
-  "isExternal",
+  "internalExternal",
   "activity",
   "signin",
 ];
@@ -90,20 +86,15 @@ export function categoryValue(
   f: NodeFeatureSnapshot,
   dim: TargetDimensionId,
 ): string {
-  switch (dim) {
-    case "role":
-      return f.role;
-    case "tier":
-      return f.permTier ?? "(none)";
-    case "project":
-      return f.project;
-    case "isExternal":
-      return f.isExternal ? "external" : "internal";
-    case "activity":
-      return f.activityBucket;
-    case "signin":
-      return f.signinBucket;
-  }
+  const d = getDimension(dim);
+  const v = d ? d.extract(f) : null;
+  // Coerce the registry's DimensionValue (string | string[] | number | null) to a
+  // stable categorical bucket string. Arrays/null map to a single neutral bucket so
+  // single-category dims keep one anchor; multi-hot dims use computeMultiHotTarget.
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (Array.isArray(v)) return v.length ? v.join("|") : "(none)";
+  return "(none)";
 }
 
 // ---------------------------------------------------------------------------
@@ -186,6 +177,51 @@ export function computeDimensionTarget(
 }
 
 /**
+ * Multi-hot target: a node's anchor is the CENTROID of the per-key anchors for each
+ * active key in its signature. Same signature → same centroid (convergence); empty
+ * signature → origin (no pull, matching the availability gate). Keys are anchored on
+ * the same volumetric spherical-Fibonacci set as categories, so depth is preserved.
+ */
+export function computeMultiHotTarget(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  dim: TargetDimensionId,
+  radius: number = ANCHOR_RADIUS,
+): Float32Array {
+  const out = new Float32Array(features.length * 3);
+  if (features.length === 0) return out;
+
+  const d = getDimension(dim);
+  const keySet = new Set<string>();
+  const sigs: string[][] = features.map((f) => {
+    const v = d ? d.extract(f) : null;
+    const keys = Array.isArray(v) ? [...v].sort() : [];
+    for (const k of keys) keySet.add(k);
+    return keys;
+  });
+
+  const keys = Array.from(keySet).sort();
+  const keyIndex = new Map<string, number>();
+  keys.forEach((k, i) => keyIndex.set(k, i));
+  const keyAnchors: Array<[number, number, number]> = keys.map((_, i) =>
+    volumetricAnchor(i, keys.length, radius),
+  );
+
+  for (let n = 0; n < features.length; n++) {
+    const sig = sigs[n];
+    if (sig.length === 0) continue; // origin → no pull (availability gate)
+    let x = 0, y = 0, z = 0;
+    for (const k of sig) {
+      const a = keyAnchors[keyIndex.get(k)!];
+      x += a[0]; y += a[1]; z += a[2];
+    }
+    out[n * 3] = x / sig.length;
+    out[n * 3 + 1] = y / sig.length;
+    out[n * 3 + 2] = z / sig.length;
+  }
+  return out;
+}
+
+/**
  * Build the per-dimension `TargetArrays` consumed by `createPhysicsLayer`.
  * Each dimension's stride-3 anchors are split into separate x/y/z Float32Arrays.
  */
@@ -197,7 +233,9 @@ export function buildFeatureTargets(
   const out: TargetArrays = {};
   const n = features.length;
   for (const dim of dims) {
-    const xyz = computeDimensionTarget(features, dim, radius);
+    const xyz = (MULTI_HOT_DIMENSION_IDS as readonly string[]).includes(dim)
+      ? computeMultiHotTarget(features, dim, radius)
+      : computeDimensionTarget(features, dim, radius);
     const x = new Float32Array(n);
     const y = new Float32Array(n);
     const z = new Float32Array(n);

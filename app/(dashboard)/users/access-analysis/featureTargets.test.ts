@@ -3,9 +3,11 @@ import {
   TARGET_DIMENSIONS,
   categoryValue,
   computeDimensionTarget,
+  computeMultiHotTarget,
   buildFeatureTargets,
   type TargetDimensionId,
 } from "./featureTargets";
+import { getDimension } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
@@ -63,7 +65,7 @@ describe("categoryValue", () => {
     expect(categoryValue(f, "role")).toBe("Engineer");
     expect(categoryValue(f, "tier")).toBe("edit");
     expect(categoryValue(f, "project")).toBe("Tower");
-    expect(categoryValue(f, "isExternal")).toBe("external");
+    expect(categoryValue(f, "internalExternal")).toBe("external");
     expect(categoryValue(f, "activity")).toBe("High");
     expect(categoryValue(f, "signin")).toBe("<7d");
   });
@@ -73,8 +75,8 @@ describe("categoryValue", () => {
   });
 
   it("represents internal users distinctly from external", () => {
-    expect(categoryValue(feature({ isExternal: false }), "isExternal")).toBe("internal");
-    expect(categoryValue(feature({ isExternal: true }), "isExternal")).toBe("external");
+    expect(categoryValue(feature({ isExternal: false }), "internalExternal")).toBe("internal");
+    expect(categoryValue(feature({ isExternal: true }), "internalExternal")).toBe("external");
   });
 });
 
@@ -266,5 +268,58 @@ describe("computeDimensionTarget volumetric distribution", () => {
     const again = computeDimensionTarget(manyCategories, "role");
     expect(Array.from(out)).toEqual(Array.from(again));
     expect(isFiniteArray(out)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Registry-driven categoryValue
+// ---------------------------------------------------------------------------
+
+describe("featureTargets — registry-driven categoryValue", () => {
+  it("TARGET_DIMENSIONS matches the registry runtime ids", () => {
+    expect(TARGET_DIMENSIONS).toEqual([
+      "project", "role", "tier", "internalExternal", "activity", "signin",
+    ]);
+  });
+
+  it("categoryValue delegates to the registry descriptor.extract (coerced to string)", () => {
+    const f = feature({ project: "Tower", role: "Engineer", permTier: "edit" });
+    expect(categoryValue(f, "project")).toBe(getDimension("project")!.extract(f));
+    expect(categoryValue(f, "role")).toBe(getDimension("role")!.extract(f));
+    // null/absent coerces to a stable bucket string, never "null"
+    expect(categoryValue(feature({ firmName: "" }), "internalExternal")).toBe("internal");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-hot module anchors
+// ---------------------------------------------------------------------------
+
+describe("featureTargets — multi-hot module anchors", () => {
+  it("a module-only node with shared modules converges near other same-module nodes", () => {
+    const a = feature({ nodeId: "a", moduleSignature: ["build", "cost"] });
+    const b = feature({ nodeId: "b", moduleSignature: ["build", "cost"] });
+    const c = feature({ nodeId: "c", moduleSignature: ["takeoff"] });
+    const xyz = computeMultiHotTarget([a, b, c], "module");
+    // same signature → identical anchor; different signature → separated
+    expect(dist3(xyz, 0, 1)).toBeCloseTo(0, 3);
+    expect(dist3(xyz, 0, 2)).toBeGreaterThan(0);
+  });
+
+  it("an empty module signature anchors at the origin (no pull)", () => {
+    const a = feature({ nodeId: "a", moduleSignature: [] });
+    const xyz = computeMultiHotTarget([a], "module");
+    expect(xyz[0]).toBe(0);
+    expect(xyz[1]).toBe(0);
+    expect(xyz[2]).toBe(0);
+  });
+
+  it("all anchor coordinates are finite", () => {
+    const fs = [
+      feature({ moduleSignature: ["build"] }),
+      feature({ moduleSignature: ["build", "cost"] }),
+      feature({ moduleSignature: [] }),
+    ];
+    expect(isFiniteArray(computeMultiHotTarget(fs, "module"))).toBe(true);
   });
 });
