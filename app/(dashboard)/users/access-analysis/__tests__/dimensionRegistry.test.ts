@@ -155,6 +155,7 @@ describe("dimension registry — module (multi-hot)", () => {
 
 import {
   RUNTIME_DIMENSION_IDS,
+  RUNTIME_TARGET_DIMENSION_IDS,
   MULTI_HOT_DIMENSION_IDS,
   getRuntimeDimensions,
   runtimeDefaultSliders,
@@ -189,5 +190,15 @@ describe("dimension registry — runtime view", () => {
     for (const id of MULTI_HOT_DIMENSION_IDS) {
       expect(getDimension(id)!.type).toBe("multi-hot");
     }
+  });
+});
+
+describe("dimension registry — target vs slider runtime sets", () => {
+  it("RUNTIME_TARGET_DIMENSION_IDS = slider dims + module (target-only, no slider)", () => {
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([...RUNTIME_DIMENSION_IDS, "module"]);
+  });
+  it("module is target-capable but NOT in the visible slider set", () => {
+    expect(RUNTIME_DIMENSION_IDS).not.toContain("module");
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("module");
   });
 });

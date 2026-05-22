@@ -737,6 +737,10 @@ function roleStrengthAt(layer: Awaited<ReturnType<typeof createPhysicsLayer>>, n
   return (layer as unknown as { __debugStrength(dimId: string, i: number): number }).__debugStrength("role", nodeIndex);
 }
 
+function moduleStrengthAt(layer: Awaited<ReturnType<typeof createPhysicsLayer>>, nodeIndex: number): number {
+  return (layer as unknown as { __debugStrength(dimId: string, i: number): number }).__debugStrength("module", nodeIndex);
+}
+
 describe("physicsLayer — per-node dimension weights", () => {
   function setup(weight1: number) {
     const nodeIds = ["a", "b"];
@@ -773,6 +777,30 @@ describe("physicsLayer — per-node dimension weights", () => {
     const v0 = layer.maskVersion;
     layer.updateSliders({ role: 1 });
     expect(layer.maskVersion).toBe(v0); // weighting is PHYSICS-bus only
+    layer.dispose();
+  });
+});
+
+// =============================================================================
+// P3.5: updateSliders MERGE — target-only dim strength survives partial push
+// =============================================================================
+
+describe("P3.5: updateSliders merges — target-only dim strength survives a partial push", () => {
+  it("module strength is preserved when updateSliders omits module", async () => {
+    const nodeIds = ["a"];
+    const nodes: SimNode[] = [{ id: "a", index: 0 }];
+    const targets: TargetArrays = {
+      role:   { x: new Float32Array([1]), y: new Float32Array([0]), z: new Float32Array([0]) },
+      module: { x: new Float32Array([1]), y: new Float32Array([0]), z: new Float32Array([0]) },
+    };
+    const layer = await createPhysicsLayer(
+      nodeIds, nodes, targets, ["role", "module"],
+      { role: 0, module: 0.15 },
+      { role: new Float32Array([1]), module: new Float32Array([1]) },
+    );
+    layer.updateSliders({ role: 1 }); // module omitted
+    expect(roleStrengthAt(layer, 0)).toBeCloseTo(0.1, 6);     // 1 × 0.1 × 1 = 0.1
+    expect(moduleStrengthAt(layer, 0)).toBeCloseTo(0.015, 6); // 0.15 × 0.1 × 1 = 0.015, preserved
     layer.dispose();
   });
 });

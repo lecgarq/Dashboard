@@ -317,10 +317,10 @@ export async function createPhysicsLayer(
 
     // PHYS-02 + PHYS-03: Update all slider strengths + engine params atomically, then reheat.
     updateSliders(values: Record<string, number>): void {
-      _sliders = { ...values };
+      _sliders = { ..._sliders, ...values }; // merge: preserve target-only dims (e.g. module)
       // PHYS-01 + PHYS-03: set per-dim strengths + engine params atomically (shared
       // with construction via applySliderForces). Returns max(sliderValues).
-      const maxSlider = applySliderForces(values);
+      const maxSlider = applySliderForces(_sliders);
       const newAlpha = Math.min(maxSlider, ALPHA_MAX_REHEAT);
 
       // No-reheat optimization: skip if frozen and delta < threshold (prevents scroll-wheel thrashing).

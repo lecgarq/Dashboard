@@ -223,6 +223,17 @@ export const RUNTIME_DIMENSION_IDS: readonly DimensionId[] = [
   "signin",
 ];
 
+/**
+ * Dimensions that participate in LAYOUT TARGETS + weighting at runtime. This is the
+ * slider set PLUS target-only dims (currently `module`): they shape position via a
+ * fixed default strength but have no visible slider yet. The advanced-UI phase
+ * promotes a target-only dim to RUNTIME_DIMENSION_IDS to give it a slider.
+ */
+export const RUNTIME_TARGET_DIMENSION_IDS: readonly DimensionId[] = [
+  ...RUNTIME_DIMENSION_IDS,
+  "module",
+];
+
 /** Multi-hot dimensions need a centroid-of-active-keys anchor (not a single category anchor). */
 export const MULTI_HOT_DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter(
   (d) => d.type === "multi-hot",

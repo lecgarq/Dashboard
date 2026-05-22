@@ -43,6 +43,10 @@ import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./g
 import { createPhysicsLayer, type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { buildFeatureTargets } from "./featureTargets";
 import { buildDimensionWeights } from "./dimensionWeights";
+import {
+  RUNTIME_TARGET_DIMENSION_IDS,
+  getDimension,
+} from "./dimensionRegistry";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
@@ -277,21 +281,32 @@ export function AccessAnalysisShell(): React.JSX.Element {
         }
 
         const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
-        const dimNames = DIMENSIONS.map((d) => d.id);
+        // P3.5: target set is RUNTIME_TARGET_DIMENSION_IDS (6 slider dims + module).
+        // The slider UI covers only the 6 visible dims (DIMENSIONS); module gets a
+        // fixed default strength via seededSliders so it shapes layout without a slider.
+        const targetDimIds = [...RUNTIME_TARGET_DIMENSION_IDS] as string[];
         // Volumetric feature-anchored targets (P1) replace the former all-zero
         // targets that produced the globe. `snapshot` is aligned to `nodeIds`,
         // so target index === physics node index.
-        const targets = buildFeatureTargets(snapshot);
+        const targets = buildFeatureTargets(snapshot, RUNTIME_TARGET_DIMENSION_IDS);
         // P3.4: slider-independent per-node weights (confidence × availability ×
         // transformer). Nodes with unavailable/sparse values get weight=0 for that
         // dim so they are never dragged to a pole without a real anchor value.
-        const dimWeights = buildDimensionWeights(snapshot, dimNames as DimensionId[]);
+        const dimWeights = buildDimensionWeights(snapshot, RUNTIME_TARGET_DIMENSION_IDS);
+        // P3.5: seed module at its registry defaultWeight (0..1); no visible slider yet.
+        // SliderProvider pushes only the 6 visible dims; the merge in updateSliders
+        // preserves module's strength across partial slider pushes.
+        const moduleDefault = getDimension("module")?.defaultWeight ?? 0;
+        const seededSliders: Record<string, number> = {
+          ...initialSliders,
+          module: moduleDefault,
+        };
         const layer = await createPhysicsLayer(
           nodeIds,
           nodes,
           targets,
-          dimNames,
-          initialSliders,
+          targetDimIds,
+          seededSliders,
           dimWeights,
         );
         if (cancelled) {
