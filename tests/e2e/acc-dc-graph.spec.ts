@@ -257,29 +257,29 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // role has many categories → the graph loads meaningfully colored, not monochrome.
     expect(initial.stats.distinctColors, "role splits into many colors").toBeGreaterThan(2);
 
-    // Switch to external → buffer must change, stay valid; a 2-class dim yields
-    // 1–2 colors (monochrome on the current all-internal snapshot). Still selectable.
-    await page.selectOption('[data-testid="toolbar-color-mode"]', "external");
-    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "external", undefined, {
+    // Switch to internalExternal (P4: "external" id was retired, renamed to "internalExternal"
+    // in the registry). A 2-class dim yields 1–2 colors on the current snapshot.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "internalExternal");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "internalExternal", undefined, {
       timeout: 15_000,
     });
     const external = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
     // eslint-disable-next-line no-console
-    console.log(`[color] external len=${external.length} distinct=${external.distinctColors} sig=${external.signature}`);
+    console.log(`[color] internalExternal len=${external.length} distinct=${external.distinctColors} sig=${external.signature}`);
     expect(external.length, "buffer length unchanged across modes").toBe(EXPECTED_NODE_COUNT * 4);
     expect(external.allAlphaOne, "alpha still 1 after recolor").toBe(true);
-    expect(external.signature, "external coloring differs from role").not.toBe(initial.stats.signature);
+    expect(external.signature, "internalExternal coloring differs from role").not.toBe(initial.stats.signature);
     expect(external.distinctColors, "internal/external yields 1–2 colors").toBeGreaterThanOrEqual(1);
     expect(external.distinctColors, "internal/external is at most 2 categories").toBeLessThanOrEqual(2);
     await expect(page.locator("canvas").first(), "2D still renders after recolor").toBeVisible();
 
-    // Back to role → deterministic return to the original signature (role → external → role).
+    // Back to role → deterministic return to the original signature.
     await page.selectOption('[data-testid="toolbar-color-mode"]', "role");
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "role", undefined, {
       timeout: 15_000,
     });
     const back = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
-    expect(back.signature, "recoloring is deterministic (role → external → role)").toBe(
+    expect(back.signature, "recoloring is deterministic (role → internalExternal → role)").toBe(
       initial.stats.signature,
     );
 
@@ -684,5 +684,141 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getBrightEdgeCount() === 0, undefined, {
       timeout: 15_000,
     });
+  });
+
+  // ── P4 assertions ──────────────────────────────────────────────────────────
+
+  test("P4: sidebar shows Primary group expanded and advanced groups collapsed", async ({ page }, testInfo) => {
+    // Primary group is always open → its title heading is visible in the DOM.
+    const primaryGroup = page.getByTestId("slider-group-Primary");
+    await expect(primaryGroup, "Primary slider group is present").toBeVisible();
+    // A primary dim label ("Project") must be visible inside it.
+    await expect(primaryGroup.getByText("Project"), "Project slider visible in Primary group").toBeVisible();
+
+    // Affiliation advanced group is collapsed by default → its toggle button has aria-expanded=false.
+    const affiliationGroup = page.getByTestId("slider-group-Affiliation");
+    await expect(affiliationGroup, "Affiliation group is present").toBeVisible();
+    const affiliationToggle = affiliationGroup.getByRole("button");
+    await expect(affiliationToggle, "Affiliation group starts collapsed").toHaveAttribute("aria-expanded", "false");
+
+    // The "Company / firm" slider label must NOT be visible while the Affiliation group is collapsed.
+    // (It lives inside affiliationGroup; when closed the rows are not rendered.)
+    await expect(affiliationGroup.getByText("Company / firm")).not.toBeVisible();
+
+    // Click the Affiliation header → group expands, "Company / firm" becomes visible.
+    await affiliationToggle.click();
+    await expect(affiliationToggle, "Affiliation group expands on click").toHaveAttribute("aria-expanded", "true");
+    await expect(affiliationGroup.getByText("Company / firm"), "Company / firm label visible after expand").toBeVisible();
+
+    await proofShot(page, testInfo, "after-p4-sidebar-groups");
+  });
+
+  test("P4: Access & permissions advanced group shows '1 active' badge (module dim default-on)", async ({ page }, testInfo) => {
+    // The organic default preset has module at 0.15 (15 > 0) and isAdmin at 0 by default.
+    // module is the only dim in "Access & permissions" that is active → badge reads "1 active".
+    const accessGroup = page.getByTestId("slider-group-Access & permissions");
+    await expect(accessGroup, "Access & permissions group is present").toBeVisible();
+    await expect(accessGroup.getByText("1 active"), "badge shows 1 active dim in Access & permissions").toBeVisible();
+    await proofShot(page, testInfo, "after-p4-active-badge");
+  });
+
+  test("P4: dimension search filters visible sliders", async ({ page }, testInfo) => {
+    const searchBox = page.getByTestId("dimension-search");
+    await expect(searchBox, "dimension search input is visible").toBeVisible();
+
+    // Typing "company" should make Company / firm appear (search opens groups).
+    await searchBox.fill("company");
+    await expect(page.getByText("Company / firm").first(), "Company / firm appears in search results").toBeVisible();
+
+    // "Project" slider label should NOT appear when query is "company".
+    // We check it's not visible (it won't match the "company" query).
+    await expect(page.getByLabel("Project thumb"), "Project slider hidden while searching 'company'").not.toBeVisible();
+
+    // Clear search → Project thumb returns.
+    await searchBox.fill("");
+    await expect(page.getByLabel("Project thumb"), "Project slider returns after clearing search").toBeVisible();
+
+    await proofShot(page, testInfo, "after-p4-dimension-search");
+  });
+
+  test("P4: color-mode select lists registry-derived options and switching changes the node color buffer", async ({ page }, testInfo) => {
+    // Verify registry-derived options are present in the color-mode select.
+    const select = page.locator('[data-testid="toolbar-color-mode"]');
+    await expect(select, "color-mode select is visible").toBeVisible();
+    const optionValues = await select.evaluate((el) =>
+      Array.from((el as HTMLSelectElement).options).map((o) => o.value),
+    );
+    // eslint-disable-next-line no-console
+    console.log(`[P4 color] options=${optionValues.join(",")}`);
+    expect(optionValues, "color-mode options include 'role'").toContain("role");
+    expect(optionValues, "color-mode options include 'company'").toContain("company");
+    expect(optionValues, "color-mode options include 'isAdmin'").toContain("isAdmin");
+    expect(optionValues, "color-mode options include 'status'").toContain("status");
+
+    // Capture baseline (default = role).
+    const baseline = await page.evaluate(() => ({
+      mode: window.__ACC_GRAPH_TEST__!.getColorMode(),
+      stats: window.__ACC_GRAPH_TEST__!.getColorStats(),
+    }));
+    expect(baseline.mode, "default color mode is role").toBe("role");
+
+    // Switch to 'company' → bridge reports mode change and buffer signature differs.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "company");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "company", undefined, {
+      timeout: 15_000,
+    });
+    const companyStats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    // eslint-disable-next-line no-console
+    console.log(`[P4 color] company len=${companyStats.length} distinct=${companyStats.distinctColors} sig=${companyStats.signature}`);
+    expect(companyStats.length, "RGBA buffer length unchanged").toBe(EXPECTED_NODE_COUNT * 4);
+    expect(companyStats.allAlphaOne, "alpha still 1 after recolor").toBe(true);
+    expect(companyStats.signature, "company coloring differs from role").not.toBe(baseline.stats.signature);
+    await expect(page.locator("canvas").first(), "canvas still rendered after color mode switch").toBeVisible();
+
+    // Return to role → signature is deterministic.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "role");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "role", undefined, {
+      timeout: 15_000,
+    });
+    const backStats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    expect(backStats.signature, "returning to role restores original signature").toBe(baseline.stats.signature);
+
+    await proofShot(page, testInfo, "after-p4-color-mode");
+  });
+
+  test("P4: Free preset relaxes layout without NaN or degenerate collapse", async ({ page }, testInfo) => {
+    // Capture baseline positions under the organic (default) preset.
+    const before = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
+    expect(before.anyNaN, "baseline layout has no NaN").toBe(false);
+    expect(before.nodeCount, "baseline has full node set").toBe(EXPECTED_NODE_COUNT);
+
+    // Apply the Free / No semantic clustering preset via the preset bar.
+    const freeBtn = page.getByTestId("preset-bar").getByRole("button", { name: "Free / No semantic clustering" });
+    await expect(freeBtn, "Free preset button is visible").toBeVisible();
+    await freeBtn.click();
+
+    // Wait briefly for the rAF-coalesced slider→physics push to apply.
+    // We do NOT wait for full freeze — same as the slider smoke test.
+    await page.waitForTimeout(1_500);
+
+    // Assert via the existing bridge: positions are finite, non-collapsed, non-runaway.
+    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    const layout = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
+    // eslint-disable-next-line no-console
+    console.log(
+      `[P4 free] n=${pos.count} anyNaN=${pos.anyNaN} maxAbs=${pos.maxAbs.toFixed(1)} x=${layout.xRange.toFixed(1)} y=${layout.yRange.toFixed(1)} z=${layout.zRange.toFixed(1)}`,
+    );
+
+    // Positions must be finite (no NaN from a bad preset application).
+    expect(pos.anyNaN, "Free preset: no NaN positions").toBe(false);
+    expect(pos.count, "Free preset: node set intact").toBe(EXPECTED_NODE_COUNT);
+    // Layout must be non-degenerate (not an origin-collapsed globe artifact).
+    expect(pos.maxAbs, "Free preset: layout is non-degenerate (spread out)").toBeGreaterThan(1);
+    expect(pos.maxAbs, "Free preset: no runaway explosion").toBeLessThan(100_000);
+    // 3D depth: zRange must be meaningful (not a flat disc or sphere-on-origin).
+    expect(layout.zRange, "Free preset: z spread is non-degenerate").toBeGreaterThan(1);
+    await expect(page.locator("canvas").first(), "canvas still rendered after Free preset").toBeVisible();
+
+    await proofShot(page, testInfo, "after-p4-free-preset");
   });
 });
