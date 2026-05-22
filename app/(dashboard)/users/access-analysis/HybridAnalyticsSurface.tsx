@@ -26,6 +26,7 @@ import { DonutPanel, type DonutSlice } from "./DonutPanel";
 import { KpiHeroStrip } from "./KpiHeroStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
 import { buildExecutiveFindings } from "./analyticsFindings";
+import { HeadlineInsights, type HeadlineInsightItem } from "./HeadlineInsights";
 import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
 import { chartColor, sequenceColor } from "./chartColors";
@@ -494,6 +495,42 @@ export function HybridAnalyticsSurface() {
     }
   };
 
+  const handleHeadlineSelect = (id: string) => {
+    const now = Date.now();
+    if (id === "stale") {
+      setDetailFilter({
+        title: "Stale or never signed-in members",
+        subtitle: "Members with no sign-in in over 90 days (or never).",
+        filterFn: (u) => {
+          const t = u.lastSignIn ? Date.parse(u.lastSignIn) : NaN;
+          if (!Number.isFinite(t)) return true;
+          return (now - t) / 86_400_000 > 90;
+        },
+      });
+    } else if (id === "active") {
+      setDetailFilter({
+        title: "Members active in the last 30 days",
+        subtitle: "Members who signed in within the last 30 days.",
+        filterFn: (u) => {
+          const t = u.lastSignIn ? Date.parse(u.lastSignIn) : NaN;
+          return Number.isFinite(t) && (now - t) / 86_400_000 <= 30;
+        },
+      });
+    } else if (id === "admins") {
+      setDetailFilter({
+        title: "Admins",
+        subtitle: "Members with account or project admin access.",
+        filterFn: (u) => u.isAccountAdmin || u.adminCount > 0,
+      });
+    } else if (id === "breadth") {
+      setDetailFilter({
+        title: "Members with 10+ projects",
+        subtitle: "Broad-access members who belong to ten or more projects.",
+        filterFn: (u) => u.projectCount >= 10,
+      });
+    }
+  };
+
   const [queryState, setQueryState] = useState<AnalyticsQueryState>(EMPTY_ANALYTICS_QUERY_STATE);
   const [isRefreshingCharts, setIsRefreshingCharts] = useState(false);
   const queryStatusRef = useRef<AnalyticsQueryState["status"]>(queryState.status);
@@ -571,6 +608,15 @@ export function HybridAnalyticsSurface() {
   const adminMixSlices = useMemo(() => computeAdminMix(users), [users]);
   const permTierSlices = useMemo(() => computePermTiers(folderRows), [folderRows]);
   const findings = useMemo(() => buildExecutiveFindings({ users, folderRows }), [users, folderRows]);
+  const headlineItems = useMemo<HeadlineInsightItem[]>(
+    () => [
+      { id: "stale", label: "Stale access", text: findings.staleMembers, severity: "risk" },
+      { id: "active", label: "Active members", text: findings.activeMembers, severity: "good" },
+      { id: "admins", label: "Admin concentration", text: findings.adminConcentration, severity: "watch" },
+      { id: "breadth", label: "Access breadth", text: findings.projectBreadth, severity: "info" },
+    ],
+    [findings],
+  );
   const topProjectRows = useMemo(() => topProjects(users), [users]);
   const topRoleRows = useMemo(() => topRoles(users), [users]);
   const projectDistributionRows = useMemo(() => projectCountDistribution(users), [users]);
@@ -681,6 +727,8 @@ export function HybridAnalyticsSurface() {
       ) : null}
 
       <KpiHeroStrip users={users} folderGrantCount={folderRows.length} summary={kpiSummaryQuery.data} />
+
+      <HeadlineInsights items={headlineItems} onSelect={handleHeadlineSelect} />
 
       {!isReady && !isFallback ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
