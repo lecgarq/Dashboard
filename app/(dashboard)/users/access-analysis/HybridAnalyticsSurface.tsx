@@ -46,6 +46,8 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
+import { ActiveFiltersBar } from "./ActiveFiltersBar";
+import type { ScopedSelection } from "./selectionFilters";
 
 const ACTIVE_REFRESH_MS = 15_000;
 const IDLE_REFRESH_MS = 5 * 60_000;
@@ -379,6 +381,13 @@ export function HybridAnalyticsSurface() {
   // table so within-table crossfilter still works, cross-table never forms.
   const usersSelection = useMemo(() => Selection.crossfilter(), []);
   const projectsSelection = useMemo(() => Selection.crossfilter(), []);
+  const scopedSelections = useMemo<ScopedSelection[]>(
+    () => [
+      { selection: usersSelection as unknown as ScopedSelection["selection"], scope: "Users" },
+      { selection: projectsSelection as unknown as ScopedSelection["selection"], scope: "Projects" },
+    ],
+    [usersSelection, projectsSelection],
+  );
 
   useEffect(() => {
     setVisibleCount(50);
@@ -711,6 +720,8 @@ export function HybridAnalyticsSurface() {
           </span>
         </div>
       </div>
+
+      <ActiveFiltersBar scoped={scopedSelections} />
 
       {isStale && (
         <div className="flex items-center gap-3 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-900/50 animate-pulse">
