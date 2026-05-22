@@ -948,4 +948,31 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     expect((CANVAS_SRC.match(/links=\{props\.links\}/g) ?? []).length).toBe(2);
     expect((CANVAS_SRC.match(/linkColors=\{props\.linkColors\}/g) ?? []).length).toBe(2);
   });
+
+  // P3.0 gate: distinct semantic colors actually reach the per-instance buffer.
+  it("P3.0: distinct node colors populate the instanceColor buffer (>1 distinct)", () => {
+    const physics = makeFakePhysics(3);
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+    // three distinct semantic colors (red / green / blue), alpha 1
+    const nodeColors = new Float32Array([
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+    ]);
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors,
+        backgroundColor: "#09090B",
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+    const rs = handle!.getRenderState();
+    expect(rs.nodeColorNodeCount).toBe(3);
+    expect(rs.nodeColorDistinctColors).toBeGreaterThan(1);
+    expect(rs.nodeColorAllFinite).toBe(true);
+    expect(rs.nodeColorNeedsUpdate).toBe(true);
+  });
 });
