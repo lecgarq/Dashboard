@@ -152,3 +152,42 @@ describe("dimension registry — module (multi-hot)", () => {
     expect(d.availability).toBe("A2");
   });
 });
+
+import {
+  RUNTIME_DIMENSION_IDS,
+  MULTI_HOT_DIMENSION_IDS,
+  getRuntimeDimensions,
+  runtimeDefaultSliders,
+} from "../dimensionRegistry";
+
+describe("dimension registry — runtime view", () => {
+  it("RUNTIME_DIMENSION_IDS is the 6 wired runtime dims, in display order", () => {
+    expect(RUNTIME_DIMENSION_IDS).toEqual([
+      "project", "role", "tier", "internalExternal", "activity", "signin",
+    ]);
+  });
+
+  it("every runtime id resolves to a registered descriptor", () => {
+    for (const id of RUNTIME_DIMENSION_IDS) {
+      expect(getDimension(id)).toBeDefined();
+    }
+  });
+
+  it("getRuntimeDimensions returns descriptors in RUNTIME_DIMENSION_IDS order", () => {
+    expect(getRuntimeDimensions().map((d) => d.id)).toEqual([...RUNTIME_DIMENSION_IDS]);
+  });
+
+  it("runtimeDefaultSliders maps defaultWeight×100 to each runtime id", () => {
+    expect(runtimeDefaultSliders()).toEqual({
+      project: 35, role: 25, tier: 15, internalExternal: 10, activity: 5, signin: 5,
+    });
+  });
+
+  it("MULTI_HOT_DIMENSION_IDS contains the multi-hot dims (module)", () => {
+    expect(MULTI_HOT_DIMENSION_IDS).toContain("module");
+    // every entry is genuinely typed multi-hot in the registry
+    for (const id of MULTI_HOT_DIMENSION_IDS) {
+      expect(getDimension(id)!.type).toBe("multi-hot");
+    }
+  });
+});

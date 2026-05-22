@@ -203,3 +203,47 @@ export function getDimension(id: DimensionId): DimensionDescriptor | undefined {
 }
 
 export const DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.map((d) => d.id);
+
+/**
+ * The dimensions wired into the LIVE runtime today (slider state + layout targets
+ * + force weighting), in display order. This is the subset of the registry the
+ * current 6-slider UI exposes — NOT the full taxonomy. The advanced UI phase widens
+ * this list; until then it is the single source of truth for "what the runtime uses".
+ *
+ * `internalExternal` replaces the legacy `isExternal` slider id (P3 reconciliation).
+ * `company`, `isAdmin`, `module` are registered but intentionally NOT in this list:
+ * they are available to color/filter/target code but have no visible slider yet.
+ */
+export const RUNTIME_DIMENSION_IDS: readonly DimensionId[] = [
+  "project",
+  "role",
+  "tier",
+  "internalExternal",
+  "activity",
+  "signin",
+];
+
+/** Multi-hot dimensions need a centroid-of-active-keys anchor (not a single category anchor). */
+export const MULTI_HOT_DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter(
+  (d) => d.type === "multi-hot",
+).map((d) => d.id);
+
+/** Runtime descriptors, resolved + ordered by RUNTIME_DIMENSION_IDS. */
+export function getRuntimeDimensions(): DimensionDescriptor[] {
+  return RUNTIME_DIMENSION_IDS.map((id) => {
+    const d = getDimension(id);
+    if (!d) throw new Error(`RUNTIME_DIMENSION_IDS references unregistered dimension: ${id}`);
+    return d;
+  });
+}
+
+/**
+ * Default slider positions (0..100) for the runtime dims, derived from each
+ * descriptor's defaultWeight (×100). This REPLACES the previously-hardcoded
+ * DEFAULT_VALUES so the organic profile lives in one place (the registry).
+ */
+export function runtimeDefaultSliders(): Record<string, number> {
+  const out: Record<string, number> = {};
+  for (const d of getRuntimeDimensions()) out[d.id] = Math.round(d.defaultWeight * 100);
+  return out;
+}
