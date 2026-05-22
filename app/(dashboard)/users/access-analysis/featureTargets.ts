@@ -35,23 +35,22 @@
 
 import type { TargetArrays } from "./physicsLayer";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
-import { getDimension, MULTI_HOT_DIMENSION_IDS, type DimensionId } from "./dimensionRegistry";
+import {
+  getDimension,
+  MULTI_HOT_DIMENSION_IDS,
+  RUNTIME_DIMENSION_IDS,
+  type DimensionId,
+} from "./dimensionRegistry";
 
 // ---------------------------------------------------------------------------
-// Dimensions — mirror the SliderContext DIMENSIONS ids so P1 wiring is 1:1.
+// Dimensions — the registry runtime view is the single source of truth.
 // ---------------------------------------------------------------------------
 
-// Runtime layout dims are the registry runtime view — single source of truth.
 export type TargetDimensionId = DimensionId;
 
-export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = [
-  "project",
-  "role",
-  "tier",
-  "internalExternal",
-  "activity",
-  "signin",
-];
+// Derived from the registry (no hardcoded duplicate) so the runtime dim list
+// can never drift from RUNTIME_DIMENSION_IDS.
+export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = RUNTIME_DIMENSION_IDS;
 
 /**
  * Outer anchor radius. The absolute scale is irrelevant to the FINAL view — the
