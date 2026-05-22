@@ -193,6 +193,12 @@ export interface GraphTestApi {
     hasLineGeometry?: boolean;
     positionAttributeLength?: number;
     colorAttributeLength?: number;
+    nodeColorAttributeLength?: number;
+    nodeColorNodeCount?: number;
+    nodeColorDistinctColors?: number;
+    nodeColorSignature?: number;
+    nodeColorAllFinite?: boolean;
+    nodeColorNeedsUpdate?: boolean;
   } | null;
   simulateHover(nodeId: string): boolean;
   simulateHoverEnd(): void;

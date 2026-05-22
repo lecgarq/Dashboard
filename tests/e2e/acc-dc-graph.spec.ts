@@ -4,7 +4,7 @@ import { test, expect, type Page, type TestInfo } from "@playwright/test";
  * Current DC snapshot size (accDcGraph.bulkUsers → one node per user×project).
  * Asserted exactly per the verification standard; bump this if the dataset changes.
  */
-const EXPECTED_NODE_COUNT = 16_934;
+const EXPECTED_NODE_COUNT = 16_942;
 
 /** Capture a full-page screenshot and attach it to the HTML report as a proof artifact. */
 async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<void> {
@@ -97,6 +97,12 @@ type Bridge = {
     hasLineGeometry?: boolean;
     positionAttributeLength?: number;
     colorAttributeLength?: number;
+    nodeColorAttributeLength?: number;
+    nodeColorNodeCount?: number;
+    nodeColorDistinctColors?: number;
+    nodeColorSignature?: number;
+    nodeColorAllFinite?: boolean;
+    nodeColorNeedsUpdate?: boolean;
   } | null;
 };
 
@@ -281,8 +287,44 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
     });
+    await page.waitForFunction(
+      () => {
+        const b = window.__ACC_GRAPH_TEST__;
+        const semantic = b?.getColorStats();
+        const renderer = b?.getRendererState();
+        return !!semantic
+          && !!renderer
+          && renderer.nodeColorNodeCount === semantic.nodeCount
+          && renderer.nodeColorAttributeLength === semantic.nodeCount * 3
+          && renderer.nodeColorDistinctColors! > 1
+          && renderer.nodeColorSignature === semantic.signature;
+      },
+      undefined,
+      { timeout: 20_000 },
+    );
     const stats3d = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
     expect(stats3d.signature, "3D shares the 2D color buffer (parity)").toBe(back.signature);
+    const renderer3d = await page.evaluate(() => {
+      const r = window.__ACC_GRAPH_TEST__!.getRendererState();
+      return {
+        nodeColorAttributeLength: r?.nodeColorAttributeLength ?? 0,
+        nodeColorNodeCount: r?.nodeColorNodeCount ?? 0,
+        nodeColorDistinctColors: r?.nodeColorDistinctColors ?? 0,
+        nodeColorSignature: r?.nodeColorSignature ?? 0,
+        nodeColorAllFinite: r?.nodeColorAllFinite ?? false,
+      };
+    });
+    // eslint-disable-next-line no-console
+    console.log(
+      `[color][3d] attrLen=${renderer3d.nodeColorAttributeLength} distinct=${renderer3d.nodeColorDistinctColors} sig=${renderer3d.nodeColorSignature}`,
+    );
+    expect(renderer3d.nodeColorNodeCount, "3D instance-color node count").toBe(EXPECTED_NODE_COUNT);
+    expect(renderer3d.nodeColorAttributeLength, "3D instanceColor buffer is nodeCount*3 RGB").toBe(
+      EXPECTED_NODE_COUNT * 3,
+    );
+    expect(renderer3d.nodeColorAllFinite, "3D instanceColor RGB has no NaN/Infinity").toBe(true);
+    expect(renderer3d.nodeColorDistinctColors, "3D renderer applies distinct semantic colors").toBeGreaterThan(1);
+    expect(renderer3d.nodeColorSignature, "3D renderer RGB signature matches semantic nodeColors").toBe(stats3d.signature);
     expect(await page.locator("canvas").count(), "3D canvas present").toBeGreaterThan(0);
     await proofShot(page, testInfo, "after-color-mode");
   });

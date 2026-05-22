@@ -522,6 +522,106 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     expect(buf[5]).toBeCloseTo(0.075, 5);
   });
 
+  it("Test 5a: colors — initial multi-color nodeColors populate the actual instanceColor buffer", () => {
+    const nodeColors = new Float32Array([
+      1, 0, 0, 1,
+      0, 1, 0, 1,
+      0, 0, 1, 1,
+    ]);
+    const physics = makeFakePhysics(3);
+    const containerRef = makeContainerRef();
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors,
+        backgroundColor: "#09090B",
+        onHandleReady: () => {},
+      })
+    );
+
+    const mesh = _capturedInstancedMeshes[0];
+    expect(Array.from(mesh.instanceColor.array)).toEqual([
+      1, 0, 0,
+      0, 1, 0,
+      0, 0, 1,
+    ]);
+    expect(mesh.instanceColor.needsUpdate).toBe(true);
+  });
+
+  it("Test 5b: colors — setColors updates instanceColor while preserving active alpha-mask dimming", () => {
+    const physics = makeFakePhysics(2);
+    const containerRef = makeContainerRef();
+    let handle: any = null;
+
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        onHandleReady: (h: any) => { handle = h; },
+      })
+    );
+
+    const mesh = _capturedInstancedMeshes[0];
+    const buf: Float32Array = mesh.instanceColor.array;
+
+    handle!.applyAlphaMask(new Float32Array([1, 0]), 1);
+    handle!.setColors(new Float32Array([
+      0.9, 0.1, 0.2, 1,
+      0.2, 0.8, 0.4, 1,
+    ]));
+
+    expect(buf[0]).toBeCloseTo(0.9, 5);
+    expect(buf[1]).toBeCloseTo(0.1, 5);
+    expect(buf[2]).toBeCloseTo(0.2, 5);
+    expect(buf[3]).toBeCloseTo(0.2 * 0.15, 5);
+    expect(buf[4]).toBeCloseTo(0.8 * 0.15, 5);
+    expect(buf[5]).toBeCloseTo(0.4 * 0.15, 5);
+    expect(mesh.instanceColor.needsUpdate).toBe(true);
+  });
+
+  it("Test 5c: colors — nodeColors prop updates refresh the actual instanceColor buffer", () => {
+    const physics = makeFakePhysics(2);
+    const containerRef = makeContainerRef();
+
+    const { rerender } = render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 1, 1, 1, 1, 1, 1, 1]),
+        backgroundColor: "#09090B",
+        onHandleReady: () => {},
+      })
+    );
+
+    const mesh = _capturedInstancedMeshes[0];
+    const nextColors = new Float32Array([
+      0.1, 0.3, 0.7, 1,
+      0.7, 0.3, 0.1, 1,
+    ]);
+
+    rerender(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: nextColors,
+        backgroundColor: "#09090B",
+        onHandleReady: () => {},
+      })
+    );
+
+    const buf: Float32Array = mesh.instanceColor.array;
+    expect(buf[0]).toBeCloseTo(0.1, 5);
+    expect(buf[1]).toBeCloseTo(0.3, 5);
+    expect(buf[2]).toBeCloseTo(0.7, 5);
+    expect(buf[3]).toBeCloseTo(0.7, 5);
+    expect(buf[4]).toBeCloseTo(0.3, 5);
+    expect(buf[5]).toBeCloseTo(0.1, 5);
+  });
+
   // Test 6: REND-03 — No remount on mode switch (WebGLRenderer constructed once)
   it("Test 6: REND-03 — WebGLRenderer constructed exactly once across mode switches", () => {
     const physics = makeFakePhysics(2);

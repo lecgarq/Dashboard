@@ -14,7 +14,7 @@
  * - Always mounted; GraphCanvas hides it via CSS visibility when mode === '2d'.
  */
 
-import { useEffect, type RefObject } from "react";
+import { useEffect, useRef, type RefObject } from "react";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import type { PhysicsLayer } from "./physicsLayer";
@@ -60,6 +60,12 @@ export interface GraphCanvas3DHandle {
     hasLineGeometry: boolean;
     positionAttributeLength: number;
     colorAttributeLength: number;
+    nodeColorAttributeLength: number;
+    nodeColorNodeCount: number;
+    nodeColorDistinctColors: number;
+    nodeColorSignature: number;
+    nodeColorAllFinite: boolean;
+    nodeColorNeedsUpdate: boolean;
   };
 }
 
@@ -88,6 +94,8 @@ export interface GraphCanvas3DProps {
 const DIM = 0.15;
 
 export function GraphCanvas3D(props: GraphCanvas3DProps): null {
+  const handleRef = useRef<GraphCanvas3DHandle | null>(null);
+
   useEffect(() => {
     const container = props.containerRef.current;
     if (!container) return;
@@ -154,8 +162,9 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // Initial color load (no alpha mask applied yet — all lit)
     // -----------------------------------------------------------------------
 
-    // We keep a local copy of the current base colors so applyAlphaMask can re-multiply
+    // We keep the current base colors + mask so recolors preserve dimming state.
     let currentNodeColors = props.nodeColors;
+    let currentAlphaMask: Float32Array | null = null;
 
     // Edge (LineSegments) state — built lazily when links are present.
     let currentXyz: Float32Array = initialXyz;
@@ -166,16 +175,17 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     let edgeLinkIndices: Float32Array | null = null; // flat [s,t,...]
     let edgeCount = 0;
 
-    function loadColors(rgba: Float32Array): void {
+    function writeCurrentNodeColors(): void {
       for (let i = 0; i < n; i++) {
-        instanceColorData[i * 3]     = rgba[i * 4];
-        instanceColorData[i * 3 + 1] = rgba[i * 4 + 1];
-        instanceColorData[i * 3 + 2] = rgba[i * 4 + 2];
+        const lit = currentAlphaMask && currentAlphaMask[i] < 0.99 ? DIM : 1.0;
+        instanceColorData[i * 3]     = currentNodeColors[i * 4]     * lit;
+        instanceColorData[i * 3 + 1] = currentNodeColors[i * 4 + 1] * lit;
+        instanceColorData[i * 3 + 2] = currentNodeColors[i * 4 + 2] * lit;
       }
       mesh.instanceColor!.needsUpdate = true;
     }
 
-    loadColors(currentNodeColors);
+    writeCurrentNodeColors();
 
     // Initial edge load (mirrors the 2D init block; built once, edge set is static).
     if (props.links && props.links.length > 0) {
@@ -211,13 +221,8 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     }
 
     function applyAlphaMask3D(mask: Float32Array): void {
-      for (let i = 0; i < n; i++) {
-        const lit = mask[i] >= 0.99 ? 1.0 : DIM;
-        instanceColorData[i * 3]     = currentNodeColors[i * 4]     * lit;
-        instanceColorData[i * 3 + 1] = currentNodeColors[i * 4 + 1] * lit;
-        instanceColorData[i * 3 + 2] = currentNodeColors[i * 4 + 2] * lit;
-      }
-      mesh.instanceColor!.needsUpdate = true;
+      currentAlphaMask = mask;
+      writeCurrentNodeColors();
     }
 
     function buildEdges(links: Float32Array): void {
@@ -287,6 +292,44 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         edgeColors[o + 5] = pb;
       }
       (edgeGeometry.attributes.color as THREE.BufferAttribute).needsUpdate = true;
+    }
+
+    function getNodeColorRenderStats(): Pick<
+      ReturnType<GraphCanvas3DHandle["getRenderState"]>,
+      | "nodeColorAttributeLength"
+      | "nodeColorNodeCount"
+      | "nodeColorDistinctColors"
+      | "nodeColorSignature"
+      | "nodeColorAllFinite"
+      | "nodeColorNeedsUpdate"
+    > {
+      const count = instanceColorData.length / 3;
+      const seen = new Set<number>();
+      let sig = 0x811c9dc5;
+      let allFinite = true;
+      for (let i = 0; i < count; i++) {
+        const r = instanceColorData[i * 3];
+        const g = instanceColorData[i * 3 + 1];
+        const b = instanceColorData[i * 3 + 2];
+        if (!Number.isFinite(r) || !Number.isFinite(g) || !Number.isFinite(b)) {
+          allFinite = false;
+        }
+        const qr = Math.max(0, Math.min(255, Math.round(r * 255)));
+        const qg = Math.max(0, Math.min(255, Math.round(g * 255)));
+        const qb = Math.max(0, Math.min(255, Math.round(b * 255)));
+        seen.add((qr << 16) | (qg << 8) | qb);
+        sig = Math.imul(sig ^ qr, 0x01000193) >>> 0;
+        sig = Math.imul(sig ^ qg, 0x01000193) >>> 0;
+        sig = Math.imul(sig ^ qb, 0x01000193) >>> 0;
+      }
+      return {
+        nodeColorAttributeLength: instanceColorData.length,
+        nodeColorNodeCount: count,
+        nodeColorDistinctColors: seen.size,
+        nodeColorSignature: sig >>> 0,
+        nodeColorAllFinite: allFinite,
+        nodeColorNeedsUpdate: mesh.instanceColor?.needsUpdate === true,
+      };
     }
 
     // -----------------------------------------------------------------------
@@ -413,7 +456,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       applyAlphaMask: (mask, _version) => applyAlphaMask3D(mask),
       setColors: (rgba) => {
         currentNodeColors = rgba;
-        loadColors(rgba);
+        writeCurrentNodeColors();
       },
       fitView,
       setBackground: (color) => {
@@ -437,9 +480,11 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         hasLineGeometry: edgeGeometry !== null,
         positionAttributeLength: edgePositions ? edgePositions.length : 0,
         colorAttributeLength: edgeColors ? edgeColors.length : 0,
+        ...getNodeColorRenderStats(),
       }),
     };
 
+    handleRef.current = handle;
     props.onHandleReady(handle);
 
     // -----------------------------------------------------------------------
@@ -462,9 +507,14 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         edgeGeometry?.dispose();
         (edgeLines.material as THREE.Material).dispose();
       }
+      handleRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    handleRef.current?.setColors(props.nodeColors);
+  }, [props.nodeColors]);
 
   return null;
 }
