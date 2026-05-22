@@ -37,9 +37,10 @@ export function ActiveFiltersBar({ scoped }: { scoped: ScopedSelection[] }) {
           onClick={() => { clearFilter(f); setVersion((v) => v + 1); }}
           className="inline-flex items-center gap-1 rounded-full border bg-muted/40 px-2 py-0.5 font-medium transition-colors hover:bg-muted"
           title={`${f.scope}: ${f.label}`}
+          aria-label={`Remove filter: ${f.scope} ${f.label}`}
         >
-          <span className="max-w-[16rem] truncate">{f.label}</span>
-          <X size={12} className="shrink-0" />
+          <span className="max-w-[16rem] truncate" aria-hidden="true">{f.label}</span>
+          <X size={12} className="shrink-0" aria-hidden="true" />
         </button>
       ))}
       <Button

@@ -41,7 +41,7 @@ export function describeActiveFilters(scoped: ScopedSelection[]): ActiveFilter[]
       const label = predicateText(clause);
       if (!label) continue;
       out.push({
-        key: `${scope}:${String(clause.source)}`,
+        key: `${scope}:${out.length}:${label}`,
         scope,
         label,
         source: clause.source,
