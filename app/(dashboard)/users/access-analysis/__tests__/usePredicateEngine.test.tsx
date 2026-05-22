@@ -205,7 +205,10 @@ describe("usePredicateEngine — Pattern 1 single mask", () => {
     expect(featureValueForDim(f, "role")).toBe("admin");
     expect(featureValueForDim(f, "tier")).toBe("edit");
     expect(featureValueForDim(f, "project")).toBe("P");
-    expect(featureValueForDim(f, "isExternal")).toBe("external");
+    expect(featureValueForDim(f, "internalExternal")).toBe("external");
+    // P3 migration guard: the legacy `isExternal` dim id must no longer resolve,
+    // otherwise the internal/external filter would mask every node (regression).
+    expect(featureValueForDim(f, "isExternal")).toBe("");
     expect(featureValueForDim(f, "activity")).toBe("High");
     expect(featureValueForDim(f, "signin")).toBe("<7d");
   });

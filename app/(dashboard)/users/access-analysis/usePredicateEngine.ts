@@ -34,7 +34,7 @@ export function featureValueForDim(
       return f.permTier ?? "(none)";
     case "project":
       return f.project;
-    case "isExternal":
+    case "internalExternal":
       return f.isExternal ? "external" : "internal";
     case "activity":
       return f.activityBucket;
