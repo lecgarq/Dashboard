@@ -1,0 +1,2522 @@
+{
+  "generatedAt": "2026-05-22T15:01:19.538Z",
+  "nodeModel": "UserProjectInstance (nodeId = userId::projectId)",
+  "internalDomainsProposed": [
+    "hermosillo.com"
+  ],
+  "currentCodeInternalDomain": "lecg.com",
+  "families": {
+    "activities": {
+      "totals": [
+        {
+          "rows": 226190,
+          "distinct_actors": 887,
+          "distinct_projects": 152,
+          "first_event": "2026-04-14T04:46:52.969Z",
+          "last_event": "2026-05-22T05:59:43.062Z"
+        }
+      ],
+      "by_service": [
+        {
+          "service": "(null)",
+          "events": 187502,
+          "actors": 817,
+          "projects": 134
+        },
+        {
+          "service": "docs",
+          "events": 24865,
+          "actors": 469,
+          "projects": 97
+        },
+        {
+          "service": "issues",
+          "events": 13353,
+          "actors": 83,
+          "projects": 15
+        },
+        {
+          "service": "rfis",
+          "events": 176,
+          "actors": 22,
+          "projects": 11
+        },
+        {
+          "service": "sheets",
+          "events": 157,
+          "actors": 8,
+          "projects": 7
+        },
+        {
+          "service": "submittals",
+          "events": 101,
+          "actors": 4,
+          "projects": 3
+        },
+        {
+          "service": "admin",
+          "events": 36,
+          "actors": 9,
+          "projects": 1
+        }
+      ],
+      "by_source_file": [
+        {
+          "sourceFile": "project",
+          "events": 225938
+        },
+        {
+          "sourceFile": "admin",
+          "events": 252
+        }
+      ],
+      "by_raw_action": [
+        {
+          "rawAction": "view-entity",
+          "events": 90231,
+          "actors": 813,
+          "projects": 141,
+          "first_event": "2026-04-15T00:59:41.689Z",
+          "last_event": "2026-05-22T05:59:43.062Z"
+        },
+        {
+          "rawAction": "upload-entity",
+          "events": 36183,
+          "actors": 272,
+          "projects": 74,
+          "first_event": "2026-04-14T04:46:52.969Z",
+          "last_event": "2026-05-22T05:59:07.213Z"
+        },
+        {
+          "rawAction": "issue-view",
+          "events": 22244,
+          "actors": 179,
+          "projects": 25,
+          "first_event": "2026-04-20T06:40:48.551Z",
+          "last_event": "2026-05-22T05:59:08.380Z"
+        },
+        {
+          "rawAction": "issue-edit",
+          "events": 14977,
+          "actors": 45,
+          "projects": 16,
+          "first_event": "2026-04-20T06:44:37.782Z",
+          "last_event": "2026-05-22T05:28:03.185Z"
+        },
+        {
+          "rawAction": "download-entity",
+          "events": 9360,
+          "actors": 579,
+          "projects": 104,
+          "first_event": "2026-04-16T23:59:03.497Z",
+          "last_event": "2026-05-22T05:59:35.000Z"
+        },
+        {
+          "rawAction": "lock-entity",
+          "events": 4015,
+          "actors": 63,
+          "projects": 35,
+          "first_event": "2026-04-20T20:38:02.242Z",
+          "last_event": "2026-05-22T05:59:33.573Z"
+        },
+        {
+          "rawAction": "unlock-entity",
+          "events": 3979,
+          "actors": 61,
+          "projects": 33,
+          "first_event": "2026-04-20T20:39:13.996Z",
+          "last_event": "2026-05-22T05:56:56.543Z"
+        },
+        {
+          "rawAction": "issue-attachment-add",
+          "events": 3748,
+          "actors": 39,
+          "projects": 9,
+          "first_event": "2026-04-20T20:15:03.747Z",
+          "last_event": "2026-05-22T05:16:43.659Z"
+        },
+        {
+          "rawAction": "view-existing-review",
+          "events": 3727,
+          "actors": 113,
+          "projects": 23,
+          "first_event": "2026-04-20T20:29:34.357Z",
+          "last_event": "2026-05-22T05:54:54.908Z"
+        },
+        {
+          "rawAction": "set-approval-status",
+          "events": 3154,
+          "actors": 22,
+          "projects": 17,
+          "first_event": "2026-04-20T20:32:21.394Z",
+          "last_event": "2026-05-22T05:35:47.596Z"
+        },
+        {
+          "rawAction": "issue-due-date",
+          "events": 2707,
+          "actors": 21,
+          "projects": 8,
+          "first_event": "2026-04-20T20:25:36.959Z",
+          "last_event": "2026-05-22T05:27:09.090Z"
+        },
+        {
+          "rawAction": "create-entity",
+          "events": 2630,
+          "actors": 132,
+          "projects": 61,
+          "first_event": "2026-04-20T20:25:26.438Z",
+          "last_event": "2026-05-22T05:42:04.433Z"
+        },
+        {
+          "rawAction": "copy-file",
+          "events": 2627,
+          "actors": 60,
+          "projects": 24,
+          "first_event": "2026-04-20T21:48:31.936Z",
+          "last_event": "2026-05-22T05:58:57.416Z"
+        },
+        {
+          "rawAction": "issue-assign",
+          "events": 1895,
+          "actors": 32,
+          "projects": 12,
+          "first_event": "2026-04-20T20:23:36.129Z",
+          "last_event": "2026-05-22T05:26:32.709Z"
+        },
+        {
+          "rawAction": "view-sheet",
+          "events": 1717,
+          "actors": 50,
+          "projects": 23,
+          "first_event": "2026-04-20T23:41:45.680Z",
+          "last_event": "2026-05-22T05:21:36.517Z"
+        },
+        {
+          "rawAction": "issue-create",
+          "events": 1695,
+          "actors": 44,
+          "projects": 17,
+          "first_event": "2026-04-20T06:40:48.103Z",
+          "last_event": "2026-05-22T05:18:28.639Z"
+        },
+        {
+          "rawAction": "rfi-view",
+          "events": 1611,
+          "actors": 62,
+          "projects": 20,
+          "first_event": "2026-04-20T21:55:08.640Z",
+          "last_event": "2026-05-22T02:24:08.521Z"
+        },
+        {
+          "rawAction": "delete-entity",
+          "events": 1388,
+          "actors": 123,
+          "projects": 47,
+          "first_event": "2026-04-20T20:17:38.535Z",
+          "last_event": "2026-05-22T05:56:38.371Z"
+        },
+        {
+          "rawAction": "rename-entity",
+          "events": 1384,
+          "actors": 119,
+          "projects": 48,
+          "first_event": "2026-04-20T21:13:57.672Z",
+          "last_event": "2026-05-22T05:51:55.229Z"
+        },
+        {
+          "rawAction": "send-entity-to-project",
+          "events": 1337,
+          "actors": 9,
+          "projects": 9,
+          "first_event": "2026-04-20T23:56:43.401Z",
+          "last_event": "2026-05-20T17:23:34.651Z"
+        },
+        {
+          "rawAction": "issue-completed",
+          "events": 1254,
+          "actors": 31,
+          "projects": 5,
+          "first_event": "2026-04-21T02:17:11.023Z",
+          "last_event": "2026-05-22T05:25:55.675Z"
+        },
+        {
+          "rawAction": "issue-in-review",
+          "events": 1051,
+          "actors": 35,
+          "projects": 10,
+          "first_event": "2026-04-20T22:23:56.958Z",
+          "last_event": "2026-05-22T04:33:13.577Z"
+        },
+        {
+          "rawAction": "issue-closed",
+          "events": 1033,
+          "actors": 18,
+          "projects": 9,
+          "first_event": "2026-04-20T06:44:05.097Z",
+          "last_event": "2026-05-22T05:48:50.433Z"
+        },
+        {
+          "rawAction": "issue-link-added",
+          "events": 964,
+          "actors": 22,
+          "projects": 8,
+          "first_event": "2026-04-21T01:38:13.290Z",
+          "last_event": "2026-05-22T04:33:13.327Z"
+        },
+        {
+          "rawAction": "issue-comment",
+          "events": 823,
+          "actors": 44,
+          "projects": 11,
+          "first_event": "2026-04-20T06:46:15.030Z",
+          "last_event": "2026-05-22T05:53:20.052Z"
+        },
+        {
+          "rawAction": "view-transmittal",
+          "events": 674,
+          "actors": 125,
+          "projects": 26,
+          "first_event": "2026-04-20T21:22:32.634Z",
+          "last_event": "2026-05-22T05:52:57.056Z"
+        },
+        {
+          "rawAction": "issue-placement-reposition",
+          "events": 586,
+          "actors": 27,
+          "projects": 12,
+          "first_event": "2026-04-20T06:41:01.264Z",
+          "last_event": "2026-05-22T04:49:25.444Z"
+        },
+        {
+          "rawAction": "issue-snapshot-edit",
+          "events": 499,
+          "actors": 30,
+          "projects": 16,
+          "first_event": "2026-04-20T06:40:52.203Z",
+          "last_event": "2026-05-22T05:29:43.587Z"
+        },
+        {
+          "rawAction": "rfi-update",
+          "events": 490,
+          "actors": 22,
+          "projects": 12,
+          "first_event": "2026-04-20T23:23:10.662Z",
+          "last_event": "2026-05-22T01:54:03.852Z"
+        },
+        {
+          "rawAction": "move-entity",
+          "events": 480,
+          "actors": 62,
+          "projects": 36,
+          "first_event": "2026-04-20T21:18:25.057Z",
+          "last_event": "2026-05-22T04:30:10.394Z"
+        },
+        {
+          "rawAction": "receive-entity-from-project",
+          "events": 419,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-05-11T22:45:27.026Z",
+          "last_event": "2026-05-21T04:06:34.954Z"
+        },
+        {
+          "rawAction": "view-public-link",
+          "events": 354,
+          "actors": 17,
+          "projects": 16,
+          "first_event": "2026-04-20T21:51:19.996Z",
+          "last_event": "2026-05-22T05:55:52.085Z"
+        },
+        {
+          "rawAction": "process-entity",
+          "events": 340,
+          "actors": 46,
+          "projects": 13,
+          "first_event": "2026-04-20T21:25:39.994Z",
+          "last_event": "2026-05-22T05:02:15.054Z"
+        },
+        {
+          "rawAction": "notify-reviewers",
+          "events": 328,
+          "actors": 47,
+          "projects": 19,
+          "first_event": "2026-04-20T21:24:55.509Z",
+          "last_event": "2026-05-22T05:36:55.519Z"
+        },
+        {
+          "rawAction": "edit-office-file",
+          "events": 318,
+          "actors": 20,
+          "projects": 14,
+          "first_event": "2026-04-20T20:37:59.593Z",
+          "last_event": "2026-05-22T03:46:38.330Z"
+        },
+        {
+          "rawAction": "add-entity-by-automation",
+          "events": 305,
+          "actors": 1,
+          "projects": 2,
+          "first_event": "2026-04-21T22:20:19.764Z",
+          "last_event": "2026-05-20T22:12:06.333Z"
+        },
+        {
+          "rawAction": "print-entity",
+          "events": 303,
+          "actors": 68,
+          "projects": 28,
+          "first_event": "2026-04-20T22:10:16.164Z",
+          "last_event": "2026-05-22T05:27:35.000Z"
+        },
+        {
+          "rawAction": "add-docs-to-review",
+          "events": 292,
+          "actors": 41,
+          "projects": 19,
+          "first_event": "2026-04-20T21:24:21.270Z",
+          "last_event": "2026-05-22T05:35:18.815Z"
+        },
+        {
+          "rawAction": "claim-review-task",
+          "events": 259,
+          "actors": 33,
+          "projects": 18,
+          "first_event": "2026-04-20T22:01:57.518Z",
+          "last_event": "2026-05-22T04:41:03.054Z"
+        },
+        {
+          "rawAction": "submittals-item-change-attribute",
+          "events": 254,
+          "actors": 24,
+          "projects": 12,
+          "first_event": "2026-04-21T00:00:23.742Z",
+          "last_event": "2026-05-20T03:43:58.302Z"
+        },
+        {
+          "rawAction": "initiate-review-process",
+          "events": 253,
+          "actors": 41,
+          "projects": 19,
+          "first_event": "2026-04-20T21:24:21.172Z",
+          "last_event": "2026-05-22T05:35:18.716Z"
+        },
+        {
+          "rawAction": "submittals-item-commit-transition",
+          "events": 249,
+          "actors": 24,
+          "projects": 12,
+          "first_event": "2026-04-21T00:00:23.742Z",
+          "last_event": "2026-05-20T03:43:58.302Z"
+        },
+        {
+          "rawAction": "submit-review",
+          "events": 236,
+          "actors": 30,
+          "projects": 18,
+          "first_event": "2026-04-20T21:22:38.829Z",
+          "last_event": "2026-05-22T01:00:34.416Z"
+        },
+        {
+          "rawAction": "review-push-approval-status",
+          "events": 233,
+          "actors": 22,
+          "projects": 17,
+          "first_event": "2026-04-20T21:22:43.224Z",
+          "last_event": "2026-05-22T01:00:36.067Z"
+        },
+        {
+          "rawAction": "create-transmittal",
+          "events": 220,
+          "actors": 36,
+          "projects": 22,
+          "first_event": "2026-04-21T05:07:32.796Z",
+          "last_event": "2026-05-22T05:56:49.838Z"
+        },
+        {
+          "rawAction": "notify-final-members",
+          "events": 216,
+          "actors": 21,
+          "projects": 16,
+          "first_event": "2026-04-20T21:22:44.850Z",
+          "last_event": "2026-05-22T01:00:39.271Z"
+        },
+        {
+          "rawAction": "submittals-item-add-attachment",
+          "events": 191,
+          "actors": 20,
+          "projects": 12,
+          "first_event": "2026-04-21T00:00:23.810Z",
+          "last_event": "2026-05-20T01:44:41.237Z"
+        },
+        {
+          "rawAction": "assign-member",
+          "events": 167,
+          "actors": 32,
+          "projects": 0,
+          "first_event": "2026-04-20T21:54:55.373Z",
+          "last_event": "2026-05-21T21:50:11.066Z"
+        },
+        {
+          "rawAction": "issue-open",
+          "events": 155,
+          "actors": 21,
+          "projects": 8,
+          "first_event": "2026-04-20T20:23:18.496Z",
+          "last_event": "2026-05-22T05:15:41.767Z"
+        },
+        {
+          "rawAction": "assign-permission",
+          "events": 155,
+          "actors": 29,
+          "projects": 29,
+          "first_event": "2026-04-22T00:08:18.058Z",
+          "last_event": "2026-05-22T03:34:05.709Z"
+        },
+        {
+          "rawAction": "submittals-item-change-attribute-user",
+          "events": 130,
+          "actors": 23,
+          "projects": 12,
+          "first_event": "2026-04-21T00:00:33.654Z",
+          "last_event": "2026-05-20T03:41:54.203Z"
+        },
+        {
+          "rawAction": "issue-deleted",
+          "events": 125,
+          "actors": 28,
+          "projects": 12,
+          "first_event": "2026-04-20T06:41:09.113Z",
+          "last_event": "2026-05-22T05:08:28.615Z"
+        },
+        {
+          "rawAction": "publish-sheet",
+          "events": 119,
+          "actors": 6,
+          "projects": 5,
+          "first_event": "2026-04-21T05:04:08.559Z",
+          "last_event": "2026-05-19T07:17:01.685Z"
+        },
+        {
+          "rawAction": "issue-copy",
+          "events": 116,
+          "actors": 10,
+          "projects": 2,
+          "first_event": "2026-04-21T03:28:09.265Z",
+          "last_event": "2026-05-22T04:52:31.795Z"
+        },
+        {
+          "rawAction": "rfi-create",
+          "events": 110,
+          "actors": 12,
+          "projects": 10,
+          "first_event": "2026-04-20T23:21:41.934Z",
+          "last_event": "2026-05-21T00:57:56.029Z"
+        },
+        {
+          "rawAction": "notify-observers",
+          "events": 110,
+          "actors": 19,
+          "projects": 15,
+          "first_event": "2026-04-20T21:23:44.229Z",
+          "last_event": "2026-05-22T05:36:55.532Z"
+        },
+        {
+          "rawAction": "submittals-step-change-attribute",
+          "events": 107,
+          "actors": 20,
+          "projects": 11,
+          "first_event": "2026-04-21T00:00:33.620Z",
+          "last_event": "2026-05-20T03:41:54.169Z"
+        },
+        {
+          "rawAction": "copy-review-docs-to-folder",
+          "events": 89,
+          "actors": 8,
+          "projects": 7,
+          "first_event": "2026-04-21T01:54:38.810Z",
+          "last_event": "2026-05-22T01:00:38.260Z"
+        },
+        {
+          "rawAction": "save-approval-workflow",
+          "events": 87,
+          "actors": 6,
+          "projects": 6,
+          "first_event": "2026-04-21T05:53:54.246Z",
+          "last_event": "2026-05-21T05:41:19.622Z"
+        },
+        {
+          "rawAction": "issue-pending",
+          "events": 77,
+          "actors": 6,
+          "projects": 3,
+          "first_event": "2026-04-21T01:47:33.591Z",
+          "last_event": "2026-05-22T05:49:23.225Z"
+        },
+        {
+          "rawAction": "response-create",
+          "events": 69,
+          "actors": 13,
+          "projects": 9,
+          "first_event": "2026-04-21T04:24:48.192Z",
+          "last_event": "2026-05-20T22:55:35.686Z"
+        },
+        {
+          "rawAction": "export-file",
+          "events": 68,
+          "actors": 35,
+          "projects": 18,
+          "first_event": "2026-04-22T03:29:55.923Z",
+          "last_event": "2026-05-20T05:10:35.491Z"
+        },
+        {
+          "rawAction": "add-doc-comment-for-review",
+          "events": 67,
+          "actors": 9,
+          "projects": 6,
+          "first_event": "2026-04-22T00:20:45.587Z",
+          "last_event": "2026-05-20T06:01:54.525Z"
+        },
+        {
+          "rawAction": "submittals-item-create",
+          "events": 64,
+          "actors": 12,
+          "projects": 12,
+          "first_event": "2026-04-21T00:00:07.951Z",
+          "last_event": "2026-05-19T05:55:03.279Z"
+        },
+        {
+          "rawAction": "submittals-item-change-attribute-final-response",
+          "events": 58,
+          "actors": 9,
+          "projects": 9,
+          "first_event": "2026-04-21T00:24:36.330Z",
+          "last_event": "2026-05-20T03:43:58.302Z"
+        },
+        {
+          "rawAction": "create-public-link-for-documents",
+          "events": 58,
+          "actors": 14,
+          "projects": 12,
+          "first_event": "2026-04-20T21:43:25.290Z",
+          "last_event": "2026-05-22T05:21:46.042Z"
+        },
+        {
+          "rawAction": "export-transmittal",
+          "events": 57,
+          "actors": 24,
+          "projects": 13,
+          "first_event": "2026-04-20T23:53:54.516Z",
+          "last_event": "2026-05-22T04:50:40.541Z"
+        },
+        {
+          "rawAction": "comment-create",
+          "events": 55,
+          "actors": 10,
+          "projects": 6,
+          "first_event": "2026-04-21T01:47:57.312Z",
+          "last_event": "2026-05-22T01:53:17.717Z"
+        },
+        {
+          "rawAction": "asset-update",
+          "events": 51,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T22:22:08.767Z",
+          "last_event": "2026-04-29T22:43:47.517Z"
+        },
+        {
+          "rawAction": "export-sheet",
+          "events": 51,
+          "actors": 9,
+          "projects": 8,
+          "first_event": "2026-04-21T02:44:05.291Z",
+          "last_event": "2026-05-19T00:21:01.986Z"
+        },
+        {
+          "rawAction": "issue-not-approved",
+          "events": 47,
+          "actors": 6,
+          "projects": 2,
+          "first_event": "2026-05-06T01:02:54.132Z",
+          "last_event": "2026-05-22T05:53:01.480Z"
+        },
+        {
+          "rawAction": "terminate-review",
+          "events": 47,
+          "actors": 16,
+          "projects": 7,
+          "first_event": "2026-04-22T21:27:42.734Z",
+          "last_event": "2026-05-22T05:15:20.862Z"
+        },
+        {
+          "rawAction": "delete-entity-by-automation",
+          "events": 46,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-12T05:27:39.480Z",
+          "last_event": "2026-05-19T03:32:08.006Z"
+        },
+        {
+          "rawAction": "delete-permission",
+          "events": 45,
+          "actors": 6,
+          "projects": 7,
+          "first_event": "2026-04-24T03:38:27.161Z",
+          "last_event": "2026-05-22T00:53:57.271Z"
+        },
+        {
+          "rawAction": "assign-admin",
+          "events": 45,
+          "actors": 22,
+          "projects": 0,
+          "first_event": "2026-04-21T03:35:25.651Z",
+          "last_event": "2026-05-22T03:08:29.864Z"
+        },
+        {
+          "rawAction": "review-export-files",
+          "events": 43,
+          "actors": 13,
+          "projects": 5,
+          "first_event": "2026-04-21T03:37:43.081Z",
+          "last_event": "2026-05-22T05:58:13.578Z"
+        },
+        {
+          "rawAction": "submittals-task-change-attribute",
+          "events": 39,
+          "actors": 10,
+          "projects": 8,
+          "first_event": "2026-04-21T05:46:17.774Z",
+          "last_event": "2026-05-20T03:41:54.056Z"
+        },
+        {
+          "rawAction": "submittals-item-change-attribute-review-response",
+          "events": 39,
+          "actors": 10,
+          "projects": 8,
+          "first_event": "2026-04-21T05:46:17.774Z",
+          "last_event": "2026-05-20T03:41:54.056Z"
+        },
+        {
+          "rawAction": "print-sheet",
+          "events": 34,
+          "actors": 4,
+          "projects": 3,
+          "first_event": "2026-04-24T22:26:29.580Z",
+          "last_event": "2026-05-22T03:26:08.738Z"
+        },
+        {
+          "rawAction": "issue-draft",
+          "events": 33,
+          "actors": 7,
+          "projects": 3,
+          "first_event": "2026-04-22T04:01:10.802Z",
+          "last_event": "2026-05-22T02:58:47.714Z"
+        },
+        {
+          "rawAction": "issue-attachment-remove",
+          "events": 32,
+          "actors": 10,
+          "projects": 3,
+          "first_event": "2026-04-20T22:40:23.647Z",
+          "last_event": "2026-05-22T03:27:26.855Z"
+        },
+        {
+          "rawAction": "create-public-link-for-folders",
+          "events": 28,
+          "actors": 11,
+          "projects": 10,
+          "first_event": "2026-04-21T21:58:45.216Z",
+          "last_event": "2026-05-22T05:04:08.834Z"
+        },
+        {
+          "rawAction": "create-version-set",
+          "events": 23,
+          "actors": 6,
+          "projects": 5,
+          "first_event": "2026-04-21T05:03:26.994Z",
+          "last_event": "2026-05-19T07:16:04.272Z"
+        },
+        {
+          "rawAction": "move-sheet-collection",
+          "events": 22,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:14:33.205Z",
+          "last_event": "2026-04-28T05:32:18.028Z"
+        },
+        {
+          "rawAction": "remove-member",
+          "events": 21,
+          "actors": 6,
+          "projects": 0,
+          "first_event": "2026-04-24T22:54:09.625Z",
+          "last_event": "2026-05-21T06:13:36.955Z"
+        },
+        {
+          "rawAction": "issue-link-removed",
+          "events": 21,
+          "actors": 6,
+          "projects": 1,
+          "first_event": "2026-04-20T21:19:28.503Z",
+          "last_event": "2026-05-22T02:26:47.103Z"
+        },
+        {
+          "rawAction": "restore-version",
+          "events": 21,
+          "actors": 10,
+          "projects": 11,
+          "first_event": "2026-04-22T21:52:42.944Z",
+          "last_event": "2026-05-22T00:52:06.895Z"
+        },
+        {
+          "rawAction": "shared-with-recipients-for-documents",
+          "events": 20,
+          "actors": 9,
+          "projects": 9,
+          "first_event": "2026-04-23T19:52:31.044Z",
+          "last_event": "2026-05-21T06:37:26.641Z"
+        },
+        {
+          "rawAction": "issue-restored",
+          "events": 17,
+          "actors": 3,
+          "projects": 2,
+          "first_event": "2026-04-23T20:57:20.453Z",
+          "last_event": "2026-05-07T00:06:45.658Z"
+        },
+        {
+          "rawAction": "edit-project",
+          "events": 17,
+          "actors": 4,
+          "projects": 0,
+          "first_event": "2026-04-25T01:45:44.489Z",
+          "last_event": "2026-05-21T22:31:30.115Z"
+        },
+        {
+          "rawAction": "restore-entity",
+          "events": 13,
+          "actors": 8,
+          "projects": 8,
+          "first_event": "2026-04-23T04:46:31.615Z",
+          "last_event": "2026-05-22T05:17:30.016Z"
+        },
+        {
+          "rawAction": "submittals-item-add-comment",
+          "events": 12,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-05-06T03:58:33.850Z",
+          "last_event": "2026-05-13T22:52:36.378Z"
+        },
+        {
+          "rawAction": "shared-with-recipients-for-folders",
+          "events": 12,
+          "actors": 8,
+          "projects": 7,
+          "first_event": "2026-04-21T05:15:54.142Z",
+          "last_event": "2026-05-21T06:50:44.311Z"
+        },
+        {
+          "rawAction": "view-in-autocad-web",
+          "events": 11,
+          "actors": 11,
+          "projects": 7,
+          "first_event": "2026-04-21T23:51:35.437Z",
+          "last_event": "2026-05-22T00:07:13.676Z"
+        },
+        {
+          "rawAction": "review-back-to-initiator",
+          "events": 9,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-21T22:17:51.293Z",
+          "last_event": "2026-05-19T20:49:00.274Z"
+        },
+        {
+          "rawAction": "delegate-review-task",
+          "events": 9,
+          "actors": 5,
+          "projects": 2,
+          "first_event": "2026-04-28T03:05:05.444Z",
+          "last_event": "2026-05-20T07:28:30.640Z"
+        },
+        {
+          "rawAction": "asset-create",
+          "events": 8,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-25T02:19:23.506Z",
+          "last_event": "2026-04-29T05:15:02.158Z"
+        },
+        {
+          "rawAction": "create-collection",
+          "events": 8,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-04-28T05:09:12.030Z",
+          "last_event": "2026-05-05T06:58:13.873Z"
+        },
+        {
+          "rawAction": "review-update-duration",
+          "events": 8,
+          "actors": 3,
+          "projects": 2,
+          "first_event": "2026-04-21T20:53:21.868Z",
+          "last_event": "2026-05-20T23:00:09.748Z"
+        },
+        {
+          "rawAction": "update-doc-comment-for-review",
+          "events": 8,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-24T02:17:21.104Z",
+          "last_event": "2026-05-20T06:02:16.421Z"
+        },
+        {
+          "rawAction": "change-discipline-order",
+          "events": 7,
+          "actors": 1,
+          "projects": 2,
+          "first_event": "2026-04-28T05:13:09.319Z",
+          "last_event": "2026-04-30T04:49:02.504Z"
+        },
+        {
+          "rawAction": "remove-docs-from-review",
+          "events": 7,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-05-01T05:25:17.078Z",
+          "last_event": "2026-05-14T06:01:26.153Z"
+        },
+        {
+          "rawAction": "response-update",
+          "events": 7,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-24T22:04:53.428Z",
+          "last_event": "2026-05-08T00:01:20.397Z"
+        },
+        {
+          "rawAction": "review-update-candidates",
+          "events": 5,
+          "actors": 4,
+          "projects": 4,
+          "first_event": "2026-04-25T23:48:06.410Z",
+          "last_event": "2026-05-15T21:21:33.943Z"
+        },
+        {
+          "rawAction": "add-recipients-to-transmittal",
+          "events": 4,
+          "actors": 4,
+          "projects": 4,
+          "first_event": "2026-04-28T23:30:09.721Z",
+          "last_event": "2026-05-12T04:10:25.210Z"
+        },
+        {
+          "rawAction": "review-rename",
+          "events": 3,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-23T04:55:59.556Z",
+          "last_event": "2026-05-15T02:01:38.823Z"
+        },
+        {
+          "rawAction": "rename-collection",
+          "events": 3,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:10:02.080Z",
+          "last_event": "2026-04-28T05:10:28.565Z"
+        },
+        {
+          "rawAction": "submittals-item-remove-attachment",
+          "events": 3,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-21T22:16:17.993Z",
+          "last_event": "2026-05-20T01:44:02.551Z"
+        },
+        {
+          "rawAction": "submittals-item-change-attribute-revision",
+          "events": 3,
+          "actors": 3,
+          "projects": 3,
+          "first_event": "2026-04-21T00:24:36.330Z",
+          "last_event": "2026-04-28T01:57:56.715Z"
+        },
+        {
+          "rawAction": "archive-review",
+          "events": 3,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-04-28T22:46:26.726Z",
+          "last_event": "2026-05-07T04:42:16.380Z"
+        },
+        {
+          "rawAction": "review-skip-step",
+          "events": 2,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-09T03:24:50.185Z",
+          "last_event": "2026-05-14T06:02:29.456Z"
+        },
+        {
+          "rawAction": "review-save-as-draft",
+          "events": 2,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-04-21T05:43:13.753Z",
+          "last_event": "2026-05-12T00:29:21.351Z"
+        },
+        {
+          "rawAction": "review-submit-as-workflow",
+          "events": 2,
+          "actors": 2,
+          "projects": 2,
+          "first_event": "2026-04-21T05:47:55.388Z",
+          "last_event": "2026-05-12T00:31:41.477Z"
+        },
+        {
+          "rawAction": "delete-bridge-automation",
+          "events": 2,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-17T01:06:51.000Z",
+          "last_event": "2026-05-17T01:12:16.000Z"
+        },
+        {
+          "rawAction": "renumber-sheet",
+          "events": 2,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:52:08.223Z",
+          "last_event": "2026-04-28T06:43:24.674Z"
+        },
+        {
+          "rawAction": "delete-sheet",
+          "events": 2,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-25T05:40:17.056Z",
+          "last_event": "2026-04-25T05:40:25.351Z"
+        },
+        {
+          "rawAction": "remove-admin",
+          "events": 2,
+          "actors": 2,
+          "projects": 0,
+          "first_event": "2026-04-25T01:30:07.100Z",
+          "last_event": "2026-05-06T22:04:15.177Z"
+        },
+        {
+          "rawAction": "delete-public-link-for-documents",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-09T05:59:04.946Z",
+          "last_event": "2026-05-09T05:59:04.946Z"
+        },
+        {
+          "rawAction": "submittals-item-change-relation-package",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-15T06:27:17.594Z",
+          "last_event": "2026-05-15T06:27:17.594Z"
+        },
+        {
+          "rawAction": "enable-collection",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:08:54.833Z",
+          "last_event": "2026-04-28T05:08:54.833Z"
+        },
+        {
+          "rawAction": "rename-version-set",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:17:14.737Z",
+          "last_event": "2026-04-28T05:17:14.737Z"
+        },
+        {
+          "rawAction": "shared-with-recipients-for-sheets",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-01T03:38:03.722Z",
+          "last_event": "2026-05-01T03:38:03.722Z"
+        },
+        {
+          "rawAction": "update-sheets-permission",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T22:30:32.840Z",
+          "last_event": "2026-04-28T22:30:32.840Z"
+        },
+        {
+          "rawAction": "update-version-set",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:17:14.737Z",
+          "last_event": "2026-04-28T05:17:14.737Z"
+        },
+        {
+          "rawAction": "upgrade-version",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-21T23:08:59.116Z",
+          "last_event": "2026-05-21T23:08:59.116Z"
+        },
+        {
+          "rawAction": "issue-placement-add",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-19T22:23:42.021Z",
+          "last_event": "2026-05-19T22:23:42.021Z"
+        },
+        {
+          "rawAction": "issue-placement-remove",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-19T22:20:52.371Z",
+          "last_event": "2026-05-19T22:20:52.371Z"
+        },
+        {
+          "rawAction": "asset-delete",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-29T21:55:20.650Z",
+          "last_event": "2026-04-29T21:55:20.650Z"
+        },
+        {
+          "rawAction": "delete-bridge",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:15:57.000Z",
+          "last_event": "2026-04-28T05:15:57.000Z"
+        },
+        {
+          "rawAction": "delete-collection",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:32:27.341Z",
+          "last_event": "2026-04-28T05:32:27.341Z"
+        },
+        {
+          "rawAction": "review-create-transmittal",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-05-16T01:39:11.831Z",
+          "last_event": "2026-05-16T01:39:11.831Z"
+        },
+        {
+          "rawAction": "create-bridge",
+          "events": 1,
+          "actors": 1,
+          "projects": 1,
+          "first_event": "2026-04-28T05:15:47.000Z",
+          "last_event": "2026-04-28T05:15:47.000Z"
+        }
+      ],
+      "by_normalized_category": [
+        {
+          "category": "view",
+          "events": 106630,
+          "distinctActions": 13
+        },
+        {
+          "category": "projectEvent",
+          "events": 59442,
+          "distinctActions": 66
+        },
+        {
+          "category": "upload",
+          "events": 43741,
+          "distinctActions": 11
+        },
+        {
+          "category": "edit",
+          "events": 14477,
+          "distinctActions": 28
+        },
+        {
+          "category": "delete",
+          "events": 1448,
+          "distinctActions": 8
+        },
+        {
+          "category": "memberEvent",
+          "events": 451,
+          "distinctActions": 5
+        },
+        {
+          "category": "other",
+          "events": 1,
+          "distinctActions": 1
+        }
+      ],
+      "unresolved_attribution": []
+    },
+    "products": {
+      "by_product": [
+        {
+          "productKey": "insight",
+          "rows": 13689,
+          "users": 2659,
+          "projects": 426,
+          "admin_rows": 4624,
+          "user_rows": 9065
+        },
+        {
+          "productKey": "docs",
+          "rows": 13689,
+          "users": 2669,
+          "projects": 427,
+          "admin_rows": 4615,
+          "user_rows": 9074
+        },
+        {
+          "productKey": "build",
+          "rows": 8814,
+          "users": 1948,
+          "projects": 375,
+          "admin_rows": 3238,
+          "user_rows": 5576
+        },
+        {
+          "productKey": "modelCoordination",
+          "rows": 2128,
+          "users": 333,
+          "projects": 302,
+          "admin_rows": 1758,
+          "user_rows": 370
+        },
+        {
+          "productKey": "designCollaboration",
+          "rows": 1318,
+          "users": 352,
+          "projects": 229,
+          "admin_rows": 953,
+          "user_rows": 365
+        },
+        {
+          "productKey": "cost",
+          "rows": 300,
+          "users": 45,
+          "projects": 126,
+          "admin_rows": 284,
+          "user_rows": 16
+        },
+        {
+          "productKey": "takeoff",
+          "rows": 127,
+          "users": 67,
+          "projects": 35,
+          "admin_rows": 41,
+          "user_rows": 86
+        },
+        {
+          "productKey": "forma",
+          "rows": 115,
+          "users": 31,
+          "projects": 60,
+          "admin_rows": 113,
+          "user_rows": 2
+        },
+        {
+          "productKey": "autoSpecs",
+          "rows": 14,
+          "users": 10,
+          "projects": 11,
+          "admin_rows": 12,
+          "user_rows": 2
+        }
+      ],
+      "project_product_totals": [
+        {
+          "rows": 5432,
+          "distinct_products": 15,
+          "projects": 427
+        }
+      ]
+    },
+    "roles": {
+      "by_role": [
+        {
+          "role_name": "Architect",
+          "roleId": "e157ff70-bf1c-4bec-b74e-f9260179976d",
+          "assignments": 2531,
+          "users": 229,
+          "projects": 315
+        },
+        {
+          "role_name": "VDC Innovacion",
+          "roleId": "80f39fe7-02b3-4fb9-aa7c-e24bf5edefc8",
+          "assignments": 1649,
+          "users": 26,
+          "projects": 424
+        },
+        {
+          "role_name": "Presupuestos",
+          "roleId": "39660f57-66e5-45d2-a614-81ad3495e166",
+          "assignments": 1409,
+          "users": 130,
+          "projects": 193
+        },
+        {
+          "role_name": "Contabilidad",
+          "roleId": "06a66694-68ec-42b1-a3ed-27e4ba47a6fb",
+          "assignments": 867,
+          "users": 26,
+          "projects": 126
+        },
+        {
+          "role_name": "Compras",
+          "roleId": "478c4bd8-322e-4ed0-9b86-3b2da4b094ac",
+          "assignments": 683,
+          "users": 89,
+          "projects": 107
+        },
+        {
+          "role_name": "Owner",
+          "roleId": "eb122736-32d4-48b3-9015-6f8af09902ca",
+          "assignments": 682,
+          "users": 446,
+          "projects": 115
+        },
+        {
+          "role_name": "Residente De Obra",
+          "roleId": "58a14604-9126-4fb0-a63d-cee03e9bce4a",
+          "assignments": 634,
+          "users": 294,
+          "projects": 93
+        },
+        {
+          "role_name": "Fire Protection Engineer",
+          "roleId": "9aa0140c-959b-40c3-bbac-1430fc3c8745",
+          "assignments": 345,
+          "users": 118,
+          "projects": 94
+        },
+        {
+          "role_name": "Electrical Engineer",
+          "roleId": "a699a65f-2e90-4300-a46f-769b57f6ab25",
+          "assignments": 322,
+          "users": 147,
+          "projects": 103
+        },
+        {
+          "role_name": "Administrador De Proyecto",
+          "roleId": "a0de3c9a-5376-4445-8e69-1e235f7d4024",
+          "assignments": 313,
+          "users": 147,
+          "projects": 105
+        },
+        {
+          "role_name": "Structural Engineer",
+          "roleId": "43d2bbee-9cd3-461c-9bda-f4042e308c03",
+          "assignments": 311,
+          "users": 84,
+          "projects": 102
+        },
+        {
+          "role_name": "Safety Manager",
+          "roleId": "cbc613c1-cb1f-46e6-bf0f-05fabf461903",
+          "assignments": 251,
+          "users": 100,
+          "projects": 70
+        },
+        {
+          "role_name": "Dirección",
+          "roleId": "b288900e-5572-4d52-af6b-63d65e90964e",
+          "assignments": 229,
+          "users": 27,
+          "projects": 128
+        },
+        {
+          "role_name": "Gerente De Desarrollo",
+          "roleId": "b07fc428-66bc-4a45-af67-b6d429b77457",
+          "assignments": 226,
+          "users": 6,
+          "projects": 200
+        },
+        {
+          "role_name": "BIM Manager",
+          "roleId": "dc8f1150-5eb9-467a-b20e-75ff7f178b55",
+          "assignments": 213,
+          "users": 10,
+          "projects": 145
+        },
+        {
+          "role_name": "Contractor",
+          "roleId": "b38bd2bf-1a23-4767-98f4-68d000eb0a13",
+          "assignments": 208,
+          "users": 203,
+          "projects": 19
+        },
+        {
+          "role_name": "Lider De Proyecto",
+          "roleId": "67c5794e-9721-4aa3-89bc-3ad577137458",
+          "assignments": 192,
+          "users": 71,
+          "projects": 102
+        },
+        {
+          "role_name": "Superintendent",
+          "roleId": "6ce04104-9941-44d0-a7a8-eb3e7d500f70",
+          "assignments": 185,
+          "users": 84,
+          "projects": 83
+        },
+        {
+          "role_name": "Designer",
+          "roleId": "f076abb8-0c9f-49f2-a951-cc03125debc5",
+          "assignments": 185,
+          "users": 72,
+          "projects": 57
+        },
+        {
+          "role_name": "Hydrosanitary Engineer",
+          "roleId": "35baab83-b107-41f4-8a37-a686f5895f4d",
+          "assignments": 176,
+          "users": 62,
+          "projects": 59
+        },
+        {
+          "role_name": "Lean Coordinator",
+          "roleId": "adcaa625-4fa1-4638-b010-57b87923aab2",
+          "assignments": 161,
+          "users": 21,
+          "projects": 79
+        },
+        {
+          "role_name": "Gerente De Construccion",
+          "roleId": "4e078bc2-bf9e-490e-b115-e89f7e5e636e",
+          "assignments": 159,
+          "users": 19,
+          "projects": 122
+        },
+        {
+          "role_name": "Mechanical Engineer",
+          "roleId": "75fa5032-9743-4856-a05e-92b52de4e7d0",
+          "assignments": 151,
+          "users": 70,
+          "projects": 61
+        },
+        {
+          "role_name": "IT Automation Access",
+          "roleId": "724e50c8-2276-4775-bd5a-3e355aea42b6",
+          "assignments": 114,
+          "users": 9,
+          "projects": 66
+        },
+        {
+          "role_name": "HVAC Engineer",
+          "roleId": "11ddab6f-ea0c-4218-b0c6-236cc33e0c25",
+          "assignments": 112,
+          "users": 46,
+          "projects": 42
+        },
+        {
+          "role_name": "Civil Engineer",
+          "roleId": "47173085-e91f-4ba0-8549-36a464c4f15f",
+          "assignments": 111,
+          "users": 22,
+          "projects": 79
+        },
+        {
+          "role_name": "Project Engineer",
+          "roleId": "4660801e-e4b7-4763-bf06-26819d49f242",
+          "assignments": 106,
+          "users": 10,
+          "projects": 60
+        },
+        {
+          "role_name": "Telecommunications Engineer",
+          "roleId": "ecc3471b-7e23-4e7e-9372-6314db729b2c",
+          "assignments": 89,
+          "users": 17,
+          "projects": 39
+        },
+        {
+          "role_name": "Director De UEN",
+          "roleId": "2bbf066a-23a8-4280-b344-9b666cdc45e4",
+          "assignments": 84,
+          "users": 4,
+          "projects": 83
+        },
+        {
+          "role_name": "Special Systems Engineer",
+          "roleId": "d519062a-89b0-4244-8446-1cccca27a15f",
+          "assignments": 80,
+          "users": 52,
+          "projects": 27
+        },
+        {
+          "role_name": "Asset Manager",
+          "roleId": "4eb63de6-2a8b-4f3e-b084-1207d46221f6",
+          "assignments": 79,
+          "users": 52,
+          "projects": 10
+        },
+        {
+          "role_name": "Plumbing Engineer",
+          "roleId": "ce97949c-f2c9-4062-a52f-5caccb5673ab",
+          "assignments": 74,
+          "users": 25,
+          "projects": 49
+        },
+        {
+          "role_name": "Safety Contractor",
+          "roleId": "eead2b63-2e77-438c-aa91-7235f72edda8",
+          "assignments": 73,
+          "users": 62,
+          "projects": 8
+        },
+        {
+          "role_name": "Riesgos Y Procesos",
+          "roleId": "dcb147e9-3515-46d3-ba63-d52a24142c73",
+          "assignments": 63,
+          "users": 3,
+          "projects": 23
+        },
+        {
+          "role_name": "Tenant",
+          "roleId": "1a49803e-3fa6-42ee-9823-7d087b4cc49c",
+          "assignments": 49,
+          "users": 27,
+          "projects": 3
+        },
+        {
+          "role_name": "BIM Engineer",
+          "roleId": "ad246ee1-2803-491c-9007-93dfa574bd0a",
+          "assignments": 48,
+          "users": 6,
+          "projects": 32
+        },
+        {
+          "role_name": "Quality Manager",
+          "roleId": "c029bd33-b04f-4672-8c37-78f91b6fdb1a",
+          "assignments": 39,
+          "users": 8,
+          "projects": 24
+        },
+        {
+          "role_name": "Core",
+          "roleId": "a2c03dca-1e9c-48be-9b35-6807a13e0b96",
+          "assignments": 36,
+          "users": 3,
+          "projects": 34
+        },
+        {
+          "role_name": "Director General",
+          "roleId": "8d71e5c0-2a90-47d1-8fdc-1595aa88fbcf",
+          "assignments": 35,
+          "users": 3,
+          "projects": 34
+        },
+        {
+          "role_name": "Hermosillo Construcción",
+          "roleId": "7d2e896e-f00f-477f-a007-3711d72c740b",
+          "assignments": 35,
+          "users": 29,
+          "projects": 8
+        },
+        {
+          "role_name": "Subcontractor",
+          "roleId": "eecced02-891b-49d0-9cdf-23e0c2eddbf8",
+          "assignments": 35,
+          "users": 35,
+          "projects": 10
+        },
+        {
+          "role_name": "Owner Consultant",
+          "roleId": "446c6482-c087-4620-9019-afae9fc2b27d",
+          "assignments": 31,
+          "users": 27,
+          "projects": 12
+        },
+        {
+          "role_name": "Fire Safety Engineer",
+          "roleId": "e2db6b71-4d9a-4b1d-8d26-56c47e88fefe",
+          "assignments": 28,
+          "users": 24,
+          "projects": 12
+        },
+        {
+          "role_name": "Comunicacion Interna",
+          "roleId": "1fb71f7b-0ea8-4630-a01e-98da6df84339",
+          "assignments": 27,
+          "users": 3,
+          "projects": 25
+        },
+        {
+          "role_name": "Proyectos Especiales",
+          "roleId": "3799bb96-400e-4292-9c52-0d5abfe10651",
+          "assignments": 27,
+          "users": 2,
+          "projects": 25
+        },
+        {
+          "role_name": "Marketing",
+          "roleId": "37deb4b8-b68a-4959-8b72-4b264650138e",
+          "assignments": 27,
+          "users": 1,
+          "projects": 27
+        },
+        {
+          "role_name": "Intern",
+          "roleId": "05beaf17-819c-4437-81c1-7b4d04b112ee",
+          "assignments": 24,
+          "users": 9,
+          "projects": 15
+        },
+        {
+          "role_name": "Document Controller",
+          "roleId": "fa9cea4d-a59d-46b5-8799-2c1ff4270148",
+          "assignments": 21,
+          "users": 14,
+          "projects": 12
+        },
+        {
+          "role_name": "LEED Consultant",
+          "roleId": "cadf85d2-0a2f-40ca-9dd4-5f5ea22331ef",
+          "assignments": 20,
+          "users": 12,
+          "projects": 7
+        },
+        {
+          "role_name": "Principal Architect",
+          "roleId": "aba383d3-ed0a-41a5-b667-547d6c625483",
+          "assignments": 20,
+          "users": 16,
+          "projects": 3
+        },
+        {
+          "role_name": "HVAC",
+          "roleId": "60c385f2-4e1f-4481-bd2c-32f19fd8b358",
+          "assignments": 17,
+          "users": 13,
+          "projects": 8
+        },
+        {
+          "role_name": "Landscape",
+          "roleId": "c664620f-1483-4686-a76b-7648cd5d40da",
+          "assignments": 13,
+          "users": 7,
+          "projects": 5
+        },
+        {
+          "role_name": "PROM Contractor",
+          "roleId": "97717f35-ae61-45da-9646-d7e5945b6039",
+          "assignments": 12,
+          "users": 12,
+          "projects": 1
+        },
+        {
+          "role_name": "VDC Manager",
+          "roleId": "8c9d9f52-7c3a-411a-bed3-0c0a8849f936",
+          "assignments": 11,
+          "users": 3,
+          "projects": 11
+        },
+        {
+          "role_name": "Hydrosanitary - Asesor",
+          "roleId": "cea91912-6f12-4a4e-840e-ffa11327ed1a",
+          "assignments": 10,
+          "users": 4,
+          "projects": 4
+        },
+        {
+          "role_name": "BMS Engineer",
+          "roleId": "ea0d2714-fbdc-4b33-ab2f-c8b3117401ca",
+          "assignments": 10,
+          "users": 9,
+          "projects": 5
+        },
+        {
+          "role_name": "Administrator",
+          "roleId": "6f402d5c-ce74-4f35-8049-a20710f9e39f",
+          "assignments": 8,
+          "users": 7,
+          "projects": 5
+        },
+        {
+          "role_name": "Interior Designer",
+          "roleId": "aa494ec3-eb1f-4a71-a2fc-b0585b2c2116",
+          "assignments": 8,
+          "users": 8,
+          "projects": 3
+        },
+        {
+          "role_name": "Drafter",
+          "roleId": "f47ac4e6-7ef9-4bd9-9bbd-1b47c8462c1d",
+          "assignments": 8,
+          "users": 3,
+          "projects": 7
+        },
+        {
+          "role_name": "Design Manager",
+          "roleId": "fa96eb78-043d-4566-97cd-36d2391f063e",
+          "assignments": 7,
+          "users": 3,
+          "projects": 7
+        },
+        {
+          "role_name": "Topografo",
+          "roleId": "d02c293d-3ebf-4db8-a1f1-20bcbca94e40",
+          "assignments": 7,
+          "users": 4,
+          "projects": 5
+        },
+        {
+          "role_name": "Coordinador De Seguridad",
+          "roleId": "c2b8edf7-cfc2-4694-b2fd-3cd73a8e81a7",
+          "assignments": 5,
+          "users": 4,
+          "projects": 4
+        },
+        {
+          "role_name": "Mechanical",
+          "roleId": "6945ceb4-6cdc-4f90-a17a-329b83d64302",
+          "assignments": 4,
+          "users": 4,
+          "projects": 2
+        },
+        {
+          "role_name": "Document Manager",
+          "roleId": "698a742c-0ee0-4916-ad93-d7f47b503499",
+          "assignments": 4,
+          "users": 2,
+          "projects": 4
+        },
+        {
+          "role_name": "Construction Manager",
+          "roleId": "07dfae70-53f5-480d-8e7c-8087b896eb10",
+          "assignments": 4,
+          "users": 2,
+          "projects": 4
+        },
+        {
+          "role_name": "Scheduler",
+          "roleId": "f965c813-a0a2-4015-bf12-2a28c9a57e2b",
+          "assignments": 3,
+          "users": 1,
+          "projects": 3
+        },
+        {
+          "role_name": "RH",
+          "roleId": "8464a2dd-f2b4-42e1-98b4-2913769610ae",
+          "assignments": 3,
+          "users": 2,
+          "projects": 3
+        },
+        {
+          "role_name": "Project Manager",
+          "roleId": "46dbd332-e995-40f6-9eee-41b33ac07c23",
+          "assignments": 3,
+          "users": 3,
+          "projects": 3
+        },
+        {
+          "role_name": "Earthworks Engineer",
+          "roleId": "d677cdaa-458a-4d86-a325-4c4e10cae257",
+          "assignments": 3,
+          "users": 3,
+          "projects": 3
+        },
+        {
+          "role_name": "MEP Consultant",
+          "roleId": "0e8f3477-5561-42ef-8287-8d5fdc427050",
+          "assignments": 2,
+          "users": 2,
+          "projects": 2
+        },
+        {
+          "role_name": "Special Systems",
+          "roleId": "6430514b-09d3-419b-a525-ce9f1739442c",
+          "assignments": 2,
+          "users": 2,
+          "projects": 1
+        },
+        {
+          "role_name": "Quantity Surveyor",
+          "roleId": "d00a5f53-8dd8-452a-9aae-a45a6b6e7d64",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        },
+        {
+          "role_name": "Controllers",
+          "roleId": "4b3fbee8-63f0-4755-8d35-4f60a0ec85be",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        },
+        {
+          "role_name": "BIM Specialist",
+          "roleId": "acac3058-cd96-4e91-870b-ab3ec7852c8f",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        },
+        {
+          "role_name": "BIM Coordinator",
+          "roleId": "105168e6-44c7-4921-9835-d7c8f17e1510",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        },
+        {
+          "role_name": "Structural",
+          "roleId": "17039734-f733-4cfe-911c-10eaff97c79e",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        },
+        {
+          "role_name": "ESG Specialist",
+          "roleId": "5fd95f37-1bb9-496a-aa59-1a71474e5689",
+          "assignments": 1,
+          "users": 1,
+          "projects": 1
+        }
+      ],
+      "roles_per_node_distribution": [
+        {
+          "roles_per_node": 1,
+          "nodes": 13132
+        },
+        {
+          "roles_per_node": 2,
+          "nodes": 263
+        },
+        {
+          "roles_per_node": 3,
+          "nodes": 12
+        },
+        {
+          "roles_per_node": 4,
+          "nodes": 3
+        },
+        {
+          "roles_per_node": 5,
+          "nodes": 1
+        },
+        {
+          "roles_per_node": 8,
+          "nodes": 1
+        }
+      ],
+      "project_role_access_levels": [
+        {
+          "docs_null": 15316,
+          "docs_admin": 246,
+          "docs_user": 6062,
+          "project_admin_set": 6612,
+          "total": 21624
+        }
+      ]
+    },
+    "companies": {
+      "totals": [
+        {
+          "distinct_companies": 319,
+          "users_with_company": 2540,
+          "instance_company_rows": 13616
+        }
+      ],
+      "top_by_users": [
+        {
+          "company": "Hermosillo",
+          "users": 1078,
+          "projects": 428,
+          "instances": 10569
+        },
+        {
+          "company": "Global Mechanical",
+          "users": 50,
+          "projects": 46,
+          "instances": 161
+        },
+        {
+          "company": "P&G",
+          "users": 44,
+          "projects": 2,
+          "instances": 49
+        },
+        {
+          "company": "Mercado Libre",
+          "users": 39,
+          "projects": 8,
+          "instances": 76
+        },
+        {
+          "company": "CEBSA",
+          "users": 36,
+          "projects": 12,
+          "instances": 64
+        },
+        {
+          "company": "MM-Engineers",
+          "users": 33,
+          "projects": 35,
+          "instances": 105
+        },
+        {
+          "company": "DEMEK",
+          "users": 33,
+          "projects": 2,
+          "instances": 35
+        },
+        {
+          "company": "Hitachi Energy",
+          "users": 30,
+          "projects": 1,
+          "instances": 30
+        },
+        {
+          "company": "Cushman & Wakefield",
+          "users": 25,
+          "projects": 11,
+          "instances": 40
+        },
+        {
+          "company": "Caterpillar",
+          "users": 24,
+          "projects": 3,
+          "instances": 28
+        },
+        {
+          "company": "Areya",
+          "users": 23,
+          "projects": 1,
+          "instances": 23
+        },
+        {
+          "company": "Tecnológico de Monterrey",
+          "users": 22,
+          "projects": 2,
+          "instances": 22
+        },
+        {
+          "company": "PROLOGIS",
+          "users": 20,
+          "projects": 26,
+          "instances": 87
+        },
+        {
+          "company": "PYE Electrificaciones",
+          "users": 20,
+          "projects": 30,
+          "instances": 62
+        },
+        {
+          "company": "Waremalcomb",
+          "users": 19,
+          "projects": 7,
+          "instances": 46
+        },
+        {
+          "company": "ALLIANCE",
+          "users": 19,
+          "projects": 7,
+          "instances": 46
+        },
+        {
+          "company": "Hidrosistemas Baja",
+          "users": 19,
+          "projects": 3,
+          "instances": 33
+        },
+        {
+          "company": "Trez",
+          "users": 18,
+          "projects": 2,
+          "instances": 24
+        },
+        {
+          "company": "SIECSA",
+          "users": 17,
+          "projects": 4,
+          "instances": 24
+        },
+        {
+          "company": "Colliers",
+          "users": 17,
+          "projects": 8,
+          "instances": 36
+        },
+        {
+          "company": "Artha Capital",
+          "users": 16,
+          "projects": 6,
+          "instances": 30
+        },
+        {
+          "company": "NG Ingeniería",
+          "users": 16,
+          "projects": 36,
+          "instances": 67
+        },
+        {
+          "company": "Gensler",
+          "users": 16,
+          "projects": 4,
+          "instances": 20
+        },
+        {
+          "company": "Hermosillo Diseño",
+          "users": 15,
+          "projects": 15,
+          "instances": 20
+        },
+        {
+          "company": "PICSA",
+          "users": 14,
+          "projects": 27,
+          "instances": 66
+        },
+        {
+          "company": "Amazon",
+          "users": 14,
+          "projects": 4,
+          "instances": 15
+        },
+        {
+          "company": "JLL",
+          "users": 14,
+          "projects": 1,
+          "instances": 14
+        },
+        {
+          "company": "SEBC",
+          "users": 13,
+          "projects": 24,
+          "instances": 74
+        },
+        {
+          "company": "TKS",
+          "users": 12,
+          "projects": 2,
+          "instances": 12
+        },
+        {
+          "company": "ICSE",
+          "users": 11,
+          "projects": 21,
+          "instances": 61
+        },
+        {
+          "company": "CLIMASER",
+          "users": 11,
+          "projects": 15,
+          "instances": 50
+        },
+        {
+          "company": "SPK Fire",
+          "users": 11,
+          "projects": 21,
+          "instances": 52
+        },
+        {
+          "company": "Danfoss",
+          "users": 11,
+          "projects": 2,
+          "instances": 11
+        },
+        {
+          "company": "FEMSA OXXO",
+          "users": 10,
+          "projects": 1,
+          "instances": 10
+        },
+        {
+          "company": "Estructure",
+          "users": 10,
+          "projects": 40,
+          "instances": 130
+        },
+        {
+          "company": "PSF",
+          "users": 10,
+          "projects": 4,
+          "instances": 23
+        },
+        {
+          "company": "ESJ",
+          "users": 10,
+          "projects": 5,
+          "instances": 24
+        },
+        {
+          "company": "Liverpool",
+          "users": 10,
+          "projects": 2,
+          "instances": 10
+        },
+        {
+          "company": "TENCO",
+          "users": 10,
+          "projects": 2,
+          "instances": 10
+        },
+        {
+          "company": "IESO",
+          "users": 9,
+          "projects": 6,
+          "instances": 17
+        }
+      ]
+    },
+    "internal_external": {
+      "by_domain": [
+        {
+          "domain": "hermosillo.com",
+          "users": 1265
+        },
+        {
+          "domain": "gmail.com",
+          "users": 228
+        },
+        {
+          "domain": "tec.mx",
+          "users": 56
+        },
+        {
+          "domain": "mercadolibre.com.mx",
+          "users": 50
+        },
+        {
+          "domain": "globalmechanical.com.mx",
+          "users": 48
+        },
+        {
+          "domain": "hotmail.com",
+          "users": 42
+        },
+        {
+          "domain": "pg.com",
+          "users": 40
+        },
+        {
+          "domain": "cebsa.mx",
+          "users": 37
+        },
+        {
+          "domain": "demek.com",
+          "users": 35
+        },
+        {
+          "domain": "hitachienergy.com",
+          "users": 31
+        },
+        {
+          "domain": "mm-eng.com",
+          "users": 29
+        },
+        {
+          "domain": "outlook.com",
+          "users": 27
+        },
+        {
+          "domain": "gensler.com",
+          "users": 27
+        },
+        {
+          "domain": "cat.com",
+          "users": 26
+        },
+        {
+          "domain": "alliance-fire.com",
+          "users": 22
+        },
+        {
+          "domain": "areya.com.mx",
+          "users": 22
+        },
+        {
+          "domain": "waremalcomb.com",
+          "users": 21
+        },
+        {
+          "domain": "hb.com.mx",
+          "users": 19
+        },
+        {
+          "domain": "prologis.com",
+          "users": 19
+        },
+        {
+          "domain": "pye-electrificaciones.com",
+          "users": 19
+        },
+        {
+          "domain": "colliers.com",
+          "users": 19
+        },
+        {
+          "domain": "esj.mx",
+          "users": 18
+        },
+        {
+          "domain": "siecsamx.com",
+          "users": 17
+        },
+        {
+          "domain": "projectmanagement.com.mx",
+          "users": 16
+        },
+        {
+          "domain": "dasvent.com",
+          "users": 15
+        },
+        {
+          "domain": "artha.com.mx",
+          "users": 15
+        },
+        {
+          "domain": "tr3z.mx",
+          "users": 15
+        },
+        {
+          "domain": "autodesk.com",
+          "users": 15
+        },
+        {
+          "domain": "cushwake.com",
+          "users": 15
+        },
+        {
+          "domain": "sebc.mx",
+          "users": 14
+        },
+        {
+          "domain": "spkfire.com",
+          "users": 14
+        },
+        {
+          "domain": "papelsanfrancisco.com",
+          "users": 14
+        },
+        {
+          "domain": "jll.com",
+          "users": 13
+        },
+        {
+          "domain": "climaser.com",
+          "users": 13
+        },
+        {
+          "domain": "amazon.com",
+          "users": 12
+        },
+        {
+          "domain": "cbre.com",
+          "users": 11
+        },
+        {
+          "domain": "teconsa.mx",
+          "users": 11
+        },
+        {
+          "domain": "danfoss.com",
+          "users": 11
+        },
+        {
+          "domain": "ngingenieria.mx",
+          "users": 11
+        },
+        {
+          "domain": "estructure.com.mx",
+          "users": 10
+        },
+        {
+          "domain": "doblei.com",
+          "users": 10
+        },
+        {
+          "domain": "liverpool.com.mx",
+          "users": 10
+        },
+        {
+          "domain": "altos.co",
+          "users": 9
+        },
+        {
+          "domain": "studio2arquitectos.com",
+          "users": 9
+        },
+        {
+          "domain": "solutecgroup.com.mx",
+          "users": 9
+        },
+        {
+          "domain": "picsainstalaciones.com",
+          "users": 9
+        },
+        {
+          "domain": "centinelaproperty.com",
+          "users": 9
+        },
+        {
+          "domain": "icseingenieria.com",
+          "users": 9
+        },
+        {
+          "domain": "kotkoff.com",
+          "users": 9
+        },
+        {
+          "domain": "syptel.com",
+          "users": 9
+        },
+        {
+          "domain": "electrosistemas.com",
+          "users": 9
+        },
+        {
+          "domain": "oxxo.com",
+          "users": 9
+        },
+        {
+          "domain": "dewa.com.mx",
+          "users": 9
+        },
+        {
+          "domain": "ttec.com",
+          "users": 9
+        },
+        {
+          "domain": "bravex.com.mx",
+          "users": 8
+        },
+        {
+          "domain": "allianceairproducts.com",
+          "users": 8
+        },
+        {
+          "domain": "transformaelectric.com",
+          "users": 8
+        },
+        {
+          "domain": "jvhvac.com",
+          "users": 8
+        },
+        {
+          "domain": "prosos.net",
+          "users": 8
+        },
+        {
+          "domain": "tenco.mx",
+          "users": 8
+        }
+      ],
+      "current_code_rule_lecg": [
+        {
+          "internal": 0,
+          "external_incl_null": 3367,
+          "total": 3367
+        }
+      ],
+      "proposed_rule_allowlist": [
+        {
+          "internal": 1265,
+          "unknown": 0,
+          "external": 2102,
+          "total": 3367
+        }
+      ],
+      "classification_changes": [
+        {
+          "now_internal_was_external": 1265,
+          "was_internal_now_external": 0,
+          "was_external_now_unknown": 0
+        }
+      ],
+      "high_priv_now_internal": [
+        {
+          "users": 328
+        }
+      ],
+      "external_users_with_admin_access": [
+        {
+          "users": 27
+        }
+      ]
+    },
+    "folder_permissions": {
+      "by_perm_type": [
+        {
+          "permType": "View Only",
+          "rows": 978804,
+          "folders": 56085,
+          "roles": 61
+        },
+        {
+          "permType": "View+Download+Upload+Edit",
+          "rows": 3887,
+          "folders": 906,
+          "roles": 50
+        },
+        {
+          "permType": "View+Download",
+          "rows": 3187,
+          "folders": 592,
+          "roles": 53
+        },
+        {
+          "permType": "View+Download+Upload",
+          "rows": 678,
+          "folders": 354,
+          "roles": 33
+        },
+        {
+          "permType": "Full Controller",
+          "rows": 141,
+          "folders": 103,
+          "roles": 16
+        }
+      ],
+      "crawl_status": [
+        {
+          "folderCrawlStatus": "never",
+          "projects": 1030
+        },
+        {
+          "folderCrawlStatus": "ok",
+          "projects": 84
+        },
+        {
+          "folderCrawlStatus": "inaccessible",
+          "projects": 28
+        },
+        {
+          "folderCrawlStatus": "partial",
+          "projects": 1
+        }
+      ],
+      "folders_and_projects": [
+        {
+          "folders": 63437,
+          "projects": 88
+        }
+      ],
+      "full_controller_roles": [
+        {
+          "roles": 16,
+          "rows": 141
+        }
+      ]
+    },
+    "temporal": {
+      "dc_user_last_sign_in": [
+        {
+          "total": 3367,
+          "null_count": 2233,
+          "earliest": "2020-09-12T17:02:28.000Z",
+          "latest": "2026-05-18T17:20:32.000Z"
+        }
+      ],
+      "dc_projectuser_dates": [
+        {
+          "total": 16942,
+          "lastsignin_null": 16942,
+          "addedon_null": 0,
+          "earliest_added": "2021-03-26T05:36:58.296Z",
+          "latest_added": "2026-05-22T03:08:29.643Z"
+        }
+      ],
+      "signin_recency_buckets": [
+        {
+          "bucket": "0-7d",
+          "users": 55
+        },
+        {
+          "bucket": "15-30d",
+          "users": 87
+        },
+        {
+          "bucket": "31-60d",
+          "users": 101
+        },
+        {
+          "bucket": "60d+",
+          "users": 804
+        },
+        {
+          "bucket": "8-14d",
+          "users": 87
+        },
+        {
+          "bucket": "never/unknown",
+          "users": 2233
+        }
+      ],
+      "activity_monthly": [
+        {
+          "month": "2026-04",
+          "events": 80716
+        },
+        {
+          "month": "2026-05",
+          "events": 145474
+        }
+      ]
+    },
+    "coverage": {
+      "node_totals": [
+        {
+          "instances": 16942,
+          "distinct_users": 3367,
+          "distinct_projects": 428
+        }
+      ],
+      "instances_with_roles": [
+        {
+          "instances_with_roles": 13412
+        }
+      ],
+      "instances_with_products": [
+        {
+          "instances_with_products": 13701
+        }
+      ],
+      "instances_with_company": [
+        {
+          "instances_with_company": 13616
+        }
+      ],
+      "instances_with_signin": [
+        {
+          "instances_with_signin": 0
+        }
+      ],
+      "multi_project_users": [
+        {
+          "multi_project_users": 1610
+        }
+      ],
+      "multi_company_users": [
+        {
+          "multi_company_users": 67
+        }
+      ],
+      "users_with_activity_via_autodeskid": [
+        {
+          "users_with_activity": 879
+        }
+      ]
+    }
+  }
+}
