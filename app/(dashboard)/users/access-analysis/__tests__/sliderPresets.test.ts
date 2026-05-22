@@ -32,6 +32,10 @@ describe("sliderPresets", () => {
       expect(organic[id]).toBe(v);
     }
     expect(organic.module).toBe(15); // promoted module keeps its 0.15 contribution (decision 4)
+    // decision 2: advanced dims are OFF in organic; module is the ONLY active advanced dim.
+    // (Guards the P3 layout-parity guarantee — organic must not turn on company/isAdmin.)
+    expect(organic.company).toBe(0);
+    expect(organic.isAdmin).toBe(0);
   });
 
   it("detectActivePreset matches a known profile and returns null for a custom mix", () => {

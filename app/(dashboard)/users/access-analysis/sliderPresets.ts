@@ -6,8 +6,8 @@
  * UAT-approved P3 default (registry defaultWeight×100 for the primary six + module).
  */
 
-import { DIMENSION_REGISTRY, type DimensionId } from "./dimensionRegistry";
-import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
+import { getDimension, type DimensionId } from "./dimensionRegistry";
+import { PRIMARY_DIMENSION_IDS, SLIDER_DIMENSION_IDS } from "./dimensionGroups";
 
 export interface SliderPreset {
   id: string;
@@ -16,18 +16,24 @@ export interface SliderPreset {
   weights: Partial<Record<DimensionId, number>>;
 }
 
-/** registry defaultWeight×100 for every slider dim (the "everything on" baseline). */
-function registryWeights(): Record<string, number> {
+/**
+ * Organic default = registry defaultWeight×100 for the PRIMARY dims + `module`.
+ * Advanced dims (company, isAdmin, …) are intentionally OFF (absent → 0 via the
+ * applyPreset 0-baseline), per decision 2: advanced sliders default to 0 EXCEPT
+ * module. This reproduces the UAT-approved P3 default layout exactly — it does NOT
+ * turn on every slider-capable dim.
+ */
+function registryOrganicWeights(): Record<string, number> {
   const out: Record<string, number> = {};
-  for (const d of DIMENSION_REGISTRY) {
-    if ((SLIDER_DIMENSION_IDS as readonly string[]).includes(d.id)) {
-      out[d.id] = Math.round(d.defaultWeight * 100);
-    }
+  const activeIds: readonly DimensionId[] = [...PRIMARY_DIMENSION_IDS, "module"];
+  for (const id of activeIds) {
+    const d = getDimension(id);
+    if (d) out[id] = Math.round(d.defaultWeight * 100);
   }
   return out;
 }
 
-const ORGANIC = registryWeights();
+const ORGANIC = registryOrganicWeights();
 
 export const SLIDER_PRESETS: readonly SliderPreset[] = [
   { id: "organic", label: "Organic (default)", weights: ORGANIC },
