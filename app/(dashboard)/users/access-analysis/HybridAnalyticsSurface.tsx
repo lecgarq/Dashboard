@@ -272,6 +272,15 @@ function adminGrantFinding(users: readonly BulkAccUser[]): string {
   return `${grants.toLocaleString()} project admin ${grants === 1 ? "grant" : "grants"}`;
 }
 
+function SectionHeading({ title, hint }: { title: string; hint?: string }) {
+  return (
+    <div className="mt-2 flex items-baseline gap-3">
+      <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+      {hint ? <span className="text-xs text-muted-foreground">{hint}</span> : null}
+    </div>
+  );
+}
+
 function FallbackBarPanel({
   title,
   subtitle,
@@ -735,108 +744,13 @@ export function HybridAnalyticsSurface() {
         <p className="rounded-md bg-amber-500/10 p-2 text-xs text-amber-700">{queryState.diagnostic}</p>
       ) : null}
 
+      <SectionHeading title="Executive summary" />
+
       <KpiHeroStrip users={users} folderGrantCount={folderRows.length} summary={kpiSummaryQuery.data} />
 
       <HeadlineInsights items={headlineItems} onSelect={handleHeadlineSelect} />
 
-      {!isReady && !isFallback ? (
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
-          <FallbackBarPanel
-            title="Top projects"
-            subtitle="Extracted project memberships shown immediately while cross-filter charts initialize."
-            rows={topProjectRows}
-            accent={ACCENTS.membership}
-            emptyText="No project memberships found."
-            onRowClick={(row) => {
-              setDetailFilter({
-                title: `Users in Project: ${row.label}`,
-                subtitle: `Detailed view of users who belong to the project "${row.label}".`,
-                filterFn: (u) => u.projects.some((p) => p.name === row.label || p.id === row.label),
-              });
-            }}
-          />
-          <FallbackBarPanel
-            title="Top roles"
-            subtitle="Extracted role assignments shown immediately while cross-filter charts initialize."
-            rows={topRoleRows}
-            accent={ACCENTS.role}
-            emptyText="No roles found."
-            onRowClick={(row) => {
-              setDetailFilter({
-                title: `Users with Role: ${row.label}`,
-                subtitle: `Detailed view of users who carry the role "${row.label}".`,
-                filterFn: (u) => {
-                  const userRoles = new Set([
-                    ...(u.allRoles ?? []),
-                    ...(u.perProjectRoleNames ?? []),
-                    ...u.projects.flatMap((p) => p.roles)
-                  ].filter(Boolean));
-                  return userRoles.has(row.label);
-                },
-              });
-            }}
-          />
-          <FallbackBarPanel
-            title="Top companies"
-            subtitle="Extracted company membership distribution."
-            rows={topCompanyRows}
-            accent={ACCENTS.company}
-            emptyText="No company data found."
-            onRowClick={(row) => {
-              setDetailFilter({
-                title: `Users at Company: ${row.label}`,
-                subtitle: `Detailed view of users belonging to "${row.label}".`,
-                filterFn: (u) => {
-                  const label = (u.companyName ?? u.companyRole ?? "Unknown").trim() || "Unknown";
-                  return label === row.label;
-                },
-              });
-            }}
-          />
-        </div>
-      ) : null}
-
-      <AccessEventsChart />
-
-      <ComplianceScanPanel />
-
-      <PermissionRiskPanel />
-
-      {isReady ? (
-        <div onClick={(e) => handleVgPlotClick(e, "projects")} className="cursor-pointer vgplot-clickable">
-          <DistributionPanel
-            title="Projects per user"
-            subtitle="Distribution of access breadth. The long tail on the right is your over-provisioned users."
-            table="users"
-            column="project_count"
-            accent={ACCENTS.distribution}
-            binStep={1}
-            height={300}
-            selection={usersSelection}
-          />
-        </div>
-      ) : isFallback ? (
-        <FallbackBarPanel
-          title="Projects per user"
-          subtitle="Local fallback distribution while DuckDB-Wasm is unavailable."
-          rows={projectDistributionRows}
-          accent={ACCENTS.distribution}
-          finding={findings.projectBreadth}
-          onRowClick={(row) => {
-            setDetailFilter({
-              title: `Users with ${row.label} Projects`,
-              subtitle: `Detailed view of users who belong to ${row.label} projects.`,
-              filterFn: (u) => {
-                if (row.label === "10+") return u.projectCount >= 10;
-                const num = parseInt(row.label, 10);
-                return !isNaN(num) && u.projectCount === num;
-              },
-            });
-          }}
-        />
-      ) : (
-        <div className="h-[340px] animate-pulse rounded-lg border bg-card/60" />
-      )}
+      <SectionHeading title="Access posture" hint="Click a slice to drill in" />
 
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-4">
         <DonutPanel
@@ -932,6 +846,44 @@ export function HybridAnalyticsSurface() {
         />
       </div>
 
+      <SectionHeading title="Access breadth" />
+
+      {isReady ? (
+        <div onClick={(e) => handleVgPlotClick(e, "projects")} className="cursor-pointer vgplot-clickable">
+          <DistributionPanel
+            title="Projects per user"
+            subtitle="Distribution of access breadth. The long tail on the right is your over-provisioned users."
+            table="users"
+            column="project_count"
+            accent={ACCENTS.distribution}
+            binStep={1}
+            height={300}
+            selection={usersSelection}
+          />
+        </div>
+      ) : isFallback ? (
+        <FallbackBarPanel
+          title="Projects per user"
+          subtitle="Local fallback distribution while DuckDB-Wasm is unavailable."
+          rows={projectDistributionRows}
+          accent={ACCENTS.distribution}
+          finding={findings.projectBreadth}
+          onRowClick={(row) => {
+            setDetailFilter({
+              title: `Users with ${row.label} Projects`,
+              subtitle: `Detailed view of users who belong to ${row.label} projects.`,
+              filterFn: (u) => {
+                if (row.label === "10+") return u.projectCount >= 10;
+                const num = parseInt(row.label, 10);
+                return !isNaN(num) && u.projectCount === num;
+              },
+            });
+          }}
+        />
+      ) : (
+        <div className="h-[340px] animate-pulse rounded-lg border bg-card/60" />
+      )}
+
       <div className="grid grid-cols-1 gap-4">
         {isReady ? (
           <div onClick={(e) => handleVgPlotClick(e, "rolesProjectStatus")} className="cursor-pointer vgplot-clickable">
@@ -1005,6 +957,65 @@ export function HybridAnalyticsSurface() {
           <div className="h-[420px] animate-pulse rounded-lg border bg-card/60" />
         )}
       </div>
+
+      <SectionHeading title="Rankings" />
+
+      {!isReady && !isFallback ? (
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
+          <FallbackBarPanel
+            title="Top projects"
+            subtitle="Extracted project memberships shown immediately while cross-filter charts initialize."
+            rows={topProjectRows}
+            accent={ACCENTS.membership}
+            emptyText="No project memberships found."
+            onRowClick={(row) => {
+              setDetailFilter({
+                title: `Users in Project: ${row.label}`,
+                subtitle: `Detailed view of users who belong to the project "${row.label}".`,
+                filterFn: (u) => u.projects.some((p) => p.name === row.label || p.id === row.label),
+              });
+            }}
+          />
+          <FallbackBarPanel
+            title="Top roles"
+            subtitle="Extracted role assignments shown immediately while cross-filter charts initialize."
+            rows={topRoleRows}
+            accent={ACCENTS.role}
+            emptyText="No roles found."
+            onRowClick={(row) => {
+              setDetailFilter({
+                title: `Users with Role: ${row.label}`,
+                subtitle: `Detailed view of users who carry the role "${row.label}".`,
+                filterFn: (u) => {
+                  const userRoles = new Set([
+                    ...(u.allRoles ?? []),
+                    ...(u.perProjectRoleNames ?? []),
+                    ...u.projects.flatMap((p) => p.roles)
+                  ].filter(Boolean));
+                  return userRoles.has(row.label);
+                },
+              });
+            }}
+          />
+          <FallbackBarPanel
+            title="Top companies"
+            subtitle="Extracted company membership distribution."
+            rows={topCompanyRows}
+            accent={ACCENTS.company}
+            emptyText="No company data found."
+            onRowClick={(row) => {
+              setDetailFilter({
+                title: `Users at Company: ${row.label}`,
+                subtitle: `Detailed view of users belonging to "${row.label}".`,
+                filterFn: (u) => {
+                  const label = (u.companyName ?? u.companyRole ?? "Unknown").trim() || "Unknown";
+                  return label === row.label;
+                },
+              });
+            }}
+          />
+        </div>
+      ) : null}
 
       {isReady ? (
         <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 xl:grid-cols-3">
@@ -1098,6 +1109,14 @@ export function HybridAnalyticsSurface() {
           ))}
         </div>
       )}
+
+      <SectionHeading title="Activity & risk" />
+
+      <AccessEventsChart />
+
+      <ComplianceScanPanel />
+
+      <PermissionRiskPanel />
 
       {/* Styled Interactive Effects for vgplot charts */}
       <style>{`
@@ -1196,9 +1215,9 @@ export function HybridAnalyticsSurface() {
                         .join("")
                         .toUpperCase()
                         .slice(0, 2) || "?";
-                      
+
                       const statusVal = u.aggregatedStatus?.toLowerCase() ?? "unknown";
-                      const badgeVariant = 
+                      const badgeVariant =
                         statusVal === "active" ? "default" :
                         statusVal === "pending" ? "outline" : "destructive";
 
