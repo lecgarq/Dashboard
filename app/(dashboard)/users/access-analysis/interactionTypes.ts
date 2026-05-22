@@ -62,6 +62,12 @@ export interface NodeFeatureSnapshot {
    * Drives the `isAdmin` governance/risk dimension.
    */
   isAdmin?: boolean;
+  /**
+   * Non-baseline product/module keys for this instance (e.g. ["build","cost"]),
+   * sorted + deduped, baselines (insight/docs) excluded. Optional for backward
+   * compatibility; set by buildFeatureSnapshot. Drives the `module` dimension.
+   */
+  moduleSignature?: string[];
 }
 
 /**

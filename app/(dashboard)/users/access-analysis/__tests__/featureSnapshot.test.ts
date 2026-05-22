@@ -26,6 +26,8 @@ interface FakeRow {
   firm_name: string | null;
   account_status: string | null;
   permission_coverage: string | null;
+  is_project_admin: boolean | number | null;
+  module_ids: string | null;
 }
 
 let mockRows: FakeRow[] = [];
@@ -39,7 +41,7 @@ vi.mock("../duckdbClient", () => ({
   getDuckDbClient: vi.fn(async () => ({ connection: mockConnection })),
 }));
 
-import { buildFeatureSnapshot, bucketActivity, bucketSignin } from "../featureSnapshot";
+import { buildFeatureSnapshot, bucketActivity, bucketSignin, parseModuleSignature } from "../featureSnapshot";
 
 beforeEach(() => {
   mockRows = [];
@@ -232,5 +234,43 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     firm_name: over.firm_name ?? null,
     account_status: over.account_status ?? null,
     permission_coverage: over.permission_coverage ?? null,
+    is_project_admin: over.is_project_admin ?? false,
+    module_ids: over.module_ids ?? null,
   };
 }
+
+describe("parseModuleSignature", () => {
+  it("splits the pipe-delimited list and excludes baseline products", () => {
+    expect(parseModuleSignature("build|cost|docs|insight")).toEqual(["build", "cost"]);
+  });
+  it("returns [] for null / empty / baseline-only input", () => {
+    expect(parseModuleSignature(null)).toEqual([]);
+    expect(parseModuleSignature("")).toEqual([]);
+    expect(parseModuleSignature("docs|insight")).toEqual([]);
+  });
+  it("dedupes, trims, and sorts deterministically", () => {
+    expect(parseModuleSignature(" build | build |cost")).toEqual(["build", "cost"]);
+  });
+});
+
+describe("buildFeatureSnapshot — moduleSignature + isAdmin enrichment", () => {
+  it("derives moduleSignature from module_ids (baselines excluded)", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", module_ids: "build|insight|cost" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.moduleSignature).toEqual(["build", "cost"]);
+  });
+  it("populates isAdmin from is_project_admin", async () => {
+    mockRows = [
+      makeRow({ user_id: "a", project_id: "p", is_project_admin: true }),
+      makeRow({ user_id: "b", project_id: "p", is_project_admin: false }),
+    ];
+    const result = await buildFeatureSnapshot({ nodeIds: ["a::p", "b::p"] });
+    expect(result[0]!.isAdmin).toBe(true);
+    expect(result[1]!.isAdmin).toBe(false);
+  });
+  it("unknown nodeId fallback → moduleSignature [], isAdmin false", async () => {
+    const result = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(result[0]!.moduleSignature).toEqual([]);
+    expect(result[0]!.isAdmin).toBe(false);
+  });
+});

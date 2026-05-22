@@ -14,6 +14,7 @@
 import { getDuckDbClient } from "./duckdbClient";
 import { GRAPH_ANALYTICS_SOURCE_TABLES } from "./graphSql";
 import { classifyAffiliation } from "./internalDomains";
+import { BASELINE_MODULES } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---- Bucketing helpers (RESEARCH Open Q#2 — defaults) ---------------------
@@ -48,6 +49,22 @@ function formatRel(days: number | null): string {
   return `${Math.floor(days / 365)}y ago`;
 }
 
+/**
+ * Parse the pipe-delimited `module_ids` column into a node's module SIGNATURE:
+ * non-baseline product keys only (baselines are near-universal → no signal),
+ * trimmed, deduped, sorted for deterministic output. See discovery §3.
+ */
+export function parseModuleSignature(raw: string | null | undefined): string[] {
+  if (!raw) return [];
+  const baseline = new Set(BASELINE_MODULES);
+  const out = new Set<string>();
+  for (const part of raw.split("|")) {
+    const key = part.trim();
+    if (key !== "" && !baseline.has(key)) out.add(key);
+  }
+  return Array.from(out).sort();
+}
+
 // ---- Row shape returned by the DuckDB SELECT ------------------------------
 
 interface RawFeatureRow {
@@ -64,6 +81,8 @@ interface RawFeatureRow {
   firm_name: string | null;
   account_status: string | null;
   permission_coverage: string | null;
+  is_project_admin: boolean | number | null;
+  module_ids: string | null;
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -114,7 +133,9 @@ export async function buildFeatureSnapshot(
       END                                                                AS last_signin_days,
       COALESCE(ANY_VALUE(u.firm_name), '')                               AS firm_name,
       COALESCE(ANY_VALUE(u.account_status), '')                          AS account_status,
-      COALESCE(ANY_VALUE(u.permission_coverage), 'unknown')              AS permission_coverage
+      COALESCE(ANY_VALUE(u.permission_coverage), 'unknown')              AS permission_coverage,
+      COALESCE(ANY_VALUE(up.is_project_admin), FALSE)                    AS is_project_admin,
+      COALESCE(ANY_VALUE(up.module_ids), '')                            AS module_ids
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id
@@ -159,6 +180,8 @@ export async function buildFeatureSnapshot(
       permissionCoverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
       firmName: String(r.firm_name ?? ""),
       accountStatus: String(r.account_status ?? ""),
+      isAdmin: Boolean(r.is_project_admin),
+      moduleSignature: parseModuleSignature(r.module_ids),
     });
   }
 
@@ -179,6 +202,8 @@ export async function buildFeatureSnapshot(
     permissionCoverage: "unknown",
     firmName: "",
     accountStatus: "",
+    isAdmin: false,
+    moduleSignature: [],
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));
