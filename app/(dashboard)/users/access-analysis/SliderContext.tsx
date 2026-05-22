@@ -21,19 +21,19 @@ import {
   type ReactNode,
 } from "react";
 import type { PhysicsLayer } from "./physicsLayer";
+import { getRuntimeDimensions, runtimeDefaultSliders } from "./dimensionRegistry";
 
 // ---------------------------------------------------------------------------
-// Canonical six-dimension list (used by both contexts and the toolbar)
+// Runtime dimension list — derived from the registry (single source of truth).
+// The advanced-UI phase widens RUNTIME_DIMENSION_IDS; this list follows it.
 // ---------------------------------------------------------------------------
 
-export const DIMENSIONS = [
-  { id: "role", label: "Role", kind: "categorical" },
-  { id: "tier", label: "Tier", kind: "categorical" },
-  { id: "project", label: "Project", kind: "categorical" },
-  { id: "isExternal", label: "External", kind: "categorical" },
-  { id: "activity", label: "Activity", kind: "bucket" },
-  { id: "signin", label: "Sign-in", kind: "bucket" },
-] as const;
+export const DIMENSIONS = getRuntimeDimensions().map((d) => ({
+  id: d.id,
+  label: d.label,
+  // categorical/binary/multi-hot → "categorical"; temporal stays "bucket".
+  kind: d.type === "temporal" ? ("bucket" as const) : ("categorical" as const),
+}));
 
 export type DimensionId = (typeof DIMENSIONS)[number]["id"];
 
@@ -41,20 +41,28 @@ export type DimensionId = (typeof DIMENSIONS)[number]["id"];
 export const CONTROLS_STORAGE_KEY = "lecg.access-analysis.controls.v1";
 
 /**
- * Organic default layout profile (P1.1). Non-zero so the graph loads as a
- * volumetric, clustered network — NOT a globe the user must "fix" with sliders.
- * Structural dimensions lead (project > role > tier > external); activity/signin
- * are weak so account-state nudges position without dominating clustering.
- * The shell seeds physics with the SAME values so UI and physics state agree.
+ * Organic default layout profile, now sourced from the registry defaultWeights
+ * (×100). Structural dims lead (project > role > tier > internalExternal); behavior
+ * dims (activity/signin) stay weak. Identical to the prior hardcoded profile, but
+ * DRY against the registry.
  */
-export const DEFAULT_VALUES: Record<DimensionId, number> = {
-  role: 25,
-  tier: 15,
-  project: 35,
-  isExternal: 10,
-  activity: 5,
-  signin: 5,
-};
+export const DEFAULT_VALUES: Record<DimensionId, number> =
+  runtimeDefaultSliders() as Record<DimensionId, number>;
+
+/**
+ * One-time migration of persisted slider state: the legacy `isExternal` slider id
+ * was renamed to `internalExternal` (registry reconciliation, P3). If a stored blob
+ * still carries `isExternal`, fold its value into `internalExternal` (unless the new
+ * key is already present, in which case the new value wins) and drop the legacy key.
+ */
+export function migratePersistedSliders(
+  sliders: Record<string, number>,
+): Record<string, number> {
+  if (!("isExternal" in sliders)) return sliders;
+  const { isExternal, ...rest } = sliders;
+  if (!("internalExternal" in rest)) rest.internalExternal = isExternal;
+  return rest;
+}
 
 // ---------------------------------------------------------------------------
 // Context shape
@@ -74,7 +82,7 @@ const SliderCtx = createContext<SliderContextValue | null>(null);
 // ---------------------------------------------------------------------------
 
 interface PersistedControls {
-  sliders?: Partial<Record<DimensionId, number>>;
+  sliders?: Partial<Record<string, number>>;
   filters?: Record<string, string[]>;
   searchQuery?: string;
 }
@@ -154,9 +162,10 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   useEffect(() => {
     const stored = readPersisted();
     if (!stored || !stored.sliders) return;
+    const migrated = migratePersistedSliders(stored.sliders as Record<string, number>);
     const next: Record<DimensionId, number> = { ...DEFAULT_VALUES };
     for (const dim of DIMENSIONS) {
-      const v = stored.sliders[dim.id];
+      const v = migrated[dim.id];
       if (typeof v === "number" && Number.isFinite(v)) {
         next[dim.id] = Math.max(0, Math.min(100, v));
       }

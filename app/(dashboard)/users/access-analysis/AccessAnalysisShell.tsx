@@ -29,6 +29,7 @@ import {
   DEFAULT_VALUES,
   DIMENSIONS,
   SliderProvider,
+  migratePersistedSliders,
   type DimensionId,
 } from "./SliderContext";
 import { FilterProvider, useFilters } from "./FilterContext";
@@ -258,8 +259,11 @@ export function AccessAnalysisShell(): React.JSX.Element {
                 sliders?: Partial<Record<DimensionId, number>>;
               };
               if (parsed.sliders) {
+                const migrated = migratePersistedSliders(
+                  parsed.sliders as Record<string, number>,
+                );
                 for (const d of DIMENSIONS) {
-                  const v = parsed.sliders[d.id];
+                  const v = migrated[d.id];
                   if (typeof v === "number" && Number.isFinite(v)) {
                     initialSliders[d.id] = Math.max(0, Math.min(1, v / 100));
                   }

@@ -19,7 +19,9 @@ import {
   DIMENSIONS,
   SliderProvider,
   useSliders,
+  migratePersistedSliders,
 } from "../SliderContext";
+import { runtimeDefaultSliders, RUNTIME_DIMENSION_IDS } from "../dimensionRegistry";
 
 function mkPhysics(): { physics: PhysicsLayer; updateSliders: ReturnType<typeof vi.fn> } {
   const updateSliders = vi.fn();
@@ -49,10 +51,10 @@ function makeWrapper(physics: PhysicsLayer): React.FC<{ children: React.ReactNod
 describe("SliderContext — organic default profile (P1.1)", () => {
   it("ships a structural default profile (project/role/tier first, activity/signin weak)", () => {
     expect(DEFAULT_VALUES).toEqual({
+      project: 35,
       role: 25,
       tier: 15,
-      project: 35,
-      isExternal: 10,
+      internalExternal: 10,
       activity: 5,
       signin: 5,
     });
@@ -210,5 +212,34 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     // confirming hydration only happens via useEffect (client-only) on pass two.
     expect(firstValues!.activity).toBe(DEFAULT_VALUES.activity);
     expect(firstValues!.activity).not.toBe(99);
+  });
+});
+
+describe("SliderContext — registry-derived dimensions", () => {
+  it("DIMENSIONS ids match the registry runtime ids in order", () => {
+    expect(DIMENSIONS.map((d) => d.id)).toEqual([...RUNTIME_DIMENSION_IDS]);
+  });
+  it("DEFAULT_VALUES equals runtimeDefaultSliders()", () => {
+    expect(DEFAULT_VALUES).toEqual(runtimeDefaultSliders());
+  });
+  it("each DIMENSION carries the registry label", () => {
+    const ext = DIMENSIONS.find((d) => d.id === "internalExternal");
+    expect(ext?.label).toBe("Internal / external");
+  });
+});
+
+describe("SliderContext — legacy isExternal migration", () => {
+  it("maps a persisted isExternal slider value to internalExternal", () => {
+    expect(migratePersistedSliders({ isExternal: 42, role: 25 })).toEqual({
+      internalExternal: 42, role: 25,
+    });
+  });
+  it("keeps internalExternal when both are present (new wins)", () => {
+    expect(migratePersistedSliders({ isExternal: 10, internalExternal: 70 })).toEqual({
+      internalExternal: 70,
+    });
+  });
+  it("is a no-op when there is nothing to migrate", () => {
+    expect(migratePersistedSliders({ role: 25 })).toEqual({ role: 25 });
   });
 });

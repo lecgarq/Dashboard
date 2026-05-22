@@ -26,7 +26,7 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
 const BUCKET_VALUES: Partial<Record<DimensionId, readonly string[]>> = {
   activity: ["None", "Low", "Med", "High"],
   signin: ["<7d", "<30d", "<90d", ">90d"],
-  isExternal: ["internal", "external"],
+  internalExternal: ["internal", "external"],
 };
 
 export interface ToolbarProps {
