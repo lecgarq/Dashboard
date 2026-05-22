@@ -65,6 +65,15 @@ export interface GraphCanvas2DHandle {
   /** Test/diagnostic: effective cosmos link-render config + number of links set. */
   getRenderState(): { renderLinks: boolean; linkCount: number };
   /**
+   * Test/diagnostic: cosmos's CURRENT point positions in its own space, as a
+   * flat `[x0,y0,x1,y1,...]` array. After a `dontRescale=false` push cosmos may
+   * rescale internally, so this — NOT the physics buffer — is the source of
+   * truth for what `spaceToScreen`/`findPointsInPolygon` operate on.
+   */
+  getPointPositions?(): number[];
+  /** Test/diagnostic: cosmos's current zoom level (camera scale). */
+  getZoomLevel?(): number;
+  /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
    */
@@ -120,10 +129,19 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   const linkCountRef = useRef(0);
   // Warn-once guard for early findPointsInPolygon calls (Pitfall 7).
   const warnedNotReadyRef = useRef(false);
-  // One-shot guard: rescale + fit the view once the layout settles. The seed
-  // range (~[-1,1]) is tiny vs the settled spread (can be thousands of units),
-  // so the init-time fit is stale until we re-fit to the frozen positions.
-  const fittedRef = useRef(false);
+  // Last spread (max |coord|) we rescaled+fit cosmos to, or null while animating.
+  // A ONE-SHOT fit on the first frozen frame is not enough: the layout flips
+  // `frozen` true and is THEN normalized to ≈±350 a beat later, so a one-shot fit
+  // frames the pre-normalization spread (~16k) and leaves the settled cloud an
+  // unzoomable speck. We instead re-fit whenever the spread changes materially —
+  // which tracks normalization but stays inert under user pan/zoom (those move
+  // the camera, not the node positions, so the measured spread is unchanged).
+  const fittedScaleRef = useRef<number | null>(null);
+  // Frames to wait before fitView after a frozen position push. fitView reads
+  // cosmos's COMMITTED point bbox, but setPointPositions uploads asynchronously,
+  // so a same-tick fitView frames the stale (pre-upload) positions and no-ops.
+  // Deferring a few rAF frames lets the new bbox land before we frame it.
+  const fitPendingRef = useRef(0);
 
   // ---------------------------------------------------------------------------
   // Mount effect: initialize cosmos.gl Graph in frozen mode (REND-01, Pattern 1)
@@ -244,21 +262,50 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             xy2[i * 2 + 1] = xyz[i * 3 + 1];
           }
           if (props.physics.frozen) {
-            // Layout settled. Rescale cosmos to the settled spread (which can far
-            // exceed spaceSize) and frame it ONCE. Positions are static now, so we
-            // must NOT keep pushing — a dontRescale=true push would re-apply the
-            // raw out-of-space coordinates and undo the fit.
-            if (!fittedRef.current) {
-              fittedRef.current = true;
-              g!.setPointPositions(xy2, false);
-              (g as unknown as { fitView?: (d?: number, p?: number) => void }).fitView?.(0);
+            // Layout settled. Push the settled positions and frame them. We re-fit
+            // only when the spread changes materially: this catches the
+            // post-`frozen` normalization to
+            // ≈±350 (a one-shot fit would frame the pre-normalization ~16k spread
+            // and leave the cloud a speck), yet does NOT fire on user pan/zoom
+            // (which leave the node positions, hence the spread, unchanged).
+            let maxAbs = 0;
+            for (let i = 0; i < count * 2; i++) {
+              const v = Math.abs(xy2[i]);
+              if (v > maxAbs) maxAbs = v;
+            }
+            const prev = fittedScaleRef.current;
+            const scaleChanged =
+              prev === null || Math.abs(maxAbs - prev) > Math.max(1, prev * 0.02);
+            if (scaleChanged) {
+              fittedScaleRef.current = maxAbs;
+              // dontRescale=TRUE keeps cosmos's space identical to the physics
+              // ≈±350 coords: no internal rescale, and spaceToScreen stays correct.
+              g!.setPointPositions(xy2, true);
               g!.render();
+              // Defer the fit — see fitPendingRef. A same-tick fitView would frame
+              // the not-yet-uploaded bbox and leave the cloud an unzoomable speck.
+              fitPendingRef.current = 4;
+              return;
+            }
+            if (fitPendingRef.current > 0) {
+              fitPendingRef.current -= 1;
+              if (fitPendingRef.current === 0) {
+                // enableSimulation:false explicitly — cosmos must not run physics
+                // during the fit (the graph is in frozen/external-positions mode).
+                (
+                  g as unknown as {
+                    fitView?: (d?: number, p?: number, s?: boolean) => void;
+                  }
+                ).fitView?.(0, 0.1, false);
+                g!.render();
+              }
             }
             return;
           }
           // Still animating: arm a fresh fit for the next settle (e.g. after a
           // slider change reheats the simulation).
-          fittedRef.current = false;
+          fittedScaleRef.current = null;
+          fitPendingRef.current = 0;
           // dontRescale=true on tick calls — prevents per-frame coordinate jitter (Pitfall 2)
           g!.setPointPositions(xy2, true);
           g!.render();
@@ -311,6 +358,16 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             renderLinks: cfg?.renderLinks === true,
             linkCount: linkCountRef.current,
           };
+        },
+
+        getPointPositions(): number[] {
+          return (
+            (g as unknown as { getPointPositions?: () => number[] }).getPointPositions?.() ?? []
+          );
+        },
+
+        getZoomLevel(): number {
+          return (g as unknown as { getZoomLevel?: () => number }).getZoomLevel?.() ?? NaN;
         },
 
         // ---- Phase 4-01 Task 2 primitives ---------------------------------

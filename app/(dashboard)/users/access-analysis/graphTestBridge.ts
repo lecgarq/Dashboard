@@ -113,6 +113,117 @@ function nodeScreenPosition(nodeId: string): { x: number; y: number } | null {
   return { x: sp[0], y: sp[1] };
 }
 
+/**
+ * Locate the densest screen region of the frozen 2D layout, in OVERLAY-LOCAL
+ * pixels — the exact basis LassoOverlay reads from pointer offsetX/Y.
+ *
+ * Why screen-probing (NOT projecting via spaceToScreen): the real lasso converts
+ * overlay-local pointer coords → space via the renderer's `screenToSpace`, then
+ * hit-tests with `findPointsInPolygon`. The cosmos canvas and the lasso overlay
+ * do not share an origin, so a point picked in `spaceToScreen` space lands in the
+ * void when the test drives the mouse in overlay space. Probing candidate screen
+ * boxes through the SAME `screenToSpace` + `findPointsInPolygon` path the overlay
+ * uses guarantees the returned point is where the real drag finds the most nodes.
+ *
+ * Determinism: a fixed coarse grid then a fixed refine window around the best
+ * cell — no RNG. Stable run-to-run because the test freezes the layout first.
+ * `count` is the node tally inside the ±HALF box the test will draw.
+ *
+ * Returns null off the 2D path or before the layout exists. Test-only — never
+ * reached unless NEXT_PUBLIC_ACC_GRAPH_TEST gates the bridge into existence.
+ */
+function densestScreenPoint(
+  w: number,
+  h: number,
+): { x: number; y: number; count: number } | null {
+  if (!shell.physics || w <= 0 || h <= 0) return null;
+  const root = shell.graphRef?.current;
+  if (!root || root.mode !== "2d" || !root.handle) return null;
+  const handle = root.handle;
+
+  const HALF = 28; // matches the lasso box the test draws → representative count
+
+  /** Nodes inside the ±HALF screen box centered at (cx,cy), via the lasso's path. */
+  const boxCount = (cx: number, cy: number): number => {
+    const screenBox: [number, number][] = [
+      [cx - HALF, cy - HALF],
+      [cx + HALF, cy - HALF],
+      [cx + HALF, cy + HALF],
+      [cx - HALF, cy + HALF],
+    ];
+    const spaceBox: [number, number][] = screenBox.map((pt) => handle.screenToSpace(pt));
+    return handle.findPointsInPolygon(spaceBox).length;
+  };
+
+  let best = { x: w / 2, y: h / 2, count: -1 };
+  const scan = (x0: number, y0: number, x1: number, y1: number, step: number): void => {
+    for (let y = y0; y <= y1; y += step) {
+      for (let x = x0; x <= x1; x += step) {
+        const count = boxCount(x, y);
+        if (count > best.count) best = { x, y, count };
+      }
+    }
+  };
+
+  // Coarse sweep across the overlay interior to find the dense cloud, then a fine
+  // refine around the winner so the box sits squarely on the densest core.
+  const lo = HALF;
+  scan(lo, lo, w - HALF, h - HALF, 60);
+  const wx = Math.min(w - HALF, best.x + 60);
+  const wy = Math.min(h - HALF, best.y + 60);
+  scan(Math.max(lo, best.x - 60), Math.max(lo, best.y - 60), wx, wy, 12);
+
+  if (best.count <= 0) return null;
+  return best;
+}
+
+/**
+ * On-screen pixel extent of the projected node cloud (2D), via the renderer's
+ * own `spaceToScreen`. Guards the post-freeze fit: if the camera is left zoomed
+ * for the pre-normalization spread, the whole cloud collapses to a few pixels
+ * and a lasso box can only ever select all-or-nothing. The e2e asserts a floor
+ * on width/height so that regression fails loudly instead of silently.
+ */
+function projectedCloudSize(): {
+  widthPx: number;
+  heightPx: number;
+  nodeCount: number;
+  zoom: number;
+} | null {
+  const root = shell.graphRef?.current;
+  if (!root || root.mode !== "2d" || !root.handle) return null;
+  const handle = root.handle;
+
+  // Source of truth = cosmos's OWN positions (it may rescale on a dontRescale=false
+  // push, so the physics buffer would project wrong). spaceToScreen of these gives
+  // the actual on-screen extent the user (and the lasso) sees.
+  const pts = handle.getPointPositions?.() ?? [];
+  const n = pts.length / 2;
+  if (n === 0) return null;
+
+  let minx = Infinity;
+  let miny = Infinity;
+  let maxx = -Infinity;
+  let maxy = -Infinity;
+  let counted = 0;
+  for (let i = 0; i < n; i++) {
+    const sp = handle.spaceToScreen([pts[i * 2], pts[i * 2 + 1]]);
+    if (!Number.isFinite(sp[0]) || !Number.isFinite(sp[1])) continue;
+    counted++;
+    if (sp[0] < minx) minx = sp[0];
+    if (sp[0] > maxx) maxx = sp[0];
+    if (sp[1] < miny) miny = sp[1];
+    if (sp[1] > maxy) maxy = sp[1];
+  }
+  if (counted === 0) return null;
+  return {
+    widthPx: maxx - minx,
+    heightPx: maxy - miny,
+    nodeCount: counted,
+    zoom: handle.getZoomLevel?.() ?? NaN,
+  };
+}
+
 function featureView(f: NodeFeatureSnapshot) {
   return {
     nodeId: f.nodeId,
@@ -165,6 +276,16 @@ export interface GraphTestApi {
   getFirstNodeId(): string | null;
   getCentermostNodeId(): string | null;
   getNodeScreenPosition(nodeId: string): { x: number; y: number } | null;
+  findDensestScreenPoint(
+    w: number,
+    h: number,
+  ): { x: number; y: number; count: number } | null;
+  getProjectedCloudSize(): {
+    widthPx: number;
+    heightPx: number;
+    nodeCount: number;
+    zoom: number;
+  } | null;
   getSampleSearchPrefix(): string | null;
   getTooltipState(): {
     visible: boolean;
@@ -335,6 +456,12 @@ function buildApi(): GraphTestApi {
     },
     getNodeScreenPosition(nodeId) {
       return nodeScreenPosition(nodeId);
+    },
+    findDensestScreenPoint(w, h) {
+      return densestScreenPoint(w, h);
+    },
+    getProjectedCloudSize() {
+      return projectedCloudSize();
     },
     getSampleSearchPrefix() {
       for (const f of shell.features) {

@@ -81,6 +81,8 @@ type Bridge = {
   getHighlightedNodeCount(): number;
   simulateHover(id: string): boolean;
   simulateClick(id: string): boolean;
+  findDensestScreenPoint(w: number, h: number): { x: number; y: number; count: number } | null;
+  getProjectedCloudSize(): { widthPx: number; heightPx: number; nodeCount: number; zoom: number } | null;
   getEdgeStats(): {
     count: number;
     selfEdges: number;
@@ -498,25 +500,70 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     });
   });
 
-  test("lasso drag selects nodes and renders the selection pie panel", async ({ page }, testInfo) => {
+  test("lasso drag selects a proper subset and renders the selection pie panel", async ({ page }, testInfo) => {
     await waitForFreeze(page); // screen-space drag needs the fitted, stable view
+
+    // GATE: the post-freeze refit must zoom the camera to the settled ≈±350 spread.
+    // If it leaves the camera framing the pre-normalization ~16k spread, the whole
+    // cloud collapses to a few on-screen pixels and a lasso box can only ever
+    // select all-or-nothing — making the strict-subset assertion below meaningless.
+    // Poll because the refit lands a frame or two after `frozen` flips true.
+    await page.waitForFunction(
+      () => {
+        const s = window.__ACC_GRAPH_TEST__!.getProjectedCloudSize();
+        return !!s && s.widthPx > 150 && s.heightPx > 150;
+      },
+      undefined,
+      { timeout: 30_000 },
+    );
+    const cloud = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getProjectedCloudSize());
+    // eslint-disable-next-line no-console
+    console.log(`[lasso] projected cloud=${cloud!.widthPx.toFixed(0)}x${cloud!.heightPx.toFixed(0)}px (n=${cloud!.nodeCount})`);
+    expect(cloud!.widthPx, "projected cloud fills a meaningful viewport width (not an 8px speck)").toBeGreaterThan(150);
+    expect(cloud!.heightPx, "projected cloud fills a meaningful viewport height (not an 8px speck)").toBeGreaterThan(150);
+
+    // The fitted cloud's position varies per run (random settle + outlier-skewed
+    // fitView), so the old 60% rectangle enclosed ALL 16,934 nodes and could not
+    // catch a select-all regression — and no FIXED sub-region reliably hits the
+    // disc. We locate the dense cloud per-run via small-box probing
+    // (findDensestScreenPoint, using the renderer's own screenToSpace +
+    // findPointsInPolygon) and lasso a box around it that is smaller than the disc:
+    // it captures the dense core while excluding the outer ring + outliers → strict
+    // subset.
+    //
+    // CRITICAL: coordinates are relative to the LASSO OVERLAY box, where pointer
+    // offsetX/Y originate — NOT page.locator("canvas").first(), which is a
+    // full-viewport background canvas in a different frame.
+    const total = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getRenderedNodeCount());
+
     await page.getByTestId("toolbar-lasso").click();
     const overlay = page.getByTestId("lasso-overlay");
     await expect(overlay).toHaveAttribute("data-active", "true");
+    const ob = await overlay.boundingBox();
+    if (!ob) throw new Error("lasso overlay has no bounding box");
 
-    const box = await canvasBox(page);
-    // Draw a large rectangle covering the central region so it encloses many nodes.
-    const x0 = box.x + box.width * 0.2;
-    const y0 = box.y + box.height * 0.2;
-    const x1 = box.x + box.width * 0.8;
-    const y1 = box.y + box.height * 0.8;
+    const dense = await page.evaluate(
+      ({ w, h }) => window.__ACC_GRAPH_TEST__!.findDensestScreenPoint(w, h),
+      { w: ob.width, h: ob.height },
+    );
+    expect(dense, "located the dense cloud region").toBeTruthy();
+    // eslint-disable-next-line no-console
+    console.log(`[lasso] dense=(${dense!.x.toFixed(0)},${dense!.y.toFixed(0)}) probeCount=${dense!.count}`);
+
+    const half = 28; // smaller than the rendered disc → strict subset
+    const cx = ob.x + dense!.x;
+    const cy = ob.y + dense!.y;
+    const x0 = cx - half;
+    const y0 = cy - half;
+    const x1 = cx + half;
+    const y1 = cy + half;
 
     await page.mouse.move(x0, y0);
     await page.mouse.down();
-    await page.mouse.move(x1, y0, { steps: 12 });
-    await page.mouse.move(x1, y1, { steps: 12 });
-    await page.mouse.move(x0, y1, { steps: 12 });
-    await page.mouse.move(x0, y0, { steps: 12 });
+    await page.mouse.move(x1, y0, { steps: 10 });
+    await page.mouse.move(x1, y1, { steps: 10 });
+    await page.mouse.move(x0, y1, { steps: 10 });
+    await page.mouse.move(x0, y0, { steps: 10 });
     await page.mouse.up();
 
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getSelectedNodeIds().length > 0, undefined, {
@@ -524,13 +571,16 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     });
     const selected = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getSelectedNodeIds().length);
     // eslint-disable-next-line no-console
-    console.log(`[lasso] selected ${selected} nodes`);
-    expect(selected).toBeGreaterThan(0);
+    console.log(`[lasso] selected ${selected} of ${total} nodes`);
+    // PROPER SUBSET — the discrimination assertions a select-all bug would fail.
+    expect(selected, "selection is non-empty").toBeGreaterThan(0);
+    expect(selected, "selection is a strict subset (not select-all)").toBeLessThan(total);
 
     await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "lasso-pie");
     await expect(page.getByTestId("selection-panel")).toBeVisible();
     const count = parseInt((await page.getByTestId("selection-count").innerText()).trim(), 10);
-    expect(count).toBeGreaterThan(0);
+    expect(count, "visible selection count is a non-empty subset").toBeGreaterThan(0);
+    expect(count).toBeLessThan(total);
 
     // Pie/donut charts render as SVGs inside the selection panel.
     await expect(page.locator('[data-testid="selection-panel"] svg').first()).toBeVisible({ timeout: 15_000 });
@@ -636,4 +686,3 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     });
   });
 });
-
