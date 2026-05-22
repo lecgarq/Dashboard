@@ -56,6 +56,12 @@ export interface NodeFeatureSnapshot {
   firmName: string;
   /** "active" | "inactive" | "" — account status (NOT recent activity). */
   accountStatus: string;
+  /**
+   * Project-admin flag for this instance (graph_user_projects.is_project_admin).
+   * Optional for backward compatibility; populated by buildFeatureSnapshot (P2 T2).
+   * Drives the `isAdmin` governance/risk dimension.
+   */
+  isAdmin?: boolean;
 }
 
 /**
