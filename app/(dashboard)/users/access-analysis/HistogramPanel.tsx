@@ -25,8 +25,6 @@ export interface HistogramPanelProps {
   topN?: number;
   /** Optional override for the shared crossfilter selection. */
   selection?: Selection;
-  /** Accent color used in the header dot. */
-  accent?: string;
 }
 
 export function HistogramPanel({

@@ -16,8 +16,6 @@ export interface HeatmapPanelProps {
   xColumn: string;
   /** Column for the Y axis (categorical). */
   yColumn: string;
-  /** Accent color used for the header dot. */
-  accent?: string;
   /**
    * Observable Plot color scheme name for the sequential scale.
    * Good picks: "blues", "viridis", "magma", "ylgnbu".
@@ -77,7 +75,7 @@ export function HeatmapPanel({
   }
 
   return (
-    <ChartPanel title={title} subtitle={subtitle} affordance="drag-to-filter">
+    <ChartPanel title={title} subtitle={subtitle}>
       <div className="mb-2 text-right text-[11px] uppercase tracking-wide text-muted-foreground">
         darker = more
       </div>

@@ -941,7 +941,6 @@ export function HybridAnalyticsSurface() {
               table="user_projects"
               xColumn="project_status"
               yColumn="role_id"
-              accent={ACCENTS.heatmap}
               scheme="blues"
               height={520}
               selection={projectsSelection}
@@ -1016,7 +1015,6 @@ export function HybridAnalyticsSurface() {
               groupBy="project_name"
               groupLabel="users per project"
               topN={20}
-              accent={ACCENTS.membership}
               selection={projectsSelection}
             />
           </div>
@@ -1027,7 +1025,6 @@ export function HybridAnalyticsSurface() {
               groupBy="role_id"
               groupLabel="users per role"
               topN={20}
-              accent={ACCENTS.role}
               selection={projectsSelection}
             />
           </div>
@@ -1038,7 +1035,6 @@ export function HybridAnalyticsSurface() {
               groupBy="company_name"
               groupLabel="users per company"
               topN={20}
-              accent={ACCENTS.company}
               selection={usersSelection}
             />
           </div>
