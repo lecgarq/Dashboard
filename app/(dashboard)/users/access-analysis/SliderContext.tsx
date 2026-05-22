@@ -3,11 +3,12 @@
 /**
  * SliderContext.tsx — Phase 4-02 Task 1
  *
- * Six-dimension slider state with:
+ * Full-dimension slider state with:
  *   - rAF-coalesced physics.updateSliders(normalizedValues 0..1) on change
  *   - per-thumb (`resetOne`) and global (`resetAll`) reset
  *   - localStorage persistence under the SHARED key `lecg.access-analysis.controls.v1`
  *   - two-pass mount (RESEARCH Pitfall 3 — defaults render server-side; effect hydrates client-side)
+ *   - Preset weight profile support (organic, structural, behavioral, flat, free)
  */
 
 import {
@@ -21,19 +22,23 @@ import {
   type ReactNode,
 } from "react";
 import type { PhysicsLayer } from "./physicsLayer";
-import { getRuntimeDimensions, runtimeDefaultSliders } from "./dimensionRegistry";
+import { getDimension } from "./dimensionRegistry";
+import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
+import { applyPreset, detectActivePreset } from "./sliderPresets";
 
 // ---------------------------------------------------------------------------
-// Runtime dimension list — derived from the registry (single source of truth).
-// The advanced-UI phase widens RUNTIME_DIMENSION_IDS; this list follows it.
+// Slider-capable dimension list — derived from the registry (single source of truth).
 // ---------------------------------------------------------------------------
 
-export const DIMENSIONS = getRuntimeDimensions().map((d) => ({
-  id: d.id,
-  label: d.label,
-  // categorical/binary/multi-hot → "categorical"; temporal stays "bucket".
-  kind: d.type === "temporal" ? ("bucket" as const) : ("categorical" as const),
-}));
+export const DIMENSIONS = SLIDER_DIMENSION_IDS.map((id) => {
+  const d = getDimension(id)!;
+  return {
+    id: d.id,
+    label: d.label,
+    // categorical/binary/multi-hot → "categorical"; temporal stays "bucket".
+    kind: d.type === "temporal" ? ("bucket" as const) : ("categorical" as const),
+  };
+});
 
 export type DimensionId = (typeof DIMENSIONS)[number]["id"];
 
@@ -42,12 +47,10 @@ export const CONTROLS_STORAGE_KEY = "lecg.access-analysis.controls.v1";
 
 /**
  * Organic default layout profile, now sourced from the registry defaultWeights
- * (×100). Structural dims lead (project > role > tier > internalExternal); behavior
- * dims (activity/signin) stay weak. Identical to the prior hardcoded profile, but
- * DRY against the registry.
+ * (×100) via the 'organic' preset.
  */
 export const DEFAULT_VALUES: Record<DimensionId, number> =
-  runtimeDefaultSliders() as Record<DimensionId, number>;
+  applyPreset("organic") as Record<DimensionId, number>;
 
 /**
  * One-time migration of persisted slider state: the legacy `isExternal` slider id
@@ -73,6 +76,8 @@ interface SliderContextValue {
   setSliderValue: (dimId: DimensionId, value: number) => void;
   resetAll: () => void;
   resetOne: (dimId: DimensionId) => void;
+  applyPreset: (presetId: string) => void;
+  activePreset: string | null;
 }
 
 const SliderCtx = createContext<SliderContextValue | null>(null);
@@ -85,6 +90,8 @@ interface PersistedControls {
   sliders?: Partial<Record<string, number>>;
   filters?: Record<string, string[]>;
   searchQuery?: string;
+  activePreset?: string;
+  openGroups?: string[];
 }
 
 function readPersisted(): PersistedControls | null {
@@ -106,6 +113,15 @@ function writePersisted(patch: PersistedControls): void {
   } catch {
     /* ignore — quota / private mode */
   }
+}
+
+export function readOpenGroups(): string[] | null {
+  const stored = readPersisted();
+  return stored?.openGroups ?? null;
+}
+
+export function writeOpenGroups(labels: string[]): void {
+  writePersisted({ openGroups: labels });
 }
 
 // ---------------------------------------------------------------------------
@@ -220,9 +236,21 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
     [schedulePush],
   );
 
+  const applyPresetCb = useCallback(
+    (presetId: string): void => {
+      const next = applyPreset(presetId) as Record<DimensionId, number>;
+      valuesRef.current = next;
+      setValues(next);
+      schedulePush(next);
+    },
+    [schedulePush],
+  );
+
+  const activePreset = useMemo(() => detectActivePreset(values), [values]);
+
   const ctx = useMemo<SliderContextValue>(
-    () => ({ values, setSliderValue, resetAll, resetOne }),
-    [values, setSliderValue, resetAll, resetOne],
+    () => ({ values, setSliderValue, resetAll, resetOne, applyPreset: applyPresetCb, activePreset }),
+    [values, setSliderValue, resetAll, resetOne, applyPresetCb, activePreset],
   );
 
   return <SliderCtx.Provider value={ctx}>{children}</SliderCtx.Provider>;

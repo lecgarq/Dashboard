@@ -21,7 +21,8 @@ import {
   useSliders,
   migratePersistedSliders,
 } from "../SliderContext";
-import { runtimeDefaultSliders, RUNTIME_DIMENSION_IDS } from "../dimensionRegistry";
+import { SLIDER_DIMENSION_IDS } from "../dimensionGroups";
+import { applyPreset } from "../sliderPresets";
 
 function mkPhysics(): { physics: PhysicsLayer; updateSliders: ReturnType<typeof vi.fn> } {
   const updateSliders = vi.fn();
@@ -49,7 +50,7 @@ function makeWrapper(physics: PhysicsLayer): React.FC<{ children: React.ReactNod
 }
 
 describe("SliderContext — organic default profile (P1.1)", () => {
-  it("ships a structural default profile (project/role/tier first, activity/signin weak)", () => {
+  it("ships a structural default profile (project/role/tier first, activity/signin weak, module 15, others 0)", () => {
     expect(DEFAULT_VALUES).toEqual({
       project: 35,
       role: 25,
@@ -57,6 +58,9 @@ describe("SliderContext — organic default profile (P1.1)", () => {
       internalExternal: 10,
       activity: 5,
       signin: 5,
+      module: 15,
+      company: 0,
+      isAdmin: 0,
     });
   });
 
@@ -217,10 +221,10 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
 describe("SliderContext — registry-derived dimensions", () => {
   it("DIMENSIONS ids match the registry runtime ids in order", () => {
-    expect(DIMENSIONS.map((d) => d.id)).toEqual([...RUNTIME_DIMENSION_IDS]);
+    expect(DIMENSIONS.map((d) => d.id)).toEqual([...SLIDER_DIMENSION_IDS]);
   });
-  it("DEFAULT_VALUES equals runtimeDefaultSliders()", () => {
-    expect(DEFAULT_VALUES).toEqual(runtimeDefaultSliders());
+  it("DEFAULT_VALUES equals applyPreset('organic')", () => {
+    expect(DEFAULT_VALUES).toEqual(applyPreset("organic"));
   });
   it("each DIMENSION carries the registry label", () => {
     const ext = DIMENSIONS.find((d) => d.id === "internalExternal");
