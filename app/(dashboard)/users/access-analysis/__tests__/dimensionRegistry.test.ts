@@ -28,6 +28,7 @@ function snap(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
     firmName: "Hermosillo",
     accountStatus: "active",
     isAdmin: false,
+    moduleSignature: ["build"],
     ...over,
   };
 }
@@ -58,9 +59,9 @@ describe("dimension registry — validity", () => {
     expect(getDimension("nope" as DimensionId)).toBeUndefined();
   });
 
-  it("registers the first-batch dimensions incl. isAdmin (module added in Task 3)", () => {
+  it("registers the first-batch dimensions incl. isAdmin + module (A2)", () => {
     expect(DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module",
     ]);
   });
 });
@@ -132,5 +133,22 @@ describe("dimension registry — drift guard vs featureTargets.categoryValue", (
         expect(getDimension(id)!.extract(f)).toBe(categoryValue(f, id));
       }
     }
+  });
+});
+
+describe("dimension registry — module (multi-hot)", () => {
+  it("extract returns the moduleSignature array; [] when absent", () => {
+    expect(getDimension("module")!.extract(snap({ moduleSignature: ["build", "cost"] }))).toEqual(["build", "cost"]);
+    expect(getDimension("module")!.extract(snap({ moduleSignature: undefined }))).toEqual([]);
+  });
+  it("isAvailable is true only for a non-empty signature", () => {
+    expect(getDimension("module")!.isAvailable(snap({ moduleSignature: ["build"] }))).toBe(true);
+    expect(getDimension("module")!.isAvailable(snap({ moduleSignature: [] }))).toBe(false);
+    expect(getDimension("module")!.isAvailable(snap({ moduleSignature: undefined }))).toBe(false);
+  });
+  it("module is typed multi-hot with availability A2", () => {
+    const d = getDimension("module")!;
+    expect(d.type).toBe("multi-hot");
+    expect(d.availability).toBe("A2");
   });
 });

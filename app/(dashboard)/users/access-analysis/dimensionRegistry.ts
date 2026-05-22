@@ -22,7 +22,8 @@ export type DimensionId =
   | "company"
   | "activity"
   | "signin"
-  | "isAdmin";
+  | "isAdmin"
+  | "module";
 
 export type DimensionFamily =
   | "structure"
@@ -182,6 +183,18 @@ export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
     extract: (f) => (f.isAdmin ? "admin" : "member"),
     // Binary axis: admin ↔ member are both real poles, so always available.
     isAvailable: () => true,
+  },
+  {
+    id: "module",
+    label: "Module signature",
+    family: "access",
+    type: "multi-hot",
+    source: "AccDcProjectUserProduct.productKey (graph_user_projects.module_ids; baselines excluded)",
+    availability: "A2",
+    defaultWeight: 0.15,
+    confidence: "high",
+    extract: (f) => f.moduleSignature ?? [],
+    isAvailable: (f) => (f.moduleSignature ?? []).length > 0,
   },
 ];
 
