@@ -25,7 +25,7 @@ import { HeatmapPanel } from "./HeatmapPanel";
 import { DonutPanel, type DonutSlice } from "./DonutPanel";
 import { KpiHeroStrip } from "./KpiHeroStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
-import { buildExecutiveFindings } from "./analyticsFindings";
+import { buildExecutiveFindings, isAdmin } from "./analyticsFindings";
 import { HeadlineInsights, type HeadlineInsightItem } from "./HeadlineInsights";
 import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
@@ -520,7 +520,7 @@ export function HybridAnalyticsSurface() {
       setDetailFilter({
         title: "Admins",
         subtitle: "Members with account or project admin access.",
-        filterFn: (u) => u.isAccountAdmin || u.adminCount > 0,
+        filterFn: (u) => isAdmin(u),
       });
     } else if (id === "breadth") {
       setDetailFilter({
