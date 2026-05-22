@@ -1,6 +1,7 @@
 "use client";
 
 import { ChartPanel } from "./ChartPanel";
+import type { InsightSeverity } from "./ChartPanel";
 
 export interface DonutSlice {
   label: string;
@@ -12,6 +13,7 @@ export interface DonutPanelProps {
   title: string;
   subtitle?: string;
   finding?: string;
+  findingSeverity?: InsightSeverity;
   data: DonutSlice[];
   /** Big number drawn in the donut center. */
   centerValue?: string | number;
@@ -56,6 +58,7 @@ export function DonutPanel({
   title,
   subtitle,
   finding,
+  findingSeverity,
   data,
   centerValue,
   centerLabel,
@@ -80,7 +83,7 @@ export function DonutPanel({
     <ChartPanel
       title={title}
       subtitle={subtitle}
-      insight={finding ? { text: finding } : undefined}
+      insight={finding ? { text: finding, severity: findingSeverity } : undefined}
       affordance={onSliceClick ? "click-to-filter" : undefined}
     >
       {total === 0 ? (

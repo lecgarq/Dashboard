@@ -757,6 +757,7 @@ export function HybridAnalyticsSurface() {
           title="User status"
           subtitle="Aggregated across project memberships"
           finding={findings.activeMembers}
+          findingSeverity="good"
           data={userStatusSlices}
           centerValue={users.length.toLocaleString()}
           centerLabel="users"
@@ -773,6 +774,7 @@ export function HybridAnalyticsSurface() {
           title="Activity recency"
           subtitle="Time since last sign-in"
           finding={findings.staleMembers}
+          findingSeverity="risk"
           data={recencySlices}
           centerValue={activeShare}
           centerLabel="active 30d"
@@ -800,6 +802,7 @@ export function HybridAnalyticsSurface() {
           title="Admin composition"
           subtitle="Where admin power sits"
           finding={findings.adminConcentration}
+          findingSeverity="watch"
           data={adminMixSlices}
           centerValue={adminTotal.toLocaleString()}
           centerLabel="any admin"
@@ -823,6 +826,7 @@ export function HybridAnalyticsSurface() {
           title="Permission tiers"
           subtitle="Folder-grant breakdown"
           finding={findings.permissionTiers}
+          findingSeverity="info"
           data={permTierSlices}
           centerValue={folderRows.length.toLocaleString()}
           centerLabel="grants"

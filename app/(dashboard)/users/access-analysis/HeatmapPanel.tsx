@@ -75,7 +75,7 @@ export function HeatmapPanel({
   }
 
   return (
-    <ChartPanel title={title} subtitle={subtitle}>
+    <ChartPanel title={title} subtitle={subtitle} affordance="click-to-filter">
       <div className="mb-2 text-right text-[11px] uppercase tracking-wide text-muted-foreground">
         darker = more
       </div>

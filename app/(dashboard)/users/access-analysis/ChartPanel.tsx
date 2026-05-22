@@ -34,7 +34,7 @@ export function ChartPanel({
     >
       <header className="mb-4 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
+          <h4 className="text-sm font-semibold tracking-tight">{title}</h4>
           {subtitle ? (
             <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p>
           ) : null}
