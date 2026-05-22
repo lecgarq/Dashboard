@@ -167,6 +167,9 @@ function normalizeNodePositions(nodes: SimNode[], halfExtent: number): void {
  * @param targets - Per-dimension target arrays produced by the caller via mathLayer.
  * @param dimNames - Dimension identifiers (e.g. ["activity", "recency", "role", ...]).
  * @param initialSliders - Initial slider state (all zeros at construction time).
+ * @param dimWeights - Optional slider-INDEPENDENT per-node weights per dimension
+ *   (confidence × availability × transformer), from dimensionWeights.buildDimensionWeights.
+ *   Omitted → every node weights 1.0 (back-compat). PHYSICS-bus only.
  */
 export async function createPhysicsLayer(
   nodeIds: string[],
@@ -174,6 +177,7 @@ export async function createPhysicsLayer(
   targets: TargetArrays,
   dimNames: string[],
   initialSliders: Record<string, number>,
+  dimWeights: Record<string, Float32Array> = {},
 ): Promise<PhysicsLayer> {
   // ---- MASK BUS (completely separate from simulation) ---------------------
 
@@ -215,13 +219,22 @@ export async function createPhysicsLayer(
   // P1.1: apply slider strengths + engine params to the live simulation. Shared by
   // construction (so the FIRST settle is organic) and updateSliders. PHYSICS-bus
   // only — never touches alpha/restart or the mask bus. Returns max(sliderValues).
+  // P3.4: per-node strength folds in dimWeights (confidence × availability ×
+  // transformer). Nodes with weight=0 (availability-gated) get zero pull even at
+  // full slider, so they never drag toward a dim pole they have no value for.
   function applySliderForces(values: Record<string, number>): number {
     const maxSlider = Math.max(0, ...Object.values(values));
     for (const [dimId, sv] of Object.entries(values)) {
-      const str = sv * STRENGTH_AT_ONE;
-      (sim.force(`${dimId}-x`) as ReturnType<typeof forceX> | null)?.strength(str);
-      (sim.force(`${dimId}-y`) as ReturnType<typeof forceY> | null)?.strength(str);
-      (sim.force(`${dimId}-z`) as ReturnType<typeof forceZ> | null)?.strength(str);
+      const base = sv * STRENGTH_AT_ONE;
+      const w = dimWeights[dimId];
+      // strengthFn uses only `i` (node index); `_d` is unused but required by d3's
+      // function-strength overload. Cast to `number` forces the scalar overload which
+      // accepts any numeric-returning function via `as unknown`.
+      const strengthFn = (_d: unknown, i: number): number =>
+        w ? base * w[i] : base;
+      (sim.force(`${dimId}-x`) as ReturnType<typeof forceX> | null)?.strength(strengthFn as unknown as number);
+      (sim.force(`${dimId}-y`) as ReturnType<typeof forceY> | null)?.strength(strengthFn as unknown as number);
+      (sim.force(`${dimId}-z`) as ReturnType<typeof forceZ> | null)?.strength(strengthFn as unknown as number);
     }
     manyBody.strength(lerp(REPULSION_ZERO, REPULSION_ONE, maxSlider));
     sim.alphaDecay(lerp(DECAY_ZERO, DECAY_ONE, maxSlider));
@@ -289,7 +302,7 @@ export async function createPhysicsLayer(
 
   // ---- Public API ---------------------------------------------------------
 
-  return {
+  const layer: PhysicsLayer = {
     get alphaMask(): Float32Array {
       return _alphaMask;
     },
@@ -352,4 +365,28 @@ export async function createPhysicsLayer(
       sim.stop();
     },
   };
+
+  // TEST-ONLY diagnostics attached outside the PhysicsLayer typed surface so the
+  // public interface stays clean. Render/interaction code MUST NOT use this.
+  //
+  // Reads the per-node effective strength for a given dimension at a given node
+  // index by calling the live strength function installed on the forceX force.
+  // The strength function is (_d, i) => base * w[i]; it uses only `i`, so calling
+  // with (null, nodeIndex) is safe. Re-installed on every applySliderForces call,
+  // so this always reflects the current slider + weight state.
+  //
+  // Why not read d3's internal `.strengths` array? That closure variable is not
+  // exposed on the force object. Calling the function directly is equivalent and
+  // reflects the identical computation d3 would run on tick.
+  (layer as unknown as Record<string, unknown>)["__debugStrength"] = (
+    dimId: string,
+    nodeIndex: number,
+  ): number => {
+    const f = sim.force(`${dimId}-x`) as ReturnType<typeof forceX> | null;
+    if (!f) return NaN;
+    const fn = f.strength() as unknown as ((_d: unknown, i: number) => number);
+    return fn(null, nodeIndex);
+  };
+
+  return layer;
 }

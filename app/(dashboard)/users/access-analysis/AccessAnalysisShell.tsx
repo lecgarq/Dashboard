@@ -42,6 +42,7 @@ import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { createPhysicsLayer, type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { buildFeatureTargets } from "./featureTargets";
+import { buildDimensionWeights } from "./dimensionWeights";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
@@ -281,12 +282,17 @@ export function AccessAnalysisShell(): React.JSX.Element {
         // targets that produced the globe. `snapshot` is aligned to `nodeIds`,
         // so target index === physics node index.
         const targets = buildFeatureTargets(snapshot);
+        // P3.4: slider-independent per-node weights (confidence × availability ×
+        // transformer). Nodes with unavailable/sparse values get weight=0 for that
+        // dim so they are never dragged to a pole without a real anchor value.
+        const dimWeights = buildDimensionWeights(snapshot, dimNames as DimensionId[]);
         const layer = await createPhysicsLayer(
           nodeIds,
           nodes,
           targets,
           dimNames,
           initialSliders,
+          dimWeights,
         );
         if (cancelled) {
           layer.dispose();

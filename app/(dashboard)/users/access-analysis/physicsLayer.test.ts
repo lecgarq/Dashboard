@@ -524,7 +524,7 @@ describe("PHYS-05: Freeze-on-rest — 'end' event triggers savePositions then si
     await flushMicrotasks();
 
     expect(mockSavePositions, "end handler must persist once").toHaveBeenCalledTimes(1);
-    const xyz = mockSavePositions.mock.calls[0][3] as Float32Array;
+    const xyz = (mockSavePositions.mock.calls[0] as unknown[])[3] as Float32Array;
     let maxAbs = 0;
     for (const v of xyz) maxAbs = Math.max(maxAbs, Math.abs(v));
     // normalizeNodePositions scales so the largest |coordinate| == halfExtent.
@@ -720,5 +720,59 @@ describe("P1.1: initial sliders applied at construction", () => {
     sim.stop();
     expect(sim.force("dim-activity-x").strength()()).toBe(0);
     expect(sim.alphaDecay()).toBeCloseTo(0.1, 6);
+  });
+});
+
+// =============================================================================
+// P3.4: Per-node dimension weights (two-bus safe)
+// =============================================================================
+
+/**
+ * Helper: reads the per-node strength for a given dimension at a given node index.
+ * Uses __debugStrength which calls the live strength function (test-only diagnostics).
+ * The strength function signature is (_d, i) — only index matters, so we pass null
+ * as the node datum safely.
+ */
+function roleStrengthAt(layer: Awaited<ReturnType<typeof createPhysicsLayer>>, nodeIndex: number): number {
+  return (layer as unknown as { __debugStrength(dimId: string, i: number): number }).__debugStrength("role", nodeIndex);
+}
+
+describe("physicsLayer — per-node dimension weights", () => {
+  function setup(weight1: number) {
+    const nodeIds = ["a", "b"];
+    const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
+    const targets: TargetArrays = {
+      role: { x: new Float32Array([100, 100]), y: new Float32Array([0, 0]), z: new Float32Array([0, 0]) },
+    };
+    const dimWeights = { role: new Float32Array([1, weight1]) };
+    return { nodeIds, nodes, targets, dimWeights };
+  }
+
+  it("slider 0 → role force strength is 0 for every node (no pull)", async () => {
+    const { nodeIds, nodes, targets, dimWeights } = setup(1);
+    // initialSliders: 0 means sv=0 → base = 0 × STRENGTH_AT_ONE = 0 → strength = 0 regardless of weight
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, ["role"], { role: 0 }, dimWeights);
+    expect(roleStrengthAt(layer, 0)).toBe(0);
+    expect(roleStrengthAt(layer, 1)).toBe(0);
+    layer.dispose();
+  });
+
+  it("slider 1 → strength = STRENGTH_AT_ONE × dimWeight per node", async () => {
+    // node 0: weight=1.0 → STRENGTH_AT_ONE(0.1) × 1.0 = 0.1
+    // node 1: weight=0   → STRENGTH_AT_ONE(0.1) × 0.0 = 0.0 (availability-gated)
+    const { nodeIds, nodes, targets, dimWeights } = setup(0);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, ["role"], { role: 1 }, dimWeights);
+    expect(roleStrengthAt(layer, 0)).toBeCloseTo(0.1, 6); // available
+    expect(roleStrengthAt(layer, 1)).toBe(0);             // availability-gated
+    layer.dispose();
+  });
+
+  it("applying weights never touches the MASK bus (two-bus invariant)", async () => {
+    const { nodeIds, nodes, targets, dimWeights } = setup(1);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, ["role"], { role: 0.5 }, dimWeights);
+    const v0 = layer.maskVersion;
+    layer.updateSliders({ role: 1 });
+    expect(layer.maskVersion).toBe(v0); // weighting is PHYSICS-bus only
+    layer.dispose();
   });
 });
