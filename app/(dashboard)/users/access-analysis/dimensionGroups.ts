@@ -8,27 +8,18 @@
  */
 
 import {
-  DIMENSION_REGISTRY,
   RUNTIME_DIMENSION_IDS,
+  RUNTIME_TARGET_DIMENSION_IDS,
+  getDimension,
   type DimensionFamily,
   type DimensionId,
-  type DimensionType,
 } from "./dimensionRegistry";
 
 /** Always-visible top group — the high-signal, UAT-tuned six. */
 export const PRIMARY_DIMENSION_IDS: readonly DimensionId[] = [...RUNTIME_DIMENSION_IDS];
 
-/**
- * Dimension types that get a SLIDER (a layout-weight control). Scalar/temporal/
- * multi-hot/categorical/binary all map to a 0..100 weight today (transformer=1);
- * `derived` dims are excluded until their compute lands (see out-of-scope).
- */
-const SLIDER_CAPABLE_TYPES = new Set<DimensionType>(["categorical", "binary", "scalar", "temporal", "multi-hot"]);
-
-/** Every dim that should get a slider, in registry order. */
-export const SLIDER_DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) =>
-  SLIDER_CAPABLE_TYPES.has(d.type),
-).map((d) => d.id);
+/** Every slider-capable dim, single-sourced from the registry (no duplicate filter). */
+export const SLIDER_DIMENSION_IDS: readonly DimensionId[] = RUNTIME_TARGET_DIMENSION_IDS;
 
 export interface AdvancedDimensionGroup {
   family: DimensionFamily;
@@ -51,11 +42,12 @@ const FAMILY_LABELS: Record<DimensionFamily, string> = {
 export const ADVANCED_DIMENSION_GROUPS: readonly AdvancedDimensionGroup[] = (() => {
   const primary = new Set<DimensionId>(PRIMARY_DIMENSION_IDS);
   const byFamily = new Map<DimensionFamily, DimensionId[]>();
-  for (const d of DIMENSION_REGISTRY) {
-    if (!SLIDER_CAPABLE_TYPES.has(d.type)) continue;
-    if (primary.has(d.id)) continue;
+  for (const id of SLIDER_DIMENSION_IDS) {
+    if (primary.has(id)) continue;
+    const d = getDimension(id);
+    if (!d) continue;
     const arr = byFamily.get(d.family) ?? [];
-    arr.push(d.id);
+    arr.push(id);
     byFamily.set(d.family, arr);
   }
   const out: AdvancedDimensionGroup[] = [];

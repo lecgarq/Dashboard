@@ -194,11 +194,27 @@ describe("dimension registry — runtime view", () => {
 });
 
 describe("dimension registry — target vs slider runtime sets", () => {
-  it("RUNTIME_TARGET_DIMENSION_IDS = slider dims + module (target-only, no slider)", () => {
-    expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([...RUNTIME_DIMENSION_IDS, "module"]);
+  // P4: RUNTIME_TARGET_DIMENSION_IDS is now the full slider-capable set (all 9 dims in
+  // registry order). The old target-only tail (module appended to RUNTIME_DIMENSION_IDS)
+  // is gone — module is a first-class slider.
+  it("RUNTIME_TARGET_DIMENSION_IDS equals the full slider-capable set in registry order", () => {
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module",
+    ]);
   });
-  it("module is target-capable but NOT in the visible slider set", () => {
+  it("RUNTIME_DIMENSION_IDS (primary 6) does not contain module; RUNTIME_TARGET_DIMENSION_IDS does", () => {
     expect(RUNTIME_DIMENSION_IDS).not.toContain("module");
     expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("module");
+  });
+});
+
+import { SLIDER_DIMENSION_IDS } from "../dimensionGroups";
+
+describe("dimension registry — P4 module promotion", () => {
+  it("module is slider-capable (in SLIDER_DIMENSION_IDS)", () => {
+    expect(SLIDER_DIMENSION_IDS).toContain("module");
+  });
+  it("RUNTIME_TARGET_DIMENSION_IDS equals the full slider set (no target-only tail)", () => {
+    expect([...RUNTIME_TARGET_DIMENSION_IDS].sort()).toEqual([...SLIDER_DIMENSION_IDS].sort());
   });
 });
