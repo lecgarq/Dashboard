@@ -21,40 +21,52 @@
  * in the Toolbar and swaps the constant buffer in the shell for `buildNodeColors`.
  */
 
+import { DIMENSION_REGISTRY, getDimension, type DimensionId } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
 // Modes
 // ---------------------------------------------------------------------------
 
-export type ColorMode = "role" | "tier" | "status" | "external";
+/** Dimension-backed color modes: categorical + binary registry dims. */
+const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter(
+  (d) => d.type === "categorical" || d.type === "binary",
+).map((d) => d.id);
 
-// "role" leads — it is the default color mode: it yields many distinct colors so
-// the graph looks meaningfully encoded at first load. ("external" stays available
-// but is monochrome on datasets where every user is the same internal/external
-// class, so it is not the default.)
-export const COLOR_MODES: readonly ColorMode[] = ["role", "tier", "status", "external"];
+/** Non-dimension extra modes (no registry dim). `status` reads accountStatus. */
+const EXTRA_COLOR_MODES = ["status"] as const;
+
+export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
+
+// "role" leads (many distinct colors at first load). Then the rest of the dim-backed
+// modes, then the non-dimension extras.
+export const COLOR_MODES: readonly ColorMode[] = [
+  "role",
+  ...COLORABLE_DIM_IDS.filter((id) => id !== "role"),
+  ...EXTRA_COLOR_MODES,
+];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
-  external: "Internal / External",
-  role: "Role",
-  tier: "Permission tier",
+  ...Object.fromEntries(COLORABLE_DIM_IDS.map((id) => [id, getDimension(id)!.label])),
   status: "Account status",
-};
+} as Record<ColorMode, string>;
 
-/** The categorical value used to pick a color for the given mode. */
+/** Category string used to pick a color. Dim-backed → descriptor.extract; extras explicit. */
 export function categoryForColor(f: NodeFeatureSnapshot, mode: ColorMode): string {
-  switch (mode) {
-    case "role":
-      return f.role;
-    case "tier":
-      return f.permTier ?? "(none)";
-    case "status":
-      return f.accountStatus || "(unknown)";
-    case "external":
-      return f.isExternal ? "external" : "internal";
-  }
+  if (mode === "status") return f.accountStatus || "(unknown)";
+  const d = getDimension(mode as DimensionId);
+  const v = d ? d.extract(f) : null;
+  if (typeof v === "string") return v;
+  if (typeof v === "number") return String(v);
+  if (Array.isArray(v)) return v.length ? v.join("|") : "(none)";
+  return "(none)";
+}
+
+/** One-time migration: the legacy `external` color-mode id → `internalExternal`. */
+export function migrateColorMode(mode: string): ColorMode {
+  if (mode === "external") return "internalExternal";
+  return (COLOR_MODES as readonly string[]).includes(mode) ? (mode as ColorMode) : "role";
 }
 
 // ---------------------------------------------------------------------------

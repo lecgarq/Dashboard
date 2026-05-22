@@ -4,8 +4,10 @@ import {
   COLOR_MODE_LABELS,
   categoryForColor,
   buildNodeColors,
+  migrateColorMode,
   type ColorMode,
 } from "./nodeColors";
+import { getDimension } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
@@ -21,6 +23,7 @@ function feature(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
     role: "Architect",
     permTier: "view",
     isExternal: false,
+    affiliation: "internal",
     activityBucket: "None",
     signinBucket: ">90d",
     activityCountRaw: 0,
@@ -28,8 +31,30 @@ function feature(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
     permissionCoverage: "unknown",
     firmName: "",
     accountStatus: "active",
+    isAdmin: false,
+    moduleSignature: [],
     ...over,
   };
+}
+
+/** Alias used by the new registry-derived tests (richer defaults). */
+function snap(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
+  return feature({
+    project: "Tower A",
+    role: "Architect",
+    permTier: "View Only",
+    affiliation: "internal",
+    activityBucket: "Med",
+    signinBucket: "<30d",
+    activityCountRaw: 1,
+    lastSignInRel: "",
+    permissionCoverage: "known",
+    firmName: "Hermosillo",
+    accountStatus: "active",
+    isAdmin: false,
+    moduleSignature: ["build"],
+    ...over,
+  });
 }
 
 function rgba(buf: Float32Array, i: number): [number, number, number, number] {
@@ -54,11 +79,13 @@ describe("categoryForColor", () => {
       permTier: "edit",
       accountStatus: "inactive",
       isExternal: true,
+      affiliation: "external",
     });
     expect(categoryForColor(f, "role")).toBe("Engineer");
     expect(categoryForColor(f, "tier")).toBe("edit");
     expect(categoryForColor(f, "status")).toBe("inactive");
-    expect(categoryForColor(f, "external")).toBe("external");
+    // internalExternal replaces the legacy external mode
+    expect(categoryForColor(f, "internalExternal")).toBe("external");
   });
 
   it("uses stable placeholders for missing tier / status", () => {
@@ -72,8 +99,9 @@ describe("color mode metadata", () => {
     expect(COLOR_MODES[0]).toBe("role");
   });
 
-  it("still exposes external as a selectable mode", () => {
-    expect(COLOR_MODES).toContain("external");
+  it("exposes internalExternal (not legacy external) as a selectable mode", () => {
+    expect(COLOR_MODES).toContain("internalExternal");
+    expect(COLOR_MODES).not.toContain("external");
   });
 
   it("provides a non-empty label for every mode", () => {
@@ -126,7 +154,7 @@ describe("buildNodeColors determinism", () => {
     feature({ role: "A", permTier: "view", accountStatus: "active" }),
   ];
 
-  it.each<ColorMode>(["role", "tier", "status"])(
+  it.each<ColorMode>(["role", "tier", "status", "internalExternal"])(
     "is deterministic for %s mode",
     (mode) => {
       const a = buildNodeColors(features, mode);
@@ -147,17 +175,54 @@ describe("buildNodeColors determinism", () => {
   });
 });
 
-describe("buildNodeColors external mode", () => {
+describe("buildNodeColors internalExternal mode", () => {
   it("colors internal and external users distinctly, consistently", () => {
     const features = [
-      feature({ isExternal: false }),
-      feature({ isExternal: true }),
-      feature({ isExternal: false }),
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "internal", isExternal: false }),
     ];
-    const buf = buildNodeColors(features, "external");
+    const buf = buildNodeColors(features, "internalExternal");
     // internals match each other …
     expect(rgba(buf, 0)).toEqual(rgba(buf, 2));
     // … and differ from external
     expect(rgba(buf, 0)).not.toEqual(rgba(buf, 1));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Registry-derived modes (P4.8)
+// ---------------------------------------------------------------------------
+
+describe("nodeColors — registry-derived modes", () => {
+  it("every categorical/binary registry dim is an available color mode", () => {
+    for (const id of ["role", "tier", "internalExternal", "company", "isAdmin"]) {
+      expect(COLOR_MODES).toContain(id);
+      expect(COLOR_MODE_LABELS[id as (typeof COLOR_MODES)[number]]).toBeTruthy();
+    }
+  });
+
+  it("dimension-backed modes delegate to descriptor.extract", () => {
+    const f = snap({ role: "Engineer" });
+    expect(categoryForColor(f, "role")).toBe(String(getDimension("role")!.extract(f)));
+  });
+
+  it("the non-dimension 'status' mode still reads accountStatus", () => {
+    expect(categoryForColor(snap({ accountStatus: "suspended" }), "status")).toBe("suspended");
+  });
+
+  it("legacy 'external' color-mode id migrates to 'internalExternal'", () => {
+    expect(migrateColorMode("external")).toBe("internalExternal");
+    expect(migrateColorMode("role")).toBe("role");
+  });
+
+  it("buildNodeColors yields >1 distinct color for a multi-role dataset (RGBA, alpha=1)", () => {
+    const buf = buildNodeColors([snap({ role: "A" }), snap({ role: "B" })], "role");
+    expect(buf.length).toBe(8);
+    expect(buf[3]).toBe(1);
+    expect(buf[7]).toBe(1);
+    const c0 = buf.slice(0, 3).join(","),
+      c1 = buf.slice(4, 7).join(",");
+    expect(c0).not.toBe(c1);
   });
 });
