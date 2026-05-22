@@ -30,6 +30,7 @@ import { HeadlineInsights, type HeadlineInsightItem } from "./HeadlineInsights";
 import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
 import { chartColor, sequenceColor } from "./chartColors";
+import { ChartPanel } from "./ChartPanel";
 import {
   Dialog,
   DialogContent,
@@ -68,12 +69,12 @@ function toFolderRows(rawRows: readonly unknown[] | undefined): GraphFolderPermi
 }
 
 const ACCENTS = {
-  distribution: "#8b5cf6",
-  distributionAdmin: "#f59e0b",
-  heatmap: "#06b6d4",
-  membership: "#10b981",
-  role: "#a855f7",
-  company: "#84cc16",
+  distribution: chartColor("seq4"),
+  distributionAdmin: chartColor("watch"),
+  heatmap: chartColor("seq2"),
+  membership: chartColor("good"),
+  role: chartColor("seq4"),
+  company: chartColor("seq1"),
 } as const;
 
 const STATUS_ROLE: Record<string, Parameters<typeof chartColor>[0]> = {
@@ -290,15 +291,12 @@ function FallbackBarPanel({
 }) {
   const max = rows.reduce((largest, row) => Math.max(largest, row.value), 0);
   return (
-    <section className="rounded-lg border bg-card p-4 shadow-sm">
-      <header className="mb-3">
-        <div className="flex items-center gap-2">
-          <span aria-hidden className="inline-block h-2.5 w-2.5 rounded-full" style={{ backgroundColor: accent }} />
-          <h2 className="text-sm font-semibold tracking-tight">{title}</h2>
-        </div>
-        {subtitle ? <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p> : null}
-        {finding ? <p className="mt-2 text-xs font-medium text-foreground/80">{finding}</p> : null}
-      </header>
+    <ChartPanel
+      title={title}
+      subtitle={subtitle}
+      insight={finding ? { text: finding } : undefined}
+      affordance={onRowClick ? "click-to-filter" : undefined}
+    >
       {rows.length === 0 ? (
         <div className="flex h-40 items-center justify-center rounded-md border border-dashed text-xs text-muted-foreground">
           {emptyText}
@@ -330,7 +328,7 @@ function FallbackBarPanel({
           ))}
         </div>
       )}
-    </section>
+    </ChartPanel>
   );
 }
 

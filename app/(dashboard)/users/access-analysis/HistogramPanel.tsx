@@ -1,9 +1,11 @@
 "use client";
 
 import { useRef } from "react";
-import { VgPlotChart, vg } from "@sqlrooms/mosaic";
+import * as vg from "@uwdata/vgplot";
+import { VgPlotChart } from "./VgPlotChart";
 import { useMosaicSelection } from "./MosaicCoordinatorContext";
 import type { Selection } from "@uwdata/mosaic-core";
+import { ChartPanel } from "./ChartPanel";
 
 export interface HistogramPanelProps {
   title: string;
@@ -23,6 +25,8 @@ export interface HistogramPanelProps {
   topN?: number;
   /** Optional override for the shared crossfilter selection. */
   selection?: Selection;
+  /** Accent color used in the header dot. */
+  accent?: string;
 }
 
 export function HistogramPanel({
@@ -40,10 +44,6 @@ export function HistogramPanel({
   // Build the vgplot HTMLElement once per mount.
   // vg.plot() returns an HTMLElement that Mosaic registers as a client with
   // the Coordinator — it must NOT be recreated on every render.
-  //
-  // Count expression:
-  //   vg.count("user_id").distinct()  →  COUNT(DISTINCT user_id)
-  //   vg.count()                      →  COUNT(*)
   const plotRef = useRef<HTMLElement | null>(null);
   if (plotRef.current === null) {
     const xExpr =
@@ -57,27 +57,33 @@ export function HistogramPanel({
         {
           x: xExpr,
           y: groupBy,
-          fill: "steelblue",
+          // Per-bar categorical color — Plot's default tableau10 palette gives
+          // each Y-category its own hue, making rows much easier to track than
+          // a single steelblue bar.
+          fill: groupBy,
           sort: { y: "-x", limit: topN },
+          tip: true,
         },
       ),
       vg.toggleY({ as: sel }),
-      vg.marginLeft(120),
-      vg.height(Math.min(40 + topN * 18, 460)),
-      vg.style({ fontSize: "11px" }),
+      vg.colorScheme("tableau10"),
+      vg.marginLeft(140),
+      vg.marginTop(6),
+      vg.marginBottom(28),
+      vg.height(Math.min(60 + topN * 24, 540)),
+      vg.style({
+        fontSize: "12px",
+        fontFamily: "inherit",
+        color: "currentColor",
+        background: "transparent",
+      }),
     );
   }
 
   return (
-    <section className="min-h-[160px] rounded-md border bg-card p-3">
-      <div className="mb-2 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">{title}</h2>
-        {groupLabel && (
-          <span className="text-[10px] text-muted-foreground">{groupLabel}</span>
-        )}
-      </div>
+    <ChartPanel title={title} subtitle={groupLabel} affordance="click-to-filter">
       {/* eslint-disable-next-line @typescript-eslint/no-non-null-assertion */}
       <VgPlotChart plot={plotRef.current!} />
-    </section>
+    </ChartPanel>
   );
 }
