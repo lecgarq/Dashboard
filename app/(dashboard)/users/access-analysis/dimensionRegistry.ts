@@ -23,7 +23,8 @@ export type DimensionId =
   | "activity"
   | "signin"
   | "isAdmin"
-  | "module";
+  | "module"
+  | "membershipBucket";
 
 export type DimensionFamily =
   | "structure"
@@ -207,6 +208,19 @@ export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
     confidence: "high",
     extract: (f) => f.moduleSignature ?? [],
     isAvailable: (f) => (f.moduleSignature ?? []).length > 0,
+  },
+  {
+    id: "membershipBucket",
+    label: "Membership tenure",
+    family: "tenure",
+    type: "categorical",
+    source: "AccDcProjectUser.addedOn bucketed (NodeFeatureSnapshot.membershipBucket)",
+    availability: "A1",
+    defaultWeight: 0, // advanced dim: default OFF (organic preset never lists it → slider 0)
+    confidence: "medium",
+    surfaces: ["slider", "color"],
+    extract: (f) => f.membershipBucket ?? "unknown",
+    isAvailable: (f) => (f.membershipBucket ?? "unknown") !== "unknown",
   },
 ];
 

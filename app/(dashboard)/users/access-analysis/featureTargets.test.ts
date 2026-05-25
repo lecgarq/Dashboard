@@ -292,6 +292,35 @@ describe("featureTargets — registry-driven categoryValue", () => {
 });
 
 // ---------------------------------------------------------------------------
+// membershipBucket (P6 categorical tenure dim) anchors
+// ---------------------------------------------------------------------------
+
+describe("featureTargets — membershipBucket anchors", () => {
+  it("yields finite, deterministic anchors", () => {
+    const fs = [
+      feature({ membershipBucket: "<30d" }),
+      feature({ membershipBucket: ">1y" }),
+      feature({ membershipBucket: "<90d" }),
+    ];
+    const a = computeDimensionTarget(fs, "membershipBucket");
+    const b = computeDimensionTarget(fs, "membershipBucket");
+    expect(isFiniteArray(a)).toBe(true);
+    expect(Array.from(a)).toEqual(Array.from(b));
+  });
+
+  it("anchors the SAME bucket together and separates DIFFERENT buckets", () => {
+    const fs = [
+      feature({ membershipBucket: "<30d" }),
+      feature({ membershipBucket: ">1y" }),
+      feature({ membershipBucket: "<30d" }),
+    ];
+    const out = computeDimensionTarget(fs, "membershipBucket");
+    expect(dist3(out, 0, 2)).toBe(0); // same bucket → identical anchor
+    expect(dist3(out, 0, 1)).toBeGreaterThan(0.1); // different bucket → separated
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Multi-hot module anchors
 // ---------------------------------------------------------------------------
 

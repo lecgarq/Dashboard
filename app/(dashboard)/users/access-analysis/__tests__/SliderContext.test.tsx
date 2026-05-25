@@ -61,6 +61,7 @@ describe("SliderContext — organic default profile (P1.1)", () => {
       module: 15,
       company: 0,
       isAdmin: 0,
+      membershipBucket: 0, // P6: advanced tenure dim, OFF in organic (P4 module parity preserved)
     });
   });
 

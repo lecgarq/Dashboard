@@ -62,9 +62,9 @@ describe("dimension registry — validity", () => {
     expect(getDimension("nope" as DimensionId)).toBeUndefined();
   });
 
-  it("registers the first-batch dimensions incl. isAdmin + module (A2)", () => {
+  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket (P6)", () => {
     expect(DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket",
     ]);
   });
 });
@@ -202,7 +202,7 @@ describe("dimension registry — target vs slider runtime sets", () => {
   // is gone — module is a first-class slider.
   it("RUNTIME_TARGET_DIMENSION_IDS equals the full slider-capable set in registry order", () => {
     expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket",
     ]);
   });
   it("RUNTIME_DIMENSION_IDS (primary 6) does not contain module; RUNTIME_TARGET_DIMENSION_IDS does", () => {
@@ -251,6 +251,36 @@ describe("dimension registry — surface capability", () => {
 });
 
 import { SLIDER_DIMENSION_IDS } from "../dimensionGroups";
+
+describe("dimension registry — membershipBucket (P6 tenure dim)", () => {
+  it("is registered with the expected descriptor fields", () => {
+    const d = getDimension("membershipBucket");
+    expect(d).toBeDefined();
+    expect(d!.family).toBe("tenure");
+    expect(d!.type).toBe("categorical");
+    expect(d!.surfaces).toEqual(["slider", "color"]);
+    expect(d!.confidence).toBe("medium");
+    expect(d!.availability).toBe("A1");
+  });
+
+  it("extract is null-safe: undefined → 'unknown'; a real bucket passes through", () => {
+    const d = getDimension("membershipBucket")!;
+    expect(d.extract(snap({ membershipBucket: undefined }))).toBe("unknown");
+    expect(d.extract(snap({ membershipBucket: ">1y" }))).toBe(">1y");
+  });
+
+  it("isAvailable is false for unknown/undefined, true for a real bucket", () => {
+    const d = getDimension("membershipBucket")!;
+    expect(d.isAvailable(snap({ membershipBucket: "unknown" }))).toBe(false);
+    expect(d.isAvailable(snap({ membershipBucket: undefined }))).toBe(false);
+    expect(d.isAvailable(snap({ membershipBucket: "<30d" }))).toBe(true);
+  });
+
+  it("is a runtime target (slider-surfaced) and is also color-surfaced", () => {
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("membershipBucket");
+    expect(dimensionHasSurface(getDimension("membershipBucket")!, "color")).toBe(true);
+  });
+});
 
 describe("dimension registry — P4 module promotion", () => {
   it("module is slider-capable (in SLIDER_DIMENSION_IDS)", () => {

@@ -56,4 +56,13 @@ describe("buildDimensionWeights", () => {
     expect(w.role).toBeInstanceOf(Float32Array);
     expect(w.role.length).toBe(2);
   });
+
+  it("membershipBucket: unknown tenure → 0; real bucket → CONFIDENCE_FACTOR.medium (0.7)", () => {
+    // membershipBucket confidence="medium" → CONFIDENCE_FACTOR.medium = 0.7;
+    // isAvailable: false for "unknown"/undefined, true for a real bucket.
+    const unknown = buildDimensionWeights([snap({ membershipBucket: "unknown" })], ["membershipBucket"]);
+    expect(unknown.membershipBucket[0]).toBe(0);
+    const real = buildDimensionWeights([snap({ membershipBucket: ">1y" })], ["membershipBucket"]);
+    expect(real.membershipBucket[0]).toBeCloseTo(CONFIDENCE_FACTOR.medium, 6); // 0.7
+  });
 });
