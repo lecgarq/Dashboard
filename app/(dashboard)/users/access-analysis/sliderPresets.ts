@@ -48,6 +48,21 @@ export const SLIDER_PRESETS: readonly SliderPreset[] = [
     weights: { activity: 40, signin: 35, role: 15, project: 15 },
   },
   {
+    id: "governance",
+    label: "Governance / risk",
+    weights: { riskScore: 45, internalExternal: 25, isAdmin: 20, tier: 15 },
+  },
+  {
+    id: "tenure",
+    label: "Tenure",
+    weights: { membershipBucket: 45, project: 20, role: 15 },
+  },
+  {
+    id: "engagement",
+    label: "Engagement / recency",
+    weights: { activityRecency: 40, activity: 25, signin: 15 },
+  },
+  {
     id: "flat",
     label: "Flat (equal)",
     weights: Object.fromEntries(SLIDER_DIMENSION_IDS.map((id) => [id, 20])) as Partial<

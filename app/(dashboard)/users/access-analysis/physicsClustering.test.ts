@@ -173,3 +173,52 @@ describe("feature targets produce real spatial clustering after settle", () => {
     );
   }, 30_000);
 });
+
+describe("riskScore slider drives clustering 0→100", () => {
+  /** Fixture where every node carries riskScore ∈ {1,2,3} (all > 0 → all available). */
+  function buildRiskFixture(n: number) {
+    const features: NodeFeatureSnapshot[] = [];
+    const cats: string[] = [];
+    for (let i = 0; i < n; i++) {
+      const riskScore = (i % 3) + 1; // 1, 2, 3 — all > 0
+      features.push(makeFeature({ nodeId: `r${i}`, riskScore }));
+      cats.push(String(riskScore)); // category = same coercion as categoryValue
+    }
+    return { features, cats };
+  }
+
+  /** Settle for the riskScore dimension ONLY (riskScore is not a primary dim). */
+  async function settleRisk(
+    features: NodeFeatureSnapshot[],
+    sliders: Record<string, number>,
+  ): Promise<Float32Array> {
+    reseedRandom();
+    _capturedSim = null;
+    const nodeIds = features.map((f) => f.nodeId);
+    const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
+    const targets = buildFeatureTargets(features, ["riskScore"]);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, ["riskScore"], sliders);
+    const sim = _capturedSim;
+    sim.stop();
+    for (let i = 0; i < 300; i++) sim.tick();
+    return physics.getPositions();
+  }
+
+  it("clustering ratio at slider 0 < slider 100, both finite (force off at 0, on at 100)", async () => {
+    const { features, cats } = buildRiskFixture(720);
+
+    const off = await settleRisk(features, { riskScore: 0 });
+    const on = await settleRisk(features, { riskScore: 1 }); // normalized 100
+
+    const rOff = computeClusteringRatio(off, cats).ratio;
+    const rOn = computeClusteringRatio(on, cats).ratio;
+
+    // eslint-disable-next-line no-console
+    console.log(`[riskScore clustering] off=${rOff.toFixed(3)} on=${rOn.toFixed(3)}`);
+
+    expect(Number.isFinite(rOff)).toBe(true);
+    expect(Number.isFinite(rOn)).toBe(true);
+    // Slider 0 = no semantic force; slider 100 engages the force → tighter clusters.
+    expect(rOn).toBeGreaterThan(rOff);
+  }, 30_000);
+});
