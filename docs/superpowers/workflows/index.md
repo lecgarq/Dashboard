@@ -6,6 +6,10 @@
 >
 > **Start here** at the beginning of any non-trivial task.
 
+> **Confused about a subsystem? Read the map first.** Before editing code you don't fully understand,
+> consult [`../codebase-map/index.md`](../codebase-map/index.md) and the relevant subsystem map. This is a
+> standing rule, enforced in the repo-development and subagent workflows below.
+
 ## How these fit together
 
 ```
@@ -28,6 +32,12 @@ request → repo-development-workflow (the spine)
 | [surgical-staging-workflow](./surgical-staging-workflow.md) | Every stage/commit — explicit paths only, never `-A`/`.`; protects baseline WIP. |
 | [subagent-development-workflow](./subagent-development-workflow.md) | Dispatching subagents to execute plan tasks; re-verify the tree on return. |
 | [multiterminal-coordination-workflow](./multiterminal-coordination-workflow.md) | When another terminal is active on the same tree — ownership boundaries + scope control. |
+
+## Codebase map (read when confused about a subsystem)
+
+- [../codebase-map/index.md](../codebase-map/index.md) — the deep map of the repo: architecture, the
+  access-analysis graph, the data pipeline, testing/gates, WIP boundaries, per-file ownership, dependency
+  flow, and a machine-readable `codebase-map.json`. **Consult it before editing an unfamiliar subsystem.**
 
 ## Domain-specific companion (not part of this package — do not overwrite)
 

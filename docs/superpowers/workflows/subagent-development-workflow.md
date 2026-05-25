@@ -45,7 +45,10 @@ physics, router), any other terminal's files, and anything outside the brief's a
 2. **Write a tight brief** for each subagent using
    [`templates/subagent-task-brief.md`](./templates/subagent-task-brief.md). Include: goal, allowed files
    (exhaustive), forbidden files, required tests, commit message, and explicit **negative assertions**
-   ("do NOT add registry descriptors", "do NOT change node identity", etc.).
+   ("do NOT add registry descriptors", "do NOT change node identity", etc.). **Point the subagent at the
+   codebase map:** if it is confused about a subsystem, it MUST consult
+   [`../codebase-map/index.md`](../codebase-map/index.md) and the relevant subsystem map before editing
+   code (a cold-started subagent especially needs this).
 3. **Check the plan for decision-contradicting bugs** before dispatch. A plan step can contradict a
    prior decision; the subagent will implement it verbatim. Catch it now.
 4. **Dispatch.** For parallel work, ensure tasks are truly independent (no shared file writes).

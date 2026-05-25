@@ -1,0 +1,137 @@
+{
+  "$comment": "Machine-readable map of the access-analysis graph feature. Authored by T2 (docs-only) from repo evidence on the feat/access-analysis-redesign branch. Paths are repo-relative. Verify against the live tree before relying; this reflects the repo at authoring time.",
+  "schemaVersion": 1,
+  "generatedFor": "Claude agent workflows",
+  "baseDir": "app/(dashboard)/users/access-analysis/",
+  "subsystems": [
+    { "id": "route-entry", "label": "Route entry", "files": ["app/(dashboard)/users/access-analysis/page.tsx", "app/(dashboard)/users/access-analysis/AccessAnalysisShellClient.tsx", "lib/server/acc-route-hydration.ts"] },
+    { "id": "shell-orchestration", "label": "Shell orchestration", "files": ["app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx", "app/(dashboard)/users/access-analysis/GraphInteractions.tsx"] },
+    { "id": "server-data-pipeline", "label": "Server data pipeline", "files": ["server/routers/acc-dc-graph.ts", "lib/server/acc-hot-cache.ts", "lib/acc/dcUserAssembly.ts", "lib/acc/acc-types.ts"] },
+    { "id": "client-data-pipeline", "label": "Client data pipeline", "files": ["app/(dashboard)/users/access-analysis/graphTables.ts", "app/(dashboard)/users/access-analysis/duckdbClient.ts", "app/(dashboard)/users/access-analysis/featureSnapshot.ts", "app/(dashboard)/users/access-analysis/interactionTypes.ts"] },
+    { "id": "dimension-model", "label": "Dimension model", "files": ["app/(dashboard)/users/access-analysis/dimensionRegistry.ts", "app/(dashboard)/users/access-analysis/featureTargets.ts", "app/(dashboard)/users/access-analysis/SliderContext.tsx", "app/(dashboard)/users/access-analysis/SliderSidebar.tsx", "app/(dashboard)/users/access-analysis/dimensionWeights.ts"] },
+    { "id": "layout-engine", "label": "Layout engine", "files": ["app/(dashboard)/users/access-analysis/mathLayer.ts", "app/(dashboard)/users/access-analysis/physicsLayer.ts", "app/(dashboard)/users/access-analysis/layoutStats.ts", "app/(dashboard)/users/access-analysis/positionsCache.ts"] },
+    { "id": "rendering", "label": "Rendering", "files": ["app/(dashboard)/users/access-analysis/GraphCanvas.tsx", "app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx", "app/(dashboard)/users/access-analysis/GraphCanvas3D.tsx", "app/(dashboard)/users/access-analysis/CosmosCanvasClient.ts", "app/(dashboard)/users/access-analysis/nodeColors.ts"] },
+    { "id": "edges", "label": "Edges", "files": ["app/(dashboard)/users/access-analysis/sameUserEdges.ts", "app/(dashboard)/users/access-analysis/linkEmphasis.ts"] },
+    { "id": "interaction", "label": "Interaction", "files": ["app/(dashboard)/users/access-analysis/GraphInteractions.tsx", "app/(dashboard)/users/access-analysis/LassoOverlay.tsx", "app/(dashboard)/users/access-analysis/SelectionContext.tsx", "app/(dashboard)/users/access-analysis/UserDetailPanel.tsx", "app/(dashboard)/users/access-analysis/NodeTooltip.tsx"] },
+    { "id": "activity-aggregation", "label": "Activity aggregation (P5-C)", "owner": "T1", "files": ["lib/acc/activityAggregate.ts", "lib/acc/activityCategories.ts"] },
+    { "id": "test-bridge", "label": "Test bridge", "files": ["app/(dashboard)/users/access-analysis/graphTestBridge.ts"] }
+  ],
+  "files": [
+    { "path": "app/(dashboard)/users/access-analysis/page.tsx", "subsystem": "route-entry", "purpose": "SSR prefetch + hydrate -> shell client", "forbiddenCasualEdit": true, "reason": "nav/route surface" },
+    { "path": "app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx", "subsystem": "shell-orchestration", "purpose": "Orchestrator; calls accDcGraph.bulkUsers({includePermissionSummary,includeActivityMix}); mounts GraphCanvas", "owner": "T1" },
+    { "path": "server/routers/acc-dc-graph.ts", "subsystem": "server-data-pipeline", "purpose": "bulkUsers tRPC adminProcedure; input flags includePermissionContexts/Summary/includeActivityMix", "forbiddenCasualEdit": true, "owner": "T1", "reason": "router + active P5-C flag" },
+    { "path": "lib/server/acc-hot-cache.ts", "subsystem": "server-data-pipeline", "purpose": "getCachedAccDcBulkUsers; 10min TTL; versioned cache; permission + activity (groupBy) queries", "owner": "T1" },
+    { "path": "lib/acc/dcUserAssembly.ts", "subsystem": "server-data-pipeline", "purpose": "pure assembleDcUsers -> BulkAccUser[]; accepts activityByInstance", "owner": "T1" },
+    { "path": "lib/acc/acc-types.ts", "subsystem": "server-data-pipeline", "purpose": "BulkAccUser/BulkAccProject types (server<->client contract)" },
+    { "path": "app/(dashboard)/users/access-analysis/graphTables.ts", "subsystem": "client-data-pipeline", "purpose": "buildGraphArrowTables: BulkAccUser[] -> Arrow graph_* tables", "owner": "T1" },
+    { "path": "app/(dashboard)/users/access-analysis/duckdbClient.ts", "subsystem": "client-data-pipeline", "purpose": "DuckDB-WASM client; registers graph_* tables" },
+    { "path": "app/(dashboard)/users/access-analysis/featureSnapshot.ts", "subsystem": "client-data-pipeline", "purpose": "buildFeatureSnapshot: DuckDB query -> NodeFeatureSnapshot[]; bucketers; computeRiskFlags", "owner": "T1" },
+    { "path": "app/(dashboard)/users/access-analysis/interactionTypes.ts", "subsystem": "client-data-pipeline", "purpose": "NodeFeatureSnapshot + interaction types", "owner": "T1" },
+    { "path": "app/(dashboard)/users/access-analysis/dimensionRegistry.ts", "subsystem": "dimension-model", "purpose": "Source of truth: 9 DimensionIds + descriptors + runtime helpers", "trap": "adding a descriptor auto-creates a layout target" },
+    { "path": "app/(dashboard)/users/access-analysis/featureTargets.ts", "subsystem": "dimension-model", "purpose": "dimension+features -> layout anchor; buildFeatureTargets" },
+    { "path": "app/(dashboard)/users/access-analysis/SliderContext.tsx", "subsystem": "dimension-model", "purpose": "runtime slider state; persistence; SliderProvider/useSliders" },
+    { "path": "app/(dashboard)/users/access-analysis/SliderSidebar.tsx", "subsystem": "dimension-model", "purpose": "grouped/preset/search slider UI" },
+    { "path": "app/(dashboard)/users/access-analysis/nodeColors.ts", "subsystem": "rendering", "purpose": "ColorMode; buildNodeColors; hashed/sequential color" },
+    { "path": "app/(dashboard)/users/access-analysis/physicsLayer.ts", "subsystem": "layout-engine", "purpose": "force sim wrapper; createPhysicsLayer", "forbiddenCasualEdit": true, "reason": "graph physics; needs layout-math validation" },
+    { "path": "app/(dashboard)/users/access-analysis/mathLayer.ts", "subsystem": "layout-engine", "purpose": "pure layout math / target blend", "forbiddenCasualEdit": true, "reason": "graph physics; invariant-gated" },
+    { "path": "app/(dashboard)/users/access-analysis/GraphCanvas.tsx", "subsystem": "rendering", "purpose": "2D/3D dispatcher; both always mounted, CSS-visibility switch", "forbiddenCasualEdit": true, "reason": "conditional render destroys WebGL context" },
+    { "path": "app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx", "subsystem": "rendering", "purpose": "cosmos.gl renderer", "forbiddenCasualEdit": true, "reason": "renderer" },
+    { "path": "app/(dashboard)/users/access-analysis/GraphCanvas3D.tsx", "subsystem": "rendering", "purpose": "three.js renderer", "forbiddenCasualEdit": true, "reason": "renderer" },
+    { "path": "app/(dashboard)/users/access-analysis/graphTestBridge.ts", "subsystem": "test-bridge", "purpose": "window.__ACC_GRAPH_TEST__ observation API (GraphTestApi)", "note": "e2e contract" },
+    { "path": "app/(dashboard)/users/access-analysis/sameUserEdges.ts", "subsystem": "edges", "purpose": "deriveSameUserEdges, toCosmosLinks", "forbiddenCasualEdit": true, "reason": "edge layer; clique-cap rules" },
+    { "path": "app/(dashboard)/users/access-analysis/linkEmphasis.ts", "subsystem": "edges", "purpose": "per-edge emphasis/RGBA", "forbiddenCasualEdit": true, "reason": "edge layer" },
+    { "path": "app/(dashboard)/users/access-analysis/LassoOverlay.tsx", "subsystem": "interaction", "purpose": "lasso selection (mask, not physics)", "forbiddenCasualEdit": true, "reason": "lasso" },
+    { "path": "app/(dashboard)/users/access-analysis/UserDetailPanel.tsx", "subsystem": "interaction", "purpose": "per-node detail panel", "forbiddenCasualEdit": true, "reason": "UserDetailPanel" },
+    { "path": "lib/acc/activityAggregate.ts", "subsystem": "activity-aggregation", "purpose": "foldActivityRows: grouped rows -> per-instance mix/total/lastActivity", "owner": "T1", "forbiddenCasualEdit": true, "reason": "active P5-C implementation" },
+    { "path": "lib/acc/activityCategories.ts", "subsystem": "activity-aggregation", "purpose": "categorize(rawAction) -> ActivityCategory", "owner": "T1" }
+  ],
+  "dependencies": [
+    { "from": "page.tsx", "to": "lib/server/acc-route-hydration.ts", "kind": "runtime" },
+    { "from": "lib/server/acc-route-hydration.ts", "to": "server/routers/acc-dc-graph.ts", "kind": "data" },
+    { "from": "server/routers/acc-dc-graph.ts", "to": "lib/server/acc-hot-cache.ts", "kind": "data" },
+    { "from": "lib/server/acc-hot-cache.ts", "to": "lib/acc/dcUserAssembly.ts", "kind": "data" },
+    { "from": "lib/server/acc-hot-cache.ts", "to": "lib/acc/activityAggregate.ts", "kind": "data", "guard": "includeActivityMix flag (P5-C/T1)" },
+    { "from": "lib/acc/dcUserAssembly.ts", "to": "lib/acc/acc-types.ts", "kind": "type" },
+    { "from": "AccessAnalysisShell.tsx", "to": "server/routers/acc-dc-graph.ts", "kind": "data", "via": "trpc.accDcGraph.bulkUsers.useQuery" },
+    { "from": "AccessAnalysisShell.tsx", "to": "app/(dashboard)/users/access-analysis/graphTables.ts", "kind": "runtime" },
+    { "from": "app/(dashboard)/users/access-analysis/graphTables.ts", "to": "app/(dashboard)/users/access-analysis/duckdbClient.ts", "kind": "data" },
+    { "from": "app/(dashboard)/users/access-analysis/duckdbClient.ts", "to": "app/(dashboard)/users/access-analysis/featureSnapshot.ts", "kind": "data" },
+    { "from": "app/(dashboard)/users/access-analysis/featureSnapshot.ts", "to": "app/(dashboard)/users/access-analysis/interactionTypes.ts", "kind": "type" },
+    { "from": "app/(dashboard)/users/access-analysis/featureTargets.ts", "to": "app/(dashboard)/users/access-analysis/dimensionRegistry.ts", "kind": "runtime" },
+    { "from": "app/(dashboard)/users/access-analysis/nodeColors.ts", "to": "app/(dashboard)/users/access-analysis/dimensionRegistry.ts", "kind": "runtime" },
+    { "from": "app/(dashboard)/users/access-analysis/SliderContext.tsx", "to": "app/(dashboard)/users/access-analysis/dimensionRegistry.ts", "kind": "runtime" },
+    { "from": "app/(dashboard)/users/access-analysis/featureTargets.ts", "to": "app/(dashboard)/users/access-analysis/physicsLayer.ts", "kind": "data" },
+    { "from": "app/(dashboard)/users/access-analysis/GraphCanvas.tsx", "to": "app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx", "kind": "runtime" },
+    { "from": "app/(dashboard)/users/access-analysis/GraphCanvas.tsx", "to": "app/(dashboard)/users/access-analysis/GraphCanvas3D.tsx", "kind": "runtime" },
+    { "from": "tests/e2e/acc-dc-graph.spec.ts", "to": "app/(dashboard)/users/access-analysis/graphTestBridge.ts", "kind": "test", "guard": "NEXT_PUBLIC_ACC_GRAPH_TEST=1" }
+  ],
+  "circularImportRules": [
+    "dimensionRegistry.ts must stay leaf-ish: no runtime/UI imports into it.",
+    "acc-types.ts is pure types: BulkAccProject.activityMix is loose Record<string,number> to avoid a cycle with activityAggregate/interactionTypes.",
+    "interactionTypes.ts is the shared type home: types flow out, not in.",
+    "lib/server/** and server/** are server-only: do not import into client components; cross only via the tRPC procedure."
+  ],
+  "fragileSeams": [
+    "Cache key must extend BOTH the version spec AND the cache id per new flag (acc-hot-cache.ts).",
+    "Node identity userId::projectId underpins edges/selection/e2e count.",
+    "AccActivity.projectId='' (empty string) = admin rows, not null.",
+    "Arrow->DuckDB swap must be atomic (CREATE OR REPLACE TABLE).",
+    "GraphCanvas keeps both canvases mounted (CSS visibility) to avoid WebGL context loss.",
+    "graphTestBridge GraphTestApi is an e2e contract.",
+    "Adding a DIMENSION_REGISTRY descriptor auto-creates a layout target."
+  ],
+  "tests": [
+    { "type": "unit", "command": "npm test", "runner": "vitest", "excludes": "tests/e2e/**", "baselineCount": 952, "location": "co-located *.test.ts(x) + __tests__/" },
+    { "type": "typecheck", "command": "npx tsc --noEmit -p tsconfig.json", "expect": "0 errors" },
+    { "type": "e2e", "command": "npm run test:e2e", "runner": "playwright", "spec": "tests/e2e/acc-dc-graph.spec.ts", "count": 19, "port": 3100, "env": { "NEXT_PUBLIC_ACC_GRAPH_TEST": "1" }, "expectedNodeCount": 16942 },
+    { "type": "lint-note", "note": "No markdown/docs lint script exists. npm run lint = eslint; npm run knip = dead-exports. Doc-only changes run nothing." }
+  ],
+  "forbiddenDuringP5C": [
+    "lib/acc/activityAggregate.ts",
+    "lib/acc/activityCategories.ts",
+    "lib/server/acc-hot-cache.ts",
+    "lib/acc/dcUserAssembly.ts",
+    "server/routers/acc-dc-graph.ts",
+    "app/(dashboard)/users/access-analysis/graphTables.ts",
+    "app/(dashboard)/users/access-analysis/featureSnapshot.ts",
+    "app/(dashboard)/users/access-analysis/interactionTypes.ts",
+    "app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx",
+    "app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx",
+    "app/(dashboard)/users/access-analysis/GraphCanvas3D.tsx",
+    "app/(dashboard)/users/access-analysis/GraphCanvas.tsx",
+    "app/(dashboard)/users/access-analysis/physicsLayer.ts",
+    "app/(dashboard)/users/access-analysis/mathLayer.ts",
+    "app/(dashboard)/users/access-analysis/sameUserEdges.ts",
+    "app/(dashboard)/users/access-analysis/linkEmphasis.ts",
+    "app/(dashboard)/users/access-analysis/LassoOverlay.tsx",
+    "app/(dashboard)/users/access-analysis/UserDetailPanel.tsx",
+    "app/(dashboard)/users/access-analysis/page.tsx"
+  ],
+  "activeOwners": {
+    "T1": {
+      "role": "runtime/implementation",
+      "scope": "P5-C AccActivity aggregation (landed, active)",
+      "files": [
+        "lib/acc/activityAggregate.ts",
+        "lib/acc/activityCategories.ts",
+        "lib/server/acc-hot-cache.ts",
+        "lib/acc/dcUserAssembly.ts",
+        "server/routers/acc-dc-graph.ts",
+        "app/(dashboard)/users/access-analysis/graphTables.ts",
+        "app/(dashboard)/users/access-analysis/featureSnapshot.ts",
+        "app/(dashboard)/users/access-analysis/interactionTypes.ts",
+        "app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx"
+      ]
+    },
+    "T2": {
+      "role": "docs-only",
+      "scope": "docs/superpowers/** (workflows + codebase-map)",
+      "writes": ["docs/superpowers/**"]
+    }
+  },
+  "phases": {
+    "P1": "closed", "P2": "closed", "P3": "closed", "P4": "closed",
+    "P5-ABD": "shipped 2026-05-25",
+    "P5-C": "landed in tree, T1-owned/active"
+  }
+}

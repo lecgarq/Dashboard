@@ -53,6 +53,9 @@ Invoke `superpowers:using-superpowers` mentally: if any skill might apply, invok
 ### 1. Discovery (read-only)
 - `git status` / `git branch --show-current` / `git rev-list --count deploy..HEAD` — know the baseline.
 - Read `…/memory/MEMORY.md` and open the facts relevant to the area.
+- **If you are confused about a subsystem, you MUST consult
+  [`../codebase-map/index.md`](../codebase-map/index.md) and the relevant subsystem map before editing any
+  code.** The map gives architecture, per-file ownership, dependency seams, and forbidden areas.
 - Locate the area with `Glob`/`Grep` (not `find`/`rg` in Bash). Read the files you'll change *and their tests*.
 - For data/schema-shaped work, run [`data-discovery-workflow`](./data-discovery-workflow.md) **first**.
 - **Verify every memory claim against the live tree** — facts reflect when they were written; a named
