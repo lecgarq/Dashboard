@@ -745,12 +745,13 @@ export async function resolveSlicesForBudget(
   plan: { slices: Slice[] },
   budget: number,
   generatedAt: Date,
+  loadInputs: typeof loadPriorityInputs = loadPriorityInputs,
 ): Promise<Slice[]> {
   if (process.env.DC_PRIORITY_BACKFILL !== '1') {
     return plan.slices;
   }
   try {
-    const inputs = await loadPriorityInputs(prisma);
+    const inputs = await loadInputs(prisma);
     const ranked = buildExtractionPriorityPlan({
       generatedAt,
       windowDays: 30,

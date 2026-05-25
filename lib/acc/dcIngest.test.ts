@@ -591,23 +591,26 @@ describe('resolveSlicesForBudget — flag OFF (default path)', () => {
     delete process.env.DC_PRIORITY_BACKFILL;
   });
 
-  it('returns plan.slices unchanged (by reference) when DC_PRIORITY_BACKFILL is unset', async () => {
+  it('returns plan.slices unchanged (by reference) when DC_PRIORITY_BACKFILL is unset, loader never called', async () => {
     delete process.env.DC_PRIORITY_BACKFILL;
     const slices = [
       makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
       makeTestSlice(['p2'], 'backward', '2024-01-01', '2024-01-31'),
     ];
     const plan = { slices };
-    const prisma = {} as never; // should not be touched
-    const result = await resolveSlicesForBudget(prisma, plan, 10, new Date());
-    expect(result).toBe(slices); // same reference
+    const loadFn = vi.fn();
+    const result = await resolveSlicesForBudget({} as never, plan, 10, new Date(), loadFn);
+    expect(result).toBe(slices); // same reference — flag-off short-circuit
+    expect(loadFn).not.toHaveBeenCalled(); // loader must never be called
   });
 
-  it('returns plan.slices unchanged when DC_PRIORITY_BACKFILL is "0"', async () => {
+  it('returns plan.slices unchanged when DC_PRIORITY_BACKFILL is "0", loader never called', async () => {
     process.env.DC_PRIORITY_BACKFILL = '0';
     const slices = [makeTestSlice(['px'], 'forward', '2024-01-01', '2024-01-31')];
-    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date());
+    const loadFn = vi.fn();
+    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date(), loadFn);
     expect(result).toBe(slices);
+    expect(loadFn).not.toHaveBeenCalled();
   });
 });
 
@@ -615,41 +618,23 @@ describe('resolveSlicesForBudget — flag ON, ordering applied', () => {
   afterEach(() => {
     delete process.env.DC_PRIORITY_BACKFILL;
     delete process.env.DC_FAIRNESS_RESERVE;
-    vi.restoreAllMocks();
   });
 
-  it('reorders slices value-first when DC_PRIORITY_BACKFILL=1', async () => {
+  it('calls the injected loader exactly once and reorders slices correctly when DC_PRIORITY_BACKFILL=1', async () => {
     process.env.DC_PRIORITY_BACKFILL = '1';
     process.env.DC_FAIRNESS_RESERVE = '0'; // disable fairness so order is purely priority-driven
 
-    // Two slices: pLow has rank 0 (highest priority), pHigh has rank 1
-    const sLow = makeTestSlice(['pLow'],  'forward', '2024-01-01', '2024-01-31');
+    // Two slices: pHigh scores rank 0 (highest priority) because it lacks activity data
+    // and has folderCrawlStatus='unknown' — the planner prioritises under-explored projects.
+    // pLow has 1000 activity rows + folderCrawlStatus='complete', so it ranks lower.
+    // Input order is [sLow, sHigh] (low-priority first) so the reorder moves sHigh to position 0.
+    const sLow  = makeTestSlice(['pLow'],  'forward', '2024-01-01', '2024-01-31');
     const sHigh = makeTestSlice(['pHigh'], 'forward', '2024-01-01', '2024-01-31');
-    const slices = [sHigh, sLow]; // intentionally reversed priority order
+    const slices = [sLow, sHigh]; // pLow first in input; reorder should put pHigh first
 
-    // Build a prisma mock that loadPriorityInputs will call
-    const prismaMock = {
-      accDcProject: { findMany: vi.fn().mockResolvedValue([
-        { id: 'pLow',  name: 'Low',  status: 'active', createdAt: new Date('2025-01-01') },
-        { id: 'pHigh', name: 'High', status: 'active', createdAt: new Date('2025-01-01') },
-      ]) },
-      accProject: { findMany: vi.fn().mockResolvedValue([]) },
-      accDcProjectUser: { groupBy: vi.fn().mockResolvedValue([]) },
-      accDcBackfillProgress: {
-        findMany: vi.fn().mockResolvedValue([
-          { projectId: 'pLow',  earliestCovered: null, latestCovered: null, projectCreatedAt: new Date('2025-01-01'), newProjectFlag: false, updatedAt: new Date('2026-01-01') },
-          { projectId: 'pHigh', earliestCovered: null, latestCovered: null, projectCreatedAt: new Date('2025-01-01'), newProjectFlag: false, updatedAt: new Date('2026-02-01') },
-        ]),
-      },
-      $queryRaw: vi.fn().mockResolvedValue([]),
-    } as never;
-
-    // We need buildExtractionPriorityPlan to return pLow=rank 0, pHigh=rank 1
-    // Rather than mocking the planner module (which is hoisted), mock loadPriorityInputs
-    // result indirectly: supply activity and status data so pLow scores higher.
-    // Instead, spy on the module-level loadPriorityInputs and return controlled data.
-    const dcIngestModule = await import('./dcIngest');
-    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockResolvedValue({
+    // Known inputs designed so buildExtractionPriorityPlan gives pLow rank 0
+    // and pHigh rank 1 (pLow has 1000 rows of recent activity; pHigh has none).
+    const knownInputs: import('./dcIngest').PriorityInputs = {
       projects: [
         { id: 'pLow',  name: 'Low',  status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'complete', memberCount: 10 },
         { id: 'pHigh', name: 'High', status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'unknown', memberCount: 1 },
@@ -659,63 +644,83 @@ describe('resolveSlicesForBudget — flag ON, ordering applied', () => {
       ],
       backfillProgress: [],
       ageByProjectId: new Map([['pLow', 0], ['pHigh', 1]]),
-    });
+    };
 
-    const result = await resolveSlicesForBudget(prismaMock, { slices }, 2, new Date());
+    const loadFn = vi.fn().mockResolvedValue(knownInputs);
+    const generatedAt = new Date('2026-05-25T00:00:00Z');
+    const budget = 2;
 
-    loadSpy.mockRestore();
+    const result = await resolveSlicesForBudget({} as never, { slices }, budget, generatedAt, loadFn);
 
-    // Result should be a reordering (length preserved)
-    expect(result).toHaveLength(slices.length);
-    // All original slices present
-    expect(new Set(result)).toEqual(new Set(slices));
+    // Loader was called exactly once — proves the reorder path is genuinely exercised.
+    expect(loadFn).toHaveBeenCalledTimes(1);
+
+    // Compute the expected order in-test using the same inputs + helpers,
+    // so the assertion is exact (deep order equality), not just "different from input".
+    const { buildExtractionPriorityPlan } = await import('./extractionPriorityPlanner');
+    const ranked = buildExtractionPriorityPlan({
+      generatedAt,
+      windowDays: 30,
+      projects: knownInputs.projects,
+      activity: knownInputs.activity,
+      backfillProgress: knownInputs.backfillProgress,
+    }).rankedProjects;
+    const priorityByProjectId = new Map(ranked.map((p) => [p.projectId, p.rank]));
+    const reserve = 0; // DC_FAIRNESS_RESERVE='0'
+    const expected = composePrioritizedSlices(
+      slices,
+      priorityByProjectId,
+      knownInputs.ageByProjectId,
+      budget,
+      reserve,
+    );
+
+    expect(result).toEqual(expected); // exact order match — proves the reorder path ran
+    // Sanity: output differs from input (pHigh moves to position 0, pLow to position 1).
+    expect(result[0].projectIds).toContain('pHigh');
+    expect(result[1].projectIds).toContain('pLow');
   });
 });
 
 describe('resolveSlicesForBudget — fallback on error', () => {
   afterEach(() => {
     delete process.env.DC_PRIORITY_BACKFILL;
-    vi.restoreAllMocks();
+    delete process.env.DC_FAIRNESS_RESERVE;
   });
 
-  it('returns plan.slices and logs a warning when loadPriorityInputs throws', async () => {
+  it('returns plan.slices, logs a warning, and calls the loader once when loader rejects', async () => {
     process.env.DC_PRIORITY_BACKFILL = '1';
     const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const slices = [makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31')];
+    const loadFn = vi.fn().mockRejectedValue(new Error('boom'));
 
-    const dcIngestModule = await import('./dcIngest');
-    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockRejectedValue(
-      new Error('db exploded'),
-    );
+    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date(), loadFn);
 
-    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date());
-
-    expect(result).toBe(slices); // fallback = original slices
+    // Fallback: original slices returned by reference.
+    expect(result).toBe(slices);
+    // Loader was actually called — proves the catch path is genuinely exercised.
+    expect(loadFn).toHaveBeenCalledTimes(1);
+    // Warning was emitted.
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining('[dcIngest] priority ordering failed'),
       expect.any(Error),
     );
-
-    loadSpy.mockRestore();
+    // Must not throw.
     warnSpy.mockRestore();
   });
 
-  it('never throws even when both loadPriorityInputs and buildExtractionPriorityPlan throw', async () => {
+  it('never throws even when the loader rejects', async () => {
     process.env.DC_PRIORITY_BACKFILL = '1';
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
 
     const slices = [makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31')];
-
-    const dcIngestModule = await import('./dcIngest');
-    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockRejectedValue(
-      new Error('network error'),
-    );
+    const loadFn = vi.fn().mockRejectedValue(new Error('network error'));
 
     await expect(
-      resolveSlicesForBudget({} as never, { slices }, 10, new Date()),
+      resolveSlicesForBudget({} as never, { slices }, 10, new Date(), loadFn),
     ).resolves.toBe(slices);
 
-    loadSpy.mockRestore();
+    warnSpy.mockRestore();
   });
 });
