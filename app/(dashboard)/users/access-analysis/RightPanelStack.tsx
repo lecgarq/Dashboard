@@ -55,7 +55,11 @@ export function RightPanelStack({
     <div
       data-testid="right-panel-stack"
       data-top-layer={top}
-      className="relative flex"
+      // P0 camera stability: pin the column to a constant width (w-96, the max of
+      // all three panels) so swapping panels — or the AnimatePresence mode="wait"
+      // gap that briefly unmounts the child — never resizes the graph's flex-1
+      // area and therefore never reframes the camera.
+      className="relative flex w-96 shrink-0"
     >
       <AnimatePresence mode="wait">
         {top === "user-detail" ? (
