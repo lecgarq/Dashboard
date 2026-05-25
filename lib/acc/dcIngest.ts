@@ -19,7 +19,7 @@
  *  10. Newly-detected projects (DC8-13)       — admin_projects.csv -> AccDcBackfillProgress upsert
  *  11. Finalize AccDcIngestRun row            — status + metrics + diff + unknownModulesSeen
  *
- * Quota exhaustion (HTTP 429 from APS) -> mark run 'quota-exceeded' and exit
+ * Quota exhaustion (HTTP 429 from APS) -> mark run 'quota-paused' and exit
  * cleanly so the next-day run resumes (DC8-11). All non-quota failures land
  * in status='failed' or 'quarantined' (assertNoAnomalies throw).
  *
@@ -39,6 +39,12 @@ import {
   type Slice,
 } from '@/lib/acc/dcProgressiveBackfill';
 import {
+  buildQuotaBudget,
+  isSameUtcDay,
+  limitSlicesToBudget,
+  nextDailyQuotaReset,
+} from '@/lib/acc/dcQuota';
+import {
   ingestActivityCsv,
   parseModuleFromFilename,
   KNOWN_MODULES,
@@ -53,6 +59,11 @@ import {
   AnomalyError,
   type PreviousRunMetrics,
 } from '@/lib/acc/dcAnomalyChecks';
+import type {
+  ExtractionPriorityProjectInput,
+  ExtractionPriorityActivityInput,
+  ExtractionPriorityBackfillInput,
+} from '@/lib/acc/extractionPriorityPlanner';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -61,6 +72,7 @@ import {
 export type RunStatus =
   | 'success'
   | 'partial'
+  | 'quota-paused'
   | 'quota-exceeded'
   | 'quarantined'
   | 'failed'
@@ -95,6 +107,8 @@ export interface RunResult {
 const APS_DC_BASE = 'https://developer.api.autodesk.com/data-connector/v1';
 const POLL_INTERVAL_MS = 30_000;
 const POLL_TIMEOUT_MS = 60 * 60 * 1000; // 1 hour per slice
+const APS_FETCH_TIMEOUT_MS = 120_000;
+const SIGNED_URL_FETCH_TIMEOUT_MS = 120_000;
 const SERVICE_GROUPS = ['activities', 'admin'];
 const STALE_LOCK_MIN = 60;
 
@@ -136,6 +150,26 @@ interface DcSubmitOpts {
   description: string;
 }
 
+async function fetchWithTimeout(
+  input: string,
+  init: RequestInit | undefined,
+  label: string,
+  timeoutMs = APS_FETCH_TIMEOUT_MS,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (err) {
+    if ((err as Error).name === 'AbortError') {
+      throw new Error(`${label} timed out after ${Math.round(timeoutMs / 1000)}s`);
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
   const body = {
     description: opts.description,
@@ -150,7 +184,7 @@ async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
   const maxAttempts = 4;
   let lastErr: string | null = null;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-    const res = await fetch(
+    const res = await fetchWithTimeout(
       `${APS_DC_BASE}/accounts/${opts.accountId}/requests`,
       {
         method: 'POST',
@@ -160,6 +194,7 @@ async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
         },
         body: JSON.stringify(body),
       },
+      'POST /requests',
     );
     if (res.status === 429) {
       throw new QuotaExceededError();
@@ -209,9 +244,10 @@ async function dcPollJobs(
   userToken: string,
   requestId: string,
 ): Promise<DcJob[]> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${APS_DC_BASE}/accounts/${accountId}/requests/${requestId}/jobs`,
     { headers: { Authorization: `Bearer ${userToken}` } },
+    'GET /jobs',
   );
   if (res.status === 429) throw new QuotaExceededError();
   const text = await res.text();
@@ -263,9 +299,10 @@ async function dcDataListing(
   userToken: string,
   jobId: string,
 ): Promise<DcDataFile[]> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${APS_DC_BASE}/accounts/${accountId}/jobs/${jobId}/data-listing`,
     { headers: { Authorization: `Bearer ${userToken}` } },
+    'GET /data-listing',
   );
   if (res.status === 429) throw new QuotaExceededError();
   const text = await res.text();
@@ -288,9 +325,10 @@ async function dcSignedUrl(
   jobId: string,
   name: string,
 ): Promise<string> {
-  const res = await fetch(
+  const res = await fetchWithTimeout(
     `${APS_DC_BASE}/accounts/${accountId}/jobs/${jobId}/data/${encodeURIComponent(name)}`,
     { headers: { Authorization: `Bearer ${userToken}` } },
+    `GET /data/${name}`,
   );
   if (res.status === 429) throw new QuotaExceededError();
   const json = (await res.json()) as {
@@ -310,7 +348,12 @@ async function fetchSignedUrlAsStream(
   signedUrl: string,
 ): Promise<NodeJS.ReadableStream> {
   // Pitfall 1: NO Authorization header on the signed-URL fetch.
-  const res = await fetch(signedUrl);
+  const res = await fetchWithTimeout(
+    signedUrl,
+    undefined,
+    'Signed URL fetch',
+    SIGNED_URL_FETCH_TIMEOUT_MS,
+  );
   if (!res.ok) {
     throw new Error(`Signed URL fetch ${res.status}`);
   }
@@ -319,6 +362,72 @@ async function fetchSignedUrlAsStream(
   }
   // Node 20+ supports Readable.fromWeb on undici streams.
   return Readable.fromWeb(res.body as Parameters<typeof Readable.fromWeb>[0]);
+}
+
+function drainSkippedStream(stream: NodeJS.ReadableStream, filename: string): void {
+  stream.on?.('error', (err) => {
+    // Signed S3 downloads can terminate mid-drain for files we intentionally
+    // skip. Treat that as a skipped-file warning, not a process-level crash.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[dcIngest] Skipped file "${filename}" stream ended early: ${(err as Error).message}`,
+    );
+  });
+  stream.resume?.();
+}
+
+function observeSignedStreamErrors(
+  stream: NodeJS.ReadableStream,
+  filename: string,
+): void {
+  stream.on?.('error', (err) => {
+    // Without at least one listener, Node treats signed-url stream failures as
+    // unhandled process errors. Downstream CSV parsers still receive normal
+    // stream termination semantics; this listener keeps the orchestrator alive.
+    // eslint-disable-next-line no-console
+    console.warn(
+      `[dcIngest] Signed stream "${filename}" emitted error: ${(err as Error).message}`,
+    );
+  });
+}
+
+async function streamToString(stream: NodeJS.ReadableStream): Promise<string> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of stream as AsyncIterable<Buffer | string>) {
+    chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks).toString('utf8');
+}
+
+interface AdminCsvAccumulator {
+  header: string;
+  rows: string[];
+}
+
+function appendAdminCsvPart(
+  partsByFilename: Map<string, AdminCsvAccumulator>,
+  filename: string,
+  csvText: string,
+): void {
+  const lines = csvText.replace(/^\uFEFF/, '').split(/\r?\n/);
+  const header = lines.shift();
+  if (!header) return;
+  const rows = lines.filter((line) => line.trim() !== '');
+  const existing = partsByFilename.get(filename);
+  if (!existing) {
+    partsByFilename.set(filename, { header, rows });
+    return;
+  }
+  existing.rows.push(...rows);
+}
+
+function adminCsvSourcesFromParts(
+  partsByFilename: Map<string, AdminCsvAccumulator>,
+): AdminFileSource[] {
+  return [...partsByFilename.entries()].map(([filename, part]) => ({
+    filename,
+    csvStream: Readable.from([[part.header, ...part.rows].join('\n') + '\n']),
+  }));
 }
 
 function sleep(ms: number): Promise<void> {
@@ -369,6 +478,140 @@ async function loadProjectProgress(
   }));
 }
 
+// ---------------------------------------------------------------------------
+// loadPriorityInputs — read-only loader for buildExtractionPriorityPlan
+// ---------------------------------------------------------------------------
+
+export interface PriorityInputs {
+  projects: ExtractionPriorityProjectInput[];
+  activity: ExtractionPriorityActivityInput[];
+  backfillProgress: ExtractionPriorityBackfillInput[];
+  ageByProjectId: Map<string, number>;
+}
+
+/**
+ * Gathers the inputs required by `buildExtractionPriorityPlan`.
+ *
+ * - Mirrors the exact query shapes used in `server/routers/acc-sync.ts`
+ *   `getExtractionPriorityPlan` (same models, same field selection, same
+ *   activity aggregation SQL).
+ * - READ-ONLY: only `findMany` / `groupBy` / `$queryRaw`. No writes.
+ * - `ageByProjectId`: ranks AccDcBackfillProgress rows by `updatedAt` ASC
+ *   (oldest → 0, next → 1, …) to feed a fairness reserve.
+ */
+export async function loadPriorityInputs(
+  prisma: PrismaClient,
+  windowDays = 30,
+): Promise<PriorityInputs> {
+  const now = new Date();
+  const windowStart = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() - windowDays + 1,
+    ),
+  );
+  const windowEndExclusive = new Date(
+    Date.UTC(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate() + 1,
+    ),
+  );
+
+  const [dcProjects, folderProjects, memberCounts, progressRows, activityRows] =
+    await Promise.all([
+      prisma.accDcProject.findMany({
+        select: { id: true, name: true, status: true, createdAt: true },
+        orderBy: { name: 'asc' },
+      }),
+      prisma.accProject.findMany({
+        select: { id: true, folderCrawlStatus: true },
+      }),
+      prisma.accDcProjectUser.groupBy({
+        by: ['projectId'],
+        _count: { userId: true },
+      }),
+      prisma.accDcBackfillProgress.findMany({
+        select: {
+          projectId: true,
+          earliestCovered: true,
+          latestCovered: true,
+          projectCreatedAt: true,
+          newProjectFlag: true,
+          updatedAt: true,
+        },
+        orderBy: { updatedAt: 'asc' },
+      }),
+      prisma.$queryRaw<
+        Array<{
+          projectId: string;
+          rows: number | bigint;
+          activeDays: number | bigint;
+          services: string[] | null;
+          lastActivityAt: Date | null;
+        }>
+      >`
+        SELECT
+          NULLIF("projectId", '') AS "projectId",
+          COUNT(*)::int AS rows,
+          COUNT(DISTINCT date_trunc('day', "createdAt"))::int AS "activeDays",
+          ARRAY_REMOVE(ARRAY_AGG(DISTINCT COALESCE(NULLIF(LOWER(service), ''), 'unknown')), NULL) AS services,
+          MAX("createdAt") AS "lastActivityAt"
+        FROM "AccActivity"
+        WHERE "projectId" IS NOT NULL
+          AND "projectId" <> ''
+          AND "createdAt" >= ${windowStart}
+          AND "createdAt" < ${windowEndExclusive}
+        GROUP BY NULLIF("projectId", '')
+      `,
+    ]);
+
+  const folderStatusByProject = new Map(
+    folderProjects.map((p) => [p.id, p.folderCrawlStatus]),
+  );
+  const memberCountByProject = new Map(
+    memberCounts.map((row) => [row.projectId, row._count.userId]),
+  );
+
+  const projects: ExtractionPriorityProjectInput[] = dcProjects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    status: p.status,
+    createdAt: p.createdAt,
+    folderCrawlStatus: folderStatusByProject.get(p.id) ?? 'unknown',
+    memberCount: memberCountByProject.get(p.id) ?? 0,
+  }));
+
+  const activity: ExtractionPriorityActivityInput[] = activityRows
+    .filter((row) => Boolean(row.projectId))
+    .map((row) => ({
+      projectId: row.projectId,
+      rows: row.rows,
+      activeDays: row.activeDays,
+      services: row.services ?? [],
+      lastActivityAt: row.lastActivityAt,
+    }));
+
+  const backfillProgress: ExtractionPriorityBackfillInput[] = progressRows.map(
+    (r) => ({
+      projectId: r.projectId,
+      earliestCovered: r.earliestCovered,
+      latestCovered: r.latestCovered,
+      projectCreatedAt: r.projectCreatedAt,
+      newProjectFlag: r.newProjectFlag,
+    }),
+  );
+
+  // progressRows was fetched ORDER BY updatedAt ASC, so index === age rank
+  // (0 = oldest / most starved).
+  const ageByProjectId = new Map<string, number>(
+    progressRows.map((r, idx) => [r.projectId, idx]),
+  );
+
+  return { projects, activity, backfillProgress, ageByProjectId };
+}
+
 async function loadPreviousRunMetrics(
   prisma: PrismaClient,
 ): Promise<PreviousRunMetrics | null> {
@@ -390,6 +633,56 @@ async function loadPreviousRunMetrics(
     rowsByAdminCsv:
       (prev.rowsByAdminCsv as Record<string, number> | null) ?? {},
   };
+}
+
+async function loadQuotaUsedToday(
+  prisma: PrismaClient,
+  now: Date,
+): Promise<number> {
+  const start = new Date(
+    Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
+  );
+  const end = new Date(start.getTime() + 24 * 60 * 60 * 1000);
+  const [runs, legacyJobs] = await Promise.all([
+    prisma.accDcIngestRun.findMany({
+      where: {
+        startedAt: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        startedAt: true,
+        quotaUsed: true,
+      },
+    }),
+    prisma.accDataConnectorJob.findMany({
+      where: {
+        startedAt: {
+          gte: start,
+          lt: end,
+        },
+      },
+      select: {
+        startedAt: true,
+      },
+    }),
+  ]);
+
+  const runQuota = runs
+    .filter((row) => isSameUtcDay(row.startedAt, now))
+    .reduce((sum, row) => sum + row.quotaUsed, 0);
+  const legacyQuota = legacyJobs.filter((row) =>
+    isSameUtcDay(row.startedAt, now),
+  ).length;
+  return runQuota + legacyQuota;
+}
+
+export function isDcIngestRelevantFile(filename: string): boolean {
+  return (
+    ACTIVITY_FILE_RE.test(filename) ||
+    ADMIN_CSV_ALLOWLIST.some((entry) => entry.filename === filename)
+  );
 }
 
 function emptyResult(
@@ -576,8 +869,52 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     };
   }
 
+  const quotaUsedToday = await loadQuotaUsedToday(prisma, startedAt);
+  // 2026-05-18: opt-in env override to push into the reserve (between safe budget
+  // and the hard cap). Defaults preserve the safe budget. Intended for manual
+  // recovery probes after a long outage; never set in the cron environment.
+  const safeBudgetOverride = process.env.DC_DAILY_SAFE_BUDGET
+    ? Math.max(0, Math.min(25, parseInt(process.env.DC_DAILY_SAFE_BUDGET, 10) || 0))
+    : undefined;
+  const quotaBudget = buildQuotaBudget({
+    usedToday: quotaUsedToday,
+    dailySafeRequestBudget: safeBudgetOverride,
+  });
+  const limitedPlan = limitSlicesToBudget(
+    plan.slices,
+    quotaBudget.safeRemainingToday,
+  );
+  if (limitedPlan.runnableRequests === 0) {
+    return finalize(prisma, run.id, startedAt, {
+      status: 'quota-paused',
+      errorMessage:
+        `Daily safe quota exhausted (${quotaBudget.usedToday}/${quotaBudget.dailySafeRequestBudget} used). ` +
+        `Next safe run: ${nextDailyQuotaReset(startedAt).toISOString()}. ` +
+        `${limitedPlan.deferredRequests} request(s) deferred.`,
+      quotaUsed: 0,
+      projectsProcessed: 0,
+      sliceWindowStart: plan.slices[0]?.start ?? null,
+      sliceWindowEnd: yesterday,
+    });
+  }
+
   // 6+. Execute the plan against APS.
-  return executePlan(prisma, run.id, plan.slices, startedAt, yesterday);
+  return executePlan(
+    prisma,
+    run.id,
+    limitedPlan.runnableSlices,
+    startedAt,
+    yesterday,
+    {
+      finalStatusOnComplete:
+        limitedPlan.deferredRequests > 0 ? 'quota-paused' : 'success',
+      deferredRequests: limitedPlan.deferredRequests,
+      plannedRequests: limitedPlan.plannedRequests,
+      quotaUsedBeforeRun: quotaBudget.usedToday,
+      nextSafeRunAt: nextDailyQuotaReset(startedAt),
+      skipAdminSnapshot: limitedPlan.deferredRequests > 0,
+    },
+  );
 }
 
 async function executePlan(
@@ -586,6 +923,14 @@ async function executePlan(
   slices: Slice[],
   startedAt: Date,
   yesterday: Date,
+  options: {
+    finalStatusOnComplete?: RunStatus;
+    deferredRequests?: number;
+    plannedRequests?: number;
+    quotaUsedBeforeRun?: number;
+    nextSafeRunAt?: Date;
+    skipAdminSnapshot?: boolean;
+  } = {},
 ): Promise<RunResult> {
   const rawHubId = process.env.APS_HUB_ID?.trim();
   if (!rawHubId) {
@@ -600,7 +945,11 @@ async function executePlan(
 
   let userToken: string;
   try {
+    // eslint-disable-next-line no-console
+    console.log(`[dcIngest] Refreshing Autodesk user token for ${DC_USER_EMAIL}`);
     userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+    // eslint-disable-next-line no-console
+    console.log(`[dcIngest] Autodesk user token ready`);
   } catch (err) {
     return finalize(prisma, ingestRunId, startedAt, {
       status: 'failed',
@@ -611,7 +960,7 @@ async function executePlan(
   }
 
   const rowsByModule: Record<string, number> = {};
-  const adminBuffer = new Map<string, AdminFileSource>();
+  const adminCsvParts = new Map<string, AdminCsvAccumulator>();
   const unknownModulesSet = new Set<string>();
   const completedSlices: Slice[] = [];
   let quotaUsed = 0;
@@ -633,9 +982,17 @@ async function executePlan(
     let requestId: string;
     try {
       // Refresh token before each submit (cheap if still fresh).
+      // eslint-disable-next-line no-console
+      console.log(
+        `[dcIngest] Refreshing user token before submit for ${slice.projectIds.length} project(s)`,
+      );
       userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
       const description = safeDescription(
         `dc-ingest ${ingestRunId} ${slice.reason} ${slice.projectIds.length}p`,
+      );
+      // eslint-disable-next-line no-console
+      console.log(
+        `[dcIngest] Submitting slice ${slice.start.toISOString()} to ${slice.end.toISOString()} for ${slice.projectIds.length} project(s)`,
       );
       requestId = await dcSubmit({
         accountId,
@@ -645,12 +1002,22 @@ async function executePlan(
         endDate: slice.end,
         description,
       });
+      // eslint-disable-next-line no-console
+      console.log(`[dcIngest] Submitted request ${requestId}`);
       quotaUsed += 1;
+      await prisma.accDcIngestRun.update({
+        where: { id: ingestRunId },
+        data: {
+          quotaUsed,
+          sliceWindowStart,
+          sliceWindowEnd,
+        },
+      });
     } catch (err) {
       if (err instanceof QuotaExceededError) {
         return finalize(prisma, ingestRunId, startedAt, {
-          status: 'quota-exceeded',
-          errorMessage: err.message,
+          status: 'quota-paused',
+          errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
           rowsByModule,
           quotaUsed,
           unknownModulesSeen: [...unknownModulesSet],
@@ -669,6 +1036,8 @@ async function executePlan(
     const pollStart = Date.now();
     let jobs: DcJob[] = [];
     let pollErr: string | null = null;
+    // eslint-disable-next-line no-console
+    console.log(`[dcIngest] Polling request ${requestId}`);
     while (Date.now() - pollStart < POLL_TIMEOUT_MS) {
       try {
         userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
@@ -676,8 +1045,8 @@ async function executePlan(
       } catch (err) {
         if (err instanceof QuotaExceededError) {
           return finalize(prisma, ingestRunId, startedAt, {
-            status: 'quota-exceeded',
-            errorMessage: err.message,
+            status: 'quota-paused',
+            errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
             rowsByModule,
             quotaUsed,
             unknownModulesSeen: [...unknownModulesSet],
@@ -691,6 +1060,10 @@ async function executePlan(
         continue;
       }
       const status = reduceJobsStatus(jobs);
+      // eslint-disable-next-line no-console
+      console.log(
+        `[dcIngest] Request ${requestId} status=${status} jobs=${jobs.length}`,
+      );
       if (status === 'success') break;
       if (status === 'failed') {
         pollErr = 'APS reported job failure';
@@ -712,12 +1085,16 @@ async function executePlan(
       let files: DcDataFile[];
       try {
         userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+        // eslint-disable-next-line no-console
+        console.log(`[dcIngest] Listing data for job ${job.id}`);
         files = await dcDataListing(accountId, userToken, job.id);
+        // eslint-disable-next-line no-console
+        console.log(`[dcIngest] Job ${job.id} returned ${files.length} file(s)`);
       } catch (err) {
         if (err instanceof QuotaExceededError) {
           return finalize(prisma, ingestRunId, startedAt, {
-            status: 'quota-exceeded',
-            errorMessage: err.message,
+            status: 'quota-paused',
+            errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
             rowsByModule,
             quotaUsed,
             unknownModulesSeen: [...unknownModulesSet],
@@ -726,17 +1103,35 @@ async function executePlan(
             sliceWindowEnd,
           });
         }
-        // eslint-disable-next-line no-console
-        console.error(`[dcIngest] data-listing failed: ${(err as Error).message}`);
-        continue;
+        // 2026-05-18 Bug B fix: hard abort. Previously console.error+continue, which let
+        // the run finalize as 'success' with zero rows. See docs/superpowers/specs/2026-05-18-dc-ingest-drift-recovery-design.md.
+        return finalize(prisma, ingestRunId, startedAt, {
+          status: 'failed',
+          errorMessage: `data-listing failed for job ${job.id}: ${(err as Error).message}`,
+          rowsByModule,
+          quotaUsed,
+          unknownModulesSeen: [...unknownModulesSet],
+          projectsProcessed: projectsProcessedSet.size,
+          sliceWindowStart,
+          sliceWindowEnd,
+        });
       }
 
       for (const f of files) {
+        if (!isDcIngestRelevantFile(f.name)) {
+          // Skip package metadata before signed-url lookup; these files are not ingested.
+          // eslint-disable-next-line no-console
+          console.warn(`[dcIngest] Unknown file "${f.name}" — skipped`);
+          continue;
+        }
         try {
           userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
           const signed =
             f.downloadUrl ?? (await dcSignedUrl(accountId, userToken, job.id, f.name));
+          // eslint-disable-next-line no-console
+          console.log(`[dcIngest] Downloading ${f.name}`);
           const stream = await fetchSignedUrlAsStream(signed);
+          observeSignedStreamErrors(stream, f.name);
 
           if (ACTIVITY_FILE_RE.test(f.name)) {
             const moduleName = parseModuleFromFilename(f.name);
@@ -762,19 +1157,19 @@ async function executePlan(
           } else if (
             ADMIN_CSV_ALLOWLIST.some((e) => e.filename === f.name)
           ) {
-            adminBuffer.set(f.name, { filename: f.name, csvStream: stream });
+            appendAdminCsvPart(adminCsvParts, f.name, await streamToString(stream));
           } else {
             // Unknown — log + skip
             // eslint-disable-next-line no-console
             console.warn(`[dcIngest] Unknown file "${f.name}" — skipped`);
             // Drain the stream so the underlying socket can close.
-            stream.resume?.();
+            drainSkippedStream(stream, f.name);
           }
         } catch (err) {
           if (err instanceof QuotaExceededError) {
             return finalize(prisma, ingestRunId, startedAt, {
-              status: 'quota-exceeded',
-              errorMessage: err.message,
+              status: 'quota-paused',
+              errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
               rowsByModule,
               quotaUsed,
               unknownModulesSeen: [...unknownModulesSet],
@@ -783,8 +1178,20 @@ async function executePlan(
               sliceWindowEnd,
             });
           }
-          // eslint-disable-next-line no-console
-          console.error(`[dcIngest] Download/ingest ${f.name} failed: ${(err as Error).message}`);
+          // 2026-05-18 Bug B fix: hard abort on any download/ingest exception. Previously
+          // console.error+continue, which silently dropped failed inserts and let the run
+          // finalize as 'success' with rowsByModule all zero. This is exactly how the
+          // ingestRunId schema drift hid for 5 days.
+          return finalize(prisma, ingestRunId, startedAt, {
+            status: 'failed',
+            errorMessage: `Download/ingest ${f.name} failed: ${(err as Error).message}`,
+            rowsByModule,
+            quotaUsed,
+            unknownModulesSeen: [...unknownModulesSet],
+            projectsProcessed: projectsProcessedSet.size,
+            sliceWindowStart,
+            sliceWindowEnd,
+          });
         }
       }
     }
@@ -794,14 +1201,31 @@ async function executePlan(
   }
 
   // 9. Admin snapshot transaction (atomic across all 16 tables).
+  //
+  // 2026-05-18 Bug C fix: only run the admin snapshot when at least one
+  // non-backward slice contributed CSVs. Backward windows naturally report
+  // smaller admin user populations than forward windows (DC reports admin
+  // users *active in the requested window*), which trips the anomaly check
+  // and rolls back. The admin tables represent CURRENT state — backward
+  // slices should never write to them. Admin CSVs collected during
+  // backward-only slices are discarded.
+  //
+  // See docs/superpowers/specs/2026-05-18-dc-ingest-drift-recovery-design.md.
+  const hasNonBackwardCompleted = completedSlices.some(
+    (s) => s.reason !== 'backward',
+  );
   let rowsByAdminCsv: Record<string, number> = {};
   let diffSummary: RunResult['diffSummary'] = null;
-  if (adminBuffer.size > 0) {
+  if (
+    !options.skipAdminSnapshot &&
+    hasNonBackwardCompleted &&
+    adminCsvParts.size > 0
+  ) {
     const previous = await loadPreviousRunMetrics(prisma);
     try {
       const snapshot = await ingestAdminSnapshot(
         prisma,
-        [...adminBuffer.values()],
+        adminCsvSourcesFromParts(adminCsvParts),
         ingestRunId,
         previous,
       );
@@ -908,10 +1332,23 @@ async function executePlan(
     });
   }
 
-  const status: RunStatus =
-    completedSlices.length === slices.length ? 'success' : 'partial';
+  const completedAllRunnable = completedSlices.length === slices.length;
+  const status: RunStatus = completedAllRunnable
+    ? options.finalStatusOnComplete ?? 'success'
+    : 'partial';
+  const deferredMessage =
+    completedAllRunnable && options.deferredRequests && options.deferredRequests > 0
+      ? `Daily safe quota budget reached after ${
+          options.quotaUsedBeforeRun ?? 0
+        } previous request(s); ${options.deferredRequests} of ${
+          options.plannedRequests ?? slices.length
+        } planned request(s) deferred until ${
+          options.nextSafeRunAt?.toISOString() ?? nextDailyQuotaReset(new Date()).toISOString()
+        }.`
+      : undefined;
   return finalize(prisma, ingestRunId, startedAt, {
     status,
+    errorMessage: deferredMessage,
     rowsByModule,
     rowsByAdminCsv,
     diffSummary,

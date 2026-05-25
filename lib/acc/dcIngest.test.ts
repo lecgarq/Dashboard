@@ -21,7 +21,23 @@ vi.mock('./dcProjectDiscovery', () => ({
   get2LegToken: vi.fn().mockResolvedValue('mock-2leg-token'),
 }));
 
-import { isKillSwitchActive, runDcIngest } from './dcIngest';
+vi.mock('@/lib/server/aps-oauth', () => ({
+  refreshUserToken: vi.fn().mockResolvedValue('mock-user-token'),
+}));
+
+vi.mock('./dcAdminCsvIngest', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./dcAdminCsvIngest')>();
+  return {
+    ...actual,
+    ingestAdminSnapshot: vi.fn().mockResolvedValue({
+      rowsByAdminCsv: {},
+      diffSummary: null,
+    }),
+  };
+});
+
+import { ingestAdminSnapshot } from './dcAdminCsvIngest';
+import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs } from './dcIngest';
 
 // ---------------------------------------------------------------------------
 // isKillSwitchActive — pure file existence check
@@ -54,21 +70,33 @@ describe('isKillSwitchActive', () => {
 interface PrismaMock {
   accDcIngestRun: {
     findFirst: ReturnType<typeof vi.fn>;
+    findMany: ReturnType<typeof vi.fn>;
     create: ReturnType<typeof vi.fn>;
     update: ReturnType<typeof vi.fn>;
   };
   accDcBackfillProgress: {
     findMany: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+    create: ReturnType<typeof vi.fn>;
     upsert: ReturnType<typeof vi.fn>;
   };
+  accDataConnectorJob: {
+    findMany: ReturnType<typeof vi.fn>;
+  };
   accDcUser: { count: ReturnType<typeof vi.fn> };
-  accDcProject: { count: ReturnType<typeof vi.fn> };
+  accDcProject: {
+    count: ReturnType<typeof vi.fn>;
+    findMany: ReturnType<typeof vi.fn>;
+    findUnique: ReturnType<typeof vi.fn>;
+  };
+  accActivity: { findFirst: ReturnType<typeof vi.fn> };
 }
 
 function makePrismaMock(): PrismaMock {
   return {
     accDcIngestRun: {
       findFirst: vi.fn().mockResolvedValue(null),
+      findMany: vi.fn().mockResolvedValue([]),
       create: vi
         .fn()
         .mockResolvedValue({ id: 'run-1', startedAt: new Date() }),
@@ -76,12 +104,32 @@ function makePrismaMock(): PrismaMock {
     },
     accDcBackfillProgress: {
       findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+      create: vi.fn().mockResolvedValue(undefined),
       upsert: vi.fn().mockResolvedValue(undefined),
     },
+    accDataConnectorJob: {
+      findMany: vi.fn().mockResolvedValue([]),
+    },
     accDcUser: { count: vi.fn().mockResolvedValue(0) },
-    accDcProject: { count: vi.fn().mockResolvedValue(0) },
+    accDcProject: {
+      count: vi.fn().mockResolvedValue(0),
+      findMany: vi.fn().mockResolvedValue([]),
+      findUnique: vi.fn().mockResolvedValue(null),
+    },
+    accActivity: { findFirst: vi.fn().mockResolvedValue(null) },
   };
 }
+
+describe('isDcIngestRelevantFile', () => {
+  it('keeps activity and admin CSVs but skips package metadata files before signed-url fetch', () => {
+    expect(isDcIngestRelevantFile('activities_docs_activities.csv')).toBe(true);
+    expect(isDcIngestRelevantFile('admin_users.csv')).toBe(true);
+    expect(isDcIngestRelevantFile('metadata.csv')).toBe(false);
+    expect(isDcIngestRelevantFile('README.html')).toBe(false);
+    expect(isDcIngestRelevantFile('autodesk_data_extract.zip')).toBe(false);
+  });
+});
 
 describe('runDcIngest — top-level branches', () => {
   let killSwitchPath: string;
@@ -185,5 +233,307 @@ describe('runDcIngest — top-level branches', () => {
     expect(result.projectsProcessed).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+
+  it('marks the run quota-paused when APS returns HTTP 429', async () => {
+    const prisma = makePrismaMock();
+    prisma.accDcBackfillProgress.findMany.mockResolvedValueOnce([
+      {
+        projectId: 'p1',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+    ]);
+    prisma.accDcIngestRun.findFirst
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('quota', { status: 429 }));
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('quota-paused');
+    const finalizeUpdate = prisma.accDcIngestRun.update.mock.calls.at(-1)?.[0] as {
+      data: { status: string; errorMessage: string | null };
+    };
+    expect(finalizeUpdate.data.status).toBe('quota-paused');
+    expect(finalizeUpdate.data.errorMessage).toMatch(/429/);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('includes legacy AccDataConnectorJob requests in the daily safe quota budget', async () => {
+    const prisma = makePrismaMock();
+    prisma.accDcBackfillProgress.findMany.mockResolvedValueOnce([
+      {
+        projectId: 'p1',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+    ]);
+    const today = new Date();
+    prisma.accDataConnectorJob.findMany.mockResolvedValueOnce(
+      Array.from({ length: 20 }, (_, i) => ({
+        id: `legacy-${i}`,
+        startedAt: today,
+      })),
+    );
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}'));
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('quota-paused');
+    expect(result.quotaUsed).toBe(0);
+    expect(fetchSpy).not.toHaveBeenCalled();
+    const finalizeUpdate = prisma.accDcIngestRun.update.mock.calls.at(-1)?.[0] as {
+      data: { errorMessage: string | null };
+    };
+    expect(finalizeUpdate.data.errorMessage).toContain('20/20 used');
+
+    fetchSpy.mockRestore();
+  });
+
+  it('skips admin snapshot but commits completed progress when quota limits defer slices', async () => {
+    const prisma = makePrismaMock();
+    const projects = Array.from({ length: 51 }, (_, i) => ({
+      projectId: `p${i + 1}`,
+      earliestCovered: null,
+      latestCovered: null,
+      projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+      newProjectFlag: true,
+    }));
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue(projects);
+    prisma.accDcBackfillProgress.findUnique.mockImplementation(
+      async ({ where }: { where: { projectId: string } }) =>
+        projects.find((project) => project.projectId === where.projectId) ?? null,
+    );
+    prisma.accDataConnectorJob.findMany.mockResolvedValueOnce(
+      Array.from({ length: 19 }, (_, i) => ({
+        id: `legacy-${i}`,
+        startedAt: new Date(),
+      })),
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.endsWith('/requests')) {
+          return new Response(JSON.stringify({ id: 'request-1' }));
+        }
+        if (url.endsWith('/requests/request-1/jobs')) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                { id: 'job-1', status: 'complete', completionStatus: 'success' },
+              ],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data-listing')) {
+          return new Response(
+            JSON.stringify({
+              results: [{ name: 'admin_users.csv' }],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data/admin_users.csv')) {
+          return new Response(JSON.stringify({ signedUrl: 'https://signed.example/admin_users.csv' }));
+        }
+        if (url === 'https://signed.example/admin_users.csv') {
+          return new Response('id,email\nu1,u1@example.com\n');
+        }
+        return new Response('{}');
+      });
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('quota-paused');
+    expect(result.quotaUsed).toBe(1);
+    expect(result.projectsProcessed).toBe(50);
+    expect(ingestAdminSnapshot).not.toHaveBeenCalled();
+    expect(prisma.accDcBackfillProgress.upsert).toHaveBeenCalledTimes(50);
+
+    fetchSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// loadPriorityInputs — read-only priority inputs loader
+// ---------------------------------------------------------------------------
+
+describe('loadPriorityInputs', () => {
+  const t0 = new Date('2026-01-01T00:00:00Z'); // oldest updatedAt → age 0
+  const t1 = new Date('2026-02-01T00:00:00Z');
+  const t2 = new Date('2026-03-01T00:00:00Z');
+
+  function makePriorityPrismaMock() {
+    return {
+      accDcProject: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'proj-a', name: 'Alpha', status: 'active', createdAt: new Date('2025-06-01T00:00:00Z') },
+          { id: 'proj-b', name: 'Beta',  status: 'archived', createdAt: new Date('2025-07-01T00:00:00Z') },
+        ]),
+        create: vi.fn().mockRejectedValue(new Error('write not allowed')),
+        update: vi.fn().mockRejectedValue(new Error('write not allowed')),
+      },
+      accProject: {
+        findMany: vi.fn().mockResolvedValue([
+          { id: 'proj-a', folderCrawlStatus: 'complete' },
+          // proj-b absent → falls back to 'unknown'
+        ]),
+        create: vi.fn().mockRejectedValue(new Error('write not allowed')),
+        update: vi.fn().mockRejectedValue(new Error('write not allowed')),
+      },
+      accDcProjectUser: {
+        groupBy: vi.fn().mockResolvedValue([
+          { projectId: 'proj-a', _count: { userId: 5 } },
+          { projectId: 'proj-b', _count: { userId: 2 } },
+        ]),
+        create: vi.fn().mockRejectedValue(new Error('write not allowed')),
+        update: vi.fn().mockRejectedValue(new Error('write not allowed')),
+      },
+      accDcBackfillProgress: {
+        // Returned ORDER BY updatedAt ASC: proj-b (t0=oldest), proj-a (t2=newest)
+        findMany: vi.fn().mockResolvedValue([
+          {
+            projectId: 'proj-b',
+            earliestCovered: new Date('2026-01-01T00:00:00Z'),
+            latestCovered: new Date('2026-03-01T00:00:00Z'),
+            projectCreatedAt: new Date('2025-07-01T00:00:00Z'),
+            newProjectFlag: false,
+            updatedAt: t0,
+          },
+          {
+            projectId: 'proj-a',
+            earliestCovered: null,
+            latestCovered: null,
+            projectCreatedAt: new Date('2025-06-01T00:00:00Z'),
+            newProjectFlag: true,
+            updatedAt: t2,
+          },
+        ]),
+        // Write methods should never be called — make them throw to enforce it.
+        create:  vi.fn().mockRejectedValue(new Error('write not allowed')),
+        update:  vi.fn().mockRejectedValue(new Error('write not allowed')),
+        upsert:  vi.fn().mockRejectedValue(new Error('write not allowed')),
+        delete:  vi.fn().mockRejectedValue(new Error('write not allowed')),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([
+        {
+          projectId: 'proj-a',
+          rows: 42,
+          activeDays: 7,
+          services: ['docs', 'issues'],
+          lastActivityAt: new Date('2026-03-15T00:00:00Z'),
+        },
+      ]),
+    };
+  }
+
+  it('returns correctly shaped projects array', async () => {
+    const prisma = makePriorityPrismaMock();
+    const result = await loadPriorityInputs(prisma as never);
+
+    expect(result.projects).toHaveLength(2);
+
+    const alpha = result.projects.find((p) => p.id === 'proj-a');
+    expect(alpha).toBeDefined();
+    expect(alpha!.name).toBe('Alpha');
+    expect(alpha!.status).toBe('active');
+    expect(alpha!.createdAt).toEqual(new Date('2025-06-01T00:00:00Z'));
+    expect(alpha!.folderCrawlStatus).toBe('complete');
+    expect(alpha!.memberCount).toBe(5);
+
+    const beta = result.projects.find((p) => p.id === 'proj-b');
+    expect(beta!.folderCrawlStatus).toBe('unknown'); // absent from accProject
+    expect(beta!.memberCount).toBe(2);
+  });
+
+  it('returns correctly shaped activity array', async () => {
+    const prisma = makePriorityPrismaMock();
+    const result = await loadPriorityInputs(prisma as never);
+
+    expect(result.activity).toHaveLength(1);
+    const act = result.activity[0];
+    expect(act.projectId).toBe('proj-a');
+    expect(act.rows).toBe(42);
+    expect(act.activeDays).toBe(7);
+    expect(act.services).toEqual(['docs', 'issues']);
+    expect(act.lastActivityAt).toEqual(new Date('2026-03-15T00:00:00Z'));
+  });
+
+  it('returns correctly shaped backfillProgress array', async () => {
+    const prisma = makePriorityPrismaMock();
+    const result = await loadPriorityInputs(prisma as never);
+
+    expect(result.backfillProgress).toHaveLength(2);
+
+    const bpB = result.backfillProgress.find((r) => r.projectId === 'proj-b');
+    expect(bpB).toBeDefined();
+    expect(bpB!.earliestCovered).toEqual(new Date('2026-01-01T00:00:00Z'));
+    expect(bpB!.latestCovered).toEqual(new Date('2026-03-01T00:00:00Z'));
+    expect(bpB!.projectCreatedAt).toEqual(new Date('2025-07-01T00:00:00Z'));
+    expect(bpB!.newProjectFlag).toBe(false);
+
+    const bpA = result.backfillProgress.find((r) => r.projectId === 'proj-a');
+    expect(bpA!.newProjectFlag).toBe(true);
+    expect(bpA!.earliestCovered).toBeNull();
+  });
+
+  it('ranks ageByProjectId with oldest updatedAt as 0', async () => {
+    const prisma = makePriorityPrismaMock();
+    const result = await loadPriorityInputs(prisma as never);
+
+    // proj-b has t0 (oldest) → rank 0; proj-a has t2 → rank 1
+    expect(result.ageByProjectId.get('proj-b')).toBe(0);
+    expect(result.ageByProjectId.get('proj-a')).toBe(1);
+  });
+
+  it('does not call any write methods (read-only guarantee)', async () => {
+    const prisma = makePriorityPrismaMock();
+    await loadPriorityInputs(prisma as never);
+
+    expect(prisma.accDcBackfillProgress.create).not.toHaveBeenCalled();
+    expect(prisma.accDcBackfillProgress.update).not.toHaveBeenCalled();
+    expect(prisma.accDcBackfillProgress.upsert).not.toHaveBeenCalled();
+    expect(prisma.accDcBackfillProgress.delete).not.toHaveBeenCalled();
+    expect(prisma.accDcProject.create).not.toHaveBeenCalled();
+    expect(prisma.accDcProject.update).not.toHaveBeenCalled();
+    expect(prisma.accProject.create).not.toHaveBeenCalled();
+    expect(prisma.accProject.update).not.toHaveBeenCalled();
+    expect(prisma.accDcProjectUser.create).not.toHaveBeenCalled();
+    expect(prisma.accDcProjectUser.update).not.toHaveBeenCalled();
+  });
+
+  it('filters out null/empty projectId rows from activity', async () => {
+    const prisma = makePriorityPrismaMock();
+    prisma.$queryRaw.mockResolvedValueOnce([
+      { projectId: '', rows: 1, activeDays: 1, services: null, lastActivityAt: null },
+      { projectId: null, rows: 2, activeDays: 1, services: null, lastActivityAt: null },
+      { projectId: 'proj-a', rows: 10, activeDays: 3, services: ['docs'], lastActivityAt: null },
+    ]);
+
+    const result = await loadPriorityInputs(prisma as never);
+
+    expect(result.activity).toHaveLength(1);
+    expect(result.activity[0].projectId).toBe('proj-a');
+  });
+
+  it('returns empty ageByProjectId when no backfill rows', async () => {
+    const prisma = makePriorityPrismaMock();
+    prisma.accDcBackfillProgress.findMany.mockResolvedValueOnce([]);
+
+    const result = await loadPriorityInputs(prisma as never);
+
+    expect(result.ageByProjectId.size).toBe(0);
+    expect(result.backfillProgress).toHaveLength(0);
   });
 });
