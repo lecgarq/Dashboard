@@ -35,7 +35,28 @@ The existing plan (`docs/superpowers/plans/2026-05-22-p5-snapshot-enrichment-adv
 
 ---
 
-## 2. The central performance decision (REQUIRES LUIS'S CALL)
+## C0 RESULT — measured 2026-05-25 (DECISION: Option A)
+
+Ran read-only against local PG (`postgresql://postgres@127.0.0.1:5432/dashboard`) via the `pg` driver (Prisma 7.8 needs an adapter, so `new PrismaClient()` is unusable for ad-hoc queries). Filter = `sourceFile='project' AND userEmail IS NOT NULL AND length(projectId)>0` (≡ `projectId <> ''`).
+
+| Metric | Value |
+|--------|-------|
+| Total `AccActivity` rows | **622,938** (NOT "millions" — the prior memory assumption was wrong) |
+| Project-attributable rows | **599,848** |
+| Distinct UserProjectInstances with activity | **2,488** (of 16,942 nodes — most instances have zero activity) |
+| Group cardinality (`userEmail,projectId,rawAction`) | **9,224** rows DB→server (folds to 2,488 instances) |
+| **Execution time** | **218 ms** (planning 0.169 ms) |
+| Plan: scan | **Parallel Seq Scan** (2 workers; no index used, as predicted) |
+| Plan: aggregate | **GroupAggregate** (Sort → Partial GroupAggregate → Gather Merge → Finalize) — Postgres chose sort+groupagg, not HashAggregate |
+| Buffers | shared hit=4292 read=12528 (~131 MB table), temp read=7474/written=7492 (external merge sort spilled **~25 MB to disk**) |
+
+**Decision: Option A (no index, accept scan + cache).** 218 ms ≪ the 5 s threshold. The only mild artifact is the external-merge sort spilling ~25 MB to disk; irrelevant at this latency. The grouped query runs once per cache version (daily DC ingest / restart) and is served from memory thereafter.
+
+**Watch item (not a blocker):** the sort spill scales with row count. There is ~23× headroom (218 ms vs 5 s), so even substantial growth stays well under budget. Revisit Option B (composite index) only if `AccActivity` grows past ~5 M rows or the cold aggregation time approaches ~2 s. **Task C1 is therefore SKIPPED** under this decision.
+
+---
+
+## 2. The central performance decision (RESOLVED by C0 → Option A)
 
 `AccActivity` indexes today (schema.prisma:546-550): `(autodeskId, createdAt)`, `(userEmail, createdAt)`, `(projectId, createdAt)`, `(rawAction)`, `(ingestRunId)`. **None covers the C1 group key `(userEmail, projectId, rawAction)`.** Postgres will therefore execute the `groupBy` as a **full sequential scan + hash aggregate** over the entire table (millions of rows per [[project_dc_csv_schema_real]]).
 
