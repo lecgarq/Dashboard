@@ -65,4 +65,15 @@ describe("buildDimensionWeights", () => {
     const real = buildDimensionWeights([snap({ membershipBucket: ">1y" })], ["membershipBucket"]);
     expect(real.membershipBucket[0]).toBeCloseTo(CONFIDENCE_FACTOR.medium, 6); // 0.7
   });
+
+  it("activityRecency: none/undefined → 0; real bucket → CONFIDENCE_FACTOR.medium (0.7)", () => {
+    // activityRecency confidence="medium" → CONFIDENCE_FACTOR.medium = 0.7;
+    // isAvailable: false for "none"/undefined, true for a real bucket.
+    const none = buildDimensionWeights([snap({ activityRecencyBucket: "none" })], ["activityRecency"]);
+    expect(none.activityRecency[0]).toBe(0);
+    const undef = buildDimensionWeights([snap({ activityRecencyBucket: undefined })], ["activityRecency"]);
+    expect(undef.activityRecency[0]).toBe(0);
+    const real = buildDimensionWeights([snap({ activityRecencyBucket: "0-7d" })], ["activityRecency"]);
+    expect(real.activityRecency[0]).toBeCloseTo(CONFIDENCE_FACTOR.medium, 6); // 0.7
+  });
 });

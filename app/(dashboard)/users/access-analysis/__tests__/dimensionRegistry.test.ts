@@ -62,9 +62,9 @@ describe("dimension registry — validity", () => {
     expect(getDimension("nope" as DimensionId)).toBeUndefined();
   });
 
-  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket (P6)", () => {
+  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket + activityRecency (P6)", () => {
     expect(DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency",
     ]);
   });
 });
@@ -202,7 +202,7 @@ describe("dimension registry — target vs slider runtime sets", () => {
   // is gone — module is a first-class slider.
   it("RUNTIME_TARGET_DIMENSION_IDS equals the full slider-capable set in registry order", () => {
     expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency",
     ]);
   });
   it("RUNTIME_DIMENSION_IDS (primary 6) does not contain module; RUNTIME_TARGET_DIMENSION_IDS does", () => {
@@ -279,6 +279,36 @@ describe("dimension registry — membershipBucket (P6 tenure dim)", () => {
   it("is a runtime target (slider-surfaced) and is also color-surfaced", () => {
     expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("membershipBucket");
     expect(dimensionHasSurface(getDimension("membershipBucket")!, "color")).toBe(true);
+  });
+});
+
+describe("dimension registry — activityRecency (P6 behavior dim)", () => {
+  it("is registered with the expected descriptor fields", () => {
+    const d = getDimension("activityRecency");
+    expect(d).toBeDefined();
+    expect(d!.family).toBe("behavior");
+    expect(d!.type).toBe("categorical");
+    expect(d!.surfaces).toEqual(["slider", "color"]);
+    expect(d!.confidence).toBe("medium");
+    expect(d!.availability).toBe("A1");
+  });
+
+  it("extract is null-safe: undefined → 'none'; a real bucket passes through", () => {
+    const d = getDimension("activityRecency")!;
+    expect(d.extract(snap({ activityRecencyBucket: undefined }))).toBe("none");
+    expect(d.extract(snap({ activityRecencyBucket: "0-7d" }))).toBe("0-7d");
+  });
+
+  it("isAvailable is false for none/undefined, true for a real bucket", () => {
+    const d = getDimension("activityRecency")!;
+    expect(d.isAvailable(snap({ activityRecencyBucket: "none" }))).toBe(false);
+    expect(d.isAvailable(snap({ activityRecencyBucket: undefined }))).toBe(false);
+    expect(d.isAvailable(snap({ activityRecencyBucket: "8-14d" }))).toBe(true);
+  });
+
+  it("is a runtime target (slider-surfaced) and is also color-surfaced", () => {
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("activityRecency");
+    expect(dimensionHasSurface(getDimension("activityRecency")!, "color")).toBe(true);
   });
 });
 

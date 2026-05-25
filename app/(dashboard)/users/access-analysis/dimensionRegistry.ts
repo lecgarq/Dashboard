@@ -24,7 +24,8 @@ export type DimensionId =
   | "signin"
   | "isAdmin"
   | "module"
-  | "membershipBucket";
+  | "membershipBucket"
+  | "activityRecency";
 
 export type DimensionFamily =
   | "structure"
@@ -221,6 +222,19 @@ export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
     surfaces: ["slider", "color"],
     extract: (f) => f.membershipBucket ?? "unknown",
     isAvailable: (f) => (f.membershipBucket ?? "unknown") !== "unknown",
+  },
+  {
+    id: "activityRecency",
+    label: "Activity recency",
+    family: "behavior",
+    type: "categorical",
+    source: "AccActivity true last-activity bucketed (NodeFeatureSnapshot.activityRecencyBucket)",
+    availability: "A1",
+    defaultWeight: 0, // advanced dim: default OFF
+    confidence: "medium",
+    surfaces: ["slider", "color"],
+    extract: (f) => f.activityRecencyBucket ?? "none",
+    isAvailable: (f) => (f.activityRecencyBucket ?? "none") !== "none",
   },
 ];
 
