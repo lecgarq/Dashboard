@@ -1,5 +1,5 @@
 /**
- * DC backfill slice priority ordering (Phase 8 task 1).
+ * DC backfill slice priority ordering.
  *
  * Pure module — no Prisma, no fs, no fetch. Accepts a list of Slice objects
  * and a project-priority map, and returns a NEW array sorted by a fully
@@ -46,13 +46,23 @@ function minRankForSlice(
  *  5. Tiebreak 4 — first projectId in the slice's `projectIds` array, lexicographic.
  *
  * The input array and all Slice objects are never mutated.
+ *
+ * Precondition: each Slice is expected to have at least one projectId
+ * (`projectIds.length >= 1`). The `Slice` type does not enforce non-emptiness,
+ * so an empty `projectIds` array is tolerated — its Tiebreak 4 key falls back to
+ * `''` (sorting it before any non-empty first projectId). Callers should not
+ * rely on this fallback; it exists only to keep the comparator total.
  */
 export function orderSlicesByPriority(
   slices: Slice[],
   priorityByProjectId: Map<string, number>,
 ): Slice[] {
   return slices.slice().sort((a, b) => {
-    // 1. Primary: min rank
+    // 1. Primary: min rank.
+    // Ranks are finite integers or +Infinity. The `rankA !== rankB` guard means
+    // we only subtract when they differ, so we never compute Infinity - Infinity
+    // (which is NaN). The both-Infinity case (all projectIds unmapped on both
+    // sides) falls through to the reason/start/end/projectId tiebreaks below.
     const rankA = minRankForSlice(a, priorityByProjectId);
     const rankB = minRankForSlice(b, priorityByProjectId);
     if (rankA !== rankB) {

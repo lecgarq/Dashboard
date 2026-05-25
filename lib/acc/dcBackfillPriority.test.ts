@@ -196,6 +196,33 @@ describe('orderSlicesByPriority — determinism and tiebreaks', () => {
     expect(result[1]).toBe(sliceB);
   });
 
+  it('empty priorityByProjectId map → every slice ranks Infinity, tiebreaks decide order', () => {
+    // No project has a rank, so primary min-rank is +Infinity for every slice.
+    // Ordering must fall through entirely to the reason → start → end → projectId
+    // tiebreak chain.
+    const emptyPriority = new Map<string, number>();
+
+    // Construct slices so each successive tiebreak is the deciding one:
+    //  - s1 wins on reason (new-project < forward).
+    //  - s2 vs s3 tie on reason+start+end, decided by projectId (alpha < beta).
+    //  - s3 vs s4 tie on reason, decided by start (Jan < Feb).
+    //  - s5 loses on reason (backward).
+    const s1 = makeSlice(['alpha'], 'new-project', '2024-01-01', '2024-01-31');
+    const s2 = makeSlice(['alpha'], 'forward',     '2024-01-01', '2024-01-31');
+    const s3 = makeSlice(['beta'],  'forward',     '2024-01-01', '2024-01-31');
+    const s4 = makeSlice(['beta'],  'forward',     '2024-02-01', '2024-02-29');
+    const s5 = makeSlice(['gamma'], 'backward',    '2024-01-01', '2024-01-31');
+
+    const input = [s5, s4, s3, s2, s1];
+    const result = orderSlicesByPriority(input, emptyPriority);
+
+    expect(result[0]).toBe(s1); // new-project
+    expect(result[1]).toBe(s2); // forward, alpha, Jan
+    expect(result[2]).toBe(s3); // forward, beta, Jan
+    expect(result[3]).toBe(s4); // forward, beta, Feb
+    expect(result[4]).toBe(s5); // backward
+  });
+
   it('full tiebreak chain produces a fully deterministic total order', () => {
     const priorityByProjectId = new Map([
       ['alpha', 2],
@@ -220,5 +247,39 @@ describe('orderSlicesByPriority — determinism and tiebreaks', () => {
     expect(result[2]).toBe(s3); // forward, beta, Jan
     expect(result[3]).toBe(s4); // forward, beta, Feb
     expect(result[4]).toBe(s5); // backward
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Test 4: Edge cases
+// ---------------------------------------------------------------------------
+
+describe('orderSlicesByPriority — edge cases', () => {
+  it('empty slices array returns []', () => {
+    const priorityByProjectId = new Map([['p1', 1]]);
+    const result = orderSlicesByPriority([], priorityByProjectId);
+    expect(result).toEqual([]);
+  });
+
+  it('tolerates a slice with empty projectIds (Tiebreak 4 falls back to "")', () => {
+    // Documents the conscious contract: orderSlicesByPriority expects each Slice
+    // to have at least one projectId, but the comparator stays total when one is
+    // empty. An empty-projectIds slice has min-rank +Infinity (no ids to look up)
+    // and its Tiebreak 4 key is '' (the `?? ''` fallback), so it sorts before a
+    // non-empty first projectId once all earlier tiebreaks tie.
+    const priorityByProjectId = new Map<string, number>();
+
+    // Both rank Infinity, same reason/start/end → decided purely by Tiebreak 4.
+    const sliceEmpty = makeSlice([], 'forward', '2024-01-01', '2024-01-31');
+    const sliceNonEmpty = makeSlice(['zzz'], 'forward', '2024-01-01', '2024-01-31');
+
+    const result = orderSlicesByPriority([sliceNonEmpty, sliceEmpty], priorityByProjectId);
+
+    // '' < 'zzz' lexicographically → empty-projectIds slice sorts first.
+    expect(result[0]).toBe(sliceEmpty);
+    expect(result[1]).toBe(sliceNonEmpty);
+
+    // Comparator stayed total: no throw, both inputs returned.
+    expect(result).toHaveLength(2);
   });
 });
