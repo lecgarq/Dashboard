@@ -676,6 +676,60 @@ describe("No-reheat optimization: skip alpha().restart() when frozen and delta <
 });
 
 // =============================================================================
+// Defect A (P0): non-dominant slider move must reheat under a multi-slider preset
+// Regression for the sticky-scalar-max bug: the old skip gate compared
+// max(allSliders) before/after, so moving a NON-dominant slider (max unchanged)
+// was silently skipped and nodes never moved.
+// =============================================================================
+describe("Defect A: reheat keys off per-dimension delta, not the scalar max", () => {
+  it("reheats when a non-dominant slider changes even though max(allSliders) is unchanged", async () => {
+    // Cache HIT → frozen from construction (mirrors a reloaded organic view).
+    const cachedPositions = new Float32Array(4 * 3).fill(0);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(4);
+    // recency is the DOMINANT slider (0.8); activity is non-dominant (0).
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0.8,
+    });
+    const sim = _capturedSim;
+
+    let restartCount = 0;
+    const origRestart = sim.restart.bind(sim);
+    sim.restart = () => {
+      restartCount++;
+      return origRestart();
+    };
+
+    // Move ONLY the non-dominant slider. max(allSliders) stays 0.8 (recency dominates),
+    // so the OLD scalar-max gate skipped this and the graph never moved.
+    physics.updateSliders({ "dim-activity": 0.5, "dim-recency": 0.8 });
+
+    expect(restartCount, "non-dominant slider change must reheat the sim").toBeGreaterThan(0);
+  });
+
+  it("still skips a sub-threshold nudge of any single slider when frozen", async () => {
+    const cachedPositions = new Float32Array(4 * 3).fill(0);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(4);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0.8,
+    });
+    const sim = _capturedSim;
+    let restartCount = 0;
+    const origRestart = sim.restart.bind(sim);
+    sim.restart = () => {
+      restartCount++;
+      return origRestart();
+    };
+    physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0.8 }); // delta 0.01 < 0.02
+    expect(restartCount, "sub-threshold nudge stays skipped (no thrash)").toBe(0);
+  });
+});
+
+// =============================================================================
 // P1.1: Initial sliders applied at construction (organic default layout)
 // The very first settle must use the profile forces so the default loaded state
 // is volumetric/clustered, not a repulsion globe the user must "fix" with sliders.

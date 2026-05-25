@@ -122,8 +122,10 @@ const REPULSION_ONE = -60;
 const DECAY_ZERO = 0.1;
 /** Slow alphaDecay when sliders are engaged — user sees motion while clusters separate. */
 const DECAY_ONE = 0.02;
-/** Skip reheat if frozen and |newMax - oldMax| < this threshold (prevents scroll-wheel thrashing). */
+/** Skip reheat if frozen and the largest per-dimension slider delta < this threshold (prevents scroll-wheel thrashing). */
 const SKIP_THRESHOLD = 0.02;
+/** Reheat alpha floor — any material slider change reheats to at least this so motion is always visible. */
+const ALPHA_REHEAT_FLOOR = 0.15;
 /** Velocity damping — locked at d3 default (CONTEXT.md). */
 const VELOCITY_DECAY = 0.4;
 
@@ -242,11 +244,10 @@ export async function createPhysicsLayer(
   }
 
   let frozen = false;
-  let prevMax = 0;
   let _sliders: Record<string, number> = { ...initialSliders };
   // P1.1: seed the simulation with the initial profile so the FIRST settle already
   // expresses structure (volumetric clusters), not a featureless repulsion globe.
-  prevMax = applySliderForces(_sliders);
+  applySliderForces(_sliders);
 
   // PHYS-05: Register "end" handler BEFORE cache check (ensures it fires if sim runs).
   // Handler packs positions synchronously into Float32Array BEFORE the async save
@@ -317,15 +318,27 @@ export async function createPhysicsLayer(
 
     // PHYS-02 + PHYS-03: Update all slider strengths + engine params atomically, then reheat.
     updateSliders(values: Record<string, number>): void {
-      _sliders = { ..._sliders, ...values }; // merge: preserve target-only dims (e.g. module)
+      const prev = _sliders;                  // reference to the previous slider vector
+      _sliders = { ..._sliders, ...values };  // merge: preserve target-only dims (e.g. module)
       // PHYS-01 + PHYS-03: set per-dim strengths + engine params atomically (shared
       // with construction via applySliderForces). Returns max(sliderValues).
       const maxSlider = applySliderForces(_sliders);
-      const newAlpha = Math.min(maxSlider, ALPHA_MAX_REHEAT);
+      // Reheat to at least the floor so even a small change is visibly animated; a
+      // sticky-high preset still yields a healthy alpha via maxSlider.
+      const newAlpha = Math.max(
+        ALPHA_REHEAT_FLOOR,
+        Math.min(maxSlider, ALPHA_MAX_REHEAT),
+      );
 
-      // No-reheat optimization: skip if frozen and delta < threshold (prevents scroll-wheel thrashing).
-      // Reference: CONTEXT.md line 32.
-      const skip = frozen && Math.abs(maxSlider - prevMax) < SKIP_THRESHOLD;
+      // CHANGE-DETECTION FIX (P0): key the skip on the PER-DIMENSION delta, not the
+      // scalar max. Multi-slider presets make max(allSliders) sticky, so a
+      // non-dominant slider move left maxSlider unchanged and was silently skipped
+      // (force field changed, sim never restarted → nodes never moved).
+      let maxDelta = 0;
+      for (const k of new Set([...Object.keys(prev), ...Object.keys(_sliders)])) {
+        maxDelta = Math.max(maxDelta, Math.abs((_sliders[k] ?? 0) - (prev[k] ?? 0)));
+      }
+      const skip = frozen && maxDelta < SKIP_THRESHOLD;
       if (!skip) {
         frozen = false;
         // Unpin nodes before reheat so forces can move them.
@@ -337,8 +350,6 @@ export async function createPhysicsLayer(
         // PHYS-02: alpha(target).restart() — never simulation.restart() bare (Pitfall 4).
         sim.alpha(newAlpha).restart();
       }
-
-      prevMax = maxSlider;
     },
 
     setMask(predicate: (nodeIndex: number) => number): void {
