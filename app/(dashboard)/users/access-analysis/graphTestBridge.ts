@@ -25,6 +25,7 @@ import type { DeriveResult } from "./sameUserEdges";
 import { computeAxisRanges, computeClusteringRatio } from "./layoutStats";
 import { categoryValue, type TargetDimensionId } from "./featureTargets";
 import type { ColorMode } from "./nodeColors";
+import { gridCells, pickDensestCell } from "./lassoProbe";
 
 export function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
@@ -132,6 +133,16 @@ function nodeScreenPosition(nodeId: string): { x: number; y: number } | null {
  * Returns null off the 2D path or before the layout exists. Test-only — never
  * reached unless NEXT_PUBLIC_ACC_GRAPH_TEST gates the bridge into existence.
  */
+// Probe grid steps. Cost is `cells × cost(findPointsInPolygon)`, and each
+// hit-test scans all N nodes regardless of box size — so the only lever is the
+// cell COUNT. A coarse, large-step sweep locates the dense region (each big-step
+// cell still overlaps the ~600px settled cloud), then a small refine window
+// centers the ±HALF box on the core. These steps cut the call count ~2-3x vs the
+// former step-60 / ±60-window scan while keeping the box on a dense core.
+const PROBE_COARSE_STEP = 90;
+const PROBE_REFINE_STEP = 16;
+const PROBE_REFINE_RADIUS = 48;
+
 function densestScreenPoint(
   w: number,
   h: number,
@@ -143,38 +154,42 @@ function densestScreenPoint(
 
   const HALF = 28; // matches the lasso box the test draws → representative count
 
-  /** Nodes inside the ±HALF screen box centered at (cx,cy), via the lasso's path. */
-  const boxCount = (cx: number, cy: number): number => {
-    const screenBox: [number, number][] = [
+  // Nodes inside the ±HALF screen box centered at (cx,cy), via the lasso's OWN
+  // path: overlay-local screen → space (screenToSpace) → findPointsInPolygon.
+  // This is the only basis that round-trips with the real drag — projecting via
+  // spaceToScreen lands in a different origin and misses (see module history).
+  const countAt = (cx: number, cy: number): number => {
+    const spaceBox: [number, number][] = [
       [cx - HALF, cy - HALF],
       [cx + HALF, cy - HALF],
       [cx + HALF, cy + HALF],
       [cx - HALF, cy + HALF],
-    ];
-    const spaceBox: [number, number][] = screenBox.map((pt) => handle.screenToSpace(pt));
+    ].map((pt) => handle.screenToSpace(pt as [number, number]));
     return handle.findPointsInPolygon(spaceBox).length;
   };
 
-  let best = { x: w / 2, y: h / 2, count: -1 };
-  const scan = (x0: number, y0: number, x1: number, y1: number, step: number): void => {
-    for (let y = y0; y <= y1; y += step) {
-      for (let x = x0; x <= x1; x += step) {
-        const count = boxCount(x, y);
-        if (count > best.count) best = { x, y, count };
-      }
-    }
-  };
-
-  // Coarse sweep across the overlay interior to find the dense cloud, then a fine
-  // refine around the winner so the box sits squarely on the densest core.
   const lo = HALF;
-  scan(lo, lo, w - HALF, h - HALF, 60);
-  const wx = Math.min(w - HALF, best.x + 60);
-  const wy = Math.min(h - HALF, best.y + 60);
-  scan(Math.max(lo, best.x - 60), Math.max(lo, best.y - 60), wx, wy, 12);
+  // Coarse sweep across the overlay interior to find the dense cloud.
+  const coarse = pickDensestCell(
+    gridCells(lo, lo, w - HALF, h - HALF, PROBE_COARSE_STEP),
+    countAt,
+  );
+  if (!coarse || coarse.count <= 0) return null;
+  // Fine refine around the winner so the box sits squarely on the densest core.
+  const refined =
+    pickDensestCell(
+      gridCells(
+        Math.max(lo, coarse.x - PROBE_REFINE_RADIUS),
+        Math.max(lo, coarse.y - PROBE_REFINE_RADIUS),
+        Math.min(w - HALF, coarse.x + PROBE_REFINE_RADIUS),
+        Math.min(h - HALF, coarse.y + PROBE_REFINE_RADIUS),
+        PROBE_REFINE_STEP,
+      ),
+      countAt,
+    ) ?? coarse;
 
-  if (best.count <= 0) return null;
-  return best;
+  if (refined.count <= 0) return null;
+  return refined;
 }
 
 /**
