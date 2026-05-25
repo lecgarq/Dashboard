@@ -156,17 +156,24 @@ export function getAccHotCacheStats() {
 
 export async function getCachedAccDcBulkUsers(
   db: any,
-  input: { includePermissionContexts?: boolean } = {},
+  input: { includePermissionContexts?: boolean; includePermissionSummary?: boolean } = {},
 ): Promise<BulkAccUser[]> {
   const includePermissionContexts = input.includePermissionContexts === true;
+  const includePermissionSummary = input.includePermissionSummary === true;
+  const needsFolderPerms = includePermissionContexts || includePermissionSummary;
   const version = await dbVersion(
     db,
-    includePermissionContexts ? [...DC_VERSION_SPECS, ...PERMISSION_VERSION_SPECS] : DC_VERSION_SPECS,
+    needsFolderPerms ? [...DC_VERSION_SPECS, ...PERMISSION_VERSION_SPECS] : DC_VERSION_SPECS,
   );
+
+  const cacheId =
+    [includePermissionContexts ? "ctx" : null, includePermissionSummary ? "sum" : null]
+      .filter(Boolean)
+      .join("+") || "lean";
 
   return cached(
     "accDcGraph.bulkUsers",
-    includePermissionContexts ? "with-permission-contexts" : "lean",
+    cacheId,
     version,
     async () => {
       const [
@@ -212,7 +219,7 @@ export async function getCachedAccDcBulkUsers(
         }),
       ]);
 
-      const rawFolderPermissions = includePermissionContexts
+      const rawFolderPermissions = needsFolderPerms
         ? await db.accFolderPermission.findMany({
             where: { folder: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } } },
             select: {
@@ -227,6 +234,7 @@ export async function getCachedAccDcBulkUsers(
 
       return assembleDcUsers({
         includePermissionContexts,
+        includePermissionSummary,
         users: users.map((u: any) => ({
           ...u,
           lastSignIn: u.lastSignIn ? u.lastSignIn.toISOString() : null,

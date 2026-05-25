@@ -115,4 +115,35 @@ describe("accDcGraphRouter.bulkUsers", () => {
     expect(proj?.addedOn).toBe("2025-01-01T00:00:00.000Z");
     expect(proj?.lastSignIn).toBe("2026-05-01T00:00:00.000Z");
   });
+
+  it("includePermissionSummary populates per-project strength without raw contexts", async () => {
+    const db = {
+      accDcUser: {
+        findMany: vi.fn(async () => [
+          { id: "u1", email: "user@lecg.com", name: "User", status: "active", companyId: null, lastSignIn: null },
+        ]),
+      },
+      accDcProjectUser: { findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1" }]) },
+      accDcProjectUserRole: { findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1", roleId: "r1" }]) },
+      accDcProjectUserProduct: { findMany: vi.fn(async () => []) },
+      accDcProjectUserCompany: { findMany: vi.fn(async () => []) },
+      accDcCompany: { findMany: vi.fn(async () => []) },
+      accRole: { findMany: vi.fn(async () => []) },
+      accProject: {
+        findMany: vi.fn(async () => [{ id: "p1", name: "P1", status: "active", folderCrawlStatus: "ok" }]),
+      },
+      accFolderPermission: {
+        findMany: vi.fn(async () => [
+          { folderId: "f1", roleId: "r1", permType: "Full Controller", actions: [], folder: { projectId: "p1", fullPath: "/A" } },
+        ]),
+      },
+    };
+
+    const rows = await makeCaller(db).bulkUsers({ includePermissionSummary: true });
+    const proj = rows[0].projects[0];
+    expect(proj.permissionStrength).toBeGreaterThan(0);
+    expect(proj.fullController).toBe(true);
+    expect(rows[0].permissionContexts).toEqual([]);
+    expect(db.accFolderPermission.findMany).toHaveBeenCalled();
+  });
 });

@@ -18,7 +18,10 @@ import { getCachedAccDcBulkUsers } from "@/lib/server/acc-hot-cache";
 
 export const accDcGraphRouter = router({
   bulkUsers: adminProcedure
-    .input(z.object({ includePermissionContexts: z.boolean().optional() }).optional())
+    .input(z.object({
+      includePermissionContexts: z.boolean().optional(),
+      includePermissionSummary: z.boolean().optional(),
+    }).optional())
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);
     }),
