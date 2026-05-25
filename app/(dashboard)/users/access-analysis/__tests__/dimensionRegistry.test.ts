@@ -6,6 +6,7 @@ import {
   getDimension,
   dimensionSurfaces,
   dimensionHasSurface,
+  dominantActivityCategory,
   type DimensionId,
   type DimensionDescriptor,
 } from "../dimensionRegistry";
@@ -62,9 +63,9 @@ describe("dimension registry — validity", () => {
     expect(getDimension("nope" as DimensionId)).toBeUndefined();
   });
 
-  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket + activityRecency + riskScore (P6)", () => {
+  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket + activityRecency + riskScore + permissionStrength + activityMix (P6)", () => {
     expect(DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency", "riskScore",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency", "riskScore", "permissionStrength", "activityMix",
     ]);
   });
 });
@@ -346,6 +347,91 @@ describe("dimension registry — riskScore (P6 governance dim, scalar + gated)",
     expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("riskScore");
     expect(dimensionHasSurface(getDimension("riskScore")!, "slider")).toBe(true);
     expect(dimensionHasSurface(getDimension("riskScore")!, "color")).toBe(true);
+  });
+});
+
+describe("dominantActivityCategory (deterministic dominant-category helper)", () => {
+  it("highest count wins", () => {
+    expect(dominantActivityCategory({ view: 2, edit: 5 })).toBe("edit");
+  });
+  it("ties break by canonical order (view precedes edit)", () => {
+    expect(dominantActivityCategory({ edit: 3, view: 3 })).toBe("view");
+  });
+  it("empty / undefined → '(none)'", () => {
+    expect(dominantActivityCategory({})).toBe("(none)");
+    expect(dominantActivityCategory(undefined)).toBe("(none)");
+  });
+  it("all-zero counts → '(none)' (no positive count)", () => {
+    expect(dominantActivityCategory({ view: 0, edit: 0 })).toBe("(none)");
+  });
+});
+
+describe("dimension registry — permissionStrength (P6 color-only scalar)", () => {
+  it("is registered with the expected color-only descriptor fields", () => {
+    const d = getDimension("permissionStrength");
+    expect(d).toBeDefined();
+    expect(d!.family).toBe("access");
+    expect(d!.type).toBe("scalar");
+    expect(d!.surfaces).toEqual(["color"]);
+    expect(d!.colorScale).toBe("ordered");
+    expect(d!.confidence).toBe("medium");
+    expect(d!.availability).toBe("A1");
+    expect(d!.defaultWeight).toBe(0);
+  });
+
+  it("extract returns the NUMBER (undefined → 0; 4 → 4)", () => {
+    const d = getDimension("permissionStrength")!;
+    expect(d.extract(snap({ permissionStrength: undefined }))).toBe(0);
+    expect(d.extract(snap({ permissionStrength: 4 }))).toBe(4);
+  });
+
+  it("isAvailable is the >0 gate", () => {
+    const d = getDimension("permissionStrength")!;
+    expect(d.isAvailable(snap({ permissionStrength: 0 }))).toBe(false);
+    expect(d.isAvailable(snap({ permissionStrength: undefined }))).toBe(false);
+    expect(d.isAvailable(snap({ permissionStrength: 3 }))).toBe(true);
+  });
+
+  it("is color-surfaced and NOT slider-surfaced; absent from RUNTIME_TARGET_DIMENSION_IDS", () => {
+    const d = getDimension("permissionStrength")!;
+    expect(dimensionHasSurface(d, "color")).toBe(true);
+    expect(dimensionHasSurface(d, "slider")).toBe(false);
+    expect(RUNTIME_TARGET_DIMENSION_IDS).not.toContain("permissionStrength");
+  });
+});
+
+describe("dimension registry — activityMix (P6 color-only derived)", () => {
+  it("is registered with the expected color-only descriptor fields", () => {
+    const d = getDimension("activityMix");
+    expect(d).toBeDefined();
+    expect(d!.family).toBe("behavior");
+    expect(d!.type).toBe("derived");
+    expect(d!.surfaces).toEqual(["color"]);
+    expect(d!.colorScale).toBe("categorical");
+    expect(d!.confidence).toBe("low");
+    expect(d!.availability).toBe("A1");
+    expect(d!.defaultWeight).toBe(0);
+  });
+
+  it("extract returns the dominant category string ('(none)' when empty)", () => {
+    const d = getDimension("activityMix")!;
+    expect(d.extract(snap({ activityMix: { view: 1, edit: 9 } }))).toBe("edit");
+    expect(d.extract(snap({ activityMix: {} }))).toBe("(none)");
+    expect(d.extract(snap({ activityMix: undefined }))).toBe("(none)");
+  });
+
+  it("isAvailable is true only when the mix has keys", () => {
+    const d = getDimension("activityMix")!;
+    expect(d.isAvailable(snap({ activityMix: { view: 1 } }))).toBe(true);
+    expect(d.isAvailable(snap({ activityMix: {} }))).toBe(false);
+    expect(d.isAvailable(snap({ activityMix: undefined }))).toBe(false);
+  });
+
+  it("is color-surfaced and NOT slider-surfaced; absent from RUNTIME_TARGET_DIMENSION_IDS", () => {
+    const d = getDimension("activityMix")!;
+    expect(dimensionHasSurface(d, "color")).toBe(true);
+    expect(dimensionHasSurface(d, "slider")).toBe(false);
+    expect(RUNTIME_TARGET_DIMENSION_IDS).not.toContain("activityMix");
   });
 });
 

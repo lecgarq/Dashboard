@@ -21,16 +21,26 @@
  * in the Toolbar and swaps the constant buffer in the shell for `buildNodeColors`.
  */
 
-import { DIMENSION_REGISTRY, getDimension, type DimensionId } from "./dimensionRegistry";
+import {
+  DIMENSION_REGISTRY,
+  getDimension,
+  dimensionHasSurface,
+  type DimensionId,
+} from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 // ---------------------------------------------------------------------------
 // Modes
 // ---------------------------------------------------------------------------
 
-/** Dimension-backed color modes: categorical + binary registry dims. */
-const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter(
-  (d) => d.type === "categorical" || d.type === "binary",
+/**
+ * Dimension-backed color modes: any registry dim declaring a "color" surface.
+ * Capability-based (not raw type) so ordered/color-only dims (riskScore,
+ * permissionStrength, activityMix) become color modes while keeping every
+ * existing categorical/binary mode.
+ */
+const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) =>
+  dimensionHasSurface(d, "color"),
 ).map((d) => d.id);
 
 /** Non-dimension extra modes (no registry dim). `status` reads accountStatus. */
@@ -114,6 +124,15 @@ function colorForCategory(category: string): [number, number, number] {
   return hslToRgb(hue, 0.6, 0.6);
 }
 
+/**
+ * Sequential ramp for "ordered" color-scale dims: blue (low) → red (high),
+ * legible on the dark zinc (#09090B) background. Reuses local hslToRgb.
+ */
+function colorForOrdered(value: number, max: number): [number, number, number] {
+  const t = max > 0 ? Math.max(0, Math.min(1, value / max)) : 0;
+  return hslToRgb(0.58 - 0.58 * t, 0.7, 0.55);
+}
+
 // ---------------------------------------------------------------------------
 // Buffer builder
 // ---------------------------------------------------------------------------
@@ -127,6 +146,28 @@ export function buildNodeColors(
   mode: ColorMode,
 ): Float32Array {
   const buf = new Float32Array(features.length * 4);
+  const dim = getDimension(mode as DimensionId);
+
+  // Ordered (sequential) ramp path: numeric extract → normalized blue→red.
+  if (dim?.colorScale === "ordered") {
+    // Find max ONCE across all features → deterministic normalization.
+    let max = 0;
+    for (const f of features) {
+      const v = Number(dim.extract(f)) || 0;
+      if (v > max) max = v;
+    }
+    for (let i = 0; i < features.length; i++) {
+      const v = Number(dim.extract(features[i])) || 0;
+      const rgb = colorForOrdered(v, max);
+      buf[i * 4] = rgb[0];
+      buf[i * 4 + 1] = rgb[1];
+      buf[i * 4 + 2] = rgb[2];
+      buf[i * 4 + 3] = 1;
+    }
+    return buf;
+  }
+
+  // Categorical hashed-hue path (unchanged).
   // Cache color per category so repeated values reuse one computation.
   const cache = new Map<string, [number, number, number]>();
   for (let i = 0; i < features.length; i++) {

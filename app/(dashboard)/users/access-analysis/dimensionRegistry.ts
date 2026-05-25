@@ -13,6 +13,7 @@
  */
 
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import type { ActivityCategory } from "@/lib/acc/activityCategories"; // TYPE-ONLY import (no cycle)
 
 export type DimensionId =
   | "project"
@@ -26,7 +27,29 @@ export type DimensionId =
   | "module"
   | "membershipBucket"
   | "activityRecency"
-  | "riskScore";
+  | "riskScore"
+  | "permissionStrength"
+  | "activityMix";
+
+// Canonical tie-break order. activityCategories.ts keeps its order PRIVATE and is a
+// forbidden file, so define the order locally (must include every ActivityCategory).
+const ACTIVITY_CATEGORY_ORDER: readonly ActivityCategory[] = [
+  "view", "upload", "edit", "delete", "memberEvent", "projectEvent", "other",
+];
+
+/** Dominant activity category: highest count wins; ties broken by ACTIVITY_CATEGORY_ORDER; empty → "(none)". */
+export function dominantActivityCategory(
+  mix: Partial<Record<ActivityCategory, number>> | undefined,
+): string {
+  if (!mix) return "(none)";
+  let best: ActivityCategory | null = null;
+  let bestCount = -1;
+  for (const cat of ACTIVITY_CATEGORY_ORDER) {       // iterate in fixed order → deterministic tie-break
+    const c = mix[cat] ?? 0;
+    if (c > bestCount) { bestCount = c; best = cat; }
+  }
+  return bestCount > 0 && best ? best : "(none)";
+}
 
 export type DimensionFamily =
   | "structure"
@@ -250,6 +273,34 @@ export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
     colorScale: "ordered", // consumed by nodeColors in Task 5; dormant until then
     extract: (f) => f.riskScore ?? 0, // returns a NUMBER (categoryValue coerces to "0".."5")
     isAvailable: (f) => (f.riskScore ?? 0) > 0, // zero-risk → no pull (calm layout)
+  },
+  {
+    id: "permissionStrength",
+    label: "Permission strength",
+    family: "access",
+    type: "scalar",
+    source: "MAX folder-grant strength 0..5 (NodeFeatureSnapshot.permissionStrength)",
+    availability: "A1",
+    defaultWeight: 0,
+    confidence: "medium",
+    surfaces: ["color"], // COLOR-ONLY: no slider, no layout target
+    colorScale: "ordered",
+    extract: (f) => f.permissionStrength ?? 0, // number
+    isAvailable: (f) => (f.permissionStrength ?? 0) > 0,
+  },
+  {
+    id: "activityMix",
+    label: "Dominant activity",
+    family: "behavior",
+    type: "derived",
+    source: "Dominant AccActivity category (NodeFeatureSnapshot.activityMix)",
+    availability: "A1",
+    defaultWeight: 0,
+    confidence: "low",
+    surfaces: ["color"], // COLOR-ONLY
+    colorScale: "categorical",
+    extract: (f) => dominantActivityCategory(f.activityMix), // string category or "(none)"
+    isAvailable: (f) => Object.keys(f.activityMix ?? {}).length > 0,
   },
 ];
 

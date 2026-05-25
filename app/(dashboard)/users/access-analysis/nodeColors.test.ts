@@ -226,3 +226,52 @@ describe("nodeColors — registry-derived modes", () => {
     expect(c0).not.toBe(c1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// P6: capability-based color modes + ordered ramp
+// ---------------------------------------------------------------------------
+
+describe("nodeColors — P6 capability-based color modes", () => {
+  it("COLOR_MODES now contains riskScore, permissionStrength, activityMix (and still role/tier/etc.)", () => {
+    for (const id of ["role", "tier", "internalExternal", "isAdmin", "riskScore", "permissionStrength", "activityMix"]) {
+      expect(COLOR_MODES).toContain(id);
+      expect(COLOR_MODE_LABELS[id as ColorMode]).toBeTruthy();
+    }
+  });
+});
+
+describe("nodeColors — ordered ramp (riskScore)", () => {
+  const features = [snap({ riskScore: 0 }), snap({ riskScore: 3 }), snap({ riskScore: 5 })];
+
+  it("is deterministic", () => {
+    const a = buildNodeColors(features, "riskScore");
+    const b = buildNodeColors(features, "riskScore");
+    expect(Array.from(a)).toEqual(Array.from(b));
+  });
+
+  it("alpha is 1 and channels are in [0,1] for every node", () => {
+    const buf = buildNodeColors(features, "riskScore");
+    expect(inUnitRange(buf)).toBe(true);
+    for (let i = 0; i < features.length; i++) expect(buf[i * 4 + 3]).toBe(1);
+  });
+
+  it("a higher score yields a DIFFERENT color than a lower score (monotonic ramp)", () => {
+    const buf = buildNodeColors(features, "riskScore");
+    expect(rgba(buf, 0)).not.toEqual(rgba(buf, 1));
+    expect(rgba(buf, 1)).not.toEqual(rgba(buf, 2));
+    expect(rgba(buf, 0)).not.toEqual(rgba(buf, 2));
+  });
+});
+
+describe("nodeColors — activityMix mode colors by dominant category", () => {
+  it("same dominant category shares a color; different dominant categories differ", () => {
+    const features = [
+      snap({ activityMix: { view: 10, edit: 1 } }), // dominant: view
+      snap({ activityMix: { upload: 9 } }), // dominant: upload
+      snap({ activityMix: { view: 5, upload: 2 } }), // dominant: view
+    ];
+    const buf = buildNodeColors(features, "activityMix");
+    expect(rgba(buf, 0)).toEqual(rgba(buf, 2)); // both dominant view
+    expect(rgba(buf, 0)).not.toEqual(rgba(buf, 1)); // view vs upload
+  });
+});
