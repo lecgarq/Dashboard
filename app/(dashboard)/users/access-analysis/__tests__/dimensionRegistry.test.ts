@@ -62,9 +62,9 @@ describe("dimension registry — validity", () => {
     expect(getDimension("nope" as DimensionId)).toBeUndefined();
   });
 
-  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket + activityRecency (P6)", () => {
+  it("registers the first-batch dimensions incl. isAdmin + module (A2) + membershipBucket + activityRecency + riskScore (P6)", () => {
     expect(DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency", "riskScore",
     ]);
   });
 });
@@ -202,7 +202,7 @@ describe("dimension registry — target vs slider runtime sets", () => {
   // is gone — module is a first-class slider.
   it("RUNTIME_TARGET_DIMENSION_IDS equals the full slider-capable set in registry order", () => {
     expect(RUNTIME_TARGET_DIMENSION_IDS).toEqual([
-      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency",
+      "project", "role", "tier", "internalExternal", "company", "activity", "signin", "isAdmin", "module", "membershipBucket", "activityRecency", "riskScore",
     ]);
   });
   it("RUNTIME_DIMENSION_IDS (primary 6) does not contain module; RUNTIME_TARGET_DIMENSION_IDS does", () => {
@@ -309,6 +309,43 @@ describe("dimension registry — activityRecency (P6 behavior dim)", () => {
   it("is a runtime target (slider-surfaced) and is also color-surfaced", () => {
     expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("activityRecency");
     expect(dimensionHasSurface(getDimension("activityRecency")!, "color")).toBe(true);
+  });
+});
+
+describe("dimension registry — riskScore (P6 governance dim, scalar + gated)", () => {
+  it("is registered with the expected scalar descriptor fields", () => {
+    const d = getDimension("riskScore");
+    expect(d).toBeDefined();
+    expect(d!.family).toBe("risk");
+    expect(d!.type).toBe("scalar");
+    expect(d!.surfaces).toEqual(["slider", "color"]);
+    expect(d!.colorScale).toBe("ordered");
+    expect(d!.confidence).toBe("low");
+    expect(d!.availability).toBe("A1");
+    expect(d!.defaultWeight).toBe(0);
+  });
+
+  it("extract returns the NUMBER (undefined → 0; 3 → 3)", () => {
+    const d = getDimension("riskScore")!;
+    expect(d.extract(snap({ riskScore: undefined }))).toBe(0);
+    expect(d.extract(snap({ riskScore: 0 }))).toBe(0);
+    expect(d.extract(snap({ riskScore: 3 }))).toBe(3);
+    expect(d.extract(snap({ riskScore: 5 }))).toBe(5);
+  });
+
+  it("isAvailable is the >0 gate: riskScore 0/undefined → false; 1..5 → true (zero-risk = no pull)", () => {
+    const d = getDimension("riskScore")!;
+    expect(d.isAvailable(snap({ riskScore: 0 }))).toBe(false);
+    expect(d.isAvailable(snap({ riskScore: undefined }))).toBe(false);
+    expect(d.isAvailable(snap({ riskScore: 1 }))).toBe(true);
+    expect(d.isAvailable(snap({ riskScore: 3 }))).toBe(true);
+    expect(d.isAvailable(snap({ riskScore: 5 }))).toBe(true);
+  });
+
+  it("is a runtime target (slider-surfaced); color surface declared but dormant until Task 5", () => {
+    expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("riskScore");
+    expect(dimensionHasSurface(getDimension("riskScore")!, "slider")).toBe(true);
+    expect(dimensionHasSurface(getDimension("riskScore")!, "color")).toBe(true);
   });
 });
 

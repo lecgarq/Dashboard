@@ -360,6 +360,48 @@ describe("featureTargets — activityRecency anchors", () => {
 });
 
 // ---------------------------------------------------------------------------
+// riskScore (P6 scalar governance dim) anchors
+// ---------------------------------------------------------------------------
+
+describe("featureTargets — riskScore anchors", () => {
+  it("categoryValue coerces the scalar number to a string bucket (3 → '3')", () => {
+    expect(categoryValue(feature({ riskScore: 3 }), "riskScore")).toBe("3");
+    expect(categoryValue(feature({ riskScore: 0 }), "riskScore")).toBe("0");
+    expect(categoryValue(feature({ riskScore: undefined }), "riskScore")).toBe("0");
+  });
+
+  it("yields finite, deterministic anchors", () => {
+    const fs = [
+      feature({ riskScore: 1 }),
+      feature({ riskScore: 4 }),
+      feature({ riskScore: 2 }),
+    ];
+    const a = computeDimensionTarget(fs, "riskScore");
+    const b = computeDimensionTarget(fs, "riskScore");
+    expect(isFiniteArray(a)).toBe(true);
+    expect(Array.from(a)).toEqual(Array.from(b));
+  });
+
+  it("anchors the SAME score together and separates DIFFERENT scores", () => {
+    const fs = [
+      feature({ riskScore: 3 }),
+      feature({ riskScore: 5 }),
+      feature({ riskScore: 3 }),
+    ];
+    const out = computeDimensionTarget(fs, "riskScore");
+    expect(dist3(out, 0, 2)).toBe(0); // same score → identical anchor
+    expect(dist3(out, 0, 1)).toBeGreaterThan(0.1); // different score → separated
+  });
+
+  it("buildFeatureTargets supports a riskScore-only subset", () => {
+    const fs = [feature({ riskScore: 1 }), feature({ riskScore: 4 })];
+    const targets = buildFeatureTargets(fs, ["riskScore"]);
+    expect(Object.keys(targets)).toEqual(["riskScore"]);
+    expect(isFiniteArray(targets.riskScore.x)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // Multi-hot module anchors
 // ---------------------------------------------------------------------------
 

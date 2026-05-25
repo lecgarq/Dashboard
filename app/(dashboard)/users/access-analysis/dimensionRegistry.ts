@@ -25,7 +25,8 @@ export type DimensionId =
   | "isAdmin"
   | "module"
   | "membershipBucket"
-  | "activityRecency";
+  | "activityRecency"
+  | "riskScore";
 
 export type DimensionFamily =
   | "structure"
@@ -235,6 +236,20 @@ export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
     surfaces: ["slider", "color"],
     extract: (f) => f.activityRecencyBucket ?? "none",
     isAvailable: (f) => (f.activityRecencyBucket ?? "none") !== "none",
+  },
+  {
+    id: "riskScore",
+    label: "Risk score",
+    family: "risk",
+    type: "scalar",
+    source: "Count of true risk primitives 0..5 (NodeFeatureSnapshot.riskScore; riskFlags.ts)",
+    availability: "A1",
+    defaultWeight: 0, // advanced dim: default OFF
+    confidence: "low", // derived + coverage-dependent → down-weighted
+    surfaces: ["slider", "color"],
+    colorScale: "ordered", // consumed by nodeColors in Task 5; dormant until then
+    extract: (f) => f.riskScore ?? 0, // returns a NUMBER (categoryValue coerces to "0".."5")
+    isAvailable: (f) => (f.riskScore ?? 0) > 0, // zero-risk → no pull (calm layout)
   },
 ];
 

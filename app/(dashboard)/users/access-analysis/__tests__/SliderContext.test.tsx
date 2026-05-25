@@ -63,6 +63,7 @@ describe("SliderContext — organic default profile (P1.1)", () => {
       isAdmin: 0,
       membershipBucket: 0, // P6: advanced tenure dim, OFF in organic (P4 module parity preserved)
       activityRecency: 0, // P6: advanced behavior dim, OFF in organic (true last-activity recency)
+      riskScore: 0, // P6: advanced governance dim, OFF in organic (gated; zero-risk = no pull)
     });
   });
 

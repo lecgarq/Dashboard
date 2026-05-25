@@ -76,4 +76,17 @@ describe("buildDimensionWeights", () => {
     const real = buildDimensionWeights([snap({ activityRecencyBucket: "0-7d" })], ["activityRecency"]);
     expect(real.activityRecency[0]).toBeCloseTo(CONFIDENCE_FACTOR.medium, 6); // 0.7
   });
+
+  it("riskScore: zero/undefined risk → 0 (the >0 gate); risk≥1 → CONFIDENCE_FACTOR.low (0.4)", () => {
+    // riskScore confidence="low" → CONFIDENCE_FACTOR.low = 0.4;
+    // isAvailable: (riskScore ?? 0) > 0 — zero-risk nodes exert NO layout pull (calm layout).
+    const zero = buildDimensionWeights([snap({ riskScore: 0 })], ["riskScore"]);
+    expect(zero.riskScore[0]).toBe(0);
+    const undef = buildDimensionWeights([snap({ riskScore: undefined })], ["riskScore"]);
+    expect(undef.riskScore[0]).toBe(0);
+    const one = buildDimensionWeights([snap({ riskScore: 1 })], ["riskScore"]);
+    expect(one.riskScore[0]).toBeCloseTo(CONFIDENCE_FACTOR.low, 6); // 0.4
+    const five = buildDimensionWeights([snap({ riskScore: 5 })], ["riskScore"]);
+    expect(five.riskScore[0]).toBeCloseTo(CONFIDENCE_FACTOR.low, 6); // 0.4
+  });
 });
