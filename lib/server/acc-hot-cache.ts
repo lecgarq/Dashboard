@@ -2,6 +2,7 @@ import "server-only";
 
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
+import { foldActivityRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
 
 export const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
 
@@ -124,6 +125,8 @@ const PERMISSION_VERSION_SPECS = [
   { model: "accFolderPermission", maxField: "syncedAt" },
 ];
 
+const ACTIVITY_VERSION_SPECS = [{ model: "accActivity", maxField: "createdAt" }];
+
 const ENRICHED_VERSION_SPECS = [
   ...DC_VERSION_SPECS,
   { model: "accProjectMember", maxField: "syncedAt" },
@@ -156,18 +159,24 @@ export function getAccHotCacheStats() {
 
 export async function getCachedAccDcBulkUsers(
   db: any,
-  input: { includePermissionContexts?: boolean; includePermissionSummary?: boolean } = {},
+  input: { includePermissionContexts?: boolean; includePermissionSummary?: boolean; includeActivityMix?: boolean } = {},
 ): Promise<BulkAccUser[]> {
   const includePermissionContexts = input.includePermissionContexts === true;
   const includePermissionSummary = input.includePermissionSummary === true;
   const needsFolderPerms = includePermissionContexts || includePermissionSummary;
-  const version = await dbVersion(
-    db,
-    needsFolderPerms ? [...DC_VERSION_SPECS, ...PERMISSION_VERSION_SPECS] : DC_VERSION_SPECS,
-  );
+  const includeActivityMix = input.includeActivityMix === true;
+  const versionSpecs = needsFolderPerms
+    ? [...DC_VERSION_SPECS, ...PERMISSION_VERSION_SPECS]
+    : [...DC_VERSION_SPECS];
+  if (includeActivityMix) versionSpecs.push(...ACTIVITY_VERSION_SPECS);
+  const version = await dbVersion(db, versionSpecs);
 
   const cacheId =
-    [includePermissionContexts ? "ctx" : null, includePermissionSummary ? "sum" : null]
+    [
+      includePermissionContexts ? "ctx" : null,
+      includePermissionSummary ? "sum" : null,
+      includeActivityMix ? "act" : null,
+    ]
       .filter(Boolean)
       .join("+") || "lean";
 
@@ -232,9 +241,32 @@ export async function getCachedAccDcBulkUsers(
           })
         : [];
 
+      let activityByInstance: Map<string, InstanceActivity> | undefined;
+      if (includeActivityMix) {
+        // Grouped ONLY — never findMany over AccActivity. sourceFile='project'
+        // already excludes admin rows (projectId='' sentinel); the projectId filter
+        // is explicit per spec. C0 measured this at ~218ms over ~623k rows.
+        const groups = await db.accActivity.groupBy({
+          by: ["userEmail", "projectId", "rawAction"],
+          where: { sourceFile: "project", userEmail: { not: null }, projectId: { not: "" } },
+          _count: { _all: true },
+          _max: { createdAt: true },
+        });
+        activityByInstance = foldActivityRows(
+          groups.map((g: any) => ({
+            userEmail: g.userEmail as string,
+            projectId: g.projectId as string,
+            rawAction: g.rawAction as string,
+            count: g._count._all as number,
+            lastCreatedAt: (g._max.createdAt as Date).toISOString(),
+          })),
+        );
+      }
+
       return assembleDcUsers({
         includePermissionContexts,
         includePermissionSummary,
+        activityByInstance,
         users: users.map((u: any) => ({
           ...u,
           lastSignIn: u.lastSignIn ? u.lastSignIn.toISOString() : null,

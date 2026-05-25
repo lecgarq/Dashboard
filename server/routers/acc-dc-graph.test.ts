@@ -146,4 +146,29 @@ describe("accDcGraphRouter.bulkUsers", () => {
     expect(rows[0].permissionContexts).toEqual([]);
     expect(db.accFolderPermission.findMany).toHaveBeenCalled();
   });
+
+  it("includeActivityMix aggregates per-instance activity via groupBy (no raw rows)", async () => {
+    const db = {
+      accDcUser: { findMany: vi.fn(async () => [{ id: "u1", email: "user@lecg.com", name: "User", status: "active", companyId: null, lastSignIn: null }]) },
+      accDcProjectUser: { findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1" }]) },
+      accDcProjectUserRole: { findMany: vi.fn(async () => []) },
+      accDcProjectUserProduct: { findMany: vi.fn(async () => []) },
+      accDcProjectUserCompany: { findMany: vi.fn(async () => []) },
+      accDcCompany: { findMany: vi.fn(async () => []) },
+      accRole: { findMany: vi.fn(async () => []) },
+      accProject: { findMany: vi.fn(async () => [{ id: "p1", name: "P1", status: "active", folderCrawlStatus: "ok" }]) },
+      accFolderPermission: { findMany: vi.fn(async () => []) },
+      accActivity: {
+        groupBy: vi.fn(async () => [
+          { userEmail: "user@lecg.com", projectId: "p1", rawAction: "File Viewed", _count: { _all: 5 }, _max: { createdAt: new Date("2026-05-10T00:00:00Z") } },
+        ]),
+      },
+    };
+    const rows = await makeCaller(db).bulkUsers({ includeActivityMix: true });
+    const proj = rows[0].projects[0];
+    expect(proj.activityTotal).toBe(5);
+    expect(proj.activityMix!.view).toBe(5);
+    expect(db.accActivity.groupBy).toHaveBeenCalled();
+    expect((db.accActivity as any).findMany).toBeUndefined(); // grouped only
+  });
 });

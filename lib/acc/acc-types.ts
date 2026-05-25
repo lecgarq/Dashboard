@@ -19,6 +19,12 @@ export interface BulkAccProject {
   permMixedProfile?: boolean;
   /** [P5-B] Any grant normalizes to "control". */
   fullController?: boolean;
+  /** [P5-C] Activity event counts keyed by ActivityCategory for THIS instance. */
+  activityMix?: Partial<Record<string, number>>;
+  /** [P5-C] Sum of activityMix values. */
+  activityTotal?: number;
+  /** [P5-C] ISO of the most recent activity event for THIS instance; null when none. */
+  lastActivity?: string | null;
 }
 
 export interface PermissionContext {

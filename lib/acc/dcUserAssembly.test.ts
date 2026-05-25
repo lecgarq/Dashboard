@@ -186,3 +186,20 @@ describe("includePermissionSummary", () => {
     expect(out[0].permissionContexts).toEqual([]);
   });
 });
+
+describe("activityByInstance attach", () => {
+  it("attaches mix/total/lastActivity to the matching project (keyed by email)", () => {
+    const out = assembleDcUsers({
+      ...base,
+      users: [{ id: "u1", email: "a@hermosillo.com", name: "A", status: "active", companyId: null }],
+      activityByInstance: new Map([["a@hermosillo.com::p1", { mix: { view: 4 }, total: 4, lastActivity: "2026-05-10T00:00:00.000Z" }]]),
+    });
+    const proj = out[0].projects[0];
+    expect(proj.activityTotal).toBe(4);
+    expect(proj.activityMix!.view).toBe(4);
+    expect(proj.lastActivity).toBe("2026-05-10T00:00:00.000Z");
+  });
+  it("defaults to undefined when no aggregate is supplied", () => {
+    expect(assembleDcUsers(base)[0].projects[0].activityTotal).toBeUndefined();
+  });
+});

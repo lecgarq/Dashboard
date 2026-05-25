@@ -1,5 +1,6 @@
 import type { BulkAccUser, PermissionContext } from "./acc-types";
 import { classifyAffiliation } from "@/app/(dashboard)/users/access-analysis/internalDomains";
+import type { InstanceActivity } from "./activityAggregate";
 
 export interface DcAssemblyInput {
   users: { id: string; email: string | null; name: string | null; status: string | null; companyId: string | null; lastSignIn?: string | null }[];
@@ -23,6 +24,8 @@ export interface DcAssemblyInput {
    */
   includePermissionContexts?: boolean;
   includePermissionSummary?: boolean;
+  /** [P5-C] Per-(user,project) activity aggregate, keyed `lowercasedEmail::projectId`. */
+  activityByInstance?: Map<string, InstanceActivity>;
 }
 
 export function normalizePermTier(permType: string): string {
@@ -169,6 +172,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         permMixedProfile = tiers.size > 1;
         fullController = tiers.has("control");
       }
+      const activity = input.activityByInstance?.get(`${email}::${pid}`);
       return {
         id: pid,
         name: meta.name,
@@ -183,6 +187,9 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         folderBreadth,
         permMixedProfile,
         fullController,
+        activityMix: activity?.mix,
+        activityTotal: activity?.total,
+        lastActivity: activity?.lastActivity,
       };
     });
 

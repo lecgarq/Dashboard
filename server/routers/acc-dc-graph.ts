@@ -21,6 +21,7 @@ export const accDcGraphRouter = router({
     .input(z.object({
       includePermissionContexts: z.boolean().optional(),
       includePermissionSummary: z.boolean().optional(),
+      includeActivityMix: z.boolean().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);
