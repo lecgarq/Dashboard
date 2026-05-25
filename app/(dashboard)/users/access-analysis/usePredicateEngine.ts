@@ -9,7 +9,7 @@
  *   The filter/search/lasso path is structurally walled off from physics ticks.
  *
  * Behavior contract:
- *   - isolatedNodeIndex !== null    → only that index returns 1.0; all others 0.15.
+ *   - isolatedNodeIndex !== null    → that index + its same-user footprint return 1.0; all others 0.15.
  *   - global filters (categorical + numeric buckets) → AND across dimensions.
  *   - searchQuery (already lowercased upstream) → prefix match on name OR email.
  *   - lassoSelection !== null       → only members lit; drillDown filters WITHIN the lasso.
@@ -18,6 +18,7 @@
 import { useEffect } from "react";
 import type { NodeFeatureSnapshot, PredicateInputs } from "./interactionTypes";
 import { isFacetKey, nodeMatchesFacet } from "./accessFacets";
+import { parseNodeId } from "./sameUserEdges";
 
 /**
  * Map a filter dimension id to the feature value compared against the allowed set.
@@ -97,61 +98,75 @@ export function filterSelectionByPredicate(
 }
 
 /**
+ * Pure alpha-mask predicate — exported so it is unit-testable and reused by the
+ * hook. The mask is overwrite semantics: one predicate replaces all prior masks
+ * (Phase 2 PHYS-04 contract). MASK-bus only — references NO simulation symbols.
+ */
+export function buildMaskPredicate(
+  inputs: Omit<PredicateInputs, "physics">,
+): (i: number) => number {
+  const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex } = inputs;
+
+  // Precompute the isolated user's id once (not per node) so isolate can light the
+  // whole same-user footprint, not just the single clicked instance.
+  let isolatedUserId: string | null = null;
+  if (isolatedNodeIndex !== null) {
+    const fi = features[isolatedNodeIndex];
+    isolatedUserId = fi ? parseNodeId(fi.nodeId)?.userId ?? null : null;
+  }
+
+  return (i: number): number => {
+    const f = features[i];
+    if (!f) return 0.15;
+
+    // 1) Click-isolate wins outright — light the clicked node AND its same-user footprint.
+    if (isolatedNodeIndex !== null) {
+      if (i === isolatedNodeIndex) return 1.0;
+      if (isolatedUserId && parseNodeId(f.nodeId)?.userId === isolatedUserId) return 1.0;
+      return 0.15;
+    }
+
+    // 2) Global filter chips + P7 facets — AND across all keys with non-empty sets.
+    for (const [dim, allowed] of Object.entries(activeFilters)) {
+      if (allowed.size === 0) continue;
+      if (isFacetKey(dim)) {
+        if (!nodeMatchesFacet(f, dim, allowed)) return 0.15;
+        continue;
+      }
+      const v = featureValueForDim(f, dim);
+      if (!allowed.has(v)) return 0.15;
+    }
+
+    // 3) Search prefix match on name OR email (already lowercased upstream).
+    if (searchQuery) {
+      const hitsName = f.nameLower.startsWith(searchQuery);
+      const hitsEmail = f.emailLower.startsWith(searchQuery);
+      if (!hitsName && !hitsEmail) return 0.15;
+    }
+
+    // 4) Lasso selection (with optional pie-slice drill-down INSIDE the lasso).
+    if (lassoSelection) {
+      if (!lassoSelection.has(i)) return 0.15;
+      if (drillDown) {
+        for (const [dim, value] of Object.entries(drillDown)) {
+          if (featureValueForDim(f, dim) !== value) return 0.15;
+        }
+      }
+    }
+
+    return 1.0;
+  };
+}
+
+/**
  * Recompute the alpha-mask predicate whenever any input changes and push it via
  * physics.setMask. The mask is overwrite semantics — one predicate replaces all
  * prior masks (Phase 2 PHYS-04 contract).
  */
 export function usePredicateEngine(inputs: PredicateInputs): void {
   useEffect(() => {
-    const {
-      physics,
-      features,
-      activeFilters,
-      searchQuery,
-      lassoSelection,
-      drillDown,
-      isolatedNodeIndex,
-    } = inputs;
-
-    physics.setMask((i: number): number => {
-      const f = features[i];
-      if (!f) return 0.15;
-
-      // 1) Click-isolate wins outright.
-      if (isolatedNodeIndex !== null) {
-        return i === isolatedNodeIndex ? 1.0 : 0.15;
-      }
-
-      // 2) Global filter chips + P7 facets — AND across all keys with non-empty sets.
-      for (const [dim, allowed] of Object.entries(activeFilters)) {
-        if (allowed.size === 0) continue;
-        if (isFacetKey(dim)) {
-          if (!nodeMatchesFacet(f, dim, allowed)) return 0.15;
-          continue;
-        }
-        const v = featureValueForDim(f, dim);
-        if (!allowed.has(v)) return 0.15;
-      }
-
-      // 3) Search prefix match on name OR email (already lowercased upstream).
-      if (searchQuery) {
-        const hitsName = f.nameLower.startsWith(searchQuery);
-        const hitsEmail = f.emailLower.startsWith(searchQuery);
-        if (!hitsName && !hitsEmail) return 0.15;
-      }
-
-      // 4) Lasso selection (with optional pie-slice drill-down INSIDE the lasso).
-      if (lassoSelection) {
-        if (!lassoSelection.has(i)) return 0.15;
-        if (drillDown) {
-          for (const [dim, value] of Object.entries(drillDown)) {
-            if (featureValueForDim(f, dim) !== value) return 0.15;
-          }
-        }
-      }
-
-      return 1.0;
-    });
+    const { physics, ...rest } = inputs;
+    physics.setMask(buildMaskPredicate(rest));
   }, [
     inputs.physics,
     inputs.features,
