@@ -199,9 +199,10 @@ function ShellBody({
 // ---------------------------------------------------------------------------
 
 export function AccessAnalysisShell(): React.JSX.Element {
-  const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
-    staleTime: 600_000,
-  });
+  const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(
+    { includePermissionSummary: true },
+    { staleTime: 600_000 },
+  );
   const users = bulkUsersQuery.data;
 
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);

@@ -139,6 +139,10 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
         module_ids: project.modules.join("|"),
         added_on: timestampMillis(project.addedOn),
         last_sign_in_instance: timestampMillis(project.lastSignIn),
+        perm_strength: project.permissionStrength ?? 0,
+        folder_breadth: project.folderBreadth ?? 0,
+        full_controller: project.fullController ?? false,
+        perm_mixed: project.permMixedProfile ?? false,
       }));
     });
   });
@@ -204,6 +208,10 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
       module_ids: projectRows.map((row) => row.module_ids),
       added_on: projectRows.map((row) => row.added_on),
       last_sign_in_instance: projectRows.map((row) => row.last_sign_in_instance),
+      perm_strength: Int32Array.from(projectRows.map((row) => row.perm_strength)),
+      folder_breadth: Int32Array.from(projectRows.map((row) => row.folder_breadth)),
+      full_controller: projectRows.map((row) => row.full_controller),
+      perm_mixed: projectRows.map((row) => row.perm_mixed),
     }),
     similarityEdges: tableFromArrays({
       source_user_id: similarityRows.map((row) => row.source_user_id),

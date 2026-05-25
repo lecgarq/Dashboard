@@ -106,6 +106,10 @@ interface RawFeatureRow {
   module_ids: string | null;
   added_on: bigint | number | null;
   last_sign_in_instance: bigint | number | null;
+  perm_strength: bigint | number | null;
+  folder_breadth: bigint | number | null;
+  full_controller: boolean | number | null;
+  perm_mixed: boolean | number | null;
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -160,7 +164,11 @@ export async function buildFeatureSnapshot(
       COALESCE(ANY_VALUE(up.is_project_admin), FALSE)                    AS is_project_admin,
       COALESCE(ANY_VALUE(up.module_ids), '')                            AS module_ids,
       ANY_VALUE(up.added_on)                                            AS added_on,
-      ANY_VALUE(up.last_sign_in_instance)                               AS last_sign_in_instance
+      ANY_VALUE(up.last_sign_in_instance)                               AS last_sign_in_instance,
+      COALESCE(ANY_VALUE(up.perm_strength), 0)                          AS perm_strength,
+      COALESCE(ANY_VALUE(up.folder_breadth), 0)                         AS folder_breadth,
+      COALESCE(ANY_VALUE(up.full_controller), FALSE)                    AS full_controller,
+      COALESCE(ANY_VALUE(up.perm_mixed), FALSE)                         AS perm_mixed
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id
@@ -189,6 +197,9 @@ export async function buildFeatureSnapshot(
     const affiliation = classifyAffiliation(email);
     const isExternal = affiliation === "external";
 
+    const permissionStrength = Number(r.perm_strength ?? 0);
+    const folderBreadth = Number(r.folder_breadth ?? 0);
+
     const riskFlags = computeRiskFlags({
       isExternal,
       isAdmin: Boolean(r.is_project_admin),
@@ -196,10 +207,9 @@ export async function buildFeatureSnapshot(
       accountStatus: String(r.account_status ?? ""),
       // hasAccess: instance is in the feed → it is a real membership.
       hasAccess: true,
-      // Phase A: permission/activity inputs not yet plumbed (see Phase B/C).
-      permissionStrength: 0,
-      folderBreadth: 0,
-      activityTotal: 0,
+      permissionStrength,
+      folderBreadth,
+      activityTotal: 0, // still 0 until Phase C
     });
 
     const addedOnMs =
@@ -239,6 +249,13 @@ export async function buildFeatureSnapshot(
       // Phase B: per-instance recency from AccDcProjectUser.lastSignIn. Phase C
       // overwrites this with true last-ACTIVITY recency from AccActivity.
       activityRecencyBucket: bucketRecency(instanceRecencyDays),
+      permissionStrength,
+      permissionTypeSummary: {
+        folderBreadth,
+        coverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
+        mixedProfile: Boolean(r.perm_mixed),
+        fullController: Boolean(r.full_controller),
+      },
     });
   }
 
@@ -271,6 +288,8 @@ export async function buildFeatureSnapshot(
     membershipAgeDays: null,
     membershipBucket: "unknown",
     activityRecencyBucket: "none",
+    permissionStrength: 0,
+    permissionTypeSummary: { folderBreadth: 0, coverage: "unknown", mixedProfile: false, fullController: false },
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));

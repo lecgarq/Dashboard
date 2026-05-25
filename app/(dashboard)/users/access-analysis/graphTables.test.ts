@@ -134,6 +134,22 @@ describe("buildGraphArrowTables", () => {
     expect(row.added_on).toBe(Date.parse("2025-01-01T00:00:00.000Z"));
     expect(row.last_sign_in_instance).toBe(Date.parse("2026-05-01T00:00:00.000Z"));
   });
+
+  it("emits permission summary columns on userProjects", async () => {
+    const users = [
+      user({
+        projects: [
+          { id: "p1", name: "P1", status: "active", isAdmin: false, roles: ["R"], modules: ["build"], permissionStrength: 5, folderBreadth: 3, fullController: true, permMixedProfile: true } as any,
+        ],
+      }),
+    ];
+    const tables = await buildGraphArrowTables({ users, similarityInput: null, topology: null });
+    const row = tables.userProjects.toArray()[0] as any;
+    expect(row.perm_strength).toBe(5);
+    expect(row.folder_breadth).toBe(3);
+    expect(row.full_controller).toBe(true);
+    expect(row.perm_mixed).toBe(true);
+  });
 });
 
 const u = (o: Partial<BulkAccUser>): BulkAccUser => ({

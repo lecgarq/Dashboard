@@ -88,6 +88,15 @@ export interface NodeFeatureSnapshot {
   membershipBucket?: "<30d" | "<90d" | "<1y" | ">1y" | "unknown";
   /** [P5-B then refined in P5-C] Last-activity recency bucket (6-way). */
   activityRecencyBucket?: "0-7d" | "8-14d" | "15-30d" | "31-60d" | "60d+" | "none";
+  /** [P5-B] Numeric access strength 0..5 (0=none, view=1 … control=5); MAX across grants. */
+  permissionStrength?: number;
+  /** [P5-B] Derived per-instance permission profile from folder grants. */
+  permissionTypeSummary?: {
+    folderBreadth: number;
+    coverage: "known" | "partial" | "unknown";
+    mixedProfile: boolean;
+    fullController: boolean;
+  };
 }
 
 /**

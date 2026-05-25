@@ -31,6 +31,10 @@ interface FakeRow {
   module_ids: string | null;
   added_on: bigint | number | null;
   last_sign_in_instance: bigint | number | null;
+  perm_strength: bigint | number | null;
+  folder_breadth: bigint | number | null;
+  full_controller: boolean | number | null;
+  perm_mixed: boolean | number | null;
 }
 
 let mockRows: FakeRow[] = [];
@@ -241,6 +245,10 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     module_ids: over.module_ids ?? null,
     added_on: over.added_on ?? null,
     last_sign_in_instance: over.last_sign_in_instance ?? null,
+    perm_strength: over.perm_strength ?? null,
+    folder_breadth: over.folder_breadth ?? null,
+    full_controller: over.full_controller ?? null,
+    perm_mixed: over.perm_mixed ?? null,
   };
 }
 
@@ -351,5 +359,27 @@ describe("buildFeatureSnapshot — P5-B membership + per-instance recency", () =
     expect(f!.membershipBucket).toBe("unknown");
     expect(f!.activityRecencyBucket).toBe("none");
     expect(f!.membershipAgeDays ?? null).toBeNull();
+  });
+});
+
+describe("buildFeatureSnapshot — P5-B permission summary", () => {
+  it("reads permissionStrength + permissionTypeSummary from columns", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", perm_strength: 5, folder_breadth: 3, full_controller: true, perm_mixed: true })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.permissionStrength).toBe(5);
+    expect(f!.permissionTypeSummary!.fullController).toBe(true);
+    expect(f!.permissionTypeSummary!.folderBreadth).toBe(3);
+    expect(f!.permissionTypeSummary!.mixedProfile).toBe(true);
+  });
+  it("external + high permission strength trips externalHighPerm", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "x@gmail.com", perm_strength: 5 })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.riskFlags!.externalHighPerm).toBe(true);
+  });
+  it("fallback yields permissionStrength 0 + unknown coverage summary", async () => {
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(f!.permissionStrength).toBe(0);
+    expect(f!.permissionTypeSummary!.coverage).toBe("unknown");
+    expect(f!.permissionTypeSummary!.fullController).toBe(false);
   });
 });
