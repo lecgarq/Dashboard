@@ -190,7 +190,7 @@ export async function getCachedAccDcBulkUsers(
           },
         }),
         db.accDcProjectUser.findMany({
-          select: { projectId: true, userId: true },
+          select: { projectId: true, userId: true, addedOn: true, lastSignIn: true },
         }),
         db.accDcProjectUserRole.findMany({
           select: { projectId: true, userId: true, roleId: true },
@@ -231,7 +231,12 @@ export async function getCachedAccDcBulkUsers(
           ...u,
           lastSignIn: u.lastSignIn ? u.lastSignIn.toISOString() : null,
         })),
-        projectUsers,
+        projectUsers: projectUsers.map((pu: any) => ({
+          projectId: pu.projectId,
+          userId: pu.userId,
+          addedOn: pu.addedOn ? pu.addedOn.toISOString() : null,
+          lastSignIn: pu.lastSignIn ? pu.lastSignIn.toISOString() : null,
+        })),
         projectUserRoles,
         projectUserProducts,
         projectUserCompanies,
