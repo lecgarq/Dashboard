@@ -133,3 +133,22 @@ describe("permissionContexts", () => {
     expect(out[0].permissionContexts).toEqual([]);
   });
 });
+
+describe("per-instance addedOn / lastSignIn", () => {
+  it("carries AccDcProjectUser.addedOn + lastSignIn onto the project", () => {
+    const input: DcAssemblyInput = {
+      ...base,
+      users: [{ id: "u1", email: "a@hermosillo.com", name: "A", status: "active", companyId: null }],
+      projectUsers: [{ projectId: "p1", userId: "u1", addedOn: "2025-01-01T00:00:00.000Z", lastSignIn: "2026-05-01T00:00:00.000Z" }],
+      projectMeta: { p1: { name: "P1", status: "active", crawlStatus: "ok" } },
+    };
+    const out = assembleDcUsers(input);
+    expect(out[0].projects[0].addedOn).toBe("2025-01-01T00:00:00.000Z");
+    expect(out[0].projects[0].lastSignIn).toBe("2026-05-01T00:00:00.000Z");
+  });
+
+  it("defaults to null when the membership row omits the dates", () => {
+    const out = assembleDcUsers(base);
+    expect(out[0]?.projects[0]?.addedOn ?? null).toBeNull();
+  });
+});

@@ -7,6 +7,10 @@ export interface BulkAccProject {
   modules: string[];
   /** AccProject.folderCrawlStatus for this project: "ok" | "never" | "partial" | "failed" | "inaccessible". */
   crawlStatus?: string;
+  /** [P5-B] ISO addedOn for THIS (project,user) membership; null when DC reported none. Source: AccDcProjectUser.addedOn. */
+  addedOn?: string | null;
+  /** [P5-B] ISO last sign-in for THIS (project,user); null when none. Source: AccDcProjectUser.lastSignIn. */
+  lastSignIn?: string | null;
 }
 
 export interface PermissionContext {

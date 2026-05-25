@@ -3,7 +3,7 @@ import { classifyAffiliation } from "@/app/(dashboard)/users/access-analysis/int
 
 export interface DcAssemblyInput {
   users: { id: string; email: string | null; name: string | null; status: string | null; companyId: string | null; lastSignIn?: string | null }[];
-  projectUsers: { projectId: string; userId: string }[];
+  projectUsers: { projectId: string; userId: string; addedOn?: string | null; lastSignIn?: string | null }[];
   projectUserRoles: { projectId: string; userId: string; roleId: string }[];
   projectUserProducts: { projectId: string; userId: string; productKey: string; accessLevel: string }[];
   companies: { id: string; name: string }[];
@@ -86,6 +86,15 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
     membersByUser.set(pu.userId, set);
   }
 
+  // Per-(user,project) membership dates from AccDcProjectUser.
+  const membershipDates = new Map<string, { addedOn: string | null; lastSignIn: string | null }>();
+  for (const pu of input.projectUsers) {
+    membershipDates.set(`${pu.userId}::${pu.projectId}`, {
+      addedOn: pu.addedOn ?? null,
+      lastSignIn: pu.lastSignIn ?? null,
+    });
+  }
+
   // Build "userId::projectId" → set of resolved role names (display names)
   const rolesByUserProject = new Map<string, Set<string>>();
   // Build "userId::projectId" → set of RAW roleIds (for joining folder permissions)
@@ -139,6 +148,8 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         roles,
         modules: prods.map((p) => p.key),
         crawlStatus: meta.crawlStatus,
+        addedOn: membershipDates.get(`${u.id}::${pid}`)?.addedOn ?? null,
+        lastSignIn: membershipDates.get(`${u.id}::${pid}`)?.lastSignIn ?? null,
       };
     });
 
