@@ -46,6 +46,9 @@ export type Availability = "A1" | "A2" | "A3" | "A4" | "A5";
 
 export type Confidence = "high" | "medium" | "low";
 
+/** Runtime surfaces a dimension can feed. */
+export type DimensionSurface = "slider" | "color";
+
 /** Confidence → weighting factor (taxonomy §14 universal weighting model). */
 export const CONFIDENCE_FACTOR: Readonly<Record<Confidence, number>> = {
   high: 1.0,
@@ -79,6 +82,15 @@ export interface DimensionDescriptor {
    * "unknown"/"(none)" are still valid categories returned by `extract`.
    */
   isAvailable(f: NodeFeatureSnapshot): boolean;
+  /**
+   * Runtime surfaces this dimension feeds. When OMITTED, defaults are derived from `type`
+   * (slider-capable types → "slider"; categorical|binary → "color") so the 9 P1–P4 dims are
+   * unchanged. Set explicitly to add a data-backed dimension WITHOUT auto-promoting it to a
+   * slider/target (e.g. color-only). A "slider" surface always implies a layout target.
+   */
+  surfaces?: ReadonlyArray<DimensionSurface>;
+  /** Color ramp style when surfaced as color: "categorical" (hashed hue) | "ordered" (sequential). */
+  colorScale?: "categorical" | "ordered";
 }
 
 export const DIMENSION_REGISTRY: readonly DimensionDescriptor[] = [
@@ -233,12 +245,29 @@ const SLIDER_CAPABLE_TYPES: ReadonlySet<DimensionType> = new Set([
 ]);
 
 /**
- * Dimensions that participate in LAYOUT TARGETS + weighting at runtime. P4 promoted
- * `module` to a visible slider, so the target set is now exactly the slider-capable
- * set — there is no target-only tail anymore.
+ * Resolve the runtime surfaces for a descriptor. Explicit `surfaces` wins; otherwise the
+ * legacy type-derived fallback (slider-capable types → "slider"; categorical|binary → "color")
+ * reproduces the pre-P6 behavior exactly so the 9 existing dims are unchanged.
+ */
+export function dimensionSurfaces(d: DimensionDescriptor): ReadonlyArray<DimensionSurface> {
+  if (d.surfaces) return d.surfaces; // explicit wins
+  const out: DimensionSurface[] = [];
+  if (SLIDER_CAPABLE_TYPES.has(d.type)) out.push("slider"); // legacy fallback
+  if (d.type === "categorical" || d.type === "binary") out.push("color");
+  return out;
+}
+
+export const dimensionHasSurface = (d: DimensionDescriptor, s: DimensionSurface): boolean =>
+  dimensionSurfaces(d).includes(s);
+
+/**
+ * Dimensions that participate in LAYOUT TARGETS + weighting at runtime. Keyed off the
+ * "slider" surface capability (not raw type), so later phases can add color-only dims
+ * without auto-promoting them to targets. For the 9 P1–P4 dims this is identical to the
+ * old slider-capable-type filter — the full slider-capable set in registry order.
  */
 export const RUNTIME_TARGET_DIMENSION_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter(
-  (d) => SLIDER_CAPABLE_TYPES.has(d.type),
+  (d) => dimensionHasSurface(d, "slider"),
 ).map((d) => d.id);
 
 /** Multi-hot dimensions need a centroid-of-active-keys anchor (not a single category anchor). */

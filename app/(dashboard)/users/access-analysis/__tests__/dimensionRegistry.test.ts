@@ -4,7 +4,10 @@ import {
   DIMENSION_IDS,
   CONFIDENCE_FACTOR,
   getDimension,
+  dimensionSurfaces,
+  dimensionHasSurface,
   type DimensionId,
+  type DimensionDescriptor,
 } from "../dimensionRegistry";
 import { categoryValue, type TargetDimensionId } from "../featureTargets";
 import type { NodeFeatureSnapshot } from "../interactionTypes";
@@ -205,6 +208,45 @@ describe("dimension registry — target vs slider runtime sets", () => {
   it("RUNTIME_DIMENSION_IDS (primary 6) does not contain module; RUNTIME_TARGET_DIMENSION_IDS does", () => {
     expect(RUNTIME_DIMENSION_IDS).not.toContain("module");
     expect(RUNTIME_TARGET_DIMENSION_IDS).toContain("module");
+  });
+});
+
+describe("dimension registry — surface capability", () => {
+  it("role (categorical) has both slider and color surfaces via legacy fallback", () => {
+    const d = getDimension("role")!;
+    expect(dimensionHasSurface(d, "slider")).toBe(true);
+    expect(dimensionHasSurface(d, "color")).toBe(true);
+  });
+
+  it("signin (temporal) is slider-capable but not color (not categorical/binary)", () => {
+    const d = getDimension("signin")!;
+    expect(dimensionHasSurface(d, "slider")).toBe(true);
+    expect(dimensionHasSurface(d, "color")).toBe(false);
+  });
+
+  it("module (multi-hot) is slider-capable but not color", () => {
+    const d = getDimension("module")!;
+    expect(dimensionHasSurface(d, "slider")).toBe(true);
+    expect(dimensionHasSurface(d, "color")).toBe(false);
+  });
+
+  it("explicit surfaces array wins over the type-derived fallback", () => {
+    const throwaway: DimensionDescriptor = {
+      id: "company" as DimensionId,
+      label: "Throwaway color-only",
+      family: "affiliation",
+      type: "categorical", // legacy fallback would yield slider+color
+      source: "test",
+      availability: "A1",
+      defaultWeight: 0,
+      confidence: "low",
+      surfaces: ["color"], // explicit: color-only, NOT a slider
+      extract: () => null,
+      isAvailable: () => true,
+    };
+    expect(dimensionSurfaces(throwaway)).toEqual(["color"]);
+    expect(dimensionHasSurface(throwaway, "slider")).toBe(false);
+    expect(dimensionHasSurface(throwaway, "color")).toBe(true);
   });
 });
 
