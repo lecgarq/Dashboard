@@ -10,6 +10,7 @@ import {
   nodeHasPermProfile,
   nodeInModule,
   nodeMatchesFacet,
+  summarizeFacets,
 } from "./accessFacets";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
@@ -87,5 +88,35 @@ describe("accessFacets — nodeMatchesFacet (OR within a family)", () => {
   });
   it("returns true for an unknown (non-facet) key", () => {
     expect(nodeMatchesFacet(risky, "role", new Set(["x"]))).toBe(true);
+  });
+});
+
+describe("accessFacets — summarizeFacets", () => {
+  it("counts risk flags, perm profiles, and modules in one pass", () => {
+    const features = [
+      node({
+        riskFlags: { externalHighPerm: true, staleButActive: false, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false },
+        permissionTypeSummary: { folderBreadth: 30, coverage: "known", mixedProfile: true, fullController: false },
+        moduleSignature: ["build", "cost"],
+      }),
+      node({
+        riskFlags: { externalHighPerm: true, staleButActive: true, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false },
+        permissionTypeSummary: { folderBreadth: 2, coverage: "partial", mixedProfile: false, fullController: true },
+        moduleSignature: ["build"],
+      }),
+      node(), // no enrichment → contributes nothing
+    ];
+    const s = summarizeFacets(features);
+    expect(s.risk.externalHighPerm).toBe(2);
+    expect(s.risk.staleButActive).toBe(1);
+    expect(s.risk.highActivityHighPerm).toBe(0);
+    expect(s.perm.mixedProfile).toBe(1);
+    expect(s.perm.fullController).toBe(1);
+    expect(s.perm.broadFolders).toBe(1);   // only the breadth-30 node
+    expect(s.perm.coverageKnown).toBe(1);
+    expect(s.modules).toEqual([
+      { key: "build", count: 2 },
+      { key: "cost", count: 1 },
+    ]); // sorted by count desc, then key asc
   });
 });

@@ -83,6 +83,36 @@ export function nodeInModule(f: NodeFeatureSnapshot, moduleKey: string): boolean
   return (f.moduleSignature ?? []).includes(moduleKey);
 }
 
+export interface FacetSummary {
+  risk: Record<RiskFlagId, number>;
+  perm: Record<PermProfileId, number>;
+  /** Module keys present in the data, sorted by count desc then key asc. */
+  modules: { key: string; count: number }[];
+}
+
+export function summarizeFacets(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+): FacetSummary {
+  const risk = Object.fromEntries(RISK_FLAG_IDS.map((id) => [id, 0])) as Record<RiskFlagId, number>;
+  const perm = Object.fromEntries(PERM_PROFILE_IDS.map((id) => [id, 0])) as Record<PermProfileId, number>;
+  const moduleCounts = new Map<string, number>();
+
+  for (const f of features) {
+    for (const id of RISK_FLAG_IDS) if (nodeHasRiskFlag(f, id)) risk[id]++;
+    for (const id of PERM_PROFILE_IDS) if (nodeHasPermProfile(f, id)) perm[id]++;
+    const keys = f.moduleFlags
+      ? Object.keys(f.moduleFlags).filter((k) => f.moduleFlags![k])
+      : (f.moduleSignature ?? []);
+    for (const k of keys) moduleCounts.set(k, (moduleCounts.get(k) ?? 0) + 1);
+  }
+
+  const modules = [...moduleCounts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+
+  return { risk, perm, modules };
+}
+
 /** OR-within-family match for one facet key. Empty set = pass. Unknown key = pass. */
 export function nodeMatchesFacet(
   f: NodeFeatureSnapshot,
