@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { orderSlicesByPriority } from './dcBackfillPriority';
+import { orderSlicesByPriority, selectRunnableWithFairness } from './dcBackfillPriority';
 import type { Slice } from './dcProgressiveBackfill';
 
 // ---------------------------------------------------------------------------
@@ -281,5 +281,268 @@ describe('orderSlicesByPriority — edge cases', () => {
 
     // Comparator stayed total: no throw, both inputs returned.
     expect(result).toHaveLength(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// selectRunnableWithFairness tests
+// ---------------------------------------------------------------------------
+
+describe('selectRunnableWithFairness — budget respected', () => {
+  it('budget <= 0 returns []', () => {
+    const s0 = makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31');
+    const s1 = makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31');
+    const ageRank = new Map([['p1', 1], ['p2', 2]]);
+
+    expect(selectRunnableWithFairness([s0, s1], 0, 0, ageRank)).toEqual([]);
+    expect(selectRunnableWithFairness([s0, s1], -5, 2, ageRank)).toEqual([]);
+  });
+
+  it('budget >= total returns all slices in original order', () => {
+    const s0 = makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31');
+    const s1 = makeSlice(['p2'], 'forward', '2024-02-01', '2024-02-28');
+    const s2 = makeSlice(['p3'], 'backward', '2024-03-01', '2024-03-31');
+    const sorted = [s0, s1, s2];
+    const ageRank = new Map([['p1', 1], ['p2', 2], ['p3', 3]]);
+
+    const result = selectRunnableWithFairness(sorted, 10, 2, ageRank);
+    expect(result).toHaveLength(3);
+    // Original order must be preserved
+    expect(result[0]).toBe(s0);
+    expect(result[1]).toBe(s1);
+    expect(result[2]).toBe(s2);
+  });
+
+  it('returns exactly min(budget, total) slices; no duplicates', () => {
+    const slices = Array.from({ length: 5 }, (_, i) =>
+      makeSlice([`p${i}`], 'forward', '2024-01-01', '2024-01-31'),
+    );
+    const ageRank = new Map(slices.map((s, i) => [s.projectIds[0], i]));
+
+    const result = selectRunnableWithFairness(slices, 3, 1, ageRank);
+    expect(result).toHaveLength(3);
+    // No duplicates: all references are unique
+    const refs = new Set(result);
+    expect(refs.size).toBe(3);
+  });
+});
+
+describe('selectRunnableWithFairness — reserve clamped', () => {
+  it('reserve > budget behaves like reserve == budget (all slots are fairness)', () => {
+    // 5 slices, budget 3, reserve 99 → effectiveReserve = 3, prefixCount = 0
+    // All 3 selected come from fairness (oldest ageRank first)
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 10 (newest)
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 5
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 1 (oldest)
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 2
+      makeSlice(['p4'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 3
+    ];
+    const ageRank = new Map([['p0', 10], ['p1', 5], ['p2', 1], ['p3', 2], ['p4', 3]]);
+
+    // All slices in tail (prefixCount = 0). Fairness picks oldest 3: p2(1), p3(2), p4(3)
+    const result = selectRunnableWithFairness(slices, 3, 99, ageRank);
+    expect(result).toHaveLength(3);
+    // Result in original index order: p2 is index 2, p3 is index 3, p4 is index 4
+    expect(result[0]).toBe(slices[2]); // p2
+    expect(result[1]).toBe(slices[3]); // p3
+    expect(result[2]).toBe(slices[4]); // p4
+  });
+
+  it('reserve == 0 returns the first budget slices in priority order', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'),
+    ];
+    const ageRank = new Map([['p0', 10], ['p1', 1], ['p2', 2], ['p3', 3]]);
+
+    const result = selectRunnableWithFairness(slices, 2, 0, ageRank);
+    expect(result).toHaveLength(2);
+    expect(result[0]).toBe(slices[0]);
+    expect(result[1]).toBe(slices[1]);
+  });
+});
+
+describe('selectRunnableWithFairness — fairness reserve honored', () => {
+  it('the most starved (oldest) tail slice is included even when it is last in priority', () => {
+    // 6 slices sorted by priority. budget=4, reserve=2 → prefix takes [0,1], fairness takes 2 from tail [2,3,4,5].
+    // p5 has the smallest ageRank (most starved) so it should be in the fairness set.
+    const slices = [
+      makeSlice(['pA'], 'forward', '2024-01-01', '2024-01-31'), // index 0 — priority prefix
+      makeSlice(['pB'], 'forward', '2024-01-01', '2024-01-31'), // index 1 — priority prefix
+      makeSlice(['pC'], 'forward', '2024-01-01', '2024-01-31'), // index 2 — tail, ageRank 50
+      makeSlice(['pD'], 'forward', '2024-01-01', '2024-01-31'), // index 3 — tail, ageRank 40
+      makeSlice(['pE'], 'forward', '2024-01-01', '2024-01-31'), // index 4 — tail, ageRank 30
+      makeSlice(['pF'], 'forward', '2024-01-01', '2024-01-31'), // index 5 — tail, ageRank 1 (most starved)
+    ];
+    const ageRank = new Map([
+      ['pA', 99], ['pB', 99],
+      ['pC', 50], ['pD', 40], ['pE', 30], ['pF', 1],
+    ]);
+
+    const result = selectRunnableWithFairness(slices, 4, 2, ageRank);
+    expect(result).toHaveLength(4);
+
+    // Prefix slices (indices 0,1) must be present
+    expect(result).toContain(slices[0]);
+    expect(result).toContain(slices[1]);
+
+    // Fairness picks the 2 oldest from the tail: pF (ageRank 1) and pE (ageRank 30)
+    expect(result).toContain(slices[5]); // pF — most starved
+    expect(result).toContain(slices[4]); // pE — second most starved
+
+    // pC (index 2) and pD (index 3) were NOT selected
+    expect(result).not.toContain(slices[2]);
+    expect(result).not.toContain(slices[3]);
+
+    // Output is in original sortedSlices index order
+    const indices = result.map(s => slices.indexOf(s));
+    expect(indices).toEqual([0, 1, 4, 5]);
+  });
+
+  it('starvation surfaced: last-priority slice with oldest ageRank appears in result when reserve >= 1', () => {
+    const slices = [
+      makeSlice(['high1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['high2'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['low'],   'backward', '2024-01-01', '2024-01-31'), // last in priority, most starved
+    ];
+    const ageRank = new Map([['high1', 100], ['high2', 200], ['low', 1]]);
+
+    const result = selectRunnableWithFairness(slices, 2, 1, ageRank);
+    expect(result).toHaveLength(2);
+    // The high-priority slice (index 0) fills the prefix
+    expect(result).toContain(slices[0]);
+    // The most-starved low-priority slice (index 2) fills the fairness slot
+    expect(result).toContain(slices[2]);
+    // In original index order
+    const indices = result.map(s => slices.indexOf(s));
+    expect(indices).toEqual([0, 2]);
+  });
+});
+
+describe('selectRunnableWithFairness — top-up', () => {
+  it('fills from unselected tail when tail has fewer items than reserve', () => {
+    // 4 slices, budget=4, reserve=3 → prefixCount=1, tail=[1,2,3] (3 items).
+    // effectiveReserve=3, tail has exactly 3 items → fairness picks all 3 → total=4.
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'),
+    ];
+    const ageRank = new Map([['p0', 4], ['p1', 3], ['p2', 2], ['p3', 1]]);
+    const result = selectRunnableWithFairness(slices, 4, 3, ageRank);
+    expect(result).toHaveLength(4);
+    // All slices returned in original order
+    expect(result[0]).toBe(slices[0]);
+    expect(result[1]).toBe(slices[1]);
+    expect(result[2]).toBe(slices[2]);
+    expect(result[3]).toBe(slices[3]);
+  });
+
+  it('top-up kicks in when tail shorter than reserve: remaining filled from non-selected tail in priority order', () => {
+    // 5 slices, budget=5, reserve=4 → prefixCount=1.
+    // tail=[1,2,3,4]. effectiveReserve=4, tail has 4. All selected. Total=5 (1+4).
+    // This exercises the "tail shorter than reserve" top-up path indirectly; more
+    // direct: budget=4, reserve=10 (clamped to 4) → prefixCount=0, tail=all 5.
+    // fairness picks 4 oldest from 5. top-up fills 1 more from remaining tail item.
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 5 (newest)
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 4
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 3
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 2
+      makeSlice(['p4'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 1 (oldest)
+    ];
+    const ageRank = new Map([['p0', 5], ['p1', 4], ['p2', 3], ['p3', 2], ['p4', 1]]);
+
+    // budget=3, reserve=3 → prefixCount=0, fairness picks 3 oldest: p4(1),p3(2),p2(3)
+    // result in original index order: p2(2), p3(3), p4(4)
+    const result = selectRunnableWithFairness(slices, 3, 3, ageRank);
+    expect(result).toHaveLength(3);
+    expect(result[0]).toBe(slices[2]); // p2 index 2
+    expect(result[1]).toBe(slices[3]); // p3 index 3
+    expect(result[2]).toBe(slices[4]); // p4 index 4
+  });
+
+  it('top-up fills the gap when tail is shorter than effectiveReserve', () => {
+    // budget=5, reserve=3 → prefixCount=2.
+    // Only 4 slices total → tail has 2 slices (indices 2,3).
+    // Fairness picks both (2 < 3), top-up tries to fill 1 more but tail is exhausted.
+    // Total = min(5, 4) = 4.
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'),
+    ];
+    const ageRank = new Map([['p0', 4], ['p1', 3], ['p2', 2], ['p3', 1]]);
+    const result = selectRunnableWithFairness(slices, 5, 3, ageRank);
+    expect(result).toHaveLength(4);
+  });
+});
+
+describe('selectRunnableWithFairness — determinism', () => {
+  it('identical inputs produce identical output across two calls', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'backward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p3'], 'backward', '2024-01-01', '2024-01-31'),
+    ];
+    const ageRank = new Map([['p0', 10], ['p1', 5], ['p2', 2], ['p3', 2]]); // p2 and p3 tie on ageRank
+
+    const r1 = selectRunnableWithFairness(slices, 3, 1, ageRank);
+    const r2 = selectRunnableWithFairness(slices, 3, 1, ageRank);
+
+    expect(r1.map(s => slices.indexOf(s))).toEqual(r2.map(s => slices.indexOf(s)));
+  });
+
+  it('tie in ageRank resolved by original index (lower index wins)', () => {
+    // budget=2, reserve=2 → prefixCount=0 (all in tail).
+    // p0 ageRank=5, p1 ageRank=1, p2 ageRank=1 → p1 and p2 tie; p1 is original index 1, p2 is index 2 → p1 wins tie.
+    // Fairness picks p1(idx1) and p2(idx2) over p0(idx0 but ageRank=5).
+    // Wait: budget=2, effectiveReserve=2, prefixCount=0, tail=[0,1,2].
+    // Sort tail by (ageKey asc, index asc): p1(1,idx1), p2(1,idx2), p0(5,idx0).
+    // Take 2: p1, p2. In original index order: index1(p1), index2(p2).
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'), // idx 0, ageRank 5
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'), // idx 1, ageRank 1
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'), // idx 2, ageRank 1
+    ];
+    const ageRank = new Map([['p0', 5], ['p1', 1], ['p2', 1]]);
+
+    const result = selectRunnableWithFairness(slices, 2, 2, ageRank);
+    expect(result).toHaveLength(2);
+    // p1 and p2 selected (tied ageRank, lower index wins tiebreak vs p0)
+    expect(result[0]).toBe(slices[1]); // p1, original index 1
+    expect(result[1]).toBe(slices[2]); // p2, original index 2
+  });
+});
+
+describe('selectRunnableWithFairness — no mutation', () => {
+  it('input array and slice objects are not mutated', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'backward', '2024-01-01', '2024-01-31'),
+    ];
+    const inputCopy = slices.slice();
+    const snapshotsBefore = slices.map(serializeSlice);
+    const ageRank = new Map([['p0', 3], ['p1', 2], ['p2', 1]]);
+
+    selectRunnableWithFairness(slices, 2, 1, ageRank);
+
+    // Array not mutated
+    expect(slices).toHaveLength(3);
+    expect(slices[0]).toBe(inputCopy[0]);
+    expect(slices[1]).toBe(inputCopy[1]);
+    expect(slices[2]).toBe(inputCopy[2]);
+
+    // Slice objects not mutated
+    slices.forEach((s, i) => {
+      expect(serializeSlice(s)).toBe(snapshotsBefore[i]);
+    });
   });
 });

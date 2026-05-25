@@ -1,12 +1,13 @@
 /**
- * DC backfill slice priority ordering.
+ * DC backfill slice priority ordering and fairness-aware selection.
  *
  * Pure module — no Prisma, no fs, no fetch. Accepts a list of Slice objects
  * and a project-priority map, and returns a NEW array sorted by a fully
  * deterministic total order so the most important work runs first.
  *
- * Single responsibility: reorder-only adapter. Fairness / quota logic lives
- * elsewhere (YAGNI).
+ * Also exports `selectRunnableWithFairness` which applies a budget + fairness
+ * reserve so that low-priority (but chronologically starved) projects are never
+ * indefinitely deferred.
  */
 import type { Slice, SliceReason } from './dcProgressiveBackfill';
 
@@ -92,4 +93,120 @@ export function orderSlicesByPriority(
     const firstB = b.projectIds[0] ?? '';
     return firstA.localeCompare(firstB);
   });
+}
+
+/**
+ * Returns the minimum age rank for a slice across all of its projectIds.
+ * A projectId absent from `ageRankByProjectId` contributes `+Infinity`
+ * (treated as least-starved / not overdue).
+ */
+function minAgeRankForSlice(
+  slice: Slice,
+  ageRankByProjectId: Map<string, number>,
+): number {
+  let min = Number.POSITIVE_INFINITY;
+  for (const id of slice.projectIds) {
+    const rank = ageRankByProjectId.get(id) ?? Number.POSITIVE_INFINITY;
+    if (rank < min) {
+      min = rank;
+    }
+  }
+  return min;
+}
+
+/**
+ * Selects up to `budget` slices from a priority-ordered list, reserving
+ * `reserve` slots for the most chronologically starved (oldest-progressed)
+ * projects so that low-priority work is never indefinitely deferred.
+ *
+ * ### Exact semantics (deterministic, no mutation)
+ * 1. `budget <= 0` → return `[]`.
+ * 2. `effectiveReserve = clamp(reserve, 0, budget)`.
+ * 3. Priority prefix = first `prefixCount = budget - effectiveReserve` slices
+ *    of `sortedSlices` — auto-selected.
+ * 4. Fairness picks come ONLY from the non-prefix tail (indices >= prefixCount).
+ *    Each slice's age key = min ageRank among its member projectIds (absent →
+ *    +Infinity). Sort tail by (ageKey asc, original index asc); take up to
+ *    `effectiveReserve` of them.
+ * 5. Top-up: if fewer than `budget` slices are selected (e.g. tail was shorter
+ *    than `effectiveReserve`), fill from still-unselected tail slices in
+ *    original index order until `budget` is reached or exhausted.
+ * 6. Final list returned in original `sortedSlices` index order.
+ * 7. Result length = `min(budget, sortedSlices.length)`. Never exceed `budget`;
+ *    never include a slice twice.
+ */
+export function selectRunnableWithFairness(
+  sortedSlices: Slice[],
+  budget: number,
+  reserve: number,
+  ageRankByProjectId: Map<string, number>,
+): Slice[] {
+  // 1. Guard: nothing to do.
+  if (budget <= 0) {
+    return [];
+  }
+
+  // 2. Clamp reserve.
+  const effectiveReserve = Math.min(Math.max(reserve, 0), budget);
+
+  // 3. Priority prefix: first prefixCount elements are auto-selected.
+  const prefixCount = budget - effectiveReserve;
+  const selectedIndices = new Set<number>();
+
+  for (let i = 0; i < prefixCount && i < sortedSlices.length; i++) {
+    selectedIndices.add(i);
+  }
+
+  // 4. Fairness picks from the non-prefix tail.
+  // Build an array of [originalIndex, ageKey] for tail items.
+  const tailEntries: Array<{ idx: number; ageKey: number }> = [];
+  for (let i = prefixCount; i < sortedSlices.length; i++) {
+    tailEntries.push({
+      idx: i,
+      ageKey: minAgeRankForSlice(sortedSlices[i], ageRankByProjectId),
+    });
+  }
+
+  // Sort tail by (ageKey asc, original index asc) — stable, deterministic.
+  const sortedTail = tailEntries.slice().sort((a, b) => {
+    if (a.ageKey !== b.ageKey) {
+      // Both could be +Infinity; if equal the index tiebreak below handles it.
+      // When one is +Infinity and the other finite, finite < +Infinity safely.
+      return a.ageKey - b.ageKey;
+    }
+    return a.idx - b.idx;
+  });
+
+  let fairnessPicked = 0;
+  for (const entry of sortedTail) {
+    if (fairnessPicked >= effectiveReserve) {
+      break;
+    }
+    if (!selectedIndices.has(entry.idx)) {
+      selectedIndices.add(entry.idx);
+      fairnessPicked++;
+    }
+  }
+
+  // 5. Top-up: fill remaining budget slots from unselected tail in original order.
+  if (selectedIndices.size < budget) {
+    for (let i = prefixCount; i < sortedSlices.length; i++) {
+      if (selectedIndices.size >= budget) {
+        break;
+      }
+      if (!selectedIndices.has(i)) {
+        selectedIndices.add(i);
+      }
+    }
+  }
+
+  // 6. Return selected slices in original sortedSlices index order.
+  const result: Slice[] = [];
+  for (let i = 0; i < sortedSlices.length; i++) {
+    if (selectedIndices.has(i)) {
+      result.push(sortedSlices[i]);
+    }
+  }
+
+  return result;
 }
