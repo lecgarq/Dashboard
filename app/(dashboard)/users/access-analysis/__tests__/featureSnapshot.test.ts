@@ -29,6 +29,8 @@ interface FakeRow {
   permission_coverage: string | null;
   is_project_admin: boolean | number | null;
   module_ids: string | null;
+  added_on: bigint | number | null;
+  last_sign_in_instance: bigint | number | null;
 }
 
 let mockRows: FakeRow[] = [];
@@ -42,7 +44,7 @@ vi.mock("../duckdbClient", () => ({
   getDuckDbClient: vi.fn(async () => ({ connection: mockConnection })),
 }));
 
-import { buildFeatureSnapshot, bucketActivity, bucketSignin, parseModuleSignature } from "../featureSnapshot";
+import { buildFeatureSnapshot, bucketActivity, bucketSignin, parseModuleSignature, bucketMembership, bucketRecency } from "../featureSnapshot";
 
 beforeEach(() => {
   mockRows = [];
@@ -237,6 +239,8 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     permission_coverage: over.permission_coverage ?? null,
     is_project_admin: over.is_project_admin ?? false,
     module_ids: over.module_ids ?? null,
+    added_on: over.added_on ?? null,
+    last_sign_in_instance: over.last_sign_in_instance ?? null,
   };
 }
 
@@ -304,5 +308,48 @@ describe("buildFeatureSnapshot — P5-A moduleFlags + riskFlags", () => {
     expect(Object.values(f!.moduleFlags!).every((v) => v === false)).toBe(true);
     expect(f!.riskScore).toBe(0);
     expect(Object.keys(f!.moduleFlags!).sort()).toEqual([...KNOWN_ADVANCED_MODULES].sort());
+  });
+});
+
+describe("bucketMembership", () => {
+  it("buckets days into <30d/<90d/<1y/>1y/unknown", () => {
+    expect(bucketMembership(10)).toBe("<30d");
+    expect(bucketMembership(60)).toBe("<90d");
+    expect(bucketMembership(200)).toBe("<1y");
+    expect(bucketMembership(400)).toBe(">1y");
+    expect(bucketMembership(null)).toBe("unknown");
+  });
+});
+
+describe("bucketRecency", () => {
+  it("buckets days into 0-7/8-14/15-30/31-60/60d+/none", () => {
+    expect(bucketRecency(3)).toBe("0-7d");
+    expect(bucketRecency(10)).toBe("8-14d");
+    expect(bucketRecency(20)).toBe("15-30d");
+    expect(bucketRecency(45)).toBe("31-60d");
+    expect(bucketRecency(90)).toBe("60d+");
+    expect(bucketRecency(null)).toBe("none");
+  });
+});
+
+describe("buildFeatureSnapshot — P5-B membership + per-instance recency", () => {
+  it("computes membershipBucket from added_on epoch ms", async () => {
+    const longAgo = Date.now() - 400 * 86_400_000;
+    mockRows = [makeRow({ user_id: "u", project_id: "p", added_on: BigInt(longAgo) })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.membershipBucket).toBe(">1y");
+    expect(f!.membershipAgeDays).toBeGreaterThanOrEqual(399);
+  });
+  it("computes activityRecencyBucket from instance last sign-in", async () => {
+    const recent = Date.now() - 3 * 86_400_000;
+    mockRows = [makeRow({ user_id: "u", project_id: "p", last_sign_in_instance: BigInt(recent) })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.activityRecencyBucket).toBe("0-7d");
+  });
+  it("fallback yields membershipBucket 'unknown' + activityRecencyBucket 'none'", async () => {
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(f!.membershipBucket).toBe("unknown");
+    expect(f!.activityRecencyBucket).toBe("none");
+    expect(f!.membershipAgeDays ?? null).toBeNull();
   });
 });

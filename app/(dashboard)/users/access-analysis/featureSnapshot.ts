@@ -32,6 +32,25 @@ export function bucketActivity(count: number): NodeFeatureSnapshot["activityBuck
   return "High";
 }
 
+/** Membership tenure bucket from age in days. null → "unknown". */
+export function bucketMembership(days: number | null): NodeFeatureSnapshot["membershipBucket"] {
+  if (days === null || !Number.isFinite(days)) return "unknown";
+  if (days < 30) return "<30d";
+  if (days < 90) return "<90d";
+  if (days < 365) return "<1y";
+  return ">1y";
+}
+
+/** Six-way recency bucket from days since last activity/sign-in. null → "none". */
+export function bucketRecency(days: number | null): NodeFeatureSnapshot["activityRecencyBucket"] {
+  if (days === null || !Number.isFinite(days)) return "none";
+  if (days <= 7) return "0-7d";
+  if (days <= 14) return "8-14d";
+  if (days <= 30) return "15-30d";
+  if (days <= 60) return "31-60d";
+  return "60d+";
+}
+
 /** Day-based bucket. Negative / null treated as ">90d" (unknown == far). */
 export function bucketSignin(days: number | null): NodeFeatureSnapshot["signinBucket"] {
   if (days === null || !Number.isFinite(days)) return ">90d";
@@ -85,6 +104,8 @@ interface RawFeatureRow {
   permission_coverage: string | null;
   is_project_admin: boolean | number | null;
   module_ids: string | null;
+  added_on: bigint | number | null;
+  last_sign_in_instance: bigint | number | null;
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -137,7 +158,9 @@ export async function buildFeatureSnapshot(
       COALESCE(ANY_VALUE(u.account_status), '')                          AS account_status,
       COALESCE(ANY_VALUE(u.permission_coverage), 'unknown')              AS permission_coverage,
       COALESCE(ANY_VALUE(up.is_project_admin), FALSE)                    AS is_project_admin,
-      COALESCE(ANY_VALUE(up.module_ids), '')                            AS module_ids
+      COALESCE(ANY_VALUE(up.module_ids), '')                            AS module_ids,
+      ANY_VALUE(up.added_on)                                            AS added_on,
+      ANY_VALUE(up.last_sign_in_instance)                               AS last_sign_in_instance
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id
@@ -179,6 +202,17 @@ export async function buildFeatureSnapshot(
       activityTotal: 0,
     });
 
+    const addedOnMs =
+      r.added_on === null || r.added_on === undefined ? null : Number(r.added_on);
+    const membershipAgeDays =
+      addedOnMs === null ? null : Math.floor((Date.now() - addedOnMs) / 86_400_000);
+    const instanceSigninMs =
+      r.last_sign_in_instance === null || r.last_sign_in_instance === undefined
+        ? null
+        : Number(r.last_sign_in_instance);
+    const instanceRecencyDays =
+      instanceSigninMs === null ? null : Math.floor((Date.now() - instanceSigninMs) / 86_400_000);
+
     map.set(id, {
       nodeId: id,
       nameLower: fullName.toLowerCase(),
@@ -200,6 +234,11 @@ export async function buildFeatureSnapshot(
       moduleFlags: deriveModuleFlags(parseModuleSignature(r.module_ids)),
       riskFlags,
       riskScore: riskScoreFromFlags(riskFlags),
+      membershipAgeDays,
+      membershipBucket: bucketMembership(membershipAgeDays),
+      // Phase B: per-instance recency from AccDcProjectUser.lastSignIn. Phase C
+      // overwrites this with true last-ACTIVITY recency from AccActivity.
+      activityRecencyBucket: bucketRecency(instanceRecencyDays),
     });
   }
 
@@ -229,6 +268,9 @@ export async function buildFeatureSnapshot(
       permissionStrength: 0, folderBreadth: 0, activityTotal: 0,
     }),
     riskScore: 0,
+    membershipAgeDays: null,
+    membershipBucket: "unknown",
+    activityRecencyBucket: "none",
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));

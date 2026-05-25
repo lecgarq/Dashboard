@@ -82,6 +82,12 @@ export interface NodeFeatureSnapshot {
   };
   /** [P5-D] Count of true riskFlags, 0..5 — a primitive, NOT a weighted score. */
   riskScore?: number;
+  /** [P5-B] Days since this instance's AccDcProjectUser.addedOn; null when unknown. */
+  membershipAgeDays?: number | null;
+  /** [P5-B] Coarse tenure bucket. */
+  membershipBucket?: "<30d" | "<90d" | "<1y" | ">1y" | "unknown";
+  /** [P5-B then refined in P5-C] Last-activity recency bucket (6-way). */
+  activityRecencyBucket?: "0-7d" | "8-14d" | "15-30d" | "31-60d" | "60d+" | "none";
 }
 
 /**
