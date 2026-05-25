@@ -754,6 +754,8 @@ export async function resolveSlicesForBudget(
   loadInputs: typeof loadPriorityInputs = loadPriorityInputs,
 ): Promise<Slice[]> {
   if (process.env.DC_PRIORITY_BACKFILL !== '1') {
+    // eslint-disable-next-line no-console
+    console.log('[dcIngest] slice ordering: mode=fair/breadth-first (DC_PRIORITY_BACKFILL not set)');
     return plan.slices;
   }
   try {
@@ -767,13 +769,33 @@ export async function resolveSlicesForBudget(
     }).rankedProjects;
     const priorityByProjectId = new Map(ranked.map((p) => [p.projectId, p.rank]));
     const reserve = resolveFairnessReserve(budget);
-    return composePrioritizedSlices(
+    const reordered = composePrioritizedSlices(
       plan.slices,
       priorityByProjectId,
       inputs.ageByProjectId,
       budget,
       reserve,
     );
+    const runnable = Math.min(budget, reordered.length);
+    const deferred = Math.max(0, reordered.length - runnable);
+    const nameById = new Map(inputs.projects.map((p) => [p.id, p.name]));
+    const top5 = reordered.slice(0, 5);
+    // eslint-disable-next-line no-console
+    console.log(
+      `[dcIngest] slice ordering: mode=priority budget=${budget} reserve=${reserve}` +
+        ` total=${reordered.length} runnable=${runnable} deferred=${deferred}`,
+    );
+    for (const s of top5) {
+      const bestRank = Math.min(
+        ...s.projectIds.map((id) => priorityByProjectId.get(id) ?? Infinity),
+      );
+      const sample = nameById.get(s.projectIds[0]) ?? s.projectIds[0];
+      // eslint-disable-next-line no-console
+      console.log(
+        `  reason=${s.reason} projects=${s.projectIds.length} bestRank=${isFinite(bestRank) ? bestRank : 'unranked'} sample="${sample}"`,
+      );
+    }
+    return reordered;
   } catch (err) {
     // eslint-disable-next-line no-console
     console.warn('[dcIngest] priority ordering failed, falling back to unordered:', err);

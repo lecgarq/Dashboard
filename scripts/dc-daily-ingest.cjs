@@ -11,6 +11,24 @@
  *   - runDcIngest(prisma) -> RunResult
  *   - Exit 0 on status in {success, killed}
  *   - Exit 1 on any other status (so Windows Task Scheduler logs "task failed")
+ *
+ * Environment flags:
+ *   DC_PRIORITY_BACKFILL=1
+ *     Enable value-first backfill ordering: high-value projects' slices are moved to
+ *     the front of the queue so scarce daily quota is spent on the most important
+ *     history first. Default OFF (unset or any value other than "1") = fair
+ *     breadth-first ordering — byte-for-byte identical to the pre-feature behavior.
+ *
+ *   DC_FAIRNESS_RESERVE=<int>
+ *     Override the per-run fairness reserve slot count (only active when
+ *     DC_PRIORITY_BACKFILL=1). The reserve is filled from the oldest-progressed
+ *     projects to prevent indefinite starvation of low-priority items.
+ *     Default: max(1, floor(safeRemainingToday * 0.2)) — roughly 20% of the
+ *     remaining daily safe budget, minimum 1 when budget > 0.
+ *
+ *   Note: PRIORITY_WINDOW_DAYS=30 is the activity-analysis window used by the
+ *   priority ranker to compute scores. It is a compile-time constant in
+ *   lib/acc/dcIngest.ts, not a runtime env var.
  */
 
 require('tsx/cjs');

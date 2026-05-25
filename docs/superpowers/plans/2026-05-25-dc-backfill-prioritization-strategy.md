@@ -1,12 +1,12 @@
 # P0 — DC Backfill Prioritization Strategy
 
-> **Status:** READ-ONLY STRATEGY PLAN. No runtime code changes yet. This document
-> evaluates a decision and specifies the implementation path *if* the upgrade is
-> approved. Execution is gated on an explicit go-decision (see §11).
-
-> **For agentic workers:** If/when approved, use `superpowers:subagent-driven-development`
-> or `superpowers:executing-plans` to implement §10 task-by-task. Steps use checkbox
-> (`- [ ]`) syntax for tracking.
+> **Status:** IMPLEMENTATION COMPLETE (2026-05-25) on branch `feat/access-analysis-redesign`.
+> All 5 tasks in §10 shipped. Feature flag default OFF (`DC_PRIORITY_BACKFILL` unset =
+> fair breadth-first, byte-for-byte unchanged). Enable with `DC_PRIORITY_BACKFILL=1`.
+> Tasks shipped: (1) pure reorder adapter (`dcBackfillPriority.ts`), (2) fairness reserve
+> (`composePrioritizedSlices` + `resolveFairnessReserve`), (3) read-only loader
+> (`loadPriorityInputs`), (4) flag-gated wiring + fallback in `resolveSlicesForBudget`,
+> (5) observability logging + flag docs in cron header.
 
 **Goal:** Decide whether to keep the current *fair, breadth-first* Data Connector
 backfill or upgrade to a *value-first* ordering that spends scarce quota on the
@@ -305,10 +305,10 @@ for wiring + fallback.
 
 ### Task 5: Observability + docs
 **Files:** Modify `lib/acc/dcIngest.ts` log lines; update this plan's status; note env vars in `scripts/dc-daily-ingest.cjs` header
-- [ ] **Step 1:** log chosen ordering mode, top-5 selected project names+ranks, and
+- [x] **Step 1:** log chosen ordering mode, top-5 selected project names+ranks, and
   fairness picks per run.
-- [ ] **Step 2:** document `DC_PRIORITY_BACKFILL` and `DC_FAIRNESS_RESERVE` in the cron script header.
-- [ ] **Step 3 — commit** (`docs(dc): document priority-backfill flags + logging`).
+- [x] **Step 2:** document `DC_PRIORITY_BACKFILL` and `DC_FAIRNESS_RESERVE` in the cron script header.
+- [x] **Step 3 — commit** (`docs(dc): document priority-backfill flags + logging`).
 
 ## 11. Decision gate (recommendation)
 
