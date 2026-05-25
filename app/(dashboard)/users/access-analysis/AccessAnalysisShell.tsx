@@ -200,7 +200,7 @@ function ShellBody({
 
 export function AccessAnalysisShell(): React.JSX.Element {
   const bulkUsersQuery = trpc.accDcGraph.bulkUsers.useQuery(
-    { includePermissionSummary: true },
+    { includePermissionSummary: true, includeActivityMix: true },
     { staleTime: 600_000 },
   );
   const users = bulkUsersQuery.data;

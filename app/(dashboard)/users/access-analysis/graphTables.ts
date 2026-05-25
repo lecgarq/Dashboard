@@ -143,6 +143,9 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
         folder_breadth: project.folderBreadth ?? 0,
         full_controller: project.fullController ?? false,
         perm_mixed: project.permMixedProfile ?? false,
+        activity_mix_json: JSON.stringify(project.activityMix ?? {}),
+        activity_total: project.activityTotal ?? 0,
+        last_activity: timestampMillis(project.lastActivity ?? null),
       }));
     });
   });
@@ -212,6 +215,9 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
       folder_breadth: Int32Array.from(projectRows.map((row) => row.folder_breadth)),
       full_controller: projectRows.map((row) => row.full_controller),
       perm_mixed: projectRows.map((row) => row.perm_mixed),
+      activity_mix_json: projectRows.map((row) => row.activity_mix_json),
+      activity_total: Int32Array.from(projectRows.map((row) => row.activity_total)),
+      last_activity: projectRows.map((row) => row.last_activity),
     }),
     similarityEdges: tableFromArrays({
       source_user_id: similarityRows.map((row) => row.source_user_id),

@@ -150,6 +150,21 @@ describe("buildGraphArrowTables", () => {
     expect(row.full_controller).toBe(true);
     expect(row.perm_mixed).toBe(true);
   });
+
+  it("emits activity columns on userProjects (mix JSON + total + last_activity)", async () => {
+    const users = [
+      user({
+        projects: [
+          { id: "p1", name: "P1", status: "active", isAdmin: false, roles: ["R"], modules: ["build"], activityMix: { view: 3 }, activityTotal: 3, lastActivity: "2026-05-10T00:00:00.000Z" } as any,
+        ],
+      }),
+    ];
+    const tables = await buildGraphArrowTables({ users, similarityInput: null, topology: null });
+    const row = tables.userProjects.toArray()[0] as any;
+    expect(JSON.parse(row.activity_mix_json).view).toBe(3);
+    expect(row.activity_total).toBe(3);
+    expect(row.last_activity).toBe(Date.parse("2026-05-10T00:00:00.000Z"));
+  });
 });
 
 const u = (o: Partial<BulkAccUser>): BulkAccUser => ({

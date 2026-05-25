@@ -97,6 +97,10 @@ export interface NodeFeatureSnapshot {
     mixedProfile: boolean;
     fullController: boolean;
   };
+  /** [P5-C] Activity event counts by normalized category. */
+  activityMix?: Partial<Record<import("@/lib/acc/activityCategories").ActivityCategory, number>>;
+  /** [P5-C] Sum of activityMix values. */
+  activityTotal?: number;
 }
 
 /**

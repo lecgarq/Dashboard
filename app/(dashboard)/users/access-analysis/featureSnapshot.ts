@@ -110,6 +110,9 @@ interface RawFeatureRow {
   folder_breadth: bigint | number | null;
   full_controller: boolean | number | null;
   perm_mixed: boolean | number | null;
+  activity_mix_json: string | null;
+  activity_total: bigint | number | null;
+  last_activity: bigint | number | null;
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -168,7 +171,10 @@ export async function buildFeatureSnapshot(
       COALESCE(ANY_VALUE(up.perm_strength), 0)                          AS perm_strength,
       COALESCE(ANY_VALUE(up.folder_breadth), 0)                         AS folder_breadth,
       COALESCE(ANY_VALUE(up.full_controller), FALSE)                    AS full_controller,
-      COALESCE(ANY_VALUE(up.perm_mixed), FALSE)                         AS perm_mixed
+      COALESCE(ANY_VALUE(up.perm_mixed), FALSE)                         AS perm_mixed,
+      ANY_VALUE(up.activity_mix_json)                                   AS activity_mix_json,
+      COALESCE(ANY_VALUE(up.activity_total), 0)                         AS activity_total,
+      ANY_VALUE(up.last_activity)                                       AS last_activity
     FROM ${userProjectsView} up
     LEFT JOIN ${usersView} u ON u.user_id = up.user_id
     LEFT JOIN ${folderPermsView} fp ON fp.project_id = up.project_id AND fp.role_id = up.role_id
@@ -199,7 +205,15 @@ export async function buildFeatureSnapshot(
 
     const permissionStrength = Number(r.perm_strength ?? 0);
     const folderBreadth = Number(r.folder_breadth ?? 0);
-
+    const activityMix = (() => {
+      try { return r.activity_mix_json ? JSON.parse(r.activity_mix_json) : {}; }
+      catch { return {}; }
+    })();
+    const activityTotal = Number(r.activity_total ?? 0);
+    const lastActivityMs =
+      r.last_activity === null || r.last_activity === undefined ? null : Number(r.last_activity);
+    const lastActivityDays =
+      lastActivityMs === null ? null : Math.floor((Date.now() - lastActivityMs) / 86_400_000);
     const riskFlags = computeRiskFlags({
       isExternal,
       isAdmin: Boolean(r.is_project_admin),
@@ -209,7 +223,7 @@ export async function buildFeatureSnapshot(
       hasAccess: true,
       permissionStrength,
       folderBreadth,
-      activityTotal: 0, // still 0 until Phase C
+      activityTotal,
     });
 
     const addedOnMs =
@@ -246,9 +260,12 @@ export async function buildFeatureSnapshot(
       riskScore: riskScoreFromFlags(riskFlags),
       membershipAgeDays,
       membershipBucket: bucketMembership(membershipAgeDays),
-      // Phase B: per-instance recency from AccDcProjectUser.lastSignIn. Phase C
-      // overwrites this with true last-ACTIVITY recency from AccActivity.
-      activityRecencyBucket: bucketRecency(instanceRecencyDays),
+      // P5-C: TRUE last-activity recency overrides the P5-B sign-in proxy when present.
+      activityRecencyBucket: lastActivityMs !== null
+        ? bucketRecency(lastActivityDays)
+        : bucketRecency(instanceRecencyDays),
+      activityMix,
+      activityTotal,
       permissionStrength,
       permissionTypeSummary: {
         folderBreadth,
@@ -290,6 +307,8 @@ export async function buildFeatureSnapshot(
     activityRecencyBucket: "none",
     permissionStrength: 0,
     permissionTypeSummary: { folderBreadth: 0, coverage: "unknown", mixedProfile: false, fullController: false },
+    activityMix: {},
+    activityTotal: 0,
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));

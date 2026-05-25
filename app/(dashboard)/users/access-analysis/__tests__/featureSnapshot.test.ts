@@ -35,6 +35,9 @@ interface FakeRow {
   folder_breadth: bigint | number | null;
   full_controller: boolean | number | null;
   perm_mixed: boolean | number | null;
+  activity_mix_json: string | null;
+  activity_total: bigint | number | null;
+  last_activity: bigint | number | null;
 }
 
 let mockRows: FakeRow[] = [];
@@ -249,6 +252,9 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     folder_breadth: over.folder_breadth ?? null,
     full_controller: over.full_controller ?? null,
     perm_mixed: over.perm_mixed ?? null,
+    activity_mix_json: over.activity_mix_json ?? null,
+    activity_total: over.activity_total ?? null,
+    last_activity: over.last_activity ?? null,
   };
 }
 
@@ -384,28 +390,44 @@ describe("buildFeatureSnapshot — P5-B permission summary", () => {
   });
 });
 
-describe("buildFeatureSnapshot — P5-D risk primitives (A→B→D slice; Phase C deferred)", () => {
-  it("external full-controller admin with broad folder access trips the B-reachable primitives", async () => {
-    // NOTE: highActivityHighPerm stays FALSE here because activityTotal is not plumbed
-    // until Phase C (AccActivity aggregation). Once Phase C lands, the full-risk fixture
-    // can also assert highActivityHighPerm === true and riskScore >= 4.
+describe("buildFeatureSnapshot — P5-D full risk primitives (Phase C landed)", () => {
+  it("external full-controller admin with broad folder access trips all five primitives", async () => {
+    // Phase C has landed: activityTotal is plumbed, so the activity-derived primitive
+    // is now reachable. This full-risk fixture trips all five primitives.
+    const recent = Date.now() - 2 * 86_400_000;
     mockRows = [makeRow({
       user_id: "u", project_id: "p", email: "x@gmail.com",
       is_project_admin: true, account_status: "active",
       perm_strength: 5, folder_breadth: 40, full_controller: true,
+      activity_total: 250, last_activity: BigInt(recent),
     })];
     const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
     expect(f!.riskFlags!.externalHighPerm).toBe(true);
     expect(f!.riskFlags!.externalProjectAdmin).toBe(true);
     expect(f!.riskFlags!.broadFolderAccess).toBe(true);
-    // Phase C not yet landed — activity-derived risk must not be faked before data exists:
-    expect(f!.riskFlags!.highActivityHighPerm).toBe(false);
-    expect(f!.riskScore).toBeGreaterThanOrEqual(3);
+    expect(f!.riskFlags!.highActivityHighPerm).toBe(true);
+    expect(f!.riskScore).toBeGreaterThanOrEqual(4);
   });
 
   it("an internal low-access user trips nothing (riskScore 0)", async () => {
     mockRows = [makeRow({ user_id: "u", project_id: "p", email: "a@hermosillo.com", perm_strength: 1 })];
     const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
     expect(f!.riskScore).toBe(0);
+  });
+});
+
+describe("buildFeatureSnapshot — P5-C activityMix + true recency", () => {
+  it("reads activityMix/activityTotal and overrides recency with true last-activity", async () => {
+    const recent = Date.now() - 3 * 86_400_000;
+    mockRows = [makeRow({ user_id: "u", project_id: "p", activity_mix_json: '{"view":5,"upload":2}', activity_total: 7, last_activity: BigInt(recent) })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.activityMix!.view).toBe(5);
+    expect(f!.activityTotal).toBe(7);
+    expect(f!.activityRecencyBucket).toBe("0-7d");
+  });
+  it("fallback yields empty activityMix + activityTotal 0", async () => {
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(f!.activityTotal).toBe(0);
+    expect(Object.keys(f!.activityMix!)).toEqual([]);
   });
 });
