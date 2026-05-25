@@ -25,6 +25,7 @@ import {
   type ReactNode,
 } from "react";
 import { CONTROLS_STORAGE_KEY, DIMENSIONS } from "./SliderContext";
+import { FACET_KEY_RISK, FACET_KEY_PERM } from "./accessFacets";
 
 type Filters = Record<string, ReadonlySet<string>>;
 
@@ -44,7 +45,10 @@ const FilterCtx = createContext<FilterContextValue | null>(null);
 
 function makeEmptyFilters(): Record<string, Set<string>> {
   const out: Record<string, Set<string>> = {};
-  for (const d of DIMENSIONS) out[d.id] = new Set();
+  for (const d of DIMENSIONS) out[d.id] = new Set(); // includes the multi-hot "module" key
+  // P7 facet families (no registry descriptor): seed so they rehydrate from persistence.
+  out[FACET_KEY_RISK] = new Set();
+  out[FACET_KEY_PERM] = new Set();
   return out;
 }
 

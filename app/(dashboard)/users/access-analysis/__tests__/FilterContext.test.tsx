@@ -12,6 +12,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { FilterProvider, useFilters } from "../FilterContext";
 import { CONTROLS_STORAGE_KEY } from "../SliderContext";
+import { FACET_KEY_RISK, FACET_KEY_PERM } from "../accessFacets";
 
 beforeEach(() => {
   window.localStorage.clear();
@@ -91,6 +92,24 @@ describe("FilterContext", () => {
     expect(result.current.activeFilters.role?.has("owner")).toBe(true);
     expect(result.current.activeFilters.project?.has("P1")).toBe(true);
     expect(result.current.searchQuery).toBe("lu");
+  });
+
+  it("rehydrates persisted risk/permission facet selections", async () => {
+    window.localStorage.setItem(
+      CONTROLS_STORAGE_KEY,
+      JSON.stringify({
+        filters: { [FACET_KEY_RISK]: ["externalHighPerm"], [FACET_KEY_PERM]: ["fullController"] },
+      }),
+    );
+
+    const { result } = renderHook(() => useFilters(), { wrapper });
+
+    await act(async () => {
+      await Promise.resolve();
+    });
+
+    expect([...(result.current.activeFilters[FACET_KEY_RISK] ?? [])]).toEqual(["externalHighPerm"]);
+    expect([...(result.current.activeFilters[FACET_KEY_PERM] ?? [])]).toEqual(["fullController"]);
   });
 
   it("drillDown is session-only and NOT restored from localStorage", async () => {
