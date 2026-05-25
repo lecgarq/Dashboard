@@ -22,6 +22,7 @@ export interface DcAssemblyInput {
    * Only the role-scoped edge feed (WS2) should request it.
    */
   includePermissionContexts?: boolean;
+  includePermissionSummary?: boolean;
 }
 
 export function normalizePermTier(permType: string): string {
@@ -31,6 +32,11 @@ export function normalizePermTier(permType: string): string {
   if (p.includes("upload")) return "upload";
   if (p.includes("download")) return "download";
   return "view";
+}
+
+const TIER_RANK: Record<string, number> = { view: 1, download: 2, upload: 3, edit: 4, control: 5 };
+export function permTierStrength(permType: string): number {
+  return TIER_RANK[normalizePermTier(permType)] ?? 0;
 }
 
 /** BulkAccUser extended with DC-only derived fields not yet on the shared type. */
@@ -53,6 +59,7 @@ function coverageFor(statuses: string[]): "known" | "partial" | "unknown" {
 
 export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
   const includeContexts = input.includePermissionContexts === true;
+  const includeSummary = input.includePermissionSummary === true;
   const companyName = new Map(input.companies.map((c) => [c.id, c.name]));
 
   // Fallback firm source: the user's dominant company across their project
@@ -140,6 +147,28 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
       const prods = prodByUserProject.get(`${u.id}::${pid}`) ?? [];
       const roles = [...(rolesByUserProject.get(`${u.id}::${pid}`) ?? [])];
       const isAdmin = prods.some((p) => p.admin);
+      let permissionStrength: number | undefined;
+      let folderBreadth: number | undefined;
+      let permMixedProfile: boolean | undefined;
+      let fullController: boolean | undefined;
+      if (includeSummary) {
+        const rawRoleIds = rawRolesByUserProject.get(`${u.id}::${pid}`) ?? new Set<string>();
+        const folders = new Set<string>();
+        const tiers = new Set<string>();
+        let maxStrength = 0;
+        for (const rid of rawRoleIds) {
+          for (const fp of folderPermsByProjectRole.get(`${pid}::${rid}`) ?? []) {
+            folders.add(fp.folderId);
+            const tier = normalizePermTier(fp.permType);
+            tiers.add(tier);
+            maxStrength = Math.max(maxStrength, permTierStrength(fp.permType));
+          }
+        }
+        permissionStrength = maxStrength;
+        folderBreadth = folders.size;
+        permMixedProfile = tiers.size > 1;
+        fullController = tiers.has("control");
+      }
       return {
         id: pid,
         name: meta.name,
@@ -150,6 +179,10 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         crawlStatus: meta.crawlStatus,
         addedOn: membershipDates.get(`${u.id}::${pid}`)?.addedOn ?? null,
         lastSignIn: membershipDates.get(`${u.id}::${pid}`)?.lastSignIn ?? null,
+        permissionStrength,
+        folderBreadth,
+        permMixedProfile,
+        fullController,
       };
     });
 

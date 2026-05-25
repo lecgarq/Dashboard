@@ -11,6 +11,14 @@ export interface BulkAccProject {
   addedOn?: string | null;
   /** [P5-B] ISO last sign-in for THIS (project,user); null when none. Source: AccDcProjectUser.lastSignIn. */
   lastSignIn?: string | null;
+  /** [P5-B] Numeric max access strength 0..5 over this instance's folder grants. */
+  permissionStrength?: number;
+  /** [P5-B] Distinct folders reachable by this instance. */
+  folderBreadth?: number;
+  /** [P5-B] >1 distinct normalized tier across grants. */
+  permMixedProfile?: boolean;
+  /** [P5-B] Any grant normalizes to "control". */
+  fullController?: boolean;
 }
 
 export interface PermissionContext {

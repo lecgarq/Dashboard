@@ -152,3 +152,37 @@ describe("per-instance addedOn / lastSignIn", () => {
     expect(out[0]?.projects[0]?.addedOn ?? null).toBeNull();
   });
 });
+
+describe("includePermissionSummary", () => {
+  const withGrants: DcAssemblyInput = {
+    ...base,
+    users: [{ id: "u1", email: "a@hermosillo.com", name: "A", status: "active", companyId: null }],
+    projectUsers: [{ projectId: "p1", userId: "u1" }],
+    projectUserRoles: [{ projectId: "p1", userId: "u1", roleId: "r1" }],
+    projectMeta: { p1: { name: "P1", status: "active", crawlStatus: "ok" } },
+    folderPermissions: [
+      { folderId: "f1", roleId: "r1", permType: "View Only", actions: [], projectId: "p1", folderPath: "A" },
+      { folderId: "f2", roleId: "r1", permType: "Full Controller", actions: [], projectId: "p1", folderPath: "B" },
+    ],
+  };
+
+  it("computes strength=control(5), breadth=2, mixed=true, fullController=true", () => {
+    const out = assembleDcUsers({ ...withGrants, includePermissionSummary: true });
+    const proj = out[0].projects[0];
+    expect(proj.permissionStrength).toBe(5);
+    expect(proj.folderBreadth).toBe(2);
+    expect(proj.permMixedProfile).toBe(true);
+    expect(proj.fullController).toBe(true);
+  });
+
+  it("leaves summary undefined and contexts empty when flag is off", () => {
+    const out = assembleDcUsers(withGrants);
+    expect(out[0].projects[0].permissionStrength).toBeUndefined();
+    expect(out[0].permissionContexts).toEqual([]);
+  });
+
+  it("summary mode does NOT ship raw permissionContexts", () => {
+    const out = assembleDcUsers({ ...withGrants, includePermissionSummary: true });
+    expect(out[0].permissionContexts).toEqual([]);
+  });
+});
