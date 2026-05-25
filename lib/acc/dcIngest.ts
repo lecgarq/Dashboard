@@ -64,6 +64,8 @@ import type {
   ExtractionPriorityActivityInput,
   ExtractionPriorityBackfillInput,
 } from '@/lib/acc/extractionPriorityPlanner';
+import { buildExtractionPriorityPlan } from '@/lib/acc/extractionPriorityPlanner';
+import { composePrioritizedSlices } from '@/lib/acc/dcBackfillPriority';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -708,6 +710,71 @@ function emptyResult(
 }
 
 // ---------------------------------------------------------------------------
+// Flag-gated value-first slice ordering
+// ---------------------------------------------------------------------------
+
+/**
+ * Resolves the fairness reserve slot count for the priority backfill path.
+ *
+ * Reads `DC_FAIRNESS_RESERVE` env var (parsed as int, clamped >= 0).
+ * Falls back to `Math.max(1, Math.floor(budget * 0.2))` when unset/invalid.
+ */
+export function resolveFairnessReserve(budget: number): number {
+  const raw = process.env.DC_FAIRNESS_RESERVE;
+  if (raw !== undefined && raw.trim() !== '') {
+    const parsed = parseInt(raw, 10);
+    if (!isNaN(parsed)) {
+      return Math.max(0, parsed);
+    }
+  }
+  return Math.max(1, Math.floor(budget * 0.2));
+}
+
+/**
+ * Returns the ordered slice list to hand to `limitSlicesToBudget`.
+ *
+ * - Flag OFF (`DC_PRIORITY_BACKFILL !== '1'`): returns `plan.slices` unchanged
+ *   (byte-for-byte identical to the pre-feature behavior).
+ * - Flag ON: builds priority ranks + fairness reserve, then calls
+ *   `composePrioritizedSlices` so the most-valuable slices bubble to the
+ *   front while the fairness reserve prevents indefinite starvation.
+ * - On ANY error: logs a warning and falls back to `plan.slices` — never throws.
+ */
+export async function resolveSlicesForBudget(
+  prisma: PrismaClient,
+  plan: { slices: Slice[] },
+  budget: number,
+  generatedAt: Date,
+): Promise<Slice[]> {
+  if (process.env.DC_PRIORITY_BACKFILL !== '1') {
+    return plan.slices;
+  }
+  try {
+    const inputs = await loadPriorityInputs(prisma);
+    const ranked = buildExtractionPriorityPlan({
+      generatedAt,
+      windowDays: 30,
+      projects: inputs.projects,
+      activity: inputs.activity,
+      backfillProgress: inputs.backfillProgress,
+    }).rankedProjects;
+    const priorityByProjectId = new Map(ranked.map((p) => [p.projectId, p.rank]));
+    const reserve = resolveFairnessReserve(budget);
+    return composePrioritizedSlices(
+      plan.slices,
+      priorityByProjectId,
+      inputs.ageByProjectId,
+      budget,
+      reserve,
+    );
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.warn('[dcIngest] priority ordering failed, falling back to unordered:', err);
+    return plan.slices;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // Main orchestrator
 // ---------------------------------------------------------------------------
 
@@ -880,8 +947,14 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     usedToday: quotaUsedToday,
     dailySafeRequestBudget: safeBudgetOverride,
   });
+  const slicesForBudget = await resolveSlicesForBudget(
+    prisma,
+    plan,
+    quotaBudget.safeRemainingToday,
+    startedAt,
+  );
   const limitedPlan = limitSlicesToBudget(
-    plan.slices,
+    slicesForBudget,
     quotaBudget.safeRemainingToday,
   );
   if (limitedPlan.runnableRequests === 0) {

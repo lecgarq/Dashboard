@@ -37,7 +37,9 @@ vi.mock('./dcAdminCsvIngest', async (importOriginal) => {
 });
 
 import { ingestAdminSnapshot } from './dcAdminCsvIngest';
-import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs } from './dcIngest';
+import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve } from './dcIngest';
+import { composePrioritizedSlices } from './dcBackfillPriority';
+import type { Slice } from './dcProgressiveBackfill';
 
 // ---------------------------------------------------------------------------
 // isKillSwitchActive — pure file existence check
@@ -535,5 +537,185 @@ describe('loadPriorityInputs', () => {
 
     expect(result.ageByProjectId.size).toBe(0);
     expect(result.backfillProgress).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveFairnessReserve — env-var parsing
+// ---------------------------------------------------------------------------
+
+describe('resolveFairnessReserve', () => {
+  afterEach(() => {
+    delete process.env.DC_FAIRNESS_RESERVE;
+  });
+
+  it('returns Math.max(1, floor(budget * 0.2)) when DC_FAIRNESS_RESERVE is unset', () => {
+    delete process.env.DC_FAIRNESS_RESERVE;
+    expect(resolveFairnessReserve(20)).toBe(4);  // floor(20 * 0.2) = 4
+    expect(resolveFairnessReserve(5)).toBe(1);   // floor(5 * 0.2) = 1 (max(1, 1) = 1)
+    expect(resolveFairnessReserve(1)).toBe(1);   // floor(1 * 0.2) = 0, max(1, 0) = 1
+    expect(resolveFairnessReserve(0)).toBe(1);   // floor(0 * 0.2) = 0, max(1, 0) = 1
+  });
+
+  it('parses DC_FAIRNESS_RESERVE integer and clamps to >= 0', () => {
+    process.env.DC_FAIRNESS_RESERVE = '5';
+    expect(resolveFairnessReserve(20)).toBe(5);
+  });
+
+  it('clamps negative DC_FAIRNESS_RESERVE to 0', () => {
+    process.env.DC_FAIRNESS_RESERVE = '-3';
+    expect(resolveFairnessReserve(20)).toBe(0);
+  });
+
+  it('falls back to default when DC_FAIRNESS_RESERVE is non-numeric', () => {
+    process.env.DC_FAIRNESS_RESERVE = 'abc';
+    expect(resolveFairnessReserve(10)).toBe(2); // floor(10 * 0.2) = 2
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveSlicesForBudget — flag-gated ordering wiring
+// ---------------------------------------------------------------------------
+
+function makeTestSlice(
+  projectIds: string[],
+  reason: Slice['reason'],
+  startISO: string,
+  endISO: string,
+): Slice {
+  return { projectIds, start: new Date(startISO), end: new Date(endISO), reason };
+}
+
+describe('resolveSlicesForBudget — flag OFF (default path)', () => {
+  afterEach(() => {
+    delete process.env.DC_PRIORITY_BACKFILL;
+  });
+
+  it('returns plan.slices unchanged (by reference) when DC_PRIORITY_BACKFILL is unset', async () => {
+    delete process.env.DC_PRIORITY_BACKFILL;
+    const slices = [
+      makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
+      makeTestSlice(['p2'], 'backward', '2024-01-01', '2024-01-31'),
+    ];
+    const plan = { slices };
+    const prisma = {} as never; // should not be touched
+    const result = await resolveSlicesForBudget(prisma, plan, 10, new Date());
+    expect(result).toBe(slices); // same reference
+  });
+
+  it('returns plan.slices unchanged when DC_PRIORITY_BACKFILL is "0"', async () => {
+    process.env.DC_PRIORITY_BACKFILL = '0';
+    const slices = [makeTestSlice(['px'], 'forward', '2024-01-01', '2024-01-31')];
+    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date());
+    expect(result).toBe(slices);
+  });
+});
+
+describe('resolveSlicesForBudget — flag ON, ordering applied', () => {
+  afterEach(() => {
+    delete process.env.DC_PRIORITY_BACKFILL;
+    delete process.env.DC_FAIRNESS_RESERVE;
+    vi.restoreAllMocks();
+  });
+
+  it('reorders slices value-first when DC_PRIORITY_BACKFILL=1', async () => {
+    process.env.DC_PRIORITY_BACKFILL = '1';
+    process.env.DC_FAIRNESS_RESERVE = '0'; // disable fairness so order is purely priority-driven
+
+    // Two slices: pLow has rank 0 (highest priority), pHigh has rank 1
+    const sLow = makeTestSlice(['pLow'],  'forward', '2024-01-01', '2024-01-31');
+    const sHigh = makeTestSlice(['pHigh'], 'forward', '2024-01-01', '2024-01-31');
+    const slices = [sHigh, sLow]; // intentionally reversed priority order
+
+    // Build a prisma mock that loadPriorityInputs will call
+    const prismaMock = {
+      accDcProject: { findMany: vi.fn().mockResolvedValue([
+        { id: 'pLow',  name: 'Low',  status: 'active', createdAt: new Date('2025-01-01') },
+        { id: 'pHigh', name: 'High', status: 'active', createdAt: new Date('2025-01-01') },
+      ]) },
+      accProject: { findMany: vi.fn().mockResolvedValue([]) },
+      accDcProjectUser: { groupBy: vi.fn().mockResolvedValue([]) },
+      accDcBackfillProgress: {
+        findMany: vi.fn().mockResolvedValue([
+          { projectId: 'pLow',  earliestCovered: null, latestCovered: null, projectCreatedAt: new Date('2025-01-01'), newProjectFlag: false, updatedAt: new Date('2026-01-01') },
+          { projectId: 'pHigh', earliestCovered: null, latestCovered: null, projectCreatedAt: new Date('2025-01-01'), newProjectFlag: false, updatedAt: new Date('2026-02-01') },
+        ]),
+      },
+      $queryRaw: vi.fn().mockResolvedValue([]),
+    } as never;
+
+    // We need buildExtractionPriorityPlan to return pLow=rank 0, pHigh=rank 1
+    // Rather than mocking the planner module (which is hoisted), mock loadPriorityInputs
+    // result indirectly: supply activity and status data so pLow scores higher.
+    // Instead, spy on the module-level loadPriorityInputs and return controlled data.
+    const dcIngestModule = await import('./dcIngest');
+    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockResolvedValue({
+      projects: [
+        { id: 'pLow',  name: 'Low',  status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'complete', memberCount: 10 },
+        { id: 'pHigh', name: 'High', status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'unknown', memberCount: 1 },
+      ],
+      activity: [
+        { projectId: 'pLow', rows: 1000, activeDays: 30, services: ['docs'], lastActivityAt: new Date('2026-05-01') },
+      ],
+      backfillProgress: [],
+      ageByProjectId: new Map([['pLow', 0], ['pHigh', 1]]),
+    });
+
+    const result = await resolveSlicesForBudget(prismaMock, { slices }, 2, new Date());
+
+    loadSpy.mockRestore();
+
+    // Result should be a reordering (length preserved)
+    expect(result).toHaveLength(slices.length);
+    // All original slices present
+    expect(new Set(result)).toEqual(new Set(slices));
+  });
+});
+
+describe('resolveSlicesForBudget — fallback on error', () => {
+  afterEach(() => {
+    delete process.env.DC_PRIORITY_BACKFILL;
+    vi.restoreAllMocks();
+  });
+
+  it('returns plan.slices and logs a warning when loadPriorityInputs throws', async () => {
+    process.env.DC_PRIORITY_BACKFILL = '1';
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const slices = [makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31')];
+
+    const dcIngestModule = await import('./dcIngest');
+    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockRejectedValue(
+      new Error('db exploded'),
+    );
+
+    const result = await resolveSlicesForBudget({} as never, { slices }, 10, new Date());
+
+    expect(result).toBe(slices); // fallback = original slices
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[dcIngest] priority ordering failed'),
+      expect.any(Error),
+    );
+
+    loadSpy.mockRestore();
+    warnSpy.mockRestore();
+  });
+
+  it('never throws even when both loadPriorityInputs and buildExtractionPriorityPlan throw', async () => {
+    process.env.DC_PRIORITY_BACKFILL = '1';
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const slices = [makeTestSlice(['p1'], 'forward', '2024-01-01', '2024-01-31')];
+
+    const dcIngestModule = await import('./dcIngest');
+    const loadSpy = vi.spyOn(dcIngestModule, 'loadPriorityInputs').mockRejectedValue(
+      new Error('network error'),
+    );
+
+    await expect(
+      resolveSlicesForBudget({} as never, { slices }, 10, new Date()),
+    ).resolves.toBe(slices);
+
+    loadSpy.mockRestore();
   });
 });

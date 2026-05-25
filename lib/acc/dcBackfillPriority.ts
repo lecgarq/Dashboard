@@ -202,3 +202,33 @@ export function selectRunnableWithFairness(
 
   return result;
 }
+
+/**
+ * Produces a full reordering of ALL `slices` for flag-gated value-first
+ * backfill: the first `budget` entries are exactly the fairness-aware
+ * selection (so `limitSlicesToBudget(result, budget)` captures them), and
+ * the remaining entries follow in priority order.
+ *
+ * Composition:
+ *   1. `ordered`   = priority-sort of all slices.
+ *   2. `runnable`  = fairness-aware selection of up to `budget` from `ordered`.
+ *   3. `deferred`  = `ordered` minus `runnable`, in priority order.
+ *   4. Return      = [...runnable, ...deferred].
+ *
+ * This preserves quota accounting and resumability unchanged: deferred slices
+ * appear after position `budget` and are dropped by the downstream
+ * `limitSlicesToBudget` call — exactly as in the unordered path.
+ */
+export function composePrioritizedSlices(
+  slices: Slice[],
+  priorityByProjectId: Map<string, number>,
+  ageByProjectId: Map<string, number>,
+  budget: number,
+  reserve: number,
+): Slice[] {
+  const ordered = orderSlicesByPriority(slices, priorityByProjectId);
+  const runnable = selectRunnableWithFairness(ordered, budget, reserve, ageByProjectId);
+  const runnableSet = new Set(runnable);
+  const deferred = ordered.filter((s) => !runnableSet.has(s));
+  return [...runnable, ...deferred];
+}

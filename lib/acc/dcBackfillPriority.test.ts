@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { orderSlicesByPriority, selectRunnableWithFairness } from './dcBackfillPriority';
+import { orderSlicesByPriority, selectRunnableWithFairness, composePrioritizedSlices } from './dcBackfillPriority';
 import type { Slice } from './dcProgressiveBackfill';
 
 // ---------------------------------------------------------------------------
@@ -603,5 +603,170 @@ describe('selectRunnableWithFairness — no mutation', () => {
     slices.forEach((s, i) => {
       expect(serializeSlice(s)).toBe(snapshotsBefore[i]);
     });
+  });
+});
+
+// ---------------------------------------------------------------------------
+// composePrioritizedSlices tests
+// ---------------------------------------------------------------------------
+
+describe('composePrioritizedSlices — permutation completeness', () => {
+  it('returns a permutation of all input slices (no loss, no dup), length == input length', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',  '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',  '2024-02-01', '2024-02-29'),
+      makeSlice(['p3'], 'new-project', '2024-01-01', '2024-01-31'),
+      makeSlice(['p4'], 'backward', '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 2], ['p1', 1], ['p2', 3], ['p3', 0], ['p4', 4]]);
+    const ageByProjectId = new Map([['p0', 3], ['p1', 0], ['p2', 1], ['p3', 4], ['p4', 2]]);
+
+    const result = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, 3, 1);
+
+    // Same length
+    expect(result).toHaveLength(slices.length);
+
+    // Same multiset
+    const inputSerialized = slices.map(serializeSlice).sort();
+    const resultSerialized = result.map(serializeSlice).sort();
+    expect(resultSerialized).toEqual(inputSerialized);
+  });
+});
+
+describe('composePrioritizedSlices — first budget entries == fairness selection', () => {
+  it('first budget entries match selectRunnableWithFairness(orderSlicesByPriority(...))', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',     '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward',    '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',     '2024-02-01', '2024-02-29'),
+      makeSlice(['p3'], 'new-project', '2024-01-01', '2024-01-31'),
+      makeSlice(['p4'], 'backward',    '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 2], ['p1', 1], ['p2', 3], ['p3', 0], ['p4', 4]]);
+    const ageByProjectId = new Map([['p0', 3], ['p1', 0], ['p2', 1], ['p3', 4], ['p4', 2]]);
+    const budget = 3;
+    const reserve = 1;
+
+    const result = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, budget, reserve);
+
+    // Compute reference using the component functions directly
+    const ordered = orderSlicesByPriority(slices, priorityByProjectId);
+    const expected = selectRunnableWithFairness(ordered, budget, reserve, ageByProjectId);
+
+    // First `budget` entries must equal the fairness selection (same references, same order)
+    const head = result.slice(0, budget);
+    expect(head).toHaveLength(expected.length);
+    for (let i = 0; i < expected.length; i++) {
+      expect(head[i]).toBe(expected[i]);
+    }
+  });
+});
+
+describe('composePrioritizedSlices — remainder in priority order', () => {
+  it('entries after the first budget are the deferred slices in priority order', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',     '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward',    '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',     '2024-02-01', '2024-02-29'),
+      makeSlice(['p3'], 'new-project', '2024-01-01', '2024-01-31'),
+      makeSlice(['p4'], 'backward',    '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 2], ['p1', 1], ['p2', 3], ['p3', 0], ['p4', 4]]);
+    const ageByProjectId = new Map([['p0', 3], ['p1', 0], ['p2', 1], ['p3', 4], ['p4', 2]]);
+    const budget = 3;
+    const reserve = 1;
+
+    const result = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, budget, reserve);
+
+    // The ordered set, minus runnable, in priority order
+    const ordered = orderSlicesByPriority(slices, priorityByProjectId);
+    const runnable = selectRunnableWithFairness(ordered, budget, reserve, ageByProjectId);
+    const runnableSet = new Set(runnable);
+    const expectedDeferred = ordered.filter((s) => !runnableSet.has(s));
+
+    const tail = result.slice(budget);
+    expect(tail).toHaveLength(expectedDeferred.length);
+    for (let i = 0; i < expectedDeferred.length; i++) {
+      expect(tail[i]).toBe(expectedDeferred[i]);
+    }
+  });
+});
+
+describe('composePrioritizedSlices — quota accounting', () => {
+  it('truncating result to first budget entries yields exactly the runnable set, deferred == total - budget', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',     '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward',    '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',     '2024-02-01', '2024-02-29'),
+      makeSlice(['p3'], 'new-project', '2024-01-01', '2024-01-31'),
+      makeSlice(['p4'], 'backward',    '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 2], ['p1', 1], ['p2', 3], ['p3', 0], ['p4', 4]]);
+    const ageByProjectId = new Map([['p0', 3], ['p1', 0], ['p2', 1], ['p3', 4], ['p4', 2]]);
+    const budget = 3;
+    const reserve = 1;
+
+    const result = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, budget, reserve);
+
+    // Simulate what limitSlicesToBudget does: take first `budget` items
+    const runnable = result.slice(0, budget);
+    const deferred = result.slice(budget);
+
+    // Runnable must equal fairness-aware selection
+    const ordered = orderSlicesByPriority(slices, priorityByProjectId);
+    const expectedRunnable = selectRunnableWithFairness(ordered, budget, reserve, ageByProjectId);
+    const expectedRunnableSet = new Set(expectedRunnable);
+    const actualRunnableSet = new Set(runnable);
+    expect(actualRunnableSet.size).toBe(expectedRunnableSet.size);
+    for (const s of expectedRunnableSet) {
+      expect(actualRunnableSet.has(s)).toBe(true);
+    }
+
+    // Deferred count == total - budget
+    expect(deferred).toHaveLength(slices.length - budget);
+  });
+});
+
+describe('composePrioritizedSlices — determinism', () => {
+  it('identical inputs produce identical output across two calls', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',  '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',  '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 1], ['p1', 0], ['p2', 2]]);
+    const ageByProjectId = new Map([['p0', 2], ['p1', 0], ['p2', 1]]);
+
+    const r1 = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, 2, 1);
+    const r2 = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, 2, 1);
+
+    expect(r1.map(serializeSlice)).toEqual(r2.map(serializeSlice));
+  });
+});
+
+describe('composePrioritizedSlices — budget >= total', () => {
+  it('when budget >= total, all slices returned with no deferred tail', () => {
+    const slices = [
+      makeSlice(['p0'], 'forward',  '2024-01-01', '2024-01-31'),
+      makeSlice(['p1'], 'backward', '2024-01-01', '2024-01-31'),
+      makeSlice(['p2'], 'forward',  '2024-02-01', '2024-02-29'),
+    ];
+    const priorityByProjectId = new Map([['p0', 1], ['p1', 0], ['p2', 2]]);
+    const ageByProjectId = new Map([['p0', 2], ['p1', 0], ['p2', 1]]);
+
+    const result = composePrioritizedSlices(slices, priorityByProjectId, ageByProjectId, 100, 5);
+
+    // All slices returned
+    expect(result).toHaveLength(slices.length);
+
+    // All input slices present in result
+    const inputSet = new Set(slices);
+    for (const s of result) {
+      expect(inputSet.has(s)).toBe(true);
+    }
+
+    // Deferred tail is empty: result.slice(100) == []
+    expect(result.slice(100)).toHaveLength(0);
   });
 });
