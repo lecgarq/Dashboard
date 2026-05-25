@@ -383,3 +383,29 @@ describe("buildFeatureSnapshot — P5-B permission summary", () => {
     expect(f!.permissionTypeSummary!.fullController).toBe(false);
   });
 });
+
+describe("buildFeatureSnapshot — P5-D risk primitives (A→B→D slice; Phase C deferred)", () => {
+  it("external full-controller admin with broad folder access trips the B-reachable primitives", async () => {
+    // NOTE: highActivityHighPerm stays FALSE here because activityTotal is not plumbed
+    // until Phase C (AccActivity aggregation). Once Phase C lands, the full-risk fixture
+    // can also assert highActivityHighPerm === true and riskScore >= 4.
+    mockRows = [makeRow({
+      user_id: "u", project_id: "p", email: "x@gmail.com",
+      is_project_admin: true, account_status: "active",
+      perm_strength: 5, folder_breadth: 40, full_controller: true,
+    })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.riskFlags!.externalHighPerm).toBe(true);
+    expect(f!.riskFlags!.externalProjectAdmin).toBe(true);
+    expect(f!.riskFlags!.broadFolderAccess).toBe(true);
+    // Phase C not yet landed — activity-derived risk must not be faked before data exists:
+    expect(f!.riskFlags!.highActivityHighPerm).toBe(false);
+    expect(f!.riskScore).toBeGreaterThanOrEqual(3);
+  });
+
+  it("an internal low-access user trips nothing (riskScore 0)", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "a@hermosillo.com", perm_strength: 1 })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.riskScore).toBe(0);
+  });
+});
