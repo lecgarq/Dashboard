@@ -443,7 +443,9 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       renderer.setSize(rw, rh, false);
       camera.aspect = rw / rh;
       camera.updateProjectionMatrix();
-      fitView();
+      // P0: do NOT fitView() on resize — that discards the user's orbit/zoom.
+      // Initial framing is handled by the first-settle fit in pumpPositions3D;
+      // mode transitions fit via GraphCanvas. Resize only adjusts the projection.
     });
     resizeObserver.observe(container);
 
