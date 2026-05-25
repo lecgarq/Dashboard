@@ -21,6 +21,7 @@ import { useFilters } from "./FilterContext";
 import { featureValueForDim } from "./usePredicateEngine";
 import { COLOR_MODES, COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import { RiskAccessPanel } from "./RiskAccessPanel";
 
 /** Fixed bucket order for the two numeric dims. */
 const BUCKET_VALUES: Partial<Record<DimensionId, readonly string[]>> = {
@@ -127,6 +128,18 @@ export function Toolbar({
           />
         ))}
       </div>
+
+      <details className="relative">
+        <summary
+          data-testid="toolbar-risk-access"
+          className="cursor-pointer list-none rounded-md border px-3 py-1.5 text-sm hover:bg-accent"
+        >
+          Risk &amp; Access
+        </summary>
+        <div className="absolute left-0 z-20 mt-1 rounded-md border bg-card shadow-lg">
+          <RiskAccessPanel features={features} />
+        </div>
+      </details>
 
       <button
         type="button"

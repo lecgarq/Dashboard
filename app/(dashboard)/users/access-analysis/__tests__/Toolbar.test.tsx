@@ -150,4 +150,16 @@ describe("Toolbar — Phase 4-02 Task 2", () => {
     expect(api!.isDefault).toBe(true);
     expect(screen.queryByTestId("toolbar-clear-all")).toBeNull();
   });
+
+  it("renders the Risk & Access disclosure and mounts the panel", () => {
+    render(<Harness />);
+    const trigger = screen.getByTestId("toolbar-risk-access");
+    expect(trigger).toBeTruthy();
+    act(() => {
+      fireEvent.click(trigger);
+    });
+    // The panel (and its always-rendered risk rows) is mounted inside the disclosure.
+    expect(screen.getByTestId("risk-access-panel")).toBeTruthy();
+    expect(screen.getByTestId("risk-facet-externalHighPerm")).toBeTruthy();
+  });
 });
