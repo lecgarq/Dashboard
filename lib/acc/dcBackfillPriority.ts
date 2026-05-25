@@ -19,16 +19,17 @@ const REASON_ORDER: Record<SliceReason, number> = {
 };
 
 /**
- * Returns the minimum priority rank for a slice across all of its projectIds.
- * Any projectId absent from `priorityByProjectId` contributes `+Infinity`.
+ * Returns the minimum value from `map` across all of a slice's projectIds.
+ * Any projectId absent from `map` contributes `+Infinity`.
+ * Used for both priority-rank and age-rank lookups.
  */
-function minRankForSlice(
+function minMappedRank(
   slice: Slice,
-  priorityByProjectId: Map<string, number>,
+  map: Map<string, number>,
 ): number {
   let min = Number.POSITIVE_INFINITY;
   for (const id of slice.projectIds) {
-    const rank = priorityByProjectId.get(id) ?? Number.POSITIVE_INFINITY;
+    const rank = map.get(id) ?? Number.POSITIVE_INFINITY;
     if (rank < min) {
       min = rank;
     }
@@ -64,8 +65,8 @@ export function orderSlicesByPriority(
     // we only subtract when they differ, so we never compute Infinity - Infinity
     // (which is NaN). The both-Infinity case (all projectIds unmapped on both
     // sides) falls through to the reason/start/end/projectId tiebreaks below.
-    const rankA = minRankForSlice(a, priorityByProjectId);
-    const rankB = minRankForSlice(b, priorityByProjectId);
+    const rankA = minMappedRank(a, priorityByProjectId);
+    const rankB = minMappedRank(b, priorityByProjectId);
     if (rankA !== rankB) {
       return rankA - rankB;
     }
@@ -95,24 +96,6 @@ export function orderSlicesByPriority(
   });
 }
 
-/**
- * Returns the minimum age rank for a slice across all of its projectIds.
- * A projectId absent from `ageRankByProjectId` contributes `+Infinity`
- * (treated as least-starved / not overdue).
- */
-function minAgeRankForSlice(
-  slice: Slice,
-  ageRankByProjectId: Map<string, number>,
-): number {
-  let min = Number.POSITIVE_INFINITY;
-  for (const id of slice.projectIds) {
-    const rank = ageRankByProjectId.get(id) ?? Number.POSITIVE_INFINITY;
-    if (rank < min) {
-      min = rank;
-    }
-  }
-  return min;
-}
 
 /**
  * Selects up to `budget` slices from a priority-ordered list, reserving
@@ -163,12 +146,13 @@ export function selectRunnableWithFairness(
   for (let i = prefixCount; i < sortedSlices.length; i++) {
     tailEntries.push({
       idx: i,
-      ageKey: minAgeRankForSlice(sortedSlices[i], ageRankByProjectId),
+      ageKey: minMappedRank(sortedSlices[i], ageRankByProjectId),
     });
   }
 
   // Sort tail by (ageKey asc, original index asc) — stable, deterministic.
-  const sortedTail = tailEntries.slice().sort((a, b) => {
+  // tailEntries is a fresh local array; sort in place (no copy needed).
+  const sortedTail = tailEntries.sort((a, b) => {
     if (a.ageKey !== b.ageKey) {
       // Both could be +Infinity; if equal the index tiebreak below handles it.
       // When one is +Infinity and the other finite, finite < +Infinity safely.
@@ -182,10 +166,18 @@ export function selectRunnableWithFairness(
     if (fairnessPicked >= effectiveReserve) {
       break;
     }
-    if (!selectedIndices.has(entry.idx)) {
-      selectedIndices.add(entry.idx);
-      fairnessPicked++;
+    // Invariant: tail indices are >= prefixCount; prefix only added indices
+    // < prefixCount. The ranges are disjoint, so no tail entry can already be
+    // selected. Assert loudly so a future refactor that breaks the invariant
+    // fails immediately rather than silently producing a short result.
+    if (selectedIndices.has(entry.idx)) {
+      throw new Error(
+        `dcBackfillPriority invariant violated: tail index ${entry.idx} was already selected (prefixCount=${prefixCount}). ` +
+        `This indicates tailEntries contains an index that was added by the priority prefix, which must not happen.`,
+      );
     }
+    selectedIndices.add(entry.idx);
+    fairnessPicked++;
   }
 
   // 5. Top-up: fill remaining budget slots from unselected tail in original order.

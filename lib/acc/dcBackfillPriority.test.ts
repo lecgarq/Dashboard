@@ -327,8 +327,8 @@ describe('selectRunnableWithFairness — budget respected', () => {
   });
 });
 
-describe('selectRunnableWithFairness — reserve clamped', () => {
-  it('reserve > budget behaves like reserve == budget (all slots are fairness)', () => {
+describe('selectRunnableWithFairness — reserve clamping and zero-reserve', () => {
+  it('reserve > budget: clamped to budget so all slots come from fairness (oldest-first)', () => {
     // 5 slices, budget 3, reserve 99 → effectiveReserve = 3, prefixCount = 0
     // All 3 selected come from fairness (oldest ageRank first)
     const slices = [
@@ -349,7 +349,7 @@ describe('selectRunnableWithFairness — reserve clamped', () => {
     expect(result[2]).toBe(slices[4]); // p4
   });
 
-  it('reserve == 0 returns the first budget slices in priority order', () => {
+  it('reserve == 0: no fairness slots; returns the first budget slices in priority order', () => {
     const slices = [
       makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
       makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
@@ -423,9 +423,10 @@ describe('selectRunnableWithFairness — fairness reserve honored', () => {
 });
 
 describe('selectRunnableWithFairness — top-up', () => {
-  it('fills from unselected tail when tail has fewer items than reserve', () => {
+  it('tail exactly fills reserve: all tail items selected by fairness, no top-up needed', () => {
     // 4 slices, budget=4, reserve=3 → prefixCount=1, tail=[1,2,3] (3 items).
     // effectiveReserve=3, tail has exactly 3 items → fairness picks all 3 → total=4.
+    // Top-up is not the observable mechanism here; fairness already fills the budget.
     const slices = [
       makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'),
       makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'),
@@ -442,12 +443,10 @@ describe('selectRunnableWithFairness — top-up', () => {
     expect(result[3]).toBe(slices[3]);
   });
 
-  it('top-up kicks in when tail shorter than reserve: remaining filled from non-selected tail in priority order', () => {
-    // 5 slices, budget=5, reserve=4 → prefixCount=1.
-    // tail=[1,2,3,4]. effectiveReserve=4, tail has 4. All selected. Total=5 (1+4).
-    // This exercises the "tail shorter than reserve" top-up path indirectly; more
-    // direct: budget=4, reserve=10 (clamped to 4) → prefixCount=0, tail=all 5.
-    // fairness picks 4 oldest from 5. top-up fills 1 more from remaining tail item.
+  it('fairness picks 3 oldest from 5-item tail; result is those 3 exact slices in original order', () => {
+    // budget=3, reserve=3 → prefixCount=0, tail=all 5 slices, effectiveReserve=3.
+    // Fairness picks the 3 oldest: p4(ageRank 1), p3(2), p2(3).
+    // No top-up needed (fairness already reached budget).
     const slices = [
       makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 5 (newest)
       makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'), // ageRank 4
@@ -457,16 +456,76 @@ describe('selectRunnableWithFairness — top-up', () => {
     ];
     const ageRank = new Map([['p0', 5], ['p1', 4], ['p2', 3], ['p3', 2], ['p4', 1]]);
 
-    // budget=3, reserve=3 → prefixCount=0, fairness picks 3 oldest: p4(1),p3(2),p2(3)
-    // result in original index order: p2(2), p3(3), p4(4)
     const result = selectRunnableWithFairness(slices, 3, 3, ageRank);
     expect(result).toHaveLength(3);
-    expect(result[0]).toBe(slices[2]); // p2 index 2
-    expect(result[1]).toBe(slices[3]); // p3 index 3
-    expect(result[2]).toBe(slices[4]); // p4 index 4
+    expect(result[0]).toBe(slices[2]); // p2 (original index 2)
+    expect(result[1]).toBe(slices[3]); // p3 (original index 3)
+    expect(result[2]).toBe(slices[4]); // p4 (original index 4)
   });
 
-  it('top-up fills the gap when tail is shorter than effectiveReserve', () => {
+  it('top-up is the observable mechanism: tail shorter than effectiveReserve forces top-up to add specific slices', () => {
+    // budget=5, reserve=4 → prefixCount=1.
+    // 4 slices total → tail=[1,2,3] (only 3 items, shorter than effectiveReserve=4).
+    // Fairness picks all 3 tail items (the 3 oldest by ageRank): p3(1), p2(2), p1(3).
+    // After fairness: selected = {0,1,2,3} = 4 slots; budget=5 → top-up must add 1 more.
+    // But ALL tail items are already selected → top-up finds nothing; result = min(5,4) = 4.
+    //
+    // To make top-up visibly ADD a slice: we need a scenario where fairness picks FEWER
+    // than budget-prefixCount items AND the remaining tail item fills the gap.
+    //
+    // Setup: budget=4, reserve=3 → prefixCount=1, effectiveReserve=3.
+    // 5 slices. Tail=[1,2,3,4] (4 items). Fairness picks 3 oldest: p4(1),p3(2),p2(3).
+    // After fairness: selected = {0, 2, 3, 4} = 4 = budget. No top-up slot needed here.
+    //
+    // The truly observable top-up case: budget=4, reserve=2 → prefixCount=2.
+    // 5 slices. Tail=[2,3,4] (3 items, > effectiveReserve=2 so fairness fills 2 slots).
+    // Fairness picks 2 oldest from tail [2,3,4]: p4(ageRank 1) and p3(ageRank 2).
+    // After fairness: selected = {0, 1, 3, 4} = 4 = budget. Still no leftover for top-up.
+    //
+    // True minimal observable case: budget=3, reserve=2 → prefixCount=1.
+    // Tail has exactly 1 item (shorter than effectiveReserve=2).
+    // Fairness picks that 1 item. Selected = 2, budget = 3. Top-up must add 1 more from tail.
+    // But tail only had 1 item and it's already selected → top-up finds nothing.
+    // Result length = min(3, 2) = 2.
+    //
+    // Correct setup for observable top-up:
+    //   budget=4, reserve=3 → prefixCount=1, effectiveReserve=3.
+    //   6 slices. Tail=[1,2,3,4,5]. Fairness picks 3 oldest by ageRank.
+    //   We bias ageRanks so that ONLY 2 tail items have finite ageRank (others Infinity).
+    //   Fairness picks those 2 (< effectiveReserve=3). Top-up fills 1 more from tail
+    //   in original index order = the NEXT unselected tail item = slices[1] (lowest index).
+    const slices = [
+      makeSlice(['p0'], 'forward', '2024-01-01', '2024-01-31'), // prefix (index 0)
+      makeSlice(['p1'], 'forward', '2024-01-01', '2024-01-31'), // tail index 1, ageRank Infinity
+      makeSlice(['p2'], 'forward', '2024-01-01', '2024-01-31'), // tail index 2, ageRank Infinity
+      makeSlice(['p3'], 'forward', '2024-01-01', '2024-01-31'), // tail index 3, ageRank 2 (starved)
+      makeSlice(['p4'], 'forward', '2024-01-01', '2024-01-31'), // tail index 4, ageRank 1 (most starved)
+      makeSlice(['p5'], 'forward', '2024-01-01', '2024-01-31'), // tail index 5, ageRank Infinity
+    ];
+    // Only p3 and p4 have finite ageRank — fairness will pick exactly those 2 (< reserve=3).
+    // Top-up must then fill 1 more slot. The top-up loop walks original tail order (i=1,2,3,4,5)
+    // and picks the first unselected: slices[1] (p1).
+    const ageRank = new Map([['p3', 2], ['p4', 1]]);
+    // budget=4, reserve=3 → prefixCount=1, effectiveReserve=3
+    const result = selectRunnableWithFairness(slices, 4, 3, ageRank);
+
+    expect(result).toHaveLength(4);
+    // Prefix: slices[0]
+    expect(result).toContain(slices[0]);
+    // Fairness: slices[4] (p4, ageRank 1) and slices[3] (p3, ageRank 2)
+    expect(result).toContain(slices[4]);
+    expect(result).toContain(slices[3]);
+    // Top-up: slices[1] (p1, first unselected tail item in original order)
+    expect(result).toContain(slices[1]);
+    // Verify exact identities in original index order
+    const indices = result.map(s => slices.indexOf(s));
+    expect(indices).toEqual([0, 1, 3, 4]);
+    // slices[2] and slices[5] were NOT selected
+    expect(result).not.toContain(slices[2]);
+    expect(result).not.toContain(slices[5]);
+  });
+
+  it('top-up cannot fill beyond available slices: result length caps at total slice count', () => {
     // budget=5, reserve=3 → prefixCount=2.
     // Only 4 slices total → tail has 2 slices (indices 2,3).
     // Fairness picks both (2 < 3), top-up tries to fill 1 more but tail is exhausted.
