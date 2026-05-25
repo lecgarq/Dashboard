@@ -66,6 +66,7 @@ import type {
 } from '@/lib/acc/extractionPriorityPlanner';
 import { buildExtractionPriorityPlan } from '@/lib/acc/extractionPriorityPlanner';
 import { composePrioritizedSlices } from '@/lib/acc/dcBackfillPriority';
+import { bisectOnForbidden, DcSubmitForbiddenError } from '@/lib/acc/dcBisect';
 
 // ---------------------------------------------------------------------------
 // Public types
@@ -148,6 +149,30 @@ export class QuotaExceededError extends Error {
   }
 }
 
+/**
+ * TERMINAL failure during a sub-batch's data-listing / download / ingest
+ * phase. Maps to the 2026-05-18 "Bug B" hard-abort: the whole run finalizes
+ * as status='failed'. Carries a human-readable message.
+ */
+export class DcRunFatalError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DcRunFatalError';
+  }
+}
+
+/**
+ * Non-terminal sub-batch skip (poll failure / poll timeout, or a generic
+ * non-403/non-429 submit failure). Maps to TODAY's "console.error + continue"
+ * behavior: skip this slice, keep going with the next.
+ */
+export class DcSliceSkipError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'DcSliceSkipError';
+  }
+}
+
 interface DcSubmitOpts {
   accountId: string;
   userToken: string;
@@ -177,7 +202,7 @@ async function fetchWithTimeout(
   }
 }
 
-async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
+export async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
   const body = {
     description: opts.description,
     scheduleInterval: 'ONE_TIME',
@@ -232,6 +257,9 @@ async function dcSubmit(opts: DcSubmitOpts): Promise<string> {
       await sleep(backoffSec * 1000);
       lastErr = `${res.status}: ${summary}`;
       continue;
+    }
+    if (res.status === 403) {
+      throw new DcSubmitForbiddenError(opts.projectIds, summary);
     }
     throw new Error(`POST /requests ${res.status}: ${summary}`);
   }
@@ -715,6 +743,34 @@ function emptyResult(
 }
 
 // ---------------------------------------------------------------------------
+// Flag-gated 403 batch bisection
+// ---------------------------------------------------------------------------
+
+/**
+ * Reads the 403-bisection feature flag + cap from the environment.
+ *
+ * - `DC_403_BISECT === '1'` enables bisection; anything else (incl. unset)
+ *   keeps the current skip-the-whole-slice behavior.
+ * - `DC_BISECT_MAX_REQUESTS` caps total submit attempts during one bisection;
+ *   defaults to 32, ignored when unset/blank/non-numeric/< 1.
+ */
+export function resolveBisectConfig(
+  env: Record<string, string | undefined> = process.env,
+): {
+  enabled: boolean;
+  maxRequests: number;
+} {
+  const enabled = env.DC_403_BISECT === '1';
+  let maxRequests = 32;
+  const raw = env.DC_BISECT_MAX_REQUESTS;
+  if (raw !== undefined && raw.trim() !== '') {
+    const n = parseInt(raw, 10);
+    if (!isNaN(n) && n >= 1) maxRequests = n;
+  }
+  return { enabled, maxRequests };
+}
+
+// ---------------------------------------------------------------------------
 // Flag-gated value-first slice ordering
 // ---------------------------------------------------------------------------
 
@@ -1015,6 +1071,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
       quotaUsedBeforeRun: quotaBudget.usedToday,
       nextSafeRunAt: nextDailyQuotaReset(startedAt),
       skipAdminSnapshot: limitedPlan.deferredRequests > 0,
+      safeRemainingRequests: quotaBudget.safeRemainingToday,
     },
   );
 }
@@ -1032,6 +1089,7 @@ async function executePlan(
     quotaUsedBeforeRun?: number;
     nextSafeRunAt?: Date;
     skipAdminSnapshot?: boolean;
+    safeRemainingRequests?: number;
   } = {},
 ): Promise<RunResult> {
   const rawHubId = process.env.APS_HUB_ID?.trim();
@@ -1071,68 +1129,81 @@ async function executePlan(
   let sliceWindowStart: Date | null = null;
   let sliceWindowEnd: Date | null = null;
 
-  // Process each slice in sequence (rate-limit conservative; mirrors the
-  // reference impl). Quota errors short-circuit cleanly.
-  for (const slice of slices) {
-    if (sliceWindowStart === null || slice.start < sliceWindowStart) {
-      sliceWindowStart = slice.start;
-    }
-    if (sliceWindowEnd === null || slice.end > sliceWindowEnd) {
-      sliceWindowEnd = slice.end;
-    }
+  // Flag-gated 403 batch bisection config + budget guard.
+  const bisectConfig = resolveBisectConfig();
+  if (!bisectConfig.enabled) {
+    // eslint-disable-next-line no-console
+    console.log('[dcIngest] 403 bisection: disabled (DC_403_BISECT not set)');
+  } else {
+    // eslint-disable-next-line no-console
+    console.log(
+      `[dcIngest] 403 bisection: enabled maxRequests=${bisectConfig.maxRequests}`,
+    );
+  }
+  const safeRemainingRequests =
+    options.safeRemainingRequests ?? Number.POSITIVE_INFINITY;
 
+  /**
+   * Submit -> poll -> data-listing -> download/ingest for ONE sub-batch of
+   * project IDs. Resolves on full success (and records completion); throws to
+   * signal an outcome the caller maps to control flow:
+   *   - QuotaExceededError    -> caller finalizes 'quota-paused' (terminal)
+   *   - DcSubmitForbiddenError -> 403; bubbles to bisection helper (flag on)
+   *   - DcRunFatalError       -> caller finalizes 'failed' (Bug B, terminal)
+   *   - DcSliceSkipError      -> caller skips this slice (non-terminal)
+   */
+  const runSubBatch = async (
+    batchProjectIds: string[],
+    slice: Slice,
+  ): Promise<void> => {
     let requestId: string;
+    // Refresh token before each submit (cheap if still fresh).
+    // eslint-disable-next-line no-console
+    console.log(
+      `[dcIngest] Refreshing user token before submit for ${batchProjectIds.length} project(s)`,
+    );
+    userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
+    const description = safeDescription(
+      `dc-ingest ${ingestRunId} ${slice.reason} ${batchProjectIds.length}p`,
+    );
+    // eslint-disable-next-line no-console
+    console.log(
+      `[dcIngest] Submitting slice ${slice.start.toISOString()} to ${slice.end.toISOString()} for ${batchProjectIds.length} project(s)`,
+    );
     try {
-      // Refresh token before each submit (cheap if still fresh).
-      // eslint-disable-next-line no-console
-      console.log(
-        `[dcIngest] Refreshing user token before submit for ${slice.projectIds.length} project(s)`,
-      );
-      userToken = await refreshUserToken(prisma, { userEmail: DC_USER_EMAIL });
-      const description = safeDescription(
-        `dc-ingest ${ingestRunId} ${slice.reason} ${slice.projectIds.length}p`,
-      );
-      // eslint-disable-next-line no-console
-      console.log(
-        `[dcIngest] Submitting slice ${slice.start.toISOString()} to ${slice.end.toISOString()} for ${slice.projectIds.length} project(s)`,
-      );
       requestId = await dcSubmit({
         accountId,
         userToken,
-        projectIds: slice.projectIds,
+        projectIds: batchProjectIds,
         startDate: slice.start,
         endDate: slice.end,
         description,
       });
-      // eslint-disable-next-line no-console
-      console.log(`[dcIngest] Submitted request ${requestId}`);
-      quotaUsed += 1;
-      await prisma.accDcIngestRun.update({
-        where: { id: ingestRunId },
-        data: {
-          quotaUsed,
-          sliceWindowStart,
-          sliceWindowEnd,
-        },
-      });
     } catch (err) {
-      if (err instanceof QuotaExceededError) {
-        return finalize(prisma, ingestRunId, startedAt, {
-          status: 'quota-paused',
-          errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
-          rowsByModule,
-          quotaUsed,
-          unknownModulesSeen: [...unknownModulesSet],
-          projectsProcessed: projectsProcessedSet.size,
-          sliceWindowStart,
-          sliceWindowEnd,
-        });
+      // QuotaExceededError (429) and DcSubmitForbiddenError (403) propagate
+      // untouched — the loop's catch / the bisection helper handle them.
+      if (
+        err instanceof QuotaExceededError ||
+        err instanceof DcSubmitForbiddenError
+      ) {
+        throw err;
       }
-      // Non-quota submit failure -> mark partial + continue with NEXT slice.
-      // eslint-disable-next-line no-console
-      console.error(`[dcIngest] Submit failed for slice: ${(err as Error).message}`);
-      continue;
+      // Generic submit failure -> non-terminal skip (today's continue branch).
+      throw new DcSliceSkipError(
+        `Submit failed for slice: ${(err as Error).message}`,
+      );
     }
+    // eslint-disable-next-line no-console
+    console.log(`[dcIngest] Submitted request ${requestId}`);
+    quotaUsed += 1;
+    await prisma.accDcIngestRun.update({
+      where: { id: ingestRunId },
+      data: {
+        quotaUsed,
+        sliceWindowStart,
+        sliceWindowEnd,
+      },
+    });
 
     // Poll
     const pollStart = Date.now();
@@ -1146,16 +1217,7 @@ async function executePlan(
         jobs = await dcPollJobs(accountId, userToken, requestId);
       } catch (err) {
         if (err instanceof QuotaExceededError) {
-          return finalize(prisma, ingestRunId, startedAt, {
-            status: 'quota-paused',
-            errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
-            rowsByModule,
-            quotaUsed,
-            unknownModulesSeen: [...unknownModulesSet],
-            projectsProcessed: projectsProcessedSet.size,
-            sliceWindowStart,
-            sliceWindowEnd,
-          });
+          throw err;
         }
         pollErr = (err as Error).message;
         await sleep(POLL_INTERVAL_MS);
@@ -1174,11 +1236,10 @@ async function executePlan(
       await sleep(POLL_INTERVAL_MS);
     }
     if (reduceJobsStatus(jobs) !== 'success') {
-      // eslint-disable-next-line no-console
-      console.error(
-        `[dcIngest] Slice failed (${pollErr ?? 'poll timeout'}); skipping.`,
+      // Non-terminal skip (today's continue branch).
+      throw new DcSliceSkipError(
+        `Slice failed (${pollErr ?? 'poll timeout'}); skipping.`,
       );
-      continue;
     }
 
     // Per-job: data-listing -> per-file download
@@ -1194,29 +1255,13 @@ async function executePlan(
         console.log(`[dcIngest] Job ${job.id} returned ${files.length} file(s)`);
       } catch (err) {
         if (err instanceof QuotaExceededError) {
-          return finalize(prisma, ingestRunId, startedAt, {
-            status: 'quota-paused',
-            errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
-            rowsByModule,
-            quotaUsed,
-            unknownModulesSeen: [...unknownModulesSet],
-            projectsProcessed: projectsProcessedSet.size,
-            sliceWindowStart,
-            sliceWindowEnd,
-          });
+          throw err;
         }
         // 2026-05-18 Bug B fix: hard abort. Previously console.error+continue, which let
         // the run finalize as 'success' with zero rows. See docs/superpowers/specs/2026-05-18-dc-ingest-drift-recovery-design.md.
-        return finalize(prisma, ingestRunId, startedAt, {
-          status: 'failed',
-          errorMessage: `data-listing failed for job ${job.id}: ${(err as Error).message}`,
-          rowsByModule,
-          quotaUsed,
-          unknownModulesSeen: [...unknownModulesSet],
-          projectsProcessed: projectsProcessedSet.size,
-          sliceWindowStart,
-          sliceWindowEnd,
-        });
+        throw new DcRunFatalError(
+          `data-listing failed for job ${job.id}: ${(err as Error).message}`,
+        );
       }
 
       for (const f of files) {
@@ -1269,37 +1314,97 @@ async function executePlan(
           }
         } catch (err) {
           if (err instanceof QuotaExceededError) {
-            return finalize(prisma, ingestRunId, startedAt, {
-              status: 'quota-paused',
-              errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
-              rowsByModule,
-              quotaUsed,
-              unknownModulesSeen: [...unknownModulesSet],
-              projectsProcessed: projectsProcessedSet.size,
-              sliceWindowStart,
-              sliceWindowEnd,
-            });
+            throw err;
           }
           // 2026-05-18 Bug B fix: hard abort on any download/ingest exception. Previously
           // console.error+continue, which silently dropped failed inserts and let the run
           // finalize as 'success' with rowsByModule all zero. This is exactly how the
           // ingestRunId schema drift hid for 5 days.
-          return finalize(prisma, ingestRunId, startedAt, {
-            status: 'failed',
-            errorMessage: `Download/ingest ${f.name} failed: ${(err as Error).message}`,
-            rowsByModule,
-            quotaUsed,
-            unknownModulesSeen: [...unknownModulesSet],
-            projectsProcessed: projectsProcessedSet.size,
-            sliceWindowStart,
-            sliceWindowEnd,
-          });
+          throw new DcRunFatalError(
+            `Download/ingest ${f.name} failed: ${(err as Error).message}`,
+          );
         }
       }
     }
 
-    completedSlices.push(slice);
-    for (const pid of slice.projectIds) projectsProcessedSet.add(pid);
+    // Full success of this sub-batch: record a sub-slice so step-10 advances
+    // AccDcBackfillProgress for EXACTLY the salvaged projects.
+    completedSlices.push({ ...slice, projectIds: batchProjectIds });
+    for (const pid of batchProjectIds) projectsProcessedSet.add(pid);
+  };
+
+  // Process each slice in sequence (rate-limit conservative; mirrors the
+  // reference impl). Quota errors short-circuit cleanly.
+  for (const slice of slices) {
+    if (sliceWindowStart === null || slice.start < sliceWindowStart) {
+      sliceWindowStart = slice.start;
+    }
+    if (sliceWindowEnd === null || slice.end > sliceWindowEnd) {
+      sliceWindowEnd = slice.end;
+    }
+
+    try {
+      if (bisectConfig.enabled) {
+        const summary = await bisectOnForbidden(
+          slice.projectIds,
+          (ids) => runSubBatch(ids, slice),
+          {
+            maxRequests: bisectConfig.maxRequests,
+            hasBudget: () => quotaUsed < safeRemainingRequests,
+            onInaccessible: (pid) =>
+              // eslint-disable-next-line no-console
+              console.error(
+                `[dcIngest] inaccessible project pid=${pid} reason=403-invalid-access slice=${slice.reason}`,
+              ),
+          },
+        );
+        if (
+          summary.inaccessibleProjectIds.length ||
+          summary.requestsUsed > 1 ||
+          summary.unprobedProjectIds.length
+        ) {
+          // eslint-disable-next-line no-console
+          console.log(
+            `[dcIngest] bisection slice=${slice.reason} requests=${summary.requestsUsed} salvaged=${summary.successfulProjectIds.length} inaccessible=${summary.inaccessibleProjectIds.length} unprobed=${summary.unprobedProjectIds.length}` +
+              (summary.inaccessibleProjectIds.length
+                ? ` inaccessibleIds=[${summary.inaccessibleProjectIds.join(',')}]`
+                : ''),
+          );
+        }
+      } else {
+        await runSubBatch(slice.projectIds, slice);
+      }
+    } catch (err) {
+      if (err instanceof QuotaExceededError) {
+        return finalize(prisma, ingestRunId, startedAt, {
+          status: 'quota-paused',
+          errorMessage: `${err.message}. Next safe run: ${nextDailyQuotaReset(new Date()).toISOString()}.`,
+          rowsByModule,
+          quotaUsed,
+          unknownModulesSeen: [...unknownModulesSet],
+          projectsProcessed: projectsProcessedSet.size,
+          sliceWindowStart,
+          sliceWindowEnd,
+        });
+      }
+      if (err instanceof DcRunFatalError) {
+        return finalize(prisma, ingestRunId, startedAt, {
+          status: 'failed',
+          errorMessage: err.message,
+          rowsByModule,
+          quotaUsed,
+          unknownModulesSeen: [...unknownModulesSet],
+          projectsProcessed: projectsProcessedSet.size,
+          sliceWindowStart,
+          sliceWindowEnd,
+        });
+      }
+      // DcSubmitForbiddenError (reachable only when flag OFF), DcSliceSkipError,
+      // or any other -> skip this slice (TODAY's behavior).
+      // eslint-disable-next-line no-console
+      console.error(`[dcIngest] Slice skipped: ${(err as Error).message}`);
+      continue;
+    }
   }
 
   // 9. Admin snapshot transaction (atomic across all 16 tables).

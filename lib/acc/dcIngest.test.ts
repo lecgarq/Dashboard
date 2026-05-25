@@ -37,7 +37,8 @@ vi.mock('./dcAdminCsvIngest', async (importOriginal) => {
 });
 
 import { ingestAdminSnapshot } from './dcAdminCsvIngest';
-import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve } from './dcIngest';
+import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve, resolveBisectConfig, dcSubmit } from './dcIngest';
+import { DcSubmitForbiddenError } from './dcBisect';
 import { composePrioritizedSlices } from './dcBackfillPriority';
 import type { Slice } from './dcProgressiveBackfill';
 
@@ -725,5 +726,268 @@ describe('resolveSlicesForBudget — fallback on error', () => {
     ).resolves.toBe(slices);
 
     warnSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// resolveBisectConfig — env-var parsing
+// ---------------------------------------------------------------------------
+
+describe('resolveBisectConfig', () => {
+  it('defaults to disabled + maxRequests=32 when DC_403_BISECT is unset', () => {
+    expect(resolveBisectConfig({})).toEqual({ enabled: false, maxRequests: 32 });
+  });
+
+  it('enables bisection when DC_403_BISECT="1"', () => {
+    expect(resolveBisectConfig({ DC_403_BISECT: '1' })).toEqual({
+      enabled: true,
+      maxRequests: 32,
+    });
+  });
+
+  it('keeps disabled for any DC_403_BISECT value other than "1"', () => {
+    expect(resolveBisectConfig({ DC_403_BISECT: '0' }).enabled).toBe(false);
+    expect(resolveBisectConfig({ DC_403_BISECT: 'true' }).enabled).toBe(false);
+  });
+
+  it('reads DC_BISECT_MAX_REQUESTS when valid (>= 1)', () => {
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: '5' }).maxRequests).toBe(5);
+  });
+
+  it('falls back to 32 for invalid / zero / blank DC_BISECT_MAX_REQUESTS', () => {
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: '0' }).maxRequests).toBe(32);
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: '-3' }).maxRequests).toBe(32);
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: 'abc' }).maxRequests).toBe(32);
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: '  ' }).maxRequests).toBe(32);
+    expect(resolveBisectConfig({ DC_BISECT_MAX_REQUESTS: '' }).maxRequests).toBe(32);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// dcSubmit — typed 403 error
+// ---------------------------------------------------------------------------
+
+describe('dcSubmit — typed errors', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  it('throws DcSubmitForbiddenError carrying the input projectIds on HTTP 403', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(
+        async () =>
+          new Response('{"detail":"Invalid user access level"}', { status: 403 }),
+      );
+
+    const ids = ['pA', 'pB', 'pC'];
+    await expect(
+      dcSubmit({
+        accountId: 'acct',
+        userToken: 'tok',
+        projectIds: ids,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31'),
+        description: 'test',
+      }),
+    ).rejects.toBeInstanceOf(DcSubmitForbiddenError);
+
+    // Re-run to inspect .projectIds (rejection above consumed the first call).
+    let caught: unknown;
+    try {
+      await dcSubmit({
+        accountId: 'acct',
+        userToken: 'tok',
+        projectIds: ids,
+        startDate: new Date('2024-01-01'),
+        endDate: new Date('2024-01-31'),
+        description: 'test',
+      });
+    } catch (err) {
+      caught = err;
+    }
+    expect(caught).toBeInstanceOf(DcSubmitForbiddenError);
+    expect((caught as DcSubmitForbiddenError).projectIds).toEqual(ids);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('resolves to the request id on HTTP 200', async () => {
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response(JSON.stringify({ id: 'req-1' })));
+
+    const id = await dcSubmit({
+      accountId: 'acct',
+      userToken: 'tok',
+      projectIds: ['p1'],
+      startDate: new Date('2024-01-01'),
+      endDate: new Date('2024-01-31'),
+      description: 'test',
+    });
+    expect(id).toBe('req-1');
+
+    fetchSpy.mockRestore();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 403 batch bisection — flag OFF vs ON, end-to-end through runDcIngest
+// ---------------------------------------------------------------------------
+
+describe('runDcIngest — 403 batch bisection', () => {
+  let killSwitchPath: string;
+  const savedEnv: Record<string, string | undefined> = {};
+  const ENV_VARS = [
+    'APS_HUB_ID',
+    'ACC_ACCOUNT_ID',
+    'LUIS_ACC_USER_ID',
+    'APS_CLIENT_ID',
+    'APS_CLIENT_SECRET',
+    'DC_403_BISECT',
+    'DC_BISECT_MAX_REQUESTS',
+  ] as const;
+
+  beforeEach(() => {
+    killSwitchPath = path.join(process.cwd(), '.dc-ingest.disabled');
+    if (fs.existsSync(killSwitchPath)) fs.unlinkSync(killSwitchPath);
+    for (const k of ENV_VARS) savedEnv[k] = process.env[k];
+    process.env.APS_HUB_ID = 'test-hub-id';
+    process.env.LUIS_ACC_USER_ID = 'test-user-id';
+    process.env.APS_CLIENT_ID = 'test-client-id';
+    process.env.APS_CLIENT_SECRET = 'test-client-secret';
+    delete process.env.DC_403_BISECT;
+    delete process.env.DC_BISECT_MAX_REQUESTS;
+  });
+  afterEach(() => {
+    if (fs.existsSync(killSwitchPath)) fs.unlinkSync(killSwitchPath);
+    for (const k of ENV_VARS) {
+      if (savedEnv[k] === undefined) delete process.env[k];
+      else process.env[k] = savedEnv[k];
+    }
+    delete process.env.DC_403_BISECT;
+    delete process.env.DC_BISECT_MAX_REQUESTS;
+    vi.restoreAllMocks();
+  });
+
+  // Seed N new-projects → planDailySlice buckets them into ONE 'new-project'
+  // slice (same window) containing all ids — exactly the multi-project slice
+  // bisection must handle.
+  function seedProjects(prisma: PrismaMock, ids: string[]) {
+    const rows = ids.map((id) => ({
+      projectId: id,
+      earliestCovered: null,
+      latestCovered: null,
+      projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+      newProjectFlag: true,
+    }));
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue(rows);
+    prisma.accDcBackfillProgress.findUnique.mockImplementation(
+      async ({ where }: { where: { projectId: string } }) =>
+        rows.find((r) => r.projectId === where.projectId) ?? null,
+    );
+  }
+
+  it('flag OFF: a 403 on the slice skips the WHOLE batch (no coverage), run finalizes partial', async () => {
+    // DC_403_BISECT unset (beforeEach deletes it).
+    const prisma = makePrismaMock();
+    seedProjects(prisma, ['p0', 'p1', 'p2', 'p3']);
+
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.endsWith('/requests')) {
+          return new Response('{"detail":"Invalid user access level"}', {
+            status: 403,
+          });
+        }
+        return new Response('{}');
+      });
+
+    const result = await runDcIngest(prisma as never);
+
+    // No project's progress advanced — whole slice skipped.
+    expect(prisma.accDcBackfillProgress.upsert).not.toHaveBeenCalled();
+    // Slice skipped (none completed) -> partial.
+    expect(result.status).toBe('partial');
+    // 403 throws before quotaUsed increments (same as today's submit-fail path).
+    expect(result.quotaUsed).toBe(0);
+
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+  });
+
+  it('flag ON: salvages good projects, isolates the 403 culprit, advances progress for the rest', async () => {
+    process.env.DC_403_BISECT = '1';
+    const prisma = makePrismaMock();
+    seedProjects(prisma, ['p0', 'p1', 'p2', 'p3']);
+
+    const errSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    let reqCounter = 0;
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.endsWith('/requests')) {
+          const body = JSON.parse(String(init.body)) as {
+            projectIdList: string[];
+          };
+          if (body.projectIdList.includes('p2')) {
+            return new Response('{"detail":"Invalid user access level"}', {
+              status: 403,
+            });
+          }
+          reqCounter += 1;
+          return new Response(JSON.stringify({ id: `req-${reqCounter}` }));
+        }
+        // GET /requests/:id/jobs → one successful job.
+        if (/\/requests\/req-\d+\/jobs$/.test(url)) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                { id: `job-${url.match(/req-(\d+)/)?.[1]}`, status: 'complete', completionStatus: 'success' },
+              ],
+            }),
+          );
+        }
+        // data-listing → empty file list (no downloads, no admin snapshot).
+        if (/\/jobs\/job-\d+\/data-listing$/.test(url)) {
+          return new Response(JSON.stringify({ results: [] }));
+        }
+        return new Response('{}');
+      });
+
+    const result = await runDcIngest(prisma as never);
+
+    // Good projects had their progress advanced.
+    const upsertedIds = prisma.accDcBackfillProgress.upsert.mock.calls.map(
+      (c) => (c[0] as { where: { projectId: string } }).where.projectId,
+    );
+    expect(upsertedIds).toEqual(expect.arrayContaining(['p0', 'p1', 'p3']));
+    // Culprit was NOT advanced.
+    expect(upsertedIds).not.toContain('p2');
+
+    // Inaccessible-project log line emitted for p2.
+    const inaccessibleLogged = errSpy.mock.calls.some((c) =>
+      String(c[0]).includes('inaccessible project pid=p2'),
+    );
+    expect(inaccessibleLogged).toBe(true);
+
+    // Bisection summary line emitted.
+    const summaryLogged = logSpy.mock.calls.some((c) =>
+      String(c[0]).includes('[dcIngest] bisection slice='),
+    );
+    expect(summaryLogged).toBe(true);
+
+    // Sanity: the run did not finalize fatal/quota.
+    expect(['success', 'partial']).toContain(result.status);
+
+    fetchSpy.mockRestore();
+    errSpy.mockRestore();
+    logSpy.mockRestore();
   });
 });
