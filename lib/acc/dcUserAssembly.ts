@@ -1,4 +1,5 @@
 import type { BulkAccUser, PermissionContext } from "./acc-types";
+import { classifyAffiliation } from "@/app/(dashboard)/users/access-analysis/internalDomains";
 
 export interface DcAssemblyInput {
   users: { id: string; email: string | null; name: string | null; status: string | null; companyId: string | null; lastSignIn?: string | null }[];
@@ -9,6 +10,18 @@ export interface DcAssemblyInput {
   roleNames: Record<string, string>;
   projectMeta: Record<string, { name: string; status: string; crawlStatus: string }>;
   folderPermissions?: { folderId: string; roleId: string; permType: string; actions: string[]; projectId: string; folderPath: string }[];
+  /**
+   * Per-(project,user) company affiliation. Used as a fallback firm source when
+   * the AccDcUser record has no companyId (common for external collaborators).
+   */
+  projectUserCompanies?: { projectId: string; userId: string; companyId: string }[];
+  /**
+   * When false (default), `permissionContexts` is left empty for every user. The
+   * per-user fan-out (user × role × folder grant) is large enough to exceed V8's
+   * max JSON string length, so it's excluded from the default lean node feed.
+   * Only the role-scoped edge feed (WS2) should request it.
+   */
+  includePermissionContexts?: boolean;
 }
 
 export function normalizePermTier(permType: string): string {
@@ -22,7 +35,11 @@ export function normalizePermTier(permType: string): string {
 
 /** BulkAccUser extended with DC-only derived fields not yet on the shared type. */
 export type DcBulkAccUser = BulkAccUser & {
-  /** True when the user's email domain is not @lecg.com. */
+  /**
+   * True only when the email resolves to an external domain (canonical rule in
+   * internalDomains.classifyAffiliation). Internal (hermosillo.com) and unknown
+   * (null/empty/malformed email) are both `false` — unknown is never auto-external.
+   */
   isExternal: boolean;
 };
 
@@ -35,7 +52,31 @@ function coverageFor(statuses: string[]): "known" | "partial" | "unknown" {
 }
 
 export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
+  const includeContexts = input.includePermissionContexts === true;
   const companyName = new Map(input.companies.map((c) => [c.id, c.name]));
+
+  // Fallback firm source: the user's dominant company across their project
+  // memberships, used when the AccDcUser record itself has no companyId.
+  const companyVotesByUser = new Map<string, Map<string, number>>();
+  for (const pc of input.projectUserCompanies ?? []) {
+    if (!pc.companyId) continue;
+    const votes = companyVotesByUser.get(pc.userId) ?? new Map<string, number>();
+    votes.set(pc.companyId, (votes.get(pc.companyId) ?? 0) + 1);
+    companyVotesByUser.set(pc.userId, votes);
+  }
+  const dominantCompanyFor = (userId: string): string | null => {
+    const votes = companyVotesByUser.get(userId);
+    if (!votes) return null;
+    let best: string | null = null;
+    let bestCount = 0;
+    for (const [companyId, count] of votes) {
+      if (count > bestCount) {
+        best = companyId;
+        bestCount = count;
+      }
+    }
+    return best;
+  };
 
   // Build user → set of project IDs
   const membersByUser = new Map<string, Set<string>>();
@@ -108,7 +149,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
 
     // Build permission contexts: only for projects with crawlStatus "ok" or "partial"
     const permissionContexts: PermissionContext[] = [];
-    for (const pid of projectIds) {
+    if (includeContexts) for (const pid of projectIds) {
       const meta = input.projectMeta[pid] ?? { name: pid, status: "unknown", crawlStatus: "never" };
       if (meta.crawlStatus !== "ok" && meta.crawlStatus !== "partial") continue;
       const rawRoleIds = rawRolesByUserProject.get(`${u.id}::${pid}`) ?? new Set<string>();
@@ -142,17 +183,21 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
       allRoles,
       allModules,
       projects,
-      isAccountAdmin: adminCount > 0,
+      isAccountAdmin: false,
       addedOn: null,
       // ── Optional BulkAccUser access-graph fields ─────────────────────────
-      firmId: u.companyId ?? null,
-      firmName: u.companyId ? (companyName.get(u.companyId) ?? null) : null,
+      projectAdmin: adminCount > 0,
+      firmId: u.companyId ?? dominantCompanyFor(u.id),
+      firmName: (() => {
+        const cid = u.companyId ?? dominantCompanyFor(u.id);
+        return cid ? (companyName.get(cid) ?? null) : null;
+      })(),
       accountStatus:
         u.status === "active" ? "active" : u.status === "inactive" ? "inactive" : null,
       permissionCoverage: coverageFor(projects.map((p) => p.crawlStatus ?? "never")),
       lastSignIn: u.lastSignIn ?? null,
       // ── DC-only extension ────────────────────────────────────────────────
-      isExternal: email.length > 0 ? !email.endsWith("@lecg.com") : true,
+      isExternal: classifyAffiliation(email) === "external",
       permissionContexts,
     });
   }

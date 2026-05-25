@@ -118,7 +118,7 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
     last_sign_in: timestampMillis(user.lastSignIn),
     added_on: timestampMillis(user.addedOn),
     aggregated_status: user.aggregatedStatus ?? "",
-    company_name: user.companyName ?? "",
+    company_name: user.companyName?.trim() || "Unknown",
     firm_name: user.firmName ?? "",
     account_status: user.accountStatus ?? "",
     permission_coverage: user.permissionCoverage ?? "unknown",
@@ -132,10 +132,10 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
         user_id: uid,
         email: user.email,
         project_id: project.id,
-        project_name: project.name,
+        project_name: project.name?.trim() || "Unknown",
         project_status: project.status,
         is_project_admin: project.isAdmin,
-        role_id: role,
+        role_id: role?.trim() || "Unknown",
         module_ids: project.modules.join("|"),
       }));
     });

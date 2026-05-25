@@ -27,6 +27,13 @@ describe("assembleDcUsers", () => {
     expect(out[0].adminCount).toBe(1);
   });
 
+  it("does not classify project admins as account admins", () => {
+    const out = assembleDcUsers(base);
+    expect(out[0].adminCount).toBe(1);
+    expect(out[0].projectAdmin).toBe(true);
+    expect(out[0].isAccountAdmin).toBe(false);
+  });
+
   it("derives permissionCoverage from project crawl status", () => {
     const partial = { ...base, projectUsers: [
       { projectId: "p1", userId: "u1" }, { projectId: "p2", userId: "u1" },
@@ -40,9 +47,45 @@ describe("assembleDcUsers", () => {
     expect(assembleDcUsers(orphan)).toHaveLength(0);
   });
 
-  it("flags external users by non-lecg email domain", () => {
-    const ext = { ...base, users: [{ id: "u1", email: "x@vendor.com", name: "X", status: "active", companyId: "c1" }] };
-    expect(assembleDcUsers(ext)[0].isExternal).toBe(true);
+  it("classifies isExternal via the canonical internal-domain rule", () => {
+    const make = (email: string | null) => ({
+      ...base,
+      users: [{ id: "u1", email, name: "X", status: "active", companyId: "c1" }],
+    });
+    // Internal: hermosillo.com domain.
+    expect(assembleDcUsers(make("user@hermosillo.com"))[0].isExternal).toBe(false);
+    // External: any other valid domain (legacy lecg.com is now external).
+    expect(assembleDcUsers(make("x@vendor.com"))[0].isExternal).toBe(true);
+    expect(assembleDcUsers(make("legacy@lecg.com"))[0].isExternal).toBe(true);
+    // Unknown (null / malformed) must NOT be auto-flagged external.
+    expect(assembleDcUsers(make(null))[0].isExternal).toBe(false);
+    expect(assembleDcUsers(make("bademail"))[0].isExternal).toBe(false);
+  });
+
+  it("derives firm from project-user company joins when AccDcUser.companyId is empty", () => {
+    const out = assembleDcUsers({
+      ...base,
+      users: [{ id: "u1", email: "a@lecg.com", name: "Ana", status: "active", companyId: null }],
+      companies: [
+        { id: "c1", name: "LECG" },
+        { id: "c2", name: "Partner" },
+      ],
+      projectUsers: [
+        { projectId: "p1", userId: "u1" },
+        { projectId: "p2", userId: "u1" },
+      ],
+      projectUserCompanies: [
+        { projectId: "p1", userId: "u1", companyId: "c2" },
+        { projectId: "p2", userId: "u1", companyId: "c2" },
+      ],
+      projectMeta: {
+        p1: { name: "P1", status: "active", crawlStatus: "ok" },
+        p2: { name: "P2", status: "active", crawlStatus: "ok" },
+      },
+    });
+
+    expect(out[0].firmId).toBe("c2");
+    expect(out[0].firmName).toBe("Partner");
   });
 });
 
@@ -58,6 +101,7 @@ describe("permissionContexts", () => {
   it("emits a permission context per user-role-folder grant in a crawled project", () => {
     const out = assembleDcUsers({
       ...base,
+      includePermissionContexts: true,
       folderPermissions: [
         { folderId: "f1", roleId: "Architect", permType: "View+Download+Upload+Edit", actions: ["VIEW", "EDIT"], projectId: "p1", folderPath: "/Project/Models" },
       ],
@@ -70,9 +114,20 @@ describe("permissionContexts", () => {
   it("emits no permission context for roles/folders in uncrawled projects", () => {
     const out = assembleDcUsers({
       ...base,
+      includePermissionContexts: true,
       projectMeta: { p1: { name: "P1", status: "active", crawlStatus: "never" } },
       folderPermissions: [
         { folderId: "f1", roleId: "Architect", permType: "View Only", actions: [], projectId: "p1", folderPath: "/x" },
+      ],
+    });
+    expect(out[0].permissionContexts).toEqual([]);
+  });
+
+  it("omits permission contexts by default (lean node feed)", () => {
+    const out = assembleDcUsers({
+      ...base,
+      folderPermissions: [
+        { folderId: "f1", roleId: "Architect", permType: "View+Download+Upload+Edit", actions: ["VIEW", "EDIT"], projectId: "p1", folderPath: "/Project/Models" },
       ],
     });
     expect(out[0].permissionContexts).toEqual([]);
