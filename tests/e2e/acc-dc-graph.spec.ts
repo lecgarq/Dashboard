@@ -958,4 +958,94 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
       timeout: 15_000,
     });
   });
+
+  // ── P0 regressions: physics responsiveness + camera stability + highlight ────
+
+  test("P0: nudging a non-dominant slider re-animates the graph (reheat)", async ({ page }, testInfo) => {
+    // Defect A regression. The OLD reheat gate keyed off max(allSliders), which is
+    // sticky under the organic preset, so a non-dominant slider move never
+    // restarted the sim. Use a real keyboard NUDGE (not End/max) on a low-default
+    // dim so the scalar max stays unchanged — proving the per-dimension delta fix.
+    await waitForFreeze(page); // ensure a frozen baseline first
+    expect(await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getFrozen())).toBe(true);
+
+    // "Company / firm" defaults low/zero in the organic preset (advanced group).
+    // Drive ONE supra-threshold change: PageUp = +10 units = 0.10 normalized, which
+    // exceeds SKIP_THRESHOLD (0.02) in a single rAF-coalesced flush. (Single arrow
+    // steps are 0.01 each — below the anti-thrash threshold — and never reheat; a
+    // real drag moves >2 units/frame, like this PageUp.) Company stays non-dominant,
+    // so max(allSliders) is unchanged — exactly the case the old scalar-max gate skipped.
+    await page.getByTestId("slider-group-Affiliation").getByRole("button").click();
+    const thumb = page.getByLabel("Company / firm thumb");
+    await thumb.focus();
+    await thumb.press("PageUp");
+
+    // The fix must reheat → the sim briefly unfreezes. Poll for frozen=false.
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getFrozen() === false, undefined, {
+      timeout: 10_000,
+    });
+
+    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    // eslint-disable-next-line no-console
+    console.log(`[P0 reheat] anyNaN=${pos.anyNaN} count=${pos.count} maxAbs=${pos.maxAbs.toFixed(1)}`);
+    expect(pos.anyNaN, "no NaN after non-dominant reheat").toBe(false);
+    expect(pos.count, "node set intact after reheat").toBe(EXPECTED_NODE_COUNT);
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await proofShot(page, testInfo, "after-p0-nondominant-slider");
+  });
+
+  test("P0: selecting a node does not move the camera (2D projected size stable)", async ({ page }, testInfo) => {
+    // Defect B regression. Selection must not reframe the camera. With the fixed-
+    // width panel column, isolating a node no longer resizes the graph, so the
+    // projected cloud size + zoom stay put.
+    await waitForFreeze(page);
+    await page.waitForFunction(
+      () => {
+        const s = window.__ACC_GRAPH_TEST__!.getProjectedCloudSize();
+        return !!s && s.widthPx > 150 && s.heightPx > 150;
+      },
+      undefined,
+      { timeout: 30_000 },
+    );
+    const before = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getProjectedCloudSize());
+    const id = await page.evaluate(
+      () => window.__ACC_GRAPH_TEST__!.getCentermostNodeId() ?? window.__ACC_GRAPH_TEST__!.getFirstNodeId(),
+    );
+    await page.evaluate((nid) => window.__ACC_GRAPH_TEST__!.simulateClick(nid!), id);
+    await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "user-detail");
+
+    const after = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getProjectedCloudSize());
+    // eslint-disable-next-line no-console
+    console.log(
+      `[P0 camera] before=${before!.widthPx.toFixed(0)}x${before!.heightPx.toFixed(0)}@${before!.zoom.toFixed(3)} after=${after!.widthPx.toFixed(0)}x${after!.heightPx.toFixed(0)}@${after!.zoom.toFixed(3)}`,
+    );
+    // Camera unchanged → projected width + zoom within a tight tolerance (no refit).
+    expect(Math.abs(after!.widthPx - before!.widthPx)).toBeLessThan(before!.widthPx * 0.05);
+    expect(Math.abs(after!.zoom - before!.zoom)).toBeLessThan(Math.max(0.01, before!.zoom * 0.05));
+    await proofShot(page, testInfo, "after-p0-select-camera-stable");
+
+    await page.keyboard.press("Escape");
+  });
+
+  test("P0: isolating a multi-project user lights its footprint (not just one node)", async ({ page }, testInfo) => {
+    // Defect C regression. Isolate must light the clicked node AND its same-user
+    // footprint, so >1 node stays lit for a multi-project user.
+    const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample()); // a multi-project user
+    expect(sample, "a multi-project user exists").toBeTruthy();
+
+    await page.evaluate((nid) => window.__ACC_GRAPH_TEST__!.simulateClick(nid), sample!.nodeId);
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getHighlightedNodeCount() > 1, undefined, {
+      timeout: 15_000,
+    });
+    const lit = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getHighlightedNodeCount());
+    // eslint-disable-next-line no-console
+    console.log(`[P0 footprint] lit=${lit} for user=${sample!.userId}`);
+    expect(lit, "footprint lit, not a single isolated node").toBeGreaterThan(1);
+    await proofShot(page, testInfo, "after-p0-footprint-lit");
+
+    await page.keyboard.press("Escape");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount() === 0, undefined, {
+      timeout: 15_000,
+    });
+  });
 });
