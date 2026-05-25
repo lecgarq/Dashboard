@@ -17,6 +17,7 @@
 
 import { useEffect } from "react";
 import type { NodeFeatureSnapshot, PredicateInputs } from "./interactionTypes";
+import { isFacetKey, nodeMatchesFacet } from "./accessFacets";
 
 /**
  * Map a filter dimension id to the feature value compared against the allowed set.
@@ -71,6 +72,13 @@ export function filterSelectionByPredicate(
     let ok = true;
     for (const [dim, allowed] of Object.entries(activeFilters)) {
       if (allowed.size === 0) continue;
+      if (isFacetKey(dim)) {
+        if (!nodeMatchesFacet(f, dim, allowed)) {
+          ok = false;
+          break;
+        }
+        continue;
+      }
       const v = featureValueForDim(f, dim);
       if (!allowed.has(v)) {
         ok = false;
@@ -114,9 +122,13 @@ export function usePredicateEngine(inputs: PredicateInputs): void {
         return i === isolatedNodeIndex ? 1.0 : 0.15;
       }
 
-      // 2) Global filter chips — AND across all dims with non-empty allowed sets.
+      // 2) Global filter chips + P7 facets — AND across all keys with non-empty sets.
       for (const [dim, allowed] of Object.entries(activeFilters)) {
         if (allowed.size === 0) continue;
+        if (isFacetKey(dim)) {
+          if (!nodeMatchesFacet(f, dim, allowed)) return 0.15;
+          continue;
+        }
         const v = featureValueForDim(f, dim);
         if (!allowed.has(v)) return 0.15;
       }

@@ -15,8 +15,9 @@ import { renderHook } from "@testing-library/react";
 import { readFileSync } from "node:fs";
 import path from "node:path";
 
-import { usePredicateEngine, featureValueForDim } from "../usePredicateEngine";
+import { usePredicateEngine, featureValueForDim, filterSelectionByPredicate } from "../usePredicateEngine";
 import type { NodeFeatureSnapshot, PredicateInputs } from "../interactionTypes";
+import { FACET_KEY_RISK, FACET_KEY_MODULE } from "../accessFacets";
 import type { PhysicsLayer } from "../physicsLayer";
 
 // ---- fixtures --------------------------------------------------------------
@@ -37,6 +38,13 @@ function mkFeature(over: Partial<NodeFeatureSnapshot> & { nodeId: string }): Nod
     permissionCoverage: over.permissionCoverage ?? "unknown",
     firmName: over.firmName ?? "",
     accountStatus: over.accountStatus ?? "",
+    // optional P5 fields forwarded as-is
+    ...(over.riskFlags !== undefined && { riskFlags: over.riskFlags }),
+    ...(over.moduleSignature !== undefined && { moduleSignature: over.moduleSignature }),
+    ...(over.moduleFlags !== undefined && { moduleFlags: over.moduleFlags }),
+    ...(over.permissionTypeSummary !== undefined && { permissionTypeSummary: over.permissionTypeSummary }),
+    ...(over.riskScore !== undefined && { riskScore: over.riskScore }),
+    ...(over.isAdmin !== undefined && { isAdmin: over.isAdmin }),
   };
 }
 
@@ -222,5 +230,55 @@ describe("usePredicateEngine — Pattern 1 single mask", () => {
     expect(src.match(/\bsim\./)).toBeNull();
     expect(src.match(/\.restart\(/)).toBeNull();
     expect(src.match(/\balpha\(/)).toBeNull();
+  });
+});
+
+describe("usePredicateEngine — P7 facets", () => {
+  it("filterSelectionByPredicate honors a risk facet (OR within family)", () => {
+    const features = [
+      mkFeature({ nodeId: "0", riskFlags: { externalHighPerm: true, staleButActive: false, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false } }),
+      mkFeature({ nodeId: "1", riskFlags: { externalHighPerm: false, staleButActive: false, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false } }),
+    ];
+    const out = filterSelectionByPredicate(
+      new Set([0, 1]),
+      features,
+      { [FACET_KEY_RISK]: new Set(["externalHighPerm"]) },
+      "",
+    );
+    expect([...(out ?? [])]).toEqual([0]);
+  });
+
+  it("filterSelectionByPredicate honors a module facet (multi-hot membership)", () => {
+    const features = [
+      mkFeature({ nodeId: "0", moduleSignature: ["build"] }),
+      mkFeature({ nodeId: "1", moduleSignature: ["cost"] }),
+    ];
+    const out = filterSelectionByPredicate(
+      new Set([0, 1]),
+      features,
+      { [FACET_KEY_MODULE]: new Set(["build"]) },
+      "",
+    );
+    expect([...(out ?? [])]).toEqual([0]);
+  });
+
+  it("mask predicate dims nodes failing a risk facet (Site B)", () => {
+    const { physics, lastPredicate } = mkPhysics();
+    const features = [
+      mkFeature({ nodeId: "0", riskFlags: { externalHighPerm: true, staleButActive: false, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false } }),
+      mkFeature({ nodeId: "1", riskFlags: { externalHighPerm: false, staleButActive: false, externalProjectAdmin: false, broadFolderAccess: false, highActivityHighPerm: false } }),
+    ];
+    runHook({
+      physics,
+      features,
+      activeFilters: { [FACET_KEY_RISK]: new Set(["externalHighPerm"]) },
+      searchQuery: "",
+      lassoSelection: null,
+      drillDown: null,
+      isolatedNodeIndex: null,
+    });
+    const p = lastPredicate();
+    expect(p(0)).toBe(1.0);
+    expect(p(1)).toBe(0.15);
   });
 });
