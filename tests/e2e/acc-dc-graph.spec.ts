@@ -821,4 +821,141 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
     await proofShot(page, testInfo, "after-p4-free-preset");
   });
+
+  test("P6: riskScore advanced slider engages without breaking the graph (smoke)", async ({ page }, testInfo) => {
+    // SMOKE only — riskScore clustering math is proven in unit tests. Here we just
+    // confirm engaging the new advanced "Risk score" slider (which defaults OFF)
+    // keeps the graph valid: no NaN, full node set, finite clustering score. We do
+    // NOT wait for a full re-settle — mirrors the project slider smoke above.
+    // The Risk family group is collapsed by default → expand it first (like the P4
+    // "Affiliation" group expand), then drive its slider.
+    await page.getByTestId("slider-group-Risk").getByRole("button").click();
+
+    const thumb = page.getByLabel("Risk score thumb");
+    await thumb.focus();
+    await page.keyboard.press("End"); // Radix slider: End → max (100)
+
+    // Let the rAF-coalesced slider→physics push apply; do NOT wait for full freeze.
+    await page.waitForTimeout(1_500);
+
+    const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("riskScore").ratio);
+    // eslint-disable-next-line no-console
+    console.log(`[P6 risk slider smoke] anyNaN=${pos.anyNaN} count=${pos.count} score=${score.toFixed(3)}`);
+    expect(pos.anyNaN, "no NaN after riskScore slider change").toBe(false);
+    expect(pos.count, "node set intact after riskScore slider change").toBe(EXPECTED_NODE_COUNT);
+    expect(Number.isFinite(score), "riskScore clustering score stays finite").toBe(true);
+    await expect(page.locator("canvas").first()).toBeVisible();
+    await proofShot(page, testInfo, "after-p6-risk-slider");
+  });
+
+  test("P6: riskScore ordered color mode swaps the node color buffer (smoke)", async ({ page }, testInfo) => {
+    // SMOKE — the ordered-ramp color MATH is proven in nodeColors.test.ts. Here we
+    // confirm the new "riskScore" color mode swaps the live RGBA buffer: alpha stays
+    // 1 (dimming is mask-only), length tracks the node set, the signature differs
+    // from role, and the ordered ramp spans ≥2 risk levels on real data. 2D only to
+    // stay fast/robust — 3D parity is already covered by the role color-mode test.
+    const select = page.locator('[data-testid="toolbar-color-mode"]');
+    await expect(select, "color-mode select is visible").toBeVisible();
+    const optionValues = await select.evaluate((el) =>
+      Array.from((el as HTMLSelectElement).options).map((o) => o.value),
+    );
+    // eslint-disable-next-line no-console
+    console.log(`[P6 color] options=${optionValues.join(",")}`);
+    expect(optionValues, "color-mode options include 'riskScore'").toContain("riskScore");
+
+    // Capture baseline (default = role).
+    const baseline = await page.evaluate(() => ({
+      mode: window.__ACC_GRAPH_TEST__!.getColorMode(),
+      stats: window.__ACC_GRAPH_TEST__!.getColorStats(),
+    }));
+    expect(baseline.mode, "default color mode is role").toBe("role");
+
+    // Switch to 'riskScore' → bridge reports mode change; buffer recolors.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "riskScore");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "riskScore", undefined, {
+      timeout: 15_000,
+    });
+    const riskStats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    // eslint-disable-next-line no-console
+    console.log(`[P6 color] riskScore len=${riskStats.length} distinct=${riskStats.distinctColors} sig=${riskStats.signature}`);
+    expect(riskStats.length, "RGBA buffer is nodeCount*4").toBe(EXPECTED_NODE_COUNT * 4);
+    expect(riskStats.allAlphaOne, "alpha stays 1 (dimming is mask-only)").toBe(true);
+    expect(riskStats.signature, "riskScore coloring differs from role").not.toBe(baseline.stats.signature);
+    // Ordered ramp over real risk levels → at least 2 distinct colors.
+    expect(riskStats.distinctColors, "ordered risk ramp spans ≥2 levels").toBeGreaterThanOrEqual(2);
+    await expect(page.locator("canvas").first(), "canvas still rendered after riskScore recolor").toBeVisible();
+
+    // Return to role → deterministic return to the original signature.
+    await page.selectOption('[data-testid="toolbar-color-mode"]', "role");
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getColorMode() === "role", undefined, {
+      timeout: 15_000,
+    });
+    const back = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getColorStats());
+    expect(back.signature, "recoloring is deterministic (role → riskScore → role)").toBe(baseline.stats.signature);
+
+    await proofShot(page, testInfo, "after-p6-risk-color-mode");
+  });
+
+  test("P7: a risk facet masks nodes without changing the node count (smoke)", async ({ page }, testInfo) => {
+    // beforeEach already ran gotoGraph(page) → bridge ready, graph rendered.
+    const RISK_IDS = [
+      "externalHighPerm",
+      "staleButActive",
+      "externalProjectAdmin",
+      "broadFolderAccess",
+      "highActivityHighPerm",
+    ];
+
+    const total = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getRenderedNodeCount());
+    const before = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount());
+    expect(before, "no dimming before any facet").toBe(0);
+    expect(total, "graph rendered with nodes").toBeGreaterThan(0);
+
+    // Open the Risk & Access disclosure by clicking the clickable <summary>.
+    await page.getByTestId("toolbar-risk-access").click();
+
+    // Read live counts; pick a risk flag that yields a PROPER subset (0 < count < total).
+    const counts: Record<string, number> = {};
+    for (const id of RISK_IDS) {
+      const txt = (await page.getByTestId(`risk-count-${id}`).textContent())?.trim() ?? "0";
+      counts[id] = Number.parseInt(txt, 10) || 0;
+    }
+    const candidates = RISK_IDS.filter((id) => counts[id] > 0 && counts[id] < total).sort(
+      (a, b) => counts[b] - counts[a],
+    );
+    // eslint-disable-next-line no-console
+    console.log(`[P7] risk counts=${JSON.stringify(counts)} total=${total} chosen=${candidates[0] ?? "(none)"}`);
+    expect(
+      candidates.length,
+      `at least one risk flag is a proper subset (counts=${JSON.stringify(counts)}, total=${total})`,
+    ).toBeGreaterThan(0);
+    const chosen = candidates[0];
+
+    // Toggle that facet → mask dims the non-matching nodes.
+    await page.getByTestId(`risk-facet-${chosen}`).click();
+    await page.waitForFunction(
+      (prev) => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount() > prev,
+      before,
+      { timeout: 15_000 },
+    );
+
+    const after = await page.evaluate(() => ({
+      total: window.__ACC_GRAPH_TEST__!.getRenderedNodeCount(),
+      dimmed: window.__ACC_GRAPH_TEST__!.getDimmedNodeCount(),
+    }));
+    // eslint-disable-next-line no-console
+    console.log(`[P7] after facet '${chosen}': dimmed=${after.dimmed} of ${after.total}`);
+    expect(after.total, "node COUNT unchanged (mask, not filter-out)").toBe(total);
+    expect(after.dimmed, "some nodes dimmed").toBeGreaterThan(0);
+    expect(after.dimmed, "not everything dimmed").toBeLessThan(after.total);
+    await proofShot(page, testInfo, "after-p7-risk-facet");
+
+    // Close the disclosure, then Clear all → dimming fully restored to 0.
+    await page.getByTestId("toolbar-risk-access").click();
+    await page.getByTestId("toolbar-clear-all").click();
+    await page.waitForFunction(() => window.__ACC_GRAPH_TEST__!.getDimmedNodeCount() === 0, undefined, {
+      timeout: 15_000,
+    });
+  });
 });
