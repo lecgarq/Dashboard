@@ -228,6 +228,11 @@ export function composePrioritizedSlices(
 ): Slice[] {
   const ordered = orderSlicesByPriority(slices, priorityByProjectId);
   const runnable = selectRunnableWithFairness(ordered, budget, reserve, ageByProjectId);
+  // Correctness invariant: this membership check relies on
+  // `selectRunnableWithFairness` returning the SAME Slice object references it
+  // received in `ordered` (Set identity membership). If that function is ever
+  // changed to clone slices, this `!runnableSet.has(s)` filter breaks (every
+  // ordered slice would be treated as deferred) — update both sites together.
   const runnableSet = new Set(runnable);
   const deferred = ordered.filter((s) => !runnableSet.has(s));
   return [...runnable, ...deferred];

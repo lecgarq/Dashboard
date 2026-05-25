@@ -549,12 +549,12 @@ describe('resolveFairnessReserve', () => {
     delete process.env.DC_FAIRNESS_RESERVE;
   });
 
-  it('returns Math.max(1, floor(budget * 0.2)) when DC_FAIRNESS_RESERVE is unset', () => {
+  it('returns Math.max(1, floor(budget * 0.2)) when DC_FAIRNESS_RESERVE is unset (0 for non-positive budget)', () => {
     delete process.env.DC_FAIRNESS_RESERVE;
     expect(resolveFairnessReserve(20)).toBe(4);  // floor(20 * 0.2) = 4
     expect(resolveFairnessReserve(5)).toBe(1);   // floor(5 * 0.2) = 1 (max(1, 1) = 1)
     expect(resolveFairnessReserve(1)).toBe(1);   // floor(1 * 0.2) = 0, max(1, 0) = 1
-    expect(resolveFairnessReserve(0)).toBe(1);   // floor(0 * 0.2) = 0, max(1, 0) = 1
+    expect(resolveFairnessReserve(0)).toBe(0);   // budget <= 0 short-circuits to 0
   });
 
   it('parses DC_FAIRNESS_RESERVE integer and clamps to >= 0', () => {
@@ -624,26 +624,29 @@ describe('resolveSlicesForBudget — flag ON, ordering applied', () => {
     process.env.DC_PRIORITY_BACKFILL = '1';
     process.env.DC_FAIRNESS_RESERVE = '0'; // disable fairness so order is purely priority-driven
 
-    // Two slices: pHigh scores rank 0 (highest priority) because it lacks activity data
-    // and has folderCrawlStatus='unknown' — the planner prioritises under-explored projects.
-    // pLow has 1000 activity rows + folderCrawlStatus='complete', so it ranks lower.
-    // Input order is [sLow, sHigh] (low-priority first) so the reorder moves sHigh to position 0.
-    const sLow  = makeTestSlice(['pLow'],  'forward', '2024-01-01', '2024-01-31');
-    const sHigh = makeTestSlice(['pHigh'], 'forward', '2024-01-01', '2024-01-31');
-    const slices = [sLow, sHigh]; // pLow first in input; reorder should put pHigh first
+    // Two slices, named by their ACTUAL rank outcome:
+    //  - pWinner: no activity rows + folderCrawlStatus='unknown' → planner puts it
+    //    in the `use_quota_first` lane, so it WINS priority (ranks first / position 0).
+    //  - pLoser: 1000 activity rows + folderCrawlStatus='complete' → lower-priority
+    //    lane, so it LOSES (ranks second / position 1).
+    // Input order is [sLoser, sWinner] (loser first) so the reorder must move
+    // sWinner to position 0.
+    const sLoser  = makeTestSlice(['pLoser'],  'forward', '2024-01-01', '2024-01-31');
+    const sWinner = makeTestSlice(['pWinner'], 'forward', '2024-01-01', '2024-01-31');
+    const slices = [sLoser, sWinner]; // loser first in input; reorder should put winner first
 
-    // Known inputs designed so buildExtractionPriorityPlan gives pLow rank 0
-    // and pHigh rank 1 (pLow has 1000 rows of recent activity; pHigh has none).
+    // Known inputs designed so buildExtractionPriorityPlan ranks pWinner first
+    // (no activity, under-explored) and pLoser second (1000 rows of recent activity).
     const knownInputs: import('./dcIngest').PriorityInputs = {
       projects: [
-        { id: 'pLow',  name: 'Low',  status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'complete', memberCount: 10 },
-        { id: 'pHigh', name: 'High', status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'unknown', memberCount: 1 },
+        { id: 'pLoser',  name: 'Loser',  status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'complete', memberCount: 10 },
+        { id: 'pWinner', name: 'Winner', status: 'active', createdAt: new Date('2025-01-01'), folderCrawlStatus: 'unknown', memberCount: 1 },
       ],
       activity: [
-        { projectId: 'pLow', rows: 1000, activeDays: 30, services: ['docs'], lastActivityAt: new Date('2026-05-01') },
+        { projectId: 'pLoser', rows: 1000, activeDays: 30, services: ['docs'], lastActivityAt: new Date('2026-05-01') },
       ],
       backfillProgress: [],
-      ageByProjectId: new Map([['pLow', 0], ['pHigh', 1]]),
+      ageByProjectId: new Map([['pLoser', 0], ['pWinner', 1]]),
     };
 
     const loadFn = vi.fn().mockResolvedValue(knownInputs);
@@ -676,9 +679,9 @@ describe('resolveSlicesForBudget — flag ON, ordering applied', () => {
     );
 
     expect(result).toEqual(expected); // exact order match — proves the reorder path ran
-    // Sanity: output differs from input (pHigh moves to position 0, pLow to position 1).
-    expect(result[0].projectIds).toContain('pHigh');
-    expect(result[1].projectIds).toContain('pLow');
+    // Sanity: output differs from input (pWinner moves to position 0, pLoser to position 1).
+    expect(result[0].projectIds).toContain('pWinner');
+    expect(result[1].projectIds).toContain('pLoser');
   });
 });
 

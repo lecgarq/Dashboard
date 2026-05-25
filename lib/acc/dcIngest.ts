@@ -114,6 +114,11 @@ const SIGNED_URL_FETCH_TIMEOUT_MS = 120_000;
 const SERVICE_GROUPS = ['activities', 'admin'];
 const STALE_LOCK_MIN = 60;
 
+// Activity-analysis window (in days) used to rank projects for priority backfill.
+export const PRIORITY_WINDOW_DAYS = 30;
+// ~20% of daily budget reserved for most-starved projects; keeps priority slots dominant while guaranteeing low-priority progress.
+const DEFAULT_FAIRNESS_FACTOR = 0.2;
+
 const DC_USER_EMAIL =
   process.env.DC_USER_EMAIL?.trim() || 'luis.cortes@hermosillo.com';
 
@@ -503,7 +508,7 @@ export interface PriorityInputs {
  */
 export async function loadPriorityInputs(
   prisma: PrismaClient,
-  windowDays = 30,
+  windowDays = PRIORITY_WINDOW_DAYS,
 ): Promise<PriorityInputs> {
   const now = new Date();
   const windowStart = new Date(
@@ -717,7 +722,8 @@ function emptyResult(
  * Resolves the fairness reserve slot count for the priority backfill path.
  *
  * Reads `DC_FAIRNESS_RESERVE` env var (parsed as int, clamped >= 0).
- * Falls back to `Math.max(1, Math.floor(budget * 0.2))` when unset/invalid.
+ * Falls back to `Math.max(1, Math.floor(budget * DEFAULT_FAIRNESS_FACTOR))`
+ * when unset/invalid (0 for a non-positive budget).
  */
 export function resolveFairnessReserve(budget: number): number {
   const raw = process.env.DC_FAIRNESS_RESERVE;
@@ -727,7 +733,7 @@ export function resolveFairnessReserve(budget: number): number {
       return Math.max(0, parsed);
     }
   }
-  return Math.max(1, Math.floor(budget * 0.2));
+  return budget <= 0 ? 0 : Math.max(1, Math.floor(budget * DEFAULT_FAIRNESS_FACTOR));
 }
 
 /**
@@ -754,7 +760,7 @@ export async function resolveSlicesForBudget(
     const inputs = await loadInputs(prisma);
     const ranked = buildExtractionPriorityPlan({
       generatedAt,
-      windowDays: 30,
+      windowDays: PRIORITY_WINDOW_DAYS,
       projects: inputs.projects,
       activity: inputs.activity,
       backfillProgress: inputs.backfillProgress,
