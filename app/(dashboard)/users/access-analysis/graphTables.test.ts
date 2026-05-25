@@ -119,6 +119,21 @@ describe("buildGraphArrowTables", () => {
       "perm_tier",
     ]);
   });
+
+  it("emits added_on + last_sign_in_instance columns on userProjects (epoch ms or null)", async () => {
+    const users = [
+      user({
+        projects: [
+          { id: "p1", name: "P1", status: "active", isAdmin: false, roles: ["R"], modules: ["build"], addedOn: "2025-01-01T00:00:00.000Z", lastSignIn: "2026-05-01T00:00:00.000Z" } as any,
+        ],
+      }),
+    ];
+    const tables = await buildGraphArrowTables({ users, similarityInput: null, topology: null });
+    const row = tables.userProjects.toArray()[0] as any;
+    expect(typeof row.added_on === "number" || row.added_on === null).toBe(true);
+    expect(row.added_on).toBe(Date.parse("2025-01-01T00:00:00.000Z"));
+    expect(row.last_sign_in_instance).toBe(Date.parse("2026-05-01T00:00:00.000Z"));
+  });
 });
 
 const u = (o: Partial<BulkAccUser>): BulkAccUser => ({

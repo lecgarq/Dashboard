@@ -137,6 +137,8 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
         is_project_admin: project.isAdmin,
         role_id: role?.trim() || "Unknown",
         module_ids: project.modules.join("|"),
+        added_on: timestampMillis(project.addedOn),
+        last_sign_in_instance: timestampMillis(project.lastSignIn),
       }));
     });
   });
@@ -200,6 +202,8 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
       is_project_admin: projectRows.map((row) => row.is_project_admin),
       role_id: projectRows.map((row) => row.role_id),
       module_ids: projectRows.map((row) => row.module_ids),
+      added_on: projectRows.map((row) => row.added_on),
+      last_sign_in_instance: projectRows.map((row) => row.last_sign_in_instance),
     }),
     similarityEdges: tableFromArrays({
       source_user_id: similarityRows.map((row) => row.source_user_id),
