@@ -16,6 +16,8 @@ import { GRAPH_ANALYTICS_SOURCE_TABLES } from "./graphSql";
 import { classifyAffiliation } from "./internalDomains";
 import { BASELINE_MODULES } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import { deriveModuleFlags } from "./moduleFlags";
+import { computeRiskFlags, riskScoreFromFlags } from "./riskFlags";
 
 // ---- Bucketing helpers (RESEARCH Open Q#2 — defaults) ---------------------
 
@@ -164,6 +166,19 @@ export async function buildFeatureSnapshot(
     const affiliation = classifyAffiliation(email);
     const isExternal = affiliation === "external";
 
+    const riskFlags = computeRiskFlags({
+      isExternal,
+      isAdmin: Boolean(r.is_project_admin),
+      signinBucket: bucketSignin(signinDays),
+      accountStatus: String(r.account_status ?? ""),
+      // hasAccess: instance is in the feed → it is a real membership.
+      hasAccess: true,
+      // Phase A: permission/activity inputs not yet plumbed (see Phase B/C).
+      permissionStrength: 0,
+      folderBreadth: 0,
+      activityTotal: 0,
+    });
+
     map.set(id, {
       nodeId: id,
       nameLower: fullName.toLowerCase(),
@@ -182,6 +197,9 @@ export async function buildFeatureSnapshot(
       accountStatus: String(r.account_status ?? ""),
       isAdmin: Boolean(r.is_project_admin),
       moduleSignature: parseModuleSignature(r.module_ids),
+      moduleFlags: deriveModuleFlags(parseModuleSignature(r.module_ids)),
+      riskFlags,
+      riskScore: riskScoreFromFlags(riskFlags),
     });
   }
 
@@ -204,6 +222,13 @@ export async function buildFeatureSnapshot(
     accountStatus: "",
     isAdmin: false,
     moduleSignature: [],
+    moduleFlags: deriveModuleFlags([]),
+    riskFlags: computeRiskFlags({
+      isExternal: false, isAdmin: false, signinBucket: ">90d",
+      accountStatus: "", hasAccess: false,
+      permissionStrength: 0, folderBreadth: 0, activityTotal: 0,
+    }),
+    riskScore: 0,
   });
 
   return nodeIds.map((id) => map.get(id) ?? fallback(id));

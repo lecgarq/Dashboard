@@ -9,6 +9,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { KNOWN_ADVANCED_MODULES } from "../moduleFlags";
 
 // ---- Mock DuckDB client BEFORE importing featureSnapshot ------------------
 
@@ -272,5 +273,36 @@ describe("buildFeatureSnapshot — moduleSignature + isAdmin enrichment", () => 
     const result = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
     expect(result[0]!.moduleSignature).toEqual([]);
     expect(result[0]!.isAdmin).toBe(false);
+  });
+});
+
+describe("buildFeatureSnapshot — P5-A moduleFlags + riskFlags", () => {
+  it("derives moduleFlags from module_ids (known modules only)", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", module_ids: "build|insight|cost" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.moduleFlags!.build).toBe(true);
+    expect(f!.moduleFlags!.cost).toBe(true);
+    expect(f!.moduleFlags!.takeoff).toBe(false);
+  });
+
+  it("computes externalProjectAdmin from email + is_project_admin", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "x@gmail.com", is_project_admin: true })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.riskFlags!.externalProjectAdmin).toBe(true);
+    expect(f!.riskScore).toBeGreaterThanOrEqual(1);
+  });
+
+  it("Phase-A perm/activity risk flags are false (inputs not yet plumbed)", async () => {
+    mockRows = [makeRow({ user_id: "u", project_id: "p", email: "x@gmail.com" })];
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["u::p"] });
+    expect(f!.riskFlags!.externalHighPerm).toBe(false);
+    expect(f!.riskFlags!.broadFolderAccess).toBe(false);
+  });
+
+  it("fallback for unknown nodeId yields all-false moduleFlags + riskScore 0", async () => {
+    const [f] = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
+    expect(Object.values(f!.moduleFlags!).every((v) => v === false)).toBe(true);
+    expect(f!.riskScore).toBe(0);
+    expect(Object.keys(f!.moduleFlags!).sort()).toEqual([...KNOWN_ADVANCED_MODULES].sort());
   });
 });

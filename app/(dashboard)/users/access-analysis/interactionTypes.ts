@@ -68,6 +68,20 @@ export interface NodeFeatureSnapshot {
    * compatibility; set by buildFeatureSnapshot. Drives the `module` dimension.
    */
   moduleSignature?: string[];
+
+  /** [P5-A] Per-known-module presence flags derived from moduleSignature. */
+  moduleFlags?: Record<string, boolean>;
+
+  /** [P5-A subset, finalized P5-D] Boolean risk primitives. */
+  riskFlags?: {
+    externalHighPerm: boolean;      // external AND permissionStrength >= 4 (edit/control)
+    staleButActive: boolean;        // no recent sign-in BUT account active + has access
+    externalProjectAdmin: boolean;  // external AND isAdmin
+    broadFolderAccess: boolean;     // folderBreadth >= BROAD_FOLDER_THRESHOLD
+    highActivityHighPerm: boolean;  // activityTotal high AND permissionStrength >= 4
+  };
+  /** [P5-D] Count of true riskFlags, 0..5 — a primitive, NOT a weighted score. */
+  riskScore?: number;
 }
 
 /**
