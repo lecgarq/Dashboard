@@ -975,6 +975,28 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     expect((CANVAS_SRC.match(/linkColors=\{props\.linkColors\}/g) ?? []).length).toBe(2);
   });
 
+  // Regression: vertexColors:true on the InstancedMesh's MeshBasicMaterial
+  // turns on USE_COLOR in the three.js shader, which multiplies vColor by the
+  // geometry `color` attribute. SphereGeometry has no `color` attribute → the
+  // unbound generic attrib defaults to (0,0,0) → every node renders near-black
+  // regardless of the populated mesh.instanceColor buffer (the "grey 3D nodes"
+  // bug). Keep the material vertexColors-flag-free; three.js auto-enables the
+  // USE_INSTANCING_COLOR path off `mesh.instanceColor !== null`.
+  it("Regression: MeshBasicMaterial does not enable vertexColors (instanceColor path)", () => {
+    const normalized = CANVAS_3D_SRC.replace(/\s+/g, " ");
+    const match = normalized.match(/new\s+THREE\.MeshBasicMaterial\s*\(\s*\{([^}]*)\}\s*\)/);
+    expect(match, "expected exactly one MeshBasicMaterial constructor call").not.toBeNull();
+    const args = (match![1] ?? "").trim();
+    expect(
+      /vertexColors/.test(args),
+      "MeshBasicMaterial must NOT set vertexColors with instanceColor (USE_COLOR + missing geometry attribute → grey nodes)",
+    ).toBe(false);
+    expect(
+      /transparent\s*:\s*true/.test(args),
+      "MeshBasicMaterial must keep transparent: true",
+    ).toBe(true);
+  });
+
   // P3.0 gate: distinct semantic colors actually reach the per-instance buffer.
   it("P3.0: distinct node colors populate the instanceColor buffer (>1 distinct)", () => {
     const physics = makeFakePhysics(3);

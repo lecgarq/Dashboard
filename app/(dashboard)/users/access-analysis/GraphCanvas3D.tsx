@@ -138,7 +138,13 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     const n = initialXyz.length / 3;
 
     const geometry = new THREE.SphereGeometry(4, 6, 6);
-    const material = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true });
+    // NOTE: do NOT set vertexColors:true here. SphereGeometry has no per-vertex
+    // `color` attribute, so enabling USE_COLOR alongside USE_INSTANCING_COLOR
+    // makes the shader multiply vColor by an unbound attribute (defaults to
+    // (0,0,0)) — every instance renders near-black/grey regardless of the
+    // populated `mesh.instanceColor` buffer. With instanceColor set, three.js
+    // enables USE_INSTANCING_COLOR on its own; that path alone is what we want.
+    const material = new THREE.MeshBasicMaterial({ transparent: true });
     const mesh = new THREE.InstancedMesh(geometry, material, n);
 
     // Per-instance RGB color buffer (stride-3; alpha baked in as color multiplication)
