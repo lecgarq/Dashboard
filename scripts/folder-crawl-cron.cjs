@@ -58,6 +58,15 @@ function parseProjectStatuses() {
   return statuses.length > 0 ? statuses : ["never", "partial", "failed"];
 }
 
+function parseProjectIds() {
+  const raw = (process.env.FOLDER_CRAWL_PROJECT_IDS || "").trim();
+  if (!raw) return [];
+  return raw
+    .split(",")
+    .map((s) => s.trim().replace(/^b\./, ""))
+    .filter(Boolean);
+}
+
 function parsePositiveInt(name) {
   const raw = process.env[name] && process.env[name].trim();
   if (!raw) return undefined;
@@ -129,11 +138,13 @@ async function main() {
 
     // ── Active projects ───────────────────────────────────────────────────
     const crawlStatuses = parseProjectStatuses();
+    const projectIds = parseProjectIds();
     const projectLimit = parsePositiveInt("FOLDER_CRAWL_LIMIT");
     const projects = await prisma.accProject.findMany({
       where: {
         status: "active",
         folderCrawlStatus: { in: crawlStatuses },
+        ...(projectIds.length > 0 ? { id: { in: projectIds } } : {}),
       },
       select: { id: true, name: true, folderCrawlStatus: true },
       orderBy: { name: "asc" },
@@ -167,6 +178,7 @@ async function main() {
               hubId,
               { id: p.id, accountId, name: p.name },
               accessToken,
+              { refreshAccessToken: fetchAutodeskToken },
             );
           } catch (err) {
             const msg = err && err.message ? err.message : String(err);
