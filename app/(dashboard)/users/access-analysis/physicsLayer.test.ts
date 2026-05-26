@@ -1093,3 +1093,171 @@ describe("P3.5: updateSliders merges — target-only dim strength survives a par
     layer.dispose();
   });
 });
+
+// =============================================================================
+// B.1: Drag-preview mode — active-input lowers the per-tick cost profile
+// =============================================================================
+
+describe("B.1: setActiveInput toggles the preview force profile", () => {
+  it("setActiveInput(true) detaches repulsion (alphaDecay + velocityDecay preserved)", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(8);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const sim = _capturedSim;
+    sim.stop(); // prevent ambient ticks during assertion
+
+    layer.updateSliders({ "dim-activity": 1, "dim-recency": 0 });
+    expect(sim.force("repulsion"), "repulsion attached at rest").not.toBeNull();
+    expect(sim.alphaDecay(), "full-profile alphaDecay at engaged slider").toBeCloseTo(0.02, 6);
+    const alphaDecayBefore = sim.alphaDecay();
+    const velocityDecayBefore = sim.velocityDecay();
+
+    layer.setActiveInput(true);
+
+    // PREVIEW ASSERTION 1: repulsion force is detached (the dominant per-tick cost).
+    expect(sim.force("repulsion"), "preview detaches repulsion").toBeFalsy();
+    // PREVIEW ASSERTION 2: alphaDecay is NOT changed. The natural settle
+    // between keystrokes is load-bearing — the 3D renderLoop gates on
+    // positions/camera/dirty (F.1, commit 9702034), so keeping positions
+    // changing every frame would steal CPU from d3 and NET-LOSE ticks.
+    expect(sim.alphaDecay(), "alphaDecay preserved during preview").toBeCloseTo(alphaDecayBefore, 6);
+    // PREVIEW ASSERTION 3: velocityDecay is NOT changed. Dropping it makes
+    // each tick move nodes farther, which spends more CPU per tick in the
+    // 3D renderLoop and was measured at ~20% 3D throughput regression.
+    expect(sim.velocityDecay(), "velocityDecay preserved during preview").toBeCloseTo(velocityDecayBefore, 6);
+    // PREVIEW ASSERTION 4: target forces (forceX/Y/Z) are UNTOUCHED — layout direction
+    // is preserved. We probe via the __debugStrength accessor exposed by physicsLayer.
+    const debugStrength = (layer as unknown as Record<string, unknown>)["__debugStrength"] as
+      (dim: string, i: number) => number;
+    expect(debugStrength("dim-activity", 0), "target-force strength preserved").toBeCloseTo(0.1, 6);
+
+    layer.dispose();
+  });
+
+  it("setActiveInput(false) re-attaches repulsion (other engine params preserved)", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(8);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const sim = _capturedSim;
+    sim.stop();
+
+    layer.updateSliders({ "dim-activity": 1, "dim-recency": 0 });
+    const alphaDecayBefore = sim.alphaDecay();
+    const velocityDecayBefore = sim.velocityDecay();
+    layer.setActiveInput(true);
+    expect(sim.force("repulsion")).toBeFalsy(); // sanity: we ARE in preview
+
+    layer.setActiveInput(false);
+
+    // RESTORE ASSERTION 1: repulsion re-attached (same manyBody instance).
+    expect(sim.force("repulsion"), "repulsion re-attached").toBe(_capturedManyBody);
+    // RESTORE ASSERTION 2 & 3: other params unchanged across the whole cycle.
+    expect(sim.alphaDecay(), "alphaDecay never changed").toBeCloseTo(alphaDecayBefore, 6);
+    expect(sim.velocityDecay(), "velocityDecay never changed").toBeCloseTo(velocityDecayBefore, 6);
+
+    layer.dispose();
+  });
+
+  it("preview enter→exit cycle preserves node count and produces no NaN positions", async () => {
+    // Deterministic seed so this test never flakes on Math.random.
+    let s = 0xdeadbeef >>> 0;
+    const rng = vi.spyOn(Math, "random").mockImplementation(() => {
+      s = (Math.imul(s, 1664525) + 1013904223) >>> 0;
+      return s / 0x100000000;
+    });
+    try {
+      const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(16);
+      const beforeCount = nodes.length;
+      const layer = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+      const sim = _capturedSim;
+      sim.stop();
+
+      // Engage sliders, tick a bit in full-profile, toggle preview, tick in preview,
+      // exit preview, tick again. Node count + finite-ness must hold throughout.
+      layer.updateSliders({ "dim-activity": 0.5, "dim-recency": 0.5 });
+      sim.tick(3);
+      layer.setActiveInput(true);
+      sim.tick(5); // ticks in preview mode (no repulsion)
+      layer.setActiveInput(false);
+      sim.tick(3); // ticks back in full profile
+
+      // ASSERTION: node count unchanged.
+      expect(nodes.length, "node count is stable across preview cycle").toBe(beforeCount);
+
+      // ASSERTION: every position component is finite (no NaN / no Infinity).
+      const xyz = layer.getPositions();
+      expect(xyz.length).toBe(beforeCount * 3);
+      for (let i = 0; i < xyz.length; i++) {
+        expect(Number.isFinite(xyz[i]), `position[${i}] must be finite, got ${xyz[i]}`).toBe(true);
+      }
+
+      // ASSERTION: deterministic — same seeded run yields identical positions.
+      // Re-run from scratch with the same seed prefix and compare.
+      s = 0xdeadbeef >>> 0;
+      const f2 = makeFixture(16);
+      _capturedSim = null;
+      _capturedManyBody = null;
+      _registeredForceNames = [];
+      const layer2 = await createPhysicsLayer(
+        f2.nodeIds, f2.nodes, f2.targets, f2.dimNames, f2.initialSliders,
+      );
+      const sim2 = _capturedSim;
+      sim2.stop();
+      layer2.updateSliders({ "dim-activity": 0.5, "dim-recency": 0.5 });
+      sim2.tick(3);
+      layer2.setActiveInput(true);
+      sim2.tick(5);
+      layer2.setActiveInput(false);
+      sim2.tick(3);
+      const xyz2 = layer2.getPositions();
+      for (let i = 0; i < xyz.length; i++) {
+        expect(xyz2[i]).toBeCloseTo(xyz[i], 5);
+      }
+
+      layer.dispose();
+      layer2.dispose();
+    } finally {
+      rng.mockRestore();
+    }
+  });
+
+  it("idempotent — repeated setActiveInput(true) doesn't re-detach or re-reheat", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(4);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const sim = _capturedSim;
+    sim.stop();
+
+    layer.setActiveInput(true);
+    const alphaAfterFirst = sim.alpha();
+    sim.tick(2); // alpha decays a bit
+    const alphaBeforeSecond = sim.alpha();
+    layer.setActiveInput(true); // second call — should be a no-op
+    expect(sim.alpha(), "second setActiveInput(true) does not reheat").toBeCloseTo(alphaBeforeSecond, 6);
+    expect(alphaAfterFirst).toBeGreaterThan(0); // sanity
+
+    layer.dispose();
+  });
+
+  it("preview mode survives a slider change without losing the detached-repulsion state", async () => {
+    // Real-world flow: user starts dragging → setActiveInput(true) → slider
+    // emits multiple updateSliders → idle timer fires → setActiveInput(false).
+    // updateSliders MUST NOT re-attach repulsion or re-pin alphaDecay while
+    // preview is engaged.
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(4);
+    const layer = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const sim = _capturedSim;
+    sim.stop();
+
+    layer.setActiveInput(true);
+    expect(sim.force("repulsion")).toBeFalsy();
+
+    // Simulate a drag — multiple slider updates while preview is engaged.
+    layer.updateSliders({ "dim-activity": 0.2, "dim-recency": 0 });
+    layer.updateSliders({ "dim-activity": 0.4, "dim-recency": 0 });
+    layer.updateSliders({ "dim-activity": 0.6, "dim-recency": 0 });
+
+    // Preview profile MUST still be in effect — repulsion stays detached even
+    // though updateSliders called manyBody.strength on the detached instance.
+    expect(sim.force("repulsion"), "repulsion stays detached during drag").toBeFalsy();
+
+    layer.dispose();
+  });
+});

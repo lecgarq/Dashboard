@@ -142,6 +142,43 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   const rafIdRef = useRef<number | null>(null);
   const pendingRef = useRef<Record<DimensionId, number> | null>(null);
 
+  // B.1 — drag-preview mode. Slider changes mark the physics layer as
+  // "active input" and (re)arm an idle timer; when the timer fires without
+  // further changes the layer is taken out of preview, restoring the full
+  // force profile so the layout can settle. The same timer covers keyboard
+  // input (no native drag-end event) and pointer drags alike.
+  const previewIdleIdRef = useRef<number | null>(null);
+  const previewActiveRef = useRef(false);
+  /** Debounce window after the last slider change before exiting preview. */
+  const PREVIEW_IDLE_MS = 250;
+
+  const enterPreview = useCallback((): void => {
+    if (!physics) return;
+    if (!previewActiveRef.current) {
+      previewActiveRef.current = true;
+      physics.setActiveInput?.(true);
+    }
+    if (previewIdleIdRef.current !== null) {
+      window.clearTimeout(previewIdleIdRef.current);
+    }
+    previewIdleIdRef.current = window.setTimeout(() => {
+      previewIdleIdRef.current = null;
+      previewActiveRef.current = false;
+      physics.setActiveInput?.(false);
+    }, PREVIEW_IDLE_MS);
+  }, [physics]);
+
+  // Cancel the timer on unmount so we never call setActiveInput against a
+  // disposed PhysicsLayer.
+  useEffect(() => {
+    return () => {
+      if (previewIdleIdRef.current !== null) {
+        window.clearTimeout(previewIdleIdRef.current);
+        previewIdleIdRef.current = null;
+      }
+    };
+  }, []);
+
   const flushToPhysics = useCallback(
     (snapshot: Record<DimensionId, number>): void => {
       if (!physics) return;
@@ -208,9 +245,10 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
       const next = { ...valuesRef.current, [dimId]: clamped };
       valuesRef.current = next;
       setValues(next);
+      enterPreview();
       schedulePush(next);
     },
-    [schedulePush],
+    [enterPreview, schedulePush],
   );
 
   const resetAll = useCallback((): void => {
@@ -223,17 +261,28 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
       rafIdRef.current = null;
     }
     pendingRef.current = null;
+    // resetAll is an explicit "settle now" gesture — leave preview mode
+    // immediately so the full force profile is in place when the defaults push.
+    if (previewIdleIdRef.current !== null) {
+      window.clearTimeout(previewIdleIdRef.current);
+      previewIdleIdRef.current = null;
+    }
+    if (previewActiveRef.current) {
+      previewActiveRef.current = false;
+      physics?.setActiveInput?.(false);
+    }
     flushToPhysics(next);
-  }, [flushToPhysics]);
+  }, [flushToPhysics, physics]);
 
   const resetOne = useCallback(
     (dimId: DimensionId): void => {
       const next = { ...valuesRef.current, [dimId]: 0 };
       valuesRef.current = next;
       setValues(next);
+      enterPreview();
       schedulePush(next);
     },
-    [schedulePush],
+    [enterPreview, schedulePush],
   );
 
   const applyPresetCb = useCallback(
@@ -241,9 +290,10 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
       const next = applyPreset(presetId) as Record<DimensionId, number>;
       valuesRef.current = next;
       setValues(next);
+      enterPreview();
       schedulePush(next);
     },
-    [schedulePush],
+    [enterPreview, schedulePush],
   );
 
   const activePreset = useMemo(() => detectActivePreset(values), [values]);

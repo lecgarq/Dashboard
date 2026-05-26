@@ -108,6 +108,15 @@ export interface PhysicsLayer {
    */
   setMask(predicate: (nodeIndex: number) => number): void;
   /**
+   * Toggle drag-preview mode (B.1). While active, the simulation runs a
+   * lower-cost force profile — repulsion is detached, alphaDecay is pinned
+   * near 0 (sim won't freeze mid-drag), velocityDecay is reduced. Target
+   * forces (forceX/Y/Z) are NEVER altered, so layout direction and node
+   * identity are preserved across arbitrary enter/exit cycles. PHYSICS-bus
+   * only — must NOT touch the mask bus.
+   */
+  setActiveInput(active: boolean): void;
+  /**
    * Snapshot current node positions into a new Float32Array(n*3) [x,y,z,...].
    * Safe to call at any time (reads from d3 node objects, stride-3).
    */
@@ -164,6 +173,51 @@ const REPULSION_THETA = 1.5;
  * cross-cluster tail of pair work. This is the dominant per-tick CPU win.
  */
 const REPULSION_DISTANCE_MAX = 200;
+
+// ---- Drag-preview profile (B.1) -----------------------------------------
+//
+// While a slider is being actively manipulated, the user is asking for
+// directional response, not equilibrium. Equilibrium is what the FULL profile
+// is tuned for — but its per-tick cost is dominated by `forceManyBody`
+// (quadtree build + Barnes-Hut traversal, even with the A.1 caps). When
+// preview is engaged we DETACH `forceManyBody` from the simulation entirely.
+//
+// The remaining forces — per-dimension forceX/Y/Z — are O(n) and cheap. The
+// semantic result (nodes drift toward their slider-weighted targets) is
+// exactly what the user sees on the slider; only the repulsive separation
+// that makes the SETTLED layout legible is deferred. That's the right thing
+// to defer: the user is iterating, not reading the final clusters yet.
+//
+// What we DELIBERATELY DO NOT change:
+//
+//   • alphaDecay — pinning it low to keep the sim "continuously alive" was a
+//     temptation that backfired in 3D. The 3D self-driving renderLoop is
+//     gated on positions/camera/dirty (F.1, commit 9702034); keeping
+//     positions changing every frame makes the renderLoop fire every frame,
+//     which on a 16k InstancedMesh steals enough CPU from d3 to NET-LOSE
+//     ticks per second (T0 §2.2 documented the same 5.5× CPU-competition
+//     gap). The natural settle between keystrokes is what lets the 3D
+//     renderLoop gate off and return CPU to the next tick.
+//
+//   • velocityDecay — dropping it (to e.g. 0.2) makes each tick move nodes
+//     farther, which spends MORE CPU per tick in the 3D renderLoop's
+//     position upload + redraw step. The B.1 runtime probe measured a ~20%
+//     3D throughput regression vs F.1 + A.1 baseline when velocity decay was
+//     dropped; restoring it to the d3 default (0.4) eliminates the
+//     regression while keeping the 2D throughput win.
+//
+// On exit (setActiveInput(false)) we re-attach forceManyBody. Target forces
+// (forceX/Y/Z) are NEVER touched by preview mode, so layout semantics + node
+// identity + dimension taxonomy survive an arbitrary number of preview
+// entries/exits.
+/**
+ * Minimum reheat alpha applied when preview is first engaged from a frozen
+ * state. The cold-start anchor in updateSliders already reheats on a
+ * meaningful slider delta; this is a defense-in-depth floor so even a
+ * sub-threshold drag-start (which updateSliders would skip) still produces
+ * visible motion the moment the user begins dragging.
+ */
+const PREVIEW_ENTRY_ALPHA = 0.2;
 
 // ---- Helpers -------------------------------------------------------------
 
@@ -292,6 +346,12 @@ export async function createPhysicsLayer(
   }
 
   let frozen = false;
+  // Drag-preview mode (B.1). When true, `repulsion` is detached and engine
+  // params hold preview values regardless of slider state. updateSliders during
+  // preview still mutates target strengths (so direction tracks the slider)
+  // but does NOT re-apply alphaDecay/repulsion — applySliderForces guards on
+  // this flag so the preview profile sticks until setActiveInput(false).
+  let _activeInput = false;
   let _sliders: Record<string, number> = { ...initialSliders };
   // Anchor for the post-freeze skip gate. The gate measures cumulative slider
   // delta against THIS anchor (not the per-call previous vector), so a slow
@@ -439,6 +499,43 @@ export async function createPhysicsLayer(
         }
         // PHYS-02: alpha(target).restart() — never simulation.restart() bare (Pitfall 4).
         sim.alpha(newAlpha).restart();
+      }
+    },
+
+    setActiveInput(active: boolean): void {
+      // Idempotent — repeated entries/exits in the same state are no-ops.
+      // This matters because keyboard repeat + rAF coalescing can produce
+      // many redundant "true" calls; we don't want each one to re-set
+      // alphaDecay (no functional damage, just noise).
+      if (active === _activeInput) return;
+      _activeInput = active;
+      if (active) {
+        // Detach repulsion entirely — the dominant per-tick cost (quadtree
+        // build + Barnes-Hut traversal) vanishes. Target forces still pull
+        // nodes toward their slider-weighted poles, so the user SEES the
+        // dimension they're dragging take effect immediately.
+        sim.force("repulsion", null);
+        // If the sim was frozen at the moment the user touched a slider,
+        // unpin and reheat so the very first preview frame already moves.
+        // updateSliders may also reheat on the same gesture; both paths
+        // converge on a running sim, alpha never exceeds ALPHA_MAX_REHEAT.
+        if (frozen) {
+          for (const n of nodes) {
+            n.fx = null;
+            n.fy = null;
+            n.fz = null;
+          }
+          frozen = false;
+        }
+        if (sim.alpha() < PREVIEW_ENTRY_ALPHA) {
+          sim.alpha(PREVIEW_ENTRY_ALPHA).restart();
+        }
+      } else {
+        // Re-attach repulsion at its current configuration. The manyBody
+        // instance was preserved across the detach — its .strength/.theta/
+        // .distanceMax are unchanged, so re-attaching restores the exact
+        // pre-preview behavior without reconstructing the force object.
+        sim.force("repulsion", manyBody);
       }
     },
 

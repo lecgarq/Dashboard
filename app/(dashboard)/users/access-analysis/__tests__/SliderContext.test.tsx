@@ -24,17 +24,23 @@ import {
 import { SLIDER_DIMENSION_IDS } from "../dimensionGroups";
 import { applyPreset } from "../sliderPresets";
 
-function mkPhysics(): { physics: PhysicsLayer; updateSliders: ReturnType<typeof vi.fn> } {
+function mkPhysics(): {
+  physics: PhysicsLayer;
+  updateSliders: ReturnType<typeof vi.fn>;
+  setActiveInput: ReturnType<typeof vi.fn>;
+} {
   const updateSliders = vi.fn();
+  const setActiveInput = vi.fn();
   const physics: Partial<PhysicsLayer> = {
     updateSliders,
+    setActiveInput,
     setMask: vi.fn(),
     getPositions: () => new Float32Array(),
     dispose: vi.fn(),
     alphaMask: new Float32Array(),
     maskVersion: 0,
   };
-  return { physics: physics as PhysicsLayer, updateSliders };
+  return { physics: physics as PhysicsLayer, updateSliders, setActiveInput };
 }
 
 beforeEach(() => {
@@ -219,6 +225,101 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     // confirming hydration only happens via useEffect (client-only) on pass two.
     expect(firstValues!.activity).toBe(DEFAULT_VALUES.activity);
     expect(firstValues!.activity).not.toBe(99);
+  });
+});
+
+describe("SliderContext — drag-preview activation (B.1)", () => {
+  it("setSliderValue marks preview active on the physics layer", async () => {
+    const { physics, setActiveInput } = mkPhysics();
+    const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+
+    await act(async () => {
+      result.current.setSliderValue("activity", 50);
+    });
+
+    expect(setActiveInput).toHaveBeenCalledWith(true);
+  });
+
+  it("preview exits after the idle window (debounced) with no further changes", async () => {
+    vi.useFakeTimers();
+    try {
+      const { physics, setActiveInput } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+
+      act(() => {
+        result.current.setSliderValue("activity", 50);
+      });
+      expect(setActiveInput).toHaveBeenLastCalledWith(true);
+
+      // Advance just under the debounce — preview must still be active.
+      act(() => {
+        vi.advanceTimersByTime(200);
+      });
+      expect(setActiveInput).not.toHaveBeenCalledWith(false);
+
+      // Cross the debounce window — preview exits.
+      act(() => {
+        vi.advanceTimersByTime(100);
+      });
+      expect(setActiveInput).toHaveBeenLastCalledWith(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("rapid back-to-back changes keep preview active and only one entry call fires", async () => {
+    vi.useFakeTimers();
+    try {
+      const { physics, setActiveInput } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+
+      act(() => {
+        result.current.setSliderValue("activity", 10);
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+        result.current.setSliderValue("activity", 20);
+      });
+      act(() => {
+        vi.advanceTimersByTime(100);
+        result.current.setSliderValue("activity", 30);
+      });
+
+      // Only one (true) call so far — repeated entries are no-ops while active.
+      const trueCalls = setActiveInput.mock.calls.filter((c) => c[0] === true).length;
+      expect(trueCalls).toBe(1);
+      // No (false) call yet — each change re-armed the timer.
+      expect(setActiveInput).not.toHaveBeenCalledWith(false);
+
+      // Now go idle long enough for the timer to fire.
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(setActiveInput).toHaveBeenLastCalledWith(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("resetAll immediately exits preview (settle-now intent)", async () => {
+    vi.useFakeTimers();
+    try {
+      const { physics, setActiveInput } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+
+      act(() => {
+        result.current.setSliderValue("activity", 50);
+      });
+      expect(setActiveInput).toHaveBeenLastCalledWith(true);
+
+      act(() => {
+        result.current.resetAll();
+      });
+      // Synchronous false — does NOT wait for the debounce window.
+      expect(setActiveInput).toHaveBeenLastCalledWith(false);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
