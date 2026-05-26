@@ -599,19 +599,28 @@ describe("Cache-hit: nodes pinned to cached positions, simulation never runs", (
 });
 
 // =============================================================================
-// No-reheat optimization
+// Slider micro-drag accumulator (Pattern A "freeze then jump")
+// -----------------------------------------------------------------------------
+// Symptom (reported by Luis 2026-05-25): on a slow continuous drag of a slider
+// thumb, nodes stayed pinned and only jumped after release or after several
+// large drags. Radix step=1 on the 0..100 slider → per-rAF-coalesced
+// normalized delta ≤ 0.01. SKIP_THRESHOLD = 0.02. The old gate measured the
+// per-CALL delta (vs the previous call's slider vector), so a slow drag of
+// many sub-threshold ticks each skipped independently and the cumulative
+// motion never crossed the gate → dead zone after every freeze.
+//
+// Fix: measure cumulative delta against the slider state at the LAST REHEAT,
+// not the last call. Sub-threshold ticks accumulate; once their sum crosses
+// SKIP_THRESHOLD the sim reheats. Anchor updates only when a reheat actually
+// fires, and is re-anchored on sim "end" (defense in depth — naturally
+// tracked during live runs, but the explicit reset documents the invariant).
 // =============================================================================
 
-describe("No-reheat optimization: skip alpha().restart() when frozen and delta < SKIP_THRESHOLD", () => {
-  it("consecutive small-delta updateSliders calls do not trigger restart on a frozen sim", async () => {
+describe("Slider micro-drag accumulator: cumulative deltas reheat across calls", () => {
+  it("accumulates a 0.01 → 0.02 → 0.03 drag and reheats once cumulative ≥ SKIP_THRESHOLD", async () => {
+    // Cache HIT → starts frozen, nodes pinned. This is the "reloaded organic
+    // view" state that triggered Luis's symptom.
     const n = 4;
-    // Use cache HIT so frozen=true from construction and never changes until a big-delta call.
-    // Cache-hit path: sim.stop() is called + frozen=true. prevMax=0.
-    //
-    // Two-call scenario:
-    //   Call 1: slider=0.01, delta = |0.01 - 0| = 0.01 < SKIP_THRESHOLD → SKIP (frozen=true stays).
-    //   Call 2: slider=0.02, delta = |0.02 - 0.01| = 0.01 < SKIP_THRESHOLD → SKIP.
-    // Both calls skip → restart never called.
     const cachedPositions = new Float32Array(n * 3).fill(0);
     mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
 
@@ -622,7 +631,106 @@ describe("No-reheat optimization: skip alpha().restart() when frozen and delta <
     });
     const sim = _capturedSim;
 
-    // Spy on restart
+    let restartCount = 0;
+    let lastAlphaArg = 0;
+    const origRestart = sim.restart.bind(sim);
+    sim.restart = () => {
+      restartCount++;
+      return origRestart();
+    };
+    const origAlpha = sim.alpha.bind(sim);
+    sim.alpha = (v?: number) => {
+      if (v !== undefined) {
+        lastAlphaArg = v;
+        return origAlpha(v);
+      }
+      return origAlpha();
+    };
+
+    // Sanity precondition: nodes are pinned by the cache-hit branch.
+    expect(nodes[0].fx, "cache-hit pin: fx set").not.toBeNull();
+    expect(nodes[0].fy, "cache-hit pin: fy set").not.toBeNull();
+    expect(nodes[0].fz, "cache-hit pin: fz set").not.toBeNull();
+
+    // Call 1: cumulative |0.01 - 0| = 0.01 < SKIP_THRESHOLD → must NOT reheat.
+    physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0 });
+    expect(restartCount, "call 1: cumulative 0.01 stays below threshold").toBe(0);
+
+    // Call 2: cumulative |0.02 - 0| = 0.02 ≥ SKIP_THRESHOLD → MUST reheat.
+    // Pre-fix: this skipped (per-call delta was 0.01 against call 1's 0.01).
+    physics.updateSliders({ "dim-activity": 0.02, "dim-recency": 0 });
+    expect(restartCount, "call 2: cumulative 0.02 crosses threshold → reheat").toBeGreaterThan(0);
+
+    // Reheat side-effects: alpha raised to at least the floor, nodes unpinned.
+    expect(lastAlphaArg, "reheat raises alpha to ≥ ALPHA_REHEAT_FLOOR (0.15)").toBeGreaterThanOrEqual(
+      0.15,
+    );
+    expect(nodes[0].fx, "reheat unpins fx").toBeNull();
+    expect(nodes[0].fy, "reheat unpins fy").toBeNull();
+    expect(nodes[0].fz, "reheat unpins fz").toBeNull();
+    expect(physics.frozen, "reheat flips frozen → false").toBe(false);
+
+    // After reheat the anchor moves to current values. The third drag tick now
+    // happens against a NON-frozen sim — every call goes through (skip only
+    // applies while frozen). This documents that no further gating is in play.
+    physics.updateSliders({ "dim-activity": 0.03, "dim-recency": 0 });
+    expect(restartCount, "call 3: non-frozen sim reheats unconditionally").toBeGreaterThan(1);
+  });
+
+  it("a single large slider jump still reheats immediately (no regression)", async () => {
+    // Regression guard for the fast-drag path. A single fat delta MUST cross
+    // the gate in one call even with the new cumulative semantics, because
+    // the cumulative is computed against the anchor — same as the per-call
+    // delta when the anchor is the initial state.
+    const n = 4;
+    const cachedPositions = new Float32Array(n * 3).fill(0);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(n);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const sim = _capturedSim;
+
+    let restartCount = 0;
+    const origRestart = sim.restart.bind(sim);
+    sim.restart = () => {
+      restartCount++;
+      return origRestart();
+    };
+
+    physics.updateSliders({ "dim-activity": 0.5, "dim-recency": 0 });
+    expect(restartCount, "single 0.5 jump reheats in one call").toBeGreaterThan(0);
+  });
+});
+
+// =============================================================================
+// No-reheat optimization
+// =============================================================================
+
+describe("No-reheat optimization: skip alpha().restart() when frozen and cumulative delta < SKIP_THRESHOLD", () => {
+  it("a one-off sub-threshold call against a fresh anchor stays skipped (no thrash)", async () => {
+    // Cumulative semantics (accumulator fix): the gate measures delta against
+    // _slidersAtLastReheat, not the per-call previous vector. With a fresh anchor
+    // (anchor = 0) a single 0.01 nudge is below SKIP_THRESHOLD and must NOT
+    // reheat — this is the still-valid scroll-wheel / accidental-nudge guard.
+    //
+    // The prior test asserted that TWO consecutive 0.01 nudges (cumulative 0.02)
+    // also stay skipped. That assertion encoded the bug Luis reported (slow drags
+    // never break out of freeze) and is now correctly covered by the
+    // "Slider micro-drag accumulator" block above, which proves call 2 reheats.
+    const n = 4;
+    const cachedPositions = new Float32Array(n * 3).fill(0);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(n);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const sim = _capturedSim;
+
     let restartCallCount = 0;
     let alphaCallCount = 0;
     const origRestart = sim.restart.bind(sim);
@@ -639,14 +747,10 @@ describe("No-reheat optimization: skip alpha().restart() when frozen and delta <
       return origAlpha();
     };
 
-    // Call 1: tiny delta from prevMax=0 → skip
+    // Single 0.01 nudge from anchor=0 → cumulative 0.01 < SKIP_THRESHOLD → skip.
     physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0 });
-    expect(restartCallCount, "call 1 (delta=0.01 from 0) must NOT restart").toBe(0);
-
-    // Call 2: tiny delta from prevMax=0.01 → skip
-    physics.updateSliders({ "dim-activity": 0.02, "dim-recency": 0 });
-    expect(restartCallCount, "call 2 (delta=0.01 from 0.01) must NOT restart").toBe(0);
-    expect(alphaCallCount, "neither call may invoke alpha(v)").toBe(0);
+    expect(restartCallCount, "single 0.01 nudge stays below threshold → no reheat").toBe(0);
+    expect(alphaCallCount, "no alpha(v) call when skipped").toBe(0);
   });
 
   it("updateSliders with delta > SKIP_THRESHOLD always reheats even when frozen", async () => {

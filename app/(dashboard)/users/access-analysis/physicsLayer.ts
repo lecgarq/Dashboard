@@ -245,6 +245,14 @@ export async function createPhysicsLayer(
 
   let frozen = false;
   let _sliders: Record<string, number> = { ...initialSliders };
+  // Anchor for the post-freeze skip gate. The gate measures cumulative slider
+  // delta against THIS anchor (not the per-call previous vector), so a slow
+  // continuous drag whose individual rAF-coalesced ticks are sub-threshold
+  // (≤ 0.01 normalized, Radix step=1 on 0..100) still accumulates and breaks
+  // out of freeze once it crosses SKIP_THRESHOLD. Without this anchor, every
+  // micro-tick was independently below threshold and the sim stayed pinned
+  // after every freeze — the "Pattern A freeze then jump" symptom.
+  let _slidersAtLastReheat: Record<string, number> = { ...initialSliders };
   // P1.1: seed the simulation with the initial profile so the FIRST settle already
   // expresses structure (volumetric clusters), not a featureless repulsion globe.
   applySliderForces(_sliders);
@@ -254,6 +262,11 @@ export async function createPhysicsLayer(
   // to avoid render-race (Pitfall 5 in RESEARCH).
   sim.on("end", async () => {
     frozen = true; // set synchronously so render loop sees it immediately
+    // Defense in depth: re-anchor the skip gate to the slider state at freeze
+    // so the next post-freeze drag measures cumulative delta from here. The
+    // anchor is also updated on every reheat below, so in normal flows this
+    // is a no-op — keep it as an explicit invariant for future readers.
+    _slidersAtLastReheat = { ..._sliders };
     // Containment: the simulation has no centering force, so normalize the
     // settled spread into a fixed cube before snapshotting/caching.
     normalizeNodePositions(nodes, LAYOUT_HALF_EXTENT);
@@ -318,7 +331,6 @@ export async function createPhysicsLayer(
 
     // PHYS-02 + PHYS-03: Update all slider strengths + engine params atomically, then reheat.
     updateSliders(values: Record<string, number>): void {
-      const prev = _sliders;                  // reference to the previous slider vector
       _sliders = { ..._sliders, ...values };  // merge: preserve target-only dims (e.g. module)
       // PHYS-01 + PHYS-03: set per-dim strengths + engine params atomically (shared
       // with construction via applySliderForces). Returns max(sliderValues).
@@ -334,12 +346,24 @@ export async function createPhysicsLayer(
       // scalar max. Multi-slider presets make max(allSliders) sticky, so a
       // non-dominant slider move left maxSlider unchanged and was silently skipped
       // (force field changed, sim never restarted → nodes never moved).
+      //
+      // ACCUMULATOR FIX (Pattern A): delta is measured against the slider state
+      // at the LAST REHEAT (_slidersAtLastReheat), not the per-call previous
+      // vector. A slow continuous drag whose individual rAF ticks are
+      // sub-threshold accumulates against this anchor; once cumulative crosses
+      // SKIP_THRESHOLD the sim reheats. Without this, slow drags after freeze
+      // sat below threshold tick-by-tick and the sim never restarted.
+      const anchor = _slidersAtLastReheat;
       let maxDelta = 0;
-      for (const k of new Set([...Object.keys(prev), ...Object.keys(_sliders)])) {
-        maxDelta = Math.max(maxDelta, Math.abs((_sliders[k] ?? 0) - (prev[k] ?? 0)));
+      for (const k of new Set([...Object.keys(anchor), ...Object.keys(_sliders)])) {
+        maxDelta = Math.max(maxDelta, Math.abs((_sliders[k] ?? 0) - (anchor[k] ?? 0)));
       }
       const skip = frozen && maxDelta < SKIP_THRESHOLD;
       if (!skip) {
+        // Anchor advances only on actual reheat; sub-threshold skipped calls
+        // leave it unchanged so the NEXT call's delta still measures from the
+        // last-frozen state (this is the load-bearing part of the accumulator).
+        _slidersAtLastReheat = { ..._sliders };
         frozen = false;
         // Unpin nodes before reheat so forces can move them.
         for (const n of nodes) {
