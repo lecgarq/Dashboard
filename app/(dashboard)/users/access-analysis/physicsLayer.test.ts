@@ -181,6 +181,22 @@ describe("PHYS-01: Named per-dimension forces registered", () => {
       expect(sim.force(`${d}-z`), `${d}-z missing`).toBeDefined();
     }
   });
+
+  // A.1: assert that the manyBody config has the tuned values applied. These
+  // are pure configuration calls; if a future refactor accidentally drops
+  // either, the per-tick CPU regression would silently return. Plan
+  // `docs/superpowers/plans/2026-05-26-p0-realtime-graph-motion-throughput.md`, §3.A.
+  it("A.1: forceManyBody is configured with the tuned distanceMax and theta", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(4);
+    await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+
+    expect(_capturedManyBody, "manyBody was captured").not.toBeNull();
+    // d3-force-3d stores the squared values internally and returns the sqrt
+    // from the getter (`manyBody.js:127, 131, 135`); compare to within float
+    // tolerance.
+    expect(_capturedManyBody.distanceMax(), "distanceMax cap").toBeCloseTo(200, 5);
+    expect(_capturedManyBody.theta(), "Barnes-Hut theta").toBeCloseTo(1.5, 5);
+  });
 });
 
 // =============================================================================

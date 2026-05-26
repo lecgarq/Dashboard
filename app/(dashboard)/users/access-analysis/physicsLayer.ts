@@ -146,6 +146,24 @@ const SKIP_THRESHOLD = 0.005;
 const ALPHA_REHEAT_FLOOR = 0.15;
 /** Velocity damping — locked at d3 default (CONTEXT.md). */
 const VELOCITY_DECAY = 0.4;
+/**
+ * forceManyBody Barnes-Hut tolerance. d3 default is 0.9. T0 baseline measured
+ * 4 Hz tick rate on 16,942 nodes; A.1 raises θ to 1.5 for a looser quadrant
+ * approximation that reduces per-tick force-computation cost. At this scale
+ * the targets (forceX/Y/Z) dominate the global layout, so the small accuracy
+ * loss in long-range repulsion does not materially affect cluster cohesion.
+ * (Plan `docs/superpowers/plans/2026-05-26-p0-realtime-graph-motion-throughput.md`, §3.A.)
+ */
+const REPULSION_THETA = 1.5;
+/**
+ * forceManyBody interaction-range cap. d3 default is Infinity (every pair
+ * contributes). The settled layout is normalized into ±LAYOUT_HALF_EXTENT
+ * (350), so the maximum node-to-node distance is ~1212. Capping the
+ * repulsion-pair contribution at 200 keeps short-range separation intact
+ * (within-cluster pairs sit well below this) while eliminating the long
+ * cross-cluster tail of pair work. This is the dominant per-tick CPU win.
+ */
+const REPULSION_DISTANCE_MAX = 200;
 
 // ---- Helpers -------------------------------------------------------------
 
@@ -213,7 +231,13 @@ export async function createPhysicsLayer(
   // ---- PHYSICS BUS --------------------------------------------------------
 
   // PHYS-01: Register one forceManyBody baseline + three named forces per dimension.
-  const manyBody = forceManyBody<SimNode>().strength(REPULSION_ZERO);
+  // A.1: cap interaction range + relax Barnes-Hut θ. Both are O(1) configuration
+  // calls; the per-tick cost reduction is realised inside d3-force-3d's quadtree
+  // traversal (`manyBody.js:83` `w*w/theta2 < l`, line 84 `if (l < distanceMax2)`).
+  const manyBody = forceManyBody<SimNode>()
+    .strength(REPULSION_ZERO)
+    .theta(REPULSION_THETA)
+    .distanceMax(REPULSION_DISTANCE_MAX);
 
   // PHYS-01: forceSimulation<SimNode>(nodes, 3) — second arg MUST be 3 (Pitfall 1).
   const sim = forceSimulation<SimNode>(nodes, 3)
