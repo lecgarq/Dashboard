@@ -604,22 +604,24 @@ describe("Cache-hit: nodes pinned to cached positions, simulation never runs", (
 // Symptom (reported by Luis 2026-05-25): on a slow continuous drag of a slider
 // thumb, nodes stayed pinned and only jumped after release or after several
 // large drags. Radix step=1 on the 0..100 slider → per-rAF-coalesced
-// normalized delta ≤ 0.01. SKIP_THRESHOLD = 0.02. The old gate measured the
-// per-CALL delta (vs the previous call's slider vector), so a slow drag of
-// many sub-threshold ticks each skipped independently and the cumulative
-// motion never crossed the gate → dead zone after every freeze.
+// normalized delta = 0.01. Two fixes shipped together:
 //
-// Fix: measure cumulative delta against the slider state at the LAST REHEAT,
-// not the last call. Sub-threshold ticks accumulate; once their sum crosses
-// SKIP_THRESHOLD the sim reheats. Anchor updates only when a reheat actually
-// fires, and is re-anchored on sim "end" (defense in depth — naturally
-// tracked during live runs, but the explicit reset documents the invariant).
+//   1. ACCUMULATOR (commit e9dcaed): measure cumulative delta against the
+//      slider state at the LAST REHEAT, not the last call. Sub-threshold ticks
+//      accumulate; once their sum crosses SKIP_THRESHOLD the sim reheats.
+//   2. SKIP_THRESHOLD = 0.005 (tightened from 0.02): a single 0.01 keystroke
+//      now crosses the gate immediately — no cold-start dead zone at the
+//      start of a drag. Only sub-keystroke programmatic noise stays filtered.
+//
+// The accumulator is still load-bearing: programmatic input below 0.005
+// (e.g. a slow algorithmic tween) still accumulates correctly across calls.
 // =============================================================================
 
 describe("Slider micro-drag accumulator: cumulative deltas reheat across calls", () => {
-  it("accumulates a 0.01 → 0.02 → 0.03 drag and reheats once cumulative ≥ SKIP_THRESHOLD", async () => {
-    // Cache HIT → starts frozen, nodes pinned. This is the "reloaded organic
-    // view" state that triggered Luis's symptom.
+  it("a single 0.01 keystroke reheats immediately from frozen (no cold-start dead zone)", async () => {
+    // Tightened SKIP_THRESHOLD = 0.005 means a Radix one-step nudge (0.01)
+    // already crosses the gate. This is the explicit fix for the symptom
+    // "I move the slider one notch and nothing happens."
     const n = 4;
     const cachedPositions = new Float32Array(n * 3).fill(0);
     mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
@@ -647,34 +649,54 @@ describe("Slider micro-drag accumulator: cumulative deltas reheat across calls",
       return origAlpha();
     };
 
-    // Sanity precondition: nodes are pinned by the cache-hit branch.
     expect(nodes[0].fx, "cache-hit pin: fx set").not.toBeNull();
-    expect(nodes[0].fy, "cache-hit pin: fy set").not.toBeNull();
-    expect(nodes[0].fz, "cache-hit pin: fz set").not.toBeNull();
+    expect(physics.frozen, "starts frozen on cache hit").toBe(true);
 
-    // Call 1: cumulative |0.01 - 0| = 0.01 < SKIP_THRESHOLD → must NOT reheat.
+    // A single keystroke — must reheat in ONE call now.
     physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0 });
-    expect(restartCount, "call 1: cumulative 0.01 stays below threshold").toBe(0);
-
-    // Call 2: cumulative |0.02 - 0| = 0.02 ≥ SKIP_THRESHOLD → MUST reheat.
-    // Pre-fix: this skipped (per-call delta was 0.01 against call 1's 0.01).
-    physics.updateSliders({ "dim-activity": 0.02, "dim-recency": 0 });
-    expect(restartCount, "call 2: cumulative 0.02 crosses threshold → reheat").toBeGreaterThan(0);
-
-    // Reheat side-effects: alpha raised to at least the floor, nodes unpinned.
+    expect(restartCount, "single 0.01 keystroke reheats in one call").toBe(1);
     expect(lastAlphaArg, "reheat raises alpha to ≥ ALPHA_REHEAT_FLOOR (0.15)").toBeGreaterThanOrEqual(
       0.15,
     );
     expect(nodes[0].fx, "reheat unpins fx").toBeNull();
-    expect(nodes[0].fy, "reheat unpins fy").toBeNull();
-    expect(nodes[0].fz, "reheat unpins fz").toBeNull();
     expect(physics.frozen, "reheat flips frozen → false").toBe(false);
+  });
 
-    // After reheat the anchor moves to current values. The third drag tick now
-    // happens against a NON-frozen sim — every call goes through (skip only
-    // applies while frozen). This documents that no further gating is in play.
-    physics.updateSliders({ "dim-activity": 0.03, "dim-recency": 0 });
-    expect(restartCount, "call 3: non-frozen sim reheats unconditionally").toBeGreaterThan(1);
+  it("accumulates sub-threshold programmatic deltas and reheats once cumulative ≥ SKIP_THRESHOLD", async () => {
+    // Below the keystroke granularity. Proves the accumulator gate still
+    // works against the anchor — three 0.002 steps against anchor=0 cumulate
+    // 0.002 → 0.004 → 0.006 and reheat on the third (0.006 ≥ 0.005).
+    const n = 4;
+    const cachedPositions = new Float32Array(n * 3).fill(0);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(n);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const sim = _capturedSim;
+
+    let restartCount = 0;
+    const origRestart = sim.restart.bind(sim);
+    sim.restart = () => {
+      restartCount++;
+      return origRestart();
+    };
+
+    // Call 1: cumulative 0.002 < 0.005 → skip.
+    physics.updateSliders({ "dim-activity": 0.002, "dim-recency": 0 });
+    expect(restartCount, "call 1: cumulative 0.002 stays below threshold").toBe(0);
+
+    // Call 2: cumulative 0.004 < 0.005 → still skip.
+    physics.updateSliders({ "dim-activity": 0.004, "dim-recency": 0 });
+    expect(restartCount, "call 2: cumulative 0.004 stays below threshold").toBe(0);
+
+    // Call 3: cumulative 0.006 ≥ 0.005 → REHEAT (anchor was never advanced
+    // because no prior call reheated).
+    physics.updateSliders({ "dim-activity": 0.006, "dim-recency": 0 });
+    expect(restartCount, "call 3: cumulative 0.006 crosses threshold → reheat").toBe(1);
+    expect(physics.frozen, "reheat flips frozen → false").toBe(false);
   });
 
   it("a single large slider jump still reheats immediately (no regression)", async () => {
@@ -747,9 +769,13 @@ describe("No-reheat optimization: skip alpha().restart() when frozen and cumulat
       return origAlpha();
     };
 
-    // Single 0.01 nudge from anchor=0 → cumulative 0.01 < SKIP_THRESHOLD → skip.
-    physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0 });
-    expect(restartCallCount, "single 0.01 nudge stays below threshold → no reheat").toBe(0);
+    // Single 0.001 sub-keystroke nudge from anchor=0 → cumulative 0.001
+    // < SKIP_THRESHOLD (0.005) → skip. With the tightened threshold, the
+    // anti-thrash test value drops below the 0.01 keystroke granularity:
+    // a real Radix step (0.01) now reheats immediately and is covered by
+    // the "single 0.01 keystroke reheats immediately" spec above.
+    physics.updateSliders({ "dim-activity": 0.001, "dim-recency": 0 });
+    expect(restartCallCount, "single 0.001 nudge stays below threshold → no reheat").toBe(0);
     expect(alphaCallCount, "no alpha(v) call when skipped").toBe(0);
   });
 
@@ -828,7 +854,7 @@ describe("Defect A: reheat keys off per-dimension delta, not the scalar max", ()
       restartCount++;
       return origRestart();
     };
-    physics.updateSliders({ "dim-activity": 0.01, "dim-recency": 0.8 }); // delta 0.01 < 0.02
+    physics.updateSliders({ "dim-activity": 0.001, "dim-recency": 0.8 }); // delta 0.001 < 0.005
     expect(restartCount, "sub-threshold nudge stays skipped (no thrash)").toBe(0);
   });
 });

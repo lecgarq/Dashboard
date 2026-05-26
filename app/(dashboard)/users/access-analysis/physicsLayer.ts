@@ -122,8 +122,16 @@ const REPULSION_ONE = -60;
 const DECAY_ZERO = 0.1;
 /** Slow alphaDecay when sliders are engaged — user sees motion while clusters separate. */
 const DECAY_ONE = 0.02;
-/** Skip reheat if frozen and the largest per-dimension slider delta < this threshold (prevents scroll-wheel thrashing). */
-const SKIP_THRESHOLD = 0.02;
+/**
+ * Skip reheat if frozen AND cumulative per-dimension slider delta (against
+ * _slidersAtLastReheat) is below this threshold. Radix step=1 on a 0..100
+ * slider maps a single keystroke / 1-pixel drag to 0.01 normalized, so 0.005
+ * means any real human input reheats immediately — no cold-start dead zone.
+ * Only sub-keystroke accidental noise (programmatic tweens below 0.005) stays
+ * filtered. Tightened from 0.02 after diagnostic showed the old gate caused
+ * a 1-step pause at the start of every drag-from-freeze.
+ */
+const SKIP_THRESHOLD = 0.005;
 /** Reheat alpha floor — any material slider change reheats to at least this so motion is always visible. */
 const ALPHA_REHEAT_FLOOR = 0.15;
 /** Velocity damping — locked at d3 default (CONTEXT.md). */
