@@ -327,6 +327,22 @@ export async function crawlProjectFolders(
     permissions.push(...batch);
   }
 
+  // ── Permissions-empty downgrade guard (2026-05-26) ───────────────────────
+  // The crawler returns status="ok" by default, and the permissions phase only
+  // sets "partial" when an explicit fetch error throws. A project where every
+  // /permissions call quietly returns [] (the FWD-Promociones shape from the
+  // 2026-05-26 dry-run) would therefore land as status="ok" with zero rows in
+  // AccFolderPermission — and `ok` is terminal for the priority planner and
+  // the recovery sweep. Downgrade that specific shape to "partial" so the
+  // permissions-only recovery pass (folder-perms-recover.cjs) picks it up.
+  // Guard is intentionally narrow: only fires when folders > 0 AND the prior
+  // status was "ok"; truly-empty projects (folders === 0) and already-degraded
+  // statuses are left untouched.
+  if (status === "ok" && folders.length > 0 && permissions.length === 0) {
+    status = "partial";
+    reason = reason ?? "permissions_empty";
+  }
+
   return {
     folders,
     permissions,

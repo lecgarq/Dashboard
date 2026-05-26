@@ -86,7 +86,14 @@ describe("BFS termination — 3-level tree", () => {
       if (url.includes("/folders/") && url.includes("/contents")) {
         return jsonRes({ data: [] });
       }
-      // Permissions: return empty for simplicity
+      // Permissions: return one ROLE entry per folder so the
+      // permissions-empty downgrade guard (status="ok" + folders>0 + perms=0 →
+      // partial) does not fire on this BFS-termination test.
+      if (url.includes("/permissions")) {
+        return jsonRes([
+          { subjectType: "ROLE", subjectId: "role-default", actions: ["VIEW"] },
+        ]);
+      }
       return jsonRes([]);
     });
 
@@ -302,5 +309,191 @@ describe("fullPath computation", () => {
 
     expect(byId["id-Root"].fullPath).toBe("/ProjectFiles");
     expect(byId["id-Child"].fullPath).toBe("/ProjectFiles/Drawings");
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. Root project access failures
+// ---------------------------------------------------------------------------
+
+describe("root project access failures", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("marks project-level topFolders 403 responses as inaccessible instead of retryable partial", async () => {
+    const mockFetch = vi.mocked(fetchWithRetry);
+
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("/topFolders")) {
+        return jsonRes({
+          jsonapi: { version: "1.0" },
+          errors: [
+            {
+              status: "403",
+              code: "BIM360DM_ERROR",
+              detail: `Project is not active: ${DM_ID}`,
+            },
+          ],
+        }, 403);
+      }
+      return jsonRes([]);
+    });
+
+    const result = await crawlProjectFolders(HUB_ID, DM_ID, PERMS_ID, TOKEN, defaultOpts);
+
+    expect(result.status).toBe("inaccessible");
+    expect(result.reason).toBe("project_access_denied");
+    expect(result.folders).toHaveLength(0);
+    expect(result.permissions).toHaveLength(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7b. Permissions-empty downgrade guard (2026-05-26)
+// ---------------------------------------------------------------------------
+//
+// Rationale: the 2026-05-26 dry-run found one project (FWD Promociones, 1,694
+// folders) where BFS completed but the permissions phase returned zero rows
+// across every folder and the crawler still reported status="ok". Such a
+// project is silently dropped from any future recovery sweep because the
+// planner only re-queues `never|partial|failed|inaccessible` — `ok` is
+// terminal. The guard below downgrades that specific shape (folders > 0,
+// permissions === 0, status was otherwise "ok") to "partial" with
+// reason="permissions_empty" so the recovery script picks it up.
+//
+// We deliberately do NOT downgrade when:
+//   - folders.length === 0 (genuinely empty / inaccessible project)
+//   - status is already "partial" / "failed" / "inaccessible" (preserve cause)
+
+describe("permissions-empty downgrade guard", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("downgrades ok → partial when folders > 0 but all permissions came back empty", async () => {
+    const mockFetch = vi.mocked(fetchWithRetry);
+
+    // 3 folders, every /permissions call returns an empty array (the
+    // FWD-Promociones shape: BFS finished within budget, but the perms
+    // endpoint quietly returned [] for every folder)
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("/topFolders")) {
+        return jsonRes({
+          data: [
+            folderData("id-F1", "F1"),
+            folderData("id-F2", "F2"),
+            folderData("id-F3", "F3"),
+          ],
+        });
+      }
+      if (url.includes("/contents")) {
+        return jsonRes({ data: [] });
+      }
+      // Permissions: empty for every folder
+      return jsonRes([]);
+    });
+
+    const result = await crawlProjectFolders(HUB_ID, DM_ID, PERMS_ID, TOKEN, defaultOpts);
+
+    expect(result.folders).toHaveLength(3);
+    expect(result.permissions).toHaveLength(0);
+    expect(result.status).toBe("partial");
+    expect(result.reason).toBe("permissions_empty");
+  });
+
+  it("stays ok when folders > 0 and at least one permission row exists", async () => {
+    const mockFetch = vi.mocked(fetchWithRetry);
+
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("/topFolders")) {
+        return jsonRes({ data: [folderData("id-F1", "F1"), folderData("id-F2", "F2")] });
+      }
+      if (url.includes("/contents")) {
+        return jsonRes({ data: [] });
+      }
+      if (url.includes("/permissions")) {
+        return jsonRes([
+          { subjectType: "ROLE", subjectId: "role-aaa", actions: ["VIEW"] },
+        ]);
+      }
+      return jsonRes([]);
+    });
+
+    const result = await crawlProjectFolders(HUB_ID, DM_ID, PERMS_ID, TOKEN, defaultOpts);
+
+    expect(result.folders.length).toBeGreaterThan(0);
+    expect(result.permissions.length).toBeGreaterThan(0);
+    expect(result.status).toBe("ok");
+    expect(result.reason).toBeUndefined();
+  });
+
+  it("does NOT force partial when both folders and permissions are zero (truly empty project)", async () => {
+    const mockFetch = vi.mocked(fetchWithRetry);
+
+    // topFolders returns empty — no folders to fetch permissions for
+    mockFetch.mockImplementation(async (url: string) => {
+      if (url.includes("/topFolders")) {
+        return jsonRes({ data: [] });
+      }
+      return jsonRes([]);
+    });
+
+    const result = await crawlProjectFolders(HUB_ID, DM_ID, PERMS_ID, TOKEN, defaultOpts);
+
+    expect(result.folders).toHaveLength(0);
+    expect(result.permissions).toHaveLength(0);
+    // Empty project should remain "ok" (or whatever upstream status was) — the
+    // guard is specifically about folders > 0 with zero permissions.
+    expect(result.status).toBe("ok");
+    expect(result.reason).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8. Token refresh during long crawls
+// ---------------------------------------------------------------------------
+
+describe("token refresh during long crawls", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("refreshes the APS token and retries once when a permission request returns AUTH-006", async () => {
+    const mockFetch = vi.mocked(fetchWithRetry);
+    const refreshAccessToken = vi.fn(async () => "fresh-token");
+    let permissionCalls = 0;
+
+    mockFetch.mockImplementation(async (url: string, init?: RequestInit) => {
+      if (url.includes("/topFolders")) {
+        return jsonRes({ data: [folderData("id-F1", "F1")] });
+      }
+      if (url.includes("/contents")) {
+        return jsonRes({ data: [] });
+      }
+      if (url.includes("/permissions")) {
+        permissionCalls++;
+        if (permissionCalls === 1) {
+          return jsonRes({
+            developerMessage: "Access token provided is invalid or expired.",
+            errorCode: "AUTH-006",
+          }, 401);
+        }
+        expect((init?.headers as Record<string, string>).Authorization).toBe("Bearer fresh-token");
+        return jsonRes([{ subjectType: "ROLE", subjectId: "role-aaa", actions: ["VIEW"] }]);
+      }
+      return jsonRes([]);
+    });
+
+    const result = await crawlProjectFolders(HUB_ID, DM_ID, PERMS_ID, TOKEN, {
+      ...defaultOpts,
+      refreshAccessToken,
+    });
+
+    expect(refreshAccessToken).toHaveBeenCalledTimes(1);
+    expect(permissionCalls).toBe(2);
+    expect(result.status).toBe("ok");
+    expect(result.permissions).toHaveLength(1);
+    expect(result.permissions[0].roleId).toBe("role-aaa");
   });
 });
