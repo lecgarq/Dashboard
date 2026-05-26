@@ -108,13 +108,20 @@ export function hashNodeSetAndSliders(
   return h.toString(16).padStart(8, "0");
 }
 
+// The cache stores one layout per slider hash, so the same node legitimately
+// appears under many set_hash values. The uniqueness invariant is therefore the
+// COMPOSITE (set_hash, node_id) — NOT node_id alone. A node_id-only primary key
+// rejected the second slider state with a "Duplicate key violates primary key
+// constraint" crash, freezing the physics pipeline on the first slider move.
+// set_hash leads the key so `WHERE set_hash = ?` (load/delete) stays index-served.
 const SCHEMA_SQL = `
   CREATE TABLE IF NOT EXISTS positions (
-    node_id TEXT PRIMARY KEY,
+    node_id TEXT NOT NULL,
     set_hash TEXT NOT NULL,
     x REAL NOT NULL,
     y REAL NOT NULL,
-    z REAL NOT NULL
+    z REAL NOT NULL,
+    PRIMARY KEY (set_hash, node_id)
   );
   CREATE INDEX IF NOT EXISTS positions_set_hash_idx ON positions(set_hash);
 `;

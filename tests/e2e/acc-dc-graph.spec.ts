@@ -237,6 +237,53 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-project-slider");
   });
 
+  test("a second slider state never raises a duplicate-key crash (positions cache regression)", async ({ page }, testInfo) => {
+    // Regression for the composite-key fix. The positions cache once used a
+    // node_id-only PRIMARY KEY, so the SECOND saved layout (a new set_hash)
+    // collided with the first on save → "Duplicate key ... violates primary key
+    // constraint" unhandledRejection → frozen physics / dead sliders. The real
+    // invariant is the COMPOSITE (set_hash, node_id). Unit-proven in
+    // positionsCache.test.ts; this asserts it end-to-end across two real saves:
+    //   save #1 = initial layout (hash A, at first freeze)
+    //   save #2 = post-reheat layout (hash B, after the slider move) ← crash point
+    // Two full 16,942-node settles → needs a generous budget; run on an idle
+    // machine (under heavy local load this hits the documented settle flake).
+    test.setTimeout(600_000);
+    const SETTLE_MS = 240_000;
+    const waitForSettle = () =>
+      page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getFrozen() === true, undefined, {
+        timeout: SETTLE_MS,
+      });
+
+    const dbErrors: string[] = [];
+    const isDupKey = (t: string) => /duplicate key|primary key constraint/i.test(t);
+    page.on("pageerror", (e) => {
+      if (isDupKey(e.message)) dbErrors.push(e.message);
+    });
+    page.on("console", (m) => {
+      if (m.type() === "error" && isDupKey(m.text())) dbErrors.push(m.text());
+    });
+
+    // Save #1: let the INITIAL layout settle and persist under hash A.
+    await waitForSettle();
+
+    // Save #2: a distinct slider state ⇒ distinct set_hash ⇒ re-saves the SAME
+    // node set. This is the exact step that crashed before the composite-key fix.
+    const thumb = page.getByLabel("Project thumb");
+    await thumb.focus();
+    await page.keyboard.press("End"); // → max (distinct value ⇒ distinct set_hash)
+    await waitForSettle();
+
+    const after = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    // eslint-disable-next-line no-console
+    console.log(`[slider dup-key] errors=${dbErrors.length} count=${after.count} anyNaN=${after.anyNaN}`);
+
+    expect(dbErrors, `no duplicate-key crash across slider states: ${dbErrors[0] ?? ""}`).toHaveLength(0);
+    expect(after.anyNaN, "no NaN after second slider state").toBe(false);
+    expect(after.count, "node set intact after the second slider state").toBe(EXPECTED_NODE_COUNT);
+    await proofShot(page, testInfo, "after-second-slider-state");
+  });
+
   test("color mode swaps the node color buffer, with 2D/3D parity (smoke)", async ({ page }, testInfo) => {
     // SMOKE — the color MATH is proven in nodeColors.test.ts. Here we confirm the
     // selector swaps the live RGBA buffer fed to BOTH renderers: alpha stays 1

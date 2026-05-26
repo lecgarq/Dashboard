@@ -20,6 +20,30 @@ function makeInMemoryConn(): AsyncDuckDBConnection {
   type Row = Record<string, unknown>;
   const tables: Record<string, Row[]> = {};
   const columns: Record<string, string[]> = {};
+  // Primary-key columns per table, parsed from the CREATE TABLE schema so the
+  // mock enforces the SAME uniqueness real DuckDB-WASM does. This is what lets
+  // these tests reproduce the "Duplicate key violates primary key constraint"
+  // runtime crash without spinning up a real wasm connection.
+  const primaryKeys: Record<string, string[]> = {};
+
+  // Split on top-level commas only (ignores commas inside `PRIMARY KEY (a, b)`).
+  function splitTopLevel(s: string): string[] {
+    const out: string[] = [];
+    let depth = 0;
+    let cur = "";
+    for (const ch of s) {
+      if (ch === "(") depth++;
+      else if (ch === ")") depth--;
+      if (ch === "," && depth === 0) {
+        out.push(cur);
+        cur = "";
+      } else {
+        cur += ch;
+      }
+    }
+    if (cur.trim()) out.push(cur);
+    return out;
+  }
 
   function parseValues(sql: string): Row[] {
     // Handles: INSERT INTO t (c1, c2, ...) VALUES (...),(...)
@@ -49,12 +73,26 @@ function makeInMemoryConn(): AsyncDuckDBConnection {
         const tbl = m[1];
         if (!tables[tbl]) {
           tables[tbl] = [];
-          // Extract column names from schema
+          // Extract column names + primary key from schema (paren-aware so a
+          // table-level `PRIMARY KEY (a, b)` constraint is parsed correctly).
           const colDefs = s.slice(s.indexOf("(") + 1, s.lastIndexOf(")"));
-          columns[tbl] = colDefs
-            .split(",")
-            .map((def) => def.trim().split(/\s+/)[0])
+          const defs = splitTopLevel(colDefs)
+            .map((d) => d.trim())
             .filter(Boolean);
+          const cols: string[] = [];
+          let pk: string[] = [];
+          for (const def of defs) {
+            const tableLevelPk = def.match(/^PRIMARY KEY\s*\(([^)]+)\)/i);
+            if (tableLevelPk) {
+              pk = tableLevelPk[1].split(",").map((c) => c.trim());
+              continue;
+            }
+            const name = def.split(/\s+/)[0];
+            cols.push(name);
+            if (/PRIMARY KEY/i.test(def)) pk = [name];
+          }
+          columns[tbl] = cols;
+          primaryKeys[tbl] = pk;
         }
         return { toArray: () => [] };
       }
@@ -68,7 +106,21 @@ function makeInMemoryConn(): AsyncDuckDBConnection {
         const tbl = m[1];
         if (!tables[tbl]) tables[tbl] = [];
         const rows = parseValues(s);
-        tables[tbl].push(...rows);
+        const pk = primaryKeys[tbl] ?? [];
+        for (const row of rows) {
+          if (pk.length > 0) {
+            const clash = tables[tbl].some((existing) =>
+              pk.every((c) => existing[c] === row[c]),
+            );
+            if (clash) {
+              const keyDesc = pk.map((c) => `${c}: ${row[c]}`).join(", ");
+              throw new Error(
+                `Constraint Error: Duplicate key "${keyDesc}" violates primary key constraint.`,
+              );
+            }
+          }
+          tables[tbl].push(row);
+        }
         return { toArray: () => [] };
       }
 
@@ -285,5 +337,74 @@ describe("layout-version cache namespacing", () => {
   it("hashNodeSet no longer collides with the pre-version key", () => {
     const ids = ["user1::proj1", "user2::proj2"];
     expect(hashNodeSet(ids)).not.toBe(versionlessHashSet(ids));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Multi-layout cache: the table stores one position set per (set_hash, node_id).
+// A node_id-only primary key prevented saving a second slider state for the same
+// node set and caused the "Duplicate key ... violates primary key constraint"
+// runtime crash on the first slider move. The real invariant is the COMPOSITE
+// (set_hash, node_id): the same node legitimately has different positions under
+// different slider hashes.
+// ---------------------------------------------------------------------------
+describe("multi-layout cache: one position row per (set_hash, node_id)", () => {
+  const IDS = ["a", "b"];
+  const XYZ_A = new Float32Array([1, 1, 1, 2, 2, 2]);
+  const XYZ_B = new Float32Array([3, 3, 3, 4, 4, 4]);
+
+  it("saves the same node set under two slider hashes without a duplicate-key error", async () => {
+    const conn = makeInMemoryConn();
+    await ensurePositionsSchema(conn);
+
+    await savePositions(conn, "hashA", IDS, XYZ_A);
+    // Before the fix this rejects: node_ids "a"/"b" already exist under hashA and
+    // the single-column PRIMARY KEY (node_id) rejects the second layout.
+    await expect(savePositions(conn, "hashB", IDS, XYZ_B)).resolves.toBeUndefined();
+  });
+
+  it("keeps each hash's positions independently retrievable", async () => {
+    const conn = makeInMemoryConn();
+    await ensurePositionsSchema(conn);
+    await savePositions(conn, "hashA", IDS, XYZ_A);
+    await savePositions(conn, "hashB", IDS, XYZ_B);
+
+    const a = await loadCachedPositions(conn, "hashA", IDS);
+    const b = await loadCachedPositions(conn, "hashB", IDS);
+    expect(a && Array.from(a)).toEqual([1, 1, 1, 2, 2, 2]);
+    expect(b && Array.from(b)).toEqual([3, 3, 3, 4, 4, 4]);
+  });
+
+  it("replacing one hash does not delete another hash's positions", async () => {
+    const conn = makeInMemoryConn();
+    await ensurePositionsSchema(conn);
+    await savePositions(conn, "hashA", IDS, XYZ_A);
+    await savePositions(conn, "hashB", IDS, XYZ_B);
+
+    // Re-save (replace) hashB only.
+    await savePositions(conn, "hashB", IDS, new Float32Array([9, 9, 9, 8, 8, 8]));
+
+    const a = await loadCachedPositions(conn, "hashA", IDS);
+    const b = await loadCachedPositions(conn, "hashB", IDS);
+    expect(a && Array.from(a)).toEqual([1, 1, 1, 2, 2, 2]); // hashA untouched
+    expect(b && Array.from(b)).toEqual([9, 9, 9, 8, 8, 8]); // hashB replaced
+  });
+
+  it("saving the same hash twice replaces only that hash (no row accumulation)", async () => {
+    const conn = makeInMemoryConn();
+    await ensurePositionsSchema(conn);
+    await savePositions(conn, "hashA", IDS, XYZ_A);
+    await savePositions(conn, "hashA", IDS, new Float32Array([5, 5, 5, 6, 6, 6]));
+
+    const a = await loadCachedPositions(conn, "hashA", IDS);
+    expect(a && Array.from(a)).toEqual([5, 5, 5, 6, 6, 6]);
+  });
+
+  it("loadCachedPositions returns positions only for the requested set_hash", async () => {
+    const conn = makeInMemoryConn();
+    await ensurePositionsSchema(conn);
+    await savePositions(conn, "hashA", IDS, XYZ_A);
+    // hashB was never saved → cache miss (null), not a leak of hashA's positions.
+    expect(await loadCachedPositions(conn, "hashB", IDS)).toBeNull();
   });
 });
