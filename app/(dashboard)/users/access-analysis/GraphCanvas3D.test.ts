@@ -44,6 +44,9 @@ const _capturedMatrixWrites: Array<{ i: number; pos: [number, number, number] }>
 let _capturedControls: any = null;
 let _webglRendererConstructorCount = 0;
 const _capturedLineSegments: any[] = [];
+// F.1: count renderer.render(scene, camera) calls so tests can prove the
+// renderLoop only paints when something changed.
+let _rendererRenderCount = 0;
 
 // ---------------------------------------------------------------------------
 // Mock @cosmos.gl/graph (needed for GraphCanvas → GraphCanvas2D)
@@ -154,7 +157,9 @@ vi.mock("three", async () => {
     }
     setPixelRatio(_r: number) {}
     setSize(_w: number, _h: number, _ud?: boolean) {}
-    render(_scene: any, _camera: any) {}
+    render(_scene: any, _camera: any) {
+      _rendererRenderCount++;
+    }
     dispose() {}
   }
 
@@ -303,12 +308,23 @@ vi.mock("three/examples/jsm/controls/OrbitControls.js", () => {
     dampingFactor = 0;
     autoRotate = true; // start as true so test confirms it gets set to false
     target = { copy: (_v: any) => {} };
+    // F.1: tests set this to drive the gated renderLoop. update() returns this
+    // value, mirroring the production behaviour where the real OrbitControls
+    // returns true when position/quaternion/target/zoom moved past _EPS.
+    _nextUpdateReturn: boolean = false;
 
     constructor(_camera: any, _domElement: any) {
       _capturedControls = this;
     }
 
-    update() {}
+    update(): boolean {
+      const r = this._nextUpdateReturn;
+      // Default behaviour after one read: pretend the camera is stable again
+      // until the test explicitly re-arms it. Matches the steady-state real
+      // OrbitControls behaviour once damping has decayed.
+      this._nextUpdateReturn = false;
+      return r;
+    }
     dispose() {}
   }
 
@@ -321,8 +337,13 @@ vi.mock("three/examples/jsm/controls/OrbitControls.js", () => {
 
 import type { PhysicsLayer } from "./physicsLayer";
 
-function makeFakePhysics(n: number): PhysicsLayer {
+function makeFakePhysics(n: number): PhysicsLayer & {
+  bumpPositionsVersion: () => void;
+} {
   let _maskVersion = 0;
+  // F.1: positionsVersion starts at 1 so the very first pumpPositions3D call
+  // (lastPositionsVersion=-1) does not match and writes initial matrices.
+  let _positionsVersion = 1;
   const _mask = new Float32Array(n).fill(1);
   const _xyz = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) {
@@ -333,6 +354,8 @@ function makeFakePhysics(n: number): PhysicsLayer {
   return {
     get alphaMask() { return _mask; },
     get maskVersion() { return _maskVersion; },
+    get positionsVersion() { return _positionsVersion; },
+    get frozen() { return false; },
     updateSliders: vi.fn(),
     setMask: vi.fn((predFn: (i: number) => number) => {
       for (let i = 0; i < n; i++) _mask[i] = predFn(i);
@@ -340,7 +363,9 @@ function makeFakePhysics(n: number): PhysicsLayer {
     }),
     getPositions: vi.fn(() => _xyz),
     dispose: vi.fn(),
-  } as unknown as PhysicsLayer;
+    // Test-only helper: simulate a d3 tick from the spec.
+    bumpPositionsVersion: () => { _positionsVersion++; },
+  } as unknown as PhysicsLayer & { bumpPositionsVersion: () => void };
 }
 
 // ---------------------------------------------------------------------------
@@ -366,6 +391,7 @@ beforeEach(async () => {
   _capturedControls = null;
   _webglRendererConstructorCount = 0;
   _capturedLineSegments.length = 0;
+  _rendererRenderCount = 0;
 
   // Dynamic import after mocks are set up
   const mod3D = await import("./GraphCanvas3D");
@@ -974,5 +1000,168 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     expect(rs.nodeColorDistinctColors).toBeGreaterThan(1);
     expect(rs.nodeColorAllFinite).toBe(true);
     expect(rs.nodeColorNeedsUpdate).toBe(true);
+  });
+
+  // -------------------------------------------------------------------------
+  // F.1: renderLoop gating tests
+  // -------------------------------------------------------------------------
+  //
+  // The 3D renderLoop is self-driving. Plan
+  // `docs/superpowers/plans/2026-05-26-p0-realtime-graph-motion-throughput.md`
+  // (T0 baseline) showed that letting it call `renderer.render(scene, camera)`
+  // every rAF tick competes with the d3 physics timer and drops physics
+  // tick rate 5.5× when 3D mode is active. F.1 gates `renderer.render` behind
+  // (a) `controls.update()` returning true, or (b) a `dirty` flag set by every
+  // imperative invalidation entry point.
+  //
+  // These tests drive the renderLoop manually via a rAF spy (same pattern as
+  // Test 11/12) and count `renderer.render` calls captured by the mock.
+  // -------------------------------------------------------------------------
+
+  function setupRenderLoopHarness(): {
+    physics: PhysicsLayer & { bumpPositionsVersion: () => void };
+    handle: { current: any };
+    drive: () => void;
+    cleanup: () => void;
+  } {
+    const scheduled: Array<(t: number) => void> = [];
+    let rafTime = 100;
+    const rafSpy = vi.spyOn(globalThis, "requestAnimationFrame").mockImplementation(
+      function (cb: FrameRequestCallback) {
+        scheduled.push(cb as (t: number) => void);
+        return scheduled.length;
+      },
+    );
+    const physics = makeFakePhysics(3);
+    const containerRef = makeContainerRef();
+    const handle: { current: any } = { current: null };
+    render(
+      React.createElement(GraphCanvas3D, {
+        containerRef,
+        physics,
+        nodeColors: new Float32Array([1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1]),
+        backgroundColor: "#09090B",
+        onHandleReady: (h: any) => { handle.current = h; },
+      }),
+    );
+    // Drive one rAF tick of the renderLoop only — the spy queue accumulates
+    // both the renderLoop self-reschedule AND any other rAFs (raycaster move
+    // coalescing). We pop ONE at a time so each test has a clean step counter.
+    const drive = (): void => {
+      // Pop only the head, NOT every queued callback — pumpPositions3D may
+      // queue raycaster work that should not run here.
+      const cb = scheduled.shift();
+      if (!cb) return;
+      rafTime += 16;
+      cb(rafTime);
+    };
+    const cleanup = (): void => {
+      rafSpy.mockRestore();
+      scheduled.length = 0;
+    };
+    return { physics, handle, drive, cleanup };
+  }
+
+  // F.1 Test A — idle frozen frame skips redundant renderer.render
+  it("F.1-A: idle renderLoop skips renderer.render when nothing changed", () => {
+    const { drive, cleanup } = setupRenderLoopHarness();
+    // The first renderLoop tick paints (initial dirty=true). Subsequent ticks
+    // with no invalidation must NOT paint.
+    _rendererRenderCount = 0;
+    drive(); // first frame: dirty=true at mount → renders
+    const afterFirst = _rendererRenderCount;
+    expect(afterFirst, "first frame after mount paints once").toBe(1);
+    // Drive several more frames without any state change. Mock OrbitControls
+    // returns false from update() by default → no paint.
+    for (let i = 0; i < 20; i++) drive();
+    expect(_rendererRenderCount, "idle frames do not call renderer.render").toBe(afterFirst);
+    cleanup();
+  });
+
+  // F.1 Test B — camera/damping motion still renders
+  it("F.1-B: controls.update() returning true causes a render", () => {
+    const { drive, cleanup } = setupRenderLoopHarness();
+    drive(); // burn first-frame dirty render
+    _rendererRenderCount = 0;
+    // Idle baseline
+    drive();
+    drive();
+    expect(_rendererRenderCount, "two idle frames stay at 0 renders").toBe(0);
+    // Arm camera motion exactly once — mock update() returns true on one read.
+    _capturedControls._nextUpdateReturn = true;
+    drive();
+    expect(_rendererRenderCount, "camera motion triggers exactly one render").toBe(1);
+    // After damping decays (default behaviour: nextUpdateReturn=false after
+    // a single true read), subsequent idle frames don't render.
+    drive();
+    drive();
+    expect(_rendererRenderCount, "post-camera idle stays at one render").toBe(1);
+    cleanup();
+  });
+
+  // F.1 Test C — positionsVersion bump causes a render
+  it("F.1-C: physics tick (positionsVersion bump) renders exactly once", () => {
+    const { physics, handle, drive, cleanup } = setupRenderLoopHarness();
+    drive(); // first-frame dirty render
+    _rendererRenderCount = 0;
+    // Idle: no render
+    drive();
+    expect(_rendererRenderCount).toBe(0);
+    // Simulate one physics tick: bump positionsVersion, then call
+    // pumpPositions3D (this is the role useGraphRafLoop plays in production).
+    physics.bumpPositionsVersion();
+    handle.current.pushPositions(new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    drive();
+    expect(_rendererRenderCount, "positionsVersion bump renders once").toBe(1);
+    // Second pushPositions with the SAME positionsVersion is a no-op for paint.
+    handle.current.pushPositions(new Float32Array([1, 2, 3, 4, 5, 6, 7, 8, 9]));
+    drive();
+    expect(_rendererRenderCount, "same positionsVersion does not re-render").toBe(1);
+    cleanup();
+  });
+
+  // F.1 Test D — mask/color/edge/background/resize/fitView all set dirty
+  it("F.1-D: every dirtying entry point causes exactly one render", () => {
+    const { handle, drive, cleanup } = setupRenderLoopHarness();
+    drive(); // first-frame dirty render
+    _rendererRenderCount = 0;
+
+    // applyAlphaMask → dirty
+    handle.current.applyAlphaMask(new Float32Array([1, 0.15, 1]), 1);
+    drive();
+    expect(_rendererRenderCount, "alpha mask change renders").toBe(1);
+
+    // setColors → dirty
+    handle.current.setColors(new Float32Array([0.5, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 1, 0.5, 0.5, 0.5, 1]));
+    drive();
+    expect(_rendererRenderCount, "setColors renders").toBe(2);
+
+    // setBackground → dirty
+    handle.current.setBackground("#FFFFFF");
+    drive();
+    expect(_rendererRenderCount, "setBackground renders").toBe(3);
+
+    // setLinks → dirty
+    handle.current.setLinks(new Float32Array([0, 1]));
+    drive();
+    expect(_rendererRenderCount, "setLinks renders").toBe(4);
+
+    // setLinkColors → dirty (applyEdgeColors reads RGBA stride-4 per edge;
+    // one edge → length 4)
+    handle.current.setLinkColors(new Float32Array([1, 0, 0, 1]));
+    drive();
+    expect(_rendererRenderCount, "setLinkColors renders").toBe(5);
+
+    // fitView → dirty
+    handle.current.fitView();
+    drive();
+    expect(_rendererRenderCount, "fitView renders").toBe(6);
+
+    // After all six, idle frames must stop painting.
+    drive();
+    drive();
+    expect(_rendererRenderCount, "idle frames after dirtying batch stay at 6").toBe(6);
+
+    cleanup();
   });
 });

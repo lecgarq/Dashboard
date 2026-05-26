@@ -596,6 +596,95 @@ describe("Cache-hit: nodes pinned to cached positions, simulation never runs", (
     // savePositions must NOT have been called (cache hit skips simulation entirely)
     expect(mockSavePositions, "savePositions must not be called on cache hit").toHaveBeenCalledTimes(0);
   });
+
+  // F.1: positionsVersion bumps on cache-hit restore so the 3D renderer paints
+  // the cached layout (not the [-1,1] seed) on its next frame.
+  it("positionsVersion is > 0 after cache-hit construction", async () => {
+    const n = 4;
+    const cachedPositions = new Float32Array([
+      10, 20, 30, 40, 50, 60, 70, 80, 90, 11, 22, 33,
+    ]);
+    mockLoadCachedPositions.mockResolvedValueOnce(cachedPositions);
+
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(n);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    expect(physics.positionsVersion, "cache-hit bumps positionsVersion").toBeGreaterThan(0);
+  });
+});
+
+// =============================================================================
+// F.1: positionsVersion increments on tick + cache-hit + post-settle normalize
+// -----------------------------------------------------------------------------
+// The 3D renderer reads physicsLayer.positionsVersion to gate its self-driving
+// renderLoop (plan
+// `docs/superpowers/plans/2026-05-26-p0-realtime-graph-motion-throughput.md`,
+// F.1). The counter MUST bump every time node x/y/z actually changes, and
+// MUST NOT bump from mask mutations (the two buses are independent).
+// =============================================================================
+
+describe("F.1: positionsVersion bus", () => {
+  it("starts at 0 before any tick or cache restore (cache miss path)", async () => {
+    // Cache miss → positions are random-seeded into d3 nodes but the seed write
+    // is part of construction-time setup, not a position update — the counter
+    // can stay at 0 until the first real tick fires. Either 0 or a small post-
+    // construction value is acceptable; the load-bearing assertion is that the
+    // counter is finite and non-negative.
+    mockLoadCachedPositions.mockResolvedValueOnce(null);
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    expect(Number.isFinite(physics.positionsVersion)).toBe(true);
+    expect(physics.positionsVersion).toBeGreaterThanOrEqual(0);
+  });
+
+  it("increments as d3's internal timer fires ticks (+ post-settle normalize)", async () => {
+    // d3-force's `sim.tick(n)` runs forces but does NOT dispatch "tick" events
+    // (events fire only from the internal d3.timer). To observe the increment
+    // we let the timer run by waiting a few ms after construction. The "end"
+    // handler also bumps positionsVersion once (after normalize), so we just
+    // assert "strictly increased" — the exact tick count is timer-driven and
+    // non-deterministic in a test environment.
+    mockLoadCachedPositions.mockResolvedValueOnce(null);
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const before = physics.positionsVersion;
+    // Let the internal timer fire some ticks. DECAY_ZERO is fast at slider=0
+    // so this also runs the sim to settle and through the "end" handler.
+    await new Promise((r) => setTimeout(r, 50));
+    await flushMicrotasks();
+    expect(
+      physics.positionsVersion,
+      "tick/end handlers must have bumped positionsVersion",
+    ).toBeGreaterThan(before);
+  });
+
+  it("is independent of maskVersion (setMask does NOT bump positionsVersion)", async () => {
+    mockLoadCachedPositions.mockResolvedValueOnce(
+      new Float32Array(2 * 3).fill(0),
+    );
+    const { nodeIds, nodes, targets, dimNames } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, {
+      "dim-activity": 0,
+      "dim-recency": 0,
+    });
+    const beforePos = physics.positionsVersion;
+    const beforeMask = physics.maskVersion;
+    physics.setMask(() => 0.5);
+    physics.setMask(() => 1.0);
+    expect(physics.maskVersion, "maskVersion bumps").toBe(beforeMask + 2);
+    expect(
+      physics.positionsVersion,
+      "positionsVersion stays put — mask bus is independent",
+    ).toBe(beforePos);
+  });
 });
 
 // =============================================================================

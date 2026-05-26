@@ -82,6 +82,16 @@ export interface PhysicsLayer {
   /** Monotonic version counter; incremented by setMask only — never by simulation ticks */
   readonly maskVersion: number;
   /**
+   * Monotonic version counter incremented when node positions actually change:
+   *   - once per d3 tick (PHYS-05),
+   *   - once on cache-hit restore (the cached positions are written verbatim),
+   *   - once at the end of the simulation after `normalizeNodePositions`.
+   * Renderers that want to skip GPU work when positions are stale can compare a
+   * locally-stashed last-seen version against this counter. Never decreases.
+   * NEVER bumped by `setMask` — the two version counters are independent buses.
+   */
+  readonly positionsVersion: number;
+  /**
    * True once the simulation has settled (frozen) or positions were restored
    * from cache. The render layer reads this to perform a one-shot rescale/fit
    * to the settled spread (positions can extend far beyond the seed range).
@@ -194,6 +204,12 @@ export async function createPhysicsLayer(
   let _maskVersion = 0;
   const _alphaMask = new Float32Array(nodes.length).fill(1.0);
 
+  // ---- POSITIONS BUS version counter -------------------------------------
+  // Independent of the mask bus. Bumped wherever node positions actually mutate
+  // (tick, cache-hit restore, post-settle normalization). The render layer reads
+  // this to gate per-frame GPU work — see GraphCanvas3D's renderLoop.
+  let _positionsVersion = 0;
+
   // ---- PHYSICS BUS --------------------------------------------------------
 
   // PHYS-01: Register one forceManyBody baseline + three named forces per dimension.
@@ -265,6 +281,14 @@ export async function createPhysicsLayer(
   // expresses structure (volumetric clusters), not a featureless repulsion globe.
   applySliderForces(_sliders);
 
+  // Bump positionsVersion every d3 tick — node x/y/z are mutated in place during
+  // the tick, so any consumer holding the previous version's snapshot is stale.
+  // No other "tick" listener exists; d3-force-3d permits multiple, but we keep
+  // it to this single light increment (O(1), no allocation).
+  sim.on("tick", () => {
+    _positionsVersion++;
+  });
+
   // PHYS-05: Register "end" handler BEFORE cache check (ensures it fires if sim runs).
   // Handler packs positions synchronously into Float32Array BEFORE the async save
   // to avoid render-race (Pitfall 5 in RESEARCH).
@@ -278,6 +302,9 @@ export async function createPhysicsLayer(
     // Containment: the simulation has no centering force, so normalize the
     // settled spread into a fixed cube before snapshotting/caching.
     normalizeNodePositions(nodes, LAYOUT_HALF_EXTENT);
+    // Normalization rewrote every node's x/y/z — bump the version so the
+    // renderer paints the settled-and-normalized layout on its next frame.
+    _positionsVersion++;
     // Pack positions synchronously into snapshot (Pitfall 5 guard).
     const xyz = new Float32Array(nodes.length * 3);
     for (let i = 0; i < nodes.length; i++) {
@@ -309,6 +336,9 @@ export async function createPhysicsLayer(
     }
     sim.stop();
     frozen = true;
+    // Cache restore wrote every node's x/y/z verbatim — bump the version so the
+    // renderer paints the cached layout instead of the [-1,1] seed positions.
+    _positionsVersion++;
   } else {
     // Cache miss: seed random positions in [-1, 1]^3 and let simulation run.
     for (const n of nodes) {
@@ -331,6 +361,10 @@ export async function createPhysicsLayer(
 
     get maskVersion(): number {
       return _maskVersion;
+    },
+
+    get positionsVersion(): number {
+      return _positionsVersion;
     },
 
     get frozen(): boolean {

@@ -197,8 +197,33 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // Handle implementation
     // -----------------------------------------------------------------------
 
+    // -----------------------------------------------------------------------
+    // F.1 render gating — `dirty` is set by every code path that invalidates
+    // the painted frame (positions, mask, colors, edges, background, fitView,
+    // resize). The self-driving renderLoop calls `controls.update()` every
+    // frame (damping requires it) but only calls `renderer.render(scene,
+    // camera)` when EITHER controls.update() returns true (camera/damping
+    // motion) OR `dirty` is set. The first frame is dirty so the initial
+    // scene paints exactly once.
+    //
+    // Positions invalidation is double-gated by `lastPositionsVersion` so
+    // useGraphRafLoop's per-frame onTick3D callback is a no-op (no matrix
+    // writes, no GPU upload) when the physics layer has not produced a new
+    // tick since the last paint — the T0 baseline showed pumpPositions3D was
+    // doing 16,942 matrix writes per rAF even between physics ticks.
+    // -----------------------------------------------------------------------
+    let dirty = true;
+    let lastPositionsVersion = -1;
+
     let fitted3D = false;
     function pumpPositions3D(xyz: Float32Array): void {
+      const v = props.physics.positionsVersion;
+      if (v === lastPositionsVersion) {
+        // Same tick as the previous frame — nothing has moved since we last
+        // wrote matrices. Skip the O(n) write + the implicit GPU re-upload.
+        return;
+      }
+      lastPositionsVersion = v;
       for (let i = 0; i < n; i++) {
         dummy.position.set(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]);
         dummy.updateMatrix();
@@ -207,6 +232,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       mesh.instanceMatrix.needsUpdate = true;
       currentXyz = xyz;
       writeEdgePositions(xyz);
+      dirty = true;
       // One-shot camera fit once the layout settles — the seed scale (~[-1,1])
       // is tiny vs the settled spread, so the initial camera pose leaves nodes
       // out of frame until we re-fit. Re-armed whenever the simulation reheats.
@@ -223,6 +249,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     function applyAlphaMask3D(mask: Float32Array): void {
       currentAlphaMask = mask;
       writeCurrentNodeColors();
+      dirty = true; // mask change → instanceColor needsUpdate → must paint
     }
 
     function buildEdges(links: Float32Array): void {
@@ -355,6 +382,11 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       camera.position.set(center.x, center.y, center.z + distance);
       controls.target.copy(center);
       controls.update();
+      // fitView calls controls.update() itself, which advances its lastPosition
+      // snapshot. The next renderLoop call would then see update() returning
+      // false and skip the frame. Force a paint via dirty so the fitted pose
+      // actually lands on screen.
+      dirty = true;
     }
 
     // -----------------------------------------------------------------------
@@ -426,7 +458,12 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     function renderLoop(): void {
       if (!mounted) return;
       rafId = requestAnimationFrame(renderLoop);
-      controls.update();
+      // controls.update() MUST run every frame — damping advances its position
+      // tween here. Skipping it would freeze post-release inertia and break the
+      // mode-transition tween's interaction with the orbit camera.
+      const cameraChanged = controls.update();
+      if (!cameraChanged && !dirty) return;
+      dirty = false;
       renderer.render(scene, camera);
     }
     rafId = requestAnimationFrame(renderLoop);
@@ -446,6 +483,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       // P0: do NOT fitView() on resize — that discards the user's orbit/zoom.
       // Initial framing is handled by the first-settle fit in pumpPositions3D;
       // mode transitions fit via GraphCanvas. Resize only adjusts the projection.
+      dirty = true; // viewport changed — must repaint at the new size.
     });
     resizeObserver.observe(container);
 
@@ -459,10 +497,12 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       setColors: (rgba) => {
         currentNodeColors = rgba;
         writeCurrentNodeColors();
+        dirty = true; // instanceColor needsUpdate → paint required
       },
       fitView,
       setBackground: (color) => {
         scene.background = new THREE.Color(color);
+        dirty = true; // background color is rendered only on paint
       },
       getCamera: () => camera,
       // Phase 4-01 Task 2 — ref-indirection (Pitfall 5). No config re-issue ever.
@@ -472,9 +512,11 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       setLinks: (links: Float32Array) => {
         buildEdges(links);
         writeEdgePositions(currentXyz);
+        dirty = true; // edge geometry rebuilt → paint required
       },
       setLinkColors: (rgba: Float32Array) => {
         applyEdgeColors(rgba);
+        dirty = true; // edge color attribute updated → paint required
       },
       getRenderState: () => ({
         renderLinks: edgeLines !== null && edgeLines.visible === true && edgeCount > 0,
