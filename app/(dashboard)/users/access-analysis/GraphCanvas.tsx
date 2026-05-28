@@ -105,8 +105,14 @@ const ENABLE_PREVIEW_INTERPOLATION = true;
  * Master switch for the 2D GPU cluster-anchor simulation (this milestone).
  * ON by default; set NEXT_PUBLIC_ACC_GPU_2D="0" to revert 2D to the frozen +
  * B.2-preview path. Rollback is this single env flip — no other change needed.
+ *
+ * Forced OFF under the e2e test bridge (NEXT_PUBLIC_ACC_GRAPH_TEST="1"): the
+ * lasso/selection e2e suite was authored against frozen, deterministic 2D
+ * positions. GPU mode is covered by unit tests; GPU-mode e2e is a follow-up.
  */
-const ENABLE_GPU_2D_SIM = process.env.NEXT_PUBLIC_ACC_GPU_2D !== "0";
+const ENABLE_GPU_2D_SIM =
+  process.env.NEXT_PUBLIC_ACC_GPU_2D !== "0" &&
+  process.env.NEXT_PUBLIC_ACC_GRAPH_TEST !== "1";
 
 // ---------------------------------------------------------------------------
 // Component
