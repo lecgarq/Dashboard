@@ -29,6 +29,11 @@ let _capturedConfig: any = null;
 let _setPointPositionsCalls: Array<{ xy: Float32Array; dontRescale: boolean }> = [];
 let _setConfigPartialCalls: any[] = [];
 let _setConfigCalls: any[] = [];
+let _clusterCalls: Array<(number | undefined)[]> = [];
+let _clusterPosCalls: Array<(number | undefined)[]> = [];
+let _clusterStrengthCalls: Array<Float32Array> = [];
+let _startCalls: Array<number | undefined> = [];
+let _pauseCalls = 0;
 
 vi.mock("@cosmos.gl/graph", () => {
   class MockGraph {
@@ -47,6 +52,13 @@ vi.mock("@cosmos.gl/graph", () => {
         _setConfigCalls.push({ ...p });
       });
       (g as any).render = vi.fn();
+      (g as any).setPointClusters = vi.fn((c: (number | undefined)[]) => { _clusterCalls.push(c.slice()); });
+      (g as any).setClusterPositions = vi.fn((p: (number | undefined)[]) => { _clusterPosCalls.push(p.slice()); });
+      (g as any).setPointClusterStrength = vi.fn((s: Float32Array) => { _clusterStrengthCalls.push(s.slice()); });
+      (g as any).start = vi.fn((a?: number) => { _startCalls.push(a); });
+      (g as any).pause = vi.fn(() => { _pauseCalls++; });
+      (g as any).unpause = vi.fn();
+      (g as any).fitView = vi.fn();
       (g as any).destroy = vi.fn();
       (g as any).ready = Promise.resolve();
       _capturedGraph = g;
@@ -92,6 +104,11 @@ function makeFakePhysics(opts?: {
       return this._frozen;
     },
     getPositions: vi.fn(() => xyz.slice()),
+    getTargets: vi.fn(() => ({
+      d1: { x: new Float32Array(n).fill(100), y: new Float32Array(n), z: new Float32Array(n) },
+    })),
+    getDimWeights: vi.fn(() => ({ d1: new Float32Array(n).fill(1) })),
+    getSliders: vi.fn(() => ({ d1: 0 })),
     updateSliders: vi.fn(),
     setMask: vi.fn(),
     dispose: vi.fn(),
@@ -123,6 +140,11 @@ beforeEach(() => {
   _setPointPositionsCalls = [];
   _setConfigPartialCalls = [];
   _setConfigCalls = [];
+  _clusterCalls = [];
+  _clusterPosCalls = [];
+  _clusterStrengthCalls = [];
+  _startCalls = [];
+  _pauseCalls = 0;
 });
 
 // ---------------------------------------------------------------------------
@@ -576,5 +598,60 @@ describe("GraphCanvas2D — REND-05 no per-frame allocation", () => {
     // The persistent xy2 buffer was allocated at mount time (before the spy was installed).
     // After mount, pushPositions should make ZERO new stride-2 allocations.
     expect(stride2AllocCount).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// GPU-1/2/3: cosmos.gl GPU cluster-anchor simulation mode (gpuSimulation=true)
+// ---------------------------------------------------------------------------
+
+async function setupGpuHandle(nodeCount = 3): Promise<any> {
+  const { GraphCanvas2D } = await import("./GraphCanvas2D");
+  const { render } = await import("@testing-library/react");
+  const { createElement } = await import("react");
+  let capturedHandle: any = null;
+  const fakeRef = makeFakeRef();
+  const physics = makeFakePhysics({ nodeCount });
+  const rgba = new Float32Array(nodeCount * 4);
+  render(
+    createElement(GraphCanvas2D, {
+      containerRef: fakeRef as any,
+      physics,
+      nodeColors: rgba,
+      backgroundColor: "#09090B",
+      gpuSimulation: true,
+      onHandleReady: (h: any) => { capturedHandle = h; },
+    }),
+  );
+  await Promise.resolve();
+  await Promise.resolve();
+  return capturedHandle;
+}
+
+describe("GraphCanvas2D — GPU simulation mode", () => {
+  it("GPU-1: constructs cosmos with enableSimulation:true and clusters one-per-node", async () => {
+    await setupGpuHandle(3);
+    expect(_capturedConfig.enableSimulation).toBe(true);
+    expect(_clusterCalls.at(-1)).toEqual([0, 1, 2]);
+    expect(_clusterPosCalls.length).toBeGreaterThan(0);
+    expect(_clusterPosCalls.at(-1)!.length).toBe(6); // stride-2 for 3 nodes
+  });
+
+  it("GPU-2: applySliders updates cluster positions + reheats via start()", async () => {
+    const handle = await setupGpuHandle(3);
+    _clusterPosCalls = [];
+    _startCalls = [];
+    handle.applySliders({ d1: 1 });
+    expect(_clusterPosCalls.length).toBe(1);
+    // d1 target.x=100 → node 0 anchor x ≈ 100
+    expect(_clusterPosCalls[0]![0]).toBeCloseTo(100, 3);
+    expect(_startCalls.length).toBe(1); // reheat
+  });
+
+  it("GPU-3: pushPositions is a no-op in GPU mode (cosmos owns positions)", async () => {
+    const handle = await setupGpuHandle(3);
+    _setPointPositionsCalls = [];
+    handle.pushPositions(new Float32Array(9));
+    expect(_setPointPositionsCalls).toHaveLength(0);
   });
 });

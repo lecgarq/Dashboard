@@ -25,6 +25,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 // TS6 note: useRef<T | null> returns RefObject<T | null>; we accept both variants.
 import { Graph } from "@cosmos.gl/graph";
+import { computeAnchors, mapForceConfig, clusterStrengthFromWeights, identityClusters } from "./gpuLayout2D";
 import type { PhysicsLayer } from "./physicsLayer";
 import type { GraphEventHandlers } from "./interactionTypes";
 
@@ -46,6 +47,13 @@ export interface GraphCanvas2DHandle {
    * @param xyz - stride-3 Float32Array(n*3) from physicsLayer.getPositions()
    */
   pushPositions(xyz: Float32Array): void;
+  /**
+   * GPU mode only: recompute per-node cluster anchors + force coefficients from
+   * the given normalized (0..1) slider values and reheat the GPU simulation.
+   * No-op in frozen mode. Optional so flag-off handle literals (e.g. interaction
+   * test fixtures) need not provide it; the real handle always implements it.
+   */
+  applySliders?(sliders: Record<string, number>): void;
   /**
    * Apply an alpha mask from physicsLayer to cosmos.gl's greyout system.
    * Uses highlightedPointIndices + pointGreyoutOpacity: 0.15 (REND-01).
@@ -113,6 +121,8 @@ export interface GraphCanvas2DProps {
   linkColors?: Float32Array;
   /** Theme-driven canvas background color (e.g. '#09090B' for dark zinc). */
   backgroundColor: string;
+  /** When true, run cosmos.gl's GPU force simulation (cluster-anchor layout) instead of frozen mode. */
+  gpuSimulation?: boolean;
   /** Called once when the cosmos.gl graph is initialized and ready to receive data. */
   onHandleReady: (h: GraphCanvas2DHandle) => void;
 }
@@ -168,8 +178,9 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // - renderLinks: true        → draws same-user footprint edges (WS2; link colors precomputed)
       // - pointGreyoutOpacity: 0.15 → matches DIM_ALPHA from CosmosCanvasClient.ts
       g = new Graph(div, {
-        enableSimulation: false,
+        enableSimulation: props.gpuSimulation === true,
         transitionDuration: 0,
+        ...(props.gpuSimulation ? mapForceConfig(props.physics.getSliders()) : {}),
         renderLinks: true,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
@@ -260,9 +271,35 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       }
       g.render();
 
+      // GPU mode init (cluster-anchor simulation) -------------------------------
+      // Wire cosmos.gl's cluster force as a per-node anchor: one cluster per node,
+      // cluster positions = slider-weighted dimension targets, per-node strength =
+      // availability-gated dim weights. Seed positions AT the anchors so the sim
+      // starts near targets (not random) then reheat with start(alpha).
+      if (props.gpuSimulation) {
+        const n2 = xyz0.length / 3;
+        const targets = props.physics.getTargets();
+        const dimW = props.physics.getDimWeights();
+        const sliders0 = props.physics.getSliders();
+        const anchors0 = computeAnchors(sliders0, targets, dimW, n2);
+        (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
+          identityClusters(n2),
+        );
+        (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
+          Array.from(anchors0),
+        );
+        (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
+          clusterStrengthFromWeights(dimW, sliders0, n2),
+        );
+        g.setPointPositions(anchors0, false); // seed near targets, not random
+        (g as unknown as { start: (a?: number) => void }).start(0.5);
+        g.render();
+      }
+
       // Expose the handle to the parent (GraphCanvas.tsx via onHandleReady) ----------
       props.onHandleReady({
         pushPositions(xyz: Float32Array): void {
+          if (props.gpuSimulation) return; // GPU mode: cosmos owns positions
           const count = xyz.length / 3;
           // Write into the pre-allocated buffer — ZERO new allocation (Pitfall 2)
           for (let i = 0; i < count; i++) {
@@ -323,6 +360,24 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           fitPendingRef.current = 0;
           // dontRescale=true on tick calls — prevents per-frame coordinate jitter (Pitfall 2)
           g!.setPointPositions(xy2, true);
+          g!.render();
+        },
+
+        applySliders(sliders: Record<string, number>): void {
+          if (!props.gpuSimulation) return;
+          const n2 = xy2.length / 2;
+          const targets = props.physics.getTargets();
+          const dimW = props.physics.getDimWeights();
+          const anchors = computeAnchors(sliders, targets, dimW, n2);
+          const cfg = mapForceConfig(sliders);
+          (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
+            Array.from(anchors),
+          );
+          (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
+            clusterStrengthFromWeights(dimW, sliders, n2),
+          );
+          g!.setConfigPartial(cfg as unknown as Record<string, unknown>);
+          (g as unknown as { start: (a?: number) => void }).start(0.5);
           g!.render();
         },
 
