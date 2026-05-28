@@ -35,12 +35,13 @@ import {
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
-import { buildNodeColors, type ColorMode } from "./nodeColors";
+import { buildNodeColors, buildClusterAssignment, type ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
-import { createPhysicsLayer, type PhysicsLayer, type SimNode } from "./physicsLayer";
+import { type PhysicsLayer, type SimNode } from "./physicsLayer";
+import { createPhysicsLayerWorker } from "./physicsLayerWorker";
 import { buildFeatureTargets } from "./featureTargets";
 import { buildDimensionWeights } from "./dimensionWeights";
 import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
@@ -105,6 +106,11 @@ function ShellBody({
   const [colorMode, setColorMode] = useState<ColorMode>("role");
   const nodeColors = useMemo<Float32Array>(
     () => buildNodeColors(features, colorMode),
+    [features, colorMode],
+  );
+  // Per-node cluster index (color-group) for the 2D GPU graph's discrete clumps.
+  const clusterAssignment = useMemo(
+    () => buildClusterAssignment(features, colorMode),
     [features, colorMode],
   );
 
@@ -178,6 +184,7 @@ function ShellBody({
               ref={graphRef}
               physics={physics}
               nodeColors={nodeColors}
+              clusterIds={clusterAssignment.clusterIds}
               mode={mode}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
@@ -310,7 +317,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
         const dimWeights = buildDimensionWeights(snapshot, SLIDER_DIMENSION_IDS);
         // initialSliders is built from DIMENSIONS (now 9 dims via SLIDER_DIMENSION_IDS),
         // so module/company/isAdmin are all included at their DEFAULT_VALUES (organic preset).
-        const layer = await createPhysicsLayer(
+        const layer = await createPhysicsLayerWorker(
           nodeIds,
           nodes,
           targets,

@@ -18,7 +18,7 @@
  * - 3D → 2D: 400ms z-flatten animation via requestAnimationFrame
  */
 
-import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import type { PhysicsLayer } from "./physicsLayer";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "./GraphCanvas2D";
@@ -27,6 +27,7 @@ import { useGraphRafLoop } from "./useGraphRafLoop";
 import { useSliders } from "./SliderContext";
 // previewLayer (B.2 fallback) is used only when ENABLE_PREVIEW_INTERPOLATION && !gpu2d
 import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
+import { computeClusterAnchors } from "./gpuLayout2D";
 
 // ---------------------------------------------------------------------------
 // Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
@@ -82,6 +83,12 @@ export interface GraphCanvasProps {
   onRendererReady?: () => void;
   /** Test/override: force 2D GPU sim on/off. Defaults to ENABLE_GPU_2D_SIM. */
   gpuSimulation?: boolean;
+  /**
+   * Per-node cluster index (color-group assignment). When present, the 2D GPU
+   * graph groups nodes into discrete clumps by cluster instead of the per-node
+   * anchor layout. Absent → backward-compatible per-node behavior.
+   */
+  clusterIds?: Int32Array;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,6 +137,36 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
 
   // B.2 preview interpolation state
   const sliders = useSliders();
+  const sliderValues = sliders.values;
+
+  // Cluster mode (this milestone): number of color-group clusters, derived from
+  // the per-node cluster ids. 0 when no clusterIds → per-node path stays active.
+  const clusterCount = useMemo(() => {
+    const ids = props.clusterIds;
+    if (!ids || ids.length === 0) return 0;
+    let m = 0;
+    for (let i = 0; i < ids.length; i++) if (ids[i] + 1 > m) m = ids[i] + 1;
+    return m;
+  }, [props.clusterIds]);
+
+  // Slider-weighted per-cluster anchors (centroid of each cluster's member
+  // targets). Recomputed on slider drag so clumps stay alive. null in per-node
+  // mode or before the GPU sim is active.
+  const clusterAnchors = useMemo(() => {
+    if (!gpu2d || !props.clusterIds || clusterCount === 0) return null;
+    const n = props.clusterIds.length;
+    const normalized: Record<string, number> = {};
+    for (const [k, v] of Object.entries(sliderValues)) normalized[k] = (v as number) / 100;
+    return computeClusterAnchors(
+      normalized,
+      props.physics.getTargets(),
+      props.physics.getDimWeights(),
+      props.clusterIds,
+      clusterCount,
+      n,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gpu2d, props.clusterIds, clusterCount, sliderValues, props.physics]);
   const previewRef = useRef<PreviewLayer | null>(null);
   const previewActiveLocalRef = useRef<boolean>(false);
   const lastFrameTsRef = useRef<number>(0);
@@ -247,16 +284,33 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     getPositionsOverride,
   });
 
-  // GPU 2D: push slider changes straight to the cosmos GPU simulation.
-  const sliderValues = sliders.values;
+  // GPU 2D (per-node path only): push slider changes straight to the cosmos GPU
+  // simulation. Gated OFF in cluster mode (props.clusterIds present) so it does
+  // not fight the cluster-anchor effects below.
   useEffect(() => {
-    if (!gpu2d || props.mode !== "2d") return;
+    if (!gpu2d || props.mode !== "2d" || props.clusterIds) return;
     const h = handle2D.current;
     if (!h) return;
     const normalized: Record<string, number> = {};
     for (const [k, v] of Object.entries(sliderValues)) normalized[k] = v / 100;
     h.applySliders?.(normalized);   // applySliders is OPTIONAL on the handle — use ?.
-  }, [sliderValues, props.mode, gpu2d]);
+  }, [sliderValues, props.mode, gpu2d, props.clusterIds]);
+
+  // Cluster mode: re-group when the cluster ids change (color-mode switch).
+  useEffect(() => {
+    if (!gpu2d || props.mode !== "2d" || !props.clusterIds) return;
+    handle2D.current?.setClusters?.(Array.from(props.clusterIds));
+    // readyTick: re-run once the async cosmos handle lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [props.clusterIds, props.mode, gpu2d, readyTick]);
+
+  // Cluster mode: reposition clumps when slider-weighted anchors change (alive).
+  useEffect(() => {
+    if (!gpu2d || props.mode !== "2d" || !clusterAnchors) return;
+    handle2D.current?.setClusterPositions?.(Array.from(clusterAnchors));
+    // readyTick: re-run once the async cosmos handle lands.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [clusterAnchors, props.mode, gpu2d, readyTick]);
 
   // Sync nodeColors to both renderers when the buffer changes
   useEffect(() => {
@@ -371,6 +425,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           links={props.links}
           linkColors={props.linkColors}
           gpuSimulation={gpu2d}
+          clusterIds={props.clusterIds}
+          clusterAnchors={clusterAnchors ?? undefined}
+          clusterCount={clusterCount}
           onHandleReady={(h) => {
             handle2D.current = h;
             setReadyTick((t) => t + 1);

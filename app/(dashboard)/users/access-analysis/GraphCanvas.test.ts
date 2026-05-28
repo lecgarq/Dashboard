@@ -605,7 +605,14 @@ describe("GraphCanvas2D — REND-05 no per-frame allocation", () => {
 // GPU-1/2/3: cosmos.gl GPU cluster-anchor simulation mode (gpuSimulation=true)
 // ---------------------------------------------------------------------------
 
-async function setupGpuHandle(nodeCount = 3): Promise<any> {
+async function setupGpuHandle(
+  nodeCount = 3,
+  clusterProps?: {
+    clusterIds?: Int32Array;
+    clusterAnchors?: Float32Array;
+    clusterCount?: number;
+  },
+): Promise<any> {
   const { GraphCanvas2D } = await import("./GraphCanvas2D");
   const { render } = await import("@testing-library/react");
   const { createElement } = await import("react");
@@ -620,6 +627,7 @@ async function setupGpuHandle(nodeCount = 3): Promise<any> {
       nodeColors: rgba,
       backgroundColor: "#09090B",
       gpuSimulation: true,
+      ...(clusterProps ?? {}),
       onHandleReady: (h: any) => { capturedHandle = h; },
     }),
   );
@@ -654,5 +662,28 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     _setPointPositionsCalls = [];
     handle.pushPositions(new Float32Array(9));
     expect(_setPointPositionsCalls).toHaveLength(0);
+  });
+
+  it("GPU-4: cluster mode groups nodes by clusterIds + uses mapClusterForceConfig", async () => {
+    const handle = await setupGpuHandle(3, {
+      clusterIds: new Int32Array([0, 1, 0]),
+      clusterAnchors: new Float32Array([10, 0, 20, 0]),
+      clusterCount: 2,
+    });
+    expect(handle).not.toBeNull();
+
+    // Nodes are assigned to their color-group clusters (not identity per-node).
+    expect(_clusterCalls.at(-1)).toEqual([0, 1, 0]);
+    // Cluster anchors are uploaded as-is (slider-weighted centroids).
+    expect(_clusterPosCalls.at(-1)).toEqual([10, 0, 20, 0]);
+    // Constructor uses the fixed cluster force config (simulationCluster 0.5).
+    expect(_capturedConfig.simulationCluster).toBe(0.5);
+
+    // setClusterPositions handle method reuploads fresh anchors + reheats.
+    _clusterPosCalls = [];
+    _startCalls = [];
+    handle.setClusterPositions([30, 0, 40, 0]);
+    expect(_clusterPosCalls.at(-1)).toEqual([30, 0, 40, 0]);
+    expect(_startCalls.length).toBeGreaterThan(0);
   });
 });
