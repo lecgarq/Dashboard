@@ -68,7 +68,12 @@ vi.mock("next-themes", () => ({
 function makeFakePhysics(opts?: {
   nodeCount?: number;
   maskVersion?: number;
-}): PhysicsLayer & { _alphaMask: Float32Array; _maskVersion: number } {
+  frozen?: boolean;
+}): PhysicsLayer & {
+  _alphaMask: Float32Array;
+  _maskVersion: number;
+  _frozen: boolean;
+} {
   const n = opts?.nodeCount ?? 3;
   const xyz = new Float32Array(n * 3);
   for (let i = 0; i < n * 3; i++) xyz[i] = i * 1.0;
@@ -76,11 +81,15 @@ function makeFakePhysics(opts?: {
   const mock = {
     _alphaMask: new Float32Array(n).fill(1.0),
     _maskVersion: opts?.maskVersion ?? 0,
+    _frozen: opts?.frozen ?? false,
     get alphaMask() {
       return this._alphaMask;
     },
     get maskVersion() {
       return this._maskVersion;
+    },
+    get frozen() {
+      return this._frozen;
     },
     getPositions: vi.fn(() => xyz.slice()),
     updateSliders: vi.fn(),
@@ -90,6 +99,7 @@ function makeFakePhysics(opts?: {
   return mock as unknown as PhysicsLayer & {
     _alphaMask: Float32Array;
     _maskVersion: number;
+    _frozen: boolean;
   };
 }
 
@@ -384,6 +394,154 @@ describe("useGraphRafLoop — mask change-detection", () => {
 // ---------------------------------------------------------------------------
 // Test 8: no per-frame allocation in the 2D push path
 // ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Tests 9–12: frozen-branch position upload (P0 — B.2 preview cadence fix)
+//
+// Bug: pushPositions rewrites xy2 every rAF, but the frozen branch could
+// return without calling setPointPositions/render when the overall coordinate
+// spread stayed stable. B.2 preview interpolation produces fresh per-frame
+// coordinates while physics.frozen===true, so the early-return silently
+// dropped preview motion and 2D appeared static between settle windows.
+//
+// Fix: the frozen branch always uploads xy2 + calls render at the top.
+// Spread-change detection and the deferred fitView remain a separate concern.
+// ---------------------------------------------------------------------------
+
+/** Variant of setupHandle that accepts an explicit physics mock. */
+async function setupHandleWith(
+  physics: PhysicsLayer,
+  nodeCount: number,
+): Promise<any> {
+  const { GraphCanvas2D } = await import("./GraphCanvas2D");
+  const { render } = await import("@testing-library/react");
+  const { createElement } = await import("react");
+
+  let capturedHandle: any = null;
+  const fakeRef = makeFakeRef();
+  const rgba = new Float32Array(nodeCount * 4);
+
+  render(
+    createElement(GraphCanvas2D, {
+      containerRef: fakeRef as any,
+      physics,
+      nodeColors: rgba,
+      backgroundColor: "#09090B",
+      onHandleReady: (h) => {
+        capturedHandle = h;
+      },
+    }),
+  );
+
+  await Promise.resolve();
+  await Promise.resolve();
+  return capturedHandle;
+}
+
+describe("GraphCanvas2DHandle — frozen-branch position upload (P0 fix)", () => {
+  it("Test 9: frozen + scale-stable still calls setPointPositions with the latest xy2", async () => {
+    const physics = makeFakePhysics({ nodeCount: 2, frozen: true });
+    const handle = await setupHandleWith(physics, 2);
+    expect(handle).not.toBeNull();
+
+    // First push primes fittedScaleRef (scaleChanged=true on first frozen frame).
+    handle.pushPositions(new Float32Array([10, 20, 0, 30, 40, 0]));
+    _setPointPositionsCalls = [];
+
+    // Second push at the SAME spread is the "scale-stable" case the bug missed.
+    // xy values shift slightly (mirroring a preview lerp tick) but max|coord|
+    // does not move enough to trip the scaleChanged gate.
+    handle.pushPositions(new Float32Array([10.1, 20.1, 0, 30.1, 40.1, 0]));
+
+    expect(_setPointPositionsCalls).toHaveLength(1);
+    const call = _setPointPositionsCalls[0];
+    expect(call.xy.length).toBe(4); // stride-2 for 2 nodes
+    expect(call.xy[0]).toBeCloseTo(10.1, 5);
+    expect(call.xy[1]).toBeCloseTo(20.1, 5);
+    expect(call.xy[2]).toBeCloseTo(30.1, 5);
+    expect(call.xy[3]).toBeCloseTo(40.1, 5);
+    expect(call.dontRescale).toBe(true);
+  });
+
+  it("Test 10: frozen + scale-stable still calls render every push (preview cadence)", async () => {
+    const physics = makeFakePhysics({ nodeCount: 2, frozen: true });
+    const handle = await setupHandleWith(physics, 2);
+    const g: any = _capturedGraph;
+    // Mock fitView so the deferred-fit frame is deterministic in this test.
+    g.fitView = vi.fn();
+
+    // Prime the scale; this arms fitPendingRef=4. We then drain it across 4
+    // scale-stable frames so the extra fitView-frame render no longer fires
+    // during the measurement window below.
+    handle.pushPositions(new Float32Array([100, 100, 0, 100, 100, 0]));
+    for (let i = 0; i < 4; i++) {
+      handle.pushPositions(new Float32Array([100, 100, 0, 100, 100, 0]));
+    }
+    expect(g.fitView).toHaveBeenCalledTimes(1);
+    g.render.mockClear();
+    g.fitView.mockClear();
+
+    // 5 scale-stable frames simulating B.2 preview interpolation while frozen.
+    // fitPendingRef is now 0, so each frame should drive exactly one render
+    // from the always-upload path at the top of the frozen branch.
+    for (let i = 0; i < 5; i++) {
+      handle.pushPositions(
+        new Float32Array([100 + i * 0.1, 100 + i * 0.1, 0, 100, 100, 0]),
+      );
+    }
+
+    // Each scale-stable frozen push must drive a render so cosmos repaints.
+    expect(g.render).toHaveBeenCalledTimes(5);
+    // fitView must NOT have re-fired — spread did not change materially.
+    expect(g.fitView).not.toHaveBeenCalled();
+  });
+
+  it("Test 11: frozen + scale-changed preserves fitPending → deferred fitView behavior", async () => {
+    const physics = makeFakePhysics({ nodeCount: 2, frozen: true });
+    const handle = await setupHandleWith(physics, 2);
+    const g: any = _capturedGraph;
+    // fitView isn't on the mock by default — inject so we can observe the call.
+    g.fitView = vi.fn();
+
+    // Prime: small spread sets fittedScaleRef=10, arms fitPending=4.
+    handle.pushPositions(new Float32Array([10, 10, 0, 10, 10, 0]));
+    // Material spread change to ~350 re-arms fitPending=4 (>2% gate).
+    handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
+    expect(g.fitView).not.toHaveBeenCalled();
+
+    // 4 scale-stable frames: fitPending counts 4→3→2→1→0; fitView fires when it hits 0.
+    handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
+    expect(g.fitView).not.toHaveBeenCalled();
+    handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
+    expect(g.fitView).not.toHaveBeenCalled();
+    handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
+    expect(g.fitView).not.toHaveBeenCalled();
+    handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
+    expect(g.fitView).toHaveBeenCalledTimes(1);
+    // Cosmos signature: (duration, padding, scaleNodes).
+    expect(g.fitView).toHaveBeenCalledWith(0, 0.1, false);
+  });
+
+  it("Test 12: non-frozen path unchanged — uploads xy2 with dontRescale=true and renders", async () => {
+    const physics = makeFakePhysics({ nodeCount: 2, frozen: false });
+    const handle = await setupHandleWith(physics, 2);
+    const g: any = _capturedGraph;
+
+    _setPointPositionsCalls = [];
+    g.render.mockClear();
+
+    handle.pushPositions(new Float32Array([1, 2, 3, 4, 5, 6]));
+
+    expect(_setPointPositionsCalls).toHaveLength(1);
+    const call = _setPointPositionsCalls[0];
+    expect(call.dontRescale).toBe(true);
+    expect(call.xy[0]).toBe(1);
+    expect(call.xy[1]).toBe(2);
+    expect(call.xy[2]).toBe(4);
+    expect(call.xy[3]).toBe(5);
+    expect(g.render).toHaveBeenCalledTimes(1);
+  });
+});
 
 describe("GraphCanvas2D — REND-05 no per-frame allocation", () => {
   it("Test 8: pushPositions does not allocate new Float32Array(n*2) on repeated calls", async () => {

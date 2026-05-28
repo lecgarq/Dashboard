@@ -262,12 +262,23 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             xy2[i * 2 + 1] = xyz[i * 3 + 1];
           }
           if (props.physics.frozen) {
-            // Layout settled. Push the settled positions and frame them. We re-fit
-            // only when the spread changes materially: this catches the
-            // post-`frozen` normalization to
-            // ≈±350 (a one-shot fit would frame the pre-normalization ~16k spread
-            // and leave the cloud a speck), yet does NOT fire on user pan/zoom
-            // (which leave the node positions, hence the spread, unchanged).
+            // Always hand the latest xy2 to cosmos every rAF, even when the
+            // overall spread is stable. B.2 preview interpolation produces fresh
+            // per-frame coordinates while physics stays frozen, and a stable-
+            // spread early-return would silently drop that motion. The rescale
+            // detection and deferred fitView below are a SEPARATE concern from
+            // the per-frame upload — they govern when to re-frame the camera,
+            // not whether to upload positions.
+            // dontRescale=TRUE keeps cosmos's space identical to the physics
+            // ≈±350 coords: no internal rescale, and spaceToScreen stays correct.
+            g!.setPointPositions(xy2, true);
+            g!.render();
+
+            // Re-fit only when the spread changes materially: this catches the
+            // post-`frozen` normalization to ≈±350 (a one-shot fit would frame
+            // the pre-normalization ~16k spread and leave the cloud a speck),
+            // yet does NOT fire on user pan/zoom (which leave the node
+            // positions, hence the spread, unchanged).
             let maxAbs = 0;
             for (let i = 0; i < count * 2; i++) {
               const v = Math.abs(xy2[i]);
@@ -278,10 +289,6 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
               prev === null || Math.abs(maxAbs - prev) > Math.max(1, prev * 0.02);
             if (scaleChanged) {
               fittedScaleRef.current = maxAbs;
-              // dontRescale=TRUE keeps cosmos's space identical to the physics
-              // ≈±350 coords: no internal rescale, and spaceToScreen stays correct.
-              g!.setPointPositions(xy2, true);
-              g!.render();
               // Defer the fit — see fitPendingRef. A same-tick fitView would frame
               // the not-yet-uploaded bbox and leave the cloud an unzoomable speck.
               fitPendingRef.current = 4;
