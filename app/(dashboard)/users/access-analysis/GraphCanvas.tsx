@@ -427,7 +427,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           gpuSimulation={gpu2d}
           clusterIds={props.clusterIds}
           clusterAnchors={clusterAnchors ?? undefined}
-          clusterCount={clusterCount}
           onHandleReady={(h) => {
             handle2D.current = h;
             setReadyTick((t) => t + 1);

@@ -145,8 +145,6 @@ export interface GraphCanvas2DProps {
   clusterIds?: Int32Array;
   /** GPU cluster mode: slider-weighted per-cluster 2D anchors (stride-2, clusterCount*2). */
   clusterAnchors?: Float32Array;
-  /** GPU cluster mode: number of clusters (max clusterId + 1). */
-  clusterCount?: number;
   /** Called once when the cosmos.gl graph is initialized and ready to receive data. */
   onHandleReady: (h: GraphCanvas2DHandle) => void;
 }
@@ -426,19 +424,19 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setClusters(clusterIds: number[]): void {
           if (!props.gpuSimulation) return;
-          (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
+          (g! as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
             clusterIds,
           );
-          (g as unknown as { start: (a?: number) => void }).start(0.5);
+          (g! as unknown as { start: (a?: number) => void }).start(0.5);
           g!.render();
         },
 
         setClusterPositions(anchors: number[]): void {
           if (!props.gpuSimulation) return;
-          (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
+          (g! as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
             anchors,
           );
-          (g as unknown as { start: (a?: number) => void }).start(0.3);
+          (g! as unknown as { start: (a?: number) => void }).start(0.3);
           g!.render();
         },
 

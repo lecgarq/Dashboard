@@ -610,7 +610,6 @@ async function setupGpuHandle(
   clusterProps?: {
     clusterIds?: Int32Array;
     clusterAnchors?: Float32Array;
-    clusterCount?: number;
   },
 ): Promise<any> {
   const { GraphCanvas2D } = await import("./GraphCanvas2D");
@@ -668,7 +667,6 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     const handle = await setupGpuHandle(3, {
       clusterIds: new Int32Array([0, 1, 0]),
       clusterAnchors: new Float32Array([10, 0, 20, 0]),
-      clusterCount: 2,
     });
     expect(handle).not.toBeNull();
 
@@ -685,5 +683,25 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     handle.setClusterPositions([30, 0, 40, 0]);
     expect(_clusterPosCalls.at(-1)).toEqual([30, 0, 40, 0]);
     expect(_startCalls.length).toBeGreaterThan(0);
+  });
+
+  it("GPU-4b: setClusters re-assigns cluster ids + reheats (re-group path)", async () => {
+    const handle = await setupGpuHandle(3, {
+      clusterIds: new Int32Array([0, 1, 0]),
+      clusterAnchors: new Float32Array([10, 0, 20, 0]),
+    });
+    expect(handle).not.toBeNull();
+
+    // Clear the calls recorded during mount/init
+    _clusterCalls = [];
+    _startCalls = [];
+
+    // Re-assign clusters (simulates a color-mode switch)
+    handle.setClusters([1, 0, 1]);
+
+    // The last setPointClusters call must carry the new ids
+    expect(_clusterCalls.at(-1)).toEqual([1, 0, 1]);
+    // A reheat (start) must have been triggered
+    expect(_startCalls.length).toBeGreaterThanOrEqual(1);
   });
 });
