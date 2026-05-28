@@ -1,9 +1,9 @@
-// gpuLayout2D.ts — Pure slider→GPU-layout mapping for the cosmos.gl 2D simulation.
+// gpuLayout2D.ts — Pure slider→GPU-layout mapping for the 2D graph simulation.
 //
 // PURITY: zero imports. Defines its own input types so the module is fully
-// standalone (no coupling to physicsLayer). Deterministic — no random, no clock.
+// standalone (no coupling to any engine). Deterministic — no random, no clock.
 
-/** Per-dimension target arrays (structurally compatible with physicsLayer.TargetArrays). */
+/** Per-dimension target arrays (structurally compatible with the engine's TargetArrays shape). */
 export type Target2DArrays = Record<
   string,
   { x: Float32Array; y: Float32Array; z?: Float32Array }
@@ -69,9 +69,9 @@ function lerp(a: number, b: number, t: number): number {
 }
 
 /**
- * Slider intensity (max over all sliders, 0..1) → cosmos GPU force coefficients.
- * Analogue of physicsLayer.applySliderForces. Tunable constants below; the unit
- * tests assert monotonicity / zero-state, not exact values, so tuning is safe.
+ * Slider intensity (max over all sliders, 0..1) → GPU force coefficients.
+ * Tunable constants below; the unit tests assert monotonicity / zero-state,
+ * not exact values, so tuning is safe.
  */
 export function mapForceConfig(sliders: Record<string, number>): GpuForceConfig {
   const max = Math.max(0, ...Object.values(sliders));
@@ -84,7 +84,7 @@ export function mapForceConfig(sliders: Record<string, number>): GpuForceConfig 
     simulationGravity: 0.1,
     // cool fast when idle; slower (more visible motion) while separating
     simulationDecay: lerp(1000, 5000, max),
-    // cosmos default friction
+    // standard default friction
     simulationFriction: 0.85,
   };
 }
