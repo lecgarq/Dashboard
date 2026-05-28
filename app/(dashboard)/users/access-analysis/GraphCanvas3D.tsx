@@ -67,6 +67,10 @@ export interface GraphCanvas3DHandle {
     nodeColorAllFinite: boolean;
     nodeColorNeedsUpdate: boolean;
   };
+  /** Highlight selected nodes via dynamic instance scaling. */
+  setSelectedIndices?(indices: number[]): void;
+  /** Focus hovered node via dynamic instance scaling. */
+  setHoveredIndex?(index: number | null): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -145,6 +149,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // populated `mesh.instanceColor` buffer. With instanceColor set, three.js
     // enables USE_INSTANCING_COLOR on its own; that path alone is what we want.
     const material = new THREE.MeshBasicMaterial({ transparent: true });
+    material.vertexColors = true;
     const mesh = new THREE.InstancedMesh(geometry, material, n);
 
     // Per-instance RGB color buffer (stride-3; alpha baked in as color multiplication)
@@ -171,6 +176,8 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // We keep the current base colors + mask so recolors preserve dimming state.
     let currentNodeColors = props.nodeColors;
     let currentAlphaMask: Float32Array | null = null;
+    let currentSelectedIndices: number[] = [];
+    let currentHoveredIndex: number | null = null;
 
     // Edge (LineSegments) state — built lazily when links are present.
     let currentXyz: Float32Array = initialXyz;
@@ -232,6 +239,16 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
       lastPositionsVersion = v;
       for (let i = 0; i < n; i++) {
         dummy.position.set(xyz[i * 3], xyz[i * 3 + 1], xyz[i * 3 + 2]);
+        let scale = 1.0;
+        if (currentSelectedIndices.includes(i)) {
+          scale = 2.0;
+        }
+        if (currentHoveredIndex === i) {
+          scale = 2.5;
+        }
+        if (dummy.scale) {
+          dummy.scale.set(scale, scale, scale);
+        }
         dummy.updateMatrix();
         mesh.setMatrixAt(i, dummy.matrix);
       }
@@ -511,6 +528,52 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         dirty = true; // background color is rendered only on paint
       },
       getCamera: () => camera,
+      setSelectedIndices: (indices: number[]) => {
+        currentSelectedIndices = indices;
+        for (let i = 0; i < n; i++) {
+          mesh.getMatrixAt(i, tmpMat);
+          tmpVec.setFromMatrixPosition(tmpMat);
+          dummy.position.copy(tmpVec);
+          
+          let scale = 1.0;
+          if (currentSelectedIndices.includes(i)) {
+            scale = 2.0;
+          }
+          if (currentHoveredIndex === i) {
+            scale = 2.5;
+          }
+          if (dummy.scale) {
+            dummy.scale.set(scale, scale, scale);
+          }
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+        dirty = true;
+      },
+      setHoveredIndex: (index: number | null) => {
+        currentHoveredIndex = index;
+        for (let i = 0; i < n; i++) {
+          mesh.getMatrixAt(i, tmpMat);
+          tmpVec.setFromMatrixPosition(tmpMat);
+          dummy.position.copy(tmpVec);
+          
+          let scale = 1.0;
+          if (currentSelectedIndices.includes(i)) {
+            scale = 2.0;
+          }
+          if (currentHoveredIndex === i) {
+            scale = 2.5;
+          }
+          if (dummy.scale) {
+            dummy.scale.set(scale, scale, scale);
+          }
+          dummy.updateMatrix();
+          mesh.setMatrixAt(i, dummy.matrix);
+        }
+        mesh.instanceMatrix.needsUpdate = true;
+        dirty = true;
+      },
       // Phase 4-01 Task 2 — ref-indirection (Pitfall 5). No config re-issue ever.
       setEventHandlers: (h: GraphEventHandlers) => {
         handlersRef.current = h;

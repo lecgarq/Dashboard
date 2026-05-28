@@ -152,15 +152,14 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     };
   }, [props.physics]);
 
-  // B.2 — Subscribe to preview-active transitions (2D only; 3D is inert).
+  // B.2 — Subscribe to preview-active transitions (both 2D and 3D).
   // Depend only on the stable subscribePreviewActive function ([] deps in
-  // SliderContext), props.physics, and props.mode — NOT on the full sliders
+  // SliderContext) and props.physics — NOT on the full sliders
   // context value (which changes identity on every slider move and would
   // cause the cleanup to fire syncPositions mid-drag).
   const { subscribePreviewActive } = sliders;
   useEffect(() => {
     if (!ENABLE_PREVIEW_INTERPOLATION) return;
-    if (props.mode !== "2d") return;
     const unsub = subscribePreviewActive((active) => {
       const layer = previewRef.current;
       if (!layer) return;
@@ -176,8 +175,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     return () => {
       unsub();
       // If we're tearing down while preview is still active (mode flip
-      // 2D→3D mid-drag), commit the in-flight buffer back to physics so
-      // the next 2D session starts from the visible state, not stale d3.
+      // mid-drag), commit the in-flight buffer back to physics so
+      // the next session starts from the visible state, not stale d3.
       if (previewActiveLocalRef.current && previewRef.current) {
         props.physics.syncPositions(previewRef.current.snapshot());
         previewActiveLocalRef.current = false;

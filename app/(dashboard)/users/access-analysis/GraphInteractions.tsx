@@ -121,10 +121,12 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
       onPointHover: (index: number, screenPos: [number, number]): void => {
         setHoveredIndex(index);
         setTooltipAnchor(screenPos);
+        handle.setHoveredIndex?.(index);
       },
       onPointHoverEnd: (): void => {
         setHoveredIndex(null);
         setTooltipAnchor(null);
+        handle.setHoveredIndex?.(null);
       },
     };
     handle.setEventHandlers(handlers);
@@ -140,6 +142,25 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
   useEffect(() => {
     setInteractionTestState({ hoveredIndex, tooltipAnchor });
   }, [hoveredIndex, tooltipAnchor]);
+
+  // Derive selection array and push to active handle
+  const selectedIndices = useMemo(() => {
+    const arr: number[] = [];
+    if (isolatedNodeIndex !== null) {
+      arr.push(isolatedNodeIndex);
+    }
+    if (lassoSelection) {
+      arr.push(...lassoSelection);
+    }
+    return arr;
+  }, [isolatedNodeIndex, lassoSelection]);
+
+  useEffect(() => {
+    const handle = graphRef.current?.handle ?? null;
+    if (handle) {
+      (handle as any).setSelectedIndices?.(selectedIndices);
+    }
+  }, [selectedIndices, graphRef, rendererReady]);
 
   // ---- Escape closes isolate ---------------------------------------
   useEffect(() => {

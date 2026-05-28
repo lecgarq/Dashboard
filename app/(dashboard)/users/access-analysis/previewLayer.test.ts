@@ -50,8 +50,8 @@ describe("previewLayer — step", () => {
     p.seedFrom(new Float32Array([0, 0, 0, 0, 0, 0]));
     const moved = p.step({ d1: 1, d2: 0 }, 16);
     expect(moved).toBe(true);
-    expect(p.displayed[0]).toBeGreaterThan(10);
-    expect(p.displayed[0]).toBeLessThan(25);
+    expect(p.displayed[0]).toBeGreaterThan(20);
+    expect(p.displayed[0]).toBeLessThan(45);
     expect(p.displayed[1]).toBe(0);
   });
 

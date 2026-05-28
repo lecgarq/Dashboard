@@ -73,16 +73,12 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
       rafId = requestAnimationFrame(tick);
 
       let xyz: Float32Array;
+      const override = getPositionsOverrideRef.current?.() ?? null;
+      xyz = override ?? opts.physics.getPositions();
+
       if (opts.mode === "2d") {
-        // In 2D: use override if supplied and returns non-null; otherwise fall
-        // back to physics.getPositions(). This avoids the physics allocation
-        // and d3-snapshot read on frames where the preview layer owns positions.
-        const override = getPositionsOverrideRef.current?.() ?? null;
-        xyz = override ?? opts.physics.getPositions();
         onTick2DRef.current(xyz);
       } else {
-        // In 3D: always use physics. Override is ignored to avoid coupling.
-        xyz = opts.physics.getPositions();
         onTick3DRef.current(xyz);
       }
 

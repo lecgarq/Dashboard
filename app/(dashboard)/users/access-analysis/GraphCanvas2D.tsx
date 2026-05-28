@@ -88,6 +88,10 @@ export interface GraphCanvas2DHandle {
   screenToSpace(screenXY: [number, number]): [number, number];
   /** Cosmos.gl space coords → canvas-local screen pixels. */
   spaceToScreen(spaceXY: [number, number]): [number, number];
+  /** Highlight selected nodes via outlines and isolated node via focus ring. */
+  setSelectedIndices?(indices: number[]): void;
+  /** Focus a point with a blue ring when hovered. */
+  setHoveredIndex?(index: number | null): void;
 }
 
 // ---------------------------------------------------------------------------
@@ -129,6 +133,8 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   const linkCountRef = useRef(0);
   // Warn-once guard for early findPointsInPolygon calls (Pitfall 7).
   const warnedNotReadyRef = useRef(false);
+  // Stored selection indices to coordinate hover rings correctly
+  const selectedIndicesRef = useRef<number[]>([]);
   // Last spread (max |coord|) we rescaled+fit cosmos to, or null while animating.
   // A ONE-SHOT fit on the first frozen frame is not enough: the layout flips
   // `frozen` true and is THEN normalized to ≈±350 a beat later, so a one-shot fit
@@ -172,6 +178,8 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         fitViewDelay: 250,
         fitViewPadding: 0.1,
         pixelRatio: window.devicePixelRatio,
+        renderHoveredPointRing: true,
+        hoveredPointRingColor: "#3b82f6",
         // -- Phase 4-01 event wiring (ref-indirect — Pitfall 5) --------------
         // cosmos.gl reads config once at construction; we route through handlersRef
         // so React closure updates take effect without setConfigPartial calls.
@@ -418,6 +426,25 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
               spaceToScreenPosition: (xy: [number, number]) => [number, number];
             }
           ).spaceToScreenPosition(spaceXY);
+        },
+
+        setSelectedIndices(indices: number[]): void {
+          selectedIndicesRef.current = indices;
+          g!.setConfigPartial({
+            outlinedPointIndices: indices.length > 0 ? indices : undefined,
+            focusedPointIndex: indices.length === 1 ? indices[0] : undefined,
+          });
+          g!.render();
+        },
+
+        setHoveredIndex(index: number | null): void {
+          const activeFocus = index !== null 
+            ? index 
+            : (selectedIndicesRef.current.length === 1 ? selectedIndicesRef.current[0] : undefined);
+          g!.setConfigPartial({
+            focusedPointIndex: activeFocus,
+          });
+          g!.render();
         },
       });
     })();

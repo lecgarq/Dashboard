@@ -182,7 +182,7 @@ describe("B.2 — GraphCanvas preview integration", () => {
     expect(physics.syncPositions).toHaveBeenCalled();
   });
 
-  it("3D: setSliderValue does NOT call physics.syncPositions", () => {
+  it("3D: setSliderValue calls physics.syncPositions on exit", () => {
     vi.useFakeTimers();
     try {
       const physics = makePhysics(2);
@@ -190,10 +190,11 @@ describe("B.2 — GraphCanvas preview integration", () => {
       act(() => {
         sink.ctx!.setSliderValue("activity", 50);
       });
+      expect(physics.syncPositions).not.toHaveBeenCalled();
       act(() => {
         vi.advanceTimersByTime(300);
       });
-      expect(physics.syncPositions).not.toHaveBeenCalled();
+      expect(physics.syncPositions).toHaveBeenCalled();
     } finally {
       vi.useRealTimers();
     }

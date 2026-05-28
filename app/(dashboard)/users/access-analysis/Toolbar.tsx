@@ -182,15 +182,22 @@ export function Toolbar({
       <div
         role="group"
         aria-label="Mode toggle"
-        className="inline-flex overflow-hidden rounded-md border"
+        className="relative inline-flex items-center bg-muted/60 p-1 rounded-xl border border-border/80 shadow-inner"
         data-testid="toolbar-mode-toggle"
       >
+        <div
+          className="absolute top-1 bottom-1 rounded-lg bg-blue-500 shadow-sm transition-all duration-300 ease-out"
+          style={{
+            left: mode === "2d" ? "4px" : "calc(50% + 2px)",
+            width: "calc(50% - 6px)",
+          }}
+        />
         <button
           type="button"
           onClick={() => onModeChange("2d")}
           aria-pressed={mode === "2d"}
-          className={`px-3 py-1.5 text-sm ${
-            mode === "2d" ? "bg-blue-500 text-white" : "hover:bg-accent"
+          className={`relative z-10 w-12 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 focus:outline-none ${
+            mode === "2d" ? "text-white" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           2D
@@ -199,8 +206,8 @@ export function Toolbar({
           type="button"
           onClick={() => onModeChange("3d")}
           aria-pressed={mode === "3d"}
-          className={`px-3 py-1.5 text-sm ${
-            mode === "3d" ? "bg-blue-500 text-white" : "hover:bg-accent"
+          className={`relative z-10 w-12 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 focus:outline-none ${
+            mode === "3d" ? "text-white" : "text-muted-foreground hover:text-foreground"
           }`}
         >
           3D

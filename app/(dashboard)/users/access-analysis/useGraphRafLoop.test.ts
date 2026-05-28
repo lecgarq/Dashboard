@@ -64,7 +64,7 @@ describe("useGraphRafLoop — getPositionsOverride", () => {
     expect(onTick2D.mock.calls[0][0]).toBe(fromPhysics);
   });
 
-  it("ignores override in 3D mode (always uses physics)", async () => {
+  it("routes override buffer to onTick3D when override returns non-null (3D)", async () => {
     const fromPhysics = new Float32Array([1, 1, 1]);
     const fromOverride = new Float32Array([9, 9, 9]);
     const onTick3D = vi.fn();
@@ -79,7 +79,7 @@ describe("useGraphRafLoop — getPositionsOverride", () => {
     renderHook(() => useGraphRafLoop(opts));
     await waitOneFrame();
     expect(onTick3D).toHaveBeenCalled();
-    expect(onTick3D.mock.calls[0][0]).toBe(fromPhysics);
+    expect(onTick3D.mock.calls[0][0]).toBe(fromOverride);
   });
 
   it("with no override at all, 2D uses physics (B.1 behavior preserved)", async () => {

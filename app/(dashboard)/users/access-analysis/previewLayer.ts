@@ -16,7 +16,7 @@ export function createPreviewLayer(opts: {
   const { nodeCount } = opts;
   const displayed = new Float32Array(nodeCount * 3);
 
-  const TAU_MS = 80;
+  const TAU_MS = 40;
   const EPSILON = 1e-4;
   const { targets, dimWeights } = opts;
   const dimIds = Object.keys(targets);

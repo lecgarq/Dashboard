@@ -202,6 +202,15 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   const schedulePush = useCallback(
     (next: Record<DimensionId, number>): void => {
       pendingRef.current = next;
+      if (previewActiveRef.current) {
+        if (rafIdRef.current !== null && typeof cancelAnimationFrame !== "undefined") {
+          cancelAnimationFrame(rafIdRef.current);
+          rafIdRef.current = null;
+        }
+        pendingRef.current = null;
+        flushToPhysics(next);
+        return;
+      }
       if (rafIdRef.current !== null) return;
       if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") {
         // Test / SSR fallback — flush immediately.
