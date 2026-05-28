@@ -138,6 +138,27 @@ function colorForOrdered(value: number, max: number): [number, number, number] {
 // ---------------------------------------------------------------------------
 
 /**
+ * Cluster assignment matching the color grouping: nodes with the same color
+ * category (for the given mode) get the same contiguous cluster index (0..k-1).
+ * `labels[idx]` is that cluster's category string (for future cluster labels).
+ */
+export function buildClusterAssignment(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  mode: ColorMode,
+): { clusterIds: Int32Array; labels: string[] } {
+  const indexByCat = new Map<string, number>();
+  const labels: string[] = [];
+  const clusterIds = new Int32Array(features.length);
+  for (let i = 0; i < features.length; i++) {
+    const cat = categoryForColor(features[i], mode);
+    let idx = indexByCat.get(cat);
+    if (idx === undefined) { idx = labels.length; indexByCat.set(cat, idx); labels.push(cat); }
+    clusterIds[i] = idx;
+  }
+  return { clusterIds, labels };
+}
+
+/**
  * Build an RGBA Float32Array(n*4) coloring each node by `mode`. Same category →
  * same color; alpha is always 1.0.
  */

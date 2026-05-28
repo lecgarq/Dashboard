@@ -120,3 +120,49 @@ export function identityClusters(nodeCount: number): number[] {
   for (let i = 0; i < nodeCount; i++) out[i] = i;
   return out;
 }
+
+/**
+ * Per-CLUSTER 2D anchor = mean of member nodes' slider-weighted target anchors.
+ * Reuses computeAnchors for per-node anchors, then averages by cluster.
+ * @param clusterIds  cluster index per node (contiguous 0..clusterCount-1; negative = unclustered, skipped)
+ * @param clusterCount number of clusters
+ * Returns Float32Array(clusterCount*2). A cluster with no members stays at origin (0,0).
+ */
+export function computeClusterAnchors(
+  sliders: Record<string, number>,
+  targets: Target2DArrays,
+  dimWeights: Record<string, Float32Array>,
+  clusterIds: Int32Array | ReadonlyArray<number>,
+  clusterCount: number,
+  nodeCount: number,
+): Float32Array {
+  const nodeAnchors = computeAnchors(sliders, targets, dimWeights, nodeCount); // n*2
+  const sx = new Float64Array(clusterCount);
+  const sy = new Float64Array(clusterCount);
+  const cnt = new Int32Array(clusterCount);
+  for (let i = 0; i < nodeCount; i++) {
+    const c = clusterIds[i];
+    if (c < 0 || c >= clusterCount) continue;
+    sx[c] += nodeAnchors[i * 2];
+    sy[c] += nodeAnchors[i * 2 + 1];
+    cnt[c] += 1;
+  }
+  const out = new Float32Array(clusterCount * 2);
+  for (let c = 0; c < clusterCount; c++) {
+    if (cnt[c] === 0) continue;
+    out[c * 2] = sx[c] / cnt[c];
+    out[c * 2 + 1] = sy[c] / cnt[c];
+  }
+  return out;
+}
+
+/** Fixed GPU force config for cluster mode — strong cluster pull, moderate repulsion. */
+export function mapClusterForceConfig(): GpuForceConfig {
+  return {
+    simulationRepulsion: 1.0,
+    simulationCluster: 0.5,
+    simulationGravity: 0.1,
+    simulationDecay: 3000,
+    simulationFriction: 0.85,
+  };
+}

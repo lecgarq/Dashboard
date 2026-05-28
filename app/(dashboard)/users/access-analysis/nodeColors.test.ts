@@ -4,6 +4,7 @@ import {
   COLOR_MODE_LABELS,
   categoryForColor,
   buildNodeColors,
+  buildClusterAssignment,
   migrateColorMode,
   type ColorMode,
 } from "./nodeColors";
@@ -273,5 +274,98 @@ describe("nodeColors — activityMix mode colors by dominant category", () => {
     const buf = buildNodeColors(features, "activityMix");
     expect(rgba(buf, 0)).toEqual(rgba(buf, 2)); // both dominant view
     expect(rgba(buf, 0)).not.toEqual(rgba(buf, 1)); // view vs upload
+  });
+});
+
+// ---------------------------------------------------------------------------
+// buildClusterAssignment
+// ---------------------------------------------------------------------------
+
+describe("buildClusterAssignment", () => {
+  it("nodes with the same internalExternal category share a cluster id", () => {
+    const features = [
+      feature({ affiliation: "internal", isExternal: false }),  // category: "internal"
+      feature({ affiliation: "external", isExternal: true }),   // category: "external"
+      feature({ affiliation: "internal", isExternal: false }),  // category: "internal"
+    ];
+    const { clusterIds } = buildClusterAssignment(features, "internalExternal");
+    // Nodes 0 and 2 are both "internal" → same cluster id
+    expect(clusterIds[0]).toBe(clusterIds[2]);
+    // Node 1 is "external" → different cluster id
+    expect(clusterIds[1]).not.toBe(clusterIds[0]);
+  });
+
+  it("distinct categories get distinct cluster ids", () => {
+    const features = [
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "unknown" as "internal" | "external" | "unknown", isExternal: false }),
+    ];
+    const { clusterIds } = buildClusterAssignment(features, "internalExternal");
+    // All three are distinct → three distinct ids
+    const ids = new Set([clusterIds[0], clusterIds[1], clusterIds[2]]);
+    expect(ids.size).toBe(3);
+  });
+
+  it("labels length equals the number of distinct categories", () => {
+    const features = [
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "internal", isExternal: false }),
+    ];
+    const { labels } = buildClusterAssignment(features, "internalExternal");
+    // Two distinct categories: "internal" and "external"
+    expect(labels.length).toBe(2);
+  });
+
+  it("clusterIds.length === features.length", () => {
+    const features = [
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "internal", isExternal: false }),
+    ];
+    const { clusterIds } = buildClusterAssignment(features, "internalExternal");
+    expect(clusterIds.length).toBe(features.length);
+  });
+
+  it("returns Int32Array for clusterIds", () => {
+    const features = [feature({ affiliation: "internal", isExternal: false })];
+    const { clusterIds } = buildClusterAssignment(features, "internalExternal");
+    expect(clusterIds).toBeInstanceOf(Int32Array);
+  });
+
+  it("handles an empty feature list", () => {
+    const { clusterIds, labels } = buildClusterAssignment([], "internalExternal");
+    expect(clusterIds.length).toBe(0);
+    expect(labels.length).toBe(0);
+  });
+
+  it("works with role mode — nodes sharing the same role share a cluster", () => {
+    const features = [
+      feature({ role: "Architect" }),
+      feature({ role: "Engineer" }),
+      feature({ role: "Architect" }),
+    ];
+    const { clusterIds, labels } = buildClusterAssignment(features, "role");
+    expect(clusterIds[0]).toBe(clusterIds[2]);
+    expect(clusterIds[1]).not.toBe(clusterIds[0]);
+    expect(labels.length).toBe(2);
+    expect(labels).toContain("Architect");
+    expect(labels).toContain("Engineer");
+  });
+
+  it("labels[clusterIds[i]] === categoryForColor(features[i], mode) for all nodes", () => {
+    const features = [
+      feature({ affiliation: "internal", isExternal: false }),
+      feature({ affiliation: "external", isExternal: true }),
+      feature({ affiliation: "internal", isExternal: false }),
+    ];
+    const { clusterIds, labels } = buildClusterAssignment(features, "internalExternal");
+    for (let i = 0; i < features.length; i++) {
+      const expected = categoryForColor(features[i], "internalExternal");
+      expect(labels[clusterIds[i]]).toBe(expected);
+    }
   });
 });
