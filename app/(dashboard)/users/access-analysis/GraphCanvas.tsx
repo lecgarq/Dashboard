@@ -86,9 +86,15 @@ export interface GraphCanvasProps {
 // ---------------------------------------------------------------------------
 
 /**
- * B.2 — 2D real-time preview interpolation. Setting this to `false` skips the
- * preview layer construction entirely; the override is never installed, so 2D
- * + 3D both behave exactly as they did in B.1.
+ * B.2 — 2D real-time preview interpolation rollout switch.
+ *
+ * Setting this to `false` disables B.2 preview interpolation: the preview
+ * layer is not constructed or used, the per-frame `getPositionsOverride` is
+ * never installed, and 2D reverts to the B.1 tick-bound path (positions come
+ * straight from `physics.getPositions()` every rAF). 3D is unaffected either way.
+ *
+ * This is the single-flip rollback if a regression surfaces; no other code
+ * change is needed to revert B.2.
  */
 const ENABLE_PREVIEW_INTERPOLATION = true;
 

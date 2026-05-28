@@ -36,12 +36,14 @@
 | Server data pipeline | `acc-dc-graph.ts`, `acc-hot-cache.ts`, `dcUserAssembly.ts`, `acc-types.ts` | data-pipeline §2–4 |
 | Client data pipeline | `graphTables.ts`, `duckdbClient.ts`, `featureSnapshot.ts`, `interactionTypes.ts` | data-pipeline §5–7 |
 | Dimension model | `dimensionRegistry.ts`, `featureTargets.ts`, `SliderContext.tsx`, `SliderSidebar.tsx` | access-analysis-graph §5 |
-| Layout engine | `mathLayer.ts`, `physicsLayer.ts`, `layoutStats.ts`, `positionsCache.ts` | access-analysis-graph §6 |
+| Layout engine | `mathLayer.ts`, `physicsLayer.ts`, `previewLayer.ts`, `layoutStats.ts`, `positionsCache.ts` | access-analysis-graph §6 |
 | Rendering | `GraphCanvas.tsx`, `GraphCanvas2D.tsx`, `GraphCanvas3D.tsx`, `nodeColors.ts`, `CosmosCanvasClient.ts` | access-analysis-graph §3,7 |
 | Edges | `sameUserEdges.ts`, `linkEmphasis.ts` | access-analysis-graph §8 |
 | Interaction | `GraphInteractions.tsx`, `LassoOverlay.tsx`, `SelectionContext.tsx`, `UserDetailPanel.tsx` | access-analysis-graph §9 |
 | Activity aggregation (P5-C, **T1-owned**) | `activityAggregate.ts`, `activityCategories.ts` | data-pipeline §8 |
 | Test bridge | `graphTestBridge.ts` | testing-and-gates |
+
+> `previewLayer.ts` — pure target-field + lerp module driving 2D preview override (B.2).
 
 ## Rule for agents
 

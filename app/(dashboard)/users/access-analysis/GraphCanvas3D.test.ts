@@ -22,6 +22,17 @@ import { render } from "@testing-library/react";
 import React from "react";
 import * as fs from "fs";
 import * as path from "path";
+import { SliderProvider } from "./SliderContext";
+
+// GraphCanvas (the top-level component) now reads SliderContext (B.2 preview
+// wiring at commit ed98d06). Tests that render <GraphCanvas/> MUST wrap it in
+// <SliderProvider physics={...}/> to match production composition.
+function withSliderProvider(physics: PhysicsLayer, gcProps: Record<string, unknown>): React.ReactElement {
+  return React.createElement(
+    SliderProvider,
+    { physics, children: React.createElement(GraphCanvas, { physics, ...gcProps }) },
+  );
+}
 
 // ---------------------------------------------------------------------------
 // jsdom stubs for browser APIs not available in test environment
@@ -361,7 +372,13 @@ function makeFakePhysics(n: number): PhysicsLayer & {
       for (let i = 0; i < n; i++) _mask[i] = predFn(i);
       _maskVersion++;
     }),
+    setActiveInput: vi.fn(),
     getPositions: vi.fn(() => _xyz),
+    // B.2 read-only accessors — stubs to satisfy GraphCanvas's preview wiring.
+    getTargets: () => ({}),
+    getDimWeights: () => ({}),
+    getSliders: () => ({}),
+    syncPositions: vi.fn(),
     dispose: vi.fn(),
     // Test-only helper: simulate a d3 tick from the spec.
     bumpPositionsVersion: () => { _positionsVersion++; },
@@ -655,19 +672,17 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
     _webglRendererConstructorCount = 0;
 
-    const { rerender } = render(
-      React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" })
-    );
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
 
     // GraphCanvas3D is always mounted — WebGLRenderer constructed once at mount
     const countAfterMount = _webglRendererConstructorCount;
     expect(countAfterMount).toBeGreaterThan(0); // should be 1
 
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
     // No new WebGLRenderer — just CSS visibility swap
     expect(_webglRendererConstructorCount).toBe(countAfterMount);
 
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
     // Still no new WebGLRenderer
     expect(_webglRendererConstructorCount).toBe(countAfterMount);
   });
@@ -755,13 +770,11 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     const physics = makeFakePhysics(3);
     const nodeColors = new Float32Array(12).fill(0.5);
 
-    const { rerender } = render(
-      React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" })
-    );
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
 
     // Part A — 2D → 3D: 600ms tilt must be scheduled
     const countBefore2To3 = scheduledCallbacks.length;
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
     const countAfter2To3 = scheduledCallbacks.length;
 
     // At least one rAF should be scheduled for the tilt animation
@@ -782,7 +795,7 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
     // Part B — 3D → 2D: 400ms flatten must be scheduled
     const countBefore3To2 = scheduledCallbacks.length;
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
     const countAfter3To2 = scheduledCallbacks.length;
 
     expect(countAfter3To2).toBeGreaterThan(countBefore3To2);
@@ -831,18 +844,16 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     const physics = makeFakePhysics(2);
     const nodeColors = new Float32Array(8).fill(0.5);
 
-    const { rerender } = render(
-      React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" })
-    );
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
 
     // Switch to 3D — starts 600ms tilt
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
 
     const tiltRafId = scheduledIds.at(-1);
     expect(tiltRafId).toBeDefined();
 
     // Rapidly switch back to 2D — should cancel the tilt and start flatten
-    rerender(React.createElement(GraphCanvas, { physics, nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
 
     // The tilt rAF should have been cancelled
     expect(cancelledIds).toContain(tiltRafId);
