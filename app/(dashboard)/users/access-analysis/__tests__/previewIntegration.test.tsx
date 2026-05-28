@@ -112,6 +112,7 @@ function renderShell(
         mode={mode}
         physics={physics}
         nodeColors={new Float32Array(8)}
+        gpuSimulation={false}
       />
     </SliderProvider>
   );

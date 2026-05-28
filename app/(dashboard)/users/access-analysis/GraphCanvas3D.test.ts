@@ -672,17 +672,19 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
     _webglRendererConstructorCount = 0;
 
-    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    // gpuSimulation=false: GraphCanvas3D.test cosmos mock lacks cluster methods;
+    // pin to the frozen/preview path so the mock is not asked for them.
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
 
     // GraphCanvas3D is always mounted — WebGLRenderer constructed once at mount
     const countAfterMount = _webglRendererConstructorCount;
     expect(countAfterMount).toBeGreaterThan(0); // should be 1
 
-    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d", gpuSimulation: false }));
     // No new WebGLRenderer — just CSS visibility swap
     expect(_webglRendererConstructorCount).toBe(countAfterMount);
 
-    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
     // Still no new WebGLRenderer
     expect(_webglRendererConstructorCount).toBe(countAfterMount);
   });
@@ -770,11 +772,13 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     const physics = makeFakePhysics(3);
     const nodeColors = new Float32Array(12).fill(0.5);
 
-    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    // gpuSimulation=false: GraphCanvas3D.test cosmos mock lacks cluster methods;
+    // pin to the frozen/preview path so the mock is not asked for them.
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
 
     // Part A — 2D → 3D: 600ms tilt must be scheduled
     const countBefore2To3 = scheduledCallbacks.length;
-    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d", gpuSimulation: false }));
     const countAfter2To3 = scheduledCallbacks.length;
 
     // At least one rAF should be scheduled for the tilt animation
@@ -795,7 +799,7 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
     // Part B — 3D → 2D: 400ms flatten must be scheduled
     const countBefore3To2 = scheduledCallbacks.length;
-    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
     const countAfter3To2 = scheduledCallbacks.length;
 
     expect(countAfter3To2).toBeGreaterThan(countBefore3To2);
@@ -844,16 +848,18 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
     const physics = makeFakePhysics(2);
     const nodeColors = new Float32Array(8).fill(0.5);
 
-    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    // gpuSimulation=false: GraphCanvas3D.test cosmos mock lacks cluster methods;
+    // pin to the frozen/preview path so the mock is not asked for them.
+    const { rerender } = render(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
 
     // Switch to 3D — starts 600ms tilt
-    rerender(withSliderProvider(physics, { nodeColors, mode: "3d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "3d", gpuSimulation: false }));
 
     const tiltRafId = scheduledIds.at(-1);
     expect(tiltRafId).toBeDefined();
 
     // Rapidly switch back to 2D — should cancel the tilt and start flatten
-    rerender(withSliderProvider(physics, { nodeColors, mode: "2d" }));
+    rerender(withSliderProvider(physics, { nodeColors, mode: "2d", gpuSimulation: false }));
 
     // The tilt rAF should have been cancelled
     expect(cancelledIds).toContain(tiltRafId);

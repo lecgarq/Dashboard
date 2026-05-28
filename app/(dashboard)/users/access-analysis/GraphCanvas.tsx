@@ -79,6 +79,8 @@ export interface GraphCanvasProps {
    * captures a null handle and hover/click/lasso never wire up.
    */
   onRendererReady?: () => void;
+  /** Test/override: force 2D GPU sim on/off. Defaults to ENABLE_GPU_2D_SIM. */
+  gpuSimulation?: boolean;
 }
 
 // ---------------------------------------------------------------------------
@@ -98,6 +100,13 @@ export interface GraphCanvasProps {
  */
 const ENABLE_PREVIEW_INTERPOLATION = true;
 
+/**
+ * Master switch for the 2D GPU cluster-anchor simulation (this milestone).
+ * ON by default; set NEXT_PUBLIC_ACC_GPU_2D="0" to revert 2D to the frozen +
+ * B.2-preview path. Rollback is this single env flip — no other change needed.
+ */
+const ENABLE_GPU_2D_SIM = process.env.NEXT_PUBLIC_ACC_GPU_2D !== "0";
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -108,6 +117,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   const bg =
     props.backgroundColor ??
     (resolvedTheme === "dark" ? "#09090B" : "#FFFFFF");
+
+  // GPU 2D sim flag — lets tests force it off deterministically via the prop
+  const gpu2d = props.gpuSimulation ?? ENABLE_GPU_2D_SIM;
 
   // B.2 preview interpolation state
   const sliders = useSliders();
@@ -137,7 +149,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
 
   // B.2 — Construct the preview layer once per physics instance
   useEffect(() => {
-    if (!ENABLE_PREVIEW_INTERPOLATION) {
+    if (!ENABLE_PREVIEW_INTERPOLATION || gpu2d) {
       previewRef.current = null;
       return;
     }
@@ -159,7 +171,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // cause the cleanup to fire syncPositions mid-drag).
   const { subscribePreviewActive } = sliders;
   useEffect(() => {
-    if (!ENABLE_PREVIEW_INTERPOLATION) return;
+    if (!ENABLE_PREVIEW_INTERPOLATION || gpu2d) return;
     const unsub = subscribePreviewActive((active) => {
       const layer = previewRef.current;
       if (!layer) return;
@@ -186,7 +198,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
 
   // B.2 — Override callback: returns the interpolated positions during preview
   const getPositionsOverride = useCallback((): Float32Array | null => {
-    if (!ENABLE_PREVIEW_INTERPOLATION) return null;
+    if (!ENABLE_PREVIEW_INTERPOLATION || gpu2d) return null;
     if (!previewActiveLocalRef.current) return null;
     const layer = previewRef.current;
     if (!layer) return null;
@@ -226,6 +238,17 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     },
     getPositionsOverride,
   });
+
+  // GPU 2D: push slider changes straight to the cosmos GPU simulation.
+  const sliderValues = sliders.values;
+  useEffect(() => {
+    if (!gpu2d || props.mode !== "2d") return;
+    const h = handle2D.current;
+    if (!h) return;
+    const normalized: Record<string, number> = {};
+    for (const [k, v] of Object.entries(sliderValues)) normalized[k] = (v as number) / 100;
+    h.applySliders?.(normalized);   // applySliders is OPTIONAL on the handle — use ?.
+  }, [sliderValues, props.mode]);
 
   // Sync nodeColors to both renderers when the buffer changes
   useEffect(() => {
@@ -339,6 +362,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           backgroundColor={bg}
           links={props.links}
           linkColors={props.linkColors}
+          gpuSimulation={gpu2d}
           onHandleReady={(h) => {
             handle2D.current = h;
             setReadyTick((t) => t + 1);
