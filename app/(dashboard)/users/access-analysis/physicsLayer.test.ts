@@ -1307,3 +1307,40 @@ describe("B.2 accessors", () => {
     physics.dispose();
   });
 });
+
+describe("B.2 syncPositions", () => {
+  it("writes xyz into node positions (round-trips via getPositions)", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const next = new Float32Array([1, 2, 3, 4, 5, 6]);
+    physics.syncPositions(next);
+    const out = physics.getPositions();
+    expect(Array.from(out)).toEqual([1, 2, 3, 4, 5, 6]);
+    physics.dispose();
+  });
+
+  it("bumps positionsVersion", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const v0 = physics.positionsVersion;
+    physics.syncPositions(new Float32Array([0, 0, 0, 0, 0, 0]));
+    expect(physics.positionsVersion).toBeGreaterThan(v0);
+    physics.dispose();
+  });
+
+  it("does not change maskVersion", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    const m0 = physics.maskVersion;
+    physics.syncPositions(new Float32Array([0, 0, 0, 0, 0, 0]));
+    expect(physics.maskVersion).toBe(m0);
+    physics.dispose();
+  });
+
+  it("rejects mismatched buffer length", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    expect(() => physics.syncPositions(new Float32Array(3))).toThrow(/length/i);
+    physics.dispose();
+  });
+});

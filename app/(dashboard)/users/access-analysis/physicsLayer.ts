@@ -127,6 +127,12 @@ export interface PhysicsLayer {
   getDimWeights(): Record<string, Float32Array>;
   /** Latest slider values seen by updateSliders (normalized 0..1). Returns a shallow copy. */
   getSliders(): Record<string, number>;
+  /**
+   * Write displayed xyz back into d3's node array so a subsequent tick continues
+   * from this position (no snap on preview exit). Stride 3, length n*3.
+   * Bumps positionsVersion. PHYSICS-bus only — never touches mask or alpha.
+   */
+  syncPositions(xyz: Float32Array): void;
   /** Stop the simulation timer and release resources. */
   dispose(): void;
 }
@@ -575,6 +581,22 @@ export async function createPhysicsLayer(
 
     getSliders(): Record<string, number> {
       return { ..._sliders };
+    },
+
+    syncPositions(xyz: Float32Array): void {
+      const expected = nodes.length * 3;
+      if (xyz.length !== expected) {
+        throw new Error(
+          `physicsLayer.syncPositions: length mismatch (got ${xyz.length}, expected ${expected})`,
+        );
+      }
+      for (let i = 0; i < nodes.length; i++) {
+        const j = i * 3;
+        nodes[i].x = xyz[j];
+        nodes[i].y = xyz[j + 1];
+        nodes[i].z = xyz[j + 2];
+      }
+      _positionsVersion++;
     },
 
     dispose(): void {
