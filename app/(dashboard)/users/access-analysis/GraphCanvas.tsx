@@ -25,6 +25,7 @@ import { GraphCanvas2D, type GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { GraphCanvas3D, type GraphCanvas3DHandle } from "./GraphCanvas3D";
 import { useGraphRafLoop } from "./useGraphRafLoop";
 import { useSliders } from "./SliderContext";
+// previewLayer (B.2 fallback) is used only when ENABLE_PREVIEW_INTERPOLATION && !gpu2d
 import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
 
 // ---------------------------------------------------------------------------
@@ -246,9 +247,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     const h = handle2D.current;
     if (!h) return;
     const normalized: Record<string, number> = {};
-    for (const [k, v] of Object.entries(sliderValues)) normalized[k] = (v as number) / 100;
+    for (const [k, v] of Object.entries(sliderValues)) normalized[k] = v / 100;
     h.applySliders?.(normalized);   // applySliders is OPTIONAL on the handle — use ?.
-  }, [sliderValues, props.mode]);
+  }, [sliderValues, props.mode, gpu2d]);
 
   // Sync nodeColors to both renderers when the buffer changes
   useEffect(() => {
