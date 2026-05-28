@@ -169,7 +169,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     return () => {
       previewRef.current = null;
     };
-  }, [props.physics]);
+  }, [props.physics, gpu2d]);
 
   // B.2 — Subscribe to preview-active transitions (both 2D and 3D).
   // Depend only on the stable subscribePreviewActive function ([] deps in
@@ -233,6 +233,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     physics: props.physics,
     mode: props.mode,
     enabled: true,
+    skipPositionPump: gpu2d,
     onTick2D: (xyz) => {
       handle2D.current?.pushPositions(xyz);
     },

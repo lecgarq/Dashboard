@@ -34,6 +34,13 @@ export interface UseGraphRafLoopOptions {
    * Intended for 2D preview override (B.2).
    */
   getPositionsOverride?: () => Float32Array | null;
+  /**
+   * When true AND mode==='2d', skip the per-frame position read+route
+   * (cosmos GPU sim drives 2D itself). Mask change-detection still runs.
+   * In 3D mode this flag is ignored — the pump always runs.
+   * Default false.
+   */
+  skipPositionPump?: boolean;
 }
 
 /**
@@ -72,17 +79,27 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
     function tick(): void {
       rafId = requestAnimationFrame(tick);
 
-      let xyz: Float32Array;
-      const override = getPositionsOverrideRef.current?.() ?? null;
-      xyz = override ?? opts.physics.getPositions();
+      // When skipPositionPump is true in 2D mode, cosmos.gl GPU sim drives
+      // positions itself — skip the costly physics.getPositions() read+route
+      // (~204 KB Float32Array allocation per frame). Mask change-detection
+      // always runs regardless of this flag. In 3D mode the pump runs
+      // unconditionally (d3 engine requires it).
+      const skipPump = !!opts.skipPositionPump && opts.mode === "2d";
 
-      if (opts.mode === "2d") {
-        onTick2DRef.current(xyz);
-      } else {
-        onTick3DRef.current(xyz);
+      if (!skipPump) {
+        let xyz: Float32Array;
+        const override = getPositionsOverrideRef.current?.() ?? null;
+        xyz = override ?? opts.physics.getPositions();
+
+        if (opts.mode === "2d") {
+          onTick2DRef.current(xyz);
+        } else {
+          onTick3DRef.current(xyz);
+        }
       }
 
       // Change-detection guard: only fire onMaskChange when version increments.
+      // ALWAYS runs — skipPositionPump does not suppress mask updates.
       const currentVersion = opts.physics.maskVersion;
       if (currentVersion !== lastMaskVersionRef.current) {
         lastMaskVersionRef.current = currentVersion;
@@ -95,8 +112,8 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
     return () => {
       cancelAnimationFrame(rafId);
     };
-    // Re-run when physics instance, mode, or enabled flag changes.
+    // Re-run when physics instance, mode, enabled flag, or skipPositionPump changes.
     // Callback functions are accessed via stable refs above.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [opts.physics, opts.mode, opts.enabled]);
+  }, [opts.physics, opts.mode, opts.enabled, opts.skipPositionPump]);
 }
