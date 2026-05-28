@@ -18,12 +18,14 @@
  * - 3D → 2D: 400ms z-flatten animation via requestAnimationFrame
  */
 
-import React, { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import type { PhysicsLayer } from "./physicsLayer";
 import { GraphCanvas2D, type GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { GraphCanvas3D, type GraphCanvas3DHandle } from "./GraphCanvas3D";
 import { useGraphRafLoop } from "./useGraphRafLoop";
+import { useSliders } from "./SliderContext";
+import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
 
 // ---------------------------------------------------------------------------
 // Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
@@ -80,6 +82,17 @@ export interface GraphCanvasProps {
 }
 
 // ---------------------------------------------------------------------------
+// Feature flag
+// ---------------------------------------------------------------------------
+
+/**
+ * B.2 — 2D real-time preview interpolation. Setting this to `false` skips the
+ * preview layer construction entirely; the override is never installed, so 2D
+ * + 3D both behave exactly as they did in B.1.
+ */
+const ENABLE_PREVIEW_INTERPOLATION = true;
+
+// ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
 
@@ -89,6 +102,12 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   const bg =
     props.backgroundColor ??
     (resolvedTheme === "dark" ? "#09090B" : "#FFFFFF");
+
+  // B.2 preview interpolation state
+  const sliders = useSliders();
+  const previewRef = useRef<PreviewLayer | null>(null);
+  const previewActiveLocalRef = useRef<boolean>(false);
+  const lastFrameTsRef = useRef<number>(0);
 
   // Handle refs for each renderer
   const handle2D = useRef<GraphCanvas2DHandle | null>(null);
@@ -109,6 +128,71 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [props.mode, readyTick],
   );
+
+  // B.2 — Construct the preview layer once per physics instance
+  useEffect(() => {
+    if (!ENABLE_PREVIEW_INTERPOLATION) {
+      previewRef.current = null;
+      return;
+    }
+    const xyz = props.physics.getPositions();
+    previewRef.current = createPreviewLayer({
+      targets: props.physics.getTargets(),
+      dimWeights: props.physics.getDimWeights(),
+      nodeCount: xyz.length / 3,
+    });
+    return () => {
+      previewRef.current = null;
+    };
+  }, [props.physics]);
+
+  // B.2 — Subscribe to preview-active transitions (2D only; 3D is inert).
+  // Depend only on the stable subscribePreviewActive function ([] deps in
+  // SliderContext), props.physics, and props.mode — NOT on the full sliders
+  // context value (which changes identity on every slider move and would
+  // cause the cleanup to fire syncPositions mid-drag).
+  const { subscribePreviewActive } = sliders;
+  useEffect(() => {
+    if (!ENABLE_PREVIEW_INTERPOLATION) return;
+    if (props.mode !== "2d") return;
+    const unsub = subscribePreviewActive((active) => {
+      const layer = previewRef.current;
+      if (!layer) return;
+      if (active) {
+        layer.seedFrom(props.physics.getPositions());
+        lastFrameTsRef.current = performance.now();
+        previewActiveLocalRef.current = true;
+      } else if (previewActiveLocalRef.current) {
+        props.physics.syncPositions(layer.snapshot());
+        previewActiveLocalRef.current = false;
+      }
+    });
+    return () => {
+      unsub();
+      // If we're tearing down while preview is still active (mode flip
+      // 2D→3D mid-drag), commit the in-flight buffer back to physics so
+      // the next 2D session starts from the visible state, not stale d3.
+      if (previewActiveLocalRef.current && previewRef.current) {
+        props.physics.syncPositions(previewRef.current.snapshot());
+        previewActiveLocalRef.current = false;
+      }
+    };
+  }, [subscribePreviewActive, props.physics, props.mode]);
+
+  // B.2 — Override callback: returns the interpolated positions during preview
+  const getPositionsOverride = useCallback((): Float32Array | null => {
+    if (!ENABLE_PREVIEW_INTERPOLATION) return null;
+    if (!previewActiveLocalRef.current) return null;
+    const layer = previewRef.current;
+    if (!layer) return null;
+    const now = performance.now();
+    // Cap dt after pauses (tab backgrounded, breakpoint, etc.) — without this
+    // the lerp would jump a huge chunk on the first resume frame.
+    const dt = Math.min(50, now - lastFrameTsRef.current);
+    lastFrameTsRef.current = now;
+    layer.step(props.physics.getSliders(), dt);
+    return layer.snapshot();
+  }, [props.physics]);
 
   // Container refs for the two canvas slots (always mounted — visibility swap pattern)
   const container2DRef = useRef<HTMLDivElement | null>(null);
@@ -135,6 +219,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
       handle2D.current?.applyAlphaMask(mask, version);
       handle3D.current?.applyAlphaMask(mask, version);
     },
+    getPositionsOverride,
   });
 
   // Sync nodeColors to both renderers when the buffer changes

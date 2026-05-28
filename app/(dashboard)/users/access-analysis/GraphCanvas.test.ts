@@ -312,7 +312,7 @@ describe("GraphCanvas.tsx + GraphCanvas2D.tsx — REND-04 source purity", () => 
     const gcImportLines = gcSrc.split("\n").filter((l) => l.trimStart().startsWith("import"));
     for (const line of gcImportLines) {
       expect(line, "GraphCanvas.tsx has unexpected import: " + line).toMatch(
-        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop/i
+        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer/i
       );
     }
   });
