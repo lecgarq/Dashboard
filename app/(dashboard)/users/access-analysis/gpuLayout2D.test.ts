@@ -1,6 +1,7 @@
 // gpuLayout2D.test.ts
 import { describe, it, expect } from "vitest";
 import { computeAnchors } from "./gpuLayout2D";
+import { mapForceConfig } from "./gpuLayout2D";
 
 // Two dims whose single-dim targets sit on orthogonal axes (matches mathLayer:
 // target[dim] already encodes R*u_d*f_d, so blending = weighted average).
@@ -46,5 +47,33 @@ describe("computeAnchors", () => {
 
   it("throws on a node-count mismatch (dev guard)", () => {
     expect(() => computeAnchors({ d1: 1 }, targets, dimWeights, 3)).toThrow();
+  });
+});
+
+describe("mapForceConfig", () => {
+  it("returns all five cosmos simulation coefficients", () => {
+    const c = mapForceConfig({ d1: 0.5 });
+    expect(c).toHaveProperty("simulationRepulsion");
+    expect(c).toHaveProperty("simulationCluster");
+    expect(c).toHaveProperty("simulationGravity");
+    expect(c).toHaveProperty("simulationDecay");
+    expect(c).toHaveProperty("simulationFriction");
+  });
+
+  it("increases repulsion and cluster pull as the max slider rises", () => {
+    const off = mapForceConfig({ d1: 0, d2: 0 });
+    const on = mapForceConfig({ d1: 1, d2: 0 });
+    expect(on.simulationRepulsion).toBeGreaterThan(off.simulationRepulsion);
+    expect(on.simulationCluster).toBeGreaterThan(off.simulationCluster);
+  });
+
+  it("uses max() across sliders (a single engaged slider drives intensity)", () => {
+    const a = mapForceConfig({ d1: 1, d2: 0 });
+    const b = mapForceConfig({ d1: 1, d2: 1 });
+    expect(a.simulationRepulsion).toBeCloseTo(b.simulationRepulsion, 5);
+  });
+
+  it("contributes zero cluster pull when all sliders are zero", () => {
+    expect(mapForceConfig({ d1: 0 }).simulationCluster).toBe(0);
   });
 });
