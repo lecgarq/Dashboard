@@ -1261,3 +1261,49 @@ describe("B.1: setActiveInput toggles the preview force profile", () => {
     layer.dispose();
   });
 });
+
+describe("B.2 accessors", () => {
+  it("getTargets returns the targets passed at construction", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    expect(physics.getTargets()).toBe(targets);
+    physics.dispose();
+  });
+
+  it("getDimWeights returns {} when not provided at construction", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    expect(physics.getDimWeights()).toEqual({});
+    physics.dispose();
+  });
+
+  it("getDimWeights returns the dimWeights reference passed at construction", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const dimWeights = {
+      "dim-activity": new Float32Array([1, 0.5]),
+      "dim-recency": new Float32Array([0.25, 1]),
+    };
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders, dimWeights);
+    expect(physics.getDimWeights()).toBe(dimWeights);
+    physics.dispose();
+  });
+
+  it("getSliders reflects the latest updateSliders call as a copy", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    physics.updateSliders({ "dim-activity": 0.42 });
+    const s = physics.getSliders();
+    expect(s["dim-activity"]).toBeCloseTo(0.42, 5);
+    // mutating the returned copy must not affect internal state
+    s["dim-activity"] = 999;
+    expect(physics.getSliders()["dim-activity"]).toBeCloseTo(0.42, 5);
+    physics.dispose();
+  });
+
+  it("getSliders includes initial slider state at construction (zeros)", async () => {
+    const { nodeIds, nodes, targets, dimNames, initialSliders } = makeFixture(2);
+    const physics = await createPhysicsLayer(nodeIds, nodes, targets, dimNames, initialSliders);
+    expect(physics.getSliders()).toEqual({ "dim-activity": 0, "dim-recency": 0 });
+    physics.dispose();
+  });
+});

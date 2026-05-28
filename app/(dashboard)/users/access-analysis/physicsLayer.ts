@@ -121,6 +121,12 @@ export interface PhysicsLayer {
    * Safe to call at any time (reads from d3 node objects, stride-3).
    */
   getPositions(): Float32Array;
+  /** Read-only snapshot of the per-dimension target arrays passed at construction. */
+  getTargets(): TargetArrays;
+  /** Read-only snapshot of the per-dimension dimWeights passed at construction. Empty object if none. */
+  getDimWeights(): Record<string, Float32Array>;
+  /** Latest slider values seen by updateSliders (normalized 0..1). Returns a shallow copy. */
+  getSliders(): Record<string, number>;
   /** Stop the simulation timer and release resources. */
   dispose(): void;
 }
@@ -557,6 +563,18 @@ export async function createPhysicsLayer(
         xyz[i * 3 + 2] = nodes[i].z ?? 0;
       }
       return xyz;
+    },
+
+    getTargets(): TargetArrays {
+      return targets;
+    },
+
+    getDimWeights(): Record<string, Float32Array> {
+      return dimWeights;
+    },
+
+    getSliders(): Record<string, number> {
+      return { ..._sliders };
     },
 
     dispose(): void {
