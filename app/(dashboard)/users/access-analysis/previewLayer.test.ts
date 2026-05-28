@@ -29,3 +29,55 @@ describe("previewLayer — construction & seed", () => {
     expect(p.displayed).toBe(before);
   });
 });
+
+describe("previewLayer — step", () => {
+  const targets = {
+    d1: { x: new Float32Array([100, 100]), y: new Float32Array([0, 0]), z: new Float32Array([0, 0]) },
+    d2: { x: new Float32Array([0, 0]), y: new Float32Array([100, 100]), z: new Float32Array([0, 0]) },
+  };
+  const dimWeights = { d1: new Float32Array([1, 1]), d2: new Float32Array([1, 1]) };
+
+  it("returns false when all sliders are zero", () => {
+    const p = createPreviewLayer({ targets, dimWeights, nodeCount: 2 });
+    p.seedFrom(new Float32Array([50, 50, 0, 50, 50, 0]));
+    const moved = p.step({ d1: 0, d2: 0 }, 16);
+    expect(moved).toBe(false);
+    expect(Array.from(p.displayed)).toEqual([50, 50, 0, 50, 50, 0]);
+  });
+
+  it("moves toward the d1 target when only d1 is active", () => {
+    const p = createPreviewLayer({ targets, dimWeights, nodeCount: 2 });
+    p.seedFrom(new Float32Array([0, 0, 0, 0, 0, 0]));
+    const moved = p.step({ d1: 1, d2: 0 }, 16);
+    expect(moved).toBe(true);
+    expect(p.displayed[0]).toBeGreaterThan(10);
+    expect(p.displayed[0]).toBeLessThan(25);
+    expect(p.displayed[1]).toBe(0);
+  });
+
+  it("blends targets proportionally to slider values", () => {
+    const p = createPreviewLayer({ targets, dimWeights, nodeCount: 2 });
+    p.seedFrom(new Float32Array([0, 0, 0, 0, 0, 0]));
+    for (let i = 0; i < 200; i++) p.step({ d1: 1, d2: 1 }, 16);
+    expect(p.displayed[0]).toBeCloseTo(50, 0);
+    expect(p.displayed[1]).toBeCloseTo(50, 0);
+  });
+
+  it("holds position when a node has zero dimWeight on every active dim", () => {
+    const zeroW = { d1: new Float32Array([0, 1]), d2: new Float32Array([0, 1]) };
+    const p = createPreviewLayer({ targets, dimWeights: zeroW, nodeCount: 2 });
+    p.seedFrom(new Float32Array([7, 7, 7, 0, 0, 0]));
+    p.step({ d1: 1, d2: 1 }, 16);
+    expect(p.displayed[0]).toBe(7);
+    expect(p.displayed[1]).toBe(7);
+    expect(p.displayed[2]).toBe(7);
+    expect(p.displayed[3]).toBeGreaterThan(0);
+  });
+
+  it("does not allocate per-frame (buffer reference stable across many steps)", () => {
+    const p = createPreviewLayer({ targets, dimWeights, nodeCount: 2 });
+    const ref = p.displayed;
+    for (let i = 0; i < 100; i++) p.step({ d1: 1, d2: 0 }, 16);
+    expect(p.snapshot()).toBe(ref);
+  });
+});
