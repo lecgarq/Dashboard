@@ -646,6 +646,7 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     // d1 target.x=100 → node 0 anchor x ≈ 100
     expect(_clusterPosCalls[0]![0]).toBeCloseTo(100, 3);
     expect(_startCalls.length).toBe(1); // reheat
+    expect(_startCalls[0]).toBe(0.5);
   });
 
   it("GPU-3: pushPositions is a no-op in GPU mode (cosmos owns positions)", async () => {

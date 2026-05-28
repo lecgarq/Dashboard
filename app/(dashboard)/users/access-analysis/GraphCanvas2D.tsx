@@ -8,7 +8,7 @@
  * - Returns null (owns no DOM of its own; the container div lives in GraphCanvas.tsx).
  * - Exposes a GraphCanvas2DHandle via onHandleReady for position + mask updates.
  *
- * REND-01: cosmos.gl v3 with enableSimulation:false (frozen), pointGreyoutOpacity:0.15.
+ * REND-01: cosmos.gl v3 — frozen mode by default (enableSimulation:false); optional GPU cluster-anchor simulation via the `gpuSimulation` prop.
  * REND-05: transitionDuration:0 + dontRescale:true on tick calls = zero jitter.
  * REND-04: Imports only @cosmos.gl/graph, react, and ./physicsLayer (type only).
  *
@@ -277,19 +277,19 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // availability-gated dim weights. Seed positions AT the anchors so the sim
       // starts near targets (not random) then reheat with start(alpha).
       if (props.gpuSimulation) {
-        const n2 = xyz0.length / 3;
         const targets = props.physics.getTargets();
         const dimW = props.physics.getDimWeights();
         const sliders0 = props.physics.getSliders();
-        const anchors0 = computeAnchors(sliders0, targets, dimW, n2);
+        const anchors0 = computeAnchors(sliders0, targets, dimW, n);
         (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
-          identityClusters(n2),
+          identityClusters(n),
         );
+        // cosmos setClusterPositions wants a plain (number|undefined)[] (undefined = unanchored); Array.from converts the typed buffer. ~n*2 numbers per slider event — negligible at human cadence.
         (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
           Array.from(anchors0),
         );
         (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
-          clusterStrengthFromWeights(dimW, sliders0, n2),
+          clusterStrengthFromWeights(dimW, sliders0, n),
         );
         g.setPointPositions(anchors0, false); // seed near targets, not random
         (g as unknown as { start: (a?: number) => void }).start(0.5);
