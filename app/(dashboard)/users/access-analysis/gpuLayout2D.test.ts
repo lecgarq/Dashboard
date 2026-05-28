@@ -2,6 +2,7 @@
 import { describe, it, expect } from "vitest";
 import { computeAnchors } from "./gpuLayout2D";
 import { mapForceConfig } from "./gpuLayout2D";
+import { clusterStrengthFromWeights, identityClusters } from "./gpuLayout2D";
 
 // Two dims whose single-dim targets sit on orthogonal axes (matches mathLayer:
 // target[dim] already encodes R*u_d*f_d, so blending = weighted average).
@@ -75,5 +76,32 @@ describe("mapForceConfig", () => {
 
   it("contributes zero cluster pull when all sliders are zero", () => {
     expect(mapForceConfig({ d1: 0 }).simulationCluster).toBe(0);
+  });
+});
+
+describe("clusterStrengthFromWeights", () => {
+  const targets3 = {
+    d1: { x: new Float32Array([0, 0, 0]), y: new Float32Array([0, 0, 0]), z: new Float32Array([0, 0, 0]) },
+  };
+  it("returns per-node strength in [0,1], one entry per node", () => {
+    const w = { d1: new Float32Array([1, 0.5, 0]) };
+    const s = clusterStrengthFromWeights(w, { d1: 1 }, 3);
+    expect(s).toBeInstanceOf(Float32Array);
+    expect(s.length).toBe(3);
+    expect(s[0]).toBeCloseTo(1, 5);
+    expect(s[1]).toBeCloseTo(0.5, 5);
+    expect(s[2]).toBe(0); // availability-gated → no pull
+    void targets3;
+  });
+  it("yields zero strength for every node when no slider is active", () => {
+    const w = { d1: new Float32Array([1, 1, 1]) };
+    const s = clusterStrengthFromWeights(w, { d1: 0 }, 3);
+    expect(Array.from(s)).toEqual([0, 0, 0]);
+  });
+});
+
+describe("identityClusters", () => {
+  it("assigns each node to its own cluster index", () => {
+    expect(identityClusters(3)).toEqual([0, 1, 2]);
   });
 });
