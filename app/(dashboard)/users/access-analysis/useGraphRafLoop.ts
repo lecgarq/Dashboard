@@ -26,6 +26,14 @@ export interface UseGraphRafLoopOptions {
    * NOT called every frame — only on change.
    */
   onMaskChange?: (alphaMask: Float32Array, version: number) => void;
+  /**
+   * Optional per-frame positions source. When supplied and the call returns a
+   * non-null Float32Array, the loop routes THAT array to onTick2D instead of
+   * calling physics.getPositions(). Returning null falls back to
+   * physics.getPositions() for that frame. Ignored entirely in 3D mode.
+   * Intended for 2D preview override (B.2).
+   */
+  getPositionsOverride?: () => Float32Array | null;
 }
 
 /**
@@ -45,6 +53,9 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
   const onTick3DRef = useRef(opts.onTick3D);
   const onMaskChangeRef = useRef(opts.onMaskChange);
 
+  const getPositionsOverrideRef = useRef(opts.getPositionsOverride);
+  getPositionsOverrideRef.current = opts.getPositionsOverride;
+
   // Keep callback refs fresh without restarting the loop
   onTick2DRef.current = opts.onTick2D;
   onTick3DRef.current = opts.onTick3D;
@@ -61,14 +72,17 @@ export function useGraphRafLoop(opts: UseGraphRafLoopOptions): void {
     function tick(): void {
       rafId = requestAnimationFrame(tick);
 
-      // physicsLayer.getPositions() allocates a new Float32Array(n*3) each call.
-      // This is expected (Pitfall 4 in RESEARCH — physicsLayer's API contract).
-      // We pass the reference through directly; no additional allocation here.
-      const xyz = opts.physics.getPositions();
-
+      let xyz: Float32Array;
       if (opts.mode === "2d") {
+        // In 2D: use override if supplied and returns non-null; otherwise fall
+        // back to physics.getPositions(). This avoids the physics allocation
+        // and d3-snapshot read on frames where the preview layer owns positions.
+        const override = getPositionsOverrideRef.current?.() ?? null;
+        xyz = override ?? opts.physics.getPositions();
         onTick2DRef.current(xyz);
       } else {
+        // In 3D: always use physics. Override is ignored to avoid coupling.
+        xyz = opts.physics.getPositions();
         onTick3DRef.current(xyz);
       }
 
