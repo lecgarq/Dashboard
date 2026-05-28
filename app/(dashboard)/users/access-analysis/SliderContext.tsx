@@ -78,6 +78,8 @@ interface SliderContextValue {
   resetOne: (dimId: DimensionId) => void;
   applyPreset: (presetId: string) => void;
   activePreset: string | null;
+  subscribePreviewActive: (listener: (active: boolean) => void) => () => void;
+  isPreviewActive: () => boolean;
 }
 
 const SliderCtx = createContext<SliderContextValue | null>(null);
@@ -152,11 +154,17 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   /** Debounce window after the last slider change before exiting preview. */
   const PREVIEW_IDLE_MS = 250;
 
+  const previewListenersRef = useRef<Set<(active: boolean) => void>>(new Set());
+  const emitPreview = useCallback((active: boolean) => {
+    previewListenersRef.current.forEach((fn) => fn(active));
+  }, []);
+
   const enterPreview = useCallback((): void => {
     if (!physics) return;
     if (!previewActiveRef.current) {
       previewActiveRef.current = true;
       physics.setActiveInput?.(true);
+      emitPreview(true);
     }
     if (previewIdleIdRef.current !== null) {
       window.clearTimeout(previewIdleIdRef.current);
@@ -165,8 +173,9 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
       previewIdleIdRef.current = null;
       previewActiveRef.current = false;
       physics.setActiveInput?.(false);
+      emitPreview(false);
     }, PREVIEW_IDLE_MS);
-  }, [physics]);
+  }, [physics, emitPreview]);
 
   // Cancel the timer on unmount so we never call setActiveInput against a
   // disposed PhysicsLayer.
@@ -270,9 +279,10 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
     if (previewActiveRef.current) {
       previewActiveRef.current = false;
       physics?.setActiveInput?.(false);
+      emitPreview(false);
     }
     flushToPhysics(next);
-  }, [flushToPhysics, physics]);
+  }, [flushToPhysics, physics, emitPreview]);
 
   const resetOne = useCallback(
     (dimId: DimensionId): void => {
@@ -298,9 +308,30 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
 
   const activePreset = useMemo(() => detectActivePreset(values), [values]);
 
+  const subscribePreviewActive = useCallback(
+    (listener: (active: boolean) => void): (() => void) => {
+      previewListenersRef.current.add(listener);
+      return () => {
+        previewListenersRef.current.delete(listener);
+      };
+    },
+    [],
+  );
+
+  const isPreviewActive = useCallback((): boolean => previewActiveRef.current, []);
+
   const ctx = useMemo<SliderContextValue>(
-    () => ({ values, setSliderValue, resetAll, resetOne, applyPreset: applyPresetCb, activePreset }),
-    [values, setSliderValue, resetAll, resetOne, applyPresetCb, activePreset],
+    () => ({
+      values,
+      setSliderValue,
+      resetAll,
+      resetOne,
+      applyPreset: applyPresetCb,
+      activePreset,
+      subscribePreviewActive,
+      isPreviewActive,
+    }),
+    [values, setSliderValue, resetAll, resetOne, applyPresetCb, activePreset, subscribePreviewActive, isPreviewActive],
   );
 
   return <SliderCtx.Provider value={ctx}>{children}</SliderCtx.Provider>;

@@ -351,3 +351,116 @@ describe("SliderContext — legacy isExternal migration", () => {
     expect(migratePersistedSliders({ role: 25 })).toEqual({ role: 25 });
   });
 });
+
+describe("SliderContext — preview subscription (B.2)", () => {
+  it("subscribePreviewActive fires true synchronously on first slider change", () => {
+    const { physics } = mkPhysics();
+    const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+    const seen: boolean[] = [];
+    act(() => {
+      result.current.subscribePreviewActive((a) => seen.push(a));
+      result.current.setSliderValue("activity", 50);
+    });
+    expect(seen[0]).toBe(true);
+  });
+
+  it("isPreviewActive reflects current state", () => {
+    vi.useFakeTimers();
+    try {
+      const { physics } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+      expect(result.current.isPreviewActive()).toBe(false);
+      act(() => {
+        result.current.setSliderValue("activity", 50);
+      });
+      expect(result.current.isPreviewActive()).toBe(true);
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(result.current.isPreviewActive()).toBe(false);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("subscribePreviewActive fires false synchronously when the debounce timer exits", () => {
+    vi.useFakeTimers();
+    try {
+      const { physics } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+      const seen: boolean[] = [];
+      act(() => {
+        result.current.subscribePreviewActive((a) => seen.push(a));
+        result.current.setSliderValue("activity", 50);
+      });
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(seen).toEqual([true, false]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("subscribePreviewActive fires false synchronously on resetAll exit", () => {
+    const { physics } = mkPhysics();
+    const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+    const seen: boolean[] = [];
+    act(() => {
+      result.current.subscribePreviewActive((a) => seen.push(a));
+      result.current.setSliderValue("activity", 50);
+    });
+    act(() => {
+      result.current.resetAll();
+    });
+    expect(seen).toEqual([true, false]);
+  });
+
+  it("repeated entry while already active does NOT re-emit true", () => {
+    vi.useFakeTimers();
+    try {
+      const { physics } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+      const seen: boolean[] = [];
+      act(() => {
+        result.current.subscribePreviewActive((a) => seen.push(a));
+        result.current.setSliderValue("activity", 10);
+      });
+      act(() => {
+        vi.advanceTimersByTime(50);
+        result.current.setSliderValue("activity", 20);
+      });
+      act(() => {
+        vi.advanceTimersByTime(50);
+        result.current.setSliderValue("activity", 30);
+      });
+      const trueCount = seen.filter((v) => v === true).length;
+      expect(trueCount).toBe(1);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("unsubscribe removes the listener", () => {
+    vi.useFakeTimers();
+    try {
+      const { physics } = mkPhysics();
+      const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+      const seen: boolean[] = [];
+      let unsub: () => void = () => {};
+      act(() => {
+        unsub = result.current.subscribePreviewActive((a) => seen.push(a));
+      });
+      act(() => {
+        unsub();
+        result.current.setSliderValue("activity", 50);
+      });
+      act(() => {
+        vi.advanceTimersByTime(300);
+      });
+      expect(seen).toEqual([]);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
