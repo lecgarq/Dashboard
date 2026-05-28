@@ -49,6 +49,15 @@ describe("computeAnchors", () => {
   it("throws on a node-count mismatch (dev guard)", () => {
     expect(() => computeAnchors({ d1: 1 }, targets, dimWeights, 3)).toThrow();
   });
+
+  it("throws when a target y array is shorter than nodeCount", () => {
+    const badYTargets = {
+      d1: { x: new Float32Array([100, 100, 100]), y: new Float32Array([0, 0]) },
+    };
+    expect(() =>
+      computeAnchors({ d1: 1 }, badYTargets, { d1: new Float32Array([1, 1, 1]) }, 3),
+    ).toThrow(/y/);
+  });
 });
 
 describe("mapForceConfig", () => {
@@ -80,9 +89,6 @@ describe("mapForceConfig", () => {
 });
 
 describe("clusterStrengthFromWeights", () => {
-  const targets3 = {
-    d1: { x: new Float32Array([0, 0, 0]), y: new Float32Array([0, 0, 0]), z: new Float32Array([0, 0, 0]) },
-  };
   it("returns per-node strength in [0,1], one entry per node", () => {
     const w = { d1: new Float32Array([1, 0.5, 0]) };
     const s = clusterStrengthFromWeights(w, { d1: 1 }, 3);
@@ -91,12 +97,19 @@ describe("clusterStrengthFromWeights", () => {
     expect(s[0]).toBeCloseTo(1, 5);
     expect(s[1]).toBeCloseTo(0.5, 5);
     expect(s[2]).toBe(0); // availability-gated → no pull
-    void targets3;
   });
   it("yields zero strength for every node when no slider is active", () => {
     const w = { d1: new Float32Array([1, 1, 1]) };
     const s = clusterStrengthFromWeights(w, { d1: 0 }, 3);
     expect(Array.from(s)).toEqual([0, 0, 0]);
+  });
+
+  it("clamps strength to 1 when a dimWeight entry exceeds 1", () => {
+    const w = { d1: new Float32Array([1.5, 0.5, 0]) };
+    const s = clusterStrengthFromWeights(w, { d1: 1 }, 3);
+    expect(s[0]).toBe(1); // clamped from 1.5
+    expect(s[1]).toBeCloseTo(0.5, 5);
+    expect(s[2]).toBe(0);
   });
 });
 

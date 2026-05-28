@@ -22,9 +22,10 @@ export function computeAnchors(
 ): Float32Array {
   const dimIds = Object.keys(targets);
   for (const id of dimIds) {
-    if (targets[id].x.length !== nodeCount) {
+    const t = targets[id];
+    if (t.x.length !== nodeCount || t.y.length !== nodeCount) {
       throw new Error(
-        `computeAnchors: target '${id}' length ${targets[id].x.length} != nodeCount ${nodeCount}`,
+        `computeAnchors: target '${id}' x/y lengths (${t.x.length}/${t.y.length}) != nodeCount ${nodeCount}`,
       );
     }
   }
@@ -106,8 +107,8 @@ export function clusterStrengthFromWeights(
     if (sv <= 0) continue;
     const w = dimWeights[id];
     for (let i = 0; i < nodeCount; i++) {
-      const wi = w ? w[i] : 1;
-      if (wi > out[i]) out[i] = wi;
+      const v = Math.min(1, w ? w[i] : 1);
+      if (v > out[i]) out[i] = v;
     }
   }
   return out;
