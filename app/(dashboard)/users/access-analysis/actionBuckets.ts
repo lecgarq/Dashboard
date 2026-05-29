@@ -18,13 +18,12 @@ export const ACTION_BUCKET_COUNT = 4;
 /** Interior tercile cut points over an action's NONZERO counts: [t1, t2]. */
 export type ActionThresholds = readonly [number, number];
 
-/** Linear-interpolated quantile of a pre-sorted ascending array. */
+/** Linear-interpolated quantile of a pre-sorted ascending array. Precondition: sorted.length >= 1. */
 function quantile(sorted: number[], q: number): number {
   if (sorted.length === 1) return sorted[0];
   const pos = (sorted.length - 1) * q;
   const lo = Math.floor(pos);
   const hi = Math.ceil(pos);
-  if (lo === hi) return sorted[lo];
   return sorted[lo] + (sorted[hi] - sorted[lo]) * (pos - lo);
 }
 
@@ -64,6 +63,7 @@ export function computeActionThresholds(
   return out;
 }
 
+// NaN counts are not guarded; callers must pass a finite number. NaN falls through to bucket 3 (all NaN comparisons are false).
 /** Classify a raw count into a bucket using the action's thresholds. */
 export function bucketForCount(count: number, thresholds: ActionThresholds): ActionBucket {
   if (count <= 0) return 0;

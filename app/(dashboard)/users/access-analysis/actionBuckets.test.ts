@@ -48,8 +48,23 @@ describe("actionBuckets", () => {
   it("outliers do not move the cut points off the bulk (relative, not absolute)", () => {
     const counts = [1, 1, 1, 1, 1, 1, 1, 1, 1, 1000]; // one huge outlier
     const th = computeActionThresholds(counts.map((c) => feat({ a: c })), ["a"]).get("a")!;
-    // t1/t2 stay near the bulk (1), so a count of 2 is already high, not "low".
-    expect(th[0]).toBeLessThan(1000);
-    expect(bucketForCount(1, th)).toBeLessThanOrEqual(3);
+    expect(th[0]).toBeLessThan(1000); // cut points stay near the bulk, not the outlier
+    expect(bucketForCount(1, th)).toBe(3);    // bulk value is high (t1==t2==1)
+    expect(bucketForCount(2, th)).toBe(3);    // above bulk is high
+    expect(bucketForCount(1000, th)).toBe(3); // outlier is high too
+  });
+
+  it("all-same nonzero distribution (t1==t2): every present count lands at high", () => {
+    const features = [1, 1, 1, 1].map((c) => feat({ view: c }));
+    const th = computeActionThresholds(features, ["view"]).get("view")!;
+    expect(th[0]).toBe(1);
+    expect(th[1]).toBe(1);
+    expect(bucketForCount(1, th)).toBe(3); // count == t1 == t2 -> high (NOT low/med)
+  });
+
+  it("count at a threshold boundary lands in the upper bucket (half-open intervals)", () => {
+    const th = computeActionThresholds([2, 4, 6].map((c) => feat({ z: c })), ["z"]).get("z")!;
+    expect(bucketForCount(Math.ceil(th[0]), th)).toBe(2); // >= t1, < t2 -> med
+    expect(bucketForCount(Math.ceil(th[1]), th)).toBe(3); // >= t2 -> high
   });
 });
