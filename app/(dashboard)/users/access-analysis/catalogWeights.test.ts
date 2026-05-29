@@ -51,4 +51,10 @@ describe("catalogWeights", () => {
     expect(w[0]).toBeCloseTo(1, 6);
     expect(w[1]).toBeCloseTo(1, 6);
   });
+
+  it("categorical extract returning a number gets weight 1 (number is a valid non-null value)", () => {
+    const d = dim({ id: "score", kind: "categorical", confidence: "high", extract: () => 42 });
+    const w = buildCatalogWeights([node({})], [d])["score"];
+    expect(w[0]).toBeCloseTo(1, 6);
+  });
 });
