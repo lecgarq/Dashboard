@@ -203,3 +203,31 @@ describe("activityByInstance attach", () => {
     expect(assembleDcUsers(base)[0].projects[0].activityTotal).toBeUndefined();
   });
 });
+
+describe("actionCounts attach", () => {
+  it("merges per-instance action counts with the actor's admin action counts onto every instance", () => {
+    const out = assembleDcUsers({
+      ...base,
+      users: [{ id: "u1", email: "a@hermosillo.com", name: "A", status: "active", companyId: null }],
+      projectUsers: [
+        { projectId: "p1", userId: "u1" },
+        { projectId: "p2", userId: "u1" },
+      ],
+      projectMeta: {
+        p1: { name: "P1", status: "active", crawlStatus: "ok" },
+        p2: { name: "P2", status: "active", crawlStatus: "ok" },
+      },
+      activityByInstance: new Map([
+        ["a@hermosillo.com::p1", { mix: { view: 4 }, total: 4, lastActivity: "2026-05-10T00:00:00.000Z", actionCounts: { "view-entity": 4 } }],
+      ]),
+      adminActionsByActor: new Map([["a@hermosillo.com", { "assign-member": 3 }]]),
+    });
+    const byId = Object.fromEntries(out[0].projects.map((p) => [p.id, p]));
+    expect(byId.p1.actionCounts).toEqual({ "view-entity": 4, "assign-member": 3 });
+    expect(byId.p2.actionCounts).toEqual({ "assign-member": 3 });
+  });
+
+  it("defaults actionCounts to an empty object when nothing applies", () => {
+    expect(assembleDcUsers(base)[0].projects[0].actionCounts).toEqual({});
+  });
+});

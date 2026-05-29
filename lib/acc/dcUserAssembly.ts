@@ -26,6 +26,8 @@ export interface DcAssemblyInput {
   includePermissionSummary?: boolean;
   /** [P5-C] Per-(user,project) activity aggregate, keyed `lowercasedEmail::projectId`. */
   activityByInstance?: Map<string, InstanceActivity>;
+  /** [Phase B] Account-level admin action counts per actor (lowercased email -> {actionId: count}). */
+  adminActionsByActor?: Map<string, Record<string, number>>;
 }
 
 export function normalizePermTier(permType: string): string {
@@ -173,6 +175,15 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         fullController = tiers.has("control");
       }
       const activity = input.activityByInstance?.get(`${email}::${pid}`);
+      // [Phase B] per-instance action counts, then fold in the actor's account-level
+      // admin action counts (same for every one of this user's instances — decision 9).
+      const actionCounts: Record<string, number> = { ...(activity?.actionCounts ?? {}) };
+      const adminCounts = input.adminActionsByActor?.get(email);
+      if (adminCounts) {
+        for (const [k, v] of Object.entries(adminCounts)) {
+          actionCounts[k] = (actionCounts[k] ?? 0) + v;
+        }
+      }
       return {
         id: pid,
         name: meta.name,
@@ -190,6 +201,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         activityMix: activity?.mix,
         activityTotal: activity?.total,
         lastActivity: activity?.lastActivity,
+        actionCounts,
       };
     });
 

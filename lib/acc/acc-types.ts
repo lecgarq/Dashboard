@@ -25,6 +25,8 @@ export interface BulkAccProject {
   activityTotal?: number;
   /** [P5-C] ISO of the most recent activity event for THIS instance; null when none. */
   lastActivity?: string | null;
+  /** [Phase B] Sparse per-canonical-action counts for THIS instance (taxonomy ids). */
+  actionCounts?: Record<string, number>;
 }
 
 export interface PermissionContext {
