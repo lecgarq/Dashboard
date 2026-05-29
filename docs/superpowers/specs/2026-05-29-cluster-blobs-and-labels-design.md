@@ -114,6 +114,32 @@ for cluster mode vs. per-node pinning) is for the plan to finalize, under the ha
 that **separation must not depend on force balance.** This also makes the cluster view fully
 deterministic, which the frozen-positions lasso/selection e2e suite prefers.
 
+**Transition animation — handle the `0↔1` boundary with care.** This is a first-class
+requirement, not a polish afterthought. The boundary at slider `0` is where the view
+*switches regimes* — true scatter / GPU free-explore at exactly 0 ↔ deterministic packed
+blobs at >0 — so a naive swap teleports nodes across that line. Rules:
+
+- **Never hard-swap positions.** Every layout change (engage, disengage, regroup, tightness)
+  animates by **interpolating current → target** node positions over a capped, eased
+  (ease-in-out) duration. The renderer always tweens; it never assigns a new buffer outright.
+- **Re-seed from the visible state on every change.** Reuse the existing preview-interpolation
+  pattern (`seedFrom(current positions)` / `syncPositions`) so a continuous slider drag
+  re-targets from where the nodes *currently are*, not from a stale base — no restart, no
+  stutter mid-drag.
+- **`0 → engaged` (scatter → blobs):** tween from the current scatter buffer to the packed
+  buffer. The GPU sim and the tween must not both write positions in the same frames.
+- **`engaged → 0` (blobs → scatter):** tween from packed back to a calm, deterministic
+  scatter target; hand control to the GPU free-explore sim (if used) **only after** the tween
+  settles, seeded from the tweened positions so it cannot jump.
+- **Boundary continuity:** prefer making the `t→0` limit of the packed layout visually close
+  to the scatter state (fill radius grows as tightness drops) so the cross-0 tween distance is
+  small and the handoff is nearly invisible.
+- **Regroup (dominant dim switch):** the largest jump; animate the reflow (optionally a brief
+  cross-fade) so blobs visibly migrate to the new grouping rather than teleport.
+- **Robustness:** cap per-frame `dt` (as the existing preview layer already does at ~50ms) so
+  resuming from a backgrounded tab doesn't lurch; and guard against NaN/empty-target flashes
+  when `clustering` becomes null (hold the last frame, then tween).
+
 ### 4. Labels (rewrite `ClusterLabels.tsx`)
 
 - **Center-following, no per-frame centroid math.** With deterministic packing the blob's
@@ -166,8 +192,10 @@ than 204 dims by hand:
 
 - **Packing performance at high k** (≈1,000+ project blobs): mitigated by the Vogel-spiral
   fallback; the plan should pick the k threshold empirically.
-- **Transition smoothness** when regrouping (dominant dim changes): positions jump to a new
-  packing; interpolation must handle a full re-layout gracefully (fade or animate).
+- **Transition smoothness**, especially the `0↔1` regime boundary and full regroups — see
+  the transition rules in §3. This is a known trap (interpolate-don't-swap, re-seed from
+  visible state, defer GPU handoff); the plan must treat it as a tested requirement, not
+  polish.
 - **Scope of the rendering change:** moving the labeled view off the GPU force path is the
   largest change; the plan must confirm the GPU free-explore path is untouched and the
   frozen e2e suite still passes.
@@ -178,5 +206,8 @@ than 204 dims by hand:
   spot-checked across `company`, `project`, `permission`, `moduleAccess`, `tenure`.
 - Labels track blob centers under pan/zoom, are readable, never a wall of boxes, and fade
   smoothly with zoom.
+- **Slider transitions are smooth in both directions** — `0→1` (scatter forms blobs) and
+  `1→0` (blobs release to scatter) interpolate with no teleport, no stutter on continuous
+  drag, and no jump when GPU free-explore resumes. Regrouping reflows rather than snaps.
 - "Grouping by: <X>" reflects the strongest slider live.
 - Full repo suite green (unit + tsc); frozen lasso/selection e2e unaffected.
