@@ -2,7 +2,7 @@ import "server-only";
 
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
-import { foldActivityRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
+import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
 
 export const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
 
@@ -175,7 +175,7 @@ export async function getCachedAccDcBulkUsers(
     [
       includePermissionContexts ? "ctx" : null,
       includePermissionSummary ? "sum" : null,
-      includeActivityMix ? "act" : null,
+      includeActivityMix ? "act2" : null, // bumped: payload now includes per-action counts (Phase B)
     ]
       .filter(Boolean)
       .join("+") || "lean";
@@ -242,6 +242,7 @@ export async function getCachedAccDcBulkUsers(
         : [];
 
       let activityByInstance: Map<string, InstanceActivity> | undefined;
+      let adminActionsByActor: Map<string, Record<string, number>> | undefined;
       if (includeActivityMix) {
         // Grouped ONLY — never findMany over AccActivity. sourceFile='project'
         // already excludes admin rows (projectId='' sentinel); the projectId filter
@@ -261,12 +262,27 @@ export async function getCachedAccDcBulkUsers(
             lastCreatedAt: (g._max.createdAt as Date).toISOString(),
           })),
         );
+        // [Phase B] Account-level admin actions (projectId='' sentinel): attribute to the
+        // ACTOR (userEmail). No target resolution. Grouped by actor + action only.
+        const adminGroups = await db.accActivity.groupBy({
+          by: ["userEmail", "rawAction"],
+          where: { sourceFile: "admin", userEmail: { not: null } },
+          _count: { _all: true },
+        });
+        adminActionsByActor = foldAdminActionRows(
+          adminGroups.map((g: any) => ({
+            actorEmail: g.userEmail as string,
+            rawAction: g.rawAction as string,
+            count: g._count._all as number,
+          })),
+        );
       }
 
       return assembleDcUsers({
         includePermissionContexts,
         includePermissionSummary,
         activityByInstance,
+        adminActionsByActor,
         users: users.map((u: any) => ({
           ...u,
           lastSignIn: u.lastSignIn ? u.lastSignIn.toISOString() : null,
