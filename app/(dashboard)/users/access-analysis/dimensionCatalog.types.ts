@@ -20,6 +20,8 @@ export interface CatalogDimension {
   /** Human-readable provenance. */
   source: string;
   confidence: DimConfidence;
+  /** Optional human explanation for a greyed/disabled row (shown as tooltip). */
+  note?: string;
   /** false => greyed/disabled in the UI (no data for this dimension). */
   available: boolean;
   surfaces: DimSurface[];

@@ -130,7 +130,7 @@ vi.mock("./catalogSearch", () => ({
 // Import after mocks are set up
 // ---------------------------------------------------------------------------
 
-import { CatalogSliderSidebar } from "./CatalogSliderSidebar";
+import { CatalogSliderSidebar, renderFlatDim } from "./CatalogSliderSidebar";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -243,5 +243,24 @@ describe("CatalogSliderSidebar", () => {
     const resetBtn = screen.getByTestId("reset-all");
     fireEvent.click(resetBtn);
     expect(mockResetAll).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("renderFlatDim", () => {
+  const base: CatalogDimension = {
+    id: "x", label: "X", family: "access", kind: "ordinal", source: "src",
+    confidence: "high", available: true, surfaces: ["slider"], extract: () => 0,
+  };
+  const noop = () => {};
+
+  it("skips available color-only dims (returns null)", () => {
+    const colorOnly: CatalogDimension = { ...base, surfaces: ["color"] };
+    expect(renderFlatDim(colorOnly, {}, noop, noop)).toBeNull();
+  });
+  it("returns an element for an available slider dim", () => {
+    expect(renderFlatDim(base, {}, noop, noop)).not.toBeNull();
+  });
+  it("returns a disabled element for an unavailable dim", () => {
+    expect(renderFlatDim({ ...base, available: false, surfaces: [] }, {}, noop, noop)).not.toBeNull();
   });
 });
