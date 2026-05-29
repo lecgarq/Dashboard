@@ -16,7 +16,7 @@
 
 import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { SliderSidebar } from "./SliderSidebar";
+import { CatalogSliderSidebar } from "./CatalogSliderSidebar";
 import { SelectionPanel } from "./SelectionPanel";
 import { UserProfilePanel } from "../UserProfilePanel";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -24,9 +24,11 @@ import { trpc } from "@/lib/core/trpc";
 import { mergeAccSummaryWithEnrichment } from "../useMergedAccUsers";
 import { useSelection } from "./SelectionContext";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 
 export interface RightPanelStackProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
+  catalog: readonly CatalogDimension[];
   visibleSelectedIndices: ReadonlySet<number> | null;
 }
 
@@ -50,6 +52,7 @@ const slide = {
 
 export function RightPanelStack({
   features,
+  catalog,
   visibleSelectedIndices,
 }: RightPanelStackProps): React.JSX.Element {
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
@@ -111,7 +114,7 @@ export function RightPanelStack({
           </motion.div>
         ) : (
           <motion.div key="sliders" {...slide}>
-            <SliderSidebar />
+            <CatalogSliderSidebar catalog={catalog} />
           </motion.div>
         )}
       </AnimatePresence>

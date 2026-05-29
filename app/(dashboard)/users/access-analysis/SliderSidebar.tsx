@@ -15,9 +15,13 @@ import { useMemo, useState } from "react";
 import { SliderGroup } from "./SliderGroup";
 import { PresetBar } from "./PresetBar";
 import { DimensionSearchBox } from "./DimensionSearchBox";
-import { useSliders, type DimensionId } from "./SliderContext";
+import { useSliders } from "./SliderContext";
 import { getDimensionGroups } from "./dimensionGroups";
-import { getDimension } from "./dimensionRegistry";
+// Phase E: SliderContext.DimensionId is now `string`. This orphaned (no-longer-
+// rendered) legacy sidebar still operates over the NARROW registry id union, so
+// it sources DimensionId from the registry — its setSliderValue/resetOne calls
+// pass those narrow ids to the now-`string`-typed context (assignable).
+import { getDimension, type DimensionId } from "./dimensionRegistry";
 import { filterDimensionIds } from "./dimensionSearch";
 
 export function SliderSidebar(): React.JSX.Element {

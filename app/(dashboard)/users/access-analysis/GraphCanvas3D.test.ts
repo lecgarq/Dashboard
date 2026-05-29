@@ -28,9 +28,11 @@ import { SliderProvider } from "./SliderContext";
 // wiring at commit ed98d06). Tests that render <GraphCanvas/> MUST wrap it in
 // <SliderProvider physics={...}/> to match production composition.
 function withSliderProvider(physics: PhysicsLayer, gcProps: Record<string, unknown>): React.ReactElement {
+  // Phase E: SliderProvider requires a catalog. This GraphCanvas render suite does
+  // not touch sliders, so an empty catalog (no slider ids, no defaults) is enough.
   return React.createElement(
     SliderProvider,
-    { physics, children: React.createElement(GraphCanvas, { physics, ...gcProps }) },
+    { physics, catalog: [], children: React.createElement(GraphCanvas, { physics, ...gcProps }) },
   );
 }
 

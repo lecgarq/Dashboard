@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-import { useSliders, type DimensionId } from "./SliderContext";
+import { useSliders } from "./SliderContext";
 import { DimensionSlider } from "./DimensionSlider";
 import { CatalogTreeSection, DisabledRow } from "./CatalogTreeSection";
 import { DimensionSearchBox } from "./DimensionSearchBox";
@@ -10,10 +10,10 @@ import type { CatalogDimension } from "./dimensionCatalog.types";
 
 export function CatalogSliderSidebar({ catalog }: { catalog: readonly CatalogDimension[] }): React.JSX.Element {
   const { values, setSliderValue, resetAll, resetOne } = useSliders();
-  // The catalog uses open `string` ids; SliderContext uses the narrower `DimensionId` union.
-  // At runtime both are plain strings — cast at the boundary so TypeScript is satisfied.
-  const setSlider = (id: string, v: number) => setSliderValue(id as DimensionId, v);
-  const resetSlider = (id: string) => resetOne(id as DimensionId);
+  // Phase E: DimensionId is now `string`, so setSliderValue/resetOne accept the
+  // catalog's open `string` ids directly — no cast wrapper needed.
+  const setSlider = setSliderValue;
+  const resetSlider = resetOne;
   const [query, setQuery] = useState("");
   const sections = useMemo(() => filterSections(getCatalogSections(catalog), query), [catalog, query]);
   const searching = query.trim() !== "";

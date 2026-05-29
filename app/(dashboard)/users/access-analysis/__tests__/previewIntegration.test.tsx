@@ -106,7 +106,7 @@ function renderShell(
 ): { sink: { ctx: SliderCtx | null }; rerender: (mode: "2d" | "3d") => void } {
   const sink: { ctx: SliderCtx | null } = { ctx: null };
   const Shell: React.FC<{ mode: "2d" | "3d" }> = ({ mode }) => (
-    <SliderProvider physics={physics as SliderProviderProps["physics"]}>
+    <SliderProvider physics={physics as SliderProviderProps["physics"]} catalog={[]}>
       <CtxGrab sink={sink} />
       <GraphCanvas
         mode={mode}

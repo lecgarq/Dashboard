@@ -1,12 +1,15 @@
 // @vitest-environment jsdom
 /**
- * SliderContext.test.tsx — Phase 4-02 Task 1 coverage:
+ * SliderContext.test.tsx — Phase E (catalog-driven) coverage:
+ *   - default state = every catalog slider id at 0 (spec decision #3)
  *   - setSliderValue dispatches rAF-coalesced physics.updateSliders with normalized value
  *   - multiple setSliderValue in one tick collapse to ONE updateSliders call
  *   - resetAll calls updateSliders with all zeros immediately
  *   - resetOne preserves other dims
- *   - localStorage round-trip restores values
+ *   - localStorage round-trip restores values for KNOWN catalog ids only
+ *   - migratePersistedSliders drops ids absent from knownIds
  *   - no SSR access during render (defaults render before effect runs)
+ *   - preview-activation machinery (B.1/B.2) preserved
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -15,14 +18,46 @@ import { useEffect } from "react";
 import type { PhysicsLayer } from "../physicsLayer";
 import {
   CONTROLS_STORAGE_KEY,
-  DEFAULT_VALUES,
-  DIMENSIONS,
   SliderProvider,
   useSliders,
   migratePersistedSliders,
 } from "../SliderContext";
-import { SLIDER_DIMENSION_IDS } from "../dimensionGroups";
-import { applyPreset } from "../sliderPresets";
+import type { CatalogDimension } from "../dimensionCatalog.types";
+
+// ---------------------------------------------------------------------------
+// Tiny fake catalog. Three slider-surfaced + available dims, one slider dim with
+// no data (greyed → listed by sliderDimensionIds but NOT defaulted), and one
+// color-only dim (never a slider).
+// ---------------------------------------------------------------------------
+
+function mkDim(over: Partial<CatalogDimension> & { id: string }): CatalogDimension {
+  return {
+    label: over.id,
+    family: "structure",
+    kind: "categorical",
+    source: "test",
+    confidence: "high",
+    available: true,
+    surfaces: ["slider"],
+    extract: () => null,
+    ...over,
+  };
+}
+
+const FAKE_CATALOG: CatalogDimension[] = [
+  mkDim({ id: "activity" }),
+  mkDim({ id: "signin" }),
+  mkDim({ id: "role" }),
+  // slider-surfaced but no data → appears in sliderDimensionIds, NOT in defaults
+  mkDim({ id: "greyed", available: false }),
+  // color-only → never a slider id
+  mkDim({ id: "colorOnly", surfaces: ["color"] }),
+];
+
+/** Available slider ids — these get a 0 default. */
+const DEFAULT_IDS = ["activity", "signin", "role"] as const;
+/** All slider-surfaced ids (incl. greyed) — the known-id space for migration. */
+const KNOWN_IDS = ["activity", "signin", "role", "greyed"] as const;
 
 function mkPhysics(): {
   physics: PhysicsLayer;
@@ -48,32 +83,18 @@ beforeEach(() => {
   vi.useRealTimers();
 });
 
-// Render helper backed by SliderProvider so renderHook can use it as wrapper.
 function makeWrapper(physics: PhysicsLayer): React.FC<{ children: React.ReactNode }> {
   return function Wrapper({ children }) {
-    return <SliderProvider physics={physics}>{children}</SliderProvider>;
+    return (
+      <SliderProvider physics={physics} catalog={FAKE_CATALOG}>
+        {children}
+      </SliderProvider>
+    );
   };
 }
 
-describe("SliderContext — organic default profile (P1.1)", () => {
-  it("ships a structural default profile (project/role/tier first, activity/signin weak, module 15, others 0)", () => {
-    expect(DEFAULT_VALUES).toEqual({
-      project: 35,
-      role: 25,
-      tier: 15,
-      internalExternal: 10,
-      activity: 5,
-      signin: 5,
-      module: 15,
-      company: 0,
-      isAdmin: 0,
-      membershipBucket: 0, // P6: advanced tenure dim, OFF in organic (P4 module parity preserved)
-      activityRecency: 0, // P6: advanced behavior dim, OFF in organic (true last-activity recency)
-      riskScore: 0, // P6: advanced governance dim, OFF in organic (gated; zero-risk = no pull)
-    });
-  });
-
-  it("renders the default profile on first commit (no slider movement required)", () => {
+describe("SliderContext — catalog-driven defaults (all-0)", () => {
+  it("initial values = every AVAILABLE slider id at 0 (greyed/color-only excluded)", () => {
     const { physics } = mkPhysics();
     let firstValues: Record<string, number> | null = null;
     function Reader(): null {
@@ -82,11 +103,14 @@ describe("SliderContext — organic default profile (P1.1)", () => {
       return null;
     }
     render(
-      <SliderProvider physics={physics}>
+      <SliderProvider physics={physics} catalog={FAKE_CATALOG}>
         <Reader />
       </SliderProvider>,
     );
-    expect(firstValues).toEqual(DEFAULT_VALUES);
+    expect(firstValues).toEqual({ activity: 0, signin: 0, role: 0 });
+    // greyed (no data) and colorOnly are NOT seeded as defaults
+    expect(firstValues!).not.toHaveProperty("greyed");
+    expect(firstValues!).not.toHaveProperty("colorOnly");
   });
 });
 
@@ -97,7 +121,6 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
     await act(async () => {
       result.current.setSliderValue("activity", 50);
-      // Wait one frame for rAF to fire.
       await new Promise<void>((r) => requestAnimationFrame(() => r()));
     });
 
@@ -117,17 +140,13 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
       await new Promise<void>((r) => requestAnimationFrame(() => r()));
     });
 
-    // updateSliders may also have been called by mount-hydration; assert that
-    // the three setSliderValue calls in one tick produced exactly one call after
-    // the most recent baseline. Simplest: take the last call and confirm it has
-    // all three values.
     const last = updateSliders.mock.calls.at(-1)![0] as Record<string, number>;
     expect(last.activity).toBeCloseTo(0.25, 6);
     expect(last.signin).toBeCloseTo(0.5, 6);
     expect(last.role).toBeCloseTo(0.75, 6);
   });
 
-  it("resetAll restores the default profile immediately (not a globe)", async () => {
+  it("resetAll restores the all-0 default immediately", async () => {
     const { physics, updateSliders } = mkPhysics();
     const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
 
@@ -144,9 +163,8 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
     expect(updateSliders).toHaveBeenCalledTimes(1);
     const args = updateSliders.mock.calls[0][0] as Record<string, number>;
-    // Reset returns to the organic DEFAULT profile (normalized 0..1), not zeros.
-    for (const dim of DIMENSIONS) {
-      expect(args[dim.id]).toBeCloseTo(DEFAULT_VALUES[dim.id] / 100, 6);
+    for (const id of DEFAULT_IDS) {
+      expect(args[id]).toBe(0);
     }
   });
 
@@ -174,7 +192,7 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     expect(result.current.values.signin).toBe(60);
   });
 
-  it("localStorage round-trip restores stored values on mount", async () => {
+  it("localStorage round-trip restores stored values for known ids on mount", async () => {
     window.localStorage.setItem(
       CONTROLS_STORAGE_KEY,
       JSON.stringify({ sliders: { activity: 42, signin: 11 } }),
@@ -183,7 +201,6 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     const { physics } = mkPhysics();
     const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
 
-    // Effects flush microtask + rAF before we read the values.
     await act(async () => {
       await new Promise<void>((r) => requestAnimationFrame(() => r()));
     });
@@ -192,10 +209,25 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     expect(result.current.values.signin).toBe(11);
   });
 
-  it("SSR safety — renders defaults without reading localStorage during initial render", () => {
-    // Sentinel inside localStorage that, if read synchronously during render,
-    // would influence the FIRST committed state. Two-pass mount means initial
-    // commit MUST show defaults — the effect that hydrates runs after.
+  it("localStorage hydration drops persisted ids that are not in the catalog", async () => {
+    window.localStorage.setItem(
+      CONTROLS_STORAGE_KEY,
+      JSON.stringify({ sliders: { activity: 30, staleDim: 90 } }),
+    );
+
+    const { physics } = mkPhysics();
+    const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
+
+    await act(async () => {
+      await new Promise<void>((r) => requestAnimationFrame(() => r()));
+    });
+
+    expect(result.current.values.activity).toBe(30);
+    // unknown id never enters the value map
+    expect(result.current.values).not.toHaveProperty("staleDim");
+  });
+
+  it("SSR safety — renders all-0 defaults without reading localStorage during initial render", () => {
     window.localStorage.setItem(
       CONTROLS_STORAGE_KEY,
       JSON.stringify({ sliders: { activity: 99 } }),
@@ -206,7 +238,6 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     let firstValues: Record<string, number> | null = null;
     function Reader(): null {
       const s = useSliders();
-      // Capture only the first render's state by checking if firstValues is still null.
       if (firstValues === null) firstValues = { ...s.values };
       useEffect(() => {
         /* no-op */
@@ -215,15 +246,15 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     }
 
     render(
-      <SliderProvider physics={physics}>
+      <SliderProvider physics={physics} catalog={FAKE_CATALOG}>
         <Reader />
       </SliderProvider>,
     );
 
     expect(firstValues).not.toBeNull();
-    // First committed render shows the DEFAULT profile — NOT the persisted 99 —
+    // First committed render shows the default (0) — NOT the persisted 99 —
     // confirming hydration only happens via useEffect (client-only) on pass two.
-    expect(firstValues!.activity).toBe(DEFAULT_VALUES.activity);
+    expect(firstValues!.activity).toBe(0);
     expect(firstValues!.activity).not.toBe(99);
   });
 });
@@ -251,13 +282,11 @@ describe("SliderContext — drag-preview activation (B.1)", () => {
       });
       expect(setActiveInput).toHaveBeenLastCalledWith(true);
 
-      // Advance just under the debounce — preview must still be active.
       act(() => {
         vi.advanceTimersByTime(200);
       });
       expect(setActiveInput).not.toHaveBeenCalledWith(false);
 
-      // Cross the debounce window — preview exits.
       act(() => {
         vi.advanceTimersByTime(100);
       });
@@ -285,13 +314,10 @@ describe("SliderContext — drag-preview activation (B.1)", () => {
         result.current.setSliderValue("activity", 30);
       });
 
-      // Only one (true) call so far — repeated entries are no-ops while active.
       const trueCalls = setActiveInput.mock.calls.filter((c) => c[0] === true).length;
       expect(trueCalls).toBe(1);
-      // No (false) call yet — each change re-armed the timer.
       expect(setActiveInput).not.toHaveBeenCalledWith(false);
 
-      // Now go idle long enough for the timer to fire.
       act(() => {
         vi.advanceTimersByTime(300);
       });
@@ -315,7 +341,6 @@ describe("SliderContext — drag-preview activation (B.1)", () => {
       act(() => {
         result.current.resetAll();
       });
-      // Synchronous false — does NOT wait for the debounce window.
       expect(setActiveInput).toHaveBeenLastCalledWith(false);
     } finally {
       vi.useRealTimers();
@@ -323,32 +348,26 @@ describe("SliderContext — drag-preview activation (B.1)", () => {
   });
 });
 
-describe("SliderContext — registry-derived dimensions", () => {
-  it("DIMENSIONS ids match the registry runtime ids in order", () => {
-    expect(DIMENSIONS.map((d) => d.id)).toEqual([...SLIDER_DIMENSION_IDS]);
+describe("SliderContext — migratePersistedSliders (catalog id-space)", () => {
+  it("keeps only known finite-numeric ids", () => {
+    expect(
+      migratePersistedSliders({ activity: 42, role: 25, unknown: 7 }, KNOWN_IDS),
+    ).toEqual({ activity: 42, role: 25 });
   });
-  it("DEFAULT_VALUES equals applyPreset('organic')", () => {
-    expect(DEFAULT_VALUES).toEqual(applyPreset("organic"));
-  });
-  it("each DIMENSION carries the registry label", () => {
-    const ext = DIMENSIONS.find((d) => d.id === "internalExternal");
-    expect(ext?.label).toBe("Internal / external");
-  });
-});
-
-describe("SliderContext — legacy isExternal migration", () => {
-  it("maps a persisted isExternal slider value to internalExternal", () => {
-    expect(migratePersistedSliders({ isExternal: 42, role: 25 })).toEqual({
-      internalExternal: 42, role: 25,
+  it("drops a greyed id ONLY if it is not in knownIds (greyed IS known)", () => {
+    // greyed is slider-surfaced (in KNOWN_IDS) even though it has no data, so a
+    // persisted value survives migration (the provider just won't seed it as a default).
+    expect(migratePersistedSliders({ greyed: 60, gone: 1 }, KNOWN_IDS)).toEqual({
+      greyed: 60,
     });
   });
-  it("keeps internalExternal when both are present (new wins)", () => {
-    expect(migratePersistedSliders({ isExternal: 10, internalExternal: 70 })).toEqual({
-      internalExternal: 70,
-    });
-  });
-  it("is a no-op when there is nothing to migrate", () => {
-    expect(migratePersistedSliders({ role: 25 })).toEqual({ role: 25 });
+  it("drops non-finite / non-number values", () => {
+    expect(
+      migratePersistedSliders(
+        { activity: Number.NaN, signin: Infinity, role: 5 } as Record<string, number>,
+        KNOWN_IDS,
+      ),
+    ).toEqual({ role: 5 });
   });
 });
 

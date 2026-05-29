@@ -26,11 +26,8 @@ import { Toolbar } from "./Toolbar";
 import { RightPanelStack } from "./RightPanelStack";
 import {
   CONTROLS_STORAGE_KEY,
-  DEFAULT_VALUES,
-  DIMENSIONS,
   SliderProvider,
   migratePersistedSliders,
-  type DimensionId,
 } from "./SliderContext";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
@@ -42,9 +39,11 @@ import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { createPhysicsLayerWorker } from "./physicsLayerWorker";
-import { buildFeatureTargets } from "./featureTargets";
-import { buildDimensionWeights } from "./dimensionWeights";
-import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
+import { buildCatalogTargets } from "./catalogTargets";
+import { buildCatalogWeights } from "./catalogWeights";
+import { buildDimensionCatalog } from "./dimensionCatalog";
+import { sliderDimensions, sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
+import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
@@ -75,6 +74,7 @@ async function loadNodeIds(): Promise<string[]> {
 interface ShellBodyProps {
   physics: PhysicsLayer;
   features: ReadonlyArray<NodeFeatureSnapshot>;
+  catalog: readonly CatalogDimension[];
   mode: "2d" | "3d";
   setMode: (m: "2d" | "3d") => void;
   lassoActive: boolean;
@@ -85,6 +85,7 @@ interface ShellBodyProps {
 function ShellBody({
   physics,
   features,
+  catalog,
   mode,
   setMode,
   lassoActive,
@@ -203,6 +204,7 @@ function ShellBody({
         </div>
         <RightPanelStack
           features={features}
+          catalog={catalog}
           visibleSelectedIndices={visibleSubset}
         />
       </div>
@@ -223,6 +225,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
 
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);
   const [physics, setPhysics] = useState<PhysicsLayer | null>(null);
+  const [catalog, setCatalog] = useState<CatalogDimension[] | null>(null);
   const [mode, setMode] = useState<"2d" | "3d">("2d");
   const [lassoActive, setLassoActive] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
@@ -262,30 +265,29 @@ export function AccessAnalysisShell(): React.JSX.Element {
         const snapshot = await buildFeatureSnapshot({ nodeIds });
         if (cancelled) return;
 
-        // Seed initial sliders from persisted controls so physics resumes the
-        // user's last view immediately on reload (mirrors SliderContext hydration).
-        // P1.1: default to the organic profile (normalized 0..1) so the first
-        // settle is structural. localStorage (if present) overrides per-dim below,
-        // mirroring SliderContext hydration so UI and physics stay in lockstep.
-        let initialSliders: Record<string, number> = Object.fromEntries(
-          DIMENSIONS.map((d) => [d.id, (DEFAULT_VALUES[d.id] ?? 0) / 100]),
-        );
+        const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
+        // Phase E: the catalog drives positioning. Targets/weights are built only
+        // for the slider-surfaced + AVAILABLE catalog dims (no data → no force).
+        // `snapshot` is aligned to `nodeIds`, so target index === physics node index.
+        const catalog = buildDimensionCatalog(snapshot);
+        const sliderDims = sliderDimensions(catalog);
+        const targetDimIds = sliderDims.map((d) => d.id);
+        const targets = buildCatalogTargets(snapshot, sliderDims);
+        const dimWeights = buildCatalogWeights(snapshot, sliderDims);
+        // Default = all sliders 0 (spec decision #3); localStorage overrides per
+        // known catalog id, mirroring SliderContext hydration so UI + physics stay
+        // in lockstep. initialSliders values are normalized 0..1 (0 already is).
+        const knownIds = sliderDimensionIds(catalog);
+        const initialSliders: Record<string, number> = { ...catalogDefaultSliders(catalog) };
         try {
           if (typeof window !== "undefined") {
             const raw = window.localStorage.getItem(CONTROLS_STORAGE_KEY);
             if (raw) {
-              const parsed = JSON.parse(raw) as {
-                sliders?: Partial<Record<DimensionId, number>>;
-              };
+              const parsed = JSON.parse(raw) as { sliders?: Record<string, number> };
               if (parsed.sliders) {
-                const migrated = migratePersistedSliders(
-                  parsed.sliders as Record<string, number>,
-                );
-                for (const d of DIMENSIONS) {
-                  const v = migrated[d.id];
-                  if (typeof v === "number" && Number.isFinite(v)) {
-                    initialSliders[d.id] = Math.max(0, Math.min(1, v / 100));
-                  }
+                const migrated = migratePersistedSliders(parsed.sliders, knownIds);
+                for (const [id, v] of Object.entries(migrated)) {
+                  if (id in initialSliders) initialSliders[id] = Math.max(0, Math.min(1, v / 100));
                 }
               }
             }
@@ -294,22 +296,6 @@ export function AccessAnalysisShell(): React.JSX.Element {
           /* ignore */
         }
 
-        const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
-        // P4.7: target set is SLIDER_DIMENSION_IDS (all 9 slider-capable dims, including
-        // module, company, isAdmin). module is now a real slider entry in DIMENSIONS with
-        // defaultWeight 0.15 → initialSliders["module"] = 0.15 via DEFAULT_VALUES/organic.
-        // company/isAdmin default to 0 in organic → no force contribution.
-        const targetDimIds = [...SLIDER_DIMENSION_IDS] as string[];
-        // Volumetric feature-anchored targets (P1) replace the former all-zero
-        // targets that produced the globe. `snapshot` is aligned to `nodeIds`,
-        // so target index === physics node index.
-        const targets = buildFeatureTargets(snapshot, SLIDER_DIMENSION_IDS);
-        // P3.4: slider-independent per-node weights (confidence × availability ×
-        // transformer). Nodes with unavailable/sparse values get weight=0 for that
-        // dim so they are never dragged to a pole without a real anchor value.
-        const dimWeights = buildDimensionWeights(snapshot, SLIDER_DIMENSION_IDS);
-        // initialSliders is built from DIMENSIONS (now 9 dims via SLIDER_DIMENSION_IDS),
-        // so module/company/isAdmin are all included at their DEFAULT_VALUES (organic preset).
         const layer = await createPhysicsLayerWorker(
           nodeIds,
           nodes,
@@ -324,6 +310,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
         }
         createdPhysics = layer;
         setFeatures(snapshot);
+        setCatalog(catalog);
         setPhysics(layer);
       } catch (e) {
         if (!cancelled) {
@@ -353,7 +340,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
     );
   }
 
-  if (!users || !features || !physics) {
+  if (!users || !features || !physics || !catalog) {
     return (
       <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
         {!users ? "Loading access data…" : "Loading graph data…"}
@@ -362,12 +349,13 @@ export function AccessAnalysisShell(): React.JSX.Element {
   }
 
   return (
-    <SliderProvider physics={physics}>
+    <SliderProvider physics={physics} catalog={catalog}>
       <FilterProvider>
         <SelectionProvider>
           <ShellBody
             physics={physics}
             features={features}
+            catalog={catalog}
             mode={mode}
             setMode={setMode}
             lassoActive={lassoActive}

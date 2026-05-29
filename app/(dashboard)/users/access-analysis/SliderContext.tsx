@@ -24,10 +24,18 @@ import {
 import type { PhysicsLayer } from "./physicsLayer";
 import { getDimension } from "./dimensionRegistry";
 import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
-import { applyPreset, detectActivePreset } from "./sliderPresets";
+import { applyPreset } from "./sliderPresets";
+import type { CatalogDimension } from "./dimensionCatalog.types";
+import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
 
 // ---------------------------------------------------------------------------
-// Slider-capable dimension list — derived from the registry (single source of truth).
+// LEGACY slider-capable dimension list — derived from the registry.
+//
+// Phase E: the live shell + sidebar are now catalog-driven (see SliderProvider
+// below). This list is RETAINED only because the legacy filter/toolbar surfaces
+// (FilterContext, Toolbar, DimensionFilterPopover) still iterate it. Those
+// modules stay alive for Phases F/G (presets/color); do NOT wire them to slider
+// state. The provider no longer reads DIMENSIONS/DEFAULT_VALUES.
 // ---------------------------------------------------------------------------
 
 export const DIMENSIONS = SLIDER_DIMENSION_IDS.map((id) => {
@@ -40,31 +48,36 @@ export const DIMENSIONS = SLIDER_DIMENSION_IDS.map((id) => {
   };
 });
 
-export type DimensionId = (typeof DIMENSIONS)[number]["id"];
+// Phase E: catalog ids are dynamic strings, so DimensionId widens to `string`.
+// (Export name retained so existing importers still type-check.)
+export type DimensionId = string;
 
 // Shared storage key — FilterContext writes to the same JSON blob.
 export const CONTROLS_STORAGE_KEY = "lecg.access-analysis.controls.v1";
 
 /**
- * Organic default layout profile, now sourced from the registry defaultWeights
- * (×100) via the 'organic' preset.
+ * LEGACY organic default profile — kept for the legacy filter/toolbar consumers
+ * (and physicsClustering tests) that still import it. The catalog-driven provider
+ * defaults every slider to 0 (spec decision #3) and no longer reads this.
  */
-export const DEFAULT_VALUES: Record<DimensionId, number> =
-  applyPreset("organic") as Record<DimensionId, number>;
+export const DEFAULT_VALUES: Record<string, number> =
+  applyPreset("organic") as Record<string, number>;
 
 /**
- * One-time migration of persisted slider state: the legacy `isExternal` slider id
- * was renamed to `internalExternal` (registry reconciliation, P3). If a stored blob
- * still carries `isExternal`, fold its value into `internalExternal` (unless the new
- * key is already present, in which case the new value wins) and drop the legacy key.
+ * Phase E: drop any persisted slider id that is not a known catalog slider id
+ * (the id-space changed from the registry union to dynamic catalog strings).
+ * Only finite numeric values for known ids survive.
  */
 export function migratePersistedSliders(
   sliders: Record<string, number>,
+  knownIds: readonly string[],
 ): Record<string, number> {
-  if (!("isExternal" in sliders)) return sliders;
-  const { isExternal, ...rest } = sliders;
-  if (!("internalExternal" in rest)) rest.internalExternal = isExternal;
-  return rest;
+  const known = new Set(knownIds);
+  const out: Record<string, number> = {};
+  for (const [k, v] of Object.entries(sliders)) {
+    if (known.has(k) && typeof v === "number" && Number.isFinite(v)) out[k] = v;
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
@@ -72,11 +85,13 @@ export function migratePersistedSliders(
 // ---------------------------------------------------------------------------
 
 interface SliderContextValue {
-  values: Record<DimensionId, number>;
-  setSliderValue: (dimId: DimensionId, value: number) => void;
+  values: Record<string, number>;
+  setSliderValue: (dimId: string, value: number) => void;
   resetAll: () => void;
-  resetOne: (dimId: DimensionId) => void;
+  resetOne: (dimId: string) => void;
+  /** Phase E stub — real presets land in Phase F. Resets to defaults (all-0). */
   applyPreset: (presetId: string) => void;
+  /** Phase E stub — no preset detection while the catalog drives state. */
   activePreset: string | null;
   subscribePreviewActive: (listener: (active: boolean) => void) => () => void;
   isPreviewActive: () => boolean;
@@ -132,17 +147,25 @@ export function writeOpenGroups(labels: string[]): void {
 
 export interface SliderProviderProps {
   physics: PhysicsLayer | null;
+  catalog: readonly CatalogDimension[];
   children: ReactNode;
 }
 
-export function SliderProvider({ physics, children }: SliderProviderProps): React.JSX.Element {
-  const [values, setValues] = useState<Record<DimensionId, number>>(DEFAULT_VALUES);
+export function SliderProvider({ physics, catalog, children }: SliderProviderProps): React.JSX.Element {
+  // Phase E: the catalog is the single source of truth for slider ids + defaults.
+  // `ids` = every slider-surfaced catalog id (incl. greyed/no-data rows, so a
+  // persisted value for a now-greyed dim still survives the migration filter).
+  // `defaults` = every AVAILABLE slider at 0 (spec decision #3).
+  const ids = useMemo(() => sliderDimensionIds(catalog), [catalog]);
+  const defaults = useMemo(() => catalogDefaultSliders(catalog), [catalog]);
+
+  const [values, setValues] = useState<Record<string, number>>(defaults);
   const valuesRef = useRef(values);
   valuesRef.current = values;
 
   // rAF coalescing for physics.updateSliders
   const rafIdRef = useRef<number | null>(null);
-  const pendingRef = useRef<Record<DimensionId, number> | null>(null);
+  const pendingRef = useRef<Record<string, number> | null>(null);
 
   // B.1 — drag-preview mode. Slider changes mark the physics layer as
   // "active input" and (re)arm an idle timer; when the timer fires without
@@ -189,7 +212,7 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   }, []);
 
   const flushToPhysics = useCallback(
-    (snapshot: Record<DimensionId, number>): void => {
+    (snapshot: Record<string, number>): void => {
       if (!physics) return;
       const normalized = Object.fromEntries(
         Object.entries(snapshot).map(([k, n]) => [k, n / 100]),
@@ -200,17 +223,8 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   );
 
   const schedulePush = useCallback(
-    (next: Record<DimensionId, number>): void => {
+    (next: Record<string, number>): void => {
       pendingRef.current = next;
-      if (previewActiveRef.current) {
-        if (rafIdRef.current !== null && typeof cancelAnimationFrame !== "undefined") {
-          cancelAnimationFrame(rafIdRef.current);
-          rafIdRef.current = null;
-        }
-        pendingRef.current = null;
-        flushToPhysics(next);
-        return;
-      }
       if (rafIdRef.current !== null) return;
       if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") {
         // Test / SSR fallback — flush immediately.
@@ -233,12 +247,11 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   useEffect(() => {
     const stored = readPersisted();
     if (!stored || !stored.sliders) return;
-    const migrated = migratePersistedSliders(stored.sliders as Record<string, number>);
-    const next: Record<DimensionId, number> = { ...DEFAULT_VALUES };
-    for (const dim of DIMENSIONS) {
-      const v = migrated[dim.id];
+    const migrated = migratePersistedSliders(stored.sliders as Record<string, number>, ids);
+    const next: Record<string, number> = { ...defaults };
+    for (const [id, v] of Object.entries(migrated)) {
       if (typeof v === "number" && Number.isFinite(v)) {
-        next[dim.id] = Math.max(0, Math.min(100, v));
+        next[id] = Math.max(0, Math.min(100, v));
       }
     }
     setValues(next);
@@ -256,7 +269,7 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   }, [values]);
 
   const setSliderValue = useCallback(
-    (dimId: DimensionId, value: number): void => {
+    (dimId: string, value: number): void => {
       const clamped = Math.max(0, Math.min(100, value));
       // Update the ref synchronously so back-to-back calls in the same tick
       // accumulate (not just overwrite each other via stale valuesRef reads).
@@ -270,7 +283,7 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
   );
 
   const resetAll = useCallback((): void => {
-    const next = { ...DEFAULT_VALUES };
+    const next = { ...defaults };
     valuesRef.current = next;
     setValues(next);
     // Cancel any pending rAF; push zeros immediately so motion stops fast.
@@ -291,10 +304,10 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
       emitPreview(false);
     }
     flushToPhysics(next);
-  }, [flushToPhysics, physics, emitPreview]);
+  }, [flushToPhysics, physics, emitPreview, defaults]);
 
   const resetOne = useCallback(
-    (dimId: DimensionId): void => {
+    (dimId: string): void => {
       const next = { ...valuesRef.current, [dimId]: 0 };
       valuesRef.current = next;
       setValues(next);
@@ -304,18 +317,18 @@ export function SliderProvider({ physics, children }: SliderProviderProps): Reac
     [enterPreview, schedulePush],
   );
 
+  // Phase E stub — preset application is deferred to Phase F. Until then this
+  // resets to the catalog defaults (all-0) so the legacy SliderSidebar/PresetBar
+  // (orphaned, no longer rendered) still type-check against the context.
   const applyPresetCb = useCallback(
-    (presetId: string): void => {
-      const next = applyPreset(presetId) as Record<DimensionId, number>;
-      valuesRef.current = next;
-      setValues(next);
-      enterPreview();
-      schedulePush(next);
+    (_presetId: string): void => {
+      resetAll();
     },
-    [enterPreview, schedulePush],
+    [resetAll],
   );
 
-  const activePreset = useMemo(() => detectActivePreset(values), [values]);
+  // Phase E stub — no preset detection while the catalog drives slider state.
+  const activePreset = null;
 
   const subscribePreviewActive = useCallback(
     (listener: (active: boolean) => void): (() => void) => {
