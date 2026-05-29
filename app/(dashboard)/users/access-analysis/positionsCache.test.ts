@@ -409,7 +409,7 @@ describe("multi-layout cache: one position row per (set_hash, node_id)", () => {
   });
 });
 
-describe("hashNodeSetAndSliders — exact-slider key (no snap)", () => {
+describe("hashNodeSetAndSliders — 2dp-quantized slider key (fine enough that distinct slider steps never collide)", () => {
   const ids = ["a::p", "b::p"];
   it("different slider values → different hashes (intermediate positions never collide)", () => {
     const h10 = hashNodeSetAndSliders(ids, { project: 0.1 });
