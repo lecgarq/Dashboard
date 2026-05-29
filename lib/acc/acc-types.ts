@@ -15,6 +15,8 @@ export interface BulkAccProject {
   permissionStrength?: number;
   /** [P5-B] Distinct folders reachable by this instance. */
   folderBreadth?: number;
+  /** [Slice D] Sum of file bytes across the folders this instance can reach (0 until crawled). */
+  accessibleDataBytes?: number;
   /** [P5-B] >1 distinct normalized tier across grants. */
   permMixedProfile?: boolean;
   /** [P5-B] Any grant normalizes to "control". */

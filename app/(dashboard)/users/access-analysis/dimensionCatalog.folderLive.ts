@@ -26,5 +26,12 @@ export function buildFolderReachDimensions(): CatalogDimension[] {
       confidence: "medium", available: true, surfaces: ["slider", "color"], colorScale: "categorical",
       extract: (f) => (f.permissionTypeSummary?.mixedProfile ? "mixed" : "uniform"),
     },
+    {
+      // [Slice D] real file data — sum of file bytes across reachable folders (0 until crawled).
+      id: "folder:data-access", label: "Data they can access", family: "folder", kind: "ordinal",
+      source: "SUM(AccFolder.totalSizeBytes) over reachable folders (Slice D file rollup)",
+      confidence: "medium", available: true, surfaces: ["slider", "color"], colorScale: "ordered",
+      extract: (f) => f.accessibleDataBytes ?? 0,
+    },
   ];
 }

@@ -11,6 +11,8 @@ export interface DcAssemblyInput {
   roleNames: Record<string, string>;
   projectMeta: Record<string, { name: string; status: string; crawlStatus: string }>;
   folderPermissions?: { folderId: string; roleId: string; permType: string; actions: string[]; projectId: string; folderPath: string }[];
+  /** [Slice D] Per-folder file-size rollup (AccFolder.totalSizeBytes), keyed by folder id. */
+  folderRollups?: { folderId: string; totalSizeBytes: number | null }[];
   /**
    * Per-(project,user) company affiliation. Used as a fallback firm source when
    * the AccDcUser record has no companyId (common for external collaborators).
@@ -130,6 +132,12 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
     folderPermsByProjectRole.set(k, arr);
   }
 
+  // [Slice D] folder id -> file bytes, for the per-instance accessible-data rollup.
+  const folderSizeById = new Map<string, number>();
+  for (const fr of input.folderRollups ?? []) {
+    folderSizeById.set(fr.folderId, fr.totalSizeBytes ?? 0);
+  }
+
   // Build "userId::projectId" → product entries
   const prodByUserProject = new Map<string, { key: string; admin: boolean }[]>();
   for (const p of input.projectUserProducts) {
@@ -154,6 +162,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
       const isAdmin = prods.some((p) => p.admin);
       let permissionStrength: number | undefined;
       let folderBreadth: number | undefined;
+      let accessibleDataBytes: number | undefined;
       let permMixedProfile: boolean | undefined;
       let fullController: boolean | undefined;
       if (includeSummary) {
@@ -173,6 +182,11 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         folderBreadth = folders.size;
         permMixedProfile = tiers.size > 1;
         fullController = tiers.has("control");
+        // [Slice D] sum file bytes over the DEDUPED reachable folders (Set avoids
+        // double-counting folders granted via multiple roles).
+        let bytes = 0;
+        for (const fid of folders) bytes += folderSizeById.get(fid) ?? 0;
+        accessibleDataBytes = bytes;
       }
       const activity = input.activityByInstance?.get(`${email}::${pid}`);
       // [Phase B] per-instance action counts, then fold in the actor's account-level
@@ -196,6 +210,7 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
         lastSignIn: membershipDates.get(`${u.id}::${pid}`)?.lastSignIn ?? null,
         permissionStrength,
         folderBreadth,
+        accessibleDataBytes,
         permMixedProfile,
         fullController,
         activityMix: activity?.mix,

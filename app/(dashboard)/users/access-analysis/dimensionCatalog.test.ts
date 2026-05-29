@@ -17,8 +17,8 @@ describe("buildDimensionCatalog", () => {
     expect(byId["issue-create"]).toBeTruthy();
     expect(byId["folder:folder-size"]).toBeTruthy();
     // 9 base structural + 5 per-tier permission sliders (Slice B) + actions
-    // + 3 live folder-reach dims (Slice C) + 19 folder placeholders
-    expect(dims.length).toBe(9 + 5 + getActions().length + 3 + 19);
+    // + 4 live folder dims (Slice C reach/controller/mixed + Slice D data-access) + 19 folder placeholders
+    expect(dims.length).toBe(9 + 5 + getActions().length + 4 + 19);
   });
   it("ids are unique", () => {
     expect(new Set(dims.map((d) => d.id)).size).toBe(dims.length);

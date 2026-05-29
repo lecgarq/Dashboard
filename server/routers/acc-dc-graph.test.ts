@@ -137,12 +137,16 @@ describe("accDcGraphRouter.bulkUsers", () => {
           { folderId: "f1", roleId: "r1", permType: "Full Controller", actions: [], folder: { projectId: "p1", fullPath: "/A" } },
         ]),
       },
+      accFolder: {
+        findMany: vi.fn(async () => [{ id: "f1", totalSizeBytes: 2048 }]),
+      },
     };
 
     const rows = await makeCaller(db).bulkUsers({ includePermissionSummary: true });
     const proj = rows[0].projects[0];
     expect(proj.permissionStrength).toBeGreaterThan(0);
     expect(proj.fullController).toBe(true);
+    expect(proj.accessibleDataBytes).toBe(2048);
     expect(rows[0].permissionContexts).toEqual([]);
     expect(db.accFolderPermission.findMany).toHaveBeenCalled();
   });

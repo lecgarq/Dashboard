@@ -108,6 +108,7 @@ interface RawFeatureRow {
   last_sign_in_instance: bigint | number | null;
   perm_strength: bigint | number | null;
   folder_breadth: bigint | number | null;
+  accessible_data_bytes: bigint | number | null;
   full_controller: boolean | number | null;
   perm_mixed: boolean | number | null;
   activity_mix_json: string | null;
@@ -171,6 +172,7 @@ export async function buildFeatureSnapshot(
       ANY_VALUE(up.last_sign_in_instance)                               AS last_sign_in_instance,
       COALESCE(ANY_VALUE(up.perm_strength), 0)                          AS perm_strength,
       COALESCE(ANY_VALUE(up.folder_breadth), 0)                         AS folder_breadth,
+      COALESCE(ANY_VALUE(up.accessible_data_bytes), 0)                  AS accessible_data_bytes,
       COALESCE(ANY_VALUE(up.full_controller), FALSE)                    AS full_controller,
       COALESCE(ANY_VALUE(up.perm_mixed), FALSE)                         AS perm_mixed,
       ANY_VALUE(up.activity_mix_json)                                   AS activity_mix_json,
@@ -207,6 +209,7 @@ export async function buildFeatureSnapshot(
 
     const permissionStrength = Number(r.perm_strength ?? 0);
     const folderBreadth = Number(r.folder_breadth ?? 0);
+    const accessibleDataBytes = Number(r.accessible_data_bytes ?? 0);
     const activityMix = (() => {
       try { return r.activity_mix_json ? JSON.parse(r.activity_mix_json) : {}; }
       catch { return {}; }
@@ -274,6 +277,7 @@ export async function buildFeatureSnapshot(
       actionCounts,
       activityTotal,
       permissionStrength,
+      accessibleDataBytes,
       permissionTypeSummary: {
         folderBreadth,
         coverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
@@ -313,6 +317,7 @@ export async function buildFeatureSnapshot(
     membershipBucket: "unknown",
     activityRecencyBucket: "none",
     permissionStrength: 0,
+    accessibleDataBytes: 0,
     permissionTypeSummary: { folderBreadth: 0, coverage: "unknown", mixedProfile: false, fullController: false },
     activityMix: {},
     actionCounts: {},

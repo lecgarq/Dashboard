@@ -90,6 +90,8 @@ export interface NodeFeatureSnapshot {
   activityRecencyBucket?: "0-7d" | "8-14d" | "15-30d" | "31-60d" | "60d+" | "none";
   /** [P5-B] Numeric access strength 0..5 (0=none, view=1 … control=5); MAX across grants. */
   permissionStrength?: number;
+  /** [Slice D] Sum of file bytes across the folders this node can reach (0 until crawled). */
+  accessibleDataBytes?: number;
   /** [P5-B] Derived per-instance permission profile from folder grants. */
   permissionTypeSummary?: {
     folderBreadth: number;

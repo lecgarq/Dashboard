@@ -241,6 +241,14 @@ export async function getCachedAccDcBulkUsers(
           })
         : [];
 
+      // [Slice D] Per-folder file-size rollup, joined into the per-instance summary.
+      const rawFolderRollups = needsFolderPerms
+        ? await db.accFolder.findMany({
+            where: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } },
+            select: { id: true, totalSizeBytes: true },
+          })
+        : [];
+
       let activityByInstance: Map<string, InstanceActivity> | undefined;
       let adminActionsByActor: Map<string, Record<string, number>> | undefined;
       if (includeActivityMix) {
@@ -311,6 +319,10 @@ export async function getCachedAccDcBulkUsers(
           actions: r.actions,
           projectId: r.folder.projectId,
           folderPath: r.folder.fullPath ?? "",
+        })),
+        folderRollups: rawFolderRollups.map((r: any) => ({
+          folderId: r.id,
+          totalSizeBytes: r.totalSizeBytes,
         })),
       });
     },
