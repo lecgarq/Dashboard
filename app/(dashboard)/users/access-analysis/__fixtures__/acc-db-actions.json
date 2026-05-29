@@ -1,0 +1,595 @@
+{
+  "generatedAt": "2026-05-29T00:37:16.092Z",
+  "project": [
+    {
+      "rawAction": "add-attribute-to-namingstandard",
+      "service": null
+    },
+    {
+      "rawAction": "add-doc-comment-for-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "add-docs-to-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "add-recipients-to-transmittal",
+      "service": "docs"
+    },
+    {
+      "rawAction": "add-resources-to-package",
+      "service": null
+    },
+    {
+      "rawAction": "apply-naming-standard",
+      "service": null
+    },
+    {
+      "rawAction": "archive-review",
+      "service": null
+    },
+    {
+      "rawAction": "asset-create",
+      "service": null
+    },
+    {
+      "rawAction": "asset-delete",
+      "service": null
+    },
+    {
+      "rawAction": "asset-update",
+      "service": null
+    },
+    {
+      "rawAction": "assign-permission",
+      "service": "docs"
+    },
+    {
+      "rawAction": "attach-custom-attribute",
+      "service": null
+    },
+    {
+      "rawAction": "change-discipline-order",
+      "service": null
+    },
+    {
+      "rawAction": "claim-review-task",
+      "service": "docs"
+    },
+    {
+      "rawAction": "comment-create",
+      "service": "rfis"
+    },
+    {
+      "rawAction": "copy-file",
+      "service": "docs"
+    },
+    {
+      "rawAction": "copy-review-docs-to-folder",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-bridge",
+      "service": null
+    },
+    {
+      "rawAction": "create-bridge-automation",
+      "service": null
+    },
+    {
+      "rawAction": "create-collection",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-custom-attribute",
+      "service": null
+    },
+    {
+      "rawAction": "create-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-public-link-for-documents",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-public-link-for-folders",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-transmittal",
+      "service": "docs"
+    },
+    {
+      "rawAction": "create-version-set",
+      "service": "sheets"
+    },
+    {
+      "rawAction": "delegate-review-task",
+      "service": "docs"
+    },
+    {
+      "rawAction": "delete-bridge",
+      "service": null
+    },
+    {
+      "rawAction": "delete-collection",
+      "service": null
+    },
+    {
+      "rawAction": "delete-doc-comment-for-review",
+      "service": null
+    },
+    {
+      "rawAction": "delete-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "delete-permission",
+      "service": "docs"
+    },
+    {
+      "rawAction": "delete-public-link-for-documents",
+      "service": null
+    },
+    {
+      "rawAction": "delete-sheet",
+      "service": null
+    },
+    {
+      "rawAction": "detach-custom-attribute",
+      "service": null
+    },
+    {
+      "rawAction": "download-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "edit-description",
+      "service": null
+    },
+    {
+      "rawAction": "edit-entity",
+      "service": null
+    },
+    {
+      "rawAction": "edit-office-file",
+      "service": "docs"
+    },
+    {
+      "rawAction": "enable-collection",
+      "service": null
+    },
+    {
+      "rawAction": "export-file",
+      "service": "docs"
+    },
+    {
+      "rawAction": "export-folder-permission-report",
+      "service": null
+    },
+    {
+      "rawAction": "export-sheet",
+      "service": null
+    },
+    {
+      "rawAction": "export-transmittal",
+      "service": "docs"
+    },
+    {
+      "rawAction": "initiate-review-process",
+      "service": "docs"
+    },
+    {
+      "rawAction": "issue-assign",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-attachment-add",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-attachment-remove",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-closed",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-comment",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-completed",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-copy",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-create",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-deleted",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-draft",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-due-date",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-edit",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-in-review",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-link-added",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-link-removed",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-not-approved",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-open",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-pending",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-placement-add",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-placement-remove",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-placement-reposition",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-restored",
+      "service": null
+    },
+    {
+      "rawAction": "issue-snapshot-edit",
+      "service": "issues"
+    },
+    {
+      "rawAction": "issue-view",
+      "service": "issues"
+    },
+    {
+      "rawAction": "lock-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "move-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "move-sheet-collection",
+      "service": null
+    },
+    {
+      "rawAction": "notify-final-members",
+      "service": "docs"
+    },
+    {
+      "rawAction": "notify-observers",
+      "service": "docs"
+    },
+    {
+      "rawAction": "notify-reviewers",
+      "service": "docs"
+    },
+    {
+      "rawAction": "print-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "print-sheet",
+      "service": null
+    },
+    {
+      "rawAction": "process-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "publish-sheet",
+      "service": "sheets"
+    },
+    {
+      "rawAction": "receive-entity-from-project",
+      "service": "docs"
+    },
+    {
+      "rawAction": "receive-entity-from-project-with-automation",
+      "service": null
+    },
+    {
+      "rawAction": "remove-docs-from-review",
+      "service": null
+    },
+    {
+      "rawAction": "rename-collection",
+      "service": null
+    },
+    {
+      "rawAction": "rename-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "rename-version-set",
+      "service": null
+    },
+    {
+      "rawAction": "renumber-sheet",
+      "service": null
+    },
+    {
+      "rawAction": "response-create",
+      "service": "docs"
+    },
+    {
+      "rawAction": "response-update",
+      "service": "docs"
+    },
+    {
+      "rawAction": "restore-entity",
+      "service": null
+    },
+    {
+      "rawAction": "restore-version",
+      "service": "docs"
+    },
+    {
+      "rawAction": "review-back-to-initiator",
+      "service": "docs"
+    },
+    {
+      "rawAction": "review-create-transmittal",
+      "service": null
+    },
+    {
+      "rawAction": "review-export-files",
+      "service": "docs"
+    },
+    {
+      "rawAction": "review-push-approval-status",
+      "service": "docs"
+    },
+    {
+      "rawAction": "review-rename",
+      "service": null
+    },
+    {
+      "rawAction": "review-save-as-draft",
+      "service": null
+    },
+    {
+      "rawAction": "review-skip-step",
+      "service": null
+    },
+    {
+      "rawAction": "review-step-back",
+      "service": null
+    },
+    {
+      "rawAction": "review-submit-as-workflow",
+      "service": null
+    },
+    {
+      "rawAction": "review-update-candidates",
+      "service": null
+    },
+    {
+      "rawAction": "review-update-duration",
+      "service": "docs"
+    },
+    {
+      "rawAction": "rfi-create",
+      "service": "rfis"
+    },
+    {
+      "rawAction": "rfi-update",
+      "service": "rfis"
+    },
+    {
+      "rawAction": "rfi-view",
+      "service": "rfis"
+    },
+    {
+      "rawAction": "save-approval-workflow",
+      "service": "docs"
+    },
+    {
+      "rawAction": "send-entity-to-project",
+      "service": "docs"
+    },
+    {
+      "rawAction": "set-approval-status",
+      "service": "docs"
+    },
+    {
+      "rawAction": "shared-with-recipients-for-documents",
+      "service": "docs"
+    },
+    {
+      "rawAction": "shared-with-recipients-for-folders",
+      "service": null
+    },
+    {
+      "rawAction": "shared-with-recipients-for-sheets",
+      "service": null
+    },
+    {
+      "rawAction": "submit-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "submittals-item-add-attachment",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-add-comment",
+      "service": null
+    },
+    {
+      "rawAction": "submittals-item-add-reference",
+      "service": null
+    },
+    {
+      "rawAction": "submittals-item-change-attribute",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-change-attribute-final-response",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-change-attribute-review-response",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-change-attribute-revision",
+      "service": null
+    },
+    {
+      "rawAction": "submittals-item-change-attribute-user",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-change-relation-package",
+      "service": null
+    },
+    {
+      "rawAction": "submittals-item-change-relation-spec",
+      "service": null
+    },
+    {
+      "rawAction": "submittals-item-commit-transition",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-create",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-item-remove-attachment",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-step-change-attribute",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "submittals-task-change-attribute",
+      "service": "submittals"
+    },
+    {
+      "rawAction": "terminate-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "unlock-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "update-custom-attribute",
+      "service": null
+    },
+    {
+      "rawAction": "update-doc-comment-for-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "update-folder-properties",
+      "service": null
+    },
+    {
+      "rawAction": "update-sheets-permission",
+      "service": null
+    },
+    {
+      "rawAction": "update-version-set",
+      "service": null
+    },
+    {
+      "rawAction": "upgrade-version",
+      "service": null
+    },
+    {
+      "rawAction": "upload-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "upsert-custom-attribute-constraint",
+      "service": null
+    },
+    {
+      "rawAction": "view-entity",
+      "service": "docs"
+    },
+    {
+      "rawAction": "view-existing-review",
+      "service": "docs"
+    },
+    {
+      "rawAction": "view-in-autocad-web",
+      "service": "docs"
+    },
+    {
+      "rawAction": "view-public-link",
+      "service": "docs"
+    },
+    {
+      "rawAction": "view-sheet",
+      "service": "sheets"
+    },
+    {
+      "rawAction": "view-transmittal",
+      "service": "docs"
+    }
+  ],
+  "admin": [
+    {
+      "rawAction": "assign-admin",
+      "service": "admin"
+    },
+    {
+      "rawAction": "assign-member",
+      "service": "admin"
+    },
+    {
+      "rawAction": "edit-project",
+      "service": "admin"
+    },
+    {
+      "rawAction": "remove-admin",
+      "service": null
+    },
+    {
+      "rawAction": "remove-member",
+      "service": null
+    }
+  ]
+}
