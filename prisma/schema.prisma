@@ -2,6 +2,12 @@ generator client {
   provider = "prisma-client-js"
 }
 
+generator erd {
+  provider = "prisma-erd-generator"
+  output   = "../docs/erd.md"
+}
+
+
 datasource db {
   provider = "postgresql"
 }
@@ -511,6 +517,15 @@ model AccFolder {
   fullPath    String?
   syncedAt    DateTime
   permissions AccFolderPermission[]
+
+  // Slice D — per-folder file rollup (files DIRECTLY in this folder, from tip versions).
+  // Nullable: populated when the folder's contents are crawled; null until then.
+  fileCount            Int?
+  totalSizeBytes       Float? // sum of tip-version storageSize (Float avoids BigInt JS friction)
+  lastModifiedTime     DateTime?
+  lastModifiedBy       String?
+  latestVersionAddedBy String?
+  maxVersionNumber     Int?
 
   @@index([projectId])
   @@index([parentId])

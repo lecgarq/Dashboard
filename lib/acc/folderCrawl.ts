@@ -483,6 +483,15 @@ export async function extractAndPersistFolders(
     await Promise.all(
       batch.map((folder) =>
         writeLimit(async () => {
+          // Slice D file rollup (undefined → null when the folder wasn't listed).
+          const rollup = {
+            fileCount: folder.fileCount ?? null,
+            totalSizeBytes: folder.totalSizeBytes ?? null,
+            lastModifiedTime: folder.lastModifiedTime ? new Date(folder.lastModifiedTime) : null,
+            lastModifiedBy: folder.lastModifiedBy ?? null,
+            latestVersionAddedBy: folder.latestVersionAddedBy ?? null,
+            maxVersionNumber: folder.maxVersionNumber ?? null,
+          };
           try {
             await prisma.accFolder.upsert({
               where: { id: folder.id },
@@ -493,6 +502,7 @@ export async function extractAndPersistFolders(
                 name: folder.name,
                 fullPath: folder.fullPath,
                 syncedAt: now,
+                ...rollup,
               },
               update: {
                 projectId: project.id,
@@ -500,6 +510,7 @@ export async function extractAndPersistFolders(
                 name: folder.name,
                 fullPath: folder.fullPath,
                 syncedAt: now,
+                ...rollup,
               },
             });
           } catch (err) {
