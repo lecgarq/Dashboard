@@ -55,7 +55,7 @@ describe("accTaxonomyStatic", () => {
     expect(Object.keys(MODULE_LABEL_TO_ID)).toHaveLength(MODULES.length);
   });
   it("GROUP_LABEL_TO_ID covers every group and targets real group ids", () => {
-    const groupIds = new Set(GROUPS.map((g) => g.id));
+    const groupIds = new Set<string>(GROUPS.map((g) => g.id));
     for (const id of Object.values(GROUP_LABEL_TO_ID)) expect(groupIds.has(id)).toBe(true);
     expect(Object.keys(GROUP_LABEL_TO_ID)).toHaveLength(GROUPS.length);
   });
