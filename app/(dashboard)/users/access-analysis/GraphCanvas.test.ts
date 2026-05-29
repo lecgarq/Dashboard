@@ -685,6 +685,15 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     expect(_startCalls.length).toBeGreaterThan(0);
   });
 
+  it("GPU-decouple: with NO clusterIds, 2D uses the slider force config (not cluster mode)", async () => {
+    await setupGpuHandle(3); // no clusterProps → clusterIds undefined
+    // Cluster mode would pin simulationCluster to the fixed 0.5 (see GPU-4); the
+    // slider-driven path (mapForceConfig) yields the slider-derived value instead.
+    expect(_capturedConfig.simulationCluster).not.toBe(0.5);
+    // Nodes stay one-per-node (no color grouping) so color never collapses clumps.
+    expect(_clusterCalls.at(-1)).toEqual([0, 1, 2]);
+  });
+
   it("GPU-4b: setClusters re-assigns cluster ids + reheats (re-group path)", async () => {
     const handle = await setupGpuHandle(3, {
       clusterIds: new Int32Array([0, 1, 0]),

@@ -35,7 +35,7 @@ import {
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
-import { buildNodeColors, buildClusterAssignment, type ColorMode } from "./nodeColors";
+import { buildNodeColors, type ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
@@ -108,12 +108,6 @@ function ShellBody({
     () => buildNodeColors(features, colorMode),
     [features, colorMode],
   );
-  // Per-node cluster index (color-group) for the 2D GPU graph's discrete clumps.
-  const clusterAssignment = useMemo(
-    () => buildClusterAssignment(features, colorMode),
-    [features, colorMode],
-  );
-
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
     installGraphTestBridge();
@@ -184,7 +178,6 @@ function ShellBody({
               ref={graphRef}
               physics={physics}
               nodeColors={nodeColors}
-              clusterIds={clusterAssignment.clusterIds}
               mode={mode}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
