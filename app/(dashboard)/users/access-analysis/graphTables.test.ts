@@ -165,6 +165,25 @@ describe("buildGraphArrowTables", () => {
     expect(row.activity_total).toBe(3);
     expect(row.last_activity).toBe(Date.parse("2026-05-10T00:00:00.000Z"));
   });
+
+  it("serializes per-action counts into the activity_actions_json column", async () => {
+    const users = [
+      user({
+        email: "alpha@example.com",
+        projects: [
+          {
+            id: "p1", name: "Project One", status: "active", isAdmin: false,
+            roles: ["Architect"], modules: ["Docs"],
+            actionCounts: { "view-entity": 5, "issue-create": 2 },
+          },
+        ],
+      }),
+    ];
+    const tables = await buildGraphArrowTables({ users, similarityInput: null, topology: null });
+    const col = tables.userProjects.getChild("activity_actions_json");
+    expect(col).not.toBeNull();
+    expect(JSON.parse(String(col!.get(0)))).toEqual({ "view-entity": 5, "issue-create": 2 });
+  });
 });
 
 const u = (o: Partial<BulkAccUser>): BulkAccUser => ({
