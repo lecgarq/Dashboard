@@ -36,6 +36,7 @@ interface FakeRow {
   full_controller: boolean | number | null;
   perm_mixed: boolean | number | null;
   activity_mix_json: string | null;
+  activity_actions_json?: string | null;
   activity_total: bigint | number | null;
   last_activity: bigint | number | null;
 }
@@ -253,6 +254,7 @@ function makeRow(over: Partial<FakeRow> & { user_id: string; project_id: string 
     full_controller: over.full_controller ?? null,
     perm_mixed: over.perm_mixed ?? null,
     activity_mix_json: over.activity_mix_json ?? null,
+    activity_actions_json: over.activity_actions_json ?? null,
     activity_total: over.activity_total ?? null,
     last_activity: over.last_activity ?? null,
   };
@@ -429,5 +431,18 @@ describe("buildFeatureSnapshot — P5-C activityMix + true recency", () => {
     const [f] = await buildFeatureSnapshot({ nodeIds: ["ghost::missing"] });
     expect(f!.activityTotal).toBe(0);
     expect(Object.keys(f!.activityMix!)).toEqual([]);
+  });
+});
+
+describe("buildFeatureSnapshot — Phase B actionCounts", () => {
+  it("parses activity_actions_json into a per-action count map", async () => {
+    mockRows = [makeRow({
+      user_id: "u1",
+      project_id: "p1",
+      activity_actions_json: '{"view-entity":7,"issue-create":2}',
+    })];
+    const [snap] = await buildFeatureSnapshot({ nodeIds: ["u1::p1"] });
+    expect(snap!.actionCounts?.["view-entity"]).toBe(7);
+    expect(snap!.actionCounts?.["issue-create"]).toBe(2);
   });
 });

@@ -101,6 +101,8 @@ export interface NodeFeatureSnapshot {
   activityMix?: Partial<Record<import("@/lib/acc/activityCategories").ActivityCategory, number>>;
   /** [P5-C] Sum of activityMix values. */
   activityTotal?: number;
+  /** [Phase B] Sparse per-canonical-action counts for this instance (taxonomy action ids). */
+  actionCounts?: Record<string, number>;
 }
 
 /**

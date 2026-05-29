@@ -111,6 +111,7 @@ interface RawFeatureRow {
   full_controller: boolean | number | null;
   perm_mixed: boolean | number | null;
   activity_mix_json: string | null;
+  activity_actions_json: string | null;
   activity_total: bigint | number | null;
   last_activity: bigint | number | null;
 }
@@ -173,6 +174,7 @@ export async function buildFeatureSnapshot(
       COALESCE(ANY_VALUE(up.full_controller), FALSE)                    AS full_controller,
       COALESCE(ANY_VALUE(up.perm_mixed), FALSE)                         AS perm_mixed,
       ANY_VALUE(up.activity_mix_json)                                   AS activity_mix_json,
+      ANY_VALUE(up.activity_actions_json)                              AS activity_actions_json,
       COALESCE(ANY_VALUE(up.activity_total), 0)                         AS activity_total,
       ANY_VALUE(up.last_activity)                                       AS last_activity
     FROM ${userProjectsView} up
@@ -207,6 +209,10 @@ export async function buildFeatureSnapshot(
     const folderBreadth = Number(r.folder_breadth ?? 0);
     const activityMix = (() => {
       try { return r.activity_mix_json ? JSON.parse(r.activity_mix_json) : {}; }
+      catch { return {}; }
+    })();
+    const actionCounts = (() => {
+      try { return r.activity_actions_json ? JSON.parse(r.activity_actions_json) : {}; }
       catch { return {}; }
     })();
     const activityTotal = Number(r.activity_total ?? 0);
@@ -265,6 +271,7 @@ export async function buildFeatureSnapshot(
         ? bucketRecency(lastActivityDays)
         : bucketRecency(instanceRecencyDays),
       activityMix,
+      actionCounts,
       activityTotal,
       permissionStrength,
       permissionTypeSummary: {
@@ -308,6 +315,7 @@ export async function buildFeatureSnapshot(
     permissionStrength: 0,
     permissionTypeSummary: { folderBreadth: 0, coverage: "unknown", mixedProfile: false, fullController: false },
     activityMix: {},
+    actionCounts: {},
     activityTotal: 0,
   });
 
