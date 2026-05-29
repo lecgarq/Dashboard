@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
-  getModules, getGroups, getActions, getAction, resolveActionId,
+  getModules, getGroups, getActions, getAction, getModuleById, resolveActionId,
   getModuleForEntitlement, getActionsByModule, isAdminSourceAction,
 } from "./accTaxonomy";
 
@@ -18,6 +18,10 @@ describe("accTaxonomy API", () => {
   it("looks up an action by id", () => {
     expect(getAction("view-entity")?.moduleId).toBe("dataManagement");
     expect(getAction("nope")).toBeUndefined();
+  });
+  it("looks up a module by id", () => {
+    expect(getModuleById("build")?.label).toBe("Build");
+    expect(getModuleById("nope")).toBeUndefined();
   });
   it("maps entitlement keys to module ids (cost folds into build)", () => {
     expect(getModuleForEntitlement("cost")?.id).toBe("build");

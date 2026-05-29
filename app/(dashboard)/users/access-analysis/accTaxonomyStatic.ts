@@ -91,6 +91,7 @@ export const MODULE_LABEL_TO_ID: Readonly<Record<string, string>> = {
   Build: "build",
   "Data Management": "dataManagement",
   Datum: "datum",
+  Design: "design",
   "Design Collaboration": "designCollaboration",
   Insight: "insight",
   "Model Coordination": "modelCoordination",

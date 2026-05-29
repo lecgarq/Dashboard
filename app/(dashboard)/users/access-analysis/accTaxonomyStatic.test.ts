@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   MODULES, GROUPS, ACCESS_LEVELS, STRUCTURAL_DIMS,
   ENTITLEMENT_TO_MODULE, ACTION_ALIASES, ADMIN_SOURCE_ACTION_IDS,
+  MODULE_LABEL_TO_ID, GROUP_LABEL_TO_ID,
 } from "./accTaxonomyStatic";
 
 describe("accTaxonomyStatic", () => {
@@ -42,5 +43,20 @@ describe("accTaxonomyStatic", () => {
     expect(GROUPS.map((g) => g.id).sort()).toEqual(
       ["accessChange", "contentChange", "delete", "read", "unknown", "workflowChange"],
     );
+  });
+
+  // Drift guard: the generator duplicates these label maps. Assert they cover EVERY
+  // module/group and target only real ids, so a missing entry (e.g. "Design") fails here.
+  it("MODULE_LABEL_TO_ID covers every module label and targets real module ids", () => {
+    const moduleIds = new Set(MODULES.map((m) => m.id));
+    for (const id of Object.values(MODULE_LABEL_TO_ID)) expect(moduleIds.has(id)).toBe(true);
+    const mappedLabels = new Set(Object.keys(MODULE_LABEL_TO_ID));
+    for (const m of MODULES) expect(mappedLabels.has(m.label)).toBe(true);
+    expect(Object.keys(MODULE_LABEL_TO_ID)).toHaveLength(MODULES.length);
+  });
+  it("GROUP_LABEL_TO_ID covers every group and targets real group ids", () => {
+    const groupIds = new Set(GROUPS.map((g) => g.id));
+    for (const id of Object.values(GROUP_LABEL_TO_ID)) expect(groupIds.has(id)).toBe(true);
+    expect(Object.keys(GROUP_LABEL_TO_ID)).toHaveLength(GROUPS.length);
   });
 });

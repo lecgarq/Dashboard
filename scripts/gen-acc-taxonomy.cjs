@@ -12,8 +12,8 @@ const fs = require("fs");
 
 const MODULE_LABEL_TO_ID = {
   AutoSpecs: "autospecs", Build: "build", "Data Management": "dataManagement",
-  Datum: "datum", "Design Collaboration": "designCollaboration", Insight: "insight",
-  "Model Coordination": "modelCoordination", Preconstruction: "preconstruction",
+  Datum: "datum", Design: "design", "Design Collaboration": "designCollaboration",
+  Insight: "insight", "Model Coordination": "modelCoordination", Preconstruction: "preconstruction",
 };
 const GROUP_LABEL_TO_ID = {
   "Content Change": "contentChange", Delete: "delete", Read: "read",
