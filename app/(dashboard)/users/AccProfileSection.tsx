@@ -46,6 +46,23 @@ const ALL_MODULES = [
 type SortField = "name" | "status" | "modules" | "admin";
 
 // ---------------------------------------------------------------------------
+// Date helpers
+// ---------------------------------------------------------------------------
+
+function formatRelativeTime(iso: string): string {
+  const then = new Date(iso).getTime();
+  if (Number.isNaN(then)) return "";
+  const diffMs = Date.now() - then;
+  const diffDays = Math.floor(diffMs / (24 * 60 * 60 * 1000));
+  if (diffDays < 1) return "today";
+  if (diffDays === 1) return "yesterday";
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)} months ago`;
+  return `${Math.floor(diffDays / 365)} years ago`;
+}
+
+// ---------------------------------------------------------------------------
 // Apple-style Toggle Switch (read-only)
 // ---------------------------------------------------------------------------
 
@@ -83,7 +100,7 @@ const LOAD_STEPS = [
   { label: "Almost done", until: 95 },
 ];
 
-function AccLoadingProgress() {
+export function AccLoadingProgress() {
   const [progress, setProgress] = useState(0);
   const rafRef = useRef<number | null>(null);
   const startRef = useRef<number | null>(null);
@@ -184,13 +201,14 @@ function ModuleToggleRow({ name, active }: { name: string; active: boolean }) {
 // Collapsible Project Card — much more visible
 // ---------------------------------------------------------------------------
 
-type ProjectData = {
+export type ProjectData = {
   id: string;
   name: string;
   status: string;
   isAdmin: boolean;
   roles?: string[];
   modules?: string[];
+  addedOn?: string;
 };
 
 function AccProjectCard({
@@ -341,7 +359,7 @@ function AccProjectCard({
 // AccProfileFull — the full ACC section
 // ---------------------------------------------------------------------------
 
-type AccProfileData = {
+export type AccProfileData = {
   found: true;
   status: string;
   name?: string;
@@ -350,14 +368,17 @@ type AccProfileData = {
   role?: string;
   company?: string;
   addedOn?: string;
+  lastSignIn?: string;
   projects?: ProjectData[];
 };
 
-function AccProfileFull({
+export function AccProfileFull({
   data,
+  email,
   onRefresh,
 }: {
   data: AccProfileData;
+  email: string;
   onRefresh: () => void;
 }) {
   const projects = data.projects ?? [];
@@ -478,8 +499,8 @@ function AccProfileFull({
         </button>
       </div>
 
-      {/* ── Company & Added On ── */}
-      {(data.company || data.addedOn) && (
+      {/* ── Company, Added On & Last Sign-In ── */}
+      {(data.company || data.addedOn || data.lastSignIn) && (
         <div className="flex flex-wrap gap-x-6 gap-y-1 px-1">
           {data.company && (
             <div className="flex items-center gap-2 text-sm">
@@ -493,6 +514,17 @@ function AccProfileFull({
               <span className="text-muted-foreground/60 font-medium">Added on:</span>
               <span className="text-foreground font-semibold">
                 {new Date(data.addedOn).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </span>
+            </div>
+          )}
+          {data.lastSignIn && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground/60 font-medium">Last sign-in:</span>
+              <span className="text-foreground font-semibold">
+                {new Date(data.lastSignIn).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </span>
+              <span className="text-muted-foreground/40 text-xs">
+                ({formatRelativeTime(data.lastSignIn)})
               </span>
             </div>
           )}
@@ -620,11 +652,307 @@ function AccProfileFull({
         </p>
       )}
 
+      {/* ── Extended insight panels ── */}
+      <div className="space-y-2 pt-2">
+        <AccUserActivityPanel email={email} />
+        <AccUserFolderAccessPanel email={email} />
+        <AccUserRecentAdditionsPanel projects={projects} />
+      </div>
+
       {/* Synced timestamp */}
       <p className="text-[10px] text-muted-foreground/40">
         Last synced {new Date(data.syncedAt).toLocaleString()}
       </p>
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Collapsible panel primitive
+// ---------------------------------------------------------------------------
+
+function CollapsiblePanel({
+  title,
+  icon,
+  subtitle,
+  defaultOpen = false,
+  children,
+}: {
+  title: string;
+  icon: React.ReactNode;
+  subtitle?: string;
+  defaultOpen?: boolean;
+  children: React.ReactNode;
+}) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div className="rounded-xl border border-border/30 bg-card/40 overflow-hidden">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="w-full flex items-center justify-between gap-3 px-4 py-3 hover:bg-muted/10 transition-colors"
+      >
+        <div className="flex items-center gap-2.5 text-sm font-bold text-foreground">
+          {icon}
+          {title}
+          {subtitle && (
+            <span className="text-xs font-medium text-muted-foreground/60">
+              {subtitle}
+            </span>
+          )}
+        </div>
+        {open ? (
+          <ChevronDown size={16} className="text-muted-foreground/60" />
+        ) : (
+          <ChevronRight size={16} className="text-muted-foreground/60" />
+        )}
+      </button>
+      {open && <div className="px-4 pb-4 pt-1">{children}</div>}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Activity panel
+// ---------------------------------------------------------------------------
+
+function AccUserActivityPanel({ email }: { email: string }) {
+  const { data, isLoading } = trpc.users.getAccUserActivity.useQuery(
+    { email },
+    { enabled: !!email, staleTime: 60_000 }
+  );
+
+  const subtitle = data
+    ? `${data.last30dCount.toLocaleString()} events in last 30 days`
+    : isLoading
+    ? "loading…"
+    : "no data";
+
+  return (
+    <CollapsiblePanel
+      title="Activity"
+      subtitle={subtitle}
+      icon={<Activity size={15} className="text-cyan-500" />}
+    >
+      {isLoading && (
+        <p className="text-xs text-muted-foreground/60 py-2">Loading activity…</p>
+      )}
+      {data && data.totalCount === 0 && (
+        <p className="text-xs text-muted-foreground/60 py-2">
+          No activity recorded for this user yet. Data populates as Data Connector ingests complete.
+        </p>
+      )}
+      {data && data.totalCount > 0 && (
+        <div className="space-y-4">
+          {/* Top actions */}
+          {data.topActions.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
+                Top actions (last 30 days)
+              </p>
+              <div className="space-y-1.5">
+                {data.topActions.map((a) => (
+                  <div key={a.action} className="flex items-center justify-between gap-2 text-xs">
+                    <span className="text-foreground font-medium">{a.action}</span>
+                    <span className="text-muted-foreground/60 font-semibold">{a.count.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {/* Recent events */}
+          {data.recentEvents.length > 0 && (
+            <div>
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
+                Recent events ({data.recentEvents.length})
+              </p>
+              <div className="max-h-[40vh] overflow-y-auto space-y-1.5 pr-1 custom-scrollbar">
+                {data.recentEvents.map((e) => (
+                  <div
+                    key={e.id}
+                    className="text-xs rounded-lg border border-border/20 bg-muted/5 px-3 py-2 space-y-0.5"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-semibold text-foreground">{e.action}</span>
+                      <span className="text-[10px] text-muted-foreground/50">
+                        {new Date(e.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    {(e.projectName || e.service) && (
+                      <div className="flex items-center gap-2 text-[10px] text-muted-foreground/60">
+                        {e.projectName && <span className="truncate">{e.projectName}</span>}
+                        {e.service && (
+                          <span className="px-1.5 py-px rounded bg-muted/20">
+                            {e.service}
+                            {e.tool ? ` · ${e.tool}` : ""}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    {e.details && (
+                      <p className="text-[11px] text-muted-foreground/70 truncate">{e.details}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+    </CollapsiblePanel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Folder access panel
+// ---------------------------------------------------------------------------
+
+function AccUserFolderAccessPanel({ email }: { email: string }) {
+  const { data, isLoading } = trpc.users.getAccUserFolderAccess.useQuery(
+    { email },
+    { enabled: !!email, staleTime: 5 * 60_000 }
+  );
+
+  const subtitle = data
+    ? `${data.folders.length.toLocaleString()} folder${data.folders.length === 1 ? "" : "s"} (${data.coverage.crawledProjects}/${data.coverage.totalProjects} projects crawled)`
+    : isLoading
+    ? "loading…"
+    : "no data";
+
+  // Group folders by project for cleaner display
+  type FolderRow = NonNullable<typeof data>["folders"][number];
+  const grouped = useMemo(() => {
+    const list: FolderRow[] = data?.folders ?? [];
+    if (list.length === 0) return [] as Array<{ projectId: string; projectName: string; folders: FolderRow[] }>;
+    const byProject = new Map<string, { projectId: string; projectName: string; folders: FolderRow[] }>();
+    for (const f of list) {
+      if (!byProject.has(f.projectId)) {
+        byProject.set(f.projectId, { projectId: f.projectId, projectName: f.projectName, folders: [] });
+      }
+      byProject.get(f.projectId)!.folders.push(f);
+    }
+    return [...byProject.values()].sort((a, b) => a.projectName.localeCompare(b.projectName));
+  }, [data]);
+
+  return (
+    <CollapsiblePanel
+      title="Folder access"
+      subtitle={subtitle}
+      icon={<FolderOpen size={15} className="text-amber-500" />}
+    >
+      {isLoading && (
+        <p className="text-xs text-muted-foreground/60 py-2">Loading folder access…</p>
+      )}
+      {data && data.folders.length === 0 && (
+        <p className="text-xs text-muted-foreground/60 py-2">
+          {data.coverage.crawledProjects === 0
+            ? "Folder crawl hasn't reached this user's projects yet. Permissions populate as the crawl progresses."
+            : "This user has no role-based folder grants in the crawled projects."}
+        </p>
+      )}
+      {data && data.folders.length > 0 && (
+        <div className="space-y-3 max-h-[50vh] overflow-y-auto pr-1 custom-scrollbar">
+          {grouped.map((g) => (
+            <div key={g.projectId} className="rounded-lg border border-border/20 bg-muted/5 p-2.5 space-y-1.5">
+              <p className="text-[11px] uppercase tracking-wider font-bold text-muted-foreground/70">
+                {g.projectName}{" "}
+                <span className="font-normal lowercase text-muted-foreground/40">
+                  · {g.folders.length} folder{g.folders.length === 1 ? "" : "s"}
+                </span>
+              </p>
+              <div className="space-y-1">
+                {g.folders.map((f) => (
+                  <div
+                    key={f.folderId + "::" + f.roleId}
+                    className="flex items-center justify-between gap-3 text-xs"
+                  >
+                    <div className="flex items-center gap-2 min-w-0 flex-1">
+                      <FolderOpen size={11} className="text-muted-foreground/40 shrink-0" />
+                      <span className="truncate text-foreground" title={f.folderPath ?? f.folderName}>
+                        {f.folderPath || f.folderName}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-px font-semibold border-violet-500/30 text-violet-400"
+                      >
+                        {f.roleName}
+                      </Badge>
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] px-1.5 py-px font-semibold border-amber-500/30 text-amber-400"
+                      >
+                        {f.permType}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </CollapsiblePanel>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Recent additions panel — uses per-project addedOn from the profile data
+// ---------------------------------------------------------------------------
+
+function AccUserRecentAdditionsPanel({ projects }: { projects: ProjectData[] }) {
+  const recent = useMemo(() => {
+    return projects
+      .filter((p) => !!p.addedOn)
+      .map((p) => ({ ...p, addedTs: new Date(p.addedOn as string).getTime() }))
+      .filter((p) => !Number.isNaN(p.addedTs))
+      .sort((a, b) => b.addedTs - a.addedTs)
+      .slice(0, 20);
+  }, [projects]);
+
+  const subtitle = recent.length
+    ? `${recent.length} most recent`
+    : projects.length === 0
+    ? "no projects"
+    : "no dates available";
+
+  return (
+    <CollapsiblePanel
+      title="Recent project additions"
+      subtitle={subtitle}
+      icon={<Layers size={15} className="text-green-500" />}
+    >
+      {recent.length === 0 && (
+        <p className="text-xs text-muted-foreground/60 py-2">
+          Per-project membership dates aren&apos;t available yet. Refresh to fetch them.
+        </p>
+      )}
+      {recent.length > 0 && (
+        <div className="space-y-1.5">
+          {recent.map((p) => (
+            <div
+              key={p.id}
+              className="flex items-center justify-between gap-3 text-xs rounded-lg border border-border/20 bg-muted/5 px-3 py-2"
+            >
+              <div className="flex items-center gap-2 min-w-0 flex-1">
+                <Building2 size={11} className="text-muted-foreground/40 shrink-0" />
+                <span className="truncate text-foreground font-medium" title={p.name}>
+                  {p.name}
+                </span>
+                {p.isAdmin && (
+                  <Badge variant="outline" className="text-[9px] px-1 py-px font-bold border-amber-500/30 text-amber-400 shrink-0">
+                    ADMIN
+                  </Badge>
+                )}
+              </div>
+              <span className="text-[10px] text-muted-foreground/60 shrink-0">
+                {new Date(p.addedOn as string).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
+    </CollapsiblePanel>
   );
 }
 
@@ -729,6 +1057,7 @@ export function AccProfileSection({ email }: { email: string }) {
     return (
       <AccProfileFull
         data={data as AccProfileData}
+        email={email}
         onRefresh={handleRefresh}
       />
     );
