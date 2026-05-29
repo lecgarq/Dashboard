@@ -61,7 +61,7 @@ function catValue(f: NodeFeatureSnapshot, dim: CatalogDimension): string {
   const v = dim.extract(f);
   if (typeof v === "string") return v;
   if (typeof v === "number") return String(v);
-  if (Array.isArray(v)) return v.length ? v.join("|") : "(none)";
+  if (Array.isArray(v)) return v.length ? [...v].sort().join("|") : "(none)";
   return "(none)";
 }
 
@@ -165,6 +165,9 @@ function bucketerFor(
       bucketCount: MEMBERSHIP_BUCKET_COUNT,
     });
   }
+  // Only activity-family dims are in `thresholds`; any other ordinal dim that reaches
+  // here gets th=[Inf,Inf] → binary-effective bucketing (none vs present). Catalog
+  // discipline keeps permission/tenure handled above, so this path is action dims.
   // Activity-family action dims: per-action quantile bucket of the raw count.
   const th = thresholds.get(dim.id) ?? ([Infinity, Infinity] as ActionThresholds);
   return (f) => ({
