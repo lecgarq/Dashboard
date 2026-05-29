@@ -63,7 +63,7 @@ export const TARGET_DIMENSIONS: readonly TargetDimensionId[] = RUNTIME_DIMENSION
  * for same-category convergence to win (see physicsClustering.test.ts), while the
  * post-settle normalization keeps the rendered/edge coordinates bounded.
  */
-const ANCHOR_RADIUS = 16000;
+export const ANCHOR_RADIUS = 16000;
 
 /** Golden angle (radians) — the spacing that makes a spherical Fibonacci set even. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5)); // ≈ 2.39996323
@@ -120,7 +120,7 @@ function distinctSortedCategories(
  * Magnitude: deterministic layered radius in [LAYER_MIN, LAYER_MIN+LAYER_SPAN]
  *            so anchors occupy a 3D volume rather than a single shell.
  */
-function volumetricAnchor(
+export function volumetricAnchor(
   i: number,
   count: number,
   radius: number,
