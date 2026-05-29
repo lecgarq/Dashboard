@@ -37,6 +37,7 @@ import {
   loadCachedPositions,
   hashNodeSetAndSliders,
 } from "./positionsCache";
+import { calibrateSliderResponse } from "./sliderCalibration";
 
 // ---- Types ---------------------------------------------------------------
 
@@ -341,7 +342,7 @@ export async function createPhysicsLayer(
   function applySliderForces(values: Record<string, number>): number {
     const maxSlider = Math.max(0, ...Object.values(values));
     for (const [dimId, sv] of Object.entries(values)) {
-      const base = sv * STRENGTH_AT_ONE;
+      const base = calibrateSliderResponse(sv) * STRENGTH_AT_ONE;
       const w = dimWeights[dimId];
       // strengthFn uses only `i` (node index); `_d` is unused but required by d3's
       // function-strength overload. Cast to `number` forces the scalar overload which

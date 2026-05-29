@@ -7,8 +7,9 @@ import type { AsyncDuckDBConnection } from "@duckdb/duckdb-wasm";
  * "feature-targets-v1": positions are now produced by volumetric feature-anchored
  * targets (featureTargets.ts) instead of the legacy all-zero "globe" targets.
  * Mixing this into every position hash invalidates the old globe positions.
+ * "feature-targets-v2": Phase D positioning engine + perceptual slider-response calibration; invalidates v1 positions.
  */
-export const LAYOUT_VERSION = "feature-targets-v1";
+export const LAYOUT_VERSION = "feature-targets-v2";
 
 export interface PositionRow {
   node_id: string;

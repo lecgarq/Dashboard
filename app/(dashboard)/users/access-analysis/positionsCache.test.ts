@@ -408,3 +408,17 @@ describe("multi-layout cache: one position row per (set_hash, node_id)", () => {
     expect(await loadCachedPositions(conn, "hashB", IDS)).toBeNull();
   });
 });
+
+describe("hashNodeSetAndSliders — exact-slider key (no snap)", () => {
+  const ids = ["a::p", "b::p"];
+  it("different slider values → different hashes (intermediate positions never collide)", () => {
+    const h10 = hashNodeSetAndSliders(ids, { project: 0.1 });
+    const h11 = hashNodeSetAndSliders(ids, { project: 0.11 });
+    expect(h10).not.toBe(h11);
+  });
+  it("identical slider state → identical hash (cache hit)", () => {
+    expect(hashNodeSetAndSliders(ids, { project: 0.37 })).toBe(
+      hashNodeSetAndSliders(ids, { project: 0.37 }),
+    );
+  });
+});
