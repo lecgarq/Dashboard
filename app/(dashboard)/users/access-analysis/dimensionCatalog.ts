@@ -14,7 +14,12 @@ import { buildFolderAttributeDimensions } from "./dimensionCatalog.folder";
 
 export * from "./dimensionCatalog.types";
 
-/** The full flat catalog. `features` (when given) drives per-action availability (greyed = no data). */
+/**
+ * The full flat catalog. Pass `features` from the live graph snapshot so action dims are
+ * greyed (`available:false`) when they have no data. If `features` is empty or omitted,
+ * availability is treated as UNKNOWN and all action dims default to `available:true` —
+ * Phase E MUST pass the real snapshot or every action will appear live.
+ */
 export function buildDimensionCatalog(features: readonly NodeFeatureSnapshot[] = []): CatalogDimension[] {
   const availability = features.length ? buildActionAvailability(features) : undefined;
   return [

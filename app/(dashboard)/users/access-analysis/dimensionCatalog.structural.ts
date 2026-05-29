@@ -46,13 +46,13 @@ export function buildStructuralDimensions(): CatalogDimension[] {
       id: "permission", label: "Permission level", family: "access", kind: "ordinal",
       source: "MAX folder-grant strength 0..5 (access ladder)", confidence: "medium", available: true,
       surfaces: ["slider", "color"], colorScale: "ordered",
-      extract: (f) => f.permissionStrength ?? 0,
+      extract: (f) => f.permissionStrength ?? 0, // raw 0..5; Phase D maps via ordinal ramp
     },
     {
       id: "tenure", label: "Membership tenure", family: "tenure", kind: "ordinal",
       source: "AccDcProjectUser.addedOn (days since)", confidence: "medium", available: true,
       surfaces: ["slider", "color"], colorScale: "ordered",
-      extract: (f) => f.membershipAgeDays ?? null,
+      extract: (f) => f.membershipAgeDays ?? null, // raw days; Phase D maps via ordinal ramp
     },
     {
       id: "moduleAccess", label: "Module access", family: "access", kind: "multiHot",
