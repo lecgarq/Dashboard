@@ -4,7 +4,7 @@ import { getActions } from "./accTaxonomy";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 const features: NodeFeatureSnapshot[] = [
-  { nodeId: "u::p", actionCounts: { "issue-create": 3 } } as NodeFeatureSnapshot,
+  { nodeId: "u::p", actionCounts: { "issue-create": 3 } } as unknown as NodeFeatureSnapshot,
 ];
 
 describe("buildDimensionCatalog", () => {
