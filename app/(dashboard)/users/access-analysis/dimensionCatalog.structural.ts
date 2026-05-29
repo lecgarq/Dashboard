@@ -5,6 +5,7 @@
  */
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getModuleForEntitlement } from "./accTaxonomy";
+import { ACCESS_LEVELS } from "./accTaxonomyStatic";
 
 /** Map a node's productKey signature to the set of excel module ids it has access to. */
 function moduleAccessOf(moduleSignature: string[] | undefined): string[] {
@@ -45,9 +46,22 @@ export function buildStructuralDimensions(): CatalogDimension[] {
     {
       id: "permission", label: "Permission level", family: "access", kind: "ordinal",
       source: "MAX folder-grant strength 0..5 (access ladder)", confidence: "medium", available: true,
-      surfaces: ["slider", "color"], colorScale: "ordered",
-      extract: (f) => f.permissionStrength ?? 0, // raw 0..5; Phase D maps via ordinal ramp
+      surfaces: ["color"], colorScale: "ordered",
+      extract: (f) => f.permissionStrength ?? 0, // color mode only; per-tier sliders below
     },
+    // Per-tier permission sliders — "single sliders, not a packaged slider". Each is a
+    // one-hot on the node's MAX folder-grant tier (permissionStrength). View+ = strength 1..5.
+    ...ACCESS_LEVELS.filter((lvl) => lvl.strength >= 1).map((lvl): CatalogDimension => ({
+      id: `permission:${lvl.id}`,
+      label: lvl.label,
+      family: "access",
+      kind: "ordinal",
+      source: `permissionStrength === ${lvl.strength} (one-hot, ${lvl.permType})`,
+      confidence: "medium",
+      available: true,
+      surfaces: ["slider"],
+      extract: (f) => ((f.permissionStrength ?? 0) === lvl.strength ? 1 : 0),
+    })),
     {
       id: "tenure", label: "Membership tenure", family: "tenure", kind: "ordinal",
       source: "AccDcProjectUser.addedOn (days since)", confidence: "medium", available: true,

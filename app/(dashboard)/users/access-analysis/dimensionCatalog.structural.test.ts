@@ -16,10 +16,33 @@ function node(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
 describe("buildStructuralDimensions", () => {
   const byId = Object.fromEntries(buildStructuralDimensions().map((d) => [d.id, d]));
 
-  it("declares the 9 excel structural/access dims", () => {
+  it("declares the 9 structural dims + 5 permission tiers", () => {
     expect(Object.keys(byId).sort()).toEqual(
-      ["admin", "company", "internalExternal", "moduleAccess", "permission", "project", "role", "status", "tenure"],
+      [
+        "admin", "company", "internalExternal", "moduleAccess",
+        "permission", "permission:fullController", "permission:viewDownload",
+        "permission:viewDownloadUpload", "permission:viewDownloadUploadEdit", "permission:viewOnly",
+        "project", "role", "status", "tenure",
+      ].sort(),
     );
+  });
+
+  it("permission is now color-only (not a slider)", () => {
+    expect(byId.permission.surfaces).toEqual(["color"]);
+    expect(byId.permission.available).toBe(true);
+  });
+
+  it("each permission tier is a slider-only one-hot on permissionStrength", () => {
+    const tiers = [
+      ["permission:viewOnly", 1], ["permission:viewDownload", 2], ["permission:viewDownloadUpload", 3],
+      ["permission:viewDownloadUploadEdit", 4], ["permission:fullController", 5],
+    ] as const;
+    for (const [id, strength] of tiers) {
+      expect(byId[id].surfaces).toEqual(["slider"]);
+      expect(byId[id].extract(node({ permissionStrength: strength }))).toBe(1);
+      expect(byId[id].extract(node({ permissionStrength: strength === 5 ? 4 : strength + 1 }))).toBe(0);
+      expect(byId[id].extract(node({ permissionStrength: 0 }))).toBe(0);
+    }
   });
   it("extracts categorical structure values", () => {
     const f = node();
@@ -50,10 +73,11 @@ describe("buildStructuralDimensions", () => {
     expect(byId.tenure.extract(node({ membershipAgeDays: 100 }))).toBe(100);
     expect(byId.tenure.extract(node({ membershipAgeDays: null }))).toBeNull();
   });
-  it("all structural dims are available and slider+color surfaced", () => {
+  it("all dims are available; tiers are slider-only, permission is color-only", () => {
     for (const d of buildStructuralDimensions()) {
       expect(d.available).toBe(true);
-      expect(d.surfaces).toContain("slider");
+      if (d.id === "permission") expect(d.surfaces).toEqual(["color"]);
+      else expect(d.surfaces.includes("slider")).toBe(true);
     }
   });
 });
