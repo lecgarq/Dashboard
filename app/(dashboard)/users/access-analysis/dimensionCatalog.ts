@@ -10,6 +10,7 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { getModules, getGroups } from "./accTaxonomy";
 import { buildStructuralDimensions } from "./dimensionCatalog.structural";
 import { buildActionDimensions, buildActionAvailability } from "./dimensionCatalog.actions";
+import { buildFolderReachDimensions } from "./dimensionCatalog.folderLive";
 import { buildFolderAttributeDimensions } from "./dimensionCatalog.folder";
 
 export * from "./dimensionCatalog.types";
@@ -25,6 +26,7 @@ export function buildDimensionCatalog(features: readonly NodeFeatureSnapshot[] =
   return [
     ...buildStructuralDimensions(),
     ...buildActionDimensions(availability),
+    ...buildFolderReachDimensions(),
     ...buildFolderAttributeDimensions(),
   ];
 }
