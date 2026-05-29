@@ -15,12 +15,14 @@ while ((match = importRe.exec(src)) !== null) {
 
 describe("physicsLayer purity", () => {
   it("only imports from the allowed allowlist", () => {
-    // physicsLayer.ts is allowed: d3-force-3d, ./positionsCache, ./duckdbClient.
+    // physicsLayer.ts is allowed: d3-force-3d, ./positionsCache, ./duckdbClient,
+    // and ./sliderCalibration (a pure, zero-import slider→force response curve).
     // It must NOT import React, Next.js, rendering engines, or DOM utilities.
     const ALLOWED = new Set([
       "d3-force-3d",
       "./positionsCache",
       "./duckdbClient",
+      "./sliderCalibration",
     ]);
     for (const spec of specifiers) {
       expect(ALLOWED.has(spec), `Disallowed import: ${spec}`).toBe(true);
