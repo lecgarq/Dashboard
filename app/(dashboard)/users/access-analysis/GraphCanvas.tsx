@@ -284,9 +284,10 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     getPositionsOverride,
   });
 
-  // GPU 2D (per-node path only): push slider changes straight to the cosmos GPU
-  // simulation. Gated OFF in cluster mode (props.clusterIds present) so it does
-  // not fight the cluster-anchor effects below.
+  // GPU 2D (per-node path): push slider changes straight to the cosmos GPU
+  // simulation. The shell no longer passes props.clusterIds (Phase D color-decouple),
+  // so this is the live 2D path; the props.clusterIds gate remains only for the
+  // dormant cluster-mode API (still exercised by GraphCanvas tests).
   useEffect(() => {
     if (!gpu2d || props.mode !== "2d" || props.clusterIds) return;
     const h = handle2D.current;

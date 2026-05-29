@@ -689,7 +689,9 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     await setupGpuHandle(3); // no clusterProps → clusterIds undefined
     // Cluster mode would pin simulationCluster to the fixed 0.5 (see GPU-4); the
     // slider-driven path (mapForceConfig) yields the slider-derived value instead.
-    expect(_capturedConfig.simulationCluster).not.toBe(0.5);
+    // mapForceConfig with all-zero fake sliders → simulationCluster 0 (cluster mode would be 0.5).
+    // toBe(0) also guards against the field being accidentally absent (undefined !== 0).
+    expect(_capturedConfig.simulationCluster).toBe(0);
     // Nodes stay one-per-node (no color grouping) so color never collapses clumps.
     expect(_clusterCalls.at(-1)).toEqual([0, 1, 2]);
   });
