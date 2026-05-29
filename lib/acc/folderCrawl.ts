@@ -19,6 +19,7 @@ import type { PrismaClient } from "@prisma/client";
 import pLimit from "p-limit";
 import { fetchWithRetry } from "@/lib/server/acc-admin";
 import { mapActions } from "@/lib/acc/permissionMapping";
+import { parseFolderContents, type ApsFolderNode, type FolderItemRollup } from "./folderContentsParse";
 
 // ---------------------------------------------------------------------------
 // Endpoints
@@ -38,6 +39,14 @@ export interface RawFolder {
   name: string;
   /** Slash-separated absolute path from hub root, e.g. "/ProjectFiles/Drawings" */
   fullPath: string;
+  // ── Slice D file rollup (files DIRECTLY in this folder, from their tip versions) ──
+  // Populated when this folder's contents are listed; absent if never reached (partial crawl).
+  fileCount?: number;
+  totalSizeBytes?: number;
+  lastModifiedTime?: string | null;
+  lastModifiedBy?: string | null;
+  latestVersionAddedBy?: string | null;
+  maxVersionNumber?: number | null;
 }
 
 export interface RawFolderPermission {
@@ -122,9 +131,12 @@ async function fetchFolderContents(
   projectIdForDM: string,
   folderId: string,
   accessToken: string,
-): Promise<ApsFolder[]> {
+): Promise<{ folders: ApsFolderNode[]; rollup: FolderItemRollup }> {
+  // No `filter[type]=folders` (Slice D): the unfiltered response ALSO returns items
+  // (data[]) and their tip versions (included[]), which carry storageSize / versionNumber /
+  // lastModifiedTime / lastModifiedUserName / createUserName. Same one-call-per-folder cost.
   const url =
-    `${DM_BASE}/data/v1/projects/${projectIdForDM}/folders/${folderId}/contents?filter[type]=folders`;
+    `${DM_BASE}/data/v1/projects/${projectIdForDM}/folders/${folderId}/contents`;
   const res = await fetchWithRetry(url, {
     headers: { Authorization: `Bearer ${accessToken}` },
     cache: "no-store",
@@ -133,8 +145,8 @@ async function fetchFolderContents(
   if (!res.ok) {
     throw new Error(`folderContents fetch failed (${res.status}): ${raw}`);
   }
-  const parsed = JSON.parse(raw) as { data?: ApsFolder[] };
-  return Array.isArray(parsed.data) ? parsed.data : [];
+  const parsed = JSON.parse(raw) as { data?: unknown[]; included?: unknown[] };
+  return parseFolderContents(parsed);
 }
 
 interface ApsPermissionEntry {
@@ -193,6 +205,9 @@ export async function crawlProjectFolders(
   let currentAccessToken = accessToken;
 
   const folders: RawFolder[] = [];
+  // Slice D: lookup so a folder's file-rollup (captured when ITS contents are listed)
+  // can be attached back to the RawFolder created when its parent was listed.
+  const foldersById = new Map<string, RawFolder>();
   let status: "ok" | "partial" | "failed" | "inaccessible" = "ok";
   let reason: string | undefined;
   let softCapWarned = false;
@@ -247,14 +262,14 @@ export async function crawlProjectFolders(
               fetchTopFolders(hubId, projectIdForDM, token)
             );
               // Return child queue items (top folders have no parent)
-              return { parent: null, children: topFolders, parentPath: "" };
+              return { parent: null, children: topFolders, parentPath: "", rollup: null, forFolderId: null };
             }
 
-            // Fetch sub-folders of a known folder
-          const subFolders = await withFreshToken((token) =>
+            // Fetch sub-folders + this folder's file rollup
+          const { folders: subFolders, rollup } = await withFreshToken((token) =>
             fetchFolderContents(projectIdForDM, item.folderId, token)
           );
-            return { parent: item, children: subFolders, parentPath: item.parentPath };
+            return { parent: item, children: subFolders, parentPath: item.parentPath, rollup, forFolderId: item.folderId };
           } catch (err) {
             const msg = err instanceof Error ? err.message : String(err);
             console.error(
@@ -267,20 +282,35 @@ export async function crawlProjectFolders(
               status = "partial";
               reason = reason ?? "fetch_error";
             }
-            return { parent: item.isRoot ? null : item, children: [], parentPath: item.parentPath };
+            return { parent: item.isRoot ? null : item, children: [] as ApsFolderNode[], parentPath: item.parentPath, rollup: null, forFolderId: null };
           }
         }),
       ),
     );
 
     // ── Push discovered folders + enqueue children ─────────────────────────
-    for (const { parent, children, parentPath } of childSets) {
+    for (const { parent, children, parentPath, rollup, forFolderId } of childSets) {
+      // Attach this folder's file rollup to the RawFolder created when its parent
+      // was listed (top folders are registered below before they are dequeued).
+      if (forFolderId && rollup) {
+        const rf = foldersById.get(forFolderId);
+        if (rf) {
+          rf.fileCount = rollup.fileCount;
+          rf.totalSizeBytes = rollup.totalSizeBytes;
+          rf.lastModifiedTime = rollup.lastModifiedTime;
+          rf.lastModifiedBy = rollup.lastModifiedBy;
+          rf.latestVersionAddedBy = rollup.latestVersionAddedBy;
+          rf.maxVersionNumber = rollup.maxVersionNumber;
+        }
+      }
       for (const child of children) {
         const name = folderName(child);
         const fullPath = parentPath ? `${parentPath}/${name}` : `/${name}`;
         const parentId = parent?.isRoot ? null : (parent?.folderId ?? null);
 
-        folders.push({ id: child.id, parentId, name, fullPath });
+        const rf: RawFolder = { id: child.id, parentId, name, fullPath };
+        folders.push(rf);
+        foldersById.set(child.id, rf);
         queue.push({ folderId: child.id, parentId, parentPath: fullPath });
       }
     }
