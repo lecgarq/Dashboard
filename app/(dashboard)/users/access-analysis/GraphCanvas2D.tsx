@@ -25,7 +25,7 @@
 import { useEffect, useRef, type RefObject } from "react";
 // TS6 note: useRef<T | null> returns RefObject<T | null>; we accept both variants.
 import { Graph } from "@cosmos.gl/graph";
-import { computeAnchors, mapForceConfig, mapClusterForceConfig, clusterStrengthFromWeights, identityClusters } from "./gpuLayout2D";
+import { mapDominantForceConfig } from "./gpuLayout2D";
 import type { PhysicsLayer } from "./physicsLayer";
 import type { GraphEventHandlers } from "./interactionTypes";
 
@@ -60,13 +60,25 @@ export interface GraphCanvas2DHandle {
    * frozen mode. Takes fresh ids as an arg to avoid a stale-closure read of
    * props.clusterIds.
    */
-  setClusters?(clusterIds: number[]): void;
+  /**
+   * GPU cluster mode (primary): seed nodes at their dominant-attribute cluster's
+   * pinned anchor + group + pin in one call, so blobs appear separated instantly.
+   * Pass (null, null) to clear clusters → calm scatter. No-op in frozen mode.
+   */
+  setClustering?(clusterIds: Int32Array | null, anchors: Float32Array | null): void;
+  setClusters?(clusterIds: (number | undefined)[]): void;
   /**
    * GPU cluster mode only: reposition the cluster anchors (e.g. when slider-
    * weighted cluster centroids change) and reheat. No-op in frozen mode. Takes
    * fresh anchors as an arg to avoid a stale-closure read of props.clusterAnchors.
    */
   setClusterPositions?(anchors: number[]): void;
+  /**
+   * Cluster-deterministic mode: pause the GPU sim so pushed positions are the sole
+   * source of truth (no force movement), or resume it. No-op when gpuSimulation is off.
+   */
+  pauseSimulation?(): void;
+  resumeSimulation?(): void;
   /**
    * Apply an alpha mask from physicsLayer to cosmos.gl's greyout system.
    * Uses highlightedPointIndices + pointGreyoutOpacity: 0.15 (REND-01).
@@ -88,8 +100,8 @@ export interface GraphCanvas2DHandle {
   /**
    * Test/diagnostic: cosmos's CURRENT point positions in its own space, as a
    * flat `[x0,y0,x1,y1,...]` array. After a `dontRescale=false` push cosmos may
-   * rescale internally, so this — NOT the physics buffer — is the source of
-   * truth for what `spaceToScreen`/`findPointsInPolygon` operate on.
+   * rescale internally, so this - NOT the physics buffer - is the source of
+   * truth for what `spaceToScreen` and rendered hit-testing operate on.
    */
   getPointPositions?(): number[];
   /** Test/diagnostic: cosmos's current zoom level (camera scale). */
@@ -100,11 +112,11 @@ export interface GraphCanvas2DHandle {
    */
   setEventHandlers(h: GraphEventHandlers): void;
   /**
-   * Polygon hit-test against current node positions. Path MUST be in cosmos.gl
-   * SPACE coordinates — callers convert from screen via screenToSpace per point.
+   * Polygon hit-test against current node positions. Path MUST be in canvas-local
+   * screen pixels, matching cosmos.gl's Graph.findPointsInPolygon API.
    * Returns [] if the graph isn't ready yet (logs a single warn).
    */
-  findPointsInPolygon(spacePath: [number, number][]): number[];
+  findPointsInPolygon(screenPath: [number, number][]): number[];
   /** Canvas-local screen pixels → cosmos.gl space coords. */
   screenToSpace(screenXY: [number, number]): [number, number];
   /** Cosmos.gl space coords → canvas-local screen pixels. */
@@ -203,7 +215,9 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
         enableSimulation: props.gpuSimulation === true,
         transitionDuration: 0,
         ...(props.gpuSimulation
-          ? (props.clusterIds ? mapClusterForceConfig() : mapForceConfig(props.physics.getSliders()))
+          ? mapDominantForceConfig(
+              Math.max(0, ...Object.values(props.physics.getSliders())),
+            )
           : {}),
         renderLinks: true,
         backgroundColor: props.backgroundColor,
@@ -295,46 +309,48 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       }
       g.render();
 
-      // GPU mode init (cluster-anchor simulation) -------------------------------
-      // Wire cosmos.gl's cluster force as a per-node anchor: one cluster per node,
-      // cluster positions = slider-weighted dimension targets, per-node strength =
-      // availability-gated dim weights. Seed positions AT the anchors so the sim
-      // starts near targets (not random) then reheat with start(alpha).
-      if (props.gpuSimulation) {
-        if (props.clusterIds && props.clusterIds.length === n) {
-          // Cluster mode: group nodes into discrete clumps by color category.
-          // The initial setPointPositions (d3 scatter) above already ran — the
-          // cluster force pulls each node toward its cluster's anchor. No
-          // identityClusters / computeAnchors / per-node strength here.
-          (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
-            Array.from(props.clusterIds),
-          );
-          if (props.clusterAnchors) {
-            (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
-              Array.from(props.clusterAnchors),
-            );
-          }
-          (g as unknown as { start: (a?: number) => void }).start(0.5);
-          g.render();
-        } else {
-          const targets = props.physics.getTargets();
-          const dimW = props.physics.getDimWeights();
-          const sliders0 = props.physics.getSliders();
-          const anchors0 = computeAnchors(sliders0, targets, dimW, n);
-          (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
-            identityClusters(n),
-          );
-          // cosmos setClusterPositions wants a plain (number|undefined)[] (undefined = unanchored); Array.from converts the typed buffer. ~n*2 numbers per slider event — negligible at human cadence.
-          (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
-            Array.from(anchors0),
-          );
-          (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
-            clusterStrengthFromWeights(dimW, sliders0, n),
-          );
-          g.setPointPositions(anchors0, false); // seed near targets, not random
-          (g as unknown as { start: (a?: number) => void }).start(0.5);
-          g.render();
+      // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs) -----------------
+      // The shell computes, from the highest slider: per-node clusterIds + a
+      // distinct PINNED 2D anchor per cluster (an even sunflower fill, never a
+      // sphere/ring). We SEED each node AT its cluster's anchor (+ tiny jitter) so
+      // the blobs appear separated INSTANTLY — separation is structural, not left
+      // to the force to discover (which failed: nodes piled centrally). The pinned
+      // anchors + cluster force then HOLD each blob; repulsion gives it area; the
+      // slider drives ONLY tightness (simulationCluster), via applySliders.
+      const seedAtAnchors = (ids: Int32Array, anchors: Float32Array): void => {
+        for (let i = 0; i < n; i++) {
+          const c = ids[i];
+          xy2[i * 2] = (anchors[c * 2] ?? 0) + (Math.random() - 0.5) * 24;
+          xy2[i * 2 + 1] = (anchors[c * 2 + 1] ?? 0) + (Math.random() - 0.5) * 24;
         }
+        g!.setPointPositions(xy2, false); // false → fitView frames the full spread
+        (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
+          Array.from(ids),
+        );
+        (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
+          new Float32Array(n).fill(1),
+        );
+        // PINNED, pre-separated anchors → blobs stay put and separated.
+        (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
+          Array.from(anchors),
+        );
+      };
+
+      if (props.gpuSimulation) {
+        if (props.clusterIds && props.clusterAnchors && props.clusterIds.length === n) {
+          seedAtAnchors(props.clusterIds, props.clusterAnchors);
+        } else {
+          // No dominant attribute → neutral random disc, no clusters (calm scatter).
+          for (let i = 0; i < n; i++) {
+            const ang = Math.random() * 2 * Math.PI;
+            const rad = Math.sqrt(Math.random()) * 800;
+            xy2[i * 2] = Math.cos(ang) * rad;
+            xy2[i * 2 + 1] = Math.sin(ang) * rad;
+          }
+          g.setPointPositions(xy2, false);
+        }
+        (g as unknown as { start: (a?: number) => void }).start(0.5);
+        g.render();
       }
 
       // Expose the handle to the parent (GraphCanvas.tsx via onHandleReady) ----------
@@ -404,28 +420,49 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           g!.render();
         },
 
-        applySliders(sliders: Record<string, number>): void {
+        setClustering(clusterIds: Int32Array | null, anchors: Float32Array | null): void {
           if (!props.gpuSimulation) return;
-          const n2 = xy2.length / 2;
-          const targets = props.physics.getTargets();
-          const dimW = props.physics.getDimWeights();
-          const anchors = computeAnchors(sliders, targets, dimW, n2);
-          const cfg = mapForceConfig(sliders);
-          (g as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
-            Array.from(anchors),
-          );
-          (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
-            clusterStrengthFromWeights(dimW, sliders, n2),
-          );
-          g!.setConfigPartial(cfg as unknown as Record<string, unknown>);
-          (g as unknown as { start: (a?: number) => void }).start(0.5);
+          if (clusterIds && anchors && clusterIds.length === n) {
+            // Re-seed every node AT its cluster's pinned anchor → instant, guaranteed
+            // separation into one blob per attribute value (no force-discovery pile).
+            seedAtAnchors(clusterIds, anchors);
+          } else {
+            // No dominant attribute → clear clusters; nodes keep their positions and
+            // repulsion gently disperses them (calm scatter, "all sliders 0 = nothing").
+            (g as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
+              new Array(n).fill(undefined),
+            );
+            (g as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
+              new Float32Array(n),
+            );
+          }
+          (g as unknown as { start: (a?: number) => void }).start(0.4);
           g!.render();
         },
 
-        setClusters(clusterIds: number[]): void {
+        applySliders(sliders: Record<string, number>): void {
+          if (!props.gpuSimulation) return;
+          // Tightness only: ramp the global cluster-pull coefficient with the
+          // dominant slider. Cluster membership + pinned anchors are owned by
+          // setClustering, so a slider drag never re-groups — it just tightens/
+          // loosens the existing blobs. Gentle reheat = controlled.
+          const max = Math.max(0, ...Object.values(sliders));
+          g!.setConfigPartial(mapDominantForceConfig(max) as unknown as Record<string, unknown>);
+          (g as unknown as { start: (a?: number) => void }).start(0.3);
+          g!.render();
+        },
+
+        setClusters(clusterIds: (number | undefined)[]): void {
           if (!props.gpuSimulation) return;
           (g! as unknown as { setPointClusters: (c: (number | undefined)[]) => void }).setPointClusters(
             clusterIds,
+          );
+          // Unclustered entries (undefined) get zero pull so they scatter; members
+          // get full pull toward their pinned anchor (global coeff scales tightness).
+          const strength = new Float32Array(clusterIds.length);
+          for (let i = 0; i < clusterIds.length; i++) strength[i] = clusterIds[i] == null ? 0 : 1;
+          (g! as unknown as { setPointClusterStrength: (s: Float32Array) => void }).setPointClusterStrength(
+            strength,
           );
           (g! as unknown as { start: (a?: number) => void }).start(0.5);
           g!.render();
@@ -433,11 +470,21 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         setClusterPositions(anchors: number[]): void {
           if (!props.gpuSimulation) return;
+          // PINNED anchors (pre-separated 2D sunflower) — never centermass.
           (g! as unknown as { setClusterPositions: (p: (number | undefined)[]) => void }).setClusterPositions(
             anchors,
           );
-          (g! as unknown as { start: (a?: number) => void }).start(0.3);
+          (g! as unknown as { start: (a?: number) => void }).start(0.5);
           g!.render();
+        },
+
+        pauseSimulation(): void {
+          if (!props.gpuSimulation) return;
+          (g as unknown as { pause?: () => void }).pause?.();
+        },
+        resumeSimulation(): void {
+          if (!props.gpuSimulation) return;
+          (g as unknown as { start?: (a?: number) => void }).start?.();
         },
 
         applyAlphaMask(mask: Float32Array, _version: number): void {
@@ -507,7 +554,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           handlersRef.current = h;
         },
 
-        findPointsInPolygon(spacePath: [number, number][]): number[] {
+        findPointsInPolygon(screenPath: [number, number][]): number[] {
           const gAny = g as unknown as {
             findPointsInPolygon?: (path: [number, number][]) => number[];
             isReady?: boolean;
@@ -523,7 +570,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             }
             return [];
           }
-          return gAny.findPointsInPolygon(spacePath) ?? [];
+          return gAny.findPointsInPolygon(screenPath) ?? [];
         },
 
         screenToSpace(screenXY: [number, number]): [number, number] {
