@@ -28,7 +28,15 @@ import {
   CONTROLS_STORAGE_KEY,
   SliderProvider,
   migratePersistedSliders,
+  useSliders,
 } from "./SliderContext";
+import { ClusterLabels } from "./ClusterLabels";
+import {
+  dominantCatalogDim,
+  buildDominantClusters,
+} from "./dominantClusters";
+import { packClusterFootprints, packMemberPositions } from "./clusterPacking";
+import { clusterColorBuffer } from "./clusterColors";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
@@ -94,6 +102,43 @@ function ShellBody({
 }: ShellBodyProps): React.JSX.Element {
   const { activeFilters, searchQuery, drillDown } = useFilters();
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
+  const { values: sliderValues } = useSliders();
+
+  // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs). The attribute with the
+  // highest slider defines the clusters; each cluster gets a distinct, pinned 2D
+  // anchor (sunflower fill) so blobs always separate, and a readable label. These
+  // memos only recompute when the DOMINANT dim changes (not on every slider tick),
+  // since dominantCatalogDim returns the same dim object while it stays on top.
+  const sliderDims = useMemo(() => sliderDimensions(catalog), [catalog]);
+  const dominant = useMemo(
+    () => dominantCatalogDim(sliderDims, sliderValues),
+    [sliderDims, sliderValues],
+  );
+  const clustering = useMemo(
+    () => (dominant ? buildDominantClusters(features, dominant) : null),
+    [features, dominant],
+  );
+  // Deterministic blob footprints (non-overlapping circle pack) for the dominant dim.
+  const footprints = useMemo(
+    () => (clustering ? packClusterFootprints(clustering.counts) : null),
+    [clustering],
+  );
+
+  // Tightness = the dominant slider's value, normalized 0..1.
+  const tightness = useMemo(() => {
+    if (!dominant) return 0;
+    return Math.min(1, Math.max(0, (sliderValues[dominant.id] ?? 0) / 100));
+  }, [dominant, sliderValues]);
+
+  // Per-node packed positions (stride-3, z=0) — recompute on regroup OR tightness change.
+  const clusterPackedPositions = useMemo(() => {
+    if (!clustering || !footprints) return undefined;
+    const n = clustering.ids.length;
+    const xy = packMemberPositions(clustering.ids, footprints, tightness, n);
+    const xyz = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { xyz[i * 3] = xy[i * 2]; xyz[i * 3 + 1] = xy[i * 2 + 1]; xyz[i * 3 + 2] = 0; }
+    return xyz;
+  }, [clustering, footprints, tightness]);
 
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
@@ -106,8 +151,11 @@ function ShellBody({
   // selection/filter state.
   const [colorMode, setColorMode] = useState<ColorMode>("role");
   const nodeColors = useMemo<Float32Array>(
-    () => buildNodeColors(features, colorMode),
-    [features, colorMode],
+    () =>
+      clustering
+        ? clusterColorBuffer(clustering.ids, clustering.labels.length)
+        : buildNodeColors(features, colorMode),
+    [clustering, features, colorMode],
   );
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
@@ -183,8 +231,21 @@ function ShellBody({
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
+              clusterPackedPositions={clusterPackedPositions}
             />
           </GraphInteractions>
+
+          {/* Dominant-attribute cluster labels (2D, "with-labels"). Renders nothing
+              when no attribute is dominant (all sliders 0) or in 3D. */}
+          <ClusterLabels
+            graphRef={graphRef}
+            centersX={footprints?.cx ?? null}
+            centersY={footprints?.cy ?? null}
+            radii={footprints?.r ?? null}
+            labels={clustering?.labels ?? []}
+            counts={clustering?.counts ?? []}
+            mode={mode}
+          />
           
           {/* Floating premium glassmorphic mode switcher overlay */}
           <div className="absolute right-4 top-4 z-10">
