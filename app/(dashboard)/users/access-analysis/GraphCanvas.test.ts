@@ -72,6 +72,31 @@ vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "dark" }),
 }));
 
+// Mock GraphCanvas3D as a trivial pass-through. The top-level GraphCanvas always
+// mounts GraphCanvas3D (visibility-swap pattern), which would otherwise pull in
+// real three.js + WebGLRenderer (no GL context in jsdom). Only the REND-cluster
+// test below mounts the top-level GraphCanvas; the other tests mount GraphCanvas2D
+// directly and are unaffected by this mock.
+vi.mock("./GraphCanvas3D", async () => {
+  const React = await import("react");
+  return {
+    GraphCanvas3D: function MockGC3D(props: any): null {
+      React.useEffect(() => {
+        props.onHandleReady?.({
+          pushPositions: () => {},
+          applyAlphaMask: () => {},
+          setColors: () => {},
+          setBackground: () => {},
+          getCamera: () => null,
+          fitView: () => {},
+        });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+      }, []);
+      return null;
+    },
+  };
+});
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -344,7 +369,7 @@ describe("GraphCanvas.tsx + GraphCanvas2D.tsx — REND-04 source purity", () => 
     const gcImportLines = gcSrc.split("\n").filter((l) => l.trimStart().startsWith("import"));
     for (const line of gcImportLines) {
       expect(line, "GraphCanvas.tsx has unexpected import: " + line).toMatch(
-        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|gpuLayout2D/i
+        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|clusterTransitionLayer|gpuLayout2D/i
       );
     }
   });
@@ -636,24 +661,29 @@ async function setupGpuHandle(
 }
 
 describe("GraphCanvas2D — GPU simulation mode", () => {
-  it("GPU-1: constructs cosmos with enableSimulation:true and clusters one-per-node", async () => {
+  it("GPU-1: constructs cosmos with enableSimulation:true and is unclustered at slider 0 (calm scatter)", async () => {
     await setupGpuHandle(3);
     expect(_capturedConfig.enableSimulation).toBe(true);
-    expect(_clusterCalls.at(-1)).toEqual([0, 1, 2]);
-    expect(_clusterPosCalls.length).toBeGreaterThan(0);
-    expect(_clusterPosCalls.at(-1)!.length).toBe(6); // stride-2 for 3 nodes
+    // No clusterIds (all sliders 0) → init does not assign clusters or pin positions.
+    expect(_clusterCalls.length).toBe(0);
+    expect(_clusterPosCalls.length).toBe(0);
+    // Cluster pull is off at slider 0 (mapDominantForceConfig(0)).
+    expect(_capturedConfig.simulationCluster).toBe(0);
   });
 
-  it("GPU-2: applySliders updates cluster positions + reheats via start()", async () => {
+  it("GPU-2: applySliders ramps tightness only (no re-group, no pinning)", async () => {
     const handle = await setupGpuHandle(3);
+    _clusterCalls = [];
     _clusterPosCalls = [];
+    _setConfigPartialCalls = [];
     _startCalls = [];
     handle.applySliders({ d1: 1 });
-    expect(_clusterPosCalls.length).toBe(1);
-    // d1 target.x=100 → node 0 anchor x ≈ 100
-    expect(_clusterPosCalls[0]![0]).toBeCloseTo(100, 3);
-    expect(_startCalls.length).toBe(1); // reheat
-    expect(_startCalls[0]).toBe(0.5);
+    // Tightness ramps to the engaged value (mapDominantForceConfig(1) → 0.8).
+    expect(_setConfigPartialCalls.at(-1)!.simulationCluster).toBeCloseTo(0.8, 5);
+    // applySliders NEVER touches membership or positions.
+    expect(_clusterCalls.length).toBe(0);
+    expect(_clusterPosCalls.length).toBe(0);
+    expect(_startCalls).toEqual([0.3]); // gentle, controlled reheat
   });
 
   it("GPU-3: pushPositions is a no-op in GPU mode (cosmos owns positions)", async () => {
@@ -663,21 +693,23 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     expect(_setPointPositionsCalls).toHaveLength(0);
   });
 
-  it("GPU-4: cluster mode groups nodes by clusterIds + uses mapClusterForceConfig", async () => {
+  it("GPU-4: clusterIds + clusterAnchors → grouped, PINNED at the supplied anchors, full per-node pull", async () => {
     const handle = await setupGpuHandle(3, {
       clusterIds: new Int32Array([0, 1, 0]),
       clusterAnchors: new Float32Array([10, 0, 20, 0]),
     });
     expect(handle).not.toBeNull();
 
-    // Nodes are assigned to their color-group clusters (not identity per-node).
+    // Nodes are grouped by their cluster ids.
     expect(_clusterCalls.at(-1)).toEqual([0, 1, 0]);
-    // Cluster anchors are uploaded as-is (slider-weighted centroids).
+    // Anchors are PINNED as-is (pre-separated 2D sunflower), never centermass.
     expect(_clusterPosCalls.at(-1)).toEqual([10, 0, 20, 0]);
-    // Constructor uses the fixed cluster force config (simulationCluster 0.5).
-    expect(_capturedConfig.simulationCluster).toBe(0.5);
+    // Clustered nodes get full per-node pull (global coeff scales tightness).
+    expect(Array.from(_clusterStrengthCalls.at(-1)!)).toEqual([1, 1, 1]);
+    // Force config is the dominant-attribute config (sliders 0 here → cluster 0).
+    expect(_capturedConfig.simulationCluster).toBe(0);
 
-    // setClusterPositions handle method reuploads fresh anchors + reheats.
+    // setClusterPositions handle method re-pins fresh anchors + reheats.
     _clusterPosCalls = [];
     _startCalls = [];
     handle.setClusterPositions([30, 0, 40, 0]);
@@ -685,34 +717,155 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
     expect(_startCalls.length).toBeGreaterThan(0);
   });
 
-  it("GPU-decouple: with NO clusterIds, 2D uses the slider force config (not cluster mode)", async () => {
+  it("GPU-decouple: with NO clusterIds, 2D stays unclustered with cluster pull off", async () => {
     await setupGpuHandle(3); // no clusterProps → clusterIds undefined
-    // Cluster mode would pin simulationCluster to the fixed 0.5 (see GPU-4); the
-    // slider-driven path (mapForceConfig) yields the slider-derived value instead.
-    // mapForceConfig with all-zero fake sliders → simulationCluster 0 (cluster mode would be 0.5).
-    // toBe(0) also guards against the field being accidentally absent (undefined !== 0).
     expect(_capturedConfig.simulationCluster).toBe(0);
-    // Nodes stay one-per-node (no color grouping) so color never collapses clumps.
-    expect(_clusterCalls.at(-1)).toEqual([0, 1, 2]);
+    expect(_clusterCalls.length).toBe(0);
   });
 
-  it("GPU-4b: setClusters re-assigns cluster ids + reheats (re-group path)", async () => {
+  it("GPU-4b: setClusters re-assigns ids + full-pull strength + reheats (re-group path)", async () => {
     const handle = await setupGpuHandle(3, {
       clusterIds: new Int32Array([0, 1, 0]),
       clusterAnchors: new Float32Array([10, 0, 20, 0]),
     });
     expect(handle).not.toBeNull();
 
-    // Clear the calls recorded during mount/init
     _clusterCalls = [];
+    _clusterStrengthCalls = [];
     _startCalls = [];
 
-    // Re-assign clusters (simulates a color-mode switch)
     handle.setClusters([1, 0, 1]);
 
-    // The last setPointClusters call must carry the new ids
     expect(_clusterCalls.at(-1)).toEqual([1, 0, 1]);
-    // A reheat (start) must have been triggered
+    expect(Array.from(_clusterStrengthCalls.at(-1)!)).toEqual([1, 1, 1]);
     expect(_startCalls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it("GPU-clear: setClusters with all-undefined clears membership and zeroes pull (scatter)", async () => {
+    const handle = await setupGpuHandle(3, {
+      clusterIds: new Int32Array([0, 1, 0]),
+      clusterAnchors: new Float32Array([10, 0, 20, 0]),
+    });
+    _clusterCalls = [];
+    _clusterStrengthCalls = [];
+    handle.setClusters([undefined, undefined, undefined]);
+    expect(_clusterCalls.at(-1)).toEqual([undefined, undefined, undefined]);
+    expect(Array.from(_clusterStrengthCalls.at(-1)!)).toEqual([0, 0, 0]);
+  });
+
+  it("GPU-6: setClustering SEEDS at anchors, groups, full-pull, and PINS in one call", async () => {
+    const handle = await setupGpuHandle(3);
+    _clusterCalls = [];
+    _clusterPosCalls = [];
+    _clusterStrengthCalls = [];
+    _setPointPositionsCalls = [];
+    _startCalls = [];
+    handle.setClustering(new Int32Array([0, 1, 0]), new Float32Array([10, 0, 20, 0]));
+    // Grouped, full per-node pull, and PINNED at the supplied anchors.
+    expect(_clusterCalls.at(-1)).toEqual([0, 1, 0]);
+    expect(Array.from(_clusterStrengthCalls.at(-1)!)).toEqual([1, 1, 1]);
+    expect(_clusterPosCalls.at(-1)).toEqual([10, 0, 20, 0]);
+    // Nodes are re-seeded near their cluster anchor (stride-2 → length 6 for 3).
+    expect(_setPointPositionsCalls.at(-1)!.xy.length).toBe(6);
+    // node 0 → cluster 0 anchor (10,0) ± small jitter (< 12 each axis).
+    expect(_setPointPositionsCalls.at(-1)!.xy[0]).toBeGreaterThan(10 - 12);
+    expect(_setPointPositionsCalls.at(-1)!.xy[0]).toBeLessThan(10 + 12);
+    expect(_startCalls.length).toBeGreaterThan(0);
+  });
+
+  it("GPU-6b: setClustering(null, null) clears membership + zeroes pull (scatter)", async () => {
+    const handle = await setupGpuHandle(3, {
+      clusterIds: new Int32Array([0, 1, 0]),
+      clusterAnchors: new Float32Array([10, 0, 20, 0]),
+    });
+    _clusterCalls = [];
+    _clusterStrengthCalls = [];
+    handle.setClustering(null, null);
+    expect(_clusterCalls.at(-1)).toEqual([undefined, undefined, undefined]);
+    expect(Array.from(_clusterStrengthCalls.at(-1)!)).toEqual([0, 0, 0]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// REND-cluster: deterministic packed-position cluster view (Task 10)
+//
+// When the shell supplies clusterPackedPositions, the top-level GraphCanvas eases
+// node positions toward the packed target via the cluster transition layer with
+// the GPU force sim PAUSED. This test mounts the TOP-LEVEL GraphCanvas (the
+// sibling tests mount GraphCanvas2D directly) wrapped in <SliderProvider> — the
+// same composition production uses — and proves both halves of the contract:
+//   1. positions are pushed to cosmos (setPointPositions called), and
+//   2. the GPU simulation is paused (graph.pause() called).
+// GraphCanvas3D is mocked above to a pass-through so no GL context is needed.
+// ---------------------------------------------------------------------------
+
+describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
+  it("REND-cluster: packed positions are pushed to cosmos with the sim paused", async () => {
+    const { GraphCanvas } = await import("./GraphCanvas");
+    const { SliderProvider } = await import("./SliderContext");
+    const { render, act } = await import("@testing-library/react");
+    const { createElement } = await import("react");
+
+    // Deterministic rAF: capture callbacks so we can drive exactly one frame.
+    let rafCallbacks: FrameRequestCallback[] = [];
+    let rafId = 0;
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      rafCallbacks.push(cb);
+      return ++rafId;
+    });
+    vi.stubGlobal("cancelAnimationFrame", () => {
+      rafCallbacks = [];
+    });
+
+    function drainRaf(timestamp = 16): void {
+      const pending = [...rafCallbacks];
+      rafCallbacks = [];
+      for (const cb of pending) cb(timestamp);
+    }
+
+    // Same node count / physics stub the sibling GPU tests use.
+    const nodeCount = 3;
+    const physics = makeFakePhysics({ nodeCount });
+    const packed = new Float32Array(nodeCount * 3); // stride-3, z=0
+    packed.set([10, 5, 0, -10, 5, 0, 0, -10, 0]);
+
+    await act(async () => {
+      render(
+        createElement(
+          SliderProvider,
+          // SliderProvider requires a catalog; this suite does not touch sliders,
+          // so an empty catalog is enough (matches GraphCanvas3D.test.ts).
+          { physics, catalog: [], children:
+            createElement(GraphCanvas, {
+              physics,
+              nodeColors: new Float32Array(nodeCount * 4),
+              mode: "2d",
+              // Force GPU sim on so the pause/resume effect engages (the cluster
+              // contract pauses the force sim). Also supply the packed positions.
+              gpuSimulation: true,
+              clusterPackedPositions: packed,
+            }),
+          },
+        ),
+      );
+      // Flush the async cosmos init (graph.ready await) + the pause/resume effect.
+      await Promise.resolve();
+      await Promise.resolve();
+    });
+
+    // Drive one rAF tick so the pump routes the eased cluster positions through
+    // onTick2D → handle2D.pushPositions. (skipPositionPump is disabled while the
+    // cluster view is active, so the pump runs.)
+    await act(async () => {
+      drainRaf();
+      await Promise.resolve();
+    });
+
+    // 1. Positions reached cosmos (initial GPU seed + any eased pushes).
+    expect(_setPointPositionsCalls.length).toBeGreaterThan(0);
+    // 2. The GPU force sim was paused while the cluster view is active.
+    expect(_pauseCalls).toBeGreaterThanOrEqual(1);
+
+    vi.unstubAllGlobals();
   });
 });
