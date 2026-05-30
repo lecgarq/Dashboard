@@ -247,6 +247,14 @@ function ShellBody({
             mode={mode}
           />
           
+          {/* Active grouping indicator — makes the "strongest slider wins" rule visible. */}
+          {dominant && mode === "2d" && (
+            <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-3 py-2 text-xs font-semibold text-foreground shadow-md backdrop-blur-md">
+              <span className="h-2 w-2 rounded-full bg-blue-500" />
+              Grouping by: {dominant.label}
+            </div>
+          )}
+
           {/* Floating premium glassmorphic mode switcher overlay */}
           <div className="absolute right-4 top-4 z-10">
             <button
