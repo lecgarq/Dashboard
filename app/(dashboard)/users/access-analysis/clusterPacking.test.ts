@@ -75,3 +75,53 @@ describe("packClusterFootprints", () => {
     expect(fp.r[0]).toBeGreaterThan(0);
   });
 });
+
+import { packMemberPositions } from "./clusterPacking";
+
+describe("packMemberPositions", () => {
+  const fp = packClusterFootprints([3, 2]); // cluster 0 has 3, cluster 1 has 2
+
+  it("returns stride-2 positions for every node", () => {
+    const ids = new Int32Array([0, 0, 0, 1, 1]);
+    const pos = packMemberPositions(ids, fp, 1, 5);
+    expect(pos.length).toBe(10);
+  });
+
+  it("keeps every member inside its footprint (never escapes → never overlaps)", () => {
+    const ids = new Int32Array([0, 0, 0, 1, 1]);
+    for (const tightness of [0, 0.5, 1]) {
+      const pos = packMemberPositions(ids, fp, tightness, 5);
+      for (let n = 0; n < 5; n++) {
+        const c = ids[n];
+        const dx = pos[n * 2] - fp.cx[c];
+        const dy = pos[n * 2 + 1] - fp.cy[c];
+        expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(fp.r[c] + 1e-6);
+      }
+    }
+  });
+
+  it("packs tighter at high tightness than low (mean radius from center shrinks)", () => {
+    const ids = new Int32Array([0, 0, 0]);
+    const meanR = (t: number): number => {
+      const pos = packMemberPositions(ids, fp, t, 3);
+      let s = 0;
+      for (let n = 0; n < 3; n++) s += Math.hypot(pos[n * 2] - fp.cx[0], pos[n * 2 + 1] - fp.cy[0]);
+      return s / 3;
+    };
+    expect(meanR(1)).toBeLessThan(meanR(0));
+  });
+
+  it("is deterministic", () => {
+    const ids = new Int32Array([0, 1, 0, 1, 0]);
+    const a = packMemberPositions(ids, fp, 0.7, 5);
+    const b = packMemberPositions(ids, fp, 0.7, 5);
+    expect(Array.from(a)).toEqual(Array.from(b));
+  });
+
+  it("places unclustered nodes (id < 0) at the origin", () => {
+    const ids = new Int32Array([-1, 0]);
+    const pos = packMemberPositions(ids, fp, 1, 2);
+    expect(pos[0]).toBe(0);
+    expect(pos[1]).toBe(0);
+  });
+});

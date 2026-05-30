@@ -76,3 +76,41 @@ export function packClusterFootprints(counts: ReadonlyArray<number>): ClusterFoo
   }
   return { cx, cy, r };
 }
+
+/** Golden angle — even Vogel sunflower spacing. */
+const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
+
+/**
+ * Per-node 2D position (stride-2) on a sunflower inside its cluster's footprint.
+ * Fill radius = footprint.r * fillFactor(tightness), so members never leave the
+ * footprint at any tightness → the packed non-overlap invariant is preserved.
+ * Node ids < 0 (unclustered) collapse to the origin.
+ */
+export function packMemberPositions(
+  clusterIds: Int32Array | ReadonlyArray<number>,
+  footprints: ClusterFootprints,
+  tightness: number,
+  nodeCount: number,
+): Float32Array {
+  const out = new Float32Array(nodeCount * 2);
+  const fill = fillFactor(tightness);
+  const k = footprints.r.length;
+  const seen = new Int32Array(k);
+  const total = new Int32Array(k);
+  for (let n = 0; n < nodeCount; n++) {
+    const c = clusterIds[n];
+    if (c >= 0 && c < k) total[c] += 1;
+  }
+  for (let n = 0; n < nodeCount; n++) {
+    const c = clusterIds[n];
+    if (c < 0 || c >= k) continue; // leave at origin
+    const j = seen[c]++;
+    const m = total[c];
+    const rFill = footprints.r[c] * fill;
+    const rr = m <= 1 ? 0 : rFill * Math.sqrt((j + 0.5) / m);
+    const th = j * GOLDEN_ANGLE;
+    out[n * 2] = footprints.cx[c] + Math.cos(th) * rr;
+    out[n * 2 + 1] = footprints.cy[c] + Math.sin(th) * rr;
+  }
+  return out;
+}
