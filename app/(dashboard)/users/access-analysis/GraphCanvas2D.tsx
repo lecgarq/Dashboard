@@ -202,6 +202,11 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
     let cancelled = false;
     let g: Graph | null = null;
+    // Cluster-deterministic mode: when true the GPU sim is paused and pushed
+    // positions (eased packed blob layout) are uploaded as the sole source of
+    // truth. Set by pauseSimulation / cleared by resumeSimulation; read by
+    // pushPositions to open its GPU-mode upload gate.
+    let clusterPushActive = false;
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
@@ -356,14 +361,16 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Expose the handle to the parent (GraphCanvas.tsx via onHandleReady) ----------
       props.onHandleReady({
         pushPositions(xyz: Float32Array): void {
-          if (props.gpuSimulation) return; // GPU mode: cosmos owns positions
+          // GPU mode: cosmos owns positions — EXCEPT in cluster-deterministic mode
+          // (sim paused), where these eased packed positions ARE the source of truth.
+          if (props.gpuSimulation && !clusterPushActive) return;
           const count = xyz.length / 3;
           // Write into the pre-allocated buffer — ZERO new allocation (Pitfall 2)
           for (let i = 0; i < count; i++) {
             xy2[i * 2] = xyz[i * 3];
             xy2[i * 2 + 1] = xyz[i * 3 + 1];
           }
-          if (props.physics.frozen) {
+          if (props.physics.frozen || clusterPushActive) {
             // Always hand the latest xy2 to cosmos every rAF, even when the
             // overall spread is stable. B.2 preview interpolation produces fresh
             // per-frame coordinates while physics stays frozen, and a stable-
@@ -480,10 +487,12 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
 
         pauseSimulation(): void {
           if (!props.gpuSimulation) return;
+          clusterPushActive = true; // open pushPositions' GPU-mode upload gate
           (g as unknown as { pause?: () => void }).pause?.();
         },
         resumeSimulation(): void {
           if (!props.gpuSimulation) return;
+          clusterPushActive = false;
           (g as unknown as { start?: (a?: number) => void }).start?.();
         },
 

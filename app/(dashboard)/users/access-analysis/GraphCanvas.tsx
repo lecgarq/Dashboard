@@ -277,13 +277,34 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     if (layer && props.clusterPackedPositions) layer.setTarget(props.clusterPackedPositions);
   }, [props.clusterPackedPositions]);
 
-  // Pause/resume the GPU sim as we enter/leave cluster mode.
+  // Pause/resume the GPU sim as we enter/leave cluster mode. On ENGAGE, re-seed the
+  // transition layer from cosmos's CURRENT on-screen positions (stride-2 → stride-3)
+  // so the ease starts from what's visible — not the stale d3-physics seed, which
+  // would jump on the first frame. Defensive: skip if positions aren't available yet.
   useEffect(() => {
     if (!gpu2d || props.mode !== "2d") return;
     const h = handle2D.current;
     if (!h) return;
-    if (clusterActive) h.pauseSimulation?.();
-    else h.resumeSimulation?.();
+    if (clusterActive) {
+      const layer = clusterLayerRef.current;
+      const pts = h.getPointPositions?.();
+      if (layer && pts && pts.length >= 2) {
+        const n = pts.length / 2;
+        const xyz = new Float32Array(n * 3);
+        for (let i = 0; i < n; i++) {
+          xyz[i * 3] = pts[i * 2];
+          xyz[i * 3 + 1] = pts[i * 2 + 1];
+        }
+        try {
+          layer.seedFrom(xyz);
+        } catch {
+          // length mismatch (node count changed mid-flight) — keep prior seed
+        }
+      }
+      h.pauseSimulation?.();
+    } else {
+      h.resumeSimulation?.();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [clusterActive, gpu2d, props.mode, readyTick]);
 

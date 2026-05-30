@@ -861,10 +861,14 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
       await Promise.resolve();
     });
 
-    // 1. Positions reached cosmos (initial GPU seed + any eased pushes).
-    expect(_setPointPositionsCalls.length).toBeGreaterThan(0);
-    // 2. The GPU force sim was paused while the cluster view is active.
+    // 1. The GPU force sim was paused while the cluster view is active.
     expect(_pauseCalls).toBeGreaterThanOrEqual(1);
+    // 2. The eased packed positions were actually UPLOADED while paused — proven by
+    //    a dontRescale=true upload. The mount-time GPU seed uses dontRescale=false,
+    //    so a true call can only come from pushPositions' eased cluster path (the
+    //    fix that opens the GPU-mode upload gate while clusterPushActive). Without
+    //    that fix pushPositions early-returns in GPU mode and no true call appears.
+    expect(_setPointPositionsCalls.some((c) => c.dontRescale === true)).toBe(true);
 
     vi.unstubAllGlobals();
   });
