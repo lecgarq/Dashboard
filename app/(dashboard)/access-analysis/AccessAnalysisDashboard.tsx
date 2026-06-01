@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAccessFilters } from "./store";
 import { useSummary, useTrends, useMembers } from "./queries";
 import { serializeFilters } from "./filterParams";
@@ -23,6 +23,8 @@ export function AccessAnalysisDashboard({ filterOptions, projectTotal }: { filte
   const { filters, toggle, setSingle } = useAccessFilters();
   const [page, setPage] = useState(0);
   const size = 50;
+  const filterKey = serializeFilters(filters);
+  useEffect(() => { setPage(0); }, [filterKey]);
 
   const summary = useSummary(filters).data ?? EMPTY_SUMMARY;
   const trends = useTrends(filters).data ?? { activityPerWeek: [], accessAdded: [] };
