@@ -82,10 +82,11 @@ export function ClusterLabels({
   if (mode !== "2d" || k === 0) return null;
 
   return (
-    <div style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 5 }}>
+    <div data-testid="cluster-labels" style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 5 }}>
       {labels.map((label, i) => (
         <div
           key={`${i}:${label}`}
+          data-testid="cluster-label"
           ref={(el) => { itemRefs.current[i] = el; }}
           style={{
             position: "absolute", left: 0, top: 0,
