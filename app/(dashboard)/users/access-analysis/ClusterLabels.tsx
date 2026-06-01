@@ -47,8 +47,17 @@ export function ClusterLabels({
     if (mode !== "2d" || k === 0 || !centersX || !centersY || !radii) return;
     let active = true;
     let raf = 0;
-    const tick = (): void => {
+    let lastProject = 0;
+    const tick = (ts: number): void => {
       if (!active) return;
+      // Throttle the per-footprint projection to ~30Hz. Projecting every cluster
+      // center through spaceToScreen on each of 60 frames was a measurable cost with
+      // many blobs; the camera rarely moves fast enough to need 60Hz label updates.
+      if (ts - lastProject < 33) {
+        raf = requestAnimationFrame(tick);
+        return;
+      }
+      lastProject = ts;
       const gh = graphRef.current;
       const handle = gh && gh.mode === "2d" ? gh.handle : null;
       if (handle?.spaceToScreen) {
