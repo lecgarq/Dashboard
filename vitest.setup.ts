@@ -5,7 +5,15 @@ process.env.NODE_ENV = "test";
 
 // Mock server-only to prevent it from throwing in tests
 vi.mock('server-only', () => ({}));
-vi.mock('next/server', () => ({ NextResponse: {} }));
+vi.mock('next/server', () => ({
+  NextResponse: {
+    json: (body: unknown, init?: ResponseInit) =>
+      new Response(JSON.stringify(body), {
+        ...init,
+        headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+      }),
+  },
+}));
 vi.mock('next-auth', () => ({
   default: () => ({
     handlers: {},
