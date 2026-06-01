@@ -65,8 +65,9 @@ export function dominantCatalogDim(
   return best;
 }
 
-/** The (key, label) a node carries for the dominant dim. Key groups; label displays. */
-function valueKeyLabel(
+/** The (key, label) a node carries for a dim. Key groups; label displays. Exported
+ *  for reuse by buildCompositeClusters (multi-slider tuple grouping). */
+export function valueKeyLabel(
   f: NodeFeatureSnapshot,
   dim: CatalogDimension,
   thresholds: Map<string, ActionThresholds>,
@@ -141,6 +142,89 @@ export function buildDominantClusters(
     counts[idx] += 1;
   }
   return { ids, labels, counts };
+}
+
+/**
+ * All slider-engaged dims (value > 0), strongest first then stable by id — the set
+ * of attributes that jointly key the composite blobs. Empty when nothing is engaged.
+ */
+export function activeCatalogDims(
+  dims: readonly CatalogDimension[],
+  sliderValues: Record<string, number>,
+): CatalogDimension[] {
+  return dims
+    .filter((d) => (sliderValues[d.id] ?? 0) > 0)
+    .sort((a, b) => {
+      const va = sliderValues[a.id] ?? 0;
+      const vb = sliderValues[b.id] ?? 0;
+      return vb - va || (a.id < b.id ? -1 : 1);
+    });
+}
+
+/**
+ * Group nodes by the TUPLE of the given dims' values (composite blobs). A single dim
+ * reproduces buildDominantClusters. Tuples with fewer than minCount members fold into
+ * one trailing "Other" cluster so 2+ broad attributes can't shatter the view into
+ * specks; minCount <= 1 disables the merge. Pure & deterministic (first-seen order).
+ */
+export function buildCompositeClusters(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  dims: ReadonlyArray<CatalogDimension>,
+  minCount = 1,
+): DominantClustering {
+  if (dims.length === 0) {
+    return { ids: new Int32Array(features.length), labels: [], counts: [] };
+  }
+  const activityIds = dims.filter((d) => d.family === "activity").map((d) => d.id);
+  const thresholds = activityIds.length
+    ? computeActionThresholds(features, activityIds)
+    : new Map<string, ActionThresholds>();
+
+  const keyToIdx = new Map<string, number>();
+  const labels: string[] = [];
+  const counts: number[] = [];
+  const rawIds = new Int32Array(features.length);
+  for (let i = 0; i < features.length; i++) {
+    const parts = dims.map((d) => valueKeyLabel(features[i], d, thresholds));
+    const key = parts.map((p) => p.key).join("¦"); // ¦ tuple separator
+    const label = parts.map((p) => p.label).join(" · "); // · join
+    let idx = keyToIdx.get(key);
+    if (idx === undefined) {
+      idx = labels.length;
+      keyToIdx.set(key, idx);
+      labels.push(label);
+      counts.push(0);
+    }
+    rawIds[i] = idx;
+    counts[idx] += 1;
+  }
+  if (minCount <= 1) return { ids: rawIds, labels, counts };
+
+  // Fold clusters below minCount into one trailing "Other".
+  const keep = counts.map((c) => c >= minCount);
+  if (keep.every(Boolean)) return { ids: rawIds, labels, counts };
+  const remap = new Int32Array(labels.length);
+  const newLabels: string[] = [];
+  const newCounts: number[] = [];
+  for (let i = 0; i < labels.length; i++) {
+    if (keep[i]) {
+      remap[i] = newLabels.length;
+      newLabels.push(labels[i]);
+      newCounts.push(counts[i]);
+    } else {
+      remap[i] = -1; // → Other
+    }
+  }
+  const otherIdx = newLabels.length;
+  newLabels.push("Other");
+  newCounts.push(0);
+  const ids = new Int32Array(features.length);
+  for (let i = 0; i < features.length; i++) {
+    const m = remap[rawIds[i]];
+    ids[i] = m >= 0 ? m : otherIdx;
+  }
+  for (let i = 0; i < counts.length; i++) if (!keep[i]) newCounts[otherIdx] += counts[i];
+  return { ids, labels: newLabels, counts: newCounts };
 }
 
 /** Golden angle — the spacing that makes a 2D sunflower (Vogel) set even. */

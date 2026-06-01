@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   dominantCatalogDim,
   buildDominantClusters,
+  buildCompositeClusters,
+  activeCatalogDims,
   clusterPositions2D,
 } from "./dominantClusters";
 import type { CatalogDimension } from "./dimensionCatalog.types";
@@ -161,5 +163,58 @@ describe("buildDominantClusters — multiHot keying (moduleAccess)", () => {
     const { ids } = buildDominantClusters(feats, multi);
     expect(ids[0]).toBe(ids[1]);
     expect(ids[0]).not.toBe(ids[2]);
+  });
+});
+
+describe("activeCatalogDims", () => {
+  const role = dim({ id: "role" });
+  const project = dim({ id: "project", label: "Project", extract: (f) => f.project ?? null });
+
+  it("returns every slider>0 dim, strongest first, then stable by id", () => {
+    expect(activeCatalogDims([role, project], { role: 40, project: 80 }).map((d) => d.id)).toEqual([
+      "project",
+      "role",
+    ]);
+    expect(activeCatalogDims([role, project], { role: 0, project: 0 })).toEqual([]);
+    expect(activeCatalogDims([role, project], { role: 50 }).map((d) => d.id)).toEqual(["role"]);
+  });
+});
+
+describe("buildCompositeClusters", () => {
+  const role = dim({ id: "role" });
+  const project = dim({ id: "project", label: "Project", extract: (f) => f.project ?? null });
+  const feats = [
+    snap({ role: "Arch", project: "Acme" }),
+    snap({ role: "Arch", project: "Bro" }),
+    snap({ role: "Eng", project: "Acme" }),
+    snap({ role: "Arch", project: "Acme" }),
+  ];
+
+  it("one dim reproduces single-attribute grouping", () => {
+    const a = buildCompositeClusters(feats, [role], 0);
+    expect([...a.labels].sort()).toEqual(["Arch", "Eng"]);
+    expect(a.counts.reduce((x, y) => x + y, 0)).toBe(4);
+  });
+
+  it("two dims group by the tuple, with labels joined", () => {
+    const c = buildCompositeClusters(feats, [role, project], 0);
+    expect(c.labels.length).toBe(3); // Arch·Acme, Arch·Bro, Eng·Acme
+    expect(c.labels.some((l) => l.includes("Arch") && l.includes("Acme"))).toBe(true);
+    expect(c.counts.reduce((x, y) => x + y, 0)).toBe(4);
+  });
+
+  it("folds tuples below minCount into a single 'Other'", () => {
+    // minCount 2 → Arch·Bro(1) + Eng·Acme(1) merge into Other(2); Arch·Acme(2) stays.
+    const c = buildCompositeClusters(feats, [role, project], 2);
+    expect(c.labels.filter((l) => l === "Other").length).toBe(1);
+    const other = c.labels.indexOf("Other");
+    expect(c.counts[other]).toBe(2);
+    expect(Array.from(c.ids).every((id) => id >= 0 && id < c.labels.length)).toBe(true);
+  });
+
+  it("no dims → empty clustering", () => {
+    const c = buildCompositeClusters(feats, [], 0);
+    expect(c.labels).toEqual([]);
+    expect(c.ids.length).toBe(feats.length);
   });
 });
