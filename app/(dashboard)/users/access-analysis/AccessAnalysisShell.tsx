@@ -32,10 +32,11 @@ import {
 } from "./SliderContext";
 import { ClusterLabels } from "./ClusterLabels";
 import {
-  dominantCatalogDim,
-  buildDominantClusters,
+  activeCatalogDims,
+  buildCompositeClusters,
 } from "./dominantClusters";
-import { packClusterFootprints, packMemberPositions } from "./clusterPacking";
+import { packMemberPositions } from "./clusterPacking";
+import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
 import { clusterColorBuffer } from "./clusterColors";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
@@ -104,31 +105,37 @@ function ShellBody({
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
   const { values: sliderValues } = useSliders();
 
-  // DOMINANT-ATTRIBUTE CLUSTERING (the "with-labels" blobs). The attribute with the
-  // highest slider defines the clusters; each cluster gets a distinct, pinned 2D
-  // anchor (sunflower fill) so blobs always separate, and a readable label. These
-  // memos only recompute when the DOMINANT dim changes (not on every slider tick),
-  // since dominantCatalogDim returns the same dim object while it stays on top.
+  // COMPOSITE CLUSTERING (the "with-labels" blobs). EVERY engaged slider contributes
+  // to the blob key (multi-slider grouping); a node's blob is the tuple of its active
+  // attributes' values, with tiny tuples folded into "Other". Blobs are arranged
+  // ORGANICALLY (d3-force collide → irregular, non-overlapping), not in a rigid
+  // circle. Clusters/footprints recompute only when the active-slider SET changes —
+  // tightness alone must NOT re-pack (keyed on the joined active ids, not values).
   const sliderDims = useMemo(() => sliderDimensions(catalog), [catalog]);
-  const dominant = useMemo(
-    () => dominantCatalogDim(sliderDims, sliderValues),
+  const activeDims = useMemo(
+    () => activeCatalogDims(sliderDims, sliderValues),
     [sliderDims, sliderValues],
   );
+  const activeKey = activeDims.map((d) => d.id).join(",");
+  const tinyBlobMin = Math.max(1, Math.floor(features.length * 0.001));
   const clustering = useMemo(
-    () => (dominant ? buildDominantClusters(features, dominant) : null),
-    [features, dominant],
+    () => (activeDims.length ? buildCompositeClusters(features, activeDims, tinyBlobMin) : null),
+    // activeKey (stable string) gates recompute; activeDims identity changes each render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [features, activeKey],
   );
-  // Deterministic blob footprints (non-overlapping circle pack) for the dominant dim.
+  // Organic, non-overlapping blob footprints (d3-force collide) for the active dims.
   const footprints = useMemo(
-    () => (clustering ? packClusterFootprints(clustering.counts) : null),
+    () => (clustering ? layoutClusterFootprintsOrganic(clustering.counts) : null),
     [clustering],
   );
 
-  // Tightness = the dominant slider's value, normalized 0..1.
+  // Tightness = the strongest engaged slider's value, normalized 0..1.
   const tightness = useMemo(() => {
-    if (!dominant) return 0;
-    return Math.min(1, Math.max(0, (sliderValues[dominant.id] ?? 0) / 100));
-  }, [dominant, sliderValues]);
+    if (activeDims.length === 0) return 0;
+    const max = Math.max(...activeDims.map((d) => sliderValues[d.id] ?? 0));
+    return Math.min(1, Math.max(0, max / 100));
+  }, [activeDims, sliderValues]);
 
   // Per-node packed positions (stride-3, z=0) — recompute on regroup OR tightness change.
   const clusterPackedPositions = useMemo(() => {
@@ -248,10 +255,13 @@ function ShellBody({
           />
           
           {/* Active grouping indicator — makes the "strongest slider wins" rule visible. */}
-          {dominant && mode === "2d" && (
+          {activeDims.length > 0 && mode === "2d" && (
             <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-3 py-2 text-xs font-semibold text-foreground shadow-md backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
-              Grouping by: {dominant.label}
+              Grouping by: {activeDims.map((d) => d.label).join(" + ")}
+              {clustering?.labels.includes("Other") ? (
+                <span className="font-normal text-muted-foreground">(small → Other)</span>
+              ) : null}
             </div>
           )}
 

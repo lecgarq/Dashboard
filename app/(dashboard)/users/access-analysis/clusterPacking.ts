@@ -46,6 +46,12 @@ function clamp(v: number, lo: number, hi: number): number {
   return Math.min(hi, Math.max(lo, v));
 }
 
+/** Footprint radius for a cluster of `count` members (clamped). Shared by the
+ *  deterministic packer and the organic force layout so both size blobs identically. */
+export function footprintRadius(count: number): number {
+  return clamp(BASE * Math.sqrt(Math.max(0, count)), R_MIN, R_MAX);
+}
+
 export function packClusterFootprints(counts: ReadonlyArray<number>): ClusterFootprints {
   const k = counts.length;
   const cx = new Float32Array(k);
@@ -53,7 +59,7 @@ export function packClusterFootprints(counts: ReadonlyArray<number>): ClusterFoo
   const r = new Float32Array(k);
   if (k === 0) return { cx, cy, r };
 
-  const padded = counts.map((c) => clamp(BASE * Math.sqrt(Math.max(0, c)), R_MIN, R_MAX) * (1 + GAP));
+  const padded = counts.map((c) => footprintRadius(c) * (1 + GAP));
 
   // Pack big-blobs-first so large footprints sit centrally; keep index mapping.
   const order = padded.map((_, i) => i).sort((a, b) => padded[b] - padded[a]);
