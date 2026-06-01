@@ -84,6 +84,27 @@ test.describe("ACC cluster blobs — dominant-attribute grouping (2D)", () => {
     await testInfo.attach("blobs-by-company", { body: await page.screenshot(), contentType: "image/png" });
   });
 
+  test("composite: engaging a second slider groups by BOTH (multi-slider)", async ({ page }) => {
+    await gotoGraph(page);
+    await setSliderTo(page, "Role", 100);
+    await expect(page.getByText(/Grouping by:\s*Role/)).toBeVisible({ timeout: 30_000 });
+    await page.waitForTimeout(1_500);
+    expect(await page.getByTestId("cluster-label").count()).toBeGreaterThan(0);
+
+    // Adding Company makes the grouping composite — the indicator names BOTH attributes
+    // (order follows slider strength). Blob count can move either way once tiny tuples
+    // fold into "Other", so the indicator is the reliable signal, not the count.
+    await setSliderTo(page, "Company", 100);
+    await expect(
+      page.getByText(/Grouping by:\s*(Role\s*\+\s*Company|Company\s*\+\s*Role)/),
+    ).toBeVisible({ timeout: 30_000 });
+    await page.waitForTimeout(2_000);
+
+    const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
+    expect(stats.anyNaN).toBe(false);
+    expect(stats.count).toBeGreaterThan(0);
+  });
+
   // KNOWN ISSUE (un-skip when fixed): after grouping engages, the 2D camera does
   // NOT frame the full packed cluster cloud. Measured on the committed build
   // (2026-06-01): of 78 role blobs only ~15 project inside the 1280×720 canvas and
