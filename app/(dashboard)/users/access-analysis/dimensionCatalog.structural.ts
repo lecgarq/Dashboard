@@ -32,6 +32,14 @@ export function buildStructuralDimensions(): CatalogDimension[] {
       extract: (f) => (f.role && f.role !== "(no role)" ? f.role : null),
     },
     {
+      id: "user", label: "User name", family: "affiliation", kind: "categorical",
+      source: "AccDcProjectUser.user_id ⋈ name", confidence: "high", available: true,
+      surfaces: ["slider", "color"], colorScale: "categorical",
+      // Group/label by display name. Same-named distinct users may merge — acceptable
+      // for this experimental slider (names are near-unique across ~3.4k users).
+      extract: (f) => (f.userName ? f.userName : null),
+    },
+    {
       id: "company", label: "Company", family: "affiliation", kind: "categorical",
       source: "AccDcProjectUserCompany ⋈ AccDcCompany.name", confidence: "high", available: true,
       surfaces: ["slider", "color"], colorScale: "categorical",

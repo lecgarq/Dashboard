@@ -16,15 +16,21 @@ function node(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
 describe("buildStructuralDimensions", () => {
   const byId = Object.fromEntries(buildStructuralDimensions().map((d) => [d.id, d]));
 
-  it("declares the 9 structural dims + 5 permission tiers", () => {
+  it("declares the 10 structural dims (incl. User name) + 5 permission tiers", () => {
     expect(Object.keys(byId).sort()).toEqual(
       [
         "admin", "company", "internalExternal", "moduleAccess",
         "permission", "permission:fullController", "permission:viewDownload",
         "permission:viewDownloadUpload", "permission:viewDownloadUploadEdit", "permission:viewOnly",
-        "project", "role", "status", "tenure",
+        "project", "role", "status", "tenure", "user",
       ].sort(),
     );
+  });
+
+  it("user is categorical, grouped/labelled by display name", () => {
+    expect(byId.user.kind).toBe("categorical");
+    expect(byId.user.extract(node({ userName: "Ada Lovelace" }))).toBe("Ada Lovelace");
+    expect(byId.user.extract(node({ userName: undefined }))).toBeNull();
   });
 
   it("permission is now color-only (not a slider)", () => {
