@@ -23,7 +23,7 @@ async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<
  * invocation (same production closures) only if the WebGL hit-test misses.
  */
 
-const GRAPH_URL = "/users/access-analysis";
+const GRAPH_URL = "/users/spatial-graph";
 
 // Minimal typing for the bridge surface we use here.
 type Bridge = {
@@ -430,6 +430,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await expect(page.getByTestId("right-panel-stack")).toHaveAttribute("data-top-layer", "user-detail");
     await expect(page.getByTestId("user-detail-panel")).toBeVisible();
     expect(await isolated()).not.toBeNull();
+    // Parity: the rail now shows the same rich ACC profile as /users (or the
+    // graceful "not synced" state for a DC-only node). Either way the ACC
+    // section header renders inside the detail panel.
+    await expect(
+      page.getByTestId("user-detail-panel").getByText(/Autodesk ACC/i),
+    ).toBeVisible({ timeout: 4_000 });
     await proofShot(page, testInfo, "after-click-isolate");
 
     await page.keyboard.press("Escape");
@@ -535,8 +541,8 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // fitView), so the old 60% rectangle enclosed ALL 16,934 nodes and could not
     // catch a select-all regression — and no FIXED sub-region reliably hits the
     // disc. We locate the dense cloud per-run via small-box probing
-    // (findDensestScreenPoint, using the renderer's own screenToSpace +
-    // findPointsInPolygon) and lasso a box around it that is smaller than the disc:
+    // (findDensestScreenPoint, using the renderer's own raw screen-pixel
+    // findPointsInPolygon path) and lasso a box around it that is smaller than the disc:
     // it captures the dense core while excluding the outer ring + outliers → strict
     // subset.
     //

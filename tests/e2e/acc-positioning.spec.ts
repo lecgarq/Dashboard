@@ -1,6 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
-const GRAPH_URL = "/users/access-analysis";
+const GRAPH_URL = "/users/spatial-graph";
 
 // NOTE: Window.__ACC_GRAPH_TEST__ is already augmented globally in acc-dc-graph.spec.ts.
 // Do NOT redeclare it here — a second augmentation with a local Bridge type causes TS2717.
