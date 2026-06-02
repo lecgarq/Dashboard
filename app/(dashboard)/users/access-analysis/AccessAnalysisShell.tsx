@@ -33,9 +33,8 @@ import {
 import { ClusterLabels } from "./ClusterLabels";
 import {
   activeCatalogDims,
-  buildCompositeClusters,
+  buildSimilarityClusters,
 } from "./dominantClusters";
-import { packMemberPositions } from "./clusterPacking";
 import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
 import { clusterColorBuffer } from "./clusterColors";
 import { FilterProvider, useFilters } from "./FilterContext";
@@ -105,21 +104,22 @@ function ShellBody({
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
   const { values: sliderValues } = useSliders();
 
-  // COMPOSITE CLUSTERING (the "with-labels" blobs). EVERY engaged slider contributes
-  // to the blob key (multi-slider grouping); a node's blob is the tuple of its active
-  // attributes' values, with tiny tuples folded into "Other". Blobs are arranged
-  // ORGANICALLY (d3-force collide → irregular, non-overlapping), not in a rigid
-  // circle. Clusters/footprints recompute only when the active-slider SET changes —
-  // tightness alone must NOT re-pack (keyed on the joined active ids, not values).
+  // SIMILARITY CLUSTERING (the "with-labels" blobs), fed to the live GPU sim.
+  // 2+ engaged sliders group nodes by SIMILARITY across the active attributes
+  // (alike nodes merge into a few groups) instead of one blob per value-tuple.
+  // Grouping uses the active SET only, so it recomputes ONLY when sliders are
+  // added/removed — a value drag never re-groups (no teleport); the value drives
+  // tightness live via the GPU sim's applySliders (how close/far). Blobs sit at
+  // organic, data-defined anchors (NOT a fixed circle).
+  const MAX_GROUPS = 8;
   const sliderDims = useMemo(() => sliderDimensions(catalog), [catalog]);
   const activeDims = useMemo(
     () => activeCatalogDims(sliderDims, sliderValues),
     [sliderDims, sliderValues],
   );
   const activeKey = activeDims.map((d) => d.id).join(",");
-  const tinyBlobMin = Math.max(1, Math.floor(features.length * 0.001));
   const clustering = useMemo(
-    () => (activeDims.length ? buildCompositeClusters(features, activeDims, tinyBlobMin) : null),
+    () => (activeDims.length ? buildSimilarityClusters(features, activeDims, MAX_GROUPS) : null),
     // activeKey (stable string) gates recompute; activeDims identity changes each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [features, activeKey],
@@ -130,22 +130,16 @@ function ShellBody({
     [clustering],
   );
 
-  // Tightness = the strongest engaged slider's value, normalized 0..1.
-  const tightness = useMemo(() => {
-    if (activeDims.length === 0) return 0;
-    const max = Math.max(...activeDims.map((d) => sliderValues[d.id] ?? 0));
-    return Math.min(1, Math.max(0, max / 100));
-  }, [activeDims, sliderValues]);
-
-  // Per-node packed positions (stride-3, z=0) — recompute on regroup OR tightness change.
-  const clusterPackedPositions = useMemo(() => {
-    if (!clustering || !footprints) return undefined;
-    const n = clustering.ids.length;
-    const xy = packMemberPositions(clustering.ids, footprints, tightness, n);
-    const xyz = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { xyz[i * 3] = xy[i * 2]; xyz[i * 3 + 1] = xy[i * 2 + 1]; xyz[i * 3 + 2] = 0; }
-    return xyz;
-  }, [clustering, footprints, tightness]);
+  // Pinned 2D anchor per cluster (stride-2) handed to the GPU cluster-anchor sim.
+  // Recomputes only with footprints (i.e. on a re-group), never on a value drag —
+  // the sim keeps members near these anchors while applySliders tightens/loosens.
+  const clusterAnchors = useMemo(() => {
+    if (!footprints) return undefined;
+    const k = footprints.cx.length;
+    const a = new Float32Array(k * 2);
+    for (let c = 0; c < k; c++) { a[c * 2] = footprints.cx[c]; a[c * 2 + 1] = footprints.cy[c]; }
+    return a;
+  }, [footprints]);
 
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
@@ -199,7 +193,10 @@ function ShellBody({
   }, [edgeData, features.length]);
 
   return (
-    <div className="flex h-full flex-col">
+    // min-h-0 + overflow-hidden so the graph row fills the viewport instead of
+    // growing to the (tall) RightPanelStack content height, which pushed the
+    // cosmos canvas off-screen (nodes invisible below the fold).
+    <div className="flex h-full min-h-0 flex-col overflow-hidden">
       <Toolbar
         features={features}
         mode={mode}
@@ -209,8 +206,8 @@ function ShellBody({
         colorMode={colorMode}
         onColorModeChange={setColorMode}
       />
-      <div className="relative flex flex-1">
-        <div className="relative flex-1">
+      <div className="relative flex flex-1 min-h-0">
+        <div className="relative flex-1 min-h-0 min-w-0">
           <GraphInteractions
             physics={physics}
             features={features}
@@ -238,12 +235,13 @@ function ShellBody({
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
-              clusterPackedPositions={clusterPackedPositions}
+              clusterIds={clustering?.ids}
+              clusterAnchors={clusterAnchors}
             />
           </GraphInteractions>
 
-          {/* Dominant-attribute cluster labels (2D, "with-labels"). Renders nothing
-              when no attribute is dominant (all sliders 0) or in 3D. */}
+          {/* Similarity-cluster labels (2D, "with-labels"), pinned to the organic
+              blob anchors. Renders nothing when no slider is engaged or in 3D. */}
           <ClusterLabels
             graphRef={graphRef}
             centersX={footprints?.cx ?? null}
@@ -253,15 +251,15 @@ function ShellBody({
             counts={clustering?.counts ?? []}
             mode={mode}
           />
-          
-          {/* Active grouping indicator — makes the "strongest slider wins" rule visible. */}
+
+          {/* Active grouping indicator. 1 slider = group by that attribute; 2+ =
+              group by SIMILARITY across the engaged attributes. */}
           {activeDims.length > 0 && mode === "2d" && (
             <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-3 py-2 text-xs font-semibold text-foreground shadow-md backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
-              Grouping by: {activeDims.map((d) => d.label).join(" + ")}
-              {clustering?.labels.includes("Other") ? (
-                <span className="font-normal text-muted-foreground">(small → Other)</span>
-              ) : null}
+              {activeDims.length >= 2
+                ? `Grouping by similarity: ${activeDims.map((d) => d.label).join(" + ")}`
+                : `Grouping by: ${activeDims[0]?.label ?? ""}`}
             </div>
           )}
 
