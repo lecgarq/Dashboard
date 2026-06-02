@@ -35,4 +35,18 @@ describe("layoutClusterFootprintsOrganic", () => {
       expect(f.r[i]).toBeGreaterThan(0);
     }
   });
+
+  // DATA DEFINES THE SHAPE: the overall extent must scale with the data, not be
+  // normalized to a constant disc. A few tiny clusters → compact; many big → wide.
+  function extent(f: ReturnType<typeof layoutClusterFootprintsOrganic>): number {
+    let m = 0;
+    for (let i = 0; i < f.r.length; i++) m = Math.max(m, Math.hypot(f.cx[i], f.cy[i]) + f.r[i]);
+    return m;
+  }
+  it("extent grows with the data (not a fixed circle)", () => {
+    const small = extent(layoutClusterFootprintsOrganic([5, 5, 5]));
+    const big = extent(layoutClusterFootprintsOrganic([4000, 4000, 4000, 4000, 4000, 4000]));
+    expect(big).toBeGreaterThan(small * 2); // clearly data-dependent, not constant
+    expect(big).toBeLessThanOrEqual(1900 + 1); // but never overflows the safety ceiling
+  });
 });

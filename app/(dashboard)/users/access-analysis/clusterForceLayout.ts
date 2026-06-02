@@ -4,11 +4,19 @@
  * forceCollide to GUARANTEE non-overlap (the blobs-don't-touch invariant) while
  * forceManyBody + weak center gravity give an irregular, breathing outer shape.
  *
+ * DATA DEFINES THE SHAPE (no fixed circle): the settled coordinates are kept at
+ * their NATURAL collide extent — which already scales with cluster count and sizes
+ * (footprintRadius ∝ √count) — recentered on the centroid. We do NOT rescale up to
+ * a constant disc (the old "fixed shape that fits the data"); few/small clusters
+ * stay compact, many/large clusters spread wider, and the camera auto-fits whatever
+ * silhouette emerges. We only scale DOWN if the natural extent would overflow the
+ * GPU space (safety), never up.
+ *
  * Pure & deterministic: nodes are seeded on a fixed phyllotaxis spiral (NO RNG) and
  * the simulation is ticked a FIXED number of times synchronously (sim.stop()), so
  * the same counts always yield the same layout (no per-render jitter). Output is the
  * SAME ClusterFootprints {cx,cy,r} shape as packClusterFootprints → drop-in for
- * packMemberPositions / ClusterLabels / the transition layer.
+ * packMemberPositions / ClusterLabels / the transition layer / GPU anchors.
  */
 import { forceSimulation, forceCollide, forceManyBody, forceX, forceY } from "d3-force";
 import { footprintRadius, type ClusterFootprints } from "./clusterPacking";
@@ -17,7 +25,12 @@ const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const GAP = 6; // breathing room (space units) added to each collide radius
 const TICKS = 280; // fixed iteration count → deterministic settle
 const SEED_RADIUS = 1200; // initial spiral spread (pre-relaxation)
-const TARGET_EXTENT = 1700; // keep camera framing comparable to the old packed layout
+/** Weak centering keeps the cloud near the origin WITHOUT pulling it into a round
+ *  disc; lower than the old 0.045 so collide relationships shape the silhouette. */
+const CENTER_STRENGTH = 0.015;
+/** Safety ceiling only: scale DOWN if the natural extent would exceed this so the
+ *  anchors stay inside the GPU spaceSize (4096). Never scales the layout UP. */
+const MAX_EXTENT = 1900;
 
 interface FNode {
   r: number;
@@ -46,12 +59,13 @@ export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): C
   const sim = forceSimulation<FNode>(nodes)
     .force("collide", forceCollide<FNode>((d) => d.r + GAP).strength(1).iterations(3))
     .force("charge", forceManyBody<FNode>().strength(-12))
-    .force("x", forceX<FNode>(0).strength(0.045))
-    .force("y", forceY<FNode>(0).strength(0.045))
+    .force("x", forceX<FNode>(0).strength(CENTER_STRENGTH))
+    .force("y", forceY<FNode>(0).strength(CENTER_STRENGTH))
     .stop();
   for (let t = 0; t < TICKS; t++) sim.tick();
 
-  // Recenter on the centroid and scale so the max reach ≈ TARGET_EXTENT (stable framing).
+  // Recenter on the centroid. Keep the NATURAL collide extent (data-defined shape +
+  // size); only scale DOWN if it would overflow the GPU space — never up to a disc.
   let mx = 0;
   let my = 0;
   for (const n of nodes) {
@@ -62,7 +76,7 @@ export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): C
   my /= k;
   let maxReach = 1;
   for (const n of nodes) maxReach = Math.max(maxReach, Math.hypot(n.x - mx, n.y - my) + n.r);
-  const scale = TARGET_EXTENT / maxReach;
+  const scale = Math.min(1, MAX_EXTENT / maxReach);
   for (const n of nodes) {
     cx[n.index] = (n.x - mx) * scale;
     cy[n.index] = (n.y - my) * scale;
