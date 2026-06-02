@@ -65,45 +65,46 @@ test.describe("ACC cluster blobs — dominant-attribute grouping (2D)", () => {
     await testInfo.attach("blobs-by-role", { body: await page.screenshot(), contentType: "image/png" });
   });
 
-  test("grouping by Company yields a different, clean grouping", async ({ page }, testInfo) => {
+  test("grouping by Project yields a different, clean grouping", async ({ page }, testInfo) => {
     await gotoGraph(page);
-    const baseRatio = await ratioFor(page, "company");
+    const baseRatio = await ratioFor(page, "project");
 
-    const landed = await setSliderTo(page, "Company", 100);
+    const landed = await setSliderTo(page, "Project", 100);
     expect(landed).toBe(100);
 
-    await expect(page.getByText(/Grouping by:\s*Company/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText(/Grouping by:\s*Project/)).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(2_500);
 
     const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
     expect(stats.anyNaN).toBe(false);
-    const ratio = await ratioFor(page, "company");
+    const ratio = await ratioFor(page, "project");
     expect(ratio).toBeGreaterThan(baseRatio * 1.15);
 
     expect(await page.getByTestId("cluster-label").count()).toBeGreaterThan(0);
-    await testInfo.attach("blobs-by-company", { body: await page.screenshot(), contentType: "image/png" });
+    await testInfo.attach("blobs-by-project", { body: await page.screenshot(), contentType: "image/png" });
   });
 
-  test("composite: engaging a second slider groups by SIMILARITY across both", async ({ page }) => {
+  test("composite: a second slider switches to the cross-tab GRID (axis headers)", async ({ page }, testInfo) => {
     await gotoGraph(page);
     await setSliderTo(page, "Role", 100);
     await expect(page.getByText(/Grouping by:\s*Role/)).toBeVisible({ timeout: 30_000 });
     await page.waitForTimeout(1_500);
     expect(await page.getByTestId("cluster-label").count()).toBeGreaterThan(0);
 
-    // Adding Company switches to SIMILARITY grouping — alike nodes across BOTH
-    // attributes merge into a few groups (not one blob per value-tuple). The
-    // indicator names both attributes (order follows slider strength) and is the
-    // reliable signal; the merged blob count is intentionally bounded.
-    await setSliderTo(page, "Company", 100);
-    await expect(
-      page.getByText(/Grouping by similarity:\s*(Role\s*\+\s*Company|Company\s*\+\s*Role)/),
-    ).toBeVisible({ timeout: 30_000 });
+    // Adding a second curated slider switches to the cross-tab GRID: the stronger
+    // dim becomes columns, the next becomes rows. The grid caption + the column/row
+    // header overlays are the reliable signal (no k-means similarity blobs anymore).
+    await setSliderTo(page, "Project", 100);
+    await expect(page.getByText(/^Grid:/)).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByTestId("grid-axis-labels")).toBeVisible();
     await page.waitForTimeout(2_000);
+    expect(await page.getByTestId("grid-col-label").count()).toBeGreaterThan(0);
+    expect(await page.getByTestId("grid-row-label").count()).toBeGreaterThan(0);
 
     const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
     expect(stats.anyNaN).toBe(false);
     expect(stats.count).toBeGreaterThan(0);
+    await testInfo.attach("grid-project-x-role", { body: await page.screenshot(), contentType: "image/png" });
   });
 
   // FIXED 2026-06-01: the deferred fit now calls fitViewByPointPositions(actual xy2)
