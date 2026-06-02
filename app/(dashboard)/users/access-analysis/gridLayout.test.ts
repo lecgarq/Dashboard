@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
-import { buildGridStructure } from "./gridLayout";
+import { buildGridStructure, gridPositions, gridCellRadius } from "./gridLayout";
 
 const dim = (id: string, get: (f: NodeFeatureSnapshot) => string): CatalogDimension =>
   ({
@@ -41,5 +41,34 @@ describe("buildGridStructure", () => {
     for (let i = 0; i < features.length; i++) {
       expect(Math.hypot(s.ux[i], s.uy[i])).toBeLessThanOrEqual(1.0001);
     }
+  });
+});
+
+describe("gridPositions", () => {
+  it("centers cells on a lattice and writes into the provided buffer (no alloc)", () => {
+    const features = [feat("A", "X"), feat("B", "X")];
+    const s = buildGridStructure(features, projectDim, roleDim, { maxCols: 8, maxRows: 8 });
+    const out = new Float32Array(features.length * 3);
+    const ref = gridPositions(s, { valueX: 1, valueY: 1 }, out);
+    expect(ref).toBe(out);
+    // Two single-member columns, centered → x of col0 = -x of col1
+    expect(out[0]).toBeCloseTo(-out[3], 5);
+    expect(out[2]).toBe(0); // z=0
+  });
+
+  it("higher slider value spreads bands further apart (monotonic pitch)", () => {
+    const features = [feat("A", "X"), feat("B", "X")];
+    const s = buildGridStructure(features, projectDim, roleDim, { maxCols: 8, maxRows: 8 });
+    const lo = new Float32Array(6);
+    gridPositions(s, { valueX: 0.1, valueY: 0.1 }, lo);
+    const hi = new Float32Array(6);
+    gridPositions(s, { valueX: 1, valueY: 1 }, hi);
+    expect(Math.abs(hi[3] - hi[0])).toBeGreaterThan(Math.abs(lo[3] - lo[0]));
+  });
+
+  it("cells never overlap: cell radius < half the min pitch", () => {
+    const colPitch = 100;
+    const rowPitch = 100;
+    expect(gridCellRadius(colPitch, rowPitch)).toBeLessThan(Math.min(colPitch, rowPitch) / 2);
   });
 });
