@@ -848,7 +848,9 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
               nodeColors: new Float32Array(nodeCount * 4),
               mode: "2d",
               gpuSimulation,
-              clusterPackedPositions: packed,
+              // A static layout target stands in for the old packed positions: the
+              // renderer eases toward it with the GPU sim paused (same contract).
+              layoutTarget: () => packed,
             }),
           },
         ),

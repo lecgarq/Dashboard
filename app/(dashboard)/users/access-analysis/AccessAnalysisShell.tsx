@@ -18,7 +18,7 @@
  * post-filter members (CONTEXT.md visible-subset rule).
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
@@ -31,12 +31,12 @@ import {
   useSliders,
 } from "./SliderContext";
 import { ClusterLabels } from "./ClusterLabels";
-import {
-  activeCatalogDims,
-  buildSimilarityClusters,
-} from "./dominantClusters";
-import { packMemberPositions } from "./clusterPacking";
+import { GridAxisLabels } from "./GridAxisLabels";
+import { activeCatalogDims, buildDominantClusters } from "./dominantClusters";
 import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
+import { buildRestLayout } from "./restLayout";
+import { buildGridStructure } from "./gridLayout";
+import { descriptorTarget, descriptorNodeCount, type LayoutDescriptor } from "./layoutDescriptor";
 import { clusterColorBuffer } from "./clusterColors";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
@@ -104,101 +104,89 @@ function ShellBody({
 }: ShellBodyProps): React.JSX.Element {
   const { activeFilters, searchQuery, drillDown } = useFilters();
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
-  const { values: sliderValues } = useSliders();
+  const { values: sliderValues, getLiveValues } = useSliders();
 
-  // SIMILARITY CLUSTERING (the "with-labels" blobs), fed to the live GPU sim.
-  // 2+ engaged sliders group nodes by SIMILARITY across the active attributes
-  // (alike nodes merge into a few groups) instead of one blob per value-tuple.
-  // Grouping uses the active SET only, so it recomputes ONLY when sliders are
-  // added/removed — a value drag never re-groups (no teleport); the value drives
-  // tightness live via the GPU sim's applySliders (how close/far). Blobs sit at
-  // organic, data-defined anchors (NOT a fixed circle).
-  const MAX_GROUPS = 8;
+  // LAYOUT DESCRIPTOR — the grouping STRUCTURE, computed once per active-SET change
+  // (gated on activeKey), NOT per value drag. The renderer turns this + the live
+  // slider value into per-frame positions (descriptorTarget) off the React path —
+  // that decoupling is the lag fix. 0 active → organic rest cloud; 1 → packed blobs;
+  // 2+ → cross-tab grid (strongest dim = columns, next = rows).
   const sliderDims = useMemo(() => curatedSliderDimensions(catalog), [catalog]);
   const activeDims = useMemo(
     () => activeCatalogDims(sliderDims, sliderValues),
     [sliderDims, sliderValues],
   );
   const activeKey = activeDims.map((d) => d.id).join(",");
-  const clustering = useMemo(
-    () => (activeDims.length ? buildSimilarityClusters(features, activeDims, MAX_GROUPS) : null),
+
+  // Static organic resting cloud (soft shared-project clumps). Computed once per data set.
+  const restXyz = useMemo(() => buildRestLayout(features), [features]);
+
+  const layoutDescriptor = useMemo<LayoutDescriptor>(() => {
+    if (activeDims.length === 0) return { kind: "rest", xyz: restXyz };
+    if (activeDims.length === 1) {
+      const clustering = buildDominantClusters(features, activeDims[0]);
+      const footprints = layoutClusterFootprintsOrganic(clustering.counts);
+      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints };
+    }
+    const structure = buildGridStructure(features, activeDims[0], activeDims[1], {
+      maxCols: 12,
+      maxRows: 8,
+    });
+    return { kind: "grid", xId: activeDims[0].id, yId: activeDims[1].id, structure };
     // activeKey (stable string) gates recompute; activeDims identity changes each render.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [features, activeKey],
-  );
-  // Organic, non-overlapping blob footprints (d3-force collide) for the active dims.
-  const footprints = useMemo(
-    () => (clustering ? layoutClusterFootprintsOrganic(clustering.counts) : null),
-    [clustering],
-  );
+  }, [features, activeKey, restXyz]);
 
-  // Pinned 2D anchor per cluster (stride-2) handed to the GPU cluster-anchor sim.
-  // Recomputes only with footprints (i.e. on a re-group), never on a value drag —
-  // the sim keeps members near these anchors while applySliders tightens/loosens.
-  const clusterAnchors = useMemo(() => {
-    if (!footprints) return undefined;
-    const k = footprints.cx.length;
-    const a = new Float32Array(k * 2);
-    for (let c = 0; c < k; c++) { a[c * 2] = footprints.cx[c]; a[c * 2 + 1] = footprints.cy[c]; }
-    return a;
-  }, [footprints]);
-
-  // Tightness = strongest engaged slider, normalized 0..1 (drives GPU-off packing).
-  const tightness = useMemo(() => {
-    if (activeDims.length === 0) return 0;
-    const max = Math.max(...activeDims.map((d) => sliderValues[d.id] ?? 0));
-    return Math.min(1, Math.max(0, max / 100));
-  }, [activeDims, sliderValues]);
-
-  // DETERMINISTIC PACKED LAYOUT — authoritative for the labelled-cluster view in
-  // BOTH GPU modes (the GPU force sim is paused while this is active). Members are
-  // packed inside their non-overlapping organic footprint, so blobs never overlap
-  // ("very clear clusters", no cluster-in-a-cluster) and labels (at footprint
-  // centres, dontRescale=true) stay locked on. LIVE tightness = how close/far.
-  // Recompute is gated to the active-SET (clustering/footprints) + tightness, so a
-  // value drag re-packs at most once per frame (rAF-coalesced) — no re-group jump.
-  const clusterPackedPositions = useMemo(() => {
-    if (!clustering || !footprints) return undefined;
-    const n = clustering.ids.length;
-    const xy = packMemberPositions(clustering.ids, footprints, tightness, n);
-    const xyz = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) { xyz[i * 3] = xy[i * 2]; xyz[i * 3 + 1] = xy[i * 2 + 1]; xyz[i * 3 + 2] = 0; }
-    return xyz;
-  }, [clustering, footprints, tightness]);
-
-  // Bbox corners of the packed cloud → GPU-off camera fit frames the known extent.
-  const clusterCloudCorners = useMemo(() => {
-    if (!clusterPackedPositions) return undefined;
-    const n = clusterPackedPositions.length / 3;
-    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
-    for (let i = 0; i < n; i++) {
-      const x = clusterPackedPositions[i * 3];
-      const y = clusterPackedPositions[i * 3 + 1];
-      if (x < minX) minX = x;
-      if (x > maxX) maxX = x;
-      if (y < minY) minY = y;
-      if (y > maxY) maxY = y;
+  // Per-frame layout target source handed to the renderer (keeps GraphCanvas pure —
+  // it never imports layout math). Reads the LIVE slider value off a ref, so a value
+  // drag flows through here in the rAF loop WITHOUT re-rendering this shell. The buffer
+  // is reused across frames (descriptorTarget writes into it) — no per-frame allocation.
+  const targetBufRef = useRef<Float32Array | null>(null);
+  const layoutTarget = useCallback((): Float32Array => {
+    const n = descriptorNodeCount(layoutDescriptor);
+    if (!targetBufRef.current || targetBufRef.current.length !== n * 3) {
+      targetBufRef.current = new Float32Array(n * 3);
     }
-    if (!Number.isFinite(minX)) return undefined;
-    return new Float32Array([minX, minY, maxX, minY, maxX, maxY, minX, maxY]);
-  }, [clusterPackedPositions]);
+    return descriptorTarget(layoutDescriptor, getLiveValues(), targetBufRef.current);
+  }, [layoutDescriptor, getLiveValues]);
 
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
 
-  // Phase 4: semantic node coloring. Default "role" — it yields many distinct
-  // colors so the graph looks meaningfully encoded at first load ("external" is
-  // monochrome when every user is the same internal/external class). Dimming
-  // stays a MASK concern, so the color buffer keeps alpha=1 and never encodes
-  // selection/filter state.
+  // Phase 4: semantic node coloring (used at rest). Default "role".
   const [colorMode, setColorMode] = useState<ColorMode>("role");
+
+  // Per-node color ids derived from the grouping:
+  //   blob          → color by the blob's attribute value
+  //   grid (2 dims) → color by CELL so the grid reads as distinct tiles
+  //   grid (3 active)→ color by the 3rd-strongest dim (the one NOT on an axis)
+  //   rest          → null → semantic color-by-mode
+  const colorIds = useMemo<{ ids: Int32Array; count: number } | null>(() => {
+    if (layoutDescriptor.kind === "blob") {
+      return { ids: layoutDescriptor.clustering.ids, count: layoutDescriptor.clustering.labels.length };
+    }
+    if (layoutDescriptor.kind === "grid") {
+      if (activeDims.length >= 3) {
+        const third = buildDominantClusters(features, activeDims[2]);
+        return { ids: third.ids, count: third.labels.length };
+      }
+      const s = layoutDescriptor.structure;
+      const ncols = s.cols.length;
+      const ids = new Int32Array(s.colOf.length);
+      for (let i = 0; i < ids.length; i++) ids[i] = s.rowOf[i] * ncols + s.colOf[i];
+      return { ids, count: Math.max(1, s.cols.length * s.rows.length) };
+    }
+    return null;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [layoutDescriptor, features, activeKey]);
+
   const nodeColors = useMemo<Float32Array>(
     () =>
-      clustering
-        ? clusterColorBuffer(clustering.ids, clustering.labels.length)
+      colorIds
+        ? clusterColorBuffer(colorIds.ids, colorIds.count)
         : buildNodeColors(features, colorMode),
-    [clustering, features, colorMode],
+    [colorIds, features, colorMode],
   );
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
@@ -277,33 +265,51 @@ function ShellBody({
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
-              clusterIds={clustering?.ids}
-              clusterAnchors={clusterAnchors}
-              clusterPackedPositions={clusterPackedPositions}
-              clusterCorners={clusterCloudCorners}
+              layoutTarget={layoutTarget}
             />
           </GraphInteractions>
 
-          {/* Similarity-cluster labels (2D, "with-labels"), pinned to the organic
-              blob anchors. Renders nothing when no slider is engaged or in 3D. */}
-          <ClusterLabels
-            graphRef={graphRef}
-            centersX={footprints?.cx ?? null}
-            centersY={footprints?.cy ?? null}
-            radii={footprints?.r ?? null}
-            labels={clustering?.labels ?? []}
-            counts={clustering?.counts ?? []}
-            mode={mode}
-          />
+          {/* 1-slider blob labels: pinned to each packed footprint center (2D only). */}
+          {layoutDescriptor.kind === "blob" && (
+            <ClusterLabels
+              graphRef={graphRef}
+              centersX={layoutDescriptor.footprints.cx}
+              centersY={layoutDescriptor.footprints.cy}
+              radii={layoutDescriptor.footprints.r}
+              labels={layoutDescriptor.clustering.labels}
+              counts={layoutDescriptor.clustering.counts}
+              mode={mode}
+            />
+          )}
 
-          {/* Active grouping indicator. 1 slider = group by that attribute; 2+ =
-              group by SIMILARITY across the engaged attributes. */}
-          {activeDims.length > 0 && mode === "2d" && (
+          {/* 2-slider grid: column headers (top) + row headers (left), tracking pitch. */}
+          {layoutDescriptor.kind === "grid" && (
+            <GridAxisLabels
+              graphRef={graphRef}
+              structure={layoutDescriptor.structure}
+              getLiveValues={getLiveValues}
+              xId={layoutDescriptor.xId}
+              yId={layoutDescriptor.yId}
+              mode={mode}
+            />
+          )}
+
+          {/* Active grouping indicator. 1 slider = blobs by that attribute; 2+ =
+              cross-tab grid (strongest = columns, next = rows; a 3rd dim → color). */}
+          {layoutDescriptor.kind !== "rest" && mode === "2d" && (
             <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-xl border border-border/80 bg-background/60 px-3 py-2 text-xs font-semibold text-foreground shadow-md backdrop-blur-md">
               <span className="h-2 w-2 rounded-full bg-blue-500" />
-              {activeDims.length >= 2
-                ? `Grouping by similarity: ${activeDims.map((d) => d.label).join(" + ")}`
-                : `Grouping by: ${activeDims[0]?.label ?? ""}`}
+              {layoutDescriptor.kind === "grid" ? (
+                <span>
+                  Grid: {activeDims[0]?.label} × {activeDims[1]?.label}
+                  {activeDims.length >= 3 ? ` · color: ${activeDims[2]?.label}` : ""}
+                  {layoutDescriptor.structure.foldedCols + layoutDescriptor.structure.foldedRows > 0
+                    ? ` · +${layoutDescriptor.structure.foldedCols + layoutDescriptor.structure.foldedRows} folded into “Other”`
+                    : ""}
+                </span>
+              ) : (
+                <span>Grouping by: {activeDims[0]?.label ?? ""}</span>
+              )}
             </div>
           )}
 

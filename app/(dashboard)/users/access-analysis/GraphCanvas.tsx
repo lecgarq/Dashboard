@@ -84,30 +84,13 @@ export interface GraphCanvasProps {
   /** Test/override: force 2D GPU sim on/off. Defaults to ENABLE_GPU_2D_SIM. */
   gpuSimulation?: boolean;
   /**
-   * Per-node cluster index (color-group assignment). When present, the 2D GPU
-   * graph groups nodes into discrete clumps by cluster instead of the per-node
-   * anchor layout. Absent → backward-compatible per-node behavior.
+   * Per-frame 2D layout target source (stride-3, z=0). The shell closes the layout
+   * descriptor + the live slider value into this callback (the renderer stays pure —
+   * it never imports layout math). When present, the 2D view eases toward this target
+   * via the cluster transition layer with the GPU sim PAUSED, so separation is
+   * structural. Absent → physics positions drive (bare/legacy path, e.g. unit tests).
    */
-  clusterIds?: Int32Array;
-  /**
-   * Pinned 2D anchor per cluster (stride-2, clusterCount*2) from the shell's
-   * dominant-attribute layout (an even sunflower fill). Pinning these guarantees
-   * blob separation. Undefined → no pinning (unclustered scatter).
-   */
-  clusterAnchors?: Float32Array;
-  /**
-   * Deterministic per-node packed positions (stride-3, z=0) for the labeled
-   * cluster view. When present, the 2D view eases toward these via the cluster
-   * transition layer with the GPU sim PAUSED — separation is structural, not
-   * force-based. Undefined → GPU free-explore / scatter as before.
-   */
-  clusterPackedPositions?: Float32Array;
-  /**
-   * Bounding-box corners (flat `[x0,y0,...]`, 4 corners) of the FINAL packed cluster
-   * cloud, for the 2D camera fit. Framing the known final extent avoids mis-zoom from
-   * the live mid-ease buffer. Undefined → the renderer falls back to live positions.
-   */
-  clusterCorners?: Float32Array;
+  layoutTarget?: () => Float32Array;
 }
 
 // ---------------------------------------------------------------------------
@@ -156,7 +139,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
 
   // B.2 preview interpolation state
   const sliders = useSliders();
-  const sliderValues = sliders.values;
 
   const previewRef = useRef<PreviewLayer | null>(null);
   const previewActiveLocalRef = useRef<boolean>(false);
@@ -231,49 +213,36 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     };
   }, [subscribePreviewActive, props.physics, props.mode]);
 
-  // Deterministic cluster view: ease node positions toward the packed target.
-  // Active whenever the shell supplies packed positions. Mutually exclusive with
-  // the GPU force sim (which we pause) so separation never depends on force balance.
-  // (Refs declared before getPositionsOverride so the callback closes over an
-  // already-initialized binding; the layer is (re)created + targeted by the
-  // effects further below.)
-  // The deterministic packed layout is AUTHORITATIVE for the labelled-cluster view
-  // in BOTH GPU modes. A force sim cannot guarantee clean, non-overlapping blobs
-  // ("cluster inside a cluster"); packing members inside non-overlapping footprints
-  // does. When packed positions are present we PAUSE the GPU force sim and ease
-  // toward the packed target (uploaded dontRescale=true so ClusterLabels' spaceToScreen
-  // keeps labels locked to their blobs). The slider drives tightness via the packed
-  // recompute, not the GPU cluster coefficient.
-  const clusterActive = !!props.clusterPackedPositions;
+  // CLUSTER-DETERMINISTIC VIEW — when the shell supplies a layoutTarget, it is the
+  // source of positions for the 2D view; the GPU force sim stays paused, so separation
+  // is structural, never force-discovered. layoutTarget() returns the per-frame target
+  // (the shell writes it into a reused buffer from the descriptor + LIVE slider value),
+  // eased through the transition layer so a regroup glides and a value drag flows.
+  // Because the live value is read off a ref inside the shell's callback, a value drag
+  // NEVER re-renders the shell or re-packs every node — that decoupling is the lag fix.
+  const clusterActive = !!props.layoutTarget;
   const clusterLayerRef = useRef<ClusterTransitionLayer | null>(null);
   const clusterLastTsRef = useRef<number>(0);
 
-  // B.2 — Override callback: returns the interpolated positions during preview
   const getPositionsOverride = useCallback((): Float32Array | null => {
-    // Cluster-deterministic mode takes precedence (both GPU modes): ease toward
-    // the packed target. The GPU force sim is paused while this is active.
-    if (props.clusterPackedPositions && clusterLayerRef.current) {
-      const layer = clusterLayerRef.current;
-      const now = performance.now();
-      const dt = clusterLastTsRef.current ? now - clusterLastTsRef.current : 16;
-      clusterLastTsRef.current = now;
-      layer.step(dt);
+    // 2D only: the target is a flat (z=0) layout. In 3D the renderer takes the
+    // physics worker's 3D positions (which still react to slider forces) instead.
+    if (props.mode !== "2d") return null;
+    const layer = clusterLayerRef.current;
+    if (!layer || !props.layoutTarget) return null;
+    const target = props.layoutTarget();
+    try {
+      layer.setTarget(target);
+    } catch {
+      // node count changed mid-flight (layer not yet re-created) — hold last frame
       return layer.snapshot();
     }
-    clusterLastTsRef.current = 0;
-    // …PRESERVED EXISTING BODY (preview/frozen logic + gpu2d early return)…
-    if (!ENABLE_PREVIEW_INTERPOLATION || gpu2d) return null;
-    if (!previewActiveLocalRef.current) return null;
-    const layer = previewRef.current;
-    if (!layer) return null;
     const now = performance.now();
-    // Cap dt after pauses (tab backgrounded, breakpoint, etc.) — without this
-    // the lerp would jump a huge chunk on the first resume frame.
-    const dt = Math.min(50, now - lastFrameTsRef.current);
-    lastFrameTsRef.current = now;
-    layer.step(props.physics.getSliders(), dt);
+    const dt = clusterLastTsRef.current ? now - clusterLastTsRef.current : 16;
+    clusterLastTsRef.current = now;
+    layer.step(dt);
     return layer.snapshot();
-  }, [props.physics, props.clusterPackedPositions, gpu2d]);
+  }, [props.layoutTarget, props.mode]);
 
   // (Re)create the layer when node count changes; seed from current visible positions.
   useEffect(() => {
@@ -283,13 +252,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     clusterLayerRef.current = layer;
     return () => { clusterLayerRef.current = null; };
   }, [props.physics]);
-
-  // Set the target whenever packed positions change (engage / regroup / tightness).
-  // setTarget eases FROM current displayed → no teleport on re-target.
-  useEffect(() => {
-    const layer = clusterLayerRef.current;
-    if (layer && props.clusterPackedPositions) layer.setTarget(props.clusterPackedPositions);
-  }, [props.clusterPackedPositions]);
 
   // Pause/resume the GPU sim as we enter/leave cluster mode. On ENGAGE, re-seed the
   // transition layer from cosmos's CURRENT on-screen positions (stride-2 → stride-3)
@@ -351,37 +313,9 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     getPositionsOverride,
   });
 
-  // TIGHTNESS: while UNCLUSTERED (scatter), every slider change ramps the global
-  // cluster-pull coefficient (mapDominantForceConfig) so the GPU sim drives the calm
-  // scatter. In cluster mode the deterministic packed path owns positions and the GPU
-  // sim is paused — calling start() here would fight it (reheat a sim whose output is
-  // overwritten every frame, burning a full physics pass on every node per slider tick,
-  // the dominant source of the slider-drag lag), so we skip it entirely when clustered.
-  useEffect(() => {
-    if (!gpu2d || props.mode !== "2d" || clusterActive) return;
-    const h = handle2D.current;
-    if (!h) return;
-    const normalized: Record<string, number> = {};
-    for (const [k, v] of Object.entries(sliderValues)) normalized[k] = v / 100;
-    h.applySliders?.(normalized);   // applySliders is OPTIONAL on the handle — use ?.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sliderValues, props.mode, gpu2d, clusterActive, readyTick]);
-
-  // MEMBERSHIP + POSITIONS (one atomic call so seeding/grouping/pinning stay in
-  // the right order): seed nodes at the dominant attribute's pinned cluster
-  // anchors. clusterIds + clusterAnchors change together (same dominant), so this
-  // fires once per re-group — NOT on every slider tick. Cleared (null) → scatter.
-  // Skipped while clusterActive: the deterministic packed path owns positions there
-  // and this call's start() would reheat the paused GPU sim (see applySliders above).
-  useEffect(() => {
-    if (!gpu2d || props.mode !== "2d" || clusterActive) return;
-    handle2D.current?.setClustering?.(
-      props.clusterIds ?? null,
-      props.clusterAnchors ?? null,
-    );
-    // readyTick: re-run once the async cosmos handle lands.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.clusterIds, props.clusterAnchors, props.mode, gpu2d, clusterActive, readyTick]);
+  // (The old GPU applySliders / setClustering effects are gone: positions are now
+  // always descriptor-driven with the GPU sim paused, so the slider value flows
+  // through descriptorTarget in the rAF loop above — not through a GPU reheat.)
 
   // Sync nodeColors to both renderers when the buffer changes
   useEffect(() => {
@@ -497,9 +431,6 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           linkColors={props.linkColors}
           gpuSimulation={gpu2d}
           clusterMode={clusterActive}
-          clusterCorners={props.clusterCorners}
-          clusterIds={props.clusterIds}
-          clusterAnchors={props.clusterAnchors}
           onHandleReady={(h) => {
             handle2D.current = h;
             setReadyTick((t) => t + 1);
