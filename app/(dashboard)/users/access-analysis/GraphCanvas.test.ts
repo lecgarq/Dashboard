@@ -59,6 +59,7 @@ vi.mock("@cosmos.gl/graph", () => {
       (g as any).pause = vi.fn(() => { _pauseCalls++; });
       (g as any).unpause = vi.fn();
       (g as any).fitView = vi.fn();
+      (g as any).fitViewByPointPositions = vi.fn();
       (g as any).destroy = vi.fn();
       (g as any).ready = Promise.resolve();
       _capturedGraph = g;
@@ -514,59 +515,65 @@ describe("GraphCanvas2DHandle — frozen-branch position upload (P0 fix)", () =>
     const physics = makeFakePhysics({ nodeCount: 2, frozen: true });
     const handle = await setupHandleWith(physics, 2);
     const g: any = _capturedGraph;
-    // Mock fitView so the deferred-fit frame is deterministic in this test.
-    g.fitView = vi.fn();
+    // Mock the deferred-fit call so the fit frame is deterministic in this test.
+    g.fitViewByPointPositions = vi.fn();
 
     // Prime the scale; this arms fitPendingRef=4. We then drain it across 4
-    // scale-stable frames so the extra fitView-frame render no longer fires
+    // scale-stable frames so the extra fit-frame render no longer fires
     // during the measurement window below.
     handle.pushPositions(new Float32Array([100, 100, 0, 100, 100, 0]));
     for (let i = 0; i < 4; i++) {
       handle.pushPositions(new Float32Array([100, 100, 0, 100, 100, 0]));
     }
-    expect(g.fitView).toHaveBeenCalledTimes(1);
+    expect(g.fitViewByPointPositions).toHaveBeenCalledTimes(1);
     g.render.mockClear();
-    g.fitView.mockClear();
+    g.fitViewByPointPositions.mockClear();
 
     // 5 scale-stable frames simulating B.2 preview interpolation while frozen.
-    // fitPendingRef is now 0, so each frame should drive exactly one render
-    // from the always-upload path at the top of the frozen branch.
+    // Each frame's coords are DISTINCT (real interpolation never repeats a frame),
+    // so every push gets past the no-op dirty-check and drives exactly one render.
+    // Base 100.5 keeps them distinct from the primed [100,100] (which the dirty-check
+    // would otherwise skip) while staying within the <2-unit scale-stable window.
     for (let i = 0; i < 5; i++) {
       handle.pushPositions(
-        new Float32Array([100 + i * 0.1, 100 + i * 0.1, 0, 100, 100, 0]),
+        new Float32Array([100.5 + i * 0.1, 100.5 + i * 0.1, 0, 100, 100, 0]),
       );
     }
 
-    // Each scale-stable frozen push must drive a render so cosmos repaints.
+    // Each scale-stable frozen push with fresh coords must drive a render.
     expect(g.render).toHaveBeenCalledTimes(5);
-    // fitView must NOT have re-fired — spread did not change materially.
-    expect(g.fitView).not.toHaveBeenCalled();
+    // the deferred fit must NOT have re-fired — spread did not change materially.
+    expect(g.fitViewByPointPositions).not.toHaveBeenCalled();
   });
 
-  it("Test 11: frozen + scale-changed preserves fitPending → deferred fitView behavior", async () => {
+  it("Test 11: frozen + scale-changed preserves fitPending → deferred fit frames the actual cloud", async () => {
     const physics = makeFakePhysics({ nodeCount: 2, frozen: true });
     const handle = await setupHandleWith(physics, 2);
     const g: any = _capturedGraph;
-    // fitView isn't on the mock by default — inject so we can observe the call.
-    g.fitView = vi.fn();
+    g.fitViewByPointPositions = vi.fn();
 
     // Prime: small spread sets fittedScaleRef=10, arms fitPending=4.
     handle.pushPositions(new Float32Array([10, 10, 0, 10, 10, 0]));
     // Material spread change to ~350 re-arms fitPending=4 (>2% gate).
     handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
-    expect(g.fitView).not.toHaveBeenCalled();
+    expect(g.fitViewByPointPositions).not.toHaveBeenCalled();
 
-    // 4 scale-stable frames: fitPending counts 4→3→2→1→0; fitView fires when it hits 0.
+    // 4 scale-stable frames: fitPending counts 4→3→2→1→0; the fit fires at 0.
     handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
-    expect(g.fitView).not.toHaveBeenCalled();
+    expect(g.fitViewByPointPositions).not.toHaveBeenCalled();
     handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
-    expect(g.fitView).not.toHaveBeenCalled();
+    expect(g.fitViewByPointPositions).not.toHaveBeenCalled();
     handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
-    expect(g.fitView).not.toHaveBeenCalled();
+    expect(g.fitViewByPointPositions).not.toHaveBeenCalled();
     handle.pushPositions(new Float32Array([350, 350, 0, 350, 350, 0]));
-    expect(g.fitView).toHaveBeenCalledTimes(1);
-    // Cosmos signature: (duration, padding, scaleNodes).
-    expect(g.fitView).toHaveBeenCalledWith(0, 0.1, false);
+    expect(g.fitViewByPointPositions).toHaveBeenCalledTimes(1);
+    // Frames the ACTUAL uploaded stride-2 cloud (not cosmos's stale committed bbox):
+    // (positions, duration=0, padding=0.12, enableSimulation=false).
+    const [positions, duration, padding, enableSim] = g.fitViewByPointPositions.mock.calls[0];
+    expect(Array.from(positions as Float32Array)).toEqual([350, 350, 350, 350]);
+    expect(duration).toBe(0);
+    expect(padding).toBeCloseTo(0.12, 5);
+    expect(enableSim).toBe(false);
   });
 
   it("Test 12: non-frozen path unchanged — uploads xy2 with dontRescale=true and renders", async () => {
@@ -800,13 +807,14 @@ describe("GraphCanvas2D — GPU simulation mode", () => {
 // ---------------------------------------------------------------------------
 
 describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
-  it("REND-cluster: packed positions are pushed to cosmos with the sim paused", async () => {
+  // Helper: mount GraphCanvas with packed positions at a given GPU mode, drive one
+  // rAF, and return. Caller asserts on the shared _pauseCalls/_setPointPositionsCalls.
+  async function mountPacked(gpuSimulation: boolean): Promise<() => void> {
     const { GraphCanvas } = await import("./GraphCanvas");
     const { SliderProvider } = await import("./SliderContext");
     const { render, act } = await import("@testing-library/react");
     const { createElement } = await import("react");
 
-    // Deterministic rAF: capture callbacks so we can drive exactly one frame.
     let rafCallbacks: FrameRequestCallback[] = [];
     let rafId = 0;
     vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
@@ -816,60 +824,59 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
     vi.stubGlobal("cancelAnimationFrame", () => {
       rafCallbacks = [];
     });
-
-    function drainRaf(timestamp = 16): void {
+    const drainRaf = (timestamp = 16): void => {
       const pending = [...rafCallbacks];
       rafCallbacks = [];
       for (const cb of pending) cb(timestamp);
-    }
+    };
 
-    // Same node count / physics stub the sibling GPU tests use.
     const nodeCount = 3;
     const physics = makeFakePhysics({ nodeCount });
     const packed = new Float32Array(nodeCount * 3); // stride-3, z=0
     packed.set([10, 5, 0, -10, 5, 0, 0, -10, 0]);
 
+    _pauseCalls = 0;
+    _setPointPositionsCalls = [];
+
     await act(async () => {
       render(
         createElement(
           SliderProvider,
-          // SliderProvider requires a catalog; this suite does not touch sliders,
-          // so an empty catalog is enough (matches GraphCanvas3D.test.ts).
           { physics, catalog: [], children:
             createElement(GraphCanvas, {
               physics,
               nodeColors: new Float32Array(nodeCount * 4),
               mode: "2d",
-              // Force GPU sim on so the pause/resume effect engages (the cluster
-              // contract pauses the force sim). Also supply the packed positions.
-              gpuSimulation: true,
+              gpuSimulation,
               clusterPackedPositions: packed,
             }),
           },
         ),
       );
-      // Flush the async cosmos init (graph.ready await) + the pause/resume effect.
       await Promise.resolve();
       await Promise.resolve();
     });
-
-    // Drive one rAF tick so the pump routes the eased cluster positions through
-    // onTick2D → handle2D.pushPositions. (skipPositionPump is disabled while the
-    // cluster view is active, so the pump runs.)
     await act(async () => {
       drainRaf();
       await Promise.resolve();
     });
+    return () => vi.unstubAllGlobals();
+  }
 
-    // 1. The GPU force sim was paused while the cluster view is active.
-    expect(_pauseCalls).toBeGreaterThanOrEqual(1);
-    // 2. The eased packed positions were actually UPLOADED while paused — proven by
-    //    a dontRescale=true upload. The mount-time GPU seed uses dontRescale=false,
-    //    so a true call can only come from pushPositions' eased cluster path (the
-    //    fix that opens the GPU-mode upload gate while clusterPushActive). Without
-    //    that fix pushPositions early-returns in GPU mode and no true call appears.
+  // GPU-OFF fallback (e2e + WebGL-incapable machines): packed positions ARE the
+  // source of truth and get uploaded (dontRescale=true upload from the cluster path).
+  it("GPU-OFF: packed positions are pushed to cosmos (deterministic fallback)", async () => {
+    const cleanup = await mountPacked(false);
     expect(_setPointPositionsCalls.some((c) => c.dontRescale === true)).toBe(true);
+    cleanup();
+  });
 
-    vi.unstubAllGlobals();
+  // GPU-ON regression guard (the user's default): packed positions must NOT pause
+  // the live cluster-anchor sim — that was the old fixed-circle / laggy path. The
+  // sim stays authoritative; the shell's clusterIds/clusterAnchors drive it instead.
+  it("GPU-ON: packed positions do NOT pause the live sim", async () => {
+    const cleanup = await mountPacked(true);
+    expect(_pauseCalls).toBe(0);
+    cleanup();
   });
 });

@@ -102,6 +102,12 @@ export interface GraphCanvasProps {
    * force-based. Undefined → GPU free-explore / scatter as before.
    */
   clusterPackedPositions?: Float32Array;
+  /**
+   * Bounding-box corners (flat `[x0,y0,...]`, 4 corners) of the FINAL packed cluster
+   * cloud, for the 2D camera fit. Framing the known final extent avoids mis-zoom from
+   * the live mid-ease buffer. Undefined → the renderer falls back to live positions.
+   */
+  clusterCorners?: Float32Array;
 }
 
 // ---------------------------------------------------------------------------
@@ -130,7 +136,7 @@ const ENABLE_PREVIEW_INTERPOLATION = true;
  * lasso/selection e2e suite was authored against frozen, deterministic 2D
  * positions. GPU mode is covered by unit tests; GPU-mode e2e is a follow-up.
  */
-const ENABLE_GPU_2D_SIM =
+export const ENABLE_GPU_2D_SIM =
   process.env.NEXT_PUBLIC_ACC_GPU_2D !== "0" &&
   process.env.NEXT_PUBLIC_ACC_GRAPH_TEST !== "1";
 
@@ -231,14 +237,20 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // (Refs declared before getPositionsOverride so the callback closes over an
   // already-initialized binding; the layer is (re)created + targeted by the
   // effects further below.)
-  const clusterActive = !!props.clusterPackedPositions;
+  // The deterministic packed layout is the GPU-OFF FALLBACK only. When the GPU sim
+  // is on (the default the user sees), the live cluster-anchor sim owns positions
+  // and we must NOT pause it / ease toward packed coords — that was the old fixed-
+  // circle, laggy path. Gating on !gpu2d keeps GPU-on on the live sim while GPU-off
+  // (e2e / WebGL fallback) still gets coherent, label-aligned packed blobs.
+  const clusterActive = !gpu2d && !!props.clusterPackedPositions;
   const clusterLayerRef = useRef<ClusterTransitionLayer | null>(null);
   const clusterLastTsRef = useRef<number>(0);
 
   // B.2 — Override callback: returns the interpolated positions during preview
   const getPositionsOverride = useCallback((): Float32Array | null => {
-    // Cluster-deterministic mode takes precedence: ease toward packed target.
-    if (props.clusterPackedPositions && clusterLayerRef.current) {
+    // Cluster-deterministic mode (GPU-OFF fallback) takes precedence: ease toward
+    // the packed target. Never engaged when the GPU sim is on (it owns positions).
+    if (!gpu2d && props.clusterPackedPositions && clusterLayerRef.current) {
       const layer = clusterLayerRef.current;
       const now = performance.now();
       const dt = clusterLastTsRef.current ? now - clusterLastTsRef.current : 16;
@@ -259,7 +271,7 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     lastFrameTsRef.current = now;
     layer.step(props.physics.getSliders(), dt);
     return layer.snapshot();
-  }, [props.physics, props.clusterPackedPositions]);
+  }, [props.physics, props.clusterPackedPositions, gpu2d]);
 
   // (Re)create the layer when node count changes; seed from current visible positions.
   useEffect(() => {
@@ -337,32 +349,37 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     getPositionsOverride,
   });
 
-  // TIGHTNESS: every slider change ramps the global cluster-pull coefficient
-  // (mapDominantForceConfig) — 0 = scatter, 100 = tight blobs. Never re-groups;
-  // membership + pinned anchors are owned by the two effects below.
+  // TIGHTNESS: while UNCLUSTERED (scatter), every slider change ramps the global
+  // cluster-pull coefficient (mapDominantForceConfig) so the GPU sim drives the calm
+  // scatter. In cluster mode the deterministic packed path owns positions and the GPU
+  // sim is paused — calling start() here would fight it (reheat a sim whose output is
+  // overwritten every frame, burning a full physics pass on every node per slider tick,
+  // the dominant source of the slider-drag lag), so we skip it entirely when clustered.
   useEffect(() => {
-    if (!gpu2d || props.mode !== "2d") return;
+    if (!gpu2d || props.mode !== "2d" || clusterActive) return;
     const h = handle2D.current;
     if (!h) return;
     const normalized: Record<string, number> = {};
     for (const [k, v] of Object.entries(sliderValues)) normalized[k] = v / 100;
     h.applySliders?.(normalized);   // applySliders is OPTIONAL on the handle — use ?.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sliderValues, props.mode, gpu2d, readyTick]);
+  }, [sliderValues, props.mode, gpu2d, clusterActive, readyTick]);
 
   // MEMBERSHIP + POSITIONS (one atomic call so seeding/grouping/pinning stay in
   // the right order): seed nodes at the dominant attribute's pinned cluster
   // anchors. clusterIds + clusterAnchors change together (same dominant), so this
   // fires once per re-group — NOT on every slider tick. Cleared (null) → scatter.
+  // Skipped while clusterActive: the deterministic packed path owns positions there
+  // and this call's start() would reheat the paused GPU sim (see applySliders above).
   useEffect(() => {
-    if (!gpu2d || props.mode !== "2d") return;
+    if (!gpu2d || props.mode !== "2d" || clusterActive) return;
     handle2D.current?.setClustering?.(
       props.clusterIds ?? null,
       props.clusterAnchors ?? null,
     );
     // readyTick: re-run once the async cosmos handle lands.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [props.clusterIds, props.clusterAnchors, props.mode, gpu2d, readyTick]);
+  }, [props.clusterIds, props.clusterAnchors, props.mode, gpu2d, clusterActive, readyTick]);
 
   // Sync nodeColors to both renderers when the buffer changes
   useEffect(() => {
@@ -477,6 +494,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
           links={props.links}
           linkColors={props.linkColors}
           gpuSimulation={gpu2d}
+          clusterMode={clusterActive}
+          clusterCorners={props.clusterCorners}
           clusterIds={props.clusterIds}
           clusterAnchors={props.clusterAnchors}
           onHandleReady={(h) => {

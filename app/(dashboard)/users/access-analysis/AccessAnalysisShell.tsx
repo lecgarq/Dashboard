@@ -20,7 +20,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/core/trpc";
-import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
+import { GraphCanvas, ENABLE_GPU_2D_SIM, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
 import { Toolbar } from "./Toolbar";
 import { RightPanelStack } from "./RightPanelStack";
@@ -35,6 +35,7 @@ import {
   activeCatalogDims,
   buildSimilarityClusters,
 } from "./dominantClusters";
+import { packMemberPositions } from "./clusterPacking";
 import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
 import { clusterColorBuffer } from "./clusterColors";
 import { FilterProvider, useFilters } from "./FilterContext";
@@ -141,6 +142,45 @@ function ShellBody({
     return a;
   }, [footprints]);
 
+  // Tightness = strongest engaged slider, normalized 0..1 (drives GPU-off packing).
+  const tightness = useMemo(() => {
+    if (activeDims.length === 0) return 0;
+    const max = Math.max(...activeDims.map((d) => sliderValues[d.id] ?? 0));
+    return Math.min(1, Math.max(0, max / 100));
+  }, [activeDims, sliderValues]);
+
+  // GPU-OFF FALLBACK (also the e2e path): a deterministic packed layout of the SAME
+  // similarity groups around the SAME organic footprints, with LIVE tightness so the
+  // fallback still separates as you drag. Computed ONLY when the GPU sim is off — in
+  // GPU-on (the user's default) this early-returns undefined, so packMemberPositions
+  // never runs on the value-drag hot path (zero lag). GraphCanvas also gates use on
+  // !gpu2d as a belt-and-suspenders guard.
+  const clusterPackedPositions = useMemo(() => {
+    if (ENABLE_GPU_2D_SIM || !clustering || !footprints) return undefined;
+    const n = clustering.ids.length;
+    const xy = packMemberPositions(clustering.ids, footprints, tightness, n);
+    const xyz = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) { xyz[i * 3] = xy[i * 2]; xyz[i * 3 + 1] = xy[i * 2 + 1]; xyz[i * 3 + 2] = 0; }
+    return xyz;
+  }, [clustering, footprints, tightness]);
+
+  // Bbox corners of the packed cloud → GPU-off camera fit frames the known extent.
+  const clusterCloudCorners = useMemo(() => {
+    if (!clusterPackedPositions) return undefined;
+    const n = clusterPackedPositions.length / 3;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (let i = 0; i < n; i++) {
+      const x = clusterPackedPositions[i * 3];
+      const y = clusterPackedPositions[i * 3 + 1];
+      if (x < minX) minX = x;
+      if (x > maxX) maxX = x;
+      if (y < minY) minY = y;
+      if (y > maxY) maxY = y;
+    }
+    if (!Number.isFinite(minX)) return undefined;
+    return new Float32Array([minX, minY, maxX, minY, maxX, maxY, minX, maxY]);
+  }, [clusterPackedPositions]);
+
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
@@ -237,6 +277,8 @@ function ShellBody({
               linkColors={baseLinkColors}
               clusterIds={clustering?.ids}
               clusterAnchors={clusterAnchors}
+              clusterPackedPositions={clusterPackedPositions}
+              clusterCorners={clusterCloudCorners}
             />
           </GraphInteractions>
 
