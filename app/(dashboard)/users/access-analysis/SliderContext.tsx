@@ -208,6 +208,10 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
         window.clearTimeout(previewIdleIdRef.current);
         previewIdleIdRef.current = null;
       }
+      if (stateRafRef.current !== null && typeof cancelAnimationFrame !== "undefined") {
+        cancelAnimationFrame(stateRafRef.current);
+        stateRafRef.current = null;
+      }
     };
   }, []);
 
@@ -243,6 +247,25 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
     [flushToPhysics],
   );
 
+  // rAF-coalesced React state commit (anti-lag). A drag fires setSliderValue on
+  // every pointer-move (often faster than one frame, esp. on 120Hz pointers); a
+  // synchronous setValues would re-render the WHOLE sidebar tree per event. We
+  // update valuesRef synchronously (so physics + accumulation are exact) and
+  // commit React state at most ONCE per frame from the latest ref. The live drag
+  // stays smooth; the only "cost" is the displayed thumb lagging ≤1 frame.
+  const stateRafRef = useRef<number | null>(null);
+  const commitState = useCallback((): void => {
+    if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") {
+      setValues({ ...valuesRef.current });
+      return;
+    }
+    if (stateRafRef.current !== null) return; // already pending → coalesce
+    stateRafRef.current = requestAnimationFrame(() => {
+      stateRafRef.current = null;
+      setValues({ ...valuesRef.current });
+    });
+  }, []);
+
   // Two-pass mount — hydrate from localStorage AFTER initial render.
   useEffect(() => {
     const stored = readPersisted();
@@ -275,11 +298,11 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
       // accumulate (not just overwrite each other via stale valuesRef reads).
       const next = { ...valuesRef.current, [dimId]: clamped };
       valuesRef.current = next;
-      setValues(next);
+      commitState(); // rAF-coalesced setValues (anti-lag) — physics gets `next` now
       enterPreview();
       schedulePush(next);
     },
-    [enterPreview, schedulePush],
+    [enterPreview, schedulePush, commitState],
   );
 
   const resetAll = useCallback((): void => {
@@ -290,6 +313,10 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
     if (rafIdRef.current !== null && typeof cancelAnimationFrame !== "undefined") {
       cancelAnimationFrame(rafIdRef.current);
       rafIdRef.current = null;
+    }
+    if (stateRafRef.current !== null && typeof cancelAnimationFrame !== "undefined") {
+      cancelAnimationFrame(stateRafRef.current);
+      stateRafRef.current = null;
     }
     pendingRef.current = null;
     // resetAll is an explicit "settle now" gesture — leave preview mode
