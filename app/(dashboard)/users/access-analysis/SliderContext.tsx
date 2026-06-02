@@ -86,6 +86,12 @@ export function migratePersistedSliders(
 
 interface SliderContextValue {
   values: Record<string, number>;
+  /**
+   * Live (uncommitted) slider values for the rAF/render loop. Reading this never
+   * triggers a React re-render (unlike `values`), so the graph layout can respond
+   * to a drag every frame without re-rendering the shell. Normalized 0..100 like `values`.
+   */
+  getLiveValues: () => Record<string, number>;
   setSliderValue: (dimId: string, value: number) => void;
   resetAll: () => void;
   resetOne: (dimId: string) => void;
@@ -369,9 +375,14 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
 
   const isPreviewActive = useCallback((): boolean => previewActiveRef.current, []);
 
+  // Stable getter — reads the synchronously-maintained ref, so the rAF loop sees
+  // the latest drag value without waiting for (or causing) a React commit.
+  const getLiveValues = useCallback((): Record<string, number> => valuesRef.current, []);
+
   const ctx = useMemo<SliderContextValue>(
     () => ({
       values,
+      getLiveValues,
       setSliderValue,
       resetAll,
       resetOne,
@@ -380,7 +391,7 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
       subscribePreviewActive,
       isPreviewActive,
     }),
-    [values, setSliderValue, resetAll, resetOne, applyPresetCb, activePreset, subscribePreviewActive, isPreviewActive],
+    [values, getLiveValues, setSliderValue, resetAll, resetOne, applyPresetCb, activePreset, subscribePreviewActive, isPreviewActive],
   );
 
   return <SliderCtx.Provider value={ctx}>{children}</SliderCtx.Provider>;
