@@ -5,6 +5,7 @@ import {
   buildCompositeClusters,
   activeCatalogDims,
   clusterPositions2D,
+  signatureLabels,
 } from "./dominantClusters";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
@@ -216,5 +217,37 @@ describe("buildCompositeClusters", () => {
     const c = buildCompositeClusters(feats, [], 0);
     expect(c.labels).toEqual([]);
     expect(c.ids.length).toBe(feats.length);
+  });
+});
+
+describe("signatureLabels", () => {
+  const role = dim({ id: "role" });
+  const project = dim({ id: "project", label: "Project", extract: (f) => f.project ?? null });
+  const features = [
+    snap({ role: "Architect", project: "P0" }),
+    snap({ role: "Architect", project: "P0" }),
+    snap({ role: "Engineer", project: "P1" }),
+  ];
+
+  it("same values → same signature; distinct values differ", () => {
+    const { signatures, ids, signatureCount } = signatureLabels(features, [role, project]);
+    expect(signatures[0]).toBe(signatures[1]);
+    expect(signatures[0]).not.toBe(signatures[2]);
+    expect(ids[0]).toBe(ids[1]);
+    expect(ids[0]).not.toBe(ids[2]);
+    expect(signatureCount).toBe(2);
+  });
+
+  it("multi-dim label joins with ' · ' and carries the value names", () => {
+    const { signatures, labelMap } = signatureLabels(features, [role, project]);
+    expect(labelMap[signatures[0]]).toContain(" · ");
+    expect(labelMap[signatures[2]]).toContain("Engineer");
+    expect(labelMap[signatures[2]]).toContain("P1");
+  });
+
+  it("empty dims → zero signatures", () => {
+    const r = signatureLabels(features, []);
+    expect(r.signatureCount).toBe(0);
+    expect(r.ids.length).toBe(features.length);
   });
 });

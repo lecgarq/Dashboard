@@ -227,6 +227,53 @@ export function buildCompositeClusters(
   return { ids, labels: newLabels, counts: newCounts };
 }
 
+export interface SignatureResult {
+  /** per-node signature key (joined value-keys across the active dims). */
+  signatures: string[];
+  /** signature key → human label (e.g. "Architect · P0"). */
+  labelMap: Record<string, string>;
+  /** per-node signature index 0..k-1 (first-seen order) for colour buffers. */
+  ids: Int32Array;
+  /** distinct signature count. */
+  signatureCount: number;
+}
+
+/**
+ * Per-node signature across the active dims — feeds the emergent similarity-blob
+ * layout (emergentBlobs.ts) so labels reflect WHERE similar nodes settle, without
+ * pre-packing them into tuple clusters or a fixed circle. Reuses valueKeyLabel so
+ * labels match the rest of the UI. Pure & deterministic (first-seen index order).
+ */
+export function signatureLabels(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  dims: ReadonlyArray<CatalogDimension>,
+): SignatureResult {
+  const signatures: string[] = new Array(features.length).fill("");
+  const labelMap: Record<string, string> = {};
+  const ids = new Int32Array(features.length);
+  if (dims.length === 0) return { signatures, labelMap, ids, signatureCount: 0 };
+
+  const activityIds = dims.filter((d) => d.family === "activity").map((d) => d.id);
+  const thresholds = activityIds.length
+    ? computeActionThresholds(features, activityIds)
+    : new Map<string, ActionThresholds>();
+
+  const keyToIdx = new Map<string, number>();
+  for (let i = 0; i < features.length; i++) {
+    const parts = dims.map((d) => valueKeyLabel(features[i], d, thresholds));
+    const key = parts.map((p) => p.key).join("¦");
+    signatures[i] = key;
+    if (!(key in labelMap)) labelMap[key] = parts.map((p) => p.label).join(" · ");
+    let idx = keyToIdx.get(key);
+    if (idx === undefined) {
+      idx = keyToIdx.size;
+      keyToIdx.set(key, idx);
+    }
+    ids[i] = idx;
+  }
+  return { signatures, labelMap, ids, signatureCount: keyToIdx.size };
+}
+
 /** Golden angle — the spacing that makes a 2D sunflower (Vogel) set even. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 /**
