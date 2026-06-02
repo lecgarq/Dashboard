@@ -28,6 +28,11 @@ export interface NodeFeatureSnapshot {
   nameLower: string;
   /** Pre-lowercased email for prefix-match search. */
   emailLower: string;
+  /**
+   * Cased display name for the User-name dimension (full name → email → userId).
+   * Optional for backward compatibility; populated by buildFeatureSnapshot.
+   */
+  userName?: string;
   /** Project display name (shown verbatim in tooltip). */
   project: string;
   /** Joined role display string (shown in tooltip + drives `role` filter dim). */
