@@ -51,7 +51,8 @@ import { createPhysicsLayerWorker } from "./physicsLayerWorker";
 import { buildCatalogTargets } from "./catalogTargets";
 import { buildCatalogWeights } from "./catalogWeights";
 import { buildDimensionCatalog } from "./dimensionCatalog";
-import { sliderDimensions, sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
+import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
+import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getDuckDbClient } from "./duckdbClient";
 import { buildGraphArrowTables } from "./graphTables";
@@ -113,7 +114,7 @@ function ShellBody({
   // tightness live via the GPU sim's applySliders (how close/far). Blobs sit at
   // organic, data-defined anchors (NOT a fixed circle).
   const MAX_GROUPS = 8;
-  const sliderDims = useMemo(() => sliderDimensions(catalog), [catalog]);
+  const sliderDims = useMemo(() => curatedSliderDimensions(catalog), [catalog]);
   const activeDims = useMemo(
     () => activeCatalogDims(sliderDims, sliderValues),
     [sliderDims, sliderValues],
@@ -390,7 +391,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
         // for the slider-surfaced + AVAILABLE catalog dims (no data → no force).
         // `snapshot` is aligned to `nodeIds`, so target index === physics node index.
         const catalog = buildDimensionCatalog(snapshot);
-        const sliderDims = sliderDimensions(catalog);
+        const sliderDims = curatedSliderDimensions(catalog);
         const targetDimIds = sliderDims.map((d) => d.id);
         const targets = buildCatalogTargets(snapshot, sliderDims);
         const dimWeights = buildCatalogWeights(snapshot, sliderDims);

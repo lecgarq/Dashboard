@@ -6,6 +6,7 @@ import { CatalogTreeSection, DisabledRow } from "./CatalogTreeSection";
 import { DimensionSearchBox } from "./DimensionSearchBox";
 import { getCatalogSections } from "./dimensionCatalog";
 import { filterSections } from "./catalogSearch";
+import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 
 /** Shared render rule for the flat (structural / folder) sections.
@@ -34,7 +35,10 @@ export function CatalogSliderSidebar({ catalog }: { catalog: readonly CatalogDim
   const setSlider = setSliderValue;
   const resetSlider = resetOne;
   const [query, setQuery] = useState("");
-  const sections = useMemo(() => filterSections(getCatalogSections(catalog), query), [catalog, query]);
+  // Surface only the curated sliders (Project / Role / User name). The rest of the
+  // catalog stays defined but hidden ("safe") — re-enable via CURATED_SLIDER_IDS.
+  const curated = useMemo(() => curatedSliderDimensions(catalog), [catalog]);
+  const sections = useMemo(() => filterSections(getCatalogSections(curated), query), [curated, query]);
   const searching = query.trim() !== "";
 
   const structural = sections.find((s) => s.kind === "structural");
