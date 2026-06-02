@@ -3,22 +3,29 @@
  * dominant-attribute cluster view. Pure: the only import is d3-hierarchy's
  * geometric circle-packing (no React/DOM/IO, no random, no clock).
  *
- * Separation is STRUCTURAL: footprints are circle-packed so they cannot overlap,
- * and members are placed on a sunflower whose radius never exceeds the footprint.
- * The slider's tightness only varies fill INSIDE the fixed footprint, so it can
- * never break the non-overlap invariant.
+ * Footprints are circle-packed so their CENTERS stay separated. Members are placed
+ * on a sunflower around each footprint center; the slider (cluster strength) scales
+ * the sunflower radius from loose (spills past the footprint, blobs blend) at low
+ * strength to a tight dense core at high strength — see fillFactor.
  */
 
 import { packSiblings, packEnclose } from "d3-hierarchy";
 
-/** Footprint fill radius as a fraction of the packed footprint, by tightness 0..1. */
-const FILL_LOOSE = 1.0;
-const FILL_TIGHT = 0.45;
+// The slider is CLUSTER STRENGTH. Member spread = footprint.r * fillFactor(strength).
+// Members NEVER spill past their footprint — footprints are non-overlapping, so a
+// fill of <=1 GUARANTEES blobs never overlap ("very clear clusters", no cluster-in-
+// a-cluster). At low strength members fill the footprint (a full, clean blob); at
+// high strength they pack into a tight dense core. The ramp is GEOMETRIC (perceptual)
+// and front-loaded so the change reads across the whole 1..100 range.
+const FILL_LOOSE = 0.95; // strength→0: members fill (just inside) the footprint — clean, never spilling
+const FILL_TIGHT = 0.22; // strength→1: tight dense core, well inside the footprint
+const RAMP_EXP = 0.7; // <1 front-loads the change so low strengths read distinctly looser
 
-/** Tightness (0..1) → fill fraction. Low = fills footprint; high = tight core. */
+/** Cluster strength (0..1) → member-fill multiple of the footprint radius. */
 export function fillFactor(tightness: number): number {
   const t = Math.min(1, Math.max(0, tightness));
-  return FILL_LOOSE + (FILL_TIGHT - FILL_LOOSE) * t;
+  // Geometric interpolation FILL_LOOSE → FILL_TIGHT on a front-loaded curve.
+  return FILL_LOOSE * Math.pow(FILL_TIGHT / FILL_LOOSE, Math.pow(t, RAMP_EXP));
 }
 
 /** Per-cluster footprint: center (cosmos space) + radius. Stride-1 parallel arrays. */
@@ -87,10 +94,10 @@ export function packClusterFootprints(counts: ReadonlyArray<number>): ClusterFoo
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
 /**
- * Per-node 2D position (stride-2) on a sunflower inside its cluster's footprint.
- * Fill radius = footprint.r * fillFactor(tightness), so members never leave the
- * footprint at any tightness → the packed non-overlap invariant is preserved.
- * Node ids < 0 (unclustered) collapse to the origin.
+ * Per-node 2D position (stride-2) on a sunflower around its cluster's footprint
+ * center. Fill radius = footprint.r * fillFactor(tightness): at high strength a tight
+ * core (well inside the footprint), at low strength a loose spill past it. Node ids
+ * < 0 (unclustered) collapse to the origin.
  */
 export function packMemberPositions(
   clusterIds: Int32Array | ReadonlyArray<number>,

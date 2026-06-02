@@ -20,7 +20,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { trpc } from "@/lib/core/trpc";
-import { GraphCanvas, ENABLE_GPU_2D_SIM, type GraphCanvasHandle } from "./GraphCanvas";
+import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
 import { Toolbar } from "./Toolbar";
 import { RightPanelStack } from "./RightPanelStack";
@@ -149,14 +149,15 @@ function ShellBody({
     return Math.min(1, Math.max(0, max / 100));
   }, [activeDims, sliderValues]);
 
-  // GPU-OFF FALLBACK (also the e2e path): a deterministic packed layout of the SAME
-  // similarity groups around the SAME organic footprints, with LIVE tightness so the
-  // fallback still separates as you drag. Computed ONLY when the GPU sim is off — in
-  // GPU-on (the user's default) this early-returns undefined, so packMemberPositions
-  // never runs on the value-drag hot path (zero lag). GraphCanvas also gates use on
-  // !gpu2d as a belt-and-suspenders guard.
+  // DETERMINISTIC PACKED LAYOUT — authoritative for the labelled-cluster view in
+  // BOTH GPU modes (the GPU force sim is paused while this is active). Members are
+  // packed inside their non-overlapping organic footprint, so blobs never overlap
+  // ("very clear clusters", no cluster-in-a-cluster) and labels (at footprint
+  // centres, dontRescale=true) stay locked on. LIVE tightness = how close/far.
+  // Recompute is gated to the active-SET (clustering/footprints) + tightness, so a
+  // value drag re-packs at most once per frame (rAF-coalesced) — no re-group jump.
   const clusterPackedPositions = useMemo(() => {
-    if (ENABLE_GPU_2D_SIM || !clustering || !footprints) return undefined;
+    if (!clustering || !footprints) return undefined;
     const n = clustering.ids.length;
     const xy = packMemberPositions(clustering.ids, footprints, tightness, n);
     const xyz = new Float32Array(n * 3);

@@ -237,20 +237,22 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // (Refs declared before getPositionsOverride so the callback closes over an
   // already-initialized binding; the layer is (re)created + targeted by the
   // effects further below.)
-  // The deterministic packed layout is the GPU-OFF FALLBACK only. When the GPU sim
-  // is on (the default the user sees), the live cluster-anchor sim owns positions
-  // and we must NOT pause it / ease toward packed coords — that was the old fixed-
-  // circle, laggy path. Gating on !gpu2d keeps GPU-on on the live sim while GPU-off
-  // (e2e / WebGL fallback) still gets coherent, label-aligned packed blobs.
-  const clusterActive = !gpu2d && !!props.clusterPackedPositions;
+  // The deterministic packed layout is AUTHORITATIVE for the labelled-cluster view
+  // in BOTH GPU modes. A force sim cannot guarantee clean, non-overlapping blobs
+  // ("cluster inside a cluster"); packing members inside non-overlapping footprints
+  // does. When packed positions are present we PAUSE the GPU force sim and ease
+  // toward the packed target (uploaded dontRescale=true so ClusterLabels' spaceToScreen
+  // keeps labels locked to their blobs). The slider drives tightness via the packed
+  // recompute, not the GPU cluster coefficient.
+  const clusterActive = !!props.clusterPackedPositions;
   const clusterLayerRef = useRef<ClusterTransitionLayer | null>(null);
   const clusterLastTsRef = useRef<number>(0);
 
   // B.2 — Override callback: returns the interpolated positions during preview
   const getPositionsOverride = useCallback((): Float32Array | null => {
-    // Cluster-deterministic mode (GPU-OFF fallback) takes precedence: ease toward
-    // the packed target. Never engaged when the GPU sim is on (it owns positions).
-    if (!gpu2d && props.clusterPackedPositions && clusterLayerRef.current) {
+    // Cluster-deterministic mode takes precedence (both GPU modes): ease toward
+    // the packed target. The GPU force sim is paused while this is active.
+    if (props.clusterPackedPositions && clusterLayerRef.current) {
       const layer = clusterLayerRef.current;
       const now = performance.now();
       const dt = clusterLastTsRef.current ? now - clusterLastTsRef.current : 16;

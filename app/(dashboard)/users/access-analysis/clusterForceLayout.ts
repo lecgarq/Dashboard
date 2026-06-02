@@ -57,7 +57,9 @@ export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): C
   });
 
   const sim = forceSimulation<FNode>(nodes)
-    .force("collide", forceCollide<FNode>((d) => d.r + GAP).strength(1).iterations(3))
+    // 1.25× margin around each footprint → a CLEAR visible gap between blobs (members
+    // fill only ~0.95 of the footprint), so clusters read as distinct, not touching.
+    .force("collide", forceCollide<FNode>((d) => d.r * 1.25 + GAP).strength(1).iterations(3))
     .force("charge", forceManyBody<FNode>().strength(-12))
     .force("x", forceX<FNode>(0).strength(CENTER_STRENGTH))
     .force("y", forceY<FNode>(0).strength(CENTER_STRENGTH))

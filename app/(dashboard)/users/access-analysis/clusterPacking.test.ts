@@ -2,9 +2,17 @@ import { describe, it, expect } from "vitest";
 import { fillFactor, packClusterFootprints } from "./clusterPacking";
 
 describe("fillFactor", () => {
-  it("is loose (fills footprint) at low tightness and tight at high tightness", () => {
-    expect(fillFactor(0)).toBeCloseTo(1.0, 5);
-    expect(fillFactor(1)).toBeCloseTo(0.45, 5);
+  // The slider behaves as CLUSTER STRENGTH: low → a full blob that FILLS its footprint
+  // (never spills past it → clusters stay clean & distinct); high → a tight dense core.
+  it("fills the footprint at low strength (never spills) and a tight core at high strength", () => {
+    expect(fillFactor(0)).toBeLessThanOrEqual(1); // members stay within the footprint → clean
+    expect(fillFactor(0)).toBeGreaterThan(0.5); // but still a full blob at low strength
+    expect(fillFactor(1)).toBeLessThan(0.3); // tight dense core
+  });
+  it("varies dramatically across the slider range (slider 1 must NOT look like slider 100)", () => {
+    // Regression guard for the reported bug: tightness was 1.0→0.45, so slider 1
+    // (t≈0.01) and slider 100 (t=1) looked identical. Require a large spread.
+    expect(fillFactor(0.01) / fillFactor(1)).toBeGreaterThan(4);
   });
   it("is monotonically non-increasing in tightness", () => {
     let prev = Infinity;
@@ -15,8 +23,8 @@ describe("fillFactor", () => {
     }
   });
   it("clamps out-of-range tightness", () => {
-    expect(fillFactor(-1)).toBeCloseTo(1.0, 5);
-    expect(fillFactor(2)).toBeCloseTo(0.45, 5);
+    expect(fillFactor(-1)).toBeCloseTo(fillFactor(0), 5);
+    expect(fillFactor(2)).toBeCloseTo(fillFactor(1), 5);
   });
 });
 
@@ -87,16 +95,26 @@ describe("packMemberPositions", () => {
     expect(pos.length).toBe(10);
   });
 
-  it("keeps every member inside its footprint (never escapes → never overlaps)", () => {
+  it("packs a tight core within the footprint at high strength", () => {
     const ids = new Int32Array([0, 0, 0, 1, 1]);
-    for (const tightness of [0, 0.5, 1]) {
-      const pos = packMemberPositions(ids, fp, tightness, 5);
-      for (let n = 0; n < 5; n++) {
-        const c = ids[n];
-        const dx = pos[n * 2] - fp.cx[c];
-        const dy = pos[n * 2 + 1] - fp.cy[c];
-        expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(fp.r[c] + 1e-6);
-      }
+    const pos = packMemberPositions(ids, fp, 1, 5);
+    for (let n = 0; n < 5; n++) {
+      const c = ids[n];
+      const dx = pos[n * 2] - fp.cx[c];
+      const dy = pos[n * 2 + 1] - fp.cy[c];
+      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(fp.r[c] + 1e-6);
+    }
+  });
+
+  it("keeps members within the footprint at low strength (clean blob, never spills)", () => {
+    const ids = new Int32Array([0, 0, 0, 1, 1]);
+    const pos = packMemberPositions(ids, fp, 0, 5);
+    for (let n = 0; n < 5; n++) {
+      const c = ids[n];
+      const dx = pos[n * 2] - fp.cx[c];
+      const dy = pos[n * 2 + 1] - fp.cy[c];
+      // Members fill the footprint but never spill past it → blobs stay distinct.
+      expect(Math.hypot(dx, dy)).toBeLessThanOrEqual(fp.r[c] + 1e-6);
     }
   });
 

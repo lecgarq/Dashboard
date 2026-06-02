@@ -871,12 +871,15 @@ describe("GraphCanvas — REND-cluster deterministic packed positions", () => {
     cleanup();
   });
 
-  // GPU-ON regression guard (the user's default): packed positions must NOT pause
-  // the live cluster-anchor sim — that was the old fixed-circle / laggy path. The
-  // sim stays authoritative; the shell's clusterIds/clusterAnchors drive it instead.
-  it("GPU-ON: packed positions do NOT pause the live sim", async () => {
+  // GPU-ON contract (the user's default): the deterministic packed layout is
+  // authoritative for the labelled-cluster view — it GUARANTEES clean, non-
+  // overlapping blobs (a force sim cannot). So packed positions PAUSE the GPU
+  // force sim and are uploaded with dontRescale=true (keeps spaceToScreen correct
+  // so ClusterLabels track the blobs).
+  it("GPU-ON: packed positions pause the force sim (packed layout authoritative)", async () => {
     const cleanup = await mountPacked(true);
-    expect(_pauseCalls).toBe(0);
+    expect(_pauseCalls).toBeGreaterThanOrEqual(1);
+    expect(_setPointPositionsCalls.some((c) => c.dontRescale === true)).toBe(true);
     cleanup();
   });
 });
