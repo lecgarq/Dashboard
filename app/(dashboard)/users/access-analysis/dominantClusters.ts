@@ -274,6 +274,121 @@ export function signatureLabels(
   return { signatures, labelMap, ids, signatureCount: keyToIdx.size };
 }
 
+/**
+ * Similarity clustering for the GPU graph. Instead of one blob per value TUPLE
+ * (which explodes combinatorially and is unreadable), nodes that are ALIKE across
+ * the active attributes are merged into a few similarity groups.
+ *
+ * KEY INVARIANT (jump-free live drag): grouping uses the active SET only — every
+ * active dim is one-hot with EQUAL weight, NOT the slider value. So dragging a
+ * slider's value never re-groups (no membership flips → no teleport); the value
+ * drives tightness elsewhere (GPU applySliders). Re-grouping happens only when the
+ * SET of engaged sliders changes.
+ *
+ * - 0 dims → empty. 1 dim → buildDominantClusters (group by that attribute).
+ * - distinct signatures ≤ maxGroups → use signatures directly.
+ * - else → deterministic k-means (largest-count seeding, no RNG/clock) on one-hot
+ *   value vectors, capped at maxGroups, each group labelled by its largest signature.
+ */
+export function buildSimilarityClusters(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  dims: ReadonlyArray<CatalogDimension>,
+  maxGroups = 8,
+): DominantClustering {
+  if (dims.length === 0) return { ids: new Int32Array(features.length), labels: [], counts: [] };
+  if (dims.length === 1) return buildDominantClusters(features, dims[0]);
+
+  const { signatures, labelMap, ids: sigIds, signatureCount } = signatureLabels(features, dims);
+  const sigCount = new Array<number>(signatureCount).fill(0);
+  const sigKey = new Array<string>(signatureCount);
+  for (let i = 0; i < features.length; i++) {
+    sigCount[sigIds[i]] += 1;
+    sigKey[sigIds[i]] = signatures[i];
+  }
+  if (signatureCount <= maxGroups) {
+    return { ids: sigIds, labels: sigKey.map((k) => labelMap[k] ?? k), counts: sigCount };
+  }
+
+  // One-hot value columns (equal weight per active dim) for each signature.
+  const colOf = new Map<string, number>();
+  const sigVals = sigKey.map((k) => k.split("¦"));
+  for (const vals of sigVals) {
+    for (let d = 0; d < vals.length; d++) {
+      const ck = `${d}|${vals[d]}`;
+      if (!colOf.has(ck)) colOf.set(ck, colOf.size);
+    }
+  }
+  const width = colOf.size;
+  const vecs: Float32Array[] = sigVals.map((vals) => {
+    const v = new Float32Array(width);
+    for (let d = 0; d < vals.length; d++) v[colOf.get(`${d}|${vals[d]}`)!] = 1;
+    return v;
+  });
+
+  // Deterministic seeding: the maxGroups largest-count signatures (tie → key asc).
+  const order = [...Array(signatureCount).keys()].sort(
+    (a, b) => sigCount[b] - sigCount[a] || (sigKey[a] < sigKey[b] ? -1 : 1),
+  );
+  const k = Math.min(maxGroups, signatureCount);
+  let centroids: Float32Array[] = order.slice(0, k).map((idx) => Float32Array.from(vecs[idx]));
+
+  const assign = new Int32Array(signatureCount);
+  for (let iter = 0; iter < 12; iter++) {
+    let moved = false;
+    for (let s = 0; s < signatureCount; s++) {
+      let best = 0;
+      let bestD = Infinity;
+      const ve = vecs[s];
+      for (let c = 0; c < k; c++) {
+        const cen = centroids[c];
+        let dd = 0;
+        for (let j = 0; j < width; j++) {
+          const diff = ve[j] - cen[j];
+          dd += diff * diff;
+        }
+        if (dd < bestD - 1e-9) { bestD = dd; best = c; }
+      }
+      if (assign[s] !== best) { assign[s] = best; moved = true; }
+    }
+    const sums = Array.from({ length: k }, () => new Float32Array(width));
+    const wsum = new Float32Array(k);
+    for (let s = 0; s < signatureCount; s++) {
+      const c = assign[s];
+      const w = sigCount[s];
+      wsum[c] += w;
+      const ve = vecs[s];
+      const su = sums[c];
+      for (let j = 0; j < width; j++) su[j] += ve[j] * w;
+    }
+    for (let c = 0; c < k; c++) {
+      if (wsum[c] > 0) for (let j = 0; j < width; j++) sums[c][j] /= wsum[c];
+    }
+    centroids = sums;
+    if (!moved && iter > 0) break;
+  }
+
+  // Drop empty centroids → contiguous group indices; label by largest signature.
+  const groupCount = new Array<number>(k).fill(0);
+  const groupTopSig = new Array<number>(k).fill(-1);
+  for (let s = 0; s < signatureCount; s++) {
+    const c = assign[s];
+    groupCount[c] += sigCount[s];
+    if (groupTopSig[c] < 0 || sigCount[s] > sigCount[groupTopSig[c]]) groupTopSig[c] = s;
+  }
+  const remap = new Int32Array(k).fill(-1);
+  const labels: string[] = [];
+  const counts: number[] = [];
+  for (let c = 0; c < k; c++) {
+    if (groupCount[c] === 0) continue;
+    remap[c] = labels.length;
+    labels.push(labelMap[sigKey[groupTopSig[c]]] ?? sigKey[groupTopSig[c]]);
+    counts.push(groupCount[c]);
+  }
+  const ids = new Int32Array(features.length);
+  for (let i = 0; i < features.length; i++) ids[i] = remap[assign[sigIds[i]]];
+  return { ids, labels, counts };
+}
+
 /** Golden angle — the spacing that makes a 2D sunflower (Vogel) set even. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 /**

@@ -6,6 +6,7 @@ import {
   activeCatalogDims,
   clusterPositions2D,
   signatureLabels,
+  buildSimilarityClusters,
 } from "./dominantClusters";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
@@ -249,5 +250,60 @@ describe("signatureLabels", () => {
     const r = signatureLabels(features, []);
     expect(r.signatureCount).toBe(0);
     expect(r.ids.length).toBe(features.length);
+  });
+});
+
+describe("buildSimilarityClusters", () => {
+  const role = dim({ id: "role" });
+  const project = dim({ id: "project", label: "Project", extract: (f) => f.project ?? null });
+
+  it("1 active dim → identical to buildDominantClusters", () => {
+    const feats = [
+      snap({ role: "A" }),
+      snap({ role: "B" }),
+      snap({ role: "A" }),
+    ];
+    const sim = buildSimilarityClusters(feats, [role], 8);
+    const dom = buildDominantClusters(feats, role);
+    expect(Array.from(sim.ids)).toEqual(Array.from(dom.ids));
+    expect(sim.labels).toEqual(dom.labels);
+    expect(sim.counts).toEqual(dom.counts);
+  });
+
+  it("2 dims, few signatures (≤ maxGroups) → one group per signature", () => {
+    const feats = [
+      snap({ role: "A", project: "P0" }),
+      snap({ role: "A", project: "P0" }),
+      snap({ role: "B", project: "P1" }),
+    ];
+    const c = buildSimilarityClusters(feats, [role, project], 8);
+    expect(c.labels.length).toBe(2);
+    expect(c.ids[0]).toBe(c.ids[1]);
+    expect(c.ids[0]).not.toBe(c.ids[2]);
+    expect(c.counts.reduce((a, b) => a + b, 0)).toBe(feats.length);
+  });
+
+  it("many signatures, small cap → merges by similarity, deterministic, total preserved", () => {
+    const roles = ["A", "B", "C", "D"];
+    const projects = ["P0", "P1", "P2"];
+    const feats = [];
+    for (const r of roles) for (const p of projects) feats.push(snap({ role: r, project: p }));
+    const a = buildSimilarityClusters(feats, [role, project], 3);
+    const b = buildSimilarityClusters(feats, [role, project], 3);
+    expect(Array.from(a.ids)).toEqual(Array.from(b.ids)); // deterministic
+    expect(a.labels.length).toBeLessThanOrEqual(3); // capped
+    expect(a.labels.length).toBeGreaterThan(0);
+    expect(a.counts.reduce((x, y) => x + y, 0)).toBe(feats.length); // every node placed
+    for (const id of a.ids) {
+      expect(id).toBeGreaterThanOrEqual(0);
+      expect(id).toBeLessThan(a.labels.length);
+    }
+  });
+
+  it("no dims → empty clustering", () => {
+    const feats = [snap({}), snap({})];
+    const c = buildSimilarityClusters(feats, [], 8);
+    expect(c.labels).toEqual([]);
+    expect(c.ids.length).toBe(feats.length);
   });
 });
