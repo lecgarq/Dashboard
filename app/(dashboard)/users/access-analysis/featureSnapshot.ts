@@ -88,7 +88,7 @@ export function parseModuleSignature(raw: string | null | undefined): string[] {
 
 // ---- Row shape returned by the DuckDB SELECT ------------------------------
 
-interface RawFeatureRow {
+export interface RawFeatureRow {
   user_id: string;
   project_id: string;
   full_name: string | null;
@@ -115,6 +115,109 @@ interface RawFeatureRow {
   activity_actions_json: string | null;
   activity_total: bigint | number | null;
   last_activity: bigint | number | null;
+}
+
+/**
+ * Map ONE raw feature row to a NodeFeatureSnapshot. Pure + side-effect free so
+ * the DuckDB reader (buildFeatureSnapshot) AND the no-DuckDB JS builder
+ * (graphNodesFromUsers) produce byte-identical snapshots from identical rows.
+ */
+export function rawRowToSnapshot(r: RawFeatureRow): NodeFeatureSnapshot {
+  const userId = String(r.user_id);
+  const projectId = String(r.project_id);
+  const id = `${userId}::${projectId}`;
+  const email = (r.email ?? "").toString();
+  const fullName = (r.full_name ?? "").toString();
+  // Pitfall 2 — BigInt to Number immediately
+  const activityCount = Number(r.activity_count ?? 0);
+  const signinDays =
+    r.last_signin_days === null || r.last_signin_days === undefined
+      ? null
+      : Number(r.last_signin_days);
+  // Affiliation derived from email domain (internalDomains.ts). unknown -> not
+  // external for P1 (isExternal stays a boolean; 3-way weighting is a later phase).
+  const affiliation = classifyAffiliation(email);
+  const isExternal = affiliation === "external";
+
+  const permissionStrength = Number(r.perm_strength ?? 0);
+  const folderBreadth = Number(r.folder_breadth ?? 0);
+  const accessibleDataBytes = Number(r.accessible_data_bytes ?? 0);
+  const activityMix = (() => {
+    try { return r.activity_mix_json ? JSON.parse(r.activity_mix_json) : {}; }
+    catch { return {}; }
+  })();
+  const actionCounts = (() => {
+    try { return r.activity_actions_json ? JSON.parse(r.activity_actions_json) : {}; }
+    catch { return {}; }
+  })();
+  const activityTotal = Number(r.activity_total ?? 0);
+  const lastActivityMs =
+    r.last_activity === null || r.last_activity === undefined ? null : Number(r.last_activity);
+  const lastActivityDays =
+    lastActivityMs === null ? null : Math.floor((Date.now() - lastActivityMs) / 86_400_000);
+  const riskFlags = computeRiskFlags({
+    isExternal,
+    isAdmin: Boolean(r.is_project_admin),
+    signinBucket: bucketSignin(signinDays),
+    accountStatus: String(r.account_status ?? ""),
+    // hasAccess: instance is in the feed → it is a real membership.
+    hasAccess: true,
+    permissionStrength,
+    folderBreadth,
+    activityTotal,
+  });
+
+  const addedOnMs =
+    r.added_on === null || r.added_on === undefined ? null : Number(r.added_on);
+  const membershipAgeDays =
+    addedOnMs === null ? null : Math.floor((Date.now() - addedOnMs) / 86_400_000);
+  const instanceSigninMs =
+    r.last_sign_in_instance === null || r.last_sign_in_instance === undefined
+      ? null
+      : Number(r.last_sign_in_instance);
+  const instanceRecencyDays =
+    instanceSigninMs === null ? null : Math.floor((Date.now() - instanceSigninMs) / 86_400_000);
+
+  return {
+    nodeId: id,
+    nameLower: fullName.toLowerCase(),
+    emailLower: email.toLowerCase(),
+    userName: fullName || email || userId,
+    project: (r.project_name ?? "").toString() || projectId,
+    role: (r.role_display ?? "(no role)").toString(),
+    permTier: r.perm_tier === null || r.perm_tier === undefined ? null : String(r.perm_tier),
+    isExternal,
+    affiliation,
+    activityBucket: bucketActivity(activityCount),
+    signinBucket: bucketSignin(signinDays),
+    activityCountRaw: activityCount,
+    lastSignInRel: formatRel(signinDays),
+    permissionCoverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
+    firmName: String(r.firm_name ?? ""),
+    accountStatus: String(r.account_status ?? ""),
+    isAdmin: Boolean(r.is_project_admin),
+    moduleSignature: parseModuleSignature(r.module_ids),
+    moduleFlags: deriveModuleFlags(parseModuleSignature(r.module_ids)),
+    riskFlags,
+    riskScore: riskScoreFromFlags(riskFlags),
+    membershipAgeDays,
+    membershipBucket: bucketMembership(membershipAgeDays),
+    // P5-C: TRUE last-activity recency overrides the P5-B sign-in proxy when present.
+    activityRecencyBucket: lastActivityMs !== null
+      ? bucketRecency(lastActivityDays)
+      : bucketRecency(instanceRecencyDays),
+    activityMix,
+    actionCounts,
+    activityTotal,
+    permissionStrength,
+    accessibleDataBytes,
+    permissionTypeSummary: {
+      folderBreadth,
+      coverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
+      mixedProfile: Boolean(r.perm_mixed),
+      fullController: Boolean(r.full_controller),
+    },
+  };
 }
 
 // ---- Public API ------------------------------------------------------------
@@ -191,101 +294,8 @@ export async function buildFeatureSnapshot(
   // Build lookup keyed by "userId::projectId" — matches CosmosCanvasClient node-id convention.
   const map = new Map<string, NodeFeatureSnapshot>();
   for (const r of rows) {
-    const userId = String(r.user_id);
-    const projectId = String(r.project_id);
-    const id = `${userId}::${projectId}`;
-    const email = (r.email ?? "").toString();
-    const fullName = (r.full_name ?? "").toString();
-    // Pitfall 2 — BigInt to Number immediately
-    const activityCount = Number(r.activity_count ?? 0);
-    const signinDays =
-      r.last_signin_days === null || r.last_signin_days === undefined
-        ? null
-        : Number(r.last_signin_days);
-    // Affiliation derived from email domain (internalDomains.ts). unknown -> not
-    // external for P1 (isExternal stays a boolean; 3-way weighting is a later phase).
-    const affiliation = classifyAffiliation(email);
-    const isExternal = affiliation === "external";
-
-    const permissionStrength = Number(r.perm_strength ?? 0);
-    const folderBreadth = Number(r.folder_breadth ?? 0);
-    const accessibleDataBytes = Number(r.accessible_data_bytes ?? 0);
-    const activityMix = (() => {
-      try { return r.activity_mix_json ? JSON.parse(r.activity_mix_json) : {}; }
-      catch { return {}; }
-    })();
-    const actionCounts = (() => {
-      try { return r.activity_actions_json ? JSON.parse(r.activity_actions_json) : {}; }
-      catch { return {}; }
-    })();
-    const activityTotal = Number(r.activity_total ?? 0);
-    const lastActivityMs =
-      r.last_activity === null || r.last_activity === undefined ? null : Number(r.last_activity);
-    const lastActivityDays =
-      lastActivityMs === null ? null : Math.floor((Date.now() - lastActivityMs) / 86_400_000);
-    const riskFlags = computeRiskFlags({
-      isExternal,
-      isAdmin: Boolean(r.is_project_admin),
-      signinBucket: bucketSignin(signinDays),
-      accountStatus: String(r.account_status ?? ""),
-      // hasAccess: instance is in the feed → it is a real membership.
-      hasAccess: true,
-      permissionStrength,
-      folderBreadth,
-      activityTotal,
-    });
-
-    const addedOnMs =
-      r.added_on === null || r.added_on === undefined ? null : Number(r.added_on);
-    const membershipAgeDays =
-      addedOnMs === null ? null : Math.floor((Date.now() - addedOnMs) / 86_400_000);
-    const instanceSigninMs =
-      r.last_sign_in_instance === null || r.last_sign_in_instance === undefined
-        ? null
-        : Number(r.last_sign_in_instance);
-    const instanceRecencyDays =
-      instanceSigninMs === null ? null : Math.floor((Date.now() - instanceSigninMs) / 86_400_000);
-
-    map.set(id, {
-      nodeId: id,
-      nameLower: fullName.toLowerCase(),
-      emailLower: email.toLowerCase(),
-      userName: fullName || email || userId,
-      project: (r.project_name ?? "").toString() || projectId,
-      role: (r.role_display ?? "(no role)").toString(),
-      permTier: r.perm_tier === null || r.perm_tier === undefined ? null : String(r.perm_tier),
-      isExternal,
-      affiliation,
-      activityBucket: bucketActivity(activityCount),
-      signinBucket: bucketSignin(signinDays),
-      activityCountRaw: activityCount,
-      lastSignInRel: formatRel(signinDays),
-      permissionCoverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
-      firmName: String(r.firm_name ?? ""),
-      accountStatus: String(r.account_status ?? ""),
-      isAdmin: Boolean(r.is_project_admin),
-      moduleSignature: parseModuleSignature(r.module_ids),
-      moduleFlags: deriveModuleFlags(parseModuleSignature(r.module_ids)),
-      riskFlags,
-      riskScore: riskScoreFromFlags(riskFlags),
-      membershipAgeDays,
-      membershipBucket: bucketMembership(membershipAgeDays),
-      // P5-C: TRUE last-activity recency overrides the P5-B sign-in proxy when present.
-      activityRecencyBucket: lastActivityMs !== null
-        ? bucketRecency(lastActivityDays)
-        : bucketRecency(instanceRecencyDays),
-      activityMix,
-      actionCounts,
-      activityTotal,
-      permissionStrength,
-      accessibleDataBytes,
-      permissionTypeSummary: {
-        folderBreadth,
-        coverage: (r.permission_coverage as NodeFeatureSnapshot["permissionCoverage"]) ?? "unknown",
-        mixedProfile: Boolean(r.perm_mixed),
-        fullController: Boolean(r.full_controller),
-      },
-    });
+    const snap = rawRowToSnapshot(r);
+    map.set(snap.nodeId, snap);
   }
 
   // Fallback for unknown ids — keeps cosmos index alignment intact.

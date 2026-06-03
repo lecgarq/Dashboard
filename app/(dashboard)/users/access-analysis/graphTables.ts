@@ -101,11 +101,52 @@ export function buildSimilarityInputFromUsers(
   };
 }
 
-export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): Promise<GraphArrowTables> {
-  const labels = labelByHiddenNode(input.topology);
-  const folderProjects = folderProjectMap(input.topology);
+/** One row per user (user_id = lowercased email). Shared by the DuckDB Arrow
+ * path and the no-DuckDB JS builder so both see identical user data. */
+export interface GraphUserRow {
+  user_id: string;
+  email: string;
+  name: string;
+  found: boolean;
+  project_count: number;
+  active_count: number;
+  admin_count: number;
+  is_account_admin: boolean;
+  company_role: string;
+  last_sign_in: number | null;
+  added_on: number | null;
+  aggregated_status: string;
+  company_name: string;
+  firm_name: string;
+  account_status: string;
+  permission_coverage: string;
+}
 
-  const usersRows = input.users.map((user) => ({
+/** One row per (user × project × role). */
+export interface GraphProjectRow {
+  user_id: string;
+  email: string;
+  project_id: string;
+  project_name: string;
+  project_status: string;
+  is_project_admin: boolean;
+  role_id: string;
+  module_ids: string;
+  added_on: number | null;
+  last_sign_in_instance: number | null;
+  perm_strength: number;
+  folder_breadth: number;
+  accessible_data_bytes: number;
+  full_controller: boolean;
+  perm_mixed: boolean;
+  activity_mix_json: string;
+  activity_actions_json: string;
+  activity_total: number;
+  last_activity: number | null;
+}
+
+export function buildUsersRows(users: readonly BulkAccUser[]): GraphUserRow[] {
+  return users.map((user) => ({
     user_id: userIdFor(user.email),
     email: user.email,
     name: user.name,
@@ -123,8 +164,10 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
     account_status: user.accountStatus ?? "",
     permission_coverage: user.permissionCoverage ?? "unknown",
   }));
+}
 
-  const projectRows = input.users.flatMap((user) => {
+export function buildProjectRows(users: readonly BulkAccUser[]): GraphProjectRow[] {
+  return users.flatMap((user) => {
     const uid = userIdFor(user.email);
     return user.projects.flatMap((project) => {
       const roles = project.roles.length ? project.roles : [""];
@@ -151,6 +194,14 @@ export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): 
       }));
     });
   });
+}
+
+export async function buildGraphArrowTables(input: BuildGraphArrowTablesInput): Promise<GraphArrowTables> {
+  const labels = labelByHiddenNode(input.topology);
+  const folderProjects = folderProjectMap(input.topology);
+
+  const usersRows = buildUsersRows(input.users);
+  const projectRows = buildProjectRows(input.users);
 
   const similarityRows = input.similarityInput
     ? computeSimilarityEdges(input.similarityInput, new Set(SIMILARITY_DIMS), 0.01).map((edge) => ({
