@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
+import { summarizeRoles, collapseToTopSlices, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import type { AccessInstance } from "../types";
 
 const mk = (roles: string[]): AccessInstance => ({
@@ -37,5 +37,47 @@ describe("summarizeRoles", () => {
     const s = summarizeRoles([mk(["Admin", "Admin"])]);
     expect(s.slices).toEqual([{ name: "Admin", value: 1 }]);
     expect(s.distinctRoles).toBe(1);
+  });
+});
+
+describe("collapseToTopSlices", () => {
+  const slices = [
+    { name: UNKNOWN_ROLE, value: 100 },
+    { name: MULTIPLE_ROLES, value: 50 },
+    { name: "A", value: 30 },
+    { name: "B", value: 20 },
+    { name: "C", value: 10 },
+    { name: "D", value: 5 },
+    { name: "E", value: 1 },
+  ];
+
+  it("pins Unknown + Multiple roles, keeps the top N roles, folds the rest into Others", () => {
+    expect(collapseToTopSlices(slices, 2)).toEqual([
+      { name: UNKNOWN_ROLE, value: 100 },
+      { name: MULTIPLE_ROLES, value: 50 },
+      { name: "A", value: 30 },
+      { name: "B", value: 20 },
+      { name: "Others (3 roles)", value: 16 }, // C+D+E
+    ]);
+  });
+
+  it("never folds the warning buckets, even at top 1", () => {
+    const out = collapseToTopSlices(slices, 1);
+    // Kept: A (30). Others = B+C+D+E = 36, which outranks A by count.
+    expect(out.map((s) => s.name)).toEqual([UNKNOWN_ROLE, MULTIPLE_ROLES, "Others (4 roles)", "A"]);
+    expect(out.find((s) => s.name === "A")).toEqual({ name: "A", value: 30 });
+  });
+
+  it("adds no Others slice when topN covers every role", () => {
+    const out = collapseToTopSlices(slices, 10);
+    expect(out.some((s) => s.name.startsWith("Others"))).toBe(false);
+    expect(out).toHaveLength(slices.length);
+  });
+
+  it("uses singular wording for a single leftover role", () => {
+    expect(collapseToTopSlices(slices, 4).find((s) => s.name.startsWith("Others"))).toEqual({
+      name: "Others (1 role)",
+      value: 1,
+    });
   });
 });

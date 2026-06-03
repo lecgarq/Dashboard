@@ -49,3 +49,27 @@ export function summarizeRoles(rows: AccessInstance[]): RoleSummary {
   const total = slices.reduce((sum, d) => sum + d.value, 0);
   return { slices, distinctRoles: distinct.size, total };
 }
+
+/**
+ * Reduce the slice list to the top `topN` individual roles plus a single
+ * "Others (k roles)" bucket for the remainder. "Unknown" and "Multiple roles"
+ * are pinned — they are data-quality warnings and never fold into Others.
+ * Used when the donut is collapsed; the UI can pass the full list instead to
+ * "expand" everything. Sorted by count desc.
+ */
+export function collapseToTopSlices(slices: RoleSlice[], topN: number): RoleSlice[] {
+  const limit = Math.max(0, topN);
+  const pinned = new Set<string>([UNKNOWN_ROLE, MULTIPLE_ROLES]);
+  const special = slices.filter((s) => pinned.has(s.name));
+  const singles = slices.filter((s) => !pinned.has(s.name)); // already sorted desc
+  const kept = singles.slice(0, limit);
+  const rest = singles.slice(limit);
+
+  const result = [...special, ...kept];
+  if (rest.length > 0) {
+    const value = rest.reduce((sum, d) => sum + d.value, 0);
+    const noun = rest.length === 1 ? "role" : "roles";
+    result.push({ name: `Others (${rest.length} ${noun})`, value });
+  }
+  return result.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
+}

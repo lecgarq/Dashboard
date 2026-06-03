@@ -11,6 +11,7 @@ vi.mock("echarts-for-react", () => ({
         data-testid="echart"
         data-slices={series.length}
         data-active={series.filter((d: any) => d.value > 0).length}
+        data-names={series.map((d: any) => d.name).join("|")}
       />
     );
   },
@@ -19,10 +20,12 @@ vi.mock("echarts-for-react", () => ({
 import { RolesPieChart } from "../components/RolesPieChart";
 
 const data = [
-  { name: "Member", value: 70 },
-  { name: "Admin", value: 20 },
-  { name: "Unknown", value: 8 },
-  { name: "Intern", value: 2 },
+  { name: "Unknown", value: 50 },
+  { name: "Multiple roles", value: 30 },
+  { name: "Alpha", value: 25 },
+  { name: "Bravo", value: 20 },
+  { name: "Charlie", value: 15 },
+  { name: "Delta", value: 10 },
 ];
 
 describe("RolesPieChart", () => {
@@ -32,41 +35,49 @@ describe("RolesPieChart", () => {
     expect(getByText(/no role assignments/i)).toBeTruthy();
   });
 
-  it("lists every role + count in the legend and starts with all selected", () => {
-    const { getByTestId } = render(<RolesPieChart data={data} distinctRoles={3} />);
+  it("shows all roles by default (top default ≥ role count) with no Others", () => {
+    const { getByTestId, queryByText } = render(<RolesPieChart data={data} distinctRoles={4} />);
     const legend = getByTestId("role-legend");
-    for (const d of data) {
-      expect(legend.textContent).toContain(d.name);
-      expect(legend.textContent).toContain(d.value.toLocaleString());
-    }
-    // All four slices present and active on first render.
-    expect(getByTestId("echart").getAttribute("data-slices")).toBe("4");
-    expect(getByTestId("echart").getAttribute("data-active")).toBe("4");
-    const metrics = getByTestId("role-metrics");
-    expect(metrics.textContent).toContain("4/4");
-    expect(metrics.textContent).toContain("100 users");
+    expect(legend.textContent).toContain("Charlie");
+    expect(legend.textContent).toContain("Delta");
+    expect(queryByText(/Others \(/)).toBeNull();
+    expect(getByTestId("echart").getAttribute("data-slices")).toBe("6");
   });
 
-  it("toggles a role off: metrics + active slice count update", () => {
-    const { getByTestId } = render(<RolesPieChart data={data} distinctRoles={3} />);
-    const legend = getByTestId("role-legend");
-    const memberBtn = within(legend).getByRole("button", { name: /Member/ });
-
-    fireEvent.click(memberBtn);
-
-    expect(memberBtn.getAttribute("aria-pressed")).toBe("false");
-    expect(getByTestId("echart").getAttribute("data-active")).toBe("3"); // Member now 0
-    const metrics = getByTestId("role-metrics");
-    expect(metrics.textContent).toContain("3/4");
-    expect(metrics.textContent).toContain("30 users"); // 20 + 8 + 2
+  it("flags Unknown and Multiple roles as warnings", () => {
+    const { getAllByTestId } = render(<RolesPieChart data={data} distinctRoles={4} />);
+    expect(getAllByTestId("warning-icon")).toHaveLength(2);
   });
 
-  it("can restore everything with 'Show all'", () => {
-    const { getByTestId, getByRole } = render(<RolesPieChart data={data} distinctRoles={3} />);
+  it("typing a top-N collapses the rest into Others", () => {
+    const { getByTestId, queryByText } = render(<RolesPieChart data={data} distinctRoles={4} />);
+    fireEvent.change(getByTestId("topn-input"), { target: { value: "2" } });
     const legend = getByTestId("role-legend");
-    fireEvent.click(within(legend).getByRole("button", { name: /Member/ }));
-    fireEvent.click(getByRole("button", { name: /show all/i }));
-    expect(getByTestId("echart").getAttribute("data-active")).toBe("4");
-    expect(getByTestId("role-metrics").textContent).toContain("4/4");
+    expect(within(legend).getByText(/Others \(2 roles\)/)).toBeTruthy();
+    expect(within(legend).queryByRole("button", { name: /Charlie/ })).toBeNull();
+    expect(within(legend).queryByRole("button", { name: /Delta/ })).toBeNull();
+    // Donut shows Unknown, Multiple, Alpha, Bravo, Others = 5 slices.
+    expect(getByTestId("echart").getAttribute("data-slices")).toBe("5");
+  });
+
+  it("expands Others (+) back to every role, in legend and on the pie", () => {
+    const { getByTestId, getByRole, queryByText } = render(<RolesPieChart data={data} distinctRoles={4} />);
+    fireEvent.change(getByTestId("topn-input"), { target: { value: "2" } });
+    fireEvent.click(getByRole("button", { name: /expand/i }));
+    const legend = getByTestId("role-legend");
+    expect(within(legend).getByRole("button", { name: /Charlie/ })).toBeTruthy();
+    expect(within(legend).getByRole("button", { name: /Delta/ })).toBeTruthy();
+    expect(queryByText(/Others \(/)).toBeNull();
+    expect(getByTestId("echart").getAttribute("data-slices")).toBe("6");
+  });
+
+  it("toggles a role off from the legend", () => {
+    const { getByTestId } = render(<RolesPieChart data={data} distinctRoles={4} />);
+    const legend = getByTestId("role-legend");
+    const alpha = within(legend).getByRole("button", { name: /Alpha/ });
+    fireEvent.click(alpha);
+    expect(alpha.getAttribute("aria-pressed")).toBe("false");
+    expect(getByTestId("echart").getAttribute("data-active")).toBe("5"); // 6 shown, 1 hidden
+    expect(getByTestId("role-metrics").textContent).toContain("125 users"); // 150 - 25
   });
 });
