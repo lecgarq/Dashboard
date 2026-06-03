@@ -163,3 +163,19 @@ hundreds of one-off slices (legend `1/47`), labels overlapped into a fan, and
   title/center collision seen in the screenshot.
 
 Gates: tsc 0 / unit 175 files, 1404 tests green. Commit `6f53355`.
+
+## Iteration #4 — 2026-06-03 (show ALL roles)
+
+Owner rejected the `Other (N roles)` grouping: every role must be visible.
+Callout labels can't fit ~70 roles around a ring, so labels moved OFF the donut
+into a **complete multi-column HTML legend** beneath it (`role-legend`): each
+role's colour swatch + name + user count + percent, laid out with
+`grid-template-columns: repeat(auto-fill, minmax(220px, 1fr))` so it wraps to as
+many columns as the width allows — all roles, no pagination, no `Other`.
+
+- `collapseToTopSlices` removed; `page.tsx` passes the full `summarizeRoles().slices`.
+- Donut: labels off (shown on hover via emphasis), `legend: { show:false }`
+  (custom HTML legend instead), colours assigned once and shared between each
+  slice and its legend row. Container widened to `max-w-6xl` for more columns.
+
+Gates: tsc 0 / unit 175 files, 1409 tests green. Commit `0d20165`.
