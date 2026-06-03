@@ -33,10 +33,7 @@ import {
 import { ClusterLabels } from "./ClusterLabels";
 import { GridAxisLabels } from "./GridAxisLabels";
 import { activeCatalogDims, buildDominantClusters } from "./dominantClusters";
-import { layoutClusterFootprints } from "./clusterForceLayout";
-import { packMemberPositions, LOOSE_TIGHTNESS } from "./clusterPacking";
-import { buildRestLayout } from "./restLayout";
-import { buildGridStructure } from "./gridLayout";
+import { buildUserBlobDescriptor } from "./blobDescriptor";
 import { descriptorTarget, descriptorNodeCount, easeMorph, type LayoutDescriptor } from "./layoutDescriptor";
 import { clusterColorBuffer, colorForCluster } from "./clusterColors";
 import { buildClusterAggregates, aggregatePositions } from "./lodAggregate";
@@ -116,11 +113,10 @@ function ShellBody({
   const { isolatedNodeIndex, lassoSelection, setLasso, setIsolated } = useSelection();
   const { values: sliderValues, getLiveValues } = useSliders();
 
-  // LAYOUT DESCRIPTOR — the grouping STRUCTURE, computed once per active-SET change
-  // (gated on activeKey), NOT per value drag. The renderer turns this + the live
-  // slider value into per-frame positions (descriptorTarget) off the React path —
-  // that decoupling is the lag fix. 0 active → organic rest cloud; 1 → packed blobs;
-  // 2+ → cross-tab grid (strongest dim = columns, next = rows).
+  // LAYOUT DESCRIPTOR — always user-blob on load. The User-name slider drives only
+  // tightness (0 = organic/loose on load, 100 = tight clumps) via the descriptorTarget
+  // morph — NOT whether clustering is on. (Other dimensions + the rest/grid layouts are
+  // future work.) activeDims/activeKey are still needed for colorIds below.
   const sliderDims = useMemo(() => curatedSliderDimensions(catalog), [catalog]);
   const activeDims = useMemo(
     () => activeCatalogDims(sliderDims, sliderValues),
@@ -128,28 +124,18 @@ function ShellBody({
   );
   const activeKey = activeDims.map((d) => d.id).join(",");
 
-  // Static organic resting cloud (soft shared-project clumps). Computed once per data set.
-  const restXyz = useMemo(() => buildRestLayout(features), [features]);
-
-  const layoutDescriptor = useMemo<LayoutDescriptor>(() => {
-    if (activeDims.length === 0) return { kind: "rest", xyz: restXyz };
-    if (activeDims.length === 1) {
-      const clustering = buildDominantClusters(features, activeDims[0]);
-      const footprints = layoutClusterFootprints(clustering.counts);
-      // Two morph endpoints, fixed footprint centers: loose (organic, fills footprints)
-      // → packed (tight cores). descriptorTarget lerps loose→packed per frame.
-      const loose = packMemberPositions(clustering.ids, footprints, LOOSE_TIGHTNESS, features.length);
-      const packed = packMemberPositions(clustering.ids, footprints, 1, features.length);
-      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints, loose, packed };
-    }
-    const structure = buildGridStructure(features, activeDims[0], activeDims[1], {
-      maxCols: 12,
-      maxRows: 8,
-    });
-    return { kind: "grid", xId: activeDims[0].id, yId: activeDims[1].id, structure };
-    // activeKey (stable string) gates recompute; activeDims identity changes each render.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [features, activeKey, restXyz]);
+  // SINGLE-DIMENSION BUILD: the graph ALWAYS clusters by user. The User-name slider
+  // drives only tightness (0 = organic/loose on load, 100 = tight clumps) via the
+  // descriptorTarget morph — NOT whether clustering is on. (Other dimensions + the
+  // rest/grid layouts are future work; see the spec.)
+  const userDim = useMemo<CatalogDimension>(
+    () => sliderDims.find((d) => d.id === "user") ?? sliderDims[0],
+    [sliderDims],
+  );
+  const layoutDescriptor = useMemo<LayoutDescriptor>(
+    () => buildUserBlobDescriptor(features, userDim),
+    [features, userDim],
+  );
 
   // Per-frame layout target source handed to the renderer (keeps GraphCanvas pure —
   // it never imports layout math). Reads the LIVE slider value off a ref, so a value
