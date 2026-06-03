@@ -10,9 +10,9 @@ export interface LinkColorOpts {
 
 // cosmos.gl RGBA is 0–1 floats (matches setPointColors in this repo).
 export const DEFAULT_LINK_COLORS: LinkColorOpts = {
-  base: [0.62, 0.72, 0.93, 0.1], // subtle always-on
-  bright: [0.62, 0.72, 0.93, 0.85],
-  dim: [0.62, 0.72, 0.93, 0.03],
+  base: [0.6, 0.62, 0.66, 0.14], // faint cool grey — quiet always-on lines
+  bright: [0.85, 0.88, 0.95, 0.9], // near-white — a person's lines light up on click/isolate
+  dim: [0.6, 0.62, 0.66, 0.04], // nearly invisible when another user is focused
 };
 
 /** Per-link RGBA buffer. No focus → all base. Focus → active-user bright, rest dim. */

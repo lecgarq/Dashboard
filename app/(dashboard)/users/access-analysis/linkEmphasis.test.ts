@@ -51,3 +51,26 @@ describe("assertLinkArrays", () => {
     expect(() => assertLinkArrays(edges.length, new Float32Array(1), new Float32Array(edges.length * 4))).toThrow();
   });
 });
+
+describe("link colors are faint grey at rest", () => {
+  it("base is grey (r≈g≈b) and low-opacity", () => {
+    const [r, g, b, a] = DEFAULT_LINK_COLORS.base;
+    expect(Math.abs(r - g)).toBeLessThan(0.08);
+    expect(Math.abs(g - b)).toBeLessThan(0.08);
+    expect(a).toBeGreaterThan(0);
+    expect(a).toBeLessThanOrEqual(0.3);
+  });
+  it("no focus → every edge gets the base grey", () => {
+    const out = computeLinkEmphasisColors(edges, new Set());
+    const first4 = Array.from(out.slice(0, 4));
+    const expected = Array.from(DEFAULT_LINK_COLORS.base);
+    for (let i = 0; i < 4; i++) {
+      expect(first4[i]).toBeCloseTo(expected[i]);
+    }
+  });
+  it("focused user's edge brightens to near-white", () => {
+    const out = computeLinkEmphasisColors(edges, new Set(["u1"]));
+    const u1 = edges.findIndex((e) => e.userId === "u1");
+    expect(out[u1 * 4 + 3]).toBeCloseTo(DEFAULT_LINK_COLORS.bright[3]);
+  });
+});
