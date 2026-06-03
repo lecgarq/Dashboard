@@ -143,3 +143,23 @@ palette (Unknown forced to muted grey `#52525b`), on-slice labels showing
 and the total shown large in the center hole. Empty state unchanged.
 
 Gates: tsc 0 / unit 175 files, 1404 tests green. Commit `59ea90e`.
+
+## Iteration #3 — 2026-06-03 (readability)
+
+v2 was unusable on real data: the combined multi-role signatures exploded into
+hundreds of one-off slices (legend `1/47`), labels overlapped into a fan, and
+"how many roles" was lost. Owner: keep the donut, make it fit.
+
+- **Multi-role → one `Multiple roles` bucket** (replaces the combined
+  `Admin + Member` labels) — kills the long tail of unique combos.
+- **Top-N + Other:** `collapseToTopSlices` keeps Unknown + Multiple roles
+  pinned, the top 8 single roles individually, and folds the rest into
+  `Other (N roles)`. The donut now draws ~11 slices max — labels never overlap.
+- **`summarizeRoles` returns `distinctRoles`** (unique role names across all
+  memberships); shown in the subtitle (`"N roles · M user–project memberships"`)
+  so the role count is explicit regardless of slice grouping.
+- Unknown grey `#52525b`, Other grey `#71717a`; `minAngle` keeps tiny slices
+  clickable; layout reflowed (title top:0, center total at 47%) to stop the
+  title/center collision seen in the screenshot.
+
+Gates: tsc 0 / unit 175 files, 1404 tests green. Commit `6f53355`.
