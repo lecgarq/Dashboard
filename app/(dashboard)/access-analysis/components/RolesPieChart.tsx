@@ -17,6 +17,18 @@ const OTHERS_COLOR = "#71717a";   // zinc-500 — the folded tail
 
 const DEFAULT_TOP = 8;
 
+// Range-slider chrome + donut card flourishes. `rp-` prefixed so the global
+// <style> can't leak into the rest of the dashboard.
+const PIE_CSS = `
+.rp-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
+.rp-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 9999px; background: #fff; border: 3px solid #6366f1; box-shadow: 0 1px 4px rgba(0,0,0,.55); transition: transform .12s ease; }
+.rp-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.rp-range:focus-visible::-webkit-slider-thumb { outline: 2px solid rgba(99,102,241,.5); outline-offset: 2px; }
+.rp-range::-moz-range-thumb { width: 15px; height: 15px; border: 3px solid #6366f1; border-radius: 9999px; background: #fff; }
+.rp-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
+.rp-range:disabled { opacity: .45; cursor: not-allowed; }
+`;
+
 const isWarning = (name: string) => name === UNKNOWN_ROLE || name === MULTIPLE_ROLES;
 const isOthers = (name: string) => name.startsWith("Others (");
 
@@ -50,8 +62,13 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
 
   if (data.length === 0) {
     return (
-      <div className="flex h-[520px] items-center justify-center rounded-xl border border-zinc-800 bg-zinc-950 text-sm text-zinc-400">
+      <div className="flex h-[460px] flex-col items-center justify-center gap-3 rounded-2xl border border-zinc-800/80 bg-gradient-to-b from-zinc-900/40 to-zinc-950 text-sm text-zinc-400">
+        <svg viewBox="0 0 24 24" fill="none" className="h-10 w-10 text-zinc-700" stroke="currentColor" strokeWidth="1.5">
+          <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
+          <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
         No role assignments found.
+        <span className="text-xs text-zinc-600">Select at least one project above.</span>
       </div>
     );
   }
@@ -77,6 +94,19 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
     setExpanded(false);
   };
 
+  // "Show top" control state.
+  const sliderMax = Math.max(singleCount, 1);
+  const effectiveTop = Math.min(topN, sliderMax);
+  const sliderValue = expanded ? sliderMax : effectiveTop;
+  const trackPct = sliderMax > 1 ? ((sliderValue - 1) / (sliderMax - 1)) * 100 : 100;
+  const presets = [10, 25].filter((n) => n < singleCount);
+  const chip = (active: boolean) =>
+    `rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
+      active
+        ? "border-indigo-500/60 bg-indigo-500/15 text-indigo-200"
+        : "border-zinc-700/70 bg-zinc-800/40 text-zinc-300 hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+    }`;
+
   const option: EChartsOption = {
     title: [
       {
@@ -91,35 +121,47 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
         text: activeUsers.toLocaleString(),
         subtext: activeCount === displaySlices.length ? "users" : "users shown",
         left: "center",
-        top: "44%",
+        top: "45%",
         textAlign: "center",
-        textStyle: { color: "#fafafa", fontSize: 30, fontWeight: 700 },
+        textStyle: { color: "#fafafa", fontSize: 32, fontWeight: 700 },
         subtextStyle: { color: "#a1a1aa", fontSize: 13 },
       },
     ],
     tooltip: {
       trigger: "item",
-      backgroundColor: "#18181b",
+      backgroundColor: "rgba(24,24,27,0.96)",
       borderColor: "#3f3f46",
+      borderWidth: 1,
+      padding: [8, 12],
       textStyle: { color: "#e4e4e7" },
-      formatter: "<b>{b}</b><br/>{c} users ({d}%)",
+      extraCssText: "border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.55);",
+      formatter: "<div style='font-weight:700;color:#fafafa;margin-bottom:2px'>{b}</div><div style='color:#a1a1aa'>{c} users · <b style='color:#e4e4e7'>{d}%</b></div>",
     },
     legend: { show: false },
     series: [
       {
         name: "Roles",
         type: "pie",
-        radius: ["52%", "78%"],
-        center: ["50%", "50%"],
-        minAngle: 0,
+        radius: ["56%", "80%"],
+        center: ["50%", "52%"],
+        padAngle: 2,
+        minAngle: 2,
         label: { show: false },
         labelLine: { show: false },
-        itemStyle: { borderColor: "#09090b", borderWidth: 1 },
+        itemStyle: {
+          borderColor: "#09090b",
+          borderWidth: 3,
+          borderRadius: 7,
+          shadowBlur: 14,
+          shadowColor: "rgba(0,0,0,0.5)",
+        },
         emphasis: {
-          scaleSize: 10,
-          itemStyle: { shadowBlur: 20, shadowColor: "rgba(0,0,0,0.55)" },
+          focus: "self",
+          scaleSize: 12,
+          itemStyle: { shadowBlur: 28, shadowColor: "rgba(0,0,0,0.65)" },
           label: { show: true, formatter: "{b}\n{c} ({d}%)", fontSize: 13, fontWeight: 700, color: "#fafafa" },
         },
+        blur: { itemStyle: { opacity: 0.22 } },
         animationType: "scale",
         animationEasing: "elasticOut",
         animationDuration: 800,
@@ -136,7 +178,9 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
   };
 
   return (
-    <div className="rounded-xl border border-zinc-800 bg-zinc-950 p-3">
+    <div className="rounded-2xl border border-zinc-800/80 bg-gradient-to-b from-zinc-900/40 to-zinc-950 p-4 shadow-xl shadow-black/30 ring-1 ring-white/5">
+      <style>{PIE_CSS}</style>
+
       <EChart
         option={option}
         height={400}
@@ -144,57 +188,68 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
         onEvents={{ click: (p) => p.name && toggle(p.name) }}
       />
 
-      <div className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
-        <div data-testid="role-controls" className="flex items-center gap-2 text-zinc-400">
-          <span>Show top</span>
+      <div className="mt-2 flex flex-wrap items-center justify-between gap-x-5 gap-y-3 text-xs">
+        {/* Show top: slider + presets */}
+        <div data-testid="role-controls" className="flex flex-wrap items-center gap-3 text-zinc-400">
+          <span className="font-medium text-zinc-300">Show</span>
           <input
             data-testid="topn-input"
-            type="number"
+            type="range"
             min={1}
-            max={singleCount}
-            value={topN}
+            max={sliderMax}
+            value={sliderValue}
             onChange={(e) => changeTopN(e.target.value)}
-            className="w-14 rounded border border-zinc-700 bg-zinc-900 px-2 py-0.5 text-center text-zinc-100 focus:border-indigo-500 focus:outline-none"
+            disabled={singleCount <= 1}
+            aria-label="Number of top roles to show"
+            className="rp-range w-36"
+            style={{ background: `linear-gradient(to right, #6366f1 ${trackPct}%, #3f3f46 ${trackPct}%)` }}
           />
-          <span>of {singleCount} roles</span>
-          {expanded && (
-            <button
-              type="button"
-              aria-label="Collapse to top roles"
-              onClick={() => setExpanded(false)}
-              className="rounded border border-zinc-700 px-2 py-0.5 text-zinc-300 hover:bg-zinc-800"
-            >
-              − Collapse
+          <span className="min-w-[3.5rem] rounded-md border border-zinc-700/70 bg-zinc-800/60 px-2 py-0.5 text-center font-semibold tabular-nums text-zinc-100">
+            {expanded ? `All ${singleCount}` : `Top ${effectiveTop}`}
+          </span>
+          <div className="flex items-center gap-1.5">
+            {presets.map((n) => (
+              <button key={n} type="button" onClick={() => { setTopN(n); setExpanded(false); }} className={chip(!expanded && topN === n)}>
+                Top {n}
+              </button>
+            ))}
+            <button type="button" aria-label="Show all roles" onClick={() => setExpanded(true)} className={chip(expanded)}>
+              All
             </button>
-          )}
+          </div>
+          <span className="text-zinc-500">of {singleCount} roles</span>
         </div>
 
-        <div data-testid="role-metrics" className="flex flex-wrap items-center gap-x-3 gap-y-1 text-zinc-400">
-          <span>
-            <b className="text-zinc-100">{activeCount}</b>/{displaySlices.length} shown
+        {/* Live metrics */}
+        <div data-testid="role-metrics" className="flex flex-wrap items-center gap-2 text-zinc-400">
+          <span className="rounded-md bg-zinc-800/50 px-2 py-0.5">
+            <b className="text-zinc-100 tabular-nums">{activeCount}</b>
+            <span className="text-zinc-500">/{displaySlices.length} shown</span>
           </span>
-          <span>
-            <b className="text-zinc-100">{activeUsers.toLocaleString()}</b> users
+          <span className="rounded-md bg-zinc-800/50 px-2 py-0.5">
+            <b className="text-zinc-100 tabular-nums">{activeUsers.toLocaleString()}</b> users
           </span>
-          <span>{fmtPct(activeUsers, grandTotal)} of all</span>
+          <span className="rounded-md bg-zinc-800/50 px-2 py-0.5 text-zinc-300">{fmtPct(activeUsers, grandTotal)} of all</span>
           {hidden.size > 0 && (
-            <button onClick={resetHidden} className="rounded border border-zinc-700 px-2 py-0.5 text-zinc-300 hover:bg-zinc-800">
+            <button onClick={resetHidden} className="rounded-md border border-zinc-700 px-2 py-0.5 text-zinc-300 transition hover:bg-zinc-800 hover:text-white">
               Reset
             </button>
           )}
         </div>
       </div>
 
-      {/* Multi-column = column-major reading order (top→bottom, then left→right). */}
+      {/* Ranked legend: each row is a mini bar of its share. Column-major reading. */}
       <ul
         data-testid="role-legend"
         className="mt-3 list-none border-t border-zinc-800 pt-3"
-        style={{ columnWidth: "240px", columnGap: "1.5rem" }}
+        style={{ columnWidth: "248px", columnGap: "1.5rem" }}
       >
         {displaySlices.map((s) => {
           const on = !hidden.has(s.name);
           const warn = isWarning(s.name);
           const others = isOthers(s.name);
+          const barPct = grandTotal > 0 ? (s.value / grandTotal) * 100 : 0;
+          const color = colorFor(s.name);
           return (
             <li key={s.name} data-warning={warn || undefined} className="mb-1 flex items-center gap-1 break-inside-avoid">
               <button
@@ -202,22 +257,28 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
                 aria-pressed={on}
                 onClick={() => toggle(s.name)}
                 title={`${s.name} — ${s.value.toLocaleString()} users (${fmtPct(s.value, grandTotal)})`}
-                className={`flex min-w-0 flex-1 items-center gap-2 rounded px-1 py-0.5 text-left text-xs transition-colors hover:bg-zinc-800/70 ${
+                className={`group relative flex min-w-0 flex-1 items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-zinc-800/60 ${
                   on ? "text-zinc-300" : "text-zinc-600"
                 }`}
               >
+                {/* Proportion bar behind the row. */}
                 <span
-                  className={`h-2.5 w-2.5 shrink-0 rounded-sm transition-opacity ${on ? "opacity-100" : "opacity-30"}`}
-                  style={{ background: colorFor(s.name) }}
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 rounded-md transition-all duration-300"
+                  style={{ width: `${barPct}%`, background: color, opacity: on ? 0.16 : 0.05 }}
+                />
+                <span
+                  className={`relative h-2.5 w-2.5 shrink-0 rounded-sm transition-opacity ${on ? "opacity-100" : "opacity-30"}`}
+                  style={{ background: color, boxShadow: on ? `0 0 6px ${color}66` : "none" }}
                 />
                 {warn && (
-                  <span data-testid="warning-icon" title="Data-quality warning" className="shrink-0 text-amber-400">
+                  <span data-testid="warning-icon" title="Data-quality warning" className="relative shrink-0 text-amber-400">
                     ⚠
                   </span>
                 )}
-                <span className={`flex-1 truncate ${on ? "" : "line-through"} ${warn ? "text-amber-300" : ""}`}>{s.name}</span>
-                <span className="shrink-0 tabular-nums text-zinc-100">{s.value.toLocaleString()}</span>
-                <span className="w-14 shrink-0 text-right tabular-nums text-zinc-500">{fmtPct(s.value, grandTotal)}</span>
+                <span className={`relative flex-1 truncate ${on ? "" : "line-through"} ${warn ? "text-amber-300" : ""}`}>{s.name}</span>
+                <span className="relative shrink-0 tabular-nums text-zinc-100">{s.value.toLocaleString()}</span>
+                <span className="relative w-14 shrink-0 text-right tabular-nums text-zinc-500">{fmtPct(s.value, grandTotal)}</span>
               </button>
               {others && (
                 <button
@@ -225,7 +286,7 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
                   aria-label="Expand others"
                   title="Show every folded role"
                   onClick={() => setExpanded(true)}
-                  className="shrink-0 rounded border border-zinc-700 px-1.5 py-0.5 text-xs text-zinc-300 hover:bg-zinc-800"
+                  className="shrink-0 rounded-md border border-zinc-700 px-1.5 py-0.5 text-xs text-zinc-300 transition hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-white"
                 >
                   +
                 </button>
