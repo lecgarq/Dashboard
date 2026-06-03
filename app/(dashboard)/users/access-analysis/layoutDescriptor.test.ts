@@ -70,11 +70,11 @@ describe("descriptorTarget", () => {
     expect(spread(at(50))).toBeGreaterThan(spread(at(100)));
   });
 
-  it("easeMorph is an ease-OUT curve with exact endpoints", () => {
+  it("easeMorph is a smoothstep curve with exact endpoints", () => {
     expect(easeMorph(0)).toBe(0);
     expect(easeMorph(1)).toBe(1);
-    // Ease-out: past the halfway mark by the time the slider is half-travelled.
-    expect(easeMorph(0.5)).toBeGreaterThan(0.5);
+    // Smoothstep: symmetric at midpoint (ease-in-out).
+    expect(easeMorph(0.5)).toBeCloseTo(0.5, 6);
     // Monotonic non-decreasing.
     expect(easeMorph(0.25)).toBeLessThan(easeMorph(0.75));
     // Clamped outside [0,1].
@@ -90,5 +90,30 @@ describe("descriptorTarget", () => {
     const ref = descriptorTarget(desc, { project: 100, role: 100 }, out);
     expect(ref).toBe(out);
     expect(out[2]).toBe(0);
+  });
+});
+
+describe("easeMorph (progressive curve)", () => {
+  it("pins the endpoints exactly", () => {
+    expect(easeMorph(0)).toBe(0);
+    expect(easeMorph(1)).toBe(1);
+  });
+  it("is symmetric at the midpoint", () => {
+    expect(easeMorph(0.5)).toBeCloseTo(0.5, 6);
+  });
+  it("is monotonically increasing", () => {
+    let prev = -1;
+    for (let s = 0; s <= 1.0001; s += 0.05) {
+      const v = easeMorph(s);
+      expect(v).toBeGreaterThanOrEqual(prev);
+      prev = v;
+    }
+  });
+  it("has a GENTLE start — no 0→1 jump (rules out the old ease-out)", () => {
+    expect(easeMorph(0.1)).toBeLessThan(0.1);
+  });
+  it("clamps out-of-range input", () => {
+    expect(easeMorph(-1)).toBe(0);
+    expect(easeMorph(2)).toBe(1);
   });
 });

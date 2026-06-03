@@ -32,17 +32,15 @@ export type LayoutDescriptor =
   | { kind: "grid"; xId: string; yId: string; structure: GridStructure };
 
 /**
- * Slider value (0..1) → morph progress (0..1), EASE-OUT: a small nudge off 0 gathers a
- * lot (responsive), then fine-settles slowly toward 100. Endpoints are exact (0→0, 1→1)
- * so the rest/clump extremes are unchanged. Tune the feel with EASE_EXP alone: 1 = linear,
- * higher = snappier start; swap the body for ease-in-out if a gentle start is wanted.
+ * Slider value (0..1) → morph progress (0..1), SMOOTHSTEP (ease-in-out): endpoints
+ * are exact (0→0, 1→1) and the slope is 0 at both ends, so a small nudge off 0 moves
+ * only a little — no 0→1 jump — and motion stays proportional across the whole range.
  * MUST be the single source of the curve — used by both the node morph (descriptorTarget)
- * and the label follow (shell labelProgress) so labels stay locked to their clumps.
+ * and any per-frame follow logic so everything stays locked together.
  */
-const EASE_EXP = 2;
 export function easeMorph(s: number): number {
   const t = Math.min(1, Math.max(0, s));
-  return 1 - Math.pow(1 - t, EASE_EXP);
+  return t * t * (3 - 2 * t);
 }
 
 /** Per-node node count a descriptor positions (for buffer sizing). */
