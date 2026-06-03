@@ -1,40 +1,66 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/core/utils";
 
 /**
  * GraphLoadingSkeleton — loading placeholder for the spatial-graph / access
- * analysis surface. Mirrors the real layout (slider sidebar + toolbar + canvas)
- * and previews the graph's *actual* sunflower seeding so the placeholder reads
- * unmistakably as "a node graph is loading".
+ * analysis surface. Mirrors the real layout (slider sidebar + toolbar + canvas),
+ * shows a live elapsed timer + progress so a slow first load is never a mystery,
+ * and draws the cloud as ORGANIC CLUSTERS (not a circular disc).
  *
- * Positions are computed at module scope with NO randomness (golden-angle
- * sunflower) so the server and client render byte-identical markup — avoiding a
- * React hydration mismatch when used inside a route-level `loading.tsx`.
- *
- * Pure presentational (no hooks/handlers) → safe in both server `loading.tsx`
- * and the client shell's loading branch.
+ * Node positions are computed at module scope with NO randomness so server and
+ * client render identical markup (no hydration mismatch); only the timer is
+ * client state and starts at 0 on both sides.
  */
 
-const NODE_COUNT = 48;
-const GOLDEN_ANGLE = 2.399963229728653; // radians — same constant the graph uses
+// A few organic cluster centers (percent of canvas) with deterministic scatter
+// — reads as "grouped network", never a filled circle.
+const CLUSTERS = [
+  { cx: 36, cy: 40, r: 15 },
+  { cx: 62, cy: 35, r: 13 },
+  { cx: 52, cy: 60, r: 17 },
+  { cx: 30, cy: 64, r: 11 },
+  { cx: 72, cy: 62, r: 12 },
+];
+const NODE_COUNT = 70;
+const GOLDEN = 2.399963229728653;
 
 const NODES = Array.from({ length: NODE_COUNT }, (_, i) => {
-  const r = Math.sqrt((i + 0.5) / NODE_COUNT) * 40; // up to 40% of canvas radius
-  const theta = i * GOLDEN_ANGLE;
+  const c = CLUSTERS[i % CLUSTERS.length];
+  const a = i * GOLDEN;
+  const rad = Math.sqrt(((i * 41) % 100) / 100) * c.r; // deterministic radial scatter
   return {
-    left: 50 + r * Math.cos(theta),
-    top: 50 + r * Math.sin(theta),
-    size: 6 + ((i * 7) % 10), // 6..15px — varied node sizes
-    delay: (i * 90) % 1400, // staggered twinkle (ms)
+    left: c.cx + Math.cos(a) * rad,
+    top: c.cy + Math.sin(a) * rad,
+    size: 5 + ((i * 7) % 9),
+    delay: (i * 70) % 1500,
   };
 });
 
 export function GraphLoadingSkeleton({
   className,
   message = "Loading graph…",
+  /** Rough upper bound used only to pace the progress bar; the screen unmounts
+   *  the instant the real graph is ready, so over-/under-estimating is harmless. */
+  estimateSeconds = 15,
 }: {
   className?: string;
   message?: string;
+  estimateSeconds?: number;
 }): React.JSX.Element {
+  const [elapsedMs, setElapsedMs] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    const id = setInterval(() => setElapsedMs(performance.now() - start), 200);
+    return () => clearInterval(id);
+  }, []);
+
+  const elapsed = elapsedMs / 1000;
+  // Asymptotic fill — approaches but never reaches 100% until the graph swaps in.
+  const pct = Math.min(96, (elapsed / estimateSeconds) * 100);
+  const slow = elapsed > 4;
+
   return (
     <div
       className={cn(
@@ -65,12 +91,10 @@ export function GraphLoadingSkeleton({
           <div className="ml-auto h-8 w-24 animate-pulse rounded-lg bg-accent" />
         </div>
 
-        {/* canvas with node cloud */}
+        {/* canvas with organic node clusters */}
         <div className="relative flex-1 overflow-hidden">
-          {/* soft brand glow behind the cloud */}
           <div className="pointer-events-none absolute left-1/2 top-1/2 h-[55%] w-[55%] -translate-x-1/2 -translate-y-1/2 rounded-full bg-primary/10 blur-3xl" />
 
-          {/* the node cloud */}
           {NODES.map((n, i) => (
             <span
               key={i}
@@ -86,21 +110,38 @@ export function GraphLoadingSkeleton({
             />
           ))}
 
-          {/* centered status pill */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div className="flex items-center gap-3 rounded-full border border-border/50 bg-card/80 px-5 py-2.5 shadow-soft-xl backdrop-blur-md">
-              <span className="relative flex h-2.5 w-2.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
-                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
-              </span>
-              <span className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-                {message}
-              </span>
+          {/* centered status card: message + live timer + progress + ETA copy */}
+          <div className="absolute left-1/2 top-1/2 w-[20rem] max-w-[80%] -translate-x-1/2 -translate-y-1/2">
+            <div className="flex flex-col gap-3 rounded-2xl border border-border/50 bg-card/85 px-5 py-4 shadow-soft-xl backdrop-blur-md">
+              <div className="flex items-center gap-3">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary/60" />
+                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-primary" />
+                </span>
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+                  {message}
+                </span>
+                <span className="ml-auto tabular-nums text-xs font-bold text-primary">
+                  {Math.floor(elapsed)}s
+                </span>
+              </div>
+
+              <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/40">
+                <div
+                  className="h-full rounded-full bg-primary transition-[width] duration-200 ease-out"
+                  style={{ width: `${pct}%` }}
+                />
+              </div>
+
+              <p className="text-[11px] leading-snug text-muted-foreground/70">
+                {slow
+                  ? "First load builds your full access dataset (~17,000 users). This can take ~15s — later loads are instant."
+                  : "Preparing your access graph…"}
+              </p>
             </div>
           </div>
 
-          {/* shimmer sweep across the canvas */}
-          <div className="pointer-events-none absolute inset-0 animate-shimmer opacity-60" />
+          <div className="pointer-events-none absolute inset-0 animate-shimmer opacity-50" />
         </div>
       </div>
     </div>
