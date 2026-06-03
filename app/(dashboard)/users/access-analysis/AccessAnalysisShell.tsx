@@ -30,7 +30,6 @@ import {
   migratePersistedSliders,
   useSliders,
 } from "./SliderContext";
-import { ClusterLabels } from "./ClusterLabels";
 import { GridAxisLabels } from "./GridAxisLabels";
 import { activeCatalogDims, buildDominantClusters } from "./dominantClusters";
 import { buildUserBlobDescriptor } from "./blobDescriptor";
@@ -148,14 +147,6 @@ function ShellBody({
       targetBufRef.current = new Float32Array(n * 3);
     }
     return descriptorTarget(layoutDescriptor, getLiveValues(), targetBufRef.current);
-  }, [layoutDescriptor, getLiveValues]);
-
-  // Live morph progress (0..1) for the active blob dim — read each frame so labels
-  // follow their clumps and fade in WITHOUT re-rendering this shell on a value drag.
-  const labelProgress = useCallback((): number => {
-    if (layoutDescriptor.kind !== "blob") return 1;
-    // SAME ease-out curve as the node morph so labels stay locked to their clumps.
-    return easeMorph((getLiveValues()[layoutDescriptor.dimId] ?? 0) / 100);
   }, [layoutDescriptor, getLiveValues]);
 
   // Per-cluster center for the LOD aggregate "super-dots". Loose and packed both center
@@ -333,22 +324,6 @@ function ShellBody({
               aggregateSizes={aggregateSizes}
             />
           </GraphInteractions>
-
-          {/* 1-slider blob labels: pinned to each packed footprint center (2D only). */}
-          {layoutDescriptor.kind === "blob" && (
-            <ClusterLabels
-              graphRef={graphRef}
-              centersX={layoutDescriptor.footprints.cx}
-              centersY={layoutDescriptor.footprints.cy}
-              restCentersX={blobRestCenters?.cx ?? null}
-              restCentersY={blobRestCenters?.cy ?? null}
-              radii={layoutDescriptor.footprints.r}
-              labels={layoutDescriptor.clustering.labels}
-              counts={layoutDescriptor.clustering.counts}
-              mode={mode}
-              progress={labelProgress}
-            />
-          )}
 
           {/* 2-slider grid: column headers (top) + row headers (left), tracking pitch. */}
           {layoutDescriptor.kind === "grid" && (
