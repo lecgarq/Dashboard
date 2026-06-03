@@ -26,42 +26,59 @@ const rows: ProjectRoleRow[] = [
   { projectId: "p3", projectName: "Bridge North", roles: ["Member"] },
 ];
 
-describe("RolesByProject", () => {
-  it("renders a project search box and the full donut by default", () => {
+const open = (getByTestId: (id: string) => HTMLElement) =>
+  fireEvent.focus(getByTestId("project-search"));
+
+describe("RolesByProject (project multi-select)", () => {
+  it("shows all projects selected by default and the full donut", () => {
     const { getByTestId } = render(<RolesByProject rows={rows} />);
-    expect(getByTestId("project-search")).toBeTruthy();
+    expect(getByTestId("project-summary").textContent).toMatch(/all projects/i);
     // Member, Multiple roles, Designer = 3 slices across all projects.
     expect(getByTestId("echart").getAttribute("data-slices")).toBe("3");
   });
 
-  it("filters the donut to a single project when its name is searched", () => {
-    const { getByTestId } = render(<RolesByProject rows={rows} />);
-    fireEvent.change(getByTestId("project-search"), { target: { value: "bridge" } });
-    const el = getByTestId("echart");
-    expect(el.getAttribute("data-slices")).toBe("1");
-    expect(el.getAttribute("data-names")).toBe("Member");
+  it("opens a checkbox per project on focus, all checked", () => {
+    const { getByTestId, getAllByRole } = render(<RolesByProject rows={rows} />);
+    open(getByTestId);
+    const boxes = getAllByRole("checkbox") as HTMLInputElement[];
+    expect(boxes).toHaveLength(3);
+    expect(boxes.every((b) => b.checked)).toBe(true);
   });
 
-  it("reports how many projects matched the query", () => {
-    const { getByTestId } = render(<RolesByProject rows={rows} />);
+  it("filters the visible checkboxes by the search string", () => {
+    const { getByTestId, getAllByRole } = render(<RolesByProject rows={rows} />);
+    open(getByTestId);
     fireEvent.change(getByTestId("project-search"), { target: { value: "tower" } });
-    expect(getByTestId("project-match").textContent).toContain("2");
-    expect(getByTestId("project-match").textContent).toContain("3");
+    const boxes = getAllByRole("checkbox") as HTMLInputElement[];
+    expect(boxes).toHaveLength(2); // Tower A + Tower B, Bridge North hidden
   });
 
-  it("clears the search and restores the full donut", () => {
+  it("unchecking a project updates the donut in real time", () => {
     const { getByTestId, getByRole } = render(<RolesByProject rows={rows} />);
-    fireEvent.change(getByTestId("project-search"), { target: { value: "bridge" } });
-    expect(getByTestId("echart").getAttribute("data-slices")).toBe("1");
-    fireEvent.click(getByRole("button", { name: /clear/i }));
-    expect((getByTestId("project-search") as HTMLInputElement).value).toBe("");
-    expect(getByTestId("echart").getAttribute("data-slices")).toBe("3");
+    open(getByTestId);
+    fireEvent.click(getByRole("checkbox", { name: /tower b/i })); // drops the Designer role
+    const el = getByTestId("echart");
+    expect(el.getAttribute("data-slices")).toBe("2");
+    expect(el.getAttribute("data-names")).not.toContain("Designer");
+    expect(getByTestId("project-summary").textContent).toContain("2");
+    expect(getByTestId("project-summary").textContent).toContain("3");
   });
 
-  it("shows the donut empty state when no project matches", () => {
-    const { getByTestId, queryByTestId, getByText } = render(<RolesByProject rows={rows} />);
-    fireEvent.change(getByTestId("project-search"), { target: { value: "nonexistent" } });
+  it("Clear unchecks all and shows the donut empty state", () => {
+    const { getByTestId, queryByTestId, getByText, getByRole } = render(<RolesByProject rows={rows} />);
+    open(getByTestId);
+    fireEvent.click(getByRole("button", { name: /clear/i }));
     expect(queryByTestId("echart")).toBeNull();
     expect(getByText(/no role assignments/i)).toBeTruthy();
+    expect(getByTestId("project-summary").textContent).toContain("0");
+  });
+
+  it("Select all re-checks every project", () => {
+    const { getByTestId, getByRole } = render(<RolesByProject rows={rows} />);
+    open(getByTestId);
+    fireEvent.click(getByRole("button", { name: /clear/i }));
+    fireEvent.click(getByRole("button", { name: /select all/i }));
+    expect(getByTestId("echart").getAttribute("data-slices")).toBe("3");
+    expect(getByTestId("project-summary").textContent).toMatch(/all projects/i);
   });
 });

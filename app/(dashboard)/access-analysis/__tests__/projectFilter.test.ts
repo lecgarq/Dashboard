@@ -1,55 +1,58 @@
 import { describe, it, expect } from "vitest";
 import {
-  filterRowsByProject,
-  distinctProjectNames,
-  countMatchedProjects,
+  projectOptions,
+  filterProjectOptions,
+  filterRowsBySelection,
   type ProjectRoleRow,
 } from "../projectFilter";
 
 const rows: ProjectRoleRow[] = [
   { projectId: "p1", projectName: "Tower A", roles: ["Member"] },
-  { projectId: "p1", projectName: "Tower A", roles: [] },
-  { projectId: "p2", projectName: "Tower B", roles: ["Admin"] },
+  { projectId: "p1", projectName: "Tower A", roles: ["Admin", "Member"] },
+  { projectId: "p2", projectName: "Tower B", roles: ["Designer"] },
   { projectId: "p3", projectName: "Bridge North", roles: ["Member"] },
 ];
 
-describe("filterRowsByProject", () => {
-  it("returns every row when the query is empty or whitespace", () => {
-    expect(filterRowsByProject(rows, "")).toHaveLength(4);
-    expect(filterRowsByProject(rows, "   ")).toHaveLength(4);
+describe("projectOptions", () => {
+  it("lists distinct projects as {id,name}, sorted by name", () => {
+    expect(projectOptions(rows)).toEqual([
+      { id: "p3", name: "Bridge North" },
+      { id: "p1", name: "Tower A" },
+      { id: "p2", name: "Tower B" },
+    ]);
+  });
+});
+
+describe("filterProjectOptions", () => {
+  const options = projectOptions(rows);
+
+  it("returns every option when the query is empty or whitespace", () => {
+    expect(filterProjectOptions(options, "")).toHaveLength(3);
+    expect(filterProjectOptions(options, "   ")).toHaveLength(3);
   });
 
-  it("matches project name by case-insensitive substring", () => {
-    const out = filterRowsByProject(rows, "tower");
-    expect(out).toHaveLength(3);
-    expect(out.every((r) => r.projectName.startsWith("Tower"))).toBe(true);
+  it("matches option name by case-insensitive, trimmed substring", () => {
+    expect(filterProjectOptions(options, "tower").map((o) => o.id)).toEqual(["p1", "p2"]);
+    expect(filterProjectOptions(options, "  BRIDGE ").map((o) => o.id)).toEqual(["p3"]);
   });
 
-  it("narrows to a single project when the full name is typed", () => {
-    const out = filterRowsByProject(rows, "Tower B");
+  it("returns no options when nothing matches", () => {
+    expect(filterProjectOptions(options, "nonexistent")).toEqual([]);
+  });
+});
+
+describe("filterRowsBySelection", () => {
+  it("keeps only rows whose project is in the selected set", () => {
+    const out = filterRowsBySelection(rows, new Set(["p3"]));
     expect(out).toHaveLength(1);
-    expect(out[0].projectId).toBe("p2");
+    expect(out[0].projectId).toBe("p3");
   });
 
-  it("ignores surrounding whitespace in the query", () => {
-    expect(filterRowsByProject(rows, "  bridge  ")).toHaveLength(1);
+  it("keeps every row when all projects are selected", () => {
+    expect(filterRowsBySelection(rows, new Set(["p1", "p2", "p3"]))).toHaveLength(4);
   });
 
-  it("returns no rows when nothing matches", () => {
-    expect(filterRowsByProject(rows, "nonexistent")).toEqual([]);
-  });
-});
-
-describe("distinctProjectNames", () => {
-  it("lists unique project names sorted alphabetically", () => {
-    expect(distinctProjectNames(rows)).toEqual(["Bridge North", "Tower A", "Tower B"]);
-  });
-});
-
-describe("countMatchedProjects", () => {
-  it("counts distinct projects (not rows) in a row list", () => {
-    expect(countMatchedProjects(rows)).toBe(3);
-    expect(countMatchedProjects(filterRowsByProject(rows, "tower"))).toBe(2);
-    expect(countMatchedProjects([])).toBe(0);
+  it("keeps nothing when the selection is empty", () => {
+    expect(filterRowsBySelection(rows, new Set())).toEqual([]);
   });
 });

@@ -1,10 +1,11 @@
 /**
- * Pure helpers for the project search bar on the roles donut.
+ * Pure helpers for the project multi-select on the roles donut.
  *
- * The donut is built from per-(user, project) memberships. To let the chart
- * react to a project search without a server round-trip, the page hands the
- * client a slim row per membership; these helpers filter that list by project
- * name and the client re-runs `summarizeRoles` on the result.
+ * The donut is built from per-(user, project) memberships. The project picker is
+ * a checkbox dropdown: the user keeps a *set* of selected project ids, and the
+ * client re-runs `summarizeRoles` on the memberships of the selected projects.
+ * The search string only narrows which project options are shown in the list —
+ * it does not filter the donut directly.
  */
 export interface ProjectRoleRow {
   projectId: string;
@@ -12,23 +13,32 @@ export interface ProjectRoleRow {
   roles: string[];
 }
 
+export interface ProjectOption {
+  id: string;
+  name: string;
+}
+
+/** Distinct projects as {id, name}, sorted alphabetically by name. */
+export function projectOptions(rows: ProjectRoleRow[]): ProjectOption[] {
+  const byId = new Map<string, string>();
+  for (const r of rows) if (!byId.has(r.projectId)) byId.set(r.projectId, r.projectName);
+  return [...byId.entries()]
+    .map(([id, name]) => ({ id, name }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 /**
- * Keep only memberships whose project name contains `query`
- * (case-insensitive, whitespace-trimmed). An empty/blank query keeps every row,
- * so the donut shows the whole account by default.
+ * Narrow the option list to those whose name contains `query`
+ * (case-insensitive, whitespace-trimmed). An empty/blank query keeps every
+ * option, so the full list shows by default.
  */
-export function filterRowsByProject<T extends { projectName: string }>(rows: T[], query: string): T[] {
+export function filterProjectOptions(options: ProjectOption[], query: string): ProjectOption[] {
   const needle = query.trim().toLowerCase();
-  if (!needle) return rows;
-  return rows.filter((r) => r.projectName.toLowerCase().includes(needle));
+  if (!needle) return options;
+  return options.filter((o) => o.name.toLowerCase().includes(needle));
 }
 
-/** Unique project names, sorted alphabetically — feeds the autocomplete datalist. */
-export function distinctProjectNames(rows: ProjectRoleRow[]): string[] {
-  return [...new Set(rows.map((r) => r.projectName))].sort((a, b) => a.localeCompare(b));
-}
-
-/** Number of distinct projects represented in a row list (not the row count). */
-export function countMatchedProjects(rows: ProjectRoleRow[]): number {
-  return new Set(rows.map((r) => r.projectId)).size;
+/** Keep only memberships whose project id is in the selected set. */
+export function filterRowsBySelection(rows: ProjectRoleRow[], selected: ReadonlySet<string>): ProjectRoleRow[] {
+  return rows.filter((r) => selected.has(r.projectId));
 }
