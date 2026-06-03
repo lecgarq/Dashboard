@@ -16,6 +16,9 @@ import sys
 import threading
 import shutil
 import time
+import json
+import urllib.error
+import urllib.request
 from pathlib import Path
 
 LOD_CHECKER_DIR = Path(r"C:\LECG\LOD Checker")
@@ -212,7 +215,7 @@ def run_next_build(project_root: Path) -> int:
         return 0
 
 
-def run_next_dev(project_root: Path, port: int) -> int:
+def run_next_dev(project_root: Path, port: int, prewarm_acc: bool = False) -> int:
     env = os.environ.copy()
     env["PORT"] = str(port)
 
@@ -235,11 +238,47 @@ def run_next_dev(project_root: Path, port: int) -> int:
 
     thread = threading.Thread(target=stream_output, args=(proc, "dashboard"), daemon=True)
     thread.start()
+    if prewarm_acc:
+        prewarm_thread = threading.Thread(target=prewarm_acc_when_ready, args=(port,), daemon=True)
+        prewarm_thread.start()
 
     try:
         return proc.wait()
     except KeyboardInterrupt:
         return 0
+
+
+def env_flag_enabled(name: str) -> bool:
+    return os.environ.get(name, "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def prewarm_acc_when_ready(port: int, timeout_seconds: int = 180) -> None:
+    url = f"http://localhost:{port}/api/dev/prewarm-acc"
+    deadline = time.time() + timeout_seconds
+    last_error: Exception | None = None
+
+    print(f"[runner] ACC prewarm enabled; waiting for {url}")
+    while time.time() < deadline:
+        try:
+            request = urllib.request.Request(url, method="GET")
+            with urllib.request.urlopen(request, timeout=20) as response:
+                raw = response.read().decode("utf-8")
+            payload = json.loads(raw)
+            print(
+                f"[runner] ACC prewarm complete: ok={payload.get('ok')} "
+                f"totalMs={payload.get('totalMs')} cache={payload.get('cache')}"
+            )
+            for task in payload.get("tasks", []):
+                print(
+                    f"[runner] ACC prewarm {task.get('name')}: "
+                    f"ok={task.get('ok')} rows={task.get('rows')} ms={task.get('ms')}"
+                )
+            return
+        except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError, json.JSONDecodeError) as err:
+            last_error = err
+            time.sleep(2)
+
+    print(f"[runner] Warning: ACC prewarm did not complete within {timeout_seconds}s: {last_error}")
 
 
 def run_next_start(project_root: Path, port: int) -> int:
@@ -306,6 +345,11 @@ def parse_args() -> argparse.Namespace:
         "--no-clean",
         action="store_true",
         help="Do not clear the .next cache before starting Next.js",
+    )
+    parser.add_argument(
+        "--prewarm-acc",
+        action="store_true",
+        help="After Next.js is reachable, warm ACC snapshot caches in the dev server process",
     )
     return parser.parse_args()
 
@@ -398,7 +442,7 @@ def main() -> int:
                 return build_code
             return run_next_start(project_root, args.port)
 
-        return run_next_dev(project_root, args.port)
+        return run_next_dev(project_root, args.port, prewarm_acc=args.prewarm_acc or env_flag_enabled("ACC_PREWARM"))
     finally:
         print("\n[runner] Shutting down all processes...")
         kill_children()

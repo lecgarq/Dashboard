@@ -34,6 +34,63 @@ export interface FolderOnlyOrphan {
   reasons: OrphanReason[];
 }
 
+type FolderMemberCounts = {
+  roleCounts: Array<{ projectId: string; roleId: string; memberCount: number }>;
+  projectMemberCounts: Array<{ projectId: string; memberCount: number }>;
+};
+
+function projectIdWhere(projectIds?: string[]) {
+  return projectIds?.length ? { projectId: { in: projectIds } } : {};
+}
+
+async function getFolderMemberCounts(db: any, projectIds?: string[]): Promise<FolderMemberCounts> {
+  const where = projectIdWhere(projectIds);
+  const [legacyRoleCounts, legacyProjectMemberCounts] = await Promise.all([
+    db.accProjectRole.groupBy({
+      by: ["projectId", "roleId"],
+      where: { ...where, memberId: { not: null } },
+      _count: { memberId: true },
+    }),
+    db.accProjectMember.groupBy({
+      by: ["projectId"],
+      where,
+      _count: { id: true },
+    }),
+  ]);
+
+  const roleCounts = legacyRoleCounts.length > 0
+    ? legacyRoleCounts.map((r: any) => ({
+        projectId: r.projectId,
+        roleId: r.roleId,
+        memberCount: r._count.memberId,
+      }))
+    : (await db.accDcProjectUserRole.groupBy({
+        by: ["projectId", "roleId"],
+        where,
+        _count: { userId: true },
+      })).map((r: any) => ({
+        projectId: r.projectId,
+        roleId: r.roleId,
+        memberCount: r._count.userId,
+      }));
+
+  const projectMemberCounts = legacyProjectMemberCounts.length > 0
+    ? legacyProjectMemberCounts.map((m: any) => ({
+        projectId: m.projectId,
+        memberCount: m._count.id,
+      }))
+    : (await db.accDcProjectUser.groupBy({
+        by: ["projectId"],
+        where,
+        _count: { userId: true },
+      })).map((m: any) => ({
+        projectId: m.projectId,
+        memberCount: m._count.userId,
+      }));
+
+  return { roleCounts, projectMemberCounts };
+}
+
 export const accFoldersRouter = router({
   /**
    * Lightweight coverage signal for the Users data strip.
@@ -66,11 +123,9 @@ export const accFoldersRouter = router({
   getMatrix: protectedProcedure
     .input(z.object({ projectIds: z.array(z.string()).optional() }).optional())
     .query(async ({ ctx, input }) => {
-      const projectFilter = input?.projectIds?.length
-        ? { projectId: { in: input.projectIds } }
-        : {};
+      const projectFilter = projectIdWhere(input?.projectIds);
 
-      const [folders, permissions, roleCounts, projectMemberCounts, projects, roles] =
+      const [folders, permissions, counts, projects, roles] =
         await Promise.all([
           ctx.db.accFolder.findMany({
             where: projectFilter,
@@ -92,15 +147,7 @@ export const accFoldersRouter = router({
               folder: { select: { projectId: true } },
             },
           }),
-          ctx.db.accProjectRole.groupBy({
-            by: ["projectId", "roleId"],
-            where: { memberId: { not: null } },
-            _count: { memberId: true },
-          }),
-          ctx.db.accProjectMember.groupBy({
-            by: ["projectId"],
-            _count: { id: true },
-          }),
+          getFolderMemberCounts(ctx.db, input?.projectIds),
           ctx.db.accProject.findMany({
             where: { status: "active" },
             select: { id: true, name: true, folderCrawlStatus: true },
@@ -121,15 +168,8 @@ export const accFoldersRouter = router({
           permType: p.permType,
           actions: p.actions,
         })),
-        projectRoles: roleCounts.map((r) => ({
-          projectId: r.projectId,
-          roleId: r.roleId,
-          memberCount: r._count.memberId,
-        })),
-        projectMembers: projectMemberCounts.map((m) => ({
-          projectId: m.projectId,
-          memberCount: m._count.id,
-        })),
+        projectRoles: counts.roleCounts,
+        projectMembers: counts.projectMemberCounts,
       });
 
       const projectById = new Map(projects.map((p) => [p.id, p]));
@@ -169,7 +209,7 @@ export const accFoldersRouter = router({
    * plus all folder-level orphans (folders with no permissions at all).
    */
   getOrphanRoles: protectedProcedure.query(async ({ ctx }) => {
-    const [folders, permissions, roleCounts, projectMemberCounts, projects, roles] =
+    const [folders, permissions, counts, projects, roles] =
       await Promise.all([
         ctx.db.accFolder.findMany({
           select: {
@@ -189,15 +229,7 @@ export const accFoldersRouter = router({
             folder: { select: { projectId: true } },
           },
         }),
-        ctx.db.accProjectRole.groupBy({
-          by: ["projectId", "roleId"],
-          where: { memberId: { not: null } },
-          _count: { memberId: true },
-        }),
-        ctx.db.accProjectMember.groupBy({
-          by: ["projectId"],
-          _count: { id: true },
-        }),
+        getFolderMemberCounts(ctx.db),
         ctx.db.accProject.findMany({
           where: { status: "active" },
           select: { id: true, name: true, folderCrawlStatus: true },
@@ -218,15 +250,8 @@ export const accFoldersRouter = router({
         permType: p.permType,
         actions: p.actions,
       })),
-      projectRoles: roleCounts.map((r) => ({
-        projectId: r.projectId,
-        roleId: r.roleId,
-        memberCount: r._count.memberId,
-      })),
-      projectMembers: projectMemberCounts.map((m) => ({
-        projectId: m.projectId,
-        memberCount: m._count.id,
-      })),
+      projectRoles: counts.roleCounts,
+      projectMembers: counts.projectMemberCounts,
     });
 
     const projectById = new Map(projects.map((p) => [p.id, p]));

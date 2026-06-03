@@ -69,16 +69,16 @@ function ResetPasswordForm() {
             <Sparkles className="h-3.5 w-3.5" />
             New credentials
           </div>
-          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Reset password
           </h2>
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-muted-foreground">
             Choose a new password and return to the dashboard immediately after verification.
           </p>
         </div>
 
         {error && (
-          <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/90 px-4 py-4 text-sm text-rose-700">
+          <div className="mt-6 rounded-2xl border border-rose-200/80 bg-rose-50/90 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 px-4 py-4 text-sm">
             {error}{" "}
             {error.includes("invalid or expired") && (
               <Link href="/forgot-password" className="font-semibold underline">
@@ -90,15 +90,15 @@ function ResetPasswordForm() {
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-4">
           <div className="space-y-2">
-            <label className="ml-1 text-sm font-semibold text-slate-700">New password</label>
+            <label className="ml-1 text-sm font-semibold text-foreground/80">New password</label>
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
               <Input
                 type="password"
                 placeholder="Minimum 6 characters"
                 required
                 minLength={6}
-                className="h-12 rounded-2xl border-white/70 pl-11"
+                className="h-12 rounded-2xl border-input pl-11"
                 value={newPassword}
                 onChange={(event) => setNewPassword(event.target.value)}
               />
@@ -106,14 +106,14 @@ function ResetPasswordForm() {
           </div>
 
           <div className="space-y-2">
-            <label className="ml-1 text-sm font-semibold text-slate-700">Confirm password</label>
+            <label className="ml-1 text-sm font-semibold text-foreground/80">Confirm password</label>
             <div className="relative">
-              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+              <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
               <Input
                 type="password"
                 placeholder="Repeat your new password"
                 required
-                className="h-12 rounded-2xl border-white/70 pl-11"
+                className="h-12 rounded-2xl border-input pl-11"
                 value={confirmPassword}
                 onChange={(event) => setConfirmPassword(event.target.value)}
               />

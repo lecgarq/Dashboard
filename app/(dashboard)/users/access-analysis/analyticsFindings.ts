@@ -69,6 +69,51 @@ export function computeActiveMembersFinding(
   return `${count.toLocaleString()} ${plural(count, "member")} signed in within ${thresholdDays} days.`;
 }
 
+export interface SignInCoverage {
+  withSignIn: number;
+  total: number;
+  percent: number;
+}
+
+/**
+ * How many users have a *recorded* last sign-in. Sign-in recency is only
+ * available for a fraction of users (per data discovery ~34%), so a "Never
+ * signed in" bucket is dominated by missing data, not real inactivity. The
+ * Sign-in recency donut surfaces this coverage so the gap is not misread.
+ */
+export function computeSignInCoverage(users: readonly BulkAccUser[]): SignInCoverage {
+  const total = users.length;
+  const withSignIn = users.filter(
+    (user) => user.lastSignIn != null && Number.isFinite(Date.parse(user.lastSignIn)),
+  ).length;
+  const percent = total === 0 ? 0 : Math.round((withSignIn / total) * 100);
+  return { withSignIn, total, percent };
+}
+
+export interface FolderProjectCoverage {
+  projectsWithFolders: number;
+  totalProjects: number;
+}
+
+/**
+ * How many distinct projects have any folder-permission data vs how many
+ * projects exist across the membership feed. Folder crawling is project-sparse
+ * (most projects are never crawled), so the Permission-tier donut covers only
+ * this crawled subset — surfaced as a caption to avoid over-generalizing.
+ */
+export function computeFolderProjectCoverage(
+  folderRows: readonly GraphFolderPermissionRow[],
+  users: readonly BulkAccUser[],
+): FolderProjectCoverage {
+  const projectsWithFolders = new Set(
+    folderRows.map((row) => row.projectId).filter(Boolean),
+  ).size;
+  const totalProjects = new Set(
+    users.flatMap((user) => user.projects.map((project) => project.id)).filter(Boolean),
+  ).size;
+  return { projectsWithFolders, totalProjects };
+}
+
 export function computePermissionTierFinding(folderRows: readonly GraphFolderPermissionRow[]): string {
   if (folderRows.length === 0) return "No folder grants are available yet.";
   const counts = new Map<string, number>();

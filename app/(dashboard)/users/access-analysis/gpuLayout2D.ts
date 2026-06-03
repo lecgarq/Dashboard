@@ -62,6 +62,13 @@ export interface GpuForceConfig {
   simulationGravity: number;
   simulationDecay: number;
   simulationFriction: number;
+  /**
+   * Link spring force coefficient. Optional. Set to 0 to make rendered links
+   * render-ONLY (no layout force) — non-zero link springs pull edge-connected
+   * nodes into filaments ("worm") and tie nodes across clusters toward the
+   * centre, fighting cluster separation.
+   */
+  simulationLinkSpring?: number;
 }
 
 /** Linear interpolation clamped to [0,1] on t. */
@@ -164,5 +171,55 @@ export function mapClusterForceConfig(): GpuForceConfig {
     simulationGravity: 0.1,
     simulationDecay: 3000,
     simulationFriction: 0.85,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Dominant-attribute clustering (the grouped-blob layout)
+//
+// The user-chosen model: one labelable blob per distinct value of whichever
+// attribute has the highest slider. The GPU graph groups nodes by `clusterId`
+// and — when cluster positions are NOT pinned — places each cluster at its
+// members' CENTERMASS, so repulsion + cluster-pull arrange the groups into
+// well-separated organic blobs, NOT a pinned ring (the "radial" look).
+//
+// The slider then drives ONLY tightness: 0 = no cluster pull (pure repulsion →
+// nodes spread "all over the place") → 100 = strong pull (tight blobs).
+// ---------------------------------------------------------------------------
+
+/** Number of distinct clusters in an id array (max id + 1; 0 when empty). */
+export function clusterCountOf(ids: Int32Array | ReadonlyArray<number>): number {
+  let m = -1;
+  for (let i = 0; i < ids.length; i++) if (ids[i] > m) m = ids[i];
+  return m + 1;
+}
+
+/**
+ * Slider→force mapping for the dominant-attribute blob layout with PINNED cluster
+ * anchors (cluster positions come from dominantClusters.clusterPositions2D and are
+ * fixed via setClusterPositions, so separation is structural — see dominantClusters).
+ *
+ *   simulationCluster  0 → 0.8   the slider's ONLY job: tightness of pinned blobs
+ *   simulationRepulsion 0.5 const gives each blob area without flinging nodes
+ *   simulationGravity   0.05 const gentle containment for the slider-0 scatter
+ *
+ * At max=0 the cluster pull is 0 — with the caller leaving nodes unclustered, the
+ * graph is a calm, contained scatter ("all sliders 0 → nothing happens"). At max=1
+ * each node snaps tightly to its cluster's pinned, pre-separated anchor.
+ *
+ * Pinned anchors + calm repulsion (not a high-repulsion, moving-centermass target)
+ * are what remove the "worm"/uncontrollable feel of the earlier layout.
+ */
+export function mapDominantForceConfig(sliderMax: number): GpuForceConfig {
+  const max = Math.min(1, Math.max(0, sliderMax));
+  return {
+    simulationRepulsion: 0.5,
+    simulationCluster: lerp(0, 0.8, max),
+    simulationGravity: 0.05,
+    simulationDecay: lerp(3000, 6000, max),
+    simulationFriction: 0.85,
+    // Render-only links: no spring force → no "worm" filaments, and same-user
+    // edges never drag nodes across clusters back toward the centre.
+    simulationLinkSpring: 0,
   };
 }

@@ -74,8 +74,17 @@ interface MappedRow {
   projectId: string;
   rawAction: string;
   service: string;
+  tool: string | null;
+  details: string | null;
   ingestRunId: string;
   createdAt: Date;
+}
+
+function parseApsDate(raw: string): Date {
+  const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}(?:\.\d+)?$/.test(raw)
+    ? `${raw.replace(' ', 'T')}Z`
+    : raw;
+  return new Date(normalized);
 }
 
 export async function ingestActivityCsv(
@@ -148,7 +157,14 @@ export async function ingestActivityCsv(
         `[dcActivityCsvIngest:diagnostic] file=${input.filename} columns=${JSON.stringify(Object.keys(raw))} sample=${JSON.stringify(raw).slice(0, 500)}`,
       );
     }
-    const autodeskId = raw.autodesk_id ?? raw.autodeskId ?? raw.user_id ?? raw.userId ?? '';
+    const autodeskId =
+      raw.autodesk_id ??
+      raw.autodeskId ??
+      raw.user_id ??
+      raw.userId ??
+      raw.created_by ??
+      raw.createdBy ??
+      '';
     const name = raw.user_name ?? raw.userName ?? raw.name ?? null;
 
     if (isBotActor({ autodeskId: autodeskId || null, name })) {
@@ -156,19 +172,26 @@ export async function ingestActivityCsv(
       continue;
     }
 
-    const rawAction = raw.raw_action ?? raw.action ?? raw.action_type ?? raw.actionType ?? '';
+    const rawAction =
+      raw.raw_action ??
+      raw.action ??
+      raw.action_type ??
+      raw.actionType ??
+      raw.activity_verb ??
+      raw.activityVerb ??
+      '';
     const createdAtRaw = raw.created_at ?? raw.createdAt ?? raw.timestamp ?? '';
     if (!autodeskId || !rawAction || !createdAtRaw) {
       rowsSkippedNoModule += 1;
       continue;
     }
-    const createdAt = new Date(createdAtRaw);
+    const createdAt = parseApsDate(createdAtRaw);
     if (Number.isNaN(createdAt.getTime())) {
       rowsSkippedNoModule += 1;
       continue;
     }
 
-    const projectIdRaw = raw.project_id ?? raw.projectId ?? '';
+    const projectIdRaw = raw.project_id ?? raw.projectId ?? raw.bim360_project_id ?? '';
     // Empty-string sentinel for admin rows so the AccActivity composite @@unique
     // dedup applies (Postgres treats NULL != NULL in unique constraints).
     const projectId = projectIdRaw || '';
@@ -176,12 +199,23 @@ export async function ingestActivityCsv(
     const lookupEmail = input.emailLookup.get(autodeskId);
     const csvEmail = (raw.user_email ?? raw.userEmail ?? raw.email ?? '').toLowerCase() || null;
 
+    const tool = raw.tool ?? raw.tool_name ?? null;
+    const details =
+      raw.details ??
+      raw.description ??
+      raw.object_display_name ??
+      raw.target_display_name ??
+      raw.object_file_name ??
+      null;
+
     buffer.push({
       autodeskId,
       userEmail: lookupEmail ?? csvEmail ?? null,
       projectId,
       rawAction,
       service: moduleName, // ALWAYS set — RESEARCH Anti-Patterns point 3.
+      tool,
+      details,
       ingestRunId: input.ingestRunId,
       createdAt,
     });

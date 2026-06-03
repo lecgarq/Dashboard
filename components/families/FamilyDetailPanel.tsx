@@ -62,8 +62,8 @@ function TipTapEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "prose prose-sm max-w-none min-h-[120px] p-3 text-sm text-gray-900 outline-none border border-gray-200 rounded-md focus:border-blue-400 transition-colors",
-          disabled && "bg-gray-50 opacity-60 cursor-not-allowed"
+          "prose prose-sm max-w-none min-h-[120px] p-3 text-sm text-foreground outline-none border border-border rounded-md focus:border-blue-400 transition-colors",
+          disabled && "bg-muted/50 opacity-60 cursor-not-allowed"
         ),
       },
     },
@@ -285,9 +285,9 @@ export function FamilyDetailPanel({
     <PanelErrorBoundary label="family-detail">
       <Sheet open={open} onOpenChange={(o) => !o && onClose()}>
         <SheetContent className="w-full sm:max-w-2xl overflow-y-auto p-0" side="right">
-          <SheetHeader className="px-6 py-4 border-b border-gray-200">
+          <SheetHeader className="px-6 py-4 border-b border-border">
             <div className="flex items-center justify-between">
-              <SheetTitle className="text-base font-semibold text-gray-900">{family.name}</SheetTitle>
+              <SheetTitle className="text-base font-semibold text-foreground">{family.name}</SheetTitle>
               {isEditor && (
                 <Button size="sm" onClick={handleSave} disabled={updateFamily.isPending}>
                   {updateFamily.isPending ? "Saving…" : "Save"}
@@ -297,7 +297,7 @@ export function FamilyDetailPanel({
           </SheetHeader>
 
           <Tabs defaultValue="details" className="flex-1">
-            <TabsList className="w-full justify-start rounded-none border-b border-gray-200 bg-white px-6 h-10">
+            <TabsList className="w-full justify-start rounded-none border-b border-border bg-card px-6 h-10">
               <TabsTrigger value="details" className="text-xs">Details</TabsTrigger>
               <TabsTrigger value="3d" className="text-xs font-bold text-primary flex items-center gap-1.5">
                 <Box size={12} />
@@ -313,11 +313,11 @@ export function FamilyDetailPanel({
               {family.apsUrn ? (
                 <div className="space-y-4">
                   <BimViewer urn={family.apsUrn} />
-                  <div className="p-3 rounded-lg bg-blue-50 border border-blue-100 flex items-start gap-3">
+                  <div className="p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-start gap-3">
                     <Info className="w-4 h-4 text-blue-500 mt-0.5" />
                     <div className="space-y-1">
-                      <p className="text-[10px] font-bold text-blue-900 uppercase tracking-widest">3D Model Status</p>
-                      <p className="text-xs text-blue-700">
+                      <p className="text-[10px] font-bold text-blue-900 dark:text-blue-200 uppercase tracking-widest">3D Model Status</p>
+                      <p className="text-xs text-blue-700 dark:text-blue-300">
                         {family.apsStatus === "SUCCESS" 
                           ? "Model is fully synchronized with Autodesk APS." 
                           : "Model is currently being processed. It may take a few minutes."}
@@ -326,12 +326,12 @@ export function FamilyDetailPanel({
                   </div>
                 </div>
               ) : (
-                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
+                <div className="flex flex-col items-center justify-center p-12 border-2 border-dashed border-border/50 rounded-2xl bg-muted/50/50">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mb-4">
                     <Box size={24} className="text-primary" />
                   </div>
-                  <h3 className="text-sm font-bold text-gray-900 mb-1">No 3D Model Found</h3>
-                  <p className="text-xs text-gray-500 text-center max-w-[240px] mb-6">
+                  <h3 className="text-sm font-bold text-foreground mb-1">No 3D Model Found</h3>
+                  <p className="text-xs text-muted-foreground text-center max-w-[240px] mb-6">
                     We need to generate a 3D viewable from an attached Revit family file.
                   </p>
                   {family.attachments.filter(a => a.name.toLowerCase().endsWith('.rfa')).length > 0 ? (
@@ -363,15 +363,15 @@ export function FamilyDetailPanel({
             <TabsContent value="details" className="px-6 py-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Name</label>
+                  <label className="text-xs font-medium text-muted-foreground">Name</label>
                   <Input value={name} onChange={(e) => setName(e.target.value)} className="h-8 text-sm" disabled={!isEditor} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Category</label>
+                  <label className="text-xs font-medium text-muted-foreground">Category</label>
                   <Input value={category} onChange={(e) => setCategory(e.target.value)} className="h-8 text-sm" disabled={!isEditor} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Phase</label>
+                  <label className="text-xs font-medium text-muted-foreground">Phase</label>
                   <Select value={phase} onValueChange={(value) => setPhase(value as FamilyPhase)} disabled={!isEditor}>
                     <SelectTrigger className="h-8 text-sm">
                       <SelectValue />
@@ -384,11 +384,11 @@ export function FamilyDetailPanel({
                   </Select>
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Owner</label>
+                  <label className="text-xs font-medium text-muted-foreground">Owner</label>
                   <Input value={owner} onChange={(e) => setOwner(e.target.value)} className="h-8 text-sm" disabled={!isEditor} />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Due Date</label>
+                  <label className="text-xs font-medium text-muted-foreground">Due Date</label>
                   <Input
                     type="date"
                     value={dueDate}
@@ -398,7 +398,7 @@ export function FamilyDetailPanel({
                   />
                 </div>
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Blocked</label>
+                  <label className="text-xs font-medium text-muted-foreground">Blocked</label>
                   <div className="flex items-center gap-2 h-8">
                     <input
                       type="checkbox"
@@ -407,14 +407,14 @@ export function FamilyDetailPanel({
                       className="rounded"
                       disabled={!isEditor}
                     />
-                    <span className="text-sm text-gray-600">Is blocked</span>
+                    <span className="text-sm text-foreground/70">Is blocked</span>
                   </div>
                 </div>
               </div>
 
               {isBlocked && (
                 <div className="space-y-1">
-                  <label className="text-xs font-medium text-gray-500">Blocked by</label>
+                  <label className="text-xs font-medium text-muted-foreground">Blocked by</label>
                   <Input
                     value={blockedBy}
                     onChange={(e) => setBlockedBy(e.target.value)}
@@ -427,7 +427,7 @@ export function FamilyDetailPanel({
 
               <div className="space-y-1">
                 <div className="flex items-center justify-between">
-                  <label className="text-xs font-medium text-gray-500">Description</label>
+                  <label className="text-xs font-medium text-muted-foreground">Description</label>
                   {isEditor && (
                     <Button
                       variant="outline"
@@ -451,7 +451,7 @@ export function FamilyDetailPanel({
                   )}
                 </div>
                 {aiLoading && aiText && (
-                  <div className="text-xs text-gray-500 bg-gray-50 p-2 rounded border border-gray-200 whitespace-pre-wrap">
+                  <div className="text-xs text-muted-foreground bg-muted/50 p-2 rounded border border-border whitespace-pre-wrap">
                     {aiText}
                   </div>
                 )}
@@ -464,7 +464,7 @@ export function FamilyDetailPanel({
               </div>
 
               <div className="space-y-1">
-                <label className="text-xs font-medium text-gray-500">Next Steps</label>
+                <label className="text-xs font-medium text-muted-foreground">Next Steps</label>
                 <Textarea
                   value={nextSteps}
                   onChange={(e) => setNextSteps(e.target.value)}
@@ -479,8 +479,8 @@ export function FamilyDetailPanel({
             {/* CHANGELOG TAB */}
             <TabsContent value="changelog" className="px-6 py-4 space-y-4">
               {isEditor && (
-                <div className="space-y-2 border border-gray-200 rounded-lg p-3 bg-gray-50">
-                  <p className="text-xs font-medium text-gray-500">Add Entry</p>
+                <div className="space-y-2 border border-border rounded-lg p-3 bg-muted/50">
+                  <p className="text-xs font-medium text-muted-foreground">Add Entry</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Input value={clVersion} onChange={(e) => setClVersion(e.target.value)} placeholder="Version (e.g. 1.2)" className="h-8 text-sm" />
                     <Input value={clAuthor} onChange={(e) => setClAuthor(e.target.value)} placeholder="Author" className="h-8 text-sm" />
@@ -495,18 +495,18 @@ export function FamilyDetailPanel({
 
               <div className="space-y-2">
                 {family.changelog.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No changelog entries yet.</p>
+                  <p className="text-sm text-muted-foreground/60 text-center py-4">No changelog entries yet.</p>
                 ) : (
                   family.changelog.map((entry) => (
-                    <div key={entry.id} className="border border-gray-200 rounded p-3 space-y-1">
+                    <div key={entry.id} className="border border-border rounded p-3 space-y-1">
                       <div className="flex items-center gap-2">
-                        <Badge className="text-xs bg-gray-100 text-gray-700">v{entry.version}</Badge>
-                        <span className="text-xs text-gray-500">{entry.author}</span>
-                        <span className="text-xs text-gray-400 ml-auto">
+                        <Badge className="text-xs bg-secondary text-foreground/80">v{entry.version}</Badge>
+                        <span className="text-xs text-muted-foreground">{entry.author}</span>
+                        <span className="text-xs text-muted-foreground/60 ml-auto">
                           {new Date(entry.createdAt).toLocaleDateString()}
                         </span>
                       </div>
-                      <p className="text-sm text-gray-700">{entry.message}</p>
+                      <p className="text-sm text-foreground/80">{entry.message}</p>
                       {entry.impact && (
                         <p className="text-xs text-amber-600">Impact: {entry.impact}</p>
                       )}
@@ -549,10 +549,10 @@ export function FamilyDetailPanel({
 
               <div className="space-y-1">
                 {family.deliverables.length === 0 ? (
-                  <p className="text-sm text-gray-400 text-center py-4">No deliverables defined.</p>
+                  <p className="text-sm text-muted-foreground/60 text-center py-4">No deliverables defined.</p>
                 ) : (
                   family.deliverables.map((d) => (
-                    <div key={d.id} className="flex items-center gap-3 py-2 border-b border-gray-100">
+                    <div key={d.id} className="flex items-center gap-3 py-2 border-b border-border/50">
                       <input
                         type="checkbox"
                         checked={d.done}
@@ -560,7 +560,7 @@ export function FamilyDetailPanel({
                         className="rounded"
                         disabled={!isEditor}
                       />
-                      <span className={`text-sm ${d.done ? "line-through text-gray-400" : "text-gray-700"}`}>
+                      <span className={`text-sm ${d.done ? "line-through text-muted-foreground/60" : "text-foreground/80"}`}>
                         {d.name}
                       </span>
                       {d.fileUrl && (
@@ -594,7 +594,7 @@ export function FamilyDetailPanel({
                   onUploadError={(error) => alert(`Upload Error: ${error.message}`)}
                   appearance={{
                     button: "bg-blue-600 text-white text-xs px-3 py-1 rounded h-7 hover:bg-blue-700",
-                    allowedContent: "text-xs text-gray-400",
+                    allowedContent: "text-xs text-muted-foreground/60",
                   }}
                 />
               ) : isEditor ? (
@@ -605,10 +605,10 @@ export function FamilyDetailPanel({
 
               <div className="grid grid-cols-2 gap-3">
                 {family.attachments.length === 0 ? (
-                  <div className="col-span-2 text-sm text-gray-400 text-center py-6">No media uploaded.</div>
+                  <div className="col-span-2 text-sm text-muted-foreground/60 text-center py-6">No media uploaded.</div>
                 ) : (
                   family.attachments.map((att) => (
-                    <div key={att.id} className="relative group border border-gray-200 rounded overflow-hidden">
+                    <div key={att.id} className="relative group border border-border rounded overflow-hidden">
                       {att.type === "IMAGE" ? (
                         <img
                           src={att.url}
@@ -619,19 +619,19 @@ export function FamilyDetailPanel({
                         <video src={att.url} className="w-full h-32 object-cover" controls />
                       ) : (
                         <a href={att.url} target="_blank" rel="noopener noreferrer"
-                          className="flex items-center justify-center h-32 bg-gray-50 text-xs text-blue-600 hover:underline">
+                          className="flex items-center justify-center h-32 bg-muted/50 text-xs text-blue-600 hover:underline">
                           {att.name}
                         </a>
                       )}
-                      <div className="absolute bottom-0 inset-x-0 bg-white/90 px-2 py-1 flex items-center justify-between">
-                        <span className="text-xs text-gray-600 truncate">{att.name}</span>
-                        <Badge className="text-xs bg-gray-100 text-gray-500 px-1">
+                      <div className="absolute bottom-0 inset-x-0 bg-card/90 px-2 py-1 flex items-center justify-between">
+                        <span className="text-xs text-foreground/70 truncate">{att.name}</span>
+                        <Badge className="text-xs bg-secondary text-muted-foreground px-1">
                           {ATTACHMENT_TYPE_LABELS[att.type]}
                         </Badge>
                       </div>
                       {isEditor && (
                         <button
-                          className="absolute top-1 right-1 bg-white/90 rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="absolute top-1 right-1 bg-card/90 rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
                           onClick={() => deleteAttachment.mutate({ id: att.id })}
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-red-500">

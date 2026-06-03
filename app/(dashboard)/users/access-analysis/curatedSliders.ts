@@ -6,8 +6,11 @@
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { sliderDimensions } from "./catalogSliders";
 
-/** The only sliders the graph currently uses. Order is irrelevant (layout sorts by value). */
-export const CURATED_SLIDER_IDS = ["project", "role", "user"] as const;
+/** The only sliders the graph currently uses. Order is irrelevant (layout sorts by value).
+ *  Pared to a single "user" slider (2026-06-02) to nail the user-name blob behavior first;
+ *  "project" and "role" return next, but as an ORGANIC multi-attribute layout — NOT the rigid
+ *  cross-tab grid (Luis: "the form always needs to be organic, not like a fixed grid"). */
+export const CURATED_SLIDER_IDS = ["user"] as const;
 
 const SET = new Set<string>(CURATED_SLIDER_IDS);
 

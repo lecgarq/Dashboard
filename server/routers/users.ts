@@ -29,6 +29,7 @@ import {
 } from "@/lib/server/acc-admin";
 import { getAccountId } from "@/lib/server/acc-helpers";
 import { rebuildAccGraphCache, sanitizeGraphPositions, ACC_GRAPH_CACHE_ID } from "@/lib/server/graph-rebuild";
+import { getCachedBulkAccSummary, invalidateAccHotCache } from "@/lib/server/acc-hot-cache";
 
 const logger = createLogger("users");
 const EMPTY_ACC_GRAPH_STATS: AccGraphStats = {
@@ -807,127 +808,7 @@ export const usersRouter = router({
    * Plan 7.2 hub-wide permission analysis. Fields are strictly additive.
    */
   bulkAccSummary: adminProcedure.query(async ({ ctx }) => {
-    const [users, caches] = await Promise.all([
-      ctx.db.user.findMany({ select: { email: true, name: true } }),
-      ctx.db.accMemberCache.findMany(),
-    ]);
-
-    const userMap = new Map(users.map((u) => [u.email.toLowerCase(), u.name]));
-    const cacheMap = new Map(caches.map((c) => [c.email.toLowerCase(), c]));
-
-    const allEmails = new Set([
-      ...users.map((u) => u.email.toLowerCase()),
-      ...caches.map((c) => c.email.toLowerCase()),
-    ]);
-
-    type CachedProject = {
-      id: string;
-      name: string;
-      status: string;
-      isAdmin: boolean;
-      roles: string[];
-      modules: string[];
-    };
-
-    type CachedData = {
-      found: boolean;
-      name?: string;
-      syncedAt?: string;
-      projects?: CachedProject[];
-      companyRole?: string | null;
-      lastSignIn?: string | null;
-      // 04-01: written by bulkAccSync when accUser.role === "account_admin".
-      // Optional on read because legacy cache rows predating 04-01 do not carry it.
-      isAccountAdmin?: boolean;
-      // 04-02: ACC member-creation date (HQ v1 `created_at`, ISO 8601), normalized to ISO
-      // at the write site. Optional on read because legacy cache rows predate this field;
-      // those rows surface as `addedOn: null` to BulkAccUser consumers (DASH-06).
-      addedOn?: string | null;
-    };
-
-    return Array.from(allEmails).map((emailLower) => {
-      const cached = cacheMap.get(emailLower);
-      const registeredName = userMap.get(emailLower);
-      const email = cached?.email || users.find(u => u.email.toLowerCase() === emailLower)?.email || emailLower;
-
-      if (!cached) {
-        return {
-          email,
-          name: registeredName ?? "",
-          found: false,
-          projectCount: 0,
-          activeCount: 0,
-          adminCount: 0,
-          hasNoProjects: true,
-          syncedAt: "",
-          allRoles: [] as string[],
-          allModules: [] as string[],
-          projects: [] as CachedProject[],
-          isAccountAdmin: false,
-          addedOn: null,
-        };
-      }
-
-      let data: CachedData = { found: false };
-      const raw = cached.data as unknown;
-      if (typeof raw === "string") {
-        try { data = JSON.parse(raw) as CachedData; } catch { /* ignore */ }
-      } else if (raw && typeof raw === "object") {
-        data = raw as CachedData;
-      }
-
-      if (!data.found) {
-        return {
-          email,
-          name: registeredName ?? data.name ?? "",
-          found: false,
-          projectCount: 0,
-          activeCount: 0,
-          adminCount: 0,
-          hasNoProjects: true,
-          syncedAt: data.syncedAt ?? cached.syncedAt.toISOString(),
-          allRoles: [] as string[],
-          allModules: [] as string[],
-          projects: [] as CachedProject[],
-          isAccountAdmin: false,
-          addedOn: null,
-        };
-      }
-
-      const projects: CachedProject[] = data.projects ?? [];
-      const activeCount = projects.filter(
-        (p) => p.status?.toLowerCase() === "active"
-      ).length;
-      const adminCount = projects.filter((p) => p.isAdmin).length;
-      const allRoles = [...new Set(projects.flatMap((p) => p.roles ?? []))];
-      const allModules = [...new Set(projects.flatMap((p) => p.modules ?? []))];
-
-      return {
-        email,
-        name: registeredName ?? data.name ?? "",
-        found: true,
-        projectCount: projects.length,
-        activeCount,
-        adminCount,
-        hasNoProjects: projects.length === 0,
-        syncedAt: data.syncedAt ?? cached.syncedAt.toISOString(),
-        allRoles,
-        allModules,
-        projects,
-        // 02.5-D fix: surface the cached HQ fields. null = ACC reported empty;
-        // undefined = older cache rows synced before fields were plumbed through.
-        companyRole: data.companyRole ?? null,
-        lastSignIn: data.lastSignIn ?? null,
-        // 04-01: ACC account-level admin (DASH-07). Default false for legacy cache rows
-        // synced before this field was plumbed; will populate on next bulkAccSync run.
-        isAccountAdmin: data.isAccountAdmin === true,
-        // 04-02: ACC member-creation date (DASH-06). Null for legacy cache rows synced
-        // before this field was plumbed; will populate on next bulkAccSync run. The widget
-        // MUST treat null as "not in any 7d/30d/90d bucket" (do not show stale users as
-        // recently-added).
-        addedOn: typeof data.addedOn === "string" && data.addedOn.length > 0 ? data.addedOn : null,
-      };
-    });
+    return getCachedBulkAccSummary(ctx.db);
   }),
 
   getAccProfile: protectedProcedure
@@ -1001,6 +882,7 @@ export const usersRouter = router({
           create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
           update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
         });
+        invalidateAccHotCache();
         return result;
       }
 
@@ -1030,6 +912,7 @@ export const usersRouter = router({
         role: accUser.role,
         company: accUser.company,
         addedOn: accUser.addedOn,
+        lastSignIn: accUser.lastSignIn,
         projects: enrichedProjects,
         syncedAt: new Date().toISOString(),
       };
@@ -1040,8 +923,254 @@ export const usersRouter = router({
         create: { email, data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
         update: { data: result as unknown as Prisma.InputJsonValue, syncedAt: new Date() },
       });
+      invalidateAccHotCache();
 
       return result;
+    }),
+
+  // -------------------------------------------------------------------------
+  // getAccUserActivity — reads AccActivity for a single user (by email).
+  // Returns last-30d count, top 5 actions, and 20 most-recent events with
+  // project names resolved.
+  // -------------------------------------------------------------------------
+  getAccUserActivity: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ input, ctx }) => {
+      const email = input.email.toLowerCase();
+      const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+      const [last30dCount, totalCount, topActionsRaw, recentRows, projects] = await Promise.all([
+        ctx.db.accActivity.count({ where: { userEmail: email, createdAt: { gte: since30d } } }),
+        ctx.db.accActivity.count({ where: { userEmail: email } }),
+        ctx.db.accActivity.groupBy({
+          by: ["rawAction"],
+          where: { userEmail: email, createdAt: { gte: since30d } },
+          _count: { _all: true },
+          orderBy: { _count: { rawAction: "desc" } },
+          take: 5,
+        }),
+        ctx.db.accActivity.findMany({
+          where: { userEmail: email },
+          orderBy: { createdAt: "desc" },
+          take: 20,
+          select: {
+            id: true,
+            createdAt: true,
+            rawAction: true,
+            service: true,
+            tool: true,
+            details: true,
+            projectId: true,
+            sourceFile: true,
+          },
+        }),
+        ctx.db.accProject.findMany({ select: { id: true, name: true } }),
+      ]);
+
+      const projectName = new Map(projects.map((p) => [p.id, p.name]));
+
+      return {
+        last30dCount,
+        totalCount,
+        topActions: topActionsRaw.map((row) => ({
+          action: row.rawAction,
+          count: row._count._all,
+        })),
+        recentEvents: recentRows.map((r) => ({
+          id: r.id,
+          createdAt: r.createdAt.toISOString(),
+          action: r.rawAction,
+          service: r.service,
+          tool: r.tool,
+          details: r.details,
+          projectId: r.projectId || null,
+          projectName: r.projectId ? projectName.get(r.projectId) ?? null : null,
+          sourceFile: r.sourceFile,
+        })),
+      };
+    }),
+
+  // -------------------------------------------------------------------------
+  // getAccUserFolderAccess — derives the folders this user can access by
+  // matching their cached project roles (by NAME, per project) to
+  // AccProjectRole → AccRole.id → AccFolderPermission.
+  // Returns partial results: only projects whose folders have been crawled
+  // contribute rows. Coverage grows as folder-crawl-cron completes.
+  // -------------------------------------------------------------------------
+  getAccUserFolderAccess: protectedProcedure
+    .input(z.object({ email: z.string().email() }))
+    .query(async ({ input, ctx }) => {
+      const email = input.email.toLowerCase();
+
+      const dcUser = await ctx.db.accDcUser.findFirst({
+        where: { email: { equals: email, mode: "insensitive" } },
+        select: { id: true },
+      });
+      if (dcUser) {
+        const [projectUsers, projectRoles] = await Promise.all([
+          ctx.db.accDcProjectUser.findMany({
+            where: { userId: dcUser.id },
+            select: { projectId: true },
+          }),
+          ctx.db.accDcProjectUserRole.findMany({
+            where: { userId: dcUser.id },
+            select: { projectId: true, roleId: true },
+          }),
+        ]);
+
+        const projectIds = [...new Set(projectUsers.map((p) => p.projectId))];
+        if (projectIds.length === 0) {
+          return { folders: [], coverage: { totalProjects: 0, crawledProjects: 0 } };
+        }
+
+        const roleProjectKeys = new Set(projectRoles.map((r) => `${r.projectId}::${r.roleId}`));
+        const allRoleIds = [...new Set(projectRoles.map((r) => r.roleId))];
+        const crawled = await ctx.db.accProject.count({
+          where: { id: { in: projectIds }, folderCrawlStatus: { in: ["ok", "partial"] } },
+        });
+
+        if (allRoleIds.length === 0) {
+          return { folders: [], coverage: { totalProjects: projectIds.length, crawledProjects: crawled } };
+        }
+
+        const [perms, roles] = await Promise.all([
+          ctx.db.accFolderPermission.findMany({
+            where: { roleId: { in: allRoleIds }, folder: { projectId: { in: projectIds } } },
+            select: {
+              id: true,
+              roleId: true,
+              actions: true,
+              permType: true,
+              folder: {
+                select: {
+                  id: true,
+                  name: true,
+                  fullPath: true,
+                  projectId: true,
+                  project: { select: { id: true, name: true } },
+                },
+              },
+            },
+          }),
+          ctx.db.accRole.findMany({
+            where: { id: { in: allRoleIds } },
+            select: { id: true, name: true },
+          }),
+        ]);
+
+        const roleNameById = new Map(roles.map((role) => [role.id, role.name]));
+        const filtered = perms.filter((p) => roleProjectKeys.has(`${p.folder.projectId}::${p.roleId}`));
+
+        return {
+          folders: filtered.map((p) => ({
+            folderId: p.folder.id,
+            folderName: p.folder.name,
+            folderPath: p.folder.fullPath,
+            projectId: p.folder.projectId,
+            projectName: p.folder.project.name,
+            roleId: p.roleId,
+            roleName: roleNameById.get(p.roleId) ?? p.roleId,
+            permType: p.permType,
+            actions: p.actions,
+          })),
+          coverage: { totalProjects: projectIds.length, crawledProjects: crawled },
+        };
+      }
+
+      // Pull the user's projects + role names from accMemberCache
+      const cached = await ctx.db.accMemberCache.findUnique({ where: { email } });
+      if (!cached) return { folders: [], coverage: { totalProjects: 0, crawledProjects: 0 } };
+
+      const data = cached.data as unknown as {
+        projects?: Array<{ id: string; name: string; roles?: string[]; isAdmin?: boolean }>;
+      };
+      const userProjects = data.projects ?? [];
+      if (userProjects.length === 0) {
+        return { folders: [], coverage: { totalProjects: 0, crawledProjects: 0 } };
+      }
+
+      const projectIds = userProjects.map((p) => p.id);
+      // Set of "projectId::roleNameLower" to match per project (case-insensitive)
+      const wantedRoleKeys = new Set<string>();
+      for (const p of userProjects) {
+        for (const roleName of p.roles ?? []) {
+          wantedRoleKeys.add(`${p.id}::${roleName.toLowerCase()}`);
+        }
+      }
+
+      // Resolve role names to role IDs scoped to this user's projects.
+      // AccProjectRole rows tell us which AccRole.id is used per project, and
+      // AccRole.name gives the human-readable name.
+      const projectRoles = await ctx.db.accProjectRole.findMany({
+        where: { projectId: { in: projectIds } },
+        select: {
+          projectId: true,
+          roleId: true,
+          role: { select: { id: true, name: true } },
+        },
+      });
+      const userRoleIdsByProject = new Map<string, Set<string>>();
+      for (const pr of projectRoles) {
+        const key = `${pr.projectId}::${pr.role.name.toLowerCase()}`;
+        if (!wantedRoleKeys.has(key)) continue;
+        if (!userRoleIdsByProject.has(pr.projectId)) userRoleIdsByProject.set(pr.projectId, new Set());
+        userRoleIdsByProject.get(pr.projectId)!.add(pr.roleId);
+      }
+      const allRoleIds = new Set<string>();
+      for (const set of userRoleIdsByProject.values()) for (const r of set) allRoleIds.add(r);
+      if (allRoleIds.size === 0) {
+        // User has roles but none match AccRole rows yet, or no folder crawl coverage
+        const crawled = await ctx.db.accProject.count({
+          where: { id: { in: projectIds }, folderCrawlStatus: { in: ["ok", "partial"] } },
+        });
+        return { folders: [], coverage: { totalProjects: projectIds.length, crawledProjects: crawled } };
+      }
+
+      const perms = await ctx.db.accFolderPermission.findMany({
+        where: { roleId: { in: [...allRoleIds] } },
+        select: {
+          id: true,
+          roleId: true,
+          actions: true,
+          permType: true,
+          folder: {
+            select: {
+              id: true,
+              name: true,
+              fullPath: true,
+              projectId: true,
+              project: { select: { id: true, name: true } },
+            },
+          },
+        },
+      });
+
+      // Filter to only this user's projects (defensive — roleId could in theory
+      // appear across projects if a role was re-used)
+      const projectIdSet = new Set(projectIds);
+      const filtered = perms.filter((p) => projectIdSet.has(p.folder.projectId));
+
+      // Resolve role NAME per row (for display)
+      const roleNameById = new Map(projectRoles.map((pr) => [pr.roleId, pr.role.name]));
+
+      const crawled = await ctx.db.accProject.count({
+        where: { id: { in: projectIds }, folderCrawlStatus: { in: ["ok", "partial"] } },
+      });
+
+      return {
+        folders: filtered.map((p) => ({
+          folderId: p.folder.id,
+          folderName: p.folder.name,
+          folderPath: p.folder.fullPath,
+          projectId: p.folder.projectId,
+          projectName: p.folder.project.name,
+          roleId: p.roleId,
+          roleName: roleNameById.get(p.roleId) ?? p.roleId,
+          permType: p.permType,
+          actions: p.actions,
+        })),
+        coverage: { totalProjects: projectIds.length, crawledProjects: crawled },
+      };
     }),
 
   bulkAccSync: adminProcedure
@@ -1207,6 +1336,7 @@ export const usersRouter = router({
         }
       }
 
+      invalidateAccHotCache();
       return { total: emails.length, found, notFound, errors, graphCache };
     }),
 
@@ -1349,12 +1479,19 @@ export const usersRouter = router({
     if (roles.length === 0) {
       return { roles: [] as { id: string; name: string; memberCount: number }[], syncedAt: null };
     }
-    const counts = await ctx.db.accProjectRole.groupBy({
+    const legacyCounts = await ctx.db.accProjectRole.groupBy({
       by: ["roleId"],
       where: { memberId: { not: null } },
       _count: { memberId: true },
     });
-    const countByRole = new Map(counts.map((c) => [c.roleId, c._count.memberId]));
+    const counts = legacyCounts.length > 0
+      ? legacyCounts.map((c) => ({ roleId: c.roleId, memberCount: c._count.memberId }))
+      : (await ctx.db.accDcProjectUserRole.groupBy({
+          by: ["roleId"],
+          where: { roleId: { in: roles.map((r) => r.id) } },
+          _count: { userId: true },
+        })).map((c) => ({ roleId: c.roleId, memberCount: c._count.userId }));
+    const countByRole = new Map(counts.map((c) => [c.roleId, c.memberCount]));
     const syncedAt = roles.reduce<Date>(
       (latest, r) => (r.syncedAt > latest ? r.syncedAt : latest),
       roles[0].syncedAt,

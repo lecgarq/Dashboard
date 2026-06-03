@@ -63,8 +63,8 @@ export function GlobalSearch() {
       />
 
       {/* Search Modal */}
-      <div className="relative w-full max-w-2xl bg-[#0a0a0a]/80 border border-white/10 backdrop-blur-xl rounded-2xl shadow-2xl shadow-black/50 overflow-hidden animate-slideUp">
-        <div className="flex items-center px-4 py-4 border-b border-white/5">
+      <div className="relative w-full max-w-2xl bg-popover border border-border backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-slideUp">
+        <div className="flex items-center px-4 py-4 border-b border-border/50">
           {isLoading ? (
             <Loader2 size={20} className="text-primary animate-spin ml-2" />
           ) : (

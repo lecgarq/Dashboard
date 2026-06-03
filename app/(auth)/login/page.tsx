@@ -86,10 +86,10 @@ function Notice({
 }) {
   const styles =
     tone === "success"
-      ? "border-emerald-200/80 bg-emerald-50/90 text-emerald-700"
+      ? "border-emerald-200/80 bg-emerald-50/90 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300"
       : tone === "error"
-        ? "border-rose-200/80 bg-rose-50/90 text-rose-700"
-        : "border-sky-200/80 bg-sky-50/90 text-sky-700";
+        ? "border-rose-200/80 bg-rose-50/90 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300"
+        : "border-sky-200/80 bg-sky-50/90 text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300";
 
   return (
     <div className={`flex items-start gap-3 rounded-2xl border px-4 py-3 text-sm ${styles}`}>
@@ -125,9 +125,14 @@ function LoginForm() {
 
   useEffect(() => {
     if (!connectProvider || loading) return;
-    if (connectProvider !== "google" && connectProvider !== "google-chat") return;
+    if (connectProvider !== "google" && connectProvider !== "google-chat" && connectProvider !== "autodesk") return;
 
     setLoading(connectProvider);
+    if (connectProvider === "autodesk") {
+      void signIn("autodesk", { redirectTo: connectCallbackUrl }, { prompt: forceConsent ? "login consent" : "login" });
+      return;
+    }
+
     startOAuthConnect(connectProvider, {
       callbackUrl: connectCallbackUrl,
       forceConsent,
@@ -137,10 +142,14 @@ function LoginForm() {
   const handleOAuthSignIn = (provider: string) => {
     setLoading(provider);
     if (provider === "google" || provider === "google-chat") {
-      startOAuthConnect(provider, { callbackUrl: "/" });
+      startOAuthConnect(provider, { callbackUrl: connectCallbackUrl });
       return;
     }
-    signIn(provider, { callbackUrl: "/" });
+    if (provider === "autodesk") {
+      signIn(provider, { redirectTo: connectCallbackUrl }, { prompt: "login" });
+      return;
+    }
+    signIn(provider, { redirectTo: connectCallbackUrl });
   };
 
   const handleCredentialsSignIn = async (event: React.FormEvent) => {
@@ -207,10 +216,10 @@ function LoginForm() {
               Workspace access
             </div>
             <div className="space-y-2">
-              <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+              <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
                 Sign in
               </h2>
-              <p className="text-sm leading-7 text-slate-600">
+              <p className="text-sm leading-7 text-muted-foreground">
                 Credentials are still supported, but linked identity providers make the daily flow smoother.
               </p>
             </div>
@@ -222,14 +231,14 @@ function LoginForm() {
 
           <form onSubmit={handleCredentialsSignIn} className="space-y-4">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700">Username or email</label>
+              <label className="text-sm font-semibold text-foreground/80">Username or email</label>
               <div className="relative">
-                <UserCircle2 className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+                <UserCircle2 className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground/60" />
                 <Input
                   type="text"
                   placeholder="you@company.com"
                   required
-                  className="h-12 rounded-2xl border-white/70 pl-11"
+                  className="h-12 rounded-2xl border-input pl-11"
                   value={userIdentifier}
                   onChange={(event) => setUserIdentifier(event.target.value)}
                 />
@@ -238,18 +247,18 @@ function LoginForm() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-4">
-                <label className="text-sm font-semibold text-slate-700">Password</label>
+                <label className="text-sm font-semibold text-foreground/80">Password</label>
                 <Link href="/forgot-password" className="text-sm font-medium text-primary transition-colors hover:text-primary/80">
                   Forgot password?
                 </Link>
               </div>
               <div className="relative">
-                <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-400" />
+                <KeyRound className="pointer-events-none absolute left-3.5 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-muted-foreground/60" />
                 <Input
                   type="password"
                   placeholder="Enter your password"
                   required
-                  className="h-12 rounded-2xl border-white/70 pl-11"
+                  className="h-12 rounded-2xl border-input pl-11"
                   value={password}
                   onChange={(event) => setPassword(event.target.value)}
                 />
@@ -278,10 +287,10 @@ function LoginForm() {
 
           <div className="relative py-1">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-slate-200/80" />
+              <div className="w-full border-t border-border" />
             </div>
             <div className="relative flex justify-center">
-              <span className="bg-white px-4 text-[11px] font-semibold uppercase tracking-[0.32em] text-slate-400">
+              <span className="bg-card px-4 text-[11px] font-semibold uppercase tracking-[0.32em] text-muted-foreground/60">
                 Or use identity provider
               </span>
             </div>
@@ -301,11 +310,11 @@ function LoginForm() {
                   <GoogleMark />
                 )}
                 <div>
-                  <p className="font-semibold text-slate-900">Continue with Google</p>
-                  <p className="text-sm text-slate-500">Use Workspace identity and shared permissions.</p>
+                  <p className="font-semibold text-foreground">Continue with Google</p>
+                  <p className="text-sm text-muted-foreground">Use Workspace identity and shared permissions.</p>
                 </div>
               </div>
-              <ArrowRight className="h-4 w-4 text-slate-400" />
+              <ArrowRight className="h-4 w-4 text-muted-foreground/60" />
             </button>
 
             <button
@@ -323,19 +332,19 @@ function LoginForm() {
                   </div>
                 )}
                 <div>
-                  <p className="font-semibold text-slate-900">Continue with Autodesk</p>
-                  <p className="text-sm text-slate-500">Link project cloud access and model workflows.</p>
+                  <p className="font-semibold text-foreground">Continue with Autodesk</p>
+                  <p className="text-sm text-muted-foreground">Link project cloud access and model workflows.</p>
                 </div>
               </div>
-              <ArrowRight className="h-4 w-4 text-slate-400" />
+              <ArrowRight className="h-4 w-4 text-muted-foreground/60" />
             </button>
           </div>
 
-          <div className="rounded-2xl border border-slate-200/80 bg-slate-50/72 px-4 py-4 text-sm text-slate-600">
+          <div className="rounded-2xl border border-border bg-muted/40 px-4 py-4 text-sm text-muted-foreground">
             Access is limited to approved team accounts. If you cannot sign in, contact your BIM manager before creating a support ticket.
           </div>
 
-          <p className="text-center text-sm text-slate-500">
+          <p className="text-center text-sm text-muted-foreground">
             Do not have a local account?{" "}
             <Link href="/register" className="font-semibold text-primary hover:text-primary/80">
               Register

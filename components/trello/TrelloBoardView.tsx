@@ -2,6 +2,7 @@
 
 import { Suspense, useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useTrelloLabelColor } from "@/lib/colors/useTrelloLabelColor";
 import {
   ArrowLeft,
   Check,
@@ -79,19 +80,6 @@ const CardDialog = dynamic(
   { ssr: false }
 );
 
-const LABEL_COLORS: Record<string, string> = {
-  green: "#61bd4f",
-  yellow: "#f2d600",
-  orange: "#ff9f1a",
-  red: "#eb5a46",
-  purple: "#c377e0",
-  blue: "#0079bf",
-  sky: "#00c2e0",
-  lime: "#51e898",
-  pink: "#ff78cb",
-  black: "#344563",
-};
-
 type TrelloBoardViewProps = {
   board: TrelloBoard | null;
   boardId: string;
@@ -104,6 +92,7 @@ export function TrelloBoardView({
   onBack,
 }: TrelloBoardViewProps) {
   const utils = trpc.useUtils();
+  const labelColor = useTrelloLabelColor();
   const [view, setView] = useState<"board" | "calendar" | "timeline" | "table">("board");
   const [copied, setCopied] = useState(false);
   const [filterText, setFilterText] = useState("");
@@ -313,7 +302,7 @@ export function TrelloBoardView({
               >
                 <span
                   className="mr-2 inline-block h-3 w-3 shrink-0 rounded-full"
-                  style={{ backgroundColor: LABEL_COLORS[label.color] ?? "#b3bac5" }}
+                  style={{ backgroundColor: labelColor(label.color) }}
                 />
                 {label.name || label.color}
               </DropdownMenuCheckboxItem>

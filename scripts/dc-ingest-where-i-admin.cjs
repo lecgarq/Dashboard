@@ -243,7 +243,7 @@ async function dcSignedUrl(accountId, userToken, jobId, name) {
 
 const BATCH_SIZE = 500;
 
-function mapRow(row, sourceFile, drops, moduleName) {
+function mapRow(row, sourceFile, drops, moduleName, ingestRunId) {
   // Bug D fix (2026-05-19): real per-module schema uses BIM360-native columns:
   //   created_by      -> autodeskId (12-char APS user ID, e.g. "ESX2N8HJL88XVK2B")
   //   activity_verb   -> rawAction  (e.g. "view-entity", "issue-view")
@@ -273,11 +273,12 @@ function mapRow(row, sourceFile, drops, moduleName) {
     tool: row.tool || null,
     details: row.details || row.description || null,
     sourceFile,
+    ingestRunId: ingestRunId ?? null,
     createdAt,
   };
 }
 
-async function ingestCsvFromUrl(prisma, signedUrl, fileName) {
+async function ingestCsvFromUrl(prisma, signedUrl, fileName, ingestRunId, rowsByModule) {
   const res = await fetch(signedUrl);
   if (!res.ok) throw new Error(`Signed URL fetch ${res.status} for ${fileName}`);
   const match = fileName.match(ACTIVITY_FILE_RE);
@@ -300,7 +301,7 @@ async function ingestCsvFromUrl(prisma, signedUrl, fileName) {
     Readable.fromWeb(res.body).pipe(parser);
     parser.on("data", (row) => {
       parsed++;
-      const mapped = mapRow(row, sourceFile, drops, moduleName);
+      const mapped = mapRow(row, sourceFile, drops, moduleName, ingestRunId);
       if (!mapped) return;
       buf.push(mapped);
       if (buf.length >= BATCH_SIZE) {
@@ -311,6 +312,10 @@ async function ingestCsvFromUrl(prisma, signedUrl, fileName) {
     parser.on("end", () => flush().then(resolve).catch(reject));
     parser.on("error", reject);
   });
+  // Tally per-module inserts for AccDcIngestRun.rowsByModule telemetry.
+  if (moduleName && rowsByModule && inserted > 0) {
+    rowsByModule[moduleName] = (rowsByModule[moduleName] || 0) + inserted;
+  }
   // Visible-failure policy: parsed-but-all-dropped is exactly the Bug D failure
   // mode that hid behind clean status for 5 days. Log per-reason drop counts so
   // schema drift surfaces in the daily log instead of looking like an idle day.
@@ -346,6 +351,8 @@ async function processBatch(prisma, accountId, batchIdx, batchTotal, projectIds,
     return { ok: false, error: err.message };
   }
   log(`${label} requestId=${requestId}`);
+  // Each successful POST /requests consumes one DC quota unit.
+  if (ctx.stats) ctx.stats.requestsSubmitted++;
 
   // 2. Persist AccDataConnectorJob
   row = await prisma.accDataConnectorJob.create({
@@ -411,7 +418,7 @@ async function processBatch(prisma, accountId, batchIdx, batchTotal, projectIds,
       try {
         userToken = await refreshUserToken(prisma);
         const signed = await dcSignedUrl(accountId, userToken, job.id, f.name);
-        const inserted = await ingestCsvFromUrl(prisma, signed, f.name);
+        const inserted = await ingestCsvFromUrl(prisma, signed, f.name, ctx.stats?.dbRunId, ctx.stats?.rowsByModule);
         log(`${label}   ${f.name}: +${inserted} rows`);
         totalInserted += inserted;
       } catch (err) {
@@ -438,6 +445,10 @@ async function main() {
   log(`=== Data Connector hub-ingest (run ${runId}) ===`);
   log(`Config: DAYS=${DAYS}, ACTIVE_ONLY=${ACTIVE_ONLY}, BATCH_LIMIT=${BATCH_LIMIT === Infinity ? "all" : BATCH_LIMIT}, RESUME_ONLY=${RESUME_ONLY}`);
   const prisma = createPrisma();
+  // Telemetry shared with processBatch. Previously this script wrote NEITHER an
+  // AccDcIngestRun row NOR ingestRunId on AccActivity, so the monitor read 0 rows
+  // and could not see this path's quota usage. Now it records both.
+  const stats = { dbRunId: null, rowsByModule: {}, requestsSubmitted: 0, projectsProcessed: 0 };
 
   try {
     const accountId = process.env.APS_HUB_ID.replace(/^b\./, "");
@@ -468,14 +479,49 @@ async function main() {
     let okCount = 0;
     let failCount = 0;
 
+    // Open the telemetry row for this run.
+    try {
+      const runRow = await prisma.accDcIngestRun.create({
+        data: {
+          status: "running",
+          sliceWindowStart: startDate,
+          sliceWindowEnd: endDate,
+          rowsByModule: {},
+          rowsByAdminCsv: {},
+        },
+      });
+      stats.dbRunId = runRow.id;
+      log(`AccDcIngestRun created: ${stats.dbRunId}`);
+    } catch (err) {
+      logErr(`Could not create AccDcIngestRun telemetry row: ${err.message}`);
+    }
+
     for (let i = 0; i < totalBatches; i++) {
-      const result = await processBatch(prisma, accountId, i, totalBatches, batches[i], startDate, endDate, { runId });
+      const result = await processBatch(prisma, accountId, i, totalBatches, batches[i], startDate, endDate, { runId, stats });
       if (result.ok) {
         okCount++;
         totalInserted += result.inserted ?? 0;
+        stats.projectsProcessed += batches[i].length;
       } else {
         failCount++;
       }
+    }
+
+    // Finalise the telemetry row so the monitor sees real rows + quota usage.
+    if (stats.dbRunId) {
+      const finalStatus = failCount === 0 ? "success" : okCount > 0 ? "partial" : "failed";
+      await prisma.accDcIngestRun.update({
+        where: { id: stats.dbRunId },
+        data: {
+          endedAt: new Date(),
+          status: finalStatus,
+          projectsProcessed: stats.projectsProcessed,
+          quotaUsed: stats.requestsSubmitted,
+          rowsByModule: stats.rowsByModule,
+          errorMessage: failCount > 0 ? `${failCount} batch(es) failed` : null,
+        },
+      });
+      log(`AccDcIngestRun ${stats.dbRunId} finalised: status=${finalStatus} quotaUsed=${stats.requestsSubmitted} rowsByModule=${JSON.stringify(stats.rowsByModule)}`);
     }
 
     const accActivityTotal = await prisma.accActivity.count();
@@ -485,6 +531,22 @@ async function main() {
     log(`AccActivity total in DB: ${accActivityTotal.toLocaleString()}`);
   } catch (err) {
     logErr("Fatal:", err.message || err);
+    // Close out the telemetry row so a crashed run isn't left "running" forever.
+    if (stats.dbRunId) {
+      await prisma.accDcIngestRun
+        .update({
+          where: { id: stats.dbRunId },
+          data: {
+            endedAt: new Date(),
+            status: "failed",
+            projectsProcessed: stats.projectsProcessed,
+            quotaUsed: stats.requestsSubmitted,
+            rowsByModule: stats.rowsByModule,
+            errorMessage: String(err?.message || err).slice(0, 500),
+          },
+        })
+        .catch(() => {});
+    }
     process.exitCode = 1;
   } finally {
     await prisma.$disconnect().catch(() => {});

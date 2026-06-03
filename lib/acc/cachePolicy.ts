@@ -1,0 +1,1 @@
+export const ACC_SNAPSHOT_STALE_TIME_MS = 10 * 60_000;

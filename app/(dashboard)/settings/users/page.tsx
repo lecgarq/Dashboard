@@ -44,9 +44,9 @@ import {
 import { Separator } from "@/components/ui/separator";
 
 const ROLE_CONFIG = {
-  ADMIN:  { label: "Admin",  icon: ShieldAlert, color: "text-red-500",  bg: "bg-red-500/10 border-red-500/20" },
-  EDITOR: { label: "Editor", icon: Shield,      color: "text-blue-500", bg: "bg-blue-500/10 border-blue-500/20" },
-  VIEWER: { label: "Viewer", icon: UserIcon,    color: "text-slate-400", bg: "bg-slate-400/10 border-slate-400/20" },
+  ADMIN:  { label: "Admin",  icon: ShieldAlert, color: "text-red-500 dark:text-red-400",   bg: "bg-red-500/10 border-red-500/20 dark:bg-red-950/30 dark:border-red-900/40" },
+  EDITOR: { label: "Editor", icon: Shield,      color: "text-blue-500 dark:text-blue-400", bg: "bg-blue-500/10 border-blue-500/20 dark:bg-blue-950/30 dark:border-blue-900/40" },
+  VIEWER: { label: "Viewer", icon: UserIcon,    color: "text-muted-foreground",            bg: "bg-muted/40 border-border" },
 };
 
 type Role = keyof typeof ROLE_CONFIG;

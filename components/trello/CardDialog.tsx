@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback } from "react";
 import { trpc as trpcClient } from "@/lib/core/trpc";
 import { useRole } from "@/hooks/use-role";
+import { useTrelloLabelColor } from "@/lib/colors/useTrelloLabelColor";
+import { LABEL_COLORS_LIGHT } from "@/lib/colors/trello";
 import {
   Dialog,
   DialogContent,
@@ -58,20 +60,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 
-const LABEL_COLORS: Record<string, string> = {
-  green: "#61bd4f",
-  yellow: "#f2d600",
-  orange: "#ff9f1a",
-  red: "#eb5a46",
-  purple: "#c377e0",
-  blue: "#0079bf",
-  sky: "#00c2e0",
-  lime: "#51e898",
-  pink: "#ff78cb",
-  black: "#344563",
-};
-
-const COVER_COLORS = Object.keys(LABEL_COLORS);
+const COVER_COLORS = Object.keys(LABEL_COLORS_LIGHT);
 
 type TrelloLabel = { id: string; name: string; color: string };
 type TrelloMember = { id: string; fullName: string; username: string; avatarHash?: string; avatarUrl?: string };
@@ -137,6 +126,7 @@ function LabelPicker({
   onRefetch: () => void;
 }) {
   const { isEditor } = useRole();
+  const labelColor = useTrelloLabelColor();
   const [managing, setManaging] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState("");
@@ -189,7 +179,7 @@ function LabelPicker({
                   >
                     <span
                       className="w-8 h-5 rounded shrink-0"
-                      style={{ backgroundColor: LABEL_COLORS[label.color] ?? "#b3bac5" }}
+                      style={{ backgroundColor: labelColor(label.color) }}
                     />
                     <span className="flex-1 text-left truncate">{label.name || label.color}</span>
                     {assigned && <Check size={12} className="text-primary shrink-0" />}
@@ -243,7 +233,7 @@ function LabelPicker({
                             key={c}
                             onClick={() => setEditColor(c)}
                             className={cn("w-5 h-5 rounded", editColor === c && "ring-2 ring-primary ring-offset-1")}
-                            style={{ backgroundColor: LABEL_COLORS[c] }}
+                            style={{ backgroundColor: labelColor(c) }}
                             title={c}
                           />
                         ))}
@@ -275,7 +265,7 @@ function LabelPicker({
                     <div className="flex items-center gap-1.5">
                       <span
                         className="flex-1 px-2 py-1 rounded text-xs text-white font-medium truncate"
-                        style={{ backgroundColor: LABEL_COLORS[label.color] ?? "#b3bac5" }}
+                        style={{ backgroundColor: labelColor(label.color) }}
                       >
                         {label.name || label.color}
                       </span>
@@ -307,7 +297,7 @@ function LabelPicker({
                     key={c}
                     onClick={() => setNewColor(c)}
                     className={cn("w-5 h-5 rounded", newColor === c && "ring-2 ring-primary ring-offset-1")}
-                    style={{ backgroundColor: LABEL_COLORS[c] }}
+                    style={{ backgroundColor: labelColor(c) }}
                     title={c}
                   />
                 ))}
@@ -332,6 +322,7 @@ function LabelPicker({
 
 export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDialogProps) {
   const { isEditor } = useRole();
+  const labelColor = useTrelloLabelColor();
 
   const [name, setName] = useState(card.name);
   const [desc, setDesc] = useState(card.desc ?? "");
@@ -459,7 +450,7 @@ export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDia
         {currentCover?.color && (
           <div
             className="h-10 -mx-6 -mt-6 mb-2 rounded-t-lg"
-            style={{ backgroundColor: LABEL_COLORS[currentCover.color] ?? "#b3bac5" }}
+            style={{ backgroundColor: labelColor(currentCover.color) }}
           />
         )}
 
@@ -487,7 +478,7 @@ export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDia
                   <span
                     key={label.id}
                     className="px-2.5 py-0.5 rounded text-white text-xs font-medium"
-                    style={{ backgroundColor: LABEL_COLORS[label.color] ?? "#b3bac5" }}
+                    style={{ backgroundColor: labelColor(label.color) }}
                   >
                     {label.name || label.color}
                   </span>
@@ -817,7 +808,7 @@ export function CardDialog({ card, lists, boardId, onClose, onRefetch }: CardDia
                         "w-6 h-6 rounded transition-transform hover:scale-110",
                         currentCover?.color === c && "ring-2 ring-primary ring-offset-1"
                       )}
-                      style={{ backgroundColor: LABEL_COLORS[c] }}
+                      style={{ backgroundColor: labelColor(c) }}
                       title={currentCover?.color === c ? `Remove ${c} cover` : `Set ${c} cover`}
                     />
                   ))}

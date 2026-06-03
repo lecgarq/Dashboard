@@ -13,9 +13,14 @@ export interface ClusterTransitionLayer {
   snapshot(): Float32Array;
 }
 
-const TAU_MS = 90;        // time constant — gentle, professional ease
+// TAU_MS / EPSILON tuned for FAST settle: each ease frame forces a full cosmos
+// re-upload (~250ms on 16,942 nodes), so the fewer frames the transition takes,
+// the shorter the low-fps window before pushPositions' dirty-check parks the pump.
+// At ~5fps (dt clamped to 50ms) this settles in ~5 frames (~1s) instead of ~24
+// (~5s). EPSILON 0.75 is sub-pixel in cosmos's ≈±350 space, so it's imperceptible.
+const TAU_MS = 35;        // time constant — quick ease (was 90)
 const MAX_DT_MS = 50;     // clamp after tab-background pauses (matches previewLayer)
-const EPSILON = 1e-3;     // settle threshold in cosmos space units
+const EPSILON = 0.75;     // settle threshold in cosmos space units (was 1e-3)
 
 export function createClusterTransitionLayer(opts: { nodeCount: number }): ClusterTransitionLayer {
   const n = opts.nodeCount;

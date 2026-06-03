@@ -113,10 +113,12 @@ export function useChatNotifications(enabled: boolean) {
     [utils]
   );
 
+  const streamEnabled = enabled && open;
+
   useEventSource<NewMessageEvent>(
     "/api/chat/stream",
     handleMessage,
-    enabled
+    streamEnabled
   );
 
   const unreadSpaceCount =

@@ -14,8 +14,8 @@
  *
  * These helpers (`gridCells` + `pickDensestCell`) own the cell generation and the
  * deterministic arg-max. The actual per-cell count is INJECTED (`countAt`) so the
- * bridge can keep using the renderer's own `screenToSpace` + `findPointsInPolygon`
- * path — the only coordinate basis that round-trips with the real lasso drag —
+ * bridge can keep using the renderer's own raw screen-pixel
+ * `findPointsInPolygon` path - the same coordinate basis as the real lasso drag -
  * while these helpers stay pure and unit-testable without a live renderer.
  *
  * Determinism: fixed row-major iteration order + first-tie-wins, so the chosen

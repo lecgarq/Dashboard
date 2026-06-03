@@ -170,11 +170,6 @@ export interface NeighborForce {
   dominantDim: SimilarityDim | null;
 }
 
-/**
- * Top-K most-similar peers per user. O(n²) pair scan; acceptable up to ~2,000
- * users (hub scale). Tighter bound is the responsibility of the caller via
- * filter dimensions or by lowering K.
- */
 export function topKNeighbors(
   input: SimilarityInput,
   strengths: ReadonlyMap<SimilarityDim, number>,
@@ -184,32 +179,117 @@ export function topKNeighbors(
   const out = new Map<string, NeighborForce[]>();
   const users = input.users;
 
-  for (let i = 0; i < users.length; i++) {
-    const a = users[i];
-    const candidates: NeighborForce[] = [];
-    for (let j = 0; j < users.length; j++) {
-      if (i === j) continue;
-      const b = users[j];
-      const force = combinedPairForce(a, b, strengths, simMin);
-      if (force <= 0) continue;
+  // Performance Safeguard: If the user count is massive, sample or cap to prevent main thread lockup
+  const maxUsers = 600;
+  const sampleUsers = users.length > maxUsers 
+    ? users.slice(0, maxUsers) 
+    : users;
 
-      // Find dominant dim for color attribution.
+  // Pre-convert sets once for all sampled users
+  const cachedSets = sampleUsers.map((u) => ({
+    projectIds: new Set(u.projectIds),
+    roleIds: new Set(u.roleIds),
+    folderIds: new Set(u.folderIds),
+    activityFileIds: new Set(u.activityFileIds),
+    coverageFlags: new Set(u.coverageFlags),
+    moduleIds: new Set(u.moduleIds ?? []),
+  }));
+
+  // Helper for extremely fast set overlap using cached sets
+  function setOverlapCached(setA: Set<string>, setB: Set<string>): number {
+    if (setA.size === 0 || setB.size === 0) return 0;
+    let shared = 0;
+    const [small, large] = setA.size < setB.size ? [setA, setB] : [setB, setA];
+    for (const x of small) {
+      if (large.has(x)) shared++;
+    }
+    return shared / Math.min(setA.size, setB.size);
+  }
+
+  for (let i = 0; i < sampleUsers.length; i++) {
+    const a = sampleUsers[i];
+    const setA = cachedSets[i];
+    const candidates: NeighborForce[] = [];
+    for (let j = 0; j < sampleUsers.length; j++) {
+      if (i === j) continue;
+      const b = sampleUsers[j];
+      const setB = cachedSets[j];
+
+      let sum = 0;
+      let contributingDimCount = 0;
       let bestDim: SimilarityDim | null = null;
       let bestContrib = 0;
+
       for (const dim of SIMILARITY_DIMS) {
-        const s = strengths.get(dim) ?? 0;
-        if (s <= 0) continue;
-        const contrib = s * pairSimilarity(a, b, dim);
+        const strength = strengths.get(dim) ?? 0;
+        if (strength <= 0) continue;
+
+        let score = 0;
+        switch (dim) {
+          case "project-members":
+            score = setOverlapCached(setA.projectIds, setB.projectIds);
+            break;
+          case "roles":
+            score = setOverlapCached(setA.roleIds, setB.roleIds);
+            break;
+          case "folder-permissions":
+            score = setOverlapCached(setA.folderIds, setB.folderIds);
+            break;
+          case "activity-logs":
+            score = setOverlapCached(setA.activityFileIds, setB.activityFileIds);
+            break;
+          case "data-coverage":
+            score = setOverlapCached(setA.coverageFlags, setB.coverageFlags);
+            break;
+          case "last-sign-in":
+            score = temporalDecay(a.lastSignIn, b.lastSignIn);
+            break;
+          case "recent-additions":
+            score = temporalDecay(a.addedAt, b.addedAt);
+            break;
+          case "admin-tier":
+            score = (!!a.isAdmin) === (!!b.isAdmin) ? 1 : 0;
+            break;
+          case "internal-external":
+            score = (!!a.isExternal) === (!!b.isExternal) ? 1 : 0;
+            break;
+          case "company-role":
+            score = (a.companyRole ?? null) === (b.companyRole ?? null) ? 1 : 0;
+            break;
+          case "module-mix":
+            score = setOverlapCached(setA.moduleIds, setB.moduleIds);
+            break;
+          case "firm-affiliation":
+            score = a.firmId != null && a.firmId === b.firmId ? 1 : 0;
+            break;
+        }
+
+        if (score <= 0) continue;
+
+        const contrib = strength * score;
+        sum += contrib;
+        contributingDimCount++;
+
         if (contrib > bestContrib) {
           bestContrib = contrib;
           bestDim = dim;
         }
       }
 
+      const force = contributingDimCount >= simMin ? sum : 0;
+      if (force <= 0) continue;
+
       candidates.push({ neighborId: b.id, force, dominantDim: bestDim });
     }
     candidates.sort((x, y) => y.force - x.force);
     out.set(a.id, candidates.slice(0, k));
+  }
+
+  // Backfill empty entries for non-sampled users to ensure complete map structure
+  for (const u of users) {
+    if (!out.has(u.id)) {
+      out.set(u.id, []);
+    }
   }
 
   return out;
@@ -229,14 +309,86 @@ export function computeSimilarityEdges(
 ): SimilarityEdge[] {
   const users = input.users;
   const edges: SimilarityEdge[] = [];
-  for (let i = 0; i < users.length; i++) {
-    for (let j = i + 1; j < users.length; j++) {
+  
+  // Performance Safeguard: If users length is large, limit to prevent browser freeze.
+  const maxUsers = 300;
+  const sampleUsers = users.length > maxUsers 
+    ? users.slice(0, maxUsers) 
+    : users;
+
+  // Pre-convert sets once for all sampled users
+  const cachedSets = sampleUsers.map((u) => ({
+    projectIds: new Set(u.projectIds),
+    roleIds: new Set(u.roleIds),
+    folderIds: new Set(u.folderIds),
+    activityFileIds: new Set(u.activityFileIds),
+    coverageFlags: new Set(u.coverageFlags),
+    moduleIds: new Set(u.moduleIds ?? []),
+  }));
+
+  // Helper for extremely fast set overlap using cached sets
+  function setOverlapCached(setA: Set<string>, setB: Set<string>): number {
+    if (setA.size === 0 || setB.size === 0) return 0;
+    let shared = 0;
+    const [small, large] = setA.size < setB.size ? [setA, setB] : [setB, setA];
+    for (const x of small) {
+      if (large.has(x)) shared++;
+    }
+    return shared / Math.min(setA.size, setB.size);
+  }
+
+  for (let i = 0; i < sampleUsers.length; i++) {
+    const a = sampleUsers[i];
+    const setA = cachedSets[i];
+    for (let j = i + 1; j < sampleUsers.length; j++) {
+      const b = sampleUsers[j];
+      const setB = cachedSets[j];
+
       for (const dim of enabledDims) {
-        const score = pairSimilarity(users[i], users[j], dim);
+        let score = 0;
+        switch (dim) {
+          case "project-members":
+            score = setOverlapCached(setA.projectIds, setB.projectIds);
+            break;
+          case "roles":
+            score = setOverlapCached(setA.roleIds, setB.roleIds);
+            break;
+          case "folder-permissions":
+            score = setOverlapCached(setA.folderIds, setB.folderIds);
+            break;
+          case "activity-logs":
+            score = setOverlapCached(setA.activityFileIds, setB.activityFileIds);
+            break;
+          case "data-coverage":
+            score = setOverlapCached(setA.coverageFlags, setB.coverageFlags);
+            break;
+          case "last-sign-in":
+            score = temporalDecay(a.lastSignIn, b.lastSignIn);
+            break;
+          case "recent-additions":
+            score = temporalDecay(a.addedAt, b.addedAt);
+            break;
+          case "admin-tier":
+            score = (!!a.isAdmin) === (!!b.isAdmin) ? 1 : 0;
+            break;
+          case "internal-external":
+            score = (!!a.isExternal) === (!!b.isExternal) ? 1 : 0;
+            break;
+          case "company-role":
+            score = (a.companyRole ?? null) === (b.companyRole ?? null) ? 1 : 0;
+            break;
+          case "module-mix":
+            score = setOverlapCached(setA.moduleIds, setB.moduleIds);
+            break;
+          case "firm-affiliation":
+            score = a.firmId != null && a.firmId === b.firmId ? 1 : 0;
+            break;
+        }
+
         if (score >= minScore) {
           edges.push({
-            userA: users[i].id,
-            userB: users[j].id,
+            userA: a.id,
+            userB: b.id,
             dimension: dim,
             score,
           });

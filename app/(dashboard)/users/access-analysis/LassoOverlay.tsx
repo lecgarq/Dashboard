@@ -4,13 +4,13 @@
  * LassoOverlay.tsx — Phase 4-01 Task 3.
  *
  * Transparent overlay canvas that captures pointer events when active, draws the
- * freehand path with 2D Canvas, then on pointerup converts SCREEN coords to SPACE
- * coords via the GraphCanvas2D handle and calls findPointsInPolygon. The matched
- * cosmos indices are returned through onComplete.
+ * freehand path with 2D Canvas, then on pointerup passes the canvas-local screen
+ * coords to findPointsInPolygon. The matched cosmos indices are returned through
+ * onComplete.
  *
  * RESEARCH patterns:
  *   Pattern 2 — overlay canvas absolutely positioned over GraphCanvas2D.
- *   Pitfall 1 — screenToSpace conversion is required when zoom/pan is active.
+ *   Pitfall 1 — polygon hit-testing uses canvas-local screen pixels.
  *   Pitfall 7 — bail to [] if graph isn't ready (handled inside the handle).
  *   Pitfall 8 — setPointerCapture so pointerup outside canvas still fires.
  *
@@ -27,7 +27,7 @@ import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
 export interface LassoOverlayProps {
   /** When false: pointer events pass through to the graph canvas. */
   active: boolean;
-  /** 2D graph handle — needed for screen↔space conversion + polygon hit-test. */
+  /** 2D graph handle — needed for polygon hit-test. */
   graphHandle: GraphCanvas2DHandle | null;
   /** Called once on pointerup with the matched cosmos node indices. */
   onComplete: (matchedIndices: number[]) => void;
@@ -110,10 +110,7 @@ export function LassoOverlay({
       pathRef.current = [];
       clearOverlay();
       if (path.length < 3 || !graphHandle) return;
-      const spacePath: [number, number][] = path.map(([sx, sy]) =>
-        graphHandle.screenToSpace([sx, sy]),
-      );
-      const matched = graphHandle.findPointsInPolygon(spacePath);
+      const matched = graphHandle.findPointsInPolygon(path);
       onComplete(matched);
     };
 

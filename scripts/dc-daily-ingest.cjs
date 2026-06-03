@@ -26,6 +26,10 @@
  *     Default: max(1, floor(safeRemainingToday * 0.2)) — roughly 20% of the
  *     remaining daily safe budget, minimum 1 when budget > 0.
  *
+ *   DC_PROGRESSIVE_SLICE_DAYS=<1..366>
+ *     Override the default 30-day progressive extraction window. Useful for
+ *     bounded manual catch-up runs that need fewer APS Data Connector requests.
+ *
  *   Note: PRIORITY_WINDOW_DAYS=30 is the activity-analysis window used by the
  *   priority ranker to compute scores. It is a compile-time constant in
  *   lib/acc/dcIngest.ts, not a runtime env var.

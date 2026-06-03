@@ -107,6 +107,15 @@ export interface GraphCanvas2DHandle {
   /** Test/diagnostic: cosmos's current zoom level (camera scale). */
   getZoomLevel?(): number;
   /**
+   * LOD: atomically switch the rendered point SET to a new count — positions (stride-2),
+   * colors (RGBA, len = count*4), and optional sizes (len = count). Keeps the camera
+   * (no refit). Used when the level-of-detail mode flips between full nodes and the
+   * smaller aggregate-clump set so cosmos updates far fewer points per frame.
+   */
+  setPointSet?(positions2: Float32Array, colors: Float32Array, sizes?: Float32Array): void;
+  /** LOD: position-only update for the CURRENT set (any count), with the no-op skip. */
+  pushPointSet?(positions2: Float32Array): void;
+  /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Pitfall 5).
    * Safe to call any number of times — cosmos.gl config is NEVER re-issued.
    */
@@ -148,6 +157,24 @@ export interface GraphCanvas2DProps {
   backgroundColor: string;
   /** When true, run cosmos.gl's GPU force simulation (cluster-anchor layout) instead of frozen mode. */
   gpuSimulation?: boolean;
+  /**
+   * True while the deterministic packed-cluster positions are the authoritative
+   * source (the shell supplies clusterPackedPositions). The pushed positions then
+   * own the layout and must drive the framing/fit path — even when the d3 physics
+   * layer hasn't frozen (GPU-off test mode) and the GPU sim isn't paused. Without
+   * this, the fit branch only runs via `physics.frozen` (false under test) or
+   * `clusterPushActive` (GPU-on only), so the cluster cloud never gets framed.
+   */
+  clusterMode?: boolean;
+  /**
+   * Bounding-box corners of the FINAL packed cluster cloud, flat `[x0,y0,...]`
+   * (4 corners) in cosmos space. The camera fit frames THESE rather than the live
+   * eased buffer: the ease can pass through a much larger/asymmetric bbox mid-flight
+   * (e.g. seeded from a wide physics scatter), so framing the live buffer mis-zooms
+   * and off-centers. Framing the known final extent is correct regardless of ease
+   * progress or seed. Undefined → fall back to the live positions.
+   */
+  clusterCorners?: Float32Array;
   /**
    * GPU cluster mode: per-node cluster index (color-group assignment). When
    * present (and length === node count), nodes are grouped into discrete clumps
@@ -192,6 +219,17 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   // so a same-tick fitView frames the stale (pre-upload) positions and no-ops.
   // Deferring a few rAF frames lets the new bbox land before we frame it.
   const fitPendingRef = useRef(0);
+  // Live mirror of props.clusterMode, read inside the mount-only pushPositions
+  // closure (props captured at mount would be stale). Kept current by the effect
+  // below. Gates the deterministic-cluster framing path independent of frozen.
+  const clusterModeRef = useRef<boolean>(!!props.clusterMode);
+  // Live mirror of the final cluster-cloud corners (see props.clusterCorners),
+  // read inside the mount-only pushPositions closure for the camera fit.
+  const clusterCornersRef = useRef<Float32Array | undefined>(props.clusterCorners);
+  // LOD: number of points cosmos is CURRENTLY rendering (full N or the smaller aggregate
+  // count). The color/size prop effects skip when their length doesn't match this, so a
+  // full-length color buffer is never pushed onto the aggregate set (a count mismatch).
+  const currentCountRef = useRef<number>(0);
 
   // ---------------------------------------------------------------------------
   // Mount effect: initialize cosmos.gl Graph in frozen mode (REND-01, Pattern 1)
@@ -207,6 +245,13 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
     // truth. Set by pauseSimulation / cleared by resumeSimulation; read by
     // pushPositions to open its GPU-mode upload gate.
     let clusterPushActive = false;
+    // Last stride-2 positions actually uploaded to cosmos. Used to skip redundant
+    // re-uploads once the cluster ease settles: the rAF pump keeps calling
+    // pushPositions every frame, and re-running setPointPositions+render (which
+    // makes cosmos re-sync every texture, ~33 texSubImage2D/frame) on IDENTICAL
+    // positions pins the page at ~5fps forever. Skipping no-op uploads recovers
+    // to full fps once the blobs stop moving.
+    let prevUploaded: Float32Array | null = null;
 
     // Async-readiness guard (Pitfall 3): wrap all init in async IIFE so we can
     // await graph.ready if cosmos.gl exposes it as a Promise.
@@ -284,6 +329,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
       // Get initial positions (stride-3) and allocate the persistent stride-2 buffer.
       const xyz0 = props.physics.getPositions();
       const n = xyz0.length / 3;
+      currentCountRef.current = n; // full set on init
       const xy2 = new Float32Array(n * 2); // allocated ONCE (Pitfall 2)
       xy2Ref.current = xy2;
 
@@ -370,7 +416,28 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             xy2[i * 2] = xyz[i * 3];
             xy2[i * 2 + 1] = xyz[i * 3 + 1];
           }
-          if (props.physics.frozen || clusterPushActive) {
+          if (props.physics.frozen || clusterPushActive || clusterModeRef.current) {
+            // No-op skip: if these positions are byte-for-byte identical to what we
+            // last uploaded, cosmos would render the exact same frame — skip the
+            // upload+render entirely. Guarded by fitPendingRef so a DEFERRED fitView
+            // (armed on a scale change below) still gets its countdown frames. This
+            // only ever skips genuinely static frames, so B.2 preview motion (which
+            // changes coordinates every frame) is never dropped.
+            if (
+              prevUploaded &&
+              prevUploaded.length === count * 2 &&
+              fitPendingRef.current === 0
+            ) {
+              let changed = false;
+              for (let i = 0; i < count * 2; i++) {
+                if (prevUploaded[i] !== xy2[i]) { changed = true; break; }
+              }
+              if (!changed) return;
+            }
+            if (!prevUploaded || prevUploaded.length !== count * 2) {
+              prevUploaded = new Float32Array(count * 2);
+            }
+            prevUploaded.set(xy2.subarray(0, count * 2));
             // Always hand the latest xy2 to cosmos every rAF, even when the
             // overall spread is stable. B.2 preview interpolation produces fresh
             // per-frame coordinates while physics stays frozen, and a stable-
@@ -406,13 +473,30 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             if (fitPendingRef.current > 0) {
               fitPendingRef.current -= 1;
               if (fitPendingRef.current === 0) {
-                // enableSimulation:false explicitly — cosmos must not run physics
-                // during the fit (the graph is in frozen/external-positions mode).
+                // Frame the camera to the ACTUAL uploaded cloud, not cosmos's committed
+                // bbox. Plain fitView() reads getFitViewPositions() (the GPU position
+                // FBO), which under our dontRescale=true uploads lags/mismatches the CPU
+                // buffer — so it framed a stale pre-cluster bbox and the packed cloud
+                // spilled off-screen (the labels, pinned to the same space, went with
+                // it). fitViewByPointPositions takes our exact xy2 buffer and only sets
+                // the zoom/pan transform (no rescale of stored coords), so spaceToScreen
+                // — which shares the same scaleX/scaleY basis — keeps labels locked to
+                // their blobs. 4th arg false = don't run the sim during the fit tween.
                 (
                   g as unknown as {
-                    fitView?: (d?: number, p?: number, s?: boolean) => void;
+                    fitViewByPointPositions?: (
+                      p: Float32Array,
+                      d?: number,
+                      pad?: number,
+                      enableSim?: boolean,
+                    ) => void;
                   }
-                ).fitView?.(0, 0.1, false);
+                ).fitViewByPointPositions?.(
+                  clusterCornersRef.current ?? xy2.subarray(0, count * 2),
+                  0,
+                  0.12,
+                  false,
+                );
                 g!.render();
               }
             }
@@ -555,6 +639,39 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
           return (g as unknown as { getZoomLevel?: () => number }).getZoomLevel?.() ?? NaN;
         },
 
+        // LOD — atomic point-SET switch (different count). Keep the camera (dontRescale=
+        // true): the aggregate clump-dots live in the same space as the full nodes (both
+        // from the same layout), so the current framing still fits. Reset prevUploaded so
+        // the per-frame no-op skip doesn't compare across a count change.
+        setPointSet(positions2: Float32Array, colors: Float32Array, sizes?: Float32Array): void {
+          g!.setPointPositions(positions2, true);
+          g!.setPointColors(colors);
+          if (sizes) g!.setPointSizes(sizes);
+          g!.render();
+          prevUploaded = null;
+          currentCountRef.current = positions2.length / 2;
+        },
+
+        // LOD — position-only update for the CURRENT set (any count). Mirrors the frozen
+        // pushPositions no-op skip so a settled view parks the GPU pump, but is count-
+        // agnostic and free of the full-set fit/scale bookkeeping.
+        pushPointSet(positions2: Float32Array): void {
+          const len = positions2.length;
+          if (prevUploaded && prevUploaded.length === len) {
+            let changed = false;
+            for (let i = 0; i < len; i++) {
+              if (prevUploaded[i] !== positions2[i]) { changed = true; break; }
+            }
+            if (!changed) return;
+          }
+          if (!prevUploaded || prevUploaded.length !== len) {
+            prevUploaded = new Float32Array(len);
+          }
+          prevUploaded.set(positions2);
+          g!.setPointPositions(positions2, true);
+          g!.render();
+        },
+
         // ---- Phase 4-01 Task 2 primitives ---------------------------------
 
         setEventHandlers(h: GraphEventHandlers): void {
@@ -645,6 +762,9 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!graphRef.current) return;
+    // Skip while the aggregate (smaller) set is live — these full-length colors would
+    // mismatch the rendered count. They re-apply when the full set is restored (setPointSet).
+    if (currentCountRef.current !== props.nodeColors.length / 4) return;
     graphRef.current.setPointColors(props.nodeColors);
     graphRef.current.render();
   }, [props.nodeColors]);
@@ -654,9 +774,18 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
   // ---------------------------------------------------------------------------
   useEffect(() => {
     if (!graphRef.current || !props.nodeSizes) return;
+    if (currentCountRef.current !== props.nodeSizes.length) return; // skip on the aggregate set
     graphRef.current.setPointSizes(props.nodeSizes);
     graphRef.current.render();
   }, [props.nodeSizes]);
+
+  // Keep the live cluster-mode mirror current for the mount-only pushPositions closure.
+  useEffect(() => {
+    clusterModeRef.current = !!props.clusterMode;
+  }, [props.clusterMode]);
+  useEffect(() => {
+    clusterCornersRef.current = props.clusterCorners;
+  }, [props.clusterCorners]);
 
   return null;
 }

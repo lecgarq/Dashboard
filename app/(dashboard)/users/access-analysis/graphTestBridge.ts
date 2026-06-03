@@ -118,13 +118,10 @@ function nodeScreenPosition(nodeId: string): { x: number; y: number } | null {
  * Locate the densest screen region of the frozen 2D layout, in OVERLAY-LOCAL
  * pixels — the exact basis LassoOverlay reads from pointer offsetX/Y.
  *
- * Why screen-probing (NOT projecting via spaceToScreen): the real lasso converts
- * overlay-local pointer coords → space via the renderer's `screenToSpace`, then
- * hit-tests with `findPointsInPolygon`. The cosmos canvas and the lasso overlay
- * do not share an origin, so a point picked in `spaceToScreen` space lands in the
- * void when the test drives the mouse in overlay space. Probing candidate screen
- * boxes through the SAME `screenToSpace` + `findPointsInPolygon` path the overlay
- * uses guarantees the returned point is where the real drag finds the most nodes.
+ * Why screen-probing (NOT projecting via spaceToScreen): the real lasso passes
+ * overlay-local pointer coords directly to `findPointsInPolygon`. Probing
+ * candidate screen boxes through that same raw screen-pixel path guarantees the
+ * returned point is where the real drag finds the most nodes.
  *
  * Determinism: a fixed coarse grid then a fixed refine window around the best
  * cell — no RNG. Stable run-to-run because the test freezes the layout first.
@@ -154,18 +151,16 @@ function densestScreenPoint(
 
   const HALF = 28; // matches the lasso box the test draws → representative count
 
-  // Nodes inside the ±HALF screen box centered at (cx,cy), via the lasso's OWN
-  // path: overlay-local screen → space (screenToSpace) → findPointsInPolygon.
-  // This is the only basis that round-trips with the real drag — projecting via
-  // spaceToScreen lands in a different origin and misses (see module history).
+  // Nodes inside the +/-HALF screen box centered at (cx,cy), via the lasso's own
+  // raw screen-pixel path into findPointsInPolygon.
   const countAt = (cx: number, cy: number): number => {
-    const spaceBox: [number, number][] = [
+    const screenBox: [number, number][] = [
       [cx - HALF, cy - HALF],
       [cx + HALF, cy - HALF],
       [cx + HALF, cy + HALF],
       [cx - HALF, cy + HALF],
-    ].map((pt) => handle.screenToSpace(pt as [number, number]));
-    return handle.findPointsInPolygon(spaceBox).length;
+    ];
+    return handle.findPointsInPolygon(screenBox).length;
   };
 
   const lo = HALF;

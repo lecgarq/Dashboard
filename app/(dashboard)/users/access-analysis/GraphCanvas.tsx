@@ -28,6 +28,7 @@ import { useSliders } from "./SliderContext";
 // previewLayer (B.2 fallback) is used only when ENABLE_PREVIEW_INTERPOLATION && !gpu2d
 import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
 import { createClusterTransitionLayer, type ClusterTransitionLayer } from "./clusterTransitionLayer";
+import { resolveLodMode } from "./lodState";
 
 // ---------------------------------------------------------------------------
 // Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
@@ -91,6 +92,18 @@ export interface GraphCanvasProps {
    * structural. Absent → physics positions drive (bare/legacy path, e.g. unit tests).
    */
   layoutTarget?: () => Float32Array;
+  /**
+   * LOD — per-frame AGGREGATE positions (one stride-2 dot per cluster), or null when no
+   * aggregate is available (e.g. the rest view). When present, the 2D renderer draws the
+   * ~K aggregate dots instead of all N nodes while DRAGGING or zoomed-OUT (≈5× fewer points
+   * cosmos updates per frame → 60fps), and swaps back to the full N nodes when zoomed-in AND
+   * settled. Absent → the legacy full-detail path drives every frame.
+   */
+  aggregateTarget?: () => Float32Array | null;
+  /** LOD: aggregate RGBA colors, length = clusterCount*4. */
+  aggregateColors?: Float32Array;
+  /** LOD: aggregate point sizes, length = clusterCount. */
+  aggregateSizes?: Float32Array;
 }
 
 // ---------------------------------------------------------------------------
@@ -224,6 +237,11 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   const clusterLayerRef = useRef<ClusterTransitionLayer | null>(null);
   const clusterLastTsRef = useRef<number>(0);
 
+  // LOD: which point set cosmos is currently showing, + a reused stride-2 buffer to
+  // downproject the full xyz when (re)establishing the full set.
+  const lodModeRef = useRef<"full" | "aggregate">("full");
+  const fullXy2Ref = useRef<Float32Array | null>(null);
+
   const getPositionsOverride = useCallback((): Float32Array | null => {
     // 2D only: the target is a flat (z=0) layout. In 3D the renderer takes the
     // physics worker's 3D positions (which still react to slider forces) instead.
@@ -301,7 +319,62 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
     enabled: true,
     skipPositionPump: gpu2d && !clusterActive,
     onTick2D: (xyz) => {
-      handle2D.current?.pushPositions(xyz);
+      const h = handle2D.current;
+      if (!h) return;
+
+      // LOD is available when the shell supplies aggregate data, the descriptor is driving
+      // (blob view), AND the renderer exposes the point-set primitives. Else: legacy full path.
+      const agg = props.aggregateTarget?.() ?? null;
+      const lodCapable =
+        !!agg && !!props.aggregateColors && clusterActive && !!h.setPointSet && !!h.pushPointSet;
+
+      // Desired set: aggregate while dragging (when capable), else full. Settled = full so
+      // interactions hit real nodes (see lodState — zoom-out aggregation is deferred).
+      const desired: "full" | "aggregate" =
+        lodCapable && resolveLodMode({ dragging: sliders.isPreviewActive() }) === "aggregate"
+          ? "aggregate"
+          : "full";
+
+      // Downproject the full xyz (stride-3) into the reused stride-2 buffer.
+      const toFullXy2 = (): Float32Array => {
+        const count = xyz.length / 3;
+        let buf = fullXy2Ref.current;
+        if (!buf || buf.length !== count * 2) {
+          buf = new Float32Array(count * 2);
+          fullXy2Ref.current = buf;
+        }
+        for (let i = 0; i < count; i++) {
+          buf[i * 2] = xyz[i * 3];
+          buf[i * 2 + 1] = xyz[i * 3 + 1];
+        }
+        return buf;
+      };
+
+      // SET SWITCH — atomically swap positions + matching-count colors/sizes, then bail.
+      if (desired !== lodModeRef.current) {
+        if (desired === "aggregate") {
+          h.setPointSet!(agg!, props.aggregateColors!, props.aggregateSizes);
+          lodModeRef.current = "aggregate";
+          return;
+        }
+        // desired full — restore the full set (positions + full colors) when the renderer
+        // supports it; otherwise fall through to the legacy push.
+        if (h.setPointSet) {
+          h.setPointSet(toFullXy2(), props.nodeColors, props.nodeSizes);
+          lodModeRef.current = "full";
+          return;
+        }
+        lodModeRef.current = "full";
+      }
+
+      // STEADY FRAME — position-only push of the active set.
+      if (desired === "aggregate") {
+        h.pushPointSet!(agg!);
+      } else if (lodCapable) {
+        h.pushPointSet!(toFullXy2()); // LOD full (zoomed-in): no camera reframe
+      } else {
+        h.pushPositions(xyz); // legacy full (rest view): keeps the load-time fit
+      }
     },
     onTick3D: (xyz) => {
       handle3D.current?.pushPositions(xyz);

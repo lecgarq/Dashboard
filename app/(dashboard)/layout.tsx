@@ -17,6 +17,7 @@ import { ChatPanelWrapper } from "@/components/dashboard/ChatPanelWrapper";
 import { MailPanelWrapper } from "@/components/dashboard/MailPanelWrapper";
 import { SessionProvider } from "next-auth/react";
 import { DualAuthGuard } from "@/components/auth/DualAuthGuard";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const session = await auth();
@@ -48,9 +49,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                 <div className="absolute inset-0 overflow-hidden">
                   <ParticleBackground />
                   <div className="pointer-events-none absolute inset-0">
-                    <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-sky-200/30 blur-3xl" />
-                    <div className="absolute right-[-6rem] top-[-3rem] h-96 w-96 rounded-full bg-amber-200/35 blur-3xl" />
-                    <div className="absolute bottom-[-6rem] right-[18%] h-80 w-80 rounded-full bg-teal-200/25 blur-3xl" />
+                    <div className="absolute -left-28 top-20 h-80 w-80 rounded-full bg-sky-200/30 dark:bg-zinc-700/10 blur-3xl" />
+                    <div className="absolute right-[-6rem] top-[-3rem] h-96 w-96 rounded-full bg-amber-200/35 dark:bg-zinc-600/8 blur-3xl" />
+                    <div className="absolute bottom-[-6rem] right-[18%] h-80 w-80 rounded-full bg-teal-200/25 dark:bg-zinc-500/8 blur-3xl" />
                   </div>
                 </div>
                 <div className="relative z-10 flex h-full min-h-0 overflow-hidden">
@@ -65,6 +66,9 @@ export default async function DashboardLayout({ children }: { children: React.Re
                   </main>
                   <ChatPanelWrapper />
                   <MailPanelWrapper />
+                </div>
+                <div className="fixed right-4 top-4 z-50">
+                  <ThemeToggle />
                 </div>
               </div>
             </ParticleZoneProvider>

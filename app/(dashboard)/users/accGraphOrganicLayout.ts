@@ -25,6 +25,46 @@ export interface OrganicLayoutNode {
   roles: string[];
   lastAddedBucket: string;
   modules: string[];
+  // ── Extra optional dimensions used by computeBlobSeedPositions for
+  //    feature-tension positioning. Older callers (Canvas2D, tests) can
+  //    leave these undefined; the layout treats absent fields as empty.
+  /** Company name as extracted from ACC HQ (e.g. "Acme Corp"). */
+  companyName?: string | null;
+  /** Company-specific role (e.g. "Senior Architect"). */
+  companyRole?: string | null;
+  /** ISO timestamp of the user's last sign-in. Bucketed for layout. */
+  lastSignIn?: string | null;
+  /** Per-project role names — finer-grained than the de-duplicated `roles`. */
+  perProjectRoleNames?: string[];
+  /** "active" | "pending" | "deleted" — user lifecycle bucket. */
+  aggregatedStatus?: "active" | "pending" | "deleted";
+  /** Executive flag (org-directory enrichment). */
+  executive?: boolean;
+  /** Folder-hub IDs this (user, project, role) combo can reach — see
+   *  AccUsersGraph buildFolderAccessLookup. Optional; absent when the
+   *  folder-permission matrix isn't available on this route. */
+  accessibleFolderHubs?: string[];
+  /** True when the user is an external collaborator (non-internal email
+   *  domain). Used as a binary axis in the blob layout so internal and
+   *  external populations form distinct centers of mass. */
+  isExternal?: boolean;
+}
+
+/**
+ * Bucket a last-sign-in timestamp into a coarse activity tier so two users
+ * who haven't logged in for ~the same amount of time land near each other.
+ * Returns one of: "never" | "today" | "week" | "month" | "quarter" | "stale".
+ */
+function activityBucket(lastSignIn: string | null | undefined): string {
+  if (!lastSignIn) return "never";
+  const ts = Date.parse(lastSignIn);
+  if (!Number.isFinite(ts)) return "never";
+  const days = (Date.now() - ts) / 86_400_000;
+  if (days < 1) return "today";
+  if (days < 7) return "week";
+  if (days < 30) return "month";
+  if (days < 90) return "quarter";
+  return "stale";
 }
 
 export interface LayoutWeights {
@@ -497,6 +537,252 @@ export function computeTopologySeedPositions(
     positions[i * 2 + 1] = clampUnit(cy + j.y * jitterScale);
   }
   return positions;
+}
+
+/**
+ * "Chaotic blob" seed positions — alternative to computeTopologySeedPositions
+ * for views where structured project clusters are visually undesired.
+ *
+ * Strategy: place each project's loose centroid at a deterministic but random-
+ * looking 2D point (no spiral, no grid), then jitter every node strongly so
+ * neighboring projects bleed into one another. Net effect: an organic mass
+ * with subtle density variation where projects happen to overlap, but no
+ * visible discs/spirals/clusters of fixed shape.
+ *
+ * Deterministic and pure — same nodes → byte-identical positions, but the
+ * arrangement looks "chaotic" because both centroid and jitter are derived
+ * from hashes of the projectId and node id respectively.
+ */
+/**
+ * Feature-based blob: each node's position is a weighted average of "anchor
+ * points" derived from its attributes (roles, modules, admin status, project,
+ * lastAdded, identity). Two users with the same roles + modules land near
+ * each other because their anchors overlap. Users with nothing in common
+ * scatter freely.
+ *
+ * This produces *tension*: the position is a function of *who* the user is,
+ * not just an unstructured hash of an id. The visual result is a chaotic
+ * blob whose density variations actually mean something — clumps are
+ * statistical "tribes" of users sharing attributes, not arbitrary geometry.
+ *
+ * Deterministic: same nodes → byte-identical positions.
+ */
+// Axis order MUST match the W block below and the anchorBuffer layout in
+// precomputeBlobAnchorBuffer / applyBlobAnchorBuffer. Keep in sync.
+export const BLOB_AXIS_KEYS = [
+  "role",
+  "modules",
+  "access",
+  "project",
+  "lastAdded",
+  "company",
+  "companyRole",
+  "activity",
+  "perProjectRoles",
+  "status",
+  "executive",
+  "folders",
+  "external",
+  "identity",
+] as const;
+export type BlobAxisKey = (typeof BLOB_AXIS_KEYS)[number];
+export const BLOB_AXIS_COUNT = BLOB_AXIS_KEYS.length;
+export const BLOB_AXIS_STRIDE = BLOB_AXIS_COUNT * 2; // (x, y) per axis per node
+
+/**
+ * Precompute the per-node feature anchors for the blob layout. Returns a
+ * Float32Array of length nodes.length * BLOB_AXIS_STRIDE laid out as:
+ *
+ *   [n0_axis0_x, n0_axis0_y, n0_axis1_x, n0_axis1_y, ..., n1_axis0_x, ...]
+ *
+ * All the hashing (featureAnchor / averageFeatureAnchor) runs ONCE here, so
+ * slider scrubs can produce new positions via a flat O(n × axes) multiply-
+ * accumulate pass with no string hashing in the hot path.
+ */
+export function precomputeBlobAnchorBuffer(nodes: readonly OrganicLayoutNode[]): Float32Array {
+  const buf = new Float32Array(nodes.length * BLOB_AXIS_STRIDE);
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+    const role = averageFeatureAnchor(node.roles, "role");
+    const modules = averageFeatureAnchor(node.modules, "modules");
+    const access = featureAnchor(node.isAdmin ? "admin" : "non-admin", "access");
+    const project = featureAnchor(node.projectId || "no-project", "project");
+    const lastAdded = featureAnchor(node.lastAddedBucket || "unknown", "lastAdded");
+    const company = featureAnchor(node.companyName || "no-company", "company");
+    const companyRole = featureAnchor(node.companyRole || "no-companyRole", "companyRole");
+    const activity = featureAnchor(activityBucket(node.lastSignIn), "activity");
+    const perProjectRoles = averageFeatureAnchor(node.perProjectRoleNames ?? [], "perProjectRoles");
+    const status = featureAnchor(node.aggregatedStatus || "unknown", "status");
+    const executive = featureAnchor(node.executive ? "exec" : "non-exec", "executive");
+    const folders = averageFeatureAnchor(node.accessibleFolderHubs ?? [], "folders");
+    const external = featureAnchor(node.isExternal ? "external" : "internal", "external");
+    const identity = featureAnchor(node.userId || node.email, "identity");
+    const o = i * BLOB_AXIS_STRIDE;
+    buf[o + 0]  = role.x;        buf[o + 1]  = role.y;
+    buf[o + 2]  = modules.x;     buf[o + 3]  = modules.y;
+    buf[o + 4]  = access.x;      buf[o + 5]  = access.y;
+    buf[o + 6]  = project.x;     buf[o + 7]  = project.y;
+    buf[o + 8]  = lastAdded.x;   buf[o + 9]  = lastAdded.y;
+    buf[o + 10] = company.x;     buf[o + 11] = company.y;
+    buf[o + 12] = companyRole.x; buf[o + 13] = companyRole.y;
+    buf[o + 14] = activity.x;    buf[o + 15] = activity.y;
+    buf[o + 16] = perProjectRoles.x; buf[o + 17] = perProjectRoles.y;
+    buf[o + 18] = status.x;      buf[o + 19] = status.y;
+    buf[o + 20] = executive.x;   buf[o + 21] = executive.y;
+    buf[o + 22] = folders.x;     buf[o + 23] = folders.y;
+    buf[o + 24] = external.x;    buf[o + 25] = external.y;
+    buf[o + 26] = identity.x;    buf[o + 27] = identity.y;
+  }
+  return buf;
+}
+
+/**
+ * Apply a weight set to a precomputed anchor buffer and write the resulting
+ * normalized positions into `out` (length must equal nodeCount * 2).
+ *
+ * Hot path for slider scrub: no allocations, no string hashing, just a tight
+ * multiply-accumulate over `nodeCount × BLOB_AXIS_COUNT` pairs followed by an
+ * in-place normalize-to-[0.05, 0.95] pass.
+ */
+export function applyBlobAnchorBuffer(
+  anchors: Float32Array,
+  weights: number[],
+  out: Float32Array,
+): void {
+  const nodeCount = out.length / 2;
+  if (weights.length !== BLOB_AXIS_COUNT) {
+    throw new Error(`applyBlobAnchorBuffer: weights length ${weights.length} != BLOB_AXIS_COUNT ${BLOB_AXIS_COUNT}`);
+  }
+  // Sum of weights → divisor for the weighted average. Falls back to 1 to
+  // keep positions sensible when every slider is at 0 (everything maps to
+  // identity-axis noise → still a blob, just unweighted).
+  let total = 0;
+  for (let a = 0; a < BLOB_AXIS_COUNT; a++) total += weights[a];
+  const inv = total > 0 ? 1 / total : 1;
+  let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+  for (let i = 0; i < nodeCount; i++) {
+    const o = i * BLOB_AXIS_STRIDE;
+    let x = 0, y = 0;
+    for (let a = 0; a < BLOB_AXIS_COUNT; a++) {
+      const w = weights[a];
+      if (w === 0) continue;
+      x += anchors[o + a * 2] * w;
+      y += anchors[o + a * 2 + 1] * w;
+    }
+    x = 0.5 + x * inv;
+    y = 0.5 + y * inv;
+    out[i * 2] = x;
+    out[i * 2 + 1] = y;
+    if (x < minX) minX = x; if (x > maxX) maxX = x;
+    if (y < minY) minY = y; if (y > maxY) maxY = y;
+  }
+  // In-place normalize to [0.05, 0.95] preserving aspect.
+  const rangeX = (maxX - minX) || 1;
+  const rangeY = (maxY - minY) || 1;
+  const maxRange = Math.max(rangeX, rangeY);
+  const offsetX = (maxRange - rangeX) / 2;
+  const offsetY = (maxRange - rangeY) / 2;
+  for (let i = 0; i < nodeCount; i++) {
+    out[i * 2]     = 0.05 + ((out[i * 2] - minX + offsetX) / maxRange) * 0.9;
+    out[i * 2 + 1] = 0.05 + ((out[i * 2 + 1] - minY + offsetY) / maxRange) * 0.9;
+  }
+}
+
+export interface BlobWeightOverrides {
+  role?: number;
+  modules?: number;
+  access?: number;
+  project?: number;
+  lastAdded?: number;
+  company?: number;
+  companyRole?: number;
+  activity?: number;
+  perProjectRoles?: number;
+  status?: number;
+  executive?: number;
+  folders?: number;
+  external?: number;
+  identity?: number;
+}
+
+export function computeBlobSeedPositions(
+  nodes: readonly OrganicLayoutNode[],
+  overrides: BlobWeightOverrides = {},
+): Float32Array {
+  const positions = new Float32Array(nodes.length * 2);
+  if (nodes.length === 0) return positions;
+
+  // Weights per feature axis. Higher = stronger pull from that dimension =
+  // more visible clustering when users share that attribute. Overrides let
+  // the Physics & Clustering panel drive each axis from a slider; missing
+  // keys fall back to the tuned default.
+  const pick = (k: keyof BlobWeightOverrides, dflt: number): number => {
+    const v = overrides[k];
+    return typeof v === "number" && Number.isFinite(v) && v >= 0 ? v : dflt;
+  };
+  const W = {
+    role: pick("role", 1.0),
+    modules: pick("modules", 1.0),
+    access: pick("access", 0.8),
+    project: pick("project", 0.6),
+    lastAdded: pick("lastAdded", 0.4),
+    company: pick("company", 0.7),
+    companyRole: pick("companyRole", 0.5),
+    activity: pick("activity", 0.5),
+    perProjectRoles: pick("perProjectRoles", 0.6),
+    status: pick("status", 0.3),
+    executive: pick("executive", 0.4),
+    folders: pick("folders", 0.9),
+    external: pick("external", 0.7),
+    identity: pick("identity", 0.3),
+  } as const;
+  const TOTAL =
+    (W.role + W.modules + W.access + W.project + W.lastAdded +
+      W.company + W.companyRole + W.activity + W.perProjectRoles +
+      W.status + W.executive + W.folders + W.external + W.identity) || 1;
+
+  for (let i = 0; i < nodes.length; i++) {
+    const node = nodes[i];
+
+    const role = averageFeatureAnchor(node.roles, "role");
+    const modules = averageFeatureAnchor(node.modules, "modules");
+    const access = featureAnchor(node.isAdmin ? "admin" : "non-admin", "access");
+    const project = featureAnchor(node.projectId || "no-project", "project");
+    const lastAdded = featureAnchor(node.lastAddedBucket || "unknown", "lastAdded");
+    const company = featureAnchor(node.companyName || "no-company", "company");
+    const companyRole = featureAnchor(node.companyRole || "no-companyRole", "companyRole");
+    const activity = featureAnchor(activityBucket(node.lastSignIn), "activity");
+    const perProjectRoles = averageFeatureAnchor(node.perProjectRoleNames ?? [], "perProjectRoles");
+    const status = featureAnchor(node.aggregatedStatus || "unknown", "status");
+    const executive = featureAnchor(node.executive ? "exec" : "non-exec", "executive");
+    const folders = averageFeatureAnchor(node.accessibleFolderHubs ?? [], "folders");
+    const external = featureAnchor(node.isExternal ? "external" : "internal", "external");
+    const identity = featureAnchor(node.userId || node.email, "identity");
+
+    const x =
+      (role.x * W.role + modules.x * W.modules + access.x * W.access +
+        project.x * W.project + lastAdded.x * W.lastAdded + company.x * W.company +
+        companyRole.x * W.companyRole + activity.x * W.activity +
+        perProjectRoles.x * W.perProjectRoles + status.x * W.status +
+        executive.x * W.executive + folders.x * W.folders +
+        external.x * W.external + identity.x * W.identity) / TOTAL;
+    const y =
+      (role.y * W.role + modules.y * W.modules + access.y * W.access +
+        project.y * W.project + lastAdded.y * W.lastAdded + company.y * W.company +
+        companyRole.y * W.companyRole + activity.y * W.activity +
+        perProjectRoles.y * W.perProjectRoles + status.y * W.status +
+        executive.y * W.executive + folders.y * W.folders +
+        external.y * W.external + identity.y * W.identity) / TOTAL;
+
+    positions[i * 2] = 0.5 + x;
+    positions[i * 2 + 1] = 0.5 + y;
+  }
+
+  // Weighted-average anchors statistically cancel out, leaving most nodes
+  // clumped near the center. Normalize to fill [0.05, 0.95] so the blob
+  // uses the whole canvas while preserving relative distances (the tension
+  // between users is unchanged — only the scale).
+  return normalizePositions(positions);
 }
 
 export function normalizePositions(positions: Float32Array): Float32Array {

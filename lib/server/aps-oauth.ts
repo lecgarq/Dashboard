@@ -106,7 +106,7 @@ export async function refreshUserToken(
       refresh_token: json.refresh_token ?? acct.refresh_token,
       expires_at:
         Math.floor(Date.now() / 1000) + (json.expires_in ?? 3600),
-      scope: json.scope ?? null,
+      scope: json.scope ?? DC_SCOPES,
     },
   });
 

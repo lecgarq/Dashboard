@@ -1,4 +1,29 @@
+import { TRPCError } from "@trpc/server";
+import type { PrismaClient } from "@prisma/client";
+
+import {
+  isDcExtractionPaused,
+  pauseDcExtraction,
+  readLatestDcLogLines,
+  resumeDcExtraction,
+  startDcExtractionProcess,
+  type ExtractionStartKind,
+} from "@/lib/acc/dcControl";
+import { estimateExtractionTiming } from "@/lib/acc/dcEta";
+import {
+  buildQuotaBudget,
+  DAILY_QUOTA_CAP,
+  isSameUtcDay,
+  nextDailyQuotaReset,
+} from "@/lib/acc/dcQuota";
+import { planDailySlice, type ProjectProgress } from "@/lib/acc/dcProgressiveBackfill";
+import { mapRunStatusToSyncCenterStatus } from "@/lib/acc/syncCenterState";
+import {
+  buildExtractionPriorityPlan,
+  type ExtractionPriorityActivityInput,
+} from "@/lib/acc/extractionPriorityPlanner";
 import { router, protectedProcedure } from "../trpc";
+import { z } from "zod";
 
 /**
  * accSyncRouter — exposes freshness state for the sidebar pill.
@@ -17,6 +42,49 @@ import { router, protectedProcedure } from "../trpc";
  * (one CSV ingested zero rows).
  */
 type RowsByFile = { project?: number; admin?: number } | null;
+
+type ActivityJobStatus = {
+  requestId?: string | null;
+  status: string;
+  startedAt: Date;
+  completedAt: Date | null;
+  errorMessage: string | null;
+};
+
+type DcRunStatus = {
+  id?: string | null;
+  status: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  errorMessage: string | null;
+  quotaUsed?: number;
+};
+
+type OperationStatus = {
+  source: "dc-run" | "activity-job";
+  id: string | null;
+  status: string;
+  startedAt: Date;
+  endedAt: Date | null;
+  errorMessage: string | null;
+  quotaUsed: number;
+};
+
+type ObservedActivityCoverage = {
+  rows: number;
+  projectsWithActivity: number;
+  daysWithActivity: number;
+  earliestAt: Date | null;
+  latestAt: Date | null;
+};
+
+const EXTRACTION_PRIORITY_INPUT = z
+  .object({
+    windowDays: z.number().int().min(1).max(730).default(30),
+    limit: z.number().int().min(1).max(500).default(75),
+    quotaLimit: z.number().int().min(0).max(20).default(5),
+  })
+  .optional();
 
 function parseRowsByFile(raw: string | null | undefined): RowsByFile {
   if (!raw) return null;
@@ -89,6 +157,118 @@ function computeIngestState(
     partial: false,
     lastIngestAt,
     lastIngestError: latestJob.errorMessage ?? null,
+  };
+}
+
+function activityJobToOperation(job: ActivityJobStatus | null): OperationStatus | null {
+  if (!job) return null;
+  return {
+    source: "activity-job",
+    id: job.requestId ?? null,
+    status: job.status,
+    startedAt: job.startedAt,
+    endedAt: job.completedAt,
+    errorMessage: job.errorMessage,
+    quotaUsed: 1,
+  };
+}
+
+function dcRunToOperation(run: DcRunStatus | null): OperationStatus | null {
+  if (!run) return null;
+  return {
+    source: "dc-run",
+    id: run.id ?? null,
+    status: run.status,
+    startedAt: run.startedAt,
+    endedAt: run.endedAt,
+    errorMessage: run.errorMessage,
+    quotaUsed: run.quotaUsed ?? 0,
+  };
+}
+
+function operationEventTime(operation: OperationStatus): Date {
+  return operation.endedAt ?? operation.startedAt;
+}
+
+function pickLatestOperation(
+  run: DcRunStatus | null,
+  activityJob: ActivityJobStatus | null,
+): OperationStatus | null {
+  const runOperation = dcRunToOperation(run);
+  const jobOperation = activityJobToOperation(activityJob);
+  if (!runOperation) return jobOperation;
+  if (!jobOperation) return runOperation;
+  return operationEventTime(jobOperation).getTime() >= operationEventTime(runOperation).getTime()
+    ? jobOperation
+    : runOperation;
+}
+
+function activityJobSuccessAt(job: ActivityJobStatus | null): Date | null {
+  if (!job || job.status !== "success") return null;
+  return job.completedAt ?? job.startedAt;
+}
+
+function pickLatestDate(a: Date | null | undefined, b: Date | null | undefined): Date | null {
+  if (!a) return b ?? null;
+  if (!b) return a;
+  return a.getTime() >= b.getTime() ? a : b;
+}
+
+function computeDcStatus(input: {
+  now: Date;
+  latestOperation: OperationStatus | null;
+  latestSuccessAt: Date | null;
+  tokenExpired: boolean;
+}): "green" | "amber" | "red" {
+  if (input.tokenExpired) return "red";
+  if (!input.latestSuccessAt) return "red";
+
+  const lastSuccessAgeHrs =
+    (input.now.getTime() - input.latestSuccessAt.getTime()) / 3_600_000;
+  if (lastSuccessAgeHrs > 36) return "red";
+
+  if (
+    input.latestOperation?.status === "failed" ||
+    input.latestOperation?.status === "quarantined" ||
+    input.latestOperation?.status === "partial" ||
+    input.latestOperation?.status === "quota-paused" ||
+    input.latestOperation?.status === "quota-exceeded"
+  ) {
+    return "amber";
+  }
+
+  if (lastSuccessAgeHrs > 24) return "amber";
+  return "green";
+}
+
+function countSameUtcDay(rows: Array<{ startedAt: Date }>, now: Date): number {
+  return rows.filter((row) => isSameUtcDay(row.startedAt, now)).length;
+}
+
+async function loadObservedActivityCoverage(db: PrismaClient): Promise<ObservedActivityCoverage> {
+  const [rows, projectRows, dayRows] = await Promise.all([
+    db.accActivity.count(),
+    db.accActivity.groupBy({
+      by: ["projectId"],
+      where: { projectId: { not: "" } },
+      _count: { _all: true },
+    }),
+    db.$queryRawUnsafe<
+      Array<{ min: Date | null; max: Date | null; days: number | bigint | null }>
+    >(
+      `SELECT MIN("createdAt") AS min,
+              MAX("createdAt") AS max,
+              COUNT(DISTINCT date_trunc('day', "createdAt"))::int AS days
+       FROM "AccActivity"`,
+    ),
+  ]);
+  const rollup = dayRows[0] ?? { min: null, max: null, days: 0 };
+  return {
+    rows,
+    projectsWithActivity: projectRows.filter((row) => Boolean(row.projectId)).length,
+    daysWithActivity: Number(rollup.days ?? 0),
+    earliestAt: rollup.min ?? null,
+    latestAt: rollup.max ?? null,
   };
 }
 
@@ -172,52 +352,84 @@ export const accSyncRouter = router({
   // "month X of Y" so Luis can answer the CONTEXT promise: "how far has the
   // 2-yr backfill progressed?".
   getDcIngestStatus: protectedProcedure.query(async ({ ctx }) => {
-    const [lastRun, lastSuccess] = await Promise.all([
+    const now = new Date();
+    const todayStart = utcDayStart(now);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const [
+      lastRun,
+      lastSuccess,
+      todayRuns,
+      latestActivityJob,
+      latestActivitySuccess,
+      todayActivityJobs,
+    ] = await Promise.all([
       ctx.db.accDcIngestRun.findFirst({ orderBy: { startedAt: "desc" } }),
       ctx.db.accDcIngestRun.findFirst({
         where: { status: "success" },
         orderBy: { startedAt: "desc" },
       }),
+      ctx.db.accDcIngestRun.findMany({
+        where: { startedAt: { gte: todayStart, lt: todayEnd } },
+        select: { quotaUsed: true },
+      }),
+      ctx.db.accDataConnectorJob.findFirst({
+        orderBy: { startedAt: "desc" },
+        select: {
+          requestId: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+          errorMessage: true,
+        },
+      }),
+      ctx.db.accDataConnectorJob.findFirst({
+        where: { status: "success" },
+        orderBy: { completedAt: "desc" },
+        select: {
+          requestId: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+          errorMessage: true,
+        },
+      }),
+      ctx.db.accDataConnectorJob.findMany({
+        where: { startedAt: { gte: todayStart, lt: todayEnd } },
+        select: { startedAt: true },
+      }),
     ]);
 
-    const now = new Date();
-    const lastSuccessAgeHrs = lastSuccess
-      ? (now.getTime() - lastSuccess.startedAt.getTime()) / 3_600_000
-      : Number.POSITIVE_INFINITY;
-
     const tokenExpired = !!(
-      lastRun?.errorMessage && /401|invalid_grant|token/i.test(lastRun.errorMessage)
+      (lastRun?.errorMessage && /401|invalid_grant|token/i.test(lastRun.errorMessage)) ||
+      (latestActivityJob?.errorMessage && /401|invalid_grant|token/i.test(latestActivityJob.errorMessage))
     );
-
-    let dcStatus: "green" | "amber" | "red";
-    if (tokenExpired || lastSuccessAgeHrs > 36) {
-      dcStatus = "red";
-    } else if (
-      lastSuccessAgeHrs > 24 ||
-      lastRun?.status === "partial" ||
-      lastRun?.status === "quarantined"
-    ) {
-      dcStatus = "amber";
-    } else {
-      dcStatus = "green";
-    }
+    const latestOperation = pickLatestOperation(lastRun, latestActivityJob);
+    const latestSuccessAt = pickLatestDate(
+      lastSuccess?.startedAt ?? null,
+      activityJobSuccessAt(latestActivitySuccess),
+    );
+    const dcStatus = computeDcStatus({
+      now,
+      latestOperation,
+      latestSuccessAt,
+      tokenExpired,
+    });
 
     const nextRunAt = nextScheduledRun(now);
     const hoursUntilNext = (nextRunAt.getTime() - now.getTime()) / 3_600_000;
 
     const quotaUsedToday =
-      lastRun?.startedAt && isSameUtcDay(lastRun.startedAt, now)
-        ? lastRun.quotaUsed
-        : 0;
+      todayRuns.reduce((sum, run) => sum + run.quotaUsed, 0) +
+      countSameUtcDay(todayActivityJobs, now);
 
     return {
       dcStatus,
-      lastRunAt: lastRun?.startedAt ?? null,
-      lastRunStatus: lastRun?.status ?? null,
-      lastSuccessAt: lastSuccess?.startedAt ?? null,
+      lastRunAt: latestOperation?.startedAt ?? null,
+      lastRunStatus: latestOperation?.status ?? null,
+      lastSuccessAt: latestSuccessAt,
       nextRunInHours: Math.max(0, Math.round(hoursUntilNext)),
       quotaUsedToday,
-      quotaCap: 25,
+      quotaCap: DAILY_QUOTA_CAP,
       diffSummary:
         (lastSuccess?.diffSummary as {
           usersAdded: number;
@@ -231,13 +443,16 @@ export const accSyncRouter = router({
   }),
 
   getBackfillProgress: protectedProcedure.query(async ({ ctx }) => {
-    const progress = await ctx.db.accDcBackfillProgress.findMany({
-      select: {
-        earliestCovered: true,
-        latestCovered: true,
-        projectCreatedAt: true,
-      },
-    });
+    const [progress, activityCoverage] = await Promise.all([
+      ctx.db.accDcBackfillProgress.findMany({
+        select: {
+          earliestCovered: true,
+          latestCovered: true,
+          projectCreatedAt: true,
+        },
+      }),
+      loadObservedActivityCoverage(ctx.db),
+    ]);
     const now = new Date();
     let totalMonths = 0;
     let coveredMonths = 0;
@@ -255,7 +470,266 @@ export const accSyncRouter = router({
       monthsTotal: totalMonths,
       backfillPct: totalMonths > 0 ? coveredMonths / totalMonths : 0,
       projectsTracked: progress.length,
+      activityCoverage,
     };
+  }),
+
+  getExtractionPriorityPlan: protectedProcedure
+    .input(EXTRACTION_PRIORITY_INPUT)
+    .query(async ({ ctx, input }) => {
+      const windowDays = input?.windowDays ?? 30;
+      const now = new Date();
+      const windowStart = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() - windowDays + 1,
+      ));
+      const windowEndExclusive = new Date(Date.UTC(
+        now.getUTCFullYear(),
+        now.getUTCMonth(),
+        now.getUTCDate() + 1,
+      ));
+
+      const [dcProjects, folderProjects, memberCounts, progressRows, activityRows] =
+        await Promise.all([
+          ctx.db.accDcProject.findMany({
+            select: { id: true, name: true, status: true, createdAt: true },
+            orderBy: { name: "asc" },
+          }),
+          ctx.db.accProject.findMany({
+            select: { id: true, folderCrawlStatus: true },
+          }),
+          ctx.db.accDcProjectUser.groupBy({
+            by: ["projectId"],
+            _count: { userId: true },
+          }),
+          ctx.db.accDcBackfillProgress.findMany({
+            select: {
+              projectId: true,
+              earliestCovered: true,
+              latestCovered: true,
+              projectCreatedAt: true,
+              newProjectFlag: true,
+            },
+          }),
+          ctx.db.$queryRaw<
+            Array<{
+              projectId: string;
+              rows: number | bigint;
+              activeDays: number | bigint;
+              services: string[] | null;
+              lastActivityAt: Date | null;
+            }>
+          >`
+            SELECT
+              NULLIF("projectId", '') AS "projectId",
+              COUNT(*)::int AS rows,
+              COUNT(DISTINCT date_trunc('day', "createdAt"))::int AS "activeDays",
+              ARRAY_REMOVE(ARRAY_AGG(DISTINCT COALESCE(NULLIF(LOWER(service), ''), 'unknown')), NULL) AS services,
+              MAX("createdAt") AS "lastActivityAt"
+            FROM "AccActivity"
+            WHERE "projectId" IS NOT NULL
+              AND "projectId" <> ''
+              AND "createdAt" >= ${windowStart}
+              AND "createdAt" < ${windowEndExclusive}
+            GROUP BY NULLIF("projectId", '')
+          `,
+        ]);
+
+      const folderStatusByProject = new Map(
+        folderProjects.map((project) => [project.id, project.folderCrawlStatus]),
+      );
+      const memberCountByProject = new Map(
+        memberCounts.map((row) => [row.projectId, row._count.userId]),
+      );
+      const activity: ExtractionPriorityActivityInput[] = activityRows
+        .filter((row) => Boolean(row.projectId))
+        .map((row) => ({
+          projectId: row.projectId,
+          rows: row.rows,
+          activeDays: row.activeDays,
+          services: row.services ?? [],
+          lastActivityAt: row.lastActivityAt,
+        }));
+
+      return buildExtractionPriorityPlan({
+        generatedAt: now,
+        windowDays,
+        limit: input?.limit,
+        quotaLimit: input?.quotaLimit,
+        projects: dcProjects.map((project) => ({
+          id: project.id,
+          name: project.name,
+          status: project.status,
+          createdAt: project.createdAt,
+          folderCrawlStatus: folderStatusByProject.get(project.id) ?? "unknown",
+          memberCount: memberCountByProject.get(project.id) ?? 0,
+        })),
+        activity,
+        backfillProgress: progressRows,
+      });
+    }),
+
+  getSyncCenterStatus: protectedProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const todayStart = utcDayStart(now);
+    const todayEnd = new Date(todayStart.getTime() + 24 * 60 * 60 * 1000);
+    const yesterday = new Date(todayStart.getTime() - 1);
+
+    const [
+      lastRun,
+      lastSuccess,
+      todayRuns,
+      progressRows,
+      activeLegacyJob,
+      latestActivityJob,
+      latestActivitySuccess,
+      todayActivityJobs,
+      activityCoverage,
+    ] = await Promise.all([
+      ctx.db.accDcIngestRun.findFirst({ orderBy: { startedAt: "desc" } }),
+      ctx.db.accDcIngestRun.findFirst({
+        where: { status: "success" },
+        orderBy: { startedAt: "desc" },
+      }),
+      ctx.db.accDcIngestRun.findMany({
+        where: { startedAt: { gte: todayStart, lt: todayEnd } },
+        select: { quotaUsed: true },
+      }),
+      ctx.db.accDcBackfillProgress.findMany(),
+      ctx.db.accDataConnectorJob.findFirst({
+        where: { status: { in: ["pending", "running"] } },
+        orderBy: { startedAt: "desc" },
+        select: { requestId: true, status: true, startedAt: true },
+      }),
+      ctx.db.accDataConnectorJob.findFirst({
+        orderBy: { startedAt: "desc" },
+        select: {
+          requestId: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+          errorMessage: true,
+        },
+      }),
+      ctx.db.accDataConnectorJob.findFirst({
+        where: { status: "success" },
+        orderBy: { completedAt: "desc" },
+        select: {
+          requestId: true,
+          status: true,
+          startedAt: true,
+          completedAt: true,
+          errorMessage: true,
+        },
+      }),
+      ctx.db.accDataConnectorJob.findMany({
+        where: { startedAt: { gte: todayStart, lt: todayEnd } },
+        select: { startedAt: true },
+      }),
+      loadObservedActivityCoverage(ctx.db),
+    ]);
+
+    const quotaUsedToday =
+      todayRuns.reduce((sum, run) => sum + run.quotaUsed, 0) +
+      countSameUtcDay(todayActivityJobs, now);
+    const quotaBudget = buildQuotaBudget({ usedToday: quotaUsedToday });
+    const projectProgress: ProjectProgress[] = progressRows.map((row) => ({
+      projectId: row.projectId,
+      earliestCovered: row.earliestCovered,
+      latestCovered: row.latestCovered,
+      projectCreatedAt: row.projectCreatedAt,
+      newProjectFlag: row.newProjectFlag,
+    }));
+    const plan = planDailySlice(projectProgress, yesterday);
+    const paused = isDcExtractionPaused();
+    const latestOperation = pickLatestOperation(lastRun, latestActivityJob);
+    const mappedStatus = mapRunStatusToSyncCenterStatus(latestOperation?.status);
+    const status =
+      paused && mappedStatus !== "running"
+        ? "paused"
+        : quotaBudget.safeRemainingToday === 0 && plan.estimatedQuota > 0
+          ? "quota-paused"
+          : mappedStatus;
+    const timing = estimateExtractionTiming({
+      startedAt: latestOperation?.startedAt ?? null,
+      endedAt: latestOperation?.endedAt ?? null,
+      quotaUsed: latestOperation?.quotaUsed ?? 0,
+      plannedRequests: Math.max(plan.estimatedQuota, latestOperation?.quotaUsed ?? 0),
+      now,
+    });
+    const latestLogs = readLatestDcLogLines(process.cwd(), 80);
+    const latestSuccessAt = pickLatestDate(
+      lastSuccess?.startedAt ?? null,
+      activityJobSuccessAt(latestActivitySuccess),
+    );
+
+    return {
+      status,
+      activeJobId:
+        mappedStatus === "running" && latestOperation?.source === "dc-run"
+          ? latestOperation.id
+          : null,
+      activeRequestId: activeLegacyJob?.requestId ?? null,
+      elapsedTime: timing.elapsedLabel,
+      estimatedRemainingTime: timing.remainingLabel,
+      completionEstimateDuration: timing.completionDurationLabel,
+      completionEstimateTime: timing.completionTime,
+      quotaUsedToday,
+      quotaRemainingToday: quotaBudget.safeRemainingToday,
+      dailyQuotaCap: quotaBudget.dailyQuotaCap,
+      dailySafeRequestBudget: quotaBudget.dailySafeRequestBudget,
+      reserveRequests: quotaBudget.reserveRequests,
+      plannedRequests: plan.estimatedQuota,
+      runnableRequestsToday: Math.min(plan.estimatedQuota, quotaBudget.safeRemainingToday),
+      deferredRequests: Math.max(0, plan.estimatedQuota - quotaBudget.safeRemainingToday),
+      nextSafeRunTime:
+        status === "quota-paused" || quotaBudget.safeRemainingToday === 0
+          ? nextDailyQuotaReset(now)
+          : nextScheduledRun(now),
+      paused,
+      lastRun: lastRun
+        ? {
+            id: lastRun.id,
+            status: lastRun.status,
+            startedAt: lastRun.startedAt,
+            endedAt: lastRun.endedAt,
+            projectsProcessed: lastRun.projectsProcessed,
+            quotaUsed: lastRun.quotaUsed,
+            errorMessage: lastRun.errorMessage,
+          }
+        : null,
+      lastSuccessAt: latestSuccessAt,
+      unknownModulesSeen: lastSuccess?.unknownModulesSeen ?? [],
+      activityCoverage,
+      latestLogs,
+      latestErrors: [
+        latestOperation?.errorMessage ?? null,
+        ...latestLogs.filter((line) => /error|failed|quota|429/i.test(line)).slice(-10),
+      ].filter((line): line is string => Boolean(line)),
+    };
+  }),
+
+  startDailyExtraction: protectedProcedure.mutation(async ({ ctx }) => {
+    return startExtractionIfIdle(ctx, "daily");
+  }),
+
+  resumeBackfill: protectedProcedure.mutation(async ({ ctx }) => {
+    return startExtractionIfIdle(ctx, "backfill");
+  }),
+
+  retryFailedJob: protectedProcedure.mutation(async ({ ctx }) => {
+    return startExtractionIfIdle(ctx, "retry");
+  }),
+
+  pauseExtraction: protectedProcedure.mutation(() => {
+    pauseDcExtraction();
+    return { paused: true };
+  }),
+
+  resumeExtraction: protectedProcedure.mutation(() => {
+    resumeDcExtraction();
+    return { paused: false };
   }),
 });
 
@@ -277,12 +751,8 @@ function nextScheduledRun(now: Date): Date {
   return target;
 }
 
-function isSameUtcDay(a: Date, b: Date): boolean {
-  return (
-    a.getUTCFullYear() === b.getUTCFullYear() &&
-    a.getUTCMonth() === b.getUTCMonth() &&
-    a.getUTCDate() === b.getUTCDate()
-  );
+function utcDayStart(now: Date): Date {
+  return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
 }
 
 /** Whole-month delta floor (start..end). Returns 0 when end < start. */
@@ -293,4 +763,33 @@ function monthsBetween(start: Date, end: Date): number {
   let total = years * 12 + months;
   if (end.getUTCDate() < start.getUTCDate()) total -= 1;
   return Math.max(0, total);
+}
+
+async function startExtractionIfIdle(
+  ctx: { db: PrismaClient },
+  kind: ExtractionStartKind,
+): Promise<{ started: true; pid: number | null; logPath: string }> {
+  const [activeRun, activeLegacyJob] = await Promise.all([
+    ctx.db.accDcIngestRun.findFirst({
+      where: { status: "running" },
+      orderBy: { startedAt: "desc" },
+      select: { id: true },
+    }),
+    ctx.db.accDataConnectorJob.findFirst({
+      where: { status: { in: ["pending", "running"] } },
+      orderBy: { startedAt: "desc" },
+      select: { requestId: true },
+    }),
+  ]);
+
+  if (activeRun || activeLegacyJob) {
+    throw new TRPCError({
+      code: "CONFLICT",
+      message: `Extraction already active (${activeRun?.id ?? activeLegacyJob?.requestId}).`,
+    });
+  }
+
+  resumeDcExtraction();
+  const started = startDcExtractionProcess(kind);
+  return { started: true, ...started };
 }

@@ -13,6 +13,7 @@ import {
   planDailySlice,
   applySliceCompletion,
   PROJECT_BATCH_LIMIT,
+  resolveSliceDays,
   type ProjectProgress,
   type Slice,
 } from './dcProgressiveBackfill';
@@ -92,6 +93,50 @@ describe('planDailySlice', () => {
     expect(s.reason).toBe('backward');
     expect(s.start.toISOString()).toBe(subDays(yesterday, 90).toISOString());
     expect(s.end.toISOString()).toBe(subDays(yesterday, 60).toISOString());
+  });
+
+  it('uses an explicit slice-day override for accelerated manual extraction', () => {
+    const newPlan = planDailySlice([newProj('p1')], yesterday, { sliceDays: 92 });
+    expect(newPlan.slices).toHaveLength(1);
+    expect(newPlan.slices[0].reason).toBe('new-project');
+    expect(newPlan.slices[0].start.toISOString()).toBe(
+      subDays(yesterday, 92).toISOString(),
+    );
+
+    const backwardPlan = planDailySlice(
+      [existingProj('p2', 100, 0, 300)],
+      yesterday,
+      { sliceDays: 92 },
+    );
+    expect(backwardPlan.slices).toHaveLength(1);
+    expect(backwardPlan.slices[0].reason).toBe('backward');
+    expect(backwardPlan.slices[0].start.toISOString()).toBe(
+      subDays(yesterday, 192).toISOString(),
+    );
+    expect(backwardPlan.slices[0].end.toISOString()).toBe(
+      subDays(yesterday, 100).toISOString(),
+    );
+  });
+
+  it('uses DC_PROGRESSIVE_SLICE_DAYS for accelerated manual extraction', () => {
+    const previous = process.env.DC_PROGRESSIVE_SLICE_DAYS;
+    process.env.DC_PROGRESSIVE_SLICE_DAYS = '92';
+
+    try {
+      expect(resolveSliceDays()).toBe(92);
+
+      const plan = planDailySlice([newProj('p1')], yesterday);
+      expect(plan.slices).toHaveLength(1);
+      expect(plan.slices[0].start.toISOString()).toBe(
+        subDays(yesterday, 92).toISOString(),
+      );
+    } finally {
+      if (previous === undefined) {
+        delete process.env.DC_PROGRESSIVE_SLICE_DAYS;
+      } else {
+        process.env.DC_PROGRESSIVE_SLICE_DAYS = previous;
+      }
+    }
   });
 
   it('clamps backward slice start to projectCreatedAt floor', () => {

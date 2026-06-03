@@ -90,6 +90,10 @@ function required(value: string | undefined, field: string, filename: string): s
   return v;
 }
 
+function firstPresent(...values: Array<string | undefined>): string | undefined {
+  return values.find((value) => nullable(value) != null);
+}
+
 const mapAdminUser = (row: CsvRow, ctx: MapperCtx) => ({
   id: required(row.id, 'id', 'admin_users.csv'),
   email: nullable(row.email),
@@ -112,7 +116,11 @@ const mapAdminCompany = (row: CsvRow, ctx: MapperCtx) => ({
 
 const mapAdminProject = (row: CsvRow, ctx: MapperCtx) => ({
   id: required(row.id, 'id', 'admin_projects.csv'),
-  accountId: required(row.account_id, 'account_id', 'admin_projects.csv'),
+  accountId: required(
+    firstPresent(row.account_id, row.bim360_account_id),
+    'account_id/bim360_account_id',
+    'admin_projects.csv',
+  ),
   name: required(row.name, 'name', 'admin_projects.csv'),
   jobNumber: nullable(row.job_number),
   status: nullable(row.status),
@@ -147,17 +155,25 @@ const mapAdminRole = (row: CsvRow, ctx: MapperCtx) => ({
 });
 
 const mapAdminProjectUser = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_users.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_users.csv',
+  ),
   userId: required(row.user_id, 'user_id', 'admin_project_users.csv'),
   status: nullable(row.status),
-  addedOn: toDateOrNull(row.added_on),
+  addedOn: toDateOrNull(firstPresent(row.added_on, row.created_at)),
   lastSignIn: toDateOrNull(row.last_sign_in),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
 
 const mapAdminProjectUserRole = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_user_roles.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_user_roles.csv',
+  ),
   userId: required(row.user_id, 'user_id', 'admin_project_user_roles.csv'),
   roleId: required(row.role_id, 'role_id', 'admin_project_user_roles.csv'),
   ingestRunId: ctx.ingestRunId,
@@ -165,7 +181,11 @@ const mapAdminProjectUserRole = (row: CsvRow, ctx: MapperCtx) => ({
 });
 
 const mapAdminProjectUserProduct = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_user_products.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_user_products.csv',
+  ),
   userId: required(row.user_id, 'user_id', 'admin_project_user_products.csv'),
   productKey: required(row.product_key, 'product_key', 'admin_project_user_products.csv'),
   accessLevel: required(row.access_level, 'access_level', 'admin_project_user_products.csv'),
@@ -174,33 +194,65 @@ const mapAdminProjectUserProduct = (row: CsvRow, ctx: MapperCtx) => ({
 });
 
 const mapAdminProjectUserCompany = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_user_companies.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_user_companies.csv',
+  ),
   userId: required(row.user_id, 'user_id', 'admin_project_user_companies.csv'),
-  companyId: required(row.company_id, 'company_id', 'admin_project_user_companies.csv'),
+  companyId: required(
+    firstPresent(row.company_id, row.company_oxygen_id),
+    'company_id/company_oxygen_id',
+    'admin_project_user_companies.csv',
+  ),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
 
 const mapAdminProjectUserService = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_user_services.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_user_services.csv',
+  ),
   userId: required(row.user_id, 'user_id', 'admin_project_user_services.csv'),
-  serviceKey: required(row.service_key, 'service_key', 'admin_project_user_services.csv'),
-  accessLevel: required(row.access_level, 'access_level', 'admin_project_user_services.csv'),
+  serviceKey: required(
+    firstPresent(row.service_key, row.service),
+    'service_key/service',
+    'admin_project_user_services.csv',
+  ),
+  accessLevel: required(
+    firstPresent(row.access_level, row.role, row.status),
+    'access_level/role/status',
+    'admin_project_user_services.csv',
+  ),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
 
 const mapAdminProjectRole = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_roles.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_roles.csv',
+  ),
   roleId: required(row.role_id, 'role_id', 'admin_project_roles.csv'),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
 
 const mapAdminProjectProduct = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_products.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_products.csv',
+  ),
   productKey: required(row.product_key, 'product_key', 'admin_project_products.csv'),
-  accessLevel: required(row.access_level, 'access_level', 'admin_project_products.csv'),
+  accessLevel: required(
+    firstPresent(row.access_level, row.status),
+    'access_level/status',
+    'admin_project_products.csv',
+  ),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
@@ -213,17 +265,37 @@ const mapAdminProjectCompany = (row: CsvRow, ctx: MapperCtx) => ({
 });
 
 const mapAdminProjectService = (row: CsvRow, ctx: MapperCtx) => ({
-  projectId: required(row.project_id, 'project_id', 'admin_project_services.csv'),
-  serviceKey: required(row.service_key, 'service_key', 'admin_project_services.csv'),
-  accessLevel: required(row.access_level, 'access_level', 'admin_project_services.csv'),
+  projectId: required(
+    firstPresent(row.project_id, row.bim360_project_id),
+    'project_id/bim360_project_id',
+    'admin_project_services.csv',
+  ),
+  serviceKey: required(
+    firstPresent(row.service_key, row.service),
+    'service_key/service',
+    'admin_project_services.csv',
+  ),
+  accessLevel: required(
+    firstPresent(row.access_level, row.status),
+    'access_level/status',
+    'admin_project_services.csv',
+  ),
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
 
 const mapAdminAccountService = (row: CsvRow, ctx: MapperCtx) => ({
-  accountId: required(row.account_id, 'account_id', 'admin_account_services.csv'),
-  serviceKey: required(row.service_key, 'service_key', 'admin_account_services.csv'),
-  accessLevel: required(row.access_level, 'access_level', 'admin_account_services.csv'),
+  accountId: required(
+    firstPresent(row.account_id, row.bim360_account_id),
+    'account_id/bim360_account_id',
+    'admin_account_services.csv',
+  ),
+  serviceKey: required(
+    firstPresent(row.service_key, row.service),
+    'service_key/service',
+    'admin_account_services.csv',
+  ),
+  accessLevel: nullable(firstPresent(row.access_level, row.status)) ?? 'enabled',
   ingestRunId: ctx.ingestRunId,
   ingestedAt: ctx.ingestedAt,
 });
@@ -360,13 +432,13 @@ export async function ingestAdminSnapshot(
           // Batch into 500-row chunks for createMany
           for (let i = 0; i < rows.length; i += BATCH) {
             const slice = rows.slice(i, i + BATCH);
-            await model.createMany({ data: slice });
+            await model.createMany({ data: slice, skipDuplicates: true });
           }
         } else {
           // Header-only CSV — invoke createMany with empty array to keep the
           // call surface consistent (tests assert deleteMany ran; createMany
           // with [] is acceptable per plan task 1 case 8).
-          await model.createMany({ data: [] });
+          await model.createMany({ data: [], skipDuplicates: true });
         }
 
         rowsByAdminCsv[entry.filename] = rows.length;

@@ -19,7 +19,7 @@
  * packMemberPositions / ClusterLabels / the transition layer / GPU anchors.
  */
 import { forceSimulation, forceCollide, forceManyBody, forceX, forceY } from "d3-force";
-import { footprintRadius, type ClusterFootprints } from "./clusterPacking";
+import { footprintRadius, packClusterFootprints, type ClusterFootprints } from "./clusterPacking";
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const GAP = 6; // breathing room (space units) added to each collide radius
@@ -37,6 +37,26 @@ interface FNode {
   x: number;
   y: number;
   index: number;
+}
+
+/**
+ * Above this cluster count the organic force layout is BOTH too slow (forceCollide
+ * degrades toward O(n²) per tick × 280 ticks — ~9s at 3,367 clusters) AND visually
+ * indistinguishable from deterministic circle packing (the blobs become specks tiling
+ * a disc). The breathing irregular outline only matters for a handful of big blobs.
+ */
+export const ORGANIC_MAX_CLUSTERS = 150;
+
+/**
+ * Footprint layout that stays fast at any cluster count: the organic force settle for
+ * a small number of blobs (roles/tiers — fast AND nicer), the deterministic packSiblings
+ * packer above ORGANIC_MAX_CLUSTERS (projects/users — ~18ms vs ~9s, same {cx,cy,r}, still
+ * a packed-circle blob, never a grid). Drop-in for layoutClusterFootprintsOrganic.
+ */
+export function layoutClusterFootprints(counts: ReadonlyArray<number>): ClusterFootprints {
+  return counts.length > ORGANIC_MAX_CLUSTERS
+    ? packClusterFootprints(counts)
+    : layoutClusterFootprintsOrganic(counts);
 }
 
 export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): ClusterFootprints {

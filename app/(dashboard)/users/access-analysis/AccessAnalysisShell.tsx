@@ -33,11 +33,13 @@ import {
 import { ClusterLabels } from "./ClusterLabels";
 import { GridAxisLabels } from "./GridAxisLabels";
 import { activeCatalogDims, buildDominantClusters } from "./dominantClusters";
-import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
+import { layoutClusterFootprints } from "./clusterForceLayout";
+import { packMemberPositions } from "./clusterPacking";
 import { buildRestLayout } from "./restLayout";
 import { buildGridStructure } from "./gridLayout";
-import { descriptorTarget, descriptorNodeCount, type LayoutDescriptor } from "./layoutDescriptor";
-import { clusterColorBuffer } from "./clusterColors";
+import { descriptorTarget, descriptorNodeCount, easeMorph, type LayoutDescriptor } from "./layoutDescriptor";
+import { clusterColorBuffer, colorForCluster } from "./clusterColors";
+import { buildClusterAggregates, aggregatePositions } from "./lodAggregate";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
@@ -55,6 +57,7 @@ import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
 import { curatedSliderDimensions } from "./curatedSliders";
 import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getDuckDbClient } from "./duckdbClient";
+import { GraphLoadingSkeleton } from "@/components/ui/GraphLoadingSkeleton";
 import { buildGraphArrowTables } from "./graphTables";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
 import { ensurePositionsSchema } from "./positionsCache";
@@ -125,8 +128,13 @@ function ShellBody({
     if (activeDims.length === 0) return { kind: "rest", xyz: restXyz };
     if (activeDims.length === 1) {
       const clustering = buildDominantClusters(features, activeDims[0]);
-      const footprints = layoutClusterFootprintsOrganic(clustering.counts);
-      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints };
+      // Fast at any cluster count: organic settle for a few blobs, packSiblings above the
+      // threshold (3,367 users would freeze ~9s under the force layout — the slider lag).
+      const footprints = layoutClusterFootprints(clustering.counts);
+      // Precompute the s=1 end (tight clump cores) ONCE; descriptorTarget lerps from
+      // restXyz (s=0) → packed (s=1) per frame. Both arrays align to clustering.ids.
+      const packed = packMemberPositions(clustering.ids, footprints, 1, features.length);
+      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints, restXyz, packed };
     }
     const structure = buildGridStructure(features, activeDims[0], activeDims[1], {
       maxCols: 12,
@@ -149,6 +157,84 @@ function ShellBody({
     }
     return descriptorTarget(layoutDescriptor, getLiveValues(), targetBufRef.current);
   }, [layoutDescriptor, getLiveValues]);
+
+  // Live morph progress (0..1) for the active blob dim — read each frame so labels
+  // follow their clumps and fade in WITHOUT re-rendering this shell on a value drag.
+  const labelProgress = useCallback((): number => {
+    if (layoutDescriptor.kind !== "blob") return 1;
+    // SAME ease-out curve as the node morph so labels stay locked to their clumps.
+    return easeMorph((getLiveValues()[layoutDescriptor.dimId] ?? 0) / 100);
+  }, [layoutDescriptor, getLiveValues]);
+
+  // Per-cluster resting-cloud centroid (the progress=0 end of each label's path). The
+  // label center lerps this → the footprint center as the slider rises, so labels ride
+  // their clumps. Computed once per blob regroup (mean of member rest positions).
+  const blobRestCenters = useMemo<{ cx: Float32Array; cy: Float32Array } | null>(() => {
+    if (layoutDescriptor.kind !== "blob") return null;
+    const { clustering, restXyz } = layoutDescriptor;
+    const k = clustering.labels.length;
+    const cx = new Float32Array(k);
+    const cy = new Float32Array(k);
+    const n = new Float32Array(k);
+    for (let i = 0; i < clustering.ids.length; i++) {
+      const c = clustering.ids[i];
+      if (c < 0 || c >= k) continue;
+      cx[c] += restXyz[i * 3];
+      cy[c] += restXyz[i * 3 + 1];
+      n[c] += 1;
+    }
+    for (let c = 0; c < k; c++) {
+      if (n[c] > 0) { cx[c] /= n[c]; cy[c] /= n[c]; }
+    }
+    return { cx, cy };
+  }, [layoutDescriptor]);
+
+  // LOD: per-cluster aggregate "super-dots" (one per user, ~3,367 vs 16,942 instances).
+  // Built once per regroup from the same pieces the labels use, so a dot sits at its
+  // cluster's morphing centroid. Drives the cheap drag/zoomed-out view (≈5× fewer points).
+  const aggregates = useMemo(() => {
+    if (layoutDescriptor.kind !== "blob" || !blobRestCenters) return null;
+    return buildClusterAggregates(
+      blobRestCenters.cx,
+      blobRestCenters.cy,
+      layoutDescriptor.footprints,
+      layoutDescriptor.clustering.counts,
+    );
+  }, [layoutDescriptor, blobRestCenters]);
+
+  // One color per cluster (matches the node cluster coloring) for the aggregate set.
+  const aggregateColors = useMemo<Float32Array | undefined>(() => {
+    if (!aggregates) return undefined;
+    const k = aggregates.count;
+    const out = new Float32Array(k * 4);
+    for (let c = 0; c < k; c++) {
+      const [r, g, b] = colorForCluster(c, k);
+      out[c * 4] = r; out[c * 4 + 1] = g; out[c * 4 + 2] = b; out[c * 4 + 3] = 1;
+    }
+    return out;
+  }, [aggregates]);
+
+  // Aggregate dot sizes — bigger clusters draw bigger dots (footprint radius → point size).
+  const aggregateSizes = useMemo<Float32Array | undefined>(() => {
+    if (!aggregates) return undefined;
+    const k = aggregates.count;
+    const out = new Float32Array(k);
+    for (let c = 0; c < k; c++) out[c] = Math.max(3, Math.min(30, aggregates.size[c] * 0.15));
+    return out;
+  }, [aggregates]);
+
+  // Per-frame aggregate positions (stride-2), eased on the SAME curve as the nodes/labels,
+  // written into a reused buffer (allocation-free, off the React path). null when no blob.
+  const aggBufRef = useRef<Float32Array | null>(null);
+  const aggregateTarget = useCallback((): Float32Array | null => {
+    if (!aggregates || layoutDescriptor.kind !== "blob") return null;
+    const k = aggregates.count;
+    if (!aggBufRef.current || aggBufRef.current.length !== k * 2) {
+      aggBufRef.current = new Float32Array(k * 2);
+    }
+    const s = easeMorph((getLiveValues()[layoutDescriptor.dimId] ?? 0) / 100);
+    return aggregatePositions(aggregates, s, aggBufRef.current);
+  }, [aggregates, layoutDescriptor, getLiveValues]);
 
   // Bumped when the cosmos.gl/three.js handle finishes async init so the
   // interaction layer can (re)wire hover/click/lasso against a live handle.
@@ -266,6 +352,9 @@ function ShellBody({
               links={links}
               linkColors={baseLinkColors}
               layoutTarget={layoutTarget}
+              aggregateTarget={aggregateTarget}
+              aggregateColors={aggregateColors}
+              aggregateSizes={aggregateSizes}
             />
           </GraphInteractions>
 
@@ -275,10 +364,13 @@ function ShellBody({
               graphRef={graphRef}
               centersX={layoutDescriptor.footprints.cx}
               centersY={layoutDescriptor.footprints.cy}
+              restCentersX={blobRestCenters?.cx ?? null}
+              restCentersY={blobRestCenters?.cy ?? null}
               radii={layoutDescriptor.footprints.r}
               labels={layoutDescriptor.clustering.labels}
               counts={layoutDescriptor.clustering.counts}
               mode={mode}
+              progress={labelProgress}
             />
           )}
 
@@ -369,14 +461,19 @@ export function AccessAnalysisShell(): React.JSX.Element {
         // graph_* DuckDB tables from the DC snapshot (accDcGraph.bulkUsers)
         // before any reader query runs. Similarity/folder tables stay empty
         // here; the WS2 edge-computation step populates them next.
-        const { connection } = await getDuckDbClient();
-        if (cancelled) return;
-        const tables = await buildGraphArrowTables({
-          users,
-          similarityInput: null,
-          topology: null,
-          folderRows: [],
-        });
+        // DuckDB-WASM init (~1-2s) and the Arrow-table build are independent —
+        // buildGraphArrowTables needs only `users`, not the connection — so run
+        // them concurrently to overlap WASM startup with table construction
+        // instead of paying them back-to-back.
+        const [{ connection }, tables] = await Promise.all([
+          getDuckDbClient(),
+          buildGraphArrowTables({
+            users,
+            similarityInput: null,
+            topology: null,
+            folderRows: [],
+          }),
+        ]);
         if (cancelled) return;
         await registerGraphArrowTables(connection, tables);
         if (cancelled) return;
@@ -469,9 +566,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
 
   if (!users || !features || !physics || !catalog) {
     return (
-      <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-        {!users ? "Loading access data…" : "Loading graph data…"}
-      </div>
+      <GraphLoadingSkeleton
+        message={!users ? "Loading access data…" : "Building graph…"}
+      />
     );
   }
 

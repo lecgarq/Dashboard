@@ -87,7 +87,10 @@ export function RightPanelStack({
       // all three panels) so swapping panels — or the AnimatePresence mode="wait"
       // gap that briefly unmounts the child — never resizes the graph's flex-1
       // area and therefore never reframes the camera.
-      className="relative flex w-96 shrink-0"
+      // h-full + min-h-0 + overflow-y-auto: the slider list is taller than the
+      // viewport; it must scroll WITHIN the bounded row, not stretch the row to its
+      // own content height (which pushed the graph canvas off-screen).
+      className="relative flex w-96 shrink-0 h-full min-h-0 overflow-y-auto"
     >
       <AnimatePresence mode="wait">
         {top === "user-detail" ? (

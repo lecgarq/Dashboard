@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/core/utils";
+import { useTrelloLabelColor } from "@/lib/colors/useTrelloLabelColor";
 
 type TrelloCard = {
   id: string; name: string; desc: string; idList: string; pos: number;
@@ -11,12 +12,6 @@ type TrelloCard = {
   url: string; idMembers?: string[];
 };
 type TrelloList = { id: string; name: string; pos: number };
-
-const LABEL_COLORS: Record<string, string> = {
-  green: "#61bd4f", yellow: "#f2d600", orange: "#ff9f1a", red: "#eb5a46",
-  purple: "#c377e0", blue: "#0079bf", sky: "#00c2e0", lime: "#51e898",
-  pink: "#ff78cb", black: "#344563",
-};
 
 const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
 const DAYS = ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
@@ -28,6 +23,7 @@ interface CalendarViewProps {
 }
 
 export function CalendarView({ cards, lists, onCardClick }: CalendarViewProps) {
+  const labelColor = useTrelloLabelColor();
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth());
   const [year, setYear] = useState(now.getFullYear());
@@ -107,7 +103,7 @@ export function CalendarView({ cards, lists, onCardClick }: CalendarViewProps) {
                       key={c.id}
                       onClick={() => onCardClick(c)}
                       className="w-full text-left text-[10px] px-1.5 py-0.5 rounded truncate hover:opacity-80 transition-smooth text-white font-medium"
-                      style={{ backgroundColor: c.labels[0] ? (LABEL_COLORS[c.labels[0].color] ?? "#0079bf") : "#0079bf" }}
+                      style={{ backgroundColor: c.labels[0] ? labelColor(c.labels[0].color) : labelColor("blue") }}
                       title={`${c.name} — ${listMap[c.idList] ?? ""}`}
                     >
                       {c.name}

@@ -16,8 +16,20 @@ import { router, protectedProcedure } from "../trpc";
 import {
   CATEGORY_TO_RAW_ACTIONS,
   INVITATION_ACTIONS,
+  classifyChangeStream,
   type ActivityCategory,
 } from "@/lib/acc/activityCategories";
+import {
+  classifyActivityActor,
+  summarizeActorClassifications,
+} from "@/lib/acc/activityActorClassification";
+import {
+  addUtcDays,
+  buildActivityCoverageMatrix,
+  endOfUtcDay,
+  startOfUtcDay,
+  type ActivityCoverageCellInput,
+} from "@/lib/acc/activityCoverageMatrix";
 
 /**
  * Phase 09 LIST-03: file-action raw strings used by the BATCH and SORT procedures.
@@ -51,6 +63,16 @@ const CATEGORY_ENUM = z.enum([
   "other",
 ]);
 
+const COVERAGE_MATRIX_INPUT = z
+  .object({
+    from: z.date().optional(),
+    to: z.date().optional(),
+    windowDays: z.number().int().min(1).max(730).default(30),
+    projectLimit: z.number().int().min(1).max(500).default(75),
+    missingProjectLimit: z.number().int().min(1).max(500).default(75),
+  })
+  .optional();
+
 export const accActivityRouter = router({
   /**
    * Lightweight coverage signal for the Users data strip.
@@ -58,20 +80,158 @@ export const accActivityRouter = router({
    * invitation-only audit widget.
    */
   getCoverage: protectedProcedure.query(async ({ ctx }) => {
-    const [totalRows, attributedRows, invitationRows] = await Promise.all([
+    const [
+      totalRows,
+      attributedRows,
+      invitationRows,
+      unknownActors,
+      unknownActionGroups,
+      unknownServiceGroups,
+      resolvedActors,
+    ] = await Promise.all([
       ctx.db.accActivity.count(),
       ctx.db.accActivity.count({ where: { userEmail: { not: null } } }),
       ctx.db.accActivity.count({
         where: { rawAction: { in: [...INVITATION_ACTIONS] } },
       }),
+      ctx.db.accActivity.groupBy({
+        by: ["autodeskId"],
+        where: { userEmail: null },
+        _count: { _all: true },
+      }),
+      ctx.db.accActivity.groupBy({
+        by: ["autodeskId", "rawAction"],
+        where: { userEmail: null },
+        _count: { _all: true },
+      }),
+      ctx.db.accActivity.groupBy({
+        by: ["service"],
+        where: { userEmail: null },
+        _count: { _all: true },
+      }),
+      ctx.db.accActivity.groupBy({
+        by: ["userEmail"],
+        where: { userEmail: { not: null } },
+        _count: { _all: true },
+      }),
     ]);
+    const unattributedRows = totalRows - attributedRows;
+    const rawActionsByActor = new Map<string, string[]>();
+    for (const row of unknownActionGroups) {
+      const actions = rawActionsByActor.get(row.autodeskId) ?? [];
+      actions.push(row.rawAction);
+      rawActionsByActor.set(row.autodeskId, actions);
+    }
+    for (const actions of rawActionsByActor.values()) actions.sort();
+
+    const unknownActorClassifications = unknownActors.map((actor) => {
+      const rawActions = rawActionsByActor.get(actor.autodeskId) ?? [];
+      return {
+        autodeskId: actor.autodeskId,
+        rows: actor._count._all,
+        rawActions,
+        classification: classifyActivityActor({
+          autodeskId: actor.autodeskId,
+          userEmail: null,
+          rawActions,
+        }),
+      };
+    });
+    const actorClassifications = summarizeActorClassifications([
+      ...resolvedActors.map((actor) => ({
+        classification: classifyActivityActor({
+          autodeskId: null,
+          userEmail: actor.userEmail,
+          rawActions: [],
+        }),
+        rows: actor._count._all,
+        actorKey: actor.userEmail ?? "(unknown-email)",
+      })),
+      ...unknownActorClassifications.map((actor) => ({
+        classification: actor.classification,
+        rows: actor.rows,
+        actorKey: actor.autodeskId,
+      })),
+    ]);
+    const unknownRowsByService = unknownServiceGroups
+      .map((row) => ({
+        service: row.service ?? "(none)",
+        rows: row._count._all,
+      }))
+      .sort((a, b) => b.rows - a.rows || a.service.localeCompare(b.service));
+    const topUnknownActors = unknownActorClassifications
+      .sort((a, b) => b.rows - a.rows || a.autodeskId.localeCompare(b.autodeskId))
+      .slice(0, 10);
 
     return {
       totalRows,
       attributedRows,
+      unattributedRows,
+      attributionRate: totalRows > 0 ? attributedRows / totalRows : 0,
+      distinctUnknownActors: unknownActors.length,
+      actorClassifications,
+      unknownRowsByService,
+      topUnknownActors,
       invitationRows,
     };
   }),
+
+  /**
+   * No-quota coverage matrix for future dashboards:
+   * AccActivity rows grouped by project x UTC day x service, plus project
+   * inventory gaps. This reads only local DB state.
+   */
+  getCoverageMatrix: protectedProcedure
+    .input(COVERAGE_MATRIX_INPUT)
+    .query(async ({ ctx, input }) => {
+      const latest = await ctx.db.accActivity.findFirst({
+        orderBy: { createdAt: "desc" },
+        select: { createdAt: true },
+      });
+      const to = endOfUtcDay(input?.to ?? latest?.createdAt ?? new Date());
+      const from = startOfUtcDay(
+        input?.from ?? addUtcDays(to, -(input?.windowDays ?? 30) + 1),
+      );
+      const exclusiveTo = addUtcDays(to, 1);
+
+      const [projects, cells] = await Promise.all([
+        ctx.db.accDcProject.findMany({
+          select: { id: true, name: true, status: true },
+          orderBy: { name: "asc" },
+        }),
+        ctx.db.$queryRaw<ActivityCoverageCellInput[]>`
+          SELECT
+            COALESCE(NULLIF(a."projectId", ''), '(admin)') AS "projectId",
+            COALESCE(p.name, CASE WHEN NULLIF(a."projectId", '') IS NULL THEN 'Admin / Account Activity' ELSE a."projectId" END) AS "projectName",
+            COALESCE(NULLIF(LOWER(a.service), ''), 'unknown') AS service,
+            date_trunc('day', a."createdAt") AS day,
+            COUNT(*)::int AS rows,
+            COUNT(DISTINCT a."autodeskId")::int AS actors,
+            COUNT(a."userEmail")::int AS "attributedRows",
+            MIN(a."createdAt") AS "firstActivityAt",
+            MAX(a."createdAt") AS "lastActivityAt"
+          FROM "AccActivity" a
+          LEFT JOIN "AccDcProject" p ON p.id = NULLIF(a."projectId", '')
+          WHERE a."createdAt" >= ${from}
+            AND a."createdAt" < ${exclusiveTo}
+          GROUP BY
+            COALESCE(NULLIF(a."projectId", ''), '(admin)'),
+            COALESCE(p.name, CASE WHEN NULLIF(a."projectId", '') IS NULL THEN 'Admin / Account Activity' ELSE a."projectId" END),
+            COALESCE(NULLIF(LOWER(a.service), ''), 'unknown'),
+            date_trunc('day', a."createdAt")
+          ORDER BY rows DESC
+        `,
+      ]);
+
+      return buildActivityCoverageMatrix({
+        from,
+        to,
+        projects,
+        cells,
+        projectLimit: input?.projectLimit,
+        missingProjectLimit: input?.missingProjectLimit,
+      });
+    }),
 
   /**
    * ACTV-03: lazy per-user file-activity timestamps.
@@ -490,24 +650,12 @@ export const accActivityRouter = router({
         select: { rawAction: true, createdAt: true, details: true, sourceFile: true },
       });
 
-      function classify(row: { rawAction: string; sourceFile: string | null; details: unknown }): "membership" | "permission" | "project" | "admin" | null {
-        const a = (row.rawAction || "").toLowerCase();
-        const d = (row.details ?? {}) as Record<string, unknown>;
-        const newRoleRaw = String(d.newRole ?? d.new_role ?? "");
-        const isAdminGrant = a.includes("role") && /admin/i.test(newRoleRaw);
-        if (isAdminGrant) return "admin";
-        if (a.startsWith("role.") || a.startsWith("permission.")) return "permission";
-        if (a.startsWith("project.member")) return "project";
-        if (a.startsWith("user.")) return "membership";
-        return null;
-      }
-
       const buckets = generateBuckets(range.start, range.end, bin);
       const bucketMap = new Map<string, { membership: number; permission: number; project: number; admin: number }>();
       for (const b of buckets) bucketMap.set(b.toISOString(), { membership: 0, permission: 0, project: 0, admin: 0 });
 
       for (const row of rows) {
-        const stream = classify(row);
+        const stream = classifyChangeStream(row);
         if (!stream) continue;
         const key = bucketStart(row.createdAt, bin).toISOString();
         const slot = bucketMap.get(key);
@@ -559,19 +707,7 @@ export const accActivityRouter = router({
         },
       });
 
-      function classify(row: typeof rows[number]): "membership" | "permission" | "project" | "admin" | null {
-        const a = (row.rawAction || "").toLowerCase();
-        const d = (row.details ?? {}) as Record<string, unknown>;
-        const newRoleRaw = String(d.newRole ?? d.new_role ?? "");
-        const isAdminGrant = a.includes("role") && /admin/i.test(newRoleRaw);
-        if (isAdminGrant) return "admin";
-        if (a.startsWith("role.") || a.startsWith("permission.")) return "permission";
-        if (a.startsWith("project.member")) return "project";
-        if (a.startsWith("user.")) return "membership";
-        return null;
-      }
-
-      const streamRows = rows.filter((r) => classify(r) === input.stream);
+      const streamRows = rows.filter((r) => classifyChangeStream(r) === input.stream);
       const rankable: RankableEvent[] = streamRows.map((r) => {
         const d = (r.details ?? {}) as Record<string, unknown>;
         return {

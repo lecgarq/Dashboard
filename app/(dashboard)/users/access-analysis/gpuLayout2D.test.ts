@@ -4,6 +4,7 @@ import { computeAnchors } from "./gpuLayout2D";
 import { mapForceConfig } from "./gpuLayout2D";
 import { clusterStrengthFromWeights, identityClusters } from "./gpuLayout2D";
 import { computeClusterAnchors, mapClusterForceConfig } from "./gpuLayout2D";
+import { clusterCountOf, mapDominantForceConfig } from "./gpuLayout2D";
 
 // Two dims whose single-dim targets sit on orthogonal axes (matches mathLayer:
 // target[dim] already encodes R*u_d*f_d, so blending = weighted average).
@@ -216,5 +217,50 @@ describe("mapClusterForceConfig", () => {
 
   it("simulationCluster value is 0.5 (strong pull for discrete clumps)", () => {
     expect(mapClusterForceConfig().simulationCluster).toBe(0.5);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Dominant-attribute clustering (the "with-labels" blob layout)
+// ---------------------------------------------------------------------------
+
+describe("clusterCountOf", () => {
+  it("returns max id + 1", () => {
+    expect(clusterCountOf(new Int32Array([0, 1, 0, 2]))).toBe(3);
+  });
+  it("returns 0 for an empty array", () => {
+    expect(clusterCountOf(new Int32Array([]))).toBe(0);
+  });
+});
+
+describe("mapDominantForceConfig", () => {
+  it("returns all five cosmos simulation coefficients", () => {
+    const c = mapDominantForceConfig(0.5);
+    expect(c).toHaveProperty("simulationRepulsion");
+    expect(c).toHaveProperty("simulationCluster");
+    expect(c).toHaveProperty("simulationGravity");
+    expect(c).toHaveProperty("simulationDecay");
+    expect(c).toHaveProperty("simulationFriction");
+  });
+
+  it("cluster pull is 0 at slider 0 (scatter) and rises toward 100", () => {
+    expect(mapDominantForceConfig(0).simulationCluster).toBe(0);
+    expect(mapDominantForceConfig(1).simulationCluster).toBeGreaterThan(
+      mapDominantForceConfig(0.5).simulationCluster,
+    );
+    expect(mapDominantForceConfig(0.5).simulationCluster).toBeGreaterThan(0);
+  });
+
+  it("keeps repulsion constant so blobs stay separated and legible (not a spread ramp)", () => {
+    expect(mapDominantForceConfig(0).simulationRepulsion).toBe(
+      mapDominantForceConfig(1).simulationRepulsion,
+    );
+  });
+
+  it("clamps out-of-range slider values", () => {
+    expect(mapDominantForceConfig(5).simulationCluster).toBe(
+      mapDominantForceConfig(1).simulationCluster,
+    );
+    expect(mapDominantForceConfig(-1).simulationCluster).toBe(0);
   });
 });

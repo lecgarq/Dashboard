@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 /**
  * Introspect the stored 3-legged Autodesk token to see what scopes are granted.
  * Read-only — uses POST /authentication/v2/introspect which is purely diagnostic.

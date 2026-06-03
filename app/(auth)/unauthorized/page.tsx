@@ -40,18 +40,18 @@ export default async function UnauthorizedPage({ searchParams }: UnauthorizedPag
       statusLabel="Access controls active"
     >
       <div className="surface-card animate-fadeIn space-y-6 rounded-[2rem] border px-6 py-8 text-center sm:px-8">
-        <div className="mx-auto flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.75rem] bg-amber-500/12 text-amber-700">
+        <div className="mx-auto flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.75rem] bg-amber-500/12 text-amber-700 dark:text-amber-300">
           {isPending ? <ShieldCheck className="h-8 w-8" /> : <AlertTriangle className="h-8 w-8" />}
         </div>
 
         <div className="space-y-3">
-          <div className="surface-chip mx-auto inline-flex rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-700">
+          <div className="surface-chip mx-auto inline-flex rounded-full px-4 py-2 text-xs font-semibold uppercase tracking-[0.28em] text-amber-700 dark:text-amber-300">
             Access update
           </div>
-          <h1 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          <h1 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             {title}
           </h1>
-          <p className="text-sm leading-7 text-slate-600">{description}</p>
+          <p className="text-sm leading-7 text-muted-foreground">{description}</p>
         </div>
 
         <Button variant="outline" asChild className="rounded-2xl">

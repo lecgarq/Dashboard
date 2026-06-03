@@ -4,7 +4,7 @@ import type { CatalogDimension } from "./dimensionCatalog.types";
 import { buildGridStructure } from "./gridLayout";
 import { buildDominantClusters } from "./dominantClusters";
 import { layoutClusterFootprintsOrganic } from "./clusterForceLayout";
-import { descriptorTarget, descriptorNodeCount, type LayoutDescriptor } from "./layoutDescriptor";
+import { descriptorTarget, descriptorNodeCount, easeMorph, type LayoutDescriptor } from "./layoutDescriptor";
 
 const dim = (id: string, get: (f: NodeFeatureSnapshot) => string): CatalogDimension =>
   ({
@@ -25,23 +25,61 @@ describe("descriptorTarget", () => {
     expect(descriptorTarget(desc, {}, out)).toBe(xyz);
   });
 
-  it("blob writes stride-3 into the buffer; tightness shrinks the spread", () => {
-    const features = Array.from({ length: 40 }, (_, i) => feat("A", i % 2 ? "X" : "Y"));
+  it("blob morphs rest→packed progressively by slider value (lerp, z=0)", () => {
+    const features = Array.from({ length: 4 }, (_, i) => feat("A", i % 2 ? "X" : "Y"));
     const clustering = buildDominantClusters(features, dim("role", (f) => f.role));
     const footprints = layoutClusterFootprintsOrganic(clustering.counts);
-    const desc: LayoutDescriptor = { kind: "blob", dimId: "role", clustering, footprints };
-    const n = descriptorNodeCount(desc);
-    const loose = new Float32Array(n * 3);
-    descriptorTarget(desc, { role: 5 }, loose);
-    const tight = new Float32Array(n * 3);
-    descriptorTarget(desc, { role: 100 }, tight);
-    const spread = (b: Float32Array) => {
+    const n = features.length;
+    // Known endpoints: rest spreads the nodes wide; packed gathers them to the origin.
+    const restXyz = new Float32Array([100, 0, 0, 0, 100, 0, -100, 0, 0, 0, -100, 0]);
+    const packed = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]);
+    const desc: LayoutDescriptor = { kind: "blob", dimId: "role", clustering, footprints, restXyz, packed };
+    expect(descriptorNodeCount(desc)).toBe(n);
+
+    const at = (v: number): Float32Array => {
+      const o = new Float32Array(n * 3);
+      descriptorTarget(desc, { role: v }, o);
+      return o;
+    };
+    const spread = (b: Float32Array): number => {
       let r = 0;
       for (let i = 0; i < n; i++) r = Math.max(r, Math.hypot(b[i * 3], b[i * 3 + 1]));
       return r;
     };
-    expect(tight[2]).toBe(0); // z=0
-    expect(spread(tight)).toBeLessThanOrEqual(spread(loose));
+
+    // s=0 → exactly the rest positions.
+    expect(Array.from(at(0))).toEqual(Array.from(restXyz));
+    // s=1 → exactly the packed positions (origin), z stays 0.
+    const tight = at(100);
+    for (let i = 0; i < n; i++) {
+      expect(tight[i * 3]).toBeCloseTo(0);
+      expect(tight[i * 3 + 1]).toBeCloseTo(0);
+      expect(tight[i * 3 + 2]).toBe(0);
+    }
+    // value 50 → eased progress easeMorph(0.5); node = rest + (packed-rest)*progress.
+    // packed = origin, so node = rest*(1-progress). Expressed via easeMorph so this
+    // survives curve tuning (EASE_EXP).
+    const f = easeMorph(0.5);
+    const mid = at(50);
+    for (let i = 0; i < n; i++) {
+      expect(mid[i * 3]).toBeCloseTo(restXyz[i * 3] * (1 - f));
+      expect(mid[i * 3 + 1]).toBeCloseTo(restXyz[i * 3 + 1] * (1 - f));
+    }
+    // Progressive: spread shrinks monotonically as the slider rises (no 0→1 jump).
+    expect(spread(at(0))).toBeGreaterThan(spread(at(50)));
+    expect(spread(at(50))).toBeGreaterThan(spread(at(100)));
+  });
+
+  it("easeMorph is an ease-OUT curve with exact endpoints", () => {
+    expect(easeMorph(0)).toBe(0);
+    expect(easeMorph(1)).toBe(1);
+    // Ease-out: past the halfway mark by the time the slider is half-travelled.
+    expect(easeMorph(0.5)).toBeGreaterThan(0.5);
+    // Monotonic non-decreasing.
+    expect(easeMorph(0.25)).toBeLessThan(easeMorph(0.75));
+    // Clamped outside [0,1].
+    expect(easeMorph(-1)).toBe(0);
+    expect(easeMorph(2)).toBe(1);
   });
 
   it("grid delegates to gridPositions (writes into buffer, z=0)", () => {

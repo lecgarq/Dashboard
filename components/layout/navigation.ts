@@ -10,6 +10,7 @@ import {
   Zap,
   Cpu,
   Network,
+  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -25,7 +26,8 @@ export type NavigationItem = {
 
 export const MODULE_NAV_ITEMS: NavigationItem[] = [
   { href: "/home", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/users", label: "Access Analysis", icon: PieChart, group: "Organization" },
+  { href: "/users", label: "Users Directory", icon: Users, group: "Organization" },
+  { href: "/access-analysis", label: "Access Analysis", icon: PieChart, group: "Organization" },
   { href: "/users/spatial-graph", label: "Spatial Graph", icon: Network, group: "Organization" },
   { href: "/sync-center", label: "Sync Center", icon: RefreshCw, group: "Organization" },
   { href: "/clash-detection", label: "Clash Detection", icon: Zap, module: "clash", group: "Wiki Bar" },
@@ -43,5 +45,6 @@ export const STAFF_NAV_ITEM: NavigationItem = {
 };
 
 export function isNavItemActive(pathname: string, href: string) {
+  if (href === "/users") return pathname === "/users";
   return pathname === href || (href !== "/home" && pathname.startsWith(href));
 }

@@ -39,3 +39,43 @@ export function windowToDateRange(window: TimeWindow, now: Date = new Date()): {
   if (window === "1y") return { start: new Date(now.getTime() - 365 * 24 * 60 * 60 * 1000), end };
   return { start: new Date(0), end };
 }
+
+export interface HeatmapHourBin {
+  x: string;
+  y: number;
+}
+
+export interface HeatmapRow {
+  id: string;
+  data: HeatmapHourBin[];
+}
+
+const DAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0") + ":00");
+
+export function computeActivityHeatmap(dates: Date[]): HeatmapRow[] {
+  const grid: Record<string, Record<string, number>> = {};
+  for (const day of DAYS) {
+    grid[day] = {};
+    for (const hr of HOURS) {
+      grid[day][hr] = 0;
+    }
+  }
+
+  for (const d of dates) {
+    if (!(d instanceof Date) || Number.isNaN(d.getTime())) continue;
+    const dayName = DAYS[d.getUTCDay()];
+    const hourStr = String(d.getUTCHours()).padStart(2, "0") + ":00";
+    if (grid[dayName] && grid[dayName][hourStr] !== undefined) {
+      grid[dayName][hourStr]++;
+    }
+  }
+
+  return DAYS.map((day) => ({
+    id: day,
+    data: HOURS.map((hr) => ({
+      x: hr,
+      y: grid[day][hr],
+    })),
+  }));
+}

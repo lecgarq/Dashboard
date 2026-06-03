@@ -132,14 +132,19 @@ describe("accDcGraphRouter.bulkUsers", () => {
       accProject: {
         findMany: vi.fn(async () => [{ id: "p1", name: "P1", status: "active", folderCrawlStatus: "ok" }]),
       },
+      // Summary path no longer scans these row-level tables; kept as spies to assert
+      // they are NOT called.
       accFolderPermission: {
-        findMany: vi.fn(async () => [
-          { folderId: "f1", roleId: "r1", permType: "Full Controller", actions: [], folder: { projectId: "p1", fullPath: "/A" } },
-        ]),
+        findMany: vi.fn(async () => []),
       },
       accFolder: {
-        findMany: vi.fn(async () => [{ id: "f1", totalSizeBytes: 2048 }]),
+        findMany: vi.fn(async () => []),
       },
+      // [Perf 2026-06] Summary path aggregates folder perms in SQL (per project,role):
+      // distinct folder count, summed bytes, distinct permTypes.
+      $queryRaw: vi.fn(async () => [
+        { projectId: "p1", roleId: "r1", folderCount: 1, totalBytes: 2048, permTypes: ["Full Controller"] },
+      ]),
     };
 
     const rows = await makeCaller(db).bulkUsers({ includePermissionSummary: true });
@@ -148,7 +153,9 @@ describe("accDcGraphRouter.bulkUsers", () => {
     expect(proj.fullController).toBe(true);
     expect(proj.accessibleDataBytes).toBe(2048);
     expect(rows[0].permissionContexts).toEqual([]);
-    expect(db.accFolderPermission.findMany).toHaveBeenCalled();
+    // Must aggregate in SQL — NOT scan the ~5M-row folder-permission table.
+    expect(db.$queryRaw).toHaveBeenCalled();
+    expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
   });
 
   it("includeActivityMix aggregates per-instance activity via groupBy (no raw rows)", async () => {

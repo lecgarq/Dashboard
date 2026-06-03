@@ -1097,7 +1097,7 @@ export function WikiEditor({
           </div>
         )}
         {/* Phase 2: drag handle + editor content + slash menu */}
-        <div className="flex min-h-[760px] w-full max-w-4xl flex-col overflow-visible rounded-[28px] border border-border/50 bg-white shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm mx-auto mb-24">
+        <div className="flex min-h-[760px] w-full max-w-4xl flex-col overflow-visible rounded-[28px] border border-border/50 bg-card shadow-[0_24px_60px_-38px_rgba(15,23,42,0.3)] backdrop-blur-sm mx-auto mb-24">
           {showEditorInitializing ? (
             <div className="flex flex-1 flex-col items-center justify-center gap-4 px-8 py-24 text-center">
               <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-primary/15 bg-primary/8 text-primary">
@@ -1128,7 +1128,7 @@ export function WikiEditor({
                   className="mx-8 mt-8 flex w-[calc(100%-4rem)] items-start gap-3 rounded-2xl border border-dashed border-primary/25 bg-primary/[0.04] px-4 py-4 text-left transition-colors hover:bg-primary/[0.08]"
                   onClick={focusEditorSurface}
                 >
-                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-white text-primary">
+                  <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-primary/15 bg-card text-primary">
                     <FileText size={16} />
                   </span>
                   <span>

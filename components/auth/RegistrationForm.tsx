@@ -59,16 +59,16 @@ export function RegistrationForm() {
             <ShieldCheck className="h-3.5 w-3.5" />
             Account created
           </div>
-          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Account created
           </h2>
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-muted-foreground">
             Your local account is ready. Now link your social accounts for full BIM Hub access.
           </p>
         </div>
 
         <div className="space-y-4 pt-2">
-          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-slate-500">
+          <p className="text-sm font-semibold uppercase tracking-[0.28em] text-muted-foreground">
             Link social accounts
           </p>
           <div className="grid gap-4">
@@ -77,7 +77,7 @@ export function RegistrationForm() {
               className="h-[3.25rem] justify-start gap-4 rounded-2xl"
               onClick={() => signIn("google", { callbackUrl: window.location.href })}
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-white dark:bg-zinc-900">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
                   <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
                   <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
@@ -115,16 +115,16 @@ export function RegistrationForm() {
           <Sparkles className="h-3.5 w-3.5" />
           Account setup
         </div>
-        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+        <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
           Create your account
         </h2>
-        <p className="text-sm leading-7 text-slate-600">
+        <p className="text-sm leading-7 text-muted-foreground">
           Start with a local profile, then connect the services your BIM operations rely on.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/90 p-4 text-sm text-rose-700">
+        <div className="flex items-start gap-3 rounded-2xl border border-rose-200/80 bg-rose-50/90 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 p-4 text-sm">
           <AlertCircle size={18} className="mt-0.5 shrink-0" />
           {error}
         </div>
@@ -132,11 +132,11 @@ export function RegistrationForm() {
 
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <label className="ml-1 text-sm font-semibold text-slate-700">Full name</label>
+          <label className="ml-1 text-sm font-semibold text-foreground/80">Full name</label>
           <Input
             placeholder="John Doe"
             required
-            className="h-12 rounded-2xl border-white/70"
+            className="h-12 rounded-2xl border-input"
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
           />
@@ -144,22 +144,22 @@ export function RegistrationForm() {
 
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-2">
-            <label className="ml-1 text-sm font-semibold text-slate-700">Username</label>
+            <label className="ml-1 text-sm font-semibold text-foreground/80">Username</label>
             <Input
               placeholder="jdoe"
               required
-              className="h-12 rounded-2xl border-white/70"
+              className="h-12 rounded-2xl border-input"
               value={formData.username}
               onChange={(e) => setFormData({ ...formData, username: e.target.value })}
             />
           </div>
           <div className="space-y-2">
-            <label className="ml-1 text-sm font-semibold text-slate-700">Email</label>
+            <label className="ml-1 text-sm font-semibold text-foreground/80">Email</label>
             <Input
               type="email"
               placeholder="john@example.com"
               required
-              className="h-12 rounded-2xl border-white/70"
+              className="h-12 rounded-2xl border-input"
               value={formData.email}
               onChange={(e) => setFormData({ ...formData, email: e.target.value })}
             />
@@ -167,12 +167,12 @@ export function RegistrationForm() {
         </div>
 
         <div className="space-y-2">
-          <label className="ml-1 text-sm font-semibold text-slate-700">Password</label>
+          <label className="ml-1 text-sm font-semibold text-foreground/80">Password</label>
           <Input
             type="password"
             placeholder="At least 6 characters"
             required
-            className="h-12 rounded-2xl border-white/70"
+            className="h-12 rounded-2xl border-input"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
           />
@@ -195,7 +195,7 @@ export function RegistrationForm() {
       </form>
 
       <div className="text-center">
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link href="/login" className="font-semibold text-primary hover:text-primary/80">
             Sign in

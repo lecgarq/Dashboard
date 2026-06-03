@@ -12,6 +12,10 @@ export function canInitializeDuckDbInBrowser(): boolean {
   return typeof window !== "undefined" && typeof document !== "undefined" && typeof Worker !== "undefined";
 }
 
+function toAbsoluteBundleUrl(url: string | undefined): string | undefined {
+  return url ? new URL(url, window.location.origin).toString() : undefined;
+}
+
 export async function getDuckDbClient(): Promise<BrowserDuckDbClient> {
   if (!canInitializeDuckDbInBrowser()) {
     throw new Error("DuckDB-Wasm analytics can only initialize in a browser runtime.");
@@ -37,12 +41,17 @@ export async function getDuckDbClient(): Promise<BrowserDuckDbClient> {
     // bundle.mainWorker is a root-relative path like "/duckdb-wasm/...". Inside
     // the worker's blob:-scoped global, importScripts() cannot resolve a relative
     // URL — it must be absolute. Anchor it to the current page origin.
-    const absoluteWorkerUrl = new URL(bundle.mainWorker!, window.location.origin).toString();
+    const absoluteMainModuleUrl = toAbsoluteBundleUrl(bundle.mainModule);
+    const absoluteWorkerUrl = toAbsoluteBundleUrl(bundle.mainWorker);
+    const absolutePthreadWorkerUrl = toAbsoluteBundleUrl(bundle.pthreadWorker);
+    if (!absoluteMainModuleUrl || !absoluteWorkerUrl) {
+      throw new Error("DuckDB-Wasm bundle is missing required module or worker URLs.");
+    }
     const workerUrl = URL.createObjectURL(new Blob([`importScripts("${absoluteWorkerUrl}");`], { type: "text/javascript" }));
     const worker = new Worker(workerUrl);
     const logger = new duckdb.ConsoleLogger();
     const db = new duckdb.AsyncDuckDB(logger, worker);
-    await db.instantiate(bundle.mainModule, bundle.pthreadWorker);
+    await db.instantiate(absoluteMainModuleUrl, absolutePthreadWorkerUrl);
     const connection = await db.connect();
     return {
       db,
@@ -62,4 +71,3 @@ export async function getDuckDbClient(): Promise<BrowserDuckDbClient> {
 export function resetDuckDbClientForTests(): void {
   cachedClient = null;
 }
-

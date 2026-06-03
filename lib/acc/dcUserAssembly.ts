@@ -14,6 +14,14 @@ export interface DcAssemblyInput {
   /** [Slice D] Per-folder file-size rollup (AccFolder.totalSizeBytes), keyed by folder id. */
   folderRollups?: { folderId: string; totalSizeBytes: number | null }[];
   /**
+   * [Perf 2026-06] Pre-aggregated folder-permission summary keyed `${projectId}::${roleId}`.
+   * When present, the `includePermissionSummary` path uses THIS instead of walking raw
+   * `folderPermissions` (which is ~5M rows in production). folderCount = distinct folders
+   * granted to that role; totalBytes = summed folder size; permTypes = distinct perm types.
+   * Raw `folderPermissions` stays the source for `includePermissionContexts` (edge feed).
+   */
+  folderSummaryByProjectRole?: Map<string, { folderCount: number; totalBytes: number; permTypes: string[] }>;
+  /**
    * Per-(project,user) company affiliation. Used as a fallback firm source when
    * the AccDcUser record has no companyId (common for external collaborators).
    */
@@ -167,26 +175,48 @@ export function assembleDcUsers(input: DcAssemblyInput): DcBulkAccUser[] {
       let fullController: boolean | undefined;
       if (includeSummary) {
         const rawRoleIds = rawRolesByUserProject.get(`${u.id}::${pid}`) ?? new Set<string>();
-        const folders = new Set<string>();
         const tiers = new Set<string>();
         let maxStrength = 0;
-        for (const rid of rawRoleIds) {
-          for (const fp of folderPermsByProjectRole.get(`${pid}::${rid}`) ?? []) {
-            folders.add(fp.folderId);
-            const tier = normalizePermTier(fp.permType);
-            tiers.add(tier);
-            maxStrength = Math.max(maxStrength, permTierStrength(fp.permType));
+        if (input.folderSummaryByProjectRole) {
+          // [Perf 2026-06] Pre-aggregated path (production). Breadth + bytes are SUMMED
+          // across the user's roles; cross-role folder overlap is NOT deduped — a
+          // negligible over-count for these fuzzy viz dims (most instances have a single
+          // role), and the trade that lets us avoid shipping ~5M raw grant rows.
+          let breadth = 0;
+          let bytes = 0;
+          for (const rid of rawRoleIds) {
+            const agg = input.folderSummaryByProjectRole.get(`${pid}::${rid}`);
+            if (!agg) continue;
+            breadth += agg.folderCount;
+            bytes += agg.totalBytes;
+            for (const pt of agg.permTypes) {
+              tiers.add(normalizePermTier(pt));
+              maxStrength = Math.max(maxStrength, permTierStrength(pt));
+            }
           }
+          folderBreadth = breadth;
+          accessibleDataBytes = bytes;
+        } else {
+          // Raw-row path (unit tests + the includePermissionContexts edge feed): dedupes
+          // folders across roles via a Set.
+          const folders = new Set<string>();
+          for (const rid of rawRoleIds) {
+            for (const fp of folderPermsByProjectRole.get(`${pid}::${rid}`) ?? []) {
+              folders.add(fp.folderId);
+              const tier = normalizePermTier(fp.permType);
+              tiers.add(tier);
+              maxStrength = Math.max(maxStrength, permTierStrength(fp.permType));
+            }
+          }
+          folderBreadth = folders.size;
+          // [Slice D] sum file bytes over the DEDUPED reachable folders.
+          let bytes = 0;
+          for (const fid of folders) bytes += folderSizeById.get(fid) ?? 0;
+          accessibleDataBytes = bytes;
         }
         permissionStrength = maxStrength;
-        folderBreadth = folders.size;
         permMixedProfile = tiers.size > 1;
         fullController = tiers.has("control");
-        // [Slice D] sum file bytes over the DEDUPED reachable folders (Set avoids
-        // double-counting folders granted via multiple roles).
-        let bytes = 0;
-        for (const fid of folders) bytes += folderSizeById.get(fid) ?? 0;
-        accessibleDataBytes = bytes;
       }
       const activity = input.activityByInstance?.get(`${email}::${pid}`);
       // [Phase B] per-instance action counts, then fold in the actor's account-level

@@ -149,7 +149,6 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
     // populated `mesh.instanceColor` buffer. With instanceColor set, three.js
     // enables USE_INSTANCING_COLOR on its own; that path alone is what we want.
     const material = new THREE.MeshBasicMaterial({ transparent: true });
-    material.vertexColors = true;
     const mesh = new THREE.InstancedMesh(geometry, material, n);
 
     // Per-instance RGB color buffer (stride-3; alpha baked in as color multiplication)

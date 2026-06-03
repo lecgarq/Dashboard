@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { cn } from "@/lib/core/utils";
 import { ChevronUp, ChevronDown, ChevronsUpDown } from "lucide-react";
+import { useTrelloLabelColor } from "@/lib/colors/useTrelloLabelColor";
 
 type TrelloCard = {
   id: string;
@@ -20,12 +21,6 @@ type TrelloCard = {
 
 type TrelloList = { id: string; name: string; pos: number };
 
-const LABEL_COLORS: Record<string, string> = {
-  green: "#61bd4f", yellow: "#f2d600", orange: "#ff9f1a", red: "#eb5a46",
-  purple: "#c377e0", blue: "#0079bf", sky: "#00c2e0", lime: "#51e898",
-  pink: "#ff78cb", black: "#344563",
-};
-
 interface TableViewProps {
   cards: TrelloCard[];
   lists: TrelloList[];
@@ -42,6 +37,7 @@ function SortIcon({ dir }: { dir: SortDir }) {
 }
 
 export function TableView({ cards, lists, onCardClick }: TableViewProps) {
+  const labelColor = useTrelloLabelColor();
   const [sortKey, setSortKey] = useState<SortKey>("list");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
 
@@ -154,7 +150,7 @@ export function TableView({ cards, lists, onCardClick }: TableViewProps) {
                         <div
                           className="w-1.5 h-5 rounded-full shrink-0"
                           style={{
-                            backgroundColor: LABEL_COLORS[card.cover.color] ?? "#b3bac5",
+                            backgroundColor: labelColor(card.cover.color),
                           }}
                         />
                       )}
@@ -178,7 +174,7 @@ export function TableView({ cards, lists, onCardClick }: TableViewProps) {
                         <span
                           key={label.id}
                           className="px-2 py-0.5 rounded text-white text-[10px] font-medium"
-                          style={{ backgroundColor: LABEL_COLORS[label.color] ?? "#b3bac5" }}
+                          style={{ backgroundColor: labelColor(label.color) }}
                           title={label.name || label.color}
                         >
                           {label.name || label.color}

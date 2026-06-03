@@ -7,9 +7,13 @@ import { createLogger } from "@/lib/server/logger";
 export const dynamic = "force-dynamic";
 const logger = createLogger("chat-stream-route");
 
-const POLL_INTERVAL_MS = 5000; // 5s — lighter with pageSize:1 polling
+const POLL_INTERVAL_MS = 5000;      // 5s normal cadence
 const HEARTBEAT_INTERVAL_MS = 20000;
-const MAX_SPACES_TO_POLL = 10; // Only check the most recent 10 spaces
+const MAX_SPACES_TO_POLL = 10;
+
+// Circuit-breaker constants
+const CB_FAILURE_THRESHOLD = 3;     // open after 3 consecutive DB timeouts
+const CB_RESET_MS = 60_000;         // retry after 60s of silence
 
 type NewMessageEvent = {
   type: "new_message";
@@ -39,6 +43,35 @@ export async function GET(req: NextRequest) {
       let closed = false;
       const lastSeenTime = new Map<string, string>();
 
+      // ── Circuit-breaker state ──────────────────────────────────────────
+      let cbFailures = 0;           // consecutive poll failures
+      let cbOpenAt: number | null = null; // timestamp when CB opened
+
+      const isCircuitOpen = () => {
+        if (cbOpenAt === null) return false;
+        if (Date.now() - cbOpenAt >= CB_RESET_MS) {
+          // Half-open: allow one probe through, reset counter
+          cbFailures = 0;
+          cbOpenAt = null;
+          return false;
+        }
+        return true;
+      };
+
+      const recordSuccess = () => {
+        cbFailures = 0;
+        cbOpenAt = null;
+      };
+
+      const recordFailure = () => {
+        cbFailures += 1;
+        if (cbFailures >= CB_FAILURE_THRESHOLD && cbOpenAt === null) {
+          cbOpenAt = Date.now();
+          logger.warn("Chat stream circuit breaker OPEN — pausing polls for 60s", { userId });
+        }
+      };
+      // ──────────────────────────────────────────────────────────────────
+
       const send = (chunk: string) => {
         if (closed) return;
         try {
@@ -54,9 +87,18 @@ export async function GET(req: NextRequest) {
 
       const poll = async () => {
         if (closed) return;
+
+        // Don't touch the DB while the circuit is open
+        if (isCircuitOpen()) return;
+
         try {
           const spacesResult = await listChatSpaces(userId);
-          if (spacesResult.status !== "ok") return;
+          if (spacesResult.status !== "ok") {
+            // Non-DB failure (e.g. no Google token) — don't penalise the CB
+            return;
+          }
+
+          recordSuccess();
 
           const activeSpaces = spacesResult.spaces.slice(0, MAX_SPACES_TO_POLL);
 
@@ -76,10 +118,8 @@ export async function GET(req: NextRequest) {
                   const msg = result.message;
                   const lastSeen = lastSeenTime.get(space.name);
 
-                  // Update the last seen time
                   lastSeenTime.set(space.name, msg.createTime);
 
-                  // Skip if this is the initial seed or not newer
                   if (!lastSeen || msg.createTime <= lastSeen) return;
 
                   logger.debug("New message detected in polled space", {
@@ -110,10 +150,18 @@ export async function GET(req: NextRequest) {
             );
           }
         } catch (err) {
-          logger.warn("Chat stream poll failed", {
-            userId,
-            error: err,
-          });
+          // Check if this looks like a DB connection-pool error
+          const msg = err instanceof Error ? err.message : String(err);
+          const isDbTimeout =
+            msg.includes("timeout exceeded") ||
+            msg.includes("ECHECKOUTTIMEOUT") ||
+            msg.includes("connection pool");
+
+          if (isDbTimeout) {
+            recordFailure();
+          }
+
+          logger.warn("Chat stream poll failed", { userId, error: err });
         }
       };
 

@@ -66,27 +66,27 @@ function DroppableColumn({
   return (
     <div
       className={cn(
-        "flex flex-col bg-gray-50 border border-gray-200 rounded-lg transition-all",
+        "flex flex-col bg-muted/40 border border-border rounded-lg transition-all",
         collapsed ? "w-10" : "min-w-52 w-64"
       )}
     >
       {/* Column header */}
       <div
         className={cn(
-          "flex items-center gap-2 p-2 border-b border-gray-200 cursor-pointer select-none",
+          "flex items-center gap-2 p-2 border-b border-border cursor-pointer select-none",
           collapsed && "flex-col py-3"
         )}
         onClick={onToggleCollapse}
       >
         {collapsed ? (
-          <span className="[writing-mode:vertical-rl] text-xs font-medium text-gray-600 rotate-180">
+          <span className="[writing-mode:vertical-rl] text-xs font-medium text-foreground/70 rotate-180">
             {phase.label} ({families.length})
           </span>
         ) : (
           <>
             <Badge className={`text-xs px-1.5 py-0 ${phase.color}`}>{phase.label}</Badge>
-            <span className="text-xs text-gray-400 ml-auto">{families.length}</span>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-gray-400">
+            <span className="text-xs text-muted-foreground/60 ml-auto">{families.length}</span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-muted-foreground/60">
               <path d="M18 15l-6-6-6 6" />
             </svg>
           </>
@@ -209,7 +209,7 @@ export function KanbanBoard({ families, onMoveFamily, onCardClick }: KanbanBoard
       </DragOverlay>
 
       {!isAdmin && (
-        <div className="mt-4 text-xs text-gray-400 text-center">
+        <div className="mt-4 text-xs text-muted-foreground/60 text-center">
           View-only mode — admin required to move cards
         </div>
       )}

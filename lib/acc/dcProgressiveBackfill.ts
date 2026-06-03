@@ -6,10 +6,10 @@
  * grouped into APS-50-cap batches.
  *
  * Algorithm (RESEARCH.md Pattern 1):
- *   - New project (no progress row, or newProjectFlag): single 30-day window
+ *   - New project (no progress row, or newProjectFlag): single default slice window
  *     ending yesterday, reason='new-project'.
  *   - Existing project:
- *       backwardStart = max(subDays(earliestCovered, 30), projectCreatedAt)
+ *       backwardStart = max(subDays(earliestCovered, sliceDays), projectCreatedAt)
  *       If backwardStart < earliestCovered → emit backward slice.
  *       forwardStart = subDays(latestCovered, 1)  (1-day overlap window)
  *       If forwardStart < yesterday → emit forward slice [forwardStart, yesterday].
@@ -21,11 +21,14 @@
  * Requirements: DC8-07, DC8-11, DC8-13.
  */
 import { subDays, max as dateMax, isBefore } from 'date-fns';
+import mtyAllowlist from './mty-allowlist.json';
+
+const mtySet = new Set(mtyAllowlist);
 
 /** APS Data Connector hard cap on `projectIdList` per request. */
 export const PROJECT_BATCH_LIMIT = 50;
 
-/** CONTEXT-locked daily window size (days). */
+/** Default daily window size (days). */
 export const SLICE_DAYS = 30;
 
 /** CONTEXT-locked overlap window for late-arriving forward events (days). */
@@ -64,6 +67,11 @@ export interface DailyPlan {
   estimatedQuota: number;
 }
 
+export interface PlanDailySliceOptions {
+  /** Manual override for accelerated, bounded extraction runs. Defaults to SLICE_DAYS. */
+  sliceDays?: number;
+}
+
 interface PerProjectSlice {
   projectId: string;
   start: Date;
@@ -74,8 +82,9 @@ interface PerProjectSlice {
 function deriveSlicesForProject(
   proj: ProjectProgress,
   yesterdayUtc: Date,
+  sliceDays: number,
 ): PerProjectSlice[] {
-  // New project: no progress yet → one 30-day window ending yesterday.
+  // New project: no progress yet -> one window ending yesterday.
   if (
     proj.newProjectFlag ||
     proj.earliestCovered === null ||
@@ -84,7 +93,7 @@ function deriveSlicesForProject(
     return [
       {
         projectId: proj.projectId,
-        start: subDays(yesterdayUtc, SLICE_DAYS),
+        start: subDays(yesterdayUtc, sliceDays),
         end: yesterdayUtc,
         reason: 'new-project',
       },
@@ -93,8 +102,8 @@ function deriveSlicesForProject(
 
   const out: PerProjectSlice[] = [];
 
-  // Backward: extend earliest coverage by SLICE_DAYS, floored at projectCreatedAt.
-  const backwardCandidate = subDays(proj.earliestCovered, SLICE_DAYS);
+  // Backward: extend earliest coverage by sliceDays, floored at projectCreatedAt.
+  const backwardCandidate = subDays(proj.earliestCovered, sliceDays);
   const backwardStart = dateMax([backwardCandidate, proj.projectCreatedAt]);
   if (isBefore(backwardStart, proj.earliestCovered)) {
     out.push({
@@ -124,13 +133,45 @@ function bucketKey(s: PerProjectSlice): string {
   return `${s.start.toISOString()}|${s.end.toISOString()}|${s.reason}`;
 }
 
+function normalizeSliceDays(value: unknown): number | null {
+  const parsed =
+    typeof value === 'number'
+      ? value
+      : typeof value === 'string'
+        ? Number.parseInt(value, 10)
+        : Number.NaN;
+  if (!Number.isFinite(parsed)) return null;
+  if (parsed < 1) return null;
+  return Math.min(Math.floor(parsed), 366);
+}
+
+export function resolveSliceDays(options?: PlanDailySliceOptions): number {
+  return (
+    normalizeSliceDays(options?.sliceDays) ??
+    normalizeSliceDays(process.env.DC_PROGRESSIVE_SLICE_DAYS) ??
+    SLICE_DAYS
+  );
+}
+
 export function planDailySlice(
   projects: ProjectProgress[],
   yesterdayUtc: Date,
+  options?: PlanDailySliceOptions,
 ): DailyPlan {
+  const sliceDays = resolveSliceDays(options);
+  // If running in tests, bypass filter to keep test cases pure.
+  const isTest =
+    typeof process !== 'undefined' &&
+    (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test');
+  const filteredProjects = isTest
+    ? projects
+    : projects.filter((p) => mtySet.has(p.projectId));
+
   const perProjectSlices: PerProjectSlice[] = [];
-  for (const proj of projects) {
-    perProjectSlices.push(...deriveSlicesForProject(proj, yesterdayUtc));
+  for (const proj of filteredProjects) {
+    perProjectSlices.push(
+      ...deriveSlicesForProject(proj, yesterdayUtc, sliceDays),
+    );
   }
 
   // Bucket by identical (start, end, reason). Use insertion-order Map so

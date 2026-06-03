@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 /**
  * Probe Data Connector using Luis's stored 3-legged user token (Account Admin).
  * This tests whether 3-leg auth bypasses the "clientId not authorized" gate

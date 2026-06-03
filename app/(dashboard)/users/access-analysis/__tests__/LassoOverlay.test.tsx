@@ -75,7 +75,7 @@ describe("LassoOverlay — Phase 4-01 Task 3", () => {
     expect(cv.dataset.active).toBe("true");
   });
 
-  it("drag of 5 points → onComplete called with indices from findPointsInPolygon", async () => {
+  it("drag of 5 points uses raw screen pixels for polygon selection", async () => {
     const onComplete = vi.fn();
     const handle = mkGraphHandle([1, 3, 7]);
     render(
@@ -92,7 +92,15 @@ describe("LassoOverlay — Phase 4-01 Task 3", () => {
     cv.dispatchEvent(pointerEvt("pointermove", { offsetX: 20, offsetY: 40 }));
     cv.dispatchEvent(pointerEvt("pointermove", { offsetX: 10, offsetY: 30 }));
     cv.dispatchEvent(pointerEvt("pointerup", { offsetX: 10, offsetY: 30 }));
+    expect(handle.screenToSpace).not.toHaveBeenCalled();
     expect(handle.findPointsInPolygon).toHaveBeenCalledTimes(1);
+    expect(handle.findPointsInPolygon).toHaveBeenCalledWith([
+      [10, 10],
+      [20, 15],
+      [30, 25],
+      [20, 40],
+      [10, 30],
+    ]);
     expect(onComplete).toHaveBeenCalledWith([1, 3, 7]);
   });
 

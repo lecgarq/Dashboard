@@ -77,8 +77,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — interactionTypes + featureSnapshot + usePredicateEngine + LassoOverlay + NodeTooltip + GraphInteractions wrapper + GraphCanvas2D/3D event primitives (INTR-01..05)
-- [ ] 04-02-PLAN.md — SliderContext + FilterContext + SelectionContext + Toolbar + SliderSidebar + SelectionPanel (DuckDB role+tier pies) + RightPanelStack + AccessAnalysisShell composition (INTR-06, INTR-07, ANLY-01, ANLY-02)
+- [x] 04-01-PLAN.md — interactionTypes + featureSnapshot + usePredicateEngine + LassoOverlay + NodeTooltip + GraphInteractions wrapper + GraphCanvas2D/3D event primitives (INTR-01..05) (completed 2026-05-20)
+- [x] 04-02-PLAN.md — SliderContext + FilterContext + SelectionContext + Toolbar + SliderSidebar + SelectionPanel (DuckDB role+tier pies) + RightPanelStack + AccessAnalysisShell composition (INTR-06, INTR-07, ANLY-01, ANLY-02) (completed 2026-05-20)
 
 ## Progress
 
@@ -90,4 +90,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Data + Math Foundation | 2/2 | Complete   | 2026-05-19 |
 | 2. Physics Layer | 2/2 | Complete   | 2026-05-19 |
 | 3. Render Layer | 2/2 | Complete   | 2026-05-19 |
-| 4. Interactions + Analytics Bridge | 1/2 | In Progress|  |
+| 4. Interactions + Analytics Bridge | 2/2 | Complete   | 2026-05-20 |

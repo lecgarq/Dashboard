@@ -49,6 +49,21 @@
   --shadow-soft-md: 0 2px 8px -2px rgba(0,0,0,0.06);
   --shadow-soft-lg: 0 4px 16px -4px rgba(0,0,0,0.08);
   --shadow-soft-xl: 0 8px 30px -8px rgba(0,0,0,0.1);
+
+  /* Surfaces (theme-aware glass layers) */
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-surface-border: var(--surface-border);
+
+  /* Semantic status colors */
+  --color-success: var(--success);
+  --color-success-bg: var(--success-bg);
+  --color-warning: var(--warning);
+  --color-warning-bg: var(--warning-bg);
+  --color-info: var(--info);
+  --color-info-bg: var(--info-bg);
+  --color-danger-bg: var(--danger-bg);
 }
 
 /* LOD Checker: Light-only professional palette */
@@ -106,6 +121,130 @@
   --sidebar-accent-foreground: #1F2937;
   --sidebar-border: #E5E7EB;
   --sidebar-ring: #1D3557;
+
+  /* Surfaces (glass layers) */
+  --surface-1: rgba(255, 255, 255, 0.96);
+  --surface-2: rgba(255, 255, 255, 0.78);
+  --surface-3: rgba(255, 255, 255, 0.72);
+  --surface-border: rgba(226, 232, 240, 0.86);
+  --shadow-elevated: 0 24px 70px -34px rgba(15, 23, 42, 0.34);
+  --shadow-elevated-hover: 0 30px 80px -38px rgba(15, 23, 42, 0.42);
+  --grid-line: rgba(148, 163, 184, 0.08);
+  --scrollbar-thumb: rgba(0, 0, 0, 0.1);
+  --scrollbar-thumb-hover: rgba(0, 0, 0, 0.18);
+  --shimmer-stop: rgba(15, 23, 42, 0.08);
+  --caret-color: #0D0D0D;
+  --caret-label-bg: var(--primary);
+  --caret-label-fg: #FFFFFF;
+
+  /* Semantic status colors */
+  --success: #059669;
+  --success-bg: #D1FAE5;
+  --warning: #D97706;
+  --warning-bg: #FEF3C7;
+  --info: #2563EB;
+  --info-bg: #DBEAFE;
+  --danger-bg: #FEE2E2;
+
+  /* Page background (composed gradient) */
+  --page-bg:
+    radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32%),
+    radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.12), transparent 28%),
+    radial-gradient(circle at 80% 100%, rgba(15, 118, 110, 0.08), transparent 24%),
+    linear-gradient(180deg, #fbfdff 0%, #f3f7fb 100%);
+
+  /* Particle background (canvas — read via getComputedStyle) */
+  --particle-rgb: 15, 23, 42;
+  --particle-alpha: 0.12;
+  --particle-line-alpha: 0.08;
+}
+
+/* Dark theme overrides — toggled by next-themes adding class="dark" to <html> */
+/* Palette: zinc — true neutral, no blue cast, deeper than slate */
+.dark {
+  /* Surfaces */
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #18181B;
+  --card-foreground: #FAFAFA;
+  --popover: #0F0F11;
+  --popover-foreground: #FAFAFA;
+
+  /* Primary — brand blue (kept consistent with light), brighter for dark contrast */
+  --primary: #3B82F6;
+  --primary-foreground: #FAFAFA;
+
+  /* Secondary */
+  --secondary: #27272A;
+  --secondary-foreground: #FAFAFA;
+
+  /* Muted */
+  --muted: #27272A;
+  --muted-foreground: #A1A1AA;
+
+  /* Accent */
+  --accent: #27272A;
+  --accent-foreground: #FAFAFA;
+
+  --destructive: #F87171;
+
+  /* Borders */
+  --border: #27272A;
+  --input: #27272A;
+  --ring: #3B82F6;
+
+  /* Charts (lighter for contrast on dark bg) */
+  --chart-1: #60A5FA;
+  --chart-2: #34D399;
+  --chart-3: #FBBF24;
+  --chart-4: #A78BFA;
+  --chart-5: #FB923C;
+
+  /* Sidebar */
+  --sidebar: #18181B;
+  --sidebar-foreground: #D4D4D8;
+  --sidebar-primary: #3B82F6;
+  --sidebar-primary-foreground: #FAFAFA;
+  --sidebar-accent: #27272A;
+  --sidebar-accent-foreground: #FAFAFA;
+  --sidebar-border: #27272A;
+  --sidebar-ring: #3B82F6;
+
+  /* Surfaces (glass layers — neutral zinc for dark) */
+  --surface-1: rgba(24, 24, 27, 0.94);
+  --surface-2: rgba(24, 24, 27, 0.78);
+  --surface-3: rgba(9, 9, 11, 0.7);
+  --surface-border: rgba(63, 63, 70, 0.6);
+  --shadow-elevated: 0 24px 70px -28px rgba(0, 0, 0, 0.8);
+  --shadow-elevated-hover: 0 30px 80px -32px rgba(0, 0, 0, 0.9);
+  --grid-line: rgba(161, 161, 170, 0.05);
+  --scrollbar-thumb: rgba(255, 255, 255, 0.15);
+  --scrollbar-thumb-hover: rgba(255, 255, 255, 0.25);
+  --shimmer-stop: rgba(161, 161, 170, 0.08);
+  --caret-color: #E4E4E7;
+  --caret-label-bg: #E4E4E7;
+  --caret-label-fg: #09090B;
+
+  /* Semantic status colors (brighter for dark contrast) */
+  --success: #34D399;
+  --success-bg: rgba(52, 211, 153, 0.12);
+  --warning: #FBBF24;
+  --warning-bg: rgba(251, 191, 36, 0.12);
+  --info: #60A5FA;
+  --info-bg: rgba(96, 165, 250, 0.12);
+  --danger-bg: rgba(248, 113, 113, 0.12);
+
+  /* Page background — neutral dark (no blue tint) */
+  --page-bg:
+    radial-gradient(circle at top left, rgba(161, 161, 170, 0.05), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(244, 244, 245, 0.03), transparent 30%),
+    radial-gradient(circle at 80% 100%, rgba(113, 113, 122, 0.04), transparent 28%),
+    linear-gradient(180deg, #09090B 0%, #050507 100%);
+
+  /* Particle background — light particles on dark bg */
+  --particle-rgb: 244, 244, 245;
+  --particle-alpha: 0.16;
+  --particle-line-alpha: 0.1;
 }
 
 /* Base layer */
@@ -118,11 +257,7 @@
     font-family: var(--font-manrope), var(--font-geist-sans), system-ui, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
-    background-image:
-      radial-gradient(circle at top left, rgba(37, 99, 235, 0.10), transparent 32%),
-      radial-gradient(circle at 85% 15%, rgba(251, 146, 60, 0.12), transparent 28%),
-      radial-gradient(circle at 80% 100%, rgba(15, 118, 110, 0.08), transparent 24%),
-      linear-gradient(180deg, #fbfdff 0%, #f3f7fb 100%);
+    background-image: var(--page-bg);
     min-height: 100vh;
   }
   body::before {
@@ -132,8 +267,8 @@
     pointer-events: none;
     z-index: 0;
     background-image:
-      linear-gradient(rgba(148, 163, 184, 0.08) 1px, transparent 1px),
-      linear-gradient(90deg, rgba(148, 163, 184, 0.08) 1px, transparent 1px);
+      linear-gradient(var(--grid-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
     background-size: 120px 120px;
     mask-image: radial-gradient(circle at center, black, transparent 82%);
     opacity: 0.55;
@@ -241,7 +376,7 @@
 }
 
 .animate-shimmer {
-  background: linear-gradient(90deg, transparent 0%, rgba(15, 23, 42, 0.08) 50%, transparent 100%);
+  background: linear-gradient(90deg, transparent 0%, var(--shimmer-stop) 50%, transparent 100%);
   background-size: 200% 100%;
   animation: shimmerProgress 1.5s infinite linear;
 }
@@ -275,33 +410,33 @@
 .stagger-children > *:nth-child(7) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 350ms; }
 
-/* UI Paper — LOD Checker card surface */
+/* UI Paper — primary card surface */
 .ui-paper {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.96), rgba(255, 255, 255, 0.84));
-  border: 1px solid rgba(226, 232, 240, 0.92);
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--surface-border);
   border-radius: 20px;
-  box-shadow: 0 24px 70px -34px rgba(15, 23, 42, 0.34);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(18px);
   transition: box-shadow var(--motion-normal) var(--motion-ease),
     transform var(--motion-normal) var(--motion-ease);
 }
 .ui-paper:hover {
-  box-shadow: 0 30px 80px -38px rgba(15, 23, 42, 0.42);
+  box-shadow: var(--shadow-elevated-hover);
   transform: translateY(-2px);
 }
 
 /* Legacy class mappings */
 .glass-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(255, 255, 255, 0.76));
-  border: 1px solid rgba(226, 232, 240, 0.78);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  border: 1px solid var(--surface-border);
   border-radius: 20px;
-  box-shadow: 0 24px 70px -34px rgba(15, 23, 42, 0.28);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(18px);
   transition: box-shadow var(--motion-normal) var(--motion-ease),
     transform var(--motion-normal) var(--motion-ease);
 }
 .glass-card:hover {
-  box-shadow: 0 30px 80px -38px rgba(15, 23, 42, 0.36);
+  box-shadow: var(--shadow-elevated-hover);
   transform: translateY(-3px);
 }
 
@@ -348,21 +483,21 @@
   font-family: var(--font-space-grotesk), var(--font-manrope), sans-serif;
 }
 .surface-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(255, 255, 255, 0.78));
-  border: 1px solid rgba(226, 232, 240, 0.86);
-  box-shadow: 0 28px 90px -44px rgba(15, 23, 42, 0.38);
+  background: linear-gradient(180deg, var(--surface-1), var(--surface-2));
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(18px);
 }
 .surface-panel {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(255, 255, 255, 0.58));
-  border: 1px solid rgba(226, 232, 240, 0.72);
-  box-shadow: 0 22px 70px -46px rgba(15, 23, 42, 0.28);
+  background: linear-gradient(180deg, var(--surface-2), var(--surface-3));
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(16px);
 }
 .surface-chip {
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  box-shadow: 0 14px 34px -24px rgba(15, 23, 42, 0.28);
+  background: var(--surface-3);
+  border: 1px solid var(--surface-border);
+  box-shadow: var(--shadow-elevated);
   backdrop-filter: blur(12px);
 }
 .surface-card-hover {
@@ -373,7 +508,7 @@
 }
 .surface-card-hover:hover {
   transform: translateY(-4px);
-  box-shadow: 0 34px 96px -48px rgba(15, 23, 42, 0.44);
+  box-shadow: var(--shadow-elevated-hover);
   border-color: rgba(96, 165, 250, 0.32);
 }
 .auth-mesh {
@@ -410,11 +545,11 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--scrollbar-thumb);
   border-radius: 2px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.18);
+  background: var(--scrollbar-thumb-hover);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -438,8 +573,8 @@
 
 /* Tiptap Collaboration Carets */
 .collaboration-caret__caret {
-  border-left: 1px solid #0D0D0D;
-  border-right: 1px solid #0D0D0D;
+  border-left: 1px solid var(--caret-color);
+  border-right: 1px solid var(--caret-color);
   margin-left: -1px;
   margin-right: -1px;
   pointer-events: none;
@@ -449,7 +584,8 @@
 
 .collaboration-caret__label {
   border-radius: 3px 3px 3px 0;
-  color: #fff;
+  color: var(--caret-label-fg);
+  background: var(--caret-label-bg);
   font-size: 11px;
   font-style: normal;
   font-weight: 500;

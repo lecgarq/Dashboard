@@ -25,7 +25,12 @@ import { HeatmapPanel } from "./HeatmapPanel";
 import { DonutPanel, type DonutSlice } from "./DonutPanel";
 import { KpiHeroStrip } from "./KpiHeroStrip";
 import { AccessEventsChart } from "./AccessEventsChart";
-import { buildExecutiveFindings, isAdmin } from "./analyticsFindings";
+import {
+  buildExecutiveFindings,
+  computeFolderProjectCoverage,
+  computeSignInCoverage,
+  isAdmin,
+} from "./analyticsFindings";
 import { HeadlineInsights, type HeadlineInsightItem } from "./HeadlineInsights";
 import { ComplianceScanPanel } from "./ComplianceScanPanel";
 import { PermissionRiskPanel } from "./PermissionRiskPanel";
@@ -104,7 +109,7 @@ function computeUserStatus(users: BulkAccUser[]): DonutSlice[] {
 function computeActivityRecency(users: BulkAccUser[]): DonutSlice[] {
   const now = Date.now();
   const buckets = [
-    { label: "Active 30d", value: 0 },
+    { label: "Signed in 30d", value: 0 },
     { label: "31-90d", value: 0 },
     { label: "Older than 90d", value: 0 },
     { label: "Never signed in", value: 0 },
@@ -640,11 +645,20 @@ export function HybridAnalyticsSurface() {
   const topCompanyRows = useMemo(() => topCompanies(users), [users]);
   const roleStatusRows = useMemo(() => roleStatusHeatmapRows(users), [users]);
 
+  const signInCoverage = useMemo(() => computeSignInCoverage(users), [users]);
+  const folderCoverage = useMemo(
+    () => computeFolderProjectCoverage(folderRows, users),
+    [folderRows, users],
+  );
+
+  // Share of users with a *recorded* sign-in in the last 30 days, measured
+  // against users who have any sign-in date — not the whole population — so the
+  // ~66% with no recorded sign-in don't deflate the number into noise.
   const activeShare = useMemo(() => {
-    if (!users.length) return "0%";
+    if (!signInCoverage.withSignIn) return "0%";
     const t = recencySlices[0]?.value ?? 0;
-    return `${Math.round((t / users.length) * 100)}%`;
-  }, [recencySlices, users.length]);
+    return `${Math.round((t / signInCoverage.withSignIn) * 100)}%`;
+  }, [recencySlices, signInCoverage.withSignIn]);
 
   const adminTotal = useMemo(
     () => users.filter((u) => u.isAccountAdmin || u.adminCount > 0).length,
@@ -771,13 +785,13 @@ export function HybridAnalyticsSurface() {
           }}
         />
         <DonutPanel
-          title="Activity recency"
-          subtitle="Time since last sign-in"
+          title="Sign-in recency"
+          subtitle={`Time since last recorded sign-in · only ${signInCoverage.percent}% of users have one`}
           finding={findings.staleMembers}
           findingSeverity="risk"
           data={recencySlices}
           centerValue={activeShare}
-          centerLabel="active 30d"
+          centerLabel="signed in 30d"
           onSliceClick={(slice) => {
             const now = Date.now();
             setDetailFilter({
@@ -790,7 +804,7 @@ export function HybridAnalyticsSurface() {
                 }
                 if (!Number.isFinite(t)) return false;
                 const days = (now - t) / 86_400_000;
-                if (slice.label === "Active 30d") return days <= 30;
+                if (slice.label === "Signed in 30d") return days <= 30;
                 if (slice.label === "31-90d") return days > 30 && days <= 90;
                 if (slice.label === "Older than 90d") return days > 90;
                 return false;
@@ -824,7 +838,11 @@ export function HybridAnalyticsSurface() {
         />
         <DonutPanel
           title="Permission tiers"
-          subtitle="Folder-grant breakdown"
+          subtitle={
+            folderCoverage.totalProjects > 0
+              ? `Folder-grant breakdown · ${folderCoverage.projectsWithFolders} of ${folderCoverage.totalProjects} projects crawled`
+              : "Folder-grant breakdown"
+          }
           finding={findings.permissionTiers}
           findingSeverity="info"
           data={permTierSlices}

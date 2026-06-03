@@ -11,15 +11,18 @@ export const ACC_MODULE_LABELS: Record<string, string> = {
   model_coordination: "Model Coordination",
   preconstruction: "Preconstruction",
   autospecs: "AutoSpecs",
+  autoSpecs: "AutoSpecs",
   build: "Build",
   insight: "Insight",
   design: "Design",
+  cost: "Cost Management",
+  forma: "Forma",
+  takeoff: "Takeoff",
 
   // camelCase variants - legacy data or alternate API shapes
   documentManagement: "Forma Data Management",
   designCollaboration: "Design Collaboration",
   modelCoordination: "Model Coordination",
-  autoSpecs: "AutoSpecs",
 };
 
 // Pre-normalized map for case-insensitive / separator-insensitive lookup

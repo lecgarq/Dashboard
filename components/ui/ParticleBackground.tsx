@@ -103,15 +103,36 @@ export default function ParticleBackground() {
       for (let i = 0; i < count; i++) particles.push(new Particle(w, h));
     };
 
+    // Cache theme-aware color tokens; re-read on theme change via MutationObserver
+    let particleRgb = "15, 23, 42";
+    let particleAlpha = 0.12;
+    let particleLineAlpha = 0.08;
+    const refreshColors = () => {
+      const cs = getComputedStyle(document.documentElement);
+      particleRgb = cs.getPropertyValue("--particle-rgb").trim() || particleRgb;
+      const a = parseFloat(cs.getPropertyValue("--particle-alpha"));
+      const la = parseFloat(cs.getPropertyValue("--particle-line-alpha"));
+      if (!Number.isNaN(a)) particleAlpha = a;
+      if (!Number.isNaN(la)) particleLineAlpha = la;
+    };
+    refreshColors();
+    const themeObserver = new MutationObserver(refreshColors);
+    themeObserver.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
     const draw = () => {
       const w = window.innerWidth, h = window.innerHeight;
       ctx.clearRect(0, 0, w, h);
+
+      const dotFill = `rgba(${particleRgb}, ${particleAlpha})`;
 
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
         p.update(w, h, mouse.x, mouse.y, zonesRef.current);
 
-        ctx.fillStyle = "rgba(15, 23, 42, 0.12)";
+        ctx.fillStyle = dotFill;
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
         ctx.fill();
@@ -120,8 +141,8 @@ export default function ParticleBackground() {
           const p2 = particles[j];
           const d = dist(p.x, p.y, p2.x, p2.y);
           if (d < CFG.connectDist) {
-            const alpha = (1 - d / CFG.connectDist) * 0.08;
-            ctx.strokeStyle = `rgba(15, 23, 42, ${alpha})`;
+            const alpha = (1 - d / CFG.connectDist) * particleLineAlpha;
+            ctx.strokeStyle = `rgba(${particleRgb}, ${alpha})`;
             ctx.lineWidth = CFG.lineWidth;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
@@ -146,6 +167,7 @@ export default function ParticleBackground() {
 
     return () => {
       cancelAnimationFrame(raf);
+      themeObserver.disconnect();
       window.removeEventListener("resize", onResize);
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("mouseout", onLeave);

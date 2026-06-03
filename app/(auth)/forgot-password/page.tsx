@@ -52,17 +52,17 @@ function ForgotPasswordForm() {
             <Sparkles className="h-3.5 w-3.5" />
             Password recovery
           </div>
-          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-slate-950">
+          <h2 className="font-display text-3xl font-semibold tracking-[-0.04em] text-foreground">
             Forgot password
           </h2>
-          <p className="text-sm leading-7 text-slate-600">
+          <p className="text-sm leading-7 text-muted-foreground">
             Enter the email tied to your account and we will send a secure reset link.
           </p>
         </div>
 
         {submitted ? (
           <div className="mt-8 space-y-5 text-center">
-            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 px-4 py-4 text-sm text-emerald-700">
+            <div className="rounded-2xl border border-emerald-200/80 bg-emerald-50/90 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/40 dark:text-emerald-300 px-4 py-4 text-sm">
               If that email exists, a reset link has been sent. Check your inbox and spam folder.
             </div>
             <Button asChild variant="outline" className="rounded-2xl">
@@ -72,20 +72,20 @@ function ForgotPasswordForm() {
         ) : (
           <form onSubmit={handleSubmit} className="mt-8 space-y-4">
             {error && (
-              <div className="rounded-2xl border border-rose-200/80 bg-rose-50/90 px-4 py-4 text-sm text-rose-700">
+              <div className="rounded-2xl border border-rose-200/80 bg-rose-50/90 text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/40 dark:text-rose-300 px-4 py-4 text-sm">
                 {error}
               </div>
             )}
 
             <div className="space-y-2">
-              <label className="ml-1 text-sm font-semibold text-slate-700">Email</label>
+              <label className="ml-1 text-sm font-semibold text-foreground/80">Email</label>
               <div className="relative">
-                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Mail className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground/60" />
                 <Input
                   type="email"
                   placeholder="you@company.com"
                   required
-                  className="h-12 rounded-2xl border-white/70 pl-11"
+                  className="h-12 rounded-2xl border-input pl-11"
                   value={email}
                   onChange={(event) => setEmail(event.target.value)}
                 />

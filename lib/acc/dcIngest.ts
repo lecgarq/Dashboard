@@ -1407,7 +1407,65 @@ async function executePlan(
     }
   }
 
-  // 9. Admin snapshot transaction (atomic across all 16 tables).
+  // 9. Apply slice completion -> upsert AccDcBackfillProgress.
+  //
+  // Activity CSV ingestion is durable before the admin snapshot is promoted.
+  // Keep coverage progress in sync with completed activity slices even when
+  // the independent admin snapshot anomaly guard quarantines its own promotion.
+  for (const slice of completedSlices) {
+    for (const projectId of slice.projectIds) {
+      const prev = await prisma.accDcBackfillProgress.findUnique({
+        where: { projectId },
+      });
+      // Resolve nullable AccDcProject.createdAt -> earliest known activity ts.
+      let projectCreatedAt: Date | null = null;
+      if (prev) {
+        projectCreatedAt = prev.projectCreatedAt;
+      } else {
+        const proj = await prisma.accDcProject.findUnique({
+          where: { id: projectId },
+          select: { createdAt: true },
+        });
+        projectCreatedAt = proj?.createdAt ?? null;
+        if (projectCreatedAt === null) {
+          const earliestActivity = await prisma.accActivity.findFirst({
+            where: { projectId },
+            orderBy: { createdAt: 'asc' },
+            select: { createdAt: true },
+          });
+          projectCreatedAt = earliestActivity?.createdAt ?? slice.start;
+        }
+      }
+      const seed = prev
+        ? ({
+            projectId,
+            earliestCovered: prev.earliestCovered,
+            latestCovered: prev.latestCovered,
+            projectCreatedAt: prev.projectCreatedAt,
+            newProjectFlag: prev.newProjectFlag,
+          } as ProjectProgress)
+        : newProjectProgress(projectId, projectCreatedAt);
+      const next = applySliceCompletion(seed, slice);
+      await prisma.accDcBackfillProgress.upsert({
+        where: { projectId },
+        create: {
+          projectId,
+          earliestCovered: next.earliestCovered,
+          latestCovered: next.latestCovered,
+          projectCreatedAt: next.projectCreatedAt,
+          newProjectFlag: next.newProjectFlag,
+        },
+        update: {
+          earliestCovered: next.earliestCovered,
+          latestCovered: next.latestCovered,
+          projectCreatedAt: next.projectCreatedAt,
+          newProjectFlag: next.newProjectFlag,
+        },
+      });
+    }
+  }
+
+  // 10. Admin snapshot transaction (atomic across all 16 tables).
   //
   // 2026-05-18 Bug C fix: only run the admin snapshot when at least one
   // non-backward slice contributed CSVs. Backward windows naturally report
@@ -1460,60 +1518,6 @@ async function executePlan(
         projectsProcessed: projectsProcessedSet.size,
         sliceWindowStart,
         sliceWindowEnd,
-      });
-    }
-  }
-
-  // 10. Apply slice completion -> upsert AccDcBackfillProgress
-  for (const slice of completedSlices) {
-    for (const projectId of slice.projectIds) {
-      const prev = await prisma.accDcBackfillProgress.findUnique({
-        where: { projectId },
-      });
-      // Resolve nullable AccDcProject.createdAt -> earliest known activity ts.
-      let projectCreatedAt: Date | null = null;
-      if (prev) {
-        projectCreatedAt = prev.projectCreatedAt;
-      } else {
-        const proj = await prisma.accDcProject.findUnique({
-          where: { id: projectId },
-          select: { createdAt: true },
-        });
-        projectCreatedAt = proj?.createdAt ?? null;
-        if (projectCreatedAt === null) {
-          const earliestActivity = await prisma.accActivity.findFirst({
-            where: { projectId },
-            orderBy: { createdAt: 'asc' },
-            select: { createdAt: true },
-          });
-          projectCreatedAt = earliestActivity?.createdAt ?? slice.start;
-        }
-      }
-      const seed = prev
-        ? ({
-            projectId,
-            earliestCovered: prev.earliestCovered,
-            latestCovered: prev.latestCovered,
-            projectCreatedAt: prev.projectCreatedAt,
-            newProjectFlag: prev.newProjectFlag,
-          } as ProjectProgress)
-        : newProjectProgress(projectId, projectCreatedAt);
-      const next = applySliceCompletion(seed, slice);
-      await prisma.accDcBackfillProgress.upsert({
-        where: { projectId },
-        create: {
-          projectId,
-          earliestCovered: next.earliestCovered,
-          latestCovered: next.latestCovered,
-          projectCreatedAt: next.projectCreatedAt,
-          newProjectFlag: next.newProjectFlag,
-        },
-        update: {
-          earliestCovered: next.earliestCovered,
-          latestCovered: next.latestCovered,
-          projectCreatedAt: next.projectCreatedAt,
-          newProjectFlag: next.newProjectFlag,
-        },
       });
     }
   }

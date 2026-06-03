@@ -16,6 +16,25 @@ export interface RawDc {
   companyNames: Array<{ id: string; name: string }>;
 }
 
+/**
+ * Resolve role id -> display name from two sources. The DC snapshot table
+ * (AccDcRole) is the intended source but is currently empty in production
+ * because Autodesk's Data Connector never delivered admin_roles.csv. The live
+ * AccRole table (synced from the APS account-roles API) carries 100% of the
+ * assigned role ids, so we use it as the base and let any DC name win on top
+ * (DC wins on conflict, per the snapshot architecture). Without this merge the
+ * downstream join silently drops every assignment -> roles count reads 0.
+ */
+export function mergeRoleNames(
+  dc: Array<{ id: string; name: string }>,
+  live: Array<{ id: string; name: string }>,
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const r of live) map.set(r.id, r.name);
+  for (const r of dc) map.set(r.id, r.name); // DC overrides live
+  return map;
+}
+
 export function buildInstanceView(raw: RawDc): AccessInstance[] {
   const userById = new Map(raw.users.map((u) => [u.id, u]));
   const projectById = new Map(raw.projects.map((p) => [p.id, p]));
@@ -69,16 +88,18 @@ const TTL_MS = 5 * 60 * 1000;
 
 export async function loadInstanceView(force = false): Promise<AccessInstance[]> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.view;
-  const [projectUsers, users, projects, products, roles, roleNames, companies, companyNames] = await Promise.all([
+  const [projectUsers, users, projects, products, roles, dcRoleNames, liveRoleNames, companies, companyNames] = await Promise.all([
     db.accDcProjectUser.findMany({ select: { projectId: true, userId: true, status: true, addedOn: true } }),
     db.accDcUser.findMany({ select: { id: true, email: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
     db.accDcProjectUserProduct.findMany({ select: { projectId: true, userId: true, productKey: true, accessLevel: true } }),
     db.accDcProjectUserRole.findMany({ select: { projectId: true, userId: true, roleId: true } }),
     db.accDcRole.findMany({ select: { id: true, name: true } }),
+    db.accRole.findMany({ select: { id: true, name: true } }),
     db.accDcProjectUserCompany.findMany({ select: { projectId: true, userId: true, companyId: true } }),
     db.accDcCompany.findMany({ select: { id: true, name: true } }),
   ]);
+  const roleNames = [...mergeRoleNames(dcRoleNames, liveRoleNames)].map(([id, name]) => ({ id, name }));
   const view = buildInstanceView({ projectUsers, users, projects, products, roles, roleNames, companies, companyNames });
   cache = { at: Date.now(), view };
   return view;

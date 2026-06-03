@@ -24,6 +24,15 @@ const authLogger = createLogger("auth");
 const isProduction = process.env.NODE_ENV === "production";
 const googleChatClientId = getGoogleChatClientId();
 const googleChatClientSecret = getGoogleChatClientSecret();
+const AUTODESK_AUTH_SCOPE =
+  "openid data:read data:create viewables:read user:read account:read";
+
+function getPersistedAccountScope(account: { provider?: string; scope?: string | null }) {
+  if (account.provider === "autodesk") {
+    return account.scope ?? AUTODESK_AUTH_SCOPE;
+  }
+  return account.scope ?? null;
+}
 
 const providers: any[] = [
   GoogleProvider({
@@ -66,7 +75,7 @@ const providers: any[] = [
       params: {
         // data:create is required for POST /data-connector/v1/.../requests
         // (Data Connector mandates 3-legged user-context auth, not 2-legged client_credentials)
-        scope: "openid data:read data:create viewables:read user:read account:read",
+        scope: AUTODESK_AUTH_SCOPE,
         response_type: "code"
       },
     },
@@ -230,7 +239,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             ...(account.refresh_token ? { refresh_token: account.refresh_token } : {}),
             expires_at: account.expires_at ?? null,
             token_type: account.token_type ?? null,
-            scope: account.scope ?? null,
+            scope: getPersistedAccountScope(account),
             id_token: account.id_token ?? null,
           },
           create: {
@@ -242,7 +251,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
             refresh_token: account.refresh_token ?? null,
             expires_at: account.expires_at ?? null,
             token_type: account.token_type ?? null,
-            scope: account.scope ?? null,
+            scope: getPersistedAccountScope(account),
             id_token: account.id_token ?? null,
             session_state: (typeof account.session_state === "string") ? account.session_state : null,
           },

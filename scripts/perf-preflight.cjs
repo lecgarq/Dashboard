@@ -1,4 +1,3 @@
-/* eslint-disable no-console */
 /**
  * Phase 4 Plan 07 — Perf Pre-Flight (PERF-GATE)
  *

@@ -2,6 +2,7 @@
 
 import { useMemo } from "react";
 import { cn } from "@/lib/core/utils";
+import { useTrelloLabelColor } from "@/lib/colors/useTrelloLabelColor";
 
 type TrelloCard = {
   id: string; name: string; idList: string; due: string | null; dueComplete: boolean;
@@ -10,12 +11,6 @@ type TrelloCard = {
 };
 type TrelloList = { id: string; name: string; pos: number };
 
-const LABEL_COLORS: Record<string, string> = {
-  green: "#61bd4f", yellow: "#f2d600", orange: "#ff9f1a", red: "#eb5a46",
-  purple: "#c377e0", blue: "#0079bf", sky: "#00c2e0", lime: "#51e898",
-  pink: "#ff78cb", black: "#344563",
-};
-
 interface TimelineViewProps {
   cards: TrelloCard[];
   lists: TrelloList[];
@@ -23,6 +18,7 @@ interface TimelineViewProps {
 }
 
 export function TimelineView({ cards, lists, onCardClick }: TimelineViewProps) {
+  const labelColor = useTrelloLabelColor();
   const now = new Date();
 
   const { startDate, days, totalDays } = useMemo(() => {
@@ -116,7 +112,7 @@ export function TimelineView({ cards, lists, onCardClick }: TimelineViewProps) {
                 {/* Card rows */}
                 {listCards.map(card => {
                   const offset = dayOffset(card.due!);
-                  const color = card.labels[0] ? (LABEL_COLORS[card.labels[0].color] ?? "#0079bf") : "#0079bf";
+                  const color = card.labels[0] ? labelColor(card.labels[0].color) : labelColor("blue");
                   const isPast = !card.dueComplete && new Date(card.due!) < now;
                   return (
                     <div key={card.id} className="flex border-b border-border/10 hover:bg-muted/10 transition-colors" style={{ height: ROW_H }}>
@@ -135,7 +131,7 @@ export function TimelineView({ cards, lists, onCardClick }: TimelineViewProps) {
                               left: offset * COL_W + 2,
                               minWidth: COL_W - 4,
                               maxWidth: 200,
-                              backgroundColor: isPast ? "#eb5a46" : color,
+                              backgroundColor: isPast ? labelColor("red") : color,
                             }}
                             title={card.name}
                           >

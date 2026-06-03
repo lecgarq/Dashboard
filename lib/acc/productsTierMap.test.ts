@@ -79,4 +79,30 @@ describe("parseProductsJson", () => {
     });
     expect(out[0].label).toBe("Design Collaboration");
   });
+
+  it("recognises product keys present in Data Connector user-product access", () => {
+    const out = parseProductsJson({
+      forma: "member",
+      takeoff: "administrator",
+      cost: "member",
+    });
+
+    expect(out).toEqual([
+      expect.objectContaining({
+        module: "forma",
+        label: "Forma",
+        isUnknownModule: false,
+      }),
+      expect.objectContaining({
+        module: "takeoff",
+        label: "Takeoff",
+        isUnknownModule: false,
+      }),
+      expect.objectContaining({
+        module: "cost",
+        label: "Cost Management",
+        isUnknownModule: false,
+      }),
+    ]);
+  });
 });

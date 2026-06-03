@@ -246,4 +246,41 @@ describe('ingestActivityCsv', () => {
     expect(created.length).toBe(1);
     expect(created[0].autodeskId).toBe('A2');
   });
+
+  it('maps APS activity export columns from current Data Connector files', async () => {
+    const { tx, created } = makeMockTx();
+    const csv = buildCsv([
+      {
+        activity_id: 'act-1',
+        bim360_account_id: 'acct-1',
+        bim360_project_id: 'project-1',
+        activity_verb: 'view-entity',
+        created_by: 'USER123',
+        created_at: '2026-04-20 16:12:19.198',
+        object_display_name: 'Model.rvt',
+        tool: 'ACC Web',
+      },
+    ]);
+
+    const result = await ingestActivityCsv(tx, {
+      filename: 'activities_docs_activities.csv',
+      csvStream: Readable.from([csv]),
+      ingestRunId: 'run-real-columns',
+      emailLookup: new Map([['USER123', 'user@example.com']]),
+    });
+
+    expect(result.rowsInserted).toBe(1);
+    expect(result.rowsSkippedNoModule).toBe(0);
+    expect(created[0]).toMatchObject({
+      autodeskId: 'USER123',
+      userEmail: 'user@example.com',
+      projectId: 'project-1',
+      rawAction: 'view-entity',
+      service: 'docs',
+      tool: 'ACC Web',
+      details: 'Model.rvt',
+      ingestRunId: 'run-real-columns',
+    });
+    expect(created[0].createdAt.toISOString()).toBe('2026-04-20T16:12:19.198Z');
+  });
 });

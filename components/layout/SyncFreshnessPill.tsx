@@ -104,7 +104,7 @@ export function SyncFreshnessPill({ collapsed = false }: SyncFreshnessPillProps)
     <div
       className={cn(
         "flex items-center gap-2.5 px-3 py-2 mb-3 rounded-xl transition-smooth group/pill",
-        "bg-white/40 border border-white/60 hover:bg-white/60 hover:border-white/80 shadow-soft-sm",
+        "bg-card/50 border border-sidebar-border hover:bg-card/70 hover:border-primary/30 shadow-soft-sm",
         tokenExpired && "cursor-pointer"
       )}
       title={state.tooltip}
@@ -183,6 +183,13 @@ type BackfillData = {
   monthsTotal: number;
   backfillPct: number;
   projectsTracked: number;
+  activityCoverage?: {
+    rows: number;
+    projectsWithActivity: number;
+    daysWithActivity: number;
+    earliestAt: Date | string | null;
+    latestAt: Date | string | null;
+  };
 };
 
 function computePillState(
@@ -192,7 +199,7 @@ function computePillState(
 ): PillState {
   if (isLoading || !data) {
     return {
-      dotClass: "bg-zinc-300",
+      dotClass: "bg-muted-foreground/40",
       label: "Checking…",
       tooltip: "Verifying sync freshness…",
     };
@@ -218,7 +225,7 @@ function computePillState(
 
   if (!mostRecentRun) {
     return {
-      dotClass: "bg-zinc-400",
+      dotClass: "bg-muted-foreground/60",
       label: "Never",
       tooltip: "No sync has run yet — waiting for first deploy or nightly cron",
     };
@@ -329,6 +336,14 @@ function mergeWithDcState(
     } else {
       lines.push("Backfill: no progress rows yet");
     }
+    if (backfill.activityCoverage && backfill.activityCoverage.rows > 0) {
+      lines.push(
+        `Observed activity: ${backfill.activityCoverage.rows.toLocaleString()} rows; ${backfill.activityCoverage.projectsWithActivity.toLocaleString()} projects; ${backfill.activityCoverage.daysWithActivity.toLocaleString()} days (${formatShortRange(
+          backfill.activityCoverage.earliestAt,
+          backfill.activityCoverage.latestAt
+        )})`
+      );
+    }
   }
 
   lines.push(`Next run: in ${dc.nextRunInHours}h`);
@@ -373,4 +388,12 @@ function pickLatest(a: Date | null, b: Date | null): Date | null {
   if (!a) return b;
   if (!b) return a;
   return a.getTime() >= b.getTime() ? a : b;
+}
+
+function formatShortRange(start: Date | string | null, end: Date | string | null): string {
+  const startDate = start ? new Date(start) : null;
+  const endDate = end ? new Date(end) : null;
+  if (!startDate || !endDate) return "no range";
+  const fmt = new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return `${fmt.format(startDate)} - ${fmt.format(endDate)}`;
 }

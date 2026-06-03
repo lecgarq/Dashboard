@@ -70,11 +70,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import type { AccUsersGraphProps } from "./AccUsersGraph";
 import {
+  ACC_SNAPSHOT_STALE_TIME_MS,
   mapFallbackDirectoryToOrgPeople,
   mergeAccSummaryWithEnrichment,
   mergePeopleWithAccSummary,
+  selectAccSummarySource,
 } from "./useMergedAccUsers";
 import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
 import { useVisibleRowEmails } from "./useVisibleRowEmails";
@@ -85,22 +86,13 @@ import {
   SheetContent,
 } from "@/components/ui/sheet";
 
-const AccProfileSection = dynamic<{ email: string }>(
-  () => import("./AccProfileSection").then((m) => m.AccProfileSection),
-  { ssr: false, loading: () => <div className="mt-5 h-24 rounded-xl bg-muted/20" /> },
-);
-
-const AccAnalysisPanel = dynamic<{
-  users: BulkAccUser[];
-  onApplyModuleFilter?: (moduleKey: string, tier: string) => void;
+const UserProfilePanel = dynamic<{
+  user: BulkAccUser | null;
+  email: string;
+  variant?: "dialog" | "rail";
 }>(
-  () => import("./AccAnalysisPanel").then((m) => m.AccAnalysisPanel),
-  { ssr: false, loading: () => <div className="h-80 rounded-xl border bg-card animate-pulse" /> },
-);
-
-const AccUsersGraph = dynamic<AccUsersGraphProps>(
-  () => import("./AccUsersGraph").then((m) => m.AccUsersGraph),
-  { ssr: false, loading: () => <div className="h-[680px] rounded-xl border bg-card animate-pulse" /> },
+  () => import("./UserProfilePanel").then((m) => m.UserProfilePanel),
+  { ssr: false, loading: () => <div className="mt-5 h-24 rounded-xl bg-muted/20" /> },
 );
 
 const UserActivityBody = dynamic<{ email: string; users: BulkAccUser[] }>(
@@ -136,7 +128,6 @@ interface LocalDirectoryUser {
 
 type GroupByField = "none" | "department" | "jobTitle" | "costCenter";
 type ViewMode = "grid" | "list";
-type UsersTab = "directory" | "analysis" | "audit" | "graph";
 
 
 
@@ -266,15 +257,15 @@ const FILE_ACTIVITY_COLUMNS: ReadonlyArray<{ key: FileActivityKey; label: string
 // Exported for reuse by DashboardSidePanel.UserActivityBody (the actual row
 // rendering site).
 export const MODULE_BADGE_COLORS: Record<string, string> = {
-  docs: "bg-blue-100 text-blue-800",
-  issues: "bg-red-100 text-red-800",
-  submittals: "bg-amber-100 text-amber-800",
-  rfis: "bg-emerald-100 text-emerald-800",
-  sheets: "bg-indigo-100 text-indigo-800",
-  admin: "bg-slate-100 text-slate-700",
-  cost: "bg-purple-100 text-purple-800",
-  assets: "bg-teal-100 text-teal-800",
-  bridge: "bg-orange-100 text-orange-800",
+  docs: "bg-blue-100 text-blue-800 dark:bg-blue-950/40 dark:text-blue-300",
+  issues: "bg-red-100 text-red-800 dark:bg-red-950/40 dark:text-red-300",
+  submittals: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+  rfis: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300",
+  sheets: "bg-indigo-100 text-indigo-800 dark:bg-indigo-950/40 dark:text-indigo-300",
+  admin: "bg-muted text-foreground/80",
+  cost: "bg-purple-100 text-purple-800 dark:bg-purple-950/40 dark:text-purple-300",
+  assets: "bg-teal-100 text-teal-800 dark:bg-teal-950/40 dark:text-teal-300",
+  bridge: "bg-orange-100 text-orange-800 dark:bg-orange-950/40 dark:text-orange-300",
 };
 
 export function ModuleBadge({ service }: { service: string | null | undefined }) {
@@ -282,7 +273,7 @@ export function ModuleBadge({ service }: { service: string | null | undefined })
   // Lookup keyed by row.service (DC8-16) — falls back to neutral slate for
   // any future / unmapped module name so we never crash on novel surfaces.
   const className =
-    MODULE_BADGE_COLORS[service.toLowerCase()] ?? "bg-slate-200 text-slate-700";
+    MODULE_BADGE_COLORS[service.toLowerCase()] ?? "bg-muted text-foreground/80";
   return (
     <span
       className={cn(
@@ -521,10 +512,12 @@ function InfoRow({
 
 function PersonDetailModal({
   person,
+  accUser,
   open,
   onOpenChange,
 }: {
   person: OrgPerson | null;
+  accUser: BulkAccUser | null;
   open: boolean;
   onOpenChange: (v: boolean) => void;
 }) {
@@ -593,7 +586,7 @@ function PersonDetailModal({
             </div>
 
             {/* Autodesk ACC profile section */}
-            <AccProfileSection email={person.email} />
+            <UserProfilePanel user={accUser} email={person.email} variant="dialog" />
 
             {/* Quick actions */}
             <div className="flex gap-2 mt-5 pt-4 border-t border-border/30">
@@ -1256,9 +1249,6 @@ function ActivityAuditPanel({
 // ---------------------------------------------------------------------------
 
 export function UsersDirectoryClient() {
-  const [activeTab, setActiveTab] = useState<UsersTab>("directory");
-  const [selectedPersonEmail, setSelectedPersonEmail] = useState<string | null>(null);
-  const [auditEmail, setAuditEmail] = useState<string | null>(null);
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedPerson, setSelectedPerson] = useState<OrgPerson | null>(null);
@@ -1444,16 +1434,20 @@ export function UsersDirectoryClient() {
   // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges (Plan 7.1)
   // and for the ACC Analysis panel (Plan 7.2). Extended fields: allRoles, allModules, projects[].
   const { data: accSummaryRaw = [], refetch: refetchAccSummary } = trpc.users.bulkAccSummary.useQuery(undefined, {
-    staleTime: 300_000,
+    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
+    retry: false,
+  });
+  const { data: dcUsersRaw = [] } = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
+    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     retry: false,
   });
   const { data: enrichedUsers = [], isLoading: enrichedLoading } = trpc.accMembers.enrichedUsers.useQuery(undefined, {
-    staleTime: 300_000,
+    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     retry: false,
   });
   const invitationsQuery = trpc.accActivity.listInvitations.useQuery(
     { windowDays: 90, limit: 100 },
-    { staleTime: 300_000, retry: false, enabled: activeTab === "audit" },
+    { staleTime: 300_000, retry: false, enabled: false },
   );
   const activityCoverageQuery = trpc.accActivity.getCoverage.useQuery(undefined, {
     staleTime: 300_000,
@@ -1463,9 +1457,13 @@ export function UsersDirectoryClient() {
     staleTime: 600_000,
     retry: false,
   });
+  const accSource = useMemo(
+    () => selectAccSummarySource(dcUsersRaw as BulkAccUser[], accSummaryRaw as BulkAccUser[]),
+    [dcUsersRaw, accSummaryRaw],
+  );
   const accSummary = useMemo<BulkAccUser[]>(() => {
-    return mergeAccSummaryWithEnrichment(accSummaryRaw as BulkAccUser[], enrichedUsers);
-  }, [accSummaryRaw, enrichedUsers]);
+    return mergeAccSummaryWithEnrichment(accSource, enrichedUsers);
+  }, [accSource, enrichedUsers]);
 
   const {
     data: directoryData,
@@ -1572,16 +1570,6 @@ export function UsersDirectoryClient() {
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
-  // Auto-open modal for user navigated from Graph tab
-  useEffect(() => {
-    if (!selectedPersonEmail || activeTab !== "directory") return;
-    const person = people.find((p) => p.email === selectedPersonEmail);
-    if (person) {
-      setSelectedPerson(person);
-      setSelectedPersonEmail(null);
-    }
-  }, [selectedPersonEmail, activeTab, people]);
-
   // Derived data
   const departments = useMemo(() => uniqueSorted(people.map((p) => p.department)), [people]);
   const jobTitles = useMemo(() => uniqueSorted(people.map((p) => p.jobTitle)), [people]);
@@ -1617,20 +1605,24 @@ export function UsersDirectoryClient() {
     const hasLastSignIn = accSummary.some((user) => !!user.lastSignIn);
     const activityRows = activityCoverageQuery.data?.totalRows ?? 0;
     const attributedActivityRows = activityCoverageQuery.data?.attributedRows ?? 0;
+    const attributionRate = activityCoverageQuery.data?.attributionRate ?? (
+      activityRows > 0 ? attributedActivityRows / activityRows : 0
+    );
+    const unattributedActivityRows = activityCoverageQuery.data?.unattributedRows ?? Math.max(0, activityRows - attributedActivityRows);
     const folderCount = folderCoverageQuery.data?.folderCount ?? 0;
     const permissionCount = folderCoverageQuery.data?.permissionCount ?? 0;
     const hasRecentAdditions =
       accSummary.some((user) => !!user.addedOn) ||
       (invitationsQuery.data?.invitations.length ?? 0) > 0;
     return [
-      { label: "Project Members", available: hasProjectMembers, loading: !accSummaryRaw.length && isLoading },
+      { label: "Project Members", available: hasProjectMembers, loading: !accSource.length && isLoading },
       { label: "Roles", available: hasRoles, loading: enrichedLoading },
-      { label: "Last Sign-In", available: hasLastSignIn, loading: !accSummaryRaw.length && isLoading },
+      { label: "Last Sign-In", available: hasLastSignIn, loading: !accSource.length && isLoading },
       {
         label: "Activity Logs",
         available: activityRows > 0,
         loading: activityCoverageQuery.isLoading,
-        detail: `${activityRows.toLocaleString()} activity rows, ${attributedActivityRows.toLocaleString()} matched to users`,
+        detail: `${activityRows.toLocaleString()} activity rows, ${Math.round(attributionRate * 100)}% attributed, ${unattributedActivityRows.toLocaleString()} classified residuals`,
       },
       {
         label: "Folder Permissions",
@@ -1644,7 +1636,7 @@ export function UsersDirectoryClient() {
     activityCoverageQuery.data,
     activityCoverageQuery.isLoading,
     accSummary,
-    accSummaryRaw.length,
+    accSource.length,
     enrichedLoading,
     folderCoverageQuery.data,
     folderCoverageQuery.isLoading,
@@ -1785,7 +1777,6 @@ export function UsersDirectoryClient() {
         ? (performance as Performance & { memory?: { usedJSHeapSize?: number } }).memory
         : undefined;
       console.debug("[UsersPerf]", {
-        activeTab,
         people: people.length,
         filtered: filtered.length,
         renderedDirectoryCount,
@@ -1793,11 +1784,10 @@ export function UsersDirectoryClient() {
         accUsers: mergedAccUsers.length,
         heapMB: memory?.usedJSHeapSize ? Math.round(memory.usedJSHeapSize / 1024 / 1024) : null,
       });
-      performance.mark(`users-tab-render:${activeTab}:${renderedDirectoryCount}`);
+      performance.mark(`users-directory-render:${renderedDirectoryCount}`);
     });
     return () => cancelAnimationFrame(frame);
   }, [
-    activeTab,
     directoryRenderLimit,
     filtered.length,
     mergedAccUsers.length,
@@ -1931,13 +1921,9 @@ export function UsersDirectoryClient() {
 
   return (
     <TooltipProvider delayDuration={150}>
-    <div className={cn(
-      activeTab === "graph"
-        ? "flex h-full w-full flex-col"
-        : "mx-auto max-w-[1600px] p-6 space-y-4 animate-fade-up",
-    )}>
+    <div className="mx-auto max-w-[1600px] p-6 space-y-4 animate-fade-up">
       {/* Header */}
-      <div className={cn("flex items-center justify-between shrink-0", activeTab === "graph" && "px-6 pt-6")}>
+      <div className="flex items-center justify-between shrink-0">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
             <Users size={16} className="text-primary" />
@@ -1967,7 +1953,6 @@ export function UsersDirectoryClient() {
         </div>
 
         {/* Directory view controls */}
-        {activeTab === "directory" && (
         <div className="flex items-center gap-2">
           <Select
             value={groupBy}
@@ -2009,70 +1994,13 @@ export function UsersDirectoryClient() {
             </button>
           </div>
         </div>
-        )}
       </div>
 
-      {/* Tab switcher */}
-      <div className={cn("flex items-center gap-1 border-b border-border/40 pb-0 shrink-0", activeTab === "graph" && "px-6")}>
-        {([
-          ["directory", "Directory"],
-          ["analysis", "Access Analysis"],
-          ["audit", "Activity Audit"],
-          ["graph", "Spatial Graph"],
-        ] as const).map(([tab, label]) => (
-          <button
-            key={tab}
-            onClick={() => setActiveTab(tab)}
-            className={cn(
-              "px-4 py-2 text-sm font-medium border-b-2 transition-all -mb-px",
-              activeTab === tab
-                ? "border-primary text-primary"
-                : "border-transparent text-muted-foreground hover:text-foreground"
-            )}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
-      <div className={cn("shrink-0", activeTab === "graph" && "px-6")}>
+      <div className="shrink-0">
         <DataCoverageStrip coverage={coverage} />
       </div>
 
-      {/* Access Analysis tab */}
-      {activeTab === "analysis" && (
-        <AccAnalysisPanel
-          users={mergedAccUsers}
-          onApplyModuleFilter={handleApplyModuleFilterFromSidePanel}
-        />
-      )}
-
-      {/* Activity Audit tab */}
-      {activeTab === "audit" && (
-        <ActivityAuditPanel
-          users={mergedAccUsers}
-          invitations={invitationsQuery.data?.invitations ?? []}
-          invitationsLoading={invitationsQuery.isLoading}
-          selectedEmail={auditEmail}
-          onSelectEmail={setAuditEmail}
-        />
-      )}
-
-      {/* Spatial Graph tab */}
-      {activeTab === "graph" && (
-        <div className="flex-1 min-h-0 pt-4">
-          <AccUsersGraph
-            users={mergedAccUsers}
-            onSelectUser={(email) => {
-              setSelectedPersonEmail(email);
-              setActiveTab("directory");
-            }}
-          />
-        </div>
-      )}
-
       {/* General tab content: search bar, filters, directory listing */}
-      {activeTab === "directory" && (
       <>
       <div className="flex flex-col gap-2">
         <div className="relative">
@@ -2497,6 +2425,13 @@ export function UsersDirectoryClient() {
 
       <PersonDetailModal
         person={selectedPerson}
+        accUser={
+          selectedPerson
+            ? mergedAccUsers.find(
+                (u) => u.email.toLowerCase() === selectedPerson.email.toLowerCase(),
+              ) ?? null
+            : null
+        }
         open={!!selectedPerson}
         onOpenChange={(v) => {
           if (!v) setSelectedPerson(null);
@@ -2519,7 +2454,6 @@ export function UsersDirectoryClient() {
         </SheetContent>
       </Sheet>
       </>
-      )}
     </div>
     </TooltipProvider>
   );

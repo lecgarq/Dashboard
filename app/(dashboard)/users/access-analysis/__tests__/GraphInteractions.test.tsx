@@ -47,7 +47,7 @@ function mkPhysics(): PhysicsLayer {
 }
 
 interface Captured {
-  set2D: ReturnType<typeof vi.fn>;
+  set2D: any;
   capturedHandlers: { current: ReturnType<typeof makeHandlers> | null };
 }
 

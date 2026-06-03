@@ -1,31 +1,31 @@
 import { z } from "zod";
 
 export const FAMILY_PHASE_METADATA = {
-  TODO: { 
-    label: "To Do", 
-    color: "text-gray-600", 
-    badgeBg: "bg-gray-100",
+  TODO: {
+    label: "To Do",
+    color: "text-foreground/70",
+    badgeBg: "bg-secondary",
     cardBg: "bg-muted/50",
     cardText: "text-muted-foreground"
   },
-  IN_PROGRESS: { 
-    label: "In Progress", 
-    color: "text-blue-700", 
-    badgeBg: "bg-blue-100",
+  IN_PROGRESS: {
+    label: "In Progress",
+    color: "text-blue-700 dark:text-blue-300",
+    badgeBg: "bg-blue-100 dark:bg-blue-950/40",
     cardBg: "bg-chart-1/10",
     cardText: "text-chart-1"
   },
-  REVIEW: { 
-    label: "Review", 
-    color: "text-amber-700", 
-    badgeBg: "bg-amber-100",
+  REVIEW: {
+    label: "Review",
+    color: "text-amber-700 dark:text-amber-300",
+    badgeBg: "bg-amber-100 dark:bg-amber-950/40",
     cardBg: "bg-chart-5/10",
     cardText: "text-chart-5"
   },
-  DONE: { 
-    label: "Done", 
-    color: "text-green-700", 
-    badgeBg: "bg-green-100",
+  DONE: {
+    label: "Done",
+    color: "text-green-700 dark:text-green-300",
+    badgeBg: "bg-green-100 dark:bg-green-950/40",
     cardBg: "bg-chart-2/10",
     cardText: "text-chart-2"
   },

@@ -2,11 +2,13 @@
 import { useQuery } from "@tanstack/react-query";
 import { serializeFilters } from "./filterParams";
 import type { FilterState, SummaryDTO, Category } from "./types";
+import type { UserRow } from "./userRows";
 
 export const accessKeys = {
   summary: (f: FilterState) => ["access-analysis", "summary", f] as const,
   trends: (f: FilterState) => ["access-analysis", "trends", f] as const,
   members: (f: FilterState, page: number, size: number) => ["access-analysis", "members", f, page, size] as const,
+  users: (f: FilterState, page: number, size: number) => ["access-analysis", "users", f, page, size] as const,
 };
 
 async function getJson<T>(path: string): Promise<T> {
@@ -30,4 +32,10 @@ export interface MembersDTO { total: number; page: number; size: number; rows: R
 export function useMembers(f: FilterState, page: number, size: number) {
   const qs = encodeURIComponent(serializeFilters(f));
   return useQuery({ queryKey: accessKeys.members(f, page, size), queryFn: () => getJson<MembersDTO>(`/api/access-analysis/members?filters=${qs}&page=${page}&size=${size}`) });
+}
+
+export interface UsersDTO { total: number; page: number; size: number; rows: UserRow[] }
+export function useUsers(f: FilterState, page: number, size: number) {
+  const qs = encodeURIComponent(serializeFilters(f));
+  return useQuery({ queryKey: accessKeys.users(f, page, size), queryFn: () => getJson<UsersDTO>(`/api/access-analysis/users?filters=${qs}&page=${page}&size=${size}`) });
 }

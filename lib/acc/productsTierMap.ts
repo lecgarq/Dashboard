@@ -50,13 +50,15 @@ const KNOWN_MODULES = new Set<string>([
   "build",
   "insight",
   "design",
+  "cost",
+  "forma",
+  "takeoff",
   // camelCase variants (legacy)
   "documentManagement",
   "designCollaboration",
   "modelCoordination",
   "autoSpecs",
   // Additional documented modules referenced in product surfaces
-  "cost",
   "assets",
   "projectAdministration",
 ]);

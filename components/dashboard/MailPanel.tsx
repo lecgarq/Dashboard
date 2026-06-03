@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 import { formatDistanceToNow } from "date-fns";
+import { useTheme } from "next-themes";
 import {
   AlertCircle,
   Archive,
@@ -195,27 +196,30 @@ function sanitizeEmailHtml(value: string) {
   return doc.body.innerHTML || "<p></p>";
 }
 
-function buildEmailSrcDoc(html?: string, text?: string) {
+function buildEmailSrcDoc(html?: string, text?: string, isDark = false) {
   const body = sanitizeEmailHtml(html?.trim() ? html : textToHtml(text ?? ""));
+  const palette = isDark
+    ? { bg: "#18181b", fg: "#fafafa", link: "#60a5fa", quote: "#a1a1aa", quoteBorder: "#3f3f46" }
+    : { bg: "#ffffff", fg: "#1f2937", link: "#1d4ed8", quote: "#4b5563", quoteBorder: "#d1d5db" };
   return `<!doctype html>
 <html>
   <head>
     <base target="_blank" />
     <style>
-      :root { color-scheme: light; }
+      :root { color-scheme: ${isDark ? "dark" : "light"}; }
       body {
         margin: 0;
         padding: 20px;
-        background: #fff;
-        color: #1f2937;
+        background: ${palette.bg};
+        color: ${palette.fg};
         font: 14px/1.55 Arial, Helvetica, sans-serif;
         overflow-wrap: anywhere;
       }
       img, table { max-width: 100% !important; }
       img { height: auto !important; }
-      a { color: #1d4ed8; }
+      a { color: ${palette.link}; }
       pre { white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-      blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid #d1d5db; color: #4b5563; }
+      blockquote { margin-left: 0; padding-left: 12px; border-left: 3px solid ${palette.quoteBorder}; color: ${palette.quote}; }
     </style>
   </head>
   <body>${body}</body>
@@ -734,7 +738,9 @@ function MessageDetailView({
 }
 
 function EmailBody({ html, text }: { html?: string; text?: string }) {
-  const srcDoc = useMemo(() => buildEmailSrcDoc(html, text), [html, text]);
+  const { resolvedTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
+  const srcDoc = useMemo(() => buildEmailSrcDoc(html, text, isDark), [html, text, isDark]);
 
   return (
     <section className="rounded-lg border border-border bg-card p-2">

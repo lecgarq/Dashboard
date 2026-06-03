@@ -3,12 +3,42 @@
 > **For agentic workers:** REQUIRED SUB-SKILL: use `superpowers:subagent-driven-development` (recommended)
 > or `superpowers:executing-plans` to implement this plan task-by-task. Steps use `- [ ]` checkbox syntax.
 >
-> **STATUS: PLAN ONLY — do NOT implement until Luis approves.**
+> **STATUS: ✅ EXECUTED & VERIFIED (2026-05-25) — approved by Luis, shipped via subagent-driven-development.**
 >
 > Operating rules for this plan: `docs/superpowers/workflows/` (repo-development, data-discovery,
 > testing-verification, surgical-staging, subagent-development) + `docs/superpowers/codebase-map/`
 > (access-analysis-graph, data-pipeline, file-ownership-map, dependency-map, testing-and-gates,
 > active-wip-boundaries). Read them before executing any task.
+
+## ✅ Execution record (2026-05-25)
+
+All 9 tasks executed task-by-task (one subagent per task, surgical explicit-path commits). Commits on
+`feat/access-analysis-redesign`:
+
+| Task | Commit | Subject |
+|------|--------|---------|
+| plan | `e01075f` | docs(acc-graph): plan enriched dimensions runtime wiring |
+| 0 | `ac0686b` | docs(research): P6 enriched-field coverage counts |
+| 1 | `5a5ebeb` | feat(acc-graph): P6 registry surface-capability (backward-compatible) |
+| 2 | `fc7d749` | feat(acc-graph): P6 membershipBucket tenure dimension (default 0) |
+| 3 | `9da75c5` | feat(acc-graph): P6 activityRecency (true last-activity) dimension (default 0) |
+| 4 | `9559bd9` | feat(acc-graph): P6 riskScore governance dimension (gated, default 0) |
+| 5 | `528217b` | feat(acc-graph): P6 permissionStrength + activityMix color modes (color-only) |
+| 6 | `d7b5547` | feat(acc-graph): P6 governance/tenure/engagement presets + clustering proof |
+| 7 | `b09ac4d` | test(acc-graph): P6 e2e smoke for risk slider + color mode |
+
+**Data gate (Task 0):** coverage on live PG (N=16,942) — membershipBucket 100%, riskScore>0 52.4%,
+permissionStrength>0 20.9%, activityRecency 14.7%, activityMix 14.7%. None near-zero → all five shipped.
+Note: instance `lastSignIn` is 100% null, so `activityRecency` is activity-based (label reflects this).
+
+**Final gates:** `npm test` **1045/1045** · `tsc --noEmit` **0 errors** · `npm run test:e2e` **21/21**
+(19 existing + 2 new), node count **16,942 unchanged**. riskScore 0→100 clustering proof: ratio 1.01 → 25.06.
+
+**Invariants held:** default/organic layout unchanged (new sliders default 0); `TARGET_DIMENSIONS` (primary 6)
+unchanged; node identity `userId::projectId` unchanged; color-only dims absent from slider/target lists; P4
+module behavior preserved. No forbidden file touched (featureSnapshot/interactionTypes/physics/renderers/
+lasso/camera/routes/UserDetailPanel/edges all untouched). Deferred to P7 as planned: riskFlags &
+permissionTypeSummary (badge/filter-only) and per-module sliders.
 
 **Goal:** Surface the P5-enriched `NodeFeatureSnapshot` fields as new *data-backed* `DIMENSION_REGISTRY`
 descriptors with an explicit per-dimension **surface capability** (slider / color / neither), so a handful of

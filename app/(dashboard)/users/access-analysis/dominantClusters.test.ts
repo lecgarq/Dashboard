@@ -286,7 +286,7 @@ describe("buildSimilarityClusters", () => {
   it("many signatures, small cap → merges by similarity, deterministic, total preserved", () => {
     const roles = ["A", "B", "C", "D"];
     const projects = ["P0", "P1", "P2"];
-    const feats = [];
+    const feats: NodeFeatureSnapshot[] = [];
     for (const r of roles) for (const p of projects) feats.push(snap({ role: r, project: p }));
     const a = buildSimilarityClusters(feats, [role, project], 3);
     const b = buildSimilarityClusters(feats, [role, project], 3);

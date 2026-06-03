@@ -1,20 +1,23 @@
 import { Suspense } from "react";
-import { AccessAnalysisPage } from "./access-analysis/AccessAnalysisPage";
+import { HydrationBoundary } from "@tanstack/react-query";
+import { createAccRouteHelpers, prefetchUsersRouteAccData } from "@/lib/server/acc-route-hydration";
 import { UsersDirectoryClient } from "./UsersDirectoryClient";
 
 export const metadata = { title: "Users Directory" };
 
-export default function UsersDirectoryPage() {
-  const newTabEnabled = process.env.NEXT_PUBLIC_NEW_ACCESS_ANALYSIS === "1";
-  if (newTabEnabled) return <AccessAnalysisPage />;
+export default async function UsersDirectoryPage() {
+  const helpers = await createAccRouteHelpers();
+  await prefetchUsersRouteAccData(helpers);
 
   return (
-    <Suspense fallback={
-      <div className="flex items-center justify-center h-64">
-        <div className="loading-spinner" />
-      </div>
-    }>
-      <UsersDirectoryClient />
-    </Suspense>
+    <HydrationBoundary state={helpers.dehydrate()}>
+      <Suspense fallback={
+        <div className="flex items-center justify-center h-64">
+          <div className="loading-spinner" />
+        </div>
+      }>
+        <UsersDirectoryClient />
+      </Suspense>
+    </HydrationBoundary>
   );
 }

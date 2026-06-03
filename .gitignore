@@ -15,6 +15,8 @@
 
 # next.js
 /.next/
+/.next-dev/
+/.next-buildcheck/
 /.next-e2e/
 /out/
 
@@ -30,6 +32,9 @@
 .DS_Store
 *.pem
 /.local/
+/.vscode/
+/.claude/settings.local.json
+/.claude/*.lock
 
 # debug
 npm-debug.log*
@@ -75,6 +80,11 @@ __pycache__/
 /*.png
 /PROBLEM*.png
 /Screenshot*.png
+/acc.xlsx
+/Start-MTY-Monitor.bat
+/Start-Monitor.cmd
+/watch-partials-progress.bat
+/watch-partials-ui.bat
 
 # self-hosted DuckDB-Wasm assets (copied by scripts/copy-duckdb-wasm.cjs in postinstall)
 /public/duckdb-wasm/

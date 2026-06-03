@@ -164,6 +164,38 @@ describe('ADMIN_CSV_ALLOWLIST', () => {
 // ---------------------------------------------------------------------------
 
 describe('ingestAdminSnapshot — happy path', () => {
+  it('accepts Data Connector admin_projects.csv with bim360_account_id instead of account_id', async () => {
+    const callsLog: string[] = [];
+    const { prisma, tx } = makeFakePrisma(callsLog, {
+      userIds: { initial: [], final: ['u1'] },
+      projectIds: { initial: [], final: ['p1'] },
+    });
+    const files = allSixteenFiles().map((source) =>
+      source.filename === 'admin_projects.csv'
+        ? csvSource(
+            'admin_projects.csv',
+            singleRowCsv(
+              ['id', 'bim360_account_id', 'name', 'job_number', 'status', 'type', 'created_at'],
+              ['p1', 'acc1', 'Project 1', 'JN-1', 'active', 'AEC', '2025-06-01T00:00:00Z'],
+            ),
+          )
+        : source,
+    );
+
+    const result = await ingestAdminSnapshot(prisma, files, 'run-1', null);
+
+    expect(result.rowsByAdminCsv['admin_projects.csv']).toBe(1);
+    expect(tx.accDcProject.createMany).toHaveBeenCalledWith({
+      data: [
+        expect.objectContaining({
+          id: 'p1',
+          accountId: 'acc1',
+        }),
+      ],
+      skipDuplicates: true,
+    });
+  });
+
   it('feeds all 16 files -> 16 deleteMany + 16 createMany in allow-list order; all rowsByAdminCsv=1', async () => {
     const callsLog: string[] = [];
     const { prisma, getTxCalls } = makeFakePrisma(callsLog, {

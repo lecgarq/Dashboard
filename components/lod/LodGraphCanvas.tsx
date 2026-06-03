@@ -274,7 +274,9 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
 
       ctx.resetTransform();
       ctx.scale(dpr, dpr);
-      ctx.fillStyle = "#F8F7F4";
+      const cs = getComputedStyle(document.documentElement);
+      const bg = cs.getPropertyValue("--background").trim() || "#F8F7F4";
+      ctx.fillStyle = bg;
       ctx.fillRect(0, 0, w, h);
 
       ctx.translate(w / 2, h / 2);
@@ -395,7 +397,9 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
         const color = getCategoryColor(nodes[selIdx].family.finalCategory);
         ctx.globalAlpha = 0.2; ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(sx, sy, 14 / v.scale, 0, Math.PI * 2); ctx.fill();
-        ctx.globalAlpha = 1.0; ctx.strokeStyle = "#222"; ctx.lineWidth = 2.5 / v.scale;
+        ctx.globalAlpha = 1.0;
+        ctx.strokeStyle = getComputedStyle(document.documentElement).getPropertyValue("--foreground").trim() || "#222";
+        ctx.lineWidth = 2.5 / v.scale;
         ctx.beginPath(); ctx.arc(sx, sy, 8 / v.scale, 0, Math.PI * 2); ctx.stroke();
         ctx.fillStyle = color;
         ctx.beginPath(); ctx.arc(sx, sy, 4 / v.scale, 0, Math.PI * 2); ctx.fill();
@@ -589,7 +593,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
 
   return (
     <div
-      className={`w-full h-full relative select-none bg-[#F8F7F4] transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
+      className={`w-full h-full relative select-none bg-background transition-opacity duration-500 ${isReady ? "opacity-100" : "opacity-0"}`}
     >
       <canvas
         ref={canvasRef}
@@ -613,7 +617,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
           className={`absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium border shadow-sm transition-colors z-20 ${
             isolateMode
               ? "bg-primary text-primary-foreground border-primary"
-              : "bg-white/90 text-foreground border-border hover:bg-muted"
+              : "bg-card/90 text-foreground border-border hover:bg-muted"
           }`}
         >
           <span className={`w-2 h-2 rounded-full ${isolateMode ? "bg-primary-foreground" : "bg-primary"}`} />
@@ -624,7 +628,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
       {/* Context menu */}
       {contextMenu.visible && (
         <div
-          className="absolute bg-white border border-border shadow-md rounded-lg p-[3px] z-[2000] min-w-[120px] animate-in zoom-in-95 duration-100"
+          className="absolute bg-popover border border-border shadow-md rounded-lg p-[3px] z-[2000] min-w-[120px] animate-in zoom-in-95 duration-100"
           style={{ left: contextMenu.x, top: contextMenu.y }}
           onClick={(e) => e.stopPropagation()}
         >
@@ -646,7 +650,7 @@ function LodGraphCanvasInner({ onSelectFamily }: LodGraphCanvasProps) {
       {/* Tooltip */}
       <div
         ref={tooltipRef}
-        className="absolute top-0 left-0 bg-white border border-border rounded-lg px-3 py-2 shadow-lg pointer-events-none z-30 opacity-0 transition-opacity duration-75 will-change-transform"
+        className="absolute top-0 left-0 bg-popover border border-border rounded-lg px-3 py-2 shadow-lg pointer-events-none z-30 opacity-0 transition-opacity duration-75 will-change-transform"
         style={{ transform: "translate(0,0)" }}
       >
         {hoveredNode && (

@@ -202,7 +202,7 @@ function MessageAttachments({
             ? getGoogleWorkspaceColor(att.contentType)
             : own
               ? ""
-              : "text-gray-600 bg-gray-50 border-gray-200";
+              : "text-muted-foreground bg-muted/40 border-border";
           const label = isWorkspace
             ? getGoogleWorkspaceLabel(att.contentType)
             : att.contentType.split("/").pop()?.toUpperCase() ?? "File";
@@ -533,6 +533,7 @@ export function ChatPanel({
           <LinkGooglePrompt onClose={close} />
         ) : view.type === "spaces" ? (
           <SpaceListView
+            open={open}
             onClose={close}
             getUnreadCount={getUnreadCount}
             onSelectSpace={(space) => {
@@ -781,15 +782,21 @@ function ReconnectGooglePrompt({ message }: { message?: string }) {
 }
 
 function SpaceListView({
+  open,
   onClose,
   onSelectSpace,
   getUnreadCount,
 }: {
+  open: boolean;
   onClose: () => void;
   onSelectSpace: (space: SpaceSelection) => void;
   getUnreadCount?: (spaceName: string) => number;
 }) {
-  const { data, error, isLoading } = trpc.chat.getSpaces.useQuery();
+  const { data, error, isLoading } = trpc.chat.getSpaces.useQuery(undefined, {
+    enabled: open,
+    staleTime: 30_000,
+    retry: false,
+  });
 
   const spaces = data?.status === "ok" ? data.spaces : [];
   const spacesError = error?.message ?? (data?.status === "error" ? data.message : null);
@@ -801,7 +808,7 @@ function SpaceListView({
 
   const { data: presenceData } = trpc.chat.getPresence.useQuery(
     { emails: dmEmails },
-    { enabled: dmEmails.length > 0, refetchInterval: 60000 }
+    { enabled: open && dmEmails.length > 0, refetchInterval: 60000 }
   );
 
   return (
@@ -812,11 +819,11 @@ function SpaceListView({
         onClose={onClose}
       />
       <div className="border-b border-border bg-white px-4 py-3">
-        <div className="rounded-full bg-[#f1f3f4] px-4 py-2 text-xs text-muted-foreground">
+        <div className="rounded-full bg-muted px-4 py-2 text-xs text-muted-foreground">
           Conversations sync from your Google Chat account
         </div>
       </div>
-      <div className="flex-1 overflow-y-auto bg-[#f8fafd] px-2 py-2">
+      <div className="flex-1 overflow-y-auto bg-muted/40 px-2 py-2">
         {isLoading ? (
           <div className="flex items-center justify-center h-32">
             <Loader2 size={20} className="animate-spin text-muted-foreground" />
@@ -1277,7 +1284,7 @@ function ConversationView({
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         className={cn(
-          "flex-1 overflow-y-auto bg-[#f8fafd] px-4 py-4 space-y-3 relative",
+          "flex-1 overflow-y-auto bg-muted/40 px-4 py-4 space-y-3 relative",
           dragOver && "ring-2 ring-inset ring-[#1a73e8]/40"
         )}
       >
@@ -1335,7 +1342,7 @@ function ConversationView({
                       "max-w-[78%] rounded-2xl px-3 py-2.5 shadow-sm",
                       own
                         ? "bg-[#1a73e8] text-white rounded-br-md"
-                        : "border border-[#e3e7ee] bg-white text-foreground rounded-bl-md"
+                        : "border border-border bg-card text-foreground rounded-bl-md"
                     )}
                   >
                     {!own && (
@@ -1438,7 +1445,7 @@ function ConversationView({
             rows={1}
             disabled={!canSend || isSending}
             className={cn(
-              "flex-1 resize-none rounded-[28px] border border-transparent bg-[#f1f3f4] px-4 py-3",
+              "flex-1 resize-none rounded-[28px] border border-transparent bg-muted px-4 py-3",
               "text-sm placeholder:text-muted-foreground/50",
               "focus:border-[#c2e7ff] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#d2e3fc]",
               "max-h-24 overflow-y-auto disabled:cursor-not-allowed disabled:opacity-60"

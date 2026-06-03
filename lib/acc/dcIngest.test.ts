@@ -37,6 +37,7 @@ vi.mock('./dcAdminCsvIngest', async (importOriginal) => {
 });
 
 import { ingestAdminSnapshot } from './dcAdminCsvIngest';
+import { AnomalyError } from './dcAnomalyChecks';
 import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve, resolveBisectConfig, dcSubmit } from './dcIngest';
 import { DcSubmitForbiddenError } from './dcBisect';
 import { composePrioritizedSlices } from './dcBackfillPriority';
@@ -363,6 +364,72 @@ describe('runDcIngest — top-level branches', () => {
     expect(result.projectsProcessed).toBe(50);
     expect(ingestAdminSnapshot).not.toHaveBeenCalled();
     expect(prisma.accDcBackfillProgress.upsert).toHaveBeenCalledTimes(50);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('commits completed progress even when the admin snapshot is quarantined', async () => {
+    const prisma = makePrismaMock();
+    const projects = [
+      {
+        projectId: 'p1',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+    ];
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue(projects);
+    prisma.accDcBackfillProgress.findUnique.mockImplementation(
+      async ({ where }: { where: { projectId: string } }) =>
+        projects.find((project) => project.projectId === where.projectId) ?? null,
+    );
+    vi.mocked(ingestAdminSnapshot).mockRejectedValueOnce(
+      new AnomalyError('User count dropped 56.6% (from 3367 to 1461); threshold 10%'),
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.endsWith('/requests')) {
+          return new Response(JSON.stringify({ id: 'request-1' }));
+        }
+        if (url.endsWith('/requests/request-1/jobs')) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                { id: 'job-1', status: 'complete', completionStatus: 'success' },
+              ],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data-listing')) {
+          return new Response(
+            JSON.stringify({
+              results: [{ name: 'admin_users.csv' }],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data/admin_users.csv')) {
+          return new Response(JSON.stringify({ signedUrl: 'https://signed.example/admin_users.csv' }));
+        }
+        if (url === 'https://signed.example/admin_users.csv') {
+          return new Response('id,email\nu1,u1@example.com\n');
+        }
+        return new Response('{}');
+      });
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('quarantined');
+    expect(result.quotaUsed).toBe(1);
+    expect(result.projectsProcessed).toBe(1);
+    expect(prisma.accDcBackfillProgress.upsert).toHaveBeenCalledTimes(1);
+    expect(prisma.accDcBackfillProgress.upsert.mock.calls[0]?.[0]).toMatchObject({
+      where: { projectId: 'p1' },
+      update: { newProjectFlag: false },
+    });
 
     fetchSpy.mockRestore();
   });

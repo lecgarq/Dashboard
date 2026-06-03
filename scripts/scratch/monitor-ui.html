@@ -1,0 +1,1873 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACC Monterrey Extraction Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-dark: #04060a;
+      --bg-card: rgba(10, 14, 23, 0.75);
+      --border-color: rgba(255, 255, 255, 0.07);
+      --accent-color: #3b82f6; /* Modern Blue */
+      --accent-glow: rgba(59, 130, 246, 0.25);
+      --success-color: #10b981; /* Emerald */
+      --success-glow: rgba(16, 185, 129, 0.2);
+      --warning-color: #fbbf24; /* Amber */
+      --warning-glow: rgba(251, 191, 36, 0.2);
+      --danger-color: #f43f5e; /* Rose */
+      --text-main: #f3f4f6;
+      --text-muted: #9ca3af;
+      --text-dark: #4b5563;
+      
+      --severity-system: #60a5fa;
+      --severity-success: #34d399;
+      --severity-warning: #fbbf24;
+      --severity-danger: #f87171;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(255, 255, 255, 0.08) transparent;
+    }
+
+    /* Custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 4px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    body {
+      background-color: var(--bg-dark);
+      color: var(--text-main);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 2rem 1rem;
+      background-image: 
+        radial-gradient(circle at 50% -10%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
+        radial-gradient(circle at 10% 50%, rgba(16, 185, 129, 0.02) 0%, transparent 40%);
+    }
+
+    .dashboard-header {
+      width: 900px;
+      max-width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .brand-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fff 50%, rgba(255, 255, 255, 0.5) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .brand-tag {
+      font-size: 0.7rem;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-color);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* Tabs Navigation */
+    .tabs-bar {
+      display: flex;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid var(--border-color);
+      padding: 0.25rem;
+      border-radius: 12px;
+      gap: 0.25rem;
+    }
+
+    .tab-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      padding: 0.5rem 1rem;
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .tab-btn:hover {
+      color: #fff;
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .tab-btn.active {
+      color: #fff;
+      background: rgba(59, 130, 246, 0.15);
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      box-shadow: 0 0 10px rgba(59, 130, 246, 0.05);
+    }
+
+    /* Main Container */
+    .main-container {
+      width: 900px;
+      max-width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+    }
+
+    /* Translucent Panels */
+    .panel {
+      background: var(--bg-card);
+      border: 1px solid var(--border-color);
+      border-radius: 20px;
+      padding: 2rem;
+      backdrop-filter: blur(25px);
+      box-shadow: 
+        0 10px 40px rgba(0, 0, 0, 0.4),
+        0 0 40px rgba(59, 130, 246, 0.02);
+      display: flex;
+      flex-direction: column;
+      gap: 1.5rem;
+      position: relative;
+      transition: all 0.3s ease;
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 1rem;
+    }
+
+    .panel-title {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.05rem;
+      font-weight: 600;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      padding: 0.25rem 0.6rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+
+    .status-badge.idle {
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .status-badge.active {
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+    }
+
+    .status-badge.idle .status-dot { background-color: var(--text-dark); }
+    .status-badge.active .status-dot { 
+      background-color: var(--success-color);
+      box-shadow: 0 0 8px var(--success-color);
+      animation: pulse 1.6s infinite;
+    }
+
+    @keyframes pulse {
+      0% { opacity: 0.3; }
+      50% { opacity: 1; }
+      100% { opacity: 0.3; }
+    }
+
+    /* Layout Grids */
+    .grid-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.015);
+      border: 1px solid var(--border-color);
+      border-radius: 14px;
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .card-label {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* Central Progress Display */
+    .progress-display {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: center;
+      padding: 1.5rem 0;
+    }
+
+    .percentage-text {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 5rem;
+      font-weight: 700;
+      line-height: 1;
+      color: #fff;
+      background: linear-gradient(135deg, #fff 40%, rgba(255, 255, 255, 0.4) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      letter-spacing: -0.04em;
+    }
+
+    .progress-bar-container {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-color);
+      border-radius: 999px;
+      overflow: hidden;
+      position: relative;
+      margin: 0.5rem 0;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--accent-color) 0%, var(--success-color) 100%);
+      border-radius: 999px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 0 12px var(--accent-glow);
+    }
+
+    .progress-subtext {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    /* Controls & Buttons */
+    .control-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 1rem;
+    }
+
+    .btn {
+      background: rgba(59, 130, 246, 0.15);
+      color: var(--accent-color);
+      border: 1px solid rgba(59, 130, 246, 0.2);
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 0.75rem 1.25rem;
+      border-radius: 10px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.2s ease;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .btn:hover:not(:disabled) {
+      background: var(--accent-color);
+      color: #fff;
+      box-shadow: 0 0 15px var(--accent-glow);
+      transform: translateY(-1px);
+    }
+
+    .btn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      border-color: var(--border-color);
+      background: rgba(255, 255, 255, 0.02) !important;
+      color: var(--text-muted) !important;
+      box-shadow: none !important;
+      transform: none !important;
+    }
+
+    .btn-success {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success-color);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+    }
+    .btn-success:hover:not(:disabled) {
+      background: var(--success-color);
+      color: #fff;
+      box-shadow: 0 0 15px var(--success-glow);
+    }
+
+    .btn-warning {
+      background: rgba(251, 191, 36, 0.15);
+      color: var(--warning-color);
+      border: 1px solid rgba(251, 191, 36, 0.2);
+    }
+    .btn-warning:hover:not(:disabled) {
+      background: var(--warning-color);
+      color: #000;
+      box-shadow: 0 0 15px var(--warning-glow);
+    }
+
+    /* Quota Gauge Section */
+    .quota-meter-container {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .quota-battery {
+      position: relative;
+      width: 90px;
+      height: 140px;
+      border: 3px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      padding: 4px;
+      display: flex;
+      flex-direction: column-reverse;
+      gap: 3px;
+      background: rgba(0, 0, 0, 0.2);
+    }
+
+    .quota-battery::before {
+      content: '';
+      position: absolute;
+      top: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 32px;
+      height: 7px;
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 4px 4px 0 0;
+    }
+
+    .quota-segment {
+      flex: 1;
+      border-radius: 4px;
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.5s ease;
+    }
+
+    .quota-segment.filled-green {
+      background: linear-gradient(90deg, #059669, #10b981);
+      box-shadow: 0 0 8px rgba(16, 185, 129, 0.25);
+    }
+
+    .quota-segment.filled-yellow {
+      background: linear-gradient(90deg, #d97706, #fbbf24);
+      box-shadow: 0 0 8px rgba(251, 191, 36, 0.25);
+    }
+
+    .quota-segment.filled-red {
+      background: linear-gradient(90deg, #e11d48, #f43f5e);
+      box-shadow: 0 0 8px rgba(244, 63, 94, 0.25);
+    }
+
+    .quota-desc {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .quota-large-val {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 2.2rem;
+      font-weight: 700;
+      color: #fff;
+      line-height: 1;
+    }
+
+    .quota-rails {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 0.8rem;
+    }
+
+    .quota-rail-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 0.76rem;
+      color: var(--text-muted);
+      gap: 0.75rem;
+    }
+
+    .quota-rail-label {
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .quota-rail-shell {
+      width: 100%;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.045);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .quota-rail-fill {
+      width: 0%;
+      height: 100%;
+      border-radius: inherit;
+      transition: width 0.35s ease, background 0.35s ease;
+    }
+
+    #safe-quota-rail {
+      background: linear-gradient(90deg, var(--success-color), var(--warning-color));
+    }
+
+    #hard-quota-rail {
+      background: linear-gradient(90deg, var(--accent-color), var(--danger-color));
+    }
+
+    .command-stack {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      border-top: 1px solid var(--border-color);
+      padding-top: 0.75rem;
+    }
+
+    .command-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.8rem;
+      padding: 0.75rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.02);
+      border: 1px solid rgba(255, 255, 255, 0.07);
+    }
+
+    .command-row[data-state="ready"] {
+      border-color: rgba(16, 185, 129, 0.22);
+      background: rgba(16, 185, 129, 0.05);
+    }
+
+    .command-row[data-state="blocked"],
+    .command-row[data-state="quota-exhausted"] {
+      border-color: rgba(244, 63, 94, 0.24);
+      background: rgba(244, 63, 94, 0.055);
+    }
+
+    .command-main {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    .command-title-line {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.65rem;
+      font-size: 0.83rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .command-state {
+      flex: 0 0 auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.63rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 999px;
+      padding: 0.15rem 0.45rem;
+      background: rgba(0, 0, 0, 0.18);
+    }
+
+    .command-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem 0.8rem;
+      color: var(--text-muted);
+      font-size: 0.72rem;
+      line-height: 1.35;
+    }
+
+    .command-meta-cost,
+    .command-meta-plan {
+      color: #dbeafe;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    .preflight-card {
+      display: none;
+      border: 1px solid rgba(59, 130, 246, 0.22);
+      background: rgba(59, 130, 246, 0.06);
+      border-radius: 12px;
+      padding: 1rem;
+      gap: 0.85rem;
+      flex-direction: column;
+    }
+
+    .preflight-card.visible {
+      display: flex;
+    }
+
+    .preflight-card.blocked {
+      border-color: rgba(244, 63, 94, 0.28);
+      background: rgba(244, 63, 94, 0.07);
+    }
+
+    .preflight-title {
+      font-size: 0.9rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .preflight-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 0.65rem;
+    }
+
+    .preflight-metric {
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.07);
+      background: rgba(0, 0, 0, 0.16);
+      padding: 0.6rem;
+    }
+
+    .preflight-metric span {
+      display: block;
+      color: var(--text-muted);
+      font-size: 0.65rem;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      margin-bottom: 0.25rem;
+    }
+
+    .preflight-metric strong {
+      color: #fff;
+      font-size: 0.88rem;
+    }
+
+    .preflight-reason {
+      color: var(--text-muted);
+      font-size: 0.78rem;
+      line-height: 1.45;
+    }
+
+    .preflight-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    /* List stats details */
+    .details-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .details-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.8rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+      padding-bottom: 0.4rem;
+    }
+
+    .details-row:last-child {
+      border-bottom: none;
+      padding-bottom: 0;
+    }
+
+    .details-label {
+      color: var(--text-muted);
+    }
+
+    .details-value {
+      font-weight: 600;
+      color: #fff;
+    }
+
+    .details-value.highlight {
+      color: var(--accent-color);
+    }
+
+    /* Logs Drawer & Terminals */
+    .expand-trigger {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 0.3rem;
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: color 0.2s ease;
+      user-select: none;
+      padding: 0.25rem;
+      margin-top: 0.5rem;
+    }
+
+    .expand-trigger:hover {
+      color: var(--text-muted);
+    }
+
+    .collapsible-drawer {
+      max-height: 0;
+      overflow: hidden;
+      transition: max-height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .collapsible-drawer.expanded {
+      max-height: 400px;
+    }
+
+    .insights-title {
+      font-size: 0.68rem;
+      font-weight: 700;
+      color: var(--text-dark);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-top: 0.5rem;
+    }
+
+    .micro-insights-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      max-height: 110px;
+      overflow-y: auto;
+      background: rgba(0, 0, 0, 0.15);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.6rem;
+    }
+
+    .micro-insight-row {
+      font-size: 0.74rem;
+      padding: 0.35rem 0.6rem;
+      background: rgba(255, 255, 255, 0.005);
+      border-left: 2px solid var(--severity-system);
+      border-radius: 4px;
+      display: flex;
+      gap: 0.5rem;
+    }
+    
+    .micro-insight-row.sev-system { border-left-color: var(--severity-system); }
+    .micro-insight-row.sev-success { border-left-color: var(--severity-success); }
+    .micro-insight-row.sev-warning { border-left-color: var(--severity-warning); }
+    .micro-insight-row.sev-danger { border-left-color: var(--severity-danger); }
+    
+    .micro-insight-icon { font-size: 0.8rem; }
+    .micro-insight-text { color: #cbd5e1; }
+    .micro-insight-text strong { color: #fff; font-weight: 600; }
+
+    .micro-logs-terminal {
+      background: #020306;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 0.85rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      line-height: 1.4;
+      color: #cbd5e1;
+      height: 160px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.25rem;
+    }
+
+    .terminal-line {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+    .terminal-line .time { color: var(--text-dark); margin-right: 0.4rem; }
+    .terminal-line.success-line { color: #34d399; }
+    .terminal-line.warning-line { color: #fbbf24; }
+    .terminal-line.danger-line { color: #f87171; }
+    .terminal-line.system-line { color: #60a5fa; }
+
+    /* Top Quota Warning Panel */
+    .quota-warning {
+      background: rgba(244, 63, 94, 0.08);
+      border: 1px solid rgba(244, 63, 94, 0.2);
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-size: 0.8rem;
+      color: #fca5a5;
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      margin-bottom: 0.5rem;
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 1rem;
+      }
+
+      .dashboard-header {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .tabs-bar,
+      .tab-btn,
+      .grid-2col {
+        width: 100%;
+      }
+
+      .tabs-bar {
+        flex-direction: column;
+      }
+
+      .grid-2col,
+      .preflight-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .panel {
+        padding: 1.1rem;
+        border-radius: 14px;
+      }
+
+      .quota-meter-container,
+      .command-row {
+        grid-template-columns: 1fr;
+      }
+
+      .quota-meter-container {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .command-title-line,
+      .details-row {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Dashboard Top Bar -->
+  <div class="dashboard-header">
+    <div class="brand-title">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="url(#blue-grad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <defs>
+          <linearGradient id="blue-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#3b82f6" />
+            <stop offset="100%" stop-color="#10b981" />
+          </linearGradient>
+        </defs>
+        <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+      </svg>
+      MTY Extractor Control Panel
+      <span class="brand-tag">Premium</span>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs-bar">
+      <button class="tab-btn active" id="tab-btn-folder" onclick="switchTab('folder')">
+        📁 Folder Structure Sync
+      </button>
+      <button class="tab-btn" id="tab-btn-activity" onclick="switchTab('activity')">
+        ⚡ Activity Ingest & DC Quota
+      </button>
+    </div>
+  </div>
+
+  <!-- Main Container -->
+  <div class="main-container">
+    
+    <!-- Tab 1: Folder Crawl Panel -->
+    <div class="panel" id="panel-folder">
+      <div class="panel-header">
+        <div class="panel-title">
+          📁 Folder & Permissions Synchronization
+        </div>
+        <div class="status-badge idle" id="badge-folder">
+          <div class="status-dot"></div>
+          <span id="badge-folder-text">Idle</span>
+        </div>
+      </div>
+
+      <div class="grid-2col">
+        <!-- 0-100% Widget -->
+        <div class="card">
+          <div class="card-label">Overall MTY Folder Crawl Status</div>
+          <div class="progress-display">
+            <div class="percentage-text" id="progress-percent">0%</div>
+            <div class="progress-bar-container">
+              <div class="progress-bar-fill" id="progress-bar-fill"></div>
+            </div>
+            <div class="progress-subtext" id="sync-count-text">0 MTY projects synchronization complete</div>
+          </div>
+        </div>
+
+        <!-- Crawl Details & Actions -->
+        <div class="card" style="justify-content: space-between;">
+          <div>
+            <div class="card-label" style="margin-bottom: 0.75rem;">Status Dashboard</div>
+            <div class="details-list">
+              <div class="details-row">
+                <span class="details-label">Active Extraction</span>
+                <span class="details-value active-pulse-text" id="running-project-name">Idle</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Estimated Time</span>
+                <span class="details-value" id="etc-text">No active task running</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Total Folders Crawled</span>
+                <span class="details-value highlight" id="stat-minimal-folders">0</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Security Rules Mapped</span>
+                <span class="details-value highlight" id="stat-minimal-perms">0</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="control-row">
+            <button class="btn btn-success" id="btn-trigger-folder" onclick="triggerCrawl('folder')">
+              🚀 Start Bulk Folder Crawl
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Log Streams Collapse -->
+      <div class="expand-trigger" onclick="toggleDrawer()" id="drawer-toggle-folder">
+        Show Detailed Crawl Output &nbsp;▾
+      </div>
+
+      <div class="collapsible-drawer" id="drawer-folder">
+        <div class="insights-title">Human Intelligence Engine</div>
+        <div class="micro-insights-list" id="insights-folder">
+          <div class="micro-insight-row sev-system">
+            <span class="micro-insight-icon">📡</span>
+            <span class="micro-insight-text">System ready. Waiting to analyze crawl stream...</span>
+          </div>
+        </div>
+        
+        <div class="insights-title">Raw Log Stream</div>
+        <div class="micro-logs-terminal" id="terminal-folder">
+          <div class="terminal-line system-line">Console idle. Ready for next bulk crawl execution...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: Activity Crawl & Quota Panel -->
+    <div class="panel" id="panel-activity" style="display: none;">
+      <div class="panel-header">
+        <div class="panel-title">
+          ⚡ Autodesk Data Connector Quota & Backfills
+        </div>
+        <div class="status-badge idle" id="badge-activity">
+          <div class="status-dot"></div>
+          <span id="badge-activity-text">Idle</span>
+        </div>
+      </div>
+
+      <!-- Privilege / Token Warning Panel -->
+      <div class="quota-warning" id="privilege-warning" style="display: none; background: rgba(244, 63, 94, 0.08); border-color: rgba(244, 63, 94, 0.2); color: #fca5a5;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.4rem;"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span>
+          <strong>Upgrade Required:</strong> Your current Autodesk session lacks write scopes (found: <strong id="warning-scopes-list">data:read</strong>). Slices and backfills will fail with 403. Click Upgrade Autodesk Session below to repair.
+        </span>
+      </div>
+
+      <!-- Critical Quota Warning Alert (Hidden by default) -->
+      <div class="quota-warning" id="quota-alert" style="display: none;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        <span><strong>Warning:</strong> Quota usage has reached safe margins (20 requests limit). Further requests consume hard limit.</span>
+      </div>
+
+      <div class="grid-2col">
+        <!-- Quota Meter Widget -->
+        <div class="card" style="justify-content: space-between;">
+          <div>
+            <div class="card-label">Daily Autodesk Request Quota</div>
+            <div class="quota-meter-container" style="margin-top: 0.5rem; margin-bottom: 0.75rem;">
+              <div class="quota-desc" style="min-width: 120px;">
+                <div class="quota-large-val" id="quota-ratio-text">0 today</div>
+                <div style="font-size: 0.8rem; font-weight:600; color: #fff; margin-top:0.25rem;">Requests Spent</div>
+                <div style="font-size: 0.72rem; color: var(--text-muted); line-height: 1.3;" id="quota-remaining-text">
+                  Safe Budget: 0-20<br>Hard Cap: 0-25
+                </div>
+              </div>
+
+              <div class="quota-rails">
+                <div>
+                  <div class="quota-rail-header">
+                    <span class="quota-rail-label">Safe Budget</span>
+                    <span id="safe-quota-text">0 / 20</span>
+                  </div>
+                  <div class="quota-rail-shell">
+                    <div class="quota-rail-fill" id="safe-quota-rail"></div>
+                  </div>
+                </div>
+                <div>
+                  <div class="quota-rail-header">
+                    <span class="quota-rail-label">Hard Cap</span>
+                    <span id="hard-quota-text">0 / 25</span>
+                  </div>
+                  <div class="quota-rail-shell">
+                    <div class="quota-rail-fill" id="hard-quota-rail"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Current Session details -->
+            <div class="details-list" style="border-top: 1px solid var(--border-color); padding-top: 0.75rem;">
+              <div class="details-row">
+                <span class="details-label">User Session</span>
+                <span class="details-value" id="session-user-email">luis.cortes@hermosillo.com</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Authorized Scopes</span>
+                <span class="details-value" id="session-user-scopes" style="font-family:'JetBrains Mono', monospace; font-size: 0.7rem;">data:read</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-warning" id="btn-trigger-login" onclick="triggerCrawl('login')" style="margin-top: 0.5rem;">
+            🔑 Upgrade Autodesk Session
+          </button>
+        </div>
+
+        <!-- Backfill Remaining Estimates & Interactive Action Stack -->
+        <div class="card" style="justify-content: space-between; height: 100%;">
+          <div>
+            <div class="card-label" style="margin-bottom: 0.5rem;">Progressive Backfill Predictions</div>
+            <div class="details-list" style="margin-bottom: 0.75rem;">
+              <div class="details-row">
+                <span class="details-label">Total DC Tracked Projects</span>
+                <span class="details-value" id="bf-total-projects">0</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Uninitialized Projects</span>
+                <span class="details-value warning" style="color:var(--warning-color)" id="bf-uninitialized">0</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Projects Needing Backward</span>
+                <span class="details-value" id="bf-needing-backward">0</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Est. Remaining Slices</span>
+                <span class="details-value highlight" id="bf-remaining-slices">0 slices</span>
+              </div>
+              <div class="details-row">
+                <span class="details-label">Time to Finish (Packed)</span>
+                <span class="details-value highlight" style="color:var(--success-color)" id="bf-days-packed">~0 days</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="command-stack">
+            <div class="command-row" data-command="activity" data-state="needs-preflight">
+              <div class="command-main">
+                <div class="command-title-line">
+                  <span>MTY 30-Day Activity Sync</span>
+                  <span class="command-state" id="command-state-activity">Needs preflight</span>
+                </div>
+                <div class="command-meta">
+                  <span>Cost <span class="command-meta-cost" id="command-cost-activity">server preflight</span></span>
+                  <span>Plan <span class="command-meta-plan" id="command-plan-activity">MTY project batch estimate</span></span>
+                </div>
+              </div>
+              <button class="btn btn-success" id="btn-command-activity" onclick="requestPreflight('activity')">Preflight</button>
+            </div>
+
+            <div class="command-row" data-command="backward" data-state="needs-preflight">
+              <div class="command-main">
+                <div class="command-title-line">
+                  <span>Single Backward Slice</span>
+                  <span class="command-state" id="command-state-backward">Needs preflight</span>
+                </div>
+                <div class="command-meta">
+                  <span>Cost <span class="command-meta-cost" id="command-cost-backward">server preflight</span></span>
+                  <span>Plan <span class="command-meta-plan" id="command-plan-backward">up to 50 projects</span></span>
+                </div>
+              </div>
+              <button class="btn" id="btn-command-backward" onclick="requestPreflight('backward')">Preflight</button>
+            </div>
+
+            <div class="command-row" data-command="bulk" data-state="needs-preflight">
+              <div class="command-main">
+                <div class="command-title-line">
+                  <span>Bulk Backward Slices</span>
+                  <span class="command-state" id="command-state-bulk">Needs preflight</span>
+                </div>
+                <div class="command-meta">
+                  <span>Cost <span class="command-meta-cost" id="command-cost-bulk">server preflight</span></span>
+                  <span>Plan <span class="command-meta-plan" id="command-plan-bulk">actual batch count from DB</span></span>
+                </div>
+              </div>
+              <button class="btn" id="btn-command-bulk" onclick="requestPreflight('bulk')">Preflight</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="preflight-card" id="preflight-card">
+        <div class="preflight-title" id="preflight-title">Backend preflight</div>
+        <div class="preflight-grid">
+          <div class="preflight-metric">
+            <span>Cost</span>
+            <strong id="preflight-cost">0</strong>
+          </div>
+          <div class="preflight-metric">
+            <span>Used Today</span>
+            <strong id="preflight-used">0</strong>
+          </div>
+          <div class="preflight-metric">
+            <span>Safe Left</span>
+            <strong id="preflight-safe">20</strong>
+          </div>
+          <div class="preflight-metric">
+            <span>Hard Left</span>
+            <strong id="preflight-hard">25</strong>
+          </div>
+        </div>
+        <div class="preflight-reason" id="preflight-reason">Select a command to run backend preflight.</div>
+        <div class="preflight-actions">
+          <button class="btn" id="preflight-cancel-btn" onclick="clearPreflight()">Cancel</button>
+          <button class="btn btn-success" id="preflight-execute-btn" onclick="executePreflight()">Execute approved command</button>
+        </div>
+      </div>
+
+      <!-- Activity Logs Collapse -->
+      <div class="expand-trigger" onclick="toggleDrawer()" id="drawer-toggle-activity">
+        Show Activity Extractor Logs &nbsp;▾
+      </div>
+
+      <div class="collapsible-drawer" id="drawer-activity">
+        <div class="insights-title">Human Intelligence Engine</div>
+        <div class="micro-insights-list" id="insights-activity">
+          <div class="micro-insight-row sev-system">
+            <span class="micro-insight-icon">📡</span>
+            <span class="micro-insight-text">System ready. Waiting to parse Activity extraction stream...</span>
+          </div>
+        </div>
+        
+        <div class="insights-title">Raw Log Stream</div>
+        <div class="micro-logs-terminal" id="terminal-activity">
+          <div class="terminal-line system-line">Console idle. Ready for MTY Systematic Activity Sync...</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    let activeTab = 'folder';
+    let drawerExpanded = { folder: false, activity: false };
+    
+    // State metrics
+    let completedCount = 0;
+    let totalTargets = 4; // MTY projects targeted
+    let totalFolders = 0;
+    let totalPerms = 0;
+    let lastActiveProjectName = "Awaiting trigger...";
+    let startTime = null;
+
+    let eventSource = null;
+    let currentQuotaUsed = 0;
+    let safeRemainingQuota = 20;
+    let pendingPreflight = null;
+    let lastActiveStatus = { folderRunning: false, activityRunning: false };
+
+    const quotaCommands = ['activity', 'backward', 'bulk'];
+    const commandLabels = {
+      folder: 'MTY Folder Crawl',
+      activity: 'MTY 30-Day Activity Sync',
+      backward: 'Single Backward Slice',
+      bulk: 'Bulk Backward Slices'
+    };
+
+    // Switch between dashboard panels
+    function switchTab(tabId) {
+      activeTab = tabId;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.querySelectorAll('.panel').forEach(p => p.style.display = 'none');
+
+      document.getElementById('tab-btn-' + tabId).classList.add('active');
+      document.getElementById('panel-' + tabId).style.display = 'flex';
+
+      // Connect/reconnect SSE
+      connectSSE(tabId);
+    }
+
+    function toggleDrawer() {
+      const type = activeTab;
+      drawerExpanded[type] = !drawerExpanded[type];
+      const drawer = document.getElementById("drawer-" + type);
+      const toggle = document.getElementById("drawer-toggle-" + type);
+      
+      if (drawerExpanded[type]) {
+        drawer.classList.add("expanded");
+        toggle.innerHTML = "Hide Detailed Output &nbsp;▴";
+        
+        // Auto scroll
+        const term = document.getElementById("terminal-" + type);
+        term.scrollTop = term.scrollHeight;
+        const ins = document.getElementById("insights-" + type);
+        ins.scrollTop = ins.scrollHeight;
+      } else {
+        drawer.classList.remove("expanded");
+        toggle.innerHTML = "Show Detailed Output &nbsp;▾";
+      }
+    }
+
+    function commandButton(type) {
+      return document.getElementById(type === 'folder' ? 'btn-trigger-folder' : `btn-command-${type}`);
+    }
+
+    function setCommandState(type, state, label) {
+      const row = document.querySelector(`.command-row[data-command="${type}"]`);
+      const stateEl = document.getElementById(`command-state-${type}`);
+      if (row) row.dataset.state = state;
+      if (stateEl) stateEl.innerText = label;
+    }
+
+    function updateCommandMeta(preflight) {
+      if (!preflight || !preflight.type) return;
+      const costEl = document.getElementById(`command-cost-${preflight.type}`);
+      const planEl = document.getElementById(`command-plan-${preflight.type}`);
+      if (costEl) costEl.innerText = `${preflight.cost} request${preflight.cost === 1 ? '' : 's'}`;
+      if (planEl) planEl.innerText = preflight.description || `${preflight.estimatedBatches || 0} batches`;
+    }
+
+    function renderPreflight(preflight) {
+      const card = document.getElementById('preflight-card');
+      const executeBtn = document.getElementById('preflight-execute-btn');
+      if (!card || !preflight) return;
+
+      pendingPreflight = preflight;
+      card.className = `preflight-card visible${preflight.allowed ? '' : ' blocked'}`;
+      document.getElementById('preflight-title').innerText =
+        `${commandLabels[preflight.type] || preflight.type} - ${preflight.allowed ? 'Ready' : 'Blocked'}`;
+      document.getElementById('preflight-cost').innerText = `${preflight.cost}`;
+      document.getElementById('preflight-used').innerText = `${preflight.quotaUsedToday}`;
+      document.getElementById('preflight-safe').innerText = `${preflight.safeRemaining}`;
+      document.getElementById('preflight-hard').innerText = `${preflight.hardRemaining}`;
+      document.getElementById('preflight-reason').innerText = preflight.reason || preflight.description || 'Backend preflight complete.';
+      executeBtn.style.display = preflight.allowed ? 'inline-flex' : 'none';
+
+      updateCommandMeta(preflight);
+      setCommandState(preflight.type, preflight.allowed ? 'ready' : 'blocked', preflight.allowed ? 'Ready' : 'Blocked');
+    }
+
+    function clearPreflight() {
+      pendingPreflight = null;
+      const card = document.getElementById('preflight-card');
+      if (card) card.className = 'preflight-card';
+      quotaCommands.forEach(type => {
+        if (!lastActiveStatus.activityRunning) setCommandState(type, 'needs-preflight', 'Needs preflight');
+      });
+    }
+
+    function requestPreflight(type) {
+      if (type === 'login') {
+        triggerLogin();
+        return;
+      }
+
+      const button = commandButton(type);
+      if (button) button.disabled = true;
+
+      fetch(`/api/preflight?type=${type}`)
+        .then(async res => {
+          const body = await res.json();
+          if (!res.ok && !body.reason) {
+            body.reason = 'Backend preflight endpoint rejected this command.';
+          }
+          return body;
+        })
+        .then(preflight => {
+          renderPreflight(preflight);
+        })
+        .catch(err => {
+          console.error(`Error preflighting ${type}:`, err);
+          renderPreflight({
+            type,
+            allowed: false,
+            reason: 'Backend preflight is unavailable. Restart the monitor after the current run finishes.',
+            cost: 0,
+            quotaUsedToday: currentQuotaUsed,
+            safeRemaining: safeRemainingQuota,
+            hardRemaining: Math.max(0, 25 - currentQuotaUsed)
+          });
+        })
+        .finally(() => {
+          if (button) button.disabled = false;
+          fetchActiveStatus();
+        });
+    }
+
+    function triggerCrawl(type) {
+      requestPreflight(type);
+    }
+
+    function triggerLogin() {
+      const confirmMsg = 'This will open the dashboard Autodesk sign-in flow. Approve the requested Data Connector scope, then return to this monitor.';
+      if (!confirm(confirmMsg)) return;
+
+      const button = document.getElementById('btn-trigger-login');
+      if (button) button.disabled = true;
+
+      fetch('/api/trigger-crawl?type=login')
+        .then(res => res.json())
+        .then(data => {
+          if (!data.success) {
+            alert('Login launch failed: ' + (data.error || 'Unknown error'));
+          } else {
+            alert('Autodesk sign-in opened. Complete the browser consent flow, then refresh the monitor quota panel.');
+          }
+        })
+        .catch(err => {
+          console.error('Error launching login:', err);
+          alert('Login launch failed. Check the monitor console.');
+        })
+        .finally(() => {
+          if (button) button.disabled = false;
+        });
+    }
+
+    function executePreflight() {
+      if (!pendingPreflight || !pendingPreflight.allowed) return;
+      const type = pendingPreflight.type;
+
+      disableAllTriggers(true);
+      fetch(`/api/trigger-crawl?type=${type}`)
+        .then(async res => {
+          const body = await res.json();
+          if (!res.ok) body.success = false;
+          return body;
+        })
+        .then(data => {
+          if (data.success) {
+            clearPreflight();
+            fetchActiveStatus();
+            fetchQuotaStatus();
+            connectSSE(type === 'folder' ? 'folder' : 'activity');
+          } else {
+            renderPreflight(data.preflight || {
+              type,
+              allowed: false,
+              reason: data.error || 'Backend trigger rejected this command.',
+              cost: pendingPreflight.cost,
+              quotaUsedToday: pendingPreflight.quotaUsedToday,
+              safeRemaining: pendingPreflight.safeRemaining,
+              hardRemaining: pendingPreflight.hardRemaining
+            });
+          }
+        })
+        .catch(err => {
+          console.error(`Error executing ${type}:`, err);
+          renderPreflight({
+            type,
+            allowed: false,
+            reason: 'Execution request failed before the backend could launch the script.',
+            cost: pendingPreflight.cost,
+            quotaUsedToday: pendingPreflight.quotaUsedToday,
+            safeRemaining: pendingPreflight.safeRemaining,
+            hardRemaining: pendingPreflight.hardRemaining
+          });
+        })
+        .finally(() => {
+          disableAllTriggers(false);
+          fetchActiveStatus();
+        });
+    }
+
+    function disableAllTriggers(disable) {
+      const selectors = [
+        '#btn-trigger-folder',
+        '#btn-trigger-login',
+        '#preflight-execute-btn',
+        '.command-row button'
+      ];
+      selectors.forEach(selector => {
+        document.querySelectorAll(selector).forEach(btn => {
+          btn.disabled = disable;
+        });
+      });
+    }
+
+    function applyRunningState(status) {
+      const folderButton = document.getElementById('btn-trigger-folder');
+      const badgeFolder = document.getElementById('badge-folder');
+      const badgeFolderText = document.getElementById('badge-folder-text');
+      const badgeActivity = document.getElementById('badge-activity');
+      const badgeActivityText = document.getElementById('badge-activity-text');
+
+      if (status.folderRunning) {
+        badgeFolder.className = 'status-badge active';
+        badgeFolderText.innerText = 'Active';
+        if (folderButton) folderButton.disabled = true;
+      } else {
+        badgeFolder.className = 'status-badge idle';
+        badgeFolderText.innerText = 'Idle';
+        if (folderButton) folderButton.disabled = false;
+      }
+
+      if (status.activityRunning) {
+        badgeActivity.className = 'status-badge active';
+        badgeActivityText.innerText = status.dbRun ? 'DB Running' : 'Active';
+        quotaCommands.forEach(type => {
+          setCommandState(type, 'running', 'Running');
+          const btn = commandButton(type);
+          if (btn) btn.disabled = true;
+        });
+      } else {
+        badgeActivity.className = 'status-badge idle';
+        badgeActivityText.innerText = 'Idle';
+        quotaCommands.forEach(type => {
+          const quotaExhausted = currentQuotaUsed >= 25;
+          if (!pendingPreflight || pendingPreflight.type !== type) {
+            setCommandState(type, quotaExhausted ? 'quota-exhausted' : 'needs-preflight', quotaExhausted ? 'Quota exhausted' : 'Needs preflight');
+          }
+          const btn = commandButton(type);
+          if (btn) btn.disabled = quotaExhausted;
+        });
+      }
+    }
+
+    // Fetch running status from server
+    function fetchActiveStatus() {
+      fetch('/api/active-status')
+        .then(res => res.json())
+        .then(status => {
+          lastActiveStatus = status;
+          applyRunningState(status);
+        })
+        .catch(err => console.error('Error fetching active status:', err));
+    }
+
+    // Fetch Database DC Quota and Backfill estimates
+    function fetchQuotaStatus() {
+      fetch('/api/quota-status')
+        .then(res => res.json())
+        .then(quota => {
+          if (quota.error) {
+            console.error('Database status unavailable:', quota.error);
+            return;
+          }
+
+          currentQuotaUsed = quota.quotaUsedToday;
+          safeRemainingQuota = quota.remainingSafe;
+          const safeBudget = quota.safeBudget || 20;
+          const hardCap = quota.hardCap || 25;
+          const safeUsed = Math.min(quota.quotaUsedToday, safeBudget);
+          const hardUsed = Math.min(quota.quotaUsedToday, hardCap);
+
+          document.getElementById('quota-ratio-text').innerText = `${quota.quotaUsedToday} today`;
+          document.getElementById('quota-remaining-text').innerHTML =
+            `Safe Budget: <strong>0-${safeBudget}</strong><br>Hard Cap: <strong>0-${hardCap}</strong>`;
+          document.getElementById('safe-quota-text').innerText = `${safeUsed} / ${safeBudget}`;
+          document.getElementById('hard-quota-text').innerText = `${hardUsed} / ${hardCap}`;
+          document.getElementById('safe-quota-rail').style.width = `${Math.min(100, (safeUsed / safeBudget) * 100)}%`;
+          document.getElementById('hard-quota-rail').style.width = `${Math.min(100, (hardUsed / hardCap) * 100)}%`;
+
+          const alertPanel = document.getElementById('quota-alert');
+          alertPanel.style.display = quota.quotaUsedToday >= safeBudget ? 'flex' : 'none';
+
+          if (quota.userEmail) {
+            document.getElementById('session-user-email').innerText = quota.userEmail;
+          }
+          if (quota.userScopes) {
+            document.getElementById('session-user-scopes').innerText = quota.userScopes;
+
+            const warningPanel = document.getElementById('privilege-warning');
+            const hasWrite = quota.userScopes.includes('data:write') || quota.userScopes.includes('data:create');
+            if (!hasWrite || quota.userScopes === 'data:read') {
+              warningPanel.style.display = 'flex';
+              document.getElementById('warning-scopes-list').innerText = quota.userScopes;
+            } else {
+              warningPanel.style.display = 'none';
+            }
+          }
+
+          document.getElementById('bf-total-projects').innerText = quota.totalProjects;
+          document.getElementById('bf-uninitialized').innerText = quota.uninitialized;
+          document.getElementById('bf-needing-backward').innerText = quota.projNeedingBackward;
+          document.getElementById('bf-remaining-slices').innerText = `${quota.perProjectSlices} slices`;
+          document.getElementById('bf-days-packed').innerText = `~${quota.daysPacked} days`;
+
+          if (!lastActiveStatus.activityRunning) {
+            quotaCommands.forEach(type => {
+              if (!pendingPreflight || pendingPreflight.type !== type) {
+                setCommandState(type, currentQuotaUsed >= hardCap ? 'quota-exhausted' : 'needs-preflight', currentQuotaUsed >= hardCap ? 'Quota exhausted' : 'Needs preflight');
+              }
+            });
+          }
+        })
+        .catch(err => console.error('Error fetching quota status:', err));
+    }
+
+    // Gorgeous, natural language translator for technical logs
+    function translateLineToNaturalLanguage(cleanLine, type) {
+      if (!cleanLine) return null;
+
+      if (type === 'folder') {
+        if (cleanLine.includes("[folder-crawl]") && cleanLine.includes("project=")) {
+          const projMatch = cleanLine.match(/project=(.*?) folders/);
+          const foldersMatch = cleanLine.match(/folders=(\d+)/);
+          const permsMatch = cleanLine.match(/perms=(\d+)/);
+          const statusMatch = cleanLine.match(/status=(\w+)/);
+          const durationMatch = cleanLine.match(/duration=(\d+)/);
+
+          if (projMatch) {
+            const name = projMatch[1];
+            const folders = foldersMatch ? parseInt(foldersMatch[1], 10) : 0;
+            const perms = permsMatch ? parseInt(permsMatch[1], 10) : 0;
+            const status = statusMatch ? statusMatch[1] : 'unknown';
+            const durationS = durationMatch ? (parseInt(durationMatch[1], 10) / 1000).toFixed(1) : '0';
+
+            let statusText = 'Completed';
+            let severity = 'success';
+            let icon = '✅';
+            
+            if (status === 'partial') {
+              statusText = 'Ceiling Reached';
+              severity = 'warning';
+              icon = '⏳';
+            } else if (status === 'failed') {
+              statusText = 'Failed';
+              severity = 'danger';
+              icon = '❌';
+            }
+
+            return {
+              icon,
+              text: `Synchronization complete for project <strong>${name}</strong>. Ingested <strong>${folders.toLocaleString()} folders</strong> & mapped <strong>${perms.toLocaleString()} rules</strong> in ${durationS}s.`,
+              severity
+            };
+          }
+        }
+
+        if (cleanLine.includes("Found") && cleanLine.includes("active AccProject")) {
+          const numMatch = cleanLine.match(/Found (\d+)/);
+          const num = numMatch ? numMatch[1] : '0';
+          totalTargets = parseInt(num, 10) || totalTargets;
+          return {
+            icon: '📁',
+            text: `Queue constructed. Successfully targeted <strong>${num} Monterrey (MTY)</strong> projects.`,
+            severity: 'system'
+          };
+        }
+
+        if (cleanLine.includes("Soft cap") && cleanLine.includes("exceeded")) {
+          return {
+            icon: '⚡',
+            text: `Project limits exceeded. Extending execution window for deep folder scan.`,
+            severity: 'warning'
+          };
+        }
+      } else {
+        if (cleanLine.includes("[CRAWL FAILED WITH CODE")) {
+          return {
+            icon: '!',
+            text: '<strong>Command failed.</strong> Review the raw log output above for the process error.',
+            severity: 'danger'
+          };
+        }
+        if (cleanLine.includes("[CRAWL COMPLETED WITH CODE 0]")) {
+          return {
+            icon: 'OK',
+            text: '<strong>Command completed successfully.</strong> Backend process exited with code 0.',
+            severity: 'success'
+          };
+        }
+        if (cleanLine.includes("Luis's 3-leg token refreshed successfully.") || cleanLine.includes("Refreshing Autodesk 3-leg token...")) {
+          return {
+            icon: '🔑',
+            text: 'Refreshing Autodesk 3-legged administrative credentials...',
+            severity: 'system'
+          };
+        }
+        if (cleanLine.includes("Autodesk reported") && cleanLine.includes("projects total")) {
+          const m = cleanLine.match(/Autodesk reported (\d+) projects total for Luis; (\d+) have projectAdmin/);
+          if (m) {
+            return {
+              icon: '📡',
+              text: `Autodesk returned <strong>${m[1]} total projects</strong>. Identified <strong>${m[2]} projects</strong> where Luis is Admin.`,
+              severity: 'system'
+            };
+          }
+        }
+        if (cleanLine.includes("Authorized MTY Projects for Data Connector")) {
+          const m = cleanLine.match(/Authorized MTY Projects for Data Connector .*?: (\d+) \/ (\d+)/);
+          if (m) {
+            return {
+              icon: '🛡️',
+              text: `Security checked. <strong>${m[1]} out of ${m[2]} MTY projects</strong> are authorized for active Data Ingest.`,
+              severity: 'system'
+            };
+          }
+        }
+        if (cleanLine.includes("Submitting Data Connector request")) {
+          const m = cleanLine.match(/Submitting Data Connector request for (\d+) projects/);
+          return {
+            icon: '📨',
+            text: `Submitting consolidated Activity Data extraction request for <strong>${m ? m[1] : 'selected'} projects</strong> (30-day interval).`,
+            severity: 'system'
+          };
+        }
+        if (cleanLine.includes("APS Status=") || cleanLine.includes("Status=")) {
+          const m = cleanLine.match(/Status=(\w+)/);
+          const status = m ? m[1] : 'running';
+          let icon = '🔄';
+          let severity = 'system';
+          if (status === 'success') { icon = '✨'; severity = 'success'; }
+          if (status === 'failed') { icon = '❌'; severity = 'danger'; }
+          return {
+            icon,
+            text: `Autodesk export server report: job is <strong>${status.toUpperCase()}</strong>.`,
+            severity
+          };
+        }
+        if (cleanLine.includes("Downloading activity package") || cleanLine.includes("Resolving ZIP download")) {
+          return {
+            icon: '📥',
+            text: 'Downloading activity zip packets from Autodesk secure storage.',
+            severity: 'system'
+          };
+        }
+        if (cleanLine.includes("Ingestion complete!") || cleanLine.includes("Ingest complete!")) {
+          return {
+            icon: '💾',
+            text: '<strong>Ingestion successful!</strong> All extracted activity logs parsed and successfully written to Postgres.',
+            severity: 'success'
+          };
+        }
+
+        if (cleanLine.includes("Starting Data Connector daily ingest…")) {
+          return {
+            icon: '⚙️',
+            text: '<strong>Progressive Backfill engine started.</strong> Analyzing DB sync states...',
+            severity: 'system'
+          };
+        }
+        if (cleanLine.includes("Run") && cleanLine.includes("ended with status=")) {
+          const m = cleanLine.match(/status=(\w+)/);
+          const stat = m ? m[1] : 'success';
+          return {
+            icon: stat === 'success' ? '🎉' : '⚠️',
+            text: `Backfill run completed with status <strong>${stat.toUpperCase()}</strong>.`,
+            severity: stat === 'success' ? 'success' : 'warning'
+          };
+        }
+        if (cleanLine.includes("quotaUsed=")) {
+          const q = cleanLine.match(/quotaUsed=(\d+)/);
+          const p = cleanLine.match(/projectsProcessed=(\d+)/);
+          return {
+            icon: '📊',
+            text: `Backfill summary: processed <strong>${p ? p[1] : '0'} projects</strong> using <strong>${q ? q[1] : '0'} requests</strong> of your daily cap.`,
+            severity: 'success'
+          };
+        }
+      }
+
+      return null;
+    }
+
+    function parseLogLine(line) {
+      if (!line.trim()) return null;
+
+      const timeMatch = line.match(/\[(?:folder-crawl-cron|mty-extract|dc-daily-ingest|backward-slice|bulk-backward) (.*?)\]/);
+      const timestamp = timeMatch ? timeMatch[1].split('T')[1].substring(0, 8) : "";
+      
+      let type = 'info';
+      if (line.includes("[folder-crawl]") && line.includes("project=")) {
+        type = 'project_crawl';
+      } else if (line.includes("Soft cap")) {
+        type = 'soft_cap';
+      }
+
+      return {
+        type,
+        timestamp,
+        raw: line
+      };
+    }
+
+    function updateMinimalistUI() {
+      const percent = Math.min(100, Math.round((completedCount / totalTargets) * 100));
+      document.getElementById("progress-percent").innerText = percent + "%";
+      document.getElementById("progress-bar-fill").style.width = percent + "%";
+      document.getElementById("sync-count-text").innerText = `${completedCount} of ${totalTargets} MTY Projects Crawled`;
+      document.getElementById("stat-minimal-folders").innerText = totalFolders.toLocaleString();
+      document.getElementById("stat-minimal-perms").innerText = totalPerms.toLocaleString();
+      
+      if (completedCount < totalTargets) {
+        document.getElementById("running-project-name").innerHTML = `<span class="active-pulse-text">${lastActiveProjectName}</span>`;
+      } else {
+        document.getElementById("running-project-name").innerHTML = '🎉 <span style="color:var(--success-color);font-weight:600;">Sync Fully Complete!</span>';
+      }
+
+      if (completedCount > 0 && startTime) {
+        const elapsedMs = Date.now() - startTime;
+        const avgDuration = elapsedMs / completedCount;
+        const remainingCount = totalTargets - completedCount;
+        const remainingMs = remainingCount * avgDuration;
+
+        if (remainingCount <= 0) {
+          document.getElementById("etc-text").innerText = "Sync complete";
+        } else {
+          const remainingMinutes = Math.round(remainingMs / 60000);
+          let timeText = remainingMinutes + "m remaining";
+          
+          const etaDate = new Date(Date.now() + remainingMs);
+          let hours = etaDate.getHours();
+          const ampm = hours >= 12 ? 'PM' : 'AM';
+          hours = hours % 12;
+          hours = hours ? hours : 12;
+          const minutes = etaDate.getMinutes().toString().padStart(2, '0');
+          const clockTime = hours + ":" + minutes + " " + ampm;
+
+          document.getElementById("etc-text").innerHTML = `⏳ <strong>${timeText}</strong> (ETA: <strong>${clockTime}</strong>)`;
+        }
+      } else {
+        document.getElementById("etc-text").innerHTML = '⏳ Calculating...';
+      }
+    }
+
+    function addInsightToContainer(translated, type) {
+      const container = document.getElementById("insights-" + type);
+      if (container.innerHTML.includes("System ready") || container.innerHTML.includes("Sync client connected")) {
+        container.innerHTML = "";
+      }
+      
+      const row = document.createElement("div");
+      row.className = 'micro-insight-row sev-' + translated.severity;
+      
+      const icon = document.createElement("span");
+      icon.className = "micro-insight-icon";
+      icon.innerText = translated.icon;
+      
+      const text = document.createElement("span");
+      text.className = "micro-insight-text";
+      text.innerHTML = translated.text;
+      
+      row.appendChild(icon);
+      row.appendChild(text);
+      container.appendChild(row);
+      container.scrollTop = container.scrollHeight;
+    }
+
+    function addLogToTerminal(parsed, type) {
+      const term = document.getElementById("terminal-" + type);
+      if (term.innerHTML.includes("Console idle") || term.innerHTML.includes("Connecting")) {
+        term.innerHTML = "";
+      }
+      
+      let lineClass = "";
+      if (parsed.type === 'project_crawl') {
+        if (parsed.raw.includes("status=success") || parsed.raw.includes("status=completed")) lineClass = 'success-line';
+        else if (parsed.raw.includes("status=partial")) lineClass = 'warning-line';
+        else lineClass = 'danger-line';
+      } else if (parsed.type === 'soft_cap') {
+        lineClass = 'warning-line';
+      } else if (parsed.raw.includes("exceeded") || parsed.raw.includes("failed") || parsed.raw.includes("Error")) {
+        lineClass = 'danger-line';
+      } else if (parsed.raw.includes("Starting") || parsed.raw.includes("Token") || parsed.raw.includes("Hub ID") || parsed.raw.includes("daily-ingest")) {
+        lineClass = 'system-line';
+      }
+
+      const logEl = document.createElement("div");
+      logEl.className = 'terminal-line ' + lineClass;
+      
+      const timeSpan = document.createElement("span");
+      timeSpan.className = "time";
+      timeSpan.innerText = parsed.timestamp ? '[' + parsed.timestamp + '] ' : "";
+      
+      logEl.appendChild(timeSpan);
+      logEl.appendChild(document.createTextNode(parsed.raw));
+      
+      term.appendChild(logEl);
+      term.scrollTop = term.scrollHeight;
+    }
+
+    function processIncomingLogLine(rawLine, type) {
+      const parsed = parseLogLine(rawLine);
+      if (!parsed) return;
+
+      if (!startTime && parsed.timestamp) {
+        const parts = parsed.timestamp.split(':');
+        const now = new Date();
+        now.setHours(parseInt(parts[0], 10));
+        now.setMinutes(parseInt(parts[1], 10));
+        startTime = now.getTime() - (60000 * 5);
+      }
+
+      addLogToTerminal(parsed, type);
+
+      const translated = translateLineToNaturalLanguage(parsed.raw, type);
+      if (translated) {
+        addInsightToContainer(translated, type);
+      }
+
+      if (type === 'folder') {
+        if (parsed.type === 'project_crawl') {
+          completedCount++;
+          const foldersMatch = parsed.raw.match(/folders=(\d+)/);
+          const permsMatch = parsed.raw.match(/perms=(\d+)/);
+          const nameMatch = parsed.raw.match(/project=(.*?) folders/);
+          
+          if (foldersMatch) totalFolders += parseInt(foldersMatch[1], 10);
+          if (permsMatch) totalPerms += parseInt(permsMatch[1], 10);
+          if (nameMatch) lastActiveProjectName = nameMatch[1];
+          
+          updateMinimalistUI();
+        } else if (parsed.raw.includes("project=") && parsed.raw.includes("crawling")) {
+          const nameMatch = parsed.raw.match(/crawling:\s*"(.*?)"/);
+          if (nameMatch) {
+            lastActiveProjectName = nameMatch[1];
+            updateMinimalistUI();
+          }
+        }
+      }
+    }
+
+    function connectSSE(type) {
+      if (eventSource) {
+        eventSource.close();
+      }
+
+      document.getElementById("terminal-" + type).innerHTML = "Connecting to live logs stream...";
+      document.getElementById("insights-" + type).innerHTML = "";
+
+      fetch(`/api/logs?type=${type}`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("terminal-" + type).innerHTML = "";
+          if (data.lines && Array.isArray(data.lines)) {
+            if (type === 'folder') {
+              completedCount = 0;
+              totalFolders = 0;
+              totalPerms = 0;
+            }
+            data.lines.forEach(line => processIncomingLogLine(line, type));
+            if (type === 'folder') updateMinimalistUI();
+          }
+        })
+        .catch(err => console.error("Error loading logs:", err));
+
+      eventSource = new EventSource(`/api/stream-logs?type=${type}`);
+
+      eventSource.onmessage = function(event) {
+        if (event.data === '__EOF__') {
+          fetchActiveStatus();
+          fetchQuotaStatus();
+          return;
+        }
+        try {
+          const payload = JSON.parse(event.data);
+          if (payload.lines && Array.isArray(payload.lines)) {
+            payload.lines.forEach(line => processIncomingLogLine(line, type));
+            if (type === 'folder') updateMinimalistUI();
+          }
+        } catch (err) {
+          console.error("Error parsing event payload:", err);
+        }
+      };
+
+      eventSource.onerror = function(err) {
+        console.error("SSE connection error", err);
+      };
+    }
+
+    // Init & Polling
+    const globalPreflightCard = document.getElementById('preflight-card');
+    const mainContainer = document.querySelector('.main-container');
+    if (globalPreflightCard && mainContainer) {
+      mainContainer.appendChild(globalPreflightCard);
+    }
+
+    fetchActiveStatus();
+    fetchQuotaStatus();
+    connectSSE('folder'); // Start with folder sync logs
+
+    // Long poll status & quota every 3.5 seconds
+    setInterval(() => {
+      fetchActiveStatus();
+      fetchQuotaStatus();
+    }, 3500);
+  </script>
+</body>
+</html>

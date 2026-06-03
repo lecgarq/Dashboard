@@ -6,17 +6,44 @@
  * React path. Pure: no React/DOM/IO.
  *
  *   0 active sliders → "rest"  (static organic cloud)
- *   1 active slider  → "blob"  (one packed blob per value; slider = tightness)
+ *   1 active slider  → "blob"  (PROGRESSIVE morph: at 0 every node sits at its resting-
+ *                               cloud position; at 100 it sits in its dominant-value clump
+ *                               core. The slider linearly interpolates between the two, so
+ *                               dragging gathers each value's members out of the cloud into
+ *                               their own clump — proportional motion, no 0→1 jump.)
  *   2+ active        → "grid"  (cross-tab: strongest = columns, next = rows)
  */
-import { packMemberPositions, type ClusterFootprints } from "./clusterPacking";
+import type { ClusterFootprints } from "./clusterPacking";
 import { gridPositions, type GridStructure } from "./gridLayout";
 import type { DominantClustering } from "./dominantClusters";
 
 export type LayoutDescriptor =
   | { kind: "rest"; xyz: Float32Array }
-  | { kind: "blob"; dimId: string; clustering: DominantClustering; footprints: ClusterFootprints }
+  | {
+      kind: "blob";
+      dimId: string;
+      clustering: DominantClustering;
+      footprints: ClusterFootprints;
+      /** Per-node resting-cloud position (stride-3, aligned to clustering.ids) — the s=0 end. */
+      restXyz: Float32Array;
+      /** Per-node packed clump-core position (stride-2, aligned to clustering.ids) — the s=1 end. */
+      packed: Float32Array;
+    }
   | { kind: "grid"; xId: string; yId: string; structure: GridStructure };
+
+/**
+ * Slider value (0..1) → morph progress (0..1), EASE-OUT: a small nudge off 0 gathers a
+ * lot (responsive), then fine-settles slowly toward 100. Endpoints are exact (0→0, 1→1)
+ * so the rest/clump extremes are unchanged. Tune the feel with EASE_EXP alone: 1 = linear,
+ * higher = snappier start; swap the body for ease-in-out if a gentle start is wanted.
+ * MUST be the single source of the curve — used by both the node morph (descriptorTarget)
+ * and the label follow (shell labelProgress) so labels stay locked to their clumps.
+ */
+const EASE_EXP = 2;
+export function easeMorph(s: number): number {
+  const t = Math.min(1, Math.max(0, s));
+  return 1 - Math.pow(1 - t, EASE_EXP);
+}
 
 /** Per-node node count a descriptor positions (for buffer sizing). */
 export function descriptorNodeCount(desc: LayoutDescriptor): number {
@@ -44,12 +71,17 @@ export function descriptorTarget(
     case "rest":
       return desc.xyz; // static — no per-frame work
     case "blob": {
-      const t = Math.min(1, Math.max(0, (live[desc.dimId] ?? 0) / 100));
+      // s = eased progress 0→1. Morph each node from its resting-cloud position (s=0) to
+      // its packed clump core (s=1) along the ease-out curve. Allocation-free: writes `out`.
+      const s = easeMorph((live[desc.dimId] ?? 0) / 100);
       const n = desc.clustering.ids.length;
-      const xy = packMemberPositions(desc.clustering.ids, desc.footprints, t, n); // stride-2
+      const rest = desc.restXyz; // stride-3
+      const packed = desc.packed; // stride-2
       for (let i = 0; i < n; i++) {
-        out[i * 3] = xy[i * 2];
-        out[i * 3 + 1] = xy[i * 2 + 1];
+        const rx = rest[i * 3];
+        const ry = rest[i * 3 + 1];
+        out[i * 3] = rx + (packed[i * 2] - rx) * s;
+        out[i * 3 + 1] = ry + (packed[i * 2 + 1] - ry) * s;
         out[i * 3 + 2] = 0;
       }
       return out;

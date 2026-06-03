@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-/* eslint-disable no-console */
 /**
  * Probe APS Data Connector authorization with multiple variants.
  * Side-effect-free.

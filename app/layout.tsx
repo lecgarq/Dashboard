@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Manrope, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { TRPCProvider } from "@/lib/core/providers";
+import { ThemeProvider } from "@/components/theme/ThemeProvider";
 import { Toaster } from "sonner";
 
 const manrope = Manrope({
@@ -37,10 +38,17 @@ export default function RootLayout({
         className={`${manrope.variable} ${spaceGrotesk.variable} font-sans antialiased`}
         suppressHydrationWarning
       >
-        <TRPCProvider>
-          {children}
-          <Toaster position="bottom-right" richColors />
-        </TRPCProvider>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <TRPCProvider>
+            {children}
+            <Toaster position="bottom-right" richColors />
+          </TRPCProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

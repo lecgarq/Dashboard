@@ -41,6 +41,7 @@ export type AccProject = {
   isAdmin: boolean;
   roles: string[];
   modules: string[];
+  addedOn?: string; // per-project membership date (when user was added to THIS project)
 };
 
 function getString(v: unknown): string {
@@ -229,7 +230,9 @@ export async function fetchAllAccUsers(
         isAccountAdmin: role === "account_admin",
         company: getString(u.company_name || u.company) || undefined,
         addedOn: getString(u.created_at || u.addedOn) || undefined,
-        companyRole: getString(u.company_role || u.companyRole) || undefined,
+        // HQ v1 returns `job_title` (verified 2026-05-18 via diagnostic dump);
+        // the previously-tried `company_role` / `companyRole` keys don't exist.
+        companyRole: getString(u.job_title || u.company_role || u.companyRole) || undefined,
         lastSignIn: getString(u.last_sign_in || u.last_activity || u.lastSignIn) || undefined,
       });
     }
@@ -274,6 +277,7 @@ export async function fetchAccUserProjects(
         isAdmin: levels?.projectAdmin === true,
         roles,
         modules: [],
+        addedOn: getString((p as { addedOn?: unknown }).addedOn) || undefined,
       });
     }
 

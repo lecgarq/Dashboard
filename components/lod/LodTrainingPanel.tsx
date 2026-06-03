@@ -85,15 +85,15 @@ export function LodTrainingPanel() {
   const currentStageIdx = getStageIndex(currentMessage);
 
   return (
-    <Card className="w-full bg-slate-900/50 border-slate-800 backdrop-blur-md">
+    <Card className="w-full bg-card/50 border-border backdrop-blur-md">
       <CardHeader>
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl flex items-center gap-2 text-white">
+            <CardTitle className="text-xl flex items-center gap-2 text-foreground">
               <FlaskConical className="w-5 h-5 text-indigo-400" />
               LOD Training Engine (Super Stack)
             </CardTitle>
-            <CardDescription className="text-slate-400">
+            <CardDescription className="text-muted-foreground">
               Process new Revit families through the 13-stage vision pipeline to build the RAG collection.
             </CardDescription>
           </div>
@@ -104,11 +104,11 @@ export function LodTrainingPanel() {
       </CardHeader>
       <CardContent className="space-y-6">
         {!isTraining && progress !== 100 && (
-          <div className="border-2 border-dashed border-slate-800 rounded-xl p-12 flex flex-col items-center justify-center gap-4 bg-slate-950/20">
-            <Cloud className="w-12 h-12 text-slate-600" />
+          <div className="border-2 border-dashed border-border rounded-xl p-12 flex flex-col items-center justify-center gap-4 bg-muted/30">
+            <Cloud className="w-12 h-12 text-muted-foreground/50" />
             <div className="text-center">
-              <p className="text-slate-300 font-medium">Drop Family Screenshots Here</p>
-              <p className="text-slate-500 text-sm">Supports PNG, JPG, WebP from Revit Exports</p>
+              <p className="text-foreground/80 font-medium">Drop Family Screenshots Here</p>
+              <p className="text-muted-foreground/70 text-sm">Supports PNG, JPG, WebP from Revit Exports</p>
             </div>
             <Button 
               variant="outline" 
@@ -130,17 +130,17 @@ export function LodTrainingPanel() {
           <div className="space-y-4">
             <div className="flex justify-between items-end mb-2">
               <div className="space-y-1">
-                <p className="text-sm font-medium text-slate-300 flex items-center gap-2">
+                <p className="text-sm font-medium text-foreground/80 flex items-center gap-2">
                   <Monitor className="w-4 h-4 text-indigo-400" />
                   {currentMessage}
                 </p>
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-muted-foreground/70">
                   Worker ID: GPU_CORE_NODE_01 | Device: CUDA (FP16)
                 </p>
               </div>
-              <p className="text-sm font-bold text-white">{progress}%</p>
+              <p className="text-sm font-bold text-foreground">{progress}%</p>
             </div>
-            <Progress value={progress} className="h-2 bg-slate-800" />
+            <Progress value={progress} className="h-2 bg-muted" />
             
             <div className="grid grid-cols-6 gap-2 pt-4">
               {STAGES.map((stage, i) => (
@@ -149,11 +149,11 @@ export function LodTrainingPanel() {
                     className={`h-1 rounded-full transition-all duration-500 ${
                       i < currentStageIdx ? "bg-emerald-500" : 
                       i === currentStageIdx ? "bg-indigo-500 animate-pulse" : 
-                      "bg-slate-800"
+                      "bg-muted"
                     }`} 
                   />
                   <p className={`text-[10px] text-center leading-tight ${
-                    i <= currentStageIdx ? "text-slate-300" : "text-slate-600"
+                    i <= currentStageIdx ? "text-foreground/80" : "text-muted-foreground/50"
                   }`}>
                     {stage}
                   </p>
@@ -167,7 +167,7 @@ export function LodTrainingPanel() {
                   <Loader2 className="w-3 h-3 animate-spin" />
                   Estimating Time to Return...
                 </span>
-                <span className="text-xs font-mono text-white bg-slate-900 px-2 py-1 rounded">
+                <span className="text-xs font-mono text-foreground bg-card px-2 py-1 rounded">
                   ETR: {Math.floor(status.etr / 60)}m {status.etr % 60}s
                 </span>
               </div>
@@ -181,8 +181,8 @@ export function LodTrainingPanel() {
               <CheckCircle2 className="w-10 h-10 text-emerald-400" />
             </div>
             <div>
-              <h3 className="text-lg font-bold text-white">Batch Integration Complete</h3>
-              <p className="text-slate-400 max-w-md mt-1">
+              <h3 className="text-lg font-bold text-foreground">Batch Integration Complete</h3>
+              <p className="text-muted-foreground max-w-md mt-1">
                 All 24 items have been processed, upscaled, and embedded into the HNSW vector store.
               </p>
             </div>

@@ -260,16 +260,32 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
   // commit React state at most ONCE per frame from the latest ref. The live drag
   // stays smooth; the only "cost" is the displayed thumb lagging ≤1 frame.
   const stateRafRef = useRef<number | null>(null);
+  const lastCommitTsRef = useRef<number>(0);
+  // Display commits are THROTTLED to ~16Hz during a drag. setValues re-renders every
+  // useSliders consumer — the shell, the graph-canvas wrapper, the panels — and that
+  // cascade (+ cosmos re-config it triggers) was competing with the rAF render loop for
+  // the frame budget (drag measured ~42fps in dev). The GRAPH still animates every frame:
+  // it reads getLiveValues() off a ref inside the rAF loop, independent of these commits.
+  // So throttling the React commit frees the budget WITHOUT slowing the motion; the only
+  // cost is the thumb display lagging ≤~60ms (imperceptible). Trailing-edge: the final
+  // value always lands within one throttle window of the last change.
+  const COMMIT_THROTTLE_MS = 60;
   const commitState = useCallback((): void => {
     if (typeof window === "undefined" || typeof requestAnimationFrame === "undefined") {
       setValues({ ...valuesRef.current });
       return;
     }
-    if (stateRafRef.current !== null) return; // already pending → coalesce
-    stateRafRef.current = requestAnimationFrame(() => {
-      stateRafRef.current = null;
-      setValues({ ...valuesRef.current });
-    });
+    if (stateRafRef.current !== null) return; // a commit is already pending → coalesce
+    const tick = (ts: number): void => {
+      if (ts - lastCommitTsRef.current >= COMMIT_THROTTLE_MS) {
+        lastCommitTsRef.current = ts;
+        stateRafRef.current = null;
+        setValues({ ...valuesRef.current });
+      } else {
+        stateRafRef.current = requestAnimationFrame(tick); // trailing — re-check next frame
+      }
+    };
+    stateRafRef.current = requestAnimationFrame(tick);
   }, []);
 
   // Two-pass mount — hydrate from localStorage AFTER initial render.

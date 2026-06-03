@@ -95,8 +95,8 @@ function AccountModal({ open, onOpenChange }: AccountModalProps) {
                 </span>
               )}
               {/* Overlay on hover */}
-              <div className="absolute inset-0 bg-black/40 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
-                <Camera size={14} className="text-white" />
+              <div className="absolute inset-0 bg-foreground/40 rounded-full opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center">
+                <Camera size={14} className="text-background" />
               </div>
             </button>
             {/* Delete button */}
@@ -282,14 +282,14 @@ export function Sidebar() {
       <aside
         ref={sidebarRef}
         className={cn(
-          "surface-panel relative h-full min-h-0 flex flex-col border-r border-white/60 transition-[width] duration-300 ease-in-out",
+          "surface-panel relative h-full min-h-0 flex flex-col border-r border-sidebar-border transition-[width] duration-300 ease-in-out",
           "shadow-[0_28px_90px_-44px_rgba(15,23,42,0.55)]",
           collapsed ? "w-[68px]" : "w-[240px]"
         )}
       >
-        <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-white/80 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-5 top-0 h-px bg-gradient-to-r from-transparent via-sidebar-border to-transparent" />
 
-        <div className="flex h-20 items-center justify-between border-b border-white/60 px-4 shrink-0">
+        <div className="flex h-20 items-center justify-between border-b border-sidebar-border px-4 shrink-0">
           {!collapsed ? (
             <div className="flex items-center gap-3 animate-fadeIn">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-primary to-chart-1 shadow-[0_18px_36px_-20px_rgba(20,33,61,0.95)] shrink-0">
@@ -298,7 +298,7 @@ export function Sidebar() {
               <div className="leading-tight">
                 <span className="font-display text-sm font-semibold tracking-tight text-sidebar-foreground">BIM</span>
                 <span className="ml-1 text-sm font-medium text-muted-foreground">Dashboard</span>
-                <p className="text-[11px] uppercase tracking-[0.24em] text-slate-400">Operations shell</p>
+                <p className="text-[11px] uppercase tracking-[0.24em] text-muted-foreground">Operations shell</p>
               </div>
             </div>
           ) : (
@@ -309,7 +309,7 @@ export function Sidebar() {
 
           {!collapsed && user && (
             <button onClick={() => setAccountOpen(true)} className="relative shrink-0 ml-auto" title="Account">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-4 ring-2 ring-white/70 transition-smooth hover:ring-primary/25">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-4 ring-2 ring-border transition-smooth hover:ring-primary/40">
                 {user.image ? (
                   <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -324,7 +324,7 @@ export function Sidebar() {
 
           {collapsed && user && (
             <button onClick={() => setAccountOpen(true)} className="relative mx-auto" title="Account">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-4 ring-2 ring-white/70 transition-smooth hover:ring-primary/25">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-primary to-chart-4 ring-2 ring-border transition-smooth hover:ring-primary/40">
                 {user.image ? (
                   <img src={user.image} alt="" className="w-full h-full rounded-full object-cover" />
                 ) : (
@@ -339,7 +339,7 @@ export function Sidebar() {
         <nav className="flex-1 overflow-y-auto p-3 space-y-1.5">
           <div className="mb-2 px-3">
             {!collapsed && (
-              <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.28em]">
+              <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.28em]">
                 Dashboard
               </span>
             )}
@@ -368,7 +368,7 @@ export function Sidebar() {
                       "group relative mb-4 flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-smooth",
                       isNavItemActive(pathname, dashboardItem.href)
                         ? "bg-gradient-to-r from-primary to-chart-1 text-white shadow-[0_18px_40px_-24px_rgba(20,33,61,0.8)]"
-                        : "text-muted-foreground hover:bg-white/78 hover:text-primary",
+                        : "text-muted-foreground hover:bg-accent hover:text-primary",
                       collapsed && "justify-center px-2"
                     )}
                     title={collapsed ? dashboardItem.label : undefined}
@@ -392,7 +392,7 @@ export function Sidebar() {
                   <div key={groupName} className="mb-4">
                     {!collapsed && groupName !== 'Other' && (
                       <div className="mb-2 px-3 mt-4">
-                        <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.28em]">
+                        <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.28em]">
                           {groupName}
                         </span>
                       </div>
@@ -410,7 +410,7 @@ export function Sidebar() {
                               "group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-smooth",
                               active
                                 ? "bg-gradient-to-r from-primary to-chart-1 text-white shadow-[0_18px_40px_-24px_rgba(20,33,61,0.8)]"
-                                : "text-muted-foreground hover:bg-white/78 hover:text-primary",
+                                : "text-muted-foreground hover:bg-accent hover:text-primary",
                               collapsed && "justify-center px-2"
                             )}
                             title={collapsed ? item.label : undefined}
@@ -440,7 +440,7 @@ export function Sidebar() {
             <>
               <div className="mt-4 mb-2 px-3">
                 {!collapsed && (
-                  <span className="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.28em]">
+                  <span className="text-[10px] font-semibold text-muted-foreground uppercase tracking-[0.28em]">
                     Staff
                   </span>
                 )}
@@ -451,7 +451,7 @@ export function Sidebar() {
                   "group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm transition-smooth",
                   pathname === STAFF_NAV_ITEM.href
                     ? "bg-gradient-to-r from-primary to-chart-1 text-white shadow-[0_18px_40px_-24px_rgba(20,33,61,0.8)]"
-                    : "text-muted-foreground hover:bg-white/78 hover:text-primary",
+                    : "text-muted-foreground hover:bg-accent hover:text-primary",
                   collapsed && "justify-center px-2"
                 )}
                 title={collapsed ? STAFF_NAV_ITEM.label : undefined}
@@ -474,7 +474,7 @@ export function Sidebar() {
           )}
         </nav>
 
-        <div className="border-t border-white/60 px-3 py-3">
+        <div className="border-t border-sidebar-border px-3 py-3">
           <SyncFreshnessPill collapsed={collapsed} />
           <button
             onClick={() => setCollapsed((prev) => !prev)}

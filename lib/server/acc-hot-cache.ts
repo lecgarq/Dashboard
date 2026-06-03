@@ -120,10 +120,13 @@ const DC_VERSION_SPECS = [
   { model: "accRole", maxField: "syncedAt" },
 ];
 
-const PERMISSION_VERSION_SPECS = [
-  { model: "accFolder", maxField: "syncedAt" },
-  { model: "accFolderPermission", maxField: "syncedAt" },
-];
+// NOTE: AccFolderPermission (~5M rows) is intentionally NOT versioned here. count()
+// + max(syncedAt) on it (an unindexed seq scan ×2) ran on EVERY bulkUsers call,
+// including cache hits. Folder permissions are (re)written by the same folder crawl
+// that updates AccFolder.syncedAt, so AccFolder is a sufficient change signal — at a
+// fraction of the cost (400k vs 5M). Worst case (perms edited with no folder touch)
+// is bounded by the 10-min cache TTL.
+const PERMISSION_VERSION_SPECS = [{ model: "accFolder", maxField: "syncedAt" }];
 
 const ACTIVITY_VERSION_SPECS = [{ model: "accActivity", maxField: "createdAt" }];
 
@@ -228,8 +231,27 @@ export async function getCachedAccDcBulkUsers(
         }),
       ]);
 
-      const rawFolderPermissions = needsFolderPerms
-        ? await db.accFolderPermission.findMany({
+      // [Perf 2026-06] Folder-permission data. AccFolderPermission is ~5M rows; loading
+      // them all into Node (the old findMany) was the dominant cause of the 60-90s
+      // access-analysis load + heap OOM. The graph only needs the SUMMARY
+      // (includePermissionSummary, NOT contexts), so aggregate in SQL — per
+      // (projectId, roleId): distinct folder count, summed folder bytes, distinct
+      // permTypes — collapsing ~5M grant rows to ~13k group rows. The contexts path
+      // (WS2 edge feed) still needs raw folder-level grants, so it keeps the row scan.
+      let rawFolderPermissions: Array<{
+        folderId: string;
+        roleId: string;
+        permType: string;
+        actions: string[];
+        folder: { projectId: string; fullPath: string | null };
+      }> = [];
+      let rawFolderRollups: Array<{ id: string; totalSizeBytes: number | null }> = [];
+      let folderSummaryByProjectRole:
+        | Map<string, { folderCount: number; totalBytes: number; permTypes: string[] }>
+        | undefined;
+      if (needsFolderPerms) {
+        if (includePermissionContexts) {
+          rawFolderPermissions = await db.accFolderPermission.findMany({
             where: { folder: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } } },
             select: {
               folderId: true,
@@ -238,16 +260,38 @@ export async function getCachedAccDcBulkUsers(
               actions: true,
               folder: { select: { projectId: true, fullPath: true } },
             },
-          })
-        : [];
-
-      // [Slice D] Per-folder file-size rollup, joined into the per-instance summary.
-      const rawFolderRollups = needsFolderPerms
-        ? await db.accFolder.findMany({
+          });
+          rawFolderRollups = await db.accFolder.findMany({
             where: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } },
             select: { id: true, totalSizeBytes: true },
-          })
-        : [];
+          });
+        } else {
+          const aggRows = await db.$queryRaw<
+            Array<{ projectId: string; roleId: string; folderCount: number; totalBytes: bigint | number; permTypes: string[] }>
+          >`
+            SELECT f."projectId" AS "projectId",
+                   fp."roleId" AS "roleId",
+                   COUNT(DISTINCT fp."folderId")::int AS "folderCount",
+                   COALESCE(SUM(COALESCE(f."totalSizeBytes", 0)), 0)::bigint AS "totalBytes",
+                   array_agg(DISTINCT fp."permType") AS "permTypes"
+            FROM "AccFolderPermission" fp
+            JOIN "AccFolder" f ON f.id = fp."folderId"
+            JOIN "AccProject" p ON p.id = f."projectId"
+            WHERE p."folderCrawlStatus" IN ('ok', 'partial')
+            GROUP BY f."projectId", fp."roleId"
+          `;
+          folderSummaryByProjectRole = new Map(
+            aggRows.map((r) => [
+              `${r.projectId}::${r.roleId}`,
+              {
+                folderCount: Number(r.folderCount),
+                totalBytes: Number(r.totalBytes),
+                permTypes: r.permTypes ?? [],
+              },
+            ]),
+          );
+        }
+      }
 
       let activityByInstance: Map<string, InstanceActivity> | undefined;
       let adminActionsByActor: Map<string, Record<string, number>> | undefined;
@@ -289,6 +333,7 @@ export async function getCachedAccDcBulkUsers(
       return assembleDcUsers({
         includePermissionContexts,
         includePermissionSummary,
+        folderSummaryByProjectRole,
         activityByInstance,
         adminActionsByActor,
         users: users.map((u: any) => ({

@@ -10,8 +10,8 @@ vi.mock("@/lib/server/accessInstanceView", () => ({
   ])),
 }));
 vi.mock("./AccessAnalysisDashboard", () => ({
-  AccessAnalysisDashboard: (props: { filterOptions: unknown; projectTotal: number }) =>
-    <div data-testid="dashboard" data-total={props.projectTotal} data-opts={JSON.stringify(props.filterOptions)} />,
+  AccessAnalysisDashboard: (props: { filterOptions: unknown }) =>
+    <div data-testid="dashboard" data-opts={JSON.stringify(props.filterOptions)} />,
 }));
 
 import AccessAnalysisRoute from "./page";
@@ -21,7 +21,6 @@ describe("AccessAnalysisRoute (new)", () => {
     const ui = await AccessAnalysisRoute();
     const { getByTestId } = render(ui);
     const el = getByTestId("dashboard");
-    expect(el.getAttribute("data-total")).toBe("1152");
     const opts = JSON.parse(el.getAttribute("data-opts")!);
     expect(opts.projects).toEqual([{ value: "p1", label: "Tower A" }]);
     expect(opts.companies).toEqual([{ value: "Hermosillo", label: "Hermosillo" }]);

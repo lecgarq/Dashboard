@@ -31,21 +31,21 @@ export default function HomeClient() {
       value: `${dashboard?.families.rate ?? 0}%`,
       detail: `${dashboard?.families.done ?? 0} of ${dashboard?.families.total ?? 0} delivered`,
       icon: CheckCircle2,
-      tone: "from-sky-500/14 to-sky-500/6 text-sky-700",
+      tone: "from-sky-500/14 to-sky-500/6 text-sky-700 dark:text-sky-300",
     },
     {
       label: "Clash QA",
       value: `${dashboard?.clash.rate ?? 0}%`,
       detail: `${dashboard?.clash.done ?? 0} of ${dashboard?.clash.total ?? 0} resolved`,
       icon: Activity,
-      tone: "from-amber-500/14 to-amber-500/6 text-amber-700",
+      tone: "from-amber-500/14 to-amber-500/6 text-amber-700 dark:text-amber-300",
     },
     {
       label: "Team load",
       value: `${dashboard?.capacity ?? 0}%`,
       detail: `${dashboard?.userCount ?? 0} active contributors`,
       icon: Users2,
-      tone: "from-emerald-500/14 to-emerald-500/6 text-emerald-700",
+      tone: "from-emerald-500/14 to-emerald-500/6 text-emerald-700 dark:text-emerald-300",
     },
   ];
 
@@ -73,17 +73,17 @@ export default function HomeClient() {
               <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-gradient-to-br ${stat.tone}`}>
                 <Icon className="h-3.5 w-3.5" />
               </div>
-              <span className="text-xs text-slate-400">{stat.label}</span>
-              <span className="text-xs font-semibold text-slate-900">{stat.value}</span>
-              <span className="text-[10px] text-slate-400 hidden sm:inline">{stat.detail}</span>
+              <span className="text-xs text-muted-foreground">{stat.label}</span>
+              <span className="text-xs font-semibold text-foreground">{stat.value}</span>
+              <span className="text-[10px] text-muted-foreground hidden sm:inline">{stat.detail}</span>
             </div>
           );
         })}
 
         <div className="ml-auto flex items-center gap-2 px-3 py-1.5 rounded-xl surface-panel">
           <CalendarClock className="h-3.5 w-3.5 text-primary" />
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-400">Next</span>
-          <span className="text-xs font-medium text-slate-900">{milestoneLabel}</span>
+          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Next</span>
+          <span className="text-xs font-medium text-foreground">{milestoneLabel}</span>
         </div>
       </div>
 

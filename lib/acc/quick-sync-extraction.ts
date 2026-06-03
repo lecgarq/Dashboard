@@ -941,6 +941,7 @@ export async function runQuickSync(
               hubId,
               { id: p.id, accountId, name: p.name },
               accessToken,
+              { refreshAccessToken: get2LeggedAutodeskToken },
             ).catch((err: unknown) => {
               const msg = err instanceof Error ? err.message : String(err);
               console.error(
