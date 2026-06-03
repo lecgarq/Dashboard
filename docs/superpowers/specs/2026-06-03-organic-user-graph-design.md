@@ -48,6 +48,7 @@ On load the graph lands on the organic (image-1) look with **zero clicks**.
 - **One spectrum of tightness**, both endpoints grouped by user:
   - **0 (default, on load): organic** — loosest force-directed spread (image-1 look).
   - **100: fully clustered** — tightest packed, clearly separated clumps (image-3 look).
+- **Progressive curve (required).** Tightening must be **smooth and gradual across the whole 0→100 range**. There is **no abrupt jump right after 0** — i.e. *not* "0 = organic, 1 = already clustered." Every step of the slider produces a proportional, visible change, so the user can park it anywhere on the spectrum. (The engine previously had a "0→1 teleport" that was fixed with a progressive lerp; preserve that progressive behavior and tune the easing so the early range moves gently, not all at once.)
 - Maps onto the existing tightness ramp (the cluster fill-factor / footprint spread the engine already uses for the 1-slider morph).
 - No grid mode, no second dimension.
 
@@ -67,7 +68,7 @@ Existing pieces reused (verify exact files/lines during planning):
 ### The actual changes (deltas vs today)
 
 1. **Default clustering → user name.** On load, run the user-name cluster layout instead of the isotropic rest scatter. (Confirm in planning whether a `user` dominant dimension exists or must be added; the engine already has a single "User-name" slider state to build on.)
-2. **Slider 0 = organic, not ungrouped.** The slider's `0` endpoint must be the **loose organic user-grouped** layout (image 1), not an ungrouped scatter; `100` = tight packed clumps. Default slider value = **0**.
+2. **Slider 0 = organic, not ungrouped; progressive across the range.** The slider's `0` endpoint must be the **loose organic user-grouped** layout (image 1), not an ungrouped scatter; `100` = tight packed clumps; default slider value = **0**. The transition must be a **smooth progressive curve** — no jump immediately after 0, every step proportional (tune the existing morph easing to avoid an early-range snap).
 3. **Default color → cluster (user) colors.** Set the default color mode so color = user (`clusterColorBuffer`), instead of the semantic rest-mode coloring.
 4. **Edges → faint grey.** Change the `linkEmphasis` base link color from blue to **grey at low opacity**; keep the bright-on-click/isolate path unchanged.
 5. **Labels → hover only.** Disable the persistent `ClusterLabels` overlay by default; ensure `NodeTooltip` shows **user name + project count**.
