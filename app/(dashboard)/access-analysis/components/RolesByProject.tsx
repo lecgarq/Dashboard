@@ -15,8 +15,8 @@ const PICKER_CSS = `
 @keyframes rbpDropIn { from { opacity: 0; transform: translateY(-6px) scale(.985); } to { opacity: 1; transform: none; } }
 .rbp-panel { animation: rbpDropIn .16s cubic-bezier(.16, 1, .3, 1); transform-origin: top center; }
 .rbp-scroll::-webkit-scrollbar { width: 9px; }
-.rbp-scroll::-webkit-scrollbar-thumb { background: rgba(113,113,122,.35); border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
-.rbp-scroll::-webkit-scrollbar-thumb:hover { background: rgba(129,140,248,.55); background-clip: padding-box; }
+.rbp-scroll::-webkit-scrollbar-thumb { background: var(--scrollbar-thumb); border-radius: 9999px; border: 2px solid transparent; background-clip: padding-box; }
+.rbp-scroll::-webkit-scrollbar-thumb:hover { background: var(--scrollbar-thumb-hover); background-clip: padding-box; }
 .rbp-scroll::-webkit-scrollbar-track { background: transparent; }
 `;
 
@@ -108,7 +108,7 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
   const summary = allSelected
     ? "All projects"
     : `${selectedCount.toLocaleString()} of ${total.toLocaleString()} projects`;
-  const dotColor = allSelected ? "bg-emerald-400" : selectedCount === 0 ? "bg-amber-400" : "bg-indigo-400";
+  const dotColor = allSelected ? "bg-success" : selectedCount === 0 ? "bg-warning" : "bg-primary";
 
   return (
     <div className="flex flex-col gap-4">
@@ -118,7 +118,7 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
         <div className="flex items-center gap-2.5">
           {/* Search field */}
           <div className="group relative flex-1">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors group-focus-within:text-indigo-400" aria-hidden>
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-primary" aria-hidden>
               <IconSearch />
             </span>
             <input
@@ -130,15 +130,15 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
               placeholder="Search projects…"
               aria-label="Search and select projects"
               aria-expanded={open}
-              className="w-full rounded-xl border border-zinc-700/70 bg-gradient-to-b from-zinc-800/50 to-zinc-900/80 py-2.5 pl-10 pr-10 text-sm text-zinc-100 shadow-inner shadow-black/20 transition placeholder:text-zinc-500 focus:border-indigo-500/70 focus:outline-none focus:ring-2 focus:ring-indigo-500/25"
+              className="w-full rounded-xl border border-border bg-card py-2.5 pl-10 pr-10 text-sm text-foreground shadow-inner shadow-black/10 transition placeholder:text-muted-foreground focus:border-primary/70 focus:outline-none focus:ring-2 focus:ring-primary/25"
             />
-            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500">
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground">
               {query ? (
                 <button
                   type="button"
                   onClick={() => setQuery("")}
                   aria-label="Reset search"
-                  className="grid h-5 w-5 place-items-center rounded-md text-zinc-400 transition hover:bg-zinc-700/60 hover:text-zinc-200"
+                  className="grid h-5 w-5 place-items-center rounded-md text-muted-foreground transition hover:bg-accent hover:text-foreground"
                 >
                   ✕
                 </button>
@@ -151,7 +151,7 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
           {/* Selection summary pill */}
           <span
             data-testid="project-summary"
-            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-zinc-700/70 bg-zinc-900/60 px-3 py-1.5 text-xs font-medium text-zinc-300"
+            className="inline-flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full border border-border bg-card px-3 py-1.5 text-xs font-medium text-foreground"
           >
             <span className={`h-1.5 w-1.5 rounded-full ${dotColor} shadow-[0_0_6px_currentColor]`} aria-hidden />
             {summary}
@@ -159,9 +159,9 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
         </div>
 
         {/* Selection meter */}
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-zinc-800/80" aria-hidden>
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-muted" aria-hidden>
           <div
-            className={`h-full rounded-full transition-all duration-300 ${allSelected ? "bg-emerald-400/80" : "bg-indigo-400/80"}`}
+            className={`h-full rounded-full transition-all duration-300 ${allSelected ? "bg-success" : "bg-primary"}`}
             style={{ width: `${pct}%` }}
           />
         </div>
@@ -171,37 +171,37 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
           <div
             role="group"
             aria-label="Projects"
-            className="rbp-panel absolute left-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-white/10 bg-zinc-900/85 shadow-2xl shadow-black/60 ring-1 ring-black/40 backdrop-blur-xl"
+            className="rbp-panel absolute left-0 z-30 mt-2 w-full overflow-hidden rounded-xl border border-surface-border bg-surface-1 shadow-elevated backdrop-blur-xl"
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/20 to-transparent" aria-hidden />
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-foreground/15 to-transparent" aria-hidden />
 
-            <div className="flex items-center justify-between gap-2 border-b border-zinc-800/80 px-2.5 py-2">
+            <div className="flex items-center justify-between gap-2 border-b border-border px-2.5 py-2">
               <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={selectAllVisible}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-zinc-700/70 bg-zinc-800/40 px-2.5 py-1 text-xs font-medium text-zinc-200 transition hover:border-indigo-500/50 hover:bg-indigo-500/10 hover:text-white"
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-foreground transition hover:border-primary/50 hover:bg-primary/10"
                 >
-                  <span className="text-indigo-400" aria-hidden><IconCheck /></span>
+                  <span className="text-primary" aria-hidden><IconCheck /></span>
                   Select all
                 </button>
                 <button
                   type="button"
                   onClick={clearVisible}
-                  className="rounded-lg border border-zinc-700/70 bg-zinc-800/40 px-2.5 py-1 text-xs font-medium text-zinc-300 transition hover:border-zinc-600 hover:bg-zinc-800 hover:text-white"
+                  className="rounded-lg border border-border bg-muted/40 px-2.5 py-1 text-xs font-medium text-muted-foreground transition hover:bg-accent hover:text-foreground"
                 >
                   Clear
                 </button>
               </div>
-              <span className="rounded-md bg-zinc-800/70 px-1.5 py-0.5 text-[11px] tabular-nums text-zinc-400">
+              <span className="rounded-md bg-muted px-1.5 py-0.5 text-[11px] tabular-nums text-muted-foreground">
                 {visible.length.toLocaleString()} shown
               </span>
             </div>
 
             <ul className="rbp-scroll max-h-72 list-none overflow-auto py-1.5">
               {visible.length === 0 ? (
-                <li className="flex flex-col items-center gap-1 px-3 py-8 text-center text-xs text-zinc-500">
-                  <span className="text-zinc-600"><IconSearch /></span>
+                <li className="flex flex-col items-center gap-1 px-3 py-8 text-center text-xs text-muted-foreground">
+                  <span className="opacity-60"><IconSearch /></span>
                   No projects match “{query.trim()}”.
                 </li>
               ) : (
@@ -211,12 +211,12 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
                     <li key={o.id} className="relative px-1.5">
                       <span
                         aria-hidden
-                        className={`absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-indigo-400 transition-opacity ${on ? "opacity-100" : "opacity-0"}`}
+                        className={`absolute inset-y-1.5 left-0 w-0.5 rounded-full bg-primary transition-opacity ${on ? "opacity-100" : "opacity-0"}`}
                       />
                       <label
                         title={`${o.name} · ${(countsById.get(o.id) ?? 0).toLocaleString()} memberships`}
                         className={`group/row flex cursor-pointer items-center gap-3 rounded-lg px-2.5 py-1.5 text-xs transition-colors ${
-                          on ? "bg-indigo-500/[0.07] text-zinc-100" : "text-zinc-300 hover:bg-white/[0.04]"
+                          on ? "bg-primary/10 text-foreground" : "text-muted-foreground hover:bg-accent"
                         }`}
                       >
                         <input
@@ -229,8 +229,8 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
                           aria-hidden
                           className={`grid h-[18px] w-[18px] shrink-0 place-items-center rounded-[6px] border transition-all ${
                             on
-                              ? "border-indigo-500 bg-indigo-500 text-white shadow-[0_0_0_3px_rgba(99,102,241,0.15)]"
-                              : "border-zinc-600 bg-zinc-800/60 text-transparent group-hover/row:border-zinc-500"
+                              ? "border-primary bg-primary text-primary-foreground shadow-[0_0_0_3px] shadow-primary/20"
+                              : "border-border bg-muted text-transparent group-hover/row:border-muted-foreground/60"
                           }`}
                         >
                           <span className={`transition-transform duration-150 ${on ? "scale-100" : "scale-50"}`}>
@@ -238,7 +238,7 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
                           </span>
                         </span>
                         <span className="flex-1 truncate">{o.name}</span>
-                        <span className="shrink-0 tabular-nums text-[11px] text-zinc-500">
+                        <span className="shrink-0 tabular-nums text-[11px] text-muted-foreground">
                           {(countsById.get(o.id) ?? 0).toLocaleString()}
                         </span>
                       </label>
@@ -248,12 +248,12 @@ export function RolesByProject({ rows }: { rows: ProjectRoleRow[] }) {
               )}
             </ul>
 
-            <div className="flex items-center justify-between border-t border-zinc-800/80 px-3 py-1.5 text-[11px] text-zinc-500">
+            <div className="flex items-center justify-between border-t border-border px-3 py-1.5 text-[11px] text-muted-foreground">
               <span>
-                <b className="text-zinc-300">{selectedCount.toLocaleString()}</b> selected
+                <b className="text-foreground">{selectedCount.toLocaleString()}</b> selected
               </span>
               <span className="flex items-center gap-1">
-                <kbd className="rounded border border-zinc-700 bg-zinc-800/70 px-1 py-px font-mono text-[10px] text-zinc-400">Esc</kbd>
+                <kbd className="rounded border border-border bg-muted px-1 py-px font-mono text-[10px] text-muted-foreground">Esc</kbd>
                 to close
               </span>
             </div>
