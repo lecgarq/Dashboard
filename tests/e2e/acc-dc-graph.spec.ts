@@ -183,13 +183,15 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-2d-load");
   });
 
-  test("default layout loads volumetric with finite, non-runaway positions", async ({ page }, testInfo) => {
+  test("default layout (user blob) loads flat 2D with finite, non-runaway positions", async ({ page }, testInfo) => {
     // Smoke/regression only — proven deterministically elsewhere:
     //   - clustering MATH (ratios)            → physicsClustering.test.ts
     //   - post-freeze normalization to ≈350   → physicsLayer.test.ts
-    // This is a NO-FREEZE gate, so coordinates are still at the raw ANCHOR_RADIUS
-    // scale (~16000); we only assert the real 16,934-node graph loads, is
-    // volumetric with depth, has no NaN, and has not exploded to runaway values.
+    // The DEFAULT layout is now the ORGANIC USER BLOB: every node is grouped by
+    // user name, with z=0 targets for all nodes (descriptorTarget sets out[i*3+2]=0
+    // for blob descriptors). The physics sim (d3-force-3d under the test flag) has
+    // no z anchors, so the settled layout is intentionally FLAT (zRange ≈ 0).
+    // We assert FLATNESS here — not volumetric depth.
     const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getLayoutStats());
     // eslint-disable-next-line no-console
     console.log(
@@ -197,11 +199,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     );
     expect(stats.anyNaN, "no NaN positions").toBe(false);
     expect(stats.nodeCount, "renders the full DC node set").toBe(EXPECTED_NODE_COUNT);
-    expect(stats.xRange, "x spread").toBeGreaterThan(1);
-    expect(stats.yRange, "y spread").toBeGreaterThan(1);
-    expect(stats.zRange, "z spread (depth)").toBeGreaterThan(1);
-    // Meaningful depth — not a flat disc.
-    expect(stats.zRange).toBeGreaterThan(0.2 * Math.max(stats.xRange, stats.yRange));
+    expect(stats.xRange, "x spread (blob spreads horizontally)").toBeGreaterThan(1);
+    expect(stats.yRange, "y spread (blob spreads vertically)").toBeGreaterThan(1);
+    // User-blob is a flat 2D layout: z targets are all 0 → zRange should be negligible.
+    expect(stats.zRange, "blob layout is flat (z is intentionally near-zero)").toBeLessThan(
+      0.05 * Math.max(stats.xRange, stats.yRange),
+    );
 
     // Coordinates are finite and non-runaway pre-freeze: anyNaN already rules out
     // NaN/Infinity; assert the spread is non-degenerate yet far below a
@@ -214,12 +217,13 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await proofShot(page, testInfo, "after-default-layout");
   });
 
-  test("moving the project slider does not crash the graph (smoke)", async ({ page }, testInfo) => {
+  test("moving the user slider does not crash the graph (smoke)", async ({ page }, testInfo) => {
     // SMOKE only — clustering math is proven in physicsClustering.test.ts. Here we
     // just confirm a real slider interaction keeps the graph valid (no NaN, full
     // node set, finite clustering score). We do NOT wait for a full re-settle or a
     // target ratio — that would add minutes of physical settling to the suite.
-    const thumb = page.getByLabel("Project thumb");
+    // The ONLY curated slider is "User name" (CURATED_SLIDER_IDS = ["user"]).
+    const thumb = page.getByLabel("User name thumb");
     await thumb.focus();
     await page.keyboard.press("End"); // Radix slider: End → max (100)
 
@@ -227,14 +231,14 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await page.waitForTimeout(1_500);
 
     const pos = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getPositionsStats());
-    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("project").ratio);
+    const score = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getClusteringScore("user").ratio);
     // eslint-disable-next-line no-console
     console.log(`[slider smoke] anyNaN=${pos.anyNaN} count=${pos.count} score=${score.toFixed(3)}`);
     expect(pos.anyNaN, "no NaN after slider change").toBe(false);
     expect(pos.count, "node set intact after slider change").toBe(EXPECTED_NODE_COUNT);
     expect(Number.isFinite(score), "clustering score stays finite").toBe(true);
     await expect(page.locator("canvas").first()).toBeVisible();
-    await proofShot(page, testInfo, "after-project-slider");
+    await proofShot(page, testInfo, "after-user-slider");
   });
 
   // NOTE: a second-slider-state duplicate-key e2e was added with the composite-key
@@ -259,7 +263,10 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     console.log(
       `[color] default=${initial.mode} len=${initial.stats.length} distinct=${initial.stats.distinctColors} sig=${initial.stats.signature}`,
     );
-    expect(initial.mode, "default color mode is role (visually informative)").toBe("role");
+    // NOTE: in blob mode the ACTUAL rendered colors come from clusterColorBuffer (one hue
+    // per user blob), not from this state. The colorMode select still defaults to "role"
+    // and controls non-blob rendering paths; blob overrides it visually.
+    expect(initial.mode, "default colorMode state is role").toBe("role");
     expect(initial.stats.length, "RGBA buffer is nodeCount*4").toBe(EXPECTED_NODE_COUNT * 4);
     expect(initial.stats.nodeCount).toBe(EXPECTED_NODE_COUNT);
     expect(initial.stats.allAlphaOne, "alpha stays 1 (dimming is mask-only)").toBe(true);
@@ -745,13 +752,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     await searchBox.fill("company");
     await expect(page.getByText("Company / firm").first(), "Company / firm appears in search results").toBeVisible();
 
-    // "Project" slider label should NOT appear when query is "company".
-    // We check it's not visible (it won't match the "company" query).
-    await expect(page.getByLabel("Project thumb"), "Project slider hidden while searching 'company'").not.toBeVisible();
+    // "User name" slider should NOT appear when query is "company" (doesn't match).
+    await expect(page.getByLabel("User name thumb"), "User name slider hidden while searching 'company'").not.toBeVisible();
 
-    // Clear search → Project thumb returns.
+    // Clear search → User name thumb returns (it is the only curated slider).
     await searchBox.fill("");
-    await expect(page.getByLabel("Project thumb"), "Project slider returns after clearing search").toBeVisible();
+    await expect(page.getByLabel("User name thumb"), "User name slider returns after clearing search").toBeVisible();
 
     await proofShot(page, testInfo, "after-p4-dimension-search");
   });
@@ -830,8 +836,12 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // Layout must be non-degenerate (not an origin-collapsed globe artifact).
     expect(pos.maxAbs, "Free preset: layout is non-degenerate (spread out)").toBeGreaterThan(1);
     expect(pos.maxAbs, "Free preset: no runaway explosion").toBeLessThan(100_000);
-    // 3D depth: zRange must be meaningful (not a flat disc or sphere-on-origin).
-    expect(layout.zRange, "Free preset: z spread is non-degenerate").toBeGreaterThan(1);
+    // The layout is always user-blob (z=0 targets), so x/y must spread but z stays flat.
+    expect(layout.xRange, "Free preset: x spread is non-degenerate").toBeGreaterThan(1);
+    expect(layout.yRange, "Free preset: y spread is non-degenerate").toBeGreaterThan(1);
+    expect(layout.zRange, "Free preset: blob layout stays flat (z intentionally near-zero)").toBeLessThan(
+      0.05 * Math.max(layout.xRange, layout.yRange),
+    );
     await expect(page.locator("canvas").first(), "canvas still rendered after Free preset").toBeVisible();
 
     await proofShot(page, testInfo, "after-p4-free-preset");
