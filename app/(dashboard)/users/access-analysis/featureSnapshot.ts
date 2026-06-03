@@ -18,6 +18,7 @@ import { BASELINE_MODULES } from "./dimensionRegistry";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { deriveModuleFlags } from "./moduleFlags";
 import { computeRiskFlags, riskScoreFromFlags } from "./riskFlags";
+import { stampUserProjectCounts } from "./userProjectCounts";
 
 // ---- Bucketing helpers (RESEARCH Open Q#2 — defaults) ---------------------
 
@@ -336,5 +337,7 @@ export async function buildFeatureSnapshot(
     activityTotal: 0,
   });
 
-  return nodeIds.map((id) => map.get(id) ?? fallback(id));
+  const snapshots = nodeIds.map((id) => map.get(id) ?? fallback(id));
+  stampUserProjectCounts(snapshots);
+  return snapshots;
 }

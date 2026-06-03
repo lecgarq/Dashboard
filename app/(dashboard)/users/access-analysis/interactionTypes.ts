@@ -33,6 +33,8 @@ export interface NodeFeatureSnapshot {
    * Optional for backward compatibility; populated by buildFeatureSnapshot.
    */
   userName?: string;
+  /** How many projects this node's user appears on (stamped by stampUserProjectCounts). */
+  projectCount?: number;
   /** Project display name (shown verbatim in tooltip). */
   project: string;
   /** Joined role display string (shown in tooltip + drives `role` filter dim). */

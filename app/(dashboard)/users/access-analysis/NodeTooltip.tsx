@@ -78,6 +78,9 @@ export function NodeTooltip({
       <div>
         Activity: {feature.activityCountRaw} ({feature.activityBucket})
       </div>
+      {typeof feature.projectCount === "number" && (
+        <div>Projects: {feature.projectCount}</div>
+      )}
     </div>,
     document.body,
   );

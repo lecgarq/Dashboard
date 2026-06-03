@@ -7,6 +7,7 @@ import {
   type GraphProjectRow,
 } from "./graphTables";
 import { rawRowToSnapshot, type RawFeatureRow } from "./featureSnapshot";
+import { stampUserProjectCounts } from "./userProjectCounts";
 
 export interface GraphNodes {
   /** DISTINCT `${user_id}::${project_id}` sorted ascending — matches loadNodeIds. */
@@ -85,6 +86,8 @@ export function buildGraphNodesFromUsers(users: readonly BulkAccUser[]): GraphNo
     const pr = repByNode.get(id)!;
     return rawRowToSnapshot(toRawFeatureRow(pr, userById.get(pr.user_id)));
   });
+
+  stampUserProjectCounts(features);
 
   return { nodeIds, features };
 }
