@@ -46,6 +46,12 @@ export async function createPhysicsLayerWorker(
   dimNames: string[],
   initialSliders: Record<string, number>,
   dimWeights: Record<string, Float32Array> = {},
+  /**
+   * When false, skip the DuckDB-backed positions cache entirely (no
+   * getDuckDbClient boot). Used by the no-DuckDB graph path — layout simply
+   * settles fresh each load instead of persisting between visits.
+   */
+  usePositionsCache = true,
 ): Promise<PhysicsLayer> {
   const n = nodeIds.length;
 
@@ -60,16 +66,17 @@ export async function createPhysicsLayerWorker(
   let _sliders: Record<string, number> = { ...initialSliders };
 
   // ---- DuckDB cache check (main thread) -----------------------------------
-  const { connection } = await getDuckDbClient();
-  const cacheKey = hashNodeSetAndSliders(nodeIds, initialSliders);
-  const cached = await loadCachedPositions(connection, cacheKey, nodeIds);
-
   let cachedPositions: Float32Array | undefined;
-  if (cached) {
-    _cachedXyz = new Float32Array(cached);
-    cachedPositions = cached;
-    frozen = true;
-    _positionsVersion++;
+  if (usePositionsCache) {
+    const { connection } = await getDuckDbClient();
+    const cacheKey = hashNodeSetAndSliders(nodeIds, initialSliders);
+    const cached = await loadCachedPositions(connection, cacheKey, nodeIds);
+    if (cached) {
+      _cachedXyz = new Float32Array(cached);
+      cachedPositions = cached;
+      frozen = true;
+      _positionsVersion++;
+    }
   }
 
   // ---- Spawn Worker -------------------------------------------------------
@@ -97,17 +104,19 @@ export async function createPhysicsLayerWorker(
       case "frozen": {
         // Simulation settled — save to DuckDB cache on main thread
         frozen = true;
-        const frozenXyz: Float32Array = msg.xyz;
-        const frozenSliders: Record<string, number> = msg.sliders;
-        const key = hashNodeSetAndSliders(nodeIds, frozenSliders);
-        void (async () => {
-          try {
-            const { connection: conn } = await getDuckDbClient();
-            await savePositions(conn, key, nodeIds, frozenXyz);
-          } catch {
-            /* ignore cache save failures */
-          }
-        })();
+        if (usePositionsCache) {
+          const frozenXyz: Float32Array = msg.xyz;
+          const frozenSliders: Record<string, number> = msg.sliders;
+          const key = hashNodeSetAndSliders(nodeIds, frozenSliders);
+          void (async () => {
+            try {
+              const { connection: conn } = await getDuckDbClient();
+              await savePositions(conn, key, nodeIds, frozenXyz);
+            } catch {
+              /* ignore cache save failures */
+            }
+          })();
+        }
         break;
       }
 

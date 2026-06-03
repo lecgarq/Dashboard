@@ -59,12 +59,19 @@ import type { CatalogDimension } from "./dimensionCatalog.types";
 import { getDuckDbClient } from "./duckdbClient";
 import { GraphLoadingSkeleton } from "@/components/ui/GraphLoadingSkeleton";
 import { buildGraphArrowTables } from "./graphTables";
+import { buildGraphNodesFromUsers } from "./graphNodesFromUsers";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
 import { ensurePositionsSchema } from "./positionsCache";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
+// Light-speed graph load: build node ids + features in pure JS from the hydrated
+// bulk users, so the graph never boots DuckDB-WASM (~1-2s) on its critical path.
+// ON by default; set NEXT_PUBLIC_ACC_JS_SNAPSHOT="0" to revert to the legacy
+// in-browser-DuckDB path. DuckDB still lazy-loads for the deferred analytics.
+const USE_JS_SNAPSHOT = process.env.NEXT_PUBLIC_ACC_JS_SNAPSHOT !== "0";
+
 // ---------------------------------------------------------------------------
-// Loader — pulls node IDs from DuckDB in deterministic order
+// Loader — pulls node IDs from DuckDB in deterministic order (legacy path)
 // ---------------------------------------------------------------------------
 
 async function loadNodeIds(): Promise<string[]> {
@@ -457,37 +464,40 @@ export function AccessAnalysisShell(): React.JSX.Element {
     let createdPhysics: PhysicsLayer | null = null;
     (async () => {
       try {
-        // WS2: the redesigned graph owns its own data lifecycle. Register the
-        // graph_* DuckDB tables from the DC snapshot (accDcGraph.bulkUsers)
-        // before any reader query runs. Similarity/folder tables stay empty
-        // here; the WS2 edge-computation step populates them next.
-        // DuckDB-WASM init (~1-2s) and the Arrow-table build are independent —
-        // buildGraphArrowTables needs only `users`, not the connection — so run
-        // them concurrently to overlap WASM startup with table construction
-        // instead of paying them back-to-back.
-        const [{ connection }, tables] = await Promise.all([
-          getDuckDbClient(),
-          buildGraphArrowTables({
-            users,
-            similarityInput: null,
-            topology: null,
-            folderRows: [],
-          }),
-        ]);
-        if (cancelled) return;
-        await registerGraphArrowTables(connection, tables);
-        if (cancelled) return;
-
-        // The positions cache table must exist before createPhysicsLayer reads
-        // it (loadCachedPositions/savePositions assume the schema). As the render
-        // integrator, the shell owns this init — idempotent CREATE IF NOT EXISTS.
-        await ensurePositionsSchema(connection);
-        if (cancelled) return;
-
-        const nodeIds = await loadNodeIds();
-        if (cancelled) return;
-        const snapshot = await buildFeatureSnapshot({ nodeIds });
-        if (cancelled) return;
+        // Build the graph node set + aligned feature snapshots. Two paths:
+        //  - JS (default): pure in-memory build from the hydrated `users` — no
+        //    DuckDB-WASM boot on the critical path (the light-speed win).
+        //  - legacy: register graph_* Arrow tables into DuckDB and read back.
+        let nodeIds: string[];
+        let snapshot: NodeFeatureSnapshot[];
+        if (USE_JS_SNAPSHOT) {
+          const built = buildGraphNodesFromUsers(users);
+          nodeIds = built.nodeIds;
+          snapshot = built.features;
+        } else {
+          // DuckDB-WASM init (~1-2s) and the Arrow-table build are independent —
+          // buildGraphArrowTables needs only `users`, not the connection — so run
+          // them concurrently to overlap WASM startup with table construction.
+          const [{ connection }, tables] = await Promise.all([
+            getDuckDbClient(),
+            buildGraphArrowTables({
+              users,
+              similarityInput: null,
+              topology: null,
+              folderRows: [],
+            }),
+          ]);
+          if (cancelled) return;
+          await registerGraphArrowTables(connection, tables);
+          if (cancelled) return;
+          // Positions-cache schema must exist before the physics layer reads it.
+          await ensurePositionsSchema(connection);
+          if (cancelled) return;
+          nodeIds = await loadNodeIds();
+          if (cancelled) return;
+          snapshot = await buildFeatureSnapshot({ nodeIds });
+          if (cancelled) return;
+        }
 
         const nodes: SimNode[] = nodeIds.map((id, index) => ({ id, index }));
         // Phase E: the catalog drives positioning. Targets/weights are built only
@@ -527,6 +537,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
           targetDimIds,
           initialSliders,
           dimWeights,
+          // JS path: skip the DuckDB-backed positions cache so the graph never
+          // boots DuckDB-WASM on its critical path (layout settles fresh).
+          !USE_JS_SNAPSHOT,
         );
         if (cancelled) {
           layer.dispose();
