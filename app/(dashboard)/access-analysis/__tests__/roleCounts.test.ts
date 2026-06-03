@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { roleBuckets, UNKNOWN_ROLE } from "../roleCounts";
+import { summarizeRoles, collapseToTopSlices, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import type { AccessInstance } from "../types";
 
 const mk = (roles: string[]): AccessInstance => ({
@@ -8,46 +8,68 @@ const mk = (roles: string[]): AccessInstance => ({
   company: "Hermosillo", roles, modules: [], adminModules: [],
 });
 
-describe("roleBuckets", () => {
-  it("returns [] for no rows", () => {
-    expect(roleBuckets([])).toEqual([]);
+describe("summarizeRoles", () => {
+  it("returns an empty summary for no rows", () => {
+    expect(summarizeRoles([])).toEqual({ slices: [], distinctRoles: 0, total: 0 });
   });
 
-  it("buckets a single-role membership under that role", () => {
-    expect(roleBuckets([mk(["Member"]), mk(["Member"]), mk(["Admin"])])).toEqual([
+  it("buckets single role, multi-role, and role-less memberships", () => {
+    const s = summarizeRoles([
+      mk(["Member"]), mk(["Member"]),
+      mk(["Admin", "Member"]),   // -> Multiple roles
+      mk([]),                     // -> Unknown
+    ]);
+    expect(s.total).toBe(4);
+    expect(s.slices).toEqual([
       { name: "Member", value: 2 },
-      { name: "Admin", value: 1 },
+      { name: MULTIPLE_ROLES, value: 1 },
+      { name: UNKNOWN_ROLE, value: 1 },
     ]);
   });
 
-  it("buckets a multi-role membership under one combined, alphabetised slice", () => {
-    const out = roleBuckets([mk(["Member", "Admin"])]);
-    expect(out).toEqual([{ name: "Admin + Member", value: 1 }]);
+  it("counts distinct role names across all memberships, including inside multi-role", () => {
+    const s = summarizeRoles([mk(["Admin", "Member"]), mk(["Member"]), mk(["Designer"]), mk([])]);
+    // Admin, Member, Designer -> 3 distinct; Unknown is not a role.
+    expect(s.distinctRoles).toBe(3);
   });
 
-  it("treats role order as irrelevant for the combined label", () => {
-    const out = roleBuckets([mk(["Member", "Admin"]), mk(["Admin", "Member"])]);
-    expect(out).toEqual([{ name: "Admin + Member", value: 2 }]);
+  it("de-duplicates repeated roles within one membership (still counts as single)", () => {
+    const s = summarizeRoles([mk(["Admin", "Admin"])]);
+    expect(s.slices).toEqual([{ name: "Admin", value: 1 }]);
+    expect(s.distinctRoles).toBe(1);
   });
+});
 
-  it("de-duplicates repeated roles within one membership", () => {
-    expect(roleBuckets([mk(["Admin", "Admin"])])).toEqual([{ name: "Admin", value: 1 }]);
-  });
+describe("collapseToTopSlices", () => {
+  const slices = [
+    { name: UNKNOWN_ROLE, value: 100 },
+    { name: MULTIPLE_ROLES, value: 50 },
+    { name: "A", value: 30 },
+    { name: "B", value: 20 },
+    { name: "C", value: 10 },
+    { name: "D", value: 5 },
+    { name: "E", value: 1 },
+  ];
 
-  it("buckets role-less memberships under Unknown", () => {
-    const out = roleBuckets([mk([]), mk([]), mk(["Member"])]);
+  it("pins Unknown + Multiple roles, keeps the top N roles, folds the rest into Other", () => {
+    const out = collapseToTopSlices(slices, 2);
     expect(out).toEqual([
-      { name: UNKNOWN_ROLE, value: 2 },
-      { name: "Member", value: 1 },
+      { name: UNKNOWN_ROLE, value: 100 },
+      { name: MULTIPLE_ROLES, value: 50 },
+      { name: "A", value: 30 },
+      { name: "B", value: 20 },
+      { name: "Other (3 roles)", value: 16 }, // C+D+E
     ]);
   });
 
-  it("sorts descending by count, then by name for stable ties", () => {
-    const out = roleBuckets([mk(["B"]), mk(["A"]), mk(["A"]), mk(["C"]), mk(["C"])]);
-    expect(out).toEqual([
-      { name: "A", value: 2 },
-      { name: "C", value: 2 },
-      { name: "B", value: 1 },
-    ]);
+  it("adds no Other slice when nothing is left over", () => {
+    const out = collapseToTopSlices(slices, 10);
+    expect(out.some((s) => s.name.startsWith("Other ("))).toBe(false);
+    expect(out).toHaveLength(slices.length);
+  });
+
+  it("uses singular wording for a single leftover role", () => {
+    const out = collapseToTopSlices(slices, 4);
+    expect(out.find((s) => s.name.startsWith("Other"))).toEqual({ name: "Other (1 role)", value: 1 });
   });
 });
