@@ -376,7 +376,7 @@ function ShellBody({
                     : ""}
                 </span>
               ) : (
-                <span>Grouping by: {activeDims[0]?.label ?? ""}</span>
+                <span>Grouping by: {userDim.label}</span>
               )}
             </div>
           )}
