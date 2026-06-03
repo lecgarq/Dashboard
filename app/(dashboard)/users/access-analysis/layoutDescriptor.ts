@@ -6,11 +6,12 @@
  * React path. Pure: no React/DOM/IO.
  *
  *   0 active sliders → "rest"  (static organic cloud)
- *   1 active slider  → "blob"  (PROGRESSIVE morph: at 0 every node sits at its resting-
- *                               cloud position; at 100 it sits in its dominant-value clump
- *                               core. The slider linearly interpolates between the two, so
- *                               dragging gathers each value's members out of the cloud into
- *                               their own clump — proportional motion, no 0→1 jump.)
+ *   1 active slider  → "blob"  (PROGRESSIVE morph between two grouped endpoints that share
+ *                               fixed footprint centers: at 0 each node sits at its LOOSE
+ *                               grouped position (members fill the footprint — organic); at
+ *                               100 it sits in its tight clump core. The slider smoothsteps
+ *                               between the two, tightening each value's members into their
+ *                               own clump — proportional motion, no 0→1 jump.)
  *   2+ active        → "grid"  (cross-tab: strongest = columns, next = rows)
  */
 import type { ClusterFootprints } from "./clusterPacking";
