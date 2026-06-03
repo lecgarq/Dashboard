@@ -67,22 +67,53 @@ describe("layoutClusterFootprints (count-routed, no slider-lag)", () => {
     expect(Array.from(auto.cy)).toEqual(Array.from(organic.cy));
   });
 
-  it("> threshold → fast packSiblings path (identical to packClusterFootprints)", () => {
+  it("> threshold → organic force layout, NOT the packed circle", () => {
+    // The owner rejected the rigid packSiblings disc. Large counts now use the FAST
+    // organic tuning (still a force layout), so the result must DIFFER from the circle
+    // packer and stay finite/bounded.
     const big = Array.from({ length: ORGANIC_MAX_CLUSTERS + 50 }, (_, i) => (i % 7) + 1);
     const auto = layoutClusterFootprints(big);
     const packed = packClusterFootprints(big);
-    expect(Array.from(auto.cx)).toEqual(Array.from(packed.cx));
-    expect(Array.from(auto.cy)).toEqual(Array.from(packed.cy));
+    let differs = false;
+    for (let i = 0; i < big.length; i++) {
+      if (auto.cx[i] !== packed.cx[i] || auto.cy[i] !== packed.cy[i]) {
+        differs = true;
+        break;
+      }
+    }
+    expect(differs).toBe(true);
+    let anyNaN = false;
+    for (let i = 0; i < big.length; i++) {
+      if (!Number.isFinite(auto.cx[i]) || !Number.isFinite(auto.cy[i]) || !Number.isFinite(auto.r[i])) anyNaN = true;
+    }
+    expect(anyNaN).toBe(false);
   });
 
-  it("stays fast at user scale (~3,367 clusters) — the slider-lag regression guard", () => {
-    // The organic force layout takes ~9s here; the routed packer is ~20ms. A generous
-    // 1s budget (≈50× margin) flags a regression without flaking on slow CI.
+  it("stays organic, bounded, and within the one-time cost guard at user scale (~3,367)", () => {
+    // The user-blob default lays this out ON LOAD. The OLD strict-collide settle took
+    // ~8s here (and packSiblings gave the rejected disc). The fast organic tuning is a
+    // one-time ~1.3s cost: a 2.5s budget flags a regression without flaking on slow CI.
     const counts = Array.from({ length: 3367 }, (_, i) => (i < 30 ? 40 : (i % 3) + 1));
     const t0 = performance.now();
     const f = layoutClusterFootprints(counts);
     const ms = performance.now() - t0;
     expect(f.cx.length).toBe(counts.length);
-    expect(ms).toBeLessThan(1000);
-  });
+    // finite + bounded by the GPU safety ceiling, not collapsed to a point
+    let anyNaN = false;
+    let mx = 0;
+    let my = 0;
+    for (let i = 0; i < counts.length; i++) {
+      if (!Number.isFinite(f.cx[i]) || !Number.isFinite(f.cy[i])) anyNaN = true;
+      mx += f.cx[i];
+      my += f.cy[i];
+    }
+    mx /= counts.length;
+    my /= counts.length;
+    let reach = 0;
+    for (let i = 0; i < counts.length; i++) reach = Math.max(reach, Math.hypot(f.cx[i] - mx, f.cy[i] - my) + f.r[i]);
+    expect(anyNaN).toBe(false);
+    expect(reach).toBeLessThanOrEqual(1901);
+    expect(reach).toBeGreaterThan(400);
+    expect(ms).toBeLessThan(2500);
+  }, 15000);
 });

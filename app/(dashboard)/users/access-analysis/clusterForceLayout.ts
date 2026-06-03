@@ -1,25 +1,24 @@
 /**
- * clusterForceLayout.ts — Organic, non-overlapping footprint layout (the general
- * placement). Replaces the rigid packSiblings→packEnclose circle: uses d3-force
- * forceCollide to GUARANTEE non-overlap (the blobs-don't-touch invariant) while
- * forceManyBody + weak center gravity give an irregular, breathing outer shape.
+ * clusterForceLayout.ts — Organic footprint layout for ALL cluster counts. d3-force
+ * (forceManyBody + weak center gravity, plus forceCollide for separation) gives an
+ * irregular, breathing outer shape — NEVER the rigid packSiblings→packEnclose circle.
  *
- * DATA DEFINES THE SHAPE (no fixed circle): the settled coordinates are kept at
- * their NATURAL collide extent — which already scales with cluster count and sizes
- * (footprintRadius ∝ √count) — recentered on the centroid. We do NOT rescale up to
- * a constant disc (the old "fixed shape that fits the data"); few/small clusters
- * stay compact, many/large clusters spread wider, and the camera auto-fits whatever
- * silhouette emerges. We only scale DOWN if the natural extent would overflow the
- * GPU space (safety), never up.
+ * Two tunings, same {cx,cy,r} output:
+ *   - few clusters (≤ ORGANIC_MAX_CLUSTERS): rich settle — strong collide (strict
+ *     non-overlap), 280 ticks. Fast at small n, prettiest for roles/tiers.
+ *   - many clusters (> threshold, e.g. ~3,367 users): FAST organic — size-scaled
+ *     repulsion (big blobs claim more room), single-iteration light collide (gentle
+ *     overlap allowed → blended at low slider, like the reference), capped repulsion
+ *     range, fewer ticks. ~1s one-time instead of ~8s; the silhouette is irregular,
+ *     not a packed disc.
  *
- * Pure & deterministic: nodes are seeded on a fixed phyllotaxis spiral (NO RNG) and
- * the simulation is ticked a FIXED number of times synchronously (sim.stop()), so
- * the same counts always yield the same layout (no per-render jitter). Output is the
- * SAME ClusterFootprints {cx,cy,r} shape as packClusterFootprints → drop-in for
- * packMemberPositions / ClusterLabels / the transition layer / GPU anchors.
+ * DATA DEFINES THE SHAPE (no fixed circle): settled coords kept at their NATURAL
+ * extent, recentered on the centroid; only scaled DOWN if they'd overflow the GPU
+ * space (never up to a disc). Pure & deterministic: fixed phyllotaxis seed (NO RNG),
+ * fixed synchronous tick count. Drop-in for packMemberPositions / GPU anchors.
  */
 import { forceSimulation, forceCollide, forceManyBody, forceX, forceY } from "d3-force";
-import { footprintRadius, packClusterFootprints, type ClusterFootprints } from "./clusterPacking";
+import { footprintRadius, type ClusterFootprints } from "./clusterPacking";
 
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 const GAP = 6; // breathing room (space units) added to each collide radius
@@ -40,23 +39,20 @@ interface FNode {
 }
 
 /**
- * Above this cluster count the organic force layout is BOTH too slow (forceCollide
- * degrades toward O(n²) per tick × 280 ticks — ~9s at 3,367 clusters) AND visually
- * indistinguishable from deterministic circle packing (the blobs become specks tiling
- * a disc). The breathing irregular outline only matters for a handful of big blobs.
+ * Above this cluster count we switch from the rich settle to the FAST organic tuning
+ * (size-scaled repulsion + single-iteration collide + fewer ticks). Both are organic
+ * force layouts — neither is a packed circle. The split is purely about keeping the
+ * one-time layout cost ~1s instead of ~8s at thousands of clusters.
  */
 export const ORGANIC_MAX_CLUSTERS = 150;
 
 /**
- * Footprint layout that stays fast at any cluster count: the organic force settle for
- * a small number of blobs (roles/tiers — fast AND nicer), the deterministic packSiblings
- * packer above ORGANIC_MAX_CLUSTERS (projects/users — ~18ms vs ~9s, same {cx,cy,r}, still
- * a packed-circle blob, never a grid). Drop-in for layoutClusterFootprintsOrganic.
+ * Footprint layout — always organic (force-directed), at any cluster count. Small
+ * counts get the rich settle; large counts (users/projects) get the fast tuning. Both
+ * yield an irregular silhouette, never a packed disc. Drop-in {cx,cy,r}.
  */
 export function layoutClusterFootprints(counts: ReadonlyArray<number>): ClusterFootprints {
-  return counts.length > ORGANIC_MAX_CLUSTERS
-    ? packClusterFootprints(counts)
-    : layoutClusterFootprintsOrganic(counts);
+  return layoutClusterFootprintsOrganic(counts);
 }
 
 export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): ClusterFootprints {
@@ -68,6 +64,8 @@ export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): C
   for (let i = 0; i < k; i++) r[i] = footprintRadius(counts[i]);
   if (k === 1) return { cx, cy, r };
 
+  const large = k > ORGANIC_MAX_CLUSTERS;
+
   // Deterministic spiral seed; bigger blobs nearer the centre (count order).
   const order = counts.map((_, i) => i).sort((a, b) => counts[b] - counts[a]);
   const nodes: FNode[] = order.map((idx, rank) => {
@@ -76,15 +74,26 @@ export function layoutClusterFootprintsOrganic(counts: ReadonlyArray<number>): C
     return { r: r[idx], x: Math.cos(th) * rr, y: Math.sin(th) * rr, index: idx };
   });
 
+  // Large: size-scaled charge (big blobs claim more room) + capped range + single-pass
+  // light collide (gentle overlap → blended at low slider). Small: strong strict-
+  // non-overlap collide + uniform charge (the proven rich settle).
+  const charge = large
+    ? forceManyBody<FNode>().strength((d) => -(d.r + 20)).distanceMax(1100)
+    : forceManyBody<FNode>().strength(-12);
   const sim = forceSimulation<FNode>(nodes)
-    // 1.25× margin around each footprint → a CLEAR visible gap between blobs (members
-    // fill only ~0.95 of the footprint), so clusters read as distinct, not touching.
-    .force("collide", forceCollide<FNode>((d) => d.r * 1.25 + GAP).strength(1).iterations(3))
-    .force("charge", forceManyBody<FNode>().strength(-12))
-    .force("x", forceX<FNode>(0).strength(CENTER_STRENGTH))
-    .force("y", forceY<FNode>(0).strength(CENTER_STRENGTH))
+    .velocityDecay(large ? 0.5 : 0.4)
+    .force(
+      "collide",
+      large
+        ? forceCollide<FNode>((d) => d.r + 4).strength(0.5).iterations(1)
+        : forceCollide<FNode>((d) => d.r * 1.25 + GAP).strength(1).iterations(3),
+    )
+    .force("charge", charge)
+    .force("x", forceX<FNode>(0).strength(CENTER_STRENGTH * (large ? 2 : 1)))
+    .force("y", forceY<FNode>(0).strength(CENTER_STRENGTH * (large ? 2 : 1)))
     .stop();
-  for (let t = 0; t < TICKS; t++) sim.tick();
+  const ticks = large ? 90 : TICKS;
+  for (let t = 0; t < ticks; t++) sim.tick();
 
   // Recenter on the centroid. Keep the NATURAL collide extent (data-defined shape +
   // size); only scale DOWN if it would overflow the GPU space — never up to a disc.
