@@ -179,3 +179,23 @@ many columns as the width allows — all roles, no pagination, no `Other`.
   slice and its legend row. Container widened to `max-w-6xl` for more columns.
 
 Gates: tsc 0 / unit 175 files, 1409 tests green. Commit `0d20165`.
+
+## Iteration #5 — 2026-06-03 (interactive + reading order)
+
+Owner: more animation, toggle roles on/off with metrics, and the legend should
+read top→bottom then left→right.
+
+- **Toggle:** click a legend row or a donut slice to hide/show a role. Hidden
+  roles remain in the series at `value: 0` so the ring animates as a smooth
+  grow/shrink. The `EChart` wrapper gained an opt-in `notMerge` prop (default
+  true); `RolesPieChart` passes `notMerge={false}` + `animationDurationUpdate`
+  so updates diff-animate instead of re-running the entrance.
+- **Live metrics** (`role-metrics`): roles selected / total, users shown, and
+  percent of all memberships — recomputed from the active set. Plus
+  `Show all` / `Clear` controls. Center total + tooltip percentages follow the
+  active selection.
+- **Reading order:** legend switched from CSS grid (row-major) to CSS
+  multi-column (`column-width`), so it now fills each column top→bottom before
+  moving right. Inactive rows dim + strike-through.
+
+Gates: tsc 0 / unit 177 files, 1418 tests green. Commit `2546b25`.
