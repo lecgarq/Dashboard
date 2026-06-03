@@ -199,3 +199,22 @@ read top→bottom then left→right.
   moving right. Inactive rows dim + strike-through.
 
 Gates: tsc 0 / unit 177 files, 1418 tests green. Commit `2546b25`.
+
+## Iteration #6 — 2026-06-03 (top-N input + expandable Others + warnings)
+
+Owner wants a typed number for how many roles to show, the rest as Others with a
+`+` to expand all, and Unknown/Multiple roles flagged as warnings.
+
+- **`collapseToTopSlices` re-added** (pins Unknown + Multiple roles, top N
+  singles, rest → `Others (k roles)`). A numeric "Show top N" input drives N
+  (default 8); changing it collapses to that N.
+- **Expand:** a `+` button on the Others legend row sets `expanded`, splitting
+  the folded roles back into individual slices on BOTH the donut and the legend;
+  a `− Collapse` control returns to top N.
+- **Warnings:** Unknown (amber `#f59e0b`) and Multiple roles (rose `#fb7185`)
+  get attention colours on the pie plus a ⚠ icon + amber text in the legend, and
+  are never folded into Others.
+- Toggle/hidden state keyed by slice name (survives regrouping); metrics +
+  column-major legend + animations retained.
+
+Gates: tsc 0 / unit 177 files, 1424 tests green. Commit `c401606`.
