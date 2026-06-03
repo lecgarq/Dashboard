@@ -49,25 +49,3 @@ export function summarizeRoles(rows: AccessInstance[]): RoleSummary {
   const total = slices.reduce((sum, d) => sum + d.value, 0);
   return { slices, distinctRoles: distinct.size, total };
 }
-
-/**
- * Reduce the slice list to a donut-friendly size: keep "Unknown" and
- * "Multiple roles" pinned, keep the `topN` largest individual roles, and fold
- * every remaining role into a single "Other (N roles)" slice. Keeps the ring
- * readable (no overlapping labels) while still accounting for 100% of users.
- */
-export function collapseToTopSlices(slices: RoleSlice[], topN: number): RoleSlice[] {
-  const pinned = new Set<string>([UNKNOWN_ROLE, MULTIPLE_ROLES]);
-  const special = slices.filter((s) => pinned.has(s.name));
-  const singles = slices.filter((s) => !pinned.has(s.name)); // already sorted desc
-  const kept = singles.slice(0, topN);
-  const rest = singles.slice(topN);
-
-  const result = [...special, ...kept];
-  if (rest.length > 0) {
-    const value = rest.reduce((sum, d) => sum + d.value, 0);
-    const noun = rest.length === 1 ? "role" : "roles";
-    result.push({ name: `Other (${rest.length} ${noun})`, value });
-  }
-  return result.sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
-}

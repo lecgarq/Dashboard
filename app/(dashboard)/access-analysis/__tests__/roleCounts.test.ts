@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { summarizeRoles, collapseToTopSlices, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
+import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import type { AccessInstance } from "../types";
 
 const mk = (roles: string[]): AccessInstance => ({
@@ -37,39 +37,5 @@ describe("summarizeRoles", () => {
     const s = summarizeRoles([mk(["Admin", "Admin"])]);
     expect(s.slices).toEqual([{ name: "Admin", value: 1 }]);
     expect(s.distinctRoles).toBe(1);
-  });
-});
-
-describe("collapseToTopSlices", () => {
-  const slices = [
-    { name: UNKNOWN_ROLE, value: 100 },
-    { name: MULTIPLE_ROLES, value: 50 },
-    { name: "A", value: 30 },
-    { name: "B", value: 20 },
-    { name: "C", value: 10 },
-    { name: "D", value: 5 },
-    { name: "E", value: 1 },
-  ];
-
-  it("pins Unknown + Multiple roles, keeps the top N roles, folds the rest into Other", () => {
-    const out = collapseToTopSlices(slices, 2);
-    expect(out).toEqual([
-      { name: UNKNOWN_ROLE, value: 100 },
-      { name: MULTIPLE_ROLES, value: 50 },
-      { name: "A", value: 30 },
-      { name: "B", value: 20 },
-      { name: "Other (3 roles)", value: 16 }, // C+D+E
-    ]);
-  });
-
-  it("adds no Other slice when nothing is left over", () => {
-    const out = collapseToTopSlices(slices, 10);
-    expect(out.some((s) => s.name.startsWith("Other ("))).toBe(false);
-    expect(out).toHaveLength(slices.length);
-  });
-
-  it("uses singular wording for a single leftover role", () => {
-    const out = collapseToTopSlices(slices, 4);
-    expect(out.find((s) => s.name.startsWith("Other"))).toEqual({ name: "Other (1 role)", value: 1 });
   });
 });
