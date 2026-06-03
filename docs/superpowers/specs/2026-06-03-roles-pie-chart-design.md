@@ -102,3 +102,21 @@ Deletion is the risky part, not the pie. Each deleted file's importers were
 grepped across the repo (excluding `.next-*` artifacts); the old UI + 4 API
 routes form a closed island referencing only themselves. The shared
 `types.ts`/`modules.ts` are kept for `loadInstanceView`.
+
+## Technical debt / follow-ups (recorded 2026-06-03, post-implementation)
+
+The legacy `.gsd/TECHNICAL_DEBT.md` log was archived on 2026-05-18 (now under
+`docs/archive/planning/2026-05-18/gsd/`), so debt is recorded here instead.
+
+- **No e2e coverage for `/access-analysis`.** The `access-analysis-redesign`
+  Playwright spec was deleted with the old UI. The route is now covered only by
+  unit (`roleCounts`) + render tests (`RolesPieChart`, `page`). A thin smoke
+  spec (page loads, a chart canvas mounts) is a possible follow-up.
+- **Deleted island is recoverable in git history** (commit `4a57e17`) — the
+  dashboard, user table, analytics panels, 4 `/api/access-analysis/*` routes,
+  and helpers (queries/store/filters/filterParams/aggregations/trends/csv/
+  userRows) if any future need arises.
+- **Stale Next generated route types.** Deleting the API routes left dangling
+  validators under `.next/types` + `.next-e2e/dev/types` that fail `tsc` until a
+  rebuild regenerates them; cleared manually during implementation. A clean
+  `npm run build` is the authoritative typecheck.
