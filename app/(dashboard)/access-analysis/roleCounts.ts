@@ -1,5 +1,3 @@
-import type { AccessInstance } from "./types";
-
 export interface RoleSlice {
   name: string;
   value: number;
@@ -31,7 +29,7 @@ export const MULTIPLE_ROLES = "Multiple roles";
  * multi-role memberships) — that is the honest answer to "how many roles do I
  * have", independent of how slices are grouped for display.
  */
-export function summarizeRoles(rows: AccessInstance[]): RoleSummary {
+export function summarizeRoles(rows: ReadonlyArray<{ roles: string[] }>): RoleSummary {
   const counts = new Map<string, number>();
   const distinct = new Set<string>();
   for (const row of rows) {
