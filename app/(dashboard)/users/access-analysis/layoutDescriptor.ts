@@ -24,8 +24,8 @@ export type LayoutDescriptor =
       dimId: string;
       clustering: DominantClustering;
       footprints: ClusterFootprints;
-      /** Per-node resting-cloud position (stride-3, aligned to clustering.ids) — the s=0 end. */
-      restXyz: Float32Array;
+      /** Per-node LOOSE grouped position (stride-2, aligned to clustering.ids) — the s=0 end. */
+      loose: Float32Array;
       /** Per-node packed clump-core position (stride-2, aligned to clustering.ids) — the s=1 end. */
       packed: Float32Array;
     }
@@ -69,17 +69,18 @@ export function descriptorTarget(
     case "rest":
       return desc.xyz; // static — no per-frame work
     case "blob": {
-      // s = eased progress 0→1. Morph each node from its resting-cloud position (s=0) to
-      // its packed clump core (s=1) along the ease-out curve. Allocation-free: writes `out`.
+      // s = smoothstep progress 0→1. Morph each node from its LOOSE grouped position
+      // (s=0, organic) to its packed clump core (s=1, tight). Both endpoints share the
+      // fixed footprint centers, so only member spread changes. Allocation-free.
       const s = easeMorph((live[desc.dimId] ?? 0) / 100);
       const n = desc.clustering.ids.length;
-      const rest = desc.restXyz; // stride-3
+      const loose = desc.loose; // stride-2
       const packed = desc.packed; // stride-2
       for (let i = 0; i < n; i++) {
-        const rx = rest[i * 3];
-        const ry = rest[i * 3 + 1];
-        out[i * 3] = rx + (packed[i * 2] - rx) * s;
-        out[i * 3 + 1] = ry + (packed[i * 2 + 1] - ry) * s;
+        const lx = loose[i * 2];
+        const ly = loose[i * 2 + 1];
+        out[i * 3] = lx + (packed[i * 2] - lx) * s;
+        out[i * 3 + 1] = ly + (packed[i * 2 + 1] - ly) * s;
         out[i * 3 + 2] = 0;
       }
       return out;

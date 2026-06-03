@@ -25,15 +25,15 @@ describe("descriptorTarget", () => {
     expect(descriptorTarget(desc, {}, out)).toBe(xyz);
   });
 
-  it("blob morphs rest→packed progressively by slider value (lerp, z=0)", () => {
+  it("blob morphs loose→packed progressively by slider value (lerp, z=0)", () => {
     const features = Array.from({ length: 4 }, (_, i) => feat("A", i % 2 ? "X" : "Y"));
     const clustering = buildDominantClusters(features, dim("role", (f) => f.role));
     const footprints = layoutClusterFootprintsOrganic(clustering.counts);
     const n = features.length;
-    // Known endpoints: rest spreads the nodes wide; packed gathers them to the origin.
-    const restXyz = new Float32Array([100, 0, 0, 0, 100, 0, -100, 0, 0, 0, -100, 0]);
+    // Known endpoints: loose spreads the nodes wide (stride-2); packed gathers them to origin.
+    const loose = new Float32Array([100, 0, 0, 100, -100, 0, 0, -100]);
     const packed = new Float32Array([0, 0, 0, 0, 0, 0, 0, 0]);
-    const desc: LayoutDescriptor = { kind: "blob", dimId: "role", clustering, footprints, restXyz, packed };
+    const desc: LayoutDescriptor = { kind: "blob", dimId: "role", clustering, footprints, loose, packed };
     expect(descriptorNodeCount(desc)).toBe(n);
 
     const at = (v: number): Float32Array => {
@@ -47,8 +47,9 @@ describe("descriptorTarget", () => {
       return r;
     };
 
-    // s=0 → exactly the rest positions.
-    expect(Array.from(at(0))).toEqual(Array.from(restXyz));
+    // s=0 → exactly the loose positions (stride-2 → stride-3, z=0).
+    const loose3 = new Float32Array([100, 0, 0, 0, 100, 0, -100, 0, 0, 0, -100, 0]);
+    expect(Array.from(at(0))).toEqual(Array.from(loose3));
     // s=1 → exactly the packed positions (origin), z stays 0.
     const tight = at(100);
     for (let i = 0; i < n; i++) {
@@ -56,14 +57,14 @@ describe("descriptorTarget", () => {
       expect(tight[i * 3 + 1]).toBeCloseTo(0);
       expect(tight[i * 3 + 2]).toBe(0);
     }
-    // value 50 → eased progress easeMorph(0.5); node = rest + (packed-rest)*progress.
-    // packed = origin, so node = rest*(1-progress). Expressed via easeMorph so this
+    // value 50 → eased progress easeMorph(0.5); node = loose + (packed-loose)*progress.
+    // packed = origin, so node = loose*(1-progress). Expressed via easeMorph so this
     // survives curve tuning (EASE_EXP).
     const f = easeMorph(0.5);
     const mid = at(50);
     for (let i = 0; i < n; i++) {
-      expect(mid[i * 3]).toBeCloseTo(restXyz[i * 3] * (1 - f));
-      expect(mid[i * 3 + 1]).toBeCloseTo(restXyz[i * 3 + 1] * (1 - f));
+      expect(mid[i * 3]).toBeCloseTo(loose[i * 2] * (1 - f));
+      expect(mid[i * 3 + 1]).toBeCloseTo(loose[i * 2 + 1] * (1 - f));
     }
     // Progressive: spread shrinks monotonically as the slider rises (no 0→1 jump).
     expect(spread(at(0))).toBeGreaterThan(spread(at(50)));
@@ -89,6 +90,38 @@ describe("descriptorTarget", () => {
     const out = new Float32Array(features.length * 3);
     const ref = descriptorTarget(desc, { project: 100, role: 100 }, out);
     expect(ref).toBe(out);
+    expect(out[2]).toBe(0);
+  });
+});
+
+function blobFixture(): Extract<LayoutDescriptor, { kind: "blob" }> {
+  return {
+    kind: "blob",
+    dimId: "user",
+    clustering: { ids: new Int32Array([0, 0]), labels: ["Ann"], counts: [2] },
+    footprints: { cx: new Float32Array([0]), cy: new Float32Array([0]), r: new Float32Array([10]) },
+    loose: new Float32Array([-5, 0, 5, 0]), // stride-2, 2 nodes — the s=0 end
+    packed: new Float32Array([-1, 0, 1, 0]), // stride-2, 2 nodes — the s=1 end
+  };
+}
+
+describe("descriptorTarget (blob morphs loose → packed)", () => {
+  it("sits at the LOOSE positions at slider 0", () => {
+    const out = new Float32Array(2 * 3);
+    descriptorTarget(blobFixture(), { user: 0 }, out);
+    expect([out[0], out[1], out[2]]).toEqual([-5, 0, 0]);
+    expect([out[3], out[4], out[5]]).toEqual([5, 0, 0]);
+  });
+  it("sits at the PACKED positions at slider 100", () => {
+    const out = new Float32Array(2 * 3);
+    descriptorTarget(blobFixture(), { user: 100 }, out);
+    expect([out[0], out[1], out[2]]).toEqual([-1, 0, 0]);
+    expect([out[3], out[4], out[5]]).toEqual([1, 0, 0]);
+  });
+  it("interpolates between loose and packed (z stays flat)", () => {
+    const out = new Float32Array(2 * 3);
+    descriptorTarget(blobFixture(), { user: 50 }, out); // smoothstep(0.5)=0.5
+    expect(out[0]).toBeCloseTo(-3, 6); // -5 + (-1 - -5)*0.5
     expect(out[2]).toBe(0);
   });
 });

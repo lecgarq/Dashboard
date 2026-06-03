@@ -28,6 +28,14 @@ export function fillFactor(tightness: number): number {
   return FILL_LOOSE * Math.pow(FILL_TIGHT / FILL_LOOSE, Math.pow(t, RAMP_EXP));
 }
 
+/**
+ * Morph loose-endpoint tightness (slider = 0). 0 → fillFactor 0.95 = members fill
+ * their footprint (clean, organic, just-touching blobs). Visual-UAT tunable: a value
+ * >0 starts the load already tighter. (Going beyond the loosest fill — overlapping/
+ * blended blobs — would require relaxing the fill<=1 non-overlap clamp; out of scope.)
+ */
+export const LOOSE_TIGHTNESS = 0;
+
 /** Per-cluster footprint: center (cosmos space) + radius. Stride-1 parallel arrays. */
 export interface ClusterFootprints {
   cx: Float32Array;

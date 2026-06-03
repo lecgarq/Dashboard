@@ -34,7 +34,7 @@ import { ClusterLabels } from "./ClusterLabels";
 import { GridAxisLabels } from "./GridAxisLabels";
 import { activeCatalogDims, buildDominantClusters } from "./dominantClusters";
 import { layoutClusterFootprints } from "./clusterForceLayout";
-import { packMemberPositions } from "./clusterPacking";
+import { packMemberPositions, LOOSE_TIGHTNESS } from "./clusterPacking";
 import { buildRestLayout } from "./restLayout";
 import { buildGridStructure } from "./gridLayout";
 import { descriptorTarget, descriptorNodeCount, easeMorph, type LayoutDescriptor } from "./layoutDescriptor";
@@ -135,13 +135,12 @@ function ShellBody({
     if (activeDims.length === 0) return { kind: "rest", xyz: restXyz };
     if (activeDims.length === 1) {
       const clustering = buildDominantClusters(features, activeDims[0]);
-      // Fast at any cluster count: organic settle for a few blobs, packSiblings above the
-      // threshold (3,367 users would freeze ~9s under the force layout — the slider lag).
       const footprints = layoutClusterFootprints(clustering.counts);
-      // Precompute the s=1 end (tight clump cores) ONCE; descriptorTarget lerps from
-      // restXyz (s=0) → packed (s=1) per frame. Both arrays align to clustering.ids.
+      // Two morph endpoints, fixed footprint centers: loose (organic, fills footprints)
+      // → packed (tight cores). descriptorTarget lerps loose→packed per frame.
+      const loose = packMemberPositions(clustering.ids, footprints, LOOSE_TIGHTNESS, features.length);
       const packed = packMemberPositions(clustering.ids, footprints, 1, features.length);
-      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints, restXyz, packed };
+      return { kind: "blob", dimId: activeDims[0].id, clustering, footprints, loose, packed };
     }
     const structure = buildGridStructure(features, activeDims[0], activeDims[1], {
       maxCols: 12,
@@ -173,27 +172,11 @@ function ShellBody({
     return easeMorph((getLiveValues()[layoutDescriptor.dimId] ?? 0) / 100);
   }, [layoutDescriptor, getLiveValues]);
 
-  // Per-cluster resting-cloud centroid (the progress=0 end of each label's path). The
-  // label center lerps this → the footprint center as the slider rises, so labels ride
-  // their clumps. Computed once per blob regroup (mean of member rest positions).
+  // Per-cluster center for the LOD aggregate "super-dots". Loose and packed both center
+  // on the footprint, so the cluster center is the footprint center at any tightness.
   const blobRestCenters = useMemo<{ cx: Float32Array; cy: Float32Array } | null>(() => {
     if (layoutDescriptor.kind !== "blob") return null;
-    const { clustering, restXyz } = layoutDescriptor;
-    const k = clustering.labels.length;
-    const cx = new Float32Array(k);
-    const cy = new Float32Array(k);
-    const n = new Float32Array(k);
-    for (let i = 0; i < clustering.ids.length; i++) {
-      const c = clustering.ids[i];
-      if (c < 0 || c >= k) continue;
-      cx[c] += restXyz[i * 3];
-      cy[c] += restXyz[i * 3 + 1];
-      n[c] += 1;
-    }
-    for (let c = 0; c < k; c++) {
-      if (n[c] > 0) { cx[c] /= n[c]; cy[c] /= n[c]; }
-    }
-    return { cx, cy };
+    return { cx: layoutDescriptor.footprints.cx, cy: layoutDescriptor.footprints.cy };
   }, [layoutDescriptor]);
 
   // LOD: per-cluster aggregate "super-dots" (one per user, ~3,367 vs 16,942 instances).
