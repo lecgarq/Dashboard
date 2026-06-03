@@ -120,3 +120,26 @@ The legacy `.gsd/TECHNICAL_DEBT.md` log was archived on 2026-05-18 (now under
   validators under `.next/types` + `.next-e2e/dev/types` that fail `tsc` until a
   rebuild regenerates them; cleared manually during implementation. A clean
   `npm run build` is the authoritative typecheck.
+
+## Iteration #2 — 2026-06-03 (counting model + animated donut)
+
+Owner feedback after seeing v1: make it more visual/animated, show percentages
+**and** user counts per role, and show role-less memberships as **Unknown**.
+
+**Counting model changed.** v1 split a multi-role membership across each role
+(`roleCounts`). v2 buckets each `(user, project)` membership into exactly ONE
+slice by its role signature (`roleBuckets`):
+- one role → that role; multiple roles on the same membership → one combined,
+  alphabetised slice (e.g. `Admin + Member`) treated as its own specific role;
+  no role → `Unknown`.
+- Granularity stays user×project (a person on N projects = N memberships).
+- Because each membership counts once, slice values sum to the total and
+  percentages sum to 100% — clean for a donut.
+
+**Visual.** `RolesPieChart` is now an animated donut: staggered elastic
+scale-in entrance, hover pop-out + drop shadow, rounded/padded slices, a vibrant
+palette (Unknown forced to muted grey `#52525b`), on-slice labels showing
+`name / count (percent)` with overlap auto-hidden, a scrollable bottom legend,
+and the total shown large in the center hole. Empty state unchanged.
+
+Gates: tsc 0 / unit 175 files, 1404 tests green. Commit `59ea90e`.
