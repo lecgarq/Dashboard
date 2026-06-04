@@ -437,6 +437,18 @@ model AccGraphLayoutCache {
   updatedAt     DateTime @updatedAt
 }
 
+model AccPersonGraphSnapshot {
+  k           Int      @id          // cluster count this snapshot was built for
+  dataHash    String
+  personCount Int
+  edgeCount   Int
+  dim         Int
+  nodes       Json                  // LayoutNode[]
+  edges       Json                  // TieredEdge[]
+  clusters    Json                  // ClusterMeta[]
+  builtAt     DateTime @updatedAt
+}
+
 // ============ MODULE: ACC V2.0 RELATIONAL LAYER ============
 
 model AccProject {
