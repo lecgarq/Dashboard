@@ -1039,3 +1039,18 @@ git commit -m "docs(acc-embed): record person-graph deferrals"
 **Type consistency:** `PersonFeatureBag`, `Embedding`, `SimEdge`, `TieredEdge`, `Clustering`, `LayoutNode`, `ClusterMeta`, `PersonGraphSnapshot` are defined once in `types.ts` and used unchanged across tasks. Functions: `buildEmbedding`, `knnEdges`, `tierEdges`, `edgeReason`, `humanizeFeature`, `sphericalKMeans`, `packedClusterLayout`, `buildPersonFeatures`, `buildSnapshotsFromBags`, `rebuildPersonGraph` — names consistent between definition and call sites.
 
 **Deviation from spec:** persistence uses a new `AccPersonGraphSnapshot` table (one row per k) instead of overloading the already-wired `AccGraphLayoutCache`. Rationale: avoid breaking the existing instance-graph cache.
+
+---
+
+## Status & Deferred (2026-06-03)
+
+Tasks 1–13 implemented and merged on `feat/access-analysis-redesign`. Final suite: **1464 tests passed / 1 skipped / 0 failed** (188 files); `npx tsc --noEmit` = **0 errors**.
+
+### Deferrals
+
+- **Opt-in flag:** Feature is behind `NEXT_PUBLIC_ACC_PERSON_GRAPH` (default OFF) pending in-app visual UAT. Once UAT passes, flip default ON and point `/users/spatial-graph` fully at `PersonGraphView`.
+- **e2e spec:** `tests/e2e/acc-person-graph.spec.ts` is flag-guarded and skips unless the flag is enabled. Run on an idle machine with `NEXT_PUBLIC_ACC_PERSON_GRAPH=1` set (machine-load flake documented in [Lasso e2e load flake](../../../memory/project_lasso_e2e_load_flake.md)).
+- **Cluster slider is discrete:** The slider switches between six precomputed snapshots (k = 6 / 8 / 10 / 12 / 14 / 16), not a continuous range. Continuous reclustering on the client is deferred.
+- **Deferred interactions:** weight/emphasis control ("group by folder-permission vs activity"), color-by toggle (currently fixed to cluster color), search-to-zoom, click-to-isolate.
+- **Data scope:** Snapshot is built from 428 DC-extractable projects / ~3,367 people; 724 projects remain LOCKED (403, needs Account Admin). Sign-in / dormancy data unavailable in current DC exports. The ~53 % standard-access mega-cluster is real data; the cluster slider splits it into meaningful sub-groups.
+- **Snapshot rebuild trigger:** `scripts/rebuild-person-graph.ts` is invoked automatically post-DC-ingest via a hook in `scripts/dc-daily-ingest.cjs`, and is also available on-demand via `npx tsx scripts/rebuild-person-graph.ts`.
