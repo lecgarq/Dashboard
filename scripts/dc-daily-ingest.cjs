@@ -100,6 +100,15 @@ async function main() {
     if (result.errorMessage) {
       logErr(`ERROR: ${result.errorMessage}`);
     }
+    if (result.status === 'success') {
+      try {
+        log('Rebuilding person-similarity graph snapshot...');
+        const { execSync } = require('node:child_process');
+        execSync('npx tsx scripts/rebuild-person-graph.ts', { stdio: 'inherit' });
+      } catch (e) {
+        log('person-graph rebuild failed (non-fatal): ' + e.message);
+      }
+    }
     process.exit(
       result.status === 'success' ||
         result.status === 'killed' ||
