@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { PersonGraphView } from "./PersonGraphView";
 
 const AccessAnalysisShell = dynamic(
   () => import("./AccessAnalysisShell").then((m) => m.AccessAnalysisShell),
@@ -15,5 +16,8 @@ const AccessAnalysisShell = dynamic(
 );
 
 export function AccessAnalysisShellClient(): React.JSX.Element {
+  if (process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1") {
+    return <PersonGraphView />;
+  }
   return <AccessAnalysisShell />;
 }
