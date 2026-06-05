@@ -43,6 +43,7 @@ export interface BucketedColors {
 }
 
 function isOrdered(mode: ColorMode): boolean {
+  // "status" has no registry entry → getDimension returns undefined → false (categorical).
   const d = getDimension(mode as DimensionId);
   return d?.colorScale === "ordered";
 }
@@ -68,13 +69,14 @@ export function buildBucketedColors(
     (a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0),
   );
 
+  const effectiveMax = Math.min(maxColors, CATEGORICAL_PALETTE.length);
   const colorByCat = new Map<string, RGB>();
   const legend: LegendEntry[] = [];
-  const top = ranked.slice(0, maxColors);
-  const rest = ranked.slice(maxColors);
+  const top = ranked.slice(0, effectiveMax);
+  const rest = ranked.slice(effectiveMax);
 
   top.forEach(([label, count], i) => {
-    const color = CATEGORICAL_PALETTE[i % CATEGORICAL_PALETTE.length];
+    const color = CATEGORICAL_PALETTE[i];
     colorByCat.set(label, color);
     legend.push({ label, color, count });
   });

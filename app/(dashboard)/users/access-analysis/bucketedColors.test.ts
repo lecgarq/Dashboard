@@ -50,4 +50,16 @@ describe("buildBucketedColors", () => {
     expect(Array.isArray(legend)).toBe(true);
     expect(legend.length).toBe(0);
   });
+
+  it("treats the non-dim 'status' mode as categorical", () => {
+    const { legend } = buildBucketedColors([f("A"), f("B")], "status", 12);
+    expect(legend.some((l) => l.isOther)).toBe(false);
+    expect(legend.reduce((s, l) => s + l.count, 0)).toBe(2);
+  });
+
+  it("returns empty buffer and legend for zero features", () => {
+    const { colors, legend } = buildBucketedColors([], "role", 12);
+    expect(colors.length).toBe(0);
+    expect(legend.length).toBe(0);
+  });
 });
