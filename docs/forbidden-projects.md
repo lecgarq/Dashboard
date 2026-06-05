@@ -1,0 +1,134 @@
+# Forbidden projects — issues not scanned (403)
+
+Generated 2026-06-05 from the ACC Issues backfill. These 123 projects returned **403 Forbidden**
+because luis is not a member/admin, so their issues (incl. any Model-Coordination clash issues) were NOT extracted.
+Request access (member/admin) for the ones that matter, then re-run `scripts/acc-issues-backfill.cjs` followed by `scripts/acc-issues-validate-clashes.cjs` (idempotent — they fold the newly-accessible projects into the count automatically).
+
+## Likely coordination/BIM/VDC — check these first (11)
+
+- [ ] CDMX BIM-VDC Standards  — `ca0efd4c-339b-4e7e-b516-315147d279de`
+- [ ] CDMX Takeoff VDC  — `dd75ab61-834a-4490-b4b9-ea8a573e2a40`
+- [ ] CDMX VDC Collaborativo  — `5eb52b19-4659-4332-a224-7cfc0b48e224`
+- [ ] FWD Gestión BIM  (FWD/26/003)  — `faaa764e-9744-4abb-b847-4870325d7bcc`
+- [ ] FWD Gestión y Coordinación  (FWD/26/002)  — `3df77dd2-3165-44eb-ac15-61a09954654a`
+- [ ] MXL Demo Model Coordination ARCHIVAR  — `fce5573c-0e4b-42c4-93f3-163fab3003b6`
+- [ ] MXL Demo Model Coordination Ejecutivo  (D/MXL/002)  — `1d62331b-68ca-4c94-9188-971c0c31d6c0`
+- [ ] TIJ Demo ACC-FiveBIM   (O/TIJ/DEMO)  — `e286c105-7ce4-4062-a326-354c18268d2d`
+- [ ] TIJ Demo LEAN-VDC  (0/TIJ/DEMO)  — `5f0fa09d-bff2-4957-8a68-41ffe10ae531`
+- [ ] TIJ Demo Revit Exporter - FiveBIM  (0/TIJ/DEMO)  — `958286dd-6e5e-4dbb-b2e6-8f95a2c908f5`
+- [ ] VDC Demo - 4D  — `b22b06d8-7ff9-40f6-8a91-2229433e9575`
+
+## Other forbidden projects (112)
+
+- [ ]  CDMX P&G NAU New Warehouse PROM  — `4cacc269-208f-49a7-893b-3823f5d4d34d`
+- [ ] ACC Migracion Templates CDMX  — `a1d384cb-b412-418e-be2e-360318b62604`
+- [ ] AF Template PROM CDMX 2026  — `5016e1ff-d80b-4798-b915-c0f8f1c22883`
+- [ ] ARCHIVAR_FWD-26101 SUBURBIA Tienda Nicolas Romero (La Gloria)  (FWD/26/101)  — `802c6b62-33cd-44d9-a472-0be830f2db05`
+- [ ] CDMX AF Training  — `9c3ac2d1-2ed9-4c01-bd6c-f08887d44630`
+- [ ] CDMX AI  — `de50470b-9f29-4eee-9096-c74b536b09ee`
+- [ ] CDMX Amazon Lerma Encinos PROM  — `b278c97a-1f5d-4c24-b320-0b694b9da116`
+- [ ] CDMX AMAZON POD MEX02 PROM  — `4e1f98d1-3992-4808-b0bf-de6069a1c9b0`
+- [ ] CDMX Biblioteca TEC CEM PROM   — `bc1f5d31-6bab-4b25-9353-6e743dfaa178`
+- [ ] CDMX CEDIS PURINA CCP ONLU004  (O/NLU/004)  — `9b20b576-0728-49a4-b831-4132334f6250`
+- [ ] CDMX Centinela Aguafria PROM  — `f04c6923-6004-43e7-a2d4-129d38762b54`
+- [ ] CDMX Especulativo MEX 7 PROM  — `61857882-4f58-4679-9272-78b87616b3d8`
+- [ ] CDMX Estancia Profesional   — `193eaf02-8b92-4719-96cd-82fbe3f05837`
+- [ ] CDMX Estándar Preconstruccion  — `8feffdf4-53e6-4ac1-bafa-c8e4be96c8bd`
+- [ ] CDMX Grupo Bal  — `a519c7c0-b27a-4826-b854-b7fadc476d8b`
+- [ ] CDMX INDUCCIÓN PRECON  — `f33adcb8-bc82-47df-a209-36c75dce40d5`
+- [ ] CDMX Infra Pluvial Reynosa Park OREX018  (O/REX/018)  — `b8d26f7c-f905-495c-abc0-c9b4ef93727c`
+- [ ] CDMX MELI 19 Fibra MTY PROM  — `74d0637b-4c6f-4fc8-bf37-a444e4d7b066`
+- [ ] CDMX MELI CENTINELA - SC PROM  — `29913bf0-2278-4699-aefa-c59dbf4c5bf2`
+- [ ] CDMX MELI PLATAH MEZZANINE MXCD13 OMEX067  (O/MEX/067)  — `386a8fb2-ca16-4585-b673-cca726c71d73`
+- [ ] CDMX MELI RC05 Arco 57 PROM  — `d199a58c-98ff-4dbb-9e95-426dfb531a05`
+- [ ] CDMX MELI RC05 Platah PROM  — `34189458-4f49-447b-9814-bd5c92bbda0a`
+- [ ] CDMX New Centinela Rey East PROM  — `63c12611-a684-429f-8483-6b718342ef27`
+- [ ] CDMX Oficinas Piso 10  — `bb4acf95-420e-48ba-a2cf-02d22a15d1be`
+- [ ] CDMX OFICINAS Piso 11  — `fb9f21b7-11da-4d61-8a7a-43aa24fb46c8`
+- [ ] CDMX Oficinas Piso 8  — `7ebcdc3a-3ac6-48cb-9a3f-4a14f97da131`
+- [ ] CDMX P&G EVE  — `05f306c6-0533-4286-9714-407809b9923f`
+- [ ] CDMX Pirelli Expansion PROM  — `0f25936f-39b3-47e6-87c4-a91d95419167`
+- [ ] CDMX Prepa ITESM Campus CCM PROM  — `36ab7f65-122b-4eff-bfef-af706952a0e9`
+- [ ] CDMX Procesos  — `97d27926-ac1c-4782-b0a7-29f9b55749fc`
+- [ ] CDMX Takeoff - Training 1  — `754cfd64-e0dd-4abc-af36-83fab96bafe6`
+- [ ] CDMX Takeoff - Training 2  — `93f3b190-fc06-46ed-9f64-44c9c150eec7`
+- [ ] CDMX Test Takeoff / Bulkmatic  — `350ccf64-55b5-4c13-9e5b-aeb0df79e429`
+- [ ] CDMX TX Santa Catarina PROM  — `47d543c1-1d29-40da-95a8-bf2531e35550`
+- [ ] CDMX Walmart CEDIS Bajío Secos  OBJX036  (O/BJX/036)  — `c1109b45-0f71-46f6-8385-e231ff2b9b94`
+- [ ] CORE INNOVATION HUB  — `eb023a33-e7e9-44df-8f8b-b0ffea4d330b`
+- [ ] EHS UEN CDMX  — `eee6f069-24ba-489c-8d22-0e85abcb33c0`
+- [ ] Fail  — `20ffa91e-647b-42e5-8d65-a038f53bcbf5`
+- [ ] FWD Demo Forma  (FWD/26/001)  — `38eaccef-639b-4fb7-b6a4-d61756a7bfba`
+- [ ] FWD-25058 PROMOCASA Monumento Infraestructura  (FWD/25/058)  — `1f016ffb-9c14-42ac-996d-f5ce061cb06e`
+- [ ] FWD-25059 HERMOSILLO MTY Modificaciones Uline Toluca  (FWD/25/059)  — `27db5a49-b29d-4f49-9892-75017ba17d50`
+- [ ] FWD-25060 PROLOGIS Park Gateway Bldg 02  (FWD/25/060)  — `64da33ed-befa-4a14-9999-adb88252ea0e`
+- [ ] FWD-25061 DOLLAR GENERAL Prototipo MX  (FWD/25/061)  — `f4648933-b842-4208-bff0-71daf159cae4`
+- [ ] FWD-25062 DOLLAR GENERAL Prototipo 02 MX  (FWD/25/062)  — `f39fd1bc-52f7-4ef1-9f6c-8745d3d54eeb`
+- [ ] FWD-25063 DOLLAR GENERAL Ladrillera  (FWD/25/063)  — `7eddee51-d6ba-4ae4-8473-e7c3b97a62ef`
+- [ ] FWD-25064 DOLLAR GENERAL Alianza Real  (FWD/25/064)  — `eb2078f5-6400-4615-9094-b422ef81fc3c`
+- [ ] FWD-25065 HERMOSILLO HIP02-05  (FWD/25/065)  — `9096e078-52d6-44c1-9962-b8c48dcb174f`
+- [ ] FWD-25066 MRP Black Zebra Infraestructura  (FWD/25/066)  — `c8d9dc72-3041-4c04-96b0-fc0989d340f6`
+- [ ] FWD-25067 HERMOSILLO MTY Unilever  (FWD/25/067)  — `13e2b1c0-0177-495c-8bb0-31eaee323a22`
+- [ ] FWD-25068 CETYS Preparatoria  (FWD/25/068)  — `8baad536-094c-4228-96cd-41e842cd04c1`
+- [ ] FWD-25069 UEN CDMX Oficinas Amazon (PPL5)  (FWD/25/069)  — `747dca54-8e81-471e-9604-b0fd188e0467`
+- [ ] FWD-25070 PROLOGIS Análisis Lerma  (FWD/25/070)  — `2c6f7d2f-10a2-4496-a414-94a6db949085`
+- [ ] FWD-25071 SUBURBIA Tienda Tulum  (FWD/25/071)  — `8283809e-6d7f-4924-bea6-9a0de6269792`
+- [ ] FWD-25072 DG Villas de Alcalá  (FWD/25/072)  — `7606d5d7-7e57-48d9-af18-c50eda51d8b1`
+- [ ] FWD-25073 SIEMENS Empresalia Oficinas  (FWD/25/073)  — `d37fb3d7-c05d-41fb-bbd2-16f8a98acc3a`
+- [ ] FWD-25075 DOLLAR GENERAL Paseo Santa Fe  (FWD/25/075 )  — `213bd853-f7e2-40e7-a74d-82b0c941e38a`
+- [ ] FWD-25077 PROLOGIS Gateway Infra Tijuana  (FWD/25/077 )  — `06db3adc-e904-44f0-a3b5-3680778cffa4`
+- [ ] FWD-25078 DOLLAR GENERAL Colinas del Sol  (FWD/25/078)  — `f1ce3c9a-04d2-49e3-a8b9-3f756cc1d593`
+- [ ] FWD-25079 DOLLAR GENERAL Teresitas  (FWD/25/079)  — `0746d419-6eec-4ea0-b5a1-96de372b0c3a`
+- [ ] FWD-25080 VERTEX Pesqueria Infra  (FWD/25/074)  — `659dbda6-7edc-4fdb-960e-b4942dae7463`
+- [ ] FWD-25081 SELECT RS Viabilidad Ferroviaria Pesqueria  (FWD/25/080)  — `1fc79233-d6bb-4924-a4dd-95d9b8d7a3fe`
+- [ ] FWD-25083 MOBILIARE BTS Guatemala  (FWD/25/083)  — `5a0642d1-ae3a-4572-afcc-3df2561ce1f7`
+- [ ] FWD-25084 CITY STORAGE Lactalis CDMX  (FWD/25/084)  — `93e4a694-2008-4405-a919-97b9ebbc3a7a`
+- [ ] FWD-25086 ARTHA CAPITAL Master plan PODEBI Hidalgo  (FWD/25/086)  — `5862a579-77af-440b-b4bc-aaf7807b08aa`
+- [ ] FWD-25087 DENSO Command & Smart Waigaya Room  (FWD/25/087)  — `492e2416-bed8-4d54-98fd-6a9176248ed2`
+- [ ] FWD-25088 UEN CDMX P&G Naucalpan  (FWD/25/088)  — `a816cfc5-64b2-409f-8e9b-a686bc6153e8`
+- [ ] FWD-25089 Davisa AIP 03 (UEN MTY)  (FWD/25/089 )  — `47c223e8-4148-441b-b58a-d7528bc824cf`
+- [ ] FWD-26090 DENSO Smart Waigaya GPP  (FWD/26/090)  — `912c3137-a4a7-4405-9379-5bc92c72b482`
+- [ ] FWD-26091 PROLOGIS Park Grande Bldg 10  (FWD/26/091 )  — `ca2ab74a-cbe8-43cd-a504-995ec872922c`
+- [ ] FWD-26092 PROLOGIS Revision proyecto Lerma bldg 02 & 04  (FWD/26/092)  — `aee6068a-bd07-4635-92d0-ceee612698eb`
+- [ ] FWD-26093 K INMUEBLES Infra Parque Tultepec & Bldg A  (FWD/26/093)  — `72096094-1841-4c42-a8ac-35424a86cddd`
+- [ ] FWD-26094 DOLLAR GENERAL La Petaca  (FWD/26/094)  — `a5c76b42-225b-4003-b7f1-efb2c1cf2196`
+- [ ] FWD-26095 PROLOGIS Park Grande Bldg 09  (FWD/26/095)  — `f0f0498c-b0af-416c-a757-647a0a2bea35`
+- [ ] FWD-26096 MAGNA 150k Building Adaptations  (FWD/26/096)  — `781fc6da-b5db-46ab-807d-0dab914a5b57`
+- [ ] FWD-26097 PROLOGIS Park Lerma II  (FWD/26/097)  — `2c131448-81b6-4870-a863-1dffa5c8c814`
+- [ ] FWD-26098 MELI MXJC01 TIs Fases 4 a 7  (FWD/26/098 )  — `65cd5a12-05d1-4e62-9ab3-7846ceea5bd0`
+- [ ] FWD-26099 DOLLAR GENERAL Tienda Renacimiento  (FWD/26/099)  — `645e5df8-fa95-48da-a687-74e5ecabd32d`
+- [ ] FWD-26100 PROLOGIS Park Toluca II Bldg 04 (Actualizacion)  (FWD/26/100)  — `fa453aae-4c3e-4d81-9f74-7e5e3c72d492`
+- [ ] FWD-26101 SUBURBIA Tienda Nicolas Romero (La Gloria)  (FWD/26/101)  — `09f20df2-fa39-4cfa-bab0-7288bbec91eb`
+- [ ] FWD-26102 MELI MXNL01 Fase 7 a 8  (FWD/26/102)  — `4ae8bb4a-50cb-4a72-86d9-4db7b5d61b4a`
+- [ ] FWD-26103 MELI MXCD15 Proyecto Electrico  (FWD/26/103)  — `2d444866-3571-4347-900f-66102a19d0a0`
+- [ ] FWD-26104 DOLLAR GENERAL Tienda Riberas de Capellanía  (FWD/26/104)  — `b777d379-fb6e-49e6-b24e-ebb777c80021`
+- [ ] FWD-26105 DOLLAR GENERAL Tienda Rincón de las Palmas  (FWD/26/105)  — `0b927171-ef2d-490f-99be-c2835b96cbab`
+- [ ] MTY Proximity - Demoliciones  (O/MTY/098)  — `304c1f02-3129-494e-b629-c4a9a82e0f66`
+- [ ] MXL Condesa Nave 07 - OMXL175  (O/MXL/175)  — `0939a300-18a6-4b6d-826d-8adef1a70860`
+- [ ] MXL Demo ACC - Diseño Ejecutivo Querétaro  (D/MXL/012)  — `0bc6e242-f12a-48b4-9f43-48316cb30070`
+- [ ] MXL DEMO Estandares 2025 - AMXL000_yc  (AMXL000)  — `6b788912-d87e-42b4-b218-2ca47a102622`
+- [ ] MXL Demo Gamma AR  (D/MXL/011)  — `cf0f0be9-9daa-4ef4-95fc-8ebc9be97ce3`
+- [ ] MXL Demo Plateros  (D/MXL/004)  — `54f54f02-3973-4e6e-a498-682d8c5ddda2`
+- [ ] MXL Demo Upgrade Revit 2021  (D/MXL/010)  — `2cce0879-7928-4dc1-845b-7b96fbc08a0b`
+- [ ] MXL HIP-0206 Estacionamiento expansión - OMXL174  (O/MXL/174)  — `38c1c615-f4cd-4c9d-a3af-c69a2eaec468`
+- [ ] MXL HIP128 Nave 02 Sendero Sur -  (O/MXL/XXX)  — `53b542db-1b98-47b8-8c3d-37519194c0f9`
+- [ ] MXL Kenworth Estructura Dinamometro - OMXL173  (O/MXL/173)  — `bf18b9b7-16d7-4dab-97ee-86181e06ae0e`
+- [ ] MXL Kimberly Clark Ecatepec PROM  (O/XXX/XX)  — `82931a83-f79a-426f-aa08-2f8eba3df168`
+- [ ] MXL Oficinas Hermosillo Empresalia QRO  (O/QRO/XXX)  — `b1f7ed71-9fad-45fb-891d-59f6eea5934a`
+- [ ] MXL Precon Promociones  (O/MXL/001)  — `9b881a07-7637-4c07-812c-f01557981f5c`
+- [ ] MXL Preliminares Amazon MID1 Exp - OMID001  (O/MID/001)  — `be18d84c-1af3-407d-8444-7a7b92423af4`
+- [ ] MXL Prueba Carpetas Precon  (D/MXL/XXX)  — `f734558b-6724-4ddb-bf4d-e044923efac6`
+- [ ] MXL PSF Cruce de Efluentes  (O/XXX/XX)  — `310b96f4-1109-4200-92ae-a9e196867aca`
+- [ ] MXL Smurfit Westrock Yaqui - OCEN009  (O/CEN/009)  — `12165266-8e94-4fed-a470-9734aa85e932`
+- [ ] MXL TIs Sendero Dongwon -  (O/MXL/XXX)  — `7f2dc955-5e1c-4ff9-b935-4337a761f8b8`
+- [ ] PROM FWD-25XXX FD LTTS BTS  — `f9fa1302-d805-40e4-9c76-90ab4a948932`
+- [ ] Proyecto TEST de Yue 2  — `482c2f96-092b-4cd6-95eb-f4b0933f08eb`
+- [ ] Schedule | Capacitación 09-Mayo  — `e9b19c9b-5e7f-4e80-81d3-60d10a3e21d5`
+- [ ] TIJ Benebion X-Ray Sterilization Facility PROM  (O/TIJ/PROM)  — `f69268f4-958c-44e5-8960-606d887b38be`
+- [ ] TIJ Casa Blake, Los Cabos OCBS001  (O/CBS/001)  — `7fe3671f-4f8a-4201-a68d-5b5ddcb06622`
+- [ ] TIJ Demo ACC Diseño  (0/TIJ/DEMO)  — `72f7f6b7-8430-4a39-bb7e-4d0447c224f4`
+- [ ] TIJ Demo AF Diseño-Asesores  (0/TIJ/DEMO)  — `a2d71b92-c34e-4901-8acb-454fa923a2c1`
+- [ ] TIJ Demo Forma Preconstrucción  (0/TIJ/DEMO)  — `96a258ac-bdab-4095-8c37-4c5248c7936e`
+- [ ] TIJ Petabyte OTIJ204  (O/TIJ/204)  — `fc4e400f-f78c-4412-985e-e31b57a99ac9`
+- [ ] TIJ Torre de Correos Community  (O/TIJ/000)  — `f5eccdd2-94e7-4c27-9872-54fd206ad500`
+- [ ] Workshop XR  — `3cf84154-237e-496b-adf2-fc844cf9eca0`
