@@ -36,7 +36,11 @@ export interface LassoOverlayProps {
   onComplete: (matchedIndices: number[]) => void;
   /** Fired on pointerdown — disable OrbitControls so the drag selects, not rotates. */
   onDragStart?: () => void;
-  /** Fired on pointerup/cancel — re-enable OrbitControls. */
+  /**
+   * Re-enable OrbitControls. Always fired once after an onDragStart — on pointerup,
+   * pointercancel, a too-short path, OR an unmount mid-drag — so controls can never
+   * be left frozen.
+   */
   onDragEnd?: () => void;
 }
 
@@ -129,7 +133,13 @@ export function LassoOverlay({
     cv.addEventListener("pointerup", onUp);
     cv.addEventListener("pointercancel", onUp);
     window.addEventListener("resize", resize);
+    // Window-level finalizers catch a release/cancel that lands outside the canvas
+    // (drag off-screen, or setPointerCapture having failed/thrown on old browsers or
+    // jsdom). On a normal in-canvas release both the canvas and window listeners fire
+    // onUp, but the drawingRef guard at the top of onUp makes the second call a no-op
+    // — keep that guard intact.
     window.addEventListener("pointerup", onUp);
+    window.addEventListener("pointercancel", onUp);
 
     return () => {
       cv.removeEventListener("pointerdown", onDown);
@@ -138,6 +148,10 @@ export function LassoOverlay({
       cv.removeEventListener("pointercancel", onUp);
       window.removeEventListener("resize", resize);
       window.removeEventListener("pointerup", onUp);
+      window.removeEventListener("pointercancel", onUp);
+      // Unmounting mid-drag (e.g. the toolbar toggles lasso off while the button is
+      // held) must thaw OrbitControls — onUp won't fire after teardown.
+      if (drawingRef.current) onDragEnd?.();
       drawingRef.current = false;
       pathRef.current = [];
       clearOverlay();

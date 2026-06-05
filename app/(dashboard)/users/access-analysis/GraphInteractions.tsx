@@ -8,7 +8,7 @@
  *     3D = three.js raycaster) via setEventHandlers.
  *   - Owns local state: hoveredIndex, tooltipAnchor.
  *   - Routes click → onIsolate prop. Routes background click + Esc → onIsolate(null).
- *   - Renders the LassoOverlay (only when mode==='2d' AND lassoActive).
+ *   - Renders the LassoOverlay whenever lassoActive (3D screen-space lasso; 2D dormant).
  *   - Renders the NodeTooltip portal anchored to the hovered node's screen pos.
  *   - Calls usePredicateEngine — the single physics.setMask channel for all of
  *     filter/search/lasso/drill/isolate.
