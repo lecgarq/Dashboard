@@ -5,6 +5,8 @@ import {
   countBrightEdges,
   assertLinkArrays,
   DEFAULT_LINK_COLORS,
+  GOSSAMER_LIGHT,
+  GOSSAMER_DARK,
 } from "./linkEmphasis";
 
 const edges = deriveSameUserEdges(["u1::p1", "u1::p2", "u2::p1", "u2::p2"]).edges; // 1 edge per user
@@ -49,6 +51,21 @@ describe("assertLinkArrays", () => {
   });
   it("throws on length mismatch", () => {
     expect(() => assertLinkArrays(edges.length, new Float32Array(1), new Float32Array(edges.length * 4))).toThrow();
+  });
+});
+
+describe("gossamer link presets", () => {
+  it("light base is a dark cool grey at ~0.10 alpha", () => {
+    expect(GOSSAMER_LIGHT.base[3]).toBeCloseTo(0.10, 2);
+    expect(GOSSAMER_LIGHT.base[0]).toBeLessThan(0.5); // darker than mid-grey → reads on white
+  });
+  it("dark base is a light grey, slightly higher alpha so it reads on near-black", () => {
+    expect(GOSSAMER_DARK.base[3]).toBeGreaterThan(GOSSAMER_LIGHT.base[3]);
+    expect(GOSSAMER_DARK.base[0]).toBeGreaterThan(0.5);
+  });
+  it("both keep bright > base alpha for same-user focus emphasis", () => {
+    expect(GOSSAMER_LIGHT.bright[3]).toBeGreaterThan(GOSSAMER_LIGHT.base[3]);
+    expect(GOSSAMER_DARK.bright[3]).toBeGreaterThan(GOSSAMER_DARK.base[3]);
   });
 });
 

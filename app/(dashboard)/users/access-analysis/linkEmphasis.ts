@@ -15,6 +15,20 @@ export const DEFAULT_LINK_COLORS: LinkColorOpts = {
   dim: [0.6, 0.62, 0.66, 0.04], // nearly invisible when another user is focused
 };
 
+/** Gossamer threads for the LIGHT (white) infographic: dark cool-grey, ~0.10 alpha. */
+export const GOSSAMER_LIGHT: LinkColorOpts = {
+  base: [0.36, 0.39, 0.45, 0.10],
+  bright: [0.20, 0.45, 0.95, 0.85], // same-user focus = blue accent
+  dim: [0.36, 0.39, 0.45, 0.03],
+};
+
+/** Gossamer threads for the DARK (near-black) variant: light grey, slightly higher alpha. */
+export const GOSSAMER_DARK: LinkColorOpts = {
+  base: [0.68, 0.71, 0.77, 0.13],
+  bright: [0.55, 0.74, 1.0, 0.9],
+  dim: [0.68, 0.71, 0.77, 0.04],
+};
+
 /** Per-link RGBA buffer. No focus → all base. Focus → active-user bright, rest dim. */
 export function computeLinkEmphasisColors(
   edges: readonly SameUserEdge[],
