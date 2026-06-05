@@ -4,7 +4,8 @@
  *   - Renders all 6 dimension popover triggers
  *   - Typing in search input updates FilterContext.searchQuery
  *   - Clicking a chip inside a popover toggles activeFilters for that dim
- *   - mode==='3d' disables the lasso toggle button
+ *   - the lasso toggle button is enabled (lasso works in 3D)
+ *   - the 2D/3D mode toggle is absent (graph is 3D-only)
  *   - "Clear all" link visible only after a chip toggle; clearing restores isDefault
  */
 

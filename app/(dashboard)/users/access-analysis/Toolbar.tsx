@@ -6,12 +6,12 @@
  * Top bar surfacing every Phase 4 user gesture EXCEPT the right-sidebar sliders:
  *   - Search input (Ctrl/Cmd+K focus shortcut)
  *   - Six dimension chip popovers (categorical + bucketed)
- *   - Lasso toggle (disabled in 3D mode — RESEARCH anti-pattern)
- *   - 2D|3D segmented pill
+ *   - Lasso toggle (works in 2D and 3D)
  *   - "Clear all" link (visible only when filters non-default)
  *
- * State is owned by FilterContext for filters + search; lasso/mode are caller-owned
- * (AccessAnalysisShell holds them as local React state).
+ * State is owned by FilterContext for filters + search; lasso is caller-owned
+ * (AccessAnalysisShell holds it as local React state). The graph is 3D-only, so
+ * the former 2D|3D segmented pill has been removed.
  */
 
 import { useEffect, useMemo, useRef } from "react";

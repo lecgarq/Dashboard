@@ -12,7 +12,7 @@
  *         <GraphInteractions(GraphCanvas)>
  *         <RightPanelStack />
  *
- * Owns local React state for `mode` and `lassoActive`, async-loads features +
+ * Owns local React state for `lassoActive` (mode is fixed to 3D), async-loads features +
  * physics on mount, and computes the still-visible subset of any lasso selection
  * via `filterSelectionByPredicate` so SelectionPanel always reflects the right
  * post-filter members (CONTEXT.md visible-subset rule).
