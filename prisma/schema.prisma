@@ -808,3 +808,47 @@ model AccDcBackfillProgress {
   newProjectFlag   Boolean   @default(false)
   updatedAt        DateTime  @updatedAt
 }
+
+model AccIssue {
+  id             String   @id // ACC issue UUID
+  projectId      String // ACC Construction-Admin project GUID (loose; logical join AccProject.id)
+  displayId      Int?
+  title          String
+  description    String?
+  status         String?
+  issueTypeId    String?
+  issueSubtypeId String?
+  createdBy      String?
+  createdAt      DateTime?
+  deleted        Boolean  @default(false)
+
+  isCoordination     Boolean @default(false)
+  coordinationSource String? // "title" | "description" | "clash-endpoint"
+  confidence         String? // "high" | "medium" | "low"
+  clashId            String?
+  clashValidated     Boolean @default(false)
+  projectMcEnabled   Boolean @default(false)
+
+  rawJson    Json?
+  fetchRunId String?
+  fetchedAt  DateTime @default(now())
+
+  @@index([projectId])
+  @@index([isCoordination])
+  @@index([clashId])
+  @@index([fetchRunId])
+  @@index([projectId, isCoordination])
+}
+
+model AccIssueFetchRun {
+  id                String    @id @default(cuid())
+  startedAt         DateTime  @default(now())
+  finishedAt        DateTime?
+  projectsTotal     Int?
+  projectsOk        Int?
+  projectsForbidden Int?
+  issuesUpserted    Int?
+  coordinationCount Int?
+  status            String    @default("running") // running | done | failed
+}
+
