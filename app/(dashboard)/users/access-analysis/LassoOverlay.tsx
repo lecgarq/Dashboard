@@ -1,36 +1,43 @@
 "use client";
 
 /**
- * LassoOverlay.tsx — Phase 4-01 Task 3.
+ * LassoOverlay.tsx — Phase 4-01 Task 3 (updated Task 6: hitTest generalization).
  *
  * Transparent overlay canvas that captures pointer events when active, draws the
- * freehand path with 2D Canvas, then on pointerup passes the canvas-local screen
- * coords to findPointsInPolygon. The matched cosmos indices are returned through
- * onComplete.
+ * freehand path with 2D Canvas, then on pointerup invokes the hitTest callback
+ * with the canvas-local screen coords and the canvas CSS size. The matched node
+ * indices are returned through onComplete.
  *
  * RESEARCH patterns:
- *   Pattern 2 — overlay canvas absolutely positioned over GraphCanvas2D.
+ *   Pattern 2 — overlay canvas absolutely positioned over the graph canvas.
  *   Pitfall 1 — polygon hit-testing uses canvas-local screen pixels.
- *   Pitfall 7 — bail to [] if graph isn't ready (handled inside the handle).
+ *   Pitfall 7 — bail to [] if graph isn't ready (handled inside hitTest).
  *   Pitfall 8 — setPointerCapture so pointerup outside canvas still fires.
  *
  * Anti-pattern avoided: path is stored in a useRef, NEVER React state — pointer
  * events fire 60+Hz and state updates would kill perf and re-render the graph.
  *
  * Active gating: pointerEvents:'auto' + cursor:'crosshair' only when `active=true`.
- * Caller (GraphInteractions) gates `active` by mode === '2d' AND toolbar toggle.
+ * In 3D mode, onDragStart/onDragEnd freeze/thaw OrbitControls so the drag selects
+ * rather than rotating the scene.
  */
 
 import { useEffect, useRef } from "react";
-import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
 
 export interface LassoOverlayProps {
   /** When false: pointer events pass through to the graph canvas. */
   active: boolean;
-  /** 2D graph handle — needed for polygon hit-test. */
-  graphHandle: GraphCanvas2DHandle | null;
-  /** Called once on pointerup with the matched cosmos node indices. */
+  /**
+   * Hit-test the completed path -> selected node indices. The overlay passes its own
+   * canvas CSS size so a 3D projector can map world->screen against the same viewport.
+   */
+  hitTest: (path: [number, number][], width: number, height: number) => number[];
+  /** Called once on pointerup with the matched node indices. */
   onComplete: (matchedIndices: number[]) => void;
+  /** Fired on pointerdown — disable OrbitControls so the drag selects, not rotates. */
+  onDragStart?: () => void;
+  /** Fired on pointerup/cancel — re-enable OrbitControls. */
+  onDragEnd?: () => void;
 }
 
 const STROKE_COLOR = "#3b82f6";
@@ -39,8 +46,10 @@ const DASH: [number, number] = [6, 4];
 
 export function LassoOverlay({
   active,
-  graphHandle,
+  hitTest,
   onComplete,
+  onDragStart,
+  onDragEnd,
 }: LassoOverlayProps): React.JSX.Element {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const pathRef = useRef<[number, number][]>([]);
@@ -85,6 +94,7 @@ export function LassoOverlay({
     const onDown = (e: PointerEvent): void => {
       drawingRef.current = true;
       pathRef.current = [[e.offsetX, e.offsetY]];
+      onDragStart?.();
       try {
         cv.setPointerCapture(e.pointerId);
       } catch {
@@ -104,14 +114,14 @@ export function LassoOverlay({
       try {
         cv.releasePointerCapture(e.pointerId);
       } catch {
-        // see above
+        // jsdom/older browsers: releasePointerCapture may throw — safe to ignore.
       }
       const path = pathRef.current;
       pathRef.current = [];
       clearOverlay();
-      if (path.length < 3 || !graphHandle) return;
-      const matched = graphHandle.findPointsInPolygon(path);
-      onComplete(matched);
+      onDragEnd?.(); // always re-enable controls, even on a too-short path
+      if (path.length < 3) return;
+      onComplete(hitTest(path, cv.clientWidth, cv.clientHeight));
     };
 
     cv.addEventListener("pointerdown", onDown);
@@ -119,6 +129,7 @@ export function LassoOverlay({
     cv.addEventListener("pointerup", onUp);
     cv.addEventListener("pointercancel", onUp);
     window.addEventListener("resize", resize);
+    window.addEventListener("pointerup", onUp);
 
     return () => {
       cv.removeEventListener("pointerdown", onDown);
@@ -126,11 +137,12 @@ export function LassoOverlay({
       cv.removeEventListener("pointerup", onUp);
       cv.removeEventListener("pointercancel", onUp);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("pointerup", onUp);
       drawingRef.current = false;
       pathRef.current = [];
       clearOverlay();
     };
-  }, [active, graphHandle, onComplete]);
+  }, [active, hitTest, onComplete, onDragStart, onDragEnd]);
 
   return (
     <canvas

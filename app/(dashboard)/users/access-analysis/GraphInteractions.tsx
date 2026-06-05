@@ -17,12 +17,12 @@
  * remasking 10k nodes on every keystroke).
  */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode, type RefObject } from "react";
 import type { PhysicsLayer } from "./physicsLayer";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { GraphCanvasHandle } from "./GraphCanvas";
-import type { GraphCanvas2DHandle } from "./GraphCanvas2D";
 import { usePredicateEngine } from "./usePredicateEngine";
+import { findPointsIn3DLasso } from "./lasso3d";
 import { LassoOverlay } from "./LassoOverlay";
 import { NodeTooltip } from "./NodeTooltip";
 import { setInteractionTestState, setEdgeTestState } from "./graphTestBridge";
@@ -213,23 +213,43 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     // rendererReady: re-apply once the async handle exists.
   }, [edges, activeUserIds, graphRef, mode, rendererReady]);
 
-  // ---- 2D-only lasso overlay ---------------------------------------
-  const graph2DHandle: GraphCanvas2DHandle | null =
-    graphRef.current && graphRef.current.mode === "2d"
-      ? graphRef.current.handle
-      : null;
+  // ---- Lasso overlay (3D screen-space projection; dormant 2D path kept) ----
+  const hitTest = useCallback(
+    (path: [number, number][], width: number, height: number): number[] => {
+      const root = graphRef.current;
+      if (!root || !root.handle) return [];
+      if (root.mode === "3d") {
+        const cam = root.handle.getCamera();
+        return [...findPointsIn3DLasso(physics.getPositions(), cam, path, width, height)];
+      }
+      // Dormant 2D path retained for completeness.
+      return root.handle.findPointsInPolygon(path);
+    },
+    [graphRef, physics],
+  );
 
-  const lassoEnabled = lassoActive && mode === "2d";
+  const onLassoDragStart = useCallback((): void => {
+    const root = graphRef.current;
+    if (root?.mode === "3d") root.handle?.setControlsEnabled(false);
+  }, [graphRef]);
+
+  const onLassoDragEnd = useCallback((): void => {
+    const root = graphRef.current;
+    if (root?.mode === "3d") root.handle?.setControlsEnabled(true);
+  }, [graphRef]);
+
   const hoveredFeature = hoveredIndex !== null ? features[hoveredIndex] ?? null : null;
 
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {children}
-      {lassoEnabled ? (
+      {lassoActive ? (
         <LassoOverlay
           active={true}
-          graphHandle={graph2DHandle}
+          hitTest={hitTest}
           onComplete={onLassoComplete}
+          onDragStart={onLassoDragStart}
+          onDragEnd={onLassoDragEnd}
         />
       ) : null}
       <NodeTooltip anchorScreenXY={tooltipAnchor} feature={hoveredFeature} />

@@ -44,9 +44,10 @@ export interface GraphCanvas3DHandle {
   setBackground(color: string): void;
   /** Expose camera so GraphCanvas can tween position during mode transitions. */
   getCamera(): THREE.PerspectiveCamera;
+  /** Enable/disable OrbitControls (used to freeze orbit during a lasso drag). */
+  setControlsEnabled(enabled: boolean): void;
   /**
    * Install click/hover handlers via ref-indirection (Phase 4-01 Task 2).
-   * No lasso primitives in 3D — v1 defers polygon selection to 2D mode only.
    */
   setEventHandlers(h: GraphEventHandlers): void;
   /** Replace the link set (flat [s,t,...] index pairs). Rebuilds line geometry. */
@@ -527,6 +528,7 @@ export function GraphCanvas3D(props: GraphCanvas3DProps): null {
         dirty = true; // background color is rendered only on paint
       },
       getCamera: () => camera,
+      setControlsEnabled: (enabled: boolean) => { controls.enabled = enabled; },
       setSelectedIndices: (indices: number[]) => {
         currentSelectedIndices = indices;
         for (let i = 0; i < n; i++) {
