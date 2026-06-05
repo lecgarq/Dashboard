@@ -1,5 +1,11 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// The 3D embedding projector is now the default graph environment. This legacy 2D/3D shell
+// suite only applies when the legacy shell is explicitly enabled.
+test.beforeEach(() => {
+  test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH !== "0", "Legacy 2D/3D shell — run with NEXT_PUBLIC_ACC_PERSON_GRAPH=0");
+});
+
 const GRAPH_URL = "/users/spatial-graph";
 
 // Window.__ACC_GRAPH_TEST__ is augmented globally in acc-dc-graph.spec.ts.

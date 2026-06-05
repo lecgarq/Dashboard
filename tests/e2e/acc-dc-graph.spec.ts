@@ -1,5 +1,11 @@
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 
+// The 3D embedding projector is now the default graph environment. This legacy 2D/3D shell
+// suite only applies when the legacy shell is explicitly enabled.
+test.beforeEach(() => {
+  test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH !== "0", "Legacy 2D/3D shell — run with NEXT_PUBLIC_ACC_PERSON_GRAPH=0");
+});
+
 /**
  * Current DC snapshot size (accDcGraph.bulkUsers → one node per user×project).
  * Asserted exactly per the verification standard; bump this if the dataset changes.
