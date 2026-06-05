@@ -32,20 +32,6 @@ async function gotoGraph(page: Page): Promise<void> {
   );
 }
 
-/** Switch to 3D so physics positions === the rendered cloud. */
-async function switchTo3D(page: Page): Promise<void> {
-  if ((await page.evaluate(() => window.__ACC_GRAPH_TEST__?.getMode())) === "3d") return;
-  await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
-  await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
-    timeout: 30_000,
-  });
-  await page.waitForFunction(
-    () => (window.__ACC_GRAPH_TEST__?.getPositionsStats().maxAbs ?? 0) > 1,
-    undefined,
-    { timeout: 60_000 },
-  );
-}
-
 /** Wait for the physics sim to freeze (alpha below threshold → positions static). */
 async function waitForFreeze(page: Page): Promise<void> {
   await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getFrozen() === true, undefined, {
@@ -62,7 +48,7 @@ test.describe("ACC 3D lasso — smoke", () => {
   test("3D lasso: toolbar button is active and a drag selects a non-empty subset", async ({ page }, testInfo) => {
     test.setTimeout(360_000); // cold-boot data load can exceed the 120s default on a loaded box
     await gotoGraph(page);
-    await switchTo3D(page);
+    // The graph is 3D-only (no 2D/3D toggle); it boots straight into 3D.
     await waitForFreeze(page); // screen-space drag needs the fitted, stable view
 
     // GATE: the post-freeze refit must zoom the camera to the settled spread so the
