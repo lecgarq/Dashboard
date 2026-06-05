@@ -12,11 +12,12 @@ const MAX_R = 5.5;
 export function ACCESS_WEIGHT(f: NodeFeatureSnapshot): number {
   const perm = f.permissionStrength ?? 0;          // 0..5
   const admin = f.isAdmin ? 2 : 0;                 // governance bonus
+  // Each (user,project) instance is on >=1 project, so unknown defaults to 1.
   const breadth = Math.log2(1 + (f.projectCount ?? 1)); // diminishing returns
   return perm + admin + breadth;
 }
 
-/** RGBA-free Float32Array(n) of per-node radii in [MIN_R, MAX_R]. */
+/** Float32Array(n) of per-node world-unit radii in [MIN_R, MAX_R]. */
 export function buildNodeSizes(features: ReadonlyArray<NodeFeatureSnapshot>): Float32Array {
   const out = new Float32Array(features.length);
   let min = Infinity;

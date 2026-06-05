@@ -38,7 +38,19 @@ describe("buildNodeSizes", () => {
   });
 
   it("ACCESS_WEIGHT is pure and handles missing optionals as zero", () => {
-    expect(ACCESS_WEIGHT(f({}))).toBe(0 + 0 + Math.log2(1 + 1));
+    // f({}) => perm 0 + admin 0 + log2(1+1) = 1
+    expect(ACCESS_WEIGHT(f({}))).toBeCloseTo(1, 10);
+    // perm 3 + admin 2 + log2(1+3)=2  => 7
+    expect(ACCESS_WEIGHT(f({ permissionStrength: 3, isAdmin: true, projectCount: 3 }))).toBeCloseTo(7, 10);
+  });
+
+  it("returns an empty array for empty input", () => {
+    expect(buildNodeSizes([]).length).toBe(0);
+  });
+
+  it("single node returns MIN (range collapses)", () => {
+    const [s] = buildNodeSizes([f({ permissionStrength: 5, isAdmin: true, projectCount: 30 })]);
+    expect(s).toBe(2);
   });
 
   it("degenerate all-equal input returns all MIN (no NaN from /0)", () => {
