@@ -268,3 +268,25 @@ ACC Issues API `GET projects/{projectId}/issues` (offset pagination, `fields` pa
 list payload); ACC Model Coordination clash endpoints `clash/v3/.../modelsets`, `clashes/assigned`
 (proven in `scripts/mc-list-assigned.cjs`); activity misattribution evidence in
 `docs/superpowers/specs/2026-06-03-modules-by-activity-design.md` + `scripts/diag-activity-*.cjs`.
+
+## Implementation addendum (2026-06-05, shipped + deployed)
+
+Four corrections vs the design above, learned by running it against the live API/data:
+
+1. **DROP the `fields=` param** (Section 3, line ~173). It corrupts `deleted` (returns `true` for every
+   issue, even active ones) AND under-returns issues by ~3,000. The no-fields list returns the full
+   ~42-field object with correct `deleted` and `description` natively — so we store the genuinely full
+   `rawJson`. Fixed in `acc-issues-backfill.cjs`.
+2. **Model-set listing endpoint is `bim360/modelset/v3/containers/{id}/modelsets`** (service base
+   `modelset`, not `clash/v3`). The assigned-clashes endpoint stays `clash/v3`.
+3. **Final data:** 14,233 issues; **1,765 clash-validated** Model-Coordination issues (0 false positives;
+   825 recovered by Pass 2 that the English heuristic missed — Spanish auto-text + edited titles). Coverage
+   is a FLOOR: 427 accessible projects, 123 credential-blocked (`docs/forbidden-projects.md`). Surfaced as
+   a panel footnote.
+4. **Dashboard pivot (Section 4 superseded).** Per owner, the standalone `<CoordinationPanel>` was replaced
+   by an **integrated companion under the module-activity donut**, sharing the one project picker; and the
+   "linked follow-up" activity-donut correction was DONE as part of this (issue-* → Build, `*-collection` →
+   Data Management, `modelCoordination` dropped from `donutModules()`). New units: `coordinationCounts.ts`
+   (pure `summarizeCoordination`), `lib/server/coordinationByProjectView.ts` (per-(project,status) rows +
+   coverage), `components/CoordinationByProject.tsx`. Removed: `CoordinationPanel.tsx`, `coordinationView.ts`.
+   Gates: unit 1498 / tsc 0; rebuilt + redeployed.
