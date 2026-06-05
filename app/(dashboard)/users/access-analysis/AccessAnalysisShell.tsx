@@ -298,7 +298,7 @@ function ShellBody({
             graphRef={graphRef}
             activeFilters={activeFilters}
             searchQuery={searchQuery}
-            lassoActive={lassoActive && mode === "2d"}
+            lassoActive={lassoActive}
             onLassoComplete={(indices) => {
               setLasso(indices);
               setLassoActive(false);
@@ -356,21 +356,7 @@ function ShellBody({
             </div>
           )}
 
-          {/* Floating premium glassmorphic mode switcher overlay */}
-          <div className="absolute right-4 top-4 z-10">
-            <button
-              type="button"
-              onClick={() => setMode(mode === "2d" ? "3d" : "2d")}
-              className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-foreground bg-background/60 hover:bg-background/95 backdrop-blur-md border border-border/80 shadow-md active:scale-95 transition-all duration-200"
-              title={mode === "2d" ? "Switch to 3D spatial layout" : "Switch to 2D flat layout"}
-            >
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
-              </span>
-              <span>{mode === "2d" ? "Go 3D" : "Go 2D"}</span>
-            </button>
-          </div>
+
         </div>
         <RightPanelStack
           features={features}
@@ -396,7 +382,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);
   const [physics, setPhysics] = useState<PhysicsLayer | null>(null);
   const [catalog, setCatalog] = useState<CatalogDimension[] | null>(null);
-  const [mode, setMode] = useState<"2d" | "3d">("2d");
+  // 3D-only: the 2D cosmos path stays in the repo but is never mounted here.
+  const mode = "3d" as const;
+  const setMode = (_m: "2d" | "3d"): void => { /* 3D-only: mode is fixed */ };
   const [lassoActive, setLassoActive] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 

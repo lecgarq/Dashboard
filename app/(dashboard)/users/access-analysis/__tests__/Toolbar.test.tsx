@@ -124,10 +124,15 @@ describe("Toolbar — Phase 4-02 Task 2", () => {
     expect(api!.activeFilters.role?.has("admin")).toBe(false);
   });
 
-  it("mode==='3d' renders the lasso button as disabled", () => {
+  it("mode==='3d' renders the lasso button as enabled (lasso works in 3D via screen-space projection)", () => {
     render(<Harness initialMode="3d" />);
     const lassoBtn = screen.getByTestId("toolbar-lasso") as HTMLButtonElement;
-    expect(lassoBtn.disabled).toBe(true);
+    expect(lassoBtn.disabled).toBe(false);
+  });
+
+  it("toolbar-mode-toggle is absent (3D-only: toggle removed)", () => {
+    render(<Harness />);
+    expect(screen.queryByTestId("toolbar-mode-toggle")).toBeNull();
   });
 
   it("'Clear all' visible only after filters become non-default; clicking restores isDefault", () => {

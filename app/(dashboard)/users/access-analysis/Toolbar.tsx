@@ -96,7 +96,8 @@ export function Toolbar({
     return () => window.removeEventListener("keydown", handler);
   }, []);
 
-  const lassoDisabled = mode === "3d";
+  // Lasso now works in 3D (screen-space projection), so it is always enabled.
+  const lassoDisabled = false;
 
   return (
     <header
@@ -145,13 +146,7 @@ export function Toolbar({
         type="button"
         onClick={onLassoToggle}
         disabled={lassoDisabled}
-        title={
-          lassoDisabled
-            ? "Lasso available in 2D mode only"
-            : lassoActive
-              ? "Cancel lasso"
-              : "Draw lasso"
-        }
+        title={lassoActive ? "Cancel lasso" : "Draw lasso"}
         data-testid="toolbar-lasso"
         className={`rounded-md border px-3 py-1.5 text-sm ${
           lassoActive
@@ -178,41 +173,6 @@ export function Toolbar({
           ))}
         </select>
       </label>
-
-      <div
-        role="group"
-        aria-label="Mode toggle"
-        className="relative inline-flex items-center bg-muted/60 p-1 rounded-xl border border-border/80 shadow-inner"
-        data-testid="toolbar-mode-toggle"
-      >
-        <div
-          className="absolute top-1 bottom-1 rounded-lg bg-blue-500 shadow-sm transition-all duration-300 ease-out"
-          style={{
-            left: mode === "2d" ? "4px" : "calc(50% + 2px)",
-            width: "calc(50% - 6px)",
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => onModeChange("2d")}
-          aria-pressed={mode === "2d"}
-          className={`relative z-10 w-12 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 focus:outline-none ${
-            mode === "2d" ? "text-white" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          2D
-        </button>
-        <button
-          type="button"
-          onClick={() => onModeChange("3d")}
-          aria-pressed={mode === "3d"}
-          className={`relative z-10 w-12 py-1.5 text-xs font-semibold rounded-lg transition-colors duration-200 focus:outline-none ${
-            mode === "3d" ? "text-white" : "text-muted-foreground hover:text-foreground"
-          }`}
-        >
-          3D
-        </button>
-      </div>
 
       <div className="ml-auto">
         {!isDefault ? (
