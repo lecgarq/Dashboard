@@ -11,7 +11,10 @@ const { refreshAndPersistFromDb } = require("../lib/acc/apsAuth.ts");
 const BASE = "https://developer.api.autodesk.com";
 const DRY = process.argv.includes("--dry-run");
 const ONLY = (process.argv.find((a) => a.startsWith("--project=")) || "").split("=")[1] || null;
-const FIELDS = "id,displayId,title,description,status,issueTypeId,issueSubtypeId,createdBy,createdAt,deleted";
+// NOTE: do NOT use the ACC Issues `fields=` query param. It corrupts the `deleted`
+// boolean (returns true for every issue) and truncates the payload to the requested
+// subset. Omitting it returns the full ~40-field object with a correct `deleted` and
+// a complete rawJson for the "full dataset" goal. (description is returned natively.)
 
 function prisma() {
   const { PrismaClient } = require("@prisma/client");
@@ -36,7 +39,7 @@ async function listIssues(token, projectId) {
   const out = [];
   let offset = 0; const limit = 100;
   for (;;) {
-    const url = `${BASE}/construction/issues/v1/projects/${projectId}/issues?limit=${limit}&offset=${offset}&fields=${FIELDS}`;
+    const url = `${BASE}/construction/issues/v1/projects/${projectId}/issues?limit=${limit}&offset=${offset}`;
     const { status, ok, body } = await apiGet(url, token);
     if (status === 403) return { forbidden: true, issues: [] };
     if (!ok) throw new Error(`issues-list ${status}: ${JSON.stringify(body).slice(0, 200)}`);
