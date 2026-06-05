@@ -5,5 +5,6 @@ export interface SimEdge { a: number; b: number; score: number; }               
 export interface TieredEdge { a: number; b: number; tier: 1 | 2 | 3; reason: string; }
 export interface Clustering { k: number; assign: Int32Array; }
 export interface LayoutNode { id: string; name: string; x: number; y: number; cluster: number; size: number; }
+export interface LayoutNode3D { id: string; name: string; x: number; y: number; z: number; cluster: number; size: number; } // static projector positions
 export interface ClusterMeta { idx: number; label: string; color: string; count: number; }
-export interface PersonGraphSnapshot { k: number; dim: number; personCount: number; nodes: LayoutNode[]; edges: TieredEdge[]; clusters: ClusterMeta[]; }
+export interface PersonGraphSnapshot { k: number; dim: number; personCount: number; nodes: LayoutNode[]; nodes3d: LayoutNode3D[]; edges: TieredEdge[]; clusters: ClusterMeta[]; }

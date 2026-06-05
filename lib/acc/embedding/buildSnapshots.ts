@@ -3,6 +3,7 @@ import { buildEmbedding } from "./tfidf";
 import { knnEdges, tierEdges, humanizeFeature } from "./cosineGraph";
 import { sphericalKMeans } from "./kmeans";
 import { packedClusterLayout } from "./packedLayout";
+import { packedClusterLayout3D } from "./packedLayout3D";
 
 const COLORS = ["#60a5fa","#fb7185","#34d399","#fbbf24","#a78bfa","#22d3ee","#f472b6","#a3e635","#f59e0b","#4ade80","#c084fc","#2dd4bf","#fca5a5","#bef264","#93c5fd","#fdba74"];
 
@@ -36,6 +37,8 @@ export function buildSnapshotsFromBags(bags: PersonFeatureBag[], ks: number[], m
     for (let i = 0; i < cl.assign.length; i++) counts[cl.assign[i]]++;
     const clusters: ClusterMeta[] = Array.from({ length: k }, (_, c) => ({ idx: c, label: labels[c], color: COLORS[c % COLORS.length], count: counts[c] }));
     const nodes = layout.nodes.map((n) => ({ id: e.persons[n.index].personId, name: e.persons[n.index].name, x: +n.x.toFixed(2), y: +n.y.toFixed(2), cluster: n.cluster, size: +n.size.toFixed(2) }));
-    return { k, dim: e.featureKeys.length, personCount: e.persons.length, nodes, edges: tiered, clusters };
+    const layout3d = packedClusterLayout3D(cl.assign, sizes, k, { size: 1000 });
+    const nodes3d = layout3d.nodes.map((n) => ({ id: e.persons[n.index].personId, name: e.persons[n.index].name, x: +n.x.toFixed(2), y: +n.y.toFixed(2), z: +n.z.toFixed(2), cluster: n.cluster, size: +n.size.toFixed(2) }));
+    return { k, dim: e.featureKeys.length, personCount: e.persons.length, nodes, nodes3d, edges: tiered, clusters };
   });
 }

@@ -443,7 +443,8 @@ model AccPersonGraphSnapshot {
   personCount Int
   edgeCount   Int
   dim         Int
-  nodes       Json                  // LayoutNode[]
+  nodes       Json                  // LayoutNode[] (2D packed)
+  nodes3d     Json     @default("[]") // LayoutNode3D[] (static projector positions)
   edges       Json                  // TieredEdge[]
   clusters    Json                  // ClusterMeta[]
   builtAt     DateTime @updatedAt

@@ -13,6 +13,8 @@ describe("buildSnapshotsFromBags", () => {
     expect(snaps.map((s) => s.k)).toEqual([2, 3]);
     const s2 = snaps[0];
     expect(s2.nodes).toHaveLength(24);
+    expect(s2.nodes3d).toHaveLength(24);
+    expect(s2.nodes3d.every((n) => Number.isFinite(n.x) && Number.isFinite(n.y) && Number.isFinite(n.z))).toBe(true);
     expect(s2.clusters).toHaveLength(2);
     expect(s2.edges.length).toBeGreaterThan(0);
     expect(s2.edges.every((e) => e.tier >= 1 && e.tier <= 3)).toBe(true);

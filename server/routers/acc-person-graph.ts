@@ -31,6 +31,7 @@ export const accPersonGraphRouter = router({
         dim: row.dim,
         personCount: row.personCount,
         nodes: row.nodes,
+        nodes3d: row.nodes3d,
         edges: row.edges,
         clusters: row.clusters,
         availableKs: PERSON_GRAPH_KS,
