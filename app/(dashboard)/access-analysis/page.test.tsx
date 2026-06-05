@@ -18,6 +18,21 @@ vi.mock("@/lib/server/accessInstanceView", () => ({
       roles: [], modules: [], adminModules: [] },
   ])),
 }));
+// Empty activity -> the modules donut renders its empty state (no second echart),
+// keeping this test focused on the roles donut.
+vi.mock("@/lib/server/moduleActivityView", () => ({
+  loadModuleActivity: vi.fn(async () => []),
+}));
+vi.mock("@/lib/server/coordinationView", () => ({
+  loadCoordinationSummary: vi.fn(async () => ({
+    totalIssues: 0,
+    coordinationCount: 0,
+    validatedCount: 0,
+    byStatus: [],
+    byProject: [],
+    auditCount: 0,
+  })),
+}));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({
   default: (props: { option: any }) => {
@@ -50,5 +65,7 @@ describe("AccessAnalysisRoute (roles donut)", () => {
     // Distinct roles seen anywhere = Admin, Member = 2.
     expect(el.getAttribute("data-subtexts")).toContain("2 roles");
     expect(getByText("Access Analysis")).toBeTruthy();
+    // The modules section is wired in below the roles donut.
+    expect(getByText(/Module activity/)).toBeTruthy();
   });
 });

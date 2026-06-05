@@ -1,12 +1,14 @@
 import { loadInstanceView } from "@/lib/server/accessInstanceView";
-import { RolesByProject } from "./components/RolesByProject";
+import { loadModuleActivity } from "@/lib/server/moduleActivityView";
+import { loadCoordinationSummary } from "@/lib/server/coordinationView";
+import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import type { ProjectRoleRow } from "./projectFilter";
 
 export const metadata = { title: "Access Analysis" };
 export const dynamic = "force-dynamic";
 
 export default async function AccessAnalysisRoute() {
-  const view = await loadInstanceView();
+  const [view, moduleRows, coordination] = await Promise.all([loadInstanceView(), loadModuleActivity(), loadCoordinationSummary()]);
   // Slim per-membership rows: just enough for the client to filter by project
   // and re-bucket roles. Everything else in the instance view is dropped.
   const rows: ProjectRoleRow[] = view.map((v) => ({
@@ -21,16 +23,17 @@ export default async function AccessAnalysisRoute() {
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
         <header className="flex flex-col gap-1.5">
           <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
-            ACC · Access
+            ACC · Access &amp; Activity
           </span>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             Access Analysis
           </h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Role distribution across user–project memberships. Search and tick projects to focus the donut.
+            Role distribution across user–project memberships and activity volume by ACC module.
+            Search and tick projects once to focus both donuts.
           </p>
         </header>
-        <RolesByProject rows={rows} />
+        <AccessAnalysisCharts roleRows={rows} moduleRows={moduleRows} coordination={coordination} />
       </div>
     </div>
   );
