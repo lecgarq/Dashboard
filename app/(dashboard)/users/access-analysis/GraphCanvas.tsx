@@ -36,8 +36,9 @@ import { resolveLodMode } from "./lodState";
 
 /**
  * Discriminated handle: GraphInteractions reads `mode` to pick the active
- * underlying renderer (2D = cosmos.gl, 3D = three.js). Lasso primitives are
- * only valid on the 2D variant.
+ * underlying renderer (2D = cosmos.gl, 3D = three.js). The lasso works in both:
+ * the 2D variant hit-tests via the cosmos handle; the 3D variant projects node
+ * positions through `getCamera()` (see findPointsIn3DLasso).
  */
 export type GraphCanvasHandle =
   | { mode: "2d"; handle: GraphCanvas2DHandle | null }

@@ -26,7 +26,8 @@ async function gotoGraph(page: Page): Promise<void> {
 /** Switch to 3D so physics.getPositions() === the rendered cloud. */
 async function switchTo3D(page: Page): Promise<void> {
   if ((await page.evaluate(() => window.__ACC_GRAPH_TEST__?.getMode())) === "3d") return;
-  await page.getByTestId("toolbar-mode-toggle").click();
+  // 3D-only restore: graph boots into 3D so the early-return above always fires; the
+  // 2D/3D toggle was removed, so there is nothing to click below.
   await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, { timeout: 30_000 });
   await page.waitForFunction(() => (window.__ACC_GRAPH_TEST__?.getPositionsStats().maxAbs ?? 0) > 1, undefined, { timeout: 60_000 });
 }
@@ -138,7 +139,7 @@ test.describe("ACC positioning — slider smoothness + color independence", () =
   });
 
   test("2D clusters by sliders (color-decoupled) without crashing", async ({ page }, testInfo) => {
-    await gotoGraph(page); // default mode is 2D
+    await gotoGraph(page); // graph is 3D-only now
     await projectThumb(page).focus();
     await page.keyboard.press("End"); // → max (100) in one press
     await page.waitForTimeout(1_500);

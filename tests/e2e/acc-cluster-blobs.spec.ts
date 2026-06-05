@@ -1,8 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// The physics shell is now the default graph environment. Skip only when the projector is opted in.
+// The 3D-only restore removed cluster-blob grouping + the cluster-label overlay from
+// the shell, so this 2D-cluster spec no longer matches the rendered UI. Skipped
+// wholesale (retained for reference / potential rewrite), not deleted.
 test.beforeEach(() => {
-  test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1", "Physics shell is the default; skip only when the projector (=1) is opted in");
+  test.skip(true, "Cluster-blob grouping + labels removed in the 3D-only restore");
 });
 
 const GRAPH_URL = "/users/spatial-graph";

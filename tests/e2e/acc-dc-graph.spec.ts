@@ -306,7 +306,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
 
     // Parity: the SAME buffer feeds the 3D renderer — switching to 3D leaves the
     // color signature identical, and 3D still renders.
-    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    // 3D-only restore: graph boots into 3D; the 2D/3D toggle was removed.
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
     });
@@ -353,7 +353,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("3D renders a non-empty, finite, centered cloud", async ({ page }, testInfo) => {
-    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    // 3D-only restore: graph boots into 3D; the 2D/3D toggle was removed.
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
     });
@@ -643,7 +643,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     const edgeCount = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeStats().count);
     expect(edgeCount, "graph has same-user edges").toBeGreaterThan(0);
 
-    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    // 3D-only restore: graph boots into 3D; the 2D/3D toggle was removed.
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
     });
@@ -663,7 +663,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     expect(sample, "a multi-project user exists").toBeTruthy();
     expect(sample!.expectedBrightCount, "sample user has >=1 edge").toBeGreaterThan(0);
 
-    await page.getByTestId("toolbar-mode-toggle").getByRole("button", { name: "3D" }).click();
+    // 3D-only restore: graph boots into 3D; the 2D/3D toggle was removed.
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
     });
