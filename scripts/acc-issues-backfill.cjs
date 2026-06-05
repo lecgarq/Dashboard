@@ -48,17 +48,24 @@ async function listIssues(token, projectId) {
   return { forbidden: false, issues: out };
 }
 
+let db; let run = { id: "dry-run" };
+
 (async () => {
-  const db = prisma();
-  const token = await refreshAndPersistFromDb(db, "data:read");
+  db = prisma();
+  let token = await refreshAndPersistFromDb(db, "data:read");
+  let tokenAt = Date.now();
   const projects = ONLY
     ? [{ id: ONLY, name: ONLY }]
     : await db.accProject.findMany({ select: { id: true, name: true } });
 
-  const run = DRY ? { id: "dry-run" } : await db.accIssueFetchRun.create({ data: {} });
+  run = DRY ? { id: "dry-run" } : await db.accIssueFetchRun.create({ data: {} });
   let ok = 0, forbidden = 0, upserted = 0, coordination = 0;
 
   for (const p of projects) {
+    if (Date.now() - tokenAt > 45 * 60 * 1000) {
+      token = await refreshAndPersistFromDb(db, "data:read");
+      tokenAt = Date.now();
+    }
     let r;
     try { r = await listIssues(token, p.id); }
     catch (e) { console.error(`  ${p.id} ERROR ${e.message}`); continue; }
@@ -98,4 +105,13 @@ async function listIssues(token, projectId) {
   }
   console.log(`\n${DRY ? "[DRY] " : ""}projects ok=${ok} forbidden=${forbidden}  issues upserted=${upserted}  coordination=${coordination}`);
   await db.$disconnect();
-})().catch((e) => { console.error(e); process.exit(1); });
+})().catch(async (e) => {
+  console.error(e);
+  try {
+    if (db && run?.id && run.id !== "dry-run") {
+      await db.accIssueFetchRun.update({ where: { id: run.id }, data: { status: "failed", finishedAt: new Date() } });
+    }
+  } catch {}
+  try { if (db) await db.$disconnect(); } catch {}
+  process.exit(1);
+});
