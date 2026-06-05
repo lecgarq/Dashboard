@@ -40,4 +40,11 @@ describe("classifyCoordination", () => {
   it("requires two {3D - user} markers for the corroborated description rule", () => {
     expect(classifyCoordination({ description: "discuss the clash between teams and vendors" }).isCoordination).toBe(false);
   });
+
+  it("flags a corroborated description (no lead phrase, clash between … and … + 2 markers) as medium", () => {
+    const description =
+      "Coordination clash between Pipe in MEP.rvt - {3D - userA} and Beam in STR.rvt - {3D - userB}";
+    expect(classifyCoordination({ description }))
+      .toEqual({ isCoordination: true, source: "description", clashId: null, confidence: "medium" });
+  });
 });
