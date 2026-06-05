@@ -16,14 +16,9 @@ export function CoordinationByProject({
   const max = byProject[0]?.count ?? 1;
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
-      <header className="mb-3 flex flex-col gap-1">
-        <span className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Model Coordination · clash-validated issues
-        </span>
-        <div className="flex items-baseline gap-2">
-          <span className="text-3xl font-semibold tabular-nums text-foreground">{total.toLocaleString()}</span>
-          <span className="text-sm text-muted-foreground">clash-validated issues</span>
-        </div>
+      <header className="mb-3 flex items-baseline gap-2">
+        <span className="text-3xl font-semibold tabular-nums text-foreground">{total.toLocaleString()}</span>
+        <span className="text-sm text-muted-foreground">clash-validated issues</span>
       </header>
 
       {byStatus.length > 0 && (
