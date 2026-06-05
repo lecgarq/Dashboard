@@ -35,8 +35,8 @@ export function CatalogSliderSidebar({ catalog }: { catalog: readonly CatalogDim
   const setSlider = setSliderValue;
   const resetSlider = resetOne;
   const [query, setQuery] = useState("");
-  // Surface only the curated sliders (Project / Role / User name). The rest of the
-  // catalog stays defined but hidden ("safe") — re-enable via CURATED_SLIDER_IDS.
+  // Surface every slider-surfaced, available dimension (3D-only restore un-pared the
+  // set; see curatedSliders.ts). Grouped below into Structural / Activity / Folder.
   const curated = useMemo(() => curatedSliderDimensions(catalog), [catalog]);
   const sections = useMemo(() => filterSections(getCatalogSections(curated), query), [curated, query]);
   const searching = query.trim() !== "";
