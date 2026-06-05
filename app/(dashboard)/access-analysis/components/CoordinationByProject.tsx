@@ -29,8 +29,8 @@ export function CoordinationByProject({
       {byStatus.length > 0 && (
         <div className="mb-3 flex flex-wrap gap-2">
           {byStatus.map((s) => (
-            <span key={s.status} className="rounded-md bg-muted px-2 py-1 text-xs font-medium tabular-nums text-muted-foreground">
-              {s.status}
+            <span key={s.status} className="rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+              {s.status}: <span className="font-medium tabular-nums text-foreground">{s.count.toLocaleString()}</span>
             </span>
           ))}
         </div>

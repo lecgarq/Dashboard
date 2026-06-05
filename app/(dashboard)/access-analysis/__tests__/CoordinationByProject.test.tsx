@@ -10,7 +10,7 @@ const summary: CoordinationSummary = {
     { projectId: "a", projectName: "MTY AE-01", count: 532 },
     { projectId: "b", projectName: "Danfoss Sensores", count: 297 },
   ],
-  byStatus: [{ status: "open", count: 1765 }],
+  byStatus: [{ status: "open", count: 1200 }, { status: "closed", count: 565 }],
 };
 
 describe("CoordinationByProject", () => {
@@ -21,9 +21,11 @@ describe("CoordinationByProject", () => {
     expect(screen.getByText("532")).toBeTruthy();
   });
 
-  it("shows a status chip", () => {
+  it("shows status chips with their counts", () => {
     render(<CoordinationByProject summary={summary} accessibleProjects={427} forbiddenProjects={123} />);
     expect(screen.getByText(/open/i)).toBeTruthy();
+    expect(screen.getByText("1,200")).toBeTruthy();
+    expect(screen.getByText("565")).toBeTruthy();
   });
 
   it("shows the coverage footnote when projects were forbidden", () => {
