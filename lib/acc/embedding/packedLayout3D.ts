@@ -5,6 +5,15 @@
 
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
+/** Deterministic per-index pseudo-random triple in [0,1) — used to jitter the fibonacci lattice
+ *  into an organic point cloud (projector look) without breaking determinism. */
+function hash3(i: number): [number, number, number] {
+  let h = Math.imul(i ^ 0x9e3779b9, 2654435761) >>> 0; const a = (h & 1023) / 1023;
+  h = Math.imul(h ^ (h >>> 13), 1274126177) >>> 0; const b = (h & 1023) / 1023;
+  h = Math.imul(h ^ (h >>> 11), 2246822519) >>> 0; const c = (h & 1023) / 1023;
+  return [a, b, c];
+}
+
 export interface PackedNode3D { index: number; x: number; y: number; z: number; cluster: number; size: number; }
 export interface PackedLayout3D { nodes: PackedNode3D[]; spheres: { x: number; y: number; z: number; r: number; cluster: number; count: number }[] }
 
@@ -55,13 +64,15 @@ export function packedClusterLayout3D(
   const X = new Float64Array(assign.length), Y = new Float64Array(assign.length), Z = new Float64Array(assign.length);
   for (let c = 0; c < k; c++) {
     const ms = members[c].slice().sort((a, b) => sizes[b] - sizes[a]); const M = ms.length;
+    const jitter = (R[c] / Math.max(1, Math.cbrt(M))) * 0.6; // ~local spacing → organic cloud
     for (let m = 0; m < M; m++) {
       const rr = R[c] * fill * Math.cbrt((m + 0.5) / M);
       const phi = Math.acos(1 - 2 * ((m + 0.5) / M));
       const theta = GOLDEN * m;
-      X[ms[m]] = cx[c] + rr * Math.sin(phi) * Math.cos(theta);
-      Y[ms[m]] = cy[c] + rr * Math.sin(phi) * Math.sin(theta);
-      Z[ms[m]] = cz[c] + rr * Math.cos(phi);
+      const [j0, j1, j2] = hash3(ms[m] + 1);
+      X[ms[m]] = cx[c] + rr * Math.sin(phi) * Math.cos(theta) + (j0 - 0.5) * jitter;
+      Y[ms[m]] = cy[c] + rr * Math.sin(phi) * Math.sin(theta) + (j1 - 0.5) * jitter;
+      Z[ms[m]] = cz[c] + rr * Math.cos(phi) + (j2 - 0.5) * jitter;
     }
   }
 
