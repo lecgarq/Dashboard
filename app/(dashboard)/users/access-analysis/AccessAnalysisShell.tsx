@@ -280,11 +280,13 @@ export function AccessAnalysisShell(): React.JSX.Element {
         const targetDimIds = sliderDims.map((d) => d.id);
         const targets = buildCatalogTargets(snapshot, sliderDims);
         const dimWeights = buildCatalogWeights(snapshot, sliderDims);
-        // Default = all sliders 0 (spec decision #3); localStorage overrides per
-        // known catalog id, mirroring SliderContext hydration so UI + physics stay
-        // in lockstep. initialSliders values are normalized 0..1 (0 already is).
+        // catalogDefaultSliders is in 0..100 (SliderContext scale); physics wants 0..1.
+        // localStorage overrides per known catalog id, mirroring SliderContext hydration
+        // so UI + physics stay in lockstep. The override loop also divides by 100.
         const knownIds = sliderDimensionIds(catalog);
-        const initialSliders: Record<string, number> = { ...catalogDefaultSliders(catalog) };
+        const initialSliders: Record<string, number> = Object.fromEntries(
+          Object.entries(catalogDefaultSliders(catalog)).map(([k, v]) => [k, v / 100]),
+        );
         try {
           if (typeof window !== "undefined") {
             const raw = window.localStorage.getItem(CONTROLS_STORAGE_KEY);

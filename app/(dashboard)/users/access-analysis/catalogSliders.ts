@@ -14,9 +14,20 @@ export function sliderDimensionIds(catalog: readonly CatalogDimension[]): string
   return catalog.filter((d) => d.surfaces.includes("slider")).map((d) => d.id);
 }
 
-/** Default state per spec decision #3: every (available) slider at 0. */
+/** Grouping strength applied to the default clustering dimension on first load. */
+export const GROUPING_DEFAULT = 60;
+
+/**
+ * Default state: the primary grouping dimension starts engaged so the map LOADS
+ * already organized (settle-on-load); every other slider is 0 for clean
+ * single-dimension clusters. Prefers Role; falls back to Project; else all 0.
+ */
 export function catalogDefaultSliders(catalog: readonly CatalogDimension[]): Record<string, number> {
+  const dims = sliderDimensions(catalog);                  // available sliders only
   const out: Record<string, number> = {};
-  for (const d of sliderDimensions(catalog)) out[d.id] = 0;
+  for (const d of dims) out[d.id] = 0;
+  const has = (id: string): boolean => dims.some((d) => d.id === id);
+  const primary = has("role") ? "role" : has("project") ? "project" : null;
+  if (primary) out[primary] = GROUPING_DEFAULT;
   return out;
 }
