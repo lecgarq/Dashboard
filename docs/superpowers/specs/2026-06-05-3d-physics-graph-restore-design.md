@@ -90,19 +90,27 @@ overridden.
    Module** — and routes the long tail of micro-dimensions into a collapsed
    "Advanced" group. Physics targets/weights (`buildCatalogTargets`,
    `buildCatalogWeights`) are built for **every surfaced slider** so each one
-   actually moves the layout. (Exact catalog member ids are pinned during
-   planning by reading the live `buildDimensionCatalog` output.)
+   actually moves the layout. Structural dims already exist via
+   `buildStructuralDimensions()` in `dimensionCatalog.structural.ts` (no new
+   API; fed by `bulkUsers`), so "un-pare" is a surface/selector change, not a
+   data change. (Exact member ids pinned during planning from the live
+   `buildDimensionCatalog` output.) **Validate** that collapsed/inactive
+   Advanced sliders pass **weight 0** to `physicsWorkerScript.ts` so they add no
+   noise to the force simulation.
 
 5. **Build the 3D lasso.**
    A bounded new unit. Reuse the existing `LassoOverlay` drag-polygon UI, but:
-   - **Projection:** map each node's live 3D world position to screen space
-     through the active camera (`camera.project`), then run the existing
-     point-in-polygon test against the projected screen points to produce the
-     selected index set. This is a pure function of (positions, camera matrices,
-     polygon) and is unit-testable without a browser.
+   - **Projection (pure helper):**
+     `findPointsIn3DLasso(positions, camera, polygon, width, height) → Set<index>`
+     — world `(x,y,z)` → `vector.project(camera)` (NDC `[-1,1]`) → viewport scale
+     to screen `(px,py)` against the overlay canvas's CSS width/height (which
+     already matches the viewport exactly, per `LassoOverlay.tsx`) → existing
+     point-in-polygon test. No DOM/three.js scene needed → fully unit-testable.
    - **Orbit suppression:** disable OrbitControls rotation/zoom while a lasso
      drag is active so the gesture selects instead of rotating; re-enable on
-     drag end.
+     drag end. Register the `pointerup` finalizer on **`window`** (not just the
+     canvas) so dragging off-screen still cleanly ends the gesture and never
+     leaves OrbitControls locked.
    - **Wiring:** `GraphInteractions` stops gating the lasso on `mode === "2d"`;
      `lassoActive` enables the 3D lasso overlay. The completed selection flows
      into the existing `SelectionContext` / `SelectionPanel` exactly as the 2D
@@ -141,13 +149,23 @@ bulkUsers (tRPC, current data)
 Color: buildNodeColors(features, colorMode)  → GraphCanvas3D instance colors
 ```
 
+## Confirmed by code review (2026-06-05)
+
+- **Physics:** the worker (`physicsWorkerScript.ts`) runs `d3-force-3d` natively
+  off the main thread (`forceSimulation(nodes, 3)`, `forceX/Y/Z`,
+  `forceManyBody`). At all-0 sliders, `REPULSION_ZERO = -10` spreads nodes into
+  an organic sphere — **no origin collapse** (resolves the prior top risk).
+- **Lasso overlay:** `LassoOverlay.tsx` is a full-viewport transparent 2D
+  `<canvas>` over the WebGL container, recording pixel coords on pointer events —
+  so screen-space projection maps 1:1.
+- **Structural dims:** `buildStructuralDimensions()` in
+  `dimensionCatalog.structural.ts`, fed by `bulkUsers` — already present.
+
 ## Risks / verify first in planning
 
-1. **Physics-at-rest behavior (highest risk).** The physics layer has only been
-   exercised *under* the blob overlay recently. Verify that with sliders at 0 it
-   settles into a sensible organic 3D scatter (free/loose), not a pile at the
-   origin, and that raising a slider visibly groups same-value nodes. If
-   bit-rotted, that is fix #1 before anything else.
+1. **Physics-at-rest behavior — RESOLVED by review above.** Still confirm in the
+   running build that raising a slider visibly groups same-value nodes (the
+   forces are slider-weighted), but no origin-collapse risk remains.
 2. **3D lasso correctness.** Projection math (world → NDC → screen) must match the
    on-screen node positions, and OrbitControls must be cleanly suppressed/restored
    around a drag without leaving the camera in a bad state.
