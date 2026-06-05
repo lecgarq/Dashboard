@@ -20,7 +20,7 @@ export function reconcileClashes(
   stored: ReadonlyArray<StoredIssueLite>,
   clashIssueIds: ReadonlySet<string>,
 ): ReconcileResult {
-  const byId = new Map(stored.map((s) => [s.id, s]));
+  const storedIds = new Set(stored.map((s) => s.id));
   const validatedIds: string[] = [];
   const falseNegIds: string[] = [];
   const falsePosIds: string[] = [];
@@ -35,7 +35,7 @@ export function reconcileClashes(
     }
   }
   for (const cid of clashIssueIds) {
-    if (!byId.has(cid)) missingIds.push(cid);
+    if (!storedIds.has(cid)) missingIds.push(cid);
   }
   return { validatedIds, falseNegIds, falsePosIds, missingIds };
 }

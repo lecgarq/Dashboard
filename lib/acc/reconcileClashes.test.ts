@@ -25,4 +25,10 @@ describe("reconcileClashes", () => {
       validatedIds: [], falseNegIds: [], falsePosIds: [], missingIds: [],
     });
   });
+
+  it("routes all clash ids to missing when nothing is stored", () => {
+    expect(reconcileClashes([], new Set(["x", "y"]))).toEqual({
+      validatedIds: [], falseNegIds: [], falsePosIds: [], missingIds: ["x", "y"],
+    });
+  });
 });
