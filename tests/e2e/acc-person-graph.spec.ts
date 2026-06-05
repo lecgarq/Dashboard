@@ -1,10 +1,10 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// Projector is the default environment now; this runs unless the legacy shell is forced on.
-const LEGACY = process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "0";
+// Projector is opt-in only; this spec runs when explicitly enabled with =1.
+const PROJECTOR_OFF = process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH !== "1";
 
 test.describe("person similarity graph", () => {
-  test.skip(LEGACY, "legacy 2D/3D shell active (projector is default)");
+  test.skip(PROJECTOR_OFF, "projector is opt-in only (NEXT_PUBLIC_ACC_PERSON_GRAPH=1 to enable)");
 
   test("renders precomputed snapshot and slider changes k", async ({ page }: { page: Page }) => {
     await page.goto("/users/spatial-graph", { waitUntil: "domcontentloaded" });

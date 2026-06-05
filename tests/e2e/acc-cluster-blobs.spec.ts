@@ -1,9 +1,8 @@
 import { test, expect, type Page } from "@playwright/test";
 
-// The 3D embedding projector is now the default graph environment. This legacy 2D/3D shell
-// suite only applies when the legacy shell is explicitly enabled.
+// The physics shell is now the default graph environment. Skip only when the projector is opted in.
 test.beforeEach(() => {
-  test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH !== "0", "Legacy 2D/3D shell — run with NEXT_PUBLIC_ACC_PERSON_GRAPH=0");
+  test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1", "Physics shell is the default; skip only when the projector (=1) is opted in");
 });
 
 const GRAPH_URL = "/users/spatial-graph";
