@@ -31,6 +31,8 @@ vi.mock("@/lib/server/coordinationView", () => ({
     byStatus: [],
     byProject: [],
     auditCount: 0,
+    accessibleProjects: 0,
+    forbiddenProjects: 0,
   })),
 }));
 /* eslint-disable @typescript-eslint/no-explicit-any */

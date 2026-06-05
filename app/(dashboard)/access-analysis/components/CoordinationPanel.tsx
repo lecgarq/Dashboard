@@ -2,7 +2,7 @@
 import type { CoordinationSummary } from "@/lib/server/coordinationView";
 
 export function CoordinationPanel({ summary }: { summary: CoordinationSummary }) {
-  const { coordinationCount, validatedCount, byStatus, byProject, auditCount } = summary;
+  const { coordinationCount, validatedCount, byStatus, byProject, auditCount, accessibleProjects, forbiddenProjects } = summary;
   return (
     <section className="rounded-xl border border-border bg-card p-5 text-foreground">
       <header className="mb-3 flex flex-col gap-1">
@@ -36,6 +36,11 @@ export function CoordinationPanel({ summary }: { summary: CoordinationSummary })
       {auditCount > 0 && (
         <p className="mt-3 text-[11px] text-muted-foreground/80">
           {auditCount} low-confidence hits pending review.
+        </p>
+      )}
+      {forbiddenProjects > 0 && (
+        <p className="mt-2 text-[11px] text-muted-foreground/70">
+          Based on {accessibleProjects} accessible projects. {forbiddenProjects} projects could not be scanned due to credentials.
         </p>
       )}
     </section>

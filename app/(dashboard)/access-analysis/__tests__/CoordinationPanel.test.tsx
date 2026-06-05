@@ -9,6 +9,8 @@ const summary: CoordinationSummary = {
   byStatus: [{ status: "open", count: 120 }, { status: "closed", count: 198 }],
   byProject: [{ projectId: "p1", projectName: "PREPATEC", count: 200 }],
   auditCount: 7,
+  accessibleProjects: 427,
+  forbiddenProjects: 123,
 };
 
 describe("CoordinationPanel", () => {
@@ -21,5 +23,11 @@ describe("CoordinationPanel", () => {
   it("shows the audit footnote when auditCount > 0", () => {
     render(<CoordinationPanel summary={summary} />);
     expect(screen.getByText(/7 low-confidence/i)).toBeTruthy();
+  });
+
+  it("shows the data-coverage footnote", () => {
+    render(<CoordinationPanel summary={summary} />);
+    expect(screen.getByText(/427 accessible projects/i)).toBeTruthy();
+    expect(screen.getByText(/123 projects could not be scanned/i)).toBeTruthy();
   });
 });
