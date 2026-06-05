@@ -50,8 +50,8 @@ async function assignedIssueIds(token, containerId, modelSetId) {
     const qs = new URLSearchParams({ pageLimit: "100" });
     if (cont) qs.set("continuationToken", cont);
     const url = `${BASE}/bim360/clash/v3/containers/${containerId}/modelsets/${modelSetId}/clashes/assigned?${qs}`;
-    const { ok, body } = await apiGet(url, token);
-    if (!ok) break;
+    const { status, ok, body } = await apiGet(url, token);
+    if (!ok) throw new Error(`assigned-clashes ${status}`);
     for (const g of body.groups || []) if (g.issueId) ids.add(g.issueId);
     cont = body.page?.continuationToken || null;
   } while (cont);
@@ -60,31 +60,38 @@ async function assignedIssueIds(token, containerId, modelSetId) {
 
 (async () => {
   const db = prisma();
-  const token = await refreshAndPersistFromDb(db, "data:read");
+  let token = await refreshAndPersistFromDb(db, "data:read");
+  let tokenAt = Date.now();
   const projectIds = ONLY
     ? [ONLY]
     : (await db.accIssue.findMany({ distinct: ["projectId"], select: { projectId: true } })).map((r) => r.projectId);
 
   let totV = 0, totFN = 0, totFP = 0, mcProjects = 0;
   for (const pid of projectIds) {
-    const sets = await listModelSets(token, pid);
-    if (!sets.length) continue; // not MC-enabled
-    mcProjects++;
-    const clashIds = new Set();
-    for (const s of sets) for (const id of await assignedIssueIds(token, pid, s)) clashIds.add(id);
-
-    const stored = await db.accIssue.findMany({ where: { projectId: pid }, select: { id: true, isCoordination: true } });
-    const r = reconcileClashes(stored, clashIds);
-    totV += r.validatedIds.length; totFN += r.falseNegIds.length; totFP += r.falsePosIds.length;
-    console.log(`  ${pid}: clash=${clashIds.size} validated=${r.validatedIds.length} falseNeg=${r.falseNegIds.length} falsePos=${r.falsePosIds.length} missing=${r.missingIds.length}`);
-
-    if (DRY) continue;
-    await db.accIssue.updateMany({ where: { projectId: pid }, data: { projectMcEnabled: true } });
-    if (r.validatedIds.length)
-      await db.accIssue.updateMany({ where: { id: { in: r.validatedIds } }, data: { clashValidated: true } });
-    if (r.falseNegIds.length)
-      await db.accIssue.updateMany({ where: { id: { in: r.falseNegIds } },
-        data: { isCoordination: true, coordinationSource: "clash-endpoint" } });
+    if (Date.now() - tokenAt > 45 * 60 * 1000) {
+      token = await refreshAndPersistFromDb(db, "data:read");
+      tokenAt = Date.now();
+    }
+    try {
+      const sets = await listModelSets(token, pid);
+      if (!sets.length) continue; // not MC-enabled
+      mcProjects++;
+      const clashIds = new Set();
+      for (const s of sets) for (const id of await assignedIssueIds(token, pid, s)) clashIds.add(id);
+      const stored = await db.accIssue.findMany({ where: { projectId: pid }, select: { id: true, isCoordination: true } });
+      const r = reconcileClashes(stored, clashIds);
+      totV += r.validatedIds.length; totFN += r.falseNegIds.length; totFP += r.falsePosIds.length;
+      console.log(`  ${pid}: clash=${clashIds.size} validated=${r.validatedIds.length} falseNeg=${r.falseNegIds.length} falsePos=${r.falsePosIds.length} missing=${r.missingIds.length}`);
+      if (DRY) continue;
+      await db.accIssue.updateMany({ where: { projectId: pid }, data: { projectMcEnabled: true } });
+      if (r.validatedIds.length)
+        await db.accIssue.updateMany({ where: { id: { in: r.validatedIds } }, data: { clashValidated: true } });
+      if (r.falseNegIds.length)
+        await db.accIssue.updateMany({ where: { id: { in: r.falseNegIds } }, data: { isCoordination: true, coordinationSource: "clash-endpoint" } });
+    } catch (e) {
+      console.error(`  ${pid} ERROR ${e.message} (skipped)`);
+      continue;
+    }
   }
   console.log(`\n${DRY ? "[DRY] " : ""}MC projects=${mcProjects}  validated=${totV}  falseNeg=${totFN}  falsePos=${totFP}`);
   await db.$disconnect();
