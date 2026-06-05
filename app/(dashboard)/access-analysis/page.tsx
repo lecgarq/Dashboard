@@ -1,6 +1,6 @@
 import { loadInstanceView } from "@/lib/server/accessInstanceView";
 import { loadModuleActivity } from "@/lib/server/moduleActivityView";
-import { loadCoordinationSummary } from "@/lib/server/coordinationView";
+import { loadCoordinationByProject } from "@/lib/server/coordinationByProjectView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import type { ProjectRoleRow } from "./projectFilter";
 
@@ -8,7 +8,7 @@ export const metadata = { title: "Access Analysis" };
 export const dynamic = "force-dynamic";
 
 export default async function AccessAnalysisRoute() {
-  const [view, moduleRows, coordination] = await Promise.all([loadInstanceView(), loadModuleActivity(), loadCoordinationSummary()]);
+  const [view, moduleRows, coordinationData] = await Promise.all([loadInstanceView(), loadModuleActivity(), loadCoordinationByProject()]);
   // Slim per-membership rows: just enough for the client to filter by project
   // and re-bucket roles. Everything else in the instance view is dropped.
   const rows: ProjectRoleRow[] = view.map((v) => ({
@@ -33,7 +33,7 @@ export default async function AccessAnalysisRoute() {
             Search and tick projects once to focus both donuts.
           </p>
         </header>
-        <AccessAnalysisCharts roleRows={rows} moduleRows={moduleRows} coordination={coordination} />
+        <AccessAnalysisCharts roleRows={rows} moduleRows={moduleRows} coordinationData={coordinationData} />
       </div>
     </div>
   );

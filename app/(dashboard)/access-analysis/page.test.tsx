@@ -23,17 +23,8 @@ vi.mock("@/lib/server/accessInstanceView", () => ({
 vi.mock("@/lib/server/moduleActivityView", () => ({
   loadModuleActivity: vi.fn(async () => []),
 }));
-vi.mock("@/lib/server/coordinationView", () => ({
-  loadCoordinationSummary: vi.fn(async () => ({
-    totalIssues: 0,
-    coordinationCount: 0,
-    validatedCount: 0,
-    byStatus: [],
-    byProject: [],
-    auditCount: 0,
-    accessibleProjects: 0,
-    forbiddenProjects: 0,
-  })),
+vi.mock("@/lib/server/coordinationByProjectView", () => ({
+  loadCoordinationByProject: () => Promise.resolve({ rows: [], accessibleProjects: 0, forbiddenProjects: 0 }),
 }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({

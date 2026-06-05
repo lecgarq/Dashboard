@@ -3,11 +3,12 @@ import { useMemo, useState } from "react";
 import { ProjectPicker } from "./ProjectPicker";
 import { RolesPieChart } from "./RolesPieChart";
 import { ModulesPieChart } from "./ModulesPieChart";
-import { CoordinationPanel } from "./CoordinationPanel";
+import { CoordinationByProject } from "./CoordinationByProject";
 import { summarizeRoles } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
+import { summarizeCoordination } from "../coordinationCounts";
 import { projectOptions, filterRowsBySelection, type ProjectRoleRow } from "../projectFilter";
-import type { CoordinationSummary } from "@/lib/server/coordinationView";
+import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 
 /**
  * The whole Access Analysis surface behind ONE project picker. The selected set
@@ -15,18 +16,22 @@ import type { CoordinationSummary } from "@/lib/server/coordinationView";
  * activity (by volume). The project list is the union of the two sources — some
  * projects have access but no recorded activity, and the account-level admin
  * bucket has activity but no membership — so neither donut hides a project the
- * other knows about.
+ * other knows about. Coordination rows are also included so MC-only projects
+ * are selectable.
  */
 export function AccessAnalysisCharts({
   roleRows,
   moduleRows,
-  coordination,
+  coordinationData,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
-  coordination?: CoordinationSummary;
+  coordinationData?: CoordinationByProjectData;
 }) {
-  const options = useMemo(() => projectOptions([...roleRows, ...moduleRows]), [roleRows, moduleRows]);
+  const options = useMemo(
+    () => projectOptions([...roleRows, ...moduleRows, ...(coordinationData?.rows ?? [])]),
+    [roleRows, moduleRows, coordinationData],
+  );
 
   // Per-project number shown in the picker = membership count (the roles donut's
   // unit), which is the figure the picker has always shown.
@@ -40,11 +45,13 @@ export function AccessAnalysisCharts({
 
   const roleSummary = useMemo(() => summarizeRoles(filterRowsBySelection(roleRows, selected)), [roleRows, selected]);
   const moduleSummary = useMemo(() => summarizeModules(filterRowsBySelection(moduleRows, selected)), [moduleRows, selected]);
+  const coordSummary = useMemo(
+    () => summarizeCoordination(filterRowsBySelection(coordinationData?.rows ?? [], selected)),
+    [coordinationData, selected],
+  );
 
   return (
     <div className="flex flex-col gap-8">
-      {coordination ? <CoordinationPanel summary={coordination} /> : null}
-
       <ProjectPicker
         options={options}
         counts={counts}
@@ -67,6 +74,19 @@ export function AccessAnalysisCharts({
         </h2>
         <ModulesPieChart summary={moduleSummary} />
       </section>
+
+      {coordinationData ? (
+        <section className="flex flex-col gap-3">
+          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
+            Model Coordination · clash-validated issues
+          </h2>
+          <CoordinationByProject
+            summary={coordSummary}
+            accessibleProjects={coordinationData.accessibleProjects}
+            forbiddenProjects={coordinationData.forbiddenProjects}
+          />
+        </section>
+      ) : null}
     </div>
   );
 }
