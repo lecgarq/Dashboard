@@ -128,11 +128,16 @@ function ShellBody({
   );
 
   // Color follows the grouping dim unless the user overrides it via the toolbar.
+  // The override is STICKY: once set it persists across grouping changes (drag a
+  // different slider and color stays put) until the toolbar "Reset" clears it.
   const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
   const colorIsAuto = colorOverride === null;
-  // The grouping dim is colorable only if it's a registry dim; else auto → "role".
   const autoColorMode: ColorMode = useMemo(() => {
     const d = getDimension(groupingDim as DimensionId);
+    // If the dominant grouping dim isn't a registry (colorable) dim, color + labels
+    // fall back to "role" while layout still groups by that dim — so chips may name
+    // role clusters. Curated sliders (project/role/user) are all colorable, so this
+    // path is effectively unreached today; widen the slider set with care.
     return d ? (groupingDim as ColorMode) : "role";
   }, [groupingDim]);
   const colorMode: ColorMode = colorOverride ?? autoColorMode;
