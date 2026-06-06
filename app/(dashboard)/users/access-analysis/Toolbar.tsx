@@ -10,8 +10,9 @@
  *   - "Clear all" link (visible only when filters non-default)
  *
  * State is owned by FilterContext for filters + search; lasso is caller-owned
- * (AccessAnalysisShell holds it as local React state). The graph is 3D-only, so
- * the former 2D|3D segmented pill has been removed.
+ * (AccessAnalysisShell holds it as local React state). The 2D/3D segmented
+ * toggle selects the renderer (2D is the default infographic view; 3D is the
+ * raw explore view).
  */
 
 import { useEffect, useMemo, useRef } from "react";
@@ -116,7 +117,7 @@ export function Toolbar({
       // ml-auto "Clear all" link and swallows clicks meant for it.
       className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14"
     >
-      <div className="flex items-center gap-1" data-testid="toolbar-mode">
+      <div className="flex items-center" data-testid="toolbar-mode">
         <button
           type="button"
           data-testid="toolbar-mode-2d"
@@ -200,6 +201,8 @@ export function Toolbar({
             </option>
           ))}
         </select>
+      </label>
+      <span className="flex items-center">
         {colorIsAuto ? (
           <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">auto</span>
         ) : (
@@ -210,7 +213,7 @@ export function Toolbar({
             className="text-xs text-blue-500 underline-offset-2 hover:underline"
           >Reset</button>
         )}
-      </label>
+      </span>
 
       <div className="ml-auto">
         {!isDefault ? (
