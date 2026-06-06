@@ -18,7 +18,8 @@
  * post-filter members (CONTEXT.md visible-subset rule).
  */
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTheme } from "next-themes";
 import { trpc } from "@/lib/core/trpc";
 import { GraphCanvas, type GraphCanvasHandle } from "./GraphCanvas";
 import { GraphInteractions } from "./GraphInteractions";
@@ -28,14 +29,21 @@ import {
   CONTROLS_STORAGE_KEY,
   SliderProvider,
   migratePersistedSliders,
+  useSliders,
 } from "./SliderContext";
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
-import { buildNodeColors, type ColorMode } from "./nodeColors";
+import { buildClusterAssignment, COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
-import { computeLinkEmphasisColors, assertLinkArrays } from "./linkEmphasis";
+import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
+import { activeGroupingDimension } from "./activeGrouping";
+import { buildBucketedColors } from "./bucketedColors";
+import { buildNodeSizes } from "./nodeSizes";
+import { Legend } from "./Legend";
+import { MapClusterLabels } from "./MapClusterLabels";
+import { getDimension, type DimensionId } from "./dimensionRegistry";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { createPhysicsLayerWorker } from "./physicsLayerWorker";
@@ -108,15 +116,46 @@ function ShellBody({
   // interaction layer can (re)wire hover/click/lasso against a live handle.
   const [rendererReady, setRendererReady] = useState(0);
 
-  // Phase 4: semantic node coloring (used at rest). Default "role".
-  const [colorMode, setColorMode] = useState<ColorMode>("role");
+  const { resolvedTheme } = useTheme();
+  const { values: sliderValues } = useSliders();
 
-  // 3D-only restore: color follows the toolbar color-mode (color-by-dimension),
-  // never cluster-id. (The blob colorIds path is 2D-cluster-era and retired here.)
-  const nodeColors = useMemo<Float32Array>(
-    () => buildNodeColors(features, colorMode),
+  // Active grouping dim = dominant slider (Role default). Catalog order gives a
+  // stable tie-break.
+  const groupingOrder = useMemo(() => catalog.map((d) => d.id), [catalog]);
+  const groupingDim = useMemo(
+    () => activeGroupingDimension(sliderValues, groupingOrder, "role"),
+    [sliderValues, groupingOrder],
+  );
+
+  // Color follows the grouping dim unless the user overrides it via the toolbar.
+  const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
+  const colorIsAuto = colorOverride === null;
+  // The grouping dim is colorable only if it's a registry dim; else auto → "role".
+  const autoColorMode: ColorMode = useMemo(() => {
+    const d = getDimension(groupingDim as DimensionId);
+    return d ? (groupingDim as ColorMode) : "role";
+  }, [groupingDim]);
+  const colorMode: ColorMode = colorOverride ?? autoColorMode;
+  const setColorMode = (m: ColorMode): void => setColorOverride(m);
+  const resetColor = (): void => setColorOverride(null);
+  const groupedByLabel = COLOR_MODE_LABELS[autoColorMode] ?? autoColorMode;
+
+  // Color-by-dimension with top-12 categorical buckets + a grey "Other"; the
+  // legend model is derived from the same pass so chips/labels match exactly.
+  const bucketed = useMemo(
+    () => buildBucketedColors(features, colorMode, 12),
     [features, colorMode],
   );
+  const nodeColors = bucketed.colors;
+  const nodeSizes = useMemo<Float32Array>(() => buildNodeSizes(features), [features]);
+  // Cluster ids/labels for the centroid labels — keyed to the COLOR dimension so
+  // chip colors match the legend exactly.
+  const clusterAssign = useMemo(
+    () => buildClusterAssignment(features, colorMode),
+    [features, colorMode],
+  );
+  // Stable getter so the labels effect doesn't re-register every render.
+  const getPositions = useCallback(() => physics.getPositions(), [physics]);
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
     installGraphTestBridge();
@@ -143,10 +182,11 @@ function ShellBody({
   const edges: SameUserEdge[] = edgeData.edges;
   const links = useMemo(() => toCosmosLinks(edges), [edges]);
   const baseLinkColors = useMemo(() => {
-    const colors = computeLinkEmphasisColors(edges, new Set());
+    const opts = resolvedTheme === "dark" ? GOSSAMER_DARK : GOSSAMER_LIGHT;
+    const colors = computeLinkEmphasisColors(edges, new Set(), opts);
     assertLinkArrays(edges.length, links, colors);
     return colors;
-  }, [edges, links]);
+  }, [edges, links, resolvedTheme]);
   useEffect(() => {
     setEdgeTestState({ derive: edgeData, nodeCount: features.length });
   }, [edgeData, features.length]);
@@ -164,6 +204,9 @@ function ShellBody({
         onLassoToggle={() => setLassoActive(!lassoActive)}
         colorMode={colorMode}
         onColorModeChange={setColorMode}
+        groupedByLabel={groupedByLabel}
+        colorIsAuto={colorIsAuto}
+        onColorReset={resetColor}
       />
       <div className="relative flex flex-1 min-h-0">
         <div className="relative flex-1 min-h-0 min-w-0">
@@ -190,13 +233,22 @@ function ShellBody({
               ref={graphRef}
               physics={physics}
               nodeColors={nodeColors}
+              nodeSizes={nodeSizes}
               mode={mode}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
             />
           </GraphInteractions>
-
+          <Legend entries={bucketed.legend} />
+          <MapClusterLabels
+            graphRef={graphRef}
+            mode={mode}
+            clusterIds={clusterAssign.clusterIds}
+            labels={clusterAssign.labels}
+            legend={bucketed.legend}
+            getPositions={getPositions}
+          />
         </div>
         <RightPanelStack
           features={features}
@@ -222,9 +274,8 @@ export function AccessAnalysisShell(): React.JSX.Element {
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);
   const [physics, setPhysics] = useState<PhysicsLayer | null>(null);
   const [catalog, setCatalog] = useState<CatalogDimension[] | null>(null);
-  // 3D-only: the 2D cosmos path stays in the repo but is never mounted here.
-  const mode = "3d" as const;
-  const setMode = (_m: "2d" | "3d"): void => { /* 3D-only: mode is fixed */ };
+  // 2D-default infographic map; 3D remains reachable via the toolbar toggle.
+  const [mode, setMode] = useState<"2d" | "3d">("2d");
   const [lassoActive, setLassoActive] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
 
