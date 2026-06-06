@@ -23,6 +23,7 @@ import {
   migratePersistedSliders,
 } from "../SliderContext";
 import type { CatalogDimension } from "../dimensionCatalog.types";
+import { GROUPING_DEFAULT } from "../catalogSliders";
 
 // ---------------------------------------------------------------------------
 // Tiny fake catalog. Three slider-surfaced + available dims, one slider dim with
@@ -93,8 +94,8 @@ function makeWrapper(physics: PhysicsLayer): React.FC<{ children: React.ReactNod
   };
 }
 
-describe("SliderContext — catalog-driven defaults (all-0)", () => {
-  it("initial values = every AVAILABLE slider id at 0 (greyed/color-only excluded)", () => {
+describe("SliderContext — catalog-driven defaults (primary dim pre-engaged)", () => {
+  it("initial values = primary dim at GROUPING_DEFAULT, every other AVAILABLE slider at 0 (greyed/color-only excluded)", () => {
     const { physics } = mkPhysics();
     let firstValues: Record<string, number> | null = null;
     function Reader(): null {
@@ -107,7 +108,8 @@ describe("SliderContext — catalog-driven defaults (all-0)", () => {
         <Reader />
       </SliderProvider>,
     );
-    expect(firstValues).toEqual({ activity: 0, signin: 0, role: 0 });
+    // FAKE_CATALOG has 'role' as an available slider → it becomes the primary dim (GROUPING_DEFAULT)
+    expect(firstValues).toEqual({ activity: 0, signin: 0, role: GROUPING_DEFAULT });
     // greyed (no data) and colorOnly are NOT seeded as defaults
     expect(firstValues!).not.toHaveProperty("greyed");
     expect(firstValues!).not.toHaveProperty("colorOnly");
@@ -146,7 +148,7 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
     expect(last.role).toBeCloseTo(0.75, 6);
   });
 
-  it("resetAll restores the all-0 default immediately", async () => {
+  it("resetAll restores the catalog default immediately (primary dim=GROUPING_DEFAULT, others=0)", async () => {
     const { physics, updateSliders } = mkPhysics();
     const { result } = renderHook(() => useSliders(), { wrapper: makeWrapper(physics) });
 
@@ -163,9 +165,11 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
     expect(updateSliders).toHaveBeenCalledTimes(1);
     const args = updateSliders.mock.calls[0][0] as Record<string, number>;
-    for (const id of DEFAULT_IDS) {
-      expect(args[id]).toBe(0);
-    }
+    // FAKE_CATALOG has 'role' as primary → physics receives GROUPING_DEFAULT/100 (normalized)
+    expect(args["role"]).toBeCloseTo(GROUPING_DEFAULT / 100, 6);
+    // all non-primary available dims reset to 0
+    expect(args["activity"]).toBe(0);
+    expect(args["signin"]).toBe(0);
   });
 
   it("resetOne(dim) preserves other dims", async () => {
