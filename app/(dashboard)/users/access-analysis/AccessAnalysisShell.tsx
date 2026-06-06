@@ -240,6 +240,12 @@ function ShellBody({
               nodeColors={nodeColors}
               nodeSizes={nodeSizes}
               mode={mode}
+              // Infographic map: drive the 2D view from the d3 worker's per-dimension
+              // (Role-grouped) layout via the frozen + position-pump path, NOT the GPU
+              // sim (which runs its own ungrouped layout unless seeded with cluster
+              // anchors). This makes the grouped layout reach the screen AND keeps
+              // MapClusterLabels' physics-based centroids aligned with the rendered dots.
+              gpuSimulation={false}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
