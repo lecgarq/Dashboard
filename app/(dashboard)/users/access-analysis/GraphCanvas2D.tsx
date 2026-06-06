@@ -270,6 +270,7 @@ export function GraphCanvas2D(props: GraphCanvas2DProps): null {
             )
           : {}),
         renderLinks: true,
+        linkWidth: 0.5,
         backgroundColor: props.backgroundColor,
         pointGreyoutOpacity: 0.15,
         spaceSize: 4096,
