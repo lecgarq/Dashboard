@@ -1078,4 +1078,32 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
       timeout: 15_000,
     });
   });
+
+  // ── 2D infographic access-map smoke ────────────────────────────────────────
+
+  test("access map boots in 2D with legend + grouped-by Role + labels overlay", async ({ page }, testInfo) => {
+    // beforeEach already ran gotoGraph(page) → bridge ready, graph rendered with
+    // valid positions. This smoke test asserts the THEME/GPU-INDEPENDENT DOM that
+    // always mounts once the shell is ready — no GPU or positional assertions.
+
+    // The 2D toggle is always rendered in the toolbar segmented control.
+    await expect(page.getByTestId("toolbar-mode-2d")).toBeVisible();
+
+    // The Legend component mounts once the color bucketing resolves (pure DOM,
+    // no WebGL dependency). Allow up to 20s for the initial data load.
+    await expect(page.getByTestId("graph-legend")).toBeVisible({ timeout: 20_000 });
+
+    // By default the grouping dim is "role" → COLOR_MODE_LABELS["role"] = "Role".
+    // The span only renders when groupedByLabel is non-empty, so this assertion
+    // simultaneously confirms the shell passed a real label to the Toolbar.
+    await expect(page.getByTestId("toolbar-grouped-by")).toContainText("Role");
+
+    // The MapClusterLabels overlay container is attached to the DOM once the shell
+    // mounts in 2D mode. We assert ATTACHED (not visible) because under the test
+    // flag the GPU 2D sim is OFF and chip projection can be mis-seeded/scattered,
+    // making individual chip visibility unreliable in e2e.
+    await expect(page.getByTestId("map-cluster-labels")).toBeAttached({ timeout: 20_000 });
+
+    await proofShot(page, testInfo, "after-access-map-2d-smoke");
+  });
 });
