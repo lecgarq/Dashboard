@@ -62,24 +62,18 @@ export function AccessAnalysisCharts({
       />
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Role distribution · by membership
-        </h2>
+        <SectionHeader title="Role distribution" subtitle="Roles held across all project memberships." />
         <RolesPieChart data={roleSummary.slices} distinctRoles={roleSummary.distinctRoles} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-          Module activity · by volume
-        </h2>
+        <SectionHeader title="Activity by module" subtitle="Total actions recorded in each ACC module." />
         <ModulesPieChart summary={moduleSummary} />
       </section>
 
       {coordinationData ? (
         <section className="flex flex-col gap-3">
-          <h2 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-            Model Coordination · clash-validated issues
-          </h2>
+          <SectionHeader title="Model Coordination" subtitle="Clash-validated coordination issues, by project." />
           <CoordinationByProject
             summary={coordSummary}
             accessibleProjects={coordinationData.accessibleProjects}
@@ -87,6 +81,21 @@ export function AccessAnalysisCharts({
           />
         </section>
       ) : null}
+    </div>
+  );
+}
+
+/**
+ * Consistent section heading: a readable title with a one-line plain-English
+ * subtitle. Replaces the cramped "Title · descriptor" caption so each panel
+ * reads clearly and the two Model Coordination surfaces stay distinct — the
+ * donut counts *actions*, this section counts *issues*.
+ */
+function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+  return (
+    <div className="flex flex-col gap-0.5">
+      <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
+      <p className="text-sm text-muted-foreground">{subtitle}</p>
     </div>
   );
 }

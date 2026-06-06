@@ -29,8 +29,8 @@ export default async function AccessAnalysisRoute() {
             Access Analysis
           </h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Role distribution across user–project memberships and activity volume by ACC module.
-            Search and tick projects once to focus both donuts.
+            Roles, module activity, and coordination issues across ACC projects.
+            Tick projects once to focus all three panels below.
           </p>
         </header>
         <AccessAnalysisCharts roleRows={rows} moduleRows={moduleRows} coordinationData={coordinationData} />

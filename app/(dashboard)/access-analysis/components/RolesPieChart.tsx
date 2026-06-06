@@ -125,11 +125,12 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
   const option: EChartsOption = {
     title: [
       {
-        text: "Role distribution",
+        // Title text lives in the section header above the card; keep only the
+        // live count line here so the heading isn't repeated inside the donut.
+        text: "",
         subtext: `${distinctRoles.toLocaleString()} roles · ${grandTotal.toLocaleString()} user–project memberships`,
         left: "center",
         top: 0,
-        textStyle: { color: cTitle, fontSize: 16, fontWeight: 600 },
         subtextStyle: { color: cSub, fontSize: 12 },
       },
       {

@@ -59,6 +59,6 @@ describe("AccessAnalysisRoute (roles donut)", () => {
     expect(el.getAttribute("data-subtexts")).toContain("2 roles");
     expect(getByText("Access Analysis")).toBeTruthy();
     // The modules section is wired in below the roles donut.
-    expect(getByText(/Module activity/)).toBeTruthy();
+    expect(getByText(/Activity by module/)).toBeTruthy();
   });
 });

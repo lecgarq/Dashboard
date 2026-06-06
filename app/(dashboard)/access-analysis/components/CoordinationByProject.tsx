@@ -18,7 +18,7 @@ export function CoordinationByProject({
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
       <header className="mb-3 flex items-baseline gap-2">
         <span className="text-3xl font-semibold tabular-nums text-foreground">{total.toLocaleString()}</span>
-        <span className="text-sm text-muted-foreground">clash-validated issues</span>
+        <span className="text-sm text-muted-foreground">issues</span>
       </header>
 
       {byStatus.length > 0 && (
