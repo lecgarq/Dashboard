@@ -40,6 +40,12 @@ export interface ToolbarProps {
   // controls; the shell always supplies both, so production is fully wired.
   colorMode?: ColorMode;
   onColorModeChange?: (m: ColorMode) => void;
+  /** Display label of the active grouping dimension (e.g. "Role"). */
+  groupedByLabel?: string;
+  /** True when color is auto-following the grouping dim (no manual override). */
+  colorIsAuto?: boolean;
+  /** Clears a manual color override, returning color to auto-follow. */
+  onColorReset?: () => void;
 }
 
 export function Toolbar({
@@ -50,6 +56,9 @@ export function Toolbar({
   onLassoToggle,
   colorMode = "role",
   onColorModeChange,
+  groupedByLabel = "",
+  colorIsAuto = true,
+  onColorReset,
 }: ToolbarProps): React.JSX.Element {
   const {
     activeFilters,
@@ -107,6 +116,25 @@ export function Toolbar({
       // ml-auto "Clear all" link and swallows clicks meant for it.
       className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14"
     >
+      <div className="flex items-center gap-1" data-testid="toolbar-mode">
+        <button
+          type="button"
+          data-testid="toolbar-mode-2d"
+          onClick={() => onModeChange("2d")}
+          className={`rounded-l-md border px-2.5 py-1.5 text-sm ${mode === "2d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
+        >2D</button>
+        <button
+          type="button"
+          data-testid="toolbar-mode-3d"
+          onClick={() => onModeChange("3d")}
+          className={`-ml-px rounded-r-md border px-2.5 py-1.5 text-sm ${mode === "3d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
+        >3D</button>
+      </div>
+      {groupedByLabel ? (
+        <span data-testid="toolbar-grouped-by" className="text-sm text-muted-foreground">
+          Grouped by: <b className="text-foreground">{groupedByLabel}</b>
+        </span>
+      ) : null}
       <input
         ref={searchInputRef}
         type="search"
@@ -172,6 +200,16 @@ export function Toolbar({
             </option>
           ))}
         </select>
+        {colorIsAuto ? (
+          <span className="rounded bg-accent px-1.5 py-0.5 text-[10px] uppercase text-muted-foreground">auto</span>
+        ) : (
+          <button
+            type="button"
+            data-testid="toolbar-color-reset"
+            onClick={() => onColorReset?.()}
+            className="text-xs text-blue-500 underline-offset-2 hover:underline"
+          >Reset</button>
+        )}
       </label>
 
       <div className="ml-auto">
