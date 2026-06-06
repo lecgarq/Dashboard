@@ -34,12 +34,14 @@ import {
 import { FilterProvider, useFilters } from "./FilterContext";
 import { SelectionProvider, useSelection } from "./SelectionContext";
 import { buildFeatureSnapshot } from "./featureSnapshot";
-import { buildClusterAssignment, COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
+import { COLOR_MODE_LABELS, type ColorMode } from "./nodeColors";
 import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
 import { activeGroupingDimension } from "./activeGrouping";
 import { buildBucketedColors } from "./bucketedColors";
+import { buildUserBlobDescriptor } from "./blobDescriptor";
+import { descriptorTarget } from "./layoutDescriptor";
 import { buildNodeSizes } from "./nodeSizes";
 import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
@@ -117,7 +119,7 @@ function ShellBody({
   const [rendererReady, setRendererReady] = useState(0);
 
   const { resolvedTheme } = useTheme();
-  const { values: sliderValues } = useSliders();
+  const { values: sliderValues, getLiveValues } = useSliders();
 
   // Active grouping dim = dominant slider (Role default). Catalog order gives a
   // stable tie-break.
@@ -126,6 +128,28 @@ function ShellBody({
     () => activeGroupingDimension(sliderValues, groupingOrder, "role"),
     [sliderValues, groupingOrder],
   );
+
+  // The catalog dimension we cluster + position by. Falls back to role, then the
+  // first catalog dim, so this is always defined.
+  const groupDim = useMemo(
+    () => catalog.find((d) => d.id === groupingDim) ?? catalog.find((d) => d.id === "role") ?? catalog[0],
+    [catalog, groupingDim],
+  );
+
+  // LAYOUT: a "blob" descriptor that pins each value's members into a packed,
+  // NON-OVERLAPPING footprint (sunflower disc). This is the project's proven way to
+  // get separated clusters — the bare d3 per-dim force just piles everything into one
+  // central disc. descriptorTarget() runs every frame off a ref (no React re-render);
+  // the live slider value drives loose→tight, the GROUPING dim only changes on regroup.
+  const blobDesc = useMemo(
+    () => (groupDim ? buildUserBlobDescriptor(features, groupDim) : null),
+    [features, groupDim],
+  );
+  const layoutOutRef = useRef<Float32Array>(new Float32Array(features.length * 3));
+  const layoutTarget = useCallback((): Float32Array => {
+    if (!blobDesc) return layoutOutRef.current;
+    return descriptorTarget(blobDesc, getLiveValues(), layoutOutRef.current);
+  }, [blobDesc, getLiveValues]);
 
   // Color follows the grouping dim unless the user overrides it via the toolbar.
   // The override is STICKY: once set it persists across grouping changes (drag a
@@ -153,14 +177,6 @@ function ShellBody({
   );
   const nodeColors = bucketed.colors;
   const nodeSizes = useMemo<Float32Array>(() => buildNodeSizes(features), [features]);
-  // Cluster ids/labels for the centroid labels — keyed to the COLOR dimension so
-  // chip colors match the legend exactly.
-  const clusterAssign = useMemo(
-    () => buildClusterAssignment(features, colorMode),
-    [features, colorMode],
-  );
-  // Stable getter so the labels effect doesn't re-register every render.
-  const getPositions = useCallback(() => physics.getPositions(), [physics]);
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
   useEffect(() => {
     installGraphTestBridge();
@@ -240,12 +256,11 @@ function ShellBody({
               nodeColors={nodeColors}
               nodeSizes={nodeSizes}
               mode={mode}
-              // Infographic map: drive the 2D view from the d3 worker's per-dimension
-              // (Role-grouped) layout via the frozen + position-pump path, NOT the GPU
-              // sim (which runs its own ungrouped layout unless seeded with cluster
-              // anchors). This makes the grouped layout reach the screen AND keeps
-              // MapClusterLabels' physics-based centroids aligned with the rendered dots.
-              gpuSimulation={false}
+              // Infographic map: a per-frame layout target pins each value's members
+              // into a packed, non-overlapping footprint (descriptor seam). The renderer
+              // eases toward it with the GPU sim paused, so clusters are STRUCTURALLY
+              // separated — not left to the d3 force (which piles everything centrally).
+              layoutTarget={layoutTarget}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
@@ -255,10 +270,10 @@ function ShellBody({
           <MapClusterLabels
             graphRef={graphRef}
             mode={mode}
-            clusterIds={clusterAssign.clusterIds}
-            labels={clusterAssign.labels}
+            centersX={blobDesc ? blobDesc.footprints.cx : null}
+            centersY={blobDesc ? blobDesc.footprints.cy : null}
+            labels={blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
-            getPositions={getPositions}
           />
         </div>
         <RightPanelStack
