@@ -45,6 +45,7 @@ import { descriptorTarget } from "./layoutDescriptor";
 import { buildNodeSizes } from "./nodeSizes";
 import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
+import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
@@ -205,6 +206,29 @@ function ShellBody({
     [lassoSelection, features, activeFilters, searchQuery],
   );
 
+  // Similarity neighbors of the clicked node — fetched on-demand (flag-OFF embedding
+  // map only). The clicked nodeId drives the admin-gated query; results are joined
+  // back to cosmos indices so the predicate engine can light the closest matches and
+  // the panel can list them. Disabled (and never rendered) on the flag-ON 3D graph.
+  const clickedNodeId = isolatedNodeIndex !== null ? features[isolatedNodeIndex]?.nodeId : null;
+  const neighborsQuery = trpc.accDcGraph.instanceNeighbors.useQuery(
+    { nodeId: clickedNodeId ?? "" },
+    { enabled: !!clickedNodeId && !ACC_3D_GRAPH_ENABLED, staleTime: 600_000 },
+  );
+  const indexByNodeId = useMemo(() => {
+    const m = new Map<string, number>();
+    features.forEach((f, i) => m.set(f.nodeId, i));
+    return m;
+  }, [features]);
+  const neighborIndices = useMemo(() => {
+    const s = new Set<number>();
+    for (const nb of neighborsQuery.data ?? []) {
+      const idx = indexByNodeId.get(nb.nodeId);
+      if (idx !== undefined) s.add(idx);
+    }
+    return s;
+  }, [neighborsQuery.data, indexByNodeId]);
+
   // Same-user edges are a physics-graph (flag-ON) affordance only. On the flag-OFF
   // embedding map we render NO edges: edges/links/baseLinkColors stay EMPTY so
   // neither GraphCanvas (setLinks is guarded by length>0) nor GraphInteractions
@@ -269,6 +293,7 @@ function ShellBody({
             }}
             isolatedNodeIndex={isolatedNodeIndex}
             onIsolate={setIsolated}
+            neighborIndices={ACC_3D_GRAPH_ENABLED ? null : neighborIndices}
             lassoSelection={lassoSelection}
             drillDown={drillDown}
             rendererReady={rendererReady}
@@ -299,6 +324,26 @@ function ShellBody({
             labels={blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
           />
+          {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
+            <NeighborMatchesPanel
+              centerName={
+                features[isolatedNodeIndex]?.userName ??
+                features[isolatedNodeIndex]?.nodeId ??
+                "Selected"
+              }
+              matches={neighborsQuery.data ?? []}
+              indexByNodeId={indexByNodeId}
+              features={features}
+              // Profile for the centre node is already the top RightPanelStack
+              // layer whenever isolatedNodeIndex !== null. Re-assert isolate on the
+              // same node (the click setter) to ensure that profile is shown — and
+              // to restore it if a different overlay was raised in the interim.
+              onOpenProfile={() => setIsolated(isolatedNodeIndex)}
+              // Re-isolate to the chosen match: opens its profile + relights its
+              // own neighbors (query re-fires on the new clickedNodeId).
+              onSelectMatch={(idx) => setIsolated(idx)}
+            />
+          )}
         </div>
         <RightPanelStack
           features={features}

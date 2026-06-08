@@ -148,6 +148,13 @@ export interface PredicateInputs {
   drillDown: Readonly<Record<string, string>> | null;
   /** Click-isolate target — wins over all other gates when not null. */
   isolatedNodeIndex: number | null;
+  /**
+   * Similarity neighbors of the isolated node (cosmos node indices). When set,
+   * these are lit alongside the clicked node + its same-user footprint so the
+   * embedding map's "closest matches" stand out. null/empty = no extra highlight.
+   * Only populated on the flag-OFF embedding map.
+   */
+  neighborIndices?: ReadonlySet<number> | null;
 }
 
 /**

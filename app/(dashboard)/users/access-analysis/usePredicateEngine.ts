@@ -105,7 +105,7 @@ export function filterSelectionByPredicate(
 export function buildMaskPredicate(
   inputs: Omit<PredicateInputs, "physics">,
 ): (i: number) => number {
-  const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex } = inputs;
+  const { features, activeFilters, searchQuery, lassoSelection, drillDown, isolatedNodeIndex, neighborIndices } = inputs;
 
   // Precompute the isolated user's id once (not per node) so isolate can light the
   // whole same-user footprint, not just the single clicked instance.
@@ -119,9 +119,11 @@ export function buildMaskPredicate(
     const f = features[i];
     if (!f) return 0.15;
 
-    // 1) Click-isolate wins outright — light the clicked node AND its same-user footprint.
+    // 1) Click-isolate wins outright — light the clicked node, its same-user
+    //    footprint, AND its similarity neighbors (closest matches on the map).
     if (isolatedNodeIndex !== null) {
       if (i === isolatedNodeIndex) return 1.0;
+      if (neighborIndices && neighborIndices.has(i)) return 1.0;
       if (isolatedUserId && parseNodeId(f.nodeId)?.userId === isolatedUserId) return 1.0;
       return 0.15;
     }
@@ -175,5 +177,6 @@ export function usePredicateEngine(inputs: PredicateInputs): void {
     inputs.lassoSelection,
     inputs.drillDown,
     inputs.isolatedNodeIndex,
+    inputs.neighborIndices,
   ]);
 }

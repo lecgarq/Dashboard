@@ -49,6 +49,13 @@ export interface GraphInteractionsProps {
   onIsolate: (i: number | null) => void;
 
   /**
+   * Similarity neighbors of the isolated node (cosmos node indices). Fed into the
+   * predicate engine so the embedding map lights the closest matches alongside the
+   * clicked node. Empty/undefined on the flag-ON physics graph (no embedding).
+   */
+  neighborIndices?: ReadonlySet<number> | null;
+
+  /**
    * Increments when the underlying renderer handle becomes available. Used to
    * re-run the event-handler wiring effect once cosmos.gl/three.js finish their
    * async init (the handle is null at mount).
@@ -87,6 +94,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     onLassoComplete,
     isolatedNodeIndex,
     onIsolate,
+    neighborIndices,
     lassoSelection,
     drillDown,
     rendererReady,
@@ -184,6 +192,7 @@ export function GraphInteractions(props: GraphInteractionsProps): React.JSX.Elem
     lassoSelection,
     drillDown,
     isolatedNodeIndex,
+    neighborIndices,
   });
 
   // Union of users in focus: hovered ∪ isolated ∪ lasso selection.
