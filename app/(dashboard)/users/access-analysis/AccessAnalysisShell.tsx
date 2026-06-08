@@ -49,6 +49,8 @@ import { getDimension, type DimensionId } from "./dimensionRegistry";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { createPhysicsLayerWorker } from "./physicsLayerWorker";
+import { createStaticLayer } from "./staticLayer";
+import { ACC_3D_GRAPH_ENABLED } from "./graphModeFlag";
 import { buildCatalogTargets } from "./catalogTargets";
 import { buildCatalogWeights } from "./catalogWeights";
 import { buildDimensionCatalog } from "./dimensionCatalog";
@@ -154,7 +156,11 @@ function ShellBody({
   // Color follows the grouping dim unless the user overrides it via the toolbar.
   // The override is STICKY: once set it persists across grouping changes (drag a
   // different slider and color stays put) until the toolbar "Reset" clears it.
-  const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
+  // Flag-OFF (embedding map default): color by "company". Flag-ON keeps the
+  // sticky auto-follow behaviour (null → autoColorMode).
+  const [colorOverride, setColorOverride] = useState<ColorMode | null>(
+    ACC_3D_GRAPH_ENABLED ? null : "company",
+  );
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = useMemo(() => {
     const d = getDimension(groupingDim as DimensionId);
@@ -199,7 +205,24 @@ function ShellBody({
     [lassoSelection, features, activeFilters, searchQuery],
   );
 
-  const edgeData = useMemo(() => deriveSameUserEdges(features.map((f) => f.nodeId)), [features]);
+  // Same-user edges are a physics-graph (flag-ON) affordance only. On the flag-OFF
+  // embedding map we render NO edges: edges/links/baseLinkColors stay EMPTY so
+  // neither GraphCanvas (setLinks is guarded by length>0) nor GraphInteractions
+  // (computeLinkEmphasisColors([]) → empty, setLinkColors([]) is a link no-op)
+  // ever draws a link.
+  const edgeData = useMemo(
+    () =>
+      ACC_3D_GRAPH_ENABLED
+        ? deriveSameUserEdges(features.map((f) => f.nodeId))
+        : {
+            edges: [] as SameUserEdge[],
+            malformedCount: 0,
+            duplicateCount: 0,
+            distinctValidUsers: 0,
+            distinctUsersWithEdges: 0,
+          },
+    [features],
+  );
   const edges: SameUserEdge[] = edgeData.edges;
   const links = useMemo(() => toCosmosLinks(edges), [edges]);
   const baseLinkColors = useMemo(() => {
@@ -228,6 +251,7 @@ function ShellBody({
         groupedByLabel={groupedByLabel}
         colorIsAuto={colorIsAuto}
         onColorReset={resetColor}
+        show3DToggle={ACC_3D_GRAPH_ENABLED}
       />
       <div className="relative flex flex-1 min-h-0">
         <div className="relative flex-1 min-h-0 min-w-0">
@@ -296,6 +320,14 @@ export function AccessAnalysisShell(): React.JSX.Element {
     { staleTime: 600_000 },
   );
   const users = bulkUsersQuery.data;
+
+  // Precomputed 2D similarity-embedding coords (admin-gated). Only fetched on the
+  // flag-OFF path, where they feed a STATIC PhysicsLayer instead of the d3-force
+  // worker; harmless (disabled) when the 3D physics graph is enabled.
+  const embeddingQuery = trpc.accDcGraph.instanceEmbedding.useQuery(undefined, {
+    staleTime: 600_000,
+    enabled: !ACC_3D_GRAPH_ENABLED,
+  });
 
   const [features, setFeatures] = useState<NodeFeatureSnapshot[] | null>(null);
   const [physics, setPhysics] = useState<PhysicsLayer | null>(null);
@@ -381,6 +413,35 @@ export function AccessAnalysisShell(): React.JSX.Element {
           /* ignore */
         }
 
+        // EMBEDDING MAP (flag-OFF default): feed the precomputed 2D coords through
+        // a STATIC PhysicsLayer so the renderer/rAF/mask/color pipeline runs
+        // unchanged — and never construct the d3-force worker. The feature
+        // snapshot + catalog are still set so color, the sliders sidebar, and all
+        // interactions render (sliders are inert against the static layer — an
+        // accepted v1 limitation). Joins embedding coords to nodeIds by nodeId.
+        if (!ACC_3D_GRAPH_ENABLED) {
+          const emb = embeddingQuery.data;
+          if (!emb) return; // wait for embedding to load (effect re-runs on data)
+          const byId = new Map(emb.map((e) => [e.nodeId, e]));
+          const xy = new Float32Array(nodeIds.length * 2);
+          for (let i = 0; i < nodeIds.length; i++) {
+            const e = byId.get(nodeIds[i]);
+            xy[i * 2] = e ? e.x : 0;
+            xy[i * 2 + 1] = e ? e.y : 0;
+          }
+          const missing = nodeIds.filter((id) => !byId.has(id)).length;
+          if (missing > 0) {
+            console.warn(`[embedding] ${missing} nodes missing coords (origin fallback)`);
+          }
+          const staticLayer = createStaticLayer(nodeIds, xy);
+          if (cancelled) return;
+          createdPhysics = staticLayer;
+          setFeatures(snapshot);
+          setCatalog(catalog);
+          setPhysics(staticLayer);
+          return;
+        }
+
         const layer = await createPhysicsLayerWorker(
           nodeIds,
           nodes,
@@ -410,7 +471,7 @@ export function AccessAnalysisShell(): React.JSX.Element {
       cancelled = true;
       createdPhysics?.dispose();
     };
-  }, [users]);
+  }, [users, embeddingQuery.data]);
 
   if (bulkUsersQuery.isError) {
     return (

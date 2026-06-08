@@ -32,10 +32,18 @@ describe("Toolbar 2D-map controls", () => {
     renderToolbar();
     expect(screen.getByTestId("toolbar-grouped-by").textContent).toContain("Role");
   });
-  it("fires onModeChange('3d') when the 3D toggle is clicked", () => {
-    const { onModeChange } = renderToolbar();
+  it("fires onModeChange('3d') when the 3D toggle is clicked (toggle shown)", () => {
+    // The 2D/3D toggle only renders on the flag-ON physics-graph path
+    // (show3DToggle); the flag-OFF embedding map hides it. Enable it here so we
+    // still verify the toggle's wiring.
+    const { onModeChange } = renderToolbar({ show3DToggle: true });
     fireEvent.click(screen.getByTestId("toolbar-mode-3d"));
     expect(onModeChange).toHaveBeenCalledWith("3d");
+  });
+  it("hides the 2D/3D toggle by default (flag-OFF embedding map)", () => {
+    renderToolbar();
+    expect(screen.queryByTestId("toolbar-mode-3d")).toBeNull();
+    expect(screen.queryByTestId("toolbar-mode-2d")).toBeNull();
   });
   it("shows an 'auto' badge and no Reset when color is auto", () => {
     renderToolbar({ colorIsAuto: true });

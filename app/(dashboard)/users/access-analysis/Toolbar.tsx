@@ -47,6 +47,12 @@ export interface ToolbarProps {
   colorIsAuto?: boolean;
   /** Clears a manual color override, returning color to auto-follow. */
   onColorReset?: () => void;
+  /**
+   * Show the 2D/3D segmented toggle. Defaults to false so the flag-OFF embedding
+   * map never exposes the (worker-only) 3D view; the shell passes
+   * ACC_3D_GRAPH_ENABLED so the physics graph keeps its toggle.
+   */
+  show3DToggle?: boolean;
 }
 
 export function Toolbar({
@@ -60,6 +66,7 @@ export function Toolbar({
   groupedByLabel = "",
   colorIsAuto = true,
   onColorReset,
+  show3DToggle = false,
 }: ToolbarProps): React.JSX.Element {
   const {
     activeFilters,
@@ -117,20 +124,22 @@ export function Toolbar({
       // ml-auto "Clear all" link and swallows clicks meant for it.
       className="flex items-center gap-2 border-b bg-card px-4 py-2 pr-14"
     >
-      <div className="flex items-center" data-testid="toolbar-mode">
-        <button
-          type="button"
-          data-testid="toolbar-mode-2d"
-          onClick={() => onModeChange("2d")}
-          className={`rounded-l-md border px-2.5 py-1.5 text-sm ${mode === "2d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
-        >2D</button>
-        <button
-          type="button"
-          data-testid="toolbar-mode-3d"
-          onClick={() => onModeChange("3d")}
-          className={`-ml-px rounded-r-md border px-2.5 py-1.5 text-sm ${mode === "3d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
-        >3D</button>
-      </div>
+      {show3DToggle ? (
+        <div className="flex items-center" data-testid="toolbar-mode">
+          <button
+            type="button"
+            data-testid="toolbar-mode-2d"
+            onClick={() => onModeChange("2d")}
+            className={`rounded-l-md border px-2.5 py-1.5 text-sm ${mode === "2d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
+          >2D</button>
+          <button
+            type="button"
+            data-testid="toolbar-mode-3d"
+            onClick={() => onModeChange("3d")}
+            className={`-ml-px rounded-r-md border px-2.5 py-1.5 text-sm ${mode === "3d" ? "border-blue-500 bg-blue-500 text-white" : "hover:bg-accent"}`}
+          >3D</button>
+        </div>
+      ) : null}
       {groupedByLabel ? (
         <span data-testid="toolbar-grouped-by" className="text-sm text-muted-foreground">
           Grouped by: <b className="text-foreground">{groupedByLabel}</b>
