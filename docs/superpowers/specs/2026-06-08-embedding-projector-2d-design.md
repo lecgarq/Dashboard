@@ -47,7 +47,7 @@ renders a 16,942-point static scatter at 60fps; with no edges there is no overdr
 | # | Decision | Choice |
 |---|----------|--------|
 | D1 | What a dot represents | **A (person, project) instance** — 16,942 dots (same node set as today). |
-| D2 | Replace or coexist | **Replace.** 2D embedding map is the only default view; 3D mode removed. |
+| D2 | Replace or coexist | **Replace as default.** 2D embedding map is the only default view. The existing 3D physics graph is **parked dormant behind a build-time flag** (`NEXT_PUBLIC_ACC_3D_GRAPH=1`) — kept in the repo, not deleted, to preserve the 11-commit 3D investment and future raw-3D-exploration optionality. |
 | D3 | Click action | **Both** — highlight most-similar dots + mini "closest matches" panel, with a button/double-click to open the full person profile. |
 | D4 | Where computed | **Ahead of time in Python** (UMAP/t-SNE via `umap-learn`/`scikit-learn`) during the daily sync; results saved to Postgres; the page reads finished coordinates. |
 | D5 | Project-identity weight | **Down-weighted.** Clusters form by *access pattern*, not raw project membership. Color-by-project still reveals project distribution. |
@@ -56,7 +56,7 @@ renders a 16,942-point static scatter at 60fps; with no edges there is no overdr
 ## 4. Non-goals (YAGNI)
 
 - No per-person (3,367) aggregation mode — per-instance only (D1).
-- No 3D mode, no 2D/3D toggle (D2 removes it).
+- 3D mode is not in the default path and the default UI has no 2D/3D toggle; the 3D physics graph is retained dormant behind `NEXT_PUBLIC_ACC_3D_GRAPH=1` (D2), not built upon in v1.
 - No same-user edges, no edges of any kind in v1.
 - No live/in-browser projection — offline only (D4).
 - No bookmarks/isolate-101/search-by-label parity with the reference UI beyond what already
@@ -155,16 +155,27 @@ The expensive math runs **once per sync**, never in the browser.
   the existing `UserProfilePanel`.
 - **Color-by selector + legend**, **zoom/pan**, **search**, **lasso** — unchanged, retained.
 
-## 7. Removals
+## 7. Default-path changes (3D parked behind a flag, not deleted)
 
-- `GraphCanvas3D.tsx` (three.js ball) and its wiring in `GraphCanvas.tsx`.
-- The 2D/3D `mode` toggle and `setMode` plumbing.
-- `physicsLayer.ts` / `physicsLayerWorker.ts` usage **for this view** (the d3-force-3d
-  simulation is no longer the position source). Keep the files if referenced elsewhere;
-  otherwise remove from this load path.
-- Same-user edge generation (`sameUserEdges.ts`) from this view's load path.
+The 3D physics graph stays in the repo, dormant, behind a build-time flag
+`NEXT_PUBLIC_ACC_3D_GRAPH` (default unset/off). All 3D code is **retained**, not removed.
 
-> These removals delete the lag source (edge overdraw) and the hairball entirely.
+**Flag OFF (default — what every user sees):**
+- The view loads the embedding-fed 2D map only. `GraphCanvas3D` is **not mounted**, the
+  `d3-force-3d` physics layer is **not constructed**, and **no edges** are derived
+  (`sameUserEdges.ts` is not on this path). No 2D/3D toggle is shown.
+
+**Flag ON (`NEXT_PUBLIC_ACC_3D_GRAPH=1` — dormant escape hatch):**
+- Restores today's behavior exactly: the 2D/3D `mode` toggle, `GraphCanvas3D`, the
+  `physicsLayerWorker` position source, and same-user edges — unchanged.
+
+**Implementation shape:** the shell branches on the flag at the top of the load path. The two
+paths must not both run (flag-off must not boot the physics worker or mount the three.js
+canvas — that is the whole point of removing the lag). `GraphCanvas2D` is shared by both
+paths; only its *position source* differs (embedding coords vs physics).
+
+> Flag-off deletes the lag source (edge overdraw) and the hairball from the default experience
+> while keeping the 3D path one env var away.
 
 ## 8. Testing
 
@@ -214,4 +225,5 @@ The expensive math runs **once per sync**, never in the browser.
 - Exact source SQL for each per-instance signal (map `featureSnapshot.ts` DuckDB reads → Postgres source tables).
 - UMAP default params (`n_neighbors`, `min_dist`, `metric`) — start `15 / 0.1 / cosine`, tune at UAT.
 - K for neighbors (default 10).
-- Whether to keep `physicsLayer*` files (used by any other surface?) or delete.
+- Exact `NEXT_PUBLIC_ACC_3D_GRAPH` branch point in the shell so flag-off never boots the
+  physics worker or mounts `GraphCanvas3D` (the two paths must be mutually exclusive at load).
