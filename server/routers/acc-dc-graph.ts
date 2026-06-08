@@ -26,4 +26,20 @@ export const accDcGraphRouter = router({
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);
     }),
+  instanceEmbedding: adminProcedure.query(async ({ ctx }) => {
+    const rows = await ctx.db.accInstanceEmbedding.findMany({
+      select: { nodeId: true, x: true, y: true },
+    });
+    // Map keyed by nodeId; the client joins to its sorted nodeIds (cosmos order).
+    return rows as Array<{ nodeId: string; x: number; y: number }>;
+  }),
+  instanceNeighbors: adminProcedure
+    .input(z.object({ nodeId: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const row = await ctx.db.accInstanceEmbedding.findUnique({
+        where: { nodeId: input.nodeId },
+        select: { neighbors: true },
+      });
+      return (row?.neighbors ?? []) as Array<{ nodeId: string; score: number }>;
+    }),
 });

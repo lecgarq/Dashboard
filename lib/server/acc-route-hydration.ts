@@ -37,5 +37,8 @@ export async function prefetchAccessAnalysisRouteData(helpers: any) {
       { includePermissionSummary: true, includeActivityMix: true },
       { staleTime: ACC_SNAPSHOT_STALE_TIME_MS },
     ),
+    helpers.accDcGraph.instanceEmbedding.prefetch(undefined, {
+      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
+    }),
   ]);
 }
