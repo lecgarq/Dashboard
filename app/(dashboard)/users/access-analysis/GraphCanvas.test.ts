@@ -372,7 +372,7 @@ describe("GraphCanvas.tsx + GraphCanvas2D.tsx — REND-04 source purity", () => 
       expect(line, "GraphCanvas.tsx has unexpected import: " + line).toMatch(
         // lodState is a PURE renderer-control resolver (no math/data/dimension layer) — the
         // LOD mode decision (aggregate vs full) belongs with the renderer, like the loop hook.
-        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|clusterTransitionLayer|gpuLayout2D|lodState/i
+        /react|next-themes|physicsLayer|GraphCanvas2D|GraphCanvas3D|useGraphRafLoop|SliderContext|previewLayer|clusterTransitionLayer|gpuLayout2D|lodState|graphModeFlag/i
       );
     }
   });

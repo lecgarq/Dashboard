@@ -29,6 +29,7 @@ import { useSliders } from "./SliderContext";
 import { createPreviewLayer, type PreviewLayer } from "./previewLayer";
 import { createClusterTransitionLayer, type ClusterTransitionLayer } from "./clusterTransitionLayer";
 import { resolveLodMode } from "./lodState";
+import { is3dGraphEnabled } from "./graphModeFlag";
 
 // ---------------------------------------------------------------------------
 // Phase 4-01 Task 2 — discriminated-union handle exposed to GraphInteractions
@@ -483,6 +484,8 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
   // Render
   // -------------------------------------------------------------------------
 
+  const show3D = is3dGraphEnabled(process.env.NEXT_PUBLIC_ACC_3D_GRAPH);
+
   return (
     <div style={{ position: "relative", width: "100%", height: "100%" }}>
       {/* 2D cosmos.gl canvas slot — always mounted, hidden in 3D mode */}
@@ -513,32 +516,32 @@ export const GraphCanvas = forwardRef<GraphCanvasHandle, GraphCanvasProps>(
         />
       </div>
 
-      {/* 3D three.js canvas slot — always mounted, hidden in 2D mode */}
-      {/* CRITICAL: GraphCanvas3D is unconditionally rendered — no {mode === '3d' && ...} */}
-      {/* Conditional rendering would destroy the WebGL context on every mode switch (Pitfall 5) */}
-      <div
-        ref={container3DRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          visibility: props.mode === "3d" ? "visible" : "hidden",
-        }}
-      >
-        <GraphCanvas3D
-          containerRef={container3DRef}
-          physics={props.physics}
-          nodeColors={props.nodeColors}
-          nodeSizes={props.nodeSizes}
-          backgroundColor={bg}
-          links={props.links}
-          linkColors={props.linkColors}
-          onHandleReady={(h) => {
-            handle3D.current = h;
-            setReadyTick((t) => t + 1);
-            props.onRendererReady?.();
+      {/* 3D three.js canvas slot — mounted only when NEXT_PUBLIC_ACC_3D_GRAPH=1 */}
+      {show3D && (
+        <div
+          ref={container3DRef}
+          style={{
+            position: "absolute",
+            inset: 0,
+            visibility: props.mode === "3d" ? "visible" : "hidden",
           }}
-        />
-      </div>
+        >
+          <GraphCanvas3D
+            containerRef={container3DRef}
+            physics={props.physics}
+            nodeColors={props.nodeColors}
+            nodeSizes={props.nodeSizes}
+            backgroundColor={bg}
+            links={props.links}
+            linkColors={props.linkColors}
+            onHandleReady={(h) => {
+              handle3D.current = h;
+              setReadyTick((t) => t + 1);
+              props.onRendererReady?.();
+            }}
+          />
+        </div>
+      )}
     </div>
   );
   },

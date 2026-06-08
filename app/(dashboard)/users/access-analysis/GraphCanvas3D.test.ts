@@ -421,6 +421,7 @@ beforeEach(async () => {
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.unstubAllEnvs();
 });
 
 // ---------------------------------------------------------------------------
@@ -669,6 +670,9 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
   // Test 6: REND-03 — No remount on mode switch (WebGLRenderer constructed once)
   it("Test 6: REND-03 — WebGLRenderer constructed exactly once across mode switches", () => {
+    // Enable the 3D canvas so GraphCanvas3D mounts (gated by NEXT_PUBLIC_ACC_3D_GRAPH).
+    vi.stubEnv("NEXT_PUBLIC_ACC_3D_GRAPH", "1");
+
     const physics = makeFakePhysics(2);
     const nodeColors = new Float32Array([1, 0, 0, 1, 0, 1, 0, 1]);
 
@@ -759,6 +763,9 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
   // Test 11: CONTEXT.md locked — both animations scheduled via rAF
   it("Test 11: CONTEXT.md locked — 600ms tilt + 400ms z-flatten both scheduled via rAF", () => {
+    // Enable the 3D canvas so the mode-transition animations run (gated by NEXT_PUBLIC_ACC_3D_GRAPH).
+    vi.stubEnv("NEXT_PUBLIC_ACC_3D_GRAPH", "1");
+
     vi.useFakeTimers();
 
     const scheduledCallbacks: Array<(t: number) => void> = [];
@@ -828,6 +835,9 @@ describe("GraphCanvas3D — REND-02 + REND-03 + mode-transition invariants", () 
 
   // Test 12: Rapid toggle cancels in-flight animation
   it("Test 12: Rapid toggle cancels in-flight rAF before scheduling new animation", () => {
+    // Enable the 3D canvas so the mode-transition animation cancel path runs (gated by NEXT_PUBLIC_ACC_3D_GRAPH).
+    vi.stubEnv("NEXT_PUBLIC_ACC_3D_GRAPH", "1");
+
     vi.useFakeTimers();
 
     const scheduledIds: number[] = [];
