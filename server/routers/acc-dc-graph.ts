@@ -15,6 +15,7 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../trpc";
 import { getCachedAccDcBulkUsers } from "@/lib/server/acc-hot-cache";
+import { dedupeAndCapEdges } from "@/lib/acc/embedding/similarityEdgeSet";
 
 export const accDcGraphRouter = router({
   bulkUsers: adminProcedure
@@ -41,5 +42,22 @@ export const accDcGraphRouter = router({
         select: { neighbors: true },
       });
       return (row?.neighbors ?? []) as Array<{ nodeId: string; score: number }>;
+    }),
+  similarityEdges: adminProcedure
+    .input(
+      z
+        .object({ limit: z.number().int().positive().max(40000).optional() })
+        .optional(),
+    )
+    .query(async ({ ctx, input }) => {
+      const limit = input?.limit ?? 18000;
+      const rows = await ctx.db.accInstanceEmbedding.findMany({
+        select: { nodeId: true, neighbors: true },
+      });
+      const nodes = rows.map((r) => ({
+        nodeId: r.nodeId,
+        neighbors: (r.neighbors ?? []) as Array<{ nodeId: string; score: number }>,
+      }));
+      return dedupeAndCapEdges(nodes, limit);
     }),
 });
