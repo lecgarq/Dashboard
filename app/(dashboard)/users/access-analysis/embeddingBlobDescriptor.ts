@@ -47,5 +47,11 @@ export function buildEmbeddingBlobDescriptor(
   }
   const footprints: ClusterFootprints = { cx, cy, r };
 
-  return { kind: "blob", dimId: dim.id, clustering, footprints, loose: embeddingXy, packed };
+  // s=0 endpoint IS the raw embedding scatter (intentionally bypassing the loose
+  // footprint fill / LOOSE_TIGHTNESS used by buildUserBlobDescriptor). Copy it so a
+  // later embedding rebuild that reuses the source buffer can't tear an in-flight morph
+  // (descriptorTarget reads `loose` every frame).
+  const loose = embeddingXy.slice();
+
+  return { kind: "blob", dimId: dim.id, clustering, footprints, loose, packed };
 }
