@@ -852,3 +852,17 @@ model AccIssueFetchRun {
   status            String    @default("running") // running | done | failed
 }
 
+// ============ MODULE: ACC INSTANCE EMBEDDING ============
+// Precomputed 2D similarity-embedding coordinates + neighbours per graph node.
+// Table is created via prisma/migrations-raw/2026-06-08-acc-instance-embedding.sql
+// (raw SQL, not prisma migrate) so that pgvector / migrate-choke is avoided.
+
+model AccInstanceEmbedding {
+  nodeId         String   @id
+  x              Float    @db.Real
+  y              Float    @db.Real
+  neighbors      Json     @default("[]")
+  embeddingRunId String
+  updatedAt      DateTime @default(now()) @updatedAt
+}
+
