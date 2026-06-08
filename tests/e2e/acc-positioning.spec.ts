@@ -1,5 +1,9 @@
 import { test, expect, type Page } from "@playwright/test";
 
+// The 2D embedding map is the DEFAULT graph environment. The 3D physics shell (and
+// its per-dimension sliders) is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1; gate to flag-on.
+const ACC_3D_GRAPH = process.env.NEXT_PUBLIC_ACC_3D_GRAPH === "1";
+
 // The physics shell is now the default graph environment. Skip only when the projector is opted in.
 test.beforeEach(() => {
   test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1", "Physics shell is the default; skip only when the projector (=1) is opted in");
@@ -60,6 +64,7 @@ async function setProjectTo(page: Page, target: number): Promise<number> {
 
 test.describe("ACC positioning — slider smoothness + color independence", () => {
   test("project slider 0→100 separates smoothly: no dead zone, monotonic-ish, even", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     await gotoGraph(page);
     await switchTo3D(page);
 
@@ -113,6 +118,7 @@ test.describe("ACC positioning — slider smoothness + color independence", () =
   });
 
   test("color is a pure overlay: switching 'Color by' never moves nodes (3D)", async ({ page }) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     await gotoGraph(page);
     await switchTo3D(page);
     await setProjectTo(page, 60);
@@ -139,6 +145,7 @@ test.describe("ACC positioning — slider smoothness + color independence", () =
   });
 
   test("2D clusters by sliders (color-decoupled) without crashing", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     await gotoGraph(page); // graph is 3D-only now
     await projectThumb(page).focus();
     await page.keyboard.press("End"); // → max (100) in one press

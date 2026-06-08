@@ -1,5 +1,9 @@
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 
+// The 2D embedding map is the DEFAULT graph environment. The 3D physics shell (and
+// its 3D lasso) is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1; gate to flag-on.
+const ACC_3D_GRAPH = process.env.NEXT_PUBLIC_ACC_3D_GRAPH === "1";
+
 // The physics shell is now the default graph environment. Skip only when the projector is opted in.
 test.beforeEach(() => {
   test.skip(
@@ -46,6 +50,7 @@ async function proofShot(page: Page, testInfo: TestInfo, name: string): Promise<
 
 test.describe("ACC 3D lasso — smoke", () => {
   test("3D lasso: toolbar button is active and a drag selects a non-empty subset", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     test.setTimeout(360_000); // cold-boot data load can exceed the 120s default on a loaded box
     await gotoGraph(page);
     // The graph is 3D-only (no 2D/3D toggle); it boots straight into 3D.

@@ -1,5 +1,10 @@
 import { test, expect, type Page, type TestInfo } from "@playwright/test";
 
+// The 2D embedding map is the DEFAULT graph environment. The 3D physics shell is
+// parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1; tests that depend on the 3D physics
+// shell or the 2D/3D mode toggle gate to flag-on via test.skip(!ACC_3D_GRAPH, …).
+const ACC_3D_GRAPH = process.env.NEXT_PUBLIC_ACC_3D_GRAPH === "1";
+
 // The physics shell is now the default graph environment. Skip only when the projector is opted in.
 test.beforeEach(() => {
   test.skip(process.env.NEXT_PUBLIC_ACC_PERSON_GRAPH === "1", "Physics shell is the default; skip only when the projector (=1) is opted in");
@@ -256,6 +261,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   // invariant lives in unit coverage; no e2e re-proof here.
 
   test("color mode swaps the node color buffer, with 2D/3D parity (smoke)", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     // SMOKE — the color MATH is proven in nodeColors.test.ts. Here we confirm the
     // selector swaps the live RGBA buffer fed to BOTH renderers: alpha stays 1
     // (dimming is mask-only), length tracks the node set, and the buffer signature
@@ -353,6 +359,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("3D renders a non-empty, finite, centered cloud", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     // 3D-only restore: graph boots into 3D; the 2D/3D toggle was removed.
     await page.waitForFunction(() => window.__ACC_GRAPH_TEST__?.getMode() === "3d", undefined, {
       timeout: 20_000,
@@ -616,6 +623,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("same-user edges are well-formed and rendered", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     const stats = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeStats());
     // eslint-disable-next-line no-console
     console.log(`[edges] count=${stats.count} selfEdges=${stats.selfEdges} dup=${stats.duplicates} dangling=${stats.danglingEndpoints} usersWithEdges=${stats.distinctUsersWithEdges}`);
@@ -640,6 +648,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("3D edges: link layer is rendered with buffers matching the edge count", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     const edgeCount = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeStats().count);
     expect(edgeCount, "graph has same-user edges").toBeGreaterThan(0);
 
@@ -659,6 +668,7 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
   });
 
   test("3D edges: isolating a multi-project user brightens exactly their footprint", async ({ page }, testInfo) => {
+    test.skip(!ACC_3D_GRAPH, "3D physics graph is parked behind NEXT_PUBLIC_ACC_3D_GRAPH=1");
     const sample = await page.evaluate(() => window.__ACC_GRAPH_TEST__!.getEdgeSample());
     expect(sample, "a multi-project user exists").toBeTruthy();
     expect(sample!.expectedBrightCount, "sample user has >=1 edge").toBeGreaterThan(0);
@@ -1086,8 +1096,9 @@ test.describe("ACC DC graph — Step 1 stabilization", () => {
     // valid positions. This smoke test asserts the THEME/GPU-INDEPENDENT DOM that
     // always mounts once the shell is ready — no GPU or positional assertions.
 
-    // The 2D toggle is always rendered in the toolbar segmented control.
-    await expect(page.getByTestId("toolbar-mode-2d")).toBeVisible();
+    // The 2D embedding map is the default and the 2D/3D mode toggle is HIDDEN when
+    // NEXT_PUBLIC_ACC_3D_GRAPH is off (show3DToggle=false) → the toggle is ABSENT.
+    await expect(page.getByTestId("toolbar-mode-2d")).toHaveCount(0);
 
     // The Legend component mounts once the color bucketing resolves (pure DOM,
     // no WebGL dependency). Allow up to 20s for the initial data load.
