@@ -34,7 +34,7 @@ def project_umap(matrix):
         import umap
         reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, metric="cosine", random_state=RANDOM_STATE)
         return np.asarray(reducer.fit_transform(matrix), dtype=np.float64)
-    except Exception as e:  # noqa: BLE001 - fallback path is intentional, logged
+    except (ImportError, ModuleNotFoundError) as e:  # fallback only when umap is not installed (spec §10)
         print(f"UMAP unavailable ({e}); falling back to PCA", file=sys.stderr)
         from sklearn.decomposition import TruncatedSVD
         svd = TruncatedSVD(n_components=2, random_state=RANDOM_STATE)
