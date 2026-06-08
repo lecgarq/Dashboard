@@ -88,3 +88,9 @@ __pycache__/
 
 # self-hosted DuckDB-Wasm assets (copied by scripts/copy-duckdb-wasm.cjs in postinstall)
 /public/duckdb-wasm/
+
+# Brainstorming visual companion (local mockups)
+.superpowers/
+
+# Embedding build artifacts
+.embedding/
