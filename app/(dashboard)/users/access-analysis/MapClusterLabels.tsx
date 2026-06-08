@@ -48,10 +48,12 @@ export interface MapClusterLabelsProps {
   labels: ReadonlyArray<string>;
   /** Legend rows — supply per-cluster color + which clusters are colored (non-Other). */
   legend: ReadonlyArray<LegendEntry>;
+  /** Overall chip opacity 0..1 — lets the caller fade labels in with grouping strength. */
+  opacity?: number;
 }
 
 export function MapClusterLabels({
-  graphRef, mode, centersX, centersY, labels, legend,
+  graphRef, mode, centersX, centersY, labels, legend, opacity = 1,
 }: MapClusterLabelsProps): React.JSX.Element | null {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
@@ -104,7 +106,14 @@ export function MapClusterLabels({
   return (
     <div
       data-testid="map-cluster-labels"
-      style={{ position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 6 }}
+      style={{
+        position: "absolute", inset: 0, pointerEvents: "none", overflow: "hidden", zIndex: 6,
+        // Fade the whole label layer in with grouping strength (per-chip collision
+        // opacity multiplies under this). transition keeps the fade smooth as strength
+        // is committed in ~60ms steps.
+        opacity: Math.max(0, Math.min(1, opacity)),
+        transition: "opacity 150ms ease",
+      }}
     >
       {renderIds.map((c, t) => (
         <div

@@ -8,6 +8,7 @@
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import { categoryForColor, buildNodeColors, type ColorMode } from "./nodeColors";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
+import type { DominantClustering } from "./dominantClusters";
 
 export type RGB = [number, number, number];
 
@@ -89,6 +90,57 @@ export function buildBucketedColors(
   const colors = new Float32Array(features.length * 4);
   for (let i = 0; i < features.length; i++) {
     const rgb = colorByCat.get(cats[i]) ?? OTHER_GREY;
+    colors[i * 4] = rgb[0];
+    colors[i * 4 + 1] = rgb[1];
+    colors[i * 4 + 2] = rgb[2];
+    colors[i * 4 + 3] = 1;
+  }
+  return { colors, legend };
+}
+
+/**
+ * Color nodes by an EXISTING dominant clustering (the same one that drives the
+ * layout blobs + labels), rather than by a registry-backed ColorMode. This keeps
+ * color, blob membership, and footprint labels consistent for ANY group-by dimension
+ * — including catalog dims (permission, tenure, status, …) whose ids don't exist in
+ * the color registry. Top-N clusters (by member count) take palette hues; the rest
+ * collapse to grey "Other". Legend labels are the cluster labels, so they match the
+ * footprint chips MapClusterLabels renders. Pure: no React/DOM/IO.
+ */
+export function bucketedColorsFromClustering(
+  clustering: DominantClustering,
+  maxColors = 12,
+): BucketedColors {
+  const { ids, labels, counts } = clustering;
+  const k = labels.length;
+  // Rank clusters by count desc, tie-break by label asc — mirrors buildBucketedColors
+  // so the palette assignment order is consistent across the two code paths.
+  const order = Array.from({ length: k }, (_, i) => i).sort(
+    (a, b) => counts[b] - counts[a] || (labels[a] < labels[b] ? -1 : labels[a] > labels[b] ? 1 : 0),
+  );
+
+  const effectiveMax = Math.min(maxColors, CATEGORICAL_PALETTE.length);
+  const colorByCluster: RGB[] = new Array(k).fill(OTHER_GREY);
+  const legend: LegendEntry[] = [];
+  let otherCount = 0;
+  order.forEach((c, rank) => {
+    if (rank < effectiveMax) {
+      const color = CATEGORICAL_PALETTE[rank];
+      colorByCluster[c] = color;
+      legend.push({ label: labels[c], color, count: counts[c] });
+    } else {
+      otherCount += counts[c];
+    }
+  });
+  if (otherCount > 0) {
+    legend.push({ label: "Other", color: OTHER_GREY, count: otherCount, isOther: true });
+  }
+
+  const n = ids.length;
+  const colors = new Float32Array(n * 4);
+  for (let i = 0; i < n; i++) {
+    const c = ids[i];
+    const rgb = c >= 0 && c < k ? colorByCluster[c] : OTHER_GREY;
     colors[i * 4] = rgb[0];
     colors[i * 4 + 1] = rgb[1];
     colors[i * 4 + 2] = rgb[2];

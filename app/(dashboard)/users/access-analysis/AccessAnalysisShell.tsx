@@ -39,7 +39,7 @@ import { filterSelectionByPredicate } from "./usePredicateEngine";
 import { deriveSameUserEdges, toCosmosLinks, type SameUserEdge } from "./sameUserEdges";
 import { computeLinkEmphasisColors, assertLinkArrays, GOSSAMER_LIGHT, GOSSAMER_DARK } from "./linkEmphasis";
 import { activeGroupingDimension } from "./activeGrouping";
-import { buildBucketedColors } from "./bucketedColors";
+import { buildBucketedColors, bucketedColorsFromClustering } from "./bucketedColors";
 import { buildUserBlobDescriptor } from "./blobDescriptor";
 import { descriptorTarget } from "./layoutDescriptor";
 import { buildNodeSizes } from "./nodeSizes";
@@ -215,14 +215,28 @@ export function ShellBody({
   const colorMode: ColorMode = colorOverride ?? autoColorMode;
   const setColorMode = (m: ColorMode): void => setColorOverride(m);
   const resetColor = (): void => setColorOverride(null);
-  const groupedByLabel = COLOR_MODE_LABELS[autoColorMode] ?? autoColorMode;
+  // While actively grouping on the projector map, the toolbar's "Grouped by" label
+  // names the real group-by dimension (the catalog label), which is accurate even for
+  // dims with no color-registry entry; otherwise it mirrors the auto color mode.
+  const groupedByLabel =
+    !ACC_3D_GRAPH_ENABLED && grouping.showLabels && groupDim
+      ? groupDim.label
+      : COLOR_MODE_LABELS[autoColorMode] ?? autoColorMode;
 
-  // Color-by-dimension with top-12 categorical buckets + a grey "Other"; the
-  // legend model is derived from the same pass so chips/labels match exactly.
-  const bucketed = useMemo(
-    () => buildBucketedColors(features, colorMode, 12),
-    [features, colorMode],
-  );
+  // Node colors + legend. Three sources, in priority order:
+  //  1. A manual color override (toolbar dropdown) always wins.
+  //  2. Actively grouping on the projector map (flag-OFF, strength > 0): color by the
+  //     SAME dominant clustering that drives the blobs + footprint labels, so color,
+  //     layout, and labels stay consistent for ANY group-by dim — including catalog
+  //     dims (permission/tenure/status/…) absent from the color registry.
+  //  3. Otherwise (rest scatter → cluster galaxy, or the flag-ON graph): the auto mode.
+  const bucketed = useMemo(() => {
+    if (colorOverride) return buildBucketedColors(features, colorOverride, 12);
+    if (!ACC_3D_GRAPH_ENABLED && grouping.showLabels && blobDesc) {
+      return bucketedColorsFromClustering(blobDesc.clustering, 12);
+    }
+    return buildBucketedColors(features, autoColorMode, 12);
+  }, [features, colorOverride, autoColorMode, blobDesc, grouping.showLabels]);
   const nodeColors = bucketed.colors;
   const nodeSizes = useMemo<Float32Array>(() => buildNodeSizes(features), [features]);
   // Test-only: install + feed the observation bridge (no-op unless the flag is set).
@@ -367,9 +381,10 @@ export function ShellBody({
             />
           </GraphInteractions>
           <Legend entries={bucketed.legend} />
-          {/* Cluster chips name the packed-blob footprints — a flag-ON layout affordance
-              only. Flag-OFF the map is a free similarity scatter with no blob centers, so
-              we feed null centers / empty labels and MapClusterLabels renders nothing. */}
+          {/* Cluster chips name the packed-blob footprints. Shown whenever we're grouping
+              (flag-ON always; flag-OFF once Grouping strength > 0) and faded in with
+              strength so they appear as the blobs form. At rest (strength 0) showLabels is
+              false → null centers / empty labels → MapClusterLabels renders nothing. */}
           <MapClusterLabels
             graphRef={graphRef}
             mode={mode}
@@ -377,6 +392,7 @@ export function ShellBody({
             centersY={grouping.showLabels && blobDesc ? blobDesc.footprints.cy : null}
             labels={grouping.showLabels && blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
+            opacity={ACC_3D_GRAPH_ENABLED ? 1 : Math.min(1, strength / 50)}
           />
           {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
             <NeighborMatchesPanel
