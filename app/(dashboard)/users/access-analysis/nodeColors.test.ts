@@ -96,8 +96,12 @@ describe("categoryForColor", () => {
 });
 
 describe("color mode metadata", () => {
-  it("leads with role (the default mode)", () => {
-    expect(COLOR_MODES[0]).toBe("role");
+  it("leads with company (company grouping is the first color mode)", () => {
+    expect(COLOR_MODES[0]).toBe("company");
+  });
+
+  it("has role as the second mode", () => {
+    expect(COLOR_MODES[1]).toBe("role");
   });
 
   it("exposes internalExternal (not legacy external) as a selectable mode", () => {

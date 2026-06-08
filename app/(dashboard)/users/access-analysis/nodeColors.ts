@@ -44,21 +44,24 @@ const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) 
 ).map((d) => d.id);
 
 /** Non-dimension extra modes (no registry dim). `status` reads accountStatus. */
-const EXTRA_COLOR_MODES = ["status"] as const;
+const EXTRA_COLOR_MODES = ["company", "status"] as const;
 
 export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
-// "role" leads (many distinct colors at first load). Then the rest of the dim-backed
-// modes, then the non-dimension extras.
+// "company" leads (firm grouping is the first coloring most users want). Then "role",
+// then the rest of the dim-backed modes, then the non-dimension extras (excluding
+// "company" which is promoted to first position).
 export const COLOR_MODES: readonly ColorMode[] = [
+  "company",
   "role",
-  ...COLORABLE_DIM_IDS.filter((id) => id !== "role"),
-  ...EXTRA_COLOR_MODES,
+  ...COLORABLE_DIM_IDS.filter((id) => id !== "role" && id !== "company"),
+  ...EXTRA_COLOR_MODES.filter((id) => id !== "company"),
 ];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
   ...Object.fromEntries(COLORABLE_DIM_IDS.map((id) => [id, getDimension(id)!.label])),
+  company: "Company",
   status: "Account status",
 } as Record<ColorMode, string>;
 

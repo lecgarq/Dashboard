@@ -63,3 +63,24 @@ describe("buildBucketedColors", () => {
     expect(legend.length).toBe(0);
   });
 });
+
+// ---------------------------------------------------------------------------
+// company color mode
+// ---------------------------------------------------------------------------
+
+const fc = (firmName: string): NodeFeatureSnapshot => ({
+  nodeId: "u::p", nameLower: "", emailLower: "", project: "", role: "r",
+  permTier: null, isExternal: false, activityBucket: "None", signinBucket: ">90d",
+  activityCountRaw: 0, lastSignInRel: "Never", permissionCoverage: "unknown",
+  firmName, accountStatus: "active",
+} as NodeFeatureSnapshot);
+
+describe("company color mode", () => {
+  it("buckets by firmName and produces a legend", () => {
+    const r = buildBucketedColors([fc("Acme"), fc("Acme"), fc("Globex")], "company", 12);
+    const labels = r.legend.map((e) => e.label);
+    expect(labels).toContain("Acme");
+    expect(labels).toContain("Globex");
+    expect(r.colors.length).toBe(3 * 4);
+  });
+});
