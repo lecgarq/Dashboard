@@ -21,7 +21,9 @@ export interface SimEdgeIds {
 }
 export interface CappedEdgeSet {
   edges: SimEdgeIds[];
+  /** Count of unique undirected edges BEFORE the limit cap. */
   total: number;
+  /** True when total > limit and `edges` was trimmed to the strongest ones. */
   capped: boolean;
 }
 
@@ -51,6 +53,7 @@ export function dedupeAndCapEdges(
   all.sort((x, y) => y.score - x.score);
 
   const total = all.length;
-  const edges = total > limit ? all.slice(0, limit) : all;
+  const safeLimit = Math.max(0, limit);
+  const edges = total > safeLimit ? all.slice(0, safeLimit) : all;
   return { edges, total, capped: total > edges.length };
 }
