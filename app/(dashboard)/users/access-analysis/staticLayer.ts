@@ -17,13 +17,9 @@ export function createStaticLayer(nodeIds: readonly string[], xy: Float32Array):
     xyz[i * 3 + 2] = 0;
   }
   let _maskVersion = 0;
-  // Use Float64Array so that values like 0.15 round-trip exactly (Float32 would
-  // truncate to 0.15000000596...). The interface types alphaMask as Float32Array
-  // for the GPU-upload use-case; here we satisfy the indexed-element contract via
-  // a cast — the renderer only does array[i] reads which work identically.
-  const _alphaMask = new Float64Array(n).fill(1.0);
+  const _alphaMask = new Float32Array(n).fill(1.0);
   return {
-    get alphaMask() { return _alphaMask as unknown as Float32Array; },
+    get alphaMask() { return _alphaMask; },
     get maskVersion() { return _maskVersion; },
     get positionsVersion() { return 1; }, // constant: positions never change
     get frozen() { return true; },

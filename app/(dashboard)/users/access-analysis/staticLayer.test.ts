@@ -12,9 +12,9 @@ describe("createStaticLayer", () => {
   it("setMask mutates alphaMask + bumps maskVersion (mask bus works)", () => {
     const layer = createStaticLayer(["a", "b"], new Float32Array([0, 0, 0, 0]));
     const v0 = layer.maskVersion;
-    layer.setMask((i) => (i === 0 ? 1.0 : 0.15));
+    layer.setMask((i) => (i === 0 ? 1.0 : 0.5));
     expect(layer.alphaMask[0]).toBe(1.0);
-    expect(layer.alphaMask[1]).toBe(0.15);
+    expect(layer.alphaMask[1]).toBe(0.5);
     expect(layer.maskVersion).toBe(v0 + 1);
   });
   it("updateSliders / setActiveInput are no-ops (positionsVersion unchanged)", () => {
