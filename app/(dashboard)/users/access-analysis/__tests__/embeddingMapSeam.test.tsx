@@ -3,16 +3,16 @@
  * embeddingMapSeam.test.tsx — flag-OFF renderer-integration seam.
  *
  * Confirms the similarity-embedding map (flag NEXT_PUBLIC_ACC_3D_GRAPH unset, the
- * default) renders the STATIC embedding coordinates rather than the grouped-by-Role
- * blob:
- *   - GraphCanvas receives layoutTarget=undefined  → GraphCanvas sets
- *     clusterActive=false → no clusterTransitionLayer descriptor easing overrides
- *     the seeded embedding positions.
- *   - GraphCanvas receives gpuSimulation=false      → cosmos.gl is frozen, so the
- *     once-at-init seed from physics.getPositions() (the embedding coords) is held
- *     and never scattered by a GPU force sim.
- *   - MapClusterLabels receives null centers / empty labels → it renders nothing
- *     (the embedding scatter has no packed-blob footprints to name).
+ * default) drives the Group-by + Strength morph through the descriptor seam while
+ * keeping the embedding scatter as the rest state:
+ *   - GraphCanvas receives a layoutTarget (a function) → clusterActive=true so the
+ *     clusterTransitionLayer eases toward the embedding-blob descriptor. At rest
+ *     (strength 0) that descriptor returns the embedding scatter, so positions are
+ *     unchanged until the user raises the Grouping-strength slider.
+ *   - GraphCanvas receives gpuSimulation=false → no GPU force sim; positions come
+ *     purely from the eased descriptor (real-time, no physics to lag or jump).
+ *   - At rest (strength 0) MapClusterLabels receives null centers / empty labels →
+ *     it renders nothing (labels fade in only once grouping begins).
  *
  * The default test env leaves NEXT_PUBLIC_ACC_3D_GRAPH unset, so ACC_3D_GRAPH_ENABLED
  * is false — exactly the flag-OFF path under test. Child components and tRPC are
@@ -164,11 +164,14 @@ function renderBody(): void {
 // ---- Tests ------------------------------------------------------------------
 
 describe("flag-OFF embedding-map seam", () => {
-  it("passes layoutTarget=undefined to GraphCanvas (no blob descriptor override)", () => {
+  it("passes a layoutTarget to GraphCanvas (Group-by descriptor morph enabled)", () => {
     captured.graphCanvasProps = null;
     renderBody();
     expect(captured.graphCanvasProps).not.toBeNull();
-    expect(captured.graphCanvasProps!.layoutTarget).toBeUndefined();
+    // The projector map is no longer inert: it always supplies a layoutTarget so the
+    // descriptor morph runs. gpuSimulation stays false (next test), so positions come
+    // from the eased descriptor — and at strength 0 that descriptor is the scatter.
+    expect(typeof captured.graphCanvasProps!.layoutTarget).toBe("function");
   });
 
   it("freezes cosmos via gpuSimulation=false (static embedding coords are not scattered)", () => {
