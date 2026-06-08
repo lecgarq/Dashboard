@@ -17,6 +17,7 @@
 import { useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { CatalogSliderSidebar } from "./CatalogSliderSidebar";
+import { GroupByControls } from "./GroupByControls";
 import { SelectionPanel } from "./SelectionPanel";
 import { UserProfilePanel } from "../UserProfilePanel";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
@@ -30,6 +31,10 @@ export interface RightPanelStackProps {
   features: ReadonlyArray<NodeFeatureSnapshot>;
   catalog: readonly CatalogDimension[];
   visibleSelectedIndices: ReadonlySet<number> | null;
+  /** Flag-OFF projector map: render the Group-by controls instead of the slider wall. */
+  useGroupByControls?: boolean;
+  groupBy?: string;
+  onGroupByChange?: (id: string) => void;
 }
 
 type LayerKind = "user-detail" | "lasso-pie" | "sliders";
@@ -54,6 +59,9 @@ export function RightPanelStack({
   features,
   catalog,
   visibleSelectedIndices,
+  useGroupByControls = false,
+  groupBy,
+  onGroupByChange,
 }: RightPanelStackProps): React.JSX.Element {
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
   const top = getTopLayer(isolatedNodeIndex, lassoSelection);
@@ -117,7 +125,11 @@ export function RightPanelStack({
           </motion.div>
         ) : (
           <motion.div key="sliders" {...slide}>
-            <CatalogSliderSidebar catalog={catalog} />
+            {useGroupByControls && groupBy && onGroupByChange ? (
+              <GroupByControls catalog={catalog} groupBy={groupBy} onGroupByChange={onGroupByChange} />
+            ) : (
+              <CatalogSliderSidebar catalog={catalog} />
+            )}
           </motion.div>
         )}
       </AnimatePresence>
