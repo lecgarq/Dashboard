@@ -137,6 +137,11 @@ export function ShellBody({
   // Changing the picker transfers the current strength to the new dim (zeroing the old)
   // so the layout follows the selection.
   const [groupBy, setGroupBy] = useState<string>(() => defaultGroupBy(catalog));
+  // `strength` reads the COMMITTED (rAF-throttled ~60ms) slider value on purpose — it
+  // only drives the color-mode/labels switch, which shouldn't strobe mid-drag. The
+  // MOTION reads the live value via getLiveValues() inside layoutTarget (every frame),
+  // so the morph itself is immediate; do NOT switch this to a live read (it would put
+  // per-frame React churn back on the critical path).
   const strength = sliderValues[groupBy] ?? 0;
   const onGroupByChange = useCallback(
     (next: string): void => {
@@ -346,13 +351,14 @@ export function ShellBody({
               // renderer eases toward it with the GPU sim paused, so clusters are
               // STRUCTURALLY separated — not left to the d3 force (which piles centrally).
               //
-              // Flag-OFF (similarity-embedding map, default): the STATIC layer already
-              // holds the precomputed UMAP coords, so we pass NO layoutTarget (→
-              // clusterActive=false, no descriptor easing) AND freeze cosmos
-              // (gpuSimulation=false). The embedding coords are then the sole source of
-              // positions: seeded once at cosmos init from physics.getPositions() and
-              // held by the frozen renderer (the rAF pump re-pushes the same static
-              // coords each frame, a no-op after the first upload).
+              // Flag-OFF (similarity-embedding projector map, default): the STATIC layer
+              // seeds the precomputed embedding coords, and we ALSO pass a layoutTarget so
+              // the Group-by + Strength morph runs (clusterActive=true → the
+              // clusterTransitionLayer eases toward the embedding-blob descriptor). At rest
+              // (strength 0) that descriptor RETURNS the embedding scatter, so the displayed
+              // positions equal the seed until the user raises the slider. gpuSimulation
+              // stays false: there is NO GPU force sim — positions come purely from the
+              // eased descriptor, so the morph is real-time with nothing to lag or jump.
               layoutTarget={layoutTarget}
               gpuSimulation={ACC_3D_GRAPH_ENABLED ? undefined : false}
               onRendererReady={() => setRendererReady((v) => v + 1)}
@@ -511,10 +517,11 @@ export function AccessAnalysisShell(): React.JSX.Element {
 
         // EMBEDDING MAP (flag-OFF default): feed the precomputed 2D coords through
         // a STATIC PhysicsLayer so the renderer/rAF/mask/color pipeline runs
-        // unchanged — and never construct the d3-force worker. The feature
-        // snapshot + catalog are still set so color, the sliders sidebar, and all
-        // interactions render (sliders are inert against the static layer — an
-        // accepted v1 limitation). Joins embedding coords to nodeIds by nodeId.
+        // unchanged — and never construct the d3-force worker. The static layer's
+        // updateSliders is a no-op, but the Group-by + Strength morph does NOT go
+        // through it: ShellBody builds an embedding-blob descriptor and drives the
+        // morph via the per-frame layoutTarget (positions) + getLiveValues (strength).
+        // Joins embedding coords to nodeIds by nodeId.
         if (!ACC_3D_GRAPH_ENABLED) {
           const emb = embeddingQuery.data;
           if (!emb) return; // wait for embedding to load (effect re-runs on data)
