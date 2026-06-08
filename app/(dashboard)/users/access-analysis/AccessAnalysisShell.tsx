@@ -47,6 +47,9 @@ import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
 import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
+import { buildEmbeddingBlobDescriptor } from "./embeddingBlobDescriptor";
+import { defaultGroupBy } from "./groupByDimensions";
+import { resolveMapGrouping } from "./mapGrouping";
 import { installGraphTestBridge, setShellTestState, setEdgeTestState } from "./graphTestBridge";
 import { type PhysicsLayer, type SimNode } from "./physicsLayer";
 import { createPhysicsLayerWorker } from "./physicsLayerWorker";
@@ -124,56 +127,86 @@ export function ShellBody({
   const [rendererReady, setRendererReady] = useState(0);
 
   const { resolvedTheme } = useTheme();
-  const { values: sliderValues, getLiveValues } = useSliders();
+  const { values: sliderValues, getLiveValues, setSliderValue } = useSliders();
 
-  // Active grouping dim = dominant slider (Role default). Catalog order gives a
-  // stable tie-break.
+  // Projector map (flag-OFF): ONE controlled grouping dim + a single strength slider.
+  // Strength is stored as that dim's slider value, so the per-frame morph reads it off
+  // getLiveValues() with no extra plumbing. defaultGroupBy prefers "company" — which is
+  // NOT the dim SliderContext seeds to GROUPING_DEFAULT (role/project) — so strength
+  // starts at 0 and the map LOADS as the embedding scatter (the approved rest state).
+  // Changing the picker transfers the current strength to the new dim (zeroing the old)
+  // so the layout follows the selection.
+  const [groupBy, setGroupBy] = useState<string>(() => defaultGroupBy(catalog));
+  const strength = sliderValues[groupBy] ?? 0;
+  const onGroupByChange = useCallback(
+    (next: string): void => {
+      const carry = sliderValues[groupBy] ?? 0;
+      setSliderValue(groupBy, 0);
+      setSliderValue(next, carry);
+      setGroupBy(next);
+    },
+    [groupBy, sliderValues, setSliderValue],
+  );
+
+  // Flag-ON: dominant slider dim (unchanged). Flag-OFF: the picker selection.
   const groupingOrder = useMemo(() => catalog.map((d) => d.id), [catalog]);
   const groupingDim = useMemo(
     () => activeGroupingDimension(sliderValues, groupingOrder, "role"),
     [sliderValues, groupingOrder],
   );
+  const grouping = useMemo(
+    () =>
+      resolveMapGrouping({
+        flagOn: ACC_3D_GRAPH_ENABLED,
+        groupBy,
+        groupingDim,
+        strength,
+        hasDim: (id) => getDimension(id as DimensionId) != null,
+      }),
+    [groupBy, groupingDim, strength],
+  );
 
-  // The catalog dimension we cluster + position by. Falls back to role, then the
-  // first catalog dim, so this is always defined.
+  // The catalog dimension we cluster + position by (always defined: falls back to role).
   const groupDim = useMemo(
-    () => catalog.find((d) => d.id === groupingDim) ?? catalog.find((d) => d.id === "role") ?? catalog[0],
-    [catalog, groupingDim],
+    () =>
+      catalog.find((d) => d.id === grouping.groupDimId) ??
+      catalog.find((d) => d.id === "role") ??
+      catalog[0],
+    [catalog, grouping.groupDimId],
   );
 
-  // LAYOUT: a "blob" descriptor that pins each value's members into a packed,
-  // NON-OVERLAPPING footprint (sunflower disc). This is the project's proven way to
-  // get separated clusters — the bare d3 per-dim force just piles everything into one
-  // central disc. descriptorTarget() runs every frame off a ref (no React re-render);
-  // the live slider value drives loose→tight, the GROUPING dim only changes on regroup.
-  const blobDesc = useMemo(
-    () => (groupDim ? buildUserBlobDescriptor(features, groupDim) : null),
-    [features, groupDim],
-  );
+  // Static layer's positions ARE the embedding scatter (flag-OFF). Downproject to
+  // stride-2 once; used as the morph's s=0 endpoint.
+  const embeddingXy = useMemo<Float32Array | null>(() => {
+    if (ACC_3D_GRAPH_ENABLED) return null;
+    const xyz = physics.getPositions();
+    const n = xyz.length / 3;
+    const xy = new Float32Array(n * 2);
+    for (let i = 0; i < n; i++) {
+      xy[i * 2] = xyz[i * 3];
+      xy[i * 2 + 1] = xyz[i * 3 + 1];
+    }
+    return xy;
+  }, [physics]);
+
+  // LAYOUT descriptor: flag-ON keeps the loose→tight footprint morph; flag-OFF morphs
+  // the embedding scatter (s=0) → grouped clump (s=1), normalized to the embedding bbox.
+  const blobDesc = useMemo(() => {
+    if (!groupDim) return null;
+    if (ACC_3D_GRAPH_ENABLED) return buildUserBlobDescriptor(features, groupDim);
+    return embeddingXy ? buildEmbeddingBlobDescriptor(features, groupDim, embeddingXy) : null;
+  }, [features, groupDim, embeddingXy]);
+
   const layoutOutRef = useRef<Float32Array>(new Float32Array(features.length * 3));
   const layoutTarget = useCallback((): Float32Array => {
     if (!blobDesc) return layoutOutRef.current;
     return descriptorTarget(blobDesc, getLiveValues(), layoutOutRef.current);
   }, [blobDesc, getLiveValues]);
 
-  // Color follows the grouping dim unless the user overrides it via the toolbar.
-  // The override is STICKY: once set it persists across grouping changes (drag a
-  // different slider and color stays put) until the toolbar "Reset" clears it.
-  // Flag-OFF (embedding map default): autoColorMode resolves to "cluster" so the
-  // AUTO color is the embedding's spatial cluster (color == group = the projector
-  // look) without a pre-set override (Reset stays unlit until the user actually
-  // picks a different color, e.g. Company). Flag-ON keeps the sticky auto-follow.
+  // Color: sticky override wins; else the resolver's auto mode.
   const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
   const colorIsAuto = colorOverride === null;
-  const autoColorMode: ColorMode = useMemo(() => {
-    if (!ACC_3D_GRAPH_ENABLED) return "cluster"; // embedding map defaults to color-by-cluster
-    const d = getDimension(groupingDim as DimensionId);
-    // If the dominant grouping dim isn't a registry (colorable) dim, color + labels
-    // fall back to "role" while layout still groups by that dim — so chips may name
-    // role clusters. Curated sliders (project/role/user) are all colorable, so this
-    // path is effectively unreached today; widen the slider set with care.
-    return d ? (groupingDim as ColorMode) : "role";
-  }, [groupingDim]);
+  const autoColorMode: ColorMode = grouping.colorMode;
   const colorMode: ColorMode = colorOverride ?? autoColorMode;
   const setColorMode = (m: ColorMode): void => setColorOverride(m);
   const resetColor = (): void => setColorOverride(null);
@@ -320,7 +353,7 @@ export function ShellBody({
               // positions: seeded once at cosmos init from physics.getPositions() and
               // held by the frozen renderer (the rAF pump re-pushes the same static
               // coords each frame, a no-op after the first upload).
-              layoutTarget={ACC_3D_GRAPH_ENABLED ? layoutTarget : undefined}
+              layoutTarget={layoutTarget}
               gpuSimulation={ACC_3D_GRAPH_ENABLED ? undefined : false}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
@@ -334,9 +367,9 @@ export function ShellBody({
           <MapClusterLabels
             graphRef={graphRef}
             mode={mode}
-            centersX={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.footprints.cx : null}
-            centersY={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.footprints.cy : null}
-            labels={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.clustering.labels : []}
+            centersX={grouping.showLabels && blobDesc ? blobDesc.footprints.cx : null}
+            centersY={grouping.showLabels && blobDesc ? blobDesc.footprints.cy : null}
+            labels={grouping.showLabels && blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
           />
           {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
@@ -364,6 +397,9 @@ export function ShellBody({
           features={features}
           catalog={catalog}
           visibleSelectedIndices={visibleSubset}
+          useGroupByControls={!ACC_3D_GRAPH_ENABLED}
+          groupBy={groupBy}
+          onGroupByChange={onGroupByChange}
         />
       </div>
     </div>
