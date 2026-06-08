@@ -156,13 +156,13 @@ function ShellBody({
   // Color follows the grouping dim unless the user overrides it via the toolbar.
   // The override is STICKY: once set it persists across grouping changes (drag a
   // different slider and color stays put) until the toolbar "Reset" clears it.
-  // Flag-OFF (embedding map default): color by "company". Flag-ON keeps the
-  // sticky auto-follow behaviour (null → autoColorMode).
-  const [colorOverride, setColorOverride] = useState<ColorMode | null>(
-    ACC_3D_GRAPH_ENABLED ? null : "company",
-  );
+  // Flag-OFF (embedding map default): autoColorMode resolves to "company" so the
+  // AUTO color is company without a pre-set override (Reset stays unlit until the
+  // user actually picks a different color). Flag-ON keeps the sticky auto-follow.
+  const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = useMemo(() => {
+    if (!ACC_3D_GRAPH_ENABLED) return "company"; // embedding map defaults to color-by-company
     const d = getDimension(groupingDim as DimensionId);
     // If the dominant grouping dim isn't a registry (colorable) dim, color + labels
     // fall back to "role" while layout still groups by that dim — so chips may name
@@ -424,21 +424,19 @@ export function AccessAnalysisShell(): React.JSX.Element {
           if (!emb) return; // wait for embedding to load (effect re-runs on data)
           const byId = new Map(emb.map((e) => [e.nodeId, e]));
           const xy = new Float32Array(nodeIds.length * 2);
+          let missing = 0;
           for (let i = 0; i < nodeIds.length; i++) {
             const e = byId.get(nodeIds[i]);
-            xy[i * 2] = e ? e.x : 0;
-            xy[i * 2 + 1] = e ? e.y : 0;
+            if (e) { xy[i * 2] = e.x; xy[i * 2 + 1] = e.y; }
+            else { xy[i * 2] = 0; xy[i * 2 + 1] = 0; missing++; }
           }
-          const missing = nodeIds.filter((id) => !byId.has(id)).length;
-          if (missing > 0) {
-            console.warn(`[embedding] ${missing} nodes missing coords (origin fallback)`);
-          }
-          const staticLayer = createStaticLayer(nodeIds, xy);
+          if (missing > 0) console.warn(`[embedding] ${missing} nodes missing coords (origin fallback)`);
+          const layer = createStaticLayer(nodeIds, xy);
+          createdPhysics = layer;
           if (cancelled) return;
-          createdPhysics = staticLayer;
           setFeatures(snapshot);
           setCatalog(catalog);
-          setPhysics(staticLayer);
+          setPhysics(layer);
           return;
         }
 
