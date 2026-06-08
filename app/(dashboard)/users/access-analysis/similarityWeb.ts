@@ -102,8 +102,8 @@ export function computeEdgeColors(
     // Alpha rises with similarity strength: weak ~0.35 of ceiling, strong = ceiling.
     const aFrac = 0.35 + 0.65 * web.strength[i];
 
-    // Quantize: 5-bit RGB (community hues are few — ~12 distinct node colors) +
-    // 3-bit alpha. Distinct combos stay in the low hundreds (fits Uint16).
+    // Quantize: 5-bit RGB + 3-bit alpha. Safe for up to ~127 distinct community hues
+    // (cosmos.gl caps at ~12, giving <=624 buckets — well within Uint16).
     const rq = Math.min(31, Math.round(r * 31));
     const gq = Math.min(31, Math.round(g * 31));
     const bq = Math.min(31, Math.round(b * 31));
@@ -120,4 +120,61 @@ export function computeEdgeColors(
   }
 
   return { bucket, palette: Float32Array.from(palette) };
+}
+
+export interface Affine {
+  sx: number;
+  sy: number;
+  ox: number;
+  oy: number;
+}
+
+/**
+ * Recover the space→screen affine from the renderer's `spaceToScreen` by probing
+ * three reference points. cosmos.gl 2D is pan+zoom only (axis-aligned, no rotation/
+ * skew), so a scale+translate is exact — and one solve per redraw replaces N
+ * per-node spaceToScreen calls (the hot-loop optimization).
+ */
+export function solveAffine(
+  spaceToScreen: (p: [number, number]) => [number, number],
+): Affine {
+  const A = spaceToScreen([0, 0]);
+  const B = spaceToScreen([1000, 0]);
+  const C = spaceToScreen([0, 1000]);
+  return {
+    sx: (B[0] - A[0]) / 1000,
+    sy: (C[1] - A[1]) / 1000,
+    ox: A[0],
+    oy: A[1],
+  };
+}
+
+export function project(aff: Affine, x: number, y: number): [number, number] {
+  return [x * aff.sx + aff.ox, y * aff.sy + aff.oy];
+}
+
+/**
+ * Control point for a gentle, uniformly-signed bow: the segment midpoint offset
+ * along the perpendicular by `k * |segment-as-vector|` (here `k` multiplies the raw
+ * delta, giving a curve proportional to segment length). Consistent sign → all arcs
+ * bow the same way, reading as flow rather than noise.
+ */
+export function quadControl(
+  ax: number,
+  ay: number,
+  bx: number,
+  by: number,
+  k: number,
+): [number, number] {
+  const mx = (ax + bx) / 2;
+  const my = (ay + by) / 2;
+  const dx = bx - ax;
+  const dy = by - ay;
+  return [mx - dy * k, my + dx * k];
+}
+
+/** Ease `cur` toward `target` by `rate`; snap when within epsilon. */
+export function stepOpacity(cur: number, target: number, rate: number): number {
+  const next = cur + (target - cur) * rate;
+  return Math.abs(target - next) < 0.005 ? target : next;
 }

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
+import { mapEdgesToIndices, computeEdgeColors, solveAffine, project, quadControl, stepOpacity } from "./similarityWeb";
 
 const idx = new Map<string, number>([
   ["a", 0],
@@ -92,5 +92,28 @@ describe("computeEdgeColors", () => {
     const { bucket, palette } = computeEdgeColors(web, nodeColors, "dark");
     expect(bucket[0]).toBe(bucket[1]);
     expect(palette.length).toBe(4); // exactly one bucket
+  });
+});
+
+describe("geometry + opacity helpers", () => {
+  it("solveAffine recovers an axis-aligned scale+translate from spaceToScreen", () => {
+    // pretend the camera maps screen = space*2 + [10, 20]
+    const s2s = (p: [number, number]): [number, number] => [p[0] * 2 + 10, p[1] * 2 + 20];
+    const aff = solveAffine(s2s);
+    expect(aff.sx).toBeCloseTo(2);
+    expect(aff.sy).toBeCloseTo(2);
+    expect(aff.ox).toBeCloseTo(10);
+    expect(aff.oy).toBeCloseTo(20);
+    expect(project(aff, 5, 7)).toEqual([5 * 2 + 10, 7 * 2 + 20]);
+  });
+
+  it("quadControl bows perpendicular to the segment, consistently signed", () => {
+    // A(0,0) -> B(10,0), k=0.1: midpoint (5,0), perpendicular offset = (-dy, dx)*k = (0, 1)
+    expect(quadControl(0, 0, 10, 0, 0.1)).toEqual([5, 1]);
+  });
+
+  it("stepOpacity eases toward the target and snaps when close", () => {
+    expect(stepOpacity(0, 1, 0.25)).toBeCloseTo(0.25);
+    expect(stepOpacity(0.999, 1, 0.25)).toBe(1); // within epsilon -> snap
   });
 });
