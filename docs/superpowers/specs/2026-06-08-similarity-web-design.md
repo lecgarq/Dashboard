@@ -41,12 +41,16 @@ The hard part is that **cosmos.gl renders links as straight GL lines only** — 
 New tRPC query on `accDcGraphRouter` (`server/routers/acc-dc-graph.ts`):
 
 ```
-similarityEdges: adminProcedure.query → Array<{ a: string; b: string; score: number }>
+similarityEdges: adminProcedure
+  .input(z.object({ limit: z.number().int().positive().max(40000).optional() }).optional())
+  .query → { edges: Array<{ a: string; b: string; score: number }>; total: number; capped: boolean }
 ```
 
 - Reads all `AccInstanceEmbedding { nodeId, neighbors }`.
 - Dedups each node's `neighbors` into undirected pairs keyed `min::max` (so each edge ships once, not twice), keeping the max score.
-- Returns **nodeId pairs** (the server does not know cosmos index order). Payload is a few hundred KB; cached via the existing route-hydration path so it loads with the page.
+- **Caps server-side (the primary density cap):** sorts the deduped pairs by score descending and slices the top `limit` (default ~18k). Returns the kept `edges`, the pre-cap `total`, and `capped: total > kept` so the client can surface (never silently truncate) the drop.
+- Returns **nodeId pairs** (the server does not know cosmos index order). Why server-side: ~17k nodes × ~10 neighbors deduped ≈ 80–90k edges ≈ 8MB+ JSON; capping to the strongest ~18k before serialization keeps the wire payload ~300KB gzip and the page load fast. The kept edges are the highest-strength pairs — exactly the ones worth drawing.
+- Cached via the existing route-hydration path so it loads with the page.
 
 ### Layer B — Edge model (client, pure)
 
@@ -56,8 +60,8 @@ New pure module `app/(dashboard)/users/access-analysis/similarityWeb.ts`:
   - maps `{a,b}` nodeId pairs to cosmos **index** pairs via `indexByNodeId` (drops edges whose endpoints aren't in the current node set);
   - normalizes `score` into `[0,1]` strength (min–max or percentile);
   - computes a **per-edge RGBA**: tint = blend of the two endpoints' community colors (read from the already-computed `bucketed` node colors), alpha/brightness = a function of strength × a theme base alpha;
-  - **quantizes** each edge color into one of ~24 buckets so the overlay can batch-stroke one `Path2D` per bucket;
-  - applies the density cap (see §6) by keeping the highest-strength edges up to `maxEdges`.
+  - **quantizes** each edge color into one of ~24 buckets so the overlay can batch-stroke one `Path2D` per bucket.
+  - The density cap is applied **server-side** (Layer A); the client builder keeps an optional defensive `maxEdges` ceiling but normally maps everything it receives.
 - Returns flat typed arrays: `srcIdx: Int32Array`, `dstIdx: Int32Array`, `bucket: Uint8Array`, plus the bucket → RGBA palette. Pure, fully unit-testable, no React.
 
 ### Layer C — Render (client overlay)
@@ -95,7 +99,7 @@ This is what makes density safe — it is a hard requirement, not a nice-to-have
 
 A *truly* dense web at 16,942 nodes is the single perf unknown. Plan:
 
-- `maxEdges` cap (default chosen during build by measurement; start generous, e.g. ~15–20k, keep highest-strength edges). `similarityWeb.ts` enforces it deterministically and is unit-tested. If edges are dropped, the cap is logged (no silent truncation).
+- **Primary cap is server-side** (`similarityEdges` `limit`, default ~18k strongest edges; §3 Layer A) — this also keeps the wire payload ~300KB gzip instead of 8MB+. The `capped`/`total` fields are surfaced, never silently truncated. The exact default is tuned by measurement; the client keeps an optional defensive ceiling.
 - Build on **Canvas2D** (batched `Path2D` per bucket). Measure real frame time on the owner's PC during settle and during a pan-drag.
 - **Escalation path, only if needed:** if the density the owner wants can't stay lag-free on Canvas2D, escalate *only this overlay* to a GPU instanced-bézier layer (custom WebGL sharing the cosmos affine). Out of scope for v1; noted so the boundary is clean. v1 ships the look at a bounded density.
 
@@ -110,8 +114,10 @@ The current always-on edges are straight cosmos.gl same-user chains (`sameUserEd
 ## 8. Files
 
 **New**
-- `server/routers/acc-dc-graph.ts` — add `similarityEdges` query (edit).
-- `app/(dashboard)/users/access-analysis/similarityWeb.ts` — pure edge-model builder.
+- `lib/acc/embedding/similarityEdgeSet.ts` — pure dedup + sort-by-score + top-N cap helper (used by the `similarityEdges` procedure; unit-tested independent of tRPC/DB).
+- `lib/acc/embedding/similarityEdgeSet.test.ts` — unit tests.
+- `server/routers/acc-dc-graph.ts` — add `similarityEdges` query that loads `neighbors` and calls the helper (edit).
+- `app/(dashboard)/users/access-analysis/similarityWeb.ts` — pure client edge-model builder (index map, color, quantize).
 - `app/(dashboard)/users/access-analysis/similarityWeb.test.ts` — unit tests.
 - `app/(dashboard)/users/access-analysis/SimilarityWebOverlay.tsx` — Canvas2D overlay.
 - `app/(dashboard)/users/access-analysis/__tests__/SimilarityWebOverlay.test.tsx` — seam test (via the graph test bridge).
@@ -130,7 +136,8 @@ The current always-on edges are straight cosmos.gl same-user chains (`sameUserEd
 
 ## 10. Testing
 
-- **Pure (`similarityWeb.test.ts`):** dedup correctness (a<b, max score), index mapping drops unknown nodeIds, strength normalization, color = community blend × strength, bucket quantization stable, `maxEdges` cap keeps the strongest and reports the drop count.
+- **Pure server (`similarityEdgeSet.test.ts`):** dedup correctness (a<b, max score), sort-by-score-desc, top-N cap keeps the strongest, `total`/`capped` reported (no silent truncation).
+- **Pure client (`similarityWeb.test.ts`):** index mapping drops unknown nodeIds, strength normalization, color = community blend × strength, bucket quantization stable, optional defensive ceiling.
 - **Overlay seam:** with the graph test bridge, assert the overlay mounts, sets a non-zero edge count when settled, and goes to 0 opacity while morphing.
 - **No regression:** full unit suite + `tsc` green; existing graph e2e unaffected (web flag OFF under test bridge if needed).
 
