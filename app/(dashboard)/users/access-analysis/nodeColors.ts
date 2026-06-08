@@ -43,29 +43,36 @@ const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) 
   dimensionHasSurface(d, "color"),
 ).map((d) => d.id);
 
-/** Non-dimension extra modes (no registry dim). `status` reads accountStatus. */
-const EXTRA_COLOR_MODES = ["status"] as const;
+/**
+ * Non-dimension extra modes (no registry dim). `status` reads accountStatus;
+ * `cluster` reads the embedding-map KMeans cluster stamped on the snapshot
+ * (color == spatial group — the TF-Embedding-Projector look).
+ */
+const EXTRA_COLOR_MODES = ["cluster", "status"] as const;
 
 export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
-// "company" leads (firm grouping is the first coloring most users want). Then "role",
-// then the rest of the dim-backed modes, then the non-dimension extras.
+// "cluster" leads (color == spatial group = the embedding-projector look). Then
+// "company", "role", the rest of the dim-backed modes, then the non-dim extras.
 export const COLOR_MODES: readonly ColorMode[] = [
+  "cluster",
   "company",
   "role",
   ...COLORABLE_DIM_IDS.filter((id) => id !== "company" && id !== "role"),
-  ...EXTRA_COLOR_MODES,
+  ...EXTRA_COLOR_MODES.filter((id) => id !== "cluster"),
 ];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
   ...Object.fromEntries(COLORABLE_DIM_IDS.map((id) => [id, getDimension(id)!.label])),
+  cluster: "Cluster",
   company: "Company",
   status: "Account status",
 } as Record<ColorMode, string>;
 
 /** Category string used to pick a color. Dim-backed → descriptor.extract; extras explicit. */
 export function categoryForColor(f: NodeFeatureSnapshot, mode: ColorMode): string {
+  if (mode === "cluster") return f.cluster != null ? `Cluster ${f.cluster + 1}` : "(none)";
   if (mode === "status") return f.accountStatus || "(unknown)";
   const d = getDimension(mode as DimensionId);
   const v = d ? d.extract(f) : null;

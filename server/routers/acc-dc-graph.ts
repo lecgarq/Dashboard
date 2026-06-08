@@ -28,10 +28,10 @@ export const accDcGraphRouter = router({
     }),
   instanceEmbedding: adminProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db.accInstanceEmbedding.findMany({
-      select: { nodeId: true, x: true, y: true },
+      select: { nodeId: true, x: true, y: true, cluster: true },
     });
     // Map keyed by nodeId; the client joins to its sorted nodeIds (cosmos order).
-    return rows as Array<{ nodeId: string; x: number; y: number }>;
+    return rows as Array<{ nodeId: string; x: number; y: number; cluster: number | null }>;
   }),
   instanceNeighbors: adminProcedure
     .input(z.object({ nodeId: z.string() }))

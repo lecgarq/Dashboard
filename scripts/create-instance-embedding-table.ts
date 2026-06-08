@@ -37,8 +37,11 @@ async function main(): Promise<void> {
   const sql = readFileSync(join(process.cwd(), "prisma/migrations-raw/2026-06-08-acc-instance-embedding.sql"), "utf8");
   const prisma = createPrisma();
   try {
-    await prisma.$executeRawUnsafe(sql);
-    console.log("AccInstanceEmbedding table ensured.");
+    // Run each statement separately — $executeRawUnsafe is single-command.
+    for (const stmt of sql.split(";").map((s) => s.trim()).filter(Boolean)) {
+      await prisma.$executeRawUnsafe(stmt);
+    }
+    console.log("AccInstanceEmbedding table + cluster column ensured.");
   } finally {
     await prisma.$disconnect().catch(() => {});
   }

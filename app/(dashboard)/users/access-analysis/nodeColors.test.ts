@@ -96,12 +96,13 @@ describe("categoryForColor", () => {
 });
 
 describe("color mode metadata", () => {
-  it("leads with company (company grouping is the first color mode)", () => {
-    expect(COLOR_MODES[0]).toBe("company");
+  it("leads with cluster (color == spatial group is the embedding-projector default)", () => {
+    expect(COLOR_MODES[0]).toBe("cluster");
   });
 
-  it("has role as the second mode", () => {
-    expect(COLOR_MODES[1]).toBe("role");
+  it("has company second and role third", () => {
+    expect(COLOR_MODES[1]).toBe("company");
+    expect(COLOR_MODES[2]).toBe("role");
   });
 
   it("exposes internalExternal (not legacy external) as a selectable mode", () => {

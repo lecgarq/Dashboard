@@ -1,23 +1,33 @@
 """Per-instance 2D embedding for /users/spatial-graph.
 
 Reads .embedding/instance-features.jsonl (one {nodeId, tokens[]} per line),
-TF-IDF weights the tokens, projects to 2D with UMAP (cosine), computes cosine
-kNN, and upserts AccInstanceEmbedding in Postgres. Pure functions are unit-tested
-in test_compute_instance_embeddings.py; main() does the I/O.
+TF-IDF weights the tokens, then:
+  - DEDUPES identical access profiles (~87% of nodes are duplicates of ~3000
+    archetypes), so the projection isn't dominated by piled-up identical points;
+  - projects the UNIQUE profiles to 2D with t-SNE (cosine) for tight, separated
+    clusters (the TF Embedding-Projector / LOOK-AND-FEEL-2 look);
+  - KMeans-clusters the 2D positions so color can == spatial group;
+  - maps every node back to its archetype coord + small jitter (so duplicate
+    density is visible), and computes cosine kNN on the full set.
+Upserts x/y/neighbors/cluster into AccInstanceEmbedding. Pure functions are
+unit-tested in test_compute_instance_embeddings.py; main() does the I/O.
 """
 import json
 import os
-import sys
 import uuid
 from datetime import datetime, timezone
 
 import numpy as np
+from sklearn.cluster import KMeans
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.manifold import TSNE
 from sklearn.neighbors import NearestNeighbors
 
 RANDOM_STATE = 42
 HALF_EXTENT = 1000.0
 K_NEIGHBORS = 10
+N_CLUSTERS = 12
+JITTER_FRAC = 0.012
 
 
 def tfidf_matrix(docs):
@@ -27,18 +37,59 @@ def tfidf_matrix(docs):
     return m, vec.get_feature_names_out().tolist()
 
 
-def project_umap(matrix):
-    """High-dim sparse TF-IDF -> 2D float array. UMAP with cosine metric.
-    PCA fallback if umap import fails (spec §10)."""
-    try:
-        import umap
-        reducer = umap.UMAP(n_neighbors=15, min_dist=0.1, metric="cosine", random_state=RANDOM_STATE)
-        return np.asarray(reducer.fit_transform(matrix), dtype=np.float64)
-    except (ImportError, ModuleNotFoundError) as e:  # fallback only when umap is not installed (spec §10)
-        print(f"UMAP unavailable ({e}); falling back to PCA", file=sys.stderr)
+def dedupe_docs(docs):
+    """Collapse identical token-lists. Returns (first_row_indices, uidx_of_node):
+    first_row_indices[u] = the first node index whose profile is archetype u;
+    uidx_of_node[i] = the archetype index for node i."""
+    uniq = {}
+    first = []
+    uidx = np.empty(len(docs), dtype=np.int64)
+    for i, toks in enumerate(docs):
+        key = tuple(toks)
+        u = uniq.get(key)
+        if u is None:
+            u = len(first)
+            uniq[key] = u
+            first.append(i)
+        uidx[i] = u
+    return first, uidx
+
+
+def project_tsne(matrix):
+    """Dense-ify the (small, deduped) matrix and t-SNE to 2D (cosine).
+    Falls back to the first two SVD components when there are too few points
+    for a meaningful perplexity."""
+    n = matrix.shape[0]
+    dense = matrix.toarray()
+    if n < 10:
         from sklearn.decomposition import TruncatedSVD
-        svd = TruncatedSVD(n_components=2, random_state=RANDOM_STATE)
-        return np.asarray(svd.fit_transform(matrix), dtype=np.float64)
+        comps = TruncatedSVD(n_components=2, random_state=RANDOM_STATE).fit_transform(matrix) \
+            if matrix.shape[1] >= 2 else np.zeros((n, 2))
+        return np.asarray(comps, dtype=np.float64)
+    perp = max(5, min(40, n // 100))
+    return np.asarray(
+        TSNE(n_components=2, metric="cosine", init="pca", perplexity=perp,
+             max_iter=1000, random_state=RANDOM_STATE).fit_transform(dense),
+        dtype=np.float64,
+    )
+
+
+def cluster_coords(coords, k=N_CLUSTERS):
+    """KMeans on 2D coords -> int cluster label per row. k clamped to n."""
+    n = len(coords)
+    kk = max(1, min(k, n))
+    if kk == 1:
+        return np.zeros(n, dtype=np.int64)
+    return KMeans(n_clusters=kk, n_init=10, random_state=RANDOM_STATE).fit_predict(coords).astype(np.int64)
+
+
+def expand_with_jitter(unique_coords, uidx_of_node, frac=JITTER_FRAC, seed=RANDOM_STATE):
+    """Map each node to its archetype's coord + gaussian jitter (so duplicate
+    density is visible instead of perfectly overlapping). Deterministic."""
+    rng = np.random.RandomState(seed)
+    span = unique_coords.max(axis=0) - unique_coords.min(axis=0)
+    base = unique_coords[uidx_of_node]
+    return base + rng.normal(0.0, 1.0, size=base.shape) * (span * frac)
 
 
 def normalize_coords(xy, half_extent=HALF_EXTENT):
@@ -81,7 +132,7 @@ def _load_jsonl(path):
     return node_ids, docs
 
 
-def _upsert(node_ids, coords, neighbors, run_id):
+def _upsert(node_ids, coords, clusters, neighbors, run_id):
     import psycopg
     url = os.environ.get("DIRECT_URL") or os.environ.get("DATABASE_URL")
     if not url:
@@ -91,13 +142,15 @@ def _upsert(node_ids, coords, neighbors, run_id):
         for i, nid in enumerate(node_ids):
             cur.execute(
                 """
-                INSERT INTO "AccInstanceEmbedding" ("nodeId","x","y","neighbors","embeddingRunId","updatedAt")
-                VALUES (%s,%s,%s,%s,%s,%s)
+                INSERT INTO "AccInstanceEmbedding"
+                  ("nodeId","x","y","cluster","neighbors","embeddingRunId","updatedAt")
+                VALUES (%s,%s,%s,%s,%s,%s,%s)
                 ON CONFLICT ("nodeId") DO UPDATE SET
-                  "x"=EXCLUDED."x","y"=EXCLUDED."y","neighbors"=EXCLUDED."neighbors",
+                  "x"=EXCLUDED."x","y"=EXCLUDED."y","cluster"=EXCLUDED."cluster",
+                  "neighbors"=EXCLUDED."neighbors",
                   "embeddingRunId"=EXCLUDED."embeddingRunId","updatedAt"=EXCLUDED."updatedAt"
                 """,
-                (nid, float(coords[i][0]), float(coords[i][1]),
+                (nid, float(coords[i][0]), float(coords[i][1]), int(clusters[i]),
                  json.dumps(neighbors.get(nid, [])), run_id, now),
             )
         conn.commit()
@@ -109,12 +162,20 @@ def main():
     if not node_ids:
         raise SystemExit("no instance features found; run build-instance-features.ts first")
     matrix, _vocab = tfidf_matrix(docs)
-    coords = normalize_coords(project_umap(matrix))
+    first, uidx = dedupe_docs(docs)
+    unique_matrix = matrix[first]
+    print(f"nodes={len(node_ids)} unique_profiles={len(first)} "
+          f"({100 * len(first) / len(node_ids):.1f}% unique)")
+    ucoords = project_tsne(unique_matrix)
+    ulabels = cluster_coords(ucoords, N_CLUSTERS)
+    coords = normalize_coords(expand_with_jitter(ucoords, uidx))
+    clusters = ulabels[uidx]
     assert np.all(np.isfinite(coords)), "non-finite coordinates produced"
     neighbors = knn_neighbors(matrix, node_ids)
     run_id = f"{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}-{uuid.uuid4().hex[:8]}"
-    _upsert(node_ids, coords, neighbors, run_id)
-    print(f"Upserted {len(node_ids)} AccInstanceEmbedding rows (run {run_id})")
+    _upsert(node_ids, coords, clusters, neighbors, run_id)
+    print(f"Upserted {len(node_ids)} AccInstanceEmbedding rows "
+          f"({int(clusters.max()) + 1} clusters, run {run_id})")
 
 
 if __name__ == "__main__":

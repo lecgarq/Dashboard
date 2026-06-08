@@ -852,6 +852,27 @@ model AccIssueFetchRun {
   status            String    @default("running") // running | done | failed
 }
 
+model AccIssueProjectFetchResult {
+  id                String   @id
+  runId             String
+  projectId         String
+  projectName       String?
+  status            String // ok | zero_issues | forbidden | error
+  issueCount        Int      @default(0)
+  coordinationCount Int      @default(0)
+  errorMessage      String?
+  startedAt         DateTime
+  finishedAt        DateTime
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([runId, projectId])
+  @@index([runId])
+  @@index([projectId])
+  @@index([status])
+  @@index([runId, status])
+}
+
 // ============ MODULE: ACC INSTANCE EMBEDDING ============
 // Precomputed 2D similarity-embedding coordinates + neighbours per graph node.
 // Table is created via prisma/migrations-raw/2026-06-08-acc-instance-embedding.sql
@@ -861,8 +882,8 @@ model AccInstanceEmbedding {
   nodeId         String   @id
   x              Float    @db.Real
   y              Float    @db.Real
+  cluster        Int?
   neighbors      Json     @default("[]")
   embeddingRunId String
   updatedAt      DateTime @default(now()) @updatedAt
 }
-

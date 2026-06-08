@@ -159,13 +159,14 @@ export function ShellBody({
   // Color follows the grouping dim unless the user overrides it via the toolbar.
   // The override is STICKY: once set it persists across grouping changes (drag a
   // different slider and color stays put) until the toolbar "Reset" clears it.
-  // Flag-OFF (embedding map default): autoColorMode resolves to "company" so the
-  // AUTO color is company without a pre-set override (Reset stays unlit until the
-  // user actually picks a different color). Flag-ON keeps the sticky auto-follow.
+  // Flag-OFF (embedding map default): autoColorMode resolves to "cluster" so the
+  // AUTO color is the embedding's spatial cluster (color == group = the projector
+  // look) without a pre-set override (Reset stays unlit until the user actually
+  // picks a different color, e.g. Company). Flag-ON keeps the sticky auto-follow.
   const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = useMemo(() => {
-    if (!ACC_3D_GRAPH_ENABLED) return "company"; // embedding map defaults to color-by-company
+    if (!ACC_3D_GRAPH_ENABLED) return "cluster"; // embedding map defaults to color-by-cluster
     const d = getDimension(groupingDim as DimensionId);
     // If the dominant grouping dim isn't a registry (colorable) dim, color + labels
     // fall back to "role" while layout still groups by that dim — so chips may name
@@ -488,6 +489,9 @@ export function AccessAnalysisShell(): React.JSX.Element {
             const e = byId.get(nodeIds[i]);
             if (e) { xy[i * 2] = e.x; xy[i * 2 + 1] = e.y; }
             else { xy[i * 2] = 0; xy[i * 2 + 1] = 0; missing++; }
+            // Stamp the embedding cluster so the "Cluster" color mode (color ==
+            // spatial group, the projector look) can read it off the snapshot.
+            if (snapshot[i]) snapshot[i].cluster = e && e.cluster != null ? e.cluster : null;
           }
           if (missing > 0) console.warn(`[embedding] ${missing} nodes missing coords (origin fallback)`);
           const layer = createStaticLayer(nodeIds, xy);

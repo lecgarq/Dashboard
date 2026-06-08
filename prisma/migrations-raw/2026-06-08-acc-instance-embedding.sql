@@ -6,3 +6,4 @@ CREATE TABLE IF NOT EXISTS "AccInstanceEmbedding" (
   "embeddingRunId" TEXT NOT NULL,
   "updatedAt"     TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+ALTER TABLE "AccInstanceEmbedding" ADD COLUMN IF NOT EXISTS "cluster" INTEGER;
