@@ -104,7 +104,9 @@ interface ShellBodyProps {
   graphRef: React.RefObject<GraphCanvasHandle | null>;
 }
 
-function ShellBody({
+// Exported for unit tests that assert the flag-gated renderer seam (the
+// embedding-map vs blob-layout wiring) without booting the full async shell.
+export function ShellBody({
   physics,
   features,
   catalog,
@@ -305,23 +307,35 @@ function ShellBody({
               nodeColors={nodeColors}
               nodeSizes={nodeSizes}
               mode={mode}
-              // Infographic map: a per-frame layout target pins each value's members
-              // into a packed, non-overlapping footprint (descriptor seam). The renderer
-              // eases toward it with the GPU sim paused, so clusters are STRUCTURALLY
-              // separated — not left to the d3 force (which piles everything centrally).
-              layoutTarget={layoutTarget}
+              // Flag-ON (3D physics graph): a per-frame layout target pins each value's
+              // members into a packed, non-overlapping footprint (descriptor seam). The
+              // renderer eases toward it with the GPU sim paused, so clusters are
+              // STRUCTURALLY separated — not left to the d3 force (which piles centrally).
+              //
+              // Flag-OFF (similarity-embedding map, default): the STATIC layer already
+              // holds the precomputed UMAP coords, so we pass NO layoutTarget (→
+              // clusterActive=false, no descriptor easing) AND freeze cosmos
+              // (gpuSimulation=false). The embedding coords are then the sole source of
+              // positions: seeded once at cosmos init from physics.getPositions() and
+              // held by the frozen renderer (the rAF pump re-pushes the same static
+              // coords each frame, a no-op after the first upload).
+              layoutTarget={ACC_3D_GRAPH_ENABLED ? layoutTarget : undefined}
+              gpuSimulation={ACC_3D_GRAPH_ENABLED ? undefined : false}
               onRendererReady={() => setRendererReady((v) => v + 1)}
               links={links}
               linkColors={baseLinkColors}
             />
           </GraphInteractions>
           <Legend entries={bucketed.legend} />
+          {/* Cluster chips name the packed-blob footprints — a flag-ON layout affordance
+              only. Flag-OFF the map is a free similarity scatter with no blob centers, so
+              we feed null centers / empty labels and MapClusterLabels renders nothing. */}
           <MapClusterLabels
             graphRef={graphRef}
             mode={mode}
-            centersX={blobDesc ? blobDesc.footprints.cx : null}
-            centersY={blobDesc ? blobDesc.footprints.cy : null}
-            labels={blobDesc ? blobDesc.clustering.labels : []}
+            centersX={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.footprints.cx : null}
+            centersY={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.footprints.cy : null}
+            labels={ACC_3D_GRAPH_ENABLED && blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
           />
           {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
