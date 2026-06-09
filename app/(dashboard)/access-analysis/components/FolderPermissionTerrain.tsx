@@ -191,7 +191,7 @@ export function FolderPermissionTerrain({
   const theme: Theme = {
     ink: dark ? "#e4e4e7" : "#27272a",
     sub: dark ? "#a1a1aa" : "#6b7280",
-    grid: dark ? "rgba(161,161,170,0.14)" : "rgba(82,82,91,0.12)",
+    grid: dark ? "rgba(161,161,170,0.10)" : "rgba(82,82,91,0.09)",
     connector: dark ? "rgba(161,161,170,0.45)" : "rgba(82,82,91,0.4)",
     hot: dark ? "#fafafa" : "#18181b",
     shadow: dark ? "rgba(0,0,0,0.34)" : "rgba(15,12,35,0.13)",
@@ -498,6 +498,7 @@ function SceneStage({
       <div className="pointer-events-auto absolute bottom-3 right-3 flex items-center gap-1 rounded-full border border-border bg-card/85 px-1.5 py-1 shadow-sm backdrop-blur">
         <ToolButton label="Orbit" active={camApi.dragMode === "orbit"} onClick={() => camApi.setDragMode(camApi.dragMode === "orbit" ? "select" : "orbit")} />
         <ToolButton label="Pan" active={camApi.dragMode === "pan"} onClick={() => camApi.setDragMode(camApi.dragMode === "pan" ? "select" : "pan")} />
+        <span className="mx-0.5 h-4 w-px bg-border" aria-hidden />
         <button onClick={camApi.framePivot} className="rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground" title="Centre the pivot">Frame</button>
         <button
           onClick={() => {
@@ -576,10 +577,10 @@ function SceneLayer({
       })}
 
       {scene.folderLabels.map((f) => (
-        <text key={f.id} x={f.textX} y={f.textY} textAnchor="end" fontSize={10.5} fill={theme.ink} dominantBaseline="middle">{f.name}</text>
+        <text key={f.id} x={f.textX} y={f.textY} textAnchor="end" fontSize={10} fill={theme.ink} dominantBaseline="middle">{f.name}</text>
       ))}
       {showRoleLabels && scene.roleLabels.map((r) => (
-        <text key={r.id} x={r.x} y={r.y} fontSize={9.5} fill={theme.sub} textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
+        <text key={r.id} x={r.x} y={r.y} fontSize={9} fill={theme.sub} textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
       ))}
 
       {entry.label && entry.labelX != null && entry.labelY != null && (
