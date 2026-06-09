@@ -122,7 +122,7 @@ describe("extractAndPersistProjects soft-delete", () => {
     expect(prisma.accProject.upsert).toHaveBeenCalledTimes(2);
 
     expect(prisma.accProject.findMany).toHaveBeenCalledWith({
-      where: { status: "active", id: { notIn: ["p1", "p2"] } },
+      where: { status: "active", type: { not: "template" }, id: { notIn: ["p1", "p2"] } },
       select: { id: true },
     });
 
@@ -134,6 +134,22 @@ describe("extractAndPersistProjects soft-delete", () => {
     expect(updateArgs.data).toEqual({ status: "inactive" });
     expect(updateArgs.where.id.in).toEqual(expect.arrayContaining(["stale-1", "stale-2"]));
     expect(updateArgs.where.id.in).toHaveLength(2);
+  });
+
+  it("excludes type='template' rows from the stale sweep", async () => {
+    const fresh = [makeProject("p1")];
+    vi.stubGlobal("fetch", vi.fn(async () => jsonResponse({ results: fresh })));
+    const prisma = buildPrismaMock([]);
+
+    await extractAndPersistProjects(
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      prisma as any,
+      "acct-xyz",
+      "token",
+    );
+
+    const whereArg = (prisma.accProject.findMany.mock.calls[0] as unknown as [{ where: Record<string, unknown> }])[0].where;
+    expect(whereArg).toMatchObject({ type: { not: "template" } });
   });
 
   it("does not call updateMany when no stale projects exist", async () => {
