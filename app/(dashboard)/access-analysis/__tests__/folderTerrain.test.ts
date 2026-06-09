@@ -16,6 +16,7 @@ import {
   buildSharedAxes,
   projectOntoAxes,
   buildStackedTerrain,
+  buildStackedScenes,
   projectIso,
   barScene,
   buildScene,
@@ -306,6 +307,42 @@ describe("buildStackedTerrain", () => {
     const axes = buildSharedAxes([a, b]);
     const s = buildStackedTerrain([a, b], axes);
     expect(s.connectors).toHaveLength(4); // 1 gap × 4 corners
+  });
+});
+
+describe("buildStackedScenes", () => {
+  const camera: Camera = { pivotCol: 0.5, pivotRow: 0.5, yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1, anchorX: 300, anchorY: 120 };
+  const a = fixture("A", [["fa", "Client Documents"]], [["r1", "Architect"]], { r1: 3 });
+  const b = fixture("B", [["fc", "Client Documents"]], [["r1", "Architect"]], { r1: 1 });
+  const c = fixture("C", [["fe", "Client Documents"]], [["r1", "Architect"]], { r1: 2 });
+  const axes = buildSharedAxes([a, b, c]);
+
+  it("builds one plane per project in a tall viewport, vertically separated top→bottom", () => {
+    const r = buildStackedScenes([a, b, c], axes, camera, { w: 600, h: 4000 });
+    expect(r.planes).toHaveLength(3);
+    for (let i = 1; i < r.planes.length; i++) {
+      expect(r.planes[i].scene.groundCorners.back.y).toBeGreaterThan(r.planes[i - 1].scene.groundCorners.front.y);
+    }
+  });
+
+  it("connects every consecutive pair at four matching corners", () => {
+    const r = buildStackedScenes([a, b, c], axes, camera, { w: 600, h: 4000 });
+    expect(r.connectors).toHaveLength((3 - 1) * 4);
+  });
+
+  it("labels each plane with its project name", () => {
+    const r = buildStackedScenes([a, b, c], axes, camera, { w: 600, h: 4000 });
+    expect(r.planes.map((p) => p.label)).toEqual(["A", "B", "C"]);
+  });
+
+  it("virtualizes planes whose band is off the viewport", () => {
+    const r = buildStackedScenes([a, b, c], axes, camera, { w: 600, h: 120 }, { margin: 10 });
+    expect(r.planes.length).toBeLessThan(3);
+  });
+
+  it("returns a positive per-plane screen pitch", () => {
+    const r = buildStackedScenes([a, b, c], axes, camera, { w: 600, h: 4000 });
+    expect(r.planePitch).toBeGreaterThan(0);
   });
 });
 

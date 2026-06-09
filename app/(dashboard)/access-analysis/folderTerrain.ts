@@ -911,3 +911,103 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
 
   return { width: W, height: H, bars, shadows, lattice, folderLabels, roleLabels, extraRoles: R - labelCount, compass, groundCorners };
 }
+
+// ===========================================================================
+// Compare — separated floating planes. Compose one camera scene per project,
+// each on the SAME camera (yaw/pitch/scale/pivot) but anchored at a different
+// SCREEN Y, so the planes are parallel, fully separated isometric islands (the
+// BOT-OR-NOT exploded stack) rather than a cascading single-grid tower.
+// ===========================================================================
+
+export interface StackedPlane {
+  scene: TerrainScene;
+  source: FolderTerrainData;
+  label: string;
+  /** Screen anchor for this plane's project header (its back-left, lifted). */
+  headerX: number;
+  headerY: number;
+  index: number;
+}
+
+export interface StackedScenes {
+  planes: StackedPlane[];
+  connectors: { x1: number; y1: number; x2: number; y2: number }[];
+  /** Vertical screen distance between consecutive plane anchors. */
+  planePitch: number;
+}
+
+export interface StackedScenesOpts {
+  /** Tallest bar per plane (shorter than single mode so stacked planes stay calm). */
+  maxBar?: number;
+  /** Airy gap (screen px, pre-scale) between a plane's footprint and the next. */
+  gap?: number;
+  /** Virtualization slack (screen px) around the viewport. */
+  margin?: number;
+}
+
+/**
+ * Compose one camera scene per project at a fixed screen-pixel vertical pitch.
+ * Connectors join matching ground corners of consecutive planes. Off-viewport
+ * planes are virtualized out; connectors are computed for all pairs (cheap) so
+ * the stack reads continuously while panning.
+ */
+export function buildStackedScenes(
+  datas: ReadonlyArray<FolderTerrainData>,
+  axes: SharedAxes,
+  camera: Camera,
+  viewport: { w: number; h: number },
+  opts: StackedScenesOpts = {},
+): StackedScenes {
+  const maxBar = opts.maxBar ?? 44;
+  const gap = opts.gap ?? 60;
+  const margin = opts.margin ?? 240;
+  const Cf = axes.folders.length;
+  const R = axes.roles.length;
+
+  // Footprint vertical screen span of the shared-axes grid (anchor-independent,
+  // so we can compute it once on the real camera; affine translation cancels).
+  const backY = projectCamera(-0.5, -0.5, 0, camera).y;
+  const frontY = projectCamera(R - 0.5, Cf - 0.5, 0, camera).y;
+  const footprintSpanY = Math.abs(frontY - backY);
+  const planePitch = footprintSpanY + (maxBar + gap) * camera.scale;
+
+  // Corner sets for ALL planes (cheap) → connectors decoupled from virtualization.
+  const corner = (i: number) => {
+    const cam: Camera = { ...camera, anchorY: camera.anchorY + i * planePitch };
+    return {
+      back: projectCamera(-0.5, -0.5, 0, cam),
+      right: projectCamera(R - 0.5, -0.5, 0, cam),
+      front: projectCamera(R - 0.5, Cf - 0.5, 0, cam),
+      left: projectCamera(-0.5, Cf - 0.5, 0, cam),
+    };
+  };
+
+  const connectors: StackedScenes["connectors"] = [];
+  for (let i = 0; i < datas.length - 1; i++) {
+    const x = corner(i), y = corner(i + 1);
+    for (const k of ["back", "right", "front", "left"] as const) {
+      connectors.push({ x1: x[k].x, y1: x[k].y, x2: y[k].x, y2: y[k].y });
+    }
+  }
+
+  const planes: StackedPlane[] = [];
+  for (let i = 0; i < datas.length; i++) {
+    const cam: Camera = { ...camera, anchorY: camera.anchorY + i * planePitch };
+    const cs = corner(i);
+    const top = Math.min(cs.back.y, cs.right.y, cs.left.y) - maxBar * camera.scale;
+    const bot = Math.max(cs.front.y, cs.left.y, cs.right.y);
+    if (bot < -margin || top > viewport.h + margin) continue; // virtualized out
+    const projected = projectOntoAxes(datas[i], axes);
+    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar });
+    planes.push({
+      scene,
+      source: datas[i],
+      label: datas[i].projectName,
+      headerX: cs.left.x,
+      headerY: cs.left.y - maxBar * camera.scale - 10,
+      index: i,
+    });
+  }
+
+  return { planes, connectors, planePitch };
+}
