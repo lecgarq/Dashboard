@@ -8,6 +8,7 @@ import {
   buildSharedAxes,
   buildStackedScenes,
   projectCamera,
+  easeCamera,
   HOME_YAW,
   HOME_PITCH,
   MIN_PITCH,
@@ -57,9 +58,15 @@ function useCamera(viewport: { w: number; h: number }) {
   });
   const [cam, setCam] = useState<Camera>(camRef.current);
   const raf = useRef<number | null>(null);
+  const tweenRaf = useRef<number | null>(null);
   const commit = useCallback(() => { raf.current = null; setCam({ ...camRef.current }); }, []);
   const schedule = useCallback(() => { if (raf.current == null) raf.current = requestAnimationFrame(commit); }, [commit]);
-  const apply = useCallback((patch: Partial<Camera>) => { camRef.current = { ...camRef.current, ...patch }; schedule(); }, [schedule]);
+  // Direct manipulation (orbit/pan/zoom/repivot) cancels any in-flight tween.
+  const apply = useCallback((patch: Partial<Camera>) => {
+    if (tweenRaf.current) { cancelAnimationFrame(tweenRaf.current); tweenRaf.current = null; }
+    camRef.current = { ...camRef.current, ...patch };
+    schedule();
+  }, [schedule]);
 
   const [dragMode, setDragMode] = useState<DragMode>("select");
   const drag = useRef({ active: false, button: 0, dragged: false, lastX: 0, lastY: 0, startX: 0, startY: 0 });
@@ -109,19 +116,38 @@ function useCamera(viewport: { w: number; h: number }) {
     apply({ pivotCol: col, pivotRow: row, anchorX: here.x, anchorY: here.y });
   }, [apply]);
 
-  const framePivot = useCallback(() => { apply({ anchorX: viewport.w / 2, anchorY: viewport.h / 2 }); }, [apply, viewport.w, viewport.h]);
+  // Cubic-eased camera move (Frame / Reset). Reduced-motion → snap instantly.
+  const tweenTo = useCallback((target: Camera, ms = 300) => {
+    if (tweenRaf.current) cancelAnimationFrame(tweenRaf.current);
+    if (prefersReducedMotion()) { camRef.current = { ...target }; setCam({ ...target }); return; }
+    const from = { ...camRef.current };
+    let start = 0;
+    const step = (t: number) => {
+      if (!start) start = t;
+      const k = Math.min(1, (t - start) / ms);
+      camRef.current = easeCamera(from, target, k);
+      setCam({ ...camRef.current });
+      if (k < 1) tweenRaf.current = requestAnimationFrame(step);
+    };
+    tweenRaf.current = requestAnimationFrame(step);
+  }, []);
 
+  const framePivot = useCallback(() => { tweenTo({ ...camRef.current, anchorX: viewport.w / 2, anchorY: viewport.h / 2 }); }, [tweenTo, viewport.w, viewport.h]);
+
+  // Instant reframe — used when the active data set changes (grow-in + cross-fade
+  // cover the visual transition; a camera tween here would fight them).
   const resetTo = useCallback((pivotCol: number, pivotRow: number) => {
+    if (tweenRaf.current) { cancelAnimationFrame(tweenRaf.current); tweenRaf.current = null; }
     camRef.current = { pivotCol, pivotRow, yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1, anchorX: viewport.w / 2, anchorY: viewport.h / 2 };
     setCam({ ...camRef.current });
   }, [viewport.w, viewport.h]);
 
-  useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); }, []);
+  useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); if (tweenRaf.current) cancelAnimationFrame(tweenRaf.current); }, []);
 
   return {
     cam, dragRef: drag, dragMode, setDragMode,
     handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerLeave: onPointerUp },
-    wheelZoom, setPivotCell, framePivot, resetTo,
+    wheelZoom, setPivotCell, framePivot, resetTo, tweenTo,
   };
 }
 
@@ -470,7 +496,16 @@ function SceneStage({
         <ToolButton label="Pan" active={camApi.dragMode === "pan"} onClick={() => camApi.setDragMode(camApi.dragMode === "pan" ? "select" : "pan")} />
         <button onClick={camApi.framePivot} className="rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground" title="Centre the pivot">Frame</button>
         <button
-          onClick={() => { const p = view.scenes[0]; if (p) camApi.resetTo((p.source.roles.length - 1) / 2, (p.source.folders.length - 1) / 2); }}
+          onClick={() => {
+            const p = view.scenes[0];
+            if (!p) return;
+            camApi.tweenTo({
+              pivotCol: (p.source.roles.length - 1) / 2,
+              pivotRow: (p.source.folders.length - 1) / 2,
+              yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1,
+              anchorX: viewport.w / 2, anchorY: viewport.h / 2,
+            });
+          }}
           className="rounded-full px-2 py-0.5 text-[11px] font-medium text-muted-foreground hover:bg-muted hover:text-foreground"
           title="Reset view"
         >Reset</button>

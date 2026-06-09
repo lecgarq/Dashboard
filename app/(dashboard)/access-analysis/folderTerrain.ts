@@ -776,6 +776,17 @@ export const HOME_PITCH = 0.5236; // ~30°
 export const MIN_PITCH = 0.14; // ~8°  (near side-on)
 export const MAX_PITCH = 1.48; // ~85° (near top-down)
 
+/** Cubic-eased interpolation between two cameras (t in 0..1) — for tweened moves. */
+export function easeCamera(a: Camera, b: Camera, t: number): Camera {
+  const e = t <= 0 ? 0 : t >= 1 ? 1 : 1 - Math.pow(1 - t, 3);
+  const lerp = (x: number, y: number) => x + (y - x) * e;
+  return {
+    pivotCol: lerp(a.pivotCol, b.pivotCol), pivotRow: lerp(a.pivotRow, b.pivotRow),
+    yaw: lerp(a.yaw, b.yaw), pitch: lerp(a.pitch, b.pitch), scale: lerp(a.scale, b.scale),
+    anchorX: lerp(a.anchorX, b.anchorX), anchorY: lerp(a.anchorY, b.anchorY),
+  };
+}
+
 /** Project grid (col,row) at height z (px) to screen, relative to the pivot. */
 export function projectCamera(col: number, row: number, z: number, c: Camera): Pt {
   const X = col - c.pivotCol;

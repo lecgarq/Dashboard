@@ -22,6 +22,7 @@ import {
   buildScene,
   projectCamera,
   depthCamera,
+  easeCamera,
   barSceneCam,
   buildCameraScene,
   HOME_YAW,
@@ -472,6 +473,20 @@ describe("depthCamera", () => {
   it("ranks a taller bar nearer than a flat one at the same cell", () => {
     const c = cam({ pivotCol: 0, pivotRow: 0 });
     expect(depthCamera(1, 1, 60, c)).toBeGreaterThan(depthCamera(1, 1, 0, c));
+  });
+});
+
+describe("easeCamera", () => {
+  const A: Camera = { pivotCol: 0, pivotRow: 0, yaw: 0, pitch: 0.5, scale: 1, anchorX: 0, anchorY: 0 };
+  const B: Camera = { pivotCol: 2, pivotRow: 3, yaw: 1, pitch: 1.0, scale: 2, anchorX: 100, anchorY: 50 };
+  it("returns A at t=0 and B at t=1", () => {
+    expect(easeCamera(A, B, 0)).toEqual(A);
+    const end = easeCamera(A, B, 1);
+    expect(end.yaw).toBeCloseTo(1); expect(end.scale).toBeCloseTo(2); expect(end.anchorX).toBeCloseTo(100);
+  });
+  it("interpolates between the endpoints", () => {
+    const mid = easeCamera(A, B, 0.5);
+    expect(mid.scale).toBeGreaterThan(1); expect(mid.scale).toBeLessThan(2);
   });
 });
 
