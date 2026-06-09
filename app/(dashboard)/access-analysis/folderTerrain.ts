@@ -844,6 +844,9 @@ export interface CameraSceneOpts {
   rowOffset?: number;
   /** 0..1 height multiplier for grow-in animation (default 1). */
   growth?: number;
+  /** Compact stacked-plane labelling (compare): keep folder labels on their rows
+   *  and collision-prune, instead of the roomy evenly-spaced leader list. */
+  compactLabels?: boolean;
 }
 
 /**
@@ -896,21 +899,48 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
   for (let col = 0; col <= R; col++) { const a = projectCamera(col - 0.5, -0.5 + rOff, 0, c); const b = projectCamera(col - 0.5, Cf - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
   for (let row = 0; row <= Cf; row++) { const a = projectCamera(-0.5, row - 0.5 + rOff, 0, c); const b = projectCamera(R - 0.5, row - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
 
-  // Folder labels: ride the terrain at each row's left edge, leader to that corner.
-  const folderLabels = folders.map((f, i) => {
-    const anchor = projectCamera(-0.5, i + rOff, 0, c);
-    return { id: f.id, name: f.name.length > 26 ? f.name.slice(0, 25) + "…" : f.name, textX: anchor.x - 10, textY: anchor.y, ax: anchor.x, ay: anchor.y };
-  });
+  // Folder labels. Rows project very close together at the home angle, so a naive
+  // per-row list overlaps. Roomy single/overview planes get an evenly-spaced left
+  // list (≥ FGAP px apart) with a thin leader to each row; compact compare slabs
+  // keep labels on their rows but greedily drop any that would collide.
+  const truncF = (s: string) => (s.length > 26 ? s.slice(0, 25) + "…" : s);
+  let folderLabels: TerrainScene["folderLabels"];
+  if (opts.compactLabels) {
+    folderLabels = folders
+      .map((f, i) => { const a = projectCamera(-0.5, i + rOff, 0, c); return { id: f.id, name: truncF(f.name), textX: a.x - 10, textY: a.y, ax: a.x, ay: a.y }; })
+      .sort((a, b) => a.textY - b.textY)
+      .reduce<TerrainScene["folderLabels"]>((kept, lab) => {
+        const last = kept[kept.length - 1];
+        if (!last || lab.textY - last.textY >= 13) kept.push(lab);
+        return kept;
+      }, []);
+  } else {
+    const FGAP = 16;
+    const topA = projectCamera(-0.5, -0.5 + rOff, 0, c);
+    const botA = projectCamera(-0.5, Cf - 0.5 + rOff, 0, c);
+    const leftX = Math.min(topA.x, botA.x) - 12;
+    const span = Math.max(botA.y - topA.y, (Cf - 1) * FGAP);
+    const start = (topA.y + botA.y) / 2 - span / 2;
+    folderLabels = folders.map((f, i) => {
+      const a = projectCamera(-0.5, i + rOff, 0, c);
+      const textY = Cf > 1 ? start + (i / (Cf - 1)) * span : a.y;
+      return { id: f.id, name: truncF(f.name), textX: leftX, textY, ax: a.x, ay: a.y };
+    });
+  }
 
-  // Role labels: along the back of the role axis, angled to it.
+  // Role labels run along the back of the role axis, angled to it. Drop any that
+  // crowd the previous kept label (by on-screen distance) so they never overlap.
   const labelCount = Math.min(maxRoleLabels, R);
   const aDir = projectCamera(0, TERRAIN.roleLabelRow + rOff, 0, c);
   const bDir = projectCamera(1, TERRAIN.roleLabelRow + rOff, 0, c);
   const axisDir = Math.atan2(bDir.y - aDir.y, bDir.x - aDir.x) * 180 / Math.PI;
-  const roleLabels = roles.slice(0, labelCount).map((r, i) => {
-    const p = projectCamera(i, TERRAIN.roleLabelRow + rOff, 0, c);
-    return { id: r.id, name: r.name.length > 22 ? r.name.slice(0, 21) + "…" : r.name, x: p.x, y: p.y, angle: axisDir };
-  });
+  const roleLabels = roles.slice(0, labelCount)
+    .map((r, i) => { const p = projectCamera(i, TERRAIN.roleLabelRow + rOff, 0, c); return { id: r.id, name: r.name.length > 22 ? r.name.slice(0, 21) + "…" : r.name, x: p.x, y: p.y, angle: axisDir }; })
+    .reduce<TerrainScene["roleLabels"]>((kept, lab) => {
+      const last = kept[kept.length - 1];
+      if (!last || Math.hypot(lab.x - last.x, lab.y - last.y) >= 24) kept.push(lab);
+      return kept;
+    }, []);
 
   // Compass: pure ground-axis directions (anchor/pivot removed) + the tilt read-out.
   const dirCam: Camera = { ...c, pivotCol: 0, pivotRow: 0, anchorX: 0, anchorY: 0, scale: 1 };
@@ -1014,7 +1044,7 @@ export function buildStackedScenes(
     const bot = Math.max(cs.front.y, cs.left.y, cs.right.y);
     if (bot < -margin || top > viewport.h + margin) continue; // virtualized out
     const projected = projectOntoAxes(datas[i], axes);
-    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar, growth: opts.growth ?? 1 });
+    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar, growth: opts.growth ?? 1, compactLabels: true });
     planes.push({
       scene,
       source: datas[i],

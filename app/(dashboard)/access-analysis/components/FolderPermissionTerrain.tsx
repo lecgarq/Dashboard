@@ -33,7 +33,7 @@ type Picked = { cell: TerrainCell; source: FolderTerrainData } | null;
 
 const PLANE_GAP = 64; // airy screen-px gap between stacked floating planes
 const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
-const VIEW_H = 520; // taller stage for the exploded stack
+const VIEW_H = 520; // fixed stage height (px)
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 interface Theme {
@@ -471,6 +471,7 @@ function SceneStage({
                   key={entry.source.projectId + si}
                   entry={entry}
                   showRoleLabels={si === 0}
+                  showFolderLabels={si === 0}
                   theme={theme}
                   hover={hover}
                   picked={picked}
@@ -524,10 +525,11 @@ function SceneStage({
 }
 
 function SceneLayer({
-  entry, showRoleLabels, theme, hover, picked, setHover, setPicked, onPick, draggedRef,
+  entry, showRoleLabels, showFolderLabels, theme, hover, picked, setHover, setPicked, onPick, draggedRef,
 }: {
   entry: SceneEntry;
   showRoleLabels: boolean;
+  showFolderLabels: boolean;
   theme: Theme;
   hover: Hover;
   picked: Picked;
@@ -576,8 +578,11 @@ function SceneLayer({
         );
       })}
 
-      {scene.folderLabels.map((f) => (
-        <text key={f.id} x={f.textX} y={f.textY} textAnchor="end" fontSize={10} fill={theme.ink} dominantBaseline="middle">{f.name}</text>
+      {showFolderLabels && scene.folderLabels.map((f) => (
+        <g key={f.id}>
+          <line x1={f.textX + 2} y1={f.textY} x2={f.ax} y2={f.ay} stroke={theme.grid} strokeWidth={1} />
+          <text x={f.textX} y={f.textY} textAnchor="end" fontSize={10} fill={theme.ink} dominantBaseline="middle">{f.name}</text>
+        </g>
       ))}
       {showRoleLabels && scene.roleLabels.map((r) => (
         <text key={r.id} x={r.x} y={r.y} fontSize={9} fill={theme.sub} textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
