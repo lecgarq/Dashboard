@@ -57,4 +57,13 @@ describe("catalogDefaultSliders default grouping", () => {
     const d = catalogDefaultSliders(cat);
     expect(Object.values(d).every((v) => v === 0)).toBe(true);
   });
+
+  it("seeds the primary at the given strength; 0 leaves everything loose (projector scatter)", () => {
+    const cat = [sliderDim("role"), sliderDim("project"), sliderDim("user")];
+    const seeded = catalogDefaultSliders(cat, 0);
+    expect(Object.values(seeded).every((v) => v === 0)).toBe(true);
+    const at40 = catalogDefaultSliders(cat, 40);
+    expect(at40.role).toBe(40);
+    expect(at40.project).toBe(0);
+  });
 });

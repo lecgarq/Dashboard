@@ -22,12 +22,15 @@ export const GROUPING_DEFAULT = 60;
  * already organized (settle-on-load); every other slider is 0 for clean
  * single-dimension clusters. Prefers Role; falls back to Project; else all 0.
  */
-export function catalogDefaultSliders(catalog: readonly CatalogDimension[]): Record<string, number> {
+export function catalogDefaultSliders(
+  catalog: readonly CatalogDimension[],
+  primaryStrength: number = GROUPING_DEFAULT,
+): Record<string, number> {
   const dims = sliderDimensions(catalog);                  // available sliders only
   const out: Record<string, number> = {};
   for (const d of dims) out[d.id] = 0;
   const has = (id: string): boolean => dims.some((d) => d.id === id);
   const primary = has("role") ? "role" : has("project") ? "project" : null;
-  if (primary) out[primary] = GROUPING_DEFAULT;
+  if (primary) out[primary] = primaryStrength;
   return out;
 }

@@ -138,12 +138,10 @@ export function ShellBody({
   const { values: sliderValues, getLiveValues, setSliderValue, isPreviewActive } = useSliders();
 
   // Projector map (flag-OFF): ONE controlled grouping dim + a single strength slider.
-  // Strength is stored as that dim's slider value, so the per-frame morph reads it off
-  // getLiveValues() with no extra plumbing. defaultGroupBy prefers "company" — which is
-  // NOT the dim SliderContext seeds to GROUPING_DEFAULT (role/project) — so strength
-  // starts at 0 and the map LOADS as the embedding scatter (the approved rest state).
-  // Changing the picker transfers the current strength to the new dim (zeroing the old)
-  // so the layout follows the selection.
+  // The picker defaults to Role (defaultGroupBy), and the projector seeds every slider
+  // to 0 (see SliderContext), so the map LOADS as the free embedding scatter — the user
+  // drags the strength slider up to morph into Role/Project/User blobs.
+  // Changing the picker transfers the current strength to the new dim (zeroing the old).
   const [groupBy, setGroupBy] = useState<string>(() => defaultGroupBy(catalog));
   // `strength` reads the COMMITTED (rAF-throttled ~60ms) slider value on purpose — it
   // only drives the color-mode/labels switch, which shouldn't strobe mid-drag. The
@@ -236,13 +234,14 @@ export function ShellBody({
     [blobDesc, getLiveValues],
   );
 
-  // Color: sticky override wins; else the resolver's auto mode.
-  const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
+  // Color is an independent picker (role / project / user), defaulting to Role; it is
+  // never "auto" — the dropdown always drives color.
+  const [colorOverride, setColorOverride] = useState<ColorMode | null>("role");
   const colorIsAuto = colorOverride === null;
   const autoColorMode: ColorMode = grouping.colorMode;
   const colorMode: ColorMode = colorOverride ?? autoColorMode;
   const setColorMode = (m: ColorMode): void => setColorOverride(m);
-  const resetColor = (): void => setColorOverride(null);
+  const resetColor = (): void => setColorOverride("role");
   // While actively grouping on the projector map, the toolbar's "Grouped by" label
   // names the real group-by dimension (the catalog label), which is accurate even for
   // dims with no color-registry entry; otherwise it mirrors the auto color mode.

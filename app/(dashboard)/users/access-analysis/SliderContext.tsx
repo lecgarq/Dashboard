@@ -26,7 +26,8 @@ import { getDimension } from "./dimensionRegistry";
 import { SLIDER_DIMENSION_IDS } from "./dimensionGroups";
 import { applyPreset } from "./sliderPresets";
 import type { CatalogDimension } from "./dimensionCatalog.types";
-import { sliderDimensionIds, catalogDefaultSliders } from "./catalogSliders";
+import { sliderDimensionIds, catalogDefaultSliders, GROUPING_DEFAULT } from "./catalogSliders";
+import { ACC_3D_GRAPH_ENABLED } from "./graphModeFlag";
 
 // ---------------------------------------------------------------------------
 // LEGACY slider-capable dimension list — derived from the registry.
@@ -163,7 +164,12 @@ export function SliderProvider({ physics, catalog, children }: SliderProviderPro
   // persisted value for a now-greyed dim still survives the migration filter).
   // `defaults` = every AVAILABLE slider at 0 (spec decision #3).
   const ids = useMemo(() => sliderDimensionIds(catalog), [catalog]);
-  const defaults = useMemo(() => catalogDefaultSliders(catalog), [catalog]);
+  // Projector (flag-OFF) loads as a free scatter (strength 0); the parked 3D graph
+  // (flag-ON) keeps its settle-on-load primary strength.
+  const defaults = useMemo(
+    () => catalogDefaultSliders(catalog, ACC_3D_GRAPH_ENABLED ? GROUPING_DEFAULT : 0),
+    [catalog],
+  );
 
   const [values, setValues] = useState<Record<string, number>>(defaults);
   const valuesRef = useRef(values);
