@@ -38,6 +38,11 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
  * Capability-based (not raw type) so ordered/color-only dims (riskScore,
  * permissionStrength, activityMix) become color modes while keeping every
  * existing categorical/binary mode.
+ *
+ * Exists solely to pre-seed COLOR_MODE_LABELS with registry labels for ALL
+ * colorable dims — not just the three offered in COLOR_MODES — because those
+ * dims remain valid ColorMode values consumed by buildNodeColors/categoryForColor
+ * even though the picker no longer surfaces them.
  */
 const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) =>
   dimensionHasSurface(d, "color"),
@@ -82,6 +87,8 @@ export function categoryForColor(f: NodeFeatureSnapshot, mode: ColorMode): strin
 /** One-time migration: the legacy `external` color-mode id → `internalExternal`. */
 export function migrateColorMode(mode: string): ColorMode {
   if (mode === "external") return "internalExternal";
+  // Intentional: only the three offered modes are valid saved preferences; any
+  // stale value (e.g. a previously-valid "cluster"/"internalExternal"/"tier") resets to "role".
   return (COLOR_MODES as readonly string[]).includes(mode) ? (mode as ColorMode) : "role";
 }
 
