@@ -743,7 +743,7 @@ function DetailPanel({ cell, project, metric, users, crossProject, onClose }: {
   const overview = metric === "projects";
   return (
     <div className="overflow-hidden rounded-xl border border-border bg-muted/40">
-      <div className="flex items-center justify-between gap-3 px-3 py-2" style={{ background: colorForRank(cell.rank), color: "#fff" }}>
+      <div className="flex items-center justify-between gap-3 px-3 py-2" style={{ background: colorForRank(cell.rank), color: tierTextColor(cell.rank) }}>
         <div className="min-w-0">
           <div className="truncate text-sm font-semibold">{cell.roleName} <span className="opacity-80">on</span> {cell.folderName}</div>
           <div className="truncate text-[11px] opacity-90">{project} · {cell.tier}</div>

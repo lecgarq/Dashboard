@@ -85,6 +85,22 @@ describe("FolderPermissionTerrain", () => {
     expect(getByText(/this role/)).toBeTruthy();
   });
 
+  it("uses dark header ink on a high-access (gold) cell", () => {
+    const gold: FolderTerrainData = {
+      ...data,
+      cells: [{ folderId: "f1", folderName: "Client Documents", roleId: "r1", roleName: "Architect", tier: "Full Controller", rank: 5, userCount: 2 }],
+    };
+    const { container, getByText } = render(
+      <FolderPermissionTerrain projects={projects} initial={gold} loadTerrain={vi.fn(async () => null)} />,
+    );
+    const polys = terrain(container).querySelectorAll("polygon");
+    fireEvent.click(polys[polys.length - 1]);
+    // The coloured details header carries the legible dark ink (rank 5), not white.
+    const header = getByText("Close").closest("[style]") as HTMLElement;
+    const style = (header.getAttribute("style") || "").toLowerCase();
+    expect(/0b1620|11,\s*22,\s*32/.test(style)).toBe(true);
+  });
+
   it("toggles the Orbit / Pan tool buttons", () => {
     const { getByTitle } = render(
       <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
