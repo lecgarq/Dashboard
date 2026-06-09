@@ -96,25 +96,46 @@ describe("categoryForColor", () => {
 });
 
 describe("color mode metadata", () => {
-  it("leads with cluster (color == spatial group is the embedding-projector default)", () => {
-    expect(COLOR_MODES[0]).toBe("cluster");
+  it("offers exactly the three presets in order: role (default), project, user", () => {
+    expect([...COLOR_MODES]).toEqual(["role", "project", "user"]);
   });
 
-  it("has company second and role third", () => {
-    expect(COLOR_MODES[1]).toBe("company");
-    expect(COLOR_MODES[2]).toBe("role");
+  it("no longer offers the removed modes (cluster, company, internalExternal, riskScore)", () => {
+    for (const removed of ["cluster", "company", "internalExternal", "riskScore", "tier", "status"]) {
+      expect(COLOR_MODES).not.toContain(removed);
+    }
   });
 
-  it("exposes internalExternal (not legacy external) as a selectable mode", () => {
-    expect(COLOR_MODES).toContain("internalExternal");
-    expect(COLOR_MODES).not.toContain("external");
-  });
-
-  it("provides a non-empty label for every mode", () => {
+  it("provides a non-empty label for every offered mode", () => {
     for (const mode of COLOR_MODES) {
       expect(COLOR_MODE_LABELS[mode]).toBeTruthy();
       expect(typeof COLOR_MODE_LABELS[mode]).toBe("string");
     }
+  });
+
+  it("labels the three presets for humans", () => {
+    expect(COLOR_MODE_LABELS.role).toBe("Role");
+    expect(COLOR_MODE_LABELS.project).toBe("Project");
+    expect(COLOR_MODE_LABELS.user).toBe("User name");
+  });
+});
+
+describe("color by user name", () => {
+  it("categoryForColor buckets by userName, with a stable placeholder when absent", () => {
+    expect(categoryForColor(feature({ userName: "Ana Ruiz" }), "user")).toBe("Ana Ruiz");
+    expect(categoryForColor(feature({ userName: undefined }), "user")).toBe("(unknown)");
+    expect(categoryForColor(feature({ userName: "" }), "user")).toBe("(unknown)");
+  });
+
+  it("buildNodeColors gives same-name users the same color and different names different colors", () => {
+    const features = [
+      feature({ userName: "Ana" }),
+      feature({ userName: "Beto" }),
+      feature({ userName: "Ana" }),
+    ];
+    const buf = buildNodeColors(features, "user");
+    expect(rgba(buf, 0)).toEqual(rgba(buf, 2)); // both "Ana"
+    expect(rgba(buf, 0)).not.toEqual(rgba(buf, 1)); // Ana vs Beto
   });
 });
 
@@ -201,13 +222,6 @@ describe("buildNodeColors internalExternal mode", () => {
 // ---------------------------------------------------------------------------
 
 describe("nodeColors — registry-derived modes", () => {
-  it("every categorical/binary registry dim is an available color mode", () => {
-    for (const id of ["role", "tier", "internalExternal", "company", "isAdmin"]) {
-      expect(COLOR_MODES).toContain(id);
-      expect(COLOR_MODE_LABELS[id as (typeof COLOR_MODES)[number]]).toBeTruthy();
-    }
-  });
-
   it("dimension-backed modes delegate to descriptor.extract", () => {
     const f = snap({ role: "Engineer" });
     expect(categoryForColor(f, "role")).toBe(String(getDimension("role")!.extract(f)));
@@ -236,15 +250,6 @@ describe("nodeColors — registry-derived modes", () => {
 // ---------------------------------------------------------------------------
 // P6: capability-based color modes + ordered ramp
 // ---------------------------------------------------------------------------
-
-describe("nodeColors — P6 capability-based color modes", () => {
-  it("COLOR_MODES now contains riskScore, permissionStrength, activityMix (and still role/tier/etc.)", () => {
-    for (const id of ["role", "tier", "internalExternal", "isAdmin", "riskScore", "permissionStrength", "activityMix"]) {
-      expect(COLOR_MODES).toContain(id);
-      expect(COLOR_MODE_LABELS[id as ColorMode]).toBeTruthy();
-    }
-  });
-});
 
 describe("nodeColors — ordered ramp (riskScore)", () => {
   const features = [snap({ riskScore: 0 }), snap({ riskScore: 3 }), snap({ riskScore: 5 })];

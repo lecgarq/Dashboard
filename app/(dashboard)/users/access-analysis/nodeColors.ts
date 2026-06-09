@@ -48,19 +48,13 @@ const COLORABLE_DIM_IDS: readonly DimensionId[] = DIMENSION_REGISTRY.filter((d) 
  * `cluster` reads the embedding-map KMeans cluster stamped on the snapshot
  * (color == spatial group — the TF-Embedding-Projector look).
  */
-const EXTRA_COLOR_MODES = ["cluster", "status"] as const;
+const EXTRA_COLOR_MODES = ["cluster", "status", "user"] as const;
 
 export type ColorMode = DimensionId | (typeof EXTRA_COLOR_MODES)[number];
 
-// "cluster" leads (color == spatial group = the embedding-projector look). Then
-// "company", "role", the rest of the dim-backed modes, then the non-dim extras.
-export const COLOR_MODES: readonly ColorMode[] = [
-  "cluster",
-  "company",
-  "role",
-  ...COLORABLE_DIM_IDS.filter((id) => id !== "company" && id !== "role"),
-  ...EXTRA_COLOR_MODES.filter((id) => id !== "cluster"),
-];
+// Exactly three presets for the projector map: Role (default), Project, User name.
+// Other dims remain valid for the helpers below but are no longer offered in the UI.
+export const COLOR_MODES: readonly ColorMode[] = ["role", "project", "user"];
 
 /** Human-readable labels for the Toolbar color-mode selector. */
 export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
@@ -68,12 +62,15 @@ export const COLOR_MODE_LABELS: Record<ColorMode, string> = {
   cluster: "Cluster",
   company: "Company",
   status: "Account status",
+  project: "Project",
+  user: "User name",
 } as Record<ColorMode, string>;
 
 /** Category string used to pick a color. Dim-backed → descriptor.extract; extras explicit. */
 export function categoryForColor(f: NodeFeatureSnapshot, mode: ColorMode): string {
   if (mode === "cluster") return f.cluster != null ? `Cluster ${f.cluster + 1}` : "(none)";
   if (mode === "status") return f.accountStatus || "(unknown)";
+  if (mode === "user") return f.userName ? f.userName : "(unknown)";
   const d = getDimension(mode as DimensionId);
   const v = d ? d.extract(f) : null;
   if (typeof v === "string") return v;
