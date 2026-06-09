@@ -108,8 +108,10 @@ describe("SliderContext — catalog-driven defaults (primary dim pre-engaged)", 
         <Reader />
       </SliderProvider>,
     );
-    // FAKE_CATALOG has 'role' as an available slider → it becomes the primary dim (GROUPING_DEFAULT)
-    expect(firstValues).toEqual({ activity: 0, signin: 0, role: GROUPING_DEFAULT });
+    // FAKE_CATALOG has 'role' as an available slider → it becomes the primary dim.
+    // In the test environment NEXT_PUBLIC_ACC_3D_GRAPH is unset (flag OFF), so the
+    // projector loads as a free scatter: primaryStrength = 0, all sliders start at 0.
+    expect(firstValues).toEqual({ activity: 0, signin: 0, role: 0 });
     // greyed (no data) and colorOnly are NOT seeded as defaults
     expect(firstValues!).not.toHaveProperty("greyed");
     expect(firstValues!).not.toHaveProperty("colorOnly");
@@ -165,8 +167,9 @@ describe("SliderContext — rAF coalescing + reset + persistence", () => {
 
     expect(updateSliders).toHaveBeenCalledTimes(1);
     const args = updateSliders.mock.calls[0][0] as Record<string, number>;
-    // FAKE_CATALOG has 'role' as primary → physics receives GROUPING_DEFAULT/100 (normalized)
-    expect(args["role"]).toBeCloseTo(GROUPING_DEFAULT / 100, 6);
+    // In the test environment NEXT_PUBLIC_ACC_3D_GRAPH is unset (flag OFF), so the
+    // projector defaults every slider to 0 (free scatter). resetAll restores those zeros.
+    expect(args["role"]).toBe(0);
     // all non-primary available dims reset to 0
     expect(args["activity"]).toBe(0);
     expect(args["signin"]).toBe(0);

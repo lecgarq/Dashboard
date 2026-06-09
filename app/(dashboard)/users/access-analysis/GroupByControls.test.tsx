@@ -41,17 +41,22 @@ function renderControls(groupBy: string, onGroupByChange = vi.fn()) {
 
 describe("GroupByControls", () => {
   it("renders a Group-by option per groupable dim, with the current one selected", () => {
+    // The picker now offers ONLY role / project / user (three presets). "company" is no
+    // longer in the preset list even though it is in the test catalog, so it is excluded.
     renderControls("role");
     const select = screen.getByTestId("group-by-select") as HTMLSelectElement;
     expect(select.value).toBe("role");
-    expect(screen.getByRole("option", { name: "Company" })).toBeTruthy();
+    // Company is intentionally not a preset — assert it is absent.
+    expect(screen.queryByRole("option", { name: "Company" })).toBeNull();
+    expect(screen.getByRole("option", { name: "Role" })).toBeTruthy();
     expect(screen.getByRole("option", { name: "Project" })).toBeTruthy();
   });
 
   it("calls onGroupByChange when the picker changes", () => {
+    // Use a valid preset option ("project") instead of the removed "company".
     const { onGroupByChange } = renderControls("role");
-    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "company" } });
-    expect(onGroupByChange).toHaveBeenCalledWith("company");
+    fireEvent.change(screen.getByTestId("group-by-select"), { target: { value: "project" } });
+    expect(onGroupByChange).toHaveBeenCalledWith("project");
   });
 
   it("shows the strength value badge for the selected dim (defaults 0)", () => {
