@@ -65,6 +65,9 @@ vi.mock("../GraphInteractions", () => ({
 vi.mock("../RightPanelStack", () => ({ RightPanelStack: () => null }));
 vi.mock("../Legend", () => ({ Legend: () => null }));
 vi.mock("../NeighborMatchesPanel", () => ({ NeighborMatchesPanel: () => null }));
+vi.mock("../SimilarityWebOverlay", () => ({
+  SimilarityWebOverlay: () => null,
+}));
 
 vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "dark" }),
