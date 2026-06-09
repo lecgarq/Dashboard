@@ -817,6 +817,46 @@ describe("writeMemberCacheFromAggregator", () => {
   });
 });
 
+describe("fetchProjectMembers fields fallback", () => {
+  beforeEach(() => { vi.restoreAllMocks(); });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it("retries without ?fields= when the API rejects the fields param with 400", async () => {
+    const member = {
+      autodeskId: "u1", email: "a@x.com", name: "A", status: "active",
+      roles: [{ id: "r1", name: "Core" }], products: [],
+    };
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes("fields=")) {
+        return new Response(
+          JSON.stringify({ status: 400, errors: [{ field: "fields", detail: 'The "fields" query parameter is invalid' }] }),
+          { status: 400, headers: { "content-type": "application/json" } },
+        );
+      }
+      return jsonResponse({ results: [member] });
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { members } = await fetchProjectMembers("tmpl-1", "token");
+    expect(members).toHaveLength(1);
+    expect(members[0].email).toBe("a@x.com");
+
+    const urls = fetchMock.mock.calls.map((c) => c[0] as string);
+    expect(urls[0]).toContain("fields=");
+    expect(urls[1]).not.toContain("fields=");
+  });
+
+  it("still throws on a non-fields 400", async () => {
+    const fetchMock = vi.fn(async () =>
+      new Response(JSON.stringify({ status: 400, detail: "something else" }), { status: 400, headers: { "content-type": "application/json" } }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    await expect(fetchProjectMembers("p1", "token")).rejects.toThrow();
+    // only one attempt — no fields-fallback retry for unrelated 400s
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+});
+
 describe("round-trip: aggregator -> blob -> buildAccGraphSnapshot", () => {
   it("synthesizes a non-empty graph snapshot from a 2-user / 2-project aggregator", () => {
     const aggregator: MemberAggregator = new Map();

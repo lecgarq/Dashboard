@@ -350,11 +350,17 @@ export async function fetchProjectMembers(
   const all: RawMember[] = [];
   let offset = 0;
   let lastSignInPresent = true; // vacuously true if no members at all
+  // Some projects — notably ACC project templates — reject the ?fields= query
+  // param with HTTP 400. The default (no-fields) response is a SUPERSET that
+  // still carries roles/companyName/products/accessLevels (only lastSignIn is
+  // absent), so on that specific 400 we drop ?fields= and retry.
+  let useFields = true;
 
   while (true) {
-    const url =
+    const base =
       `${ACC_ADMIN_V1_BASE}/projects/${projectId}/users` +
-      `?limit=${MEMBER_PAGE_SIZE}&offset=${offset}&fields=${MEMBER_FIELDS}`;
+      `?limit=${MEMBER_PAGE_SIZE}&offset=${offset}`;
+    const url = useFields ? `${base}&fields=${MEMBER_FIELDS}` : base;
 
     const response = await fetchWithRetry(url, {
       headers: { Authorization: `Bearer ${accessToken}` },
@@ -362,6 +368,10 @@ export async function fetchProjectMembers(
     });
     const raw = await response.text();
     if (!response.ok) {
+      if (response.status === 400 && useFields && /fields/i.test(raw)) {
+        useFields = false;
+        continue; // retry the same offset without ?fields=
+      }
       throw new IntegrationError(
         `APS project members fetch failed (project ${projectId}): ${response.status} ${response.statusText} — ${raw}`,
         response.status,
