@@ -84,7 +84,48 @@ describe("packClusterFootprints", () => {
   });
 });
 
-import { packMemberPositions } from "./clusterPacking";
+import { clusterMemberCentroids, packMemberPositions } from "./clusterPacking";
+
+describe("clusterMemberCentroids", () => {
+  const fp = packClusterFootprints([2, 2]); // two clusters
+
+  it("returns one centroid per cluster (aligned to footprints)", () => {
+    const ids = new Int32Array([0, 0, 1, 1]);
+    const pos = Float32Array.from([0, 0, 10, 0, 100, 50, 100, 70]);
+    const c = clusterMemberCentroids(ids, pos, fp);
+    expect(c.cx.length).toBe(2);
+    expect(c.cy.length).toBe(2);
+  });
+
+  it("averages each cluster's member positions", () => {
+    // cluster 0: (0,0) & (10,0) → (5,0); cluster 1: (100,50) & (100,70) → (100,60)
+    const ids = new Int32Array([0, 0, 1, 1]);
+    const pos = Float32Array.from([0, 0, 10, 0, 100, 50, 100, 70]);
+    const c = clusterMemberCentroids(ids, pos, fp);
+    expect(c.cx[0]).toBeCloseTo(5, 6);
+    expect(c.cy[0]).toBeCloseTo(0, 6);
+    expect(c.cx[1]).toBeCloseTo(100, 6);
+    expect(c.cy[1]).toBeCloseTo(60, 6);
+  });
+
+  it("falls back to the footprint center for a cluster with no members", () => {
+    // No node belongs to cluster 1 → its centroid must be the footprint center,
+    // NOT the origin (which would yank the label to mid-map).
+    const ids = new Int32Array([0, 0]);
+    const pos = Float32Array.from([0, 0, 10, 0]);
+    const c = clusterMemberCentroids(ids, pos, fp);
+    expect(c.cx[1]).toBeCloseTo(fp.cx[1], 6);
+    expect(c.cy[1]).toBeCloseTo(fp.cy[1], 6);
+  });
+
+  it("ignores unclustered nodes (id < 0)", () => {
+    const ids = new Int32Array([-1, 0, 0]);
+    const pos = Float32Array.from([999, 999, 0, 0, 4, 0]);
+    const c = clusterMemberCentroids(ids, pos, fp);
+    expect(c.cx[0]).toBeCloseTo(2, 6); // mean of (0,0) & (4,0); the -1 node excluded
+    expect(c.cy[0]).toBeCloseTo(0, 6);
+  });
+});
 
 describe("packMemberPositions", () => {
   const fp = packClusterFootprints([3, 2]); // cluster 0 has 3, cluster 1 has 2

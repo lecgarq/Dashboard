@@ -3,9 +3,13 @@
 /**
  * MapClusterLabels.tsx — HTML overlay naming the colored clusters on the 2D map.
  *
- * Anchors each label at its cluster's FOOTPRINT CENTER (the packed-blob center the
- * layout descriptor pins it to), projected to screen via the cosmos 2D handle's
- * spaceToScreen each ~30Hz frame so it tracks pan/zoom. Colors come from the legend
+ * Anchors each label at its cluster's LIVE centroid: during the scatter→clump morph the
+ * cluster travels from its rest centroid (members spread across the embedding) to its
+ * packed footprint center, so the chip is positioned at lerp(restCenter → footprintCenter)
+ * on the SAME easeMorph curve the dots use (`liveLabelCenter`). It therefore RIDES its
+ * cluster at every slider value instead of sitting at the (empty) destination until full
+ * strength. That space-coord center is projected to screen via the cosmos 2D handle's
+ * spaceToScreen each ~30Hz frame so it also tracks pan/zoom. Colors come from the legend
  * (so chips match the dots); only the colored (non-"Other") clusters are labeled.
  * Renders only in 2D. Theme-aware, non-interactive.
  */
@@ -13,6 +17,7 @@ import { useEffect, useMemo, useRef } from "react";
 import { useTheme } from "next-themes";
 import type { GraphCanvasHandle } from "./GraphCanvas";
 import type { LegendEntry, RGB } from "./bucketedColors";
+import { liveLabelCenter } from "./clusterLabelLayout";
 
 const MAX_LABELS = 16;     // cap on rendered chips (top colored clusters)
 const MIN_SEP_PX = 20;     // basic vertical de-clutter
@@ -41,9 +46,18 @@ export function visibleLabelClusters(
 export interface MapClusterLabelsProps {
   graphRef: React.RefObject<GraphCanvasHandle | null>;
   mode: "2d" | "3d";
-  /** Per-cluster footprint centers (cosmos space, stride-1), aligned to `labels`. */
+  /** Per-cluster footprint centers (cosmos space, stride-1), aligned to `labels`.
+   *  The morph's s=1 (fully-clumped) end. */
   centersX: Float32Array | null;
   centersY: Float32Array | null;
+  /** Per-cluster REST centroids (cosmos space, stride-1) — the morph's s=0 end (members
+   *  spread across the embedding). The chip lerps these → footprint by `progress` so it
+   *  rides the cluster mid-morph. Omit/null to anchor at the footprint center always. */
+  restCentersX?: Float32Array | null;
+  restCentersY?: Float32Array | null;
+  /** Reads the LIVE raw slider value 0..1 each frame (NOT eased — liveLabelCenter applies
+   *  easeMorph so the chip stays locked to the dots). Defaults to 1 (fully formed). */
+  progress?: () => number;
   /** Cluster id → display label (DominantClustering.labels). */
   labels: ReadonlyArray<string>;
   /** Legend rows — supply per-cluster color + which clusters are colored (non-Other). */
@@ -53,7 +67,7 @@ export interface MapClusterLabelsProps {
 }
 
 export function MapClusterLabels({
-  graphRef, mode, centersX, centersY, labels, legend, opacity = 1,
+  graphRef, mode, centersX, centersY, restCentersX, restCentersY, progress, labels, legend, opacity = 1,
 }: MapClusterLabelsProps): React.JSX.Element | null {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
@@ -79,11 +93,18 @@ export function MapClusterLabels({
       const gh = graphRef.current;
       const handle = gh && gh.mode === "2d" ? gh.handle : null;
       if (handle?.spaceToScreen) {
+        const p = progress ? progress() : 1;
         const placed: number[] = [];
         renderIds.forEach((c, t) => {
           const el = itemRefs.current[t];
           if (!el) return;
-          const [sx, sy] = handle.spaceToScreen([centersX[c], centersY[c]]);
+          // Live anchor: lerp rest centroid → footprint center on the morph curve, so
+          // the chip rides its cluster at every strength (falls back to the footprint
+          // center when no rest data / no progress).
+          const rx = restCentersX ? restCentersX[c] : centersX[c];
+          const ry = restCentersY ? restCentersY[c] : centersY[c];
+          const [lx, ly] = liveLabelCenter(rx, ry, centersX[c], centersY[c], p);
+          const [sx, sy] = handle.spaceToScreen([lx, ly]);
           const collide = placed.some((y) => Math.abs(y - sy) < MIN_SEP_PX);
           if (collide) { el.style.opacity = "0"; return; }
           placed.push(sy);
@@ -95,7 +116,7 @@ export function MapClusterLabels({
     };
     raf = requestAnimationFrame(tick);
     return () => { active = false; cancelAnimationFrame(raf); };
-  }, [mode, renderIds, centersX, centersY, graphRef]);
+  }, [mode, renderIds, centersX, centersY, restCentersX, restCentersY, progress, graphRef]);
 
   if (mode !== "2d" || renderIds.length === 0) return null;
 

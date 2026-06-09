@@ -43,6 +43,10 @@ interface ShellState {
   /** Active semantic color mode + the live RGBA buffer fed to BOTH renderers. */
   colorMode: ColorMode;
   nodeColors: Float32Array | null;
+  /** Projector-map grouping (flag-OFF): per-node cluster id + per-cluster label, so a
+   *  test can verify each name chip sits on its cluster's LIVE on-screen centroid. */
+  projectorIds: Int32Array | null;
+  projectorLabels: ReadonlyArray<string> | null;
 }
 
 interface InteractionState {
@@ -61,6 +65,8 @@ const shell: ShellState = {
   isolated: null,
   colorMode: "role",
   nodeColors: null,
+  projectorIds: null,
+  projectorLabels: null,
 };
 
 const interaction: InteractionState = {
@@ -296,6 +302,15 @@ export interface GraphTestApi {
     nodeCount: number;
     zoom: number;
   } | null;
+  /** Per-cluster on-screen centroid of the projector grouping's member dots (canvas-local
+   *  pixels, the SAME basis the name chips are positioned in). Lets a test assert each chip
+   *  rides its cluster mid-morph. null off the 2D projector path / before grouping data. */
+  getProjectorClusterCentroidsScreen(): Array<{
+    label: string;
+    x: number;
+    y: number;
+    members: number;
+  }> | null;
   getSampleSearchPrefix(): string | null;
   getTooltipState(): {
     visible: boolean;
@@ -472,6 +487,40 @@ function buildApi(): GraphTestApi {
     },
     getProjectedCloudSize() {
       return projectedCloudSize();
+    },
+    getProjectorClusterCentroidsScreen() {
+      const ids = shell.projectorIds;
+      const labels = shell.projectorLabels;
+      const root = shell.graphRef?.current;
+      if (!ids || !labels || !root || root.mode !== "2d" || !root.handle) return null;
+      const handle = root.handle;
+      // Use cosmos's OWN rendered positions (what the user/labels actually see); fall
+      // back to the physics buffer. Both are projected through the live spaceToScreen,
+      // so the centroid is in the chip's coordinate basis.
+      const pts = handle.getPointPositions?.() ?? null; // stride-2
+      const phys = pts ? null : shell.physics?.getPositions() ?? null; // stride-3
+      const n = pts ? pts.length / 2 : phys ? phys.length / 3 : 0;
+      if (n === 0) return null;
+      const k = labels.length;
+      const sx = new Float64Array(k);
+      const sy = new Float64Array(k);
+      const cnt = new Int32Array(k);
+      for (let i = 0; i < n; i++) {
+        const c = ids[i];
+        if (c < 0 || c >= k) continue;
+        const x = pts ? pts[i * 2] : phys![i * 3];
+        const y = pts ? pts[i * 2 + 1] : phys![i * 3 + 1];
+        const s = handle.spaceToScreen([x, y]);
+        if (!Number.isFinite(s[0]) || !Number.isFinite(s[1])) continue;
+        sx[c] += s[0];
+        sy[c] += s[1];
+        cnt[c] += 1;
+      }
+      const out: Array<{ label: string; x: number; y: number; members: number }> = [];
+      for (let c = 0; c < k; c++) {
+        if (cnt[c] > 0) out.push({ label: labels[c], x: sx[c] / cnt[c], y: sy[c] / cnt[c], members: cnt[c] });
+      }
+      return out;
     },
     getSampleSearchPrefix() {
       for (const f of shell.features) {

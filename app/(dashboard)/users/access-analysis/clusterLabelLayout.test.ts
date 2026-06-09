@@ -1,5 +1,29 @@
 import { describe, it, expect } from "vitest";
-import { selectVisibleLabels } from "./clusterLabelLayout";
+import { selectVisibleLabels, liveLabelCenter } from "./clusterLabelLayout";
+import { easeMorph } from "./layoutDescriptor";
+
+describe("liveLabelCenter", () => {
+  it("anchors at the rest centroid at progress 0", () => {
+    expect(liveLabelCenter(5, -3, 100, 60, 0)).toEqual([5, -3]);
+  });
+
+  it("anchors at the footprint center at progress 1", () => {
+    expect(liveLabelCenter(5, -3, 100, 60, 1)).toEqual([100, 60]);
+  });
+
+  it("lerps on the SAME easeMorph curve the node morph uses (not raw/linear)", () => {
+    const [x, y] = liveLabelCenter(0, 0, 100, 200, 0.25);
+    const s = easeMorph(0.25); // ≈0.156, NOT 0.25 → proves the curve is applied
+    expect(x).toBeCloseTo(100 * s, 6);
+    expect(y).toBeCloseTo(200 * s, 6);
+    expect(x).not.toBeCloseTo(25, 1); // 25 would mean it used raw (linear) progress
+  });
+
+  it("clamps progress outside 0..1 to the endpoints", () => {
+    expect(liveLabelCenter(5, -3, 100, 60, -1)).toEqual([5, -3]);
+    expect(liveLabelCenter(5, -3, 100, 60, 2)).toEqual([100, 60]);
+  });
+});
 
 describe("selectVisibleLabels", () => {
   it("hides labels whose on-screen blob radius is below the reveal threshold", () => {

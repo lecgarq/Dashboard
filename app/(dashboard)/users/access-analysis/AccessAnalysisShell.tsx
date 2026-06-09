@@ -42,6 +42,7 @@ import { activeGroupingDimension } from "./activeGrouping";
 import { buildBucketedColors, bucketedColorsFromClustering } from "./bucketedColors";
 import { buildUserBlobDescriptor } from "./blobDescriptor";
 import { descriptorTarget } from "./layoutDescriptor";
+import { clusterMemberCentroids } from "./clusterPacking";
 import { buildNodeSizes } from "./nodeSizes";
 import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
@@ -215,6 +216,26 @@ export function ShellBody({
     return descriptorTarget(blobDesc, getLiveValues(), layoutOutRef.current);
   }, [blobDesc, getLiveValues]);
 
+  // Per-cluster REST centroids — the centroid of each cluster's members at the morph's
+  // s=0 (scatter) endpoint. The cluster chips lerp these → footprint centers by the live
+  // strength (MapClusterLabels) so a chip rides its cluster through the whole morph
+  // instead of pinning to the empty clump destination until full strength. Recomputed
+  // only on a regroup (descriptor change), never per frame.
+  const blobRestCenters = useMemo(
+    () =>
+      blobDesc
+        ? clusterMemberCentroids(blobDesc.clustering.ids, blobDesc.loose, blobDesc.footprints)
+        : null,
+    [blobDesc],
+  );
+  // Live morph progress for the chips: read the SAME slider value the node morph reads
+  // (descriptorTarget keys off blobDesc.dimId), live every frame, so chip and dots stay
+  // locked. Raw 0..1 — liveLabelCenter applies the easeMorph curve.
+  const labelProgress = useCallback(
+    () => (blobDesc ? (getLiveValues()[blobDesc.dimId] ?? 0) / 100 : 0),
+    [blobDesc, getLiveValues],
+  );
+
   // Color: sticky override wins; else the resolver's auto mode.
   const [colorOverride, setColorOverride] = useState<ColorMode | null>(null);
   const colorIsAuto = colorOverride === null;
@@ -260,8 +281,12 @@ export function ShellBody({
       isolated: isolatedNodeIndex,
       colorMode,
       nodeColors,
+      // Projector grouping so an e2e can verify each name chip rides its cluster's
+      // live on-screen centroid (only set when actively grouping with labels shown).
+      projectorIds: grouping.showLabels && blobDesc ? blobDesc.clustering.ids : null,
+      projectorLabels: grouping.showLabels && blobDesc ? blobDesc.clustering.labels : null,
     });
-  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors]);
+  }, [physics, features, graphRef, mode, lassoSelection, isolatedNodeIndex, colorMode, nodeColors, grouping.showLabels, blobDesc]);
 
   const visibleSubset = useMemo<ReadonlySet<number> | null>(
     () => filterSelectionByPredicate(lassoSelection, features, activeFilters, searchQuery),
@@ -414,6 +439,9 @@ export function ShellBody({
             mode={mode}
             centersX={grouping.showLabels && blobDesc ? blobDesc.footprints.cx : null}
             centersY={grouping.showLabels && blobDesc ? blobDesc.footprints.cy : null}
+            restCentersX={grouping.showLabels && blobRestCenters ? blobRestCenters.cx : null}
+            restCentersY={grouping.showLabels && blobRestCenters ? blobRestCenters.cy : null}
+            progress={labelProgress}
             labels={grouping.showLabels && blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}
             opacity={ACC_3D_GRAPH_ENABLED ? 1 : Math.min(1, strength / 50)}

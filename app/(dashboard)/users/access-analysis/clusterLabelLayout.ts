@@ -5,6 +5,28 @@
  * blobs win slots; a greedy declutter drops any that collide with one already
  * placed. No DOM — the component feeds projected screen coords in and renders out.
  */
+import { easeMorph } from "./layoutDescriptor";
+
+/**
+ * Live label anchor (space coords) for a cluster mid-morph. Each node eases from its
+ * rest position to its packed clump on the `easeMorph` curve, so the cluster's live
+ * centroid is the SAME-curve lerp of its rest centroid → footprint center. Anchoring
+ * the chip here makes it RIDE its cluster at every slider value — not just snap onto it
+ * at full strength (the bug where chips sat at the empty destination during the morph).
+ * `progress` is the RAW slider value 0..1; `easeMorph` (the single source of the morph
+ * curve, shared with descriptorTarget) is applied here so chip and dots stay locked.
+ */
+export function liveLabelCenter(
+  restX: number,
+  restY: number,
+  footX: number,
+  footY: number,
+  progress: number,
+): [number, number] {
+  const s = easeMorph(progress);
+  return [restX + (footX - restX) * s, restY + (footY - restY) * s];
+}
+
 export interface LabelCandidate {
   i: number;
   screenX: number;

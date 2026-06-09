@@ -98,6 +98,43 @@ export function packClusterFootprints(counts: ReadonlyArray<number>): ClusterFoo
   return { cx, cy, r };
 }
 
+/**
+ * Per-cluster centroid (stride-1 parallel arrays) of stride-2 member `positions`,
+ * grouped by `clusterIds` (id < 0 = unclustered, ignored). A cluster with no members
+ * falls back to its footprint center so a label anchored to it never collapses to the
+ * origin. Centroid is linear, so for a morph that lerps each member loose→packed, the
+ * centroid of the lerped cloud equals the lerp of these endpoint centroids — letting a
+ * label ride its cluster by lerping restCentroid → footprintCenter on the same slider.
+ */
+export function clusterMemberCentroids(
+  clusterIds: Int32Array | ReadonlyArray<number>,
+  positions: Float32Array,
+  footprints: ClusterFootprints,
+): { cx: Float32Array; cy: Float32Array } {
+  const k = footprints.r.length;
+  const cx = new Float32Array(k);
+  const cy = new Float32Array(k);
+  const cnt = new Int32Array(k);
+  const n = positions.length / 2;
+  for (let i = 0; i < n; i++) {
+    const c = clusterIds[i];
+    if (c < 0 || c >= k) continue;
+    cx[c] += positions[i * 2];
+    cy[c] += positions[i * 2 + 1];
+    cnt[c] += 1;
+  }
+  for (let c = 0; c < k; c++) {
+    if (cnt[c] > 0) {
+      cx[c] /= cnt[c];
+      cy[c] /= cnt[c];
+    } else {
+      cx[c] = footprints.cx[c];
+      cy[c] = footprints.cy[c];
+    }
+  }
+  return { cx, cy };
+}
+
 /** Golden angle — even Vogel sunflower spacing. */
 const GOLDEN_ANGLE = Math.PI * (3 - Math.sqrt(5));
 
