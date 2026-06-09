@@ -946,6 +946,8 @@ export interface StackedScenesOpts {
   gap?: number;
   /** Virtualization slack (screen px) around the viewport. */
   margin?: number;
+  /** 0..1 bar grow-in multiplier forwarded to each plane (default 1). */
+  growth?: number;
 }
 
 /**
@@ -1001,7 +1003,7 @@ export function buildStackedScenes(
     const bot = Math.max(cs.front.y, cs.left.y, cs.right.y);
     if (bot < -margin || top > viewport.h + margin) continue; // virtualized out
     const projected = projectOntoAxes(datas[i], axes);
-    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar });
+    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar, growth: opts.growth ?? 1 });
     planes.push({
       scene,
       source: datas[i],

@@ -125,6 +125,32 @@ function useCamera(viewport: { w: number; h: number }) {
   };
 }
 
+function prefersReducedMotion(): boolean {
+  if (typeof window === "undefined" || !window.matchMedia) return false;
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+/** Eases a 0→1 growth factor whenever `key` changes (bar grow-in). */
+function useGrowth(key: string): number {
+  const [g, setG] = useState(() => (prefersReducedMotion() ? 1 : 0));
+  const raf = useRef<number | null>(null);
+  useEffect(() => {
+    if (prefersReducedMotion()) { setG(1); return; }
+    let start = 0;
+    const D = 460;
+    setG(0);
+    const tick = (t: number) => {
+      if (!start) start = t;
+      const p = Math.min(1, (t - start) / D);
+      setG(1 - Math.pow(1 - p, 3)); // ease-out cubic
+      if (p < 1) raf.current = requestAnimationFrame(tick);
+    };
+    raf.current = requestAnimationFrame(tick);
+    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
+  }, [key]);
+  return g;
+}
+
 // ---------------------------------------------------------------------------
 export function FolderPermissionTerrain({
   projects, initial, loadTerrain, loadOverview,
@@ -207,15 +233,19 @@ export function FolderPermissionTerrain({
   const camApi = useCamera(viewport);
   const busy = loading;
 
-  const view = useMemo<StageView>(
-    () => buildView(mode, single, overview, compareDatas, camApi.cam, viewport, busy),
-    [mode, single, overview, compareDatas, camApi.cam, viewport, busy],
-  );
-
-  // Reframe the camera when the active data set (not the camera) changes.
+  // Stable key for the active data set — drives reframe, grow-in, and cross-fade.
   const dataKey = mode === "single" ? (single ? `s:${single.projectId}` : "")
     : mode === "overview" ? (overview ? "o" : "")
     : (compareDatas.length >= 2 ? `c:${compareDatas.map((d) => d.projectId).join(",")}` : "");
+
+  const growth = useGrowth(dataKey);
+
+  const view = useMemo<StageView>(
+    () => buildView(mode, single, overview, compareDatas, camApi.cam, viewport, busy, growth),
+    [mode, single, overview, compareDatas, camApi.cam, viewport, busy, growth],
+  );
+
+  // Reframe the camera when the active data set (not the camera) changes.
   const lastKey = useRef("");
   const { resetTo, framePivot } = camApi;
   useEffect(() => {
@@ -308,23 +338,23 @@ function defaultPivot(mode: Mode, single: FolderTerrainData | null, overview: Fo
   return { col: 0, row: 0 };
 }
 
-function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean): StageView {
+function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean, growth: number): StageView {
   const blank = (empty: string): StageView => ({ scenes: [], connectors: [], metric: "users", empty });
 
   if (mode === "single") {
     if (!single) return blank(busy ? "Loading terrain…" : "No folder-permission data for this project.");
-    const scene = buildCameraScene(single, { camera: cam, viewport });
+    const scene = buildCameraScene(single, { camera: cam, viewport, growth });
     return { scenes: [{ scene, source: single }], connectors: [], metric: "users", empty: null };
   }
   if (mode === "overview") {
     if (!overview) return blank(busy ? "Loading overview…" : "Overview unavailable.");
-    const scene = buildCameraScene(overview, { camera: cam, viewport });
+    const scene = buildCameraScene(overview, { camera: cam, viewport, growth });
     return { scenes: [{ scene, source: overview }], connectors: [], metric: "projects", empty: null };
   }
   // compare — separated floating planes, one per project, on a shared camera.
   if (compareDatas.length < 2) return blank(busy ? "Loading projects…" : "Pick at least two projects to compare.");
   const axes = buildSharedAxes(compareDatas);
-  const stacked = buildStackedScenes(compareDatas, axes, cam, viewport, { maxBar: SLAB_MAXBAR, gap: PLANE_GAP });
+  const stacked = buildStackedScenes(compareDatas, axes, cam, viewport, { maxBar: SLAB_MAXBAR, gap: PLANE_GAP, growth });
   const scenes: SceneEntry[] = stacked.planes.map((p) => ({
     scene: p.scene,
     source: p.source,

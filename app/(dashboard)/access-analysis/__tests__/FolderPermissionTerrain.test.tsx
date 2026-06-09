@@ -49,16 +49,31 @@ const projects: TerrainProjectOption[] = [
 describe("FolderPermissionTerrain", () => {
   const terrain = (container: HTMLElement) => container.querySelector('svg[aria-label="Folder permission terrain"]')!;
 
-  it("renders culled lit faces + a contact shadow per cell and labels the folders", () => {
+  it("renders culled lit faces + a contact shadow per cell and labels the folders", async () => {
     const { container, getByText } = render(
       <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
     );
-    // At the home angle each bar shows 2 sides + 1 top (=3 faces), plus 1 ground
-    // shadow polygon per cell: 3 cells × (3 + 1) = 12 polygons (compass excluded).
-    expect(terrain(container).querySelectorAll("polygon").length).toBe(12);
-    // Folders are labelled in the gutter (the user's priority).
+    // Folders are labelled in the gutter (the user's priority) — independent of grow-in.
     expect(getByText("Client Documents")).toBeTruthy();
     expect(getByText("Design Documents")).toBeTruthy();
+    // After grow-in settles each bar shows 2 sides + 1 top (=3 faces), plus 1 ground
+    // shadow polygon per cell: 3 cells × (3 + 1) = 12 polygons (compass excluded).
+    await vi.waitFor(() => {
+      expect(terrain(container).querySelectorAll("polygon").length).toBe(12);
+    });
+  });
+
+  it("renders full geometry immediately under reduced motion (no grow-in)", () => {
+    vi.stubGlobal("matchMedia", (q: string) => ({ matches: true, media: q, addEventListener() {}, removeEventListener() {}, addListener() {}, removeListener() {}, onchange: null, dispatchEvent: () => false }));
+    try {
+      const { container } = render(
+        <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
+      );
+      // Reduced motion → growth starts at 1, so all 12 polygons appear synchronously.
+      expect(terrain(container).querySelectorAll("polygon").length).toBe(12);
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 
   it("defines blur + top-gradient defs and uses a gradient fill on top faces", () => {
