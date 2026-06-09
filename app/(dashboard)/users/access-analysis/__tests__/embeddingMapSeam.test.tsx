@@ -70,12 +70,16 @@ vi.mock("next-themes", () => ({
   useTheme: () => ({ resolvedTheme: "dark" }),
 }));
 
-// tRPC: the only external data dependency ShellBody touches (instanceNeighbors).
+// tRPC: the external data dependencies ShellBody touches (instanceNeighbors +
+// similarityEdges for the SIM_WEB_ENABLED overlay).
 vi.mock("@/lib/core/trpc", () => ({
   trpc: {
     accDcGraph: {
       instanceNeighbors: {
         useQuery: () => ({ data: [], isLoading: false }),
+      },
+      similarityEdges: {
+        useQuery: () => ({ data: undefined, isLoading: false }),
       },
     },
   },

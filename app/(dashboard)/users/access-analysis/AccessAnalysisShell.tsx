@@ -45,6 +45,8 @@ import { descriptorTarget } from "./layoutDescriptor";
 import { buildNodeSizes } from "./nodeSizes";
 import { Legend } from "./Legend";
 import { MapClusterLabels } from "./MapClusterLabels";
+import { SimilarityWebOverlay } from "./SimilarityWebOverlay";
+import { mapEdgesToIndices, computeEdgeColors } from "./similarityWeb";
 import { NeighborMatchesPanel } from "./NeighborMatchesPanel";
 import { getDimension, type DimensionId } from "./dimensionRegistry";
 import { buildEmbeddingBlobDescriptor } from "./embeddingBlobDescriptor";
@@ -68,6 +70,11 @@ import { buildGraphNodesFromUsers } from "./graphNodesFromUsers";
 import { GRAPH_ANALYTICS_SOURCE_TABLES, registerGraphArrowTables } from "./graphSql";
 import { ensurePositionsSchema } from "./positionsCache";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
+
+// Single-flip rollback for the similarity web. OFF (=0) → overlay never mounts and
+// the query never fires. Flag-OFF projector map only (the 3D physics graph keeps its
+// same-user lines). Default ON.
+const SIM_WEB_ENABLED = process.env.NEXT_PUBLIC_ACC_SIM_WEB !== "0" && !ACC_3D_GRAPH_ENABLED;
 
 // Light-speed graph load: build node ids + features in pure JS from the hydrated
 // bulk users, so the graph never boots DuckDB-WASM (~1-2s) on its critical path.
@@ -127,7 +134,7 @@ export function ShellBody({
   const [rendererReady, setRendererReady] = useState(0);
 
   const { resolvedTheme } = useTheme();
-  const { values: sliderValues, getLiveValues, setSliderValue } = useSliders();
+  const { values: sliderValues, getLiveValues, setSliderValue, isPreviewActive } = useSliders();
 
   // Projector map (flag-OFF): ONE controlled grouping dim + a single strength slider.
   // Strength is stored as that dim's slider value, so the per-frame morph reads it off
@@ -275,6 +282,23 @@ export function ShellBody({
     features.forEach((f, i) => m.set(f.nodeId, i));
     return m;
   }, [features]);
+
+  // Similarity web (flag-OFF projector map): the always-on curved edge mesh. The
+  // server returns the capped, strongest edge set keyed by nodeId; we map to cosmos
+  // indices once, then color by community (endpoint blend) × similarity strength.
+  const simEdgesQuery = trpc.accDcGraph.similarityEdges.useQuery(undefined, {
+    enabled: SIM_WEB_ENABLED,
+    staleTime: 600_000,
+  });
+  const simWeb = useMemo(
+    () => mapEdgesToIndices(simEdgesQuery.data?.edges ?? [], indexByNodeId),
+    [simEdgesQuery.data, indexByNodeId],
+  );
+  const simPaint = useMemo(
+    () => computeEdgeColors(simWeb, nodeColors, resolvedTheme === "dark" ? "dark" : "light"),
+    [simWeb, nodeColors, resolvedTheme],
+  );
+
   const neighborIndices = useMemo(() => {
     const s = new Set<number>();
     for (const nb of neighborsQuery.data ?? []) {
@@ -394,6 +418,20 @@ export function ShellBody({
             legend={bucketed.legend}
             opacity={ACC_3D_GRAPH_ENABLED ? 1 : Math.min(1, strength / 50)}
           />
+          {SIM_WEB_ENABLED && (
+            <SimilarityWebOverlay
+              graphRef={graphRef}
+              mode={mode}
+              src={simWeb.src}
+              dst={simWeb.dst}
+              bucket={simPaint.bucket}
+              palette={simPaint.palette}
+              // Faint when scattered, clearer as the grouping tightens — same lever
+              // that fades in the cluster labels. Fades fully out during the morph.
+              opacity={Math.min(1, 0.25 + (strength / 100) * 0.75)}
+              isMorphing={isPreviewActive}
+            />
+          )}
           {!ACC_3D_GRAPH_ENABLED && isolatedNodeIndex !== null && (
             <NeighborMatchesPanel
               centerName={
