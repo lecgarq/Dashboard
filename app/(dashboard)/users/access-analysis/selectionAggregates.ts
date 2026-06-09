@@ -72,3 +72,43 @@ export function aggregateSelectionByTier(
 ): DonutSlice[] {
   return aggregateField(features, indices, (f) => f.permTier);
 }
+
+/** Aggregate the selected nodes by project (snapshot `project`). */
+export function aggregateSelectionByProject(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  indices: Iterable<number>,
+): DonutSlice[] {
+  return aggregateField(features, indices, (f) => f.project);
+}
+
+/** Headline KPI counts for the lasso selection — total, external, admins, projects. */
+export interface SelectionKpis {
+  total: number;
+  external: number;
+  admins: number;
+  projects: number;
+}
+
+/**
+ * One-pass headline summary over the selected nodes. `admins` counts any instance
+ * flagged `isAdmin` (project-admin); `projects` is the count of DISTINCT non-empty
+ * project names touched by the selection.
+ */
+export function selectionKpis(
+  features: ReadonlyArray<NodeFeatureSnapshot>,
+  indices: Iterable<number>,
+): SelectionKpis {
+  let total = 0;
+  let external = 0;
+  let admins = 0;
+  const projects = new Set<string>();
+  for (const i of indices) {
+    const f = features[i];
+    if (!f) continue;
+    total++;
+    if (f.isExternal) external++;
+    if (f.isAdmin) admins++;
+    if (f.project) projects.add(f.project);
+  }
+  return { total, external, admins, projects: projects.size };
+}

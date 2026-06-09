@@ -14,8 +14,13 @@
  * Slide-in animation: framer-motion AnimatePresence with translateX (RESEARCH Pattern 9).
  */
 
-import { useMemo } from "react";
+import { useMemo, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import {
+  clampSidebarWidth,
+  loadSidebarWidth,
+  saveSidebarWidth,
+} from "./sidebarWidth";
 import { CatalogSliderSidebar } from "./CatalogSliderSidebar";
 import { GroupByControls } from "./GroupByControls";
 import { SelectionPanel } from "./SelectionPanel";
@@ -66,6 +71,35 @@ export function RightPanelStack({
   const { isolatedNodeIndex, lassoSelection, setIsolated, setLasso } = useSelection();
   const top = getTopLayer(isolatedNodeIndex, lassoSelection);
 
+  // ---- Resizable rail width (persisted, drag handle on the left edge) -------
+  // Client-only shell (AccessAnalysisShellClient is dynamic ssr:false), so it's
+  // safe to seed from localStorage in the lazy initializer.
+  const [width, setWidth] = useState<number>(() => loadSidebarWidth());
+  const widthRef = useRef(width);
+  const dragRef = useRef<{ startX: number; startW: number } | null>(null);
+  const setWidthTracked = (w: number): void => {
+    widthRef.current = w;
+    setWidth(w);
+  };
+  const onHandleDown = (e: ReactPointerEvent): void => {
+    e.preventDefault();
+    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    dragRef.current = { startX: e.clientX, startW: widthRef.current };
+  };
+  const onHandleMove = (e: ReactPointerEvent): void => {
+    const d = dragRef.current;
+    if (!d) return;
+    // Rail sits on the right edge of the layout: dragging the handle LEFT
+    // (clientX decreases) widens it; dragging right narrows it.
+    setWidthTracked(clampSidebarWidth(d.startW + (d.startX - e.clientX)));
+  };
+  const onHandleUp = (e: ReactPointerEvent): void => {
+    if (!dragRef.current) return;
+    dragRef.current = null;
+    (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+    saveSidebarWidth(widthRef.current);
+  };
+
   // Email → synced snapshot, built from data the access-analysis page already
   // loads (accDcGraph.bulkUsers — same query + args as the shell, so React Query
   // dedups to a cache hit) plus enrichment for company/status parity with the
@@ -88,51 +122,67 @@ export function RightPanelStack({
   }, [bulkUsersQuery.data, enrichedQuery.data]);
 
   return (
-    <div
-      data-testid="right-panel-stack"
-      data-top-layer={top}
-      // P0 camera stability: pin the column to a constant width (w-96, the max of
-      // all three panels) so swapping panels — or the AnimatePresence mode="wait"
-      // gap that briefly unmounts the child — never resizes the graph's flex-1
-      // area and therefore never reframes the camera.
-      // h-full + min-h-0 + overflow-y-auto: the slider list is taller than the
-      // viewport; it must scroll WITHIN the bounded row, not stretch the row to its
-      // own content height (which pushed the graph canvas off-screen).
-      className="relative flex w-96 shrink-0 h-full min-h-0 overflow-y-auto"
-    >
-      <AnimatePresence mode="wait">
-        {top === "user-detail" ? (
-          <motion.div key="user-detail" {...slide}>
-            {(() => {
-              const email = features[isolatedNodeIndex!]?.emailLower ?? "";
-              return (
-                <UserProfilePanel
-                  user={usersByEmail.get(email) ?? null}
-                  email={email}
-                  onClose={() => setIsolated(null)}
-                  variant="rail"
-                />
-              );
-            })()}
-          </motion.div>
-        ) : top === "lasso-pie" ? (
-          <motion.div key="lasso-pie" {...slide}>
-            <SelectionPanel
-              visibleSelectedIndices={visibleSelectedIndices ?? new Set<number>()}
-              features={features}
-              onClear={() => setLasso(null)}
-            />
-          </motion.div>
-        ) : (
-          <motion.div key="sliders" {...slide}>
-            {useGroupByControls && groupBy && onGroupByChange ? (
-              <GroupByControls catalog={catalog} groupBy={groupBy} onGroupByChange={onGroupByChange} />
-            ) : (
-              <CatalogSliderSidebar catalog={catalog} />
-            )}
-          </motion.div>
-        )}
-      </AnimatePresence>
+    // Outer column owns the (resizable) width + the drag handle. Width is constant
+    // across panel swaps — only a deliberate user drag changes it — so the
+    // AnimatePresence mode="wait" gap never reframes the graph's flex-1 camera.
+    <div className="relative flex h-full min-h-0 shrink-0" style={{ width }}>
+      {/* Drag handle straddling the left border. setPointerCapture keeps the drag
+          alive even when the cursor outruns the 8px hit area. */}
+      <div
+        data-testid="sidebar-resize-handle"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize panel"
+        onPointerDown={onHandleDown}
+        onPointerMove={onHandleMove}
+        onPointerUp={onHandleUp}
+        onPointerCancel={onHandleUp}
+        className="group absolute left-0 top-0 z-30 h-full w-2 -translate-x-1/2 cursor-col-resize touch-none"
+      >
+        <div className="mx-auto h-full w-px bg-border transition-colors group-hover:bg-blue-500" />
+      </div>
+      {/* Inner scroll area: the slider list is taller than the viewport; it must
+          scroll WITHIN the bounded row, not stretch it (which pushed the canvas
+          off-screen). Kept separate from the handle so the handle never scrolls. */}
+      <div
+        data-testid="right-panel-stack"
+        data-top-layer={top}
+        className="flex h-full min-h-0 w-full overflow-y-auto"
+      >
+        <AnimatePresence mode="wait">
+          {top === "user-detail" ? (
+            <motion.div key="user-detail" className="h-full w-full" {...slide}>
+              {(() => {
+                const email = features[isolatedNodeIndex!]?.emailLower ?? "";
+                return (
+                  <UserProfilePanel
+                    user={usersByEmail.get(email) ?? null}
+                    email={email}
+                    onClose={() => setIsolated(null)}
+                    variant="rail"
+                  />
+                );
+              })()}
+            </motion.div>
+          ) : top === "lasso-pie" ? (
+            <motion.div key="lasso-pie" className="h-full w-full" {...slide}>
+              <SelectionPanel
+                visibleSelectedIndices={visibleSelectedIndices ?? new Set<number>()}
+                features={features}
+                onClear={() => setLasso(null)}
+              />
+            </motion.div>
+          ) : (
+            <motion.div key="sliders" className="h-full w-full" {...slide}>
+              {useGroupByControls && groupBy && onGroupByChange ? (
+                <GroupByControls catalog={catalog} groupBy={groupBy} onGroupByChange={onGroupByChange} />
+              ) : (
+                <CatalogSliderSidebar catalog={catalog} />
+              )}
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

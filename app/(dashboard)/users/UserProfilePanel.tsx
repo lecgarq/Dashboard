@@ -93,11 +93,11 @@ export function UserProfilePanel({
     return <div data-testid="user-detail-panel">{body}</div>;
   }
 
-  // rail: fixed width (w-96) so isolating a node never resizes the graph.
+  // rail: fills the resizable RightPanelStack column (width owned by the parent).
   return (
     <aside
       data-testid="user-detail-panel"
-      className="flex h-full w-96 shrink-0 flex-col border-l border-border/30 bg-card"
+      className="flex h-full w-full shrink-0 flex-col border-l border-border/30 bg-card"
     >
       <header className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3">
         <div className="min-w-0">

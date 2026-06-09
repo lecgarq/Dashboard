@@ -2,6 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   aggregateSelectionByRole,
   aggregateSelectionByTier,
+  aggregateSelectionByProject,
+  selectionKpis,
   colorForIndex,
   UNKNOWN_LABEL,
 } from "./selectionAggregates";
@@ -27,13 +29,13 @@ function feature(over: Partial<NodeFeatureSnapshot> = {}): NodeFeatureSnapshot {
   };
 }
 
-// A small fixture with known role / tier distributions.
+// A small fixture with known role / tier / project distributions.
 const FEATURES: NodeFeatureSnapshot[] = [
-  feature({ role: "Architect", permTier: "view" }), // 0
-  feature({ role: "Engineer", permTier: "edit" }), //  1
-  feature({ role: "Architect", permTier: "edit" }), // 2
-  feature({ role: "Architect", permTier: null }), //   3 (tier → Unknown)
-  feature({ role: "", permTier: "view" }), //          4 (role → Unknown)
+  feature({ role: "Architect", permTier: "view", project: "Alpha", isExternal: false, isAdmin: true }), //  0
+  feature({ role: "Engineer", permTier: "edit", project: "Alpha", isExternal: true, isAdmin: false }), //   1
+  feature({ role: "Architect", permTier: "edit", project: "Beta", isExternal: false, isAdmin: false }), //  2
+  feature({ role: "Architect", permTier: null, project: "Beta", isExternal: true, isAdmin: true }), //      3 (tier → Unknown)
+  feature({ role: "", permTier: "view", project: "", isExternal: false, isAdmin: false }), //               4 (role/project → Unknown)
 ];
 
 describe("selectionAggregates", () => {
@@ -86,5 +88,38 @@ describe("selectionAggregates", () => {
   it("ignores out-of-range indices defensively", () => {
     const slices = aggregateSelectionByRole(FEATURES, [0, 999]);
     expect(slices).toEqual([{ label: "Architect", value: 1, color: colorForIndex(0) }]);
+  });
+
+  it("counts projects over the selected subset", () => {
+    // Select 0,1,2,3 → Alpha×2, Beta×2 (tie → label asc).
+    const slices = aggregateSelectionByProject(FEATURES, [0, 1, 2, 3]);
+    expect(slices.map((s) => [s.label, s.value])).toEqual([
+      ["Alpha", 2],
+      ["Beta", 2],
+    ]);
+  });
+
+  it("buckets missing project as Unknown", () => {
+    const slices = aggregateSelectionByProject(FEATURES, [4]);
+    expect(slices).toEqual([{ label: UNKNOWN_LABEL, value: 1, color: colorForIndex(0) }]);
+  });
+
+  it("summarizes KPI counts over the selected subset", () => {
+    // Select 0,1,2,3 → total 4, external 2 (1,3), admins 2 (0,3), projects 2 (Alpha,Beta).
+    expect(selectionKpis(FEATURES, [0, 1, 2, 3])).toEqual({
+      total: 4,
+      external: 2,
+      admins: 2,
+      projects: 2,
+    });
+  });
+
+  it("returns zeroed KPIs for an empty selection", () => {
+    expect(selectionKpis(FEATURES, [])).toEqual({
+      total: 0,
+      external: 0,
+      admins: 0,
+      projects: 0,
+    });
   });
 });

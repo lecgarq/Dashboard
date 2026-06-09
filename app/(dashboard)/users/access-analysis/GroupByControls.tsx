@@ -24,7 +24,7 @@ export function GroupByControls({ catalog, groupBy, onGroupByChange }: GroupByCo
   const strength = values[groupBy] ?? 0;
 
   return (
-    <aside data-testid="group-by-controls" className="flex w-96 shrink-0 flex-col border-l bg-card">
+    <aside data-testid="group-by-controls" className="flex w-full shrink-0 flex-col border-l bg-card">
       <header className="flex items-center justify-between border-b p-4">
         <h2 className="text-sm font-semibold">Map grouping</h2>
       </header>

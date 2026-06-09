@@ -48,7 +48,7 @@ export function CatalogSliderSidebar({ catalog }: { catalog: readonly CatalogDim
   const headerCls = "sticky top-0 z-10 bg-card py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground";
 
   return (
-    <aside data-testid="catalog-slider-sidebar" className="flex w-96 shrink-0 flex-col border-l bg-card">
+    <aside data-testid="catalog-slider-sidebar" className="flex w-full shrink-0 flex-col border-l bg-card">
       <header className="flex items-center justify-between border-b p-4">
         <h2 className="text-sm font-semibold">Dimensions</h2>
         <button type="button" onClick={resetAll} data-testid="reset-all"
