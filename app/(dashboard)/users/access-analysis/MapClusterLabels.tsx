@@ -24,10 +24,13 @@ import type { GraphCanvasHandle } from "./GraphCanvas";
 import { OTHER_GREY, type LegendEntry, type RGB } from "./bucketedColors";
 import { liveLabelCenter, labelCandidateClusters, selectVisibleLabels, type LabelCandidate } from "./clusterLabelLayout";
 
-const MAX_LABELS = 60;        // cap on rendered chips (largest clusters; LOD reveals a subset)
-const MIN_SCREEN_RADIUS = 11; // px — a blob must look at least this big to earn a chip (zoom LOD)
-const SEP_X = 120;            // de-clutter: min horizontal gap between placed chips
-const SEP_Y = 22;             // de-clutter: min vertical gap between placed chips
+// Tuned dense (2026-06-09): surface many more name-chips at once without hover. The
+// MAX_LABELS cap still bounds live DOM (FPS ceiling) and SEP still guarantees no two
+// chips overlap — these widen the window, they don't remove the wall. Tune to taste.
+const MAX_LABELS = 120;       // cap on rendered chips (largest clusters; LOD reveals a subset)
+const MIN_SCREEN_RADIUS = 4;  // px — a blob must look at least this big to earn a chip (zoom LOD)
+const SEP_X = 70;             // de-clutter: min horizontal gap between placed chips
+const SEP_Y = 14;             // de-clutter: min vertical gap between placed chips
 
 function rgbCss([r, g, b]: RGB): string {
   return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
@@ -159,15 +162,15 @@ export function MapClusterLabels({
           ref={(el) => { itemRefs.current[t] = el; }}
           style={{
             position: "absolute", left: 0, top: 0, transform: "translate(-50%,-50%)",
-            display: "flex", alignItems: "center", gap: 6, whiteSpace: "nowrap",
-            fontSize: 12, fontWeight: 600, lineHeight: 1.2,
-            color: chipColor, background: chipBg, borderRadius: 6, padding: "2px 7px",
+            display: "flex", alignItems: "center", gap: 4, whiteSpace: "nowrap",
+            fontSize: 11, fontWeight: 600, lineHeight: 1.2,
+            color: chipColor, background: chipBg, borderRadius: 6, padding: "1px 5px",
             opacity: 0, transition: "opacity 150ms ease", textShadow: chipShadow,
             backdropFilter: "blur(2px)",
           }}
         >
           <span style={{
-            width: 8, height: 8, borderRadius: "50%", flex: "0 0 auto",
+            width: 6, height: 6, borderRadius: "50%", flex: "0 0 auto",
             background: rgbCss(colorByLabel.get(labels[c]) ?? OTHER_GREY),
           }} />
           {labels[c]}
