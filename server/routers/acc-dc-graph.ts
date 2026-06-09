@@ -15,7 +15,7 @@
 import { z } from "zod";
 import { router, adminProcedure } from "../trpc";
 import { getCachedAccDcBulkUsers } from "@/lib/server/acc-hot-cache";
-import { dedupeAndCapEdges } from "@/lib/acc/embedding/similarityEdgeSet";
+import { dedupeAndSelectClusterAware } from "@/lib/acc/embedding/similarityEdgeSet";
 
 export const accDcGraphRouter = router({
   bulkUsers: adminProcedure
@@ -52,12 +52,18 @@ export const accDcGraphRouter = router({
     .query(async ({ ctx, input }) => {
       const limit = input?.limit ?? 18000;
       const rows = await ctx.db.accInstanceEmbedding.findMany({
-        select: { nodeId: true, neighbors: true },
+        select: { nodeId: true, neighbors: true, cluster: true },
       });
       const nodes = rows.map((r) => ({
         nodeId: r.nodeId,
         neighbors: (r.neighbors ?? []) as Array<{ nodeId: string; score: number }>,
       }));
-      return dedupeAndCapEdges(nodes, limit);
+      // Cluster-aware selection so cross-cluster "bridge" edges survive the cap. A
+      // plain top-N-by-score cap is 100% saturated by score-1.0 duplicate-profile
+      // twins (all intra-cluster), so the web never connects different clusters.
+      const clusterById = new Map<string, number | null>(
+        rows.map((r) => [r.nodeId, r.cluster]),
+      );
+      return dedupeAndSelectClusterAware(nodes, clusterById, limit);
     }),
 });
