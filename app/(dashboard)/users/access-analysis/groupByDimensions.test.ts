@@ -11,33 +11,31 @@ function dim(id: string, kind: CatalogDimension["kind"], available = true): Cata
 }
 
 describe("groupByDimensions", () => {
-  it("keeps categorical/binary + permission/tenure, drops numeric activity dims and unavailable", () => {
+  it("offers ONLY the three presets (role, project, user), dropping everything else", () => {
     const catalog = [
       dim("role", "categorical"),
-      dim("company", "categorical"),
-      dim("permission", "ordinal"),       // kept (bucketed)
-      dim("tenure", "ordinal"),           // kept (bucketed)
-      dim("docViews", "ordinal"),         // dropped (numeric activity)
-      dim("internalExternal", "binary"),  // kept
-      dim("ghost", "categorical", false), // dropped (unavailable)
+      dim("project", "categorical"),
+      dim("user", "categorical"),
+      dim("company", "categorical"),       // dropped (not a preset)
+      dim("permission", "ordinal"),        // dropped
+      dim("tenure", "ordinal"),            // dropped
+      dim("internalExternal", "binary"),   // dropped
     ];
-    const ids = groupByDimensions(catalog).map((d) => d.id);
-    expect(ids).toContain("role");
-    expect(ids).toContain("company");
-    expect(ids).toContain("permission");
-    expect(ids).toContain("tenure");
-    expect(ids).toContain("internalExternal");
-    expect(ids).not.toContain("docViews");
-    expect(ids).not.toContain("ghost");
+    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual(["role", "project", "user"]);
   });
 
-  it("orders curated dims first (company, role, project, ...)", () => {
-    const catalog = [dim("role", "categorical"), dim("project", "categorical"), dim("company", "categorical")];
-    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual(["company", "role", "project"]);
+  it("drops an unavailable preset dim", () => {
+    const catalog = [dim("role", "categorical"), dim("user", "categorical", false)];
+    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual(["role"]);
   });
 
-  it("defaultGroupBy returns the first curated option, or 'role' when empty", () => {
-    expect(defaultGroupBy([dim("role", "categorical"), dim("company", "categorical")])).toBe("company");
+  it("orders role first, then project, then user, regardless of catalog order", () => {
+    const catalog = [dim("user", "categorical"), dim("project", "categorical"), dim("role", "categorical")];
+    expect(groupByDimensions(catalog).map((d) => d.id)).toEqual(["role", "project", "user"]);
+  });
+
+  it("defaultGroupBy returns 'role' when present, or 'role' when empty", () => {
+    expect(defaultGroupBy([dim("project", "categorical"), dim("role", "categorical"), dim("user", "categorical")])).toBe("role");
     expect(defaultGroupBy([])).toBe("role");
   });
 });
