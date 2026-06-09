@@ -116,6 +116,16 @@ describe("FolderPermissionTerrain", () => {
     expect(/0b1620|11,\s*22,\s*32/.test(style)).toBe(true);
   });
 
+  it("lifts the hovered bar", () => {
+    const { container } = render(
+      <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
+    );
+    const polys = terrain(container).querySelectorAll("polygon");
+    const barGroup = polys[polys.length - 1].closest("g")!;
+    fireEvent.mouseEnter(barGroup);
+    expect(barGroup.getAttribute("transform") || barGroup.style.transform || "").toMatch(/translate|matrix/);
+  });
+
   it("toggles the Orbit / Pan tool buttons", () => {
     const { getByTitle } = render(
       <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,

@@ -554,7 +554,7 @@ function SceneLayer({
             key={`b${i}`}
             onMouseEnter={() => setHover({ cell: b.cell, x: b.cx, y: b.cy })}
             onClick={() => { if (!draggedRef.current.dragged) { setPicked({ cell: b.cell, source }); onPick(b); } }}
-            style={{ cursor: "pointer" }}
+            style={{ cursor: "pointer", transition: "transform .14s ease", transform: isHot ? "translateY(-4px)" : undefined }}
           >
             {b.faces.map((f, fi) => (
               <polygon
