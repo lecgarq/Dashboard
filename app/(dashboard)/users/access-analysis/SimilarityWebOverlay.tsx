@@ -56,6 +56,9 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
     let last = 0;
     let curOpacity = 0;
     let prevAff: Affine | null = null;
+    let prevSrc: Int32Array | null = null;
+
+    const ctx = canvas.getContext("2d");
 
     const affChanged = (a: Affine, b: Affine | null): boolean =>
       !b || a.sx !== b.sx || a.sy !== b.sy || a.ox !== b.ox || a.oy !== b.oy;
@@ -70,9 +73,12 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
 
       const { graphRef, src, dst, bucket, palette, opacity, isMorphing, curve = 0.14 } =
         dataRef.current;
+      const morphing = isMorphing();
+      const dataChanged = src !== prevSrc;
+      prevSrc = src;
+
       const root = graphRef.current;
       const handle = root && root.mode === "2d" ? root.handle : null;
-      const ctx = canvas.getContext("2d");
 
       if (handle?.spaceToScreen && handle.getPointPositions && ctx) {
         // Size the drawing buffer to the canvas's CSS box (handles resize + dpr).
@@ -84,13 +90,13 @@ export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JS
           canvas.height = Math.round(ch * dpr);
         }
 
-        const target = isMorphing() ? 0 : Math.max(0, Math.min(1, opacity));
+        const target = morphing ? 0 : Math.max(0, Math.min(1, opacity));
         const aff = solveAffine(handle.spaceToScreen);
         const moved = affChanged(aff, prevAff);
         const opacitySettled = curOpacity === target;
 
         // Skip the whole redraw when nothing changed (idle = zero cost).
-        if (!moved && opacitySettled && !isMorphing()) {
+        if (!moved && opacitySettled && !morphing && !dataChanged) {
           raf = requestAnimationFrame(tick);
           return;
         }
