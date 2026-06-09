@@ -179,12 +179,15 @@ function useGrowth(key: string): number {
 
 // ---------------------------------------------------------------------------
 export function FolderPermissionTerrain({
-  projects, initial, loadTerrain, loadOverview,
+  projects, initial, loadTerrain, loadOverview, singleProject = false,
 }: {
   projects: TerrainProjectOption[];
   initial: FolderTerrainData | null;
   loadTerrain: (projectId: string) => Promise<FolderTerrainData | null>;
   loadOverview?: () => Promise<FolderTerrainData | null>;
+  // When true: lock to single-project mode and hide the mode toggle + project
+  // picker (used by the Template MTY tab, which has exactly one "project").
+  singleProject?: boolean;
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
@@ -288,10 +291,14 @@ export function FolderPermissionTerrain({
     <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-soft-xl">
       <div className="flex flex-wrap items-start justify-between gap-3 px-4 pb-2 pt-4">
         <div className="flex min-w-0 flex-col gap-2">
-          <ModeToggle mode={mode} hasOverview={!!loadOverview} onChange={(m) => { clear(); setMode(m); }} />
+          {!singleProject && (
+            <ModeToggle mode={mode} hasOverview={!!loadOverview} onChange={(m) => { clear(); setMode(m); }} />
+          )}
           {mode === "single" ? (
             <div className="flex flex-col gap-1">
-              <ProjectSelect projects={projects} value={singleId} onChange={(id) => { clear(); setSingleId(id); }} disabled={busy} />
+              {!singleProject && (
+                <ProjectSelect projects={projects} value={singleId} onChange={(id) => { clear(); setSingleId(id); }} disabled={busy} />
+              )}
               {single && (
                 <p className="text-xs text-muted-foreground">
                   {officeLabel(single.office)} · {single.folders.length} folders · {single.roles.length} roles · {single.cells.length} role-permissions
