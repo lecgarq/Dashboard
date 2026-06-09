@@ -6,7 +6,7 @@ import {
   tierTextColor,
   buildCameraScene,
   buildSharedAxes,
-  projectOntoAxes,
+  buildStackedScenes,
   projectCamera,
   HOME_YAW,
   HOME_PITCH,
@@ -30,9 +30,9 @@ type DragMode = "select" | "orbit" | "pan";
 type Hover = { cell: TerrainCell; x: number; y: number } | null;
 type Picked = { cell: TerrainCell; source: FolderTerrainData } | null;
 
-const SLAB_GAP = 2; // grid rows between stacked compare slabs
-const SLAB_MAXBAR = 44; // shorter bars so stacked slabs stay legible
-const VIEW_H = 500; // fixed stage height (px)
+const PLANE_GAP = 64; // airy screen-px gap between stacked floating planes
+const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
+const VIEW_H = 520; // taller stage for the exploded stack
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 interface Theme {
@@ -303,9 +303,7 @@ function defaultPivot(mode: Mode, single: FolderTerrainData | null, overview: Fo
   if (mode === "overview" && overview) return centerPivot(overview.roles.length, overview.folders.length);
   if (mode === "compare" && compareDatas.length >= 2) {
     const axes = buildSharedAxes(compareDatas);
-    const Cf = axes.folders.length, R = axes.roles.length, n = compareDatas.length;
-    const totalRows = n * Cf + (n - 1) * SLAB_GAP;
-    return { col: (R - 1) / 2, row: (totalRows - 1) / 2 };
+    return centerPivot(axes.roles.length, axes.folders.length);
   }
   return { col: 0, row: 0 };
 }
@@ -323,34 +321,18 @@ function buildView(mode: Mode, single: FolderTerrainData | null, overview: Folde
     const scene = buildCameraScene(overview, { camera: cam, viewport });
     return { scenes: [{ scene, source: overview }], connectors: [], metric: "projects", empty: null };
   }
-  // compare — one camera world, slabs stacked along the folder axis, virtualized.
+  // compare — separated floating planes, one per project, on a shared camera.
   if (compareDatas.length < 2) return blank(busy ? "Loading projects…" : "Pick at least two projects to compare.");
   const axes = buildSharedAxes(compareDatas);
-  const Cf = axes.folders.length;
-  const margin = 240; // generous: tilt makes the projected band larger than the slab
-  const scenes: SceneEntry[] = [];
-  const cornersByIndex: Record<number, TerrainScene["groundCorners"]> = {};
-  compareDatas.forEach((d, i) => {
-    const rowOffset = i * (Cf + SLAB_GAP);
-    // Cheap visibility test: project the slab's near/far mid-edge; skip if off-stage.
-    const midCol = (axes.roles.length - 1) / 2;
-    const yA = projectCamera(midCol, rowOffset - 0.5, 0, cam).y;
-    const yB = projectCamera(midCol, rowOffset + Cf - 0.5, 0, cam).y;
-    const top = Math.min(yA, yB) - SLAB_MAXBAR;
-    const bot = Math.max(yA, yB);
-    if (bot < -margin || top > viewport.h + margin) return; // virtualized out
-    const projected = projectOntoAxes(d, axes);
-    const scene = buildCameraScene(projected, { camera: cam, viewport, maxBar: SLAB_MAXBAR, rowOffset });
-    cornersByIndex[i] = scene.groundCorners;
-    scenes.push({ scene, source: d, label: d.projectName, labelX: scene.groundCorners.left.x, labelY: scene.groundCorners.left.y });
-  });
-  const connectors: StageView["connectors"] = [];
-  for (let i = 0; i < compareDatas.length - 1; i++) {
-    const a = cornersByIndex[i], b = cornersByIndex[i + 1];
-    if (!a || !b) continue;
-    for (const k of ["back", "right", "front", "left"] as const) connectors.push({ x1: a[k].x, y1: a[k].y, x2: b[k].x, y2: b[k].y });
-  }
-  return { scenes, connectors, metric: "users", empty: null };
+  const stacked = buildStackedScenes(compareDatas, axes, cam, viewport, { maxBar: SLAB_MAXBAR, gap: PLANE_GAP });
+  const scenes: SceneEntry[] = stacked.planes.map((p) => ({
+    scene: p.scene,
+    source: p.source,
+    label: p.label,
+    labelX: p.headerX,
+    labelY: p.headerY,
+  }));
+  return { scenes, connectors: stacked.connectors, metric: "users", empty: null };
 }
 
 /** Per-project tier for one cell, across the compare set (for the detail card). */

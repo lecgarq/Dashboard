@@ -118,17 +118,19 @@ describe("FolderPermissionTerrain", () => {
     expect(getByText(/No folder-permission data/)).toBeTruthy();
   });
 
-  it("stacks projects on shared axes in compare mode", async () => {
+  it("stacks projects as separated planes with connectors in compare mode", async () => {
     const loadTerrain = vi.fn(async (id: string) => (id === "p2" ? data2 : id === "p1" ? data : null));
-    const { getByText, findByText } = render(
+    const { getByText, findByText, container } = render(
       <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={loadTerrain} />,
     );
     fireEvent.click(getByText("Compare"));
-    // The second project's slab tag appears once its data has loaded.
+    // Each project keeps its own header once its data has loaded.
     expect(await findByText("Project Two")).toBeTruthy();
     expect(getByText("Demo Project")).toBeTruthy();
-    // It fetched the uncached compare slot.
     expect(loadTerrain).toHaveBeenCalledWith("p2");
+    // Dotted connector drop-lines join the two planes (4 corners per gap).
+    const dashed = [...terrain(container).querySelectorAll("line")].filter((l) => l.getAttribute("stroke-dasharray"));
+    expect(dashed.length).toBeGreaterThanOrEqual(4);
   });
 
   it("lazily loads the account-wide overview and drills into tiers", async () => {
