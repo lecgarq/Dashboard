@@ -116,20 +116,31 @@ const groupBy = await page.getByTestId("group-by-select").inputValue();
 console.log(`[verify] group-by = ${groupBy}; waiting for snapshot to settle...`);
 await page.waitForTimeout(9_000);
 
-const steps = [
-  { name: "50", set: () => setStrengthPct(page, 50) },
-  { name: "100", set: () => setMax(page) },
-];
-for (const step of steps) {
-  const landed = await step.set();
-  await page.waitForTimeout(4_000); // ease + camera reframe settle
-  const chips = await chipReport(page);
-  const clip = await tightClip(page, chips);
-  const file = `${OUT}/labels-after-${step.name}.png`;
-  await page.screenshot({ path: file, clip });
-  console.log(`[verify] strength~${landed}: ${chips.length} chips → ${file}`);
-  console.log(`[verify]   chips: ${chips.map((c) => `${c.label}(${c.x},${c.y})`).join(", ")}`);
+// Full grouping so clusters are formed and chips are LOD-gated.
+const landed = await setMax(page);
+await page.waitForTimeout(4_000);
+let chips = await chipReport(page);
+await page.screenshot({ path: `${OUT}/zoom-default.png`, clip: await tightClip(page, chips) });
+console.log(`[verify] strength~${landed} default zoom: ${chips.length} visible chips → zoom-default.png`);
+console.log(`[verify]   ${chips.map((c) => c.label).join(", ")}`);
+
+// Zoom into the cluster region (wheel toward the cursor) to reveal smaller clusters.
+const region = await page.evaluate(() => {
+  const r = document.querySelector('[data-testid="map-cluster-labels"]').getBoundingClientRect();
+  return { left: r.left, top: r.top, w: r.width, h: r.height };
+});
+await page.mouse.move(region.left + region.w * 0.42, region.top + region.h * 0.5);
+for (let i = 0; i < 5; i++) {
+  await page.mouse.wheel(0, -240);
+  await page.waitForTimeout(120);
 }
+await page.waitForTimeout(1_500);
+chips = await chipReport(page);
+// Clip to the on-screen viewport (the canvas area) so the shot shows what the user sees.
+const viewClip = { x: Math.max(0, region.left), y: Math.max(0, region.top), width: region.w, height: region.h };
+await page.screenshot({ path: `${OUT}/zoom-in.png`, clip: viewClip });
+console.log(`[verify] zoomed in: ${chips.length} visible chips → zoom-in.png`);
+console.log(`[verify]   ${chips.map((c) => c.label).join(", ")}`);
 
 await browser.close();
 console.log("[verify] done");

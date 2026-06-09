@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * MapClusterLabels.tsx — HTML overlay naming the colored clusters on the 2D map.
+ * MapClusterLabels.tsx — HTML overlay naming the clusters on the 2D map.
  *
  * Anchors each label at its cluster's LIVE centroid: during the scatter→clump morph the
  * cluster travels from its rest centroid (members spread across the embedding) to its
@@ -9,38 +9,28 @@
  * on the SAME easeMorph curve the dots use (`liveLabelCenter`). It therefore RIDES its
  * cluster at every slider value instead of sitting at the (empty) destination until full
  * strength. That space-coord center is projected to screen via the cosmos 2D handle's
- * spaceToScreen each ~30Hz frame so it also tracks pan/zoom. Colors come from the legend
- * (so chips match the dots); only the colored (non-"Other") clusters are labeled.
- * Renders only in 2D. Theme-aware, non-interactive.
+ * spaceToScreen each ~30Hz frame so it also tracks pan/zoom.
+ *
+ * VISIBILITY is zoom-aware level-of-detail (NOT just the colored top-N): the candidates
+ * are the largest clusters by member count, and `selectVisibleLabels` reveals one only
+ * once its blob's on-screen radius clears a threshold — so zoomed out shows only the big
+ * clusters and zooming into a region reveals smaller clusters' names. Colors come from the
+ * legend (so chips match the dots); a small cluster not in the colored legend gets a
+ * neutral grey dot (matching its grey "Other" dots). Renders only in 2D. Theme-aware.
  */
 import { useEffect, useMemo, useRef } from "react";
 import { useTheme } from "next-themes";
 import type { GraphCanvasHandle } from "./GraphCanvas";
-import type { LegendEntry, RGB } from "./bucketedColors";
-import { liveLabelCenter } from "./clusterLabelLayout";
+import { OTHER_GREY, type LegendEntry, type RGB } from "./bucketedColors";
+import { liveLabelCenter, labelCandidateClusters, selectVisibleLabels, type LabelCandidate } from "./clusterLabelLayout";
 
-const MAX_LABELS = 16;     // cap on rendered chips (top colored clusters)
-const MIN_SEP_PX = 20;     // basic vertical de-clutter
+const MAX_LABELS = 60;        // cap on rendered chips (largest clusters; LOD reveals a subset)
+const MIN_SCREEN_RADIUS = 11; // px — a blob must look at least this big to earn a chip (zoom LOD)
+const SEP_X = 120;            // de-clutter: min horizontal gap between placed chips
+const SEP_Y = 22;             // de-clutter: min vertical gap between placed chips
 
 function rgbCss([r, g, b]: RGB): string {
   return `rgb(${Math.round(r * 255)}, ${Math.round(g * 255)}, ${Math.round(b * 255)})`;
-}
-
-/**
- * Pure: which cluster indices get a chip — those whose label matches a non-"Other"
- * legend entry — ranked by that entry's member count (largest first), capped at `max`.
- */
-export function visibleLabelClusters(
-  labels: ReadonlyArray<string>,
-  legend: ReadonlyArray<LegendEntry>,
-  max = MAX_LABELS,
-): number[] {
-  const byLabel = new Map<string, LegendEntry>();
-  for (const e of legend) if (!e.isOther) byLabel.set(e.label, e);
-  const idx: number[] = [];
-  for (let c = 0; c < labels.length; c++) if (byLabel.has(labels[c])) idx.push(c);
-  idx.sort((a, b) => (byLabel.get(labels[b])!.count) - (byLabel.get(labels[a])!.count));
-  return idx.slice(0, max);
 }
 
 export interface MapClusterLabelsProps {
@@ -55,19 +45,25 @@ export interface MapClusterLabelsProps {
    *  rides the cluster mid-morph. Omit/null to anchor at the footprint center always. */
   restCentersX?: Float32Array | null;
   restCentersY?: Float32Array | null;
+  /** Per-cluster footprint radius (cosmos space, stride-1) — projected each frame to drive
+   *  the zoom level-of-detail. Omit/null to skip LOD (de-clutter only). */
+  radii?: Float32Array | null;
+  /** Per-cluster member count — ranks candidates + prioritizes the LOD slot fight. */
+  counts?: ReadonlyArray<number>;
   /** Reads the LIVE raw slider value 0..1 each frame (NOT eased — liveLabelCenter applies
    *  easeMorph so the chip stays locked to the dots). Defaults to 1 (fully formed). */
   progress?: () => number;
   /** Cluster id → display label (DominantClustering.labels). */
   labels: ReadonlyArray<string>;
-  /** Legend rows — supply per-cluster color + which clusters are colored (non-Other). */
+  /** Legend rows — supply per-cluster color (a cluster absent from the colored legend
+   *  falls back to neutral grey). */
   legend: ReadonlyArray<LegendEntry>;
   /** Overall chip opacity 0..1 — lets the caller fade labels in with grouping strength. */
   opacity?: number;
 }
 
 export function MapClusterLabels({
-  graphRef, mode, centersX, centersY, restCentersX, restCentersY, progress, labels, legend, opacity = 1,
+  graphRef, mode, centersX, centersY, restCentersX, restCentersY, radii, counts, progress, labels, legend, opacity = 1,
 }: MapClusterLabelsProps): React.JSX.Element | null {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme === "dark";
@@ -78,7 +74,12 @@ export function MapClusterLabels({
     return m;
   }, [legend]);
 
-  const renderIds = useMemo(() => visibleLabelClusters(labels, legend), [labels, legend]);
+  // Candidates = the largest clusters across the WHOLE clustering (not just the colored
+  // legend), so small clusters can earn a chip via the per-frame zoom LOD below.
+  const renderIds = useMemo(
+    () => labelCandidateClusters(counts ?? labels.map(() => 0), MAX_LABELS),
+    [counts, labels],
+  );
   const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
@@ -94,10 +95,8 @@ export function MapClusterLabels({
       const handle = gh && gh.mode === "2d" ? gh.handle : null;
       if (handle?.spaceToScreen) {
         const p = progress ? progress() : 1;
-        const placed: number[] = [];
+        const cands: LabelCandidate[] = [];
         renderIds.forEach((c, t) => {
-          const el = itemRefs.current[t];
-          if (!el) return;
           // Live anchor: lerp rest centroid → footprint center on the morph curve, so
           // the chip rides its cluster at every strength (falls back to the footprint
           // center when no rest data / no progress).
@@ -105,18 +104,35 @@ export function MapClusterLabels({
           const ry = restCentersY ? restCentersY[c] : centersY[c];
           const [lx, ly] = liveLabelCenter(rx, ry, centersX[c], centersY[c], p);
           const [sx, sy] = handle.spaceToScreen([lx, ly]);
-          const collide = placed.some((y) => Math.abs(y - sy) < MIN_SEP_PX);
-          if (collide) { el.style.opacity = "0"; return; }
-          placed.push(sy);
-          el.style.opacity = "1";
-          el.style.transform = `translate(-50%, -50%) translate(${sx}px, ${sy}px)`;
+          // On-screen radius drives the zoom LOD. Without radii, pass the threshold so it
+          // degrades to de-clutter-only (no cluster ever hidden purely for being small).
+          let screenRadius = MIN_SCREEN_RADIUS;
+          if (radii) {
+            const [ex] = handle.spaceToScreen([lx + radii[c], ly]);
+            screenRadius = Math.abs(ex - sx);
+          }
+          cands.push({ i: t, screenX: sx, screenY: sy, screenRadius, count: counts?.[c] ?? 0 });
         });
+        const visible = new Set(
+          selectVisibleLabels(cands, { minScreenRadius: MIN_SCREEN_RADIUS, sepX: SEP_X, sepY: SEP_Y }).map((x) => x.i),
+        );
+        for (let t = 0; t < renderIds.length; t++) {
+          const el = itemRefs.current[t];
+          if (!el) continue;
+          if (visible.has(t)) {
+            const cand = cands[t];
+            el.style.opacity = "1";
+            el.style.transform = `translate(-50%, -50%) translate(${cand.screenX}px, ${cand.screenY}px)`;
+          } else {
+            el.style.opacity = "0";
+          }
+        }
       }
       raf = requestAnimationFrame(tick);
     };
     raf = requestAnimationFrame(tick);
     return () => { active = false; cancelAnimationFrame(raf); };
-  }, [mode, renderIds, centersX, centersY, restCentersX, restCentersY, progress, graphRef]);
+  }, [mode, renderIds, centersX, centersY, restCentersX, restCentersY, radii, counts, progress, graphRef]);
 
   if (mode !== "2d" || renderIds.length === 0) return null;
 
@@ -152,7 +168,7 @@ export function MapClusterLabels({
         >
           <span style={{
             width: 8, height: 8, borderRadius: "50%", flex: "0 0 auto",
-            background: rgbCss(colorByLabel.get(labels[c]) ?? [0.5, 0.5, 0.5]),
+            background: rgbCss(colorByLabel.get(labels[c]) ?? OTHER_GREY),
           }} />
           {labels[c]}
         </div>

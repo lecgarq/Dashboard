@@ -27,6 +27,20 @@ export function liveLabelCenter(
   return [restX + (footX - restX) * s, restY + (footY - restY) * s];
 }
 
+/**
+ * The clusters eligible for a chip: the `max` largest by member count, across ALL
+ * clusters (not just the legend-colored ones), ranked biggest-first. The per-frame LOD
+ * (selectVisibleLabels) then reveals a candidate only once its blob is big enough on
+ * screen — so small clusters get a name when you zoom into them, while the rendered DOM
+ * stays bounded (one node per tiny cluster is the per-frame cost that tanks fps). Stable
+ * for equal counts (original index order). Pure.
+ */
+export function labelCandidateClusters(counts: ReadonlyArray<number>, max: number): number[] {
+  const idx = counts.map((_, i) => i);
+  idx.sort((a, b) => (counts[b] ?? 0) - (counts[a] ?? 0)); // V8 sort is stable → ties keep index order
+  return idx.slice(0, Math.min(counts.length, max));
+}
+
 export interface LabelCandidate {
   i: number;
   screenX: number;

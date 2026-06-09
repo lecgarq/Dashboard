@@ -441,6 +441,8 @@ export function ShellBody({
             centersY={grouping.showLabels && blobDesc ? blobDesc.footprints.cy : null}
             restCentersX={grouping.showLabels && blobRestCenters ? blobRestCenters.cx : null}
             restCentersY={grouping.showLabels && blobRestCenters ? blobRestCenters.cy : null}
+            radii={grouping.showLabels && blobDesc ? blobDesc.footprints.r : null}
+            counts={grouping.showLabels && blobDesc ? blobDesc.clustering.counts : undefined}
             progress={labelProgress}
             labels={grouping.showLabels && blobDesc ? blobDesc.clustering.labels : []}
             legend={bucketed.legend}

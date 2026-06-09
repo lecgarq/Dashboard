@@ -52,6 +52,26 @@ async function setStrengthMax(page: Page): Promise<number> {
   return Number(await thumb.getAttribute("aria-valuenow"));
 }
 
+/** Every rendered chip with its label, style opacity, and overlay-local center. */
+async function allChips(page: Page): Promise<Array<{ label: string; opacity: string; x: number; y: number }>> {
+  return await page.evaluate(() => {
+    const cont = document.querySelector('[data-testid="map-cluster-labels"]') as HTMLElement | null;
+    const base = cont?.getBoundingClientRect();
+    const out: Array<{ label: string; opacity: string; x: number; y: number }> = [];
+    document.querySelectorAll('[data-testid="map-cluster-label"]').forEach((el) => {
+      const node = el as HTMLElement;
+      const r = node.getBoundingClientRect();
+      out.push({
+        label: (node.textContent || "").trim(),
+        opacity: node.style.opacity,
+        x: r.left + r.width / 2 - (base?.left ?? 0),
+        y: r.top + r.height / 2 - (base?.top ?? 0),
+      });
+    });
+    return out;
+  });
+}
+
 /** Visible chip centers in the labels overlay's local basis (same basis as spaceToScreen). */
 async function chipCenters(page: Page): Promise<Record<string, { x: number; y: number }>> {
   return await page.evaluate(() => {
@@ -133,5 +153,47 @@ test.describe("ACC projector map — name chips ride their clusters (2D)", () =>
     expect(highD.mean).toBeLessThan(70);
 
     await expect(page.locator("canvas").first()).toBeVisible();
+  });
+
+  test("zooming into a small cluster reveals its name (zoom level-of-detail)", async ({ page }, testInfo) => {
+    test.setTimeout(360_000);
+    await gotoGraph(page);
+    const s = await setStrengthMax(page); // full grouping → tight clumps + chips
+    expect(s).toBeGreaterThanOrEqual(90);
+    await page.waitForTimeout(3_500);
+
+    const before = await allChips(page);
+    const visBefore = new Set(before.filter((c) => c.opacity === "1").map((c) => c.label));
+    // Small clusters whose blob is below the on-screen LOD threshold are rendered but
+    // hidden (opacity 0). There must be some — that's the symptom being fixed.
+    const hidden = before.filter((c) => c.opacity === "0" && c.label);
+    expect(hidden.length).toBeGreaterThan(0);
+    await testInfo.attach("zoom-default", { body: await page.screenshot(), contentType: "image/png" });
+
+    // Pick a hidden cluster, find its on-screen centroid, and zoom into it.
+    const cents = await clusterCentroids(page);
+    const centByLabel = new Map(cents.map((c) => [c.label, c]));
+    const target = hidden.find((h) => centByLabel.has(h.label));
+    expect(target, "a hidden cluster with a known centroid").toBeTruthy();
+    const tc = centByLabel.get(target!.label)!;
+    const origin = await page.evaluate(() => {
+      const r = document.querySelector('[data-testid="map-cluster-labels"]')!.getBoundingClientRect();
+      return { left: r.left, top: r.top };
+    });
+    await page.mouse.move(origin.left + tc.x, origin.top + tc.y);
+    for (let i = 0; i < 8; i++) {
+      await page.mouse.wheel(0, -240); // zoom in toward the cursor (the small cluster)
+      await page.waitForTimeout(120);
+    }
+    await page.waitForTimeout(1_500);
+
+    const after = await allChips(page);
+    const visAfter = new Set(after.filter((c) => c.opacity === "1").map((c) => c.label));
+    // eslint-disable-next-line no-console
+    console.log(`[labels] zoom reveal: target="${target!.label}" visBefore=${visBefore.size} visAfter=${visAfter.size}`);
+    await testInfo.attach("zoom-in", { body: await page.screenshot(), contentType: "image/png" });
+
+    // The previously-hidden small cluster now shows its name.
+    expect(visAfter.has(target!.label)).toBe(true);
   });
 });

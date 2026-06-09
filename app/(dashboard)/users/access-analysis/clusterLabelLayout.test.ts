@@ -1,6 +1,25 @@
 import { describe, it, expect } from "vitest";
-import { selectVisibleLabels, liveLabelCenter } from "./clusterLabelLayout";
+import { selectVisibleLabels, liveLabelCenter, labelCandidateClusters } from "./clusterLabelLayout";
 import { easeMorph } from "./layoutDescriptor";
+
+describe("labelCandidateClusters", () => {
+  it("ranks ALL clusters by member count desc — small clusters included, not just the colored ones", () => {
+    // counts by cluster index: c0=5, c1=900, c2=50, c3=1 → 1,2,0,3
+    expect(labelCandidateClusters([5, 900, 50, 1], 10)).toEqual([1, 2, 0, 3]);
+  });
+
+  it("caps at max, keeping the largest", () => {
+    expect(labelCandidateClusters([5, 900, 50, 1], 2)).toEqual([1, 2]);
+  });
+
+  it("returns every cluster when there are fewer than max", () => {
+    expect(labelCandidateClusters([3, 7], 10)).toEqual([1, 0]);
+  });
+
+  it("preserves original order for equal counts (stable)", () => {
+    expect(labelCandidateClusters([0, 0, 0], 10)).toEqual([0, 1, 2]);
+  });
+});
 
 describe("liveLabelCenter", () => {
   it("anchors at the rest centroid at progress 0", () => {
