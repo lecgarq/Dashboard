@@ -133,6 +133,17 @@ describe("FolderPermissionTerrain", () => {
     expect(dashed.length).toBeGreaterThanOrEqual(4);
   });
 
+  it("renders a bold, sizeable project header per plane in compare mode", async () => {
+    const loadTerrain = vi.fn(async (id: string) => (id === "p2" ? data2 : id === "p1" ? data : null));
+    const { getByText, findByText } = render(
+      <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={loadTerrain} />,
+    );
+    fireEvent.click(getByText("Compare"));
+    const header = await findByText("Project Two");
+    expect(Number(header.getAttribute("font-weight") || "400")).toBeGreaterThanOrEqual(700);
+    expect(Number(header.getAttribute("font-size") || "0")).toBeGreaterThanOrEqual(13);
+  });
+
   it("lazily loads the account-wide overview and drills into tiers", async () => {
     const overview: FolderTerrainData = {
       projectId: "__overview__",

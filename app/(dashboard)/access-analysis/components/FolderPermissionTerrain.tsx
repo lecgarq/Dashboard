@@ -247,7 +247,7 @@ export function FolderPermissionTerrain({
             <div className="flex flex-col gap-1.5">
               <ProjectMultiSelect projects={projects} selected={selected} onChange={(ids) => { clear(); setSelected(ids); }} disabled={busy} />
               <p className="text-xs text-muted-foreground">
-                {selected.length} projects · stacked on shared axes — scan a column down to compare the same folder × role. Scroll-pan through the tower.
+                {selected.length} projects · each on its own plane, stacked top→bottom — scan a column straight down to compare the same folder × role. Drag to orbit the whole stack; scroll-drag to pan through it.
               </p>
             </div>
           ) : (
@@ -514,9 +514,14 @@ function SceneLayer({
       ))}
 
       {entry.label && entry.labelX != null && entry.labelY != null && (
-        <text x={entry.labelX - 6} y={entry.labelY} fontSize={12} fontWeight={700} fill={theme.ink} textAnchor="end" dominantBaseline="middle">
-          {entry.label.length > 22 ? entry.label.slice(0, 21) + "…" : entry.label}
-        </text>
+        <g pointerEvents="none">
+          <text x={entry.labelX} y={entry.labelY} fontSize={13.5} fontWeight={800} fill={theme.ink}
+            textAnchor="start" dominantBaseline="middle" letterSpacing="0.02em">
+            {entry.label.length > 26 ? entry.label.slice(0, 25) + "…" : entry.label}
+          </text>
+          <line x1={entry.labelX} y1={entry.labelY + 10} x2={entry.labelX + 34} y2={entry.labelY + 10}
+            stroke={theme.connector} strokeWidth={2} strokeLinecap="round" />
+        </g>
       )}
     </g>
   );
