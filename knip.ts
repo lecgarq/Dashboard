@@ -9,7 +9,8 @@ const config: KnipConfig = {
     'scripts/**',              // Ignore utility scripts not directly running in prod
     'node_modules/**',         // Implicitly ignored but good to be explicit
     'next-env.d.ts',
-    'postcss.config.mjs'
+    'postcss.config.mjs',
+    'playwright.verify.config.ts', // invoked via `playwright test --config` by the /verify flow, not imported
   ],
   ignoreDependencies: [
     'shadcn', 

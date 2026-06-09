@@ -20,6 +20,12 @@
 /.next-e2e/
 /out/
 
+# manual next.js build-snapshot backups (never committed)
+/.next-bak/
+/.next-bak-*/
+/.next.bak-*/
+/.next.predeploy-*/
+
 # playwright e2e
 /playwright/.auth/
 /playwright-report/
@@ -68,6 +74,7 @@ texti.env
 
 # temp / dump files
 /tmp/
+/.tmp/
 /prisma/dev.db
 .tmp-*.txt
 /400
@@ -78,6 +85,9 @@ texti.env
 *.py[cod]
 __pycache__/
 /*.png
+/*.jpg
+/*.gif
+/*.mov
 /PROBLEM*.png
 /Screenshot*.png
 /acc.xlsx
