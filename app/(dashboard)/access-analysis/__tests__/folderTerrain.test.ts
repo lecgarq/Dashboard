@@ -536,4 +536,17 @@ describe("buildCameraScene", () => {
   it("returns an empty scene for null data", () => {
     expect(buildCameraScene(null, { camera, viewport: { w: 600, h: 360 } }).bars).toHaveLength(0);
   });
+
+  it("scales every bar's height by the growth factor", () => {
+    const full = buildCameraScene(data, { camera, viewport: { w: 600, h: 360 } });
+    const half = buildCameraScene(data, { camera, viewport: { w: 600, h: 360 }, growth: 0.5 });
+    // Taller bars reach a smaller screen-y; at growth 0.5 every top sits lower.
+    const topY = (s: typeof full) => Math.min(...s.bars.flatMap((b) => b.top.map((p) => p.y)));
+    expect(topY(half)).toBeGreaterThan(topY(full));
+  });
+
+  it("treats growth=0 as flat (no height)", () => {
+    const flat = buildCameraScene(data, { camera, viewport: { w: 600, h: 360 }, growth: 0 });
+    expect(flat.bars.length).toBe(2);
+  });
 });

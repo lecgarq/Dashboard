@@ -831,6 +831,8 @@ export interface CameraSceneOpts {
   /** Shift every cell down by this many grid rows — stacks compare slabs in one
    *  camera world so the whole tower orbits/pans as a unit. */
   rowOffset?: number;
+  /** 0..1 height multiplier for grow-in animation (default 1). */
+  growth?: number;
 }
 
 /**
@@ -866,10 +868,11 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
   // Bars + contact shadows.
   const bars: SceneBar[] = [];
   const shadows: { points: string }[] = [];
+  const growth = opts.growth ?? 1;
   for (const cell of data.cells) {
     const ci = roleIdx.get(cell.roleId) ?? 0;
     const ri = (folderIdx.get(cell.folderId) ?? 0) + rOff;
-    const h = cellHeight(cell);
+    const h = cellHeight(cell) * growth;
     const b = barSceneCam(ci, ri, h, c, colorForRank(cell.rank), L);
     bars.push({ cell, faces: b.faces, top: b.top, cx: b.cx, cy: b.cy, depth: b.depth, col: ci, row: ri });
     const ground = SHADOW_CORNERS.map(([dc, dr]) => { const p = projectCamera(ci + dc, ri + dr, 0, c); return { x: p.x, y: p.y + 3 }; });
