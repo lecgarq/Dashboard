@@ -428,7 +428,7 @@ export function ShellBody({
               palette={simPaint.palette}
               // Faint when scattered, clearer as the grouping tightens — same lever
               // that fades in the cluster labels. Fades fully out during the morph.
-              opacity={Math.min(1, 0.25 + (strength / 100) * 0.75)}
+              opacity={Math.min(1, 0.5 + (strength / 100) * 0.5)}
               isMorphing={isPreviewActive}
             />
           )}

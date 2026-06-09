@@ -37,7 +37,7 @@ export interface SimilarityWebOverlayProps {
 }
 
 const FRAME_MS = 33; // ~30Hz, matches MapClusterLabels
-const LINE_WIDTH = 0.6;
+const LINE_WIDTH = 1.0;
 
 export function SimilarityWebOverlay(props: SimilarityWebOverlayProps): React.JSX.Element | null {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);

@@ -65,9 +65,9 @@ export interface EdgePaint {
   palette: Float32Array;
 }
 
-/** Faint base-alpha ceiling per theme — keeps the web gossamer, never solid. */
+/** Base-alpha ceiling per theme — translucent, but legible (not halftone-faint). */
 function baseAlpha(theme: "light" | "dark"): number {
-  return theme === "dark" ? 0.16 : 0.12;
+  return theme === "dark" ? 0.38 : 0.3;
 }
 
 /**
@@ -99,8 +99,8 @@ export function computeEdgeColors(
       g *= 0.85;
       b *= 0.85;
     }
-    // Alpha rises with similarity strength: weak ~0.35 of ceiling, strong = ceiling.
-    const aFrac = 0.35 + 0.65 * web.strength[i];
+    // Alpha rises with similarity strength: weak = half the ceiling, strong = ceiling.
+    const aFrac = 0.5 + 0.5 * web.strength[i];
 
     // Quantize: 5-bit RGB + 3-bit alpha. Safe for up to ~127 distinct community hues
     // (cosmos.gl caps at ~12, giving <=624 buckets — well within Uint16).
