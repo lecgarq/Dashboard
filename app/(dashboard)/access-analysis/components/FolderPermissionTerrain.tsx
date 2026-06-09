@@ -331,6 +331,7 @@ export function FolderPermissionTerrain({
         setHover={setHover}
         setPicked={setPicked}
         camApi={camApi}
+        dataKey={dataKey}
       />
 
       {picked && (
@@ -405,7 +406,7 @@ function crossProjectTiers(cell: TerrainCell, datas: FolderTerrainData[]): { pro
 // Stage — fixed viewport SVG; pan/zoom/orbit move content within it.
 // ---------------------------------------------------------------------------
 function SceneStage({
-  wrapRef, view, viewport, theme, dark, cam, busy, hover, picked, setHover, setPicked, camApi,
+  wrapRef, view, viewport, theme, dark, cam, busy, hover, picked, setHover, setPicked, camApi, dataKey,
 }: {
   wrapRef: React.MutableRefObject<HTMLDivElement | null>;
   view: StageView;
@@ -419,6 +420,7 @@ function SceneStage({
   setHover: (h: Hover) => void;
   setPicked: (p: Picked) => void;
   camApi: ReturnType<typeof useCamera>;
+  dataKey: string;
 }) {
   const bg = dark
     ? "radial-gradient(120% 90% at 50% 0%, rgba(124,58,237,0.10), transparent 60%)"
@@ -460,23 +462,25 @@ function SceneStage({
           <text x={viewport.w / 2} y={viewport.h / 2} textAnchor="middle" fontSize={13} fill={theme.sub}>{view.empty}</text>
         ) : (
           <>
-            {view.connectors.map((c, i) => (
-              <line key={`c${i}`} x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2} stroke={theme.connector} strokeWidth={1} strokeDasharray="2 4" />
-            ))}
-            {view.scenes.map((entry, si) => (
-              <SceneLayer
-                key={entry.source.projectId + si}
-                entry={entry}
-                showRoleLabels={si === 0}
-                theme={theme}
-                hover={hover}
-                picked={picked}
-                setHover={setHover}
-                setPicked={setPicked}
-                onPick={(b) => camApi.setPivotCell(b.col ?? cam.pivotCol, b.row ?? cam.pivotRow)}
-                draggedRef={camApi.dragRef}
-              />
-            ))}
+            <FadingScene k={dataKey}>
+              {view.connectors.map((c, i) => (
+                <line key={`c${i}`} x1={c.x1} y1={c.y1} x2={c.x2} y2={c.y2} stroke={theme.connector} strokeWidth={1} strokeDasharray="2 4" />
+              ))}
+              {view.scenes.map((entry, si) => (
+                <SceneLayer
+                  key={entry.source.projectId + si}
+                  entry={entry}
+                  showRoleLabels={si === 0}
+                  theme={theme}
+                  hover={hover}
+                  picked={picked}
+                  setHover={setHover}
+                  setPicked={setPicked}
+                  onPick={(b) => camApi.setPivotCell(b.col ?? cam.pivotCol, b.row ?? cam.pivotRow)}
+                  draggedRef={camApi.dragRef}
+                />
+              ))}
+            </FadingScene>
             {/* Pivot marker */}
             <g transform={`translate(${pivotPt.x} ${pivotPt.y})`} pointerEvents="none">
               <circle r={5} fill="none" stroke={theme.hot} strokeWidth={1.4} opacity={0.8} />
@@ -590,6 +594,18 @@ function SceneLayer({
       )}
     </g>
   );
+}
+
+/** Fades its contents in (opacity 0→1) whenever `k` changes — scene cross-fade. */
+function FadingScene({ k, children }: { k: string; children: React.ReactNode }) {
+  const [op, setOp] = useState(() => (prefersReducedMotion() ? 1 : 0));
+  useEffect(() => {
+    if (prefersReducedMotion()) { setOp(1); return; }
+    setOp(0);
+    const r = requestAnimationFrame(() => setOp(1));
+    return () => cancelAnimationFrame(r);
+  }, [k]);
+  return <g data-scene-fade style={{ opacity: op, transition: "opacity .28s ease" }}>{children}</g>;
 }
 
 function TerrainDefs() {

@@ -136,6 +136,15 @@ describe("FolderPermissionTerrain", () => {
     expect(orbit.className).toMatch(/bg-primary/);
   });
 
+  it("wraps the scene in a keyed fading group", () => {
+    const { container } = render(
+      <FolderPermissionTerrain projects={projects} initial={data} loadTerrain={vi.fn(async () => null)} />,
+    );
+    const fade = terrain(container).querySelector("g[data-scene-fade]") as SVGGElement | null;
+    expect(fade).toBeTruthy();
+    expect(fade!.style.transition).toMatch(/opacity/);
+  });
+
   it("shows the empty state when there is no data", () => {
     const { getByText } = render(
       <FolderPermissionTerrain projects={[]} initial={null} loadTerrain={vi.fn(async () => null)} />,
