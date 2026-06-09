@@ -3,6 +3,8 @@ import {
   rankForTier,
   colorForRank,
   tierTextColor,
+  topGradientId,
+  TIER_GRADIENTS,
   compareFolderNames,
   isoBase,
   barFaces,
@@ -92,6 +94,25 @@ describe("tierTextColor", () => {
     expect(tierTextColor(3)).toBe("#ffffff");
     expect(tierTextColor(4)).toBe("#0b1620");
     expect(tierTextColor(5)).toBe("#0b1620");
+  });
+});
+
+describe("top-face gradients", () => {
+  it("gives a stable, unique gradient id per rank", () => {
+    const ids = [1, 2, 3, 4, 5].map(topGradientId);
+    expect(new Set(ids).size).toBe(5);
+    expect(topGradientId(5)).toBe("terrainTop-5");
+  });
+  it("publishes one gradient descriptor per rank with light->base stops", () => {
+    expect(TIER_GRADIENTS).toHaveLength(5);
+    for (const g of TIER_GRADIENTS) {
+      expect(g.id).toBe(topGradientId(g.rank));
+      expect(g.from).toMatch(/^#[0-9a-f]{6}$/i); // brighter top stop
+      expect(g.to).toMatch(/^#[0-9a-f]{6}$/i);   // base stop
+    }
+  });
+  it("keeps top brighter than the lit-side cap", () => {
+    expect(DEFAULT_LIGHT.topBright).toBeGreaterThan(DEFAULT_LIGHT.sideMax);
   });
 });
 

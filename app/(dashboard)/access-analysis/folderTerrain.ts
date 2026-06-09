@@ -113,6 +113,27 @@ export function tierTextColor(rank: number): string {
   return rank >= 4 ? "#0b1620" : "#ffffff";
 }
 
+/** Lighten/darken a #rrggbb by a factor (1 = unchanged) for gradient stops. */
+function mix(hex: string, f: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const c = (s: number) => Math.max(0, Math.min(255, Math.round(((n >> s) & 255) * f)));
+  return `#${((1 << 24) | (c(16) << 16) | (c(8) << 8) | c(0)).toString(16).slice(1)}`;
+}
+
+/** Stable SVG gradient id for a rank's top face. */
+export function topGradientId(rank: number): string {
+  return `terrainTop-${rank}`;
+}
+
+/** Per-rank top-face gradient descriptors (bright far edge → slightly deeper). */
+export const TIER_GRADIENTS: ReadonlyArray<{ rank: number; id: string; from: string; to: string }> =
+  [1, 2, 3, 4, 5].map((rank) => ({
+    rank,
+    id: topGradientId(rank),
+    from: mix(TIER_COLORS[rank], 1.14),
+    to: mix(TIER_COLORS[rank], 0.92),
+  }));
+
 /** Legend rows, in ascending-access order. */
 export const TIER_LEGEND: ReadonlyArray<{ rank: number; label: string }> = [
   { rank: 1, label: "View only" },
@@ -562,7 +583,7 @@ export interface Light {
   sideMax: number;
 }
 
-export const DEFAULT_LIGHT: Light = { dx: 0.35, dy: 0.94, ambient: 0.4, diffuse: 0.55, topBright: 1, sideMax: 0.9 };
+export const DEFAULT_LIGHT: Light = { dx: 0.32, dy: 0.95, ambient: 0.34, diffuse: 0.66, topBright: 1.06, sideMax: 0.86 };
 
 /** Brightness of a side whose rotated outward normal is (nx,ny). */
 function sideBrightness(nx: number, ny: number, L: Light): number {
