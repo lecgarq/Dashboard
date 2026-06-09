@@ -1,5 +1,4 @@
 // @vitest-environment jsdom
-/// <reference types="@testing-library/jest-dom" />
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
 import { TemplateMembersTable } from "../components/TemplateMembersTable";
@@ -15,11 +14,11 @@ const members: TemplateMember[] = [
 describe("TemplateMembersTable", () => {
   it("renders one row per member with name, email, role, and company", () => {
     render(<TemplateMembersTable members={members} />);
-    expect(screen.getByText("Alberto")).toBeInTheDocument();
-    expect(screen.getByText("alberto.sanchez@hermosillo.com")).toBeInTheDocument();
-    expect(screen.getByText("Core")).toBeInTheDocument();
+    expect(screen.getByText("Alberto")).toBeTruthy();
+    expect(screen.getByText("alberto.sanchez@hermosillo.com")).toBeTruthy();
+    expect(screen.getByText("Core")).toBeTruthy();
     expect(screen.getAllByText("Hermosillo").length).toBeGreaterThan(0);
-    expect(screen.getByText("Guest")).toBeInTheDocument();
-    expect(screen.getByText("No role")).toBeInTheDocument();
+    expect(screen.getByText("Guest")).toBeTruthy();
+    expect(screen.getByText("No role")).toBeTruthy();
   });
 });
