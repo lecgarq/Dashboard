@@ -8,6 +8,7 @@ describe("dashboard navigation", () => {
         expect.objectContaining({ href: "/users", label: "Users Directory" }),
         expect.objectContaining({ href: "/access-analysis", label: "Access Analysis" }),
         expect.objectContaining({ href: "/users/spatial-graph", label: "Spatial Graph" }),
+        expect.objectContaining({ href: "/template-mty", label: "Template MTY" }),
       ]),
     );
   });
