@@ -65,5 +65,6 @@ describe("catalogDefaultSliders default grouping", () => {
     const at40 = catalogDefaultSliders(cat, 40);
     expect(at40.role).toBe(40);
     expect(at40.project).toBe(0);
+    expect(at40.user).toBe(0);
   });
 });

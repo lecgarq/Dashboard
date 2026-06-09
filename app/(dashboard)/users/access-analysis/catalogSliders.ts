@@ -18,9 +18,10 @@ export function sliderDimensionIds(catalog: readonly CatalogDimension[]): string
 export const GROUPING_DEFAULT = 60;
 
 /**
- * Default state: the primary grouping dimension starts engaged so the map LOADS
- * already organized (settle-on-load); every other slider is 0 for clean
- * single-dimension clusters. Prefers Role; falls back to Project; else all 0.
+ * Default slider state. The primary grouping dimension is seeded to `primaryStrength`
+ * (default `GROUPING_DEFAULT`) for settle-on-load organised clusters; every other
+ * slider is 0. Callers pass `0` to load loose/scatter (as the projector does after
+ * the Role-default wiring). Prefers Role; falls back to Project; else all 0.
  */
 export function catalogDefaultSliders(
   catalog: readonly CatalogDimension[],

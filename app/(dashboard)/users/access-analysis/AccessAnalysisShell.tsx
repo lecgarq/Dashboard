@@ -257,6 +257,9 @@ export function ShellBody({
   //     layout, and labels stay consistent for ANY group-by dim — including catalog
   //     dims (permission/tenure/status/…) absent from the color registry.
   //  3. Otherwise (rest scatter → cluster galaxy, or the flag-ON graph): the auto mode.
+  // NOTE: colorOverride is never null now (inits to "role", resets to "role"), so
+  // branch 1 always wins — branches 2–3 (auto-follow / cluster galaxy) are currently
+  // unreachable. Kept for the parked flag-ON 3D route; prune in a future cleanup.
   const bucketed = useMemo(() => {
     if (colorOverride) return buildBucketedColors(features, colorOverride, 12);
     if (!ACC_3D_GRAPH_ENABLED && grouping.showLabels && blobDesc) {
