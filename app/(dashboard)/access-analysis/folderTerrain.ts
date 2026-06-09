@@ -108,6 +108,11 @@ export function colorForRank(rank: number): string {
   return TIER_COLORS[rank] ?? TIER_COLORS[1];
 }
 
+/** Legible foreground colour for text drawn ON a tier swatch (ranks 4–5 are light). */
+export function tierTextColor(rank: number): string {
+  return rank >= 4 ? "#0b1620" : "#ffffff";
+}
+
 /** Legend rows, in ascending-access order. */
 export const TIER_LEGEND: ReadonlyArray<{ rank: number; label: string }> = [
   { rank: 1, label: "View only" },

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   rankForTier,
   colorForRank,
+  tierTextColor,
   compareFolderNames,
   isoBase,
   barFaces,
@@ -81,6 +82,16 @@ describe("TIER_COLORS ramp", () => {
     const red = (n: number) => (n >> 16) & 255, blue = (n: number) => n & 255;
     expect(red(r5)).toBeGreaterThan(red(r1));   // warmer at the top
     expect(blue(r1)).toBeGreaterThan(blue(r5)); // cooler at the bottom
+  });
+});
+
+describe("tierTextColor", () => {
+  it("uses dark ink on the light amber/gold tiers and white on the dark cool tiers", () => {
+    expect(tierTextColor(1)).toBe("#ffffff");
+    expect(tierTextColor(2)).toBe("#ffffff");
+    expect(tierTextColor(3)).toBe("#ffffff");
+    expect(tierTextColor(4)).toBe("#0b1620");
+    expect(tierTextColor(5)).toBe("#0b1620");
   });
 });
 
