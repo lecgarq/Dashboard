@@ -31,6 +31,9 @@ async function main() {
   process.env.DC_SKIP_ADMIN_SNAPSHOT = "1";
   const prisma = createPrisma();
   try {
+    log(
+      `adminSnapshot=skip cutoff=${process.env.DC_BACKFILL_CUTOFF_DATE || "(yesterday)"}`,
+    );
     for (let i = 1; i <= maxRuns; i += 1) {
       log(`starting run ${i}/${maxRuns}`);
       const result = await runDcIngest(prisma);

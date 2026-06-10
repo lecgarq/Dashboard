@@ -478,13 +478,46 @@ function safeDescription(raw: string): string {
 // Helpers
 // ---------------------------------------------------------------------------
 
-function yesterdayUtc(): Date {
-  const now = new Date();
+function yesterdayUtc(now = new Date()): Date {
   const utcToday = new Date(
     Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
   );
   // End-of-yesterday-UTC (1ms before today UTC midnight).
   return new Date(utcToday.getTime() - 1);
+}
+
+function parseUtcDateEnd(raw: string): Date {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw.trim());
+  if (!match) {
+    throw new Error(
+      'DC_BACKFILL_CUTOFF_DATE must use YYYY-MM-DD format, for example 2026-06-06',
+    );
+  }
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  const start = new Date(Date.UTC(year, month - 1, day));
+  if (
+    start.getUTCFullYear() !== year ||
+    start.getUTCMonth() !== month - 1 ||
+    start.getUTCDate() !== day
+  ) {
+    throw new Error(
+      'DC_BACKFILL_CUTOFF_DATE must be a real calendar date in YYYY-MM-DD format',
+    );
+  }
+  return new Date(Date.UTC(year, month - 1, day + 1) - 1);
+}
+
+export function resolveBackfillCeilingDate(
+  now = new Date(),
+  rawCutoff = process.env.DC_BACKFILL_CUTOFF_DATE,
+): Date {
+  const defaultCeiling = yesterdayUtc(now);
+  const trimmed = rawCutoff?.trim();
+  if (!trimmed) return defaultCeiling;
+  const cutoff = parseUtcDateEnd(trimmed);
+  return cutoff < defaultCeiling ? cutoff : defaultCeiling;
 }
 
 function newProjectProgress(
@@ -994,8 +1027,8 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
   const progress = newOnes.length > 0 ? await loadProjectProgress(prisma) : existing;
 
   // 5. Plan slice
-  const yesterday = yesterdayUtc();
-  const plan = planDailySlice(progress, yesterday);
+  const ceilingDate = resolveBackfillCeilingDate(startedAt);
+  const plan = planDailySlice(progress, ceilingDate);
 
   if (plan.slices.length === 0) {
     // Nothing to do — fully backfilled (or still no admin projects).
@@ -1006,7 +1039,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
         status: 'success',
         endedAt,
         sliceWindowStart: null,
-        sliceWindowEnd: yesterday,
+        sliceWindowEnd: ceilingDate,
         projectsProcessed: 0,
         rowsByModule: {},
         rowsByAdminCsv: {},
@@ -1019,7 +1052,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
       startedAt,
       endedAt,
       sliceWindowStart: null,
-      sliceWindowEnd: yesterday,
+      sliceWindowEnd: ceilingDate,
       projectsProcessed: 0,
       rowsByModule: {},
       rowsByAdminCsv: {},
@@ -1061,7 +1094,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
       quotaUsed: 0,
       projectsProcessed: 0,
       sliceWindowStart: plan.slices[0]?.start ?? null,
-      sliceWindowEnd: yesterday,
+      sliceWindowEnd: ceilingDate,
     });
   }
 
@@ -1073,7 +1106,7 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     run.id,
     limitedPlan.runnableSlices,
     startedAt,
-    yesterday,
+    ceilingDate,
     {
       finalStatusOnComplete:
         limitedPlan.deferredRequests > 0 ? 'quota-paused' : 'success',

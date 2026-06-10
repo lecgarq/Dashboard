@@ -38,7 +38,7 @@ vi.mock('./dcAdminCsvIngest', async (importOriginal) => {
 
 import { ingestAdminSnapshot } from './dcAdminCsvIngest';
 import { AnomalyError } from './dcAnomalyChecks';
-import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve, resolveBisectConfig, dcSubmit } from './dcIngest';
+import { isDcIngestRelevantFile, isKillSwitchActive, runDcIngest, loadPriorityInputs, resolveSlicesForBudget, resolveFairnessReserve, resolveBisectConfig, dcSubmit, resolveBackfillCeilingDate } from './dcIngest';
 import { DcSubmitForbiddenError } from './dcBisect';
 import { composePrioritizedSlices } from './dcBackfillPriority';
 import type { Slice } from './dcProgressiveBackfill';
@@ -135,6 +135,34 @@ describe('isDcIngestRelevantFile', () => {
   });
 });
 
+describe('resolveBackfillCeilingDate', () => {
+  const now = new Date('2026-06-10T16:00:00Z');
+
+  it('defaults to end-of-yesterday UTC when no cutoff is configured', () => {
+    expect(resolveBackfillCeilingDate(now, undefined).toISOString()).toBe(
+      '2026-06-09T23:59:59.999Z',
+    );
+  });
+
+  it('uses DC_BACKFILL_CUTOFF_DATE as an end-of-day UTC ceiling', () => {
+    expect(resolveBackfillCeilingDate(now, '2026-06-06').toISOString()).toBe(
+      '2026-06-06T23:59:59.999Z',
+    );
+  });
+
+  it('clamps future cutoff dates to end-of-yesterday UTC', () => {
+    expect(resolveBackfillCeilingDate(now, '2026-06-12').toISOString()).toBe(
+      '2026-06-09T23:59:59.999Z',
+    );
+  });
+
+  it('rejects invalid cutoff date values', () => {
+    expect(() => resolveBackfillCeilingDate(now, '06/06/2026')).toThrow(
+      /DC_BACKFILL_CUTOFF_DATE/,
+    );
+  });
+});
+
 describe('runDcIngest — top-level branches', () => {
   let killSwitchPath: string;
   const savedEnv: Record<string, string | undefined> = {};
@@ -145,6 +173,7 @@ describe('runDcIngest — top-level branches', () => {
     'APS_CLIENT_ID',
     'APS_CLIENT_SECRET',
     'DC_SKIP_ADMIN_SNAPSHOT',
+    'DC_BACKFILL_CUTOFF_DATE',
   ] as const;
 
   beforeEach(() => {
@@ -159,6 +188,7 @@ describe('runDcIngest — top-level branches', () => {
     process.env.APS_CLIENT_ID = 'test-client-id';
     process.env.APS_CLIENT_SECRET = 'test-client-secret';
     delete process.env.DC_SKIP_ADMIN_SNAPSHOT;
+    delete process.env.DC_BACKFILL_CUTOFF_DATE;
     vi.clearAllMocks();
   });
   afterEach(() => {
@@ -242,11 +272,47 @@ describe('runDcIngest — top-level branches', () => {
     fetchSpy.mockRestore();
   });
 
+  it('uses DC_BACKFILL_CUTOFF_DATE as the planning ceiling and skips newer forward work', async () => {
+    process.env.DC_BACKFILL_CUTOFF_DATE = '2026-06-06';
+    const prisma = makePrismaMock();
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue([
+      {
+        projectId: 'p-cutoff',
+        earliestCovered: new Date('2026-05-01T00:00:00Z'),
+        latestCovered: new Date('2026-06-07T23:59:59.999Z'),
+        projectCreatedAt: new Date('2026-05-01T00:00:00Z'),
+        newProjectFlag: false,
+      },
+    ]);
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}'));
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('success');
+    expect(result.quotaUsed).toBe(0);
+    expect(result.projectsProcessed).toBe(0);
+    expect(result.sliceWindowEnd?.toISOString()).toBe(
+      '2026-06-06T23:59:59.999Z',
+    );
+    expect(fetchSpy).not.toHaveBeenCalled();
+
+    const finalizeUpdate = prisma.accDcIngestRun.update.mock.calls.at(-1)?.[0] as {
+      data: { sliceWindowEnd: Date | null };
+    };
+    expect(finalizeUpdate.data.sliceWindowEnd?.toISOString()).toBe(
+      '2026-06-06T23:59:59.999Z',
+    );
+
+    fetchSpy.mockRestore();
+  });
+
   it('does not submit APS requests when pending projects are only low-value allowlisted names', async () => {
     const previousVitest = process.env.VITEST;
     const previousNodeEnv = process.env.NODE_ENV;
     process.env.VITEST = 'false';
-    process.env.NODE_ENV = 'production';
+    (process.env as any).NODE_ENV = 'production';
 
     const prisma = makePrismaMock();
     prisma.accDcBackfillProgress.findMany.mockResolvedValue([
@@ -296,9 +362,9 @@ describe('runDcIngest — top-level branches', () => {
         process.env.VITEST = previousVitest;
       }
       if (previousNodeEnv === undefined) {
-        delete process.env.NODE_ENV;
+        delete (process.env as any).NODE_ENV;
       } else {
-        process.env.NODE_ENV = previousNodeEnv;
+        (process.env as any).NODE_ENV = previousNodeEnv;
       }
     }
   });

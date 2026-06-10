@@ -15,6 +15,9 @@ const {
   planDailySlice,
 } = require("../../lib/acc/dcProgressiveBackfill");
 const {
+  resolveBackfillCeilingDate,
+} = require("../../lib/acc/dcIngest");
+const {
   isLowValueExtractionProjectName,
 } = require("../../lib/acc/dcProjectEligibility");
 
@@ -34,7 +37,7 @@ async function main() {
     const utcToday = new Date(
       Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()),
     );
-    const yesterday = new Date(utcToday.getTime() - 1);
+    const ceilingDate = resolveBackfillCeilingDate(now);
 
     const [progressRows, projects] = await Promise.all([
       prisma.accDcBackfillProgress.findMany(),
@@ -51,7 +54,7 @@ async function main() {
       newProjectFlag: row.newProjectFlag,
     }));
 
-    const plan = planDailySlice(progress, yesterday, {
+    const plan = planDailySlice(progress, ceilingDate, {
       filterProjectEligibility: true,
     });
     const runnableIds = new Set(
@@ -62,6 +65,7 @@ async function main() {
       .filter((project) => isLowValueExtractionProjectName(project.name));
 
     console.log("=== DC RUNNABLE PROJECT AUDIT ===");
+    console.log(`ceilingDate=${ceilingDate.toISOString()}`);
     console.log(`progressRows=${progressRows.length}`);
     console.log(`slices=${plan.slices.length}`);
     console.log(`runnableProjects=${runnableIds.size}`);

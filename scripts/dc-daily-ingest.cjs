@@ -36,6 +36,12 @@
  *     scoped/project-window continuation batches that would otherwise compare a
  *     partial admin CSV against the full-account baseline and quarantine.
  *
+ *   DC_BACKFILL_CUTOFF_DATE=YYYY-MM-DD
+ *     Manual history mode: use the end of this UTC date as the extraction
+ *     ceiling instead of yesterday. Example: 2026-06-06 means do not spend
+ *     quota catching up activity after 2026-06-06; continue historical backfill
+ *     backward from that ceiling.
+ *
  *   Note: PRIORITY_WINDOW_DAYS=30 is the activity-analysis window used by the
  *   priority ranker to compute scores. It is a compile-time constant in
  *   lib/acc/dcIngest.ts, not a runtime env var.
