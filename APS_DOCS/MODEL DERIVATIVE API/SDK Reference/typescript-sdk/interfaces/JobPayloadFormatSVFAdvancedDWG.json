@@ -1,9 +1,0 @@
-{
-  "_meta": {
-    "source": "https://aps.autodesk.com/en/docs/model-derivative/v2/reference/typescript-sdk/interfaces/JobPayloadFormatSVFAdvancedDWG",
-    "scrapedAt": "2026-05-08T18:34:13.569Z",
-    "category": "SDK Reference/typescript-sdk/interfaces",
-    "apiName": "MODEL DERIVATIVE API"
-  },
-  "title": "Interface: JobPayloadFormatSVFAdvancedDWG"
-}

@@ -1,9 +1,0 @@
-{
-  "_meta": {
-    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/typescript-sdk/interfaces/JwksKey",
-    "scrapedAt": "2026-05-08T17:37:44.211Z",
-    "category": "SDK Reference/typescript-sdk/interfaces",
-    "apiName": "AUTHENTICATION API"
-  },
-  "title": "Interface: JwksKey"
-}

@@ -1,9 +1,0 @@
-{
-  "_meta": {
-    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/typescript-sdk/interfaces/ThreeLeggedToken",
-    "scrapedAt": "2026-05-08T17:37:53.996Z",
-    "category": "SDK Reference/typescript-sdk/interfaces",
-    "apiName": "AUTHENTICATION API"
-  },
-  "title": "Interface: ThreeLeggedToken"
-}

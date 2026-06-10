@@ -1,9 +1,0 @@
-{
-  "_meta": {
-    "source": "https://aps.autodesk.com/en/docs/oauth/v2/developers_guide/rate-limiting/oauth-rate-limits",
-    "scrapedAt": "2026-05-08T17:35:11.380Z",
-    "category": "Developer Guide/rate-limiting",
-    "apiName": "AUTHENTICATION API"
-  },
-  "title": "Authentication Rate Limits"
-}

@@ -1,9 +1,0 @@
-{
-  "_meta": {
-    "source": "https://aps.autodesk.com/en/docs/oauth/v2/reference/typescript-sdk/interfaces/UserInfo",
-    "scrapedAt": "2026-05-08T17:38:00.514Z",
-    "category": "SDK Reference/typescript-sdk/interfaces",
-    "apiName": "AUTHENTICATION API"
-  },
-  "title": "Interface: UserInfo"
-}
