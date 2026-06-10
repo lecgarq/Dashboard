@@ -1,0 +1,69 @@
+"use client";
+import { useMemo } from "react";
+import { useTheme } from "next-themes";
+import { EChart } from "@/app/(dashboard)/access-analysis/components/EChart";
+import type { EChartsOption } from "echarts";
+import type { ModuleAccessSummary } from "../moduleAccess";
+
+export function ModuleAccessChart({ summary }: { summary: ModuleAccessSummary }) {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light";
+  const cText = dark ? "#e4e4e7" : "#374151";
+  const cAxis = dark ? "#3f3f46" : "#e5e7eb";
+  const cBar = "#6366f1";
+  const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
+
+  const slices = summary.slices;
+  const byName = useMemo(() => new Map(slices.map((s) => [s.name, s])), [slices]);
+
+  const option = useMemo<EChartsOption>(() => {
+    // Category axis renders bottom-up, so reverse to put the largest bar on top.
+    const names = slices.map((s) => s.name).reverse();
+    const values = slices.map((s) => s.userCount).reverse();
+    return {
+      grid: { left: 8, right: 56, top: 8, bottom: 8, containLabel: true },
+      tooltip: {
+        trigger: "item",
+        backgroundColor: cTipBg,
+        borderColor: cAxis,
+        borderWidth: 1,
+        textStyle: { color: cText },
+        extraCssText: "border-radius:10px;",
+        formatter: (params) => {
+          const p = Array.isArray(params) ? params[0] : params;
+          const name = (p as { name?: string }).name;
+          const s = name ? byName.get(name) : undefined;
+          if (!s) return "";
+          const roles = s.roles.length ? s.roles.join(", ") : "—";
+          return `<b>${s.name}</b><br/>${s.userCount} members<br/><span style="opacity:.7">${roles}</span>`;
+        },
+      },
+      xAxis: { type: "value", minInterval: 1, axisLine: { lineStyle: { color: cAxis } }, axisLabel: { color: cText }, splitLine: { lineStyle: { color: cAxis, opacity: 0.4 } } },
+      yAxis: { type: "category", data: names, axisLine: { lineStyle: { color: cAxis } }, axisLabel: { color: cText } },
+      series: [
+        {
+          type: "bar",
+          data: values,
+          itemStyle: { color: cBar, borderRadius: [0, 5, 5, 0] },
+          barWidth: "58%",
+          label: { show: true, position: "right", color: cText, formatter: "{c}" },
+        },
+      ],
+    };
+  }, [slices, byName, cText, cAxis, cTipBg]);
+
+  if (!summary.hasData) {
+    return (
+      <div className="flex min-h-[160px] flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+        <span className="font-medium text-foreground">No module access captured yet</span>
+        <span>Add <code className="rounded bg-muted px-1.5 py-0.5">modules</code> to each member in <code className="rounded bg-muted px-1.5 py-0.5">lib/acc/template-mty-roster.ts</code>.</span>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
+      <EChart option={option} height={Math.max(160, slices.length * 34 + 24)} notMerge={false} />
+    </div>
+  );
+}
