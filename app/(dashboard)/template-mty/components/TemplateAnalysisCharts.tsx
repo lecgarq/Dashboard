@@ -6,8 +6,10 @@ import { loadTemplateTerrain } from "../templateTerrainActions";
 import type { FolderTerrainData, TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { TemplateOverview } from "@/lib/server/templateView";
 import type { PermissionAccessSummary } from "../permissionAccess";
+import type { RoleTreeNode } from "@/lib/server/templateRoleTree";
 import { PermissionAccessChart } from "./PermissionAccessChart";
 import { ModuleAccessChart } from "./ModuleAccessChart";
+import { RolePermissionTree } from "./RolePermissionTree";
 import { TemplateMembersTable } from "./TemplateMembersTable";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -20,12 +22,13 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 }
 
 export function TemplateAnalysisCharts({
-  overview, terrain, terrainOption, permissionAccess,
+  overview, terrain, terrainOption, permissionAccess, roleTree,
 }: {
   overview: TemplateOverview;
   terrain: FolderTerrainData | null;
   terrainOption: TerrainProjectOption;
   permissionAccess: PermissionAccessSummary;
+  roleTree: RoleTreeNode[];
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -66,6 +69,11 @@ export function TemplateAnalysisCharts({
           loadTerrain={loadTemplateTerrain}
           singleProject
         />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionHeader title="Role access tree" subtitle="What each role can reach — expand a role to see every folder it holds permissions on, grouped by permission tier." />
+        <RolePermissionTree nodes={roleTree} />
       </section>
     </div>
   );
