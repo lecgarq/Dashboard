@@ -1,5 +1,5 @@
 // app/(dashboard)/template-mty/page.tsx
-import { loadTemplateOverview } from "@/lib/server/templateView";
+import { loadTemplateOverview, loadTemplatePermissionAccess } from "@/lib/server/templateView";
 import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrainView";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import type { TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
@@ -9,9 +9,10 @@ export const metadata = { title: "Template MTY" };
 export const dynamic = "force-dynamic";
 
 export default async function TemplateMtyRoute() {
-  const [overview, terrain] = await Promise.all([
+  const [overview, terrain, permissionAccess] = await Promise.all([
     loadTemplateOverview(),
     loadFolderPermissionTerrain(TEMPLATE_MTY_ID),
+    loadTemplatePermissionAccess(),
   ]);
 
   const terrainOption: TerrainProjectOption = {
@@ -32,12 +33,16 @@ export default async function TemplateMtyRoute() {
           </span>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">{TEMPLATE_MTY_NAME}</h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Members, roles, companies, access levels, and folder permissions for the
-            ACC Template MTY project template.
+            Members, roles, folder access, and module provisioning for the ACC Template MTY project template.
           </p>
         </header>
 
-        <TemplateAnalysisCharts overview={overview} terrain={terrain} terrainOption={terrainOption} />
+        <TemplateAnalysisCharts
+          overview={overview}
+          terrain={terrain}
+          terrainOption={terrainOption}
+          permissionAccess={permissionAccess}
+        />
       </div>
     </div>
   );

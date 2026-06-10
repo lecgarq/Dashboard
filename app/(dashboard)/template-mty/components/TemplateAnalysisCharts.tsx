@@ -5,7 +5,9 @@ import { FolderPermissionTerrain } from "@/app/(dashboard)/access-analysis/compo
 import { loadTerrainForProject } from "@/app/(dashboard)/access-analysis/folderTerrainActions";
 import type { FolderTerrainData, TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { TemplateOverview } from "@/lib/server/templateView";
-import { AccessLevelPieChart } from "./AccessLevelPieChart";
+import type { PermissionAccessSummary } from "../permissionAccess";
+import { PermissionAccessChart } from "./PermissionAccessChart";
+import { ModuleAccessChart } from "./ModuleAccessChart";
 import { TemplateMembersTable } from "./TemplateMembersTable";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -18,11 +20,12 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 }
 
 export function TemplateAnalysisCharts({
-  overview, terrain, terrainOption,
+  overview, terrain, terrainOption, permissionAccess,
 }: {
   overview: TemplateOverview;
   terrain: FolderTerrainData | null;
   terrainOption: TerrainProjectOption;
+  permissionAccess: PermissionAccessSummary;
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -46,8 +49,13 @@ export function TemplateAnalysisCharts({
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Access levels" subtitle="Project Admins vs Project Members across the roster." />
-        <AccessLevelPieChart slices={overview.accessLevels} />
+        <SectionHeader title="Folder access by tier" subtitle="Which roles — and how many of the members in them — hold each folder permission tier." />
+        <PermissionAccessChart summary={permissionAccess} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionHeader title="ACC module access" subtitle="Which ACC modules the template's members are provisioned for." />
+        <ModuleAccessChart summary={overview.moduleSummary} />
       </section>
 
       <section className="flex flex-col gap-3">
