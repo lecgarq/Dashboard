@@ -17,6 +17,7 @@
 /.next/
 /.next-dev/
 /.next-buildcheck/
+/.next-new/
 /.next-e2e/
 /out/
 
