@@ -8,7 +8,7 @@
 
 ## 1. Goal
 
-Wrap the existing organic, community-colored node map in a **dense web of very faint, thin, curved edges that connect instances by embedding similarity** — the Gephi / Force-Atlas "cotton" look (reference: `LOOK AND FEEL 1.jpg`). The web must be:
+Wrap the existing organic, community-colored node map in a **dense web of very faint, thin, curved edges that connect instances by embedding similarity** — the Gephi / Force-Atlas "cotton" look (reference: `docs/superpowers/assets/LOOK AND FEEL 1.jpg`). The web must be:
 
 - **Curved**, never straight polylines (gentle per-edge bow).
 - **Subtle** — density paints the texture; uniform low alpha keeps it elegant, not a hairball.

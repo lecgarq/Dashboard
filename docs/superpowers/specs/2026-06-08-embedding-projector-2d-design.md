@@ -9,12 +9,12 @@
 
 ## 1. Problem
 
-The current `/users/spatial-graph` view (see `problem.mov`) renders the access graph as a
+The current `/users/spatial-graph` view (see `docs/superpowers/assets/problem.mov`) renders the access graph as a
 **3D force-directed ball** (`GraphCanvas3D.tsx`, three.js + `d3-force-3d` via
 `physicsLayerWorker`). It has two fatal problems:
 
 1. **Wrong look.** The owner wants the **TensorFlow Embedding Projector** aesthetic
-   (`LOOK AND FEEL 2.gif`): a flat 2D similarity scatter where similar items land near
+   (`docs/superpowers/assets/LOOK AND FEEL 2.gif`): a flat 2D similarity scatter where similar items land near
    each other, crisp separated clusters, color-by-label legend, **no edges**, zoom-to-detail,
    click-to-see-nearest-neighbors. A 3D force layout *always* projects to a filled sphere —
    depth overlap destroys the whitespace and community separation that make the reference
@@ -37,7 +37,7 @@ preset-cluster color, no per-node click).
 Replace the 3D force-ball with a **2D similarity-embedding map** of the existing
 (person, project) instances, computed by a real dimensionality-reduction projection (UMAP/t-SNE),
 rendered as a static no-edge scatter, with click-to-explore-neighbors. Match the look and the
-zero-lag feel of `LOOK AND FEEL 2.gif`.
+zero-lag feel of `docs/superpowers/assets/LOOK AND FEEL 2.gif`.
 
 **No rendering-framework change.** `cosmos.gl` (`GraphCanvas2D.tsx`) is already integrated and
 renders a 16,942-point static scatter at 60fps; with no edges there is no overdraw and no lag.
@@ -194,7 +194,7 @@ paths; only its *position source* differs (embedding coords vs physics).
 1. Implement Python step + table + frontend swap behind the existing default (2D).
 2. Run `python scripts/build_instance_embedding.py` on real data to populate the table.
 3. `npm run build` + restart (note: do **not** build under a running :3000 — it 500s the live app).
-4. Owner opens `/users/spatial-graph`, eyeballs against `LOOK AND FEEL 2.gif`.
+4. Owner opens `/users/spatial-graph`, eyeballs against `docs/superpowers/assets/LOOK AND FEEL 2.gif`.
 5. Tune projection params (UMAP `n_neighbors`/`min_dist`), project down-weight factor, and color
    defaults from there.
 

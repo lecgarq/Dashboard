@@ -24,7 +24,7 @@ This is the trade-off the recent projector pivot created:
 | | Old physics graph (flag-ON, parked) | New projector map (flag-OFF, live default) |
 |---|---|---|
 | Sliders | Worked (drove a live GPU force layout) | Dead (no-op) |
-| Motion | Laggy + jumpy (`problem.mov`) | Smooth, but frozen |
+| Motion | Laggy + jumpy (`docs/superpowers/assets/problem.mov`) | Smooth, but frozen |
 
 ## Goal
 

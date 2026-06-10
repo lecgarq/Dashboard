@@ -25,7 +25,7 @@ finds it unprofessional and confusing in three specific ways:
 3. **Animations feel lazy.** There are essentially none: camera, mode, and data changes snap
    instantly; hover only toggles a stroke.
 
-The owner's INSPIRATION images (BOT-OR-NOT; the tier-1/2/3 city infographic; Virtual/Mix/Real)
+The owner's INSPIRATION images (now in `docs/superpowers/assets/`; BOT-OR-NOT; the tier-1/2/3 city infographic; Virtual/Mix/Real)
 all show the same target: **separate isometric planes, one per category, stacked vertically
 with airy gaps and faint connector drop-lines**, each independently legible.
 

@@ -1172,7 +1172,7 @@ Owner action (do NOT `npm run build` under a running :3000 — it 500s the live 
 npm run build
 # restart the Task Scheduler "start-local" app
 ```
-Then open `/users/spatial-graph` and compare to `LOOK AND FEEL 2.gif`.
+Then open `/users/spatial-graph` and compare to `docs/superpowers/assets/LOOK AND FEEL 2.gif`.
 
 - [ ] **Step 3: Tune at UAT (no commit unless changed)**
 
