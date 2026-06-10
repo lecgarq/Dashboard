@@ -16,6 +16,9 @@ const config: KnipConfig = {
     'components/ui/**',        // Shadcn UI components are imported ad-hoc
     'scripts/**',              // Utility/cron scripts run via node, not imported by the app
     'playwright.verify.config.ts', // invoked via `playwright test --config` by the /verify flow, not imported
+    'lib/acc/apsAuth.ts',          // required at runtime by scripts/acc-issues-*.cjs (scripts/ is knip-blind)
+    'lib/acc/ingestActivityZip.ts', // required at runtime by scripts/dc-extract-id-list.cjs
+    'lib/client/emptyDuckDbNode.ts', // webpack alias target in next.config.ts (string path, not an import)
   ],
   ignoreDependencies: [
     'shadcn',
