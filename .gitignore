@@ -104,3 +104,4 @@ __pycache__/
 
 # Embedding build artifacts
 .embedding/
+scripts/_attic/
