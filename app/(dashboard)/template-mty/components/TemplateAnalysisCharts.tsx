@@ -2,7 +2,7 @@
 "use client";
 import { RolesPieChart } from "@/app/(dashboard)/access-analysis/components/RolesPieChart";
 import { FolderPermissionTerrain } from "@/app/(dashboard)/access-analysis/components/FolderPermissionTerrain";
-import { loadTerrainForProject } from "@/app/(dashboard)/access-analysis/folderTerrainActions";
+import { loadTemplateTerrain } from "../templateTerrainActions";
 import type { FolderTerrainData, TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { TemplateOverview } from "@/lib/server/templateView";
 import type { PermissionAccessSummary } from "../permissionAccess";
@@ -59,11 +59,11 @@ export function TemplateAnalysisCharts({
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Folder permission terrain" subtitle="Each Level-2 folder × role, coloured by permission tier and raised by users in that role." />
+        <SectionHeader title="Folder permission terrain" subtitle="Every folder (2nd level down) whose permissions are explicitly changed from its parent — inherited folders excluded. Colour = permission tier, height = members in that role. Drag to orbit, scroll to zoom, hover a bar for the folder." />
         <FolderPermissionTerrain
           projects={[terrainOption]}
           initial={terrain}
-          loadTerrain={loadTerrainForProject}
+          loadTerrain={loadTemplateTerrain}
           singleProject
         />
       </section>

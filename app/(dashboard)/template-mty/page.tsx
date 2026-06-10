@@ -1,6 +1,6 @@
 // app/(dashboard)/template-mty/page.tsx
 import { loadTemplateOverview, loadTemplatePermissionAccess } from "@/lib/server/templateView";
-import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrainView";
+import { loadTemplateFolderTerrain } from "@/lib/server/templateFolderTerrain";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import type { TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import { TemplateAnalysisCharts } from "./components/TemplateAnalysisCharts";
@@ -11,7 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function TemplateMtyRoute() {
   const [overview, terrain, permissionAccess] = await Promise.all([
     loadTemplateOverview(),
-    loadFolderPermissionTerrain(TEMPLATE_MTY_ID),
+    loadTemplateFolderTerrain(),
     loadTemplatePermissionAccess(),
   ]);
 

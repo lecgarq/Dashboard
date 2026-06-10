@@ -375,14 +375,19 @@ function defaultPivot(mode: Mode, single: FolderTerrainData | null, overview: Fo
 function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean, growth: number): StageView {
   const blank = (empty: string): StageView => ({ scenes: [], connectors: [], metric: "users", empty });
 
+  // Many folders (e.g. the template's all-changed terrain) overflow the roomy
+  // evenly-spaced folder-label list, so fall back to compact, collision-pruned
+  // labels past this count; small terrains keep the spacious leader list.
+  const MANY_FOLDERS = 20;
+
   if (mode === "single") {
     if (!single) return blank(busy ? "Loading terrain…" : "No folder-permission data for this project.");
-    const scene = buildCameraScene(single, { camera: cam, viewport, growth });
+    const scene = buildCameraScene(single, { camera: cam, viewport, growth, compactLabels: single.folders.length > MANY_FOLDERS });
     return { scenes: [{ scene, source: single }], connectors: [], metric: "users", empty: null };
   }
   if (mode === "overview") {
     if (!overview) return blank(busy ? "Loading overview…" : "Overview unavailable.");
-    const scene = buildCameraScene(overview, { camera: cam, viewport, growth });
+    const scene = buildCameraScene(overview, { camera: cam, viewport, growth, compactLabels: overview.folders.length > MANY_FOLDERS });
     return { scenes: [{ scene, source: overview }], connectors: [], metric: "projects", empty: null };
   }
   // compare — separated floating planes, one per project, on a shared camera.
