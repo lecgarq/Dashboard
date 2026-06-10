@@ -3,13 +3,13 @@ import { buildTemplateOverview } from "@/lib/server/templateView";
 import type { TemplateRosterMember } from "@/lib/acc/template-mty-roster";
 
 const roster: TemplateRosterMember[] = [
-  { name: "Cain", email: "cain@hermosillo.com", company: "Hermosillo", role: "Architect", accessLevel: "Project Admin" },
-  { name: "Diego", email: "diego@hermosillo.com", company: "Hermosillo", role: "Designer", accessLevel: "Project Member" },
+  { name: "Cain", email: "cain@hermosillo.com", company: "Hermosillo", role: "Architect", accessLevel: "Project Admin", modules: ["dataManagement", "build"] },
+  { name: "Diego", email: "diego@hermosillo.com", company: "Hermosillo", role: "Designer", accessLevel: "Project Member", modules: ["dataManagement"] },
   { name: "Guest", email: "guest@outside.com", company: "Outside Co", role: "Designer", accessLevel: "Project Member" },
 ];
 
 describe("buildTemplateOverview", () => {
-  it("builds members, role/access/company breakdowns, and counts from the roster", () => {
+  it("builds members, role/company breakdowns, module summary, and counts from the roster", () => {
     const o = buildTemplateOverview(roster, "2026-06-09");
 
     expect(o.memberCount).toBe(3);
@@ -27,11 +27,10 @@ describe("buildTemplateOverview", () => {
       { name: "Architect", value: 1 },
     ]);
 
-    // access-level split, sorted by count desc
-    expect(o.accessLevels).toEqual([
-      { name: "Project Member", value: 2 },
-      { name: "Project Admin", value: 1 },
-    ]);
+    // module summary delegates to summarizeModuleAccess
+    expect(o.moduleSummary.hasData).toBe(true);
+    expect(o.moduleSummary.memberCount).toBe(3);
+    expect(o.moduleSummary.slices.find((s) => s.id === "dataManagement")?.userCount).toBe(2);
 
     // companies, sorted by count desc
     expect(o.companies).toEqual([
