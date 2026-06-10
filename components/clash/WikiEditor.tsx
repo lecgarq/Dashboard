@@ -1,34 +1,22 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { useEditor, EditorContent, ReactNodeViewRenderer } from "@tiptap/react";
-import { StarterKit } from "@tiptap/starter-kit";
-import { Placeholder } from "@tiptap/extension-placeholder";
-import { Underline } from "@tiptap/extension-underline";
-import { Link } from "@tiptap/extension-link";
-import { FontFamily } from "@tiptap/extension-font-family";
-import { TextStyle } from "@tiptap/extension-text-style";
-import Collaboration from "@tiptap/extension-collaboration";
-import CollaborationCaret from "@tiptap/extension-collaboration-caret";
-import BulletList from "@tiptap/extension-bullet-list";
-import OrderedList from "@tiptap/extension-ordered-list";
-import ListItem from "@tiptap/extension-list-item";
+import { useEditor, EditorContent } from "@tiptap/react";
 import { useSession } from "next-auth/react";
-import dynamic from "next/dynamic";
 import { compressImage } from "./wiki-editor/media";
 import { WikiLinkDialog } from "./wiki-editor/WikiLinkDialog";
-import { VideoNode } from "./wiki-editor/video-node";
 import { getOrCreateYjsProvider, releaseYjsProvider } from "./wiki-editor/yjs-provider";
 
-// Phase 2: Image (replaces tiptap-extension-resize-image)
-import { ImageNode } from "./wiki-editor/image-node";
+// Extension configuration (extracted verbatim — see wiki-editor/editor-extensions.ts)
+import {
+  buildStaticExtensions,
+  buildCollaborationExtensions,
+} from "./wiki-editor/editor-extensions";
 
-// Phase 2: PDF node (schema only — NodeView wired below via dynamic import)
-import { PdfNode } from "./wiki-editor/pdf-node";
+// Toolbar UI (extracted verbatim — see wiki-editor/EditorToolbar.tsx)
+import { EditorToolbar, type AutoSaveState } from "./wiki-editor/EditorToolbar";
 
-// Phase 2: Table extensions
-import { TableKit } from "./wiki-editor/table-node/extensions/table-node-extension";
-import { CustomTableCell } from "./wiki-editor/table-node/extensions/custom-table-cell";
+// Phase 2: Table overlays
 import { TableCellHandleMenu, TableHandle } from "./wiki-editor/table-node/ui/table-handle";
 
 // Phase 2: Drag handle
@@ -38,48 +26,12 @@ import { WikiDragHandle } from "./wiki-editor/drag-handle";
 import { SlashDropdownMenu } from "./wiki-editor/slash-menu";
 import { WIKI_SLASH_ITEMS } from "./wiki-editor/slash-menu/wiki-slash-items";
 
-// Dynamic import for PdfNodeView — keeps this file SSR-safe (pdf.js uses browser APIs)
-const DynamicPdfNodeView = dynamic(
-  () => import("./wiki-editor/pdf-node-view"),
-  { ssr: false }
-);
-
-import { Button } from "@/components/ui/button";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Type,
-  Image as ImageIcon,
-  Video as VideoIcon,
-  Loader2,
-  Link as LinkIcon,
-  FileText,
-  Table2,
-} from "lucide-react";
+import { Loader2, FileText } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
-import { cn } from "@/lib/core/utils";
 import { startOAuthConnect } from "@/lib/google/oauth-connect";
-import {
-  Save,
-  Printer,
-  Bold,
-  Italic,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  Check,
-  Underline as UnderlineIcon,
-} from "lucide-react";
 import { useDebounce } from "@/hooks/use-debounce";
 
 type WikiStatus = "DRAFT" | "REVIEW" | "APPROVED";
-type AutoSaveState = "idle" | "pending" | "saving" | "saved";
 
 type WikiMediaUploadError = Error & {
   code?: string;
@@ -194,7 +146,7 @@ export function WikiEditor({
   const debouncedVersion = useDebounce(contentVersion, 1500);
   const currentHtmlRef = useRef(section.content);
   const roomName = useMemo(() => `wiki-room-${module}-${section.id}`, [module, section.id]);
-  
+
   // Link dialog state
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState("");
@@ -274,60 +226,12 @@ export function WikiEditor({
     const color = defaultColors[(sessionEmail.charCodeAt(0) || 0) % defaultColors.length] || '#f79a36';
 
     return [
-      StarterKit.configure({
-        history: false,
-        bulletList: false,
-        orderedList: false,
-        listItem: false,
-        // Disable built-ins that we register explicitly below to avoid
-        // "[tiptap warn]: Duplicate extension names found: ['link', 'underline']"
-        link: false,
-        underline: false,
-      } as any),
-      BulletList,
-      OrderedList,
-      ListItem,
-      Placeholder.configure({ placeholder: "Write section content here..." }),
-      Underline,
-      TextStyle,
-      FontFamily,
-      // Phase 2: ImageNode replaces ImageResize — same node name "image" preserves backward compat
-      ImageNode,
-      VideoNode,
-      Link.configure({
-        openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-primary underline cursor-pointer',
-        },
-      }),
-
-      // Phase 2: Table (registered BEFORE Collaboration)
-      // tableCell: false prevents TableKit from registering the built-in TableCell —
-      // CustomTableCell below is the sole 'tableCell' extension, avoiding the
-      // "[tiptap warn]: Duplicate extension names found: ['tableCell']" warning.
-      TableKit.configure({ table: { resizable: true }, tableCell: false } as any),
-      CustomTableCell,
-
-      // Phase 2: PDF node with dynamic NodeView (avoids SSR crash)
-      PdfNode.extend({
-        addNodeView() {
-          return ReactNodeViewRenderer(DynamicPdfNodeView as any);
-        },
-      }),
-
+      ...buildStaticExtensions(),
       ...(ydoc && provider
-        ? [
-            Collaboration.configure({
-              document: ydoc,
-            }),
-            CollaborationCaret.configure({
-              provider: provider,
-              user: {
-                name: session?.user?.name || session?.user?.email?.split('@')[0] || "Anonymous",
-                color: color,
-              },
-            }),
-          ]
+        ? buildCollaborationExtensions(ydoc, provider, {
+            name: session?.user?.name || session?.user?.email?.split('@')[0] || "Anonymous",
+            color: color,
+          })
         : []),
     ];
   }, [provider, session, ydoc]);
@@ -355,7 +259,7 @@ export function WikiEditor({
   const handleMediaUpload = useCallback(async (files: File[]) => {
     const ed = editorRef.current;
     if (!ed || !editorCanWrite) return;
-    
+
     setUploadError(null);
     setIsUploading(true);
     setUploadProgress(0);
@@ -433,7 +337,7 @@ export function WikiEditor({
 
             xhr.send(formData);
           });
-          
+
           // 3. Finalize: Replace placeholder with real URL
           // We find the node with the temp ID and update its src
           ed.state.doc.descendants((node, pos) => {
@@ -500,7 +404,7 @@ export function WikiEditor({
       // 1. Try direct files
       const files = Array.from(clipboardData.files || [])
         .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
-      
+
       if (files.length > 0) {
         event.preventDefault();
         uploadRef.current(files);
@@ -545,7 +449,7 @@ export function WikiEditor({
 
       const files = Array.from(dataTransfer.files || [])
         .filter(file => file.type.startsWith('image/') || file.type.startsWith('video/'));
-      
+
       if (files.length > 0) {
         event.preventDefault();
         uploadRef.current(files);
@@ -582,7 +486,7 @@ export function WikiEditor({
   // Only inject HTML payload from the database ONCE on initial Yjs sync if it's completely empty.
   useEffect(() => {
     if (!editor || !provider) return;
-    
+
     let initialized = false;
     let hasCompletedInitialSync = provider.synced;
     let disposed = false;
@@ -595,12 +499,12 @@ export function WikiEditor({
     }, COLLAB_SYNC_TIMEOUT_MS);
 
     const clearSyncTimeout = () => window.clearTimeout(syncTimeout);
-    
+
     const handleSynced = ({ state }: HocuspocusSyncedPayload) => {
       if (disposed) return;
       hasCompletedInitialSync = state;
       setIsSynced(state);
-      
+
       if (!state) return;
 
       clearSyncTimeout();
@@ -640,16 +544,16 @@ export function WikiEditor({
           : "Collaboration server disconnected before sync completed."
       );
     };
-    
+
     provider.on("synced", handleSynced);
     provider.on("authenticationFailed", handleAuthenticationFailed);
     provider.on("disconnect", handleDisconnect);
-    
+
     // Check initial state if already synced
     if (provider.synced) {
       handleSynced({ state: true });
     }
-    
+
     return () => {
       disposed = true;
       clearSyncTimeout();
@@ -715,14 +619,14 @@ export function WikiEditor({
 
   useEffect(() => {
     if (debouncedVersion === 0 || debouncedVersion === lastSavedVersionRef.current || !editor || upsert.isPending) return;
-    
+
     // We only save the structural metadata (title, status).
     // CRDT handles the actual text/HTML payload internally via WebSockets and Prisma.
     // If only text is changing across multiple clients, we avoid hitting this.
     // However, if localTitle changes, it will trigger an upsert.
     const versionToSave = debouncedVersion;
     setAutoSaveState("saving");
-    
+
     upsert.mutate(
       {
         section: section.section,
@@ -793,276 +697,28 @@ export function WikiEditor({
   const showEditorInitializing = canEdit && (!editor || !editorCanWrite || !isSynced) && !collabError;
   const showEmptyCanvasHint = !!editor && editorCanWrite && isSynced && editor.isEmpty;
 
-  const toolbarButtons = editor
-    ? [
-        {
-          icon: Bold,
-          action: () => editor.chain().focus().toggleBold().run(),
-          active: editor.isActive("bold"),
-          label: "Bold",
-        },
-        {
-          icon: Italic,
-          action: () => editor.chain().focus().toggleItalic().run(),
-          active: editor.isActive("italic"),
-          label: "Italic",
-        },
-        {
-          icon: UnderlineIcon,
-          action: () => editor.chain().focus().toggleUnderline().run(),
-          active: editor.isActive("underline"),
-          label: "Underline",
-        },
-        {
-          icon: Heading2,
-          action: () => editor.chain().focus().toggleHeading({ level: 2 }).run(),
-          active: editor.isActive("heading", { level: 2 }),
-          label: "H2",
-        },
-        {
-          icon: Heading3,
-          action: () => editor.chain().focus().toggleHeading({ level: 3 }).run(),
-          active: editor.isActive("heading", { level: 3 }),
-          label: "H3",
-        },
-        {
-          icon: List,
-          action: () => editor.chain().focus().toggleBulletList().run(),
-          active: editor.isActive("bulletList"),
-          label: "Bullet",
-        },
-        {
-          icon: ListOrdered,
-          action: () => editor.chain().focus().toggleOrderedList().run(),
-          active: editor.isActive("orderedList"),
-          label: "Number",
-        },
-        {
-          icon: LinkIcon,
-          action: () => {
-            const currentUrl = editor.getAttributes("link").href || "";
-            setLinkUrl(currentUrl);
-            setLinkDialogOpen(true);
-          },
-          active: editor.isActive("link"),
-          label: "Link",
-        },
-        {
-          icon: ImageIcon,
-          action: () => {
-             const input = document.getElementById('wiki-image-upload') as HTMLInputElement;
-             if (input) input.click();
-          },
-          active: false,
-          label: "Image",
-        },
-        {
-          icon: VideoIcon,
-          action: () => {
-             const input = document.getElementById('wiki-video-upload') as HTMLInputElement;
-             if (input) input.click();
-          },
-          active: false,
-          label: "Video",
-        },
-        {
-          icon: Table2,
-          action: () => {
-            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-          },
-          active: false,
-          label: "Table",
-        },
-      ]
-    : [];
-
   return (
     <div className="flex flex-col h-full">
       {canEdit && editor && (
-      <div className="flex items-center justify-between px-4 py-2 border-b border-border/30 bg-card/50 backdrop-blur-sm shrink-0">
-        <div className="flex items-center gap-0.5">
-            <Select 
-              disabled={!editorCanWrite}
-              onValueChange={(value) => editor.chain().focus().setFontFamily(value).run()}
-            >
-              <SelectTrigger className="h-7 w-[100px] text-[10px] bg-secondary/30 border-none hover:bg-secondary/50 transition-colors">
-                 <div className="flex items-center gap-1.5 overflow-hidden">
-                    <Type size={12} className="shrink-0 opacity-50" />
-                    <SelectValue placeholder="Font" />
-                 </div>
-              </SelectTrigger>
-              <SelectContent className="bg-card border-border">
-                <SelectItem value="Inter" className="text-[10px] font-sans">Inter</SelectItem>
-                <SelectItem value="'Playfair Display', serif" className="text-[10px] font-serif">Serif</SelectItem>
-                <SelectItem value="'JetBrains Mono', monospace" className="text-[10px] font-mono">Monospace</SelectItem>
-                <SelectItem value="Outfit" className="text-[10px]">Outfit</SelectItem>
-                <SelectItem value="Roboto" className="text-[10px]">Roboto</SelectItem>
-              </SelectContent>
-            </Select>
-
-            <div className="w-[1px] h-4 bg-border/30 mx-1" />
-
-            <input
-               id="wiki-image-upload"
-               type="file"
-               accept="image/*"
-               multiple
-               className="hidden"
-               title="Upload Image"
-               aria-label="Upload image"
-               onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (files.length > 0) handleMediaUpload(files);
-               }}
-            />
-            <input
-               id="wiki-video-upload"
-               type="file"
-               accept="video/*"
-               multiple
-               className="hidden"
-               title="Upload Video"
-               aria-label="Upload video"
-               onChange={(e) => {
-                  const files = Array.from(e.target.files || []);
-                  if (files.length > 0) handleMediaUpload(files);
-               }}
-            />
-            {/* Phase 2: PDF upload — triggered by slash menu PDF item */}
-            <input
-               id="wiki-pdf-upload"
-               type="file"
-               accept="application/pdf"
-               className="hidden"
-               title="Upload PDF"
-               aria-label="Upload PDF"
-               onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !editor) return;
-                  const fileName = file.name;
-                  const formData = new FormData();
-                  formData.append("file", file);
-                  const xhr = new XMLHttpRequest();
-                  xhr.open("POST", "/api/wiki-media");
-                  xhr.setRequestHeader("x-wiki-module", module);
-                  xhr.upload.addEventListener("progress", (ev) => {
-                    if (ev.lengthComputable) {
-                      setNamedUploadProgress({ fileName, progress: Math.round((ev.loaded / ev.total) * 100) });
-                    }
-                  });
-                  xhr.addEventListener("load", () => {
-                    setNamedUploadProgress(null);
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                      const { url } = JSON.parse(xhr.responseText) as { url: string };
-                      // Extract fileId from returned URL or use the URL directly
-                      const fileIdMatch = url.match(/[?&]id=([^&]+)/) ?? url.match(/\/d\/([^/]+)/);
-                      const fileId = fileIdMatch ? fileIdMatch[1] : url;
-                      editor.chain().focus().insertContent({
-                        type: "pdf",
-                        attrs: { fileId, fileName, caption: null, height: 500 },
-                      }).run();
-                    } else {
-                      try {
-                        const payload = JSON.parse(xhr.responseText);
-                        if (payload?.code === "reconnect_required") {
-                          reconnectGoogleDrive();
-                        } else if (typeof payload?.error === "string") {
-                          setUploadError(payload.error);
-                        } else {
-                          setUploadError("PDF upload failed");
-                        }
-                      } catch {
-                        setUploadError("PDF upload failed");
-                      }
-                    }
-                    // Reset input so the same file can be re-selected
-                    e.target.value = "";
-                  });
-                  xhr.addEventListener("error", () => {
-                    setNamedUploadProgress(null);
-                    e.target.value = "";
-                  });
-                  xhr.send(formData);
-               }}
-            />
-
-            {toolbarButtons.map((btn) => {
-              const Icon = btn.icon;
-              return (
-                <button
-                  key={btn.label}
-                  onClick={btn.action}
-                  disabled={isUploading || !editorCanWrite}
-                  title={btn.label}
-                  aria-label={btn.label}
-                  className={cn(
-                    "p-1.5 rounded-md transition-smooth",
-                    btn.active
-                      ? "bg-primary/15 text-primary"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/50",
-                    isUploading && "opacity-50 cursor-not-allowed"
-                  )}
-                >
-                  <Icon size={15} />
-                </button>
-              );
-            })}
-            {isUploading && (
-              <div className="flex items-center gap-2 ml-2 px-2 py-0.5 rounded-full bg-primary/10 border border-primary/20">
-                <Loader2 size={12} className="animate-spin text-primary" />
-                <span className="text-[10px] font-medium text-primary">{uploadProgress}%</span>
-              </div>
-            )}
-            {uploadError && (
-              <span className="ml-2 text-[11px] text-destructive">
-                {uploadError}
-              </span>
-            )}
-            {collabError && (
-              <span className="ml-2 text-[11px] text-destructive">
-                {collabError}
-              </span>
-            )}
-          </div>
-
-          <div className="flex items-center gap-2">
-            {autoSaveState === "pending" && (
-              <span className="text-[11px] text-muted-foreground/60 min-w-[60px] text-right">
-                Editing...
-              </span>
-            )}
-            {autoSaveState === "saving" && (
-              <span className="text-[11px] text-muted-foreground/60 min-w-[60px] text-right">
-                Saving...
-              </span>
-            )}
-            {autoSaveState === "saved" && (
-              <span className="text-[11px] text-chart-2 flex items-center gap-1 min-w-[60px] justify-end">
-                <Check size={11} /> Saved
-              </span>
-            )}
-            {autoSaveState === "idle" && isDirty && editorCanWrite && (
-              <Button
-                size="sm"
-                className="h-7 text-xs gap-1.5 gradient-accent text-white hover:opacity-90"
-                onClick={handleSave}
-                disabled={upsert.isPending}
-              >
-                <Save size={12} />
-                Save
-              </Button>
-            )}
-
-            <button
-              onClick={() => window.print()}
-              className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-accent/50 transition-smooth"
-              title="Print"
-              aria-label="Print"
-            >
-              <Printer size={14} />
-            </button>
-          </div>
-        </div>
+        <EditorToolbar
+          editor={editor}
+          editorCanWrite={editorCanWrite}
+          module={module}
+          isUploading={isUploading}
+          uploadProgress={uploadProgress}
+          uploadError={uploadError}
+          collabError={collabError}
+          autoSaveState={autoSaveState}
+          isDirty={isDirty}
+          isSavePending={upsert.isPending}
+          onSave={handleSave}
+          onMediaUpload={handleMediaUpload}
+          onReconnectGoogleDrive={reconnectGoogleDrive}
+          setUploadError={setUploadError}
+          setNamedUploadProgress={setNamedUploadProgress}
+          setLinkUrl={setLinkUrl}
+          setLinkDialogOpen={setLinkDialogOpen}
+        />
       )}
 
       <div className="flex flex-col flex-1 min-h-0 overflow-y-auto">
