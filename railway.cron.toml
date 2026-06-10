@@ -1,7 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-
-[deploy]
-startCommand = "node scripts/deep-sync-ingest.cjs"
-cronSchedule = "*/30 * * * *"
-restartPolicyType = "never"
