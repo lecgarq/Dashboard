@@ -9,7 +9,7 @@ import type { PermissionAccessSummary } from "../permissionAccess";
 import type { RoleTreeNode } from "@/lib/server/templateRoleTree";
 import { PermissionAccessChart } from "./PermissionAccessChart";
 import { ModuleAccessChart } from "./ModuleAccessChart";
-import { RolePermissionTree } from "./RolePermissionTree";
+import { RoleAccessPie } from "./RoleAccessPie";
 import { TemplateMembersTable } from "./TemplateMembersTable";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -72,8 +72,8 @@ export function TemplateAnalysisCharts({
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Role access tree" subtitle="What each role can reach — expand a role to see every folder it holds permissions on, grouped by permission tier." />
-        <RolePermissionTree nodes={roleTree} />
+        <SectionHeader title="Role access" subtitle="What each role can reach across the template's folders — slice size is the number of folders, coloured by the role's highest permission tier. Click a role for its tier breakdown." />
+        <RoleAccessPie nodes={roleTree} />
       </section>
     </div>
   );
