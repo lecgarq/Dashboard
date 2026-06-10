@@ -163,16 +163,6 @@ erDiagram
     }
   
 
-  "ClashToolRelease" {
-    String id "🗝️"
-    String version 
-    String changelog 
-    String downloadUrl "❓"
-    DateTime releasedAt 
-    String testCases "❓"
-    }
-  
-
   "SimWiki" {
     String id "🗝️"
     String section 
@@ -197,16 +187,6 @@ erDiagram
     Boolean isBlocked 
     DateTime createdAt 
     DateTime updatedAt 
-    }
-  
-
-  "SimToolRelease" {
-    String id "🗝️"
-    String version 
-    String changelog 
-    String downloadUrl "❓"
-    DateTime releasedAt 
-    String testCases "❓"
     }
   
 
@@ -336,6 +316,20 @@ erDiagram
     Int projectCount 
     String nodeIds 
     DateTime updatedAt 
+    }
+  
+
+  "AccPersonGraphSnapshot" {
+    Int k "🗝️"
+    String dataHash 
+    Int personCount 
+    Int edgeCount 
+    Int dim 
+    Json nodes 
+    Json nodes3d 
+    Json edges 
+    Json clusters 
+    DateTime builtAt 
     }
   
 
@@ -633,6 +627,70 @@ erDiagram
     DateTime latestCovered "❓"
     DateTime projectCreatedAt 
     Boolean newProjectFlag 
+    DateTime updatedAt 
+    }
+  
+
+  "AccIssue" {
+    String id "🗝️"
+    String projectId 
+    Int displayId "❓"
+    String title 
+    String description "❓"
+    String status "❓"
+    String issueTypeId "❓"
+    String issueSubtypeId "❓"
+    String createdBy "❓"
+    DateTime createdAt "❓"
+    Boolean deleted 
+    Boolean isCoordination 
+    String coordinationSource "❓"
+    String confidence "❓"
+    String clashId "❓"
+    Boolean clashValidated 
+    Boolean projectMcEnabled 
+    Json rawJson "❓"
+    String fetchRunId "❓"
+    DateTime fetchedAt 
+    }
+  
+
+  "AccIssueFetchRun" {
+    String id "🗝️"
+    DateTime startedAt 
+    DateTime finishedAt "❓"
+    Int projectsTotal "❓"
+    Int projectsOk "❓"
+    Int projectsForbidden "❓"
+    Int issuesUpserted "❓"
+    Int coordinationCount "❓"
+    String status 
+    }
+  
+
+  "AccIssueProjectFetchResult" {
+    String id "🗝️"
+    String runId 
+    String projectId 
+    String projectName "❓"
+    String status 
+    Int issueCount 
+    Int coordinationCount 
+    String errorMessage "❓"
+    DateTime startedAt 
+    DateTime finishedAt 
+    DateTime createdAt 
+    DateTime updatedAt 
+    }
+  
+
+  "AccInstanceEmbedding" {
+    String nodeId "🗝️"
+    Float x 
+    Float y 
+    Int cluster "❓"
+    Json neighbors 
+    String embeddingRunId 
     DateTime updatedAt 
     }
   

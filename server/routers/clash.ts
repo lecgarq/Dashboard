@@ -85,14 +85,6 @@ export const clashRouter = createModuleRouter({
       where: { id },
       select: { id: true },
     }),
-  listReleases: (db: PrismaClient) =>
-    db.clashToolRelease.findMany({
-      orderBy: { releasedAt: "desc" },
-    }),
-  createRelease: (db: PrismaClient, input) =>
-    db.clashToolRelease.create({
-      data: input,
-    }),
   auditFeedback: {
     score: 92,
     feedback:

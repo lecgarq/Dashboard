@@ -85,14 +85,6 @@ export const simRouter = createModuleRouter({
       where: { id },
       select: { id: true },
     }),
-  listReleases: (db: PrismaClient) =>
-    db.simToolRelease.findMany({
-      orderBy: { releasedAt: "desc" },
-    }),
-  createRelease: (db: PrismaClient, input) =>
-    db.simToolRelease.create({
-      data: input,
-    }),
   auditFeedback: {
     score: 85,
     feedback:

@@ -118,16 +118,6 @@ type ModuleRouterConfig = {
     }
   ) => Promise<ModuleTaskRecord>;
   deleteTask: (db: PrismaClient, id: string) => Promise<{ id: string }>;
-  listReleases: (db: PrismaClient) => Promise<unknown[]>;
-  createRelease: (
-    db: PrismaClient,
-    input: {
-      version: string;
-      changelog: string;
-      downloadUrl?: string;
-      testCases?: string;
-    }
-  ) => Promise<unknown>;
   auditFeedback: {
     score: number;
     feedback: string;
@@ -403,23 +393,6 @@ export function createModuleRouter(config: ModuleRouterConfig) {
         });
 
         return deleted;
-      }),
-
-    getReleases: protectedProcedure.query(async ({ ctx }) => {
-      return config.listReleases(ctx.db);
-    }),
-
-    createRelease: editorProcedure
-      .input(
-        z.object({
-          version: z.string().min(1),
-          changelog: z.string(),
-          downloadUrl: z.string().optional(),
-          testCases: z.string().optional(),
-        })
-      )
-      .mutation(async ({ ctx, input }) => {
-        return config.createRelease(ctx.db, input);
       }),
 
     getKPIs: protectedProcedure.query(async ({ ctx }) => {

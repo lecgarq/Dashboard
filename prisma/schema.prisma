@@ -218,15 +218,6 @@ model ClashTask {
   @@index([updatedAt])
 }
 
-model ClashToolRelease {
-  id          String   @id @default(cuid())
-  version     String
-  changelog   String
-  downloadUrl String?
-  releasedAt  DateTime @default(now())
-  testCases   String?
-}
-
 // ============ MODULE: SIM AUTOMATION ============
 // Cloned from Clash Detection
 
@@ -260,15 +251,6 @@ model SimTask {
 
   @@index([status])
   @@index([dueDate])
-}
-
-model SimToolRelease {
-  id          String   @id @default(cuid())
-  version     String
-  changelog   String
-  downloadUrl String?
-  releasedAt  DateTime @default(now())
-  testCases   String?
 }
 
 // ============ MODULE 3: EXAMEN REVIT ============
