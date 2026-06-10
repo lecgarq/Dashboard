@@ -144,7 +144,7 @@ export async function removeMemberFromCard(cardId: string, memberId: string) {
 
 // ── Checklists ───────────────────────────────────────────────────────────────
 
-export interface CheckItem {
+interface CheckItem {
   id: string;
   name: string;
   state: "complete" | "incomplete";

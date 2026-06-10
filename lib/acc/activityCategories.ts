@@ -60,7 +60,7 @@ export type ActivityDomain =
   | "bridge"
   | "unknown";
 
-export type ActivityEntity =
+type ActivityEntity =
   | "file"
   | "sheet"
   | "issue"
@@ -77,7 +77,7 @@ export type ActivityEntity =
   | "bridge"
   | "unknown";
 
-export type ActivityOperation =
+type ActivityOperation =
   | "view"
   | "download"
   | "print"
@@ -98,7 +98,7 @@ export type ActivityOperation =
   | "process"
   | "other";
 
-export type ActivityImpact =
+type ActivityImpact =
   | "read"
   | "content-change"
   | "workflow-change"
@@ -106,7 +106,7 @@ export type ActivityImpact =
   | "delete"
   | "unknown";
 
-export type ActivityClassificationConfidence = "exact" | "prefix" | "service" | "unknown";
+type ActivityClassificationConfidence = "exact" | "prefix" | "service" | "unknown";
 
 export interface ActivityClassification {
   rawAction: string;
@@ -652,14 +652,6 @@ export function classifyChangeStream(row: ChangeStreamInput): ChangeStreamCatego
   return null;
 }
 
-/** Categories that count toward "file activity" per ACTV-03. */
-export const FILE_CATEGORIES: ReadonlySet<ActivityCategory> = new Set([
-  "view",
-  "upload",
-  "edit",
-  "delete",
-]);
-
 const CATEGORY_ORDER: readonly Exclude<ActivityCategory, "other">[] = [
   "view",
   "upload",
@@ -698,5 +690,3 @@ export const INVITATION_ACTIONS: readonly string[] = [
   "User Invited",
   "Project Member Added",
 ];
-
-export const INVITATION_ACTIONS_SET: ReadonlySet<string> = new Set(INVITATION_ACTIONS);

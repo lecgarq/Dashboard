@@ -15,7 +15,7 @@ import type { DonutSlice } from "./DonutPanel";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 
 /** Stable categorical palette (legible on the dark zinc background). */
-export const PALETTE: readonly string[] = [
+const PALETTE: readonly string[] = [
   "#3b82f6", // blue
   "#10b981", // emerald
   "#f59e0b", // amber

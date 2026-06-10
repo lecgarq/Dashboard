@@ -25,11 +25,11 @@
 import { getActionsByModule, getModules, getAction, resolveActionId } from "../users/access-analysis/accTaxonomy";
 import { normalizeActionId } from "../users/access-analysis/accNormalize";
 
-export const ADMIN_ACTIONS_ID = "adminActions";
-export const ADMIN_ACTIONS_LABEL = "Admin Actions";
-export const MODEL_COORDINATION_ID = "modelCoordination";
-export const DATA_MANAGEMENT_ID = "dataManagement";
-export const BUILD_ID = "build";
+const ADMIN_ACTIONS_ID = "adminActions";
+const ADMIN_ACTIONS_LABEL = "Admin Actions";
+const MODEL_COORDINATION_ID = "modelCoordination";
+const DATA_MANAGEMENT_ID = "dataManagement";
+const BUILD_ID = "build";
 
 /** Bucket id for any raw action with no mapping at all. Not a real module. */
 export const UNMAPPED_MODULE = "unmapped";
@@ -51,7 +51,7 @@ export const CATEGORY_ORDER: readonly string[] = [
 ];
 
 /** Coordination issue events -> Build. Keyed by normalized id -> label. */
-export const COORDINATION_ISSUE_LABELS: Readonly<Record<string, string>> = {
+const COORDINATION_ISSUE_LABELS: Readonly<Record<string, string>> = {
   "issue-attach": "Issue Attach",
   "issue-work-completed": "Issue Work Completed",
   "issue-ready-to-inspect": "Issue Ready to Inspect",
@@ -67,7 +67,7 @@ export const COORDINATION_ISSUE_LABELS: Readonly<Record<string, string>> = {
  * Keyed by canonical action id (post-alias). Keeps the drill-down's "Other"
  * bucket empty for the actions we understand.
  */
-export const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
+const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
   "receive-entity-from-project-with-automation": CAT.contentChange,
   "add-resources-to-package": CAT.contentChange,
   "review-entity": CAT.workflowChange,
@@ -86,7 +86,7 @@ export const CATEGORY_OVERRIDES: Readonly<Record<string, string>> = {
  * DB actions absent from the excel catalog. Keyed by normalized id ->
  * { module, label, category }. Researched 2026-06-05 (see file header).
  */
-export const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; category: string }>> = {
+const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: string; category: string }>> = {
   "add-version-to-set": { module: DATA_MANAGEMENT_ID, label: "Add Version to Set", category: CAT.contentChange },
   "create-set": { module: DATA_MANAGEMENT_ID, label: "Create Set", category: CAT.contentChange },
   "calibrate-entity": { module: DATA_MANAGEMENT_ID, label: "Calibrate Entity", category: CAT.contentChange },
@@ -100,7 +100,7 @@ export const EXTRA_ACTIONS: Readonly<Record<string, { module: string; label: str
  * permission/membership/admin actions, reclassified to Admin Actions. Derived
  * from the catalog so it stays in sync if the excel changes.
  */
-export const ADMIN_ACTION_IDS: ReadonlySet<string> = new Set(
+const ADMIN_ACTION_IDS: ReadonlySet<string> = new Set(
   getActionsByModule("preconstruction").map((a) => a.id),
 );
 

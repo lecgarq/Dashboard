@@ -28,7 +28,7 @@ const str = (v: unknown): string => (v === null || v === undefined ? "" : String
 // ---------------------------------------------------------------------------
 // 1. External users with elevated folder permissions  (level8 #51)  CRITICAL
 // ---------------------------------------------------------------------------
-export function fetchExternalElevated(db: Db) {
+function fetchExternalElevated(db: Db) {
   return db.$queryRaw`
     WITH external_members AS (
       SELECT LOWER(email) as email, data->>'name' as name, data->>'company' as company,
@@ -74,7 +74,7 @@ export function mapExternalElevated(rows: readonly any[]): ComplianceViolation[]
 // ---------------------------------------------------------------------------
 // 2. Data hoarding "mole"  (level8 #52)  CRITICAL
 // ---------------------------------------------------------------------------
-export function fetchDataHoarding(db: Db) {
+function fetchDataHoarding(db: Db) {
   return db.$queryRaw`
     WITH activity_counts AS (
       SELECT LOWER("userEmail") as email, "projectId",
@@ -109,7 +109,7 @@ export function mapDataHoarding(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 3. Activity after removal  (level4 #28)  CRITICAL  (multi-step fetch)
 // ---------------------------------------------------------------------------
-export async function fetchPostRemoval(db: Db) {
+async function fetchPostRemoval(db: Db) {
   const removals = await db.$queryRaw`
     SELECT LOWER("userEmail") as remover, "details" as removed_name,
            "createdAt" as removed_at, "projectId"
@@ -143,7 +143,7 @@ export async function fetchPostRemoval(db: Db) {
   }
   return out;
 }
-export function mapPostRemoval(rows: readonly any[]): ComplianceViolation[] {
+function mapPostRemoval(rows: readonly any[]): ComplianceViolation[] {
   return (rows ?? []).map((r, i) => ({
     id: `deep-post-removal-${i}`,
     ruleId: "deep-post-removal",
@@ -162,7 +162,7 @@ export function mapPostRemoval(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 4. ISO 19650 breach on Shared/Published folders  (level8 #53)  WARNING
 // ---------------------------------------------------------------------------
-export function fetchIsoBreach(db: Db) {
+function fetchIsoBreach(db: Db) {
   return db.$queryRaw`
     SELECT f.name as "folderName", f."fullPath", p.name as "projectName",
            r.name as "roleName", fp."permType"
@@ -177,7 +177,7 @@ export function fetchIsoBreach(db: Db) {
     ORDER BY p.name, f."fullPath"
     LIMIT 10`;
 }
-export function mapIsoBreach(rows: readonly any[]): ComplianceViolation[] {
+function mapIsoBreach(rows: readonly any[]): ComplianceViolation[] {
   return (rows ?? []).map((r, i) => ({
     id: `deep-iso-breach-${i}`,
     ruleId: "deep-iso-breach",
@@ -195,7 +195,7 @@ export function mapIsoBreach(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 5. Velocity spike  (level4 #21)  WARNING
 // ---------------------------------------------------------------------------
-export function fetchVelocitySpike(db: Db) {
+function fetchVelocitySpike(db: Db) {
   return db.$queryRaw`
     WITH daily AS (
       SELECT LOWER("userEmail") as email, DATE("createdAt") as d, COUNT(*)::int as cnt
@@ -214,7 +214,7 @@ export function fetchVelocitySpike(db: Db) {
     ORDER BY spike_ratio DESC
     LIMIT 10`;
 }
-export function mapVelocitySpike(rows: readonly any[]): ComplianceViolation[] {
+function mapVelocitySpike(rows: readonly any[]): ComplianceViolation[] {
   return (rows ?? []).map((r, i) => ({
     id: `deep-velocity-spike-${i}`,
     ruleId: "deep-velocity-spike",
@@ -231,7 +231,7 @@ export function mapVelocitySpike(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 6. Email/company identity mismatch  (level4 #26)  WARNING  (forward + reverse)
 // ---------------------------------------------------------------------------
-export async function fetchIdentityMismatch(db: Db) {
+async function fetchIdentityMismatch(db: Db) {
   const forward = await db.$queryRaw`
     SELECT email, data->>'name' as name, data->>'company' as company
     FROM "AccMemberCache"
@@ -272,7 +272,7 @@ export function mapIdentityMismatch(rows: readonly any[]): ComplianceViolation[]
 // ---------------------------------------------------------------------------
 // 7. Role-permission drift  (level5 #30)  WARNING
 // ---------------------------------------------------------------------------
-export function fetchRoleDrift(db: Db) {
+function fetchRoleDrift(db: Db) {
   return db.$queryRaw`
     SELECT r.name as "roleName", COUNT(DISTINCT fp."permType")::int as "uniquePermTypes",
            COUNT(DISTINCT f."projectId")::int as "projectCount",
@@ -304,7 +304,7 @@ export function mapRoleDrift(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 8. Sensitive folders in generic paths  (level6 #44)  INFO
 // ---------------------------------------------------------------------------
-export function fetchSensitivePaths(db: Db) {
+function fetchSensitivePaths(db: Db) {
   return db.$queryRaw`
     SELECT f.name, f."fullPath", p.name as "projectName", fp."permType", r.name as "roleName"
     FROM "AccFolder" f
@@ -323,7 +323,7 @@ export function fetchSensitivePaths(db: Db) {
     ORDER BY f.name
     LIMIT 15`;
 }
-export function mapSensitivePaths(rows: readonly any[]): ComplianceViolation[] {
+function mapSensitivePaths(rows: readonly any[]): ComplianceViolation[] {
   return (rows ?? []).map((r, i) => ({
     id: `deep-sensitive-path-${i}`,
     ruleId: "deep-sensitive-path",
@@ -341,7 +341,7 @@ export function mapSensitivePaths(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 9. Shadow module usage  (level7 #45)  INFO  (SQL + semantic validator)
 // ---------------------------------------------------------------------------
-export function fetchShadowModules(db: Db) {
+function fetchShadowModules(db: Db) {
   return db.$queryRaw`
     WITH activity_summary AS (
       SELECT LOWER("userEmail") as email, "projectId", "service", COUNT(*)::int as action_count
@@ -391,7 +391,7 @@ export function mapShadowModules(rows: readonly any[]): ComplianceViolation[] {
 // ---------------------------------------------------------------------------
 // 10. Role synonym duplication  (level5 #29)  INFO  (SQL + accent-strip grouping)
 // ---------------------------------------------------------------------------
-export function fetchRoleSynonyms(db: Db) {
+function fetchRoleSynonyms(db: Db) {
   return db.$queryRaw`SELECT id, name, "memberCount" FROM "AccRole" ORDER BY name`;
 }
 function normalizeRoleName(s: string): string {

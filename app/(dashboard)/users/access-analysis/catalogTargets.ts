@@ -66,7 +66,7 @@ function catValue(f: NodeFeatureSnapshot, dim: CatalogDimension): string {
 }
 
 /** Categorical/binary anchors — same as the legacy path but driven by dim.extract. */
-export function computeCatalogCategoricalTarget(
+function computeCatalogCategoricalTarget(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   dim: CatalogDimension,
   radius: number = ANCHOR_RADIUS,
@@ -89,7 +89,7 @@ export function computeCatalogCategoricalTarget(
 }
 
 /** MultiHot anchors — centroid of per-key anchors; empty signature → origin. */
-export function computeCatalogMultiHotTarget(
+function computeCatalogMultiHotTarget(
   features: ReadonlyArray<NodeFeatureSnapshot>,
   dim: CatalogDimension,
   radius: number = ANCHOR_RADIUS,

@@ -49,4 +49,4 @@ export function useChatPanel() {
   return context;
 }
 
-export type { View as ChatPanelView, SpaceSelection };
+export type { SpaceSelection };

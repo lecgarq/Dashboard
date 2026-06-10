@@ -77,7 +77,7 @@ export function selectAccSummarySource(
   return dcUsers.length > 0 ? dcUsers : cacheUsers;
 }
 
-export function createAccUserStub(person: OrgPerson): BulkAccUser {
+function createAccUserStub(person: OrgPerson): BulkAccUser {
   return {
     email: person.email,
     name: person.displayName,

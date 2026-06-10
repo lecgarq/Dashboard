@@ -1,6 +1,6 @@
 const GOLDEN = Math.PI * (3 - Math.sqrt(5));
 
-export interface PackedNode { index: number; x: number; y: number; cluster: number; size: number; }
+interface PackedNode { index: number; x: number; y: number; cluster: number; size: number; }
 export interface PackedLayout { nodes: PackedNode[]; discs: { x: number; y: number; r: number; cluster: number; count: number }[]; }
 
 /**

@@ -59,7 +59,7 @@ export type DimensionFamily =
   | "tenure"
   | "risk";
 
-export type DimensionType =
+type DimensionType =
   | "categorical"
   | "binary"
   | "scalar"
@@ -68,7 +68,7 @@ export type DimensionType =
   | "derived";
 
 /** Availability codes from the taxonomy: A1 in-snapshot … A5 unavailable. */
-export type Availability = "A1" | "A2" | "A3" | "A4" | "A5";
+type Availability = "A1" | "A2" | "A3" | "A4" | "A5";
 
 export type Confidence = "high" | "medium" | "low";
 

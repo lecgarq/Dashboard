@@ -50,7 +50,7 @@ export function buildWikiSectionSlug(title: string) {
   return title.trim().toLowerCase().replace(/\s+/g, "-");
 }
 
-export function findModuleSectionIndex<T extends { section: string }>(
+function findModuleSectionIndex<T extends { section: string }>(
   sections: T[],
   incomingSection: string
 ) {

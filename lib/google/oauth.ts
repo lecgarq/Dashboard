@@ -1,7 +1,7 @@
-export const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
+const GOOGLE_DRIVE_SCOPE = "https://www.googleapis.com/auth/drive";
 export const GMAIL_SCOPE = "https://mail.google.com/";
 
-export const GOOGLE_OAUTH_SCOPES = [
+const GOOGLE_OAUTH_SCOPES = [
   "openid",
   "email",
   "profile",
@@ -15,7 +15,7 @@ export const GOOGLE_OAUTH_SCOPES = [
 
 export const GOOGLE_DRIVE_REQUIRED_SCOPES = [GOOGLE_DRIVE_SCOPE] as const;
 
-export const GOOGLE_CHAT_OAUTH_SCOPES = [
+const GOOGLE_CHAT_OAUTH_SCOPES = [
   "openid",
   "email",
   "profile",
@@ -63,7 +63,7 @@ export function getGoogleChatClientSecret() {
   ]);
 }
 
-export function parseGoogleScopeString(scope?: string | null) {
+function parseGoogleScopeString(scope?: string | null) {
   return new Set(
     (scope ?? "")
       .split(/\s+/)

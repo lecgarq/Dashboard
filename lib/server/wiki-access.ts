@@ -14,10 +14,6 @@ function hasModuleAccess(user: WikiSessionUser, module: WikiModule) {
   return (user.moduleAccess ?? []).includes(module);
 }
 
-export function canReadWikiModule(user: WikiSessionUser, module: WikiModule) {
-  return hasModuleAccess(user, module);
-}
-
 export function canEditWikiModule(user: WikiSessionUser, module: WikiModule) {
   if (!hasModuleAccess(user, module)) return false;
   return user.role === "ADMIN" || user.role === "EDITOR";

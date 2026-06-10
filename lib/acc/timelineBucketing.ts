@@ -40,7 +40,7 @@ export function windowToDateRange(window: TimeWindow, now: Date = new Date()): {
   return { start: new Date(0), end };
 }
 
-export interface HeatmapHourBin {
+interface HeatmapHourBin {
   x: string;
   y: number;
 }

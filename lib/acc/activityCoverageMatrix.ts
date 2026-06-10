@@ -63,7 +63,7 @@ export function addUtcDays(date: Date, days: number): Date {
   return out;
 }
 
-export function dayKey(value: Date | string): string {
+function dayKey(value: Date | string): string {
   if (typeof value === "string") {
     if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
     return new Date(value).toISOString().slice(0, 10);

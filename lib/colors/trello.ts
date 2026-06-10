@@ -37,7 +37,7 @@ export const LABEL_COLORS_LIGHT: Record<TrelloLabelKey, string> = {
  * Dark-mode equivalents: same hues, ~25% desaturated, lightness lifted ~10%.
  * Computed once so the values are stable; not derived at runtime to avoid color-math bugs.
  */
-export const LABEL_COLORS_DARK: Record<TrelloLabelKey, string> = {
+const LABEL_COLORS_DARK: Record<TrelloLabelKey, string> = {
   green: "#7fc77a",
   yellow: "#e8d75c",
   orange: "#ffb454",

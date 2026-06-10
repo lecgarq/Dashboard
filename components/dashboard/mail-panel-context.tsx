@@ -49,4 +49,4 @@ export function useMailPanel() {
   return context;
 }
 
-export type { ComposeSeed, View as MailPanelView };
+export type { ComposeSeed };

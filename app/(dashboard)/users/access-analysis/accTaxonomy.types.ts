@@ -9,7 +9,7 @@ export type GroupId =
   | "unknown";
 
 /** Where the action's data comes from. "admin" = account-level, actor-attributed. */
-export type ActivitySource = "project" | "admin";
+type ActivitySource = "project" | "admin";
 
 export interface TaxonomyModule {
   id: string;
@@ -37,7 +37,7 @@ export interface AccessLevel {
   permType: string | null; // AccFolderPermission.permType, or null for "none"
 }
 
-export type StructuralKind = "categorical" | "ordinal" | "binary";
+type StructuralKind = "categorical" | "ordinal" | "binary";
 
 export interface StructuralDim {
   id: string;

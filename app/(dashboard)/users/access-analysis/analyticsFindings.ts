@@ -49,7 +49,7 @@ export function computeAdminConcentrationFinding(users: readonly BulkAccUser[]):
   return `Admin access is concentrated in ${count.toLocaleString()} ${plural(count, "company", "companies")}.`;
 }
 
-export function computeStaleMembersFinding(
+function computeStaleMembersFinding(
   users: readonly BulkAccUser[],
   now = Date.now(),
   thresholdDays = 90,
@@ -59,7 +59,7 @@ export function computeStaleMembersFinding(
   return `${count.toLocaleString()} ${plural(count, "member")} ${count === 1 ? "is" : "are"} stale or ${count === 1 ? "has" : "have"} never signed in.`;
 }
 
-export function computeActiveMembersFinding(
+function computeActiveMembersFinding(
   users: readonly BulkAccUser[],
   now = Date.now(),
   thresholdDays = 30,
@@ -114,7 +114,7 @@ export function computeFolderProjectCoverage(
   return { projectsWithFolders, totalProjects };
 }
 
-export function computePermissionTierFinding(folderRows: readonly GraphFolderPermissionRow[]): string {
+function computePermissionTierFinding(folderRows: readonly GraphFolderPermissionRow[]): string {
   if (folderRows.length === 0) return "No folder grants are available yet.";
   const counts = new Map<string, number>();
   for (const row of folderRows) {

@@ -33,7 +33,7 @@ export const DEFAULT_SORT_STATE: SortState = {
   direction: "asc",
 };
 
-export const DEFAULT_FILTER_STATE: FilterState = {
+const DEFAULT_FILTER_STATE: FilterState = {
   query: "",
   active: false,
 };

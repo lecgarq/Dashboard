@@ -25,17 +25,8 @@ export type SimilarityDimKey =
   | "last-sign-in"
   | "recent-additions";
 
-export const SIMILARITY_DIM_KEYS: readonly SimilarityDimKey[] = [
-  "project-members",
-  "roles",
-  "folder-permissions",
-  "activity-logs",
-  "data-coverage",
-  "last-sign-in",
-  "recent-additions",
-] as const;
-export type ViewMode = "multi" | "user-only";
-export type GraphNodeKind =
+type ViewMode = "multi" | "user-only";
+type GraphNodeKind =
   | "user"
   | "project"
   | "role"
@@ -71,8 +62,8 @@ export interface GraphFilters {
   /** Similarity-dimension include-list. Applied in topology adapter + layout. */
   simDims: SimilarityDimKey[];
   /**
-   * Phase 07.1: per-dim strength multipliers in [0, 1], parallel to
-   * SIMILARITY_DIM_KEYS. Length must be 7. Defaults to all 1.0.
+   * Phase 07.1: per-dim strength multipliers in [0, 1], parallel to the
+   * SimilarityDimKey union order. Length must be 7. Defaults to all 1.0.
    */
   simStr: number[];
   /** Minimum count of contributing dims for a pair to feed clustering force. */

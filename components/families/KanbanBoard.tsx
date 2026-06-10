@@ -30,7 +30,7 @@ export type FamilyWithRelations = Family & {
 
 
 const PHASES = FAMILY_PHASES.map(id => ({ id, ...getPhaseMetadata(id) }));
-export type Phase = FamilyPhase;
+type Phase = FamilyPhase;
 
 interface KanbanBoardProps {
   families: Family[];

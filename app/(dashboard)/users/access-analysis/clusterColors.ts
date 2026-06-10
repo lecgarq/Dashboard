@@ -23,7 +23,7 @@ function rgbStrTo01(s: string): [number, number, number] {
 }
 
 /** Deterministic color for a cluster index given the total cluster count. */
-export function colorForCluster(idx: number, clusterCount: number): [number, number, number] {
+function colorForCluster(idx: number, clusterCount: number): [number, number, number] {
   if (idx < 0) return GREY;
   if (clusterCount <= schemeTableau10.length) return hexToRgb01(schemeTableau10[idx % schemeTableau10.length]);
   return rgbStrTo01(interpolateSinebow((idx + 0.5) / clusterCount));

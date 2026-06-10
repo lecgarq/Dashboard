@@ -77,7 +77,7 @@ export interface TerrainProjectOption {
  * Maps the DB permType string to a 1..5 ordinal. "Upload Only" is rare and sits
  * alongside View+Download at rank 2 (both are limited, non-edit access).
  */
-export const TIER_RANK: Readonly<Record<string, number>> = {
+const TIER_RANK: Readonly<Record<string, number>> = {
   "View Only": 1,
   "View+Download": 2,
   "Upload Only": 2,
@@ -242,7 +242,7 @@ export function shade(hex: string, amt: number): string {
 // so the panel and a static preview generator share one source of truth.
 // ---------------------------------------------------------------------------
 
-export const TERRAIN = {
+const TERRAIN = {
   tileW: 28,
   tileH: 14, // 2:1 iso
   maxBar: 72, // px for the tallest bar
@@ -254,7 +254,7 @@ export const TERRAIN = {
   roleLabelRow: -1.7, // how far behind the grid the role axis labels sit
 } as const;
 
-export interface TerrainBar {
+interface TerrainBar {
   cell: TerrainCell;
   folderIdx: number;
   roleIdx: number;
@@ -458,7 +458,7 @@ export function projectOntoAxes(data: FolderTerrainData, axes: SharedAxes): Fold
   };
 }
 
-export interface StackedSlab {
+interface StackedSlab {
   projectId: string;
   projectName: string;
   layout: TerrainLayout;
@@ -539,7 +539,7 @@ export function projectIso(col: number, row: number, z: number, V: ViewParams): 
 }
 
 /** Into-screen depth of a cell (larger = nearer the viewer). */
-export function isoDepth(col: number, row: number, V: ViewParams): number {
+function isoDepth(col: number, row: number, V: ViewParams): number {
   const u = col - V.cx;
   const v = row - V.cy;
   const ct = Math.cos(V.theta);
@@ -565,7 +565,7 @@ const ptsStr = (pts: ReadonlyArray<Pt>) => pts.map((p) => `${round(p.x)},${round
 const round = (n: number) => Math.round(n * 100) / 100;
 
 /** Multiply a #rrggbb by brightness (0..1+), clamped — darkens/lightens for lighting. */
-export function tint(hex: string, b: number): string {
+function tint(hex: string, b: number): string {
   const n = parseInt(hex.slice(1), 16);
   const f = (c: number) => Math.max(0, Math.min(255, Math.round(c * b)));
   return `#${((1 << 24) | (f((n >> 16) & 255) << 16) | (f((n >> 8) & 255) << 8) | f(n & 255)).toString(16).slice(1)}`;
@@ -621,7 +621,7 @@ export function barScene(
   return { faces, top, depth };
 }
 
-export interface SceneBar {
+interface SceneBar {
   cell: TerrainCell;
   faces: SceneFace[];
   /** Top-face screen polygon for hover/click hit-testing. */
@@ -963,7 +963,7 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
 // BOT-OR-NOT exploded stack) rather than a cascading single-grid tower.
 // ===========================================================================
 
-export interface StackedPlane {
+interface StackedPlane {
   scene: TerrainScene;
   source: FolderTerrainData;
   label: string;

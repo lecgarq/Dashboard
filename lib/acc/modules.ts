@@ -4,7 +4,7 @@
 // We accept both, normalize on lookup, and fall through to the raw key for anything we
 // don't recognize (e.g. `cost`, `takeoff`) so it's still visible rather than silently dropped.
 
-export const ACC_MODULE_LABELS: Record<string, string> = {
+const ACC_MODULE_LABELS: Record<string, string> = {
   // ACC HQ Admin API product keys (snake_case / lowercase) - what the API actually returns
   docs: "Forma Data Management",
   design_collaboration: "Design Collaboration",

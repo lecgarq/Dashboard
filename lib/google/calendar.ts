@@ -62,7 +62,7 @@ function buildUserCalendarAuth(userId: string, account: GoogleCalendarAccountRec
   return oauth2;
 }
 
-export interface CalendarAttendee {
+interface CalendarAttendee {
   email: string;
   displayName?: string | null;
   responseStatus?: string | null;
@@ -86,7 +86,7 @@ export interface CalendarEvent {
   status: string | null;
 }
 
-export interface CalendarRoom {
+interface CalendarRoom {
   id: string;
   summary: string;
   description?: string | null;

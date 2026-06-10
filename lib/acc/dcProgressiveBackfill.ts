@@ -32,7 +32,7 @@ export const PROJECT_BATCH_LIMIT = 50;
 export const SLICE_DAYS = 30;
 
 /** CONTEXT-locked overlap window for late-arriving forward events (days). */
-export const OVERLAP_DAYS = 1;
+const OVERLAP_DAYS = 1;
 
 export interface ProjectProgress {
   projectId: string;

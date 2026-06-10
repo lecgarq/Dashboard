@@ -162,14 +162,3 @@ export interface PredicateInputs {
    */
   neighborIndices?: ReadonlySet<number> | null;
 }
-
-/**
- * Local interaction state owned by GraphInteractions. Surfaced here so 04-02's
- * RightPanelStack + Toolbar can reference the same shape if they read it back.
- */
-export interface GraphInteractionState {
-  hoveredIndex: number | null;
-  tooltipAnchor: [number, number] | null;
-  isolatedNodeIndex: number | null;
-  lassoActive: boolean;
-}

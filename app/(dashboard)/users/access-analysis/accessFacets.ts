@@ -47,7 +47,7 @@ export const PERM_PROFILE_IDS: readonly PermProfileId[] = [
 export const FACET_KEY_RISK = "riskFlag";
 export const FACET_KEY_PERM = "permProfile";
 export const FACET_KEY_MODULE = "module";
-export const FACET_KEYS: readonly string[] = [FACET_KEY_RISK, FACET_KEY_PERM, FACET_KEY_MODULE];
+const FACET_KEYS: readonly string[] = [FACET_KEY_RISK, FACET_KEY_PERM, FACET_KEY_MODULE];
 
 export function isFacetKey(key: string): boolean {
   return FACET_KEYS.includes(key);

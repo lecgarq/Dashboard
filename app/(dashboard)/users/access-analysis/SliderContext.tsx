@@ -139,15 +139,6 @@ function writePersisted(patch: PersistedControls): void {
   }
 }
 
-export function readOpenGroups(): string[] | null {
-  const stored = readPersisted();
-  return stored?.openGroups ?? null;
-}
-
-export function writeOpenGroups(labels: string[]): void {
-  writePersisted({ openGroups: labels });
-}
-
 // ---------------------------------------------------------------------------
 // Provider
 // ---------------------------------------------------------------------------

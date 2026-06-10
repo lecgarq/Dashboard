@@ -2,7 +2,7 @@
 
 import { useTheme } from "next-themes";
 import { useCallback } from "react";
-import { getTrelloLabelColor, LABEL_COLORS_LIGHT, LABEL_COLORS_DARK } from "./trello";
+import { getTrelloLabelColor } from "./trello";
 
 /**
  * Returns a function `(labelName) => hex` that picks the right Trello label color
@@ -21,5 +21,3 @@ export function useTrelloLabelColor() {
     [isDark],
   );
 }
-
-export { LABEL_COLORS_LIGHT, LABEL_COLORS_DARK, getTrelloLabelColor };

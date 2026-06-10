@@ -1,6 +1,6 @@
 // lib/acc/accessAnalysisTypes.ts
 
-export const TIME_WINDOWS = ["30d", "90d", "1y", "all"] as const;
+const TIME_WINDOWS = ["30d", "90d", "1y", "all"] as const;
 export type TimeWindow = (typeof TIME_WINDOWS)[number];
 
 export const CHANGE_STREAMS = [
@@ -46,16 +46,6 @@ export const CHANGE_STREAM_META: Record<ChangeStreamId, ChangeStreamMeta> = {
 };
 
 export type TimelineBin = "day" | "week" | "month";
-
-export interface TimelinePoint {
-  /** ISO date string for the bin's start (UTC). */
-  bucket: string;
-  /** Counts per stream. Missing streams default to 0. */
-  membership: number;
-  permission: number;
-  project: number;
-  admin: number;
-}
 
 export interface KpiSummary {
   members: { value: number; delta: number };

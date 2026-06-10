@@ -4,7 +4,7 @@ import type { drive_v3 } from "googleapis";
 
 const WIKI_MEDIA_FOLDER_NAME = "wiki-media";
 
-export function getConfiguredDriveFolderId() {
+function getConfiguredDriveFolderId() {
   const folderId = process.env.GOOGLE_DRIVE_FOLDER_ID?.trim();
   if (!folderId) {
     throw new Error("Google Drive not configured");

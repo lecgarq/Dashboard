@@ -7,10 +7,6 @@ export const DEFAULT_WIKI_SECTIONS = [
   { section: "definition-of-done", title: "Definition of Done", order: 5 },
 ] as const;
 
-export const DEFAULT_WIKI_SECTION_KEY_SET = new Set(
-  DEFAULT_WIKI_SECTIONS.map((section) => section.section)
-);
-
 export function normalizeWikiSectionKey(section: string): string {
   if (!section) return section;
 

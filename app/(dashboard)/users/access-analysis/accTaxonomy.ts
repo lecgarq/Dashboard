@@ -6,17 +6,13 @@
  */
 import { normalizeActionId } from "./accNormalize";
 import {
-  MODULES, GROUPS, ACCESS_LEVELS, STRUCTURAL_DIMS,
+  MODULES, GROUPS,
   ENTITLEMENT_TO_MODULE, ACTION_ALIASES, ADMIN_SOURCE_ACTION_IDS,
 } from "./accTaxonomyStatic";
 import { GENERATED_ACTIONS } from "./accTaxonomyActions.generated";
 import type { TaxonomyAction, TaxonomyModule } from "./accTaxonomy.types";
 
 export * from "./accTaxonomy.types";
-export {
-  MODULES, GROUPS, ACCESS_LEVELS, STRUCTURAL_DIMS,
-  ENTITLEMENT_TO_MODULE, ACTION_ALIASES, ADMIN_SOURCE_ACTION_IDS,
-} from "./accTaxonomyStatic";
 
 const ACTION_BY_ID = new Map<string, TaxonomyAction>(GENERATED_ACTIONS.map((a) => [a.id, a]));
 const MODULE_BY_ID = new Map<string, TaxonomyModule>(MODULES.map((m) => [m.id, m]));

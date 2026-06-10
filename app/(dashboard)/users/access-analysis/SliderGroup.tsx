@@ -2,7 +2,7 @@
 
 import { DimensionSlider } from "./DimensionSlider";
 
-export interface SliderGroupRow {
+interface SliderGroupRow {
   id: string;
   label: string;
   value: number;

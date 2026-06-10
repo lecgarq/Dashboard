@@ -22,7 +22,7 @@ export function isDcExtractionPaused(repoRoot = process.cwd()): boolean {
   return fs.existsSync(path.join(repoRoot, KILL_SWITCH_FILENAME));
 }
 
-export function listLatestDcLogs(repoRoot = process.cwd(), limit = 20): string[] {
+function listLatestDcLogs(repoRoot = process.cwd(), limit = 20): string[] {
   const logDir = path.join(repoRoot, LOG_DIR);
   if (!fs.existsSync(logDir)) return [];
   return fs

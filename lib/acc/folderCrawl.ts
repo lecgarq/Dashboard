@@ -31,7 +31,7 @@ const DM_BASE = "https://developer.api.autodesk.com";
 // Types (exported for downstream consumption in Plan 04+)
 // ---------------------------------------------------------------------------
 
-export interface RawFolder {
+interface RawFolder {
   /** Folder URN — b.-prefixed (Data Management format) */
   id: string;
   /** Parent folder URN, or null for top-level folders */
@@ -49,7 +49,7 @@ export interface RawFolder {
   maxVersionNumber?: number | null;
 }
 
-export interface RawFolderPermission {
+interface RawFolderPermission {
   folderId: string;
   /** subjectId of the ROLE entry (subjectType==="ROLE" already filtered) */
   roleId: string;
@@ -612,7 +612,7 @@ export async function extractAndPersistFolders(
 // (folderId, roleId) upsert refreshes syncedAt and overwrites permType.
 // ---------------------------------------------------------------------------
 
-export interface PermissionsOnlyResult {
+interface PermissionsOnlyResult {
   folderCount: number;
   permissionCount: number;
   permissionFetchFailures: number;

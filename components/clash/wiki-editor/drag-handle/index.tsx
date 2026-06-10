@@ -59,10 +59,3 @@ export function WikiDragHandle({ editor }: WikiDragHandleProps) {
     </DragHandle>
   );
 }
-
-// Re-export the Tiptap core drag handle extension and node range extension
-// so WikiEditor.tsx can import them from a single path.
-export { default as DragHandleExtension } from "@tiptap/extension-drag-handle";
-export { NodeRange } from "@tiptap/extension-node-range";
-
-export default WikiDragHandle;

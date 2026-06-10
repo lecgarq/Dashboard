@@ -16,8 +16,8 @@ export interface PhysicsEdge {
   weight: number;
 }
 
-export const SIM_WIDTH = 6000;
-export const SIM_HEIGHT = 6000;
+const SIM_WIDTH = 6000;
+const SIM_HEIGHT = 6000;
 
 const SIM_ITERATIONS = 150;
 const REPULSION = 28000;

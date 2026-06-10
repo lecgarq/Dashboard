@@ -884,7 +884,7 @@ export async function writeMemberCacheFromAggregator(
  * Per-project failures inside step 3 are swallowed by skip-and-continue and
  * surface in `failures`/`failCount` rather than throwing.
  */
-export async function runQuickSync(
+async function runQuickSync(
   prisma: PrismaClient,
 ): Promise<{
   projectCount: number;

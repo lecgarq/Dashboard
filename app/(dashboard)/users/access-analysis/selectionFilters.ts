@@ -3,7 +3,7 @@
 // free of React so they are unit-testable with a fake selection. The runtime
 // Mosaic Selection satisfies SelectionLike structurally.
 
-export interface ClauseLike {
+interface ClauseLike {
   source: unknown;
   predicate: { toString(): string } | null | undefined;
 }

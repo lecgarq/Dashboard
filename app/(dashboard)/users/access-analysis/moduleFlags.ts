@@ -22,8 +22,6 @@ export const KNOWN_ADVANCED_MODULES = [
   "assets",
 ] as const;
 
-export type KnownModule = (typeof KNOWN_ADVANCED_MODULES)[number];
-
 /** Derive a complete (all keys present) flag map from a module signature. */
 export function deriveModuleFlags(moduleSignature: readonly string[]): Record<string, boolean> {
   const present = new Set(moduleSignature);

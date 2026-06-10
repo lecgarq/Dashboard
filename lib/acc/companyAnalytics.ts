@@ -10,7 +10,7 @@ import type { ActiveTier } from "./activeUserTiers";
 
 export type FirmType = "Internal" | "External" | "Consultant" | "Partner";
 
-export interface CompanyInputUser {
+interface CompanyInputUser {
   id: string;
   email: string | null;
   companyId: string | null;
@@ -19,13 +19,13 @@ export interface CompanyInputUser {
   projectCount: number;
 }
 
-export interface CompanyInputJoin {
+interface CompanyInputJoin {
   companyId: string;
   projectId: string;
   userId: string;
 }
 
-export interface CompanyInputMeta {
+interface CompanyInputMeta {
   id: string;
   name: string;
 }

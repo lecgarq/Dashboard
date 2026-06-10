@@ -1,10 +1,10 @@
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { GroupId } from "./accTaxonomy.types";
 
-export type DimKind = "categorical" | "ordinal" | "binary" | "multiHot";
-export type DimFamily = "structure" | "access" | "affiliation" | "tenure" | "activity" | "folder";
+type DimKind = "categorical" | "ordinal" | "binary" | "multiHot";
+type DimFamily = "structure" | "access" | "affiliation" | "tenure" | "activity" | "folder";
 export type DimConfidence = "high" | "medium" | "low";
-export type DimSurface = "slider" | "color";
+type DimSurface = "slider" | "color";
 
 /** A node's value: number (ordinal), string (categorical/binary), string[] (multiHot), or null (absent). */
 export type DimValue = string | number | string[] | null;

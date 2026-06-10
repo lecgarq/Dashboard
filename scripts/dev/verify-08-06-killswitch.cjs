@@ -33,13 +33,13 @@ const LOG_DIR = path.join(REPO_ROOT, 'logs');
 let failures = 0;
 
 function pass(label) {
-  // eslint-disable-next-line no-console
+   
   console.log(`PASS - ${label}`);
 }
 
 function fail(label, detail) {
   failures += 1;
-  // eslint-disable-next-line no-console
+   
   console.error(`FAIL - ${label}: ${detail}`);
 }
 
@@ -72,7 +72,7 @@ async function dbCount() {
       await prisma.$disconnect().catch(() => {});
     }
   } catch (err) {
-    // eslint-disable-next-line no-console
+     
     console.warn(
       `[verify] DB count unavailable (${err.message}); skipping AccDcIngestRun assertion.`,
     );
@@ -81,7 +81,7 @@ async function dbCount() {
 }
 
 async function testNodeEntry() {
-  // eslint-disable-next-line no-console
+   
   console.log('--- Test 1: node scripts/dc-daily-ingest.cjs with kill-switch present');
   const before = await dbCount();
   ensureKillSwitch();
@@ -113,7 +113,7 @@ async function testNodeEntry() {
         pass(`Test 1 AccDcIngestRun count unchanged (${before})`);
       }
     } else {
-      // eslint-disable-next-line no-console
+       
       console.warn('  (skipping AccDcIngestRun count assertion -- no DB)');
     }
   } finally {
@@ -122,7 +122,7 @@ async function testNodeEntry() {
 }
 
 function testPowerShellEntry() {
-  // eslint-disable-next-line no-console
+   
   console.log('--- Test 2: pwsh scripts/dc-daily-cron.ps1 with kill-switch present');
 
   // pwsh availability probe
@@ -130,7 +130,7 @@ function testPowerShellEntry() {
     encoding: 'utf8',
   });
   if (probe.status !== 0) {
-    // eslint-disable-next-line no-console
+     
     console.warn('  pwsh not available on PATH -- skipping (Linux CI will not fail).');
     return;
   }
@@ -182,17 +182,17 @@ async function main() {
     clearKillSwitch();
   }
   if (failures > 0) {
-    // eslint-disable-next-line no-console
+     
     console.error(`\n${failures} assertion(s) failed.`);
     process.exit(1);
   }
-  // eslint-disable-next-line no-console
+   
   console.log('\nAll kill-switch assertions passed.');
   process.exit(0);
 }
 
 main().catch((err) => {
-  // eslint-disable-next-line no-console
+   
   console.error('Fatal:', err);
   clearKillSwitch();
   process.exit(1);

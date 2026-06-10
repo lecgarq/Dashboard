@@ -134,12 +134,6 @@ export const CATEGORY_GROUPS = {
   ],
 } as const;
 
-// Flat list of all 114 categories
-const FAMILY_CATEGORIES = Object.values(CATEGORY_GROUPS).flat();
-
-// Type for a single category
-export type FamilyCategory = (typeof FAMILY_CATEGORIES)[number];
-
 // Group names
 export type CategoryGroup = keyof typeof CATEGORY_GROUPS;
 

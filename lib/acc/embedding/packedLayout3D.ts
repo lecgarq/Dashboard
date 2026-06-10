@@ -14,7 +14,7 @@ function hash3(i: number): [number, number, number] {
   return [a, b, c];
 }
 
-export interface PackedNode3D { index: number; x: number; y: number; z: number; cluster: number; size: number; }
+interface PackedNode3D { index: number; x: number; y: number; z: number; cluster: number; size: number; }
 export interface PackedLayout3D { nodes: PackedNode3D[]; spheres: { x: number; y: number; z: number; r: number; cluster: number; count: number }[] }
 
 /**

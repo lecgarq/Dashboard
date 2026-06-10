@@ -9,9 +9,9 @@ import type { NodeFeatureSnapshot } from "./interactionTypes";
 /** A folder reach at/above this many distinct folders is "broad". Tunable in P6. */
 export const BROAD_FOLDER_THRESHOLD = 25;
 /** Activity volume at/above this total is "high". Aligns with bucketActivity High (>100). */
-export const HIGH_ACTIVITY_THRESHOLD = 100;
+const HIGH_ACTIVITY_THRESHOLD = 100;
 /** permissionStrength at/above this is "high permission" (edit=4, control=5). */
-export const HIGH_PERMISSION_STRENGTH = 4;
+const HIGH_PERMISSION_STRENGTH = 4;
 
 export interface RiskInput {
   isExternal: boolean;

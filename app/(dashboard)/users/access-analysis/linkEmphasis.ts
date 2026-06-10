@@ -1,6 +1,6 @@
 import type { SameUserEdge } from "./sameUserEdges";
 
-export type RGBA = readonly [number, number, number, number];
+type RGBA = readonly [number, number, number, number];
 
 export interface LinkColorOpts {
   base: RGBA;

@@ -20,7 +20,7 @@ type AccountStore = {
   };
 };
 
-export class GmailAccessRequiredError extends Error {
+class GmailAccessRequiredError extends Error {
   constructor() {
     super("gmail_access_required");
     this.name = "GmailAccessRequiredError";

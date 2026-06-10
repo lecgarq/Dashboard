@@ -47,7 +47,7 @@ export function tierEdges(edges: SimEdge[], featureKeys: string[], embedding?: E
 }
 
 /** Reason = the top shared features (by product of weights) between the two people, humanized + deduped. */
-export function edgeReason(e: Embedding, a: number, b: number, featureKeys: string[]): string {
+function edgeReason(e: Embedding, a: number, b: number, featureKeys: string[]): string {
   const pa = e.persons[a], pb = e.persons[b];
   const mb = new Map<number, number>();
   for (let t = 0; t < pb.idx.length; t++) mb.set(pb.idx[t], pb.val[t]);

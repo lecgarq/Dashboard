@@ -13,7 +13,7 @@ const authClient = new AuthenticationClient();
 const ossClient = new OssClient();
 const derivativeClient = new ModelDerivativeClient();
 
-export async function getInternalToken() {
+async function getInternalToken() {
   const credentials = await authClient.getTwoLeggedToken(APS_CLIENT_ID, APS_CLIENT_SECRET, [
     Scopes.DataRead,
     Scopes.DataWrite,

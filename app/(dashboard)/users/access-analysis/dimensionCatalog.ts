@@ -33,7 +33,7 @@ export function buildDimensionCatalog(features: readonly NodeFeatureSnapshot[] =
 
 // ---- Section tree for the sidebar ----------------------------------------
 
-export interface CatalogActivityGroup { groupId: GroupId; groupLabel: string; actions: CatalogDimension[] }
+interface CatalogActivityGroup { groupId: GroupId; groupLabel: string; actions: CatalogDimension[] }
 export interface CatalogActivityModule { moduleId: string; moduleLabel: string; groups: CatalogActivityGroup[] }
 export interface CatalogSection {
   kind: "structural" | "activity" | "folder";

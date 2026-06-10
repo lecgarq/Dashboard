@@ -61,7 +61,7 @@ export function buildPrimaryGoogleOAuthClient() {
   return new google.auth.OAuth2(config.clientId, config.clientSecret);
 }
 
-export function getGoogleDriveOAuthConfig(): GoogleDriveOAuthConfig {
+function getGoogleDriveOAuthConfig(): GoogleDriveOAuthConfig {
   const clientId = getFirstConfiguredEnv([
     "GOOGLE_CLIENT_ID",
     "GMAIL_OAUTH_CLIENT_ID",

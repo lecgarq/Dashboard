@@ -6,7 +6,7 @@
  * stays small (~18k edges instead of ~80-90k). No DB / tRPC / React imports.
  */
 
-export interface RawNeighbor {
+interface RawNeighbor {
   nodeId: string;
   score: number;
 }
@@ -14,7 +14,7 @@ export interface RawNodeNeighbors {
   nodeId: string;
   neighbors: RawNeighbor[];
 }
-export interface SimEdgeIds {
+interface SimEdgeIds {
   a: string;
   b: string;
   score: number;

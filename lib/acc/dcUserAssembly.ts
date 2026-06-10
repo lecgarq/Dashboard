@@ -50,7 +50,7 @@ export function normalizePermTier(permType: string): string {
 }
 
 const TIER_RANK: Record<string, number> = { view: 1, download: 2, upload: 3, edit: 4, control: 5 };
-export function permTierStrength(permType: string): number {
+function permTierStrength(permType: string): number {
   return TIER_RANK[normalizePermTier(permType)] ?? 0;
 }
 

@@ -54,7 +54,7 @@ type ChatProfile = {
   email: string | null;
 };
 
-export interface ChatSpace {
+interface ChatSpace {
   name: string;
   displayName: string;
   type: string;

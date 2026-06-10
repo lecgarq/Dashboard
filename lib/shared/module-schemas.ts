@@ -4,7 +4,6 @@ export const moduleKeySchema = z.enum(["clash", "sim"]);
 export type ModuleKey = z.infer<typeof moduleKeySchema>;
 
 export const wikiStatusSchema = z.enum(["DRAFT", "REVIEW", "APPROVED"]);
-export type WikiStatus = z.infer<typeof wikiStatusSchema>;
 
 export const moduleTaskStatusSchema = z.enum([
   "PLANNING",
@@ -12,4 +11,3 @@ export const moduleTaskStatusSchema = z.enum([
   "REVIEW",
   "DONE",
 ]);
-export type ModuleTaskStatus = z.infer<typeof moduleTaskStatusSchema>;

@@ -13,21 +13,6 @@ export function isOAuthConnectProvider(value: string): value is OAuthConnectProv
   return (OAUTH_CONNECT_PROVIDERS as readonly string[]).includes(value);
 }
 
-export function buildOAuthConnectPath(
-  provider: OAuthConnectProvider,
-  options: OAuthConnectOptions
-) {
-  const params = new URLSearchParams({
-    callbackUrl: options.callbackUrl,
-  });
-
-  if (options.forceConsent) {
-    params.set("forceConsent", "1");
-  }
-
-  return `/api/connect/${provider}?${params.toString()}`;
-}
-
 export function startOAuthConnect(
   provider: OAuthConnectProvider,
   options: OAuthConnectOptions

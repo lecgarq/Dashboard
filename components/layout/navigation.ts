@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
-export type ModuleKey = "families" | "clash" | "exam" | "trello" | "lod" | "sim";
+type ModuleKey = "families" | "clash" | "exam" | "trello" | "lod" | "sim";
 
 export type NavigationItem = {
   href: string;

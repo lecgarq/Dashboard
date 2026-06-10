@@ -22,7 +22,7 @@ export type ActorClassificationSummary = {
   actors: number;
 };
 
-export const ACTOR_CLASSIFICATION_ORDER: readonly ActivityActorClassification[] = [
+const ACTOR_CLASSIFICATION_ORDER: readonly ActivityActorClassification[] = [
   "resolved_user",
   "automation/system",
   "unmapped_external_user",

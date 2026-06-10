@@ -134,7 +134,7 @@ const ENABLE_PREVIEW_INTERPOLATION = true;
  * lasso/selection e2e suite was authored against frozen, deterministic 2D
  * positions. GPU mode is covered by unit tests; GPU-mode e2e is a follow-up.
  */
-export const ENABLE_GPU_2D_SIM =
+const ENABLE_GPU_2D_SIM =
   process.env.NEXT_PUBLIC_ACC_GPU_2D !== "0" &&
   process.env.NEXT_PUBLIC_ACC_GRAPH_TEST !== "1";
 

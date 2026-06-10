@@ -32,12 +32,12 @@ function ts() {
 }
 
 function log(...args) {
-  // eslint-disable-next-line no-console
+   
   console.log(`[dc-reset-progress ${ts()}]`, ...args);
 }
 
 function logErr(...args) {
-  // eslint-disable-next-line no-console
+   
   console.error(`[dc-reset-progress ${ts()}]`, ...args);
 }
 

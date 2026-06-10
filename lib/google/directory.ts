@@ -286,7 +286,7 @@ function withTimeout<T>(promise: Promise<T>, timeoutMs: number, label: string): 
  * Uses the People API with the directory.readonly scope.
  * Any Workspace member can call this - no admin required.
  */
-export async function listOrgDirectoryPeople(userId: string): Promise<OrgPerson[]> {
+async function listOrgDirectoryPeople(userId: string): Promise<OrgPerson[]> {
   // Check memory cache first
   const cached = directoryCache.get(userId);
   if (cached && Date.now() - cached.timestamp < DIRECTORY_CACHE_TTL) {

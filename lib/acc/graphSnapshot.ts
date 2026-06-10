@@ -1,8 +1,8 @@
 import crypto from "crypto";
 
-export type AccGraphNodeKind = "instance";
+type AccGraphNodeKind = "instance";
 
-export interface AccGraphBaseNode {
+interface AccGraphBaseNode {
   kind: AccGraphNodeKind;
   id: string;
   label: string;
@@ -13,7 +13,7 @@ export interface AccGraphBaseNode {
   vy: number;
 }
 
-export interface AccGraphInstanceNode extends AccGraphBaseNode {
+interface AccGraphInstanceNode extends AccGraphBaseNode {
   kind: "instance";
   email: string;
   name: string;
@@ -30,7 +30,7 @@ export interface AccGraphInstanceNode extends AccGraphBaseNode {
 
 export type AccGraphNode = AccGraphInstanceNode;
 
-export interface AccGraphEdge {
+interface AccGraphEdge {
   source: string;
   target: string;
   color: string;

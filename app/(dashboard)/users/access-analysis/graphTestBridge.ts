@@ -27,7 +27,7 @@ import { categoryValue, type TargetDimensionId } from "./featureTargets";
 import type { ColorMode } from "./nodeColors";
 import { gridCells, pickDensestCell } from "./lassoProbe";
 
-export function isGraphTestEnabled(): boolean {
+function isGraphTestEnabled(): boolean {
   return process.env.NEXT_PUBLIC_ACC_GRAPH_TEST === "1";
 }
 
@@ -253,7 +253,7 @@ function featureView(f: NodeFeatureSnapshot) {
 
 // ---- Public window API -----------------------------------------------------
 
-export interface GraphTestApi {
+interface GraphTestApi {
   isReady(): boolean;
   getFrozen(): boolean;
   getMode(): "2d" | "3d";

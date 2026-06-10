@@ -520,57 +520,6 @@ export async function sendDeclinedEmail(
   );
 }
 
-/**
- * Send a sync-failure alert to the operator (luis.ecorteg@gmail.com).
- *
- * Used by Phase 1 sync orchestration scripts (`scripts/release.cjs` Quick Sync and
- * `scripts/deep-sync.cjs` Deep Sync) when their server-side run fails. Note the CJS
- * release/cron scripts cannot directly require this TS module — they implement an
- * inline raw-fetch Resend POST that mirrors this function's payload shape. This
- * export exists for TS callers (tRPC procedures, tests).
- *
- * Recipient is hardcoded per CONTEXT.md decision (email-only alerting for v2.0,
- * single operator). Internal `sendEmail` failures are swallowed — caller is already
- * in a failure path; we must not mask the original error with an alerting error.
- */
-export async function sendSyncFailureAlert(opts: {
-  syncType: "quick" | "deep";
-  timestamp: string;
-  errorMessage: string;
-  jobId?: string;
-}): Promise<void> {
-  const { syncType, timestamp, errorMessage, jobId } = opts;
-  const label =
-    syncType === "quick" ? "Quick Sync (release step)" : "Deep Sync (nightly cron)";
-  const subject = `[BIM Dashboard] ${label} failed — ${timestamp}`;
-  const jobLine = jobId
-    ? `<p><strong>Job ID:</strong> ${escapeHtml(jobId)}</p>`
-    : "";
-  try {
-    await sendEmail(
-      "luis.ecorteg@gmail.com",
-      subject,
-      `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;">
-        <h2>Sync Failure Alert</h2>
-        <p><strong>Sync type:</strong> ${escapeHtml(label)}</p>
-        <p><strong>Time:</strong> ${escapeHtml(timestamp)}</p>
-        ${jobLine}
-        <p><strong>Error:</strong></p>
-        <pre style="background:#f5f5f5;padding:12px;border-radius:4px;font-size:12px;overflow:auto;">${escapeHtml(errorMessage)}</pre>
-        <hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
-        <p style="color:#aaa;font-size:12px;">BIM Dashboard — Automated Sync Alerts</p>
-      </div>`
-    );
-  } catch (alertErr) {
-    logger.warn("sendSyncFailureAlert failed (swallowed)", {
-      syncType,
-      timestamp,
-      errorMessage,
-      alertError: alertErr instanceof Error ? alertErr.message : String(alertErr),
-    });
-  }
-}
-
 export async function sendAdminNotificationEmail(
   userEmail: string,
   userName: string | null | undefined
@@ -609,7 +558,7 @@ export interface GmailMessageSummary {
   hasAttachments: boolean;
 }
 
-export interface GmailAttachment {
+interface GmailAttachment {
   partId: string;
   filename: string;
   mimeType: string;

@@ -4,7 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo } from "reac
 import { useSession } from "next-auth/react";
 import type { Session } from "next-auth";
 
-export type DashboardRole = "VIEWER" | "EDITOR" | "ADMIN";
+type DashboardRole = "VIEWER" | "EDITOR" | "ADMIN";
 
 type DashboardAuthContextValue = {
   status: "loading" | "authenticated" | "unauthenticated";

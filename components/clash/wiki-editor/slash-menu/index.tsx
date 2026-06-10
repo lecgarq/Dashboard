@@ -396,5 +396,3 @@ export function SlashDropdownMenu({
     document.body
   );
 }
-
-export default SlashDropdownMenu;

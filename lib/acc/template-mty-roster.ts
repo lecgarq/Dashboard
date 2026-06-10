@@ -12,7 +12,7 @@
 //
 // Captured from the ACC web UI on 2026-06-09.
 
-export type TemplateAccessLevel = "Project Admin" | "Project Member";
+type TemplateAccessLevel = "Project Admin" | "Project Member";
 
 export interface TemplateRosterMember {
   name: string;

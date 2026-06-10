@@ -59,7 +59,7 @@ export function getPrimaryAdminEmail() {
   return normalizeEmail(process.env.ADMIN_EMAIL) ?? "luis.cortes@hermosillo.com";
 }
 
-export function getAdminEmailAliases() {
+function getAdminEmailAliases() {
   const primary = getPrimaryAdminEmail();
   return parseEmailList(process.env.ADMIN_EMAIL_ALIAS).filter((email) => email !== primary);
 }
@@ -68,7 +68,7 @@ export function isPrimaryAdminEmail(email?: string | null) {
   return normalizeEmail(email) === getPrimaryAdminEmail();
 }
 
-export function isAdminIdentityEmail(email?: string | null) {
+function isAdminIdentityEmail(email?: string | null) {
   const normalized = normalizeEmail(email);
   if (!normalized) return false;
 

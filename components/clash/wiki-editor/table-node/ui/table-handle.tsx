@@ -586,7 +586,7 @@ export function TableHandle({ editor }: TableHandleProps) {
   return <TableOverlayLayer editor={editor} />;
 }
 
-export function TableTriggerButton({
+function TableTriggerButton({
   editor: _editor,
   className,
   icon = <Plus size={14} />,
@@ -618,8 +618,6 @@ export function TableTriggerButton({
     </button>
   );
 }
-
-export const TableSelectionOverlay = TableHandle;
 
 export function TableCellHandleMenu({ editor }: TableHandleProps) {
   const [menuState, setMenuState] = useState<TableMenuState | null>(null);

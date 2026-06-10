@@ -4,7 +4,7 @@ import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
 import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
 
-export const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
+const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
 
 type CacheEntry<T> = {
   namespace: string;
@@ -145,7 +145,7 @@ export function invalidateAccHotCache() {
   stats.invalidations++;
 }
 
-export function getAccHotCacheStats() {
+function getAccHotCacheStats() {
   deleteExpired();
   return {
     entries: cache.size,
