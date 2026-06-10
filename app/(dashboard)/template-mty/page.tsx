@@ -2,6 +2,7 @@
 import { loadTemplateOverview, loadTemplatePermissionAccess } from "@/lib/server/templateView";
 import { loadTemplateFolderTerrain } from "@/lib/server/templateFolderTerrain";
 import { loadTemplateRoleTree } from "@/lib/server/templateRoleTree";
+import { buildRoleSimilarityGraph } from "./roleSimilarity";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import type { TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import { TemplateAnalysisCharts } from "./components/TemplateAnalysisCharts";
@@ -16,6 +17,8 @@ export default async function TemplateMtyRoute() {
     loadTemplatePermissionAccess(),
     loadTemplateRoleTree(),
   ]);
+
+  const roleSimilarity = buildRoleSimilarityGraph(roleTree);
 
   const terrainOption: TerrainProjectOption = {
     id: TEMPLATE_MTY_ID,
@@ -45,6 +48,7 @@ export default async function TemplateMtyRoute() {
           terrainOption={terrainOption}
           permissionAccess={permissionAccess}
           roleTree={roleTree}
+          roleSimilarity={roleSimilarity}
         />
       </div>
     </div>

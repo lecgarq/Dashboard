@@ -7,9 +7,11 @@ import type { FolderTerrainData, TerrainProjectOption } from "@/app/(dashboard)/
 import type { TemplateOverview } from "@/lib/server/templateView";
 import type { PermissionAccessSummary } from "../permissionAccess";
 import type { RoleTreeNode } from "@/lib/server/templateRoleTree";
+import type { RoleSimilarityGraph as RoleSimilarityGraphData } from "../roleSimilarity";
 import { PermissionAccessChart } from "./PermissionAccessChart";
 import { ModuleAccessChart } from "./ModuleAccessChart";
 import { RoleAccessPie } from "./RoleAccessPie";
+import { RoleSimilarityGraph } from "./RoleSimilarityGraph";
 import { TemplateMembersTable } from "./TemplateMembersTable";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -22,13 +24,14 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
 }
 
 export function TemplateAnalysisCharts({
-  overview, terrain, terrainOption, permissionAccess, roleTree,
+  overview, terrain, terrainOption, permissionAccess, roleTree, roleSimilarity,
 }: {
   overview: TemplateOverview;
   terrain: FolderTerrainData | null;
   terrainOption: TerrainProjectOption;
   permissionAccess: PermissionAccessSummary;
   roleTree: RoleTreeNode[];
+  roleSimilarity: RoleSimilarityGraphData;
 }) {
   return (
     <div className="flex flex-col gap-8">
@@ -74,6 +77,11 @@ export function TemplateAnalysisCharts({
       <section className="flex flex-col gap-3">
         <SectionHeader title="Role access" subtitle="What each role can reach across the template's folders — slice size is the number of folders, coloured by the role's highest permission tier. Click a role for its tier breakdown." />
         <RoleAccessPie nodes={roleTree} />
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their folder access — roles that grant the same folders at the same tiers are pulled together. Clusters are roles that are effectively interchangeable." />
+        <RoleSimilarityGraph graph={roleSimilarity} />
       </section>
     </div>
   );
