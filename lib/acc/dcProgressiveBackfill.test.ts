@@ -139,6 +139,34 @@ describe('planDailySlice', () => {
     }
   });
 
+  it('hard-skips allowlisted low-value projects before creating slices', () => {
+    const projects: ProjectProgress[] = [
+      {
+        ...newProj('2a46d219-9e58-479f-a4ba-daed763c7d61'),
+        projectName: 'ACC Template Ejecucion MTY',
+      },
+      {
+        ...newProj('96ed997a-f39b-4035-baf9-9eca1b5eb6b3'),
+        projectName: 'MTY BIM Sharespace',
+      },
+      {
+        ...newProj('fa948b7b-43eb-458e-8d8b-9f4cf7aa957f'),
+        projectName: 'MTY Caterpillar Azteca - OMTY083',
+      },
+    ];
+
+    const plan = planDailySlice(projects, yesterday, {
+      filterProjectEligibility: true,
+    });
+
+    expect(plan.slices).toHaveLength(1);
+    expect(plan.slices[0].projectIds).toEqual([
+      'fa948b7b-43eb-458e-8d8b-9f4cf7aa957f',
+    ]);
+    expect(plan.totalProjects).toBe(3);
+    expect(plan.estimatedQuota).toBe(1);
+  });
+
   it('clamps backward slice start to projectCreatedAt floor', () => {
     // earliestCovered = yesterday-100d, projectCreatedAt = yesterday-110d, latestCovered=yesterday
     const proj: ProjectProgress = {

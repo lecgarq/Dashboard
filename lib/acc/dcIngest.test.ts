@@ -144,6 +144,7 @@ describe('runDcIngest — top-level branches', () => {
     'LUIS_ACC_USER_ID',
     'APS_CLIENT_ID',
     'APS_CLIENT_SECRET',
+    'DC_SKIP_ADMIN_SNAPSHOT',
   ] as const;
 
   beforeEach(() => {
@@ -157,6 +158,8 @@ describe('runDcIngest — top-level branches', () => {
     process.env.LUIS_ACC_USER_ID = 'test-user-id';
     process.env.APS_CLIENT_ID = 'test-client-id';
     process.env.APS_CLIENT_SECRET = 'test-client-secret';
+    delete process.env.DC_SKIP_ADMIN_SNAPSHOT;
+    vi.clearAllMocks();
   });
   afterEach(() => {
     if (fs.existsSync(killSwitchPath)) fs.unlinkSync(killSwitchPath);
@@ -237,6 +240,67 @@ describe('runDcIngest — top-level branches', () => {
     expect(result.projectsProcessed).toBe(0);
     expect(fetchSpy).not.toHaveBeenCalled();
     fetchSpy.mockRestore();
+  });
+
+  it('does not submit APS requests when pending projects are only low-value allowlisted names', async () => {
+    const previousVitest = process.env.VITEST;
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.VITEST = 'false';
+    process.env.NODE_ENV = 'production';
+
+    const prisma = makePrismaMock();
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue([
+      {
+        projectId: '2a46d219-9e58-479f-a4ba-daed763c7d61',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+      {
+        projectId: '96ed997a-f39b-4035-baf9-9eca1b5eb6b3',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+    ]);
+    prisma.accDcProject.findMany.mockResolvedValue([
+      {
+        id: '2a46d219-9e58-479f-a4ba-daed763c7d61',
+        name: 'ACC Template Ejecucion MTY',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      },
+      {
+        id: '96ed997a-f39b-4035-baf9-9eca1b5eb6b3',
+        name: 'MTY BIM Sharespace',
+        createdAt: new Date('2026-01-01T00:00:00Z'),
+      },
+    ]);
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockResolvedValue(new Response('{}'));
+
+    try {
+      const result = await runDcIngest(prisma as never);
+
+      expect(result.status).toBe('success');
+      expect(result.quotaUsed).toBe(0);
+      expect(result.projectsProcessed).toBe(0);
+      expect(fetchSpy).not.toHaveBeenCalled();
+    } finally {
+      fetchSpy.mockRestore();
+      if (previousVitest === undefined) {
+        delete process.env.VITEST;
+      } else {
+        process.env.VITEST = previousVitest;
+      }
+      if (previousNodeEnv === undefined) {
+        delete process.env.NODE_ENV;
+      } else {
+        process.env.NODE_ENV = previousNodeEnv;
+      }
+    }
   });
 
   it('marks the run quota-paused when APS returns HTTP 429', async () => {
@@ -364,6 +428,70 @@ describe('runDcIngest — top-level branches', () => {
     expect(result.projectsProcessed).toBe(50);
     expect(ingestAdminSnapshot).not.toHaveBeenCalled();
     expect(prisma.accDcBackfillProgress.upsert).toHaveBeenCalledTimes(50);
+
+    fetchSpy.mockRestore();
+  });
+
+  it('skips admin snapshot when DC_SKIP_ADMIN_SNAPSHOT=1 even if all runnable slices completed', async () => {
+    process.env.DC_SKIP_ADMIN_SNAPSHOT = '1';
+    const prisma = makePrismaMock();
+    const projects = [
+      {
+        projectId: 'p1',
+        earliestCovered: null,
+        latestCovered: null,
+        projectCreatedAt: new Date('2026-01-01T00:00:00Z'),
+        newProjectFlag: true,
+      },
+    ];
+    prisma.accDcBackfillProgress.findMany.mockResolvedValue(projects);
+    prisma.accDcBackfillProgress.findUnique.mockImplementation(
+      async ({ where }: { where: { projectId: string } }) =>
+        projects.find((project) => project.projectId === where.projectId) ?? null,
+    );
+    vi.mocked(ingestAdminSnapshot).mockRejectedValueOnce(
+      new AnomalyError('User count dropped 56.6% (from 3870 to 1680); threshold 10%'),
+    );
+
+    const fetchSpy = vi
+      .spyOn(globalThis, 'fetch')
+      .mockImplementation(async (input, init) => {
+        const url = String(input);
+        if (init?.method === 'POST' && url.endsWith('/requests')) {
+          return new Response(JSON.stringify({ id: 'request-1' }));
+        }
+        if (url.endsWith('/requests/request-1/jobs')) {
+          return new Response(
+            JSON.stringify({
+              results: [
+                { id: 'job-1', status: 'complete', completionStatus: 'success' },
+              ],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data-listing')) {
+          return new Response(
+            JSON.stringify({
+              results: [{ name: 'admin_users.csv' }],
+            }),
+          );
+        }
+        if (url.endsWith('/jobs/job-1/data/admin_users.csv')) {
+          return new Response(JSON.stringify({ signedUrl: 'https://signed.example/admin_users.csv' }));
+        }
+        if (url === 'https://signed.example/admin_users.csv') {
+          return new Response('id,email\nu1,u1@example.com\n');
+        }
+        return new Response('{}');
+      });
+
+    const result = await runDcIngest(prisma as never);
+
+    expect(result.status).toBe('success');
+    expect(result.quotaUsed).toBe(1);
+    expect(result.projectsProcessed).toBe(1);
+    expect(ingestAdminSnapshot).not.toHaveBeenCalled();
+    expect(prisma.accDcBackfillProgress.upsert).toHaveBeenCalledTimes(1);
 
     fetchSpy.mockRestore();
   });

@@ -490,9 +490,11 @@ function yesterdayUtc(): Date {
 function newProjectProgress(
   projectId: string,
   projectCreatedAt: Date,
+  projectName?: string | null,
 ): ProjectProgress {
   return {
     projectId,
+    projectName,
     earliestCovered: null,
     latestCovered: null,
     projectCreatedAt,
@@ -503,9 +505,16 @@ function newProjectProgress(
 async function loadProjectProgress(
   prisma: PrismaClient,
 ): Promise<ProjectProgress[]> {
-  const rows = await prisma.accDcBackfillProgress.findMany();
+  const [rows, projects] = await Promise.all([
+    prisma.accDcBackfillProgress.findMany(),
+    prisma.accDcProject.findMany({
+      select: { id: true, name: true },
+    }),
+  ]);
+  const nameByProjectId = new Map(projects.map((p) => [p.id, p.name]));
   return rows.map((r) => ({
     projectId: r.projectId,
+    projectName: nameByProjectId.get(r.projectId) ?? null,
     earliestCovered: r.earliestCovered,
     latestCovered: r.latestCovered,
     projectCreatedAt: r.projectCreatedAt,
@@ -1056,6 +1065,8 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
     });
   }
 
+  const operatorSkipAdminSnapshot = process.env.DC_SKIP_ADMIN_SNAPSHOT === '1';
+
   // 6+. Execute the plan against APS.
   return executePlan(
     prisma,
@@ -1070,7 +1081,8 @@ export async function runDcIngest(prisma: PrismaClient): Promise<RunResult> {
       plannedRequests: limitedPlan.plannedRequests,
       quotaUsedBeforeRun: quotaBudget.usedToday,
       nextSafeRunAt: nextDailyQuotaReset(startedAt),
-      skipAdminSnapshot: limitedPlan.deferredRequests > 0,
+      skipAdminSnapshot:
+        operatorSkipAdminSnapshot || limitedPlan.deferredRequests > 0,
       safeRemainingRequests: quotaBudget.safeRemainingToday,
     },
   );
@@ -1419,14 +1431,16 @@ async function executePlan(
       });
       // Resolve nullable AccDcProject.createdAt -> earliest known activity ts.
       let projectCreatedAt: Date | null = null;
+      let projectName: string | null = null;
       if (prev) {
         projectCreatedAt = prev.projectCreatedAt;
       } else {
         const proj = await prisma.accDcProject.findUnique({
           where: { id: projectId },
-          select: { createdAt: true },
+          select: { createdAt: true, name: true },
         });
         projectCreatedAt = proj?.createdAt ?? null;
+        projectName = proj?.name ?? null;
         if (projectCreatedAt === null) {
           const earliestActivity = await prisma.accActivity.findFirst({
             where: { projectId },
@@ -1444,7 +1458,7 @@ async function executePlan(
             projectCreatedAt: prev.projectCreatedAt,
             newProjectFlag: prev.newProjectFlag,
           } as ProjectProgress)
-        : newProjectProgress(projectId, projectCreatedAt);
+        : newProjectProgress(projectId, projectCreatedAt, projectName);
       const next = applySliceCompletion(seed, slice);
       await prisma.accDcBackfillProgress.upsert({
         where: { projectId },

@@ -30,6 +30,12 @@
  *     Override the default 30-day progressive extraction window. Useful for
  *     bounded manual catch-up runs that need fewer APS Data Connector requests.
  *
+ *   DC_SKIP_ADMIN_SNAPSHOT=1
+ *     Manual backfill mode: ingest activity CSVs and advance backfill progress,
+ *     but leave the last known-good admin snapshot untouched. Use when running
+ *     scoped/project-window continuation batches that would otherwise compare a
+ *     partial admin CSV against the full-account baseline and quarantine.
+ *
  *   Note: PRIORITY_WINDOW_DAYS=30 is the activity-analysis window used by the
  *   priority ranker to compute scores. It is a compile-time constant in
  *   lib/acc/dcIngest.ts, not a runtime env var.

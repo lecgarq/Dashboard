@@ -21,9 +21,7 @@
  * Requirements: DC8-07, DC8-11, DC8-13.
  */
 import { subDays, max as dateMax, isBefore } from 'date-fns';
-import mtyAllowlist from './mty-allowlist.json';
-
-const mtySet = new Set(mtyAllowlist);
+import { isDcBackfillEligibleProject } from './dcProjectEligibility';
 
 /** APS Data Connector hard cap on `projectIdList` per request. */
 export const PROJECT_BATCH_LIMIT = 50;
@@ -36,6 +34,7 @@ const OVERLAP_DAYS = 1;
 
 export interface ProjectProgress {
   projectId: string;
+  projectName?: string | null;
   earliestCovered: Date | null;
   latestCovered: Date | null;
   /**
@@ -70,6 +69,8 @@ export interface DailyPlan {
 export interface PlanDailySliceOptions {
   /** Manual override for accelerated, bounded extraction runs. Defaults to SLICE_DAYS. */
   sliceDays?: number;
+  /** Test hook for exercising the production project eligibility filter. */
+  filterProjectEligibility?: boolean;
 }
 
 interface PerProjectSlice {
@@ -159,13 +160,17 @@ export function planDailySlice(
   options?: PlanDailySliceOptions,
 ): DailyPlan {
   const sliceDays = resolveSliceDays(options);
-  // If running in tests, bypass filter to keep test cases pure.
-  const isTest =
-    typeof process !== 'undefined' &&
-    (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test');
-  const filteredProjects = isTest
-    ? projects
-    : projects.filter((p) => mtySet.has(p.projectId));
+  const shouldFilterEligibility =
+    options?.filterProjectEligibility ??
+    !(
+      typeof process !== 'undefined' &&
+      (process.env.VITEST === 'true' || process.env.NODE_ENV === 'test')
+    );
+  const filteredProjects = shouldFilterEligibility
+    ? projects.filter((p) =>
+        isDcBackfillEligibleProject(p.projectId, p.projectName),
+      )
+    : projects;
 
   const perProjectSlices: PerProjectSlice[] = [];
   for (const proj of filteredProjects) {
