@@ -1,6 +1,7 @@
 export type ModuleId =
   | "dataManagement" | "insight" | "build" | "modelCoordination"
-  | "designCollaboration" | "preconstruction" | "design" | "autospecs" | "datum";
+  | "designCollaboration" | "preconstruction" | "design" | "autospecs" | "datum"
+  | "costManagement";
 
 export interface AccessInstance {
   projectId: string;

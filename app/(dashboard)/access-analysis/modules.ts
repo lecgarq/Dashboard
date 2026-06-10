@@ -7,6 +7,7 @@ export const MODULES: ReadonlyArray<{ id: ModuleId; label: string; keys: string[
   { id: "modelCoordination",   label: "Model Coordination",  keys: ["modelCoordination", "model_coordination"] },
   { id: "designCollaboration", label: "Design Collaboration", keys: ["designCollaboration", "design_collaboration"] },
   { id: "preconstruction",     label: "Preconstruction",     keys: ["takeoff", "cost"] },
+  { id: "costManagement",      label: "Cost Management",     keys: ["costmanagement", "cost_management"] },
   { id: "design",              label: "Design",              keys: ["forma"] },
   { id: "autospecs",           label: "AutoSpecs",           keys: ["autoSpecs", "autospecs"] },
   { id: "datum",               label: "Datum",               keys: ["datum"] },

@@ -10,16 +10,17 @@
 // roster — it lives solely in ACC's web layer. So it is maintained here by hand:
 // to update, copy the roster from the ACC Project Members page and edit this list.
 //
-// Captured from the ACC web UI on 2026-06-09.
+// Captured from the ACC web UI on 2026-06-09; per-member module access (the
+// "Product access enabled" column) added 2026-06-10.
 
 import type { ModuleId } from "@/app/(dashboard)/access-analysis/types";
 
-// ACC module ids (fill `modules` per member from the ACC web UI — Project Admin →
-// the member's product access). Legend:
-//   dataManagement = Docs/Files   build = Build           modelCoordination = Model Coordination
-//   designCollaboration = Design Collaboration            insight = Insight
-//   preconstruction = Takeoff/Cost  design = Forma         autospecs = AutoSpecs   datum = Datum
-// Example: modules: ["dataManagement", "build", "modelCoordination"]
+// ACC module ids (the "Product access enabled" column on the member detail).
+// Legend:
+//   dataManagement = Data Management (Docs/Files)   build = Build
+//   modelCoordination = Model Coordination          designCollaboration = Design Collaboration
+//   costManagement = Cost Management                insight = Insight
+//   preconstruction = Takeoff                        design = Forma   autospecs = AutoSpecs   datum = Datum
 
 type TemplateAccessLevel = "Project Admin" | "Project Member";
 
@@ -33,26 +34,26 @@ export interface TemplateRosterMember {
   modules?: ModuleId[];
 }
 
-export const TEMPLATE_MTY_ROSTER_UPDATED = "2026-06-09";
+export const TEMPLATE_MTY_ROSTER_UPDATED = "2026-06-10";
 
 export const TEMPLATE_MTY_ROSTER: TemplateRosterMember[] = [
-  { name: "Cain Cruz Gonzalez",            email: "cain.cruz@hermosillo.com",       company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin" },
-  { name: "Diego Adal Barrera Armendariz", email: "diego.barrera@hermosillo.com",   company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "Elisa Cervantes",               email: "elisa.cervantes@hermosillo.com", company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin" },
-  { name: "Elizabeth Soto",                email: "elizabeth.soto@hermosillo.com",  company: "Hermosillo", role: "VDC Innovacion",          accessLevel: "Project Admin" },
-  { name: "Evodio Hernández",              email: "evodio.hernandez@hermosillo.com",company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin" },
-  { name: "Fernando Becerril",             email: "fernando.becerril@hermosillo.com",company: "Hermosillo",role: "Gerente De Desarrollo",   accessLevel: "Project Member" },
-  { name: "Fernando Gonzalez Arechaga",    email: "fernando.gonzalez@hermosillo.com",company: "Hermosillo",role: "Dirección",               accessLevel: "Project Member" },
-  { name: "Glenda Lorey Diaz",             email: "glenda.lorey@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "Jennifer Martinez",             email: "jennifer.martinez@hermosillo.com",company: "Hermosillo",role: "Designer",                accessLevel: "Project Member" },
-  { name: "Jesus Acosta Aguilar",          email: "jesus.acosta@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "Josue Balderrama",              email: "josue.balderrama@hermosillo.com",company: "Hermosillo", role: "Core",                    accessLevel: "Project Admin" },
-  { name: "Khaled Parra Chá",              email: "khaled.parra@hermosillo.com",    company: "Hermosillo", role: "Gerente De Construccion", accessLevel: "Project Member" },
-  { name: "lester gomez",                  email: "lester.gomez@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "Lorena Lizarraga Haro",         email: "lorena.haro@hermosillo.com",     company: "Hermosillo", role: "Dirección",               accessLevel: "Project Member" },
-  { name: "maria rueda",                   email: "maria.rueda@hermosillo.com",     company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member" },
-  { name: "miriam felix",                  email: "miriam.felix@hermosillo.com",    company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member" },
-  { name: "Rogelio Romero",                email: "rogelio.romero@hermosillo.com",  company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "Sarah Yamil Vazquez Herrera",   email: "sarah.vazquez@hermosillo.com",   company: "Hermosillo", role: "Designer",                accessLevel: "Project Member" },
-  { name: "sergio galindo",                email: "sergio.galindo@hermosillo.com",  company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member" },
+  { name: "Cain Cruz Gonzalez",            email: "cain.cruz@hermosillo.com",       company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin",  modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Diego Adal Barrera Armendariz", email: "diego.barrera@hermosillo.com",   company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Elisa Cervantes",               email: "elisa.cervantes@hermosillo.com", company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin",  modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Elizabeth Soto",                email: "elizabeth.soto@hermosillo.com",  company: "Hermosillo", role: "VDC Innovacion",          accessLevel: "Project Admin",  modules: ["dataManagement", "designCollaboration", "modelCoordination", "build"] },
+  { name: "Evodio Hernández",              email: "evodio.hernandez@hermosillo.com",company: "Hermosillo", role: "Architect",               accessLevel: "Project Admin",  modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Fernando Becerril",             email: "fernando.becerril@hermosillo.com",company: "Hermosillo",role: "Gerente De Desarrollo",   accessLevel: "Project Member", modules: ["dataManagement"] },
+  { name: "Fernando Gonzalez Arechaga",    email: "fernando.gonzalez@hermosillo.com",company: "Hermosillo",role: "Dirección",               accessLevel: "Project Member", modules: ["dataManagement", "build"] },
+  { name: "Glenda Lorey Diaz",             email: "glenda.lorey@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Jennifer Martinez",             email: "jennifer.martinez@hermosillo.com",company: "Hermosillo",role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Jesus Acosta Aguilar",          email: "jesus.acosta@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Josue Balderrama",              email: "josue.balderrama@hermosillo.com",company: "Hermosillo", role: "Core",                    accessLevel: "Project Admin",  modules: ["dataManagement", "designCollaboration", "modelCoordination", "build", "costManagement"] },
+  { name: "Khaled Parra Chá",              email: "khaled.parra@hermosillo.com",    company: "Hermosillo", role: "Gerente De Construccion", accessLevel: "Project Member", modules: ["dataManagement"] },
+  { name: "lester gomez",                  email: "lester.gomez@hermosillo.com",    company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Lorena Lizarraga Haro",         email: "lorena.haro@hermosillo.com",     company: "Hermosillo", role: "Dirección",               accessLevel: "Project Member", modules: ["dataManagement"] },
+  { name: "maria rueda",                   email: "maria.rueda@hermosillo.com",     company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member", modules: ["dataManagement"] },
+  { name: "miriam felix",                  email: "miriam.felix@hermosillo.com",    company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member", modules: ["dataManagement"] },
+  { name: "Rogelio Romero",                email: "rogelio.romero@hermosillo.com",  company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "Sarah Yamil Vazquez Herrera",   email: "sarah.vazquez@hermosillo.com",   company: "Hermosillo", role: "Designer",                accessLevel: "Project Member", modules: ["dataManagement", "designCollaboration", "modelCoordination"] },
+  { name: "sergio galindo",                email: "sergio.galindo@hermosillo.com",  company: "Hermosillo", role: "Contabilidad",            accessLevel: "Project Member", modules: ["dataManagement"] },
 ];
