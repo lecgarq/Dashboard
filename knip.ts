@@ -1,31 +1,29 @@
 import type { KnipConfig } from 'knip';
 
 const config: KnipConfig = {
-  entry: ['app/**/page.tsx', 'app/**/layout.tsx', 'app/api/**/route.ts', 'server/routers/**/*.ts'],
+  entry: [
+    'app/**/page.tsx',
+    'app/**/layout.tsx',
+    'app/**/loading.tsx',
+    'app/**/error.tsx',
+    'app/api/**/route.ts',
+    'server/routers/**/*.ts',
+    'auth.config.ts',
+    'electron/**/*.{js,cjs,mjs}',
+  ],
   project: ['**/*.{js,ts,tsx}'],
   ignore: [
-    'components/ui/**',        // Ignore Shadcn UI components as they are typically imported ad-hoc
-    '.gsd/**',                 // Ignore GSD documentation
-    'scripts/**',              // Ignore utility scripts not directly running in prod
-    'node_modules/**',         // Implicitly ignored but good to be explicit
-    'next-env.d.ts',
-    'postcss.config.mjs',
+    'components/ui/**',        // Shadcn UI components are imported ad-hoc
+    'scripts/**',              // Utility/cron scripts run via node, not imported by the app
     'playwright.verify.config.ts', // invoked via `playwright test --config` by the /verify flow, not imported
   ],
   ignoreDependencies: [
-    'shadcn', 
+    'shadcn',
     'eslint-config-next',
-    '@types/react',
-    '@types/react-dom',
-    '@tailwindcss/postcss',
-    'tw-animate-css',
-    '@auth/core',
-    '@auth/core/adapters',
-    'react',
-    'react-dom',
     '@types/bcryptjs',
-    'next-themes'
-  ]
+    '@auth/core',
+    'tw-animate-css', // imported via @import in app/globals.css — invisible to knip
+  ],
 };
 
 export default config;
