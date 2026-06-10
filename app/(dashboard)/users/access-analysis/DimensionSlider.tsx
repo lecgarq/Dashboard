@@ -6,7 +6,7 @@
  *   - thumb scales + glows on hover/active; range fill eases
  *   - double-click thumb to reset; zinc palette per feedback_dark_palette_neutral.md
  */
-import * as Slider from "@radix-ui/react-slider";
+import { Slider } from "radix-ui";
 
 export interface DimensionSliderProps {
   dimId: string;

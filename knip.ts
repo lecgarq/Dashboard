@@ -26,7 +26,10 @@ const config: KnipConfig = {
     '@types/bcryptjs',
     '@auth/core',
     'tw-animate-css', // imported via @import in app/globals.css — invisible to knip
+    'pdfjs-dist',     // worker file imported via react-pdf's transitive copy (version must follow react-pdf)
+    'unzipper',       // used by lib/acc/ingestActivityZip.ts + scripts (both knip-ignored)
   ],
+  ignoreBinaries: ['python'], // npm run dev drives scripts/run_dev_stack.py
 };
 
 export default config;

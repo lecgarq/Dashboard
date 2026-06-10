@@ -20,7 +20,7 @@ import {
   DialogContent,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
+import { VisuallyHidden as VisuallyHiddenPrimitive } from "radix-ui";
 import {
   Search,
   Users,
@@ -529,9 +529,9 @@ function PersonDetailModal({
         className="flex flex-col max-w-3xl w-[90vw] bg-card border-border/50 text-foreground p-0 overflow-hidden shadow-2xl shadow-black/20"
         style={{ resize: "both", minWidth: 380, minHeight: 400, maxHeight: "90vh" }}
       >
-        <VisuallyHidden>
+        <VisuallyHiddenPrimitive.Root>
           <DialogTitle>{person.displayName}</DialogTitle>
-        </VisuallyHidden>
+        </VisuallyHiddenPrimitive.Root>
 
         {/* Header banner */}
         <div className="h-20 bg-gradient-to-br from-primary/25 via-chart-4/15 to-primary/8 relative shrink-0">

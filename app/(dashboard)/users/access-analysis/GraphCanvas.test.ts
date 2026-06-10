@@ -9,7 +9,7 @@
  *   rAF mask change-detection (Test 7): onMaskChange fires only on version change
  *   Pitfall 1 guard (Test 5): setConfig never called outside constructor
  *
- * Environment: jsdom (set via @vitest-environment comment above).
+ * Environment: jsdom (set via the vitest environment directive on line 1).
  * cosmos.gl is fully mocked — no GPU context required.
  */
 

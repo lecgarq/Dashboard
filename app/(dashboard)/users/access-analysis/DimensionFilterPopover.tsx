@@ -8,7 +8,7 @@
  * use fixed labels in the canonical order defined here.
  */
 
-import * as Popover from "@radix-ui/react-popover";
+import { Popover } from "radix-ui";
 import type { DIMENSIONS } from "./SliderContext";
 
 export interface DimensionFilterPopoverProps {
