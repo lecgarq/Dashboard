@@ -12,6 +12,15 @@
 //
 // Captured from the ACC web UI on 2026-06-09.
 
+import type { ModuleId } from "@/app/(dashboard)/access-analysis/types";
+
+// ACC module ids (fill `modules` per member from the ACC web UI — Project Admin →
+// the member's product access). Legend:
+//   dataManagement = Docs/Files   build = Build           modelCoordination = Model Coordination
+//   designCollaboration = Design Collaboration            insight = Insight
+//   preconstruction = Takeoff/Cost  design = Forma         autospecs = AutoSpecs   datum = Datum
+// Example: modules: ["dataManagement", "build", "modelCoordination"]
+
 type TemplateAccessLevel = "Project Admin" | "Project Member";
 
 export interface TemplateRosterMember {
@@ -20,6 +29,8 @@ export interface TemplateRosterMember {
   company: string;
   role: string;
   accessLevel: TemplateAccessLevel;
+  /** ACC modules this member is provisioned for. Empty until captured by hand. */
+  modules?: ModuleId[];
 }
 
 export const TEMPLATE_MTY_ROSTER_UPDATED = "2026-06-09";
