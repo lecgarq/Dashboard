@@ -16,6 +16,7 @@ interface PEdge extends SimulationLinkDatum<PNode> {
 }
 
 const H = 500;
+const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
 export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   const { resolvedTheme } = useTheme();
@@ -58,7 +59,10 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
     return { pnodes, pedges, neighbors };
   }, [graph, width, radius]);
 
-  const [, setTick] = useState(0);
+  // One render counter drives both sim ticks and view (pan/zoom) updates.
+  const [, setFrame] = useState(0);
+  const frame = () => setFrame((f) => f + 1);
+
   const simRef = useRef<Simulation<PNode, PEdge> | null>(null);
   useEffect(() => {
     const sim = forceSimulation<PNode>(pnodes)
@@ -66,36 +70,74 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
       .force("charge", forceManyBody<PNode>().strength(-230))
       .force("center", forceCenter(width / 2, H / 2))
       .force("collide", forceCollide<PNode>().radius((d) => d.r + 5))
-      .on("tick", () => setTick((t) => t + 1));
+      .on("tick", frame);
     simRef.current = sim;
     return () => { sim.stop(); };
   }, [pnodes, pedges, width]);
 
-  const [hover, setHover] = useState<string | null>(null);
-  const drag = useRef<{ node: PNode | null }>({ node: null });
+  // Pan/zoom view transform (translate in screen px, then scale). Kept in a ref so
+  // the imperative wheel/pointer handlers read the latest without stale closures.
+  const viewRef = useRef({ x: 0, y: 0, k: 1 });
+  const setView = (next: { x: number; y: number; k: number }) => { viewRef.current = next; frame(); };
+  const resetView = () => setView({ x: 0, y: 0, k: 1 });
 
-  const toSvg = (clientX: number, clientY: number) => {
+  const screenToGraph = (clientX: number, clientY: number) => {
     const rect = svgRef.current?.getBoundingClientRect();
-    return { x: clientX - (rect?.left ?? 0), y: clientY - (rect?.top ?? 0) };
+    const sx = clientX - (rect?.left ?? 0);
+    const sy = clientY - (rect?.top ?? 0);
+    const v = viewRef.current;
+    return { x: (sx - v.x) / v.k, y: (sy - v.y) / v.k };
   };
+
+  // Wheel zoom toward the cursor (non-passive so the page doesn't scroll).
+  useEffect(() => {
+    const el = svgRef.current;
+    if (!el) return;
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault();
+      const rect = el.getBoundingClientRect();
+      const px = e.clientX - rect.left, py = e.clientY - rect.top;
+      const v = viewRef.current;
+      const k = clamp(v.k * Math.exp(-e.deltaY * 0.0012), 0.2, 5);
+      viewRef.current = { x: px - (px - v.x) * (k / v.k), y: py - (py - v.y) * (k / v.k), k };
+      setFrame((f) => f + 1);
+    };
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  const [hover, setHover] = useState<string | null>(null);
+  const ix = useRef<{ mode: "none" | "node" | "pan"; node: PNode | null; lastX: number; lastY: number }>({ mode: "none", node: null, lastX: 0, lastY: 0 });
+
   const onNodeDown = (n: PNode) => (e: React.PointerEvent) => {
     e.preventDefault();
-    drag.current.node = n;
-    n.fx = n.x; n.fy = n.y;
+    e.stopPropagation(); // don't also start a background pan
+    ix.current = { mode: "node", node: n, lastX: e.clientX, lastY: e.clientY };
+    const g = screenToGraph(e.clientX, e.clientY);
+    n.fx = g.x; n.fy = g.y;
     simRef.current?.alphaTarget(0.3).restart();
-    (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    svgRef.current?.setPointerCapture?.(e.pointerId);
+  };
+  const onSvgDown = (e: React.PointerEvent) => {
+    ix.current = { mode: "pan", node: null, lastX: e.clientX, lastY: e.clientY };
+    svgRef.current?.setPointerCapture?.(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
-    const n = drag.current.node;
-    if (!n) return;
-    const p = toSvg(e.clientX, e.clientY);
-    n.fx = p.x; n.fy = p.y;
+    const s = ix.current;
+    if (s.mode === "node" && s.node) {
+      const g = screenToGraph(e.clientX, e.clientY);
+      s.node.fx = g.x; s.node.fy = g.y;
+    } else if (s.mode === "pan") {
+      const dx = e.clientX - s.lastX, dy = e.clientY - s.lastY;
+      s.lastX = e.clientX; s.lastY = e.clientY;
+      const v = viewRef.current;
+      setView({ x: v.x + dx, y: v.y + dy, k: v.k });
+    }
   };
   const onUp = () => {
-    const n = drag.current.node;
-    if (n) { n.fx = null; n.fy = null; }
-    drag.current.node = null;
-    simRef.current?.alphaTarget(0);
+    const s = ix.current;
+    if (s.mode === "node" && s.node) { s.node.fx = null; s.node.fy = null; simRef.current?.alphaTarget(0); }
+    ix.current = { mode: "none", node: null, lastX: 0, lastY: 0 };
   };
 
   if (graph.nodes.length === 0) {
@@ -109,12 +151,13 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   const hoverNeighbors = hover ? neighbors.get(hover) ?? new Set<string>() : null;
   const isLit = (id: string) => !hover || id === hover || (hoverNeighbors?.has(id) ?? false);
   const hovered = hover ? pnodes.find((n) => n.roleId === hover) ?? null : null;
+  const v = viewRef.current;
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="px-1 text-xs text-muted-foreground">
-          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Drag a dot; hover to isolate.
+          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it.
         </p>
         <div className="flex items-center gap-2 text-[11px]" style={{ color: sub }}>
           {TIER_LEGEND.map((t) => (
@@ -133,41 +176,55 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
           height={H}
           viewBox={`0 0 ${width} ${H}`}
           className="block touch-none select-none"
+          style={{ cursor: ix.current.mode === "pan" ? "grabbing" : "grab" }}
+          onPointerDown={onSvgDown}
           onPointerMove={onMove}
           onPointerUp={onUp}
           onPointerLeave={onUp}
+          onContextMenu={(e) => e.preventDefault()}
         >
-          {pedges.map((e, i) => {
-            const s = e.source as PNode;
-            const t = e.target as PNode;
-            if (typeof s !== "object" || typeof t !== "object") return null;
-            const lit = !hover || (isLit(s.roleId) && isLit(t.roleId) && (s.roleId === hover || t.roleId === hover));
-            return (
-              <line
-                key={i}
-                x1={s.x} y1={s.y} x2={t.x} y2={t.y}
-                stroke={edgeColor}
-                strokeWidth={0.6 + e.weight * 2.4}
-                strokeOpacity={lit ? 0.55 * (0.4 + e.weight * 0.6) : 0.06}
-              />
-            );
-          })}
-          {pnodes.map((n) => {
-            const lit = isLit(n.roleId);
-            return (
-              <g key={n.roleId} style={{ cursor: "grab" }}
-                 onPointerDown={onNodeDown(n)}
-                 onMouseEnter={() => setHover(n.roleId)}
-                 onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
-              >
-                <circle cx={n.x} cy={n.y} r={n.r} fill={TIER_COLORS[n.maxRank]} stroke={nodeStroke} strokeWidth={1.5} opacity={lit ? 1 : 0.18} />
-                <text x={n.x} y={(n.y ?? 0) + n.r + 9} textAnchor="middle" fontSize={9} fill={ink} opacity={lit ? 0.9 : 0.12} pointerEvents="none">
-                  {n.roleName.length > 18 ? n.roleName.slice(0, 17) + "…" : n.roleName}
-                </text>
-              </g>
-            );
-          })}
+          <g transform={`translate(${v.x} ${v.y}) scale(${v.k})`}>
+            {pedges.map((e, i) => {
+              const s = e.source as PNode;
+              const t = e.target as PNode;
+              if (typeof s !== "object" || typeof t !== "object") return null;
+              const lit = !hover || (isLit(s.roleId) && isLit(t.roleId) && (s.roleId === hover || t.roleId === hover));
+              return (
+                <line
+                  key={i}
+                  x1={s.x} y1={s.y} x2={t.x} y2={t.y}
+                  stroke={edgeColor}
+                  strokeWidth={(0.6 + e.weight * 2.4) / v.k}
+                  strokeOpacity={lit ? 0.55 * (0.4 + e.weight * 0.6) : 0.06}
+                />
+              );
+            })}
+            {pnodes.map((n) => {
+              const lit = isLit(n.roleId);
+              return (
+                <g key={n.roleId} style={{ cursor: "grab" }}
+                   onPointerDown={onNodeDown(n)}
+                   onMouseEnter={() => setHover(n.roleId)}
+                   onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
+                >
+                  <circle cx={n.x} cy={n.y} r={n.r} fill={TIER_COLORS[n.maxRank]} stroke={nodeStroke} strokeWidth={1.5 / v.k} opacity={lit ? 1 : 0.18} />
+                  <text x={n.x} y={(n.y ?? 0) + n.r + 9 / v.k} textAnchor="middle" fontSize={9 / v.k} fill={ink} opacity={lit ? 0.9 : 0.12} pointerEvents="none">
+                    {n.roleName.length > 18 ? n.roleName.slice(0, 17) + "…" : n.roleName}
+                  </text>
+                </g>
+              );
+            })}
+          </g>
         </svg>
+
+        <button
+          type="button"
+          onClick={resetView}
+          className="absolute bottom-3 right-3 rounded-full border border-border bg-card/85 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur hover:bg-muted hover:text-foreground"
+          title="Reset zoom & pan"
+        >
+          Reset view
+        </button>
 
         {hovered && (
           <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
