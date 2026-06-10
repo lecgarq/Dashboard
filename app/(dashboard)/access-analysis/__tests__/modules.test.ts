@@ -2,10 +2,10 @@ import { describe, it, expect } from "vitest";
 import { MODULES, reduceModules, moduleLabelById } from "../modules";
 
 describe("MODULES", () => {
-  it("declares the 9 business modules in adoption order", () => {
+  it("declares the business modules in adoption order", () => {
     expect(MODULES.map((m) => m.id)).toEqual([
       "dataManagement", "insight", "build", "modelCoordination",
-      "designCollaboration", "preconstruction", "design", "autospecs", "datum",
+      "designCollaboration", "preconstruction", "costManagement", "design", "autospecs", "datum",
     ]);
   });
 });
