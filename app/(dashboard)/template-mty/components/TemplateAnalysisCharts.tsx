@@ -5,7 +5,7 @@ import { FolderPermissionTerrain } from "@/app/(dashboard)/access-analysis/compo
 import { loadTerrainForProject } from "@/app/(dashboard)/access-analysis/folderTerrainActions";
 import type { FolderTerrainData, TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { TemplateOverview } from "@/lib/server/templateView";
-import { ProvisionedModulesPieChart } from "./ProvisionedModulesPieChart";
+import { AccessLevelPieChart } from "./AccessLevelPieChart";
 import { TemplateMembersTable } from "./TemplateMembersTable";
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
@@ -24,33 +24,30 @@ export function TemplateAnalysisCharts({
   terrain: FolderTerrainData | null;
   terrainOption: TerrainProjectOption;
 }) {
-  const freshness = overview.syncedAt
-    ? new Date(overview.syncedAt).toLocaleString()
-    : "not synced yet";
-
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">Template</span>
         <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.memberCount}</b> members</span>
+        <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.adminCount}</b> admins</span>
         <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.distinctRoles}</b> roles</span>
         <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.companyCount}</b> companies</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5">synced {freshness}</span>
+        <span className="rounded-md bg-muted/50 px-2 py-0.5">roster updated {overview.updatedAt}</span>
       </div>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Project members" subtitle="Everyone configured on this template, with their roles, company, and module access." />
+        <SectionHeader title="Project members" subtitle="The roster that projects created from this template inherit — with each member's role, company, and access level." />
         <TemplateMembersTable members={overview.members} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Role distribution" subtitle="Roles held across the template's members." />
+        <SectionHeader title="Role distribution" subtitle="Roles held across the template's member roster." />
         <RolesPieChart data={overview.roleSummary.slices} distinctRoles={overview.distinctRoles} />
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Provisioned modules" subtitle="How many members are granted each ACC tool in the template." />
-        <ProvisionedModulesPieChart summary={overview.moduleSummary} />
+        <SectionHeader title="Access levels" subtitle="Project Admins vs Project Members across the roster." />
+        <AccessLevelPieChart slices={overview.accessLevels} />
       </section>
 
       <section className="flex flex-col gap-3">

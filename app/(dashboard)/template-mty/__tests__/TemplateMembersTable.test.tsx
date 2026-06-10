@@ -5,20 +5,22 @@ import { TemplateMembersTable } from "../components/TemplateMembersTable";
 import type { TemplateMember } from "@/lib/server/templateView";
 
 const members: TemplateMember[] = [
-  { name: "Alberto", email: "alberto.sanchez@hermosillo.com", company: "Hermosillo",
-    roleNames: ["Core"], modules: ["dataManagement", "build"], isInternal: true, isAdmin: true },
+  { name: "Alberto", email: "alberto@hermosillo.com", company: "Hermosillo",
+    role: "Core", accessLevel: "Project Admin", isInternal: true, isAdmin: true },
   { name: "Guest", email: "guest@outside.com", company: "Outside Co",
-    roleNames: [], modules: [], isInternal: false, isAdmin: false },
+    role: "Designer", accessLevel: "Project Member", isInternal: false, isAdmin: false },
 ];
 
 describe("TemplateMembersTable", () => {
-  it("renders one row per member with name, email, role, and company", () => {
+  it("renders one row per member with name, email, role, company, and access level", () => {
     render(<TemplateMembersTable members={members} />);
     expect(screen.getByText("Alberto")).toBeTruthy();
-    expect(screen.getByText("alberto.sanchez@hermosillo.com")).toBeTruthy();
+    expect(screen.getByText("alberto@hermosillo.com")).toBeTruthy();
     expect(screen.getByText("Core")).toBeTruthy();
+    expect(screen.getByText("Project Admin")).toBeTruthy();
     expect(screen.getAllByText("Hermosillo").length).toBeGreaterThan(0);
     expect(screen.getByText("Guest")).toBeTruthy();
-    expect(screen.getByText("No role")).toBeTruthy();
+    expect(screen.getByText("Project Member")).toBeTruthy();
+    expect(screen.getByText("External")).toBeTruthy();
   });
 });

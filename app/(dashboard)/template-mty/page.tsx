@@ -23,8 +23,6 @@ export default async function TemplateMtyRoute() {
     userRoleCount: terrain?.maxUserCount ?? 0,
   };
 
-  const notSynced = overview.memberCount === 0;
-
   return (
     <div className="h-full overflow-y-auto text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
@@ -34,18 +32,12 @@ export default async function TemplateMtyRoute() {
           </span>
           <h1 className="text-2xl font-semibold tracking-tight text-foreground">{TEMPLATE_MTY_NAME}</h1>
           <p className="max-w-prose text-sm text-muted-foreground">
-            Members, roles, companies, provisioned modules, and folder permissions for the
+            Members, roles, companies, access levels, and folder permissions for the
             ACC Template MTY project template.
           </p>
         </header>
 
-        {notSynced ? (
-          <div className="rounded-2xl border border-border bg-card p-6 text-sm text-muted-foreground">
-            This template hasn&apos;t been synced yet. Run <code className="rounded bg-muted px-1.5 py-0.5">node scripts/template-sync.cjs</code> to populate its data.
-          </div>
-        ) : (
-          <TemplateAnalysisCharts overview={overview} terrain={terrain} terrainOption={terrainOption} />
-        )}
+        <TemplateAnalysisCharts overview={overview} terrain={terrain} terrainOption={terrainOption} />
       </div>
     </div>
   );
