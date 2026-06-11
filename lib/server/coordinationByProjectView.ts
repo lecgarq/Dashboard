@@ -6,11 +6,14 @@ export interface CoordinationByProjectData {
   rows: CoordinationRow[]; // per-(project, status) validated-coordination counts
   accessibleProjects: number; // latest run's projectsOk — for the coverage footnote
   forbiddenProjects: number; // latest run's projectsForbidden
+  latestRunAt: string | null; // ISO start of the latest issue extraction — proves freshness
+  coordinationCount: number; // run-reported coordination total (sanity vs the summed rows)
 }
 
-// "Model Coordination issue" = a coordination issue that is clash-validated OR lives
-// in a Model-Coordination-enabled project (matches the headline definition).
-const CORE = { isCoordination: true, OR: [{ clashValidated: true }, { projectMcEnabled: true }] };
+// "Model Coordination issue" = every issue classified as coordination by the
+// backfill classifier or the clash validation pass. This is the coordination
+// subset of all stored ACC issues, not the full issue table.
+const CORE = { isCoordination: true };
 
 let cache: { at: number; data: CoordinationByProjectData } | null = null;
 const TTL_MS = 5 * 60 * 1000;
@@ -29,7 +32,7 @@ export async function loadCoordinationByProject(
     db.accProject.findMany({ select: { id: true, name: true } }),
     db.accIssueFetchRun.findFirst({
       orderBy: { startedAt: "desc" },
-      select: { projectsOk: true, projectsForbidden: true },
+      select: { projectsOk: true, projectsForbidden: true, startedAt: true, coordinationCount: true },
     }),
   ]);
 
@@ -45,6 +48,8 @@ export async function loadCoordinationByProject(
     rows,
     accessibleProjects: run?.projectsOk ?? 0,
     forbiddenProjects: run?.projectsForbidden ?? 0,
+    latestRunAt: run?.startedAt?.toISOString() ?? null,
+    coordinationCount: run?.coordinationCount ?? 0,
   };
   cache = { at: Date.now(), data };
   return data;

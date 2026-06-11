@@ -13,13 +13,19 @@ export interface ProjectRoleRow {
   roles: string[];
 }
 
+/** Anything carrying a project id + name — the only fields the picker needs. */
+export interface ProjectNamed {
+  projectId: string;
+  projectName: string;
+}
+
 export interface ProjectOption {
   id: string;
   name: string;
 }
 
 /** Distinct projects as {id, name}, sorted alphabetically by name. */
-export function projectOptions(rows: ProjectRoleRow[]): ProjectOption[] {
+export function projectOptions(rows: ReadonlyArray<ProjectNamed>): ProjectOption[] {
   const byId = new Map<string, string>();
   for (const r of rows) if (!byId.has(r.projectId)) byId.set(r.projectId, r.projectName);
   return [...byId.entries()]
@@ -38,7 +44,10 @@ export function filterProjectOptions(options: ProjectOption[], query: string): P
   return options.filter((o) => o.name.toLowerCase().includes(needle));
 }
 
-/** Keep only memberships whose project id is in the selected set. */
-export function filterRowsBySelection(rows: ProjectRoleRow[], selected: ReadonlySet<string>): ProjectRoleRow[] {
+/** Keep only rows whose project id is in the selected set. */
+export function filterRowsBySelection<T extends { projectId: string }>(
+  rows: ReadonlyArray<T>,
+  selected: ReadonlySet<string>,
+): T[] {
   return rows.filter((r) => selected.has(r.projectId));
 }

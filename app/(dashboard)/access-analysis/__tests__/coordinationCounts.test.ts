@@ -13,11 +13,11 @@ describe("summarizeCoordination", () => {
     expect(summarizeCoordination(rows).total).toBe(25);
   });
 
-  it("aggregates per project (merging statuses), sorted by count desc", () => {
+  it("aggregates per project (merging statuses) with an open/closed split, sorted by count desc", () => {
     expect(summarizeCoordination(rows).byProject).toEqual([
-      { projectId: "a", projectName: "Alpha", count: 15 },
-      { projectId: "b", projectName: "Bravo", count: 8 },
-      { projectId: "c", projectName: "Charlie", count: 2 },
+      { projectId: "a", projectName: "Alpha", count: 15, open: 10, closed: 5 },
+      { projectId: "b", projectName: "Bravo", count: 8, open: 8, closed: 0 },
+      { projectId: "c", projectName: "Charlie", count: 2, open: 2, closed: 0 },
     ]);
   });
 

@@ -23,8 +23,36 @@ vi.mock("@/lib/server/accessInstanceView", () => ({
 vi.mock("@/lib/server/moduleActivityView", () => ({
   loadModuleActivity: vi.fn(async () => []),
 }));
+// Empty actor activity -> the Activity-by-role donut renders its empty state
+// (no echart), so the singular getByTestId("echart") still resolves the roles donut.
+vi.mock("@/lib/server/activityByActorView", () => ({
+  loadActivityByActor: vi.fn(async () => []),
+}));
+// Empty timeline -> the Activity-over-time section renders its empty state
+// (no echart), so the singular getByTestId("echart") still resolves the roles donut.
+vi.mock("@/lib/server/activityTimelineView", () => ({
+  loadActivityTimeline: vi.fn(async () => []),
+}));
 vi.mock("@/lib/server/coordinationByProjectView", () => ({
-  loadCoordinationByProject: () => Promise.resolve({ rows: [], accessibleProjects: 0, forbiddenProjects: 0 }),
+  loadCoordinationByProject: () =>
+    Promise.resolve({ rows: [], accessibleProjects: 0, forbiddenProjects: 0, latestRunAt: null, coordinationCount: 0 }),
+}));
+vi.mock("@/lib/server/projectCoverageView", () => ({
+  loadProjectCoverage: () => Promise.resolve([]),
+}));
+// Empty terrain project list -> the folder-permission terrain section is omitted,
+// keeping this test focused on the roles donut.
+vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
+  loadTerrainProjects: vi.fn(async () => []),
+  loadFolderPermissionTerrain: vi.fn(async () => null),
+}));
+// Server actions ("use server") — mocked so the route test doesn't pull auth/db wiring.
+vi.mock("./coordinationActions", () => ({
+  loadProjectClashes: vi.fn(async () => []),
+}));
+vi.mock("./folderTerrainActions", () => ({
+  loadTerrainForProject: vi.fn(async () => null),
+  loadOverviewTerrain: vi.fn(async () => null),
 }));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({
