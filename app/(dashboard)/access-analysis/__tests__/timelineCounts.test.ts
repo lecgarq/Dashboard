@@ -61,6 +61,15 @@ describe("summarizeActivityTimeline", () => {
     expect(s.peak).toMatchObject({ month: "2024-01", count: 8 });
   });
 
+  it("picks the earliest year on a busiest-year tie", () => {
+    const rows = [
+      { projectId: "p1", month: "2023-06", count: 10 },
+      { projectId: "p1", month: "2024-06", count: 10 },
+    ];
+    const s = summarizeActivityTimeline(rows, all);
+    expect(s.busiestYear).toEqual({ year: "2023", count: 10 });
+  });
+
   it("reports the busiest year and a total equal to the sum of points", () => {
     const rows = [
       { projectId: "p1", month: "2023-01", count: 5 },

@@ -8,7 +8,7 @@
  */
 export interface ActivityTimelineRow {
   projectId: string; // "" = account-level (admin) activity
-  projectName: string;
+  projectName: string; // carried for callers (e.g. the loader); not read by summarizeActivityTimeline
   month: string; // "YYYY-MM" (UTC calendar month)
   count: number;
 }
@@ -93,6 +93,7 @@ export function summarizeActivityTimeline(
   // 4. Busiest year.
   let busiestYear: { year: string; count: number } | null = null;
   for (const [year, count] of yearTotals) {
+    // strict > => ties keep the earliest year (yearTotals is built chronologically)
     if (!busiestYear || count > busiestYear.count) busiestYear = { year, count };
   }
 
