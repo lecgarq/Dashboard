@@ -80,7 +80,7 @@ export function TemplateAnalysisCharts({
       </section>
 
       <section className="flex flex-col gap-3">
-        <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their folder access — roles that grant the same folders at the same tiers are pulled together. Clusters are roles that are effectively interchangeable." />
+        <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles." />
         <RoleSimilarityGraph graph={roleSimilarity} />
       </section>
     </div>

@@ -2,7 +2,7 @@
 import { loadTemplateOverview, loadTemplatePermissionAccess } from "@/lib/server/templateView";
 import { loadTemplateFolderTerrain } from "@/lib/server/templateFolderTerrain";
 import { loadTemplateRoleTree } from "@/lib/server/templateRoleTree";
-import { buildRoleSimilarityGraph } from "./roleSimilarity";
+import { loadTemplateRoleSimilarity } from "@/lib/server/templateRoleSimilarity";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import type { TerrainProjectOption } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import { TemplateAnalysisCharts } from "./components/TemplateAnalysisCharts";
@@ -11,14 +11,17 @@ export const metadata = { title: "Template MTY" };
 export const dynamic = "force-dynamic";
 
 export default async function TemplateMtyRoute() {
-  const [overview, terrain, permissionAccess, roleTree] = await Promise.all([
+  // Role similarity is computed over EXPLICIT permissions only — every folder whose
+  // permissions differ from its parent (inherited folders excluded), INCLUDING the
+  // top-level "Project Files" folder so the Full-Control vs View+Download role groups
+  // stay separated. The role-access donut above still uses every folder (total reach).
+  const [overview, terrain, permissionAccess, roleTree, roleSimilarity] = await Promise.all([
     loadTemplateOverview(),
     loadTemplateFolderTerrain(),
     loadTemplatePermissionAccess(),
     loadTemplateRoleTree(),
+    loadTemplateRoleSimilarity(),
   ]);
-
-  const roleSimilarity = buildRoleSimilarityGraph(roleTree);
 
   const terrainOption: TerrainProjectOption = {
     id: TEMPLATE_MTY_ID,
