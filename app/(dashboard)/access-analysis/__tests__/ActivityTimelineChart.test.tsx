@@ -42,4 +42,17 @@ describe("ActivityTimelineChart", () => {
     expect(headline.textContent).toContain("Mar 2024");
     expect(headline.textContent).toContain("2024");
   });
+
+  it("omits the busiest-month label when peak is null", () => {
+    const noPeak: TimelineSummary = {
+      points: [{ month: "2024-01", label: "Jan 2024", count: 0 }],
+      total: 0,
+      peak: null,
+      busiestYear: { year: "2024", count: 0 },
+      span: { from: "2024-01", to: "2024-01" },
+    };
+    const { getByTestId } = render(<ActivityTimelineChart summary={noPeak} />);
+    expect(getByTestId("echart").getAttribute("data-points")).toBe("1");
+    expect(getByTestId("timeline-headline").textContent).not.toContain("busiest month");
+  });
 });

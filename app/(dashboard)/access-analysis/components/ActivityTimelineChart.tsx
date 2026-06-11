@@ -2,7 +2,7 @@
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "./EChart";
-import type { EChartsOption } from "echarts";
+import type { EChartsOption, LineSeriesOption } from "echarts";
 import type { TimelineSummary } from "../timelineCounts";
 
 const ACCENT = "#38bdf8"; // sky — same accent as the Model-Coordination module
@@ -45,10 +45,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
   const cTipText = dark ? "#e4e4e7" : "#374151";
   const cTitle = dark ? "#fafafa" : "#111827";
 
-  // Cast needed: ECharts conditional-spread markPoint produces `T | undefined`
-  // which the strict internal SeriesOption type rejects; cast at the boundary.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const lineSeries = {
+  const lineSeries: LineSeriesOption = {
     name: "Activity",
     type: "line",
     smooth: true,
@@ -73,7 +70,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
             symbolSize: 46,
             itemStyle: { color: ACCENT },
             label: { color: "#06121b", fontSize: 10, fontWeight: 700, formatter: () => "peak" },
-            data: [{ coord: [peak.label, peak.count], value: peak.count }],
+            data: [{ name: "peak", coord: [peak.label, peak.count], value: peak.count }],
           },
         }
       : {}),
@@ -134,8 +131,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
         textStyle: { color: cAxis },
       },
     ],
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    series: [lineSeries as any],
+    series: [lineSeries],
   };
 
   return (
