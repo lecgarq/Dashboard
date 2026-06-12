@@ -560,6 +560,29 @@ model AccActivity {
   @@index([ingestRunId]) // forensic lookup: "which run inserted these rows?"
 }
 
+model AccActivityAccds {
+  accdsActivityId String   @id
+  autodeskId      String
+  userEmail       String?
+  userName        String?
+  projectId       String
+  serviceGroup    String?
+  activityVerb    String
+  objectId        String?
+  objectType      String?
+  objectName      String?
+  folderId        String?
+  folderName      String?
+  createdAt       DateTime
+  ingestRunId     String?
+  fetchedAt       DateTime @default(now())
+
+  @@index([projectId, createdAt(sort: Desc)])
+  @@index([userEmail, createdAt(sort: Desc)])
+  @@index([activityVerb])
+  @@index([createdAt(sort: Desc)])
+}
+
 model UnresolvedAttribution {
   id         String   @id @default(cuid())
   activityId String // logical FK to AccActivity.id (not enforced — soft retention)
