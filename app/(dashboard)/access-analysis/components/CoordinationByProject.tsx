@@ -1,5 +1,7 @@
 "use client";
 import { useState } from "react";
+import { motion, useReducedMotion } from "framer-motion";
+import { AnimatedExpand, useEntrance } from "@/components/ui/animated-list";
 import type { CoordinationSummary } from "../coordinationCounts";
 import { summarizeAuthors, type ClashIssue } from "../coordinationClash";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
@@ -100,9 +102,18 @@ function OpenClosedBar({ open, closed }: { open: number; closed: number }) {
   );
 }
 
-function ClashCard({ c, onAuthorClick }: { c: ClashIssue; onAuthorClick?: (email: string) => void }) {
+function ClashCard({
+  c,
+  index,
+  onAuthorClick,
+}: {
+  c: ClashIssue;
+  index: number;
+  onAuthorClick?: (email: string) => void;
+}) {
+  const entrance = useEntrance();
   return (
-    <li className="rounded-lg border border-border bg-card/60 p-2.5">
+    <motion.li {...entrance(index)} className="rounded-lg border border-border bg-card/60 p-2.5">
       <div className="flex items-start justify-between gap-2">
         <div className="flex min-w-0 items-center gap-1.5">
           {c.displayId != null && (
@@ -135,7 +146,7 @@ function ClashCard({ c, onAuthorClick }: { c: ClashIssue; onAuthorClick?: (email
         {(c.attachmentCount ?? 0) > 0 && <span title="Attachments">📎 {c.attachmentCount}</span>}
         {c.createdAt && <span className="ml-auto" title={formatAbsolute(c.createdAt)}>{formatRelativeTime(c.createdAt)}</span>}
       </div>
-    </li>
+    </motion.li>
   );
 }
 
@@ -160,6 +171,7 @@ export function CoordinationByProject({
 }) {
   const { total, byProject, byStatus } = summary;
   const max = byProject[0]?.count ?? 1;
+  const reduce = useReducedMotion();
 
   const [openId, setOpenId] = useState<string | null>(null);
   const [clashes, setClashes] = useState<Map<string, ClashIssue[]>>(new Map());
@@ -249,7 +261,13 @@ export function CoordinationByProject({
                   aria-expanded={isOpen}
                   className={`relative flex w-full items-center gap-2 px-2 py-1.5 text-left text-xs ${expandable ? "cursor-pointer" : "cursor-default"}`}
                 >
-                  <span aria-hidden className="absolute inset-y-0 left-0 rounded-md bg-primary/10" style={{ width: `${pct}%` }} />
+                  <motion.span
+                    aria-hidden
+                    className="absolute inset-y-0 left-0 rounded-md bg-primary/10"
+                    initial={reduce ? false : { width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+                  />
                   {expandable && (
                     <span className="relative shrink-0 text-muted-foreground"><IconChevron open={isOpen} /></span>
                   )}
@@ -259,7 +277,7 @@ export function CoordinationByProject({
                   <span className="relative shrink-0"><OpenClosedBar open={p.open} closed={p.closed} /></span>
                   <span className="relative shrink-0 tabular-nums font-semibold text-foreground">{p.count.toLocaleString()}</span>
                 </button>
-                {isOpen && (
+                <AnimatedExpand open={isOpen}>
                   <div className="border-t border-border bg-muted/20 px-2.5 py-2">
                     {cov && (
                       <div className="mb-2 flex items-center gap-2">
@@ -276,7 +294,7 @@ export function CoordinationByProject({
                         <TopAuthors clashes={list} onAuthorClick={onAuthorClick} />
                         <ul className="space-y-1.5">
                           {list.map((c, i) => (
-                            <ClashCard key={`${c.displayId ?? "x"}-${i}`} c={c} onAuthorClick={onAuthorClick} />
+                            <ClashCard key={`${c.displayId ?? "x"}-${i}`} c={c} index={i} onAuthorClick={onAuthorClick} />
                           ))}
                           {list.length >= 500 && (
                             <li className="pt-1 text-center text-[10px] text-muted-foreground/70">Showing the first 500 clashes.</li>
@@ -287,7 +305,7 @@ export function CoordinationByProject({
                       <p className="py-3 text-center text-xs text-muted-foreground">No individual clashes to show.</p>
                     )}
                   </div>
-                )}
+                </AnimatedExpand>
               </li>
             );
           })}
