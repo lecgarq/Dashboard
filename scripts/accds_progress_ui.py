@@ -66,10 +66,10 @@ def fetch_stats():
             )
             services = [{"name": r[0], "rows": r[1]} for r in cur.fetchall()]
 
-            # top projects by row count
+            # all projects by row count (highest first)
             cur.execute(
                 'SELECT "projectId", count(*) n FROM "AccActivityAccds" '
-                'GROUP BY "projectId" ORDER BY n DESC LIMIT 15'
+                'GROUP BY "projectId" ORDER BY n DESC'
             )
             tops = cur.fetchall()
             ids = [t[0] for t in tops]
@@ -167,8 +167,8 @@ PAGE = r"""<!doctype html>
     </div>
   </div>
   <div class="panel" style="margin-top:14px">
-    <h2>Top projects by rows</h2>
-    <table><tbody id="tops"></tbody></table>
+    <h2>All projects (<span id="projcount">0</span>)</h2>
+    <div style="max-height:460px; overflow-y:auto;"><table><tbody id="tops"></tbody></table></div>
   </div>
 </div>
 <script>
@@ -216,6 +216,7 @@ async function tick(){
       '<tr><td class="name" title="'+p.name.replace(/"/g,'&quot;')+'">'+p.name+'</td>'+
       '<td style="width:40%"><div class="bar"><i style="width:'+(100*p.rows/max)+'%"></i></div></td>'+
       '<td class="n">'+fmt(p.rows)+'</td></tr>').join('');
+    document.getElementById('projcount').textContent = d.topProjects.length;
     // chart sample
     samples.push({t: Date.now(), total: d.total});
     if (samples.length>120) samples.shift();
