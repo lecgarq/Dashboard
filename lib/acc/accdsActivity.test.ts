@@ -64,4 +64,21 @@ describe('crawlProjectActivity', () => {
     expect(res.fetched).toBe(3);
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  it('advances offset by actual rows returned when API returns fewer than requested limit', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(page([row('a'), row('b')], 4, true))   // requested limit 10, API returns 2
+      .mockResolvedValueOnce(page([row('c'), row('d')], 4, false)); // must be fetched at offset=2, not 10
+    const collected: string[] = [];
+    await crawlProjectActivity({
+      getToken, projectId: 'p1',
+      fromISO: '2026-06-01T00:00:00.000Z', toISO: '2026-06-15T00:00:00.000Z',
+      pageSize: 10,
+      onRows: async (rows) => { collected.push(...rows.map(r => r.activity_id)); },
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect(collected).toEqual(['a', 'b', 'c', 'd']);
+    const secondUrl = fetchImpl.mock.calls[1][0] as string;
+    expect(secondUrl).toContain('offset=2'); // NOT offset=10
+  });
 });

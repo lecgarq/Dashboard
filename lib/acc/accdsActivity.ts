@@ -64,7 +64,7 @@ export async function crawlProjectActivity(args: {
   pageSize?: number;
   fetchImpl?: typeof fetch;
 }): Promise<{ projectId: string; fetched: number }> {
-  const pageSize = args.pageSize ?? 200;
+  const pageSize = args.pageSize ?? 100;
   let fetched = 0;
   for (const [startISO, endISO] of splitWindows(args.fromISO, args.toISO)) {
     let offset = 0;
@@ -83,7 +83,10 @@ export async function crawlProjectActivity(args: {
         fetched += page.results.length;
       }
       if (!page.hasNextPage || page.results.length === 0) break;
-      offset += pageSize;
+      // Advance by the rows actually returned, NOT pageSize: the accds API caps
+      // pages at 100 regardless of the requested limit, so advancing by the
+      // requested pageSize would skip rows.
+      offset += page.results.length;
     }
   }
   return { projectId: args.projectId, fetched };
