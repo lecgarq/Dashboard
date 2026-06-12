@@ -121,10 +121,22 @@ async function main() {
     // Boundary spot-check on the latest-starting project.
     const [late] = await q(`SELECT "projectId" pid, MIN("createdAt") s
       FROM "AccActivityAccds" GROUP BY "projectId" ORDER BY s DESC LIMIT 1`);
-    const keptInRange = n(await q(`${CTE}
-      SELECT COUNT(*)::bigint total FROM "AccActivity" d JOIN astart a ON a."projectId"=d."projectId"
-      WHERE d."projectId"='${late.pid}' AND d."createdAt" < a.s AND d."createdAt" >= a.s`));
-    ok(keptInRange === 0, `boundary: no kept DC row for latest-start project sits inside accds range`);
+    const pid = String(late.pid).replace(/'/g, "''");
+    const expectedLate = n(await q(`SELECT
+        (SELECT COUNT(*) FROM "AccActivityAccds" WHERE "projectId"='${pid}')
+      + (SELECT COUNT(*) FROM "AccActivity" WHERE "projectId"='${pid}'
+           AND "createdAt" < (SELECT MIN("createdAt") FROM "AccActivityAccds" WHERE "projectId"='${pid}'))
+      AS total`));
+    const mergedLate = n(await q(`${CTE}
+      SELECT SUM(c)::bigint AS total FROM (
+        SELECT COUNT(*)::int AS c FROM "AccActivityAccds" WHERE "projectId"='${pid}'
+        UNION ALL
+        SELECT COUNT(*)::int AS c FROM "AccActivity" d
+          LEFT JOIN astart a ON a."projectId" = d."projectId"
+          WHERE d."projectId"='${pid}' AND (a.s IS NULL OR d."createdAt" < a.s)
+      ) u`));
+    ok(mergedLate === expectedLate && expectedLate > 0,
+      `boundary: latest-start project merge=${mergedLate} == accds(P)+DC-backfill(P)=${expectedLate} (and > 0)`);
 
     if (fails.length) { console.error(`\n${fails.length} assertion(s) failed`); process.exit(1); }
     console.log('\nAll merge assertions passed.');
