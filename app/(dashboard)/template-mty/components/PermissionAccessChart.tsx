@@ -86,7 +86,7 @@ export function PermissionAccessChart({ summary }: { summary: PermissionAccessSu
   }
 
   return (
-    <div className="ui-paper p-5">
+    <div className="panel-elevated p-5">
       <EChart option={option} height={Math.max(180, rows.length * 38 + 24)} notMerge={false} />
       <p className="mt-2 px-1 text-xs text-muted-foreground">
         A role can grant several tiers across folders, so a member is counted under every tier their role grants.

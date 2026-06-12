@@ -3,6 +3,7 @@
 import { useState } from "react";
 import dynamic from "next/dynamic";
 import { Reveal } from "@/components/ui/animated-list";
+import { StatStrip } from "@/components/ui/stat-tile";
 import { RolesPieChart } from "@/app/(dashboard)/access-analysis/components/RolesPieChart";
 import { FolderPermissionTerrain } from "@/app/(dashboard)/access-analysis/components/FolderPermissionTerrain";
 import { loadTemplateTerrain } from "../templateTerrainActions";
@@ -53,13 +54,19 @@ export function TemplateAnalysisCharts({
   const [profileEmail, setProfileEmail] = useState<string | null>(null);
   return (
     <div className="flex flex-col gap-8">
-      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-        <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">Template</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.memberCount}</b> members</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.adminCount}</b> admins</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.distinctRoles}</b> roles</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5"><b className="text-foreground">{overview.companyCount}</b> companies</span>
-        <span className="rounded-md bg-muted/50 px-2 py-0.5">roster updated {overview.updatedAt}</span>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+          <span className="rounded-full border border-primary/40 bg-primary/10 px-2 py-0.5 font-semibold uppercase tracking-wide text-primary">Template</span>
+          <span>Roster updated {overview.updatedAt}</span>
+        </div>
+        <StatStrip
+          stats={[
+            { label: "Members", value: overview.memberCount, accent: "primary" },
+            { label: "Admins", value: overview.adminCount, accent: "emerald" },
+            { label: "Roles", value: overview.distinctRoles, accent: "violet" },
+            { label: "Companies", value: overview.companyCount, accent: "amber" },
+          ]}
+        />
       </div>
 
       <Reveal>

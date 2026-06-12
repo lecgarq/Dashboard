@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Reveal } from "@/components/ui/animated-list";
+import { StatStrip, type Stat } from "@/components/ui/stat-tile";
 import { ProjectPicker } from "./ProjectPicker";
 import { RolesPieChart } from "./RolesPieChart";
 import { ModulesPieChart } from "./ModulesPieChart";
@@ -117,8 +118,18 @@ export function AccessAnalysisCharts({
     [coordinationData, selected],
   );
 
+  const kpis: Stat[] = [
+    { label: "Projects", value: selected.size, accent: "primary" },
+    { label: "Memberships", value: roleSummary.total, accent: "emerald" },
+    { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "violet" },
+    { label: "Activities", value: moduleSummary.total, accent: "amber" },
+    { label: "Coordination issues", value: coordSummary.total, accent: "orange" },
+  ];
+
   return (
     <div className="flex flex-col gap-8">
+      <StatStrip stats={kpis} />
+
       <ProjectPicker
         options={options}
         counts={counts}

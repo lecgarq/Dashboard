@@ -209,7 +209,7 @@ export function CoordinationByProject({
   const closedTotal = byProject.reduce((a, p) => a + p.closed, 0);
 
   return (
-    <div className="ui-paper p-5">
+    <div className="panel-elevated p-5">
       <header className="mb-3 flex flex-wrap items-end justify-between gap-3">
         <div className="flex items-baseline gap-2">
           <span className="text-3xl font-semibold tabular-nums text-foreground">{total.toLocaleString()}</span>

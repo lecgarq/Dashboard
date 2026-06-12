@@ -94,7 +94,7 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
   }
 
   return (
-    <div className="ui-paper p-5">
+    <div className="panel-elevated p-5">
       <EChart
         option={option}
         height={360}

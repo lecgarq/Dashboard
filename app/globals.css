@@ -425,6 +425,54 @@
   transform: translateY(-2px);
 }
 
+/* Panel Elevated — solid analytics card with layered depth that reads clearly
+   on a light background (where translucent glass falls flat). Used for every
+   chart/list panel on the access-analysis + template-mty surfaces. */
+.panel-elevated {
+  position: relative;
+  background: var(--card);
+  border: 1px solid var(--surface-border);
+  border-radius: 22px;
+  box-shadow:
+    0 1px 1px rgba(15, 23, 42, 0.04),
+    0 10px 26px -14px rgba(15, 23, 42, 0.20),
+    0 28px 64px -36px rgba(15, 23, 42, 0.26);
+  transition: transform var(--motion-normal) var(--motion-ease),
+    box-shadow var(--motion-normal) var(--motion-ease),
+    border-color var(--motion-normal) var(--motion-ease);
+}
+/* Hairline top highlight for a crisp lit edge. */
+.panel-elevated::after {
+  content: "";
+  position: absolute;
+  inset-inline: 1px;
+  top: 0;
+  height: 1px;
+  border-radius: 22px 22px 0 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.7), transparent);
+  pointer-events: none;
+}
+.panel-elevated:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 2px rgba(15, 23, 42, 0.05),
+    0 16px 34px -14px rgba(15, 23, 42, 0.24),
+    0 36px 80px -38px rgba(15, 23, 42, 0.32);
+  border-color: rgba(37, 99, 235, 0.30);
+}
+.dark .panel-elevated {
+  box-shadow:
+    0 1px 0 0 rgba(255, 255, 255, 0.04) inset,
+    0 12px 30px -16px rgba(0, 0, 0, 0.6),
+    0 34px 76px -36px rgba(0, 0, 0, 0.72);
+}
+.dark .panel-elevated::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.10), transparent);
+}
+.dark .panel-elevated:hover {
+  border-color: rgba(96, 165, 250, 0.38);
+}
+
 /* Legacy class mappings */
 .glass-card {
   background: linear-gradient(180deg, var(--surface-2), var(--surface-3));

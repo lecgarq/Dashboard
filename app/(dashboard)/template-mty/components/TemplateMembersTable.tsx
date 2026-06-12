@@ -66,7 +66,7 @@ export function TemplateMembersTable({
   }
 
   return (
-    <div className="ui-paper overflow-hidden">
+    <div className="panel-elevated overflow-hidden">
       {/* Toolbar */}
       <div className="flex flex-wrap items-center gap-2 border-b border-border px-3 py-2.5">
         <div className="relative min-w-[12rem] flex-1">

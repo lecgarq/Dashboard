@@ -154,7 +154,7 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   const v = viewRef.current;
 
   return (
-    <div className="ui-paper p-5">
+    <div className="panel-elevated p-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="px-1 text-xs text-muted-foreground">
           Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it.
