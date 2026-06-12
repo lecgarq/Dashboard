@@ -1,0 +1,96 @@
+#!/usr/bin/env node
+/**
+ * accds/v0 activity crawler. Pages every admin-accessible project (no DC quota)
+ * over the trailing ACCDS_MONTHS_BACK months and upserts into AccActivityAccds.
+ *
+ * Env:
+ *   ACCDS_MONTHS_BACK=12   trailing window (default 12)
+ *   ACCDS_PROJECT=<id>     crawl only this project (smoke test); else all distinct
+ *                          projectIds already present in AccActivity (admin-accessible set)
+ *
+ * Requires scratch/acc-session.json (run scripts/accds-login.cjs first).
+ * Run: node scripts/accds-activity-ingest.cjs
+ */
+const path = require('node:path');
+const dotenv = (() => { try { return require('dotenv'); } catch { return null; } })();
+if (dotenv) dotenv.config();
+require('tsx/cjs');
+
+function createPrisma() {
+  const { PrismaClient } = require('@prisma/client');
+  const { PrismaPg } = require('@prisma/adapter-pg');
+  const url = (process.env.DIRECT_URL && process.env.DIRECT_URL.trim()) ||
+              (process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
+  if (!url) throw new Error('DATABASE_URL or DIRECT_URL must be set');
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 4 }), log: ['error'] });
+}
+
+const { loadCookieHeader, createTokenProvider } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsToken.ts'));
+const { crawlProjectActivity } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsActivity.ts'));
+const { mapAccdsRow } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsActivityMap.ts'));
+const pLimitMod = require('p-limit');
+const pLimit = pLimitMod.default || pLimitMod;
+
+const SESSION = path.join(process.cwd(), 'scratch', 'acc-session.json');
+const MONTHS_BACK = Number(process.env.ACCDS_MONTHS_BACK || 12);
+const ONLY = process.env.ACCDS_PROJECT || null;
+
+async function main() {
+  const prisma = createPrisma();
+  const runId = 'accds-' + new Date().toISOString();
+  try {
+    const cookieHeader = await loadCookieHeader(SESSION);
+    const getToken = createTokenProvider(cookieHeader);
+
+    const toISO = new Date().toISOString();
+    const fromISO = new Date(Date.now() - MONTHS_BACK * 30 * 24 * 60 * 60 * 1000).toISOString();
+
+    let projectIds;
+    if (ONLY) {
+      projectIds = [ONLY];
+    } else {
+      const rows = await prisma.accActivity.findMany({
+        where: { projectId: { not: null } },
+        distinct: ['projectId'],
+        select: { projectId: true },
+      });
+      projectIds = rows.map((r) => r.projectId).filter((p) => p && p.length > 0);
+    }
+    console.log(`[accds] ${projectIds.length} project(s); window ${fromISO} .. ${toISO}; run ${runId}`);
+
+    const limit = pLimit(4);
+    let totalInserted = 0;
+    await Promise.all(projectIds.map((projectId) => limit(async () => {
+      const seen = new Set();
+      let buffer = [];
+      const flush = async () => {
+        if (!buffer.length) return;
+        const res = await prisma.accActivityAccds.createMany({ data: buffer, skipDuplicates: true });
+        totalInserted += res.count;
+        buffer = [];
+      };
+      try {
+        const { fetched } = await crawlProjectActivity({
+          getToken, projectId, fromISO, toISO,
+          onRows: async (rows) => {
+            for (const r of rows) {
+              if (seen.has(r.activity_id)) continue;
+              seen.add(r.activity_id);
+              buffer.push(mapAccdsRow(r, runId));
+            }
+            if (buffer.length >= 500) await flush();
+          },
+        });
+        await flush();
+        console.log(`  ✓ ${projectId}  fetched=${fetched}`);
+      } catch (e) {
+        console.error(`  ✗ ${projectId}: ${e && e.message ? e.message : e}`);
+      }
+    })));
+
+    console.log(`[accds] done. inserted ~${totalInserted} new rows (run ${runId}).`);
+  } finally {
+    await prisma.$disconnect();
+  }
+}
+main().catch((e) => { console.error('FATAL:', e); process.exit(1); });
