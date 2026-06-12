@@ -80,6 +80,7 @@ async function main() {
       const seen = new Set();
       let buffer = [];
       let projectInserted = 0;
+      let skipped = 0;
       const flush = async () => {
         if (!buffer.length) return;
         const res = await prisma.accActivityAccds.createMany({ data: buffer, skipDuplicates: true });
@@ -92,15 +93,21 @@ async function main() {
           getToken, projectId, fromISO, toISO,
           onRows: async (rows) => {
             for (const r of rows) {
-              if (seen.has(r.activity_id)) continue;
+              if (!r.activity_id || seen.has(r.activity_id)) continue;
               seen.add(r.activity_id);
-              buffer.push(mapAccdsRow(r, runId));
+              const rec = mapAccdsRow(r, runId);
+              // accds omits project_id on some (e.g. account-level) rows; we crawl per
+              // project, so attribute to the crawled projectId. Skip rows still missing a
+              // NOT NULL column so one bad row can't reject the whole 500-row batch.
+              if (!rec.projectId) rec.projectId = projectId;
+              if (!rec.autodeskId || !rec.activityVerb) { skipped++; continue; }
+              buffer.push(rec);
             }
             if (buffer.length >= 500) await flush();
           },
         });
         await flush();
-        console.log(`  ✓ ${projectId}  fetched=${fetched} inserted=${projectInserted}`);
+        console.log(`  ✓ ${projectId}  fetched=${fetched} inserted=${projectInserted}${skipped ? ` skipped=${skipped}` : ''}`);
       } catch (e) {
         // SessionExpiredError is fatal to the whole run — no other project can succeed.
         if (e && e.name === 'SessionExpiredError') throw e;
