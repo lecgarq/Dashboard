@@ -561,7 +561,7 @@ model AccActivity {
 }
 
 model AccActivityAccds {
-  accdsActivityId String   @id
+  accdsActivityId String   @id  // accds row activity_id (unique hash); dedup key — runner uses createMany({ skipDuplicates: true })
   autodeskId      String
   userEmail       String?
   userName        String?
@@ -581,6 +581,7 @@ model AccActivityAccds {
   @@index([userEmail, createdAt(sort: Desc)])
   @@index([activityVerb])
   @@index([createdAt(sort: Desc)])
+  @@index([ingestRunId])
 }
 
 model UnresolvedAttribution {

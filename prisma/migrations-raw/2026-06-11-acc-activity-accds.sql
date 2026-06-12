@@ -21,3 +21,4 @@ CREATE INDEX IF NOT EXISTS "AccActivityAccds_projectId_createdAt_idx" ON "AccAct
 CREATE INDEX IF NOT EXISTS "AccActivityAccds_userEmail_createdAt_idx" ON "AccActivityAccds" ("userEmail", "createdAt" DESC);
 CREATE INDEX IF NOT EXISTS "AccActivityAccds_activityVerb_idx" ON "AccActivityAccds" ("activityVerb");
 CREATE INDEX IF NOT EXISTS "AccActivityAccds_createdAt_idx" ON "AccActivityAccds" ("createdAt" DESC);
+CREATE INDEX IF NOT EXISTS "AccActivityAccds_ingestRunId_idx" ON "AccActivityAccds" ("ingestRunId");
