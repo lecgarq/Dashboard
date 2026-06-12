@@ -182,7 +182,7 @@ export function ActivityByRolePieChart({ summary }: { summary: RoleActivitySumma
   const drillSlice = drill ? slices.find((s) => s.name === drill) : undefined;
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
+    <div className="ui-paper p-5">
       <style>{PIE_CSS}</style>
 
       <EChart

@@ -135,7 +135,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
+    <div className="ui-paper p-5">
       <div data-testid="timeline-headline" className="mb-2 text-sm text-muted-foreground">
         <b className="text-foreground">{total.toLocaleString()}</b> activities
         {peak ? <> · busiest month <b className="text-foreground">{peak.label}</b></> : null}

@@ -194,7 +194,7 @@ export function RolesPieChart({ data, distinctRoles }: { data: RoleSlice[]; dist
   };
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
+    <div className="ui-paper p-5">
       <style>{PIE_CSS}</style>
 
       <EChart

@@ -54,14 +54,16 @@ export default async function AccessAnalysisRoute() {
     // its own vertical scroll. Background comes from the themed layout/body.
     <div className="h-full overflow-y-auto text-foreground">
       <div className="mx-auto flex max-w-6xl flex-col gap-6 px-4 py-8">
-        <header className="flex flex-col gap-1.5">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.22em] text-primary/80">
+        <header className="surface-card relative overflow-hidden rounded-3xl p-6">
+          <span aria-hidden className="pointer-events-none absolute -right-12 -top-16 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
+          <span className="relative inline-flex w-fit items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] text-primary">
+            <span aria-hidden className="h-1.5 w-1.5 rounded-full bg-primary shadow-[0_0_8px_currentColor]" />
             ACC · Access &amp; Activity
           </span>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
+          <h1 className="relative mt-3 font-display text-3xl font-bold tracking-tight text-foreground">
             Access Analysis
           </h1>
-          <p className="max-w-prose text-sm text-muted-foreground">
+          <p className="relative mt-1.5 max-w-prose text-sm text-muted-foreground">
             Roles, module activity, and coordination issues across ACC projects.
             Tick projects once to focus all three panels below.
           </p>

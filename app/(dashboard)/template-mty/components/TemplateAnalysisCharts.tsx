@@ -30,9 +30,12 @@ const AuthorProfileDrawer = dynamic(
 
 function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
   return (
-    <div className="flex flex-col gap-0.5">
-      <h2 className="text-base font-semibold tracking-tight text-foreground">{title}</h2>
-      <p className="text-sm text-muted-foreground">{subtitle}</p>
+    <div className="flex items-start gap-3">
+      <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
+      <div className="flex flex-col gap-0.5">
+        <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+        <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
+      </div>
     </div>
   );
 }

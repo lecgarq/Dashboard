@@ -62,7 +62,7 @@ export function ModuleAccessChart({ summary }: { summary: ModuleAccessSummary })
   }
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-4 shadow-soft-xl">
+    <div className="ui-paper p-5">
       <EChart option={option} height={Math.max(160, slices.length * 34 + 24)} notMerge={false} />
     </div>
   );
