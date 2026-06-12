@@ -15,27 +15,41 @@ interface RawRow {
 }
 
 /**
- * Per-(project, month) activity counts for the Activity timeline. One grouped
- * raw query buckets ~1M AccActivity rows by UTC calendar month (date_trunc),
- * collapsing to a few thousand compact rows the client re-buckets + zero-fills
- * (the same ship-and-rebucket shape as the donut views). Modeled on the
- * day-bucketed getCoverageMatrix query in server/routers/acc-activity.ts.
- *
- * Scope is ALL recorded activity (this is volume, not attributed users): rows
- * with a null userEmail are still counted; admin rows (null/empty projectId)
- * fold into an "Account-level" project — selectable in the picker like any other.
+ * Per-(project, month) activity counts for the Activity timeline (spec 2026-06-12).
+ * Uses a merged accds+DC-backfill query: AccActivityAccds is primary for each project
+ * ([earliest accds row → now]); AccActivity (DC) fills only months before a project's
+ * first accds row. Account-level DC rows (null/empty projectId) are kept all-time and
+ * fold into the "Account-level" synthetic project via COALESCE(NULLIF(...), '').
  */
 export async function loadActivityTimeline(force = false): Promise<ActivityTimelineRow[]> {
   if (!force && cache && Date.now() - cache.at < TTL_MS) return cache.rows;
 
   const [pairs, projects] = await Promise.all([
     db.$queryRaw<RawRow[]>`
-      SELECT
-        COALESCE(NULLIF(a."projectId", ''), '') AS "projectId",
-        to_char(date_trunc('month', a."createdAt"), 'YYYY-MM') AS month,
-        COUNT(*)::int AS count
-      FROM "AccActivity" a
-      GROUP BY 1, 2
+      WITH astart AS (
+        SELECT "projectId", MIN("createdAt") AS s
+        FROM "AccActivityAccds"
+        GROUP BY "projectId"
+      )
+      SELECT pid AS "projectId", month, SUM(c)::int AS count
+      FROM (
+        SELECT "projectId" AS pid,
+               to_char(date_trunc('month', "createdAt"), 'YYYY-MM') AS month,
+               COUNT(*)::int AS c
+          FROM "AccActivityAccds"
+          GROUP BY 1, 2
+        UNION ALL
+        SELECT COALESCE(NULLIF(d."projectId", ''), '') AS pid,
+               to_char(date_trunc('month', d."createdAt"), 'YYYY-MM') AS month,
+               COUNT(*)::int AS c
+          FROM "AccActivity" d
+          LEFT JOIN astart a ON a."projectId" = d."projectId"
+          WHERE d."projectId" IS NULL OR d."projectId" = ''
+             OR a.s IS NULL
+             OR d."createdAt" < a.s
+          GROUP BY 1, 2
+      ) u
+      GROUP BY pid, month
     `,
     db.accDcProject.findMany({ select: { id: true, name: true } }),
   ]);
