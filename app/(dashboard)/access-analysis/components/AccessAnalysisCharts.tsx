@@ -177,7 +177,10 @@ export function AccessAnalysisCharts({
             title="Activity by role"
             subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
           />
-          <ActivityByRolePieChart summary={activityByRoleSummary} />
+          <ActivityByRolePieChart
+            summary={activityByRoleSummary}
+            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
         </section></Reveal>
       ) : null}
 

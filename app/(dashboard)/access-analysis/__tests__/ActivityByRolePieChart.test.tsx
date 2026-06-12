@@ -72,6 +72,15 @@ describe("ActivityByRolePieChart", () => {
     expect(drill.textContent).toContain("70");
   });
 
+  it("calls onUserClick with the person's email when a drilled user is clicked", () => {
+    const onUserClick = vi.fn();
+    const { getByTestId } = render(<ActivityByRolePieChart summary={summary} onUserClick={onUserClick} />);
+    fireEvent.click(within(getByTestId("activity-role-legend")).getByRole("button", { name: /Alpha/ }));
+    const drill = getByTestId("activity-role-drilldown");
+    fireEvent.click(within(drill).getByRole("button", { name: /Ana/ }));
+    expect(onUserClick).toHaveBeenCalledWith("ana@x.com");
+  });
+
   it("collapses to a top-N with an Others bucket", () => {
     const { getByTestId, queryByText } = render(<ActivityByRolePieChart summary={summary} />);
     fireEvent.change(getByTestId("activity-topn-input"), { target: { value: "2" } });
