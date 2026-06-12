@@ -26,6 +26,17 @@ PORT = int(os.environ.get("ACCDS_UI_PORT", "4322"))
 
 app = Flask(__name__)
 
+# Target = all admin-accessible projects (distinct projectIds the crawler reaches,
+# i.e. those present in AccActivity). Static during a sweep, so compute once + cache.
+_target_cache = {"n": None}
+
+
+def target_projects(cur):
+    if _target_cache["n"] is None:
+        cur.execute('SELECT count(DISTINCT "projectId") FROM "AccActivity" WHERE "projectId" IS NOT NULL')
+        _target_cache["n"] = cur.fetchone()[0]
+    return _target_cache["n"]
+
 
 def fetch_stats():
     with psycopg.connect(DB_URL, connect_timeout=5) as conn:
@@ -35,6 +46,7 @@ def fetch_stats():
 
             cur.execute('SELECT count(DISTINCT "projectId") FROM "AccActivityAccds"')
             projects = cur.fetchone()[0]
+            target = target_projects(cur)
 
             # rows inserted in the last 10s -> live rate
             cur.execute(
@@ -90,6 +102,7 @@ def fetch_stats():
         "ts": datetime.now(timezone.utc).isoformat(),
         "total": total,
         "projects": projects,
+        "targetProjects": target,
         "ratePerSec": round(last10 / 10.0, 1),
         "run": run_info,
         "services": services,
@@ -152,8 +165,8 @@ PAGE = r"""<!doctype html>
   <div class="cards">
     <div class="card"><div class="label">Total activity rows</div><div class="val" id="total">—</div></div>
     <div class="card"><div class="label">Insert rate</div><div class="val" id="rate">—<small> rows/s</small></div></div>
-    <div class="card"><div class="label">Projects with data</div><div class="val" id="projects">—</div></div>
-    <div class="card"><div class="label">Latest run rows</div><div class="val" id="runrows">—</div></div>
+    <div class="card"><div class="label">Projects done</div><div class="val"><span id="projects">—</span><small> / <span id="target">—</span></small></div></div>
+    <div class="card"><div class="label">Est. time remaining</div><div class="val" id="eta">—</div></div>
   </div>
   <div class="grid2">
     <div class="panel">
@@ -175,6 +188,23 @@ PAGE = r"""<!doctype html>
 const nf = new Intl.NumberFormat('en-US');
 const samples = []; // {t, total}
 function fmt(n){ return n==null ? '—' : nf.format(n); }
+function fmtDur(sec){
+  if (sec < 60) return Math.round(sec)+'s';
+  if (sec < 3600) return Math.floor(sec/60)+'m '+Math.round(sec%60)+'s';
+  return Math.floor(sec/3600)+'h '+Math.round((sec%3600)/60)+'m';
+}
+function etaText(target){
+  if (!target || samples.length < 4) return 'calculating…';
+  const last = samples[samples.length-1], first = samples[0];
+  const dtMin = (last.t - first.t)/60000;
+  if (dtMin < 0.5) return 'calculating…';
+  const remaining = Math.max(0, target - last.projects);
+  if (remaining === 0) return 'complete ✓';
+  const dp = last.projects - first.projects;        // projects finished across the window
+  if (dp <= 0) return 'large project in flight…';   // no completion in window -> can't estimate yet
+  const rate = dp/dtMin;                            // projects per minute
+  return '~'+fmtDur((remaining/rate)*60);
+}
 
 function drawChart(){
   const c = document.getElementById('chart'), ctx = c.getContext('2d');
@@ -200,7 +230,7 @@ async function tick(){
     document.getElementById('total').textContent = fmt(d.total);
     document.getElementById('rate').innerHTML = fmt(d.ratePerSec)+' <small>rows/s</small>';
     document.getElementById('projects').textContent = fmt(d.projects);
-    document.getElementById('runrows').textContent = d.run ? fmt(d.run.rows) : '—';
+    document.getElementById('target').textContent = fmt(d.targetProjects);
     dot.className = 'dot' + (d.ratePerSec>0 ? '' : ' stale');
     if (d.run) document.getElementById('runinfo').textContent =
       'run '+d.run.id+'  ·  window '+(d.run.from||'').slice(0,10)+' → '+(d.run.to||'').slice(0,10);
@@ -218,9 +248,10 @@ async function tick(){
       '<td class="n">'+fmt(p.rows)+'</td></tr>').join('');
     document.getElementById('projcount').textContent = d.topProjects.length;
     // chart sample
-    samples.push({t: Date.now(), total: d.total});
-    if (samples.length>120) samples.shift();
+    samples.push({t: Date.now(), total: d.total, projects: d.projects});
+    if (samples.length>180) samples.shift();
     drawChart();
+    document.getElementById('eta').textContent = etaText(d.targetProjects);
   } catch(e){
     dot.className='dot err'; err.style.display='block'; err.textContent='⚠ '+e.message;
   }
