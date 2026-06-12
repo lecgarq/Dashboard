@@ -22,7 +22,7 @@ function createPrisma() {
   const url = (process.env.DIRECT_URL && process.env.DIRECT_URL.trim()) ||
               (process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
   if (!url) throw new Error('DATABASE_URL or DIRECT_URL must be set');
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 5_000 }), log: ['error'] });
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: CONCURRENCY + 2, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 5_000 }), log: ['error'] });
 }
 
 const { loadCookieHeader, createTokenProvider } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsToken.ts'));
@@ -36,6 +36,8 @@ const MONTHS_BACK = Number(process.env.ACCDS_MONTHS_BACK || 12);
 const ONLY = process.env.ACCDS_PROJECT || null;
 const NAME_LIKE = process.env.ACCDS_NAME_LIKE || null; // case-insensitive regex on project name (e.g. office prefix "MTY")
 const RESUME = process.env.ACCDS_RESUME === '1'; // skip projects that already have ANY accds rows (crawl only the un-crawled remainder)
+const CONCURRENCY = Number(process.env.ACCDS_CONCURRENCY || 6); // projects crawled in parallel
+const PAGE_CONCURRENCY = Number(process.env.ACCDS_PAGE_CONCURRENCY || 8); // pages fetched in parallel per window (main throughput lever)
 
 async function main() {
   const prisma = createPrisma();
@@ -82,8 +84,9 @@ async function main() {
       console.log(`[accds] resume: skipping ${before - projectIds.length} already-crawled, ${projectIds.length} remaining`);
     }
     console.log(`[accds] ${projectIds.length} project(s); window ${fromISO} .. ${toISO}; run ${runId}`);
+    console.log(`[accds] concurrency: ${CONCURRENCY} projects x ${PAGE_CONCURRENCY} pages`);
 
-    const limit = pLimit(4);
+    const limit = pLimit(CONCURRENCY);
     let totalInserted = 0;
     await Promise.all(projectIds.map((projectId) => limit(async () => {
       const seen = new Set();
@@ -99,7 +102,7 @@ async function main() {
       };
       try {
         const { fetched } = await crawlProjectActivity({
-          getToken, projectId, fromISO, toISO,
+          getToken, projectId, fromISO, toISO, pageConcurrency: PAGE_CONCURRENCY,
           onRows: async (rows) => {
             for (const r of rows) {
               if (!r.activity_id || seen.has(r.activity_id)) continue;

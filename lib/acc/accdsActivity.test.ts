@@ -104,4 +104,25 @@ describe('crawlProjectActivity', () => {
     const secondUrl = fetchImpl.mock.calls[1][0] as string;
     expect(secondUrl).toContain('offset=2'); // NOT offset=10
   });
+
+  it('fetches a window\'s pages in parallel (derived from total) when pageConcurrency > 1', async () => {
+    // total=5, pageSize=2 -> first page at offset 0, then parallel offsets 2 and 4.
+    const byOffset: Record<string, Response> = {
+      '0': page([row('a'), row('b')], 5, true),
+      '2': page([row('c'), row('d')], 5, true),
+      '4': page([row('e')], 5, false),
+    };
+    const fetchImpl = vi.fn(async (url: string) => byOffset[String(url).match(/offset=(\d+)/)![1]]);
+    const collected: string[] = [];
+    const res = await crawlProjectActivity({
+      getToken, projectId: 'p1',
+      fromISO: '2026-06-01T00:00:00.000Z', toISO: '2026-06-10T00:00:00.000Z',
+      pageSize: 2, pageConcurrency: 4,
+      onRows: async (rows) => { collected.push(...rows.map(r => r.activity_id)); },
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+    });
+    expect([...collected].sort()).toEqual(['a', 'b', 'c', 'd', 'e']);
+    expect(res.fetched).toBe(5);
+    expect(fetchImpl).toHaveBeenCalledTimes(3); // offsets 0, 2, 4 — each once
+  });
 });

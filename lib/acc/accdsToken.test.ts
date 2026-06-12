@@ -73,4 +73,16 @@ describe('createTokenProvider', () => {
     expect(await getToken()).toBe(tokenB);   // fetch #2
     expect(fetchImpl).toHaveBeenCalledTimes(2);
   });
+
+  it('collapses concurrent refreshes into a single fetch', async () => {
+    let release: () => void = () => {};
+    const gate = new Promise<void>((r) => { release = r; });
+    const fetchImpl = vi.fn(async () => { await gate; return jsonResponse({ accessToken: jwt(2_000_000_000) }); });
+    const getToken = createTokenProvider('a=1', { fetchImpl: fetchImpl as unknown as typeof fetch });
+    const both = Promise.all([getToken(), getToken()]); // both start while no token cached
+    release();
+    const [t1, t2] = await both;
+    expect(t1).toBe(t2);
+    expect(fetchImpl).toHaveBeenCalledTimes(1); // one refresh served both callers
+  });
 });

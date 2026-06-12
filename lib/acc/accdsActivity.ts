@@ -71,7 +71,30 @@ export async function fetchActivityWindow(args: {
   }
 }
 
-/** Crawl one project's activity across the date range, streaming pages to onRows. */
+/** Run `fn` over items with bounded concurrency, preserving result order. */
+async function mapLimit<T, R>(
+  items: T[],
+  concurrency: number,
+  fn: (item: T) => Promise<R>,
+): Promise<R[]> {
+  const results: R[] = new Array(items.length);
+  let next = 0;
+  async function worker(): Promise<void> {
+    while (next < items.length) {
+      const i = next++;
+      results[i] = await fn(items[i]);
+    }
+  }
+  const n = Math.max(1, Math.min(concurrency, items.length));
+  await Promise.all(Array.from({ length: n }, worker));
+  return results;
+}
+
+/**
+ * Crawl one project's activity across the date range, streaming pages to onRows.
+ * `pageConcurrency` > 1 fetches a window's pages in parallel (derived from the
+ * window's total_results) instead of one-at-a-time — the main throughput lever.
+ */
 export async function crawlProjectActivity(args: {
   getToken: () => Promise<string>;
   projectId: string;
@@ -79,31 +102,57 @@ export async function crawlProjectActivity(args: {
   toISO: string;
   onRows: (rows: AccdsActivityRow[]) => Promise<void>;
   pageSize?: number;
+  pageConcurrency?: number;
   fetchImpl?: typeof fetch;
 }): Promise<{ projectId: string; fetched: number }> {
   const pageSize = args.pageSize ?? 100;
+  const pageConcurrency = args.pageConcurrency ?? 1;
   let fetched = 0;
+  const fetchPage = (startISO: string, endISO: string, offset: number) =>
+    fetchActivityWindow({
+      getToken: args.getToken,
+      projectId: args.projectId,
+      startISO,
+      endISO,
+      limit: pageSize,
+      offset,
+      fetchImpl: args.fetchImpl,
+    });
+
   for (const [startISO, endISO] of splitWindows(args.fromISO, args.toISO)) {
-    let offset = 0;
-    for (;;) {
-      const page = await fetchActivityWindow({
-        getToken: args.getToken,
-        projectId: args.projectId,
-        startISO,
-        endISO,
-        limit: pageSize,
-        offset,
-        fetchImpl: args.fetchImpl,
-      });
-      if (page.results.length) {
-        await args.onRows(page.results);
-        fetched += page.results.length;
+    // First page tells us the window total (and whether there's more).
+    const first = await fetchPage(startISO, endISO, 0);
+    if (first.results.length) {
+      await args.onRows(first.results);
+      fetched += first.results.length;
+    }
+    if (!first.hasNextPage || first.results.length === 0) continue;
+
+    if (pageConcurrency <= 1) {
+      // Sequential: advance by rows actually returned (the API caps pages at 100
+      // regardless of the requested limit, so advancing by pageSize would skip rows).
+      let offset = first.results.length;
+      for (;;) {
+        const page = await fetchPage(startISO, endISO, offset);
+        if (page.results.length) {
+          await args.onRows(page.results);
+          fetched += page.results.length;
+        }
+        if (!page.hasNextPage || page.results.length === 0) break;
+        offset += page.results.length;
       }
-      if (!page.hasNextPage || page.results.length === 0) break;
-      // Advance by the rows actually returned, NOT pageSize: the accds API caps
-      // pages at 100 regardless of the requested limit, so advancing by the
-      // requested pageSize would skip rows.
-      offset += page.results.length;
+    } else {
+      // Parallel: derive every remaining offset from the window total and fetch
+      // them concurrently instead of waiting on each page's has_next_page.
+      const offsets: number[] = [];
+      for (let o = first.results.length; o < first.total; o += pageSize) offsets.push(o);
+      const pages = await mapLimit(offsets, pageConcurrency, (o) => fetchPage(startISO, endISO, o));
+      for (const page of pages) {
+        if (page.results.length) {
+          await args.onRows(page.results);
+          fetched += page.results.length;
+        }
+      }
     }
   }
   return { projectId: args.projectId, fetched };

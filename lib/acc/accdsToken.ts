@@ -80,9 +80,17 @@ export function createTokenProvider(
   const fetchImpl = opts.fetchImpl ?? fetch;
   const nowSec = opts.nowSec ?? (() => Math.floor(Date.now() / 1000));
   let cache: FreshToken | null = null;
+  let inflight: Promise<FreshToken> | null = null;
   return async function getToken(): Promise<string> {
     if (cache && cache.expSec - nowSec() > 60) return cache.accessToken;
-    cache = await fetchFreshToken(cookieHeader, fetchImpl);
-    return cache.accessToken;
+    // Collapse concurrent refreshes into a single in-flight request so high
+    // page/project concurrency can't fire a stampede of refresh calls (which
+    // could itself be rate-limited and falsely trip SessionExpiredError).
+    if (!inflight) {
+      inflight = fetchFreshToken(cookieHeader, fetchImpl)
+        .then((t) => { cache = t; inflight = null; return t; })
+        .catch((e) => { inflight = null; throw e; });
+    }
+    return (await inflight).accessToken;
   };
 }
