@@ -106,3 +106,6 @@ __pycache__/
 # Embedding build artifacts
 .embedding/
 scripts/_attic/
+
+# Local UI inspection screenshots (scripts/ui-inspect.ts, ui-prove-activity.ts)
+.ui-shots/
