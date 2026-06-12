@@ -45,6 +45,29 @@ describe('fetchActivityWindow', () => {
       fetchImpl: fetchImpl as unknown as typeof fetch,
     })).rejects.toThrow(/403/);
   });
+
+  it('retries on 429 then succeeds', async () => {
+    const fetchImpl = vi.fn()
+      .mockResolvedValueOnce(new Response('rate limited', { status: 429 }))
+      .mockResolvedValueOnce(page([row('a')], 1, false));
+    const res = await fetchActivityWindow({
+      getToken, projectId: 'p1', startISO: 's', endISO: 'e', limit: 50, offset: 0,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      sleep: async () => {},
+    });
+    expect(res.results.map(r => r.activity_id)).toEqual(['a']);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
+
+  it('throws after exhausting retries on persistent 503', async () => {
+    const fetchImpl = vi.fn(async () => new Response('down', { status: 503 }));
+    await expect(fetchActivityWindow({
+      getToken, projectId: 'p1', startISO: 's', endISO: 'e', limit: 50, offset: 0,
+      fetchImpl: fetchImpl as unknown as typeof fetch,
+      maxAttempts: 2, sleep: async () => {},
+    })).rejects.toThrow(/503/);
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+  });
 });
 
 describe('crawlProjectActivity', () => {

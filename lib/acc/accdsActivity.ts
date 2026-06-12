@@ -33,25 +33,42 @@ export async function fetchActivityWindow(args: {
   limit: number;
   offset: number;
   fetchImpl?: typeof fetch;
+  maxAttempts?: number;
+  sleep?: (ms: number) => Promise<void>;
 }): Promise<AccdsPage> {
   const fetchImpl = args.fetchImpl ?? fetch;
+  const maxAttempts = args.maxAttempts ?? 4;
+  const sleep = args.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
   const token = await args.getToken();
   const url =
     `${ACCDS_BASE}/${encodeURIComponent(args.projectId)}/data?template=activities` +
     `&filter[created_at]=${args.startISO}..${args.endISO}` +
     `&limit=${args.limit}&offset=${args.offset}`;
-  // region: 'US' matches the account's data residency; make it a param if EU projects are ever crawled.
-  const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${token}`, region: 'US' } });
-  if (!res.ok) throw new Error(`accds ${res.status} for project ${args.projectId}`);
-  const json = (await res.json()) as {
-    results?: AccdsActivityRow[];
-    pagination?: { total_results?: string; has_next_page?: boolean };
-  };
-  return {
-    results: json.results ?? [],
-    total: Number(json.pagination?.total_results ?? 0),
-    hasNextPage: Boolean(json.pagination?.has_next_page),
-  };
+  for (let attempt = 0; ; attempt++) {
+    // region: 'US' matches the account's data residency; make it a param if EU projects are ever crawled.
+    const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${token}`, region: 'US' } });
+    if (res.ok) {
+      const json = (await res.json()) as {
+        results?: AccdsActivityRow[];
+        pagination?: { total_results?: string; has_next_page?: boolean };
+      };
+      return {
+        results: json.results ?? [],
+        total: Number(json.pagination?.total_results ?? 0),
+        hasNextPage: Boolean(json.pagination?.has_next_page),
+      };
+    }
+    const retryable = res.status === 429 || res.status >= 500;
+    if (retryable && attempt < maxAttempts - 1) {
+      const ra = Number(res.headers.get('retry-after'));
+      const waitMs = Number.isFinite(ra) && ra > 0
+        ? Math.min(60_000, ra * 1000)
+        : Math.min(30_000, 1000 * 2 ** attempt);
+      await sleep(waitMs);
+      continue;
+    }
+    throw new Error(`accds ${res.status} for project ${args.projectId}`);
+  }
 }
 
 /** Crawl one project's activity across the date range, streaming pages to onRows. */
