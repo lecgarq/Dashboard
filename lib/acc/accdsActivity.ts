@@ -16,7 +16,10 @@ export function splitWindows(fromISO: string, toISO: string, maxDays = 30): Arra
   const stepMs = maxDays * 24 * 60 * 60 * 1000;
   while (start < end) {
     const next = Math.min(start + stepMs, end);
-    out.push([new Date(start).toISOString(), new Date(next).toISOString()]);
+    // accds filter[created_at]=a..b may be inclusive on both ends; step non-final
+    // window ends back 1ms so a boundary-timestamp row can't land in two windows.
+    const windowEnd = next < end ? next - 1 : end;
+    out.push([new Date(start).toISOString(), new Date(windowEnd).toISOString()]);
     start = next;
   }
   return out;
@@ -34,9 +37,10 @@ export async function fetchActivityWindow(args: {
   const fetchImpl = args.fetchImpl ?? fetch;
   const token = await args.getToken();
   const url =
-    `${ACCDS_BASE}/${args.projectId}/data?template=activities` +
+    `${ACCDS_BASE}/${encodeURIComponent(args.projectId)}/data?template=activities` +
     `&filter[created_at]=${args.startISO}..${args.endISO}` +
     `&limit=${args.limit}&offset=${args.offset}`;
+  // region: 'US' matches the account's data residency; make it a param if EU projects are ever crawled.
   const res = await fetchImpl(url, { headers: { Authorization: `Bearer ${token}`, region: 'US' } });
   if (!res.ok) throw new Error(`accds ${res.status} for project ${args.projectId}`);
   const json = (await res.json()) as {

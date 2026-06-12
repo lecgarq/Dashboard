@@ -19,6 +19,7 @@ describe('splitWindows', () => {
     expect(w.length).toBe(3);
     expect(w[0][0]).toBe('2026-01-01T00:00:00.000Z');
     expect(new Date(w[2][1]).toISOString()).toBe('2026-03-17T00:00:00.000Z');
+    expect(w[0][1]).not.toBe(w[1][0]); // windows must not overlap at the seam
   });
 });
 
