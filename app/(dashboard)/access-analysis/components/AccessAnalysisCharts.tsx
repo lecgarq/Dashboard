@@ -1,6 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { Reveal } from "@/components/ui/animated-list";
 import { ProjectPicker } from "./ProjectPicker";
 import { RolesPieChart } from "./RolesPieChart";
 import { ModulesPieChart } from "./ModulesPieChart";
@@ -130,17 +131,17 @@ export function AccessAnalysisCharts({
       />
 
       {timelineRows ? (
-        <section className="flex flex-col gap-3">
+        <Reveal><section className="flex flex-col gap-3">
           <SectionHeader
             title="Activity over time"
             subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
           />
           <ActivityTimelineChart summary={timelineSummary} />
-        </section>
+        </section></Reveal>
       ) : null}
 
       {terrainProjects && terrainProjects.length > 0 && loadTerrain && (
-        <section className="flex flex-col gap-3">
+        <Reveal><section className="flex flex-col gap-3">
           <SectionHeader
             title="Folder permission terrain"
             subtitle="Per project: each Level-2 folder × role, coloured by permission tier and raised by the number of users in that role. Pick a project, hover a block, click to list its users."
@@ -151,31 +152,31 @@ export function AccessAnalysisCharts({
             loadTerrain={loadTerrain}
             loadOverview={loadOverview}
           />
-        </section>
+        </section></Reveal>
       )}
 
-      <section className="flex flex-col gap-3">
+      <Reveal><section className="flex flex-col gap-3">
         <SectionHeader title="Role distribution" subtitle="Roles held across all project memberships." />
         <RolesPieChart data={roleSummary.slices} distinctRoles={roleSummary.distinctRoles} />
-      </section>
+      </section></Reveal>
 
       {activityActorRows ? (
-        <section className="flex flex-col gap-3">
+        <Reveal><section className="flex flex-col gap-3">
           <SectionHeader
             title="Activity by role"
             subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
           />
           <ActivityByRolePieChart summary={activityByRoleSummary} />
-        </section>
+        </section></Reveal>
       ) : null}
 
-      <section className="flex flex-col gap-3">
+      <Reveal><section className="flex flex-col gap-3">
         <SectionHeader title="Activity by module" subtitle="Total actions recorded in each ACC module." />
         <ModulesPieChart summary={moduleSummary} />
-      </section>
+      </section></Reveal>
 
       {coordinationData ? (
-        <section className="flex flex-col gap-3">
+        <Reveal><section className="flex flex-col gap-3">
           <SectionHeader title="Model Coordination" subtitle="Coordination-classified issues, by project." />
           <CoordinationByProject
             summary={coordSummary}
@@ -187,7 +188,7 @@ export function AccessAnalysisCharts({
             loadClashes={loadClashes}
             onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
           />
-        </section>
+        </section></Reveal>
       ) : null}
 
       {profileEmail && (
