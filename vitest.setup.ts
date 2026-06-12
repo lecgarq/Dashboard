@@ -25,3 +25,13 @@ vi.mock('next-auth', () => ({
 vi.mock('next-auth/next', () => ({
   default: vi.fn(),
 }));
+
+// jsdom has no IntersectionObserver; framer-motion's whileInView needs it.
+// A no-op stub keeps in-view-animated components renderable under test.
+class IntersectionObserverStub {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+  takeRecords() { return []; }
+}
+vi.stubGlobal("IntersectionObserver", IntersectionObserverStub);
