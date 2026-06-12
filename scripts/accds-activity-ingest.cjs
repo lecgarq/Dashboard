@@ -35,6 +35,7 @@ const SESSION = path.join(process.cwd(), 'scratch', 'acc-session.json');
 const MONTHS_BACK = Number(process.env.ACCDS_MONTHS_BACK || 12);
 const ONLY = process.env.ACCDS_PROJECT || null;
 const NAME_LIKE = process.env.ACCDS_NAME_LIKE || null; // case-insensitive regex on project name (e.g. office prefix "MTY")
+const RESUME = process.env.ACCDS_RESUME === '1'; // skip projects that already have ANY accds rows (crawl only the un-crawled remainder)
 
 async function main() {
   const prisma = createPrisma();
@@ -71,6 +72,14 @@ async function main() {
         projectIds = projectIds.filter((id) => re.test(nameById.get(id) || ''));
         console.log(`[accds] name filter /${NAME_LIKE}/i matched ${projectIds.length} of ${before} projects`);
       }
+    }
+    if (RESUME && !ONLY) {
+      // Skip projects already crawled (they have accds rows); crawl only the remainder.
+      const done = await prisma.accActivityAccds.findMany({ distinct: ['projectId'], select: { projectId: true } });
+      const doneSet = new Set(done.map((r) => r.projectId));
+      const before = projectIds.length;
+      projectIds = projectIds.filter((id) => !doneSet.has(id));
+      console.log(`[accds] resume: skipping ${before - projectIds.length} already-crawled, ${projectIds.length} remaining`);
     }
     console.log(`[accds] ${projectIds.length} project(s); window ${fromISO} .. ${toISO}; run ${runId}`);
 
