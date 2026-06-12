@@ -22,7 +22,7 @@ function createPrisma() {
   const url = (process.env.DIRECT_URL && process.env.DIRECT_URL.trim()) ||
               (process.env.DATABASE_URL && process.env.DATABASE_URL.trim());
   if (!url) throw new Error('DATABASE_URL or DIRECT_URL must be set');
-  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 4 }), log: ['error'] });
+  return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: 4, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 5_000 }), log: ['error'] });
 }
 
 const { loadCookieHeader, createTokenProvider } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsToken.ts'));
@@ -43,6 +43,7 @@ async function main() {
     const getToken = createTokenProvider(cookieHeader);
 
     const toISO = new Date().toISOString();
+    // Trailing window in 30-day "months" (ACCDS_MONTHS_BACK * 30d), not calendar months.
     const fromISO = new Date(Date.now() - MONTHS_BACK * 30 * 24 * 60 * 60 * 1000).toISOString();
 
     let projectIds;
@@ -63,10 +64,12 @@ async function main() {
     await Promise.all(projectIds.map((projectId) => limit(async () => {
       const seen = new Set();
       let buffer = [];
+      let projectInserted = 0;
       const flush = async () => {
         if (!buffer.length) return;
         const res = await prisma.accActivityAccds.createMany({ data: buffer, skipDuplicates: true });
         totalInserted += res.count;
+        projectInserted += res.count;
         buffer = [];
       };
       try {
@@ -82,8 +85,10 @@ async function main() {
           },
         });
         await flush();
-        console.log(`  ✓ ${projectId}  fetched=${fetched}`);
+        console.log(`  ✓ ${projectId}  fetched=${fetched} inserted=${projectInserted}`);
       } catch (e) {
+        // SessionExpiredError is fatal to the whole run — no other project can succeed.
+        if (e && e.name === 'SessionExpiredError') throw e;
         console.error(`  ✗ ${projectId}: ${e && e.message ? e.message : e}`);
       }
     })));
