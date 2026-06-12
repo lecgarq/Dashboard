@@ -35,7 +35,8 @@ export async function loadCookieHeader(sessionPath: string): Promise<string> {
 
 function decodeExpSec(jwt: string): number {
   try {
-    const payload = JSON.parse(Buffer.from(jwt.split('.')[1], 'base64').toString());
+    const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    const payload = JSON.parse(Buffer.from(b64, 'base64').toString());
     return typeof payload.exp === 'number' ? payload.exp : 0;
   } catch {
     return 0;
@@ -56,6 +57,7 @@ export async function fetchFreshToken(
     },
     redirect: 'manual',
   });
+  // 401/403 = unauthorized; 3xx (redirect:'manual') = ACC login redirect = session expired.
   if (res.status === 401 || res.status === 403 || (res.status >= 300 && res.status < 400)) {
     throw new SessionExpiredError();
   }

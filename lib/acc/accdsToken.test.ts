@@ -47,6 +47,12 @@ describe('fetchFreshToken', () => {
     await expect(fetchFreshToken('a=1', fetchImpl as unknown as typeof fetch))
       .rejects.toBeInstanceOf(SessionExpiredError);
   });
+
+  it('throws SessionExpiredError on a 302 login redirect', async () => {
+    const fetchImpl = vi.fn(async () => new Response('', { status: 302, headers: { location: 'https://signin.autodesk.com/' } }));
+    await expect(fetchFreshToken('a=1', fetchImpl as unknown as typeof fetch))
+      .rejects.toBeInstanceOf(SessionExpiredError);
+  });
 });
 
 describe('createTokenProvider', () => {
