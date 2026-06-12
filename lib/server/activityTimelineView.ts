@@ -44,6 +44,10 @@ export async function loadActivityTimeline(force = false): Promise<ActivityTimel
                COUNT(*)::int AS c
           FROM "AccActivity" d
           LEFT JOIN astart a ON a."projectId" = d."projectId"
+          -- DC backfill keep-predicate: account-level admin rows (no project) all-time;
+          -- projects accds has not reached yet (a.s IS NULL); and each project's months
+          -- that predate its first accds row (d.createdAt < a.s). The overlap accds
+          -- already covers (createdAt >= a.s) is excluded here to avoid double-counting.
           WHERE d."projectId" IS NULL OR d."projectId" = ''
              OR a.s IS NULL
              OR d."createdAt" < a.s
