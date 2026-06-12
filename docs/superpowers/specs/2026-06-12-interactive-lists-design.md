@@ -2,7 +2,13 @@
 
 **Date:** 2026-06-12
 **Branch:** `feat/access-analysis-redesign`
-**Status:** Approved (design)
+**Status:** Implemented (`a9c8dab`..`116c6aa`) — unit suite 1834 green, tsc 0. Owner rebuild/visual-UAT pending.
+
+> **Deviation:** the members-table rows do NOT use `AnimatePresence`. In jsdom the
+> exit animation never completes, so filtered-out rows lingered in the DOM and
+> broke the search/filter tests. Dropped `AnimatePresence` — entrance stagger and
+> `layout` reflow on sort still work; filtered rows just unmount instantly (no exit
+> fade). Everything else matches the design.
 
 ## Goal
 
