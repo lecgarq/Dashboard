@@ -5,7 +5,7 @@ import { db } from "@/server/db";
 export interface ActivityActorRow {
   projectId: string;
   projectName: string;
-  userEmail: string; // lowercased, as stored on AccActivity
+  userEmail: string; // lowercased, as stored on AccActivityAccds / AccActivity
   userName: string; // resolved from AccDcUser; falls back to the email
   count: number;
 }
