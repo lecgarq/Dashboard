@@ -1,5 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { motion } from "framer-motion";
+import { AnimatedExpand, useEntrance } from "@/components/ui/animated-list";
 import { filterProjectOptions, type ProjectOption } from "../projectFilter";
 import type { OfficeGroup } from "../projectGroups";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
@@ -62,6 +64,7 @@ export function ProjectPicker({
   const [coveredOnly, setCoveredOnly] = useState(false);
   const [collapsed, setCollapsed] = useState<Set<string>>(() => new Set());
   const containerRef = useRef<HTMLDivElement>(null);
+  const entrance = useEntrance();
 
   const hasCoverage = !!coverage && coverage.size > 0;
 
@@ -135,12 +138,12 @@ export function ProjectPicker({
     : `${selectedCount.toLocaleString()} of ${total.toLocaleString()} projects`;
   const dotColor = allSelected ? "bg-success" : selectedCount === 0 ? "bg-warning" : "bg-primary";
 
-  const renderRow = (o: ProjectOption) => {
+  const renderRow = (o: ProjectOption, idx: number) => {
     const on = selected.has(o.id);
     const cov = coverage?.get(o.id);
     const full = isFullyCovered(cov);
     return (
-      <li key={o.id} className="relative px-1.5">
+      <motion.li key={o.id} {...entrance(idx)} className="relative px-1.5">
         <span
           aria-hidden
           className={`absolute inset-y-1.5 left-0 w-0.5 rounded-full transition-opacity ${
@@ -172,7 +175,7 @@ export function ProjectPicker({
             {(counts.get(o.id) ?? 0).toLocaleString()}
           </span>
         </label>
-      </li>
+      </motion.li>
     );
   };
 
@@ -329,7 +332,9 @@ export function ProjectPicker({
                         </button>
                       </div>
                     </div>
-                    {!isCollapsed && <ul className="list-none">{g.options.map(renderRow)}</ul>}
+                    <AnimatedExpand open={!isCollapsed}>
+                      <ul className="list-none">{g.options.map(renderRow)}</ul>
+                    </AnimatedExpand>
                   </div>
                 );
               })
