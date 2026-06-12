@@ -34,6 +34,7 @@ const pLimit = pLimitMod.default || pLimitMod;
 const SESSION = path.join(process.cwd(), 'scratch', 'acc-session.json');
 const MONTHS_BACK = Number(process.env.ACCDS_MONTHS_BACK || 12);
 const ONLY = process.env.ACCDS_PROJECT || null;
+const NAME_LIKE = process.env.ACCDS_NAME_LIKE || null; // case-insensitive regex on project name (e.g. office prefix "MTY")
 
 async function main() {
   const prisma = createPrisma();
@@ -56,6 +57,20 @@ async function main() {
         select: { projectId: true },
       });
       projectIds = rows.map((r) => r.projectId).filter((p) => p && p.length > 0);
+      if (NAME_LIKE) {
+        // Filter the admin-accessible set by project name (office scoping).
+        const [dc, ap] = await Promise.all([
+          prisma.accDcProject.findMany({ where: { id: { in: projectIds } }, select: { id: true, name: true } }),
+          prisma.accProject.findMany({ where: { id: { in: projectIds } }, select: { id: true, name: true } }),
+        ]);
+        const nameById = new Map();
+        for (const p of ap) nameById.set(p.id, p.name);
+        for (const p of dc) if (!nameById.has(p.id)) nameById.set(p.id, p.name);
+        const re = new RegExp(NAME_LIKE, 'i');
+        const before = projectIds.length;
+        projectIds = projectIds.filter((id) => re.test(nameById.get(id) || ''));
+        console.log(`[accds] name filter /${NAME_LIKE}/i matched ${projectIds.length} of ${before} projects`);
+      }
     }
     console.log(`[accds] ${projectIds.length} project(s); window ${fromISO} .. ${toISO}; run ${runId}`);
 
