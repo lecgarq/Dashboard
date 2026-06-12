@@ -48,7 +48,7 @@ export async function loadActivityByActor(force = false): Promise<ActivityActorR
       FROM (
         SELECT "projectId" AS pid, "userEmail" AS email, COUNT(*)::int AS c
           FROM "AccActivityAccds"
-          WHERE "userEmail" IS NOT NULL
+          WHERE "projectId" IS NOT NULL AND "projectId" <> '' AND "userEmail" IS NOT NULL
           GROUP BY 1, 2
         UNION ALL
         SELECT d."projectId" AS pid, d."userEmail" AS email, COUNT(*)::int AS c
