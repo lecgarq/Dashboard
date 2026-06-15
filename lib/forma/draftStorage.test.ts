@@ -15,7 +15,7 @@ describe("draftStorage", () => {
     const d = emptyDraft("tpl", DEFAULT_FORMA_ROLES, NOW);
     expect(d.version).toBe(DRAFT_VERSION);
     expect(d.templateProjectId).toBe("tpl");
-    expect(d.roles).toHaveLength(25);
+    expect(d.roles).toHaveLength(26);
     expect(d.assignments).toEqual({});
     expect(d.updatedAt).toBe(NOW);
   });

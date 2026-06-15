@@ -10,6 +10,7 @@ export interface FormaRole {
 export const FORMA_GROUPS = [
   "BIM",
   "Commercial / Cost",
+  "Site",
   "Design",
   "Engineering",
   "Governance",
@@ -25,7 +26,8 @@ export const DEFAULT_FORMA_ROLES: FormaRole[] = [
   { id: "vdc-specialist", label: "VDC Specialist", group: "BIM" },
   { id: "estimator-specialist", label: "Estimator Specialist", group: "Commercial / Cost" },
   { id: "procurement-specialist", label: "Procurement Specialist", group: "Commercial / Cost" },
-  { id: "site-specialist", label: "Site Specialist", group: "Commercial / Cost" },
+  { id: "site-specialist", label: "Site Specialist", group: "Site" },
+  { id: "superintendent", label: "Superintendent", group: "Site" },
   { id: "architect", label: "Architect", group: "Design" },
   { id: "civil-engineer", label: "Civil Engineer", group: "Engineering" },
   { id: "electrical-engineer", label: "Electrical Engineer", group: "Engineering" },

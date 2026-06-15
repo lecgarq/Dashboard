@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { DEFAULT_FORMA_ROLES, FORMA_GROUPS } from "./defaultRoles";
 
 describe("default forma roles", () => {
-  it("has 25 roles", () => {
-    expect(DEFAULT_FORMA_ROLES).toHaveLength(25);
+  it("has 26 roles", () => {
+    expect(DEFAULT_FORMA_ROLES).toHaveLength(26);
   });
 
   it("every role has a unique slug id", () => {
@@ -16,8 +16,8 @@ describe("default forma roles", () => {
     for (const r of DEFAULT_FORMA_ROLES) expect(FORMA_GROUPS).toContain(r.group);
   });
 
-  it("covers all 9 groups", () => {
-    expect(new Set(DEFAULT_FORMA_ROLES.map((r) => r.group)).size).toBe(9);
-    expect(FORMA_GROUPS).toHaveLength(9);
+  it("covers all 10 groups", () => {
+    expect(new Set(DEFAULT_FORMA_ROLES.map((r) => r.group)).size).toBe(10);
+    expect(FORMA_GROUPS).toHaveLength(10);
   });
 });
