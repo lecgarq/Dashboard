@@ -6,6 +6,7 @@ import {
   type TerrainCell,
   type TerrainUser,
 } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { resolveEffectiveTier } from "@/app/(dashboard)/access-analysis/folderInheritance";
 import { TEMPLATE_MTY_ID, TEMPLATE_MTY_NAME } from "@/lib/acc/template-mty";
 import { TEMPLATE_MTY_ROSTER } from "@/lib/acc/template-mty-roster";
 
@@ -14,7 +15,7 @@ export interface ChangedTerrainInput {
   projectName: string;
   office?: string;
   folders: Array<{ id: string; parentId: string | null; name: string; fullPath: string | null }>;
-  perms: Array<{ folderId: string; roleId: string; roleName: string; permType: string }>;
+  perms: Array<{ folderId: string; roleId: string; roleName: string; permType: string; actionCount: number }>;
   /** Roster members — supply role names so bar height = members in that role. */
   roster: Array<{ name: string; email: string; role: string }>;
   generatedAt: string;
@@ -28,27 +29,26 @@ export interface ChangedTerrainInput {
  * nesting). The panel renders inheritors muted so the *explicitly changed*
  * folders — where someone made a deliberate access decision — stand out.
  *
- * Inheritance is detected by comparing each folder's permission signature
- * (sorted "roleId|permType" pairs) to its parent's. Bar height = number of the
- * given roster members holding each role (roles without roster members render at
- * the floor height). Pure — no I/O — so it is unit-tested.
+ * Tiers are resolved through ACC inheritance first: a folder with empty actions
+ * for a role adopts its nearest explicit ancestor's level (so a folder under a
+ * Full-Controller "Project Files" reads as Full Controller, not the stored
+ * "View Only" floor). A folder is then `inherited` when its EFFECTIVE grants equal
+ * its parent's (no deliberate override). Bar height = number of the given roster
+ * members holding each role (roles without roster members render at the floor
+ * height). Pure — no I/O — so it is unit-tested.
  */
 export function buildFolderTerrain(input: ChangedTerrainInput): FolderTerrainData | null {
   const { folders, perms, roster } = input;
   const byId = new Map(folders.map((f) => [f.id, f]));
 
-  // roleId → {roleName, permType} per folder, plus a signature for inheritance.
-  const permsByFolder = new Map<string, Map<string, { roleName: string; permType: string }>>();
+  // roleId → {roleName, permType, actionCount} per folder. actionCount 0 ⇒ the
+  // grant is INHERITED (ACC stores actions only where a permission is explicitly set).
+  const permsByFolder = new Map<string, Map<string, { roleName: string; permType: string; actionCount: number }>>();
   for (const p of perms) {
     let m = permsByFolder.get(p.folderId);
     if (!m) { m = new Map(); permsByFolder.set(p.folderId, m); }
-    m.set(p.roleId, { roleName: p.roleName, permType: p.permType });
+    m.set(p.roleId, { roleName: p.roleName, permType: p.permType, actionCount: p.actionCount });
   }
-  const sig = (id: string): string => {
-    const m = permsByFolder.get(id);
-    if (!m) return "";
-    return [...m.entries()].map(([rid, v]) => `${rid}|${v.permType}`).sort().join(",");
-  };
 
   const projectFiles = folders.find((f) => f.name === "Project Files");
   if (!projectFiles) return null;
@@ -59,17 +59,39 @@ export function buildFolderTerrain(input: ChangedTerrainInput): FolderTerrainDat
     if (arr) arr.push(f); else childrenOf.set(f.parentId, [f]);
   }
 
-  // BFS from Project Files (level 1). Keep every level ≥2 folder that carries a
-  // permission, tagging each as `inherited` (perm signature identical to its
-  // parent's — no explicit override) and with its nesting `depth` (level − 2).
+  // BFS from Project Files (level 1) — parent before child — resolving each
+  // folder's EFFECTIVE grants: it inherits the parent's already-resolved set, then
+  // its own explicit (non-empty) grants override; an empty-actions grant keeps the
+  // inherited level (or the View-Only floor when nothing is inherited). A folder is
+  // `inherited` when its effective grants equal its parent's (no deliberate
+  // override), so the panel can mute pure inheritors while still showing their true
+  // (inherited) tier. Keep every level ≥2 folder that carries a permission, with
+  // its nesting `depth` (level − 2).
+  const effByFolder = new Map<string, Map<string, { permType: string; rank: number }>>();
+  const effSig = (id: string): string => {
+    const m = effByFolder.get(id);
+    if (!m) return "";
+    return [...m.entries()].map(([rid, v]) => `${rid}|${v.permType}`).sort().join(",");
+  };
   type FolderRow = { id: string; name: string; fullPath: string | null; inherited: boolean; depth: number };
   const all: FolderRow[] = [];
   const queue: Array<{ f: (typeof folders)[number]; level: number }> = [{ f: projectFiles, level: 1 }];
   while (queue.length > 0) {
     const { f, level } = queue.shift()!;
+    const parentEff = f.parentId ? effByFolder.get(f.parentId) : undefined;
+    const eff = new Map(parentEff ?? []);
+    for (const [rid, v] of permsByFolder.get(f.id) ?? []) {
+      const pe = parentEff?.get(rid);
+      const r = resolveEffectiveTier(
+        { permType: v.permType, actionCount: v.actionCount },
+        pe ? { permType: pe.permType, actionCount: 1 } : undefined,
+      );
+      eff.set(rid, { permType: r.tier, rank: r.rank });
+    }
+    effByFolder.set(f.id, eff);
     if (level >= 2 && permsByFolder.has(f.id)) {
-      const parentSig = f.parentId ? sig(f.parentId) : "";
-      all.push({ id: f.id, name: f.name, fullPath: f.fullPath, inherited: sig(f.id) === parentSig, depth: level - 2 });
+      const inherited = effSig(f.id) === (f.parentId ? effSig(f.parentId) : "");
+      all.push({ id: f.id, name: f.name, fullPath: f.fullPath, inherited, depth: level - 2 });
     }
     for (const ch of childrenOf.get(f.id) ?? []) queue.push({ f: ch, level: level + 1 });
   }
@@ -104,14 +126,16 @@ export function buildFolderTerrain(input: ChangedTerrainInput): FolderTerrainDat
 
   const cells: TerrainCell[] = [];
   for (const cf of all) {
+    const eff = effByFolder.get(cf.id);
     for (const [rid, v] of permsByFolder.get(cf.id) ?? []) {
+      const e = eff?.get(rid);
       cells.push({
         folderId: cf.id,
         folderName: cf.name,
         roleId: rid,
         roleName: v.roleName,
-        tier: v.permType,
-        rank: rankForTier(v.permType),
+        tier: e?.permType ?? v.permType,
+        rank: e?.rank ?? rankForTier(v.permType),
         userCount: usersByRole[rid]?.length ?? 0,
         inherited: cf.inherited,
       });
@@ -146,8 +170,9 @@ export async function loadTemplateFolderTerrain(): Promise<FolderTerrainData | n
       where: { projectId: TEMPLATE_MTY_ID },
       select: { id: true, parentId: true, name: true, fullPath: true },
     }),
-    db.$queryRaw<Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string }>>`
-      SELECT fp."folderId" AS folder_id, fp."roleId" AS role_id, r.name AS role_name, fp."permType" AS perm_type
+    db.$queryRaw<Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string; n_actions: number }>>`
+      SELECT fp."folderId" AS folder_id, fp."roleId" AS role_id, r.name AS role_name, fp."permType" AS perm_type,
+             COALESCE(cardinality(fp.actions), 0)::int AS n_actions
       FROM "AccFolderPermission" fp
       JOIN "AccRole" r ON r.id = fp."roleId"
       JOIN "AccFolder" f ON f.id = fp."folderId"
@@ -160,7 +185,7 @@ export async function loadTemplateFolderTerrain(): Promise<FolderTerrainData | n
     projectId: TEMPLATE_MTY_ID,
     projectName: project.name ?? TEMPLATE_MTY_NAME,
     folders,
-    perms: perms.map((p) => ({ folderId: p.folder_id, roleId: p.role_id, roleName: p.role_name, permType: p.perm_type })),
+    perms: perms.map((p) => ({ folderId: p.folder_id, roleId: p.role_id, roleName: p.role_name, permType: p.perm_type, actionCount: p.n_actions })),
     roster: TEMPLATE_MTY_ROSTER.map((r) => ({ name: r.name, email: r.email, role: r.role })),
     generatedAt: new Date().toISOString(),
   });
