@@ -20,7 +20,7 @@ the same project shown at
 
 | Decision | Choice |
 | --- | --- |
-| Role columns | Seed with the 25 curated roles from the owner's image (9 groups), **editable** — add / rename / delete in the UI, persisted in the draft |
+| Role columns | Seed with the 26 curated roles from the owner's image (10 groups), **editable** — add / rename / delete in the UI, persisted in the draft |
 | Folder rows | **All 206 folders** of the template, as a collapsible tree |
 | Assignment UX | **Role-first walk**: pick one role, then assign tiers down the folder tree |
 | Start state | **Blank** — every folder starts at "No access" |
@@ -53,10 +53,11 @@ the same project shown at
 
 ## 4. Default role taxonomy (seed)
 
-25 roles across 9 groups (correcting the image's "Contrator"/"Administartion" typos):
+26 roles across 10 groups (correcting the image's "Contrator"/"Administartion" typos):
 
 - **BIM:** APS Specialist, Modeler Specialist, VDC Specialist
-- **Commercial / Cost:** Estimator Specialist, Procurement Specialist, Site Specialist
+- **Commercial / Cost:** Estimator Specialist, Procurement Specialist
+- **Site:** Site Specialist, Superintendent
 - **Design:** Architect
 - **Engineering:** Civil Engineer, Electrical Engineer, Fire Protection Engineer,
   HVAC Engineer, Mechanical Engineer, Plumbing Engineer, Site Engineer,
@@ -93,7 +94,7 @@ interface FormaDraft {
 interface FormaRole { id: string; label: string; group: string; }
 ```
 
-Storing only explicit overrides keeps the cache tiny (hundreds of entries, not ~5,150
+Storing only explicit overrides keeps the cache tiny (hundreds of entries, not ~5,356
 cells) and makes inheritance the natural default — the same model ACC itself uses.
 
 ## 6. Inheritance & bulk apply
@@ -149,7 +150,7 @@ Export is pure client-side (Blob download); no server round-trip, no ACC write.
 
 | File | Responsibility | Tested |
 | --- | --- | --- |
-| `lib/forma/defaultRoles.ts` | the 25-role / 9-group seed (pure data) | unit (integrity) |
+| `lib/forma/defaultRoles.ts` | the 26-role / 10-group seed (pure data) | unit (integrity) |
 | `lib/forma/tiers.ts` | ordered tiers, "No access" sentinel, labels, colors, tier→actions | unit |
 | `lib/forma/inheritance.ts` | build parent index, resolve effective tier, applyToSubtree, coverage counts | unit (TDD) |
 | `lib/forma/draftStorage.ts` | load/save/migrate the `localStorage` draft | unit (TDD) |
