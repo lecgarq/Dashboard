@@ -7,7 +7,6 @@ import {
 import {
   applyToSubtree, buildFolderIndex, type ExplicitMap, type FormaFolder,
 } from "@/lib/forma/inheritance";
-import { reparent, type HierarchyMap } from "@/lib/forma/hierarchy";
 import type { FormaTier } from "@/lib/forma/tiers";
 
 export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
@@ -61,21 +60,7 @@ export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
   }, [index]);
 
   const addRole = useCallback((role: FormaRole) => {
-    setDraft((d) => touch({
-      ...d,
-      roles: [...d.roles, role],
-      hierarchy: { ...(d.hierarchy ?? {}), [role.id]: null }, // new role starts top-level
-    }));
-  }, []);
-
-  // Re-parent a role in the org chart (cycle-checked); no-op on an invalid move.
-  const setParent = useCallback((roleId: string, parentId: string | null) => {
-    setDraft((d) => {
-      const cur: HierarchyMap = d.hierarchy ?? {};
-      const next = reparent(cur, roleId, parentId);
-      if (next === cur) return d;
-      return touch({ ...d, hierarchy: next });
-    });
+    setDraft((d) => touch({ ...d, roles: [...d.roles, role] }));
   }, []);
 
   const renameRole = useCallback((roleId: string, label: string) => {
@@ -86,18 +71,7 @@ export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
     setDraft((d) => {
       const assignments = { ...d.assignments };
       delete assignments[roleId];
-      // Drop the role from the org chart and lift its direct reports to top-level.
-      const hierarchy: HierarchyMap = {};
-      for (const [id, parent] of Object.entries(d.hierarchy ?? {})) {
-        if (id === roleId) continue;
-        hierarchy[id] = parent === roleId ? null : parent;
-      }
-      return touch({
-        ...d,
-        roles: d.roles.filter((r) => r.id !== roleId),
-        assignments,
-        hierarchy,
-      });
+      return touch({ ...d, roles: d.roles.filter((r) => r.id !== roleId), assignments });
     });
   }, []);
 
@@ -107,6 +81,6 @@ export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
 
   return {
     draft, hydrated, index,
-    setTier, clearTier, applySubtree, addRole, renameRole, deleteRole, setParent, reset,
+    setTier, clearTier, applySubtree, addRole, renameRole, deleteRole, reset,
   };
 }

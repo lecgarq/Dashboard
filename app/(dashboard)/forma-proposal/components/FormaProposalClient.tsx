@@ -3,7 +3,6 @@ import { useState } from "react";
 import { Download, RotateCcw } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 import { countExplicit, type FormaFolder } from "@/lib/forma/inheritance";
-import { coverageByRole } from "@/lib/forma/hierarchy";
 import { toCsv, toJson, type ExportInput } from "@/lib/forma/exportProposal";
 import { FORMA_TIERS, TIER_COLOR, TIER_SHORT } from "@/lib/forma/tiers";
 import { useFormaDraft } from "./useFormaDraft";
@@ -45,7 +44,6 @@ export function FormaProposalClient({
   const explicit = d.draft.assignments[activeId] ?? {};
   const folderCount = d.index.byId.size;
   const coverage = countExplicit(explicit);
-  const coverageMap = coverageByRole(d.draft.assignments, d.draft.roles.map((r) => r.id));
 
   const exportInput = (): ExportInput => ({
     templateProjectId: templateId,
@@ -150,12 +148,16 @@ export function FormaProposalClient({
       ) : (
         <div className="min-h-0 flex-1">
           <HierarchyView
+            index={d.index}
+            explicit={explicit}
+            rootLabel={templateName}
             roles={d.draft.roles}
-            hierarchy={d.draft.hierarchy ?? {}}
-            coverage={coverageMap}
-            folderCount={folderCount}
-            onSelectRole={(roleId) => { setActiveRoleId(roleId); setMode("permissions"); }}
-            onReparent={d.setParent}
+            activeRoleId={activeId}
+            activeRoleLabel={activeRole?.label ?? "—"}
+            onPickRole={setActiveRoleId}
+            onSetTier={(folderId, tier) => d.setTier(activeId, folderId, tier)}
+            onApplySubtree={(folderId, tier) => d.applySubtree(activeId, folderId, tier)}
+            onClear={(folderId) => d.clearTier(activeId, folderId)}
           />
         </div>
       )}

@@ -3,7 +3,6 @@
 // — the React hook supplies "now" and performs the I/O, keeping this testable.
 import type { FormaTier } from "./tiers";
 import type { FormaRole } from "./defaultRoles";
-import type { HierarchyMap } from "./hierarchy";
 
 export const DRAFT_VERSION = 1;
 
@@ -13,8 +12,6 @@ export interface FormaDraft {
   roles: FormaRole[];
   /** roleId → folderId → tier (explicit overrides only). */
   assignments: Record<string, Record<string, FormaTier>>;
-  /** roleId → parent roleId | null (custom org chart). Added post-v1; back-compat. */
-  hierarchy: HierarchyMap;
   updatedAt: string; // ISO
 }
 
@@ -32,7 +29,6 @@ export function emptyDraft(
     templateProjectId,
     roles: roles.map((r) => ({ ...r })), // own copy
     assignments: {},
-    hierarchy: {},
     updatedAt: nowIso,
   };
 }
@@ -56,8 +52,5 @@ export function parseDraft(raw: string | null): FormaDraft | null {
   if (!Array.isArray(d.roles)) return null;
   if (typeof d.assignments !== "object" || d.assignments === null) return null;
   if (typeof d.updatedAt !== "string") return null;
-  // hierarchy added after v1 — tolerate its absence in older saved drafts.
-  const hierarchy =
-    d.hierarchy && typeof d.hierarchy === "object" ? d.hierarchy : {};
-  return { ...d, hierarchy } as FormaDraft;
+  return d as FormaDraft;
 }

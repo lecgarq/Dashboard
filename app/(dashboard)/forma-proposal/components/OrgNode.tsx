@@ -1,56 +1,49 @@
 "use client";
-import { Crown, UserRound } from "lucide-react";
+import { Folder, FolderOpen, FolderRoot } from "lucide-react";
 import { cn } from "@/lib/core/utils";
 
-// Color by depth, matching the reference organogram: root rose, level-1 amber, deeper teal.
-const LEVEL = [
-  { ring: "border-rose-400/70", disc: "from-rose-400 to-rose-600", glow: "shadow-rose-500/30" },
-  { ring: "border-amber-400/70", disc: "from-amber-400 to-amber-500", glow: "shadow-amber-500/30" },
-  { ring: "border-teal-400/70", disc: "from-teal-400 to-teal-500", glow: "shadow-teal-500/30" },
-];
-
+/** Presentational organogram node: a colored disc + label + sublabel. */
 export function OrgNode({
-  depth, label, coverage, total, selected, dropTarget, dimmed, root,
+  color, label, sublabel, inherited, root, open, selected,
 }: {
-  depth: number;
+  color: string; // tier color (hex)
   label: string;
-  coverage?: number;
-  total: number;
-  selected?: boolean;
-  dropTarget?: boolean;
-  dimmed?: boolean;
+  sublabel?: string;
+  inherited?: boolean;
   root?: boolean;
+  open?: boolean; // children currently visible
+  selected?: boolean;
 }) {
-  const lv = LEVEL[Math.min(depth, LEVEL.length - 1)];
-  const Icon = root ? Crown : UserRound;
+  const Icon = root ? FolderRoot : open ? FolderOpen : Folder;
   return (
-    <div
-      className={cn(
-        "flex w-[150px] cursor-pointer flex-col items-center gap-1.5 transition-opacity duration-150",
-        dimmed && "opacity-35",
-      )}
-    >
+    <div className="flex w-[140px] cursor-pointer flex-col items-center gap-1">
       <div
         className={cn(
-          "relative grid place-items-center rounded-full border-2 border-dashed p-1 transition-all duration-150",
-          lv.ring,
-          dropTarget && "scale-110 border-solid ring-4 ring-primary/40",
-          selected && "ring-4 ring-primary/50",
+          "relative grid place-items-center rounded-full border-2 p-1 transition-all duration-150",
+          inherited ? "border-dashed" : "border-solid",
+          selected && "ring-4 ring-primary/40",
         )}
+        style={{ borderColor: `${color}99` }}
       >
-        <div className={cn("grid h-14 w-14 place-items-center rounded-full bg-gradient-to-br shadow-lg", lv.disc, lv.glow)}>
-          <div className="grid h-9 w-9 place-items-center rounded-full bg-white shadow-inner">
-            <Icon className="h-4 w-4 text-zinc-700" />
+        <div
+          className="grid h-12 w-12 place-items-center rounded-full"
+          style={{
+            background: `radial-gradient(circle at 35% 28%, ${color}, ${color}cc)`,
+            boxShadow: `0 6px 16px -6px ${color}aa`,
+          }}
+        >
+          <div className="grid h-8 w-8 place-items-center rounded-full bg-white shadow-inner">
+            <Icon className="h-4 w-4" style={{ color }} />
           </div>
         </div>
       </div>
       <div className="text-center">
-        <div className="max-w-[150px] truncate text-[12px] font-semibold leading-tight text-foreground" title={label}>
+        <div className="max-w-[140px] truncate text-[11px] font-semibold leading-tight text-foreground" title={label}>
           {label}
         </div>
-        {!root && (
-          <div className="text-[10px] tabular-nums text-muted-foreground">
-            {coverage ?? 0}/{total} set
+        {sublabel && (
+          <div className={cn("text-[9px] leading-tight", inherited ? "italic text-muted-foreground/70" : "text-muted-foreground")}>
+            {sublabel}
           </div>
         )}
       </div>
