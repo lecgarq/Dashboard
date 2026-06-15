@@ -13,13 +13,17 @@
 // Types
 // ---------------------------------------------------------------------------
 
+// Aligned to ACC's actual folder-permission picker (View / Create / Edit / Manage
+// groups), including the "Publish markups" level. Classification stays
+// "highest-capability" (NOT strict subset nesting) so real-world rows that hold
+// upload/edit without an explicit PUBLISH_MARKUP keep their true level.
 export type PermTier =
   | "View Only"
   | "View+Download"
-  | "Upload Only"
-  | "View+Download+Upload"
-  | "View+Download+Upload+Edit"
-  | "Full Controller";
+  | "View+Download+Publish markups"
+  | "View+Download+Publish markups+Upload"
+  | "View+Download+Publish markups+Upload+Edit"
+  | "Full administrative controls";
 
 export interface MapActionsResult {
   /** The best-match tier, or null when no tier can be satisfied. */
@@ -61,20 +65,21 @@ export const TIER_DEFINITIONS: ReadonlyArray<{
   actions: ReadonlySet<string>;
 }> = [
   {
-    tier: "Full Controller",
+    tier: "Full administrative controls",
     actions: new Set(["VIEW", "DOWNLOAD", "COLLABORATE", "PUBLISH", "EDIT", "CONTROL"]),
   },
   {
-    tier: "View+Download+Upload+Edit",
+    tier: "View+Download+Publish markups+Upload+Edit",
     actions: new Set(["VIEW", "DOWNLOAD", "COLLABORATE", "PUBLISH", "EDIT"]),
   },
   {
-    tier: "View+Download+Upload",
+    tier: "View+Download+Publish markups+Upload",
     actions: new Set(["VIEW", "DOWNLOAD", "COLLABORATE", "PUBLISH"]),
   },
   {
-    tier: "Upload Only",
-    actions: new Set(["PUBLISH"]),
+    // Markups (PUBLISH_MARKUP) granted, but no upload (PUBLISH).
+    tier: "View+Download+Publish markups",
+    actions: new Set(["VIEW", "DOWNLOAD", "COLLABORATE", "PUBLISH_MARKUP"]),
   },
   {
     tier: "View+Download",
