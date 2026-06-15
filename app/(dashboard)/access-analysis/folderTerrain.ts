@@ -37,14 +37,20 @@ export interface TerrainCell {
   userCount: number;
   /** Overview only: rank → project count, for the tier-distribution drill. */
   tierBreakdown?: Record<number, number>;
+  /** True when this cell's folder merely inherits its parent's permission set
+   *  (no explicit override). Inheritors render muted/passive so the deliberately
+   *  changed folders stand out. Absent/false = an explicit access decision. */
+  inherited?: boolean;
 }
 
 export interface FolderTerrainData {
   projectId: string;
   projectName: string;
   office: string;
-  /** L2 folders present, already in display order. */
-  folders: ReadonlyArray<{ id: string; name: string }>;
+  /** Folders present, already in display order (depth-first by path). `depth` is
+   *  0 for top-level (level-2) folders and increases with nesting; `inherited`
+   *  marks folders that copy their parent's permissions verbatim. */
+  folders: ReadonlyArray<{ id: string; name: string; inherited?: boolean; depth?: number }>;
   /** Roles present on ≥1 folder, already in display order (most-staffed first). */
   roles: ReadonlyArray<{ id: string; name: string }>;
   /** Sparse set of populated (folder, role) cells. */
@@ -74,16 +80,22 @@ export interface TerrainProjectOption {
 // ---------------------------------------------------------------------------
 
 /**
- * Maps the DB permType string to a 1..5 ordinal. "Upload Only" is rare and sits
- * alongside View+Download at rank 2 (both are limited, non-edit access).
+ * Maps the DB permType string to a 1..6 ordinal, aligned to ACC's real levels
+ * (View / Create / Edit / Manage). Legacy strings kept so any not-yet-remigrated
+ * row never falls back to rank 1 by surprise.
  */
 const TIER_RANK: Readonly<Record<string, number>> = {
   "View Only": 1,
   "View+Download": 2,
-  "Upload Only": 2,
-  "View+Download+Upload": 3,
-  "View+Download+Upload+Edit": 4,
-  "Full Controller": 5,
+  "View+Download+Publish markups": 3,
+  "View+Download+Publish markups+Upload": 4,
+  "View+Download+Publish markups+Upload+Edit": 5,
+  "Full administrative controls": 6,
+  // legacy aliases (pre-ACC-alignment)
+  "Upload Only": 4,
+  "View+Download+Upload": 4,
+  "View+Download+Upload+Edit": 5,
+  "Full Controller": 6,
 };
 
 export function rankForTier(tier: string): number {
@@ -92,16 +104,16 @@ export function rankForTier(tier: string): number {
 
 /**
  * Cool-professional sequential ramp (low access = cool slate-teal … full control
- * = warm gold). Indexed by rank 1..5. Tuned to read on both the dark zinc and the
- * light theme; the cyan→amber break at 3→4 also marks the read/upload vs edit/control
- * divide.
+ * = warm gold). Indexed by rank 1..6. The cyan→amber break at 3→4 marks the
+ * read/markups vs upload/edit/control divide.
  */
 export const TIER_COLORS: Readonly<Record<number, string>> = {
   1: "#1e3a4c", // deep slate-teal — View Only
-  2: "#2a7d8c", // teal — View+Download / Upload Only
-  3: "#46b8c4", // cyan — +Upload
-  4: "#f0a830", // amber — +Edit
-  5: "#f8d348", // gold — Full Control
+  2: "#2a7d8c", // teal — View+Download
+  3: "#46b8c4", // cyan — +Publish markups
+  4: "#e8943a", // orange — +Upload
+  5: "#f0b32f", // amber — +Edit
+  6: "#f8d348", // gold — Full administrative controls
 };
 
 export function colorForRank(rank: number): string {
@@ -125,22 +137,25 @@ export function topGradientId(rank: number): string {
   return `terrainTop-${rank}`;
 }
 
-/** Per-rank top-face gradient descriptors (bright far edge → slightly deeper). */
+/** Per-rank top-face gradient descriptors (bright far edge → slightly deeper).
+ *  Derived from TIER_COLORS keys so every defined rank (1..6) gets a top gradient —
+ *  a missing one renders the bar's top face with no fill (see-through). */
 export const TIER_GRADIENTS: ReadonlyArray<{ rank: number; id: string; from: string; to: string }> =
-  [1, 2, 3, 4, 5].map((rank) => ({
+  Object.keys(TIER_COLORS).map(Number).map((rank) => ({
     rank,
     id: topGradientId(rank),
-    from: mix(TIER_COLORS[rank], 1.14),
-    to: mix(TIER_COLORS[rank], 0.92),
+    from: mix(TIER_COLORS[rank], 1.32), // bright specular highlight edge
+    to: mix(TIER_COLORS[rank], 0.80),   // deeper base — wider ramp reads as gloss
   }));
 
 /** Legend rows, in ascending-access order. */
 export const TIER_LEGEND: ReadonlyArray<{ rank: number; label: string }> = [
   { rank: 1, label: "View only" },
   { rank: 2, label: "View / download" },
-  { rank: 3, label: "+ Upload" },
-  { rank: 4, label: "+ Edit" },
-  { rank: 5, label: "Full control" },
+  { rank: 3, label: "+ Publish markups" },
+  { rank: 4, label: "+ Upload" },
+  { rank: 5, label: "+ Edit" },
+  { rank: 6, label: "Full control" },
 ];
 
 // ---------------------------------------------------------------------------
@@ -245,12 +260,12 @@ export function shade(hex: string, amt: number): string {
 const TERRAIN = {
   tileW: 28,
   tileH: 14, // 2:1 iso
-  maxBar: 72, // px for the tallest bar
-  minBar: 7, // px floor so every permission shows
+  maxBar: 90, // px for the tallest bar
+  minBar: 8, // px floor so every permission shows
   margin: 16,
   gutter: 188, // left gutter for folder labels
   topPad: 96, // headroom for role labels + tallest bar
-  maxRoleLabels: 12,
+  maxRoleLabels: 40, // candidate cap; collision-pruning + zoom reveal the rest
   roleLabelRow: -1.7, // how far behind the grid the role axis labels sit
 } as const;
 
@@ -583,7 +598,7 @@ export interface Light {
   sideMax: number;
 }
 
-export const DEFAULT_LIGHT: Light = { dx: 0.32, dy: 0.95, ambient: 0.34, diffuse: 0.66, topBright: 1.06, sideMax: 0.86 };
+export const DEFAULT_LIGHT: Light = { dx: 0.32, dy: 0.95, ambient: 0.28, diffuse: 0.74, topBright: 1.12, sideMax: 0.9 };
 
 /** Brightness of a side whose rotated outward normal is (nx,ny). */
 function sideBrightness(nx: number, ny: number, L: Light): number {
@@ -629,6 +644,8 @@ interface SceneBar {
   cx: number; // top-face centroid (for highlight ring / tooltip anchor)
   cy: number;
   depth: number; // painter order key
+  /** Mirrors cell.inherited — lets the renderer mute pure inheritors. */
+  inherited?: boolean;
   /** Grid coords of this bar (col = role index, row = folder index). Set by the
    *  camera scene so a click can re-pivot to the picked cell. */
   col?: number;
@@ -643,9 +660,11 @@ export interface TerrainScene {
   /** Faint ground footprints under each bar (contact shading). */
   shadows: { points: string }[];
   lattice: { x1: number; y1: number; x2: number; y2: number }[];
-  folderLabels: { id: string; name: string; textX: number; textY: number; ax: number; ay: number }[];
+  folderLabels: { id: string; name: string; textX: number; textY: number; ax: number; ay: number; depth?: number; inherited?: boolean }[];
   roleLabels: { id: string; name: string; x: number; y: number; angle: number }[];
   extraRoles: number;
+  /** Folder rows whose labels were pruned to avoid overlap (zoom in to reveal). */
+  hiddenFolders?: number;
   compass: { folder: { x: number; y: number }; role: { x: number; y: number }; origin: { x: number; y: number }; pitch?: number };
   groundCorners: { back: Pt; right: Pt; front: Pt; left: Pt };
 }
@@ -877,7 +896,13 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
 
   const heightByUsers = data.maxUserCount > 0;
   const maxMetric = heightByUsers ? data.maxUserCount : 5;
-  const cellHeight = (cell: TerrainCell) => barHeight(heightByUsers ? cell.userCount : cell.rank, maxMetric, minBar, maxBar);
+  // Perceptual height curve: a sqrt ramp lifts low-count cells off the floor so a
+  // sparse field still reads as a lit terrain (skyline) rather than a flat plane,
+  // while the tallest bars stay distinct.
+  const cellHeight = (cell: TerrainCell) => {
+    const t = maxMetric > 0 ? Math.min(1, (heightByUsers ? cell.userCount : cell.rank) / maxMetric) : 0;
+    return minBar + Math.sqrt(t) * (maxBar - minBar);
+  };
 
   // Bars + contact shadows.
   const bars: SceneBar[] = [];
@@ -888,8 +913,10 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
     const ri = (folderIdx.get(cell.folderId) ?? 0) + rOff;
     const h = cellHeight(cell) * growth;
     const b = barSceneCam(ci, ri, h, c, colorForRank(cell.rank), L);
-    bars.push({ cell, faces: b.faces, top: b.top, cx: b.cx, cy: b.cy, depth: b.depth, col: ci, row: ri });
-    const ground = SHADOW_CORNERS.map(([dc, dr]) => { const p = projectCamera(ci + dc, ri + dr, 0, c); return { x: p.x, y: p.y + 3 }; });
+    bars.push({ cell, faces: b.faces, top: b.top, cx: b.cx, cy: b.cy, depth: b.depth, col: ci, row: ri, inherited: cell.inherited });
+    // Every bar casts a tight contact shadow so it visibly sits ON the ground
+    // plane — a key depth cue for reading what's in front of what.
+    const ground = SHADOW_CORNERS.map(([dc, dr]) => { const p = projectCamera(ci + dc, ri + dr, 0, c); return { x: p.x, y: p.y + 2 }; });
     shadows.push({ points: ptsStr(ground) });
   }
   bars.sort((a, b2) => a.depth - b2.depth);
@@ -899,34 +926,38 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
   for (let col = 0; col <= R; col++) { const a = projectCamera(col - 0.5, -0.5 + rOff, 0, c); const b = projectCamera(col - 0.5, Cf - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
   for (let row = 0; row <= Cf; row++) { const a = projectCamera(-0.5, row - 0.5 + rOff, 0, c); const b = projectCamera(R - 0.5, row - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
 
-  // Folder labels. Rows project very close together at the home angle, so a naive
-  // per-row list overlaps. Roomy single/overview planes get an evenly-spaced left
-  // list (≥ FGAP px apart) with a thin leader to each row; compact compare slabs
-  // keep labels on their rows but greedily drop any that would collide.
-  const truncF = (s: string) => (s.length > 26 ? s.slice(0, 25) + "…" : s);
-  let folderLabels: TerrainScene["folderLabels"];
-  if (opts.compactLabels) {
-    folderLabels = folders
-      .map((f, i) => { const a = projectCamera(-0.5, i + rOff, 0, c); return { id: f.id, name: truncF(f.name), textX: a.x - 10, textY: a.y, ax: a.x, ay: a.y }; })
-      .sort((a, b) => a.textY - b.textY)
-      .reduce<TerrainScene["folderLabels"]>((kept, lab) => {
-        const last = kept[kept.length - 1];
-        if (!last || lab.textY - last.textY >= 13) kept.push(lab);
-        return kept;
-      }, []);
-  } else {
-    const FGAP = 16;
-    const topA = projectCamera(-0.5, -0.5 + rOff, 0, c);
-    const botA = projectCamera(-0.5, Cf - 0.5 + rOff, 0, c);
-    const leftX = Math.min(topA.x, botA.x) - 12;
-    const span = Math.max(botA.y - topA.y, (Cf - 1) * FGAP);
-    const start = (topA.y + botA.y) / 2 - span / 2;
-    folderLabels = folders.map((f, i) => {
-      const a = projectCamera(-0.5, i + rOff, 0, c);
-      const textY = Cf > 1 ? start + (i / (Cf - 1)) * span : a.y;
-      return { id: f.id, name: truncF(f.name), textX: leftX, textY, ax: a.x, ay: a.y };
-    });
+  // Folder labels. Each label hugs the left edge of its own row (a short leader to
+  // the bar's ground anchor), staggered left by nesting depth so the hierarchy
+  // reads like a file tree, with pure inheritors dimmed. Hundreds of rows project
+  // far too close together to all fit, so we keep a non-overlapping subset chosen
+  // by PRIORITY — explicitly-changed folders first, then shallower ones — and
+  // prune the rest by 2-D screen distance. Zooming spreads the rows apart and
+  // reveals more (a free level-of-detail); the hovered bar always names its
+  // folder via the tooltip, so pruned rows stay identifiable.
+  const truncF = (s: string) => (s.length > 30 ? s.slice(0, 29) + "…" : s);
+  // Labels are right-anchored and all extend LEFT, so two at a similar height
+  // overlap regardless of their anchor x — collision must be a VERTICAL gap, sized
+  // to clear the font + halo. Keep the highest-priority label per slot.
+  const FGAP = 20; // min vertical px between two kept folder labels
+  const FMAXLABELS = 70; // cap drawn labels (perf when zoomed right in)
+  type FLab = TerrainScene["folderLabels"][number] & { priority: number };
+  const fCandidates: FLab[] = folders.map((f, i) => {
+    const a = projectCamera(-0.5, i + rOff, 0, c);
+    const depth = f.depth ?? 0;
+    const inherited = !!f.inherited;
+    // Smaller priority value = filled first. Changed beats inherited; shallower
+    // beats deeper; ties keep top-down row order.
+    const priority = (inherited ? 100000 : 0) + depth * 1000 + i;
+    return { id: f.id, name: truncF(f.name), textX: a.x - 9, textY: a.y, ax: a.x, ay: a.y, depth, inherited, priority };
+  });
+  const fKept: FLab[] = [];
+  for (const lab of [...fCandidates].sort((a, b) => a.priority - b.priority)) {
+    if (fKept.length >= FMAXLABELS) break;
+    if (fKept.every((k) => Math.abs(k.textY - lab.textY) >= FGAP)) fKept.push(lab);
   }
+  fKept.sort((a, b) => a.textY - b.textY);
+  const folderLabels: TerrainScene["folderLabels"] = fKept.map(({ priority: _p, ...rest }) => rest);
+  const hiddenFolders = Cf - folderLabels.length;
 
   // Role labels run along the back of the role axis, angled to it. Drop any that
   // crowd the previous kept label (by on-screen distance) so they never overlap.
@@ -934,11 +965,14 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
   const aDir = projectCamera(0, TERRAIN.roleLabelRow + rOff, 0, c);
   const bDir = projectCamera(1, TERRAIN.roleLabelRow + rOff, 0, c);
   const axisDir = Math.atan2(bDir.y - aDir.y, bDir.x - aDir.x) * 180 / Math.PI;
+  const RGAP = 84; // min on-screen px between two kept role labels (must exceed text width)
   const roleLabels = roles.slice(0, labelCount)
-    .map((r, i) => { const p = projectCamera(i, TERRAIN.roleLabelRow + rOff, 0, c); return { id: r.id, name: r.name.length > 22 ? r.name.slice(0, 21) + "…" : r.name, x: p.x, y: p.y, angle: axisDir }; })
+    .map((r, i) => { const p = projectCamera(i, TERRAIN.roleLabelRow + rOff, 0, c); return { id: r.id, name: r.name.length > 13 ? r.name.slice(0, 12) + "…" : r.name, x: p.x, y: p.y, angle: axisDir }; })
     .reduce<TerrainScene["roleLabels"]>((kept, lab) => {
-      const last = kept[kept.length - 1];
-      if (!last || Math.hypot(lab.x - last.x, lab.y - last.y) >= 24) kept.push(lab);
+      // Greedy by staffing priority (roles arrive most-staffed first); keep a label
+      // only if it clears EVERY already-kept one (not just the previous), so the
+      // wide angled text never piles up. Zooming spreads the axis → more appear.
+      if (kept.every((k) => Math.hypot(lab.x - k.x, lab.y - k.y) >= RGAP)) kept.push(lab);
       return kept;
     }, []);
 
@@ -953,7 +987,7 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
     front: projectCamera(R - 0.5, Cf - 0.5 + rOff, 0, c), left: projectCamera(-0.5, Cf - 0.5 + rOff, 0, c),
   };
 
-  return { width: W, height: H, bars, shadows, lattice, folderLabels, roleLabels, extraRoles: R - labelCount, compass, groundCorners };
+  return { width: W, height: H, bars, shadows, lattice, folderLabels, roleLabels, extraRoles: R - roleLabels.length, compass, groundCorners, hiddenFolders };
 }
 
 // ===========================================================================

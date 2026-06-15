@@ -52,12 +52,19 @@ function fixture(id: string, folders: [string, string][], roles: [string, string
 
 describe("rankForTier", () => {
   it("maps each known tier to its ordinal", () => {
+    // Canonical ACC levels (View / Create / Edit / Manage incl. Publish markups).
     expect(rankForTier("View Only")).toBe(1);
     expect(rankForTier("View+Download")).toBe(2);
-    expect(rankForTier("Upload Only")).toBe(2);
-    expect(rankForTier("View+Download+Upload")).toBe(3);
-    expect(rankForTier("View+Download+Upload+Edit")).toBe(4);
-    expect(rankForTier("Full Controller")).toBe(5);
+    expect(rankForTier("View+Download+Publish markups")).toBe(3);
+    expect(rankForTier("View+Download+Publish markups+Upload")).toBe(4);
+    expect(rankForTier("View+Download+Publish markups+Upload+Edit")).toBe(5);
+    expect(rankForTier("Full administrative controls")).toBe(6);
+    // Legacy aliases must still resolve, so any not-yet-remigrated row keeps its
+    // true level instead of silently falling back to rank 1.
+    expect(rankForTier("Upload Only")).toBe(4);
+    expect(rankForTier("View+Download+Upload")).toBe(4);
+    expect(rankForTier("View+Download+Upload+Edit")).toBe(5);
+    expect(rankForTier("Full Controller")).toBe(6);
   });
   it("falls back to rank 1 for an unknown tier", () => {
     expect(rankForTier("Mystery")).toBe(1);
@@ -75,17 +82,17 @@ describe("colorForRank", () => {
 });
 
 describe("TIER_COLORS ramp", () => {
-  it("defines a distinct colour for every rank 1..5", () => {
-    const vals = [1, 2, 3, 4, 5].map((r) => TIER_COLORS[r]);
-    expect(new Set(vals).size).toBe(5);
+  it("defines a distinct colour for every rank 1..6", () => {
+    const vals = [1, 2, 3, 4, 5, 6].map((r) => TIER_COLORS[r]);
+    expect(new Set(vals).size).toBe(6);
     for (const v of vals) expect(v).toMatch(/^#[0-9a-f]{6}$/i);
   });
-  it("starts cool (rank 1) and ends warm/gold (rank 5)", () => {
+  it("starts cool (rank 1) and ends warm/gold (rank 6)", () => {
     const hex = (s: string) => parseInt(s.slice(1), 16);
-    const r1 = hex(TIER_COLORS[1]), r5 = hex(TIER_COLORS[5]);
+    const r1 = hex(TIER_COLORS[1]), r6 = hex(TIER_COLORS[6]);
     const red = (n: number) => (n >> 16) & 255, blue = (n: number) => n & 255;
-    expect(red(r5)).toBeGreaterThan(red(r1));   // warmer at the top
-    expect(blue(r1)).toBeGreaterThan(blue(r5)); // cooler at the bottom
+    expect(red(r6)).toBeGreaterThan(red(r1));   // warmer at the top
+    expect(blue(r1)).toBeGreaterThan(blue(r6)); // cooler at the bottom
   });
 });
 
@@ -96,6 +103,7 @@ describe("tierTextColor", () => {
     expect(tierTextColor(3)).toBe("#ffffff");
     expect(tierTextColor(4)).toBe("#0b1620");
     expect(tierTextColor(5)).toBe("#0b1620");
+    expect(tierTextColor(6)).toBe("#0b1620");
   });
 });
 
@@ -106,7 +114,7 @@ describe("top-face gradients", () => {
     expect(topGradientId(5)).toBe("terrainTop-5");
   });
   it("publishes one gradient descriptor per rank with light->base stops", () => {
-    expect(TIER_GRADIENTS).toHaveLength(5);
+    expect(TIER_GRADIENTS).toHaveLength(Object.keys(TIER_COLORS).length); // one per defined rank — a missing one = see-through top face
     for (const g of TIER_GRADIENTS) {
       expect(g.id).toBe(topGradientId(g.rank));
       expect(g.from).toMatch(/^#[0-9a-f]{6}$/i); // brighter top stop
@@ -531,7 +539,10 @@ describe("buildCameraScene", () => {
     expect(s.bars[0].row).toBeDefined();
     expect(s.width).toBe(600);
     expect(s.height).toBe(360);
-    expect(s.folderLabels).toHaveLength(2);
+    // Folder labels are collision-pruned (rows can project closer than the min gap),
+    // so a small terrain may show fewer labels than folders — just never zero/over.
+    expect(s.folderLabels.length).toBeGreaterThan(0);
+    expect(s.folderLabels.length).toBeLessThanOrEqual(2);
     expect(s.compass.folder).toBeDefined();
   });
 

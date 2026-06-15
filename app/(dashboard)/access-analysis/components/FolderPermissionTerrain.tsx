@@ -13,6 +13,7 @@ import {
   HOME_PITCH,
   MIN_PITCH,
   MAX_PITCH,
+  STEP,
   TIER_LEGEND,
   TIER_COLORS,
   TIER_GRADIENTS,
@@ -36,8 +37,23 @@ const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
 const VIEW_H = 520; // fixed stage height (px)
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
+/** Blend #rrggbb `hex` toward #rrggbb `target` by t (0 = hex, 1 = target).
+ *  Used to desaturate inheritor bars toward neutral while keeping their tier hue. */
+function mixHex(hex: string, target: string, t: number): string {
+  const a = parseInt(hex.slice(1), 16), b = parseInt(target.slice(1), 16);
+  const ch = (s: number) => { const ca = (a >> s) & 255, cb = (b >> s) & 255; return Math.round(ca + (cb - ca) * t); };
+  return `#${((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1)}`;
+}
+
 interface Theme {
   ink: string; sub: string; grid: string; connector: string; hot: string; shadow: string; topEdge: string;
+  /** Dark seam stroked around every bar face so overlapping bars stay distinct. */
+  edge: string;
+  /** Solid floor plane fill + outline, so "ground level" is unambiguous. */
+  ground: string; groundEdge: string;
+  /** Halo behind labels so they stay legible over the bars. */
+  halo: string;
+  dark: boolean;
 }
 interface SceneEntry { scene: TerrainScene; source: FolderTerrainData; label?: string; labelX?: number; labelY?: number; }
 interface StageView { scenes: SceneEntry[]; connectors: { x1: number; y1: number; x2: number; y2: number }[]; metric: Metric; empty: string | null; }
@@ -103,7 +119,7 @@ function useCamera(viewport: { w: number; h: number }) {
   const wheelZoom = useCallback((clientX: number, clientY: number, deltaY: number, rect: DOMRect) => {
     const cx = clientX - rect.left, cy = clientY - rect.top;
     const c = camRef.current;
-    const k = clamp(c.scale * Math.exp(-deltaY * 0.0012), 0.3, 4) / c.scale;
+    const k = clamp(c.scale * Math.exp(-deltaY * 0.0012), 0.16, 4) / c.scale;
     apply({ scale: c.scale * k, anchorX: cx - (cx - c.anchorX) * k, anchorY: cy - (cy - c.anchorY) * k });
   }, [apply]);
 
@@ -136,9 +152,9 @@ function useCamera(viewport: { w: number; h: number }) {
 
   // Instant reframe — used when the active data set changes (grow-in + cross-fade
   // cover the visual transition; a camera tween here would fight them).
-  const resetTo = useCallback((pivotCol: number, pivotRow: number) => {
+  const resetTo = useCallback((pivotCol: number, pivotRow: number, scale = 1) => {
     if (tweenRaf.current) { cancelAnimationFrame(tweenRaf.current); tweenRaf.current = null; }
-    camRef.current = { pivotCol, pivotRow, yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1, anchorX: viewport.w / 2, anchorY: viewport.h / 2 };
+    camRef.current = { pivotCol, pivotRow, yaw: HOME_YAW, pitch: HOME_PITCH, scale, anchorX: viewport.w / 2, anchorY: viewport.h / 2 };
     setCam({ ...camRef.current });
   }, [viewport.w, viewport.h]);
 
@@ -192,13 +208,18 @@ export function FolderPermissionTerrain({
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
   const theme: Theme = {
-    ink: dark ? "#e4e4e7" : "#27272a",
+    ink: dark ? "#f1f1f4" : "#1f2024",
     sub: dark ? "#a1a1aa" : "#6b7280",
     grid: dark ? "rgba(161,161,170,0.10)" : "rgba(82,82,91,0.09)",
     connector: dark ? "rgba(161,161,170,0.45)" : "rgba(82,82,91,0.4)",
     hot: dark ? "#fafafa" : "#18181b",
-    shadow: dark ? "rgba(0,0,0,0.34)" : "rgba(15,12,35,0.13)",
-    topEdge: dark ? "rgba(255,255,255,0.16)" : "rgba(255,255,255,0.42)",
+    shadow: dark ? "rgba(0,0,0,0.5)" : "rgba(15,12,35,0.22)",
+    topEdge: dark ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.62)",
+    edge: dark ? "rgba(0,0,0,0.62)" : "rgba(24,27,38,0.42)",
+    ground: dark ? "#191c28" : "#e4e8f0",        // opaque floor — nothing shows through
+    groundEdge: dark ? "rgba(150,170,210,0.28)" : "rgba(40,55,90,0.24)",
+    halo: dark ? "rgba(6,6,9,0.72)" : "rgba(255,255,255,0.78)",
+    dark,
   };
 
   const [mode, setMode] = useState<Mode>("single");
@@ -281,8 +302,9 @@ export function FolderPermissionTerrain({
     if (!dataKey || dataKey === lastKey.current) return;
     lastKey.current = dataKey;
     const p = defaultPivot(mode, single, overview, compareDatas);
-    resetTo(p.col, p.row);
-  }, [dataKey, mode, single, overview, compareDatas, resetTo]);
+    const { R, Cf } = activeDims(mode, single, overview, compareDatas);
+    resetTo(p.col, p.row, fitScale(R, Cf, viewport.w, viewport.h));
+  }, [dataKey, mode, single, overview, compareDatas, resetTo, viewport.w, viewport.h]);
 
   // Re-centre the anchor when the stage is measured / resized (keeps orbit+zoom).
   useEffect(() => { framePivot(); }, [viewport.w, viewport.h, framePivot]);
@@ -301,7 +323,9 @@ export function FolderPermissionTerrain({
               )}
               {single && (
                 <p className="text-xs text-muted-foreground">
-                  {officeLabel(single.office)} · {single.folders.length} folders · {single.roles.length} roles · {single.cells.length} role-permissions
+                  {officeLabel(single.office)} · {single.folders.length} folders
+                  {(() => { const inh = single.folders.filter((f) => f.inherited).length; return inh > 0 ? ` (${single.folders.length - inh} changed · ${inh} inherited)` : ""; })()}
+                  {" · "}{single.roles.length} roles
                   {single.maxUserCount > 0 ? " · height = users in role" : " · height = permission level"}
                 </p>
               )}
@@ -362,14 +386,31 @@ export function FolderPermissionTerrain({
 // ---------------------------------------------------------------------------
 const centerPivot = (R: number, Cf: number) => ({ col: (R - 1) / 2, row: (Cf - 1) / 2 });
 
+/** Grid dimensions of the active view (role columns × folder rows). */
+function activeDims(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[]): { R: number; Cf: number } {
+  if (mode === "single" && single) return { R: single.roles.length, Cf: single.folders.length };
+  if (mode === "overview" && overview) return { R: overview.roles.length, Cf: overview.folders.length };
+  if (mode === "compare" && compareDatas.length >= 2) { const axes = buildSharedAxes(compareDatas); return { R: axes.roles.length, Cf: axes.folders.length }; }
+  return { R: 1, Cf: 1 };
+}
+
 function defaultPivot(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[]) {
-  if (mode === "single" && single) return centerPivot(single.roles.length, single.folders.length);
-  if (mode === "overview" && overview) return centerPivot(overview.roles.length, overview.folders.length);
-  if (mode === "compare" && compareDatas.length >= 2) {
-    const axes = buildSharedAxes(compareDatas);
-    return centerPivot(axes.roles.length, axes.folders.length);
-  }
-  return { col: 0, row: 0 };
+  const { R, Cf } = activeDims(mode, single, overview, compareDatas);
+  return R > 0 && Cf > 0 ? centerPivot(R, Cf) : { col: 0, row: 0 };
+}
+
+/**
+ * Default zoom that frames the whole footprint at the home angle. Only ever zooms
+ * OUT (capped at 1), so small terrains keep their natural size while a deep field
+ * (e.g. the template's 177 folders) loads fully visible — zoom in then reveals
+ * more labels (level-of-detail).
+ */
+function fitScale(R: number, Cf: number, vw: number, vh: number): number {
+  const k = Math.SQRT1_2; // sin = cos at the 45° home yaw
+  const sp = Math.sin(HOME_PITCH), cp = Math.cos(HOME_PITCH);
+  const spanW = Math.max(1, (R + Cf) * k * STEP);
+  const spanH = Math.max(1, (R + Cf) * k * sp * STEP + 90 * cp);
+  return Math.max(0.16, Math.min((vw * 0.86) / spanW, (vh * 0.82) / spanH, 1));
 }
 
 function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean, growth: number): StageView {
@@ -434,11 +475,18 @@ function SceneStage({
   camApi: ReturnType<typeof useCamera>;
   dataKey: string;
 }) {
-  const bg = dark
-    ? "radial-gradient(120% 90% at 50% 0%, rgba(124,58,237,0.10), transparent 60%)"
-    : "radial-gradient(120% 90% at 50% 0%, rgba(124,58,237,0.06), transparent 60%)";
+  // Base fill behind the SVG (the SVG paints the layered atmosphere on top).
+  const bg = dark ? "#070709" : "#e2e5ee";
   const compass = view.scenes[0]?.scene.compass;
+  const hiddenFolders = view.scenes[0]?.scene.hiddenFolders ?? 0;
   const svgRef = useRef<SVGSVGElement | null>(null);
+
+  // Centre of the footprint → where the floor glow sits.
+  const floor = (() => {
+    const gc = view.empty ? null : view.scenes[0]?.scene.groundCorners;
+    if (!gc) return null;
+    return { x: (gc.back.x + gc.front.x + gc.left.x + gc.right.x) / 4, y: (gc.back.y + gc.front.y + gc.left.y + gc.right.y) / 4 };
+  })();
 
   // Non-passive wheel listener so we can preventDefault (page would scroll otherwise).
   const { wheelZoom } = camApi;
@@ -469,7 +517,8 @@ function SceneStage({
         onMouseLeave={() => setHover(null)}
         {...camApi.handlers}
       >
-        <TerrainDefs />
+        <TerrainDefs dark={dark} />
+        <Backdrop w={viewport.w} h={viewport.h} floor={floor} />
         {view.empty ? (
           <text x={viewport.w / 2} y={viewport.h / 2} textAnchor="middle" fontSize={13} fill={theme.sub}>{view.empty}</text>
         ) : (
@@ -502,6 +551,9 @@ function SceneStage({
             </g>
           </>
         )}
+        {/* Atmosphere on top: vignette focuses the centre, grain adds render-viewport texture. */}
+        <rect x={0} y={0} width={viewport.w} height={viewport.h} fill="url(#terrainVignette)" pointerEvents="none" />
+        <rect x={0} y={0} width={viewport.w} height={viewport.h} filter="url(#terrainGrain)" fill="#000" pointerEvents="none" />
       </svg>
 
       <Tooltip hover={hover} width={viewport.w} metric={view.metric} />
@@ -520,7 +572,8 @@ function SceneStage({
             camApi.tweenTo({
               pivotCol: (p.source.roles.length - 1) / 2,
               pivotRow: (p.source.folders.length - 1) / 2,
-              yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1,
+              yaw: HOME_YAW, pitch: HOME_PITCH,
+              scale: fitScale(p.source.roles.length, p.source.folders.length, viewport.w, viewport.h),
               anchorX: viewport.w / 2, anchorY: viewport.h / 2,
             });
           }}
@@ -532,6 +585,11 @@ function SceneStage({
       <div className="pointer-events-none absolute left-4 top-2 text-[11px] text-muted-foreground/70">
         Scroll-drag to pan · Shift+scroll-drag to orbit · scroll to zoom · click a square to focus
       </div>
+      {hiddenFolders > 0 && (
+        <div className="pointer-events-none absolute bottom-3 left-3 rounded-full border border-border bg-card/80 px-2.5 py-1 text-[11px] font-medium text-muted-foreground shadow-sm backdrop-blur">
+          +{hiddenFolders} more folder{hiddenFolders === 1 ? "" : "s"} · zoom in to reveal labels
+        </div>
+      )}
     </div>
   );
 }
@@ -551,8 +609,12 @@ function SceneLayer({
   draggedRef: React.MutableRefObject<{ dragged: boolean }>;
 }) {
   const { scene, source } = entry;
+  const g = scene.groundCorners;
+  const groundPts = `${g.back.x},${g.back.y} ${g.right.x},${g.right.y} ${g.front.x},${g.front.y} ${g.left.x},${g.left.y}`;
   return (
     <g>
+      {/* Solid ground plane → establishes "ground level" the bars stand on. */}
+      <polygon points={groundPts} fill={theme.ground} stroke={theme.groundEdge} strokeWidth={1} strokeLinejoin="round" pointerEvents="none" />
       {scene.lattice.map((l, i) => (
         <line key={`g${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={theme.grid} strokeWidth={1} />
       ))}
@@ -564,24 +626,29 @@ function SceneLayer({
         </g>
       )}
 
+      {/* Bars in ONE back-to-front (painter's) pass so occlusion is correct. Every
+          bar shows its permission-tier colour and is hover/click-able; inheritors
+          are desaturated + flat (recessive), explicitly-changed folders are glossy.
+          A dark edge seam on every face keeps overlapping bars separated. */}
       {scene.bars.map((b, i) => {
         const active = (picked ? picked.cell : hover?.cell) ?? null;
         const isHot = !!active && active.folderId === b.cell.folderId && active.roleId === b.cell.roleId
           && (picked ? picked.source.projectId === source.projectId : true);
+        const inh = !!b.inherited;
         return (
           <g
             key={`b${i}`}
             onMouseEnter={() => setHover({ cell: b.cell, x: b.cx, y: b.cy })}
             onClick={() => { if (!draggedRef.current.dragged) { setPicked({ cell: b.cell, source }); onPick(b); } }}
-            style={{ cursor: "pointer", transition: "transform .14s ease", transform: isHot ? "translateY(-4px)" : undefined }}
+            style={{ cursor: "pointer", transition: "transform .14s ease", transform: isHot ? "translateY(-5px)" : undefined }}
           >
             {b.faces.map((f, fi) => (
               <polygon
                 key={fi}
                 points={f.points}
-                fill={f.kind === "top" ? `url(#${topGradientId(b.cell.rank)})` : f.fill}
-                stroke={f.kind === "top" ? (isHot ? theme.hot : theme.topEdge) : "none"}
-                strokeWidth={f.kind === "top" ? (isHot ? 1.8 : 0.8) : 0}
+                fill={inh ? mixHex(f.fill, "#000000", 0.16) : (f.kind === "top" ? `url(#${topGradientId(b.cell.rank)})` : f.fill)}
+                stroke={f.kind === "top" ? (isHot ? theme.hot : (inh ? theme.edge : theme.topEdge)) : theme.edge}
+                strokeWidth={f.kind === "top" ? (isHot ? 1.8 : (inh ? 0.5 : 0.9)) : 0.5}
                 strokeLinejoin="round"
               />
             ))}
@@ -590,14 +657,25 @@ function SceneLayer({
         );
       })}
 
-      {showFolderLabels && scene.folderLabels.map((f) => (
-        <g key={f.id}>
-          <line x1={f.textX + 2} y1={f.textY} x2={f.ax} y2={f.ay} stroke={theme.grid} strokeWidth={1} />
-          <text x={f.textX} y={f.textY} textAnchor="end" fontSize={10} fill={theme.ink} dominantBaseline="middle">{f.name}</text>
-        </g>
-      ))}
+      {showFolderLabels && scene.folderLabels.map((f) => {
+        const inh = !!f.inherited;
+        return (
+          <g key={f.id} opacity={inh ? 0.55 : 1}>
+            <line x1={f.textX + 2} y1={f.textY} x2={f.ax} y2={f.ay} stroke={theme.grid} strokeWidth={1} />
+            <text
+              x={f.textX} y={f.textY} textAnchor="end"
+              fontSize={inh ? 9.5 : 10.5} fontWeight={inh ? 400 : 600}
+              fill={inh ? theme.sub : theme.ink}
+              stroke={theme.halo} strokeWidth={1.8} paintOrder="stroke" strokeLinejoin="round"
+              dominantBaseline="middle"
+            >{f.name}</text>
+          </g>
+        );
+      })}
       {showRoleLabels && scene.roleLabels.map((r) => (
-        <text key={r.id} x={r.x} y={r.y} fontSize={9} fill={theme.sub} textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
+        <text key={r.id} x={r.x} y={r.y} fontSize={9} fill={theme.sub}
+          stroke={theme.halo} strokeWidth={1.6} paintOrder="stroke" strokeLinejoin="round"
+          textAnchor="start" transform={`rotate(${r.angle} ${r.x} ${r.y})`}>{r.name}</text>
       ))}
 
       {entry.label && entry.labelX != null && entry.labelY != null && (
@@ -626,19 +704,79 @@ function FadingScene({ k, children }: { k: string; children: React.ReactNode }) 
   return <g data-scene-fade style={{ opacity: op, transition: "opacity .28s ease" }}>{children}</g>;
 }
 
-function TerrainDefs() {
+function TerrainDefs({ dark }: { dark: boolean }) {
   return (
     <defs>
-      <filter id="terrainSoftShadow" x="-40%" y="-40%" width="180%" height="180%">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" />
+      {/* Tight contact shadow — small blur so bars read as grounded without smudging. */}
+      <filter id="terrainSoftShadow" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur in="SourceGraphic" stdDeviation="2.6" />
       </filter>
+
+      {/* Film grain — breaks up flat gradients so the stage reads like a render viewport. */}
+      <filter id="terrainGrain" x="0%" y="0%" width="100%" height="100%">
+        <feTurbulence type="fractalNoise" baseFrequency="0.82" numOctaves="2" stitchTiles="stitch" />
+        <feColorMatrix type="saturate" values="0" />
+        <feComponentTransfer><feFuncA type="linear" slope={dark ? 0.03 : 0.02} /></feComponentTransfer>
+      </filter>
+
+      {/* Vertical stage gradient (sky → studio floor). */}
+      <linearGradient id="terrainSky" x1="0" y1="0" x2="0" y2="1">
+        {dark ? (
+          <>
+            <stop offset="0%" stopColor="#16161f" />
+            <stop offset="52%" stopColor="#0c0c12" />
+            <stop offset="100%" stopColor="#070709" />
+          </>
+        ) : (
+          <>
+            <stop offset="0%" stopColor="#f8f9fc" />
+            <stop offset="58%" stopColor="#eef0f6" />
+            <stop offset="100%" stopColor="#e2e5ee" />
+          </>
+        )}
+      </linearGradient>
+
+      {/* Key-light pool — a cool glow behind/above the terrain. */}
+      <radialGradient id="terrainKey" cx="50%" cy="20%" r="78%">
+        <stop offset="0%" stopColor={dark ? "rgba(94,234,212,0.16)" : "rgba(45,212,191,0.13)"} />
+        <stop offset="42%" stopColor={dark ? "rgba(56,189,248,0.07)" : "rgba(56,189,248,0.05)"} />
+        <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+      </radialGradient>
+
+      {/* Vignette — darken the corners to focus the centre. */}
+      <radialGradient id="terrainVignette" cx="50%" cy="44%" r="78%">
+        <stop offset="52%" stopColor="rgba(0,0,0,0)" />
+        <stop offset="100%" stopColor={dark ? "rgba(0,0,0,0.5)" : "rgba(30,33,45,0.13)"} />
+      </radialGradient>
+
+      {/* Floor glow under the footprint, grounding the bars. */}
+      <radialGradient id="terrainFloor" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor={dark ? "rgba(94,234,212,0.18)" : "rgba(45,212,191,0.16)"} />
+        <stop offset="70%" stopColor={dark ? "rgba(56,189,248,0.05)" : "rgba(56,189,248,0.04)"} />
+        <stop offset="100%" stopColor="rgba(0,0,0,0)" />
+      </radialGradient>
+
+      {/* Per-tier glossy top faces — wide bright→deep ramp angled for a diagonal sheen. */}
       {TIER_GRADIENTS.map((g) => (
-        <linearGradient key={g.id} id={g.id} x1="0" y1="0" x2="0" y2="1">
+        <linearGradient key={g.id} id={g.id} x1="0.1" y1="0" x2="0.5" y2="1">
           <stop offset="0%" stopColor={g.from} />
           <stop offset="100%" stopColor={g.to} />
         </linearGradient>
       ))}
     </defs>
+  );
+}
+
+/** Layered atmospheric backdrop drawn behind the terrain (sky + key light + floor glow). */
+function Backdrop({ w, h, floor }: { w: number; h: number; floor: { x: number; y: number } | null }) {
+  return (
+    <g pointerEvents="none">
+      <rect x={0} y={0} width={w} height={h} fill="url(#terrainSky)" />
+      <rect x={0} y={0} width={w} height={h} fill="url(#terrainKey)" />
+      {floor && (
+        <ellipse cx={floor.x} cy={floor.y} rx={Math.min(w * 0.46, 560)} ry={Math.min(h * 0.34, 190)} fill="url(#terrainFloor)" />
+      )}
+    </g>
   );
 }
 
@@ -688,11 +826,17 @@ function Tooltip({ hover, width, metric }: { hover: Hover; width: number; metric
       className="pointer-events-none absolute z-10 rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
       style={{ left: Math.min(hover.x + 12, width - 210), top: Math.max(4, hover.y - 10) }}
     >
-      <div className="font-semibold text-foreground">{hover.cell.folderName}</div>
+      <div className="flex items-center gap-1.5">
+        <span className="font-semibold text-foreground">{hover.cell.folderName}</span>
+        {hover.cell.inherited && (
+          <span className="rounded-full bg-muted px-1.5 py-px text-[10px] font-medium text-muted-foreground">inherited</span>
+        )}
+      </div>
       <div className="text-muted-foreground">{hover.cell.roleName}</div>
       <div className="mt-1 flex items-center gap-1.5">
         <span className="inline-block h-2.5 w-2.5 rounded-sm" style={{ background: colorForRank(hover.cell.rank) }} />
         <span className="text-foreground">{metric === "projects" ? "typically " : ""}{hover.cell.tier}</span>
+        {hover.cell.inherited && <span className="text-muted-foreground">· from parent</span>}
       </div>
       <div className="text-muted-foreground">{line}</div>
     </div>
@@ -812,12 +956,17 @@ function ProjectMultiSelect({ projects, selected, onChange, disabled }: { projec
 
 function TierLegend({ ink }: { ink: string }) {
   return (
-    <div className="flex items-center gap-2 text-[11px]" style={{ color: ink }}>
+    <div className="flex flex-wrap items-center gap-2 text-[11px]" style={{ color: ink }}>
       <span className="uppercase tracking-wider">Less</span>
       <div className="flex items-center gap-0.5">
         {TIER_LEGEND.map((t) => (<span key={t.rank} title={t.label} className="inline-block h-3 w-5 rounded-sm" style={{ background: TIER_COLORS[t.rank] }} />))}
       </div>
       <span className="uppercase tracking-wider">Full control</span>
+      <span className="mx-0.5 h-3 w-px opacity-25" style={{ background: "currentColor" }} aria-hidden />
+      <span className="inline-flex items-center gap-1" title="Folders that simply inherit their parent's permissions are dimmed; the bright bars are deliberate access changes.">
+        <span className="inline-block h-3 w-5 rounded-sm" style={{ background: TIER_COLORS[3], opacity: 0.28 }} />
+        <span>inherited</span>
+      </span>
     </div>
   );
 }

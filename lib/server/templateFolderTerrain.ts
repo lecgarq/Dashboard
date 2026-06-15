@@ -21,17 +21,19 @@ export interface ChangedTerrainInput {
 }
 
 /**
- * Build a folder-permission terrain that shows EVERY folder (level ≥ 2 under
- * "Project Files") whose role→tier permission set differs from its parent — i.e.
- * folders with *explicitly changed* permissions. Folders that merely inherit
- * their parent's permissions (identical set) are excluded.
+ * Build a folder-permission terrain over EVERY folder (level ≥ 2 under "Project
+ * Files") that carries a permission, at any nesting depth. Each folder is tagged
+ * `inherited` when its role→tier permission set is identical to its parent's (a
+ * pure inheritor) and `depth` (0 = top-level under Project Files, increasing with
+ * nesting). The panel renders inheritors muted so the *explicitly changed*
+ * folders — where someone made a deliberate access decision — stand out.
  *
  * Inheritance is detected by comparing each folder's permission signature
  * (sorted "roleId|permType" pairs) to its parent's. Bar height = number of the
  * given roster members holding each role (roles without roster members render at
  * the floor height). Pure — no I/O — so it is unit-tested.
  */
-export function buildChangedFolderTerrain(input: ChangedTerrainInput): FolderTerrainData | null {
+export function buildFolderTerrain(input: ChangedTerrainInput): FolderTerrainData | null {
   const { folders, perms, roster } = input;
   const byId = new Map(folders.map((f) => [f.id, f]));
 
@@ -57,26 +59,29 @@ export function buildChangedFolderTerrain(input: ChangedTerrainInput): FolderTer
     if (arr) arr.push(f); else childrenOf.set(f.parentId, [f]);
   }
 
-  // BFS from Project Files (level 1). Keep level ≥2 folders whose perm signature
-  // differs from their parent's (explicit override), excluding pure inheritors.
-  const changed: Array<{ id: string; name: string; fullPath: string | null }> = [];
+  // BFS from Project Files (level 1). Keep every level ≥2 folder that carries a
+  // permission, tagging each as `inherited` (perm signature identical to its
+  // parent's — no explicit override) and with its nesting `depth` (level − 2).
+  type FolderRow = { id: string; name: string; fullPath: string | null; inherited: boolean; depth: number };
+  const all: FolderRow[] = [];
   const queue: Array<{ f: (typeof folders)[number]; level: number }> = [{ f: projectFiles, level: 1 }];
   while (queue.length > 0) {
     const { f, level } = queue.shift()!;
     if (level >= 2 && permsByFolder.has(f.id)) {
       const parentSig = f.parentId ? sig(f.parentId) : "";
-      if (sig(f.id) !== parentSig) changed.push({ id: f.id, name: f.name, fullPath: f.fullPath });
+      all.push({ id: f.id, name: f.name, fullPath: f.fullPath, inherited: sig(f.id) === parentSig, depth: level - 2 });
     }
     for (const ch of childrenOf.get(f.id) ?? []) queue.push({ f: ch, level: level + 1 });
   }
-  if (changed.length === 0) return null;
+  if (all.length === 0) return null;
 
-  // Order by full path so a folder and its changed descendants sit together.
-  changed.sort((a, b) => (a.fullPath ?? a.name).localeCompare(b.fullPath ?? b.name));
+  // Order by full path so each folder sits next to its descendants (a depth-first
+  // walk down the folder axis), keeping the hierarchy legible.
+  all.sort((a, b) => (a.fullPath ?? a.name).localeCompare(b.fullPath ?? b.name));
 
-  // Roles present on the changed folders, ordered by how many of them use the role.
+  // Roles present on any folder, ordered by how many folders use the role.
   const roleUse = new Map<string, { name: string; folders: number }>();
-  for (const cf of changed) {
+  for (const cf of all) {
     for (const [rid, v] of permsByFolder.get(cf.id) ?? []) {
       const e = roleUse.get(rid) ?? { name: v.roleName, folders: 0 };
       e.folders += 1;
@@ -98,7 +103,7 @@ export function buildChangedFolderTerrain(input: ChangedTerrainInput): FolderTer
   for (const role of roles) usersByRole[role.id] = rosterByRole.get(role.name) ?? [];
 
   const cells: TerrainCell[] = [];
-  for (const cf of changed) {
+  for (const cf of all) {
     for (const [rid, v] of permsByFolder.get(cf.id) ?? []) {
       cells.push({
         folderId: cf.id,
@@ -108,6 +113,7 @@ export function buildChangedFolderTerrain(input: ChangedTerrainInput): FolderTer
         tier: v.permType,
         rank: rankForTier(v.permType),
         userCount: usersByRole[rid]?.length ?? 0,
+        inherited: cf.inherited,
       });
     }
   }
@@ -118,7 +124,7 @@ export function buildChangedFolderTerrain(input: ChangedTerrainInput): FolderTer
     projectId: input.projectId,
     projectName: input.projectName,
     office: input.office ?? "",
-    folders: changed.map((c) => ({ id: c.id, name: c.name })),
+    folders: all.map((c) => ({ id: c.id, name: c.name, inherited: c.inherited, depth: c.depth })),
     roles,
     cells,
     usersByRole,
@@ -150,7 +156,7 @@ export async function loadTemplateFolderTerrain(): Promise<FolderTerrainData | n
   ]);
   if (!project) return null;
 
-  return buildChangedFolderTerrain({
+  return buildFolderTerrain({
     projectId: TEMPLATE_MTY_ID,
     projectName: project.name ?? TEMPLATE_MTY_NAME,
     folders,

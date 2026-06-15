@@ -102,7 +102,7 @@ export function TemplateAnalysisCharts({
 
       <Reveal>
         <section className="flex flex-col gap-3">
-          <SectionHeader title="Folder permission terrain" subtitle="Every folder (2nd level down) whose permissions are explicitly changed from its parent — inherited folders excluded. Colour = permission tier, height = members in that role. Drag to orbit, scroll to zoom, hover a bar for the folder." />
+          <SectionHeader title="Folder permission terrain" subtitle="Every folder under Project Files, at any depth. Bright bars are folders whose permissions were deliberately changed from their parent; dimmed bars simply inherit. Colour = permission tier, height = members in that role. Drag to orbit, scroll to zoom, hover a bar for the folder." />
           <FolderPermissionTerrain
             projects={[terrainOption]}
             initial={terrain}
