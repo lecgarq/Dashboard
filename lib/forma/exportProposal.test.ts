@@ -25,7 +25,7 @@ describe("exportProposal", () => {
     const parsed = JSON.parse(toJson(input));
     expect(parsed.template.name).toBe("ACC Template MTY");
     expect(parsed.matrix.architect.a).toBe("View+Download");
-    expect(parsed.tierActions["Full Controller"]).toContain("CONTROL");
+    expect(parsed.tierActions["Full administrative controls"]).toContain("CONTROL");
   });
 
   it("toCsv has a header row and quotes fields with commas", () => {

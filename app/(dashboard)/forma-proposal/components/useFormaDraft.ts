@@ -7,7 +7,7 @@ import {
 import {
   applyToSubtree, buildFolderIndex, type ExplicitMap, type FormaFolder,
 } from "@/lib/forma/inheritance";
-import type { FormaTier } from "@/lib/forma/tiers";
+import { migrateTier, type FormaTier } from "@/lib/forma/tiers";
 
 export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
   const index = useMemo(() => buildFolderIndex(folders), [folders]);
@@ -16,10 +16,20 @@ export function useFormaDraft(templateId: string, folders: FormaFolder[]) {
   );
   const [hydrated, setHydrated] = useState(false);
 
-  // Load once on mount (client only).
+  // Load once on mount (client only), migrating any legacy tier strings.
   useEffect(() => {
     const saved = parseDraft(localStorage.getItem(storageKey(templateId)));
-    setDraft(saved ?? emptyDraft(templateId, DEFAULT_FORMA_ROLES, new Date().toISOString()));
+    if (saved) {
+      const assignments: Record<string, Record<string, FormaTier>> = {};
+      for (const [roleId, folders] of Object.entries(saved.assignments)) {
+        const migrated: Record<string, FormaTier> = {};
+        for (const [folderId, tier] of Object.entries(folders)) migrated[folderId] = migrateTier(tier);
+        assignments[roleId] = migrated;
+      }
+      setDraft({ ...saved, assignments });
+    } else {
+      setDraft(emptyDraft(templateId, DEFAULT_FORMA_ROLES, new Date().toISOString()));
+    }
     setHydrated(true);
   }, [templateId]);
 

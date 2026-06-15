@@ -22,7 +22,7 @@ describe("draftStorage", () => {
 
   it("serialize → parse round-trips", () => {
     const d = emptyDraft("tpl", DEFAULT_FORMA_ROLES, NOW);
-    d.assignments = { architect: { root: "Full Controller" } };
+    d.assignments = { architect: { root: "Full administrative controls" } };
     expect(parseDraft(serializeDraft(d))).toEqual(d);
   });
 

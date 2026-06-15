@@ -42,8 +42,8 @@ describe("inheritance", () => {
 
   it("applyToSubtree stamps the folder and every descendant explicitly", () => {
     const index = buildFolderIndex(FOLDERS);
-    const next = applyToSubtree("a", "Full Controller", {}, index);
-    expect(next).toEqual({ a: "Full Controller", a1: "Full Controller", a2: "Full Controller" });
+    const next = applyToSubtree("a", "Full administrative controls", {}, index);
+    expect(next).toEqual({ a: "Full administrative controls", a1: "Full administrative controls", a2: "Full administrative controls" });
     // does not touch siblings/root
     expect(next.b).toBeUndefined();
     expect(next.root).toBeUndefined();
@@ -52,10 +52,10 @@ describe("inheritance", () => {
   it("applyToSubtree returns a new object (no mutation)", () => {
     const index = buildFolderIndex(FOLDERS);
     const prev = { b: "View Only" as const };
-    const next = applyToSubtree("a", "Full Controller", prev, index);
+    const next = applyToSubtree("a", "Full administrative controls", prev, index);
     expect(prev).toEqual({ b: "View Only" }); // unchanged
     expect(next.b).toBe("View Only"); // preserved
-    expect(next.a).toBe("Full Controller");
+    expect(next.a).toBe("Full administrative controls");
   });
 
   it("countExplicit counts set folders", () => {
