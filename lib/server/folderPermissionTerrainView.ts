@@ -11,6 +11,7 @@ import {
   type TerrainProjectOption,
   type TerrainUser,
 } from "@/app/(dashboard)/access-analysis/folderTerrain";
+import { resolveEffectiveTier } from "@/app/(dashboard)/access-analysis/folderInheritance";
 
 const TTL_MS = 5 * 60 * 1000;
 const mtySet = new Set(mtyAllowlist as string[]);
@@ -81,7 +82,7 @@ export async function loadFolderPermissionTerrain(
   const hit = terrainCache.get(projectId);
   if (!force && hit && Date.now() - hit.at < TTL_MS) return hit.data;
 
-  const [project, folders, perms, dcRoleUsers, liveRoleUsers] = await Promise.all([
+  const [project, folders, perms, parentPerms, dcRoleUsers, liveRoleUsers] = await Promise.all([
     db.accProject.findUnique({ where: { id: projectId }, select: { id: true, name: true } }),
     db.$queryRaw<Array<{ id: string; name: string }>>`
       SELECT f.id, f.name
@@ -90,15 +91,25 @@ export async function loadFolderPermissionTerrain(
       WHERE f."projectId" = ${projectId}
     `,
     db.$queryRaw<
-      Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string }>
+      Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string; n_actions: number }>
     >`
       SELECT fp."folderId" AS folder_id, fp."roleId" AS role_id,
-             r.name AS role_name, fp."permType" AS perm_type
+             r.name AS role_name, fp."permType" AS perm_type,
+             COALESCE(cardinality(fp.actions), 0)::int AS n_actions
       FROM "AccFolderPermission" fp
       JOIN "AccRole" r ON r.id = fp."roleId"
       JOIN "AccFolder" f ON f.id = fp."folderId"
       JOIN "AccFolder" parent ON f."parentId" = parent.id AND parent.name = 'Project Files'
       WHERE f."projectId" = ${projectId}
+    `,
+    // Parent ("Project Files") own grants per role — the source an inherited
+    // (empty-actions) child folder defers to instead of the "View Only" floor.
+    db.$queryRaw<Array<{ role_id: string; perm_type: string; n_actions: number }>>`
+      SELECT fp."roleId" AS role_id, fp."permType" AS perm_type,
+             COALESCE(cardinality(fp.actions), 0)::int AS n_actions
+      FROM "AccFolderPermission" fp
+      JOIN "AccFolder" f ON f.id = fp."folderId"
+      WHERE f."projectId" = ${projectId} AND f.name = 'Project Files'
     `,
     // DC snapshot user→role (broadest coverage; roleId is the same APS id space).
     db.$queryRaw<Array<{ role_id: string; name: string | null; email: string | null }>>`
@@ -153,15 +164,31 @@ export async function loadFolderPermissionTerrain(
     .map(([id, name]) => ({ id, name }))
     .sort((a, b) => userCountFor(b.id) - userCountFor(a.id) || a.name.localeCompare(b.name));
 
-  const cells: TerrainCell[] = perms.map((p) => ({
-    folderId: p.folder_id,
-    folderName: folders.find((f) => f.id === p.folder_id)?.name ?? p.folder_id,
-    roleId: p.role_id,
-    roleName: p.role_name,
-    tier: p.perm_type,
-    rank: rankForTier(p.perm_type),
-    userCount: userCountFor(p.role_id),
-  }));
+  // Strongest explicit "Project Files" grant per role — what an inherited
+  // (empty-actions) child folder adopts instead of the "View Only" floor.
+  const parentByRole = new Map<string, { permType: string; actionCount: number }>();
+  for (const pp of parentPerms) {
+    const cur = parentByRole.get(pp.role_id);
+    if (!cur || pp.n_actions > cur.actionCount) {
+      parentByRole.set(pp.role_id, { permType: pp.perm_type, actionCount: pp.n_actions });
+    }
+  }
+
+  const cells: TerrainCell[] = perms.map((p) => {
+    const eff = resolveEffectiveTier(
+      { permType: p.perm_type, actionCount: p.n_actions },
+      parentByRole.get(p.role_id),
+    );
+    return {
+      folderId: p.folder_id,
+      folderName: folders.find((f) => f.id === p.folder_id)?.name ?? p.folder_id,
+      roleId: p.role_id,
+      roleName: p.role_name,
+      tier: eff.tier,
+      rank: eff.rank,
+      userCount: userCountFor(p.role_id),
+    };
+  });
 
   const maxUserCount = orderedRoles.reduce((mx, r) => Math.max(mx, userCountFor(r.id)), 0);
 
