@@ -244,16 +244,39 @@ export async function loadFolderPermissionOverview(force = false): Promise<Folde
   const roleIds = roleRank.map((r) => r.role_id);
   const roleNameById = new Map(roleRank.map((r) => [r.role_id, r.role_name]));
 
-  // Per (folder, role, tier): how many distinct projects configure it.
+  // Per (folder, role, EFFECTIVE tier): how many distinct projects configure it.
+  // Each project's inherited L2 folders (empty actions) are resolved to their
+  // "Project Files" parent grant FIRST — the same rule as
+  // folderInheritance.resolveEffectiveTier — so the cross-project modal tier
+  // reflects real (inherited) access instead of the empty-actions "View Only" floor.
   const agg = folderNames.length && roleIds.length
     ? await db.$queryRaw<Array<{ folder_name: string; role_id: string; tier: string; projects: number }>>`
-        SELECT f.name AS folder_name, fp."roleId" AS role_id, fp."permType" AS tier,
-               COUNT(DISTINCT f."projectId")::int AS projects
-        FROM "AccFolderPermission" fp
-        JOIN "AccFolder" f ON f.id = fp."folderId"
-        JOIN "AccFolder" parent ON f."parentId" = parent.id AND parent.name = 'Project Files'
-        WHERE f.name IN (${Prisma.join(folderNames)}) AND fp."roleId" IN (${Prisma.join(roleIds)})
-        GROUP BY f.name, fp."roleId", fp."permType"
+        WITH parent_grants AS (
+          -- Strongest explicit "Project Files" grant per (project, role).
+          SELECT f."projectId" AS project_id, fp."roleId" AS role_id,
+                 (ARRAY_AGG(fp."permType" ORDER BY cardinality(fp.actions) DESC NULLS LAST))[1] AS parent_tier,
+                 MAX(COALESCE(cardinality(fp.actions), 0)) AS parent_n
+          FROM "AccFolderPermission" fp
+          JOIN "AccFolder" f ON f.id = fp."folderId"
+          WHERE f.name = 'Project Files'
+          GROUP BY f."projectId", fp."roleId"
+        ),
+        eff AS (
+          -- Each L2 cell's effective tier: own explicit grant, else the inherited
+          -- parent grant, else the View-Only floor.
+          SELECT f."projectId" AS project_id, f.name AS folder_name, fp."roleId" AS role_id,
+                 CASE WHEN COALESCE(cardinality(fp.actions), 0) > 0 THEN fp."permType"
+                      WHEN pg.parent_n > 0 THEN pg.parent_tier
+                      ELSE fp."permType" END AS tier
+          FROM "AccFolderPermission" fp
+          JOIN "AccFolder" f ON f.id = fp."folderId"
+          JOIN "AccFolder" parent ON f."parentId" = parent.id AND parent.name = 'Project Files'
+          LEFT JOIN parent_grants pg ON pg.project_id = f."projectId" AND pg.role_id = fp."roleId"
+          WHERE f.name IN (${Prisma.join(folderNames)}) AND fp."roleId" IN (${Prisma.join(roleIds)})
+        )
+        SELECT folder_name, role_id, tier, COUNT(DISTINCT project_id)::int AS projects
+        FROM eff
+        GROUP BY folder_name, role_id, tier
       `
     : [];
 
