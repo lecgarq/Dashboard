@@ -1,6 +1,7 @@
 import {
   Building2,
   ClipboardCheck,
+  FolderTree,
   LayoutDashboard,
   LayoutTemplate,
   PieChart,
@@ -30,6 +31,7 @@ export const MODULE_NAV_ITEMS: NavigationItem[] = [
   { href: "/users", label: "Users Directory", icon: Users, group: "Organization" },
   { href: "/access-analysis", label: "Access Analysis", icon: PieChart, group: "Organization" },
   { href: "/template-mty", label: "Template MTY", icon: LayoutTemplate, group: "Organization" },
+  { href: "/forma-proposal", label: "Forma Proposal", icon: FolderTree, group: "Organization" },
   { href: "/users/spatial-graph", label: "Spatial Graph", icon: Network, group: "Organization" },
   { href: "/sync-center", label: "Sync Center", icon: RefreshCw, group: "Organization" },
   { href: "/clash-detection", label: "Clash Detection", icon: Zap, module: "clash", group: "Wiki Bar" },
