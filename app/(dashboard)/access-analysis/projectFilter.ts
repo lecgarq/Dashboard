@@ -11,6 +11,8 @@ export interface ProjectRoleRow {
   projectId: string;
   projectName: string;
   roles: string[];
+  /** The member's company on this project (null/blank → "Unknown company"); drives the Users-by-company donut. */
+  company?: string | null;
 }
 
 /** Anything carrying a project id + name — the only fields the picker needs. */

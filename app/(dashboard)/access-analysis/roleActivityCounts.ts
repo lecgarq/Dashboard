@@ -38,11 +38,13 @@ export interface ActivityActorInput {
   count: number;
 }
 
-/** One shipped membership: the roles an actor holds on a project. */
+/** One shipped membership: the roles an actor holds on a project (and their company). */
 export interface MembershipRolesInput {
   projectId: string;
   email: string;
   roles: string[];
+  /** The actor's company on this project; feeds the Activity-by-company donut. */
+  company?: string | null;
 }
 
 const key = (email: string, projectId: string) => `${email}::${projectId}`;

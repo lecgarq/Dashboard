@@ -40,6 +40,7 @@ export default async function AccessAnalysisRoute() {
     projectId: v.projectId,
     projectName: v.projectName,
     roles: v.roles,
+    company: v.company,
   }));
   // Slim memberships for the Activity-by-role join: the actor's role(s) on each
   // project, keyed later by `email::projectId`. Derived from the instance view
@@ -48,6 +49,7 @@ export default async function AccessAnalysisRoute() {
     projectId: v.projectId,
     email: v.email,
     roles: v.roles,
+    company: v.company,
   }));
   return (
     // The dashboard <main> is fixed-height + overflow-hidden, so this page owns
