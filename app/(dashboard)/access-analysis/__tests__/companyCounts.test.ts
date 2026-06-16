@@ -3,7 +3,7 @@ import { summarizeCompanies, collapseCompanySlices, UNKNOWN_COMPANY } from "../c
 
 describe("summarizeCompanies", () => {
   it("returns an empty summary for no rows", () => {
-    expect(summarizeCompanies([])).toEqual({ slices: [], distinctCompanies: 0, total: 0 });
+    expect(summarizeCompanies([])).toEqual({ slices: [], distinctCompanies: 0, total: 0, usersByCompany: new Map() });
   });
 
   it("buckets memberships by company and tallies counts", () => {
@@ -32,6 +32,28 @@ describe("summarizeCompanies", () => {
     const s = summarizeCompanies([{}, { company: undefined }]);
     expect(s.slices).toEqual([{ name: UNKNOWN_COMPANY, value: 2 }]);
     expect(s.distinctCompanies).toBe(0);
+  });
+
+  it("collects the people behind each company bucket (seat count per person)", () => {
+    const s = summarizeCompanies([
+      { company: "Hermosillo", name: "Ana", email: "ana@x.com" },
+      { company: "Hermosillo", name: "Ana", email: "ana@x.com" }, // same person, 2nd seat
+      { company: "Hermosillo", name: "Bo", email: "bo@x.com" },
+      { company: null, name: "Di", email: "di@x.com" }, // -> Unknown company
+    ]);
+    expect(s.usersByCompany.get("Hermosillo")).toEqual([
+      { email: "ana@x.com", name: "Ana", count: 2 },
+      { email: "bo@x.com", name: "Bo", count: 1 },
+    ]);
+    expect(s.usersByCompany.get(UNKNOWN_COMPANY)).toEqual([{ email: "di@x.com", name: "Di", count: 1 }]);
+    const seats = s.usersByCompany.get("Hermosillo")!.reduce((n, p) => n + p.count, 0);
+    expect(seats).toBe(s.slices.find((x) => x.name === "Hermosillo")!.value);
+  });
+
+  it("leaves the people list empty when rows carry no email (back-compat)", () => {
+    const s = summarizeCompanies([{ company: "Hermosillo" }, { company: "Hermosillo" }]);
+    expect(s.slices).toEqual([{ name: "Hermosillo", value: 2 }]);
+    expect(s.usersByCompany.size).toBe(0);
   });
 });
 

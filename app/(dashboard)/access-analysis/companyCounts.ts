@@ -1,4 +1,4 @@
-import type { RoleSlice } from "./roleCounts";
+import type { RoleSlice, DrillPerson } from "./roleCounts";
 
 export interface CompanySummary {
   /** Company -> membership count, desc; includes the "Unknown company" bucket. */
@@ -7,6 +7,8 @@ export interface CompanySummary {
   distinctCompanies: number;
   /** Total number of (user, project) memberships. */
   total: number;
+  /** Company label -> the people in that bucket (merged across memberships), sorted by seat count desc. */
+  usersByCompany: Map<string, DrillPerson[]>;
 }
 
 /** Bucket for memberships with no resolvable company name. */
@@ -25,20 +27,37 @@ const labelFor = (company?: string | null): string => {
  * percentages add to 100%. `distinctCompanies` counts only real company names.
  */
 export function summarizeCompanies(
-  rows: ReadonlyArray<{ company?: string | null }>,
+  rows: ReadonlyArray<{ company?: string | null; name?: string; email?: string }>,
 ): CompanySummary {
   const counts = new Map<string, number>();
   const distinct = new Set<string>();
+  // label -> (email -> merged person), so one person spanning memberships collapses.
+  const usersAgg = new Map<string, Map<string, DrillPerson>>();
   for (const row of rows) {
     const label = labelFor(row.company);
     if (label !== UNKNOWN_COMPANY) distinct.add(label);
     counts.set(label, (counts.get(label) ?? 0) + 1);
+
+    if (row.email) {
+      const byEmail = usersAgg.get(label) ?? usersAgg.set(label, new Map()).get(label)!;
+      const cur = byEmail.get(row.email);
+      if (cur) cur.count += 1;
+      else byEmail.set(row.email, { email: row.email, name: row.name ?? row.email, count: 1 });
+    }
   }
   const slices = [...counts.entries()]
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   const total = slices.reduce((sum, d) => sum + d.value, 0);
-  return { slices, distinctCompanies: distinct.size, total };
+
+  const usersByCompany = new Map<string, DrillPerson[]>();
+  for (const [label, byEmail] of usersAgg) {
+    usersByCompany.set(
+      label,
+      [...byEmail.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    );
+  }
+  return { slices, distinctCompanies: distinct.size, total, usersByCompany };
 }
 
 /**
