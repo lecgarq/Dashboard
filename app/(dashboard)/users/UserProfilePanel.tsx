@@ -24,6 +24,7 @@ import {
   type AccProfileData,
 } from "./AccProfileSection";
 import { bulkUserToProfileData } from "./bulkUserToProfileData";
+import { ProfileAvatar } from "./ProfileAvatar";
 
 export interface UserProfilePanelProps {
   user: BulkAccUser | null;
@@ -100,13 +101,16 @@ export function UserProfilePanel({
       className="flex h-full w-full shrink-0 flex-col border-l border-border/30 bg-card"
     >
       <header className="flex items-center justify-between gap-2 border-b border-border/30 px-4 py-3">
-        <div className="min-w-0">
-          <h2 className="truncate text-sm font-semibold" title={user?.name || email}>
-            {user?.name || email}
-          </h2>
-          <p className="truncate text-xs text-muted-foreground" title={email}>
-            {email}
-          </p>
+        <div className="flex min-w-0 items-center gap-3">
+          <ProfileAvatar name={user?.name} email={email} photoUrl={user?.photoUrl} size="lg" />
+          <div className="min-w-0">
+            <h2 className="truncate text-sm font-semibold" title={user?.name || email}>
+              {user?.name || email}
+            </h2>
+            <p className="truncate text-xs text-muted-foreground" title={email}>
+              {email}
+            </p>
+          </div>
         </div>
         {onClose && (
           <button

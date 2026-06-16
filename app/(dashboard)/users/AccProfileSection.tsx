@@ -501,13 +501,19 @@ export function AccProfileFull({
       </div>
 
       {/* ── Company, Added On & Last Sign-In ── */}
-      {(data.company || data.addedOn || data.lastSignIn) && (
+      {(data.company || data.addedOn || data.lastSignIn || data.costCenter) && (
         <div className="flex flex-wrap gap-x-6 gap-y-1 px-1">
           {data.company && (
             <div className="flex items-center gap-2 text-sm">
               <Building2 size={13} className="text-muted-foreground/50 shrink-0" />
               <span className="text-muted-foreground/60 font-medium">Company:</span>
               <span className="text-foreground font-semibold">{data.company}</span>
+            </div>
+          )}
+          {data.costCenter && (
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground/60 font-medium">Cost center:</span>
+              <span className="text-foreground font-semibold">{data.costCenter}</span>
             </div>
           )}
           {data.addedOn && (
