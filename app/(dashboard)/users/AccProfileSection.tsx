@@ -21,6 +21,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/core/utils";
 import { trpc } from "@/lib/core/trpc";
+import { StatCardDetail } from "./StatCardDetail";
 
 // ---------------------------------------------------------------------------
 // Constants
@@ -150,23 +151,46 @@ function StatCard({
   value,
   label,
   color,
+  onClick,
+  active,
+  disabled,
 }: {
   icon: React.ElementType;
   value: number | string;
   label: string;
   color: string;
+  onClick?: () => void;
+  active?: boolean;
+  disabled?: boolean;
 }) {
-  return (
-    <div className="flex flex-col items-center gap-1 px-4 py-3 rounded-xl bg-card border border-border/40">
-      <Icon size={16} className={color} />
-      <span className="text-xl font-extrabold tabular-nums text-foreground leading-none">
-        {value}
-      </span>
-      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">
-        {label}
-      </span>
-    </div>
+  const cls = cn(
+    "flex flex-col items-center gap-1 px-4 py-3 rounded-xl border transition-colors",
+    active ? "border-primary/50 bg-primary/5 ring-1 ring-primary/30" : "border-border/40 bg-card",
+    onClick && !disabled && "cursor-pointer hover:border-primary/40 hover:bg-accent/40",
+    disabled && "opacity-50 cursor-not-allowed",
   );
+  const inner = (
+    <>
+      <Icon size={16} className={color} />
+      <span className="text-xl font-extrabold tabular-nums text-foreground leading-none">{value}</span>
+      <span className="text-[10px] text-muted-foreground font-semibold uppercase tracking-wide">{label}</span>
+    </>
+  );
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        data-testid={`statcard-${label.toLowerCase()}`}
+        onClick={onClick}
+        disabled={disabled}
+        aria-pressed={active}
+        className={cls}
+      >
+        {inner}
+      </button>
+    );
+  }
+  return <div className={cls}>{inner}</div>;
 }
 
 // ---------------------------------------------------------------------------
@@ -383,6 +407,9 @@ export function AccProfileFull({
   onRefresh: () => void;
 }) {
   const projects = data.projects ?? [];
+  const [activeCard, setActiveCard] = useState<"admin" | "roles" | "modules" | null>(null);
+  const toggleCard = (k: "admin" | "roles" | "modules") =>
+    setActiveCard((cur) => (cur === k ? null : k));
   const [searchQuery, setSearchQuery] = useState("");
   const [sortField, setSortField] = useState<SortField>("name");
   const [sortAsc, setSortAsc] = useState(true);
@@ -538,14 +565,26 @@ export function AccProfileFull({
         </div>
       )}
 
-      {/* ── Aggregate Stats ── */}
+      {/* ── Aggregate Stats (Admin / Roles / Modules are clickable) ── */}
       {projects.length > 0 && (
-        <div className="grid grid-cols-5 gap-2">
-          <StatCard icon={FolderOpen} value={stats.total} label="Projects" color="text-blue-500" />
-          <StatCard icon={Layers} value={stats.active} label="Active" color="text-green-500" />
-          <StatCard icon={Crown} value={stats.admin} label="Admin" color="text-amber-500" />
-          <StatCard icon={Shield} value={stats.roles} label="Roles" color="text-violet-500" />
-          <StatCard icon={Package} value={stats.modules} label="Modules" color="text-cyan-500" />
+        <div className="space-y-3">
+          <div className="grid grid-cols-5 gap-2">
+            <StatCard icon={FolderOpen} value={stats.total} label="Projects" color="text-blue-500" />
+            <StatCard icon={Layers} value={stats.active} label="Active" color="text-green-500" />
+            <StatCard
+              icon={Crown} value={stats.admin} label="Admin" color="text-amber-500"
+              onClick={() => toggleCard("admin")} active={activeCard === "admin"} disabled={stats.admin === 0}
+            />
+            <StatCard
+              icon={Shield} value={stats.roles} label="Roles" color="text-violet-500"
+              onClick={() => toggleCard("roles")} active={activeCard === "roles"} disabled={stats.roles === 0}
+            />
+            <StatCard
+              icon={Package} value={stats.modules} label="Modules" color="text-cyan-500"
+              onClick={() => toggleCard("modules")} active={activeCard === "modules"} disabled={stats.modules === 0}
+            />
+          </div>
+          {activeCard && <StatCardDetail kind={activeCard} projects={projects} />}
         </div>
       )}
 
@@ -628,8 +667,8 @@ export function AccProfileFull({
         </div>
       )}
 
-      {/* ── Projects list ── */}
-      {filteredProjects.length > 0 && (
+      {/* ── Projects list (hidden when a stat-card detail is open) ── */}
+      {!activeCard && filteredProjects.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide">
@@ -653,7 +692,7 @@ export function AccProfileFull({
         </div>
       )}
 
-      {filteredProjects.length === 0 && projects.length > 0 && (
+      {!activeCard && filteredProjects.length === 0 && projects.length > 0 && (
         <p className="text-sm text-muted-foreground text-center py-6">
           No projects match your search
         </p>

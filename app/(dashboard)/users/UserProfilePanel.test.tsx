@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
@@ -42,6 +42,13 @@ const found: BulkAccUser = {
   syncedAt: "2026-06-16T00:00:00.000Z",
   photoUrl: null,
   costCenter: "ENG-100",
+  projectCount: 1,
+  activeCount: 1,
+  adminCount: 1,
+  hasNoProjects: false,
+  projects: [
+    { id: "p1", name: "Tower A", status: "active", isAdmin: true, roles: ["Project Admin"], modules: ["build"] },
+  ] as BulkAccUser["projects"],
 };
 
 describe("UserProfilePanel", () => {
@@ -75,5 +82,26 @@ describe("UserProfilePanel", () => {
     render(<UserProfilePanel user={found} email={found.email} variant="rail" />);
     expect(screen.getByText(/5 events all-time/i)).toBeTruthy();
     expect(screen.queryByText(/last 30 days/i)).toBeNull();
+  });
+
+  it("opens the Admin detail on click and toggles closed", () => {
+    render(<UserProfilePanel user={found} email={found.email} variant="rail" />);
+    expect(screen.queryByTestId("stat-detail-admin")).toBeNull();
+    fireEvent.click(screen.getByTestId("statcard-admin"));
+    expect(screen.getByTestId("stat-detail-admin")).toBeTruthy();
+    expect(screen.getByText("Tower A")).toBeTruthy();
+    fireEvent.click(screen.getByTestId("statcard-admin"));
+    expect(screen.queryByTestId("stat-detail-admin")).toBeNull();
+  });
+
+  it("disables a zero-count stat card", () => {
+    const noRoles = {
+      ...found,
+      projects: [
+        { id: "p1", name: "Tower A", status: "active", isAdmin: true, roles: [], modules: ["build"] },
+      ] as BulkAccUser["projects"],
+    };
+    render(<UserProfilePanel user={noRoles} email={noRoles.email} variant="rail" />);
+    expect(screen.getByTestId("statcard-roles").hasAttribute("disabled")).toBe(true);
   });
 });
