@@ -145,3 +145,26 @@ describe("AccessAnalysisCharts — Activity by role donut", () => {
     expect(getByTestId("activity-company-drilldown").textContent).toContain("Ana");
   });
 });
+
+describe("AccessAnalysisCharts — Dormant companies panel", () => {
+  it("does not render the dormant panel without a roster", () => {
+    const { queryByTestId } = render(<AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />);
+    expect(queryByTestId("dormant-panel")).toBeNull();
+  });
+
+  it("renders the account-wide dormant panel from the roster", () => {
+    const { getByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        activityActorRows={activityActorRows}
+        membershipRows={membershipRows}
+        roster={["Acme", "Globex"]}
+      />,
+    );
+    // roleRows carry no company → no company has members → Acme + Globex are "No users".
+    const panel = getByTestId("dormant-panel");
+    expect(panel).toBeTruthy();
+    expect(getByTestId("dormant-tab-no-users").textContent).toContain("2");
+  });
+});
