@@ -38,6 +38,12 @@ describe("AccessAnalysisCharts (one picker, both donuts)", () => {
     expect(getByTestId("module-legend").textContent).toContain("Build");
   });
 
+  it("renders a Users-by-company donut driven by the shared selection", () => {
+    const { getByTestId } = render(<AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />);
+    // The test roleRows carry no company, so every membership lands in Unknown company.
+    expect(getByTestId("company-legend").textContent).toContain("Unknown company");
+  });
+
   it("offers one checkbox per project (union of both sources), all checked", () => {
     const { getByTestId, getAllByRole } = render(<AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />);
     fireEvent.focus(getByTestId("project-search"));
@@ -121,5 +127,21 @@ describe("AccessAnalysisCharts — Activity by role donut", () => {
     );
     fireEvent.click(within(getByTestId("activity-role-legend")).getByRole("button", { name: /Member/ }));
     expect(getByTestId("activity-role-drilldown").textContent).toContain("Ana");
+  });
+
+  it("renders the Activity-by-company donut and drills into its people", () => {
+    const { getByTestId } = render(
+      <AccessAnalysisCharts
+        roleRows={roleRows}
+        moduleRows={moduleRows}
+        activityActorRows={activityActorRows}
+        membershipRows={membershipRows}
+      />,
+    );
+    const legend = getByTestId("activity-company-legend");
+    // membershipRows carry no company → Unknown company holds all the activity.
+    expect(legend.textContent).toContain("Unknown company");
+    fireEvent.click(within(legend).getByRole("button", { name: /Unknown company/ }));
+    expect(getByTestId("activity-company-drilldown").textContent).toContain("Ana");
   });
 });

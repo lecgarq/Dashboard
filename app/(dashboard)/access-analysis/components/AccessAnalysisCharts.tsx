@@ -7,12 +7,16 @@ import { ProjectPicker } from "./ProjectPicker";
 import { RolesPieChart } from "./RolesPieChart";
 import { ModulesPieChart } from "./ModulesPieChart";
 import { ActivityByRolePieChart } from "./ActivityByRolePieChart";
+import { CompaniesPieChart } from "./CompaniesPieChart";
+import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { CoordinationByProject } from "./CoordinationByProject";
 import { FolderPermissionTerrain } from "./FolderPermissionTerrain";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
 import { summarizeRoles } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
 import { summarizeActivityByRole, type MembershipRolesInput } from "../roleActivityCounts";
+import { summarizeCompanies } from "../companyCounts";
+import { summarizeActivityByCompany } from "../companyActivityCounts";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
 import { projectOptions, filterRowsBySelection, type ProjectRoleRow } from "../projectFilter";
@@ -113,6 +117,18 @@ export function AccessAnalysisCharts({
       ),
     [activityActorRows, membershipRows, selected],
   );
+  const companySummary = useMemo(
+    () => summarizeCompanies(filterRowsBySelection(roleRows, selected)),
+    [roleRows, selected],
+  );
+  const activityByCompanySummary = useMemo(
+    () =>
+      summarizeActivityByCompany(
+        filterRowsBySelection(activityActorRows ?? [], selected),
+        filterRowsBySelection(membershipRows ?? [], selected),
+      ),
+    [activityActorRows, membershipRows, selected],
+  );
   const coordSummary = useMemo(
     () => summarizeCoordination(filterRowsBySelection(coordinationData?.rows ?? [], selected)),
     [coordinationData, selected],
@@ -122,6 +138,7 @@ export function AccessAnalysisCharts({
     { label: "Projects", value: selected.size, accent: "primary" },
     { label: "Memberships", value: roleSummary.total, accent: "emerald" },
     { label: "Distinct roles", value: roleSummary.distinctRoles, accent: "violet" },
+    { label: "Companies", value: companySummary.distinctCompanies, accent: "primary" },
     { label: "Activities", value: moduleSummary.total, accent: "amber" },
     { label: "Coordination issues", value: coordSummary.total, accent: "orange" },
   ];
@@ -171,6 +188,11 @@ export function AccessAnalysisCharts({
         <RolesPieChart data={roleSummary.slices} distinctRoles={roleSummary.distinctRoles} />
       </section></Reveal>
 
+      <Reveal><section className="flex flex-col gap-3">
+        <SectionHeader title="Users by company" subtitle="Project memberships grouped by each member's company." />
+        <CompaniesPieChart data={companySummary.slices} distinctCompanies={companySummary.distinctCompanies} />
+      </section></Reveal>
+
       {activityActorRows ? (
         <Reveal><section className="flex flex-col gap-3">
           <SectionHeader
@@ -179,6 +201,19 @@ export function AccessAnalysisCharts({
           />
           <ActivityByRolePieChart
             summary={activityByRoleSummary}
+            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          />
+        </section></Reveal>
+      ) : null}
+
+      {activityActorRows ? (
+        <Reveal><section className="flex flex-col gap-3">
+          <SectionHeader
+            title="Activity by company"
+            subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
+          />
+          <CompaniesActivityPieChart
+            summary={activityByCompanySummary}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
         </section></Reveal>
