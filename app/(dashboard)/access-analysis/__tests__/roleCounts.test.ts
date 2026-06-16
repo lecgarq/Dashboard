@@ -10,7 +10,7 @@ const mk = (roles: string[]): AccessInstance => ({
 
 describe("summarizeRoles", () => {
   it("returns an empty summary for no rows", () => {
-    expect(summarizeRoles([])).toEqual({ slices: [], distinctRoles: 0, total: 0 });
+    expect(summarizeRoles([])).toEqual({ slices: [], distinctRoles: 0, total: 0, usersByRole: new Map() });
   });
 
   it("buckets single role, multi-role, and role-less memberships", () => {
@@ -37,6 +37,36 @@ describe("summarizeRoles", () => {
     const s = summarizeRoles([mk(["Admin", "Admin"])]);
     expect(s.slices).toEqual([{ name: "Admin", value: 1 }]);
     expect(s.distinctRoles).toBe(1);
+  });
+
+  it("collects the people behind each role bucket (seat count per person)", () => {
+    const s = summarizeRoles([
+      { roles: ["Member"], name: "Ana", email: "ana@x.com" },
+      { roles: ["Member"], name: "Ana", email: "ana@x.com" }, // same person, 2nd seat
+      { roles: ["Member"], name: "Bo", email: "bo@x.com" },
+      { roles: ["Admin", "Member"], name: "Cy", email: "cy@x.com" }, // -> Multiple roles
+      { roles: [], name: "Di", email: "di@x.com" }, // -> Unknown
+    ]);
+    expect(s.usersByRole.get("Member")).toEqual([
+      { email: "ana@x.com", name: "Ana", count: 2 },
+      { email: "bo@x.com", name: "Bo", count: 1 },
+    ]);
+    expect(s.usersByRole.get("Multiple roles")).toEqual([{ email: "cy@x.com", name: "Cy", count: 1 }]);
+    expect(s.usersByRole.get("Unknown")).toEqual([{ email: "di@x.com", name: "Di", count: 1 }]);
+    // Seat counts sum to the slice value.
+    const memberSeats = s.usersByRole.get("Member")!.reduce((n, p) => n + p.count, 0);
+    expect(memberSeats).toBe(s.slices.find((x) => x.name === "Member")!.value);
+  });
+
+  it("leaves the people list empty when rows carry no email (back-compat)", () => {
+    const s = summarizeRoles([{ roles: ["Member"] }, { roles: ["Member"] }]);
+    expect(s.slices).toEqual([{ name: "Member", value: 2 }]);
+    expect(s.usersByRole.size).toBe(0);
+  });
+
+  it("falls back to the email as the display name when name is absent", () => {
+    const s = summarizeRoles([{ roles: ["Member"], email: "noname@x.com" }]);
+    expect(s.usersByRole.get("Member")).toEqual([{ email: "noname@x.com", name: "noname@x.com", count: 1 }]);
   });
 });
 

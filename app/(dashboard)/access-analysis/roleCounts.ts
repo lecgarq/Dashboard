@@ -1,3 +1,10 @@
+/** One contributing person within a drilled slice. Shared by every people-donut. */
+export interface DrillPerson {
+  email: string;
+  name: string;
+  count: number;
+}
+
 export interface RoleSlice {
   name: string;
   value: number;
@@ -10,6 +17,8 @@ export interface RoleSummary {
   distinctRoles: number;
   /** Total number of (user, project) memberships. */
   total: number;
+  /** Slice label -> the people in that bucket (merged across memberships), sorted by seat count desc. */
+  usersByRole: Map<string, DrillPerson[]>;
 }
 
 /** Label for memberships that carry no role at all. */
@@ -29,9 +38,13 @@ export const MULTIPLE_ROLES = "Multiple roles";
  * multi-role memberships) — that is the honest answer to "how many roles do I
  * have", independent of how slices are grouped for display.
  */
-export function summarizeRoles(rows: ReadonlyArray<{ roles: string[] }>): RoleSummary {
+export function summarizeRoles(
+  rows: ReadonlyArray<{ roles: string[]; name?: string; email?: string }>,
+): RoleSummary {
   const counts = new Map<string, number>();
   const distinct = new Set<string>();
+  // label -> (email -> merged person), so one person spanning memberships collapses.
+  const usersAgg = new Map<string, Map<string, DrillPerson>>();
   for (const row of rows) {
     const uniqueRoles = [...new Set(row.roles)];
     for (const r of uniqueRoles) distinct.add(r);
@@ -40,12 +53,29 @@ export function summarizeRoles(rows: ReadonlyArray<{ roles: string[] }>): RoleSu
         : uniqueRoles.length === 1 ? uniqueRoles[0]
           : MULTIPLE_ROLES;
     counts.set(label, (counts.get(label) ?? 0) + 1);
+
+    // Attribute the seat to its person. No email -> not attributable, so it stays
+    // out of the drill list (slice value still counts the membership).
+    if (row.email) {
+      const byEmail = usersAgg.get(label) ?? usersAgg.set(label, new Map()).get(label)!;
+      const cur = byEmail.get(row.email);
+      if (cur) cur.count += 1;
+      else byEmail.set(row.email, { email: row.email, name: row.name ?? row.email, count: 1 });
+    }
   }
   const slices = [...counts.entries()]
     .map(([name, value]) => ({ name, value }))
     .sort((a, b) => b.value - a.value || a.name.localeCompare(b.name));
   const total = slices.reduce((sum, d) => sum + d.value, 0);
-  return { slices, distinctRoles: distinct.size, total };
+
+  const usersByRole = new Map<string, DrillPerson[]>();
+  for (const [label, byEmail] of usersAgg) {
+    usersByRole.set(
+      label,
+      [...byEmail.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name)),
+    );
+  }
+  return { slices, distinctRoles: distinct.size, total, usersByRole };
 }
 
 /**
