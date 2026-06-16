@@ -13,6 +13,10 @@ export interface ProjectRoleRow {
   roles: string[];
   /** The member's company on this project (null/blank → "Unknown company"); drives the Users-by-company donut. */
   company?: string | null;
+  /** The member's display name; drives the membership-donut people drill-downs. */
+  name?: string;
+  /** The member's lowercased email; the drill-down's profile-drawer key + merge key. */
+  email?: string;
 }
 
 /** Anything carrying a project id + name — the only fields the picker needs. */

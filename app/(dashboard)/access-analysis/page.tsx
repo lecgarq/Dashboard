@@ -41,6 +41,8 @@ export default async function AccessAnalysisRoute() {
     projectName: v.projectName,
     roles: v.roles,
     company: v.company,
+    name: v.name,
+    email: v.email,
   }));
   // Slim memberships for the Activity-by-role join: the actor's role(s) on each
   // project, keyed later by `email::projectId`. Derived from the instance view
