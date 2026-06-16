@@ -92,6 +92,8 @@ function createAccUserStub(person: OrgPerson): BulkAccUser {
     projects: [],
     isAccountAdmin: false,
     addedOn: null,
+    photoUrl: person.photoUrl,
+    costCenter: person.costCenter,
   };
 }
 
@@ -106,7 +108,9 @@ export function mergePeopleWithAccSummary(
   const directoryRows = people.map((person) => {
     const email = person.email.toLowerCase();
     seen.add(email);
-    return byEmail.get(email) ?? createAccUserStub(person);
+    const acc = byEmail.get(email);
+    if (!acc) return createAccUserStub(person);
+    return { ...acc, photoUrl: person.photoUrl, costCenter: person.costCenter };
   });
   const accOnlyRows = accSummary
     .filter((user) => !seen.has(user.email.toLowerCase()))

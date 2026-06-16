@@ -6,6 +6,7 @@ import {
   mergeAccSummaryWithEnrichment,
   mergePeopleWithAccSummary,
   selectAccSummarySource,
+  type OrgPerson,
 } from "./useMergedAccUsers";
 
 function user(overrides: Partial<BulkAccUser>): BulkAccUser {
@@ -111,5 +112,68 @@ describe("ACC user merge helpers", () => {
 
     expect(selectAccSummarySource(dcUsers, cacheUsers)).toEqual(dcUsers);
     expect(selectAccSummarySource([], cacheUsers)).toEqual(cacheUsers);
+  });
+});
+
+function person(over: Partial<OrgPerson>): OrgPerson {
+  return {
+    resourceName: "people/1",
+    displayName: "Ada Lovelace",
+    email: "ada@hermosillo.com",
+    photoUrl: "https://lh3.googleusercontent.com/a/ada",
+    department: null,
+    jobTitle: null,
+    phoneNumber: null,
+    costCenter: "ENG-100",
+    ...over,
+  };
+}
+
+function accUser(email: string): BulkAccUser {
+  return {
+    email,
+    name: "Ada (ACC)",
+    found: true,
+    projectCount: 1,
+    activeCount: 1,
+    adminCount: 0,
+    hasNoProjects: false,
+    syncedAt: "2026-06-16T00:00:00.000Z",
+    allRoles: [],
+    allModules: [],
+    projects: [],
+    isAccountAdmin: false,
+    addedOn: null,
+  };
+}
+
+describe("mergePeopleWithAccSummary — directory enrichment", () => {
+  it("attaches photoUrl + costCenter onto a matched ACC user", () => {
+    const out = mergePeopleWithAccSummary(
+      [person({ email: "ada@hermosillo.com" })],
+      [accUser("ada@hermosillo.com")],
+    );
+    const row = out.find((u) => u.email === "ada@hermosillo.com")!;
+    expect(row.found).toBe(true);
+    expect(row.photoUrl).toBe("https://lh3.googleusercontent.com/a/ada");
+    expect(row.costCenter).toBe("ENG-100");
+  });
+
+  it("sets photoUrl + costCenter on a directory-only stub user", () => {
+    const out = mergePeopleWithAccSummary(
+      [person({ email: "new@hermosillo.com", photoUrl: "p", costCenter: "CC-9" })],
+      [],
+    );
+    const row = out.find((u) => u.email === "new@hermosillo.com")!;
+    expect(row.found).toBe(false);
+    expect(row.photoUrl).toBe("p");
+    expect(row.costCenter).toBe("CC-9");
+  });
+
+  it("leaves photoUrl/costCenter undefined for an ACC user with no directory match", () => {
+    const out = mergePeopleWithAccSummary([], [accUser("ghost@x.com")]);
+    const row = out.find((u) => u.email === "ghost@x.com")!;
+    expect(row.photoUrl).toBeUndefined();
+    expect(row.costCenter).toBeUndefined();
   });
 });

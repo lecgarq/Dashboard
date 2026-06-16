@@ -63,6 +63,10 @@ export interface BulkAccUser {
   companyRole?: string | null;
   /** Last sign-in / activity ISO string from the ACC HQ user record. Null when ACC reports no activity. */
   lastSignIn?: string | null;
+  /** Google Workspace profile photo URL (People API). Undefined when the user is not a directory member. */
+  photoUrl?: string | null;
+  /** Google Workspace cost center (People API org/userDefined/clientData). Undefined when not a directory member. */
+  costCenter?: string | null;
   /**
    * True iff the user has ACC account-level admin access (HQ v1 `role === "account_admin"`).
    * Distinct from per-project admin (BulkAccProject.isAdmin / accessLevels.projectAdmin).
