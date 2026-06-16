@@ -27,7 +27,7 @@ import { SelectionPanel } from "./SelectionPanel";
 import { UserProfilePanel } from "../UserProfilePanel";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { trpc } from "@/lib/core/trpc";
-import { mergeAccSummaryWithEnrichment } from "../useMergedAccUsers";
+import { mergeAccSummaryWithEnrichment, attachDirectoryFields, useOrgDirectoryPeople } from "../useMergedAccUsers";
 import { useSelection } from "./SelectionContext";
 import type { NodeFeatureSnapshot } from "./interactionTypes";
 import type { CatalogDimension } from "./dimensionCatalog.types";
@@ -113,13 +113,17 @@ export function RightPanelStack({
     staleTime: 600_000,
     retry: false,
   });
+  const directoryPeople = useOrgDirectoryPeople();
   const usersByEmail = useMemo<Map<string, BulkAccUser>>(() => {
     const base = (bulkUsersQuery.data ?? []) as BulkAccUser[];
-    const merged = mergeAccSummaryWithEnrichment(base, enrichedQuery.data ?? []);
+    const merged = attachDirectoryFields(
+      mergeAccSummaryWithEnrichment(base, enrichedQuery.data ?? []),
+      directoryPeople,
+    );
     const map = new Map<string, BulkAccUser>();
     for (const u of merged) map.set(u.email.toLowerCase(), u);
     return map;
-  }, [bulkUsersQuery.data, enrichedQuery.data]);
+  }, [bulkUsersQuery.data, enrichedQuery.data, directoryPeople]);
 
   return (
     // Outer column owns the (resizable) width + the drag handle. Width is constant

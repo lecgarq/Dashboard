@@ -6,6 +6,7 @@ import {
   mergeAccSummaryWithEnrichment,
   mergePeopleWithAccSummary,
   selectAccSummarySource,
+  attachDirectoryFields,
   type OrgPerson,
 } from "./useMergedAccUsers";
 
@@ -175,5 +176,31 @@ describe("mergePeopleWithAccSummary — directory enrichment", () => {
     const row = out.find((u) => u.email === "ghost@x.com")!;
     expect(row.photoUrl).toBeUndefined();
     expect(row.costCenter).toBeUndefined();
+  });
+});
+
+describe("attachDirectoryFields", () => {
+  it("spreads photoUrl + costCenter onto matched users (by email)", () => {
+    const out = attachDirectoryFields(
+      [accUser("ada@hermosillo.com"), accUser("nobody@x.com")],
+      [person({ email: "ada@hermosillo.com", photoUrl: "P", costCenter: "CC" })],
+    );
+    const ada = out.find((u) => u.email === "ada@hermosillo.com")!;
+    expect(ada.photoUrl).toBe("P");
+    expect(ada.costCenter).toBe("CC");
+  });
+
+  it("leaves unmatched users unchanged", () => {
+    const out = attachDirectoryFields(
+      [accUser("nobody@x.com")],
+      [person({ email: "ada@hermosillo.com" })],
+    );
+    expect(out[0].photoUrl).toBeUndefined();
+    expect(out[0].costCenter).toBeUndefined();
+  });
+
+  it("returns users unchanged when there are no directory people", () => {
+    const users = [accUser("a@x.com")];
+    expect(attachDirectoryFields(users, [])).toEqual(users);
   });
 });

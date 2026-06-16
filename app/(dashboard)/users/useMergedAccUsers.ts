@@ -118,6 +118,51 @@ export function mergePeopleWithAccSummary(
   return [...directoryRows, ...accOnlyRows];
 }
 
+/**
+ * Spread Google-directory photo + cost center onto users, matched by email.
+ * For surfaces that build users via mergeAccSummaryWithEnrichment (the
+ * access-analysis rail/drawer), which otherwise carry no directory fields.
+ */
+export function attachDirectoryFields(
+  users: readonly BulkAccUser[],
+  people: readonly OrgPerson[],
+): BulkAccUser[] {
+  if (!people.length) return [...users];
+  const byEmail = new Map(people.map((p) => [p.email.toLowerCase(), p]));
+  return users.map((u) => {
+    const person = byEmail.get(u.email.toLowerCase());
+    return person ? { ...u, photoUrl: person.photoUrl, costCenter: person.costCenter } : u;
+  });
+}
+
+/**
+ * Fetch org-directory people (Workspace, with a local-DB fallback), deriving them
+ * exactly as useMergedAccUsers does. Shared so the rail surfaces can enrich users
+ * with photoUrl/costCenter; the underlying queries dedupe with any other caller
+ * via React Query, so this adds no extra network when the directory is cached.
+ */
+export function useOrgDirectoryPeople(
+  options: { enabled?: boolean; refetchInterval?: number | false } = {},
+): OrgPerson[] {
+  const enabled = options.enabled ?? true;
+  const { data: directoryData } = trpc.users.getOrgDirectory.useQuery(undefined, {
+    enabled,
+    staleTime: 300_000,
+    retry: false,
+    refetchInterval: options.refetchInterval,
+  });
+  const { data: fallbackDirectory = [] } = trpc.users.getDirectory.useQuery(undefined, {
+    enabled,
+    staleTime: 300_000,
+    retry: false,
+    refetchInterval: options.refetchInterval,
+  });
+  return useMemo<OrgPerson[]>(() => {
+    if (directoryData?.status === "ok") return directoryData.people ?? [];
+    return mapFallbackDirectoryToOrgPeople(fallbackDirectory as LocalDirectoryUser[]);
+  }, [directoryData, fallbackDirectory]);
+}
+
 export function useMergedAccUsers(options: { refetchInterval?: number | false } = {}): { users: BulkAccUser[]; loading: boolean } {
   const { data: accSummaryRaw = [], isLoading: accLoading } = trpc.users.bulkAccSummary.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,

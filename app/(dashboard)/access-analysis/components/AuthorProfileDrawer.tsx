@@ -17,7 +17,12 @@ import { AnimatePresence, motion } from "framer-motion";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { UserProfilePanel } from "../../users/UserProfilePanel";
-import { mergeAccSummaryWithEnrichment, selectAccSummarySource } from "../../users/useMergedAccUsers";
+import {
+  mergeAccSummaryWithEnrichment,
+  selectAccSummarySource,
+  attachDirectoryFields,
+  useOrgDirectoryPeople,
+} from "../../users/useMergedAccUsers";
 
 const STALE_MS = 600_000;
 
@@ -33,16 +38,20 @@ export function AuthorProfileDrawer({
   const summary = trpc.users.bulkAccSummary.useQuery(undefined, { enabled, staleTime: STALE_MS, retry: false });
   const enriched = trpc.accMembers.enrichedUsers.useQuery(undefined, { enabled, staleTime: STALE_MS, retry: false });
 
+  const directoryPeople = useOrgDirectoryPeople({ enabled });
   const usersByEmail = useMemo(() => {
     const source = selectAccSummarySource(
       (dcUsers.data ?? []) as BulkAccUser[],
       (summary.data ?? []) as BulkAccUser[],
     );
-    const merged = mergeAccSummaryWithEnrichment(source, enriched.data ?? []);
+    const merged = attachDirectoryFields(
+      mergeAccSummaryWithEnrichment(source, enriched.data ?? []),
+      directoryPeople,
+    );
     const map = new Map<string, BulkAccUser>();
     for (const u of merged) map.set(u.email.toLowerCase(), u);
     return map;
-  }, [dcUsers.data, summary.data, enriched.data]);
+  }, [dcUsers.data, summary.data, enriched.data, directoryPeople]);
 
   const key = email?.toLowerCase() ?? "";
   const user = usersByEmail.get(key) ?? null;

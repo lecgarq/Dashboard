@@ -20,6 +20,10 @@ vi.mock("@/lib/core/trpc", () => ({
   trpc: {
     accDcGraph: { bulkUsers: { useQuery: () => ({ data: [] }) } },
     accMembers: { enrichedUsers: { useQuery: () => ({ data: [] }) } },
+    users: {
+      getOrgDirectory: { useQuery: () => ({ data: undefined }) },
+      getDirectory: { useQuery: () => ({ data: [] }) },
+    },
   },
 }));
 
