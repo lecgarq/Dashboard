@@ -12,13 +12,12 @@ import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { CoordinationByProject } from "./CoordinationByProject";
 import { FolderPermissionTerrain } from "./FolderPermissionTerrain";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
-import { summarizeRoles } from "../roleCounts";
+import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
 import { summarizeActivityByRole, type MembershipRolesInput } from "../roleActivityCounts";
 import { summarizeCompanies, UNKNOWN_COMPANY } from "../companyCounts";
 import { summarizeActivityByCompany } from "../companyActivityCounts";
-import { DormantCompaniesPanel } from "./DormantCompaniesPanel";
-import { summarizeDormantCompanies } from "../dormantCompanies";
+import { rankDormantByPeople } from "../dormantActivity";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
 import { projectOptions, filterRowsBySelection, type ProjectRoleRow } from "../projectFilter";
@@ -59,7 +58,6 @@ export function AccessAnalysisCharts({
   initialTerrain,
   loadTerrain,
   loadOverview,
-  roster,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
@@ -77,8 +75,6 @@ export function AccessAnalysisCharts({
   initialTerrain?: FolderTerrainData | null;
   loadTerrain?: (projectId: string) => Promise<FolderTerrainData | null>;
   loadOverview?: () => Promise<FolderTerrainData | null>;
-  /** Full company roster (distinct AccDcCompany names) for the account-wide Dormant panel. */
-  roster?: string[];
 }) {
   const options = useMemo(
     () => projectOptions([...roleRows, ...moduleRows, ...(timelineRows ?? []), ...(coordinationData?.rows ?? [])]),
@@ -139,20 +135,25 @@ export function AccessAnalysisCharts({
     [coordinationData, selected],
   );
 
-  // Account-wide (picker-independent) inputs for the Dormant companies panel.
-  const accountCompanies = useMemo(() => summarizeCompanies(roleRows), [roleRows]);
-  const accountActivityByCompany = useMemo(
-    () => summarizeActivityByCompany(activityActorRows ?? [], membershipRows ?? []),
-    [activityActorRows, membershipRows],
-  );
-  const dormant = useMemo(
+  // Dormant = entities with members in the current selection but 0 activity there,
+  // ranked by headcount. Picker-scoped, so it mirrors the activity donut it sits under.
+  const dormantRoles = useMemo(
     () =>
-      summarizeDormantCompanies(
-        roster ?? [],
-        accountCompanies.usersByCompany,
-        new Set(accountActivityByCompany.slices.map((s) => s.name).filter((n) => n !== UNKNOWN_COMPANY)),
+      rankDormantByPeople(
+        roleSummary.usersByRole,
+        new Set(activityByRoleSummary.slices.map((s) => s.name)),
+        new Set([UNKNOWN_ROLE, MULTIPLE_ROLES]),
       ),
-    [roster, accountCompanies, accountActivityByCompany],
+    [roleSummary, activityByRoleSummary],
+  );
+  const dormantCompanies = useMemo(
+    () =>
+      rankDormantByPeople(
+        companySummary.usersByCompany,
+        new Set(activityByCompanySummary.slices.map((s) => s.name)),
+        new Set([UNKNOWN_COMPANY]),
+      ),
+    [companySummary, activityByCompanySummary],
   );
 
   const kpis: Stat[] = [
@@ -232,6 +233,7 @@ export function AccessAnalysisCharts({
           />
           <ActivityByRolePieChart
             summary={activityByRoleSummary}
+            dormant={dormantRoles}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
         </section></Reveal>
@@ -245,6 +247,7 @@ export function AccessAnalysisCharts({
           />
           <CompaniesActivityPieChart
             summary={activityByCompanySummary}
+            dormant={dormantCompanies}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
         </section></Reveal>
@@ -268,16 +271,6 @@ export function AccessAnalysisCharts({
             loadClashes={loadClashes}
             onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
           />
-        </section></Reveal>
-      ) : null}
-
-      {roster && roster.length > 0 ? (
-        <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader
-            title="Dormant companies"
-            subtitle="Account-wide: companies on the roster that never appear in the donuts — no users at all, or users with no recorded activity. Not affected by the project picker."
-          />
-          <DormantCompaniesPanel summary={dormant} />
         </section></Reveal>
       ) : null}
 

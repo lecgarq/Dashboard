@@ -5,7 +5,6 @@ import { loadCoordinationByProject } from "@/lib/server/coordinationByProjectVie
 import { loadProjectCoverage } from "@/lib/server/projectCoverageView";
 import { loadTerrainProjects, loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrainView";
 import { loadActivityTimeline } from "@/lib/server/activityTimelineView";
-import { loadCompanyRoster } from "@/lib/server/companyRosterView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import { loadProjectClashes } from "./coordinationActions";
 import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
@@ -16,7 +15,7 @@ export const metadata = { title: "Access Analysis" };
 export const dynamic = "force-dynamic";
 
 export default async function AccessAnalysisRoute() {
-  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timelineRows, roster] = await Promise.all([
+  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timelineRows] = await Promise.all([
     loadInstanceView(),
     loadModuleActivity(),
     loadActivityByActor(),
@@ -24,7 +23,6 @@ export default async function AccessAnalysisRoute() {
     loadProjectCoverage(),
     loadTerrainProjects(),
     loadActivityTimeline(),
-    loadCompanyRoster(),
   ]);
   // Default the terrain to a well-staffed project: among the permission-dense
   // half, the one with the most users in roles (so bar heights are meaningful).
@@ -88,7 +86,6 @@ export default async function AccessAnalysisRoute() {
           initialTerrain={initialTerrain}
           loadTerrain={loadTerrainForProject}
           loadOverview={loadOverviewTerrain}
-          roster={roster}
         />
       </div>
     </div>

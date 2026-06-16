@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "./EChart";
 import { PeopleDrillList } from "./PeopleDrillList";
+import { NoActivityBars } from "./NoActivityBars";
+import type { DormantEntity } from "../dormantActivity";
 import type { EChartsOption } from "echarts";
 import { collapseCompanySlices, UNKNOWN_COMPANY } from "../companyCounts";
 import type { CompanyActivitySummary } from "../companyActivityCounts";
@@ -49,10 +51,13 @@ function fmtPct(value: number, total: number): string {
 export function CompaniesActivityPieChart({
   summary,
   onUserClick,
+  dormant,
 }: {
   summary: CompanyActivitySummary;
   /** Open a person's profile (same drawer Model Coordination uses). */
   onUserClick?: (email: string) => void;
+  /** Companies with members in scope but 0 activity — the "No activity" footer. */
+  dormant?: DormantEntity[];
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
@@ -298,6 +303,7 @@ export function CompaniesActivityPieChart({
         })}
       </ul>
 
+      <NoActivityBars noun="companies" entities={dormant ?? []} onUserClick={onUserClick} />
     </div>
   );
 }

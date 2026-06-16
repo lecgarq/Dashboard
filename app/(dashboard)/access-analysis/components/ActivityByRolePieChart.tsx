@@ -3,6 +3,8 @@ import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "./EChart";
 import { PeopleDrillList } from "./PeopleDrillList";
+import { NoActivityBars } from "./NoActivityBars";
+import type { DormantEntity } from "../dormantActivity";
 import type { EChartsOption } from "echarts";
 import { UNKNOWN_ROLE, MULTIPLE_ROLES, collapseToTopSlices } from "../roleCounts";
 import type { RoleActivitySummary } from "../roleActivityCounts";
@@ -50,10 +52,13 @@ function fmtPct(value: number, total: number): string {
 export function ActivityByRolePieChart({
   summary,
   onUserClick,
+  dormant,
 }: {
   summary: RoleActivitySummary;
   /** Open a person's profile (same drawer Model Coordination uses). */
   onUserClick?: (email: string) => void;
+  /** Roles with members in scope but 0 activity — the "No activity" footer. */
+  dormant?: DormantEntity[];
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
@@ -301,6 +306,7 @@ export function ActivityByRolePieChart({
         })}
       </ul>
 
+      <NoActivityBars noun="roles" entities={dormant ?? []} onUserClick={onUserClick} />
     </div>
   );
 }

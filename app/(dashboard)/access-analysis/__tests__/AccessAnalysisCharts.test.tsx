@@ -146,25 +146,35 @@ describe("AccessAnalysisCharts — Activity by role donut", () => {
   });
 });
 
-describe("AccessAnalysisCharts — Dormant companies panel", () => {
-  it("does not render the dormant panel without a roster", () => {
-    const { queryByTestId } = render(<AccessAnalysisCharts roleRows={roleRows} moduleRows={moduleRows} />);
-    expect(queryByTestId("dormant-panel")).toBeNull();
-  });
-
-  it("renders the account-wide dormant panel from the roster", () => {
-    const { getByTestId } = render(
+describe("AccessAnalysisCharts — 'No activity' footers (replaces the Dormant panel)", () => {
+  it("no longer renders the standalone dormant panel", () => {
+    const { queryByTestId } = render(
       <AccessAnalysisCharts
         roleRows={roleRows}
         moduleRows={moduleRows}
         activityActorRows={activityActorRows}
         membershipRows={membershipRows}
-        roster={["Acme", "Globex"]}
       />,
     );
-    // roleRows carry no company → no company has members → Acme + Globex are "No users".
-    const panel = getByTestId("dormant-panel");
-    expect(panel).toBeTruthy();
-    expect(getByTestId("dormant-tab-no-users").textContent).toContain("2");
+    expect(queryByTestId("dormant-panel")).toBeNull();
+  });
+
+  it("lists roles with members but no activity under the Activity-by-role donut", () => {
+    // "Ghost" role has a member (Zoe) on p3, but only Ana (Member) recorded activity.
+    const rRows = [
+      { projectId: "p1", projectName: "Tower A", roles: ["Member"], name: "Ana", email: "ana@x.com" },
+      { projectId: "p3", projectName: "Tower C", roles: ["Ghost"], name: "Zoe", email: "zoe@x.com" },
+    ];
+    const aRows = [{ projectId: "p1", projectName: "Tower A", userEmail: "ana@x.com", userName: "Ana", count: 100 }];
+    const mRows = [
+      { projectId: "p1", email: "ana@x.com", roles: ["Member"] },
+      { projectId: "p3", email: "zoe@x.com", roles: ["Ghost"] },
+    ];
+    const { getByTestId } = render(
+      <AccessAnalysisCharts roleRows={rRows} moduleRows={moduleRows} activityActorRows={aRows} membershipRows={mRows} />,
+    );
+    const footer = getByTestId("no-activity-roles");
+    expect(footer.textContent).toContain("No activity");
+    expect(footer.textContent).toContain("Ghost");
   });
 });
