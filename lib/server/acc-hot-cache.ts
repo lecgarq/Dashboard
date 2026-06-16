@@ -181,12 +181,18 @@ function getAccHotCacheStats() {
 
 export async function getCachedAccDcBulkUsers(
   db: any,
-  input: { includePermissionContexts?: boolean; includePermissionSummary?: boolean; includeActivityMix?: boolean } = {},
+  input: { includePermissionContexts?: boolean; includePermissionSummary?: boolean; includeActivityMix?: boolean; leanProjects?: boolean } = {},
 ): Promise<BulkAccUser[]> {
   const includePermissionContexts = input.includePermissionContexts === true;
   const includePermissionSummary = input.includePermissionSummary === true;
   const needsFolderPerms = includePermissionContexts || includePermissionSummary;
   const includeActivityMix = input.includeActivityMix === true;
+  // leanProjects: empty each project's roles[]/modules[] (≈77% of the projects
+  // payload, ~15MB at hub scale). The /users directory never reads per-project
+  // roles/modules — its role/module filters use the top-level allRoles/allModules
+  // aggregates — so this trims the dehydrated page payload without losing any
+  // field /users actually consumes. Other surfaces keep the full variant.
+  const leanProjects = input.leanProjects === true;
   const versionSpecs = needsFolderPerms
     ? [...DC_VERSION_SPECS, ...PERMISSION_VERSION_SPECS]
     : [...DC_VERSION_SPECS];
@@ -198,6 +204,7 @@ export async function getCachedAccDcBulkUsers(
       includePermissionContexts ? "ctx" : null,
       includePermissionSummary ? "sum" : null,
       includeActivityMix ? "act2" : null, // bumped: payload now includes per-action counts (Phase B)
+      leanProjects ? "leanproj" : null,
     ]
       .filter(Boolean)
       .join("+") || "lean";
@@ -323,7 +330,7 @@ export async function getCachedAccDcBulkUsers(
         adminActionsByActor = foldAdminActionRows(adminGroups);
       }
 
-      return assembleDcUsers({
+      const assembled = assembleDcUsers({
         includePermissionContexts,
         includePermissionSummary,
         folderSummaryByProjectRole,
@@ -363,6 +370,27 @@ export async function getCachedAccDcBulkUsers(
           totalSizeBytes: r.totalSizeBytes,
         })),
       });
+
+      // leanProjects: reduce each project to the fields the /users directory
+      // actually reads (id for the side-panel name map, name for the project
+      // filter, status for the status fallback). Dropping the per-(project,user)
+      // optional fields — addedOn, lastSignIn, crawlStatus, actionCounts, the
+      // P5 metrics — is where the bytes are (~15 MB across 22.8k project rows).
+      // roles/modules are emptied too; the filters use the top-level
+      // allRoles/allModules aggregates, which assembly already computed above.
+      // Done post-assembly so those aggregates see the full data first.
+      if (!leanProjects) return assembled;
+      return assembled.map((u) => ({
+        ...u,
+        projects: u.projects.map((p) => ({
+          id: p.id,
+          name: p.name,
+          status: p.status,
+          isAdmin: p.isAdmin,
+          roles: [] as string[],
+          modules: [] as string[],
+        })),
+      }));
     },
   );
 }
@@ -814,6 +842,11 @@ export async function prewarmAccHotCache(db: any) {
   const start = Date.now();
   const tasks = [
     await timeTask("accDcGraph.bulkUsers", () => getCachedAccDcBulkUsers(db)),
+    // The /users directory uses this trimmed variant (no per-project
+    // roles/modules) — warm it so the route's SSR prefetch is a hit.
+    await timeTask("accDcGraph.bulkUsers(leanProjects)", () =>
+      getCachedAccDcBulkUsers(db, { leanProjects: true }),
+    ),
     // /users/spatial-graph requests this HEAVY variant (folder-perm SQL aggregate
     // over ~6M rows + activity grouping ≈ 15s cold). It's a SEPARATE cache key
     // from the lean snapshot above, so it must be warmed explicitly or the first

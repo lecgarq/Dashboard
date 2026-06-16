@@ -116,6 +116,31 @@ describe("ACC hot cache", () => {
     expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
   });
 
+  it("leanProjects variant empties per-project roles[]/modules[] but keeps name/status and a separate cache key", async () => {
+    const db = makeDcDb();
+
+    const full = await getCachedAccDcBulkUsers(db, {});
+    const lean = await getCachedAccDcBulkUsers(db, { leanProjects: true });
+
+    const fullUser = full.find((u) => u.projects.length > 0)!;
+    const leanUser = lean.find((u) => u.email === fullUser.email)!;
+
+    // Sanity: the full variant carries per-project roles (the heavy payload).
+    expect(fullUser.projects[0].roles.length).toBeGreaterThan(0);
+    // Lean-projects keeps project identity (name/status/id) for the /users
+    // directory filter + status fallback, but drops the heavy roles/modules.
+    expect(leanUser.projects).toHaveLength(fullUser.projects.length);
+    expect(leanUser.projects[0].name).toBe(fullUser.projects[0].name);
+    expect(leanUser.projects[0].status).toBe(fullUser.projects[0].status);
+    expect(leanUser.projects[0].roles).toEqual([]);
+    expect(leanUser.projects[0].modules).toEqual([]);
+    // Top-level aggregates are untouched — the role/module filters rely on these.
+    expect(leanUser.allRoles).toEqual(fullUser.allRoles);
+    expect(leanUser.allModules).toEqual(fullUser.allModules);
+    // Separate cache key: the lean-projects compute runs its own assembly.
+    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(2);
+  });
+
   it("does not poison the cache when DC bulk-user assembly fails", async () => {
     const db = makeDcDb();
     db.accDcProjectUser.findMany.mockRejectedValueOnce(new Error("temporary read failure"));

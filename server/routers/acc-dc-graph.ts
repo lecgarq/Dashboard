@@ -23,6 +23,8 @@ export const accDcGraphRouter = router({
       includePermissionContexts: z.boolean().optional(),
       includePermissionSummary: z.boolean().optional(),
       includeActivityMix: z.boolean().optional(),
+      // Empties per-project roles[]/modules[] — the /users directory's lean payload.
+      leanProjects: z.boolean().optional(),
     }).optional())
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);

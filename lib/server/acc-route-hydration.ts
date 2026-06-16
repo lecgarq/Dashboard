@@ -25,7 +25,10 @@ export async function prefetchUsersRouteAccData(helpers: any) {
   // superjson into the page HTML. The client query is gated to fetch it lazily
   // only when the DC snapshot is genuinely empty.
   await Promise.allSettled([
-    helpers.accDcGraph.bulkUsers.prefetch(undefined, snapshotOptions),
+    // leanProjects:true MUST match the client query in UsersDirectoryClient — it's
+    // part of the tRPC/React-Query cache key, so a mismatch silently misses the
+    // hydration cache and the client refetches the whole snapshot after mount.
+    helpers.accDcGraph.bulkUsers.prefetch({ leanProjects: true }, snapshotOptions),
     helpers.accMembers.enrichedUsers.prefetch(undefined, snapshotOptions),
     helpers.users.getOrgDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),
     helpers.users.getDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),

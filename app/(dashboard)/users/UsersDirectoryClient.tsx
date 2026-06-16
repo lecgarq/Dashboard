@@ -1434,10 +1434,18 @@ export function UsersDirectoryClient() {
   // Primary user snapshot (DC). Drives the directory rows, badges, filters and
   // the ACC Analysis panel. bulkAccSummary below is only a fallback for when
   // this is empty.
-  const { data: dcUsersRaw = [], isLoading: dcLoading } = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
-    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    retry: false,
-  });
+  //
+  // leanProjects: the directory + its filters never read per-project
+  // roles[]/modules[] (role/module filters use the top-level allRoles/allModules),
+  // so we request the variant that empties them — trimming ~15 MB from the
+  // dehydrated page payload. The input MUST match the prefetch + prewarm key.
+  const { data: dcUsersRaw = [], isLoading: dcLoading } = trpc.accDcGraph.bulkUsers.useQuery(
+    { leanProjects: true },
+    {
+      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
+      retry: false,
+    },
+  );
   // Fallback ACC summary (~7 MB) — consumed only when the DC snapshot is empty
   // (selectAccSummarySource prefers dcUsersRaw). Gated so it never loads while DC
   // data is present, which is always in production; this keeps it out of both the

@@ -32,9 +32,11 @@ describe("ACC route hydration", () => {
     // empty) — prefetching it dehydrated ~7 MB of redundant superjson, so it is
     // intentionally left to the client's gated lazy query.
     expect(helpers.users.bulkAccSummary.prefetch).not.toHaveBeenCalled();
-    expect(helpers.accDcGraph.bulkUsers.prefetch).toHaveBeenCalledWith(undefined, {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    });
+    // leanProjects:true must match the UsersDirectoryClient query key (hydration parity).
+    expect(helpers.accDcGraph.bulkUsers.prefetch).toHaveBeenCalledWith(
+      { leanProjects: true },
+      { staleTime: ACC_SNAPSHOT_STALE_TIME_MS },
+    );
     expect(helpers.accMembers.enrichedUsers.prefetch).toHaveBeenCalledWith(undefined, {
       staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     });
