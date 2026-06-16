@@ -59,13 +59,22 @@ describe("CompaniesPieChart", () => {
     expect(getByTestId("echart").getAttribute("data-slices")).toBe("4");
   });
 
-  it("toggles a company off from the legend", () => {
-    const { getByTestId } = render(<CompaniesPieChart data={data} distinctCompanies={5} />);
-    const legend = getByTestId("company-legend");
-    const top = within(legend).getByRole("button", { name: /Hermosillo/ });
-    fireEvent.click(top);
-    expect(top.getAttribute("aria-pressed")).toBe("false");
-    expect(getByTestId("echart").getAttribute("data-active")).toBe("5"); // 6 shown, 1 hidden
-    expect(getByTestId("company-metrics").textContent).toContain("100 users"); // 150 - 50
+  it("drills into the people behind a company and fires onUserClick", () => {
+    const onUserClick = vi.fn();
+    const usersByCompany = new Map([
+      ["Hermosillo", [
+        { email: "ana@x.com", name: "Ana", count: 3 },
+        { email: "al@x.com", name: "Al", count: 1 },
+      ]],
+    ]);
+    const { getByTestId } = render(
+      <CompaniesPieChart data={data} distinctCompanies={5} usersByCompany={usersByCompany} onUserClick={onUserClick} />,
+    );
+    fireEvent.click(within(getByTestId("company-legend")).getByRole("button", { name: /Hermosillo/ }));
+    const drill = getByTestId("company-drilldown");
+    expect(drill.textContent).toContain("Ana");
+    expect(drill.textContent).toContain("Al");
+    fireEvent.click(within(drill).getByRole("button", { name: /Ana/ }));
+    expect(onUserClick).toHaveBeenCalledWith("ana@x.com");
   });
 });
