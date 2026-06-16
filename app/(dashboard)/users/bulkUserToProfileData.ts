@@ -37,6 +37,8 @@ export function bulkUserToProfileData(user: BulkAccUser): AccProfileData {
     syncedAt: user.syncedAt,
     role,
     company: user.companyName ?? undefined,
+    photoUrl: user.photoUrl ?? undefined,
+    costCenter: user.costCenter ?? undefined,
     addedOn: user.addedOn ?? undefined,
     lastSignIn: user.lastSignIn ?? undefined,
     projects,

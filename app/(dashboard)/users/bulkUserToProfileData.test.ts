@@ -88,4 +88,28 @@ describe("bulkUserToProfileData", () => {
     });
     expect(data.status).toBe("inactive");
   });
+
+  it("maps photoUrl and costCenter into the profile data", () => {
+    const user = {
+      email: "ada@hermosillo.com",
+      name: "Ada",
+      found: true,
+      projectCount: 0,
+      activeCount: 0,
+      adminCount: 0,
+      hasNoProjects: true,
+      syncedAt: "2026-06-16T00:00:00.000Z",
+      allRoles: [],
+      allModules: [],
+      projects: [],
+      isAccountAdmin: false,
+      addedOn: null,
+      photoUrl: "https://lh3.googleusercontent.com/a/ada",
+      costCenter: "ENG-100",
+    } as const;
+
+    const data = bulkUserToProfileData(user as never);
+    expect(data.photoUrl).toBe("https://lh3.googleusercontent.com/a/ada");
+    expect(data.costCenter).toBe("ENG-100");
+  });
 });

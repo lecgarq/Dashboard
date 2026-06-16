@@ -368,6 +368,8 @@ export type AccProfileData = {
   company?: string;
   addedOn?: string;
   lastSignIn?: string;
+  photoUrl?: string | null;
+  costCenter?: string | null;
   projects?: ProjectData[];
 };
 
