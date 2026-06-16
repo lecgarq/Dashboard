@@ -35,7 +35,8 @@ describe("PeopleDrillList", () => {
     const { getByTestId } = render(
       <PeopleDrillList testId="role-drilldown" title="Hermosillo" color="#6366f1" people={people} total={100} unitNoun="members" onClose={() => {}} />,
     );
-    expect(within(getByTestId("role-drilldown")).getByRole("button", { name: /Ana/ })).toBeDisabled();
+    const row = within(getByTestId("role-drilldown")).getByRole("button", { name: /Ana/ }) as HTMLButtonElement;
+    expect(row.disabled).toBe(true);
   });
 
   it("fires onClose when the close button is clicked", () => {
