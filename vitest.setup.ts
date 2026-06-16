@@ -1,4 +1,5 @@
 import { vi } from 'vitest';
+import '@testing-library/jest-dom';
 
 process.env.DATABASE_URL = "postgresql://user:pass@localhost:5432/db";
 process.env.NODE_ENV = "test";
