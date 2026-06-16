@@ -3,13 +3,24 @@ import "server-only";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
 import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
+import {
+  groupUnifiedActivityByUserProjectAction,
+  groupUnifiedAdminActionsByActor,
+} from "@/lib/server/unifiedActivitySource";
 
 const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
+// Sliding-TTL hard ceiling. A version-stable entry that keeps getting read (e.g.
+// kept warm by the 8-min instrumentation prewarm) has its TTL pushed forward on
+// every hit so it never lapses into a cold window. This caps how long that can
+// continue without a fresh compute, so a change the version probe somehow missed
+// still self-heals within the hour instead of being pinned warm forever.
+const ACC_HOT_CACHE_MAX_AGE_MS = 60 * 60_000;
 
 type CacheEntry<T> = {
   namespace: string;
   inputKey: string;
   version: string;
+  createdAt: number;
   expiresAt: number;
   promise: Promise<T>;
 };
@@ -84,7 +95,11 @@ async function cached<T>(
   const key = `${namespace}:${inputKey}:${version}`;
   const now = Date.now();
   const existing = cache.get(key) as CacheEntry<T> | undefined;
-  if (existing && existing.expiresAt > now) {
+  if (existing && existing.expiresAt > now && now - existing.createdAt < ACC_HOT_CACHE_MAX_AGE_MS) {
+    // Sliding TTL: each hit pushes the expiry forward so a regularly-read (or
+    // prewarmed) snapshot stays warm indefinitely while its data version is
+    // unchanged — eliminating the cold-load window between prewarm cycles.
+    existing.expiresAt = now + ACC_HOT_CACHE_TTL_MS;
     stats.hits++;
     return existing.promise;
   }
@@ -95,6 +110,7 @@ async function cached<T>(
     namespace,
     inputKey,
     version,
+    createdAt: now,
     expiresAt: now + ACC_HOT_CACHE_TTL_MS,
     promise,
   });
@@ -128,7 +144,10 @@ const DC_VERSION_SPECS = [
 // is bounded by the 10-min cache TTL.
 const PERMISSION_VERSION_SPECS = [{ model: "accFolder", maxField: "syncedAt" }];
 
-const ACTIVITY_VERSION_SPECS = [{ model: "accActivity", maxField: "createdAt" }];
+const ACTIVITY_VERSION_SPECS = [
+  { model: "accActivity", maxField: "createdAt" },
+  { model: "accActivityAccds", maxField: "createdAt" },
+];
 
 const ENRICHED_VERSION_SPECS = [
   ...DC_VERSION_SPECS,
@@ -296,38 +315,12 @@ export async function getCachedAccDcBulkUsers(
       let activityByInstance: Map<string, InstanceActivity> | undefined;
       let adminActionsByActor: Map<string, Record<string, number>> | undefined;
       if (includeActivityMix) {
-        // Grouped ONLY — never findMany over AccActivity. sourceFile='project'
-        // already excludes admin rows (projectId='' sentinel); the projectId filter
-        // is explicit per spec. C0 measured this at ~218ms over ~623k rows.
-        const groups = await db.accActivity.groupBy({
-          by: ["userEmail", "projectId", "rawAction"],
-          where: { sourceFile: "project", userEmail: { not: null }, projectId: { not: "" } },
-          _count: { _all: true },
-          _max: { createdAt: true },
-        });
-        activityByInstance = foldActivityRows(
-          groups.map((g: any) => ({
-            userEmail: g.userEmail as string,
-            projectId: g.projectId as string,
-            rawAction: g.rawAction as string,
-            count: g._count._all as number,
-            lastCreatedAt: (g._max.createdAt as Date).toISOString(),
-          })),
-        );
-        // [Phase B] Account-level admin actions (projectId='' sentinel): attribute to the
-        // ACTOR (userEmail). No target resolution. Grouped by actor + action only.
-        const adminGroups = await db.accActivity.groupBy({
-          by: ["userEmail", "rawAction"],
-          where: { sourceFile: "admin", userEmail: { not: null } },
-          _count: { _all: true },
-        });
-        adminActionsByActor = foldAdminActionRows(
-          adminGroups.map((g: any) => ({
-            actorEmail: g.userEmail as string,
-            rawAction: g.rawAction as string,
-            count: g._count._all as number,
-          })),
-        );
+        const [groups, adminGroups] = await Promise.all([
+          groupUnifiedActivityByUserProjectAction(db),
+          groupUnifiedAdminActionsByActor(db),
+        ]);
+        activityByInstance = foldActivityRows(groups);
+        adminActionsByActor = foldAdminActionRows(adminGroups);
       }
 
       return assembleDcUsers({
@@ -821,6 +814,17 @@ export async function prewarmAccHotCache(db: any) {
   const start = Date.now();
   const tasks = [
     await timeTask("accDcGraph.bulkUsers", () => getCachedAccDcBulkUsers(db)),
+    // /users/spatial-graph requests this HEAVY variant (folder-perm SQL aggregate
+    // over ~6M rows + activity grouping ≈ 15s cold). It's a SEPARATE cache key
+    // from the lean snapshot above, so it must be warmed explicitly or the first
+    // visitor after each idle gap eats the full cold cost. Combined with the
+    // sliding TTL, this 8-min prewarm keeps it permanently warm.
+    await timeTask("accDcGraph.bulkUsers(summary+activity)", () =>
+      getCachedAccDcBulkUsers(db, {
+        includePermissionSummary: true,
+        includeActivityMix: true,
+      }),
+    ),
     await timeTask("accMembers.enrichedUsers", () => getCachedAccMembersEnrichedUsers(db)),
     await timeTask("users.bulkAccSummary", () => getCachedBulkAccSummary(db)),
   ];

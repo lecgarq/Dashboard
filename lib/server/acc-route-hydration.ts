@@ -18,8 +18,13 @@ export async function createAccRouteHelpers() {
 
 export async function prefetchUsersRouteAccData(helpers: any) {
   const snapshotOptions = { staleTime: ACC_SNAPSHOT_STALE_TIME_MS };
+  // NOTE: users.bulkAccSummary is deliberately NOT prefetched. The directory uses
+  // it only as a FALLBACK source when accDcGraph.bulkUsers is empty (see
+  // selectAccSummarySource); whenever the DC snapshot has data — i.e. always in
+  // production — it's discarded. Prefetching it dehydrated a redundant ~7 MB of
+  // superjson into the page HTML. The client query is gated to fetch it lazily
+  // only when the DC snapshot is genuinely empty.
   await Promise.allSettled([
-    helpers.users.bulkAccSummary.prefetch(undefined, snapshotOptions),
     helpers.accDcGraph.bulkUsers.prefetch(undefined, snapshotOptions),
     helpers.accMembers.enrichedUsers.prefetch(undefined, snapshotOptions),
     helpers.users.getOrgDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),

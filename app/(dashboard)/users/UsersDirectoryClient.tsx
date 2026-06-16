@@ -1431,15 +1431,21 @@ export function UsersDirectoryClient() {
     };
   }, []);
 
-  // Bulk ACC cache summary — used for instant "No ACC Projects" filter + card badges (Plan 7.1)
-  // and for the ACC Analysis panel (Plan 7.2). Extended fields: allRoles, allModules, projects[].
-  const { data: accSummaryRaw = [], refetch: refetchAccSummary } = trpc.users.bulkAccSummary.useQuery(undefined, {
+  // Primary user snapshot (DC). Drives the directory rows, badges, filters and
+  // the ACC Analysis panel. bulkAccSummary below is only a fallback for when
+  // this is empty.
+  const { data: dcUsersRaw = [], isLoading: dcLoading } = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     retry: false,
   });
-  const { data: dcUsersRaw = [] } = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
+  // Fallback ACC summary (~7 MB) — consumed only when the DC snapshot is empty
+  // (selectAccSummarySource prefers dcUsersRaw). Gated so it never loads while DC
+  // data is present, which is always in production; this keeps it out of both the
+  // dehydrated page payload and the post-mount fetch path.
+  const { data: accSummaryRaw = [] } = trpc.users.bulkAccSummary.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     retry: false,
+    enabled: !dcLoading && dcUsersRaw.length === 0,
   });
   const { data: enrichedUsers = [], isLoading: enrichedLoading } = trpc.accMembers.enrichedUsers.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,

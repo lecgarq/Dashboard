@@ -23,14 +23,15 @@ function makeHelpers() {
 }
 
 describe("ACC route hydration", () => {
-  it("prefetches the exact /users ACC and directory queries used by useMergedAccUsers", async () => {
+  it("prefetches the /users ACC + directory queries but NOT the fallback-only bulkAccSummary", async () => {
     const helpers = makeHelpers();
 
     await prefetchUsersRouteAccData(helpers as never);
 
-    expect(helpers.users.bulkAccSummary.prefetch).toHaveBeenCalledWith(undefined, {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    });
+    // bulkAccSummary is a fallback source (used only when the DC snapshot is
+    // empty) — prefetching it dehydrated ~7 MB of redundant superjson, so it is
+    // intentionally left to the client's gated lazy query.
+    expect(helpers.users.bulkAccSummary.prefetch).not.toHaveBeenCalled();
     expect(helpers.accDcGraph.bulkUsers.prefetch).toHaveBeenCalledWith(undefined, {
       staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     });

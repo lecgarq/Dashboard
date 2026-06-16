@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCachedAccDcBulkUsers,
   getCachedAccMembersEnrichedUsers,
   invalidateAccHotCache,
+  prewarmAccHotCache,
 } from "./acc-hot-cache";
 
 const stamp = new Date("2026-05-21T12:00:00.000Z");
@@ -58,10 +59,27 @@ function makeDcDb() {
   };
 }
 
+// Superset mock that also supports the heavy bulkUsers variant (folder-perm SQL
+// aggregate + activity grouping go through `$queryRaw`) and the other prewarm
+// targets (`user`, embedding, activity version probes).
+function makePrewarmDb(): any {
+  const db: any = makeDcDb();
+  db.user = versionedModel([{ email: "user@lecg.com", name: "User" }]);
+  db.accActivity = versionedModel([]);
+  db.accActivityAccds = versionedModel([]);
+  db.accInstanceEmbedding = { findMany: vi.fn(async () => []) };
+  db.$queryRaw = vi.fn(async () => []);
+  return db;
+}
+
 describe("ACC hot cache", () => {
   beforeEach(() => {
     invalidateAccHotCache();
     vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
   it("reuses cached DC bulk users while the DB version signature is unchanged", async () => {
@@ -115,6 +133,49 @@ describe("ACC hot cache", () => {
     await getCachedAccMembersEnrichedUsers(db);
 
     expect(db.accProjectMember.findMany).toHaveBeenCalledTimes(1);
+    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  it("prewarms the heavy permission-summary + activity bulkUsers variant, not just the lean one", async () => {
+    const db = makePrewarmDb();
+
+    const result = await prewarmAccHotCache(db);
+
+    // The heavy variant's folder-perm aggregate + activity grouping run through
+    // `$queryRaw`; the lean variant never touches it. If prewarm only warmed the
+    // lean snapshot (the old bug), `$queryRaw` is never called here.
+    expect(db.$queryRaw).toHaveBeenCalled();
+    expect(
+      result.tasks.some((task) => /summary|activity/i.test(task.name) && task.ok),
+    ).toBe(true);
+
+    // And /users/spatial-graph's exact query must now be a warm cache hit.
+    const queryRawCallsAfterPrewarm = db.$queryRaw.mock.calls.length;
+    await getCachedAccDcBulkUsers(db, {
+      includePermissionSummary: true,
+      includeActivityMix: true,
+    });
+    expect(db.$queryRaw.mock.calls.length).toBe(queryRawCallsAfterPrewarm);
+  });
+
+  it("slides the TTL on cache hits so a regularly-prewarmed snapshot never goes cold", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-16T00:00:00.000Z"));
+    const db = makeDcDb();
+
+    await getCachedAccDcBulkUsers(db); // miss → compute, base expiry +10min
+    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(1);
+
+    // A prewarm hit at +8min (under the 10-min TTL) must push the expiry forward.
+    vi.setSystemTime(new Date("2026-06-16T00:08:00.000Z"));
+    await getCachedAccDcBulkUsers(db);
+    expect(db.accDcUser.findMany).toHaveBeenCalledTimes(1);
+
+    // +16min: under a fixed 10-min TTL the original entry (expiry +10) would have
+    // been evicted → recompute. With sliding TTL the +8 hit pushed expiry to +18,
+    // so this is still a warm hit.
+    vi.setSystemTime(new Date("2026-06-16T00:16:00.000Z"));
+    await getCachedAccDcBulkUsers(db);
     expect(db.accDcUser.findMany).toHaveBeenCalledTimes(1);
   });
 });

@@ -164,15 +164,19 @@ export function useOrgDirectoryPeople(
 }
 
 export function useMergedAccUsers(options: { refetchInterval?: number | false } = {}): { users: BulkAccUser[]; loading: boolean } {
-  const { data: accSummaryRaw = [], isLoading: accLoading } = trpc.users.bulkAccSummary.useQuery(undefined, {
-    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    retry: false,
-    refetchInterval: options.refetchInterval,
-  });
   const { data: dcUsersRaw = [], isLoading: dcLoading } = trpc.accDcGraph.bulkUsers.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
     retry: false,
     refetchInterval: options.refetchInterval,
+  });
+  // bulkAccSummary is a ~7 MB fallback source consumed only when the DC snapshot
+  // is empty (selectAccSummarySource prefers dcUsersRaw). Gate it so it never
+  // loads while DC data is present — which is always, in production.
+  const { data: accSummaryRaw = [], isLoading: accLoading } = trpc.users.bulkAccSummary.useQuery(undefined, {
+    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
+    retry: false,
+    refetchInterval: options.refetchInterval,
+    enabled: !dcLoading && dcUsersRaw.length === 0,
   });
   const { data: enrichedUsers = [], isLoading: enrichedLoading } = trpc.accMembers.enrichedUsers.useQuery(undefined, {
     staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
