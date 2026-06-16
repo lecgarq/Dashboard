@@ -667,8 +667,8 @@ export function AccProfileFull({
         </div>
       )}
 
-      {/* ── Projects list (hidden when a stat-card detail is open) ── */}
-      {!activeCard && filteredProjects.length > 0 && (
+      {/* ── Projects list ── */}
+      {filteredProjects.length > 0 && (
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground font-bold uppercase tracking-wide">
@@ -692,7 +692,7 @@ export function AccProfileFull({
         </div>
       )}
 
-      {!activeCard && filteredProjects.length === 0 && projects.length > 0 && (
+      {filteredProjects.length === 0 && projects.length > 0 && (
         <p className="text-sm text-muted-foreground text-center py-6">
           No projects match your search
         </p>

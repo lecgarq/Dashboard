@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 
@@ -89,7 +89,8 @@ describe("UserProfilePanel", () => {
     expect(screen.queryByTestId("stat-detail-admin")).toBeNull();
     fireEvent.click(screen.getByTestId("statcard-admin"));
     expect(screen.getByTestId("stat-detail-admin")).toBeTruthy();
-    expect(screen.getByText("Tower A")).toBeTruthy();
+    // Scope to the detail: with push-down, "Tower A" also appears in the projects list below.
+    expect(within(screen.getByTestId("stat-detail-admin")).getByText("Tower A")).toBeTruthy();
     fireEvent.click(screen.getByTestId("statcard-admin"));
     expect(screen.queryByTestId("stat-detail-admin")).toBeNull();
   });
