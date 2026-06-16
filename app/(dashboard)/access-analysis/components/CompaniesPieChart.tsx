@@ -6,7 +6,7 @@ import type { EChartsOption } from "echarts";
 import { type RoleSlice } from "../roleCounts";
 import { UNKNOWN_COMPANY, collapseCompanySlices } from "../companyCounts";
 
-// Vibrant, cohesive palette for the role slices. These are data colors and
+// Vibrant, cohesive palette for the company slices. These are data colors and
 // read well on both the light and dark card surfaces.
 const PALETTE = [
   "#6366f1", "#22d3ee", "#34d399", "#10b981", "#3b82f6", "#a78bfa",
@@ -20,15 +20,15 @@ const OTHERS_COLOR = "#71717a";   // zinc-500 — the folded tail
 const DEFAULT_TOP = 8;
 
 // Range-slider chrome. Token-driven (var(--primary)/(--card)/(--border)) so the
-// thumb and fill follow the active theme. `rp-` prefixed to avoid leakage.
+// thumb and fill follow the active theme. `cp-` prefixed to avoid leakage.
 const PIE_CSS = `
-.rp-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
-.rp-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 9999px; background: var(--card); border: 3px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.35); transition: transform .12s ease; }
-.rp-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
-.rp-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ring); outline-offset: 2px; }
-.rp-range::-moz-range-thumb { width: 15px; height: 15px; border: 3px solid var(--primary); border-radius: 9999px; background: var(--card); }
-.rp-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
-.rp-range:disabled { opacity: .45; cursor: not-allowed; }
+.cp-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
+.cp-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 9999px; background: var(--card); border: 3px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.35); transition: transform .12s ease; }
+.cp-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.cp-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ring); outline-offset: 2px; }
+.cp-range::-moz-range-thumb { width: 15px; height: 15px; border: 3px solid var(--primary); border-radius: 9999px; background: var(--card); }
+.cp-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
+.cp-range:disabled { opacity: .45; cursor: not-allowed; }
 `;
 
 const isWarning = (name: string) => name === UNKNOWN_COMPANY;
@@ -45,7 +45,7 @@ export function CompaniesPieChart({ data, distinctCompanies }: { data: RoleSlice
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
 
-  // Stable color per role name (kept across collapse/expand and toggling).
+  // Stable color per company name (kept across collapse/expand and toggling).
   const colorByName = useMemo(() => {
     const m = new Map<string, string>();
     let hue = 0;
@@ -215,7 +215,7 @@ export function CompaniesPieChart({ data, distinctCompanies }: { data: RoleSlice
             onChange={(e) => changeTopN(e.target.value)}
             disabled={singleCount <= 1}
             aria-label="Number of top companies to show"
-            className="rp-range w-36"
+            className="cp-range w-36"
             style={{ background: `linear-gradient(to right, var(--primary) ${trackPct}%, var(--border) ${trackPct}%)` }}
           />
           <span className="min-w-[3.5rem] rounded-md border border-border bg-muted px-2 py-0.5 text-center font-semibold tabular-nums text-foreground">

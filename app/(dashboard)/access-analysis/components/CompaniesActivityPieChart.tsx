@@ -6,8 +6,8 @@ import type { EChartsOption } from "echarts";
 import { collapseCompanySlices, UNKNOWN_COMPANY } from "../companyCounts";
 import type { CompanyActivitySummary } from "../companyActivityCounts";
 
-// Same role palette + warning colors as RolesPieChart, so a role reads the same
-// hue in both donuts. Slices are data colors that work on light + dark cards.
+// Same company palette + warning colors as CompaniesPieChart, so a company reads the
+// same hue in both donuts. Slices are data colors that work on light + dark cards.
 const PALETTE = [
   "#6366f1", "#22d3ee", "#34d399", "#10b981", "#3b82f6", "#a78bfa",
   "#2dd4bf", "#facc15", "#38bdf8", "#c084fc", "#4ade80", "#818cf8",
@@ -20,13 +20,13 @@ const OTHERS_COLOR = "#71717a"; // zinc-500 — the folded tail
 const DEFAULT_TOP = 8;
 
 const PIE_CSS = `
-.ar-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
-.ar-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 9999px; background: var(--card); border: 3px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.35); transition: transform .12s ease; }
-.ar-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
-.ar-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ring); outline-offset: 2px; }
-.ar-range::-moz-range-thumb { width: 15px; height: 15px; border: 3px solid var(--primary); border-radius: 9999px; background: var(--card); }
-.ar-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
-.ar-range:disabled { opacity: .45; cursor: not-allowed; }
+.ca-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
+.ca-range::-webkit-slider-thumb { -webkit-appearance: none; appearance: none; width: 15px; height: 15px; border-radius: 9999px; background: var(--card); border: 3px solid var(--primary); box-shadow: 0 1px 4px rgba(0,0,0,.35); transition: transform .12s ease; }
+.ca-range:hover::-webkit-slider-thumb { transform: scale(1.15); }
+.ca-range:focus-visible::-webkit-slider-thumb { outline: 2px solid var(--ring); outline-offset: 2px; }
+.ca-range::-moz-range-thumb { width: 15px; height: 15px; border: 3px solid var(--primary); border-radius: 9999px; background: var(--card); }
+.ca-range::-moz-range-track { height: 6px; border-radius: 9999px; background: transparent; }
+.ca-range:disabled { opacity: .45; cursor: not-allowed; }
 `;
 
 const isWarning = (name: string) => name === UNKNOWN_COMPANY;
@@ -57,7 +57,7 @@ export function CompaniesActivityPieChart({
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
   const { slices, total, distinctCompanies, usersByCompany } = summary;
 
-  // Stable color per role name, assigned over the full (uncollapsed) slice list.
+  // Stable color per company name, assigned over the full (uncollapsed) slice list.
   const colorByName = useMemo(() => {
     const m = new Map<string, string>();
     let hue = 0;
@@ -208,7 +208,7 @@ export function CompaniesActivityPieChart({
           onChange={(e) => changeTopN(e.target.value)}
           disabled={singleCount <= 1}
           aria-label="Number of top companies to show"
-          className="ar-range w-36"
+          className="ca-range w-36"
           style={{ background: `linear-gradient(to right, var(--primary) ${trackPct}%, var(--border) ${trackPct}%)` }}
         />
         <span className="min-w-[3.5rem] rounded-md border border-border bg-muted px-2 py-0.5 text-center font-semibold tabular-nums text-foreground">
@@ -227,7 +227,7 @@ export function CompaniesActivityPieChart({
         <span className="text-muted-foreground">of {singleCount} companies</span>
       </div>
 
-      {/* Ranked legend — click a role to drill into the people behind it. */}
+      {/* Ranked legend — click a company to drill into the people behind it. */}
       <ul
         data-testid="activity-company-legend"
         className="mt-3 list-none border-t border-border pt-3"
@@ -283,7 +283,7 @@ export function CompaniesActivityPieChart({
         })}
       </ul>
 
-      {/* Drill-down: the people behind the selected role, busiest first. */}
+      {/* Drill-down: the people behind the selected company, busiest first. */}
       {drill && drillSlice && (
         <div data-testid="activity-company-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
           <div className="mb-2 flex items-center justify-between gap-2">
