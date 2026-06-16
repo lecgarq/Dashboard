@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "./EChart";
+import { PeopleDrillList } from "./PeopleDrillList";
 import type { EChartsOption } from "echarts";
 import { collapseCompanySlices, UNKNOWN_COMPANY } from "../companyCounts";
 import type { CompanyActivitySummary } from "../companyActivityCounts";
@@ -227,6 +228,20 @@ export function CompaniesActivityPieChart({
         <span className="text-muted-foreground">of {singleCount} companies</span>
       </div>
 
+      {/* Drill-down: the people behind the selected company, busiest first — above the legend. */}
+      {drill && drillSlice && (
+        <PeopleDrillList
+          testId="activity-company-drilldown"
+          title={drill}
+          color={colorFor(drill)}
+          people={drillUsers}
+          total={drillSlice.value}
+          unitNoun="activities"
+          onUserClick={onUserClick}
+          onClose={() => setDrill(null)}
+        />
+      )}
+
       {/* Ranked legend — click a company to drill into the people behind it. */}
       <ul
         data-testid="activity-company-legend"
@@ -283,61 +298,6 @@ export function CompaniesActivityPieChart({
         })}
       </ul>
 
-      {/* Drill-down: the people behind the selected company, busiest first. */}
-      {drill && drillSlice && (
-        <div data-testid="activity-company-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
-          <div className="mb-2 flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorFor(drill) }} aria-hidden />
-              {drill}
-              <span className="text-xs font-normal text-muted-foreground">
-                {drillUsers.length} {drillUsers.length === 1 ? "person" : "people"} · {drillSlice.value.toLocaleString()} activities
-              </span>
-            </div>
-            <button
-              type="button"
-              onClick={() => setDrill(null)}
-              aria-label="Close breakdown"
-              className="rounded-md border border-border px-1.5 py-0.5 text-xs text-muted-foreground transition hover:bg-accent hover:text-foreground"
-            >
-              ✕
-            </button>
-          </div>
-          <ul className="max-h-80 list-none space-y-0.5 overflow-auto pr-1" style={{ columnWidth: "260px", columnGap: "1.5rem" }}>
-            {drillUsers.map((u) => {
-              const barPct = drillSlice.value > 0 ? (u.count / drillSlice.value) * 100 : 0;
-              const clickable = !!(u.email && onUserClick);
-              return (
-                <li key={u.email} className="break-inside-avoid">
-                  <button
-                    type="button"
-                    disabled={!clickable}
-                    onClick={() => clickable && onUserClick!(u.email)}
-                    title={clickable ? `View ${u.name}'s profile` : u.email}
-                    className={`group/u relative flex w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors ${
-                      clickable ? "cursor-pointer hover:bg-accent" : "cursor-default"
-                    }`}
-                  >
-                    <span aria-hidden className="absolute inset-y-0 left-0 rounded-md" style={{ width: `${barPct}%`, background: colorFor(drill), opacity: 0.12 }} />
-                    <span
-                      className={`relative flex-1 truncate ${
-                        clickable ? "text-foreground/90 group-hover/u:text-primary group-hover/u:underline underline-offset-2" : "text-foreground/85"
-                      }`}
-                    >
-                      {u.name}
-                    </span>
-                    <span className="relative shrink-0 tabular-nums text-foreground">{u.count.toLocaleString()}</span>
-                    <span className="relative w-12 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(u.count, drillSlice.value)}</span>
-                    {clickable && (
-                      <span aria-hidden className="relative shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover/u:opacity-100">›</span>
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }
