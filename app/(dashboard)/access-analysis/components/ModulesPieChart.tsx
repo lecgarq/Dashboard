@@ -172,58 +172,6 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
         onEvents={{ click: (p) => (p.data as { id?: string })?.id && toggleDrill((p.data as { id: string }).id) }}
       />
 
-      {/* Ranked legend — click a module to drill into its activity types. */}
-      <ul
-        data-testid="module-legend"
-        className="mt-3 list-none border-t border-border pt-3"
-        style={{ columnWidth: "248px", columnGap: "1.5rem" }}
-      >
-        {slices.map((s) => {
-          const warn = s.id === UNMAPPED_MODULE;
-          const open = drill === s.id;
-          const barPct = total > 0 ? (s.value / total) * 100 : 0;
-          const color = colorFor(s.id);
-          const typeCount = typesByModule.get(s.id)?.length ?? 0;
-          return (
-            <li key={s.id} data-warning={warn || undefined} className="mb-1 break-inside-avoid">
-              <button
-                type="button"
-                aria-expanded={open}
-                onClick={() => toggleDrill(s.id)}
-                title={`${s.name} — ${s.value.toLocaleString()} activities (${fmtPct(s.value, total)}) · ${typeCount} activity types — click to ${open ? "collapse" : "expand"}`}
-                className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent ${
-                  open ? "bg-accent text-foreground" : "text-foreground/85"
-                }`}
-              >
-                <span
-                  aria-hidden
-                  className="absolute inset-y-0 left-0 rounded-md transition-all duration-300"
-                  style={{ width: `${barPct}%`, background: color, opacity: open ? 0.24 : 0.16 }}
-                />
-                <span
-                  className="relative h-2.5 w-2.5 shrink-0 rounded-sm"
-                  style={{ background: color, boxShadow: `0 0 6px ${color}66` }}
-                />
-                {warn && (
-                  <span data-testid="warning-icon" title="Activity not in the taxonomy" className="relative shrink-0 text-warning">
-                    ⚠
-                  </span>
-                )}
-                <span className={`relative flex-1 truncate ${warn ? "text-warning" : ""}`}>{s.name}</span>
-                <span className="relative shrink-0 tabular-nums text-foreground">{s.value.toLocaleString()}</span>
-                <span className="relative w-14 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(s.value, total)}</span>
-                <span
-                  aria-hidden
-                  className={`relative shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`}
-                >
-                  ›
-                </span>
-              </button>
-            </li>
-          );
-        })}
-      </ul>
-
       {/* Drill-down: every activity type that maps into the selected module. */}
       {drill && drillSlice && (
         <div data-testid="module-drilldown" className="mt-3 rounded-xl border border-border bg-muted/30 p-3">
@@ -279,6 +227,58 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
           </div>
         </div>
       )}
+
+      {/* Ranked legend — click a module to drill into its activity types. */}
+      <ul
+        data-testid="module-legend"
+        className="mt-3 list-none border-t border-border pt-3"
+        style={{ columnWidth: "248px", columnGap: "1.5rem" }}
+      >
+        {slices.map((s) => {
+          const warn = s.id === UNMAPPED_MODULE;
+          const open = drill === s.id;
+          const barPct = total > 0 ? (s.value / total) * 100 : 0;
+          const color = colorFor(s.id);
+          const typeCount = typesByModule.get(s.id)?.length ?? 0;
+          return (
+            <li key={s.id} data-warning={warn || undefined} className="mb-1 break-inside-avoid">
+              <button
+                type="button"
+                aria-expanded={open}
+                onClick={() => toggleDrill(s.id)}
+                title={`${s.name} — ${s.value.toLocaleString()} activities (${fmtPct(s.value, total)}) · ${typeCount} activity types — click to ${open ? "collapse" : "expand"}`}
+                className={`group relative flex min-w-0 w-full items-center gap-2 overflow-hidden rounded-md px-2 py-1 text-left text-xs transition-colors hover:bg-accent ${
+                  open ? "bg-accent text-foreground" : "text-foreground/85"
+                }`}
+              >
+                <span
+                  aria-hidden
+                  className="absolute inset-y-0 left-0 rounded-md transition-all duration-300"
+                  style={{ width: `${barPct}%`, background: color, opacity: open ? 0.24 : 0.16 }}
+                />
+                <span
+                  className="relative h-2.5 w-2.5 shrink-0 rounded-sm"
+                  style={{ background: color, boxShadow: `0 0 6px ${color}66` }}
+                />
+                {warn && (
+                  <span data-testid="warning-icon" title="Activity not in the taxonomy" className="relative shrink-0 text-warning">
+                    ⚠
+                  </span>
+                )}
+                <span className={`relative flex-1 truncate ${warn ? "text-warning" : ""}`}>{s.name}</span>
+                <span className="relative shrink-0 tabular-nums text-foreground">{s.value.toLocaleString()}</span>
+                <span className="relative w-14 shrink-0 text-right tabular-nums text-muted-foreground">{fmtPct(s.value, total)}</span>
+                <span
+                  aria-hidden
+                  className={`relative shrink-0 text-muted-foreground transition-transform duration-200 ${open ? "rotate-90" : ""}`}
+                >
+                  ›
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
 
       {/* Modules with no activity in the current scope. */}
       {zeroModules.length > 0 && (
