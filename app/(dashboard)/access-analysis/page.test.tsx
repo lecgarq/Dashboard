@@ -76,8 +76,13 @@ import AccessAnalysisRoute from "./page";
 describe("AccessAnalysisRoute (roles donut)", () => {
   it("buckets single role, Multiple roles, and Unknown, and reports the role count", async () => {
     const ui = await AccessAnalysisRoute();
-    const { getByTestId, getByText } = render(ui);
-    const el = getByTestId("echart");
+    const { getAllByTestId, getByText } = render(ui);
+    // Two donuts now render an echart (roles + companies). Pick the roles donut
+    // by its subtext, which names "roles" ("N roles · M user–project memberships").
+    const el = getAllByTestId("echart").find((c) =>
+      (c.getAttribute("data-subtexts") ?? "").includes("roles"),
+    )!;
+    expect(el).toBeTruthy();
     expect(el.getAttribute("data-slices")).toBe("3");
     const names = el.getAttribute("data-names")!.split("|");
     expect(names).toContain("Member");
