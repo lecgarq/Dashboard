@@ -729,7 +729,7 @@ function AccUserActivityPanel({ email }: { email: string }) {
   );
 
   const subtitle = data
-    ? `${data.last30dCount.toLocaleString()} events in last 30 days`
+    ? `${data.totalCount.toLocaleString()} events all-time`
     : isLoading
     ? "loading…"
     : "no data";
@@ -754,7 +754,7 @@ function AccUserActivityPanel({ email }: { email: string }) {
           {data.topActions.length > 0 && (
             <div>
               <p className="text-[10px] uppercase tracking-wider text-muted-foreground/50 font-bold mb-2">
-                Top actions (last 30 days)
+                Top actions
               </p>
               <div className="space-y-1.5">
                 {data.topActions.map((a) => (

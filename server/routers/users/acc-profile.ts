@@ -13,6 +13,11 @@ import {
   type AccProject,
 } from "@/lib/server/acc-admin";
 import { getCachedBulkAccSummary, invalidateAccHotCache } from "@/lib/server/acc-hot-cache";
+import {
+  countUnifiedActivityRows,
+  groupUnifiedActivityByRawAction,
+  listUnifiedActivityRows,
+} from "@/lib/server/unifiedActivitySource";
 import { toAccRouterError, resolveAccountIdForRouter } from "./shared";
 
 const ACC_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
@@ -190,40 +195,26 @@ export const userAccProfileProcedures = {
     }),
 
   // -------------------------------------------------------------------------
-  // getAccUserActivity — reads AccActivity for a single user (by email).
-  // Returns last-30d count, top 5 actions, and 20 most-recent events with
+  // getAccUserActivity — reads unified ACCDS + DC-backfill activity for a single user (by email).
+  // Returns all-time count, top 5 actions, and 20 most-recent events with
   // project names resolved.
   // -------------------------------------------------------------------------
   getAccUserActivity: protectedProcedure
     .input(z.object({ email: z.string().email() }))
     .query(async ({ input, ctx }) => {
       const email = input.email.toLowerCase();
-      const since30d = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
 
-      const [last30dCount, totalCount, topActionsRaw, recentRows, projects] = await Promise.all([
-        ctx.db.accActivity.count({ where: { userEmail: email, createdAt: { gte: since30d } } }),
-        ctx.db.accActivity.count({ where: { userEmail: email } }),
-        ctx.db.accActivity.groupBy({
-          by: ["rawAction"],
-          where: { userEmail: email, createdAt: { gte: since30d } },
-          _count: { _all: true },
-          orderBy: { _count: { rawAction: "desc" } },
+      // All-time: no date window. totalCount + top actions span the user's full history;
+      // recent events are the latest 20 regardless of age.
+      const [totalCount, topActionsRaw, recentRows, projects] = await Promise.all([
+        countUnifiedActivityRows(ctx.db, { userEmail: email }),
+        groupUnifiedActivityByRawAction(ctx.db, {
+          where: { userEmail: email },
           take: 5,
         }),
-        ctx.db.accActivity.findMany({
+        listUnifiedActivityRows(ctx.db, {
           where: { userEmail: email },
-          orderBy: { createdAt: "desc" },
           take: 20,
-          select: {
-            id: true,
-            createdAt: true,
-            rawAction: true,
-            service: true,
-            tool: true,
-            details: true,
-            projectId: true,
-            sourceFile: true,
-          },
         }),
         ctx.db.accProject.findMany({ select: { id: true, name: true } }),
       ]);
@@ -231,11 +222,10 @@ export const userAccProfileProcedures = {
       const projectName = new Map(projects.map((p) => [p.id, p.name]));
 
       return {
-        last30dCount,
         totalCount,
         topActions: topActionsRaw.map((row) => ({
           action: row.rawAction,
-          count: row._count._all,
+          count: row.count,
         })),
         recentEvents: recentRows.map((r) => ({
           id: r.id,

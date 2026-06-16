@@ -70,4 +70,10 @@ describe("UserProfilePanel", () => {
     expect(screen.getByText(/cost center/i)).toBeTruthy();
     expect(screen.getByText("ENG-100")).toBeTruthy();
   });
+
+  it("labels the activity summary as all-time, not last-30-days", () => {
+    render(<UserProfilePanel user={found} email={found.email} variant="rail" />);
+    expect(screen.getByText(/5 events all-time/i)).toBeTruthy();
+    expect(screen.queryByText(/last 30 days/i)).toBeNull();
+  });
 });
