@@ -60,24 +60,33 @@ describe("RolesPieChart", () => {
     expect(getByTestId("echart").getAttribute("data-slices")).toBe("5");
   });
 
-  it("expands Others (+) back to every role, in legend and on the pie", () => {
-    const { getByTestId, getByRole, queryByText } = render(<RolesPieChart data={data} distinctRoles={4} />);
+  it("expands Others back to every role, in legend and on the pie", () => {
+    const { getByTestId, queryByText } = render(<RolesPieChart data={data} distinctRoles={4} />);
     fireEvent.change(getByTestId("topn-input"), { target: { value: "2" } });
-    fireEvent.click(getByRole("button", { name: /expand/i }));
     const legend = getByTestId("role-legend");
+    fireEvent.click(within(legend).getByRole("button", { name: /Others \(2 roles\)/ }));
     expect(within(legend).getByRole("button", { name: /Charlie/ })).toBeTruthy();
     expect(within(legend).getByRole("button", { name: /Delta/ })).toBeTruthy();
     expect(queryByText(/Others \(/)).toBeNull();
     expect(getByTestId("echart").getAttribute("data-slices")).toBe("6");
   });
 
-  it("toggles a role off from the legend", () => {
-    const { getByTestId } = render(<RolesPieChart data={data} distinctRoles={4} />);
-    const legend = getByTestId("role-legend");
-    const alpha = within(legend).getByRole("button", { name: /Alpha/ });
-    fireEvent.click(alpha);
-    expect(alpha.getAttribute("aria-pressed")).toBe("false");
-    expect(getByTestId("echart").getAttribute("data-active")).toBe("5"); // 6 shown, 1 hidden
-    expect(getByTestId("role-metrics").textContent).toContain("125 users"); // 150 - 25
+  it("drills into the people behind a role and fires onUserClick", () => {
+    const onUserClick = vi.fn();
+    const usersByRole = new Map([
+      ["Alpha", [
+        { email: "ana@x.com", name: "Ana", count: 3 },
+        { email: "al@x.com", name: "Al", count: 1 },
+      ]],
+    ]);
+    const { getByTestId } = render(
+      <RolesPieChart data={data} distinctRoles={4} usersByRole={usersByRole} onUserClick={onUserClick} />,
+    );
+    fireEvent.click(within(getByTestId("role-legend")).getByRole("button", { name: /Alpha/ }));
+    const drill = getByTestId("role-drilldown");
+    expect(drill.textContent).toContain("Ana");
+    expect(drill.textContent).toContain("Al");
+    fireEvent.click(within(drill).getByRole("button", { name: /Ana/ }));
+    expect(onUserClick).toHaveBeenCalledWith("ana@x.com");
   });
 });
