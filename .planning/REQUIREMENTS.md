@@ -99,17 +99,51 @@ Acknowledged but deferred — not in this milestone's roadmap.
 
 ## Traceability
 
-Populated during roadmap creation — each requirement maps to exactly one phase.
+Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| (to be filled by roadmapper) | — | Pending |
+| FND-01 | Phase 1 — Shared Design Foundation | Pending |
+| FND-02 | Phase 1 — Shared Design Foundation | Pending |
+| FND-03 | Phase 1 — Shared Design Foundation | Pending |
+| FND-04 | Phase 1 — Shared Design Foundation | Pending |
+| INT-01 | Phase 1 — Shared Design Foundation | Pending |
+| VIS-06 | Phase 1 — Shared Design Foundation | Pending |
+| USR-01 | Phase 2 — /users Decomposition | Pending |
+| PERF-03 | Phase 2 — /users Decomposition | Pending |
+| FND-05 | Phase 3 — DataTable Primitive | Pending |
+| USR-02 | Phase 4 — /users Table & Polish | Pending |
+| PERF-01 | Phase 4 — /users Table & Polish | Pending |
+| PERF-04 | Phase 4 — /users Table & Polish | Pending |
+| INT-03 | Phase 4 — /users Table & Polish | Pending |
+| VIS-03 | Phase 4 — /users Table & Polish | Pending |
+| VIS-04 | Phase 4 — /users Table & Polish | Pending |
+| ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| ACC-03 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| PERF-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| PERF-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| INT-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| INT-04 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| INT-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| TPL-02 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| TPL-03 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| FRM-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| FRM-02 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+
+**Note:** Phase 7 (Pre-Workshop UAT) is a cross-cutting verification gate — it re-exercises VIS-05, PERF-01..05, THM-01, and INT-01..05 across all four pages but owns no requirement exclusively. Each of those requirements is owned by the phase that builds it (above) and re-verified at the projector in Phase 7.
 
 **Coverage:**
 - v1 requirements: 28 total
-- Mapped to phases: 0 (pending roadmap)
-- Unmapped: 28 ⚠️
+- Mapped to phases: 28 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-17*
-*Last updated: 2026-06-17 after initial definition*
+*Last updated: 2026-06-17 after roadmap creation (traceability filled, 28/28 mapped)*
