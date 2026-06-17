@@ -13,7 +13,7 @@ A premium UI/UX overhaul of four existing pages (`/users`, `/access-analysis`, `
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Shared Design Foundation** - Depth/glow tokens, `PremiumSurface`, themed `EChart`, motion facade, slide-in `Sheet` — every page imports this
+- [x] **Phase 1: Shared Design Foundation** - Depth/glow tokens, `PremiumSurface`, themed `EChart`, motion facade, slide-in `Sheet` — every page imports this (completed 2026-06-17)
 - [ ] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test
 - [ ] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages
 - [ ] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton
@@ -36,14 +36,14 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. A motion facade exposes reveal/stagger presets and zeroes durations under `prefers-reduced-motion` (verified via DevTools emulation).
   5. A single shared slide-in `Sheet` panel mounts and is importable as the one drill-target for all four pages; `npx tsc --noEmit` exits 0.
 
-**Plans**: 5/6 plans executed
+**Plans**: 6/6 plans complete
 
 - [x] 01-01-PLAN.md — Add depth/glow/glass tokens + indigo/violet ambient glow to globals.css (FND-01) [wave 1]
 - [x] 01-02-PLAN.md — Bump framer-motion to ^12.39.0 (VIS-06 prerequisite) [wave 1]
 - [x] 01-03-PLAN.md — PremiumSurface card primitive: base/float/glass/inset + glow (FND-02) [wave 2]
 - [x] 01-04-PLAN.md — Theme-aware EChart wrapper + echartsTheme palette (FND-03) [wave 2]
 - [x] 01-05-PLAN.md — Motion facade: presets + useSafeVariants reduced-motion enforcement (FND-04, VIS-06) [wave 2]
-- [ ] 01-06-PLAN.md — DrillSheet shared right-slide ~480px shell (INT-01) [wave 3]
+- [x] 01-06-PLAN.md — DrillSheet shared right-slide ~480px shell (INT-01) [wave 3]
 
 **UI hint**: yes
 
@@ -166,7 +166,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Shared Design Foundation | 5/6 | In Progress|  |
+| 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
 | 2. /users Decomposition | 0/TBD | Not started | - |
 | 3. DataTable Primitive | 0/TBD | Not started | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |

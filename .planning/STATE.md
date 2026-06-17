@@ -6,15 +6,15 @@ current_phase: 1
 current_phase_name: Shared Design Foundation
 status: executing
 stopped_at: Phase 1 Plan 1 complete — depth/glow/glass tokens + dark ambient glow in app/globals.css
-last_updated: "2026-06-17T18:24:56.366Z"
+last_updated: "2026-06-17T18:29:19.280Z"
 last_activity: 2026-06-17
 last_activity_desc: 01-01 FND-01 CSS tokens shipped (2 tasks, ef07c31, 9df1dee)
 progress:
   total_phases: 7
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 6
-  completed_plans: 5
-  percent: 0
+  completed_plans: 6
+  percent: 14
 ---
 
 # Project State
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 1 of 7 (Shared Design Foundation)
-Plan: 4 of 6 complete in current phase
+Plan: 5 of 6 complete in current phase
 Status: Executing — Plan 01 complete
 Last activity: 2026-06-17 — 01-01 FND-01 CSS tokens shipped (2 tasks, ef07c31, 9df1dee)
 
@@ -72,6 +72,7 @@ Recent decisions affecting current work:
 - [Phase ?]: framer-motion 12.40.0 (VIS-06)
 - [Phase ?]: axisLabel.color uses palette.axis (split-line color) matching existing chart conventions
 - [Phase ?]: mergeEChartsTheme always injects default xAxis/yAxis objects even when caller omits them
+- [Phase ?]: w-[480px] sm:w-[480px] on SheetContent overrides shadcn sm:max-w-sm for consistent drill panel width
 
 ### Pending Todos
 
@@ -97,6 +98,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-17T18:24:30.220Z
+Last session: 2026-06-17T18:29:13.981Z
 Stopped at: Phase 1 context gathered (balanced-premium intensity, indigo→violet accent, smooth-flowing motion, dual-theme parity, ~480px right Sheet, subtle global ambient glow, subtle catch-light)
 Resume file: .planning/phases/01-shared-design-foundation/01-CONTEXT.md

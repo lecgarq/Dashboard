@@ -11,7 +11,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 - [x] **FND-01**: A shared depth/glow/glass design-token set lives in `globals.css` and drives all 4 pages (no hardcoded hex in TSX)
 - [x] **FND-02**: A reusable `PremiumSurface` card primitive (base / float / glass / inset variants) replaces ad-hoc panel styling across the 4 pages
-- [ ] **FND-03**: A single shared `EChart` wrapper auto-applies the correct light/dark theme via `resolvedTheme`, so every chart themes consistently
+- [x] **FND-03**: A single shared `EChart` wrapper auto-applies the correct light/dark theme via `resolvedTheme`, so every chart themes consistently
 - [x] **FND-04**: A central motion facade exposes shared reveal/stagger presets and disables motion under `prefers-reduced-motion`
 - [ ] **FND-05**: A reusable virtualized `DataTable` primitive (sort, sticky header, row-click, inline row-expand, density toggle) is available for table pages
 
@@ -25,7 +25,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Interactivity & Drill-down
 
-- [ ] **INT-01**: A single shared slide-in detail panel (shadcn `Sheet`) is the drill-target for every click source across the 4 pages
+- [x] **INT-01**: A single shared slide-in detail panel (shadcn `Sheet`) is the drill-target for every click source across the 4 pages
 - [ ] **INT-02**: Chart segments are clickable and open the relevant people/detail in the slide-in panel
 - [ ] **INT-03**: Table rows are clickable (open detail) and expandable inline (summary) without full-page navigation
 - [ ] **INT-04**: On `/access-analysis`, clicking a chart cross-filters the other charts client-side (zero new queries)
@@ -105,9 +105,9 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 |-------------|-------|--------|
 | FND-01 | Phase 1 — Shared Design Foundation | Complete |
 | FND-02 | Phase 1 — Shared Design Foundation | Complete |
-| FND-03 | Phase 1 — Shared Design Foundation | Pending |
+| FND-03 | Phase 1 — Shared Design Foundation | Complete |
 | FND-04 | Phase 1 — Shared Design Foundation | Complete |
-| INT-01 | Phase 1 — Shared Design Foundation | Pending |
+| INT-01 | Phase 1 — Shared Design Foundation | Complete |
 | VIS-06 | Phase 1 — Shared Design Foundation | Complete |
 | USR-01 | Phase 2 — /users Decomposition | Pending |
 | PERF-03 | Phase 2 — /users Decomposition | Pending |
