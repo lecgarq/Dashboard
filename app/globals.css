@@ -242,11 +242,11 @@
   --info-bg: rgba(96, 165, 250, 0.12);
   --danger-bg: rgba(248, 113, 113, 0.12);
 
-  /* Page background — neutral dark (no blue tint) */
+  /* Page background — subtle indigo/violet ambient glow on zinc base */
   --page-bg:
-    radial-gradient(circle at top left, rgba(161, 161, 170, 0.05), transparent 35%),
-    radial-gradient(circle at 85% 15%, rgba(244, 244, 245, 0.03), transparent 30%),
-    radial-gradient(circle at 80% 100%, rgba(113, 113, 122, 0.04), transparent 28%),
+    radial-gradient(circle at top left, rgba(99, 102, 241, 0.06), transparent 35%),
+    radial-gradient(circle at 85% 15%, rgba(139, 92, 246, 0.04), transparent 30%),
+    radial-gradient(circle at 80% 100%, rgba(99, 102, 241, 0.03), transparent 28%),
     linear-gradient(180deg, #09090B 0%, #050507 100%);
 
   /* Particle background — light particles on dark bg */
