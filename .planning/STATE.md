@@ -2,13 +2,8 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 1
-current_phase_name: Shared Design Foundation
-status: executing
-stopped_at: Phase 1 Plan 1 complete — depth/glow/glass tokens + dark ambient glow in app/globals.css
-last_updated: "2026-06-17T18:29:19.280Z"
-last_activity: 2026-06-17
-last_activity_desc: 01-01 FND-01 CSS tokens shipped (2 tasks, ef07c31, 9df1dee)
+status: planning
+last_updated: "2026-06-17T18:36:34.411Z"
 progress:
   total_phases: 7
   completed_phases: 1
@@ -24,39 +19,36 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-17)
 
 **Core value:** When these 4 pages are presented in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live.
-**Current focus:** Phase 1 — Shared Design Foundation
+**Current focus:** Phase 2 — /users Decomposition
 
 ## Current Position
 
-Phase: 1 of 7 (Shared Design Foundation)
-Plan: 5 of 6 complete in current phase
-Status: Executing — Plan 01 complete
-Last activity: 2026-06-17 — 01-01 FND-01 CSS tokens shipped (2 tasks, ef07c31, 9df1dee)
+Phase: 2 of 7 (/users Decomposition)
+Plan: 0 of TBD in current phase
+Status: Phase 1 complete (verified 5/5, human-approved) — ready to plan Phase 2
+Last activity: 2026-06-17 — Phase 1 executed: 6/6 plans across 3 parallel waves, verified, approved
 
-Progress: [█░░░░░░░░░] 17%
+Progress: [█░░░░░░░░░] 14%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 1
-- Average duration: 2m 40s
-- Total execution time: 2m 40s
+- Total plans completed: 6
+- Phase 1 executed in 3 parallel waves (wall-clock ~16m end-to-end)
 
 **By Phase:**
 
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| 01 | 1 | 2m 40s | 2m 40s |
+| Phase | Plans | Notes |
+|-------|-------|-------|
+| 01    | 6/6   | 3 waves, parallel executors; 48 tests, tsc 0 |
 
 **Recent Trend:**
 
-- Last 5 plans: 01-01 (2m 40s)
-- Trend: —
+- Phase 1: 01-01..01-06 all complete; verification human_needed → approved
+- Trend: foundation primitives shipped
 
 *Updated after each plan completion*
-| Phase 01 P03 | 169 | 1 tasks | 2 files |
-| Phase 01 P05 | 4min | 1 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -69,14 +61,14 @@ Recent decisions affecting current work:
 - [Roadmap]: `/users` decomposition (Phase 2) + DataTable (Phase 3) both precede the `/users` table redesign (Phase 4).
 - [Roadmap]: Phases 4, 5, 6 are parallel-safe after the foundation; Phase 7 (projector UAT) is the only valid acceptance test.
 - [Roadmap]: NA-01 (analytics feasibility gate) lives in Phase 5 where new analytics are introduced; THM-01 (light/dark + projector contrast) is verified on the densest data surface (Phase 5).
-- [Phase ?]: framer-motion 12.40.0 (VIS-06)
-- [Phase ?]: axisLabel.color uses palette.axis (split-line color) matching existing chart conventions
-- [Phase ?]: mergeEChartsTheme always injects default xAxis/yAxis objects even when caller omits them
-- [Phase ?]: w-[480px] sm:w-[480px] on SheetContent overrides shadcn sm:max-w-sm for consistent drill panel width
+- [Phase 01]: framer-motion bumped to 12.40.0 (VIS-06; React 19 reorder layout-animation fix).
+- [Phase 01]: EChart `axisLabel.color` uses `palette.axis` (split-line color), matching existing chart conventions.
+- [Phase 01]: `mergeEChartsTheme` always injects default xAxis/yAxis objects even when the caller omits them.
+- [Phase 01]: `w-[480px] sm:w-[480px]` on SheetContent overrides shadcn `sm:max-w-sm` for consistent ~480px drill-panel width.
 
 ### Pending Todos
 
-None yet.
+- [Phase 4/7 UAT] Verify `prefers-reduced-motion` at runtime via DevTools Rendering → "Emulate prefers-reduced-motion: reduce" once a page wires the motion facade. Code-level enforcement (`useSafeVariants`) is proven by 15/15 unit tests; only the live browser media-query path is unverified. (Carried forward from 01-VERIFICATION.md human_needed item, approved 2026-06-17.)
 
 ### Blockers/Concerns
 
@@ -98,6 +90,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-17T18:29:13.981Z
-Stopped at: Phase 1 context gathered (balanced-premium intensity, indigo→violet accent, smooth-flowing motion, dual-theme parity, ~480px right Sheet, subtle global ambient glow, subtle catch-light)
-Resume file: .planning/phases/01-shared-design-foundation/01-CONTEXT.md
+Last session: 2026-06-17
+Stopped at: Phase 1 (Shared Design Foundation) complete — 6/6 plans, verified, human-approved. Foundation primitives (tokens, PremiumSurface, EChart, motion facade, DrillSheet) shipped to feat/access-analysis-redesign.
+Resume file: .planning/ROADMAP.md (Phase 2 — /users Decomposition; run `/gsd:plan-phase 2`)
