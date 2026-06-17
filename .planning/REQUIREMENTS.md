@@ -38,7 +38,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 - [ ] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
 - [ ] **VIS-04**: KPI numbers count up smoothly on first load
 - [ ] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
-- [ ] **VIS-06**: One or two selective real-3D hero accents appear only on non-data regions (`/forma-proposal` background, `/users` header) — never on data pages
+- [x] **VIS-06**: One or two selective real-3D hero accents appear only on non-data regions (`/forma-proposal` background, `/users` header) — never on data pages
 
 ### Theming & Legibility
 
@@ -108,7 +108,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | FND-03 | Phase 1 — Shared Design Foundation | Pending |
 | FND-04 | Phase 1 — Shared Design Foundation | Pending |
 | INT-01 | Phase 1 — Shared Design Foundation | Pending |
-| VIS-06 | Phase 1 — Shared Design Foundation | Pending |
+| VIS-06 | Phase 1 — Shared Design Foundation | Complete |
 | USR-01 | Phase 2 — /users Decomposition | Pending |
 | PERF-03 | Phase 2 — /users Decomposition | Pending |
 | FND-05 | Phase 3 — DataTable Primitive | Pending |
@@ -140,6 +140,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 **Note:** Phase 7 (Pre-Workshop UAT) is a cross-cutting verification gate — it re-exercises VIS-05, PERF-01..05, THM-01, and INT-01..05 across all four pages but owns no requirement exclusively. Each of those requirements is owned by the phase that builds it (above) and re-verified at the projector in Phase 7.
 
 **Coverage:**
+
 - v1 requirements: 28 total
 - Mapped to phases: 28 ✓
 - Unmapped: 0 ✓
