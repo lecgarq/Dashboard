@@ -10,9 +10,9 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Foundation & Design System
 
 - [x] **FND-01**: A shared depth/glow/glass design-token set lives in `globals.css` and drives all 4 pages (no hardcoded hex in TSX)
-- [ ] **FND-02**: A reusable `PremiumSurface` card primitive (base / float / glass / inset variants) replaces ad-hoc panel styling across the 4 pages
+- [x] **FND-02**: A reusable `PremiumSurface` card primitive (base / float / glass / inset variants) replaces ad-hoc panel styling across the 4 pages
 - [ ] **FND-03**: A single shared `EChart` wrapper auto-applies the correct light/dark theme via `resolvedTheme`, so every chart themes consistently
-- [ ] **FND-04**: A central motion facade exposes shared reveal/stagger presets and disables motion under `prefers-reduced-motion`
+- [x] **FND-04**: A central motion facade exposes shared reveal/stagger presets and disables motion under `prefers-reduced-motion`
 - [ ] **FND-05**: A reusable virtualized `DataTable` primitive (sort, sticky header, row-click, inline row-expand, density toggle) is available for table pages
 
 ### Speed & Perceived Performance
@@ -104,9 +104,9 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | FND-01 | Phase 1 — Shared Design Foundation | Complete |
-| FND-02 | Phase 1 — Shared Design Foundation | Pending |
+| FND-02 | Phase 1 — Shared Design Foundation | Complete |
 | FND-03 | Phase 1 — Shared Design Foundation | Pending |
-| FND-04 | Phase 1 — Shared Design Foundation | Pending |
+| FND-04 | Phase 1 — Shared Design Foundation | Complete |
 | INT-01 | Phase 1 — Shared Design Foundation | Pending |
 | VIS-06 | Phase 1 — Shared Design Foundation | Complete |
 | USR-01 | Phase 2 — /users Decomposition | Pending |
