@@ -19,7 +19,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 - [ ] **PERF-01**: Each of the 4 pages shows a skeleton/loading state within ~200ms of navigation
 - [ ] **PERF-02**: `/access-analysis` renders its first tier (KPIs + donuts) fast (~300ms target), streaming heavier tiers (timeline, terrain) progressively rather than blocking on one `Promise.all`
-- [ ] **PERF-03**: Each tRPC endpoint is fetched at most once per page load (no redundant/double fetch)
+- [x] **PERF-03**: Each tRPC endpoint is fetched at most once per page load (no redundant/double fetch)
 - [ ] **PERF-04**: `/users` initial client payload is reduced (heavy per-user data deferred to detail-open); no load-time regression vs. today
 - [ ] **PERF-05**: No page introduces a new WebGL context on a data surface (GPU budget preserved; verified < 400MB GPU memory)
 
@@ -46,7 +46,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Per-Page: /users
 
-- [ ] **USR-01**: `UsersDirectoryClient` is decomposed (Zustand store + single data hook + extracted sub-components; shell ~200 lines) with existing filter/sort/search/virtualization behavior unchanged, guarded by a golden-path integration test written before extraction
+- [x] **USR-01**: `UsersDirectoryClient` is decomposed (Zustand store + single data hook + extracted sub-components; shell ~200 lines) with existing filter/sort/search/virtualization behavior unchanged, guarded by a golden-path integration test written before extraction
 - [ ] **USR-02**: The user directory is presented as a premium `DataTable` — pinned name column, sticky frosted header, sortable, density toggle, row-click → detail panel, row-expand → inline summary
 
 ### Per-Page: /access-analysis
@@ -109,8 +109,8 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | FND-04 | Phase 1 — Shared Design Foundation | Complete |
 | INT-01 | Phase 1 — Shared Design Foundation | Complete |
 | VIS-06 | Phase 1 — Shared Design Foundation | Complete |
-| USR-01 | Phase 2 — /users Decomposition | Pending |
-| PERF-03 | Phase 2 — /users Decomposition | Pending |
+| USR-01 | Phase 2 — /users Decomposition | Complete |
+| PERF-03 | Phase 2 — /users Decomposition | Complete |
 | FND-05 | Phase 3 — DataTable Primitive | Pending |
 | USR-02 | Phase 4 — /users Table & Polish | Pending |
 | PERF-01 | Phase 4 — /users Table & Polish | Pending |

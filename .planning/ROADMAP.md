@@ -61,9 +61,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Existing filter, sort, search, and window-virtualization behavior is observably identical to before the refactor.
   4. Each tRPC endpoint is fetched at most once per `/users` load — shared query-key constants and matching `staleTime` eliminate the hydration-key cache-miss double-fetch; `npx tsc --noEmit` exits 0 and the full test count holds after every extraction step.
 
-**Plans**: 6 plans
+**Plans**: 1/6 plans executed
 
-- [ ] 02-01-PLAN.md — Install zustand + write the golden-path integration test, proven green on the monolith (USR-01, PERF-03) [wave 1]
+- [x] 02-01-PLAN.md — Install zustand + write the golden-path integration test, proven green on the monolith (USR-01, PERF-03) [wave 1]
 - [ ] 02-02-PLAN.md — Extract pure helpers + stateless display sub-components (directoryUtils, PersonDetailModal, DirectoryPills, DataCoverageStrip, CollapsibleGroup) (USR-01) [wave 2]
 - [ ] 02-03-PLAN.md — Extract PersonRow + PersonRowList with the virtualizer scroll-init hack verbatim (USR-01) [wave 3]
 - [ ] 02-04-PLAN.md — Create the Zustand store + migrate filter/search/sort/view/selectedEmail state (USR-01) [wave 4]
@@ -175,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
-| 2. /users Decomposition | 0/6 | Not started | - |
+| 2. /users Decomposition | 1/6 | In Progress|  |
 | 3. DataTable Primitive | 0/TBD | Not started | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |

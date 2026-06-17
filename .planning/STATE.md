@@ -2,13 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
+current_phase: 2
+current_phase_name: /users Decomposition
 status: planning
-last_updated: "2026-06-17T18:36:34.411Z"
+stopped_at: Phase 1 (Shared Design Foundation) complete — 6/6 plans, verified, human-approved. Foundation primitives (tokens, PremiumSurface, EChart, motion facade, DrillSheet) shipped to feat/access-analysis-redesign.
+last_updated: "2026-06-17T23:58:35.065Z"
+last_activity: 2026-06-17
+last_activity_desc: "Phase 1 executed: 6/6 plans across 3 parallel waves, verified, approved"
 progress:
   total_phases: 7
   completed_phases: 1
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 12
+  completed_plans: 7
   percent: 14
 ---
 
@@ -24,11 +29,11 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 2 of 7 (/users Decomposition)
-Plan: 0 of TBD in current phase
-Status: Phase 1 complete (verified 5/5, human-approved) — ready to plan Phase 2
-Last activity: 2026-06-17 — Phase 1 executed: 6/6 plans across 3 parallel waves, verified, approved
+Plan: 1 of 6 in current phase (02-01 complete)
+Status: Phase 2 in progress — 02-01 complete (zustand installed, golden-path test GREEN)
+Last activity: 2026-06-17 — 02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)
 
-Progress: [█░░░░░░░░░] 14%
+Progress: [██████░░░░] 58%
 
 ## Performance Metrics
 
@@ -65,6 +70,9 @@ Recent decisions affecting current work:
 - [Phase 01]: EChart `axisLabel.color` uses `palette.axis` (split-line color), matching existing chart conventions.
 - [Phase 01]: `mergeEChartsTheme` always injects default xAxis/yAxis objects even when the caller omits them.
 - [Phase 01]: `w-[480px] sm:w-[480px]` on SheetContent overrides shadcn `sm:max-w-sm` for consistent ~480px drill-panel width.
+- [Phase 02-01]: zustand 5.0.14 installed as a dependency (not devDep) — store is shipped app code.
+- [Phase 02-01]: Baseline test count = 2015 (2012 pass + 1 skip + 2 pre-existing FolderPermissionTerrain failures from concurrent WIP). Every extraction plan must hold or exceed this.
+- [Phase 02-01]: vi.hoisted() required for bulkUsersQuerySpy to survive vi.mock hoisting; HTMLElement.prototype.scrollIntoView + window.scrollTo stubbed for Radix Select + jsdom compatibility.
 
 ### Pending Todos
 
@@ -91,5 +99,5 @@ Items acknowledged and carried forward:
 ## Session Continuity
 
 Last session: 2026-06-17
-Stopped at: Phase 1 (Shared Design Foundation) complete — 6/6 plans, verified, human-approved. Foundation primitives (tokens, PremiumSurface, EChart, motion facade, DrillSheet) shipped to feat/access-analysis-redesign.
-Resume file: .planning/ROADMAP.md (Phase 2 — /users Decomposition; run `/gsd:plan-phase 2`)
+Stopped at: Completed 02-01 (zustand install + golden-path test) — Phase 2 plan 1/6 done
+Resume file: .planning/phases/02-users-decomposition/02-02-PLAN.md (next: state slice extraction)
