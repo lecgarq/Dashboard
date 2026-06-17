@@ -61,7 +61,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. Existing filter, sort, search, and window-virtualization behavior is observably identical to before the refactor.
   4. Each tRPC endpoint is fetched at most once per `/users` load — shared query-key constants and matching `staleTime` eliminate the hydration-key cache-miss double-fetch; `npx tsc --noEmit` exits 0 and the full test count holds after every extraction step.
 
-**Plans**: TBD
+**Plans**: 6 plans
+
+- [ ] 02-01-PLAN.md — Install zustand + write the golden-path integration test, proven green on the monolith (USR-01, PERF-03) [wave 1]
+- [ ] 02-02-PLAN.md — Extract pure helpers + stateless display sub-components (directoryUtils, PersonDetailModal, DirectoryPills, DataCoverageStrip, CollapsibleGroup) (USR-01) [wave 2]
+- [ ] 02-03-PLAN.md — Extract PersonRow + PersonRowList with the virtualizer scroll-init hack verbatim (USR-01) [wave 3]
+- [ ] 02-04-PLAN.md — Create the Zustand store + migrate filter/search/sort/view/selectedEmail state (USR-01) [wave 4]
+- [ ] 02-05-PLAN.md — Single data hook + shared BULK_USERS_LEAN_INPUT prefetch/client constant (USR-01, PERF-03) [wave 5]
+- [ ] 02-06-PLAN.md — ActivityAuditPanel + filter bar extraction, ~200-line shell, projector zero-change sign-off (USR-01, PERF-03) [wave 6]
+
 **UI hint**: yes
 
 **Phase context / research note**: Highest structural risk; the Zustand + single-hook seam is the prerequisite for Phase 4. Standard patterns — decomposition strategy fully specified in ARCHITECTURE.md. Per-phase research should `npm run repo-map` and read the `dependency-graph` for `UsersDirectoryClient` before extraction, plus the `ast-grep` `fetch-calls` report to confirm the redundant-fetch surface (PERF-03 is owned here because the double-fetch lives in the `/users` data layer; run `npm run repo-map:check` after to ratchet against re-introduced fetches). `/users/spatial-graph` is strictly out of scope — verify `git diff --name-only` touches zero files under `users/access-analysis/`.
@@ -167,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
-| 2. /users Decomposition | 0/TBD | Not started | - |
+| 2. /users Decomposition | 0/6 | Not started | - |
 | 3. DataTable Primitive | 0/TBD | Not started | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
