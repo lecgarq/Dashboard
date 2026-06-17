@@ -32,7 +32,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A single shared `EChart` wrapper auto-applies the correct palette via `resolvedTheme` and remounts cleanly on theme switch (`key={resolvedTheme}`).
   4. A motion facade exposes reveal/stagger presets and zeroes durations under `prefers-reduced-motion` (verified via DevTools emulation).
   5. A single shared slide-in `Sheet` panel mounts and is importable as the one drill-target for all four pages; `npx tsc --noEmit` exits 0.
-**Plans**: TBD
+**Plans**: 6 plans
+- [ ] 01-01-PLAN.md — Add depth/glow/glass tokens + indigo/violet ambient glow to globals.css (FND-01) [wave 1]
+- [ ] 01-02-PLAN.md — Bump framer-motion to ^12.39.0 (VIS-06 prerequisite) [wave 1]
+- [ ] 01-03-PLAN.md — PremiumSurface card primitive: base/float/glass/inset + glow (FND-02) [wave 2]
+- [ ] 01-04-PLAN.md — Theme-aware EChart wrapper + echartsTheme palette (FND-03) [wave 2]
+- [ ] 01-05-PLAN.md — Motion facade: presets + useSafeVariants reduced-motion enforcement (FND-04, VIS-06) [wave 2]
+- [ ] 01-06-PLAN.md — DrillSheet shared right-slide ~480px shell (INT-01) [wave 3]
 **UI hint**: yes
 
 **Phase context / research note**: Standard patterns (token recipes, `EChart` wrapper, `motion.ts` facade fully specified in STACK.md + ARCHITECTURE.md) — no dedicated research-phase needed. Per-phase research should `npm run repo-map` then consult the dep graph and the `ast-grep` `react-use-effect` report to locate every chart's current `useTheme` call so the shared wrapper can replace them. `INT-01` builds the empty `Sheet` shell here (the drill *sources* are wired in the per-page phases). `VIS-06` lands the motion/3D *facade contract* and reduced-motion enforcement here; the actual R3F accents are placed on `/users` (Phase 4) and `/forma-proposal` (Phase 6). framer-motion is bumped to 12.39.0+ for the React 19 layout-animation fix.
@@ -135,7 +141,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Shared Design Foundation | 0/TBD | Not started | - |
+| 1. Shared Design Foundation | 0/6 | Not started | - |
 | 2. /users Decomposition | 0/TBD | Not started | - |
 | 3. DataTable Primitive | 0/TBD | Not started | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
