@@ -48,6 +48,7 @@ When these pages are presented to all users in a workshop, the data makes people
 - **Design references** (the *feel*, not the content): [landonorris.com](https://landonorris.com/), [igloo.inc](https://www.igloo.inc/), [orano.group innovation slider](https://www.orano.group/experience/innovation/en/slider) — dark, cinematic, depth-rich, motion-guided experiences. None are analytics tools; the brief is to translate that premium experience feeling onto interactive pies, donuts, and tables.
 - **Current page weights** (from the map): `/users` is a 2,474-line `UsersDirectoryClient` monolith with 6+ heavy tRPC queries (~7–15MB) and no real table; `/access-analysis` runs 7 parallel RSC loaders (~20MB) but is the cleanest layout; `/template-mty` is the lightest/most focused; `/forma-proposal` is a local-draft editor with a 315-line `HierarchyView` spike.
 - **Theming history** (memory): existing dark palette is **zinc, not slate** (`#09090B` bg, no blue cast); a dark-mode plan and `DARK_MODE.md` conventions already exist. Page roots must own scroll (`h-full overflow-y-auto`) and use semantic CSS-var tokens; ECharts must read `resolvedTheme` for canvas colors.
+- **Codebase-mapping toolchain** (added 2026-06-17): `scripts/repo-map/` generates an LLM-friendly repo digest + structural reports into `.tools/repo-map/` via `npm run repo-map[:ast | :deps | :repomix | :repomix-zones | :summary]` (backed by `repomix`, `dependency-cruiser`, `@ast-grep/cli`). Current artifacts: `architecture-summary.md`, `repomix-output.xml` + per-zone digests (`repomix/`), `dependency-cruiser.json` / `dependency-graph.mmd`, and ast-grep reports (`fetch-calls`, `prisma-access`, `react-use-effect`, `router-push`). `npm run repo-map:check` ratchets against `.tools/repo-map/baselines/` to flag regressions (new fetch calls / effects). **These are the standing structural input for per-phase research** — phase agents should refresh (`npm run repo-map`) then consult: the dependency graph before the `/users` decomposition (USR-01), the fetch/effect ast-grep reports for the redundant-fetch audit (PERF-03), and `ast-grep-prisma-access.json` for the new-analytics feasibility gate (NA-01).
 
 ## Constraints
 
@@ -67,6 +68,7 @@ When these pages are presented to all users in a workshop, the data makes people
 | Mix treatment per page (`/users` redesign; others polish + depth + new views) | Matches each page's current state — `/users` is a monolith, the others are already clean | — Pending |
 | New analytics bounded strictly to the existing Prisma DB | DB is the source of truth; prevents the "new analytics" scope from ballooning into data engineering | — Pending |
 | `/users/spatial-graph` deferred to its own project | It needs full dedicated attention (real 3D); excluding it keeps this milestone focused | — Pending |
+| Adopt the `scripts/repo-map` toolchain as the standing input for per-phase research & a regression ratchet | Gives planning agents precise structural facts (dep graph for the `/users` split, ast-grep sweeps for the foundation/perf work, `prisma-access` for the NA feasibility gate); `repo-map:check` guards against re-introducing redundant fetches | — Pending |
 
 ---
-*Last updated: 2026-06-17 after initialization*
+*Last updated: 2026-06-17 after initialization + repo-map toolchain integration*
