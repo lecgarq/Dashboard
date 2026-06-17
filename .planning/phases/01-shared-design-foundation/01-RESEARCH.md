@@ -542,19 +542,19 @@ No external dependencies beyond the project's own codebase. All required package
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **`PremiumSurface` default variant when unspecified**
    - What we know: CONTEXT.md leaves this to Claude's discretion.
-   - Recommendation: `"base"` — it's the most universally applicable (no glass blur cost, no elevation ambiguity). Callers opt into `float` or `glass` explicitly.
+   - RESOLVED — Recommendation: `"base"` — it's the most universally applicable (no glass blur cost, no elevation ambiguity). Callers opt into `float` or `glass` explicitly.
 
 2. **`DrillSheet` — does the shell need a loading state?**
    - What we know: Phase 1 builds an empty shell. Per-page phases wire content.
-   - Recommendation: Include a minimal `Skeleton` fallback inside `DrillSheet` that renders when `children` is null or a Suspense boundary is used. Use the existing `components/ui/skeleton.tsx`.
+   - RESOLVED — Recommendation: Include a minimal `Skeleton` fallback inside `DrillSheet` that renders when `children` is null or a Suspense boundary is used. Use the existing `components/ui/skeleton.tsx`.
 
 3. **`animated-list.tsx` relationship to `motion.ts`**
    - What we know: `animated-list.tsx` already has `useEntrance`, `AnimatedExpand`, `Reveal` — all reduced-motion-safe. The new `motion.ts` is the canonical facade.
-   - Recommendation: Do NOT deprecate or modify `animated-list.tsx` in Phase 1. It is imported by existing components; changing it risks regressions. The new `motion.ts` is the forward-facing contract for new code only.
+   - RESOLVED — Recommendation: Do NOT deprecate or modify `animated-list.tsx` in Phase 1. It is imported by existing components; changing it risks regressions. The new `motion.ts` is the forward-facing contract for new code only.
 
 ---
 
