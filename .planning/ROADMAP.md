@@ -107,7 +107,13 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. KPI / header numbers count up smoothly on first load; a subtle R3F particle accent renders only in the page header (`ssr:false`, `frameloop:demand`) and never on the data-table region.
   5. `npx tsc --noEmit` exits 0; the Network tab shows each tRPC endpoint called once per load.
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+- [ ] 04-01-PLAN.md — DirectoryRow + buildDirectoryRows + 5 typed columns + PeekPanel (TDD) (USR-02, INT-03, PERF-04) [wave 1]
+- [ ] 04-02-PLAN.md — UserProfilePanel gains optional person chrome for the slide-in panel (Open Q1) (INT-03, USR-02) [wave 1]
+- [ ] 04-03-PLAN.md — Wire DataTable into the shell + DrillSheet migration + table skeleton + entrance fade + error/empty states (USR-02, INT-03, PERF-01, PERF-04, VIS-03) [wave 2]
+- [ ] 04-04-PLAN.md — Header KPI strip + count-up + R3F particle accent (install @react-three/fiber@9, CSS fallback) (VIS-04, USR-02) [wave 3]
+
 **UI hint**: yes
 
 **Phase context / research note**: Consumes the Phase 2 store/hook seam and the Phase 3 `DataTable`; not parallel with those, but parallel-safe with Phases 5 and 6 once both prerequisites land. WebGL is confined to the header region per Pitfall 1 (CSS 2.5D on the data table itself). Per-phase research: re-run `npm run repo-map:check` to confirm payload-deferral did not add fetches; verify GPU memory < 400MB for the header particle field in Chrome DevTools.
@@ -181,7 +187,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
-| 4. /users Table & Polish | 0/TBD | Not started | - |
+| 4. /users Table & Polish | 0/4 | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |
