@@ -13,7 +13,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 - [x] **FND-02**: A reusable `PremiumSurface` card primitive (base / float / glass / inset variants) replaces ad-hoc panel styling across the 4 pages
 - [x] **FND-03**: A single shared `EChart` wrapper auto-applies the correct light/dark theme via `resolvedTheme`, so every chart themes consistently
 - [x] **FND-04**: A central motion facade exposes shared reveal/stagger presets and disables motion under `prefers-reduced-motion`
-- [ ] **FND-05**: A reusable virtualized `DataTable` primitive (sort, sticky header, row-click, inline row-expand, density toggle) is available for table pages
+- [x] **FND-05**: A reusable virtualized `DataTable` primitive (sort, sticky header, row-click, inline row-expand, density toggle) is available for table pages
 
 ### Speed & Perceived Performance
 
@@ -111,7 +111,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | VIS-06 | Phase 1 — Shared Design Foundation | Complete |
 | USR-01 | Phase 2 — /users Decomposition | Complete |
 | PERF-03 | Phase 2 — /users Decomposition | Complete |
-| FND-05 | Phase 3 — DataTable Primitive | Pending |
+| FND-05 | Phase 3 — DataTable Primitive | Complete |
 | USR-02 | Phase 4 — /users Table & Polish | Pending |
 | PERF-01 | Phase 4 — /users Table & Polish | Pending |
 | PERF-04 | Phase 4 — /users Table & Polish | Pending |

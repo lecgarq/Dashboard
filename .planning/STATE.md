@@ -2,13 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: unknown
-last_updated: "2026-06-18T15:00:06.594Z"
+current_phase: 2
+current_phase_name: /users Decomposition
+status: verifying
+stopped_at: Completed 03-01 (react-table v8 installed; DataTable RED contract locked)
+last_updated: "2026-06-18T15:49:36.309Z"
+last_activity: 2026-06-18
+last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
-  total_phases: 2
+  total_phases: 7
   completed_phases: 2
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 14
+  completed_plans: 13
+  percent: 29
 ---
 
 # Project State
@@ -24,7 +30,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 
 Phase: 2 of 7 (/users Decomposition)
 Plan: 6 of 6 in current phase (Phase 2 complete)
-Status: Phase 2 complete — all 6 plans executed; shell 314 lines; projector click-through APPROVED
+Status: Phase complete — ready for verification
 Last activity: 2026-06-18 — 02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off
 
 Progress: [██████░░░░] 58%
@@ -52,6 +58,7 @@ Progress: [██████░░░░] 58%
 | Phase 02 P03 | 372 | 3 tasks | 3 files |
 | Phase 02-users-decomposition P04 | 7 | 3 tasks | 4 files |
 | Phase 02-users-decomposition P05 | 420 | 3 tasks | 4 files |
+| Phase 03 P01 | 9min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -78,6 +85,9 @@ Recent decisions affecting current work:
 - [Phase ?]: PersonDetailModal stays a centered shadcn Dialog — Sheet migration deferred to Phase 4 (RESEARCH Open Q1)
 - [Phase ?]: setMounted scroll-init hack preserved verbatim in PersonRowList.tsx (RESEARCH Pitfall 3) - transitive import pattern via PersonRowList
 - [Phase ?]: BULK_USERS_LEAN_INPUT exported at module scope; imported by both hook and prefetch — structural PERF-03 fix by referential-identity sharing
+- [Phase ?]: ColumnDef<MockRow, string>[] (explicit value-type param) required with createColumnHelper — TanStack Table v8 strict generics
+- [Phase ?]: @ts-expect-error on RED-step component imports keeps tsc exit 0 while preserving runtime RED failure
+- [Phase ?]: Plan 02 must implement data-expand/data-cell/data-density/data-clear-filters attributes as test selector surface
 
 ### Pending Todos
 
@@ -104,6 +114,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T00:00:00.000Z
-Stopped at: Completed 02-06 (Phase 2 complete — 314-line shell; projector sign-off)
+Last session: 2026-06-18T15:49:36.302Z
+Stopped at: Completed 03-01 (react-table v8 installed; DataTable RED contract locked)
 Resume file: None
