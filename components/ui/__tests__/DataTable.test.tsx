@@ -62,7 +62,6 @@ vi.mock("@tanstack/react-virtual", () => ({
 // ---------------------------------------------------------------------------
 // Import the component under test — this import FAILS RED until Plan 02 ships
 // ---------------------------------------------------------------------------
-// @ts-expect-error DataTable does not exist yet (Plan 02 RED step — intentional)
 import { DataTable } from "../DataTable";
 
 // ---------------------------------------------------------------------------
