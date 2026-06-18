@@ -20,7 +20,8 @@ import { summarizeActivityByCompany } from "../companyActivityCounts";
 import { rankDormantByPeople } from "../dormantActivity";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
-import { projectOptions, filterRowsBySelection, type ProjectRoleRow } from "../projectFilter";
+import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectRoleRow, type SliceFilters } from "../projectFilter";
+import { PillBar } from "./PillBar";
 import { groupProjectOptions } from "../projectGroups";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
@@ -102,33 +103,63 @@ export function AccessAnalysisCharts({
   // The author whose profile drawer is open (null = closed). Lowercased email.
   const [profileEmail, setProfileEmail] = useState<string | null>(null);
 
+  // Slice cross-filters — one value per dimension, ANDed. Toggling the same value clears it.
+  // Project Picker `selected` is deliberately separate: "Clear all" only clears sliceFilters.
+  const [sliceFilters, setSliceFilters] = useState<SliceFilters>({});
+  const toggleSliceFilter = (dim: string, val: string) =>
+    setSliceFilters((prev) => {
+      const next = { ...prev };
+      if (next[dim] === val) delete next[dim]; else next[dim] = val;
+      return next;
+    });
+
+  // Narrow the projectId set by any active sliceFilters so the timeline refocuses with the donuts.
+  // We derive the narrowed set from the slice-filtered role rows (which carry role+company),
+  // then intersect with `selected` so the Project Picker and the timeline agree.
+  const sliceFilteredProjectIds = useMemo(() => {
+    if (Object.keys(sliceFilters).length === 0) return selected;
+    const narrowed = new Set(
+      applySliceFilters(filterRowsBySelection(roleRows, selected), sliceFilters).map((r) => r.projectId),
+    );
+    return narrowed;
+  }, [roleRows, selected, sliceFilters]);
+
   // Timeline filters internally (it needs the full per-project rows + the Set),
   // so it takes `timelineRows` directly rather than via filterRowsBySelection.
+  // When sliceFilters are active, narrow the timeline to the slice-filtered project set.
   const timelineSummary = useMemo(
-    () => summarizeActivityTimeline(timelineRows ?? [], selected),
-    [timelineRows, selected],
+    () => summarizeActivityTimeline(timelineRows ?? [], sliceFilteredProjectIds),
+    [timelineRows, sliceFilteredProjectIds],
   );
-  const roleSummary = useMemo(() => summarizeRoles(filterRowsBySelection(roleRows, selected)), [roleRows, selected]);
-  const moduleSummary = useMemo(() => summarizeModules(filterRowsBySelection(moduleRows, selected)), [moduleRows, selected]);
+  const roleSummary = useMemo(
+    () => summarizeRoles(applySliceFilters(filterRowsBySelection(roleRows, selected), sliceFilters)),
+    [roleRows, selected, sliceFilters],
+  );
+  // moduleSummary: ModuleActivityRow has no roles/company → applySliceFilters is a type-safe no-op;
+  // keep driven by the project picker only (consistent with Terrain + MC out-of-scope boundary).
+  const moduleSummary = useMemo(
+    () => summarizeModules(filterRowsBySelection(moduleRows, selected)),
+    [moduleRows, selected],
+  );
   const activityByRoleSummary = useMemo(
     () =>
       summarizeActivityByRole(
         filterRowsBySelection(activityActorRows ?? [], selected),
-        filterRowsBySelection(membershipRows ?? [], selected),
+        applySliceFilters(filterRowsBySelection(membershipRows ?? [], selected), sliceFilters),
       ),
-    [activityActorRows, membershipRows, selected],
+    [activityActorRows, membershipRows, selected, sliceFilters],
   );
   const companySummary = useMemo(
-    () => summarizeCompanies(filterRowsBySelection(roleRows, selected)),
-    [roleRows, selected],
+    () => summarizeCompanies(applySliceFilters(filterRowsBySelection(roleRows, selected), sliceFilters)),
+    [roleRows, selected, sliceFilters],
   );
   const activityByCompanySummary = useMemo(
     () =>
       summarizeActivityByCompany(
         filterRowsBySelection(activityActorRows ?? [], selected),
-        filterRowsBySelection(membershipRows ?? [], selected),
+        applySliceFilters(filterRowsBySelection(membershipRows ?? [], selected), sliceFilters),
       ),
-    [activityActorRows, membershipRows, selected],
+    [activityActorRows, membershipRows, selected, sliceFilters],
   );
   const coordSummary = useMemo(
     () => summarizeCoordination(filterRowsBySelection(coordinationData?.rows ?? [], selected)),
@@ -180,6 +211,13 @@ export function AccessAnalysisCharts({
         coverage={coverageMap}
       />
 
+      <PillBar
+        filters={sliceFilters}
+        onRemove={(d) => toggleSliceFilter(d, sliceFilters[d])}
+        onClear={() => setSliceFilters({})}
+        labels={{ role: "Role", company: "Company" }}
+      />
+
       {timelineRows ? (
         <Reveal><section className="flex flex-col gap-3">
           <SectionHeader
@@ -212,6 +250,8 @@ export function AccessAnalysisCharts({
           distinctRoles={roleSummary.distinctRoles}
           usersByRole={roleSummary.usersByRole}
           onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          onSliceClick={(val) => toggleSliceFilter("role", val)}
+          activeSlice={sliceFilters.role}
         />
       </section></Reveal>
 
@@ -222,6 +262,8 @@ export function AccessAnalysisCharts({
           distinctCompanies={companySummary.distinctCompanies}
           usersByCompany={companySummary.usersByCompany}
           onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+          onSliceClick={(val) => toggleSliceFilter("company", val)}
+          activeSlice={sliceFilters.company}
         />
       </section></Reveal>
 
@@ -235,6 +277,8 @@ export function AccessAnalysisCharts({
             summary={activityByRoleSummary}
             dormant={dormantRoles}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+            onSliceClick={(val) => toggleSliceFilter("role", val)}
+            activeSlice={sliceFilters.role}
           />
         </section></Reveal>
       ) : null}
@@ -249,6 +293,8 @@ export function AccessAnalysisCharts({
             summary={activityByCompanySummary}
             dormant={dormantCompanies}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+            onSliceClick={(val) => toggleSliceFilter("company", val)}
+            activeSlice={sliceFilters.company}
           />
         </section></Reveal>
       ) : null}

@@ -60,6 +60,8 @@ export function RolesPieChart({
   distinctRoles,
   usersByRole,
   onUserClick,
+  onSliceClick,
+  activeSlice,
 }: {
   data: RoleSlice[];
   distinctRoles: number;
@@ -67,6 +69,10 @@ export function RolesPieChart({
   usersByRole?: ReadonlyMap<string, DrillPerson[]>;
   /** Open a person's profile (same drawer the activity donuts use). */
   onUserClick?: (email: string) => void;
+  /** Cross-filter callback: called with the clicked role name (parent sets sliceFilters). */
+  onSliceClick?: (value: string) => void;
+  /** Currently-active cross-filter value for this dimension (glows + pulls out). */
+  activeSlice?: string;
 }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
@@ -111,6 +117,8 @@ export function RolesPieChart({
   const toggleDrill = (name: string) => {
     if (isOthers(name)) { setExpanded(true); return; }
     setDrill((cur) => (cur === name ? null : name));
+    // Cross-filter: real role names only (not Others/warnings)
+    if (!isOthers(name) && !isWarning(name)) onSliceClick?.(name);
   };
   const changeTopN = (raw: string) => {
     const n = Math.max(1, Math.floor(Number(raw) || 1));
@@ -189,13 +197,21 @@ export function RolesPieChart({
         animationDelay: (idx: number) => idx * 16,
         animationDurationUpdate: 550,
         animationEasingUpdate: "cubicInOut",
+        selectedMode: activeSlice ? "single" : false,
         data: displaySlices.map((s) => {
           const base = colorFor(s.name);
+          const isActive = activeSlice ? s.name === activeSlice : false;
+          const hasSomeActive = !!activeSlice;
           return {
             name: s.name,
             value: s.value,
+            // Pull out the active slice; dim siblings
+            selected: isActive,
             itemStyle: {
               color: { type: "linear" as const, x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: lighten(base, 0.22) }, { offset: 1, color: base }] },
+              opacity: hasSomeActive && !isActive ? 0.45 : 1,
+              shadowBlur: isActive ? 24 : 0,
+              shadowColor: isActive ? base + "99" : undefined,
             },
           };
         }),
