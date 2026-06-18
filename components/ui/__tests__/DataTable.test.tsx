@@ -80,7 +80,11 @@ const MOCK_DATA: MockRow[] = [
 
 const columnHelper = createColumnHelper<MockRow>();
 
-const MOCK_COLUMNS: ColumnDef<MockRow, string>[] = [
+// TanStack's ColumnDef is invariant in its TValue param, so a `, string`
+// instantiation is not assignable to the DataTable prop's ColumnDef<MockRow>
+// (TValue = unknown). Use `any` for TValue — matching TanStack's own
+// TableOptions.columns: ColumnDef<TData, any>[] convention.
+const MOCK_COLUMNS: ColumnDef<MockRow, any>[] = [
   columnHelper.accessor("name", {
     header: "Name",
     enableSorting: true,
