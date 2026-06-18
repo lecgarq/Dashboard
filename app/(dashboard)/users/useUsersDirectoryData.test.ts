@@ -111,6 +111,9 @@ vi.mock("@/lib/core/trpc", () => ({
       getCoverage: {
         useQuery: () => ({ data: undefined, isLoading: false }),
       },
+      lastFileActivityByEmailAll: {
+        useQuery: () => ({ data: undefined, isLoading: false }),
+      },
     },
     accFolders: {
       getCoverage: {

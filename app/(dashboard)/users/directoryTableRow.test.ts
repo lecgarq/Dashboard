@@ -202,4 +202,92 @@ describe("buildDirectoryRows", () => {
     const rows = buildDirectoryRows([p], map);
     expect(rows[0].accUser).not.toBeNull();
   });
+
+  // ---------------------------------------------------------------------------
+  // G1 fix: optional lastActivityByEmail override map
+  // ---------------------------------------------------------------------------
+
+  it("G1: when lastActivityByEmail map is provided, row.lastActivity comes from the map (not project.lastActivity)", () => {
+    // project.lastActivity is stale/wrong; map has the real value
+    const user = accUser({
+      projects: [project({ id: "p1", lastActivity: "2025-01-01T00:00:00.000Z" })],
+    });
+    const map = new Map([[person().email.toLowerCase(), user]]);
+    const lastActivityByEmail = new Map<string, string | null>([
+      ["ada@hermosillo.com", "2026-06-15T12:00:00.000Z"],
+    ]);
+    const rows = buildDirectoryRows([person()], map, lastActivityByEmail);
+    // Must come from the override map, not from project.lastActivity
+    expect(rows[0].lastActivity).toBe("2026-06-15T12:00:00.000Z");
+  });
+
+  it("G1: when lastActivityByEmail map has null for the email, row.lastActivity is null", () => {
+    const user = accUser({
+      projects: [project({ id: "p1", lastActivity: "2026-01-01T00:00:00.000Z" })],
+    });
+    const map = new Map([[person().email.toLowerCase(), user]]);
+    const lastActivityByEmail = new Map<string, string | null>([
+      ["ada@hermosillo.com", null],
+    ]);
+    const rows = buildDirectoryRows([person()], map, lastActivityByEmail);
+    // Explicit null in map means "no file activity" — must not fall back to project.lastActivity
+    expect(rows[0].lastActivity).toBeNull();
+  });
+
+  it("G1: when lastActivityByEmail map has no entry for email, row.lastActivity falls back to project.lastActivity", () => {
+    const user = accUser({
+      projects: [project({ id: "p1", lastActivity: "2026-03-01T00:00:00.000Z" })],
+    });
+    const emptyMap = new Map<string, string | null>();
+    const rows = buildDirectoryRows([person()], new Map([[person().email.toLowerCase(), user]]), emptyMap);
+    // No entry → fall back to project.lastActivity
+    expect(rows[0].lastActivity).toBe("2026-03-01T00:00:00.000Z");
+  });
+
+  it("G1: lastActivityByEmail is case-insensitive (uses lowercased email key)", () => {
+    const user = accUser({ projects: [] });
+    const accMap = new Map([[person().email.toLowerCase(), user]]);
+    const lastActivityByEmail = new Map<string, string | null>([
+      // Key is lowercase even if person email might differ
+      ["ada@hermosillo.com", "2026-06-10T00:00:00.000Z"],
+    ]);
+    const p = person({ email: "Ada@Hermosillo.com" }); // uppercase
+    const rows = buildDirectoryRows([p], accMap, lastActivityByEmail);
+    expect(rows[0].lastActivity).toBe("2026-06-10T00:00:00.000Z");
+  });
+
+  it("G1: isDormant recomputed from lastActivityByEmail override (recent map value → not dormant)", () => {
+    const recentIso = new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(); // 10 days ago
+    const user = accUser({ projects: [] });
+    const accMap = new Map([[person().email.toLowerCase(), user]]);
+    const lastActivityByEmail = new Map<string, string | null>([
+      ["ada@hermosillo.com", recentIso],
+    ]);
+    const rows = buildDirectoryRows([person()], accMap, lastActivityByEmail);
+    expect(rows[0].isDormant).toBe(false);
+  });
+
+  it("G1: isDormant recomputed from lastActivityByEmail override (old map value → dormant)", () => {
+    const oldIso = new Date(Date.now() - 100 * 24 * 60 * 60 * 1000).toISOString(); // 100 days ago
+    const user = accUser({ projects: [] });
+    const accMap = new Map([[person().email.toLowerCase(), user]]);
+    const lastActivityByEmail = new Map<string, string | null>([
+      ["ada@hermosillo.com", oldIso],
+    ]);
+    const rows = buildDirectoryRows([person()], accMap, lastActivityByEmail);
+    expect(rows[0].isDormant).toBe(true);
+  });
+
+  it("G1: without lastActivityByEmail param, existing project.lastActivity behavior is unchanged (backward compat)", () => {
+    const user = accUser({
+      projects: [
+        project({ id: "p1", lastActivity: "2026-01-01T00:00:00.000Z" }),
+        project({ id: "p2", lastActivity: "2026-06-01T00:00:00.000Z" }),
+      ],
+    });
+    const map = new Map([[person().email.toLowerCase(), user]]);
+    // No third argument — old behavior
+    const rows = buildDirectoryRows([person()], map);
+    expect(rows[0].lastActivity).toBe("2026-06-01T00:00:00.000Z");
+  });
 });

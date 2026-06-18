@@ -226,6 +226,17 @@ vi.mock("@/lib/core/trpc", () => ({
       getFileActivityForUser: {
         useQuery: () => ({ data: undefined }),
       },
+      // G1 fix: mock lastFileActivityByEmailAll so "Last active" column shows
+      // real times. Alice has a recent timestamp; Bob has no file activity.
+      lastFileActivityByEmailAll: {
+        useQuery: () => ({
+          data: {
+            "alice@hermosillo.com": "2026-06-01T00:00:00.000Z",
+            // Bob is absent → no file activity → falls back to null
+          },
+          isLoading: false,
+        }),
+      },
       usersOrderedByLastFileActivity: {
         useInfiniteQuery: () => ({
           data: undefined,
@@ -567,5 +578,39 @@ describe("UsersDirectoryClient — golden-path integration", () => {
       },
     );
     expect(nonLeanCalls).toHaveLength(0);
+  });
+
+  // -------------------------------------------------------------------------
+  // Case 11 (G1): lastFileActivityByEmailAll drives "Last active" column
+  // Alice has a mock timestamp in lastFileActivityByEmailAll →
+  // LastActiveCell must render a relative time (contains "ago").
+  // Bob is absent from the map → cell shows "No data".
+  // -------------------------------------------------------------------------
+  it("G1: LastActiveCell shows relative time for Alice (from lastFileActivityByEmailAll) and 'No data' for Bob", async () => {
+    const { container } = render(<UsersDirectoryClient />);
+
+    const allText = container.textContent ?? "";
+    // Alice has "2026-06-01T00:00:00.000Z" in the lastFileActivityByEmailAll mock.
+    // The LastActiveCell should render a relative time string (e.g. "17 days ago").
+    // Bob is absent from the map — his cell should show "No data".
+    expect(allText).toContain("No data"); // Bob has no file activity entry
+    // Alice's cell must NOT be "No data" — it should be some relative time.
+    // Since the date is fixed at "2026-06-01" and currentDate is 2026-06-18,
+    // the relative string should contain "ago".
+    expect(allText).toContain("ago");
+  });
+
+  // -------------------------------------------------------------------------
+  // Case 12 (G1): PERF-04 single-bulkUsers assertion still holds after G1 fix
+  // -------------------------------------------------------------------------
+  it("G1+PERF-04: adding lastFileActivityByEmailAll does NOT add a second bulkUsers call", () => {
+    render(<UsersDirectoryClient />);
+    // The G1 query (lastFileActivityByEmailAll) is separate; bulkUsers must still
+    // be called exactly once.
+    expect(bulkUsersQuerySpy).toHaveBeenCalledTimes(1);
+    expect(bulkUsersQuerySpy).toHaveBeenCalledWith(
+      BULK_USERS_LEAN_INPUT,
+      expect.objectContaining({ staleTime: expect.any(Number) }),
+    );
   });
 });
