@@ -94,6 +94,14 @@ export function UsersDirectoryClient() {
     if (activatedEmails.has(email) || hoverTimers.current.has(email)) return;
     const timer = setTimeout(() => {
       hoverTimers.current.delete(email);
+      // Warm the DrillSheet profile panel's queries on hover so it opens
+      // instantly instead of cold-loading on click (G4 perf): the full-user
+      // snapshot (roles/modules), the activity panel, and the folder-access
+      // panel. staleTimes match the panel's own useQuery calls for cache parity.
+      utils.accDcGraph.bulkUser.prefetch({ email }, { staleTime: 5 * 60_000 }).catch(() => {});
+      utils.users.getAccUserActivity.prefetch({ email }, { staleTime: 60_000 }).catch(() => {});
+      utils.users.getAccUserFolderAccess.prefetch({ email }, { staleTime: 5 * 60_000 }).catch(() => {});
+      // Activity side-panel path (existing behavior).
       utils.accActivity.getFileActivityForUser.prefetch({ email }, { staleTime: 5 * 60_000 }).catch(() => {});
       activateEmail(email);
     }, 250);
@@ -306,6 +314,8 @@ export function UsersDirectoryClient() {
               />
             )}
             onRowClick={(r) => setSelectedEmail(r.original.email)}
+            onRowHover={(r) => handleRowHoverEnter(r.original.email)}
+            onRowHoverEnd={(r) => handleRowHoverLeave(r.original.email)}
             hasActiveFilter={hasActiveFilters || !!search}
             onClearFilters={clearAllFilters}
             filteredEmptyMessage="No one matches those filters"

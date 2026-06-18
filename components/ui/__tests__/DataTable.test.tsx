@@ -261,6 +261,28 @@ describe("DataTable", () => {
     }
   });
 
+  // onRowHover fires on row pointer-enter and onRowHoverEnd on leave — used to
+  // prefetch the detail panel's queries so the profile opens instantly.
+  it("fires onRowHover on row mouseEnter and onRowHoverEnd on mouseLeave", () => {
+    const onRowHover = vi.fn();
+    const onRowHoverEnd = vi.fn();
+    const { container } = render(
+      <DataTable<MockRow>
+        data={MOCK_DATA}
+        columns={MOCK_COLUMNS}
+        onRowHover={onRowHover}
+        onRowHoverEnd={onRowHoverEnd}
+      />
+    );
+    const dataCell = container.querySelector("[data-cell]") as HTMLElement | null;
+    expect(dataCell).not.toBeNull();
+    const tr = dataCell!.closest("tr") as HTMLElement;
+    fireEvent.mouseEnter(tr);
+    expect(onRowHover).toHaveBeenCalledTimes(1);
+    fireEvent.mouseLeave(tr);
+    expect(onRowHoverEnd).toHaveBeenCalledTimes(1);
+  });
+
   // FND-05-f: density toggle swaps row-height class; font-size class unchanged
   it("FND-05-f: density toggle changes row-height class but not font-size class", () => {
     const { container } = render(

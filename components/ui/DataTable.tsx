@@ -29,6 +29,12 @@ export interface DataTableProps<T> {
   columns: ColumnDef<T>[];
   /** Called when a non-chevron area of a row is clicked. */
   onRowClick?: (row: Row<T>) => void;
+  /** Called when the pointer enters a row — use to prefetch row detail (warm
+   *  the detail panel's queries before the click so it opens instantly). */
+  onRowHover?: (row: Row<T>) => void;
+  /** Called when the pointer leaves a row — use to cancel a pending prefetch
+   *  so fast scroll-over doesn't warm every passed row. */
+  onRowHoverEnd?: (row: Row<T>) => void;
   /** Render slot for the inline expand peek. Receives the TanStack Row<T>. */
   renderExpanded?: (row: Row<T>) => React.ReactNode;
   /** Column ID to pin on the left (e.g. 'name'). */
@@ -63,6 +69,8 @@ export function DataTable<T>({
   data,
   columns,
   onRowClick,
+  onRowHover,
+  onRowHoverEnd,
   renderExpanded,
   pinnedColumn,
   defaultSort,
@@ -351,6 +359,8 @@ export function DataTable<T>({
                           <tbody>
                             <tr
                               className="hover:bg-muted/30 transition-shadow hover:shadow-[var(--depth-float)] group"
+                              onMouseEnter={() => onRowHover?.(row)}
+                              onMouseLeave={() => onRowHoverEnd?.(row)}
                             >
                               {/* Expand chevron cell */}
                               <td
