@@ -2,6 +2,38 @@ import { describe, expect, it, vi } from "vitest";
 import { accDcGraphRouter } from "./acc-dc-graph";
 import { invalidateAccHotCache } from "@/lib/server/acc-hot-cache";
 
+// ---------------------------------------------------------------------------
+// Shared minimal DB stub (non-versioned, no hot-cache)
+// ---------------------------------------------------------------------------
+function makeMinimalDb(overrides: Record<string, unknown> = {}) {
+  return {
+    accDcUser: {
+      findMany: vi.fn(async () => [
+        { id: "u1", email: "user@lecg.com", name: "User", status: "active", companyId: null, lastSignIn: null },
+      ]),
+    },
+    accDcProjectUser: {
+      findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1", addedOn: null, lastSignIn: null }]),
+    },
+    accDcProjectUserRole: {
+      findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1", roleId: "r1" }]),
+    },
+    accDcProjectUserProduct: {
+      findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1", productKey: "build", accessLevel: "view" }]),
+    },
+    accDcProjectUserCompany: { findMany: vi.fn(async () => []) },
+    accDcCompany: { findMany: vi.fn(async () => []) },
+    accRole: {
+      findMany: vi.fn(async () => [{ id: "r1", name: "Project Admin" }]),
+    },
+    accProject: {
+      findMany: vi.fn(async () => [{ id: "p1", name: "Tower A", status: "active", folderCrawlStatus: "ok" }]),
+    },
+    accFolderPermission: { findMany: vi.fn(async () => []) },
+    ...overrides,
+  };
+}
+
 function makeCaller(db: unknown) {
   return accDcGraphRouter.createCaller({
     db,
@@ -158,7 +190,7 @@ describe("accDcGraphRouter.bulkUsers", () => {
     expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
   });
 
-  it("includeActivityMix aggregates per-instance activity via groupBy (no raw rows)", async () => {
+  it("includeActivityMix aggregates per-instance activity from unified grouped rows", async () => {
     const db = {
       accDcUser: { findMany: vi.fn(async () => [{ id: "u1", email: "user@lecg.com", name: "User", status: "active", companyId: null, lastSignIn: null }]) },
       accDcProjectUser: { findMany: vi.fn(async () => [{ projectId: "p1", userId: "u1" }]) },
@@ -169,17 +201,63 @@ describe("accDcGraphRouter.bulkUsers", () => {
       accRole: { findMany: vi.fn(async () => []) },
       accProject: { findMany: vi.fn(async () => [{ id: "p1", name: "P1", status: "active", folderCrawlStatus: "ok" }]) },
       accFolderPermission: { findMany: vi.fn(async () => []) },
-      accActivity: {
-        groupBy: vi.fn(async () => [
-          { userEmail: "user@lecg.com", projectId: "p1", rawAction: "File Viewed", _count: { _all: 5 }, _max: { createdAt: new Date("2026-05-10T00:00:00Z") } },
-        ]),
-      },
+      $queryRaw: vi
+        .fn()
+        .mockResolvedValueOnce([
+          {
+            userEmail: "user@lecg.com",
+            projectId: "p1",
+            rawAction: "File Viewed",
+            count: 5,
+            lastCreatedAt: new Date("2026-05-10T00:00:00Z"),
+          },
+        ])
+        .mockResolvedValueOnce([]),
     };
     const rows = await makeCaller(db).bulkUsers({ includeActivityMix: true });
     const proj = rows[0].projects[0];
     expect(proj.activityTotal).toBe(5);
     expect(proj.activityMix!.view).toBe(5);
-    expect(db.accActivity.groupBy).toHaveBeenCalled();
-    expect((db.accActivity as any).findMany).toBeUndefined(); // grouped only
+    expect(db.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// accDcGraphRouter.bulkUser — single-user full fetch (non-lean)
+// ---------------------------------------------------------------------------
+describe("accDcGraphRouter.bulkUser", () => {
+  it("returns the matching user with full roles and modules from non-lean cache", async () => {
+    invalidateAccHotCache();
+    const db = makeMinimalDb();
+    const caller = makeCaller(db);
+
+    const result = await caller.bulkUser({ email: "user@lecg.com" });
+
+    expect(result).not.toBeNull();
+    expect(result!.email).toBe("user@lecg.com");
+    // Full (non-lean) — roles and modules must be populated
+    expect(result!.projects[0].roles).toContain("Project Admin");
+    expect(result!.projects[0].modules).toContain("build");
+  });
+
+  it("returns null when the email is not found in the DC snapshot", async () => {
+    invalidateAccHotCache();
+    const db = makeMinimalDb();
+    const caller = makeCaller(db);
+
+    const result = await caller.bulkUser({ email: "unknown@example.com" });
+
+    expect(result).toBeNull();
+  });
+
+  it("is case-insensitive on email lookup", async () => {
+    invalidateAccHotCache();
+    const db = makeMinimalDb();
+    const caller = makeCaller(db);
+
+    const result = await caller.bulkUser({ email: "USER@LECG.COM" });
+
+    expect(result).not.toBeNull();
+    expect(result!.email).toBe("user@lecg.com");
   });
 });

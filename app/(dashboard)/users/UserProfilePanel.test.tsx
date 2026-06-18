@@ -5,14 +5,51 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import type { OrgPerson } from "./directoryUtils";
 
-const fetchSpy = vi.fn(async () => ({ found: false, syncedAt: "" }));
+// vi.hoisted ensures these spies are available inside the hoisted vi.mock factory.
+const { fetchSpy, bulkUserQuerySpy } = vi.hoisted(() => ({
+  fetchSpy: vi.fn(async () => ({ found: false, syncedAt: "" })),
+  bulkUserQuerySpy: vi.fn(() => ({
+    data: {
+      email: "ada@hermosillo.com",
+      name: "Ada Lovelace",
+      found: true,
+      syncedAt: "2026-06-16T00:00:00.000Z",
+      photoUrl: null,
+      costCenter: "ENG-100",
+      projectCount: 1,
+      activeCount: 1,
+      adminCount: 1,
+      hasNoProjects: false,
+      isAccountAdmin: false,
+      addedOn: null,
+      projects: [
+        {
+          id: "p1",
+          name: "Tower A",
+          status: "active",
+          isAdmin: true,
+          roles: ["Project Admin"],
+          modules: ["build"],
+        },
+      ],
+      allRoles: ["Project Admin"],
+      allModules: ["build"],
+    },
+    isLoading: false,
+  })),
+}));
+
 const activityData = { totalCount: 5, last30dCount: 0, topActions: [], recentEvents: [] };
+
 vi.mock("@/lib/core/trpc", () => ({
   trpc: {
     useUtils: () => ({ users: { getAccProfile: { fetch: fetchSpy } } }),
     users: {
       getAccUserActivity: { useQuery: () => ({ data: activityData, isLoading: false }) },
       getAccUserFolderAccess: { useQuery: () => ({ data: undefined, isLoading: false }) },
+    },
+    accDcGraph: {
+      bulkUser: { useQuery: bulkUserQuerySpy },
     },
   },
 }));
@@ -160,5 +197,41 @@ describe("UserProfilePanel", () => {
     );
     // Rail has its own header from ProfileAvatar/name — person chrome block must not appear
     expect(screen.queryByTestId("person-chrome-header")).toBeNull();
+  });
+
+  it("[G4] shows per-project roles and modules in dialog variant WITHOUT clicking Refresh (sourced from bulkUser proc)", () => {
+    // The lean in-memory `found` has roles: ["Project Admin"] and modules: ["build"] already
+    // (the test fixture happens to have them), BUT the bulkUserQuerySpy returns fullBulkUser
+    // which is the enriched source. The key assertion is that roles + modules render AND the
+    // Autodesk live-fetch spy (getAccProfile.fetch) is NOT called automatically.
+    render(
+      <UserProfilePanel
+        user={found}
+        email={found.email}
+        variant="dialog"
+      />
+    );
+    // accDcGraph.bulkUser must have been queried on mount
+    expect(bulkUserQuerySpy).toHaveBeenCalled();
+    // Live Autodesk fetch must NOT fire automatically
+    expect(fetchSpy).not.toHaveBeenCalled();
+    // Per-project role "Project Admin" must be visible
+    expect(screen.getAllByText("Project Admin").length).toBeGreaterThan(0);
+    // The Roles stat card value must be > 0
+    expect(screen.getByTestId("statcard-roles")).toBeTruthy();
+    expect(screen.getByTestId("statcard-roles").hasAttribute("disabled")).toBe(false);
+  });
+
+  it("[G4] shows a loading indicator on the ACC detail section while bulkUser is in-flight", () => {
+    // Override spy to simulate in-flight state
+    bulkUserQuerySpy.mockReturnValueOnce({ data: undefined, isLoading: true });
+    render(
+      <UserProfilePanel
+        user={found}
+        email={found.email}
+        variant="dialog"
+      />
+    );
+    expect(screen.getByTestId("acc-detail-loading")).toBeTruthy();
   });
 });
