@@ -24,7 +24,7 @@ import { bulkUserToProfileData } from "./bulkUserToProfileData";
 import { ProfileAvatar } from "./ProfileAvatar";
 import { Badge } from "@/components/ui/badge";
 import type { OrgPerson } from "./directoryUtils";
-import { PersonAvatar } from "./PersonDetailModal";
+import { PersonAvatar } from "./PersonAvatar";
 
 export interface UserProfilePanelProps {
   user: BulkAccUser | null;
