@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
-stopped_at: Completed 03-02 (DataTable GREEN — all 11 FND-05 tests pass; tsc 0)
-last_updated: "2026-06-18T17:26:53.295Z"
+stopped_at: Completed 04-02 (UserProfilePanel person chrome — 10 tests green; tsc 0)
+last_updated: "2026-06-18T17:32:29.061Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
   completed_phases: 3
   total_plans: 18
-  completed_plans: 15
+  completed_plans: 16
   percent: 43
 ---
 
@@ -60,6 +60,7 @@ Progress: [██████░░░░] 58%
 | Phase 02-users-decomposition P05 | 420 | 3 tasks | 4 files |
 | Phase 03 P01 | 9min | 2 tasks | 3 files |
 | Phase 03-datatable-primitive P02 | 4min | 3 tasks | 2 files |
+| Phase 04-users-table-polish P02 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -91,6 +92,7 @@ Recent decisions affecting current work:
 - [Phase ?]: Plan 02 must implement data-expand/data-cell/data-density/data-clear-filters attributes as test selector surface
 - [Phase ?]: AnimatePresence inside conditional: framer-motion exit async in jsdom; React must control DOM presence
 - [Phase ?]: Cross-wave @ts-expect-error removal: TS2307 suppression becomes TS2578 once DataTable.tsx exists; must remove in same commit
+- [Phase ?]: [Phase 04-02]: UserProfilePanel.tsx gains optional person?: OrgPerson prop; dialog variant renders person chrome (banner avatar, name, title, badge tags, contact rows) when supplied; rail ignores it; PersonAvatar imported from PersonDetailModal to avoid duplication
 
 ### Pending Todos
 
@@ -117,6 +119,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T17:26:19.272Z
-Stopped at: Completed 03-02 (DataTable GREEN — all 11 FND-05 tests pass; tsc 0)
+Last session: 2026-06-18T17:32:29.054Z
+Stopped at: Completed 04-02 (UserProfilePanel person chrome — 10 tests green; tsc 0)
 Resume file: None
