@@ -16,7 +16,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Shared Design Foundation** - Depth/glow tokens, `PremiumSurface`, themed `EChart`, motion facade, slide-in `Sheet` — every page imports this (completed 2026-06-17)
 - [x] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test (completed 2026-06-18)
 - [x] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages (completed 2026-06-18)
-- [ ] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton
+- [x] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton (completed 2026-06-18)
 - [ ] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain
 - [ ] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent
 - [ ] **Phase 7: Pre-Workshop UAT** - Projector-brightness simulation, contrast/perf/motion/boundary gates across all 4 pages
@@ -107,12 +107,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. KPI / header numbers count up smoothly on first load; a subtle R3F particle accent renders only in the page header (`ssr:false`, `frameloop:demand`) and never on the data-table region.
   5. `npx tsc --noEmit` exits 0; the Network tab shows each tRPC endpoint called once per load.
 
-**Plans**: 2/4 plans executed
+**Plans**: 4/4 plans complete
 
 - [x] 04-01-PLAN.md — DirectoryRow + buildDirectoryRows + 5 typed columns + PeekPanel (TDD) (USR-02, INT-03, PERF-04) [wave 1]
 - [x] 04-02-PLAN.md — UserProfilePanel gains optional person chrome for the slide-in panel (Open Q1) (INT-03, USR-02) [wave 1]
-- [ ] 04-03-PLAN.md — Wire DataTable into the shell + DrillSheet migration + table skeleton + entrance fade + error/empty states (USR-02, INT-03, PERF-01, PERF-04, VIS-03) [wave 2]
-- [ ] 04-04-PLAN.md — Header KPI strip + count-up + R3F particle accent (install @react-three/fiber@9, CSS fallback) (VIS-04, USR-02) [wave 3]
+- [x] 04-03-PLAN.md — Wire DataTable into the shell + DrillSheet migration + table skeleton + entrance fade + error/empty states (USR-02, INT-03, PERF-01, PERF-04, VIS-03) [wave 2]
+- [x] 04-04-PLAN.md — Header KPI strip + count-up + R3F particle accent (install @react-three/fiber@9, CSS fallback) (VIS-04, USR-02) [wave 3]
 
 **UI hint**: yes
 
@@ -187,7 +187,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
-| 4. /users Table & Polish | 2/4 | In Progress|  |
+| 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |

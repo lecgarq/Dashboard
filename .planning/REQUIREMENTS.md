@@ -36,7 +36,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 - [ ] **VIS-01**: Chart panels and key surfaces use 2.5D depth (glass, layered shadow, catch-light) and no longer look flat — in both themes
 - [ ] **VIS-02**: Donut/pie charts use gradient fills, selected-segment glow, and rounded segments
 - [x] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
-- [ ] **VIS-04**: KPI numbers count up smoothly on first load
+- [x] **VIS-04**: KPI numbers count up smoothly on first load
 - [ ] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
 - [x] **VIS-06**: One or two selective real-3D hero accents appear only on non-data regions (`/forma-proposal` background, `/users` header) — never on data pages
 
@@ -117,7 +117,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | PERF-04 | Phase 4 — /users Table & Polish | Complete |
 | INT-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-03 | Phase 4 — /users Table & Polish | Complete |
-| VIS-04 | Phase 4 — /users Table & Polish | Pending |
+| VIS-04 | Phase 4 — /users Table & Polish | Complete |
 | ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | ACC-03 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
