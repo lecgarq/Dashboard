@@ -1,13 +1,10 @@
 // @vitest-environment jsdom
 /**
- * NA-01 — ActivityCoverageBadge RED test stub.
- * ActivityCoverageBadge does not exist yet; this test intentionally fails at runtime until
- * Wave 2 implements the component. The @ts-expect-error suppresses the TS2307
- * "module not found" error so tsc exits 0.
+ * NA-01 — ActivityCoverageBadge tests.
+ * Wave 2 implementation — component now exists; @ts-expect-error removed.
  */
 import { describe, it, expect } from "vitest";
 import { render } from "@testing-library/react";
-// @ts-expect-error not yet implemented — Wave 2 will create this component
 import { ActivityCoverageBadge } from "../components/ActivityCoverageBadge";
 
 describe("ActivityCoverageBadge (NA-01)", () => {
