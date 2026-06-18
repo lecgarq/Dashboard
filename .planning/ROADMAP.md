@@ -85,7 +85,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `components/ui/DataTable.tsx` renders a virtualized body with a sticky header, column sort, pinned column, `onRowClick`, inline row-expand, and a density toggle — typed with `ColumnDef<T>` generics.
   3. The primitive renders correctly in both light and dark themes and introduces no new WebGL context; `npx tsc --noEmit` exits 0.
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+- [ ] 03-01-PLAN.md — Install @tanstack/react-table v8 + write the failing DataTable contract test suite (RED) (FND-05) [wave 1]
+- [ ] 03-02-PLAN.md — Implement components/ui/DataTable.tsx to GREEN: sort, glass sticky header, pinned column, accordion expand, density toggle, two-message empty state (FND-05) [wave 2]
+
 **UI hint**: yes
 
 **Phase context / research note**: Standard patterns — TanStack Table v8 + Virtual v3 well-documented. Isolated to `components/ui/DataTable.tsx`; depends only on Phase 1 (uses `PremiumSurface`/tokens for styling). Parallel-safe with Phase 5 but MUST precede Phase 4 and Phase 6's table work. Per-phase research: confirm the exact `@tanstack/react-virtual` version (`npm run repo-map` / dep graph) before installing to catch the v2→v3 break flagged in research.
@@ -176,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
-| 3. DataTable Primitive | 0/TBD | Not started | - |
+| 3. DataTable Primitive | 0/2 | Planned | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
