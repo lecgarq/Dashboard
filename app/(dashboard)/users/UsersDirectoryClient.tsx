@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/core/trpc";
-import { Button } from "@/components/ui/button";
+
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, RefreshCw } from "lucide-react";
 import { motion, fadeUp, useSafeVariants } from "@/components/ui/motion";
@@ -40,8 +40,6 @@ const UserProfilePanel = dynamic(
   { ssr: false },
 );
 
-const DIRECTORY_RENDER_BATCH = 160;
-
 // ---------------------------------------------------------------------------
 // UsersDirectoryClient — DataTable-driven /users directory shell (Plan 04-03)
 // ---------------------------------------------------------------------------
@@ -77,7 +75,6 @@ export function UsersDirectoryClient() {
   })));
 
   // ---- Shell-only state / refs --------------------------------------------
-  const [directoryRenderLimit, setDirectoryRenderLimit] = useState(DIRECTORY_RENDER_BATCH);
   const [perfLoggingEnabled] = useState(() => {
     if (typeof window === "undefined") return false;
     const p = new URLSearchParams(window.location.search);
@@ -166,22 +163,19 @@ export function UsersDirectoryClient() {
   }, [setSearch, setDebouncedSearch]);
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
 
-  // ---- Derived rows (filtering / sorting / windowing) --------------------
-  const { filtered, visibleFiltered, renderedDirectoryCount, hasMoreDirectoryRows, hasActiveFilters } =
-    useDirectoryRows({ people, accSummaryMap, orderedActivityEmails, activitySortActive: activitySort.active, directoryRenderLimit });
-
-  // Reset render window on any filter/view change
-  useEffect(() => { setDirectoryRenderLimit(DIRECTORY_RENDER_BATCH); }, [debouncedSearch, filterDept, filterJobTitle, filterCostCenter, filterNoProjects, filterAccProject, filterAccRole, filterAccModule, statusFilter, projectAdminFilter]);
+  // ---- Derived rows (filtering / sorting) --------------------------------
+  const { filtered, displayRows, hasActiveFilters } =
+    useDirectoryRows({ people, accSummaryMap, orderedActivityEmails, activitySortActive: activitySort.active });
 
   useEffect(() => {
     if (!perfLoggingEnabled) return;
     const frame = requestAnimationFrame(() => {
       const mem = "memory" in performance ? (performance as Performance & { memory?: { usedJSHeapSize?: number } }).memory : undefined;
-      console.debug("[UsersPerf]", { people: people.length, filtered: filtered.length, renderedDirectoryCount, directoryRenderLimit, accUsers: mergedAccUsers.length, heapMB: mem?.usedJSHeapSize ? Math.round(mem.usedJSHeapSize / 1024 / 1024) : null });
-      performance.mark(`users-directory-render:${renderedDirectoryCount}`);
+      console.debug("[UsersPerf]", { people: people.length, filtered: filtered.length, accUsers: mergedAccUsers.length, heapMB: mem?.usedJSHeapSize ? Math.round(mem.usedJSHeapSize / 1024 / 1024) : null });
+      performance.mark(`users-directory-render:${filtered.length}`);
     });
     return () => cancelAnimationFrame(frame);
-  }, [directoryRenderLimit, filtered.length, mergedAccUsers.length, people.length, perfLoggingEnabled, renderedDirectoryCount]);
+  }, [filtered.length, mergedAccUsers.length, people.length, perfLoggingEnabled]);
 
   const stats = useMemo(() => ({ total: people.length, shown: filtered.length, depts: departments.length, costCenters: costCenters.length }), [people, filtered, departments, costCenters]);
 
@@ -214,12 +208,12 @@ export function UsersDirectoryClient() {
   }, [people, accSummaryMap, lastActivityByEmail]); // ACTIVE_30D_MS is a constant, no dep needed
 
   // ---- DataTable rows (pre-sorted/filtered list) -------------------------
-  // Pass the already-filtered/sorted list from useDirectoryRows so the
-  // pre-sort seam (Open Q3) holds; DataTable's own column sort operates on top.
+  // Pass the full filtered+sorted list from useDirectoryRows — DataTable already
+  // virtualizes via @tanstack/react-virtual so only visible rows hit the DOM.
   // G1 fix: pass lastActivityByEmail so rows show real "Last active" times.
   const rows = useMemo(
-    () => buildDirectoryRows(visibleFiltered, accSummaryMap, lastActivityByEmail),
-    [visibleFiltered, accSummaryMap, lastActivityByEmail],
+    () => buildDirectoryRows(displayRows, accSummaryMap, lastActivityByEmail),
+    [displayRows, accSummaryMap, lastActivityByEmail],
   );
 
   // ---- Retry handler for error state -------------------------------------
@@ -321,14 +315,6 @@ export function UsersDirectoryClient() {
             filteredEmptyMessage="No one matches those filters"
             emptyMessage="No people found in your organization directory."
           />
-        </div>
-      )}
-
-      {!isLoading && hasMoreDirectoryRows && (
-        <div className="flex items-center justify-center pt-4">
-          <Button type="button" variant="outline" size="sm" onClick={() => setDirectoryRenderLimit((limit) => limit + DIRECTORY_RENDER_BATCH)}>
-            Show {Math.min(DIRECTORY_RENDER_BATCH, filtered.length - renderedDirectoryCount).toLocaleString()} more
-          </Button>
         </div>
       )}
 

@@ -7,8 +7,7 @@
 // Inputs come from the Zustand store (filter values) and the data hook
 // (people, accSummaryMap), plus the activity-sort state from the shell.
 //
-// Outputs: filtered, displayRows, groups, visibleFiltered, visibleGroups,
-// renderedDirectoryCount, hasMoreDirectoryRows, hasActiveFilters.
+// Outputs: filtered, displayRows, groups, hasActiveFilters.
 // ---------------------------------------------------------------------------
 
 import { useMemo } from "react";
@@ -18,16 +17,10 @@ import { useShallow } from "zustand/shallow";
 import type { OrgPerson } from "./directoryUtils";
 import { parseSearchTokens, matchesPerson } from "./directoryUtils";
 import { useUsersDirectoryStore } from "./useUsersDirectoryStore";
-import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
-
 export interface DirectoryRowsResult {
   filtered: OrgPerson[];
   displayRows: OrgPerson[];
   groups: [string, OrgPerson[]][] | null;
-  visibleFiltered: OrgPerson[];
-  visibleGroups: [string, OrgPerson[]][] | null;
-  renderedDirectoryCount: number;
-  hasMoreDirectoryRows: boolean;
   hasActiveFilters: boolean;
 }
 
@@ -36,13 +29,11 @@ export function useDirectoryRows({
   accSummaryMap,
   orderedActivityEmails,
   activitySortActive,
-  directoryRenderLimit,
 }: {
   people: OrgPerson[];
   accSummaryMap: Map<string, BulkAccUser>;
   orderedActivityEmails: string[];
   activitySortActive: boolean;
-  directoryRenderLimit: number;
 }): DirectoryRowsResult {
   const {
     debouncedSearch, groupBy,
@@ -102,10 +93,5 @@ export function useDirectoryRows({
     return Array.from(map.entries()).sort(([a], [b]) => a === "Not specified" ? 1 : b === "Not specified" ? -1 : a.localeCompare(b));
   }, [displayRows, groupBy]);
 
-  const visibleFiltered = useMemo(() => displayRows.slice(0, directoryRenderLimit), [displayRows, directoryRenderLimit]);
-  const visibleGroups = useMemo(() => groups ? limitGroupedItems(groups, directoryRenderLimit) : null, [groups, directoryRenderLimit]);
-  const renderedDirectoryCount = visibleGroups ? countGroupedItems(visibleGroups) : visibleFiltered.length;
-  const hasMoreDirectoryRows = renderedDirectoryCount < filtered.length;
-
-  return { filtered, displayRows, groups, visibleFiltered, visibleGroups, renderedDirectoryCount, hasMoreDirectoryRows, hasActiveFilters };
+  return { filtered, displayRows, groups, hasActiveFilters };
 }
