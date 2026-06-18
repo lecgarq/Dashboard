@@ -22,7 +22,10 @@ import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timeline
 import { summarizeCoordination } from "../coordinationCounts";
 import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectRoleRow, type SliceFilters } from "../projectFilter";
 import { PillBar } from "./PillBar";
+import { PeopleDrillList } from "./PeopleDrillList";
+import { DrillSheet } from "@/components/ui/DrillSheet";
 import { groupProjectOptions } from "../projectGroups";
+import type { DrillPerson } from "../roleCounts";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
@@ -102,6 +105,10 @@ export function AccessAnalysisCharts({
   const [selected, setSelected] = useState<Set<string>>(() => new Set(options.map((o) => o.id)));
   // The author whose profile drawer is open (null = closed). Lowercased email.
   const [profileEmail, setProfileEmail] = useState<string | null>(null);
+
+  // People sheet: opened by "View N people →" affordance (NOT by slice clicks — locked decision).
+  // Sources people from in-memory summaries — no tRPC/useQuery (Pitfall 2).
+  const [peopleSheet, setPeopleSheet] = useState<{ title: string; people: DrillPerson[] } | null>(null);
 
   // Slice cross-filters — one value per dimension, ANDed. Toggling the same value clears it.
   // Project Picker `selected` is deliberately separate: "Clear all" only clears sliceFilters.
@@ -244,7 +251,13 @@ export function AccessAnalysisCharts({
       )}
 
       <Reveal><section className="flex flex-col gap-3">
-        <SectionHeader title="Role distribution" subtitle="Roles held across all project memberships." />
+        <SectionHeaderWithPeople
+          title="Role distribution"
+          subtitle="Roles held across all project memberships."
+          people={[...roleSummary.usersByRole.values()].flat()}
+          onViewPeople={(people) => setPeopleSheet({ title: "Role distribution — people", people })}
+          testId="view-people-role"
+        />
         <RolesPieChart
           data={roleSummary.slices}
           distinctRoles={roleSummary.distinctRoles}
@@ -256,7 +269,13 @@ export function AccessAnalysisCharts({
       </section></Reveal>
 
       <Reveal><section className="flex flex-col gap-3">
-        <SectionHeader title="Users by company" subtitle="Project memberships grouped by each member's company." />
+        <SectionHeaderWithPeople
+          title="Users by company"
+          subtitle="Project memberships grouped by each member's company."
+          people={[...companySummary.usersByCompany.values()].flat()}
+          onViewPeople={(people) => setPeopleSheet({ title: "Users by company — people", people })}
+          testId="view-people-company"
+        />
         <CompaniesPieChart
           data={companySummary.slices}
           distinctCompanies={companySummary.distinctCompanies}
@@ -269,9 +288,12 @@ export function AccessAnalysisCharts({
 
       {activityActorRows ? (
         <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader
+          <SectionHeaderWithPeople
             title="Activity by role"
             subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
+            people={[...activityByRoleSummary.usersByRole.values()].flat()}
+            onViewPeople={(people) => setPeopleSheet({ title: "Activity by role — people", people })}
+            testId="view-people-activity-role"
           />
           <ActivityByRolePieChart
             summary={activityByRoleSummary}
@@ -285,9 +307,12 @@ export function AccessAnalysisCharts({
 
       {activityActorRows ? (
         <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader
+          <SectionHeaderWithPeople
             title="Activity by company"
             subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
+            people={[...activityByCompanySummary.usersByCompany.values()].flat()}
+            onViewPeople={(people) => setPeopleSheet({ title: "Activity by company — people", people })}
+            testId="view-people-activity-company"
           />
           <CompaniesActivityPieChart
             summary={activityByCompanySummary}
@@ -323,6 +348,31 @@ export function AccessAnalysisCharts({
       {profileEmail && (
         <AuthorProfileDrawer email={profileEmail} onClose={() => setProfileEmail(null)} />
       )}
+
+      {/* People sheet — opened ONLY by "View N people →" affordance, not by slice clicks. */}
+      <DrillSheet
+        open={!!peopleSheet}
+        onClose={() => setPeopleSheet(null)}
+        title={peopleSheet?.title}
+        data-testid="people-sheet"
+      >
+        {peopleSheet && (
+          <div data-testid="people-sheet">
+            <PeopleDrillList
+              title={peopleSheet.title}
+              color="#6366f1"
+              people={peopleSheet.people}
+              total={peopleSheet.people.reduce((s, p) => s + p.count, 0)}
+              unitNoun="people"
+              onUserClick={(email) => {
+                setProfileEmail(email.toLowerCase());
+                setPeopleSheet(null);
+              }}
+              onClose={() => setPeopleSheet(null)}
+            />
+          </div>
+        )}
+      </DrillSheet>
     </div>
   );
 }
@@ -341,6 +391,59 @@ function SectionHeader({ title, subtitle }: { title: string; subtitle: string })
         <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
         <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
       </div>
+    </div>
+  );
+}
+
+/**
+ * Section heading variant for filterable panels that also carry a "View N people →"
+ * affordance (INT-02). The affordance opens the shared people sheet — clicking a
+ * slice does NOT open it (locked CONTEXT decision).
+ */
+function SectionHeaderWithPeople({
+  title,
+  subtitle,
+  people,
+  onViewPeople,
+  testId,
+}: {
+  title: string;
+  subtitle: string;
+  /** All people in the current filtered view (from in-memory summary). */
+  people: DrillPerson[];
+  /** Opens the people sheet with the supplied list. Called only by this button. */
+  onViewPeople: (people: DrillPerson[]) => void;
+  testId: string;
+}) {
+  // Deduplicate by email so cross-role/company duplication doesn't inflate count.
+  const uniquePeople = useMemo(() => {
+    const seen = new Set<string>();
+    return people.filter((p) => {
+      if (seen.has(p.email)) return false;
+      seen.add(p.email);
+      return true;
+    });
+  }, [people]);
+
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start gap-3">
+        <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
+        <div className="flex flex-col gap-0.5">
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+          <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
+        </div>
+      </div>
+      {uniquePeople.length > 0 && (
+        <button
+          type="button"
+          data-testid={testId}
+          onClick={() => onViewPeople(uniquePeople)}
+          className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition hover:bg-primary/20"
+        >
+          View {uniquePeople.length} {uniquePeople.length === 1 ? "person" : "people"} →
+        </button>
+      )}
     </div>
   );
 }
