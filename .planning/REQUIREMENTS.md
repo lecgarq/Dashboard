@@ -20,14 +20,14 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 - [ ] **PERF-01**: Each of the 4 pages shows a skeleton/loading state within ~200ms of navigation
 - [ ] **PERF-02**: `/access-analysis` renders its first tier (KPIs + donuts) fast (~300ms target), streaming heavier tiers (timeline, terrain) progressively rather than blocking on one `Promise.all`
 - [x] **PERF-03**: Each tRPC endpoint is fetched at most once per page load (no redundant/double fetch)
-- [ ] **PERF-04**: `/users` initial client payload is reduced (heavy per-user data deferred to detail-open); no load-time regression vs. today
+- [x] **PERF-04**: `/users` initial client payload is reduced (heavy per-user data deferred to detail-open); no load-time regression vs. today
 - [ ] **PERF-05**: No page introduces a new WebGL context on a data surface (GPU budget preserved; verified < 400MB GPU memory)
 
 ### Interactivity & Drill-down
 
 - [x] **INT-01**: A single shared slide-in detail panel (shadcn `Sheet`) is the drill-target for every click source across the 4 pages
 - [ ] **INT-02**: Chart segments are clickable and open the relevant people/detail in the slide-in panel
-- [ ] **INT-03**: Table rows are clickable (open detail) and expandable inline (summary) without full-page navigation
+- [x] **INT-03**: Table rows are clickable (open detail) and expandable inline (summary) without full-page navigation
 - [ ] **INT-04**: On `/access-analysis`, clicking a chart cross-filters the other charts client-side (zero new queries)
 - [ ] **INT-05**: An active-filter / drill-state pill bar shows current filters with one-click dismiss
 
@@ -47,7 +47,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Per-Page: /users
 
 - [x] **USR-01**: `UsersDirectoryClient` is decomposed (Zustand store + single data hook + extracted sub-components; shell ~200 lines) with existing filter/sort/search/virtualization behavior unchanged, guarded by a golden-path integration test written before extraction
-- [ ] **USR-02**: The user directory is presented as a premium `DataTable` — pinned name column, sticky frosted header, sortable, density toggle, row-click → detail panel, row-expand → inline summary
+- [x] **USR-02**: The user directory is presented as a premium `DataTable` — pinned name column, sticky frosted header, sortable, density toggle, row-click → detail panel, row-expand → inline summary
 
 ### Per-Page: /access-analysis
 
@@ -112,10 +112,10 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | USR-01 | Phase 2 — /users Decomposition | Complete |
 | PERF-03 | Phase 2 — /users Decomposition | Complete |
 | FND-05 | Phase 3 — DataTable Primitive | Complete |
-| USR-02 | Phase 4 — /users Table & Polish | Pending |
+| USR-02 | Phase 4 — /users Table & Polish | Complete |
 | PERF-01 | Phase 4 — /users Table & Polish | Pending |
-| PERF-04 | Phase 4 — /users Table & Polish | Pending |
-| INT-03 | Phase 4 — /users Table & Polish | Pending |
+| PERF-04 | Phase 4 — /users Table & Polish | Complete |
+| INT-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-03 | Phase 4 — /users Table & Polish | Pending |
 | VIS-04 | Phase 4 — /users Table & Polish | Pending |
 | ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
