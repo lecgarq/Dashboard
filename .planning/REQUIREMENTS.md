@@ -18,10 +18,10 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Speed & Perceived Performance
 
 - [x] **PERF-01**: Each of the 4 pages shows a skeleton/loading state within ~200ms of navigation
-- [ ] **PERF-02**: `/access-analysis` renders its first tier (KPIs + donuts) fast (~300ms target), streaming heavier tiers (timeline, terrain) progressively rather than blocking on one `Promise.all`
+- [x] **PERF-02**: `/access-analysis` renders its first tier (KPIs + donuts) fast (~300ms target), streaming heavier tiers (timeline, terrain) progressively rather than blocking on one `Promise.all`
 - [x] **PERF-03**: Each tRPC endpoint is fetched at most once per page load (no redundant/double fetch)
 - [x] **PERF-04**: `/users` initial client payload is reduced (heavy per-user data deferred to detail-open); no load-time regression vs. today
-- [ ] **PERF-05**: No page introduces a new WebGL context on a data surface (GPU budget preserved; verified < 400MB GPU memory)
+- [x] **PERF-05**: No page introduces a new WebGL context on a data surface (GPU budget preserved; verified < 400MB GPU memory)
 
 ### Interactivity & Drill-down
 
@@ -29,12 +29,12 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 - [ ] **INT-02**: Chart segments are clickable and open the relevant people/detail in the slide-in panel
 - [x] **INT-03**: Table rows are clickable (open detail) and expandable inline (summary) without full-page navigation
 - [ ] **INT-04**: On `/access-analysis`, clicking a chart cross-filters the other charts client-side (zero new queries)
-- [ ] **INT-05**: An active-filter / drill-state pill bar shows current filters with one-click dismiss
+- [x] **INT-05**: An active-filter / drill-state pill bar shows current filters with one-click dismiss
 
 ### Visual Depth & Motion
 
 - [ ] **VIS-01**: Chart panels and key surfaces use 2.5D depth (glass, layered shadow, catch-light) and no longer look flat — in both themes
-- [ ] **VIS-02**: Donut/pie charts use gradient fills, selected-segment glow, and rounded segments
+- [x] **VIS-02**: Donut/pie charts use gradient fills, selected-segment glow, and rounded segments
 - [x] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
 - [x] **VIS-04**: KPI numbers count up smoothly on first load
 - [ ] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
@@ -52,7 +52,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Per-Page: /access-analysis
 
 - [ ] **ACC-01**: All panels are wrapped in `PremiumSurface` with depth + staggered reveal
-- [ ] **ACC-02**: All donuts + the timeline use the shared themed `EChart` wrapper with depth/glow and `universalTransition` drill morphs
+- [x] **ACC-02**: All donuts + the timeline use the shared themed `EChart` wrapper with depth/glow and `universalTransition` drill morphs
 - [ ] **ACC-03**: Folder-permission terrain is click-to-expand / lazy-loaded (no 2–3s lag on first interaction)
 
 ### Per-Page: /template-mty
@@ -68,7 +68,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Data Integrity (New Analytics Gate)
 
-- [ ] **NA-01**: Any new per-page metric proposed during planning passes a Prisma-schema feasibility gate (named model, stated coverage, no schema change) before implementation; under-covered sources (e.g. `AccActivity` covers 428/1,152 projects) are labeled as such in the UI
+- [x] **NA-01**: Any new per-page metric proposed during planning passes a Prisma-schema feasibility gate (named model, stated coverage, no schema change) before implementation; under-covered sources (e.g. `AccActivity` covers 428/1,152 projects) are labeled as such in the UI
 
 ## v2 Requirements
 
@@ -119,18 +119,18 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | VIS-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-04 | Phase 4 — /users Table & Polish | Complete |
 | ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | ACC-03 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| PERF-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| PERF-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| PERF-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
+| PERF-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | INT-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | INT-04 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| INT-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| INT-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | VIS-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| VIS-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
 | TPL-02 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
 | TPL-03 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
