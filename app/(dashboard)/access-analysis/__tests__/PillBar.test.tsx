@@ -7,7 +7,6 @@
  */
 import { describe, it, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/react";
-// @ts-expect-error not yet implemented — Wave 1 will create this component
 import { PillBar } from "../components/PillBar";
 
 describe("PillBar (INT-05)", () => {
