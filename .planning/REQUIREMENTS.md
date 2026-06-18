@@ -17,7 +17,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Speed & Perceived Performance
 
-- [ ] **PERF-01**: Each of the 4 pages shows a skeleton/loading state within ~200ms of navigation
+- [x] **PERF-01**: Each of the 4 pages shows a skeleton/loading state within ~200ms of navigation
 - [ ] **PERF-02**: `/access-analysis` renders its first tier (KPIs + donuts) fast (~300ms target), streaming heavier tiers (timeline, terrain) progressively rather than blocking on one `Promise.all`
 - [x] **PERF-03**: Each tRPC endpoint is fetched at most once per page load (no redundant/double fetch)
 - [x] **PERF-04**: `/users` initial client payload is reduced (heavy per-user data deferred to detail-open); no load-time regression vs. today
@@ -35,7 +35,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 - [ ] **VIS-01**: Chart panels and key surfaces use 2.5D depth (glass, layered shadow, catch-light) and no longer look flat — in both themes
 - [ ] **VIS-02**: Donut/pie charts use gradient fills, selected-segment glow, and rounded segments
-- [ ] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
+- [x] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
 - [ ] **VIS-04**: KPI numbers count up smoothly on first load
 - [ ] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
 - [x] **VIS-06**: One or two selective real-3D hero accents appear only on non-data regions (`/forma-proposal` background, `/users` header) — never on data pages
@@ -113,10 +113,10 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | PERF-03 | Phase 2 — /users Decomposition | Complete |
 | FND-05 | Phase 3 — DataTable Primitive | Complete |
 | USR-02 | Phase 4 — /users Table & Polish | Complete |
-| PERF-01 | Phase 4 — /users Table & Polish | Pending |
+| PERF-01 | Phase 4 — /users Table & Polish | Complete |
 | PERF-04 | Phase 4 — /users Table & Polish | Complete |
 | INT-03 | Phase 4 — /users Table & Polish | Complete |
-| VIS-03 | Phase 4 — /users Table & Polish | Pending |
+| VIS-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-04 | Phase 4 — /users Table & Polish | Pending |
 | ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
