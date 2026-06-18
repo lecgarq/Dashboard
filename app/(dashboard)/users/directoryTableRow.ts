@@ -96,19 +96,37 @@ function mode(values: string[]): string | null {
  *
  * @param people   Ordered list from useMergedAccUsers / useOrgDirectoryPeople.
  * @param accSummaryMap  Map<email (lowercased), BulkAccUser> from the ACC snapshot.
+ * @param lastActivityByEmail  Optional Map<email_lowercase, ISO string | null> from
+ *   the accActivity.lastFileActivityByEmailAll query (G1 fix). When provided and the
+ *   map HAS an entry for this user's email (even if null), that value is used as the
+ *   authoritative lastActivity instead of project.lastActivity. When the map is
+ *   provided but has NO entry for the email, falls back to project.lastActivity.
+ *   When the param is absent entirely, original project.lastActivity-max behavior
+ *   is preserved for backward compatibility.
  */
 export function buildDirectoryRows(
   people: OrgPerson[],
   accSummaryMap: Map<string, BulkAccUser>,
+  lastActivityByEmail?: Map<string, string | null>,
 ): DirectoryRow[] {
   const now = Date.now();
 
   return people.map((person) => {
     const accUser = accSummaryMap.get(person.email.toLowerCase()) ?? null;
+    const emailKey = person.email.toLowerCase();
 
-    // ── lastActivity: max over project.lastActivity (NEVER lastSignIn) ──────
+    // ── lastActivity ─────────────────────────────────────────────────────────
+    // G1 fix: if lastActivityByEmail map is provided AND has an entry for this
+    // email (existence check via .has() — the value may be null), use it as the
+    // authoritative source. This replaces the always-null project.lastActivity
+    // path for the /users directory view.
+    // When the map is absent or has no entry, fall back to project.lastActivity-max.
     let lastActivity: string | null = null;
-    if (accUser) {
+    if (lastActivityByEmail !== undefined && lastActivityByEmail.has(emailKey)) {
+      // Authoritative: map entry wins (may be null = no file activity)
+      lastActivity = lastActivityByEmail.get(emailKey) ?? null;
+    } else if (accUser) {
+      // Fallback: max over project.lastActivity (original behavior — NEVER lastSignIn)
       const validDates = accUser.projects
         .map((p) => p.lastActivity ?? null)
         .filter((d): d is string => d !== null && d !== undefined);

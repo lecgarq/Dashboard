@@ -147,6 +147,7 @@ export function UsersDirectoryClient() {
     people, accSummaryMap, mergedAccUsers, noProjectsCount,
     usingFallbackDirectory, directoryBanner, isLoading, error,
     coverage, departments, jobTitles, costCenters, accProjects, accRoles, accModules,
+    lastActivityByEmail,
   } = useUsersDirectoryData();
 
   // Debounced search
@@ -185,11 +186,14 @@ export function UsersDirectoryClient() {
     for (const person of people) {
       const accUser = accSummaryMap.get(person.email.toLowerCase());
       if (accUser) {
-        // active30d: any project lastActivity within 30 days
-        const hasRecentActivity = accUser.projects.some((p) => {
-          if (!p.lastActivity) return false;
-          return now - new Date(p.lastActivity).getTime() <= ACTIVE_30D_MS;
-        });
+        // active30d: use lastActivityByEmail map (G1 fix) when available.
+        // project.lastActivity is never populated by the /users feed (always null),
+        // so falling back to it gives 0. Use the map when loaded; show 0 while loading.
+        let hasRecentActivity = false;
+        if (lastActivityByEmail !== undefined) {
+          const ts = lastActivityByEmail.get(person.email.toLowerCase());
+          hasRecentActivity = !!ts && now - new Date(ts).getTime() <= ACTIVE_30D_MS;
+        }
         if (hasRecentActivity) active30d += 1;
         // admins: project admin on any project or has adminCount > 0 or isAccountAdmin
         if (accUser.adminCount > 0 || accUser.projectAdmin === true || accUser.isAccountAdmin) {
@@ -199,14 +203,15 @@ export function UsersDirectoryClient() {
     }
     return { totalUsers: people.length, active30d, admins };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [people, accSummaryMap]); // ACTIVE_30D_MS is a constant, no dep needed
+  }, [people, accSummaryMap, lastActivityByEmail]); // ACTIVE_30D_MS is a constant, no dep needed
 
   // ---- DataTable rows (pre-sorted/filtered list) -------------------------
   // Pass the already-filtered/sorted list from useDirectoryRows so the
   // pre-sort seam (Open Q3) holds; DataTable's own column sort operates on top.
+  // G1 fix: pass lastActivityByEmail so rows show real "Last active" times.
   const rows = useMemo(
-    () => buildDirectoryRows(visibleFiltered, accSummaryMap),
-    [visibleFiltered, accSummaryMap],
+    () => buildDirectoryRows(visibleFiltered, accSummaryMap, lastActivityByEmail),
+    [visibleFiltered, accSummaryMap, lastActivityByEmail],
   );
 
   // ---- Retry handler for error state -------------------------------------

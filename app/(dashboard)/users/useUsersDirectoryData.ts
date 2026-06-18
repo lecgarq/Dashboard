@@ -79,6 +79,10 @@ export interface UsersDirectoryData {
     isLoading: boolean;
   };
 
+  // G1 fix: per-user file-activity map for "Last active" column and Active-30d KPI
+  // Map<email_lowercase, ISO string | null>. undefined = query still loading.
+  lastActivityByEmail: Map<string, string | null> | undefined;
+
   // Option lists for filter dropdowns
   departments: string[];
   jobTitles: string[];
@@ -178,6 +182,27 @@ export function useUsersDirectoryData(): UsersDirectoryData {
     staleTime: 300_000,
     retry: false,
   });
+
+  // -------------------------------------------------------------------------
+  // Query 9: Per-user last file-activity for ALL users (G1 fix)
+  // Feeds the "Last active" column and Active-30d KPI. staleTime matches the
+  // other snapshot queries (5 min). Returns undefined while loading so the
+  // shell can distinguish "not yet fetched" from "fetched and empty".
+  // -------------------------------------------------------------------------
+  const { data: lastFileActivityAllRaw } =
+    trpc.accActivity.lastFileActivityByEmailAll.useQuery(undefined, {
+      staleTime: 300_000,
+      retry: false,
+    });
+
+  const lastActivityByEmail = useMemo<Map<string, string | null> | undefined>(() => {
+    if (lastFileActivityAllRaw === undefined) return undefined;
+    const m = new Map<string, string | null>();
+    for (const [email, ts] of Object.entries(lastFileActivityAllRaw)) {
+      m.set(email.toLowerCase(), ts);
+    }
+    return m;
+  }, [lastFileActivityAllRaw]);
 
   // -------------------------------------------------------------------------
   // Derivation: accSource + accSummary
@@ -407,6 +432,7 @@ export function useUsersDirectoryData(): UsersDirectoryData {
     enrichedLoading,
     coverage,
     invitationsQuery,
+    lastActivityByEmail,
     departments,
     jobTitles,
     costCenters,

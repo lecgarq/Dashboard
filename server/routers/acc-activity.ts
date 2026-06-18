@@ -11,7 +11,6 @@
  */
 
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { router, protectedProcedure } from "../trpc";
 import {
   CATEGORY_TO_RAW_ACTIONS,
@@ -28,8 +27,17 @@ import {
   buildActivityCoverageMatrix,
   endOfUtcDay,
   startOfUtcDay,
-  type ActivityCoverageCellInput,
 } from "@/lib/acc/activityCoverageMatrix";
+import {
+  countUnifiedActivityRows,
+  findUnifiedActivityDate,
+  getAllLastUnifiedActivityByEmail,
+  getLastUnifiedActivityByEmail,
+  getUnifiedActivityCoverageStats,
+  getUnifiedCoverageMatrixCells,
+  listUnifiedActivityRows,
+  listUsersByLastUnifiedActivity,
+} from "@/lib/server/unifiedActivitySource";
 
 /**
  * Phase 09 LIST-03: file-action raw strings used by the BATCH and SORT procedures.
@@ -80,7 +88,7 @@ export const accActivityRouter = router({
    * invitation-only audit widget.
    */
   getCoverage: protectedProcedure.query(async ({ ctx }) => {
-    const [
+    const {
       totalRows,
       attributedRows,
       invitationRows,
@@ -88,33 +96,7 @@ export const accActivityRouter = router({
       unknownActionGroups,
       unknownServiceGroups,
       resolvedActors,
-    ] = await Promise.all([
-      ctx.db.accActivity.count(),
-      ctx.db.accActivity.count({ where: { userEmail: { not: null } } }),
-      ctx.db.accActivity.count({
-        where: { rawAction: { in: [...INVITATION_ACTIONS] } },
-      }),
-      ctx.db.accActivity.groupBy({
-        by: ["autodeskId"],
-        where: { userEmail: null },
-        _count: { _all: true },
-      }),
-      ctx.db.accActivity.groupBy({
-        by: ["autodeskId", "rawAction"],
-        where: { userEmail: null },
-        _count: { _all: true },
-      }),
-      ctx.db.accActivity.groupBy({
-        by: ["service"],
-        where: { userEmail: null },
-        _count: { _all: true },
-      }),
-      ctx.db.accActivity.groupBy({
-        by: ["userEmail"],
-        where: { userEmail: { not: null } },
-        _count: { _all: true },
-      }),
-    ]);
+    } = await getUnifiedActivityCoverageStats(ctx.db, INVITATION_ACTIONS);
     const unattributedRows = totalRows - attributedRows;
     const rawActionsByActor = new Map<string, string[]>();
     for (const row of unknownActionGroups) {
@@ -128,7 +110,7 @@ export const accActivityRouter = router({
       const rawActions = rawActionsByActor.get(actor.autodeskId) ?? [];
       return {
         autodeskId: actor.autodeskId,
-        rows: actor._count._all,
+        rows: actor.rows,
         rawActions,
         classification: classifyActivityActor({
           autodeskId: actor.autodeskId,
@@ -144,7 +126,7 @@ export const accActivityRouter = router({
           userEmail: actor.userEmail,
           rawActions: [],
         }),
-        rows: actor._count._all,
+        rows: actor.rows,
         actorKey: actor.userEmail ?? "(unknown-email)",
       })),
       ...unknownActorClassifications.map((actor) => ({
@@ -156,7 +138,7 @@ export const accActivityRouter = router({
     const unknownRowsByService = unknownServiceGroups
       .map((row) => ({
         service: row.service ?? "(none)",
-        rows: row._count._all,
+        rows: row.rows,
       }))
       .sort((a, b) => b.rows - a.rows || a.service.localeCompare(b.service));
     const topUnknownActors = unknownActorClassifications
@@ -178,17 +160,14 @@ export const accActivityRouter = router({
 
   /**
    * No-quota coverage matrix for future dashboards:
-   * AccActivity rows grouped by project x UTC day x service, plus project
-   * inventory gaps. This reads only local DB state.
+   * Unified ACCDS + DC-backfill rows grouped by project x UTC day x service,
+   * plus project inventory gaps. This reads only local DB state.
    */
   getCoverageMatrix: protectedProcedure
     .input(COVERAGE_MATRIX_INPUT)
     .query(async ({ ctx, input }) => {
-      const latest = await ctx.db.accActivity.findFirst({
-        orderBy: { createdAt: "desc" },
-        select: { createdAt: true },
-      });
-      const to = endOfUtcDay(input?.to ?? latest?.createdAt ?? new Date());
+      const latest = await findUnifiedActivityDate(ctx.db, { order: "desc" });
+      const to = endOfUtcDay(input?.to ?? latest ?? new Date());
       const from = startOfUtcDay(
         input?.from ?? addUtcDays(to, -(input?.windowDays ?? 30) + 1),
       );
@@ -199,28 +178,7 @@ export const accActivityRouter = router({
           select: { id: true, name: true, status: true },
           orderBy: { name: "asc" },
         }),
-        ctx.db.$queryRaw<ActivityCoverageCellInput[]>`
-          SELECT
-            COALESCE(NULLIF(a."projectId", ''), '(admin)') AS "projectId",
-            COALESCE(p.name, CASE WHEN NULLIF(a."projectId", '') IS NULL THEN 'Admin / Account Activity' ELSE a."projectId" END) AS "projectName",
-            COALESCE(NULLIF(LOWER(a.service), ''), 'unknown') AS service,
-            date_trunc('day', a."createdAt") AS day,
-            COUNT(*)::int AS rows,
-            COUNT(DISTINCT a."autodeskId")::int AS actors,
-            COUNT(a."userEmail")::int AS "attributedRows",
-            MIN(a."createdAt") AS "firstActivityAt",
-            MAX(a."createdAt") AS "lastActivityAt"
-          FROM "AccActivity" a
-          LEFT JOIN "AccDcProject" p ON p.id = NULLIF(a."projectId", '')
-          WHERE a."createdAt" >= ${from}
-            AND a."createdAt" < ${exclusiveTo}
-          GROUP BY
-            COALESCE(NULLIF(a."projectId", ''), '(admin)'),
-            COALESCE(p.name, CASE WHEN NULLIF(a."projectId", '') IS NULL THEN 'Admin / Account Activity' ELSE a."projectId" END),
-            COALESCE(NULLIF(LOWER(a.service), ''), 'unknown'),
-            date_trunc('day', a."createdAt")
-          ORDER BY rows DESC
-        `,
+        getUnifiedCoverageMatrixCells(ctx.db, { from, exclusiveTo }),
       ]);
 
       return buildActivityCoverageMatrix({
@@ -247,13 +205,12 @@ export const accActivityRouter = router({
       const email = input.email.toLowerCase();
 
       const lastFor = (cat: "view" | "upload" | "edit" | "delete") =>
-        ctx.db.accActivity.findFirst({
+        findUnifiedActivityDate(ctx.db, {
           where: {
             userEmail: email,
-            rawAction: { in: [...CATEGORY_TO_RAW_ACTIONS[cat]] },
+            rawActionIn: [...CATEGORY_TO_RAW_ACTIONS[cat]],
           },
-          orderBy: { createdAt: "desc" },
-          select: { createdAt: true },
+          order: "desc",
         });
 
       const [v, u, e, d] = await Promise.all([
@@ -264,10 +221,10 @@ export const accActivityRouter = router({
       ]);
 
       return {
-        lastView: v?.createdAt ?? null,
-        lastUpload: u?.createdAt ?? null,
-        lastEdit: e?.createdAt ?? null,
-        lastDelete: d?.createdAt ?? null,
+        lastView: v,
+        lastUpload: u,
+        lastEdit: e,
+        lastDelete: d,
       };
     }),
 
@@ -291,21 +248,39 @@ export const accActivityRouter = router({
       for (const e of lowered) out[e] = null;
       if (lowered.length === 0) return out;
 
-      const rows = await ctx.db.accActivity.groupBy({
-        by: ["userEmail"],
-        where: {
-          userEmail: { in: lowered },
-          rawAction: { in: [...FILE_RAW_ACTIONS] },
-        },
-        _max: { createdAt: true },
+      const rows = await getLastUnifiedActivityByEmail(ctx.db, {
+        emails: lowered,
+        rawActionIn: [...FILE_RAW_ACTIONS],
       });
       for (const r of rows) {
-        if (r.userEmail) {
-          out[r.userEmail.toLowerCase()] = r._max.createdAt?.toISOString() ?? null;
-        }
+        out[r.email.toLowerCase()] = r.lastActivity;
       }
       return out;
     }),
+
+  /**
+   * G1 fix: per-user latest file-activity timestamp for ALL users in one grouped
+   * query. Feeds the /users "Last active" column without the 200-email cap of
+   * getLastFileActivityBatch (which was designed for IntersectionObserver batches).
+   *
+   * Returns Record<email_lowercase, ISO string | null>:
+   *   - key present + string  → user has at least one file-activity event
+   *   - key present + null    → (not emitted; only present emails are returned)
+   * Consumers distinguish loading (undefined result) from empty (empty object).
+   *
+   * Uses the same FILE_RAW_ACTIONS constant as getLastFileActivityBatch so
+   * sort/display semantics stay in sync (Pitfall 6 guard).
+   */
+  lastFileActivityByEmailAll: protectedProcedure.query(async ({ ctx }) => {
+    const rows = await getAllLastUnifiedActivityByEmail(ctx.db, {
+      rawActionIn: [...FILE_RAW_ACTIONS],
+    });
+    const out: Record<string, string | null> = {};
+    for (const r of rows) {
+      out[r.email.toLowerCase()] = r.lastActivity;
+    }
+    return out;
+  }),
 
   /**
    * Phase 09 LIST-03 sort path: server-side ordered list of users by last
@@ -340,43 +315,14 @@ export const accActivityRouter = router({
     .query(async ({ ctx, input }) => {
       const fileActions = [...FILE_RAW_ACTIONS];
       const direction = input.order;
-
-      // Build the HAVING clause as a Prisma.sql fragment so cursor parameters
-      // are bound safely. Direction is injected via Prisma.raw because it's
-      // constrained to the enum above (no SQL injection vector).
-      const orderDir = Prisma.raw(direction === "desc" ? "DESC" : "ASC");
-      const cursorTs = input.cursor ? new Date(input.cursor.lastActivity) : null;
-      const cursorEmail = input.cursor ? input.cursor.email.toLowerCase() : null;
-
-      // For DESC: rows must come "after" the cursor in DESC order, meaning
-      //   MAX(createdAt) < $ts  OR  (MAX(createdAt) = $ts AND LOWER(userEmail) > $email)
-      // For ASC: mirrored.
-      const havingClause: Prisma.Sql =
-        cursorTs && cursorEmail
-          ? direction === "desc"
-            ? Prisma.sql`HAVING MAX("createdAt") < ${cursorTs} OR (MAX("createdAt") = ${cursorTs} AND LOWER("userEmail") > ${cursorEmail})`
-            : Prisma.sql`HAVING MAX("createdAt") > ${cursorTs} OR (MAX("createdAt") = ${cursorTs} AND LOWER("userEmail") > ${cursorEmail})`
-          : Prisma.empty;
-
-      const sql = Prisma.sql`
-        SELECT LOWER("userEmail") AS email, MAX("createdAt") AS "lastActivity"
-        FROM "AccActivity"
-        WHERE "userEmail" IS NOT NULL
-          AND "rawAction" = ANY(${fileActions})
-        GROUP BY LOWER("userEmail")
-        ${havingClause}
-        ORDER BY MAX("createdAt") ${orderDir} NULLS LAST, LOWER("userEmail") ASC
-        LIMIT ${input.limit}
-      `;
-
-      const rawRows = await ctx.db.$queryRaw<
-        { email: string; lastActivity: Date | null }[]
-      >(sql);
-
-      const rows = rawRows.map((r) => ({
-        email: r.email,
-        lastActivity: r.lastActivity ? r.lastActivity.toISOString() : null,
-      }));
+      const rows = await listUsersByLastUnifiedActivity(ctx.db, {
+        rawActionIn: fileActions,
+        order: direction,
+        cursor: input.cursor
+          ? { lastActivity: new Date(input.cursor.lastActivity), email: input.cursor.email }
+          : undefined,
+        limit: input.limit,
+      });
 
       let nextCursor: { lastActivity: string; email: string } | null = null;
       if (rows.length === input.limit) {
@@ -421,55 +367,36 @@ export const accActivityRouter = router({
       // a NOT IN filter when alone. Keep semantics simple: if categories is
       // provided AND only "other" is selected, return rows with rawAction NOT
       // IN any known category; otherwise build the inclusion list.
-      let rawActionFilter: { in: string[] } | { notIn: string[] } | undefined;
+      let rawActionIn: string[] | undefined;
+      let rawActionNotIn: string[] | undefined;
       if (input.categories && input.categories.length > 0) {
         const knownCats = input.categories.filter(
           (c): c is Exclude<ActivityCategory, "other"> => c !== "other"
         );
         const hasOther = input.categories.includes("other");
         if (knownCats.length > 0 && !hasOther) {
-          const raws = knownCats.flatMap((c) => [...CATEGORY_TO_RAW_ACTIONS[c]]);
-          rawActionFilter = { in: raws };
+          rawActionIn = knownCats.flatMap((c) => [...CATEGORY_TO_RAW_ACTIONS[c]]);
         } else if (hasOther && knownCats.length === 0) {
           // Only "other" — exclude every known raw action.
           const allKnown = (
             ["view", "upload", "edit", "delete", "memberEvent", "projectEvent"] as const
           ).flatMap((c) => [...CATEGORY_TO_RAW_ACTIONS[c]]);
-          rawActionFilter = { notIn: allKnown };
+          rawActionNotIn = allKnown;
         }
         // Otherwise (mix of known + other) — no filter; include everything.
       }
 
-      const where: Record<string, unknown> = { userEmail: email };
-      if (rawActionFilter) where.rawAction = rawActionFilter;
-      if (input.projectId) where.projectId = input.projectId;
-      if (input.dateRange) {
-        where.createdAt = { gte: input.dateRange.from, lte: input.dateRange.to };
-      }
-      if (input.cursor) {
-        // (createdAt, id) < cursor — Prisma doesn't support compound row comparison
-        // directly, so we OR it: createdAt < cursor.createdAt OR (createdAt = cursor.createdAt AND id < cursor.id).
-        const cursorOr = [
-          { createdAt: { lt: input.cursor.createdAt } },
-          {
-            AND: [
-              { createdAt: input.cursor.createdAt },
-              { id: { lt: input.cursor.id } },
-            ],
-          },
-        ];
-        // Preserve existing createdAt range (if any) via AND-merge.
-        const existing = where.createdAt;
-        delete where.createdAt;
-        where.AND = [
-          ...(existing ? [{ createdAt: existing }] : []),
-          { OR: cursorOr },
-        ];
-      }
-
-      const rows = await ctx.db.accActivity.findMany({
-        where,
-        orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      const rows = await listUnifiedActivityRows(ctx.db, {
+        where: {
+          userEmail: email,
+          rawActionIn,
+          rawActionNotIn,
+          projectId: input.projectId,
+          createdAt: input.dateRange
+            ? { gte: input.dateRange.from, lte: input.dateRange.to }
+            : undefined,
+          cursorBefore: input.cursor,
+        },
         take: input.limit + 1,
       });
 
@@ -631,7 +558,7 @@ export const accActivityRouter = router({
 
   /**
    * Returns time-binned counts of access-change events for the hero chart.
-   * Classifies each AccActivity row into one of four streams based on rawAction
+   * Classifies each unified activity row into one of four streams based on rawAction
    * + details.newRole, then bins into day/week/month buckets.
    */
   getTimeline: protectedProcedure
@@ -645,9 +572,8 @@ export const accActivityRouter = router({
       const range = windowToDateRange(window);
       const bin = pickBinSize(window);
 
-      const rows = await ctx.db.accActivity.findMany({
+      const rows = await listUnifiedActivityRows(ctx.db, {
         where: { createdAt: { gte: range.start, lte: range.end } },
-        select: { rawAction: true, createdAt: true, details: true, sourceFile: true },
       });
 
       const buckets = generateBuckets(range.start, range.end, bin);
@@ -668,15 +594,12 @@ export const accActivityRouter = router({
       }));
       points.sort((a, b) => a.bucket.localeCompare(b.bucket));
 
-      const earliest = await ctx.db.accActivity.findFirst({
-        orderBy: { createdAt: "asc" },
-        select: { createdAt: true },
-      });
+      const earliest = await findUnifiedActivityDate(ctx.db, { order: "asc" });
 
       return {
         points,
         bin,
-        dataEarliestEvent: earliest?.createdAt.toISOString() ?? null,
+        dataEarliestEvent: earliest?.toISOString() ?? null,
       };
     }),
 
