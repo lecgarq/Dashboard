@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
-import { EChart } from "./EChart";
+import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption, LineSeriesOption } from "echarts";
 import type { TimelineSummary } from "../timelineCounts";
 
@@ -38,11 +38,9 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
     );
   }
 
+  // cAxis/cSplit injected by mergeEChartsTheme via the canonical wrapper.
+  // cTitle used in tooltip formatter HTML (not injected by mergeEChartsTheme).
   const cAxis = dark ? "#a1a1aa" : "#6b7280";
-  const cSplit = dark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
-  const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
-  const cTipBorder = dark ? "#3f3f46" : "#e5e7eb";
-  const cTipText = dark ? "#e4e4e7" : "#374151";
   const cTitle = dark ? "#fafafa" : "#111827";
 
   const lineSeries: LineSeriesOption = {
@@ -82,11 +80,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
     grid: { left: 8, right: 16, top: 16, bottom: 64, containLabel: true },
     tooltip: {
       trigger: "axis",
-      backgroundColor: cTipBg,
-      borderColor: cTipBorder,
-      borderWidth: 1,
       padding: [10, 12],
-      textStyle: { color: cTipText },
       extraCssText: "border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.35);",
       formatter: (params: unknown) => {
         const arr = params as Array<{ dataIndex: number }>;
@@ -100,7 +94,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
             : `<div style="color:${cAxis}">${delta >= 0 ? "▲ +" : "▼ −"}${Math.abs(delta).toLocaleString()} vs ${priorYear}</div>`;
         return (
           `<div style="font-weight:700;color:${cTitle};margin-bottom:2px">${p.label}</div>` +
-          `<div style="color:${cTipText}">${p.count.toLocaleString()} activities</div>` +
+          `<div>${p.count.toLocaleString()} activities</div>` +
           deltaLine
         );
       },
@@ -109,14 +103,11 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
       type: "category",
       data: points.map((p) => p.label),
       boundaryGap: false,
-      axisLabel: { color: cAxis, hideOverlap: true },
-      axisLine: { lineStyle: { color: cSplit } },
+      axisLabel: { hideOverlap: true },
       axisTick: { show: false },
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: cAxis },
-      splitLine: { lineStyle: { color: cSplit } },
     },
     dataZoom: [
       { type: "inside" },
@@ -141,7 +132,7 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
         {peak ? <> · busiest month <b className="text-foreground">{peak.label}</b></> : null}
         {busiestYear ? <> · busiest year <b className="text-foreground">{busiestYear.year}</b></> : null}
       </div>
-      <EChart option={option} height={360} />
+      <EChart option={option} height={360} notMerge={false} />
     </div>
   );
 }

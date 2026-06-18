@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
-import { EChart } from "./EChart";
+import { EChart } from "@/components/ui/EChart";
 import { PeopleDrillList } from "./PeopleDrillList";
 import { NoActivityBars } from "./NoActivityBars";
 import type { DormantEntity } from "../dormantActivity";
@@ -21,6 +21,15 @@ const UNKNOWN_COLOR = "#f59e0b"; // amber — activity by someone with no compan
 const OTHERS_COLOR = "#71717a"; // zinc-500 — the folded tail
 
 const DEFAULT_TOP = 8;
+
+/** Lighten a hex color by mixing it toward white by `amt` (0–1). */
+function lighten(hex: string, amt: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = Math.min(255, ((n >> 16) & 0xff) + Math.round((255 - ((n >> 16) & 0xff)) * amt));
+  const g = Math.min(255, ((n >> 8) & 0xff) + Math.round((255 - ((n >> 8) & 0xff)) * amt));
+  const b = Math.min(255, (n & 0xff) + Math.round((255 - (n & 0xff)) * amt));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
 
 const PIE_CSS = `
 .ca-range { -webkit-appearance: none; appearance: none; height: 6px; border-radius: 9999px; cursor: pointer; }
@@ -120,11 +129,9 @@ export function CompaniesActivityPieChart({
     }`;
 
   // ECharts colors are baked into the JS option (not CSS), so branch on theme.
+  // cTitle/cSub used in title center-labels + tooltip formatter HTML (not injected by mergeEChartsTheme).
   const cTitle = dark ? "#fafafa" : "#111827";
   const cSub = dark ? "#a1a1aa" : "#6b7280";
-  const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
-  const cTipBorder = dark ? "#3f3f46" : "#e5e7eb";
-  const cTipText = dark ? "#e4e4e7" : "#374151";
   const cSlice = dark ? "#18181b" : "#ffffff";
   const cShadow = dark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.12)";
   const cShadowHover = dark ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0.2)";
@@ -150,13 +157,9 @@ export function CompaniesActivityPieChart({
     ],
     tooltip: {
       trigger: "item",
-      backgroundColor: cTipBg,
-      borderColor: cTipBorder,
-      borderWidth: 1,
       padding: [8, 12],
-      textStyle: { color: cTipText },
       extraCssText: "border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.35);",
-      formatter: `<div style='font-weight:700;color:${cTitle};margin-bottom:2px'>{b}</div><div style='color:${cSub}'>{c} activities · <b style='color:${cTipText}'>{d}%</b></div>`,
+      formatter: `<div style='font-weight:700;color:${cTitle};margin-bottom:2px'>{b}</div><div style='color:${cSub}'>{c} activities · <b style='color:${cTitle}'>{d}%</b></div>`,
     },
     legend: { show: false },
     series: [
@@ -169,6 +172,7 @@ export function CompaniesActivityPieChart({
         minAngle: 2,
         label: { show: false },
         labelLine: { show: false },
+        universalTransition: true,
         itemStyle: { borderColor: cSlice, borderWidth: 3, borderRadius: 7, shadowBlur: 14, shadowColor: cShadow },
         emphasis: {
           focus: "self",
@@ -183,7 +187,16 @@ export function CompaniesActivityPieChart({
         animationDelay: (idx: number) => idx * 16,
         animationDurationUpdate: 550,
         animationEasingUpdate: "cubicInOut",
-        data: displaySlices.map((s) => ({ name: s.name, value: s.value, itemStyle: { color: colorFor(s.name) } })),
+        data: displaySlices.map((s) => {
+          const base = colorFor(s.name);
+          return {
+            name: s.name,
+            value: s.value,
+            itemStyle: {
+              color: { type: "linear" as const, x: 0, y: 0, x2: 0, y2: 1, colorStops: [{ offset: 0, color: lighten(base, 0.22) }, { offset: 1, color: base }] },
+            },
+          };
+        }),
       },
     ],
   };
