@@ -5,6 +5,11 @@ import superjson from "superjson";
 import { ACC_SNAPSHOT_STALE_TIME_MS } from "@/lib/acc/cachePolicy";
 import { appRouter } from "@/server/routers/root";
 import { createTRPCContext } from "@/server/trpc";
+// PERF-03: import the referentially-stable input constant shared with the
+// client query (useUsersDirectoryData). Using the SAME object reference
+// ensures the tRPC/React-Query cache key is identical on both sides so the
+// hydration cache is always hit on mount and the client never re-fetches.
+import { BULK_USERS_LEAN_INPUT } from "@/app/(dashboard)/users/useUsersDirectoryData";
 
 export { ACC_SNAPSHOT_STALE_TIME_MS };
 
@@ -25,10 +30,11 @@ export async function prefetchUsersRouteAccData(helpers: any) {
   // superjson into the page HTML. The client query is gated to fetch it lazily
   // only when the DC snapshot is genuinely empty.
   await Promise.allSettled([
-    // leanProjects:true MUST match the client query in UsersDirectoryClient — it's
-    // part of the tRPC/React-Query cache key, so a mismatch silently misses the
-    // hydration cache and the client refetches the whole snapshot after mount.
-    helpers.accDcGraph.bulkUsers.prefetch({ leanProjects: true }, snapshotOptions),
+    // PERF-03: BULK_USERS_LEAN_INPUT is the same object reference imported from
+    // useUsersDirectoryData — sharing one referentially-stable constant makes it
+    // structurally impossible for the prefetch and client to drift. A mismatch
+    // would silently miss the hydration cache and force a full re-fetch on mount.
+    helpers.accDcGraph.bulkUsers.prefetch(BULK_USERS_LEAN_INPUT, snapshotOptions),
     helpers.accMembers.enrichedUsers.prefetch(undefined, snapshotOptions),
     helpers.users.getOrgDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),
     helpers.users.getDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),

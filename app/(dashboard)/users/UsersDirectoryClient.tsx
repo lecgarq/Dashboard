@@ -51,15 +51,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import {
-  ACC_SNAPSHOT_STALE_TIME_MS,
-  mapFallbackDirectoryToOrgPeople,
-  mergeAccSummaryWithEnrichment,
-  mergePeopleWithAccSummary,
-  selectAccSummarySource,
-} from "./useMergedAccUsers";
-import type { OrgPerson, LocalDirectoryUser, GroupByField, ViewMode } from "./directoryUtils";
-import { normalize, uniqueSorted, parseSearchTokens, matchesPerson } from "./directoryUtils";
+import type { OrgPerson, GroupByField } from "./directoryUtils";
+import { normalize, parseSearchTokens, matchesPerson } from "./directoryUtils";
+import { useUsersDirectoryData } from "./useUsersDirectoryData";
 import { PersonDetailModal, PersonAvatar } from "./PersonDetailModal";
 import { STATUS_PILL_LABEL, StatusPill, AdminPill, AccBadge } from "./DirectoryPills";
 import { PersonRowList } from "./PersonRowList";
@@ -593,148 +587,33 @@ export function UsersDirectoryClient() {
     };
   }, []);
 
-  // Primary user snapshot (DC). Drives the directory rows, badges, filters and
-  // the ACC Analysis panel. bulkAccSummary below is only a fallback for when
-  // this is empty.
-  //
-  // leanProjects: the directory + its filters never read per-project
-  // roles[]/modules[] (role/module filters use the top-level allRoles/allModules),
-  // so we request the variant that empties them — trimming ~15 MB from the
-  // dehydrated page payload. The input MUST match the prefetch + prewarm key.
-  const { data: dcUsersRaw = [], isLoading: dcLoading } = trpc.accDcGraph.bulkUsers.useQuery(
-    { leanProjects: true },
-    {
-      staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-      retry: false,
-    },
-  );
-  // Fallback ACC summary (~7 MB) — consumed only when the DC snapshot is empty
-  // (selectAccSummarySource prefers dcUsersRaw). Gated so it never loads while DC
-  // data is present, which is always in production; this keeps it out of both the
-  // dehydrated page payload and the post-mount fetch path.
-  const { data: accSummaryRaw = [] } = trpc.users.bulkAccSummary.useQuery(undefined, {
-    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    retry: false,
-    enabled: !dcLoading && dcUsersRaw.length === 0,
-  });
-  const { data: enrichedUsers = [], isLoading: enrichedLoading } = trpc.accMembers.enrichedUsers.useQuery(undefined, {
-    staleTime: ACC_SNAPSHOT_STALE_TIME_MS,
-    retry: false,
-  });
-  const invitationsQuery = trpc.accActivity.listInvitations.useQuery(
-    { windowDays: 90, limit: 100 },
-    { staleTime: 300_000, retry: false, enabled: false },
-  );
-  const activityCoverageQuery = trpc.accActivity.getCoverage.useQuery(undefined, {
-    staleTime: 300_000,
-    retry: false,
-  });
-  const folderCoverageQuery = trpc.accFolders.getCoverage.useQuery(undefined, {
-    staleTime: 600_000,
-    retry: false,
-  });
-  const accSource = useMemo(
-    () => selectAccSummarySource(dcUsersRaw as BulkAccUser[], accSummaryRaw as BulkAccUser[]),
-    [dcUsersRaw, accSummaryRaw],
-  );
-  const accSummary = useMemo<BulkAccUser[]>(() => {
-    return mergeAccSummaryWithEnrichment(accSource, enrichedUsers);
-  }, [accSource, enrichedUsers]);
-
+  // ---------------------------------------------------------------------------
+  // Data hook (USR-01 Wave 5 / PERF-03): all 8 main-body tRPC queries and their
+  // derivations are consolidated in useUsersDirectoryData. The hook exports the
+  // referentially-stable BULK_USERS_LEAN_INPUT constant which is also imported
+  // by acc-route-hydration.ts, guaranteeing the SSR prefetch and client query
+  // share an identical cache key (PERF-03 fix by construction).
+  // ---------------------------------------------------------------------------
   const {
-    data: directoryData,
-    isLoading: isDirectoryLoading,
+    people,
+    accSummary,
+    accSummaryMap,
+    mergedAccUsers,
+    noProjectsCount,
+    usingFallbackDirectory,
+    directoryBanner,
+    isLoading,
     error,
-  } = trpc.users.getOrgDirectory.useQuery(undefined, {
-    staleTime: 300_000,
-    retry: false,
-  });
-
-  const {
-    data: fallbackDirectory = [],
-    isLoading: isFallbackLoading,
-  } = trpc.users.getDirectory.useQuery(undefined, {
-    staleTime: 300_000,
-    retry: false,
-  });
-
-  const people = useMemo<OrgPerson[]>(() => {
-    if (directoryData?.status === "ok") {
-      return directoryData.people ?? [];
-    }
-
-    return mapFallbackDirectoryToOrgPeople(fallbackDirectory as LocalDirectoryUser[]);
-  }, [directoryData, fallbackDirectory]);
-
-  const isLoading = !people.length && isDirectoryLoading && isFallbackLoading;
-
-  // Map of email -> BulkAccUser for O(1) lookup in render
-  const accSummaryMap = useMemo<Map<string, BulkAccUser>>(() => {
-    const map = new Map<string, BulkAccUser>();
-    for (const item of accSummary) {
-      map.set(item.email, item);
-    }
-    return map;
-  }, [accSummary]);
-
-  // All 1197 directory people merged with ACC cache data — unregistered people get found:false stubs
-  const mergedAccUsers = useMemo<BulkAccUser[]>(() => {
-    const byEmail = new Map<string, BulkAccUser>();
-    for (const u of accSummary) byEmail.set(u.email.toLowerCase(), u);
-    return people.map((p) => byEmail.get(p.email.toLowerCase()) ?? {
-      email: p.email,
-      name: p.displayName,
-      found: false,
-      projectCount: 0,
-      activeCount: 0,
-      adminCount: 0,
-      hasNoProjects: true,
-      syncedAt: "",
-      allRoles: [],
-      allModules: [],
-      projects: [],
-      isAccountAdmin: false,
-      addedOn: null,
-    });
-  }, [people, accSummary]);
-
-  // Count of people in the directory who have hasNoProjects === true
-  const noProjectsCount = useMemo(
-    () => people.filter((p) => accSummaryMap.get(p.email)?.hasNoProjects === true).length,
-    [people, accSummaryMap]
-  );
-
-  const usingFallbackDirectory =
-    !error && (directoryData?.status !== "ok" || (isDirectoryLoading && fallbackDirectory.length > 0));
-
-  const directoryBanner = useMemo(() => {
-    if (error || directoryData?.status === "ok") {
-      return null;
-    }
-
-    if (isDirectoryLoading && fallbackDirectory.length > 0) {
-      return {
-        title: "Loading organization directory",
-        description:
-          "Google directory is still loading. Showing registered app users for now.",
-      };
-    }
-
-    if (directoryData?.status === "not_linked") {
-      return {
-        title: "Google directory not linked",
-        description:
-          "Google is not linked for organization lookup. Showing registered app users only.",
-      };
-    }
-
-    return {
-      title: "Organization directory unavailable",
-      description: `${
-        directoryData?.message ?? "Reconnect your Google account to restore Directory access."
-      } Showing registered app users only.`,
-    };
-  }, [directoryData, error, fallbackDirectory.length, isDirectoryLoading]);
+    enrichedLoading,
+    coverage,
+    invitationsQuery,
+    departments,
+    jobTitles,
+    costCenters,
+    accProjects,
+    accRoles,
+    accModules,
+  } = useUsersDirectoryData();
 
   // Debounced search for real-time feel without excessive re-renders.
   // The debounce timer (ref) and this handler stay in the shell;
@@ -747,81 +626,6 @@ export function UsersDirectoryClient() {
 
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
-
-  // Derived data
-  const departments = useMemo(() => uniqueSorted(people.map((p) => p.department)), [people]);
-  const jobTitles = useMemo(() => uniqueSorted(people.map((p) => p.jobTitle)), [people]);
-  const costCenters = useMemo(() => uniqueSorted(people.map((p) => p.costCenter)), [people]);
-
-  const accProjects = useMemo(() => {
-    const set = new Set<string>();
-    for (const u of accSummary) {
-      for (const p of u.projects) set.add(p.name);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [accSummary]);
-
-  const accRoles = useMemo(() => {
-    const set = new Set<string>();
-    for (const u of accSummary) {
-      for (const r of u.allRoles) set.add(r);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [accSummary]);
-
-  const accModules = useMemo(() => {
-    const set = new Set<string>();
-    for (const u of accSummary) {
-      for (const m of u.allModules) set.add(m);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [accSummary]);
-
-  const coverage = useMemo(() => {
-    const hasProjectMembers = accSummary.some((user) => user.found);
-    const hasRoles = accSummary.some((user) => (user.allRoles?.length ?? 0) > 0);
-    const hasLastSignIn = accSummary.some((user) => !!user.lastSignIn);
-    const activityRows = activityCoverageQuery.data?.totalRows ?? 0;
-    const attributedActivityRows = activityCoverageQuery.data?.attributedRows ?? 0;
-    const attributionRate = activityCoverageQuery.data?.attributionRate ?? (
-      activityRows > 0 ? attributedActivityRows / activityRows : 0
-    );
-    const unattributedActivityRows = activityCoverageQuery.data?.unattributedRows ?? Math.max(0, activityRows - attributedActivityRows);
-    const folderCount = folderCoverageQuery.data?.folderCount ?? 0;
-    const permissionCount = folderCoverageQuery.data?.permissionCount ?? 0;
-    const hasRecentAdditions =
-      accSummary.some((user) => !!user.addedOn) ||
-      (invitationsQuery.data?.invitations.length ?? 0) > 0;
-    return [
-      { label: "Project Members", available: hasProjectMembers, loading: !accSource.length && isLoading },
-      { label: "Roles", available: hasRoles, loading: enrichedLoading },
-      { label: "Last Sign-In", available: hasLastSignIn, loading: !accSource.length && isLoading },
-      {
-        label: "Activity Logs",
-        available: activityRows > 0,
-        loading: activityCoverageQuery.isLoading,
-        detail: `${activityRows.toLocaleString()} activity rows, ${Math.round(attributionRate * 100)}% attributed, ${unattributedActivityRows.toLocaleString()} classified residuals`,
-      },
-      {
-        label: "Folder Permissions",
-        available: permissionCount > 0,
-        loading: folderCoverageQuery.isLoading,
-        detail: `${permissionCount.toLocaleString()} permission rows across ${folderCount.toLocaleString()} folders`,
-      },
-      { label: "Recent Additions", available: hasRecentAdditions, loading: invitationsQuery.isLoading },
-    ];
-  }, [
-    activityCoverageQuery.data,
-    activityCoverageQuery.isLoading,
-    accSummary,
-    accSource.length,
-    enrichedLoading,
-    folderCoverageQuery.data,
-    folderCoverageQuery.isLoading,
-    invitationsQuery.data,
-    invitationsQuery.isLoading,
-    isLoading,
-  ]);
 
   const hasActiveFilters = !!(
     filterDept || filterJobTitle || filterCostCenter || filterNoProjects ||
