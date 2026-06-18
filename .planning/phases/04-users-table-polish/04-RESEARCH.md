@@ -740,7 +740,9 @@ ASVS categories: not newly applicable in Phase 4 (presentation layer only; auth,
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> All three resolved during planning (2026-06-18): Q1 → Plan 04-02 (optional `person?: OrgPerson` prop on `UserProfilePanel`); Q2 → Plan 04-03 (retire grid/list toggle UI, leave store `viewMode` field inert); Q3 → Plan 04-03 (`useDirectoryRows` emits pre-filtered/sorted `displayRows`; DataTable column-sort stays independent). The recommendations below were adopted as-is.
 
 1. **`PersonDetailModal` header chrome migration**
    - What we know: `PersonDetailModal` has its own avatar banner, contact-info rows, quick-action buttons. `UserProfilePanel` has only the ACC profile body (AccProfileFull).
