@@ -8,6 +8,13 @@
  * INSTANTLY with no getAccProfile round trip. The manual Refresh button is the
  * only path that fetches live from Autodesk.
  *
+ * G4 fix: in dialog variant the panel additionally fetches the FULL (non-lean)
+ * BulkAccUser from accDcGraph.bulkUser — a local DC snapshot proc with no live
+ * Autodesk call — so per-project roles[] and modules[] are populated automatically.
+ * The panel renders the lean base data immediately (instant open), then enriches
+ * the ACC section when the full data arrives. A subtle "loading details…" indicator
+ * is shown on the ACC section header while the fetch is in flight.
+ *
  * variant:
  *   - "dialog" — embedded inside the /users PersonDetailModal (modal owns chrome).
  *   - "rail"   — mounted in the access-analysis right rail; fixed w-96 (camera
@@ -15,7 +22,7 @@
  */
 
 import { useState } from "react";
-import { RefreshCw, Mail, Building2, Briefcase, Phone, DollarSign } from "lucide-react";
+import { RefreshCw, Mail, Building2, Briefcase, Phone, DollarSign, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/core/trpc";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { AccProfileFull, AccLoadingProgress } from "./AccProfileSection";
@@ -49,9 +56,33 @@ export function UserProfilePanel({
   const [override, setOverride] = useState<AccProfileData | null>(null);
   const [refreshing, setRefreshing] = useState(false);
 
-  const baseData: AccProfileData | null =
-    user && user.found ? bulkUserToProfileData(user) : null;
-  const data = override ?? baseData;
+  // G4: fetch the full (non-lean) BulkAccUser from the DC snapshot so per-project
+  // roles[] and modules[] are populated automatically — no Autodesk API call.
+  // Only enabled in dialog variant (rail panels don't need the enrichment).
+  const { data: fullBulkUser, isLoading: fullUserLoading } =
+    trpc.accDcGraph.bulkUser.useQuery(
+      { email },
+      {
+        enabled: variant === "dialog" && !!email,
+        staleTime: 5 * 60_000,
+      },
+    );
+
+  // Derive display data: Refresh override wins; otherwise use the full DC snapshot
+  // if available (has real roles/modules and email matches); fall back to lean
+  // in-memory user.
+  const baseData: AccProfileData | null = (() => {
+    if (override) return override;
+    if (
+      fullBulkUser &&
+      fullBulkUser.found &&
+      fullBulkUser.email.toLowerCase() === email.toLowerCase()
+    ) {
+      return bulkUserToProfileData(fullBulkUser);
+    }
+    if (user && user.found) return bulkUserToProfileData(user);
+    return null;
+  })();
 
   function handleRefresh(): void {
     setRefreshing(true);
@@ -68,11 +99,25 @@ export function UserProfilePanel({
       .finally(() => setRefreshing(false));
   }
 
+  // G4: true when the full-user fetch is in-flight (dialog only; rail skips it)
+  const detailLoading = variant === "dialog" && fullUserLoading && !fullBulkUser;
+
   const body =
-    refreshing && !data ? (
+    refreshing && !baseData ? (
       <AccLoadingProgress />
-    ) : data ? (
-      <AccProfileFull data={data} email={email} onRefresh={handleRefresh} />
+    ) : baseData ? (
+      <>
+        {detailLoading && (
+          <div
+            data-testid="acc-detail-loading"
+            className="mt-6 pt-4 flex items-center gap-2 text-xs text-muted-foreground/60"
+          >
+            <Loader2 size={12} className="animate-spin shrink-0" />
+            Loading project details…
+          </div>
+        )}
+        <AccProfileFull data={baseData} email={email} onRefresh={handleRefresh} />
+      </>
     ) : (
       <div className="mt-6 pt-5 border-t-2 border-border/50">
         <div className="mb-3 flex items-center justify-between">

@@ -29,6 +29,26 @@ export const accDcGraphRouter = router({
     .query(async ({ ctx, input }) => {
       return getCachedAccDcBulkUsers(ctx.db, input ?? undefined);
     }),
+
+  /**
+   * Single-user full (non-lean) fetch from the DC snapshot.
+   *
+   * Returns the BulkAccUser for the given email with full per-project
+   * roles[] and modules[] populated — the /users page uses leanProjects
+   * which empties these arrays, so the profile panel calls this proc to
+   * enrich the view without hitting the live Autodesk API.
+   *
+   * Uses the shared hot-cache (full variant key) so the first call after
+   * a cold start pays the assembly cost once; subsequent calls are instant.
+   */
+  bulkUser: adminProcedure
+    .input(z.object({ email: z.string() }))
+    .query(async ({ ctx, input }) => {
+      const users = await getCachedAccDcBulkUsers(ctx.db, {});
+      return users.find(
+        (u) => u.email.toLowerCase() === input.email.toLowerCase(),
+      ) ?? null;
+    }),
   instanceEmbedding: adminProcedure.query(async ({ ctx }) => {
     const rows = await ctx.db.accInstanceEmbedding.findMany({
       select: { nodeId: true, x: true, y: true, cluster: true },

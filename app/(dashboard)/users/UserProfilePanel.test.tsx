@@ -8,35 +8,53 @@ import type { OrgPerson } from "./directoryUtils";
 // vi.hoisted ensures these spies are available inside the hoisted vi.mock factory.
 const { fetchSpy, bulkUserQuerySpy } = vi.hoisted(() => ({
   fetchSpy: vi.fn(async () => ({ found: false, syncedAt: "" })),
-  bulkUserQuerySpy: vi.fn(() => ({
-    data: {
-      email: "ada@hermosillo.com",
-      name: "Ada Lovelace",
-      found: true,
-      syncedAt: "2026-06-16T00:00:00.000Z",
-      photoUrl: null,
-      costCenter: "ENG-100",
-      projectCount: 1,
-      activeCount: 1,
-      adminCount: 1,
-      hasNoProjects: false,
-      isAccountAdmin: false,
-      addedOn: null,
-      projects: [
-        {
-          id: "p1",
-          name: "Tower A",
-          status: "active",
-          isAdmin: true,
-          roles: ["Project Admin"],
-          modules: ["build"],
-        },
-      ],
-      allRoles: ["Project Admin"],
-      allModules: ["build"],
+  /**
+   * Simulates accDcGraph.bulkUser.useQuery.
+   *
+   * Respects the `enabled` option (second argument) — returns `{ data: undefined,
+   * isLoading: false }` when enabled is false (matches real tRPC behavior).
+   * When enabled, returns full data only for ada@hermosillo.com; null otherwise.
+   * Tests that need a custom return value can use bulkUserQuerySpy.mockReturnValueOnce.
+   */
+  bulkUserQuerySpy: vi.fn(
+    (input: { email: string }, options?: { enabled?: boolean }) => {
+      if (options?.enabled === false) {
+        return { data: undefined, isLoading: false };
+      }
+      if (input?.email?.toLowerCase() === "ada@hermosillo.com") {
+        return {
+          data: {
+            email: "ada@hermosillo.com",
+            name: "Ada Lovelace",
+            found: true,
+            syncedAt: "2026-06-16T00:00:00.000Z",
+            photoUrl: null,
+            costCenter: "ENG-100",
+            projectCount: 1,
+            activeCount: 1,
+            adminCount: 1,
+            hasNoProjects: false,
+            isAccountAdmin: false,
+            addedOn: null,
+            projects: [
+              {
+                id: "p1",
+                name: "Tower A",
+                status: "active",
+                isAdmin: true,
+                roles: ["Project Admin"],
+                modules: ["build"],
+              },
+            ],
+            allRoles: ["Project Admin"],
+            allModules: ["build"],
+          },
+          isLoading: false,
+        };
+      }
+      return { data: null, isLoading: false };
     },
-    isLoading: false,
-  })),
+  ),
 }));
 
 const activityData = { totalCount: 5, last30dCount: 0, topActions: [], recentEvents: [] };
