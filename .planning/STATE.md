@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: planning
-stopped_at: Completed 02-02 (low-risk component extraction)
-last_updated: "2026-06-18T00:10:51.974Z"
+stopped_at: Completed 02-03 (PersonRow + PersonRowList extraction)
+last_updated: "2026-06-18T00:19:25.507Z"
 last_activity: 2026-06-17
 last_activity_desc: "02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 12
-  completed_plans: 8
+  completed_plans: 9
   percent: 14
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 2 of 7 (/users Decomposition)
-Plan: 2 of 6 in current phase (02-01 complete)
+Plan: 3 of 6 in current phase (02-01 complete)
 Status: Phase 2 in progress — 02-01 complete (zustand installed, golden-path test GREEN)
 Last activity: 2026-06-17 — 02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)
 
@@ -55,6 +55,7 @@ Progress: [██████░░░░] 58%
 
 *Updated after each plan completion*
 | Phase 02-users-decomposition P02 | 11 | 3 tasks | 6 files |
+| Phase 02 P03 | 372 | 3 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,7 @@ Recent decisions affecting current work:
 - [Phase 02-01]: vi.hoisted() required for bulkUsersQuerySpy to survive vi.mock hoisting; HTMLElement.prototype.scrollIntoView + window.scrollTo stubbed for Radix Select + jsdom compatibility.
 - [Phase ?]: OrgPerson/LocalDirectoryUser re-exported from useMergedAccUsers via directoryUtils to avoid a second source of truth
 - [Phase ?]: PersonDetailModal stays a centered shadcn Dialog — Sheet migration deferred to Phase 4 (RESEARCH Open Q1)
+- [Phase ?]: setMounted scroll-init hack preserved verbatim in PersonRowList.tsx (RESEARCH Pitfall 3) - transitive import pattern via PersonRowList
 
 ### Pending Todos
 
@@ -101,6 +103,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T00:10:51.967Z
-Stopped at: Completed 02-02 (low-risk component extraction)
+Last session: 2026-06-18T00:19:25.501Z
+Stopped at: Completed 02-03 (PersonRow + PersonRowList extraction)
 Resume file: None
