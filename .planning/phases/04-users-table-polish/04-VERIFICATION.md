@@ -1,8 +1,9 @@
 ---
 phase: 04-users-table-polish
 verified: 2026-06-18T20:30:00Z
-status: human_needed
+status: gaps_found
 score: 5/5
+human_uat: 2026-06-18 — owner rebuilt :3000 and tested live; 5 gaps found (see ## Gaps)
 behavior_unverified: 2
 overrides_applied: 0
 human_verification:
@@ -192,6 +193,37 @@ No debt markers (TBD, FIXME, XXX, HACK, PLACEHOLDER) in any Phase-4 modified fil
 No gaps found. All 5 observable truths are either VERIFIED (3) or PRESENT_BEHAVIOR_UNVERIFIED (2). The 2 unverified truths have all code present and wired; they are gated on runtime behavior (animation smoothness, timing, GPU budget) that automated static analysis cannot observe. No missing artifacts, stub implementations, broken key links, or debt markers were found.
 
 The 4 human verification items above are runtime/visual checks that require a browser session — they are the standard UAT items for a visual/animation phase, not evidence of incomplete implementation.
+
+---
+
+## Gaps (found in live owner UAT, 2026-06-18 — rebuilt :3000)
+
+The owner rebuilt the production bundle and tested `/users` live. Five gaps surfaced. Root causes were traced in code (systematic-debugging) before any fix.
+
+### G1 — Last Active reads "— No data" on every row; Active 30d KPI genuinely 0  (status: failed) [HIGH]
+**Symptom:** Every directory row shows "— No data" for Last Active; the Active 30d KPI is 0.
+**Root cause (confirmed):** `/users` fetches the lean bulk payload `BULK_USERS_LEAN_INPUT = { leanProjects: true }`. The lean projection in `lib/server/acc-hot-cache.ts` (getCachedAccDcBulkUsers, ~line 383-392) reduces each project to `{id, name, status, isAdmin, roles:[], modules:[]}` and **drops `lastActivity`** (the P5-C field). But `buildDirectoryRows` (04-01) derives `lastActivity = max(project.lastActivity)`, and the Active-30d KPI (`useUsersDirectoryData`/shell) counts projects with recent `lastActivity`. With the field stripped, both collapse to null/0 for everyone. Phase-2 lean optimization vs Phase-4 derivation integration gap.
+**Fix direction:** Add `lastActivity: p.lastActivity` to the lean projection (one ISO string/project ≈ ~0.5 MB across 22.8k rows — small vs the ~15 MB roles/modules savings lean preserves). Keep the cache key. Add a server test asserting lean retains lastActivity.
+
+### G2 — KPI count-up frozen at 0 (Total users / Active 30d / Admins all show 0)  (status: failed) [HIGH]
+**Symptom:** All three KPI tiles display 0 even though the table is populated.
+**Root cause (confirmed):** `useAnimatedNumber` in `UsersTableHeader.tsx` captures `initialTarget = useRef(target)` at first render and guards with `hasAnimated`. The header mounts before the async data loads, so the captured target is 0; the effect runs once, sees 0, sets 0, and the guard blocks all future runs. When real data arrives the ref is still 0 and the effect never re-fires → permanently 0. (Total users=0 is purely this; Active 30d=0 is this AND G1.) The 04-04 unit test used a fixed non-zero value, so it never exercised the load-from-0 path.
+**Fix direction:** Re-arm the count-up when the target value changes (animate from the current displayed value to the new target; no-op when unchanged). This animates once when data first lands and still does NOT restart on sort/filter/density (those don't change the KPI values). Add a test that mounts with 0 then updates to N and asserts it animates to N.
+
+### G3 — Whole-page entrance fade is imperceptible  (status: failed) [MEDIUM]
+**Symptom:** Owner cannot see any entrance animation (VIS-03 "staggered entrance").
+**Root cause (confirmed):** The shell wraps content in `motion.div` with `fadeIn` (opacity-only, 0.25 s) rather than `fadeUp` (opacity + upward drift, 0.35 s) or a `stagger`. A 0.25 s opacity blink on an already-laid-out page is easy to miss; if the OS/projector has `prefers-reduced-motion`, `useSafeVariants` zeroes it entirely.
+**Fix direction:** Use `fadeUp` (or a gentle `stagger` over the header + table) for a calm-but-visible entrance within the <400 ms budget; confirm reduced-motion isn't the cause in this environment.
+
+### G4 — Profile panel role/module counts require a manual refresh; activity is slow to appear  (status: failed) [MEDIUM]
+**Symptom:** Opening a profile in the DrillSheet shows empty role/module counts until the browser is refreshed; activity takes a long time to render.
+**Likely cause (needs its own investigation):** `UserProfilePanel`'s tRPC queries (getAccProfile / getAccUserActivity / getAccUserFolderAccess) interact with the app-wide caching config (`refetchOnWindowFocus:false` + long `staleTime` in `lib/core/providers.tsx`) — the pre-existing `/users` data-freshness item that STATE.md deferred to Phase 4. The on-open query is either not eager or returns stale-empty until a hard refetch. Activity slowness = cold per-user query.
+**Fix direction:** Investigate the panel queries; ensure they fetch eagerly on open with a sensible staleTime and a loading state; consider prefetch on row hover (a hover-prefetch seam already exists in the shell for file activity). Tie to the deferred freshness item.
+
+### G5 — Directory takes a while to show full data  (status: failed) [LOW]
+**Symptom:** Noticeable wait before the full directory renders.
+**Likely cause:** The ~15 MB bulkUsers snapshot load (PERF-01); partly inherent and overlapping with G4. The table skeleton already covers the gap visually.
+**Fix direction:** Confirm the SSR hydration cache is actually hit (no client re-fetch), measure load, and decide if further deferral/streaming is warranted. May fold into G4's investigation.
 
 ---
 
