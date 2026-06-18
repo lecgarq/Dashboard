@@ -77,6 +77,8 @@ import {
   mergePeopleWithAccSummary,
   selectAccSummarySource,
 } from "./useMergedAccUsers";
+import type { OrgPerson, LocalDirectoryUser, GroupByField, ViewMode } from "./directoryUtils";
+import { normalize, uniqueSorted, parseSearchTokens, matchesPerson } from "./directoryUtils";
 import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
 import { useVisibleRowEmails } from "./useVisibleRowEmails";
 import { moduleLabel } from "@/lib/acc/modules";
@@ -102,131 +104,9 @@ const UserActivityBody = dynamic<{ email: string; users: BulkAccUser[] }>(
 
 const DIRECTORY_RENDER_BATCH = 160;
 
-// ---------------------------------------------------------------------------
-// Types
-// ---------------------------------------------------------------------------
-
-interface OrgPerson {
-  resourceName: string;
-  displayName: string;
-  email: string;
-  photoUrl: string | null;
-  department: string | null;
-  jobTitle: string | null;
-  phoneNumber: string | null;
-  costCenter: string | null;
-}
-
-interface LocalDirectoryUser {
-  id: string;
-  name: string | null;
-  email: string;
-  image: string | null;
-  department: string | null;
-  jobTitle: string | null;
-}
-
-type GroupByField = "none" | "department" | "jobTitle" | "costCenter";
-type ViewMode = "grid" | "list";
-
-
-
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function normalize(value: string) {
-  return value
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .trim();
-}
-
-function uniqueSorted(values: (string | null | undefined)[]): string[] {
-  return Array.from(new Set(values.filter(Boolean) as string[])).sort((a, b) =>
-    a.localeCompare(b)
-  );
-}
-
-/** Parse field-scoped tokens like `dept:engineering` from the query */
-function parseSearchTokens(raw: string) {
-  const fieldAliases: Record<string, keyof OrgPerson> = {
-    dept: "department",
-    department: "department",
-    depto: "department",
-    departamento: "department",
-    job: "jobTitle",
-    title: "jobTitle",
-    puesto: "jobTitle",
-    cargo: "jobTitle",
-    role: "jobTitle",
-    cc: "costCenter",
-    cost: "costCenter",
-    centro: "costCenter",
-    presupuesto: "costCenter",
-    phone: "phoneNumber",
-    tel: "phoneNumber",
-    telefono: "phoneNumber",
-    email: "email",
-    correo: "email",
-    name: "displayName",
-    nombre: "displayName",
-  };
-
-  const fieldFilters: Partial<Record<keyof OrgPerson, string>> = {};
-  const freeTerms: string[] = [];
-
-  // Split by spaces but keep quoted strings together
-  const parts = raw.match(/(?:[^\s"]+|"[^"]*")+/g) ?? [];
-
-  for (const part of parts) {
-    const colonIdx = part.indexOf(":");
-    if (colonIdx > 0) {
-      const prefix = part.slice(0, colonIdx).toLowerCase();
-      const value = part.slice(colonIdx + 1).replace(/^"|"$/g, "");
-      const field = fieldAliases[prefix];
-      if (field && value) {
-        fieldFilters[field] = normalize(value);
-        continue;
-      }
-    }
-    freeTerms.push(normalize(part));
-  }
-
-  return { fieldFilters, freeText: freeTerms.join(" ") };
-}
-
-function matchesPerson(
-  person: OrgPerson,
-  freeText: string,
-  fieldFilters: Partial<Record<keyof OrgPerson, string>>
-): boolean {
-  // Field-scoped filters must all match
-  for (const [field, query] of Object.entries(fieldFilters)) {
-    const value = person[field as keyof OrgPerson];
-    if (!value || !normalize(String(value)).includes(query!)) return false;
-  }
-
-  // Free text matches any field
-  if (freeText) {
-    const haystack = normalize(
-      [
-        person.displayName,
-        person.email,
-        person.department,
-        person.jobTitle,
-        person.phoneNumber,
-        person.costCenter,
-      ]
-        .filter(Boolean)
-        .join(" ")
-    );
-    return haystack.includes(freeText);
-  }
-
-  return true;
-}
+// Types and helpers moved to ./directoryUtils (USR-01 decomposition, Wave 2).
+// OrgPerson, LocalDirectoryUser, GroupByField, ViewMode, normalize,
+// uniqueSorted, parseSearchTokens, matchesPerson are imported above.
 
 // ---------------------------------------------------------------------------
 // File-activity column helpers (ACTV-03 / LIST-03 prep)
