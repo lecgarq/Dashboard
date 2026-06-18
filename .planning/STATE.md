@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
-stopped_at: Completed 04-02 (UserProfilePanel person chrome — 10 tests green; tsc 0)
-last_updated: "2026-06-18T23:14:24.148Z"
+stopped_at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
+last_updated: "2026-06-18T23:27:16.463Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 23
-  completed_plans: 22
+  completed_plans: 23
   percent: 57
 ---
 
@@ -63,6 +63,7 @@ Progress: [██████░░░░] 58%
 | Phase 04-users-table-polish P02 | 2min | 2 tasks | 2 files |
 | Phase 04 P03 | 15min | 3 tasks | 6 files |
 | Phase 04-users-table-polish P04 | 9min | 3 tasks | 7 files |
+| Phase 05 P02 | 8min | 3 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -95,6 +96,7 @@ Recent decisions affecting current work:
 - [Phase ?]: AnimatePresence inside conditional: framer-motion exit async in jsdom; React must control DOM presence
 - [Phase ?]: Cross-wave @ts-expect-error removal: TS2307 suppression becomes TS2578 once DataTable.tsx exists; must remove in same commit
 - [Phase ?]: [Phase 04-02]: UserProfilePanel.tsx gains optional person?: OrgPerson prop; dialog variant renders person chrome (banner avatar, name, title, badge tags, contact rows) when supplied; rail ignores it; PersonAvatar imported from PersonDetailModal to avoid duplication
+- [Phase ?]: Timeline slice-narrowing via sliceFilteredProjectIds; moduleSummary stays picker-only; people sheet from in-memory summaries
 
 ### Pending Todos
 
@@ -121,6 +123,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T23:14:24.141Z
-Stopped at: Completed 04-02 (UserProfilePanel person chrome — 10 tests green; tsc 0)
+Last session: 2026-06-18T23:27:16.456Z
+Stopped at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
 Resume file: None
