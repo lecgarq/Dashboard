@@ -57,3 +57,27 @@ export function filterRowsBySelection<T extends { projectId: string }>(
 ): T[] {
   return rows.filter((r) => selected.has(r.projectId));
 }
+
+/** Active drill filters, one value per dimension, ANDed across dimensions. Empty = no drill. */
+export type SliceFilters = Record<string, string>;
+
+/**
+ * Drill-within-selection: keeps only rows matching every active slice filter.
+ * Pure, in-memory — NO network call (Pitfall 2 / PERF-03). Peer to filterRowsBySelection.
+ * Supported dimensions: "role" (matches when r.roles includes the value) and
+ * "company" (matches when r.company === value). Unknown dimension keys are ignored.
+ * An empty filters object returns the rows unchanged (referential pass-through allowed).
+ */
+export function applySliceFilters<T extends { roles?: string[]; company?: string | null }>(
+  rows: ReadonlyArray<T>,
+  filters: SliceFilters,
+): T[] {
+  const role = Object.hasOwn(filters, "role") ? filters.role : undefined;
+  const company = Object.hasOwn(filters, "company") ? filters.company : undefined;
+  if (role === undefined && company === undefined) return rows as T[];
+  return rows.filter((r) => {
+    if (role !== undefined && !(r.roles ?? []).includes(role)) return false;
+    if (company !== undefined && (r.company ?? null) !== company) return false;
+    return true;
+  });
+}

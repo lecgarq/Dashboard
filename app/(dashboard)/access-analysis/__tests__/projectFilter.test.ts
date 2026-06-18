@@ -3,7 +3,9 @@ import {
   projectOptions,
   filterProjectOptions,
   filterRowsBySelection,
+  applySliceFilters,
   type ProjectRoleRow,
+  type SliceFilters,
 } from "../projectFilter";
 
 const rows: ProjectRoleRow[] = [
@@ -54,5 +56,49 @@ describe("filterRowsBySelection", () => {
 
   it("keeps nothing when the selection is empty", () => {
     expect(filterRowsBySelection(rows, new Set())).toEqual([]);
+  });
+});
+
+describe("applySliceFilters", () => {
+  type Row = { projectId: string; projectName: string; roles: string[]; company?: string | null };
+  const sliceRows: Row[] = [
+    { projectId: "p1", projectName: "Tower A", roles: ["PM", "Admin"], company: "Acme" },
+    { projectId: "p2", projectName: "Tower B", roles: ["Designer"], company: "Acme" },
+    { projectId: "p3", projectName: "Bridge", roles: ["PM"], company: "Beta" },
+    { projectId: "p4", projectName: "Depot", roles: ["Member"], company: null },
+  ];
+
+  it("empty filters returns all rows unchanged (referential pass-through)", () => {
+    const result = applySliceFilters(sliceRows, {} as SliceFilters);
+    expect(result).toHaveLength(4);
+  });
+
+  it("{ role: 'PM' } keeps only rows whose roles include PM", () => {
+    const result = applySliceFilters(sliceRows, { role: "PM" });
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.projectId)).toEqual(["p1", "p3"]);
+  });
+
+  it("{ company: 'Acme' } keeps only rows where company === Acme", () => {
+    const result = applySliceFilters(sliceRows, { company: "Acme" });
+    expect(result).toHaveLength(2);
+    expect(result.map((r) => r.projectId)).toEqual(["p1", "p2"]);
+  });
+
+  it("{ role: 'PM', company: 'Acme' } AND-stacks both filters", () => {
+    const result = applySliceFilters(sliceRows, { role: "PM", company: "Acme" });
+    expect(result).toHaveLength(1);
+    expect(result[0].projectId).toBe("p1");
+  });
+
+  it("a row with company: null is excluded by { company: 'Acme' } filter", () => {
+    const result = applySliceFilters(sliceRows, { company: "Acme" });
+    const ids = result.map((r) => r.projectId);
+    expect(ids).not.toContain("p4"); // p4 has company: null
+  });
+
+  it("unknown dimension keys in filters are ignored", () => {
+    const result = applySliceFilters(sliceRows, { unknownDim: "whatever" } as SliceFilters);
+    expect(result).toHaveLength(4);
   });
 });
