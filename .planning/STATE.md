@@ -4,17 +4,17 @@ milestone: v1.0
 milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
-status: planning
-stopped_at: Completed 02-03 (PersonRow + PersonRowList extraction)
-last_updated: "2026-06-18T00:40:38.171Z"
-last_activity: 2026-06-17
-last_activity_desc: "02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)"
+status: phase-complete
+stopped_at: Completed 02-06 (ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off)
+last_updated: "2026-06-18T00:00:00.000Z"
+last_activity: 2026-06-18
+last_activity_desc: "02-06: shell 1,439→314 lines; 6 extracted files; human projector click-through APPROVED; Phase 2 complete"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 12
-  completed_plans: 11
-  percent: 14
+  completed_plans: 12
+  percent: 16
 ---
 
 # Project State
@@ -29,9 +29,9 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 2 of 7 (/users Decomposition)
-Plan: 5 of 6 in current phase (02-01 complete)
-Status: Phase 2 in progress — 02-01 complete (zustand installed, golden-path test GREEN)
-Last activity: 2026-06-17 — 02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)
+Plan: 6 of 6 in current phase (Phase 2 complete)
+Status: Phase 2 complete — all 6 plans executed; shell 314 lines; projector click-through APPROVED
+Last activity: 2026-06-18 — 02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off
 
 Progress: [██████░░░░] 58%
 
@@ -77,6 +77,9 @@ Recent decisions affecting current work:
 - [Phase 02-01]: zustand 5.0.14 installed as a dependency (not devDep) — store is shipped app code.
 - [Phase 02-01]: Baseline test count = 2015 (2012 pass + 1 skip + 2 pre-existing FolderPermissionTerrain failures from concurrent WIP). Every extraction plan must hold or exceed this.
 - [Phase 02-01]: vi.hoisted() required for bulkUsersQuerySpy to survive vi.mock hoisting; HTMLElement.prototype.scrollIntoView + window.scrollTo stubbed for Radix Select + jsdom compatibility.
+- [Phase 02-06]: DirectoryFilterBar reads from useUsersDirectoryStore directly — no prop drilling of 12+ option lists/setters into the extracted component.
+- [Phase 02-06]: useDirectoryRows custom hook extracts filtering/sorting/grouping/windowing memos so the shell stays under the 320-line ceiling.
+- [Phase 02-06 → Phase 4 DEFERRED]: /users auto-refresh / data freshness — pre-existing refetchOnWindowFocus:false + 5-10min staleTime in lib/core/providers.tsx; not a Phase 2 regression; deferred to Phase 4 (/users freshness/polish).
 - [Phase ?]: OrgPerson/LocalDirectoryUser re-exported from useMergedAccUsers via directoryUtils to avoid a second source of truth
 - [Phase ?]: PersonDetailModal stays a centered shadcn Dialog — Sheet migration deferred to Phase 4 (RESEARCH Open Q1)
 - [Phase ?]: setMounted scroll-init hack preserved verbatim in PersonRowList.tsx (RESEARCH Pitfall 3) - transitive import pattern via PersonRowList
@@ -103,9 +106,10 @@ Items acknowledged and carried forward:
 | Forma Proposal | FRM-V2-01 role-permission diff view (needs new `template.getBaseline(roleId)` query) | Deferred to v2 | 2026-06-17 |
 | Access Analysis | ACC-V2-01 project-grouped persistent accordion in picker | Deferred to v2 | 2026-06-17 |
 | Analytics | NA-V2-01 additional new analytics beyond the gated per-page set | Deferred to v2 | 2026-06-17 |
+| /users freshness | /users data requires manual browser refresh to show latest data — pre-existing refetchOnWindowFocus:false + staleTime in lib/core/providers.tsx; confirmed NOT a Phase 2 regression | Deferred to Phase 4 | 2026-06-18 |
 
 ## Session Continuity
 
-Last session: 2026-06-18T00:40:34.553Z
-Stopped at: Completed 02-03 (PersonRow + PersonRowList extraction)
+Last session: 2026-06-18T00:00:00.000Z
+Stopped at: Completed 02-06 (Phase 2 complete — 314-line shell; projector sign-off)
 Resume file: None

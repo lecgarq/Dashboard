@@ -14,7 +14,7 @@ A premium UI/UX overhaul of four existing pages (`/users`, `/access-analysis`, `
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Shared Design Foundation** - Depth/glow tokens, `PremiumSurface`, themed `EChart`, motion facade, slide-in `Sheet` — every page imports this (completed 2026-06-17)
-- [ ] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test
+- [x] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test (completed 2026-06-18)
 - [ ] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages
 - [ ] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton
 - [ ] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain
@@ -68,7 +68,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] 02-03-PLAN.md — Extract PersonRow + PersonRowList with the virtualizer scroll-init hack verbatim (USR-01) [wave 3]
 - [x] 02-04-PLAN.md — Create the Zustand store + migrate filter/search/sort/view/selectedEmail state (USR-01) [wave 4]
 - [x] 02-05-PLAN.md — Single data hook + shared BULK_USERS_LEAN_INPUT prefetch/client constant (USR-01, PERF-03) [wave 5]
-- [ ] 02-06-PLAN.md — ActivityAuditPanel + filter bar extraction, ~200-line shell, projector zero-change sign-off (USR-01, PERF-03) [wave 6]
+- [x] 02-06-PLAN.md — ActivityAuditPanel + filter bar extraction, ~200-line shell, projector zero-change sign-off (USR-01, PERF-03) [wave 6]
 
 **UI hint**: yes
 
@@ -175,7 +175,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
-| 2. /users Decomposition | 5/6 | In Progress|  |
+| 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
 | 3. DataTable Primitive | 0/TBD | Not started | - |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
