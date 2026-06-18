@@ -19,6 +19,9 @@ function makeHelpers() {
     accMembers: {
       enrichedUsers: { prefetch: vi.fn(async () => undefined) },
     },
+    accActivity: {
+      lastFileActivityByEmailAll: { prefetch: vi.fn(async () => undefined) },
+    },
   };
 }
 
@@ -42,6 +45,13 @@ describe("ACC route hydration", () => {
     });
     expect(helpers.users.getOrgDirectory.prefetch).toHaveBeenCalled();
     expect(helpers.users.getDirectory.prefetch).toHaveBeenCalled();
+    // G1/G5: the per-user last-file-activity map must be prefetched (undefined
+    // input, matching the client useQuery) so the "Last active" column hydrates
+    // on mount instead of refetching after hydration.
+    expect(helpers.accActivity.lastFileActivityByEmailAll.prefetch).toHaveBeenCalledWith(
+      undefined,
+      { staleTime: 5 * 60_000 },
+    );
   });
 
   it("prefetches the DC graph snapshot with the SAME input the client query uses (hydration-key parity)", async () => {

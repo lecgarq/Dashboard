@@ -38,6 +38,11 @@ export async function prefetchUsersRouteAccData(helpers: any) {
     helpers.accMembers.enrichedUsers.prefetch(undefined, snapshotOptions),
     helpers.users.getOrgDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),
     helpers.users.getDirectory.prefetch(undefined, { staleTime: 5 * 60_000 }),
+    // G1/G5: per-user last-file-activity map drives the "Last active" column +
+    // Active-30d KPI. Prefetch it here (staleTime matches the client useQuery in
+    // useUsersDirectoryData) so it's hydrated on mount rather than a post-mount
+    // fetch — keeps the column instant and avoids regressing first-paint speed.
+    helpers.accActivity.lastFileActivityByEmailAll.prefetch(undefined, { staleTime: 5 * 60_000 }),
   ]);
 }
 
