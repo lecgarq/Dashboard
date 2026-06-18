@@ -3,6 +3,7 @@
 import { render, screen, fireEvent, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
+import type { OrgPerson } from "./directoryUtils";
 
 const fetchSpy = vi.fn(async () => ({ found: false, syncedAt: "" }));
 const activityData = { totalCount: 5, last30dCount: 0, topActions: [], recentEvents: [] };
@@ -49,6 +50,17 @@ const found: BulkAccUser = {
   projects: [
     { id: "p1", name: "Tower A", status: "active", isAdmin: true, roles: ["Project Admin"], modules: ["build"] },
   ] as BulkAccUser["projects"],
+};
+
+const orgPerson: OrgPerson = {
+  resourceName: "people/ada.lovelace",
+  displayName: "Ada Lovelace",
+  email: "ada@hermosillo.com",
+  photoUrl: null,
+  department: "Engineering",
+  jobTitle: "Lead Engineer",
+  phoneNumber: "+52-664-000-0000",
+  costCenter: "ENG-100",
 };
 
 describe("UserProfilePanel", () => {
@@ -104,5 +116,49 @@ describe("UserProfilePanel", () => {
     };
     render(<UserProfilePanel user={noRoles} email={noRoles.email} variant="rail" />);
     expect(screen.getByTestId("statcard-roles").hasAttribute("disabled")).toBe(true);
+  });
+
+  it("renders person chrome (name, job title, email) in dialog variant when person is supplied", () => {
+    render(
+      <UserProfilePanel
+        user={found}
+        email={found.email}
+        variant="dialog"
+        person={orgPerson}
+      />
+    );
+    // Person header chrome should appear
+    expect(screen.getByTestId("person-chrome-header")).toBeTruthy();
+    expect(screen.getAllByText("Ada Lovelace").length).toBeGreaterThan(0);
+    // jobTitle appears in the subtitle + info row
+    expect(screen.getAllByText("Lead Engineer").length).toBeGreaterThan(0);
+    // Email contact row
+    expect(screen.getAllByText("ada@hermosillo.com").length).toBeGreaterThan(0);
+  });
+
+  it("does NOT render person chrome when person is omitted (dialog variant)", () => {
+    render(
+      <UserProfilePanel
+        user={found}
+        email={found.email}
+        variant="dialog"
+      />
+    );
+    expect(screen.queryByTestId("person-chrome-header")).toBeNull();
+    // "Ada Lovelace" as a display-name heading should not appear (it's still in the ACC body title potentially, but no chrome heading)
+    expect(screen.queryByTestId("person-chrome-header")).toBeNull();
+  });
+
+  it("does NOT render person chrome in rail variant even when person is supplied", () => {
+    render(
+      <UserProfilePanel
+        user={found}
+        email={found.email}
+        variant="rail"
+        person={orgPerson}
+      />
+    );
+    // Rail has its own header from ProfileAvatar/name — person chrome block must not appear
+    expect(screen.queryByTestId("person-chrome-header")).toBeNull();
   });
 });
