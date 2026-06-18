@@ -229,6 +229,7 @@ vi.mock("next/dynamic", () => ({
 // Import component AFTER mocks
 // ---------------------------------------------------------------------------
 import { UsersDirectoryClient } from "../UsersDirectoryClient";
+import { useUsersDirectoryStore } from "../useUsersDirectoryStore";
 
 // ---------------------------------------------------------------------------
 // Tests
@@ -237,6 +238,28 @@ import { UsersDirectoryClient } from "../UsersDirectoryClient";
 describe("UsersDirectoryClient — golden-path integration", () => {
   beforeEach(() => {
     vi.useFakeTimers();
+    // Reset Zustand store between tests so filter/search state from one test
+    // does not bleed into the next (store is a singleton; useState was per-mount).
+    useUsersDirectoryStore.setState({
+      search: "",
+      debouncedSearch: "",
+      viewMode: "grid",
+      groupBy: "none",
+      filterDept: null,
+      filterJobTitle: null,
+      filterCostCenter: null,
+      filterNoProjects: false,
+      filterAccProject: null,
+      filterAccRole: null,
+      filterAccModule: null,
+      filterAccModuleTier: null,
+      statusFilter: [],
+      projectAdminFilter: false,
+      activitySort: { active: false, direction: "desc" },
+      selectedEmail: null,
+      activityEmail: null,
+      activatedEmails: new Set(),
+    });
   });
 
   afterEach(() => {

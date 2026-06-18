@@ -63,6 +63,7 @@ import { normalize, uniqueSorted, parseSearchTokens, matchesPerson } from "./dir
 import { PersonDetailModal, PersonAvatar } from "./PersonDetailModal";
 import { STATUS_PILL_LABEL, StatusPill, AdminPill, AccBadge } from "./DirectoryPills";
 import { PersonRowList } from "./PersonRowList";
+import { useUsersDirectoryStore } from "./useUsersDirectoryStore";
 import { DataCoverageStrip } from "./DataCoverageStrip";
 import { CollapsibleGroup } from "./CollapsibleGroup";
 import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
@@ -394,58 +395,76 @@ function ActivityAuditPanel({
 // ---------------------------------------------------------------------------
 
 export function UsersDirectoryClient() {
-  const [search, setSearch] = useState("");
-  const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedPerson, setSelectedPerson] = useState<OrgPerson | null>(null);
-  const [viewMode, setViewMode] = useState<ViewMode>("grid");
-  const [groupBy, setGroupBy] = useState<GroupByField>("none");
-  const [filterDept, setFilterDept] = useState<string | null>(null);
-  const [filterJobTitle, setFilterJobTitle] = useState<string | null>(null);
-  const [filterCostCenter, setFilterCostCenter] = useState<string | null>(null);
-  const [filterNoProjects, setFilterNoProjects] = useState(false);
-  const [filterAccProject, setFilterAccProject] = useState<string | null>(null);
-  const [filterAccRole, setFilterAccRole] = useState<string | null>(null);
-  const [filterAccModule, setFilterAccModule] = useState<string | null>(null);
-  // Phase 09 LIST-01 / LIST-02 — Status multi-select + Project Admin binary
-  const [statusFilter, setStatusFilter] = useState<AggregatedStatus[]>([]);
-  const [projectAdminFilter, setProjectAdminFilter] = useState<boolean>(false);
-  // Phase 09-04 LIST-03 (sort path): server-side sort by max(file activity).
-  // `active=false` means default directory ordering; first click activates DESC.
-  // Cycle: off -> desc -> asc -> off.
-  const [activitySort, setActivitySort] = useState<{
-    active: boolean;
-    direction: "asc" | "desc";
-  }>({ active: false, direction: "desc" });
-  // LIST-04: informational tier label paired with filterAccModule when the user click-throughs
-  // from the side panel's Module Access section. Row-predicate fallback is module-only because
-  // BulkAccUser.allModules has no per-project tier — tier is surfaced in the ActiveFilterPill chip
-  // for user intent transparency. Documented in 09-03 SUMMARY trade-offs.
-  const [filterAccModuleTier, setFilterAccModuleTier] = useState<string | null>(null);
+  // ---------------------------------------------------------------------------
+  // Store: filter / search / sort / viewMode / selection state (USR-01 Wave 4)
+  // ---------------------------------------------------------------------------
+  const search = useUsersDirectoryStore((s) => s.search);
+  const debouncedSearch = useUsersDirectoryStore((s) => s.debouncedSearch);
+  const viewMode = useUsersDirectoryStore((s) => s.viewMode);
+  const groupBy = useUsersDirectoryStore((s) => s.groupBy);
+  const filterDept = useUsersDirectoryStore((s) => s.filterDept);
+  const filterJobTitle = useUsersDirectoryStore((s) => s.filterJobTitle);
+  const filterCostCenter = useUsersDirectoryStore((s) => s.filterCostCenter);
+  const filterNoProjects = useUsersDirectoryStore((s) => s.filterNoProjects);
+  const filterAccProject = useUsersDirectoryStore((s) => s.filterAccProject);
+  const filterAccRole = useUsersDirectoryStore((s) => s.filterAccRole);
+  const filterAccModule = useUsersDirectoryStore((s) => s.filterAccModule);
+  const filterAccModuleTier = useUsersDirectoryStore((s) => s.filterAccModuleTier);
+  const statusFilter = useUsersDirectoryStore((s) => s.statusFilter);
+  const projectAdminFilter = useUsersDirectoryStore((s) => s.projectAdminFilter);
+  const activitySort = useUsersDirectoryStore((s) => s.activitySort);
+  const selectedEmail = useUsersDirectoryStore((s) => s.selectedEmail);
+  const activityEmail = useUsersDirectoryStore((s) => s.activityEmail);
+  const activatedEmails = useUsersDirectoryStore((s) => s.activatedEmails);
+
+  // Store actions
+  const setSearch = useUsersDirectoryStore((s) => s.setSearch);
+  const setDebouncedSearch = useUsersDirectoryStore((s) => s.setDebouncedSearch);
+  const setViewMode = useUsersDirectoryStore((s) => s.setViewMode);
+  const setGroupBy = useUsersDirectoryStore((s) => s.setGroupBy);
+  const setFilterDept = useUsersDirectoryStore((s) => s.setFilterDept);
+  const setFilterJobTitle = useUsersDirectoryStore((s) => s.setFilterJobTitle);
+  const setFilterCostCenter = useUsersDirectoryStore((s) => s.setFilterCostCenter);
+  const setFilterNoProjects = useUsersDirectoryStore((s) => s.setFilterNoProjects);
+  const setFilterAccProject = useUsersDirectoryStore((s) => s.setFilterAccProject);
+  const setFilterAccRole = useUsersDirectoryStore((s) => s.setFilterAccRole);
+  const setFilterAccModule = useUsersDirectoryStore((s) => s.setFilterAccModule);
+  const setFilterAccModuleTier = useUsersDirectoryStore((s) => s.setFilterAccModuleTier);
+  const setStatusFilter = useUsersDirectoryStore((s) => s.setStatusFilter);
+  const setProjectAdminFilter = useUsersDirectoryStore((s) => s.setProjectAdminFilter);
+  const setActivityEmail = useUsersDirectoryStore((s) => s.setActivityEmail);
+  const setSelectedEmail = useUsersDirectoryStore((s) => s.setSelectedEmail);
+  const clearAllFilters = useUsersDirectoryStore((s) => s.clearAllFilters);
+  const cycleActivitySort = useUsersDirectoryStore((s) => s.cycleActivitySort);
+  const storeActivateEmail = useUsersDirectoryStore((s) => s.activateEmail);
+  const applyModuleFilterFromSidePanel = useUsersDirectoryStore(
+    (s) => s.applyModuleFilterFromSidePanel,
+  );
+
+  // ---------------------------------------------------------------------------
+  // Shell-only state: directoryRenderLimit + perfLoggingEnabled stay as useState
+  // (not serializable store candidates; perf flag is read once at mount)
+  // ---------------------------------------------------------------------------
   const [directoryRenderLimit, setDirectoryRenderLimit] = useState(DIRECTORY_RENDER_BATCH);
   const [perfLoggingEnabled] = useState(() => {
     if (typeof window === "undefined") return false;
     const params = new URLSearchParams(window.location.search);
     return params.has("usersPerf") || localStorage.getItem("users-perf") === "1";
   });
+
+  // ---------------------------------------------------------------------------
+  // Shell-only refs / tRPC utils / hover-prefetch (MUST NOT move to store)
+  // ---------------------------------------------------------------------------
   const debounceTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
-  // ACTV-03: per-row hover-prefetch state. activatedEmails tracks rows whose
-  // file-activity query has been "activated" by hover; FileActivityCell flips
-  // its useQuery `enabled` flag on once activated and stays on so the cache
-  // keeps serving subsequent renders.
+  // ACTV-03: per-row hover-prefetch state. activatedEmails lives in the store
+  // for sharing, but trpc.useUtils() MUST stay in the shell (React hook).
   const utils = trpc.useUtils();
-  const [activatedEmails, setActivatedEmails] = useState<Set<string>>(new Set());
   const hoverTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map());
-  const [activityEmail, setActivityEmail] = useState<string | null>(null);
 
   const activateEmail = useCallback((email: string) => {
-    setActivatedEmails((prev) => {
-      if (prev.has(email)) return prev;
-      const next = new Set(prev);
-      next.add(email);
-      return next;
-    });
-  }, []);
+    storeActivateEmail(email);
+  }, [storeActivateEmail]);
 
   const handleRowHoverEnter = useCallback(
     (email: string) => {
@@ -480,7 +499,7 @@ export function UsersDirectoryClient() {
       activateEmail(email); // also flips the cell from "—" to populated
       setActivityEmail(email);
     },
-    [activateEmail],
+    [activateEmail, setActivityEmail],
   );
 
   // Phase 09 LIST-01 / LIST-02 — pill click handlers (Task 3).
@@ -506,23 +525,21 @@ export function UsersDirectoryClient() {
       );
       scrollDirectoryToTop();
     },
-    [scrollDirectoryToTop],
+    [setStatusFilter, scrollDirectoryToTop],
   );
   const handleAdminPillClick = useCallback(() => {
     setProjectAdminFilter((prev) => !prev);
     scrollDirectoryToTop();
-  }, [scrollDirectoryToTop]);
+  }, [setProjectAdminFilter, scrollDirectoryToTop]);
 
   // Phase 09-04 LIST-03 (sort path): three-state header click cycle.
   // off -> desc -> asc -> off. Decoupled from display-path batch query.
+  // Delegates the cycle logic to cycleActivitySort in the store; shell still
+  // owns the scrollDirectoryToTop side-effect.
   const handleActivitySortClick = useCallback(() => {
-    setActivitySort((prev) => {
-      if (!prev.active) return { active: true, direction: "desc" };
-      if (prev.direction === "desc") return { active: true, direction: "asc" };
-      return { active: false, direction: "desc" };
-    });
+    cycleActivitySort();
     scrollDirectoryToTop();
-  }, [scrollDirectoryToTop]);
+  }, [cycleActivitySort, scrollDirectoryToTop]);
 
   // Phase 09-04 LIST-03 (sort path): paginated server-side sort. KEPT
   // INTENTIONALLY SEPARATE from the batch display query (Pitfall 6 — sharing
@@ -719,12 +736,14 @@ export function UsersDirectoryClient() {
     };
   }, [directoryData, error, fallbackDirectory.length, isDirectoryLoading]);
 
-  // Debounced search for real-time feel without excessive re-renders
+  // Debounced search for real-time feel without excessive re-renders.
+  // The debounce timer (ref) and this handler stay in the shell;
+  // setSearch / setDebouncedSearch are store actions.
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
     clearTimeout(debounceTimer.current);
     debounceTimer.current = setTimeout(() => setDebouncedSearch(value), 150);
-  }, []);
+  }, [setSearch, setDebouncedSearch]);
 
   // Cleanup timer on unmount
   useEffect(() => () => clearTimeout(debounceTimer.current), []);
@@ -963,31 +982,21 @@ export function UsersDirectoryClient() {
     costCenters: costCenters.length,
   }), [people, filtered, departments, costCenters]);
 
-  function clearAllFilters() {
-    setFilterDept(null);
-    setFilterJobTitle(null);
-    setFilterCostCenter(null);
-    setFilterNoProjects(false);
-    setFilterAccProject(null);
-    setFilterAccRole(null);
-    setFilterAccModule(null);
-    setFilterAccModuleTier(null);
-    setStatusFilter([]);
-    setProjectAdminFilter(false);
-    handleSearchChange("");
-  }
+  // clearAllFilters and handleApplyModuleFilterFromSidePanel delegate to the
+  // store's composite actions (USR-01 Wave 4). The store's clearAllFilters also
+  // resets search + debouncedSearch (matching the monolith's behaviour where
+  // clearAllFilters called handleSearchChange("")).
 
   // LIST-04: side-panel Module Access click-through → narrow the directory by module.
   // Tier is captured as informational chip metadata (per-tier predicate not feasible without
   // per-project tier on the row; documented trade-off in 09-03 SUMMARY).
   const handleApplyModuleFilterFromSidePanel = useCallback(
     (moduleKey: string, tier: string) => {
-      setFilterAccModule(moduleKey);
-      setFilterAccModuleTier(tier || null);
+      applyModuleFilterFromSidePanel(moduleKey, tier);
       // Side panel stays open intentionally so the user can see the directory facet take effect
       // behind it. Closing it would obscure the cause-and-effect signal.
     },
-    [],
+    [applyModuleFilterFromSidePanel],
   );
 
   function renderPeople(list: OrgPerson[]) {
@@ -1053,7 +1062,7 @@ export function UsersDirectoryClient() {
             list={list}
             accSummaryMap={accSummaryMap}
             activatedEmails={activatedEmails}
-            onPersonClick={setSelectedPerson}
+            onPersonClick={(p) => setSelectedEmail(p.email)}
             onHoverEnter={handleRowHoverEnter}
             onHoverLeave={handleRowHoverLeave}
             onActivityCellClick={openActivitySheet}
@@ -1071,7 +1080,7 @@ export function UsersDirectoryClient() {
             key={person.resourceName}
             person={person}
             accSummary={accSummaryMap.get(person.email)}
-            onClick={() => setSelectedPerson(person)}
+            onClick={() => setSelectedEmail(person.email)}
           />
         ))}
       </div>
@@ -1375,7 +1384,7 @@ export function UsersDirectoryClient() {
           {/* ACC "No Projects" filter chip — only visible when there is cache data */}
           {noProjectsCount > 0 && (
             <button
-              onClick={() => setFilterNoProjects((prev) => !prev)}
+              onClick={() => setFilterNoProjects(!filterNoProjects)}
               className={cn(
                 "inline-flex items-center gap-1.5 text-[11px] font-medium px-2.5 py-1 rounded-full border transition-all",
                 filterNoProjects
@@ -1582,18 +1591,24 @@ export function UsersDirectoryClient() {
         </>
       )}
 
+      {/* PersonDetailModal: selectedEmail (string) drives open/close;
+          object is resolved here so the store stays serializable (USR-01). */}
       <PersonDetailModal
-        person={selectedPerson}
+        person={
+          selectedEmail
+            ? people.find((p) => p.email.toLowerCase() === selectedEmail.toLowerCase()) ?? null
+            : null
+        }
         accUser={
-          selectedPerson
+          selectedEmail
             ? mergedAccUsers.find(
-                (u) => u.email.toLowerCase() === selectedPerson.email.toLowerCase(),
+                (u) => u.email.toLowerCase() === selectedEmail.toLowerCase(),
               ) ?? null
             : null
         }
-        open={!!selectedPerson}
+        open={!!selectedEmail}
         onOpenChange={(v) => {
-          if (!v) setSelectedPerson(null);
+          if (!v) setSelectedEmail(null);
         }}
       />
 
