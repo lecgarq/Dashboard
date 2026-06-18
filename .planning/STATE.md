@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: planning
-stopped_at: Phase 1 (Shared Design Foundation) complete — 6/6 plans, verified, human-approved. Foundation primitives (tokens, PremiumSurface, EChart, motion facade, DrillSheet) shipped to feat/access-analysis-redesign.
-last_updated: "2026-06-17T23:58:35.065Z"
+stopped_at: Completed 02-02 (low-risk component extraction)
+last_updated: "2026-06-18T00:10:51.974Z"
 last_activity: 2026-06-17
-last_activity_desc: "Phase 1 executed: 6/6 plans across 3 parallel waves, verified, approved"
+last_activity_desc: "02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)"
 progress:
   total_phases: 7
   completed_phases: 1
   total_plans: 12
-  completed_plans: 7
+  completed_plans: 8
   percent: 14
 ---
 
@@ -29,7 +29,7 @@ See: .planning/PROJECT.md (updated 2026-06-17)
 ## Current Position
 
 Phase: 2 of 7 (/users Decomposition)
-Plan: 1 of 6 in current phase (02-01 complete)
+Plan: 2 of 6 in current phase (02-01 complete)
 Status: Phase 2 in progress — 02-01 complete (zustand installed, golden-path test GREEN)
 Last activity: 2026-06-17 — 02-01: zustand 5.0.14 installed, 7-case golden-path integration test GREEN (2015 tests baseline)
 
@@ -54,6 +54,7 @@ Progress: [██████░░░░] 58%
 - Trend: foundation primitives shipped
 
 *Updated after each plan completion*
+| Phase 02-users-decomposition P02 | 11 | 3 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 02-01]: zustand 5.0.14 installed as a dependency (not devDep) — store is shipped app code.
 - [Phase 02-01]: Baseline test count = 2015 (2012 pass + 1 skip + 2 pre-existing FolderPermissionTerrain failures from concurrent WIP). Every extraction plan must hold or exceed this.
 - [Phase 02-01]: vi.hoisted() required for bulkUsersQuerySpy to survive vi.mock hoisting; HTMLElement.prototype.scrollIntoView + window.scrollTo stubbed for Radix Select + jsdom compatibility.
+- [Phase ?]: OrgPerson/LocalDirectoryUser re-exported from useMergedAccUsers via directoryUtils to avoid a second source of truth
+- [Phase ?]: PersonDetailModal stays a centered shadcn Dialog — Sheet migration deferred to Phase 4 (RESEARCH Open Q1)
 
 ### Pending Todos
 
@@ -98,6 +101,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-17
-Stopped at: Completed 02-01 (zustand install + golden-path test) — Phase 2 plan 1/6 done
-Resume file: .planning/phases/02-users-decomposition/02-02-PLAN.md (next: state slice extraction)
+Last session: 2026-06-18T00:10:51.967Z
+Stopped at: Completed 02-02 (low-risk component extraction)
+Resume file: None
