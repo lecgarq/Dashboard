@@ -445,7 +445,10 @@ describe("UsersDirectoryClient — golden-path integration", () => {
     // The DrillSheet's children (the dynamic panel mock) appear in the document.
     // Use act+advanceTimers to flush Radix portal rendering.
     await act(async () => { vi.advanceTimersByTime(100); });
-    const panel = document.querySelector("[data-testid='dynamic-panel']");
+    // Find the dynamic panel that has a truthy email (the DrillSheet's UserProfilePanel),
+    // not an empty-email panel (e.g. UsersTableHeader's HeaderParticleAccent dynamic import).
+    const panels = Array.from(document.querySelectorAll("[data-testid='dynamic-panel']"));
+    const panel = panels.find((p) => p.getAttribute("data-email"));
     expect(panel).toBeTruthy();
     // The panel must carry the email of the clicked person
     expect(panel?.getAttribute("data-email")).toBeTruthy();

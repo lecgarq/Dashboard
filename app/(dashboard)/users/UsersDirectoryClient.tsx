@@ -5,7 +5,7 @@ import { useMemo, useState, useCallback, useRef, useEffect } from "react";
 import { trpc } from "@/lib/core/trpc";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, AlertCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 import { motion, fadeIn, useSafeVariants } from "@/components/ui/motion";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { type AggregatedStatus } from "@/lib/acc/accStatusReduction";
@@ -25,6 +25,7 @@ import { USERS_COLUMNS } from "./DirectoryTableColumns";
 import { buildDirectoryRows, type DirectoryRow } from "./directoryTableRow";
 import { PeekPanel } from "./PeekPanel";
 import { UsersTableSkeleton } from "./UsersTableSkeleton";
+import { UsersTableHeader } from "./UsersTableHeader";
 
 // Re-export MODULE_BADGE_COLORS and ModuleBadge for backward-compat consumers.
 export { MODULE_BADGE_COLORS, ModuleBadge } from "./ModuleBadge";
@@ -173,6 +174,31 @@ export function UsersDirectoryClient() {
 
   const stats = useMemo(() => ({ total: people.length, shown: filtered.length, depts: departments.length, costCenters: costCenters.length }), [people, filtered, departments, costCenters]);
 
+  // ---- KPI derivations for header (no new fetch — in-memory only) ----------
+  const ACTIVE_30D_MS = 30 * 24 * 60 * 60 * 1000;
+  const kpiValues = useMemo(() => {
+    const now = Date.now();
+    let active30d = 0;
+    let admins = 0;
+    for (const person of people) {
+      const accUser = accSummaryMap.get(person.email.toLowerCase());
+      if (accUser) {
+        // active30d: any project lastActivity within 30 days
+        const hasRecentActivity = accUser.projects.some((p) => {
+          if (!p.lastActivity) return false;
+          return now - new Date(p.lastActivity).getTime() <= ACTIVE_30D_MS;
+        });
+        if (hasRecentActivity) active30d += 1;
+        // admins: project admin on any project or has adminCount > 0 or isAccountAdmin
+        if (accUser.adminCount > 0 || accUser.projectAdmin === true || accUser.isAccountAdmin) {
+          admins += 1;
+        }
+      }
+    }
+    return { totalUsers: people.length, active30d, admins };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [people, accSummaryMap]); // ACTIVE_30D_MS is a constant, no dep needed
+
   // ---- DataTable rows (pre-sorted/filtered list) -------------------------
   // Pass the already-filtered/sorted list from useDirectoryRows so the
   // pre-sort seam (Open Q3) holds; DataTable's own column sort operates on top.
@@ -195,22 +221,22 @@ export function UsersDirectoryClient() {
       animate={safeFade.visible}
       className="mx-auto max-w-[1600px] p-6 space-y-4"
     >
+      {/* Page header — KPI glass strip + particle accent (Plan 04-04) */}
+      <UsersTableHeader
+        totalUsers={kpiValues.totalUsers}
+        active30d={kpiValues.active30d}
+        admins={kpiValues.admins}
+      />
+
+      {/* Sub-header: counts + group-by control */}
       <div className="flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary/20 to-primary/5 border border-primary/20 flex items-center justify-center">
-            <Users size={16} className="text-primary" />
-          </div>
-          <div>
-            <h1 className="text-xl font-bold text-foreground tracking-tight">Users</h1>
-            <p className="text-xs text-muted-foreground">
-              {isLoading ? "Loading..." : stats.shown === stats.total
-                ? `${stats.total} ${usingFallbackDirectory ? "registered users" : "people"}`
-                : `${stats.shown} of ${stats.total} ${usingFallbackDirectory ? "registered users" : "people"}`}
-              {stats.depts > 0 && !isLoading && <span className="text-muted-foreground/50"> &middot; {stats.depts} departments</span>}
-              {stats.costCenters > 0 && !isLoading && <span className="text-muted-foreground/50"> &middot; {stats.costCenters} cost centers</span>}
-            </p>
-          </div>
-        </div>
+        <p className="text-xs text-muted-foreground">
+          {isLoading ? "Loading..." : stats.shown === stats.total
+            ? `${stats.total} ${usingFallbackDirectory ? "registered users" : "people"}`
+            : `${stats.shown} of ${stats.total} ${usingFallbackDirectory ? "registered users" : "people"}`}
+          {stats.depts > 0 && !isLoading && <span className="text-muted-foreground/50"> &middot; {stats.depts} departments</span>}
+          {stats.costCenters > 0 && !isLoading && <span className="text-muted-foreground/50"> &middot; {stats.costCenters} cost centers</span>}
+        </p>
         <div className="flex items-center gap-2">
           <Select value={groupBy} onValueChange={(v) => setGroupBy(v as GroupByField)}>
             <SelectTrigger className="h-8 w-[140px] text-xs bg-card border-border"><SelectValue placeholder="Group by..." /></SelectTrigger>
