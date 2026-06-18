@@ -556,6 +556,7 @@ model AccActivity {
   @@index([autodeskId, createdAt(sort: Desc)])
   @@index([userEmail, createdAt(sort: Desc)]) // drives ACTV-03 lazy per-user file activity query
   @@index([projectId, createdAt(sort: Desc)])
+  @@index([userEmail, projectId]) // composite — speeds up activityByActor GROUP BY (projectId, userEmail)
   @@index([rawAction])
   @@index([ingestRunId]) // forensic lookup: "which run inserted these rows?"
 }
