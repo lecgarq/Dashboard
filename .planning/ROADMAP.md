@@ -131,7 +131,15 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Drill/reveal motion is smooth and directional (≤200ms), fires only on mount/drill (never on filter change), and KPI numbers count up on first load; all data labels meet WCAG AA contrast at projector brightness in both themes (THM-01 verified here on the densest data surface).
   5. No new WebGL context is introduced (GPU < 400MB); each tRPC endpoint is fetched once; every new per-page metric passed a Prisma-schema feasibility gate (named model, stated coverage, no schema change) and under-covered sources (e.g. `AccActivity` 428/1,152) are labeled as such in the UI.
 
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Foundation: applySliceFilters helper + canonical EChart migration (6 charts, gradient/universalTransition) + AccActivity composite index + PillBar/ActivityCoverageBadge RED stubs [wave 1]
+- [ ] 05-02-PLAN.md — Cross-filter: sliceFilters state + PillBar + onSliceClick lift (4 donuts) + "View N people →" slide-in (INT-02/04/05, VIS-05) [wave 2]
+- [ ] 05-03-PLAN.md — ActivityCoverageBadge component + pure coverageCounts helper (NA-01) [wave 2]
+- [ ] 05-04-PLAN.md — Presentation surgery: Suspense tiers + PremiumSurface 2-up grid + lazy TerrainReveal + badge placement + KPI no-reanimate (ACC-01/03, PERF-02, VIS-01) [wave 3]
+- [ ] 05-05-PLAN.md — THM-01 WCAG AA chart-label contrast gate (automated + projector sign-off) [wave 4]
+
 **UI hint**: yes
 
 **Phase context / research note**: `/access-analysis` is the cleanest layout but the densest data surface — `THM-01` (light/dark + projector contrast parity) and `NA-01` (new-analytics feasibility gate) are owned here because this is where new analytics and the most data labels live. Parallel-safe with Phases 4 and 6 after Phase 1. Pitfalls in play: redundant fetching (Pitfall 2 — new panels consume RSC props / shared `FilterContext` only, never new `trpc.useQuery` for already-fetched data), WebGL on data pages (Pitfall 1 — depth via CSS/ECharts only), under-counting analytics (Pitfall 5). **Plan-time gate (not research-phase):** enumerate every proposed new metric's Prisma model + coverage before writing implementation tasks. Add the `AccActivity (email, projectId)` composite index here (not deferred). Per-phase research: `npm run repo-map` then consult `ast-grep-prisma-access.json` for the feasibility gate and the `fetch-calls` report for the redundant-fetch audit (`repo-map:check` ratchet after).
@@ -188,6 +196,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
-| 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
+| 5. /access-analysis Depth & Cross-Filtering | 0/5 | Planned | - |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |
