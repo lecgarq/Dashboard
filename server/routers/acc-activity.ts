@@ -60,6 +60,7 @@ import {
   bucketStart,
 } from "@/lib/acc/timelineBucketing";
 import { pickHeadlineEvent, type RankableEvent } from "@/lib/acc/headlineEventPicker";
+import { getCachedLastFileActivityByEmailAll } from "@/lib/server/acc-hot-cache";
 
 const CATEGORY_ENUM = z.enum([
   "view",
@@ -272,9 +273,10 @@ export const accActivityRouter = router({
    * sort/display semantics stay in sync (Pitfall 6 guard).
    */
   lastFileActivityByEmailAll: protectedProcedure.query(async ({ ctx }) => {
-    const rows = await getAllLastUnifiedActivityByEmail(ctx.db, {
-      rawActionIn: [...FILE_RAW_ACTIONS],
-    });
+    // Use the hot-cache wrapper so the heavy GROUP BY over ~623k unified_activity
+    // rows is computed once per ingest cycle and served from memory on every
+    // subsequent SSR prefetch (G2 fix: eliminates the cold query on every load).
+    const rows = await getCachedLastFileActivityByEmailAll(ctx.db);
     const out: Record<string, string | null> = {};
     for (const r of rows) {
       out[r.email.toLowerCase()] = r.lastActivity;

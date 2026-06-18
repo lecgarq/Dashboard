@@ -2,6 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   getCachedAccDcBulkUsers,
   getCachedAccMembersEnrichedUsers,
+  getCachedLastFileActivityByEmailAll,
   invalidateAccHotCache,
   prewarmAccHotCache,
 } from "./acc-hot-cache";
@@ -202,5 +203,51 @@ describe("ACC hot cache", () => {
     vi.setSystemTime(new Date("2026-06-16T00:16:00.000Z"));
     await getCachedAccDcBulkUsers(db);
     expect(db.accDcUser.findMany).toHaveBeenCalledTimes(1);
+  });
+
+  // -------------------------------------------------------------------------
+  // getCachedLastFileActivityByEmailAll
+  // -------------------------------------------------------------------------
+
+  it("getCachedLastFileActivityByEmailAll: memoises the result — second call within TTL does NOT re-run $queryRaw", async () => {
+    const db = makePrewarmDb();
+    db.$queryRaw.mockResolvedValue([
+      { email: "alice@test.com", lastActivity: new Date("2026-06-01T00:00:00.000Z") },
+    ]);
+
+    const first = await getCachedLastFileActivityByEmailAll(db);
+    const second = await getCachedLastFileActivityByEmailAll(db);
+
+    // $queryRaw called exactly once (the second call is a cache hit)
+    expect(db.$queryRaw).toHaveBeenCalledTimes(1);
+    // Both calls return the same data
+    expect(first).toEqual(second);
+    expect(first).toHaveLength(1);
+    expect(first[0].email).toBe("alice@test.com");
+  });
+
+  it("getCachedLastFileActivityByEmailAll: invalidates when activity version changes", async () => {
+    const db = makePrewarmDb();
+    db.accActivity.aggregate
+      .mockResolvedValueOnce({ _max: { createdAt: stamp } })
+      .mockResolvedValueOnce({ _max: { createdAt: laterStamp } });
+    db.$queryRaw.mockResolvedValue([]);
+
+    await getCachedLastFileActivityByEmailAll(db);
+    await getCachedLastFileActivityByEmailAll(db);
+
+    // Version changed between calls → cache miss → $queryRaw called twice
+    expect(db.$queryRaw).toHaveBeenCalledTimes(2);
+  });
+
+  it("prewarmAccHotCache includes the last-file-activity-by-email task", async () => {
+    const db = makePrewarmDb();
+    db.$queryRaw.mockResolvedValue([]);
+
+    const result = await prewarmAccHotCache(db);
+
+    expect(
+      result.tasks.some((t) => t.name === "accActivity.lastFileActivityByEmailAll" && t.ok),
+    ).toBe(true);
   });
 });

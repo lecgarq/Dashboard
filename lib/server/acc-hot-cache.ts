@@ -6,7 +6,9 @@ import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/
 import {
   groupUnifiedActivityByUserProjectAction,
   groupUnifiedAdminActionsByActor,
+  getAllLastUnifiedActivityByEmail,
 } from "@/lib/server/unifiedActivitySource";
+import { CATEGORY_TO_RAW_ACTIONS } from "@/lib/acc/activityCategories";
 
 const ACC_HOT_CACHE_TTL_MS = 10 * 60_000;
 // Sliding-TTL hard ceiling. A version-stable entry that keeps getting read (e.g.
@@ -837,6 +839,45 @@ async function timeTask<T extends unknown[]>(
   }
 }
 
+// ---------------------------------------------------------------------------
+// File-activity aggregate cache (G2 fix: heavy GROUP BY runs once per ingest)
+// ---------------------------------------------------------------------------
+
+/**
+ * File-action raw strings (mirrors the FILE_RAW_ACTIONS constant in
+ * server/routers/acc-activity.ts — kept in sync via CATEGORY_TO_RAW_ACTIONS).
+ * Defined here so acc-hot-cache.ts does not depend on the tRPC router.
+ */
+const HOT_CACHE_FILE_RAW_ACTIONS: readonly string[] = [
+  ...CATEGORY_TO_RAW_ACTIONS.view,
+  ...CATEGORY_TO_RAW_ACTIONS.upload,
+  ...CATEGORY_TO_RAW_ACTIONS.edit,
+  ...CATEGORY_TO_RAW_ACTIONS.delete,
+];
+
+/**
+ * Cached wrapper around `getAllLastUnifiedActivityByEmail`.
+ *
+ * The underlying query is a GROUP BY over ~623k rows of the unified_activity
+ * CTE (AccActivity + AccActivityAccds union). Without caching it runs on every
+ * SSR prefetch, blocking the /users page render. This wrapper memoises the
+ * result using the ACTIVITY_VERSION_SPECS fingerprint (same signal used by the
+ * activity-mix variant of bulkUsers) so the cache invalidates whenever new
+ * activity is ingested.
+ *
+ * Returns the same `Array<{ email: string; lastActivity: string }>` shape that
+ * `getAllLastUnifiedActivityByEmail` returns; the router procedure continues to
+ * do the Record<email, ISO> shaping.
+ */
+export async function getCachedLastFileActivityByEmailAll(
+  db: any,
+): Promise<Array<{ email: string; lastActivity: string }>> {
+  const version = await dbVersion(db, ACTIVITY_VERSION_SPECS);
+  return cached("accActivity.lastFileActivityByEmailAll", "all", version, () =>
+    getAllLastUnifiedActivityByEmail(db, { rawActionIn: HOT_CACHE_FILE_RAW_ACTIONS }),
+  );
+}
+
 export async function prewarmAccHotCache(db: any) {
   const startedAt = new Date().toISOString();
   const start = Date.now();
@@ -860,6 +901,9 @@ export async function prewarmAccHotCache(db: any) {
     ),
     await timeTask("accMembers.enrichedUsers", () => getCachedAccMembersEnrichedUsers(db)),
     await timeTask("users.bulkAccSummary", () => getCachedBulkAccSummary(db)),
+    // /users "Last active" column — GROUP BY over ~623k activity rows. Stays warm
+    // so the SSR prefetch on every page load is a cache hit (not a cold query).
+    await timeTask("accActivity.lastFileActivityByEmailAll", () => getCachedLastFileActivityByEmailAll(db)),
   ];
 
   return {
