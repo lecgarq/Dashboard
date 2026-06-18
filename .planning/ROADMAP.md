@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Shared Design Foundation** - Depth/glow tokens, `PremiumSurface`, themed `EChart`, motion facade, slide-in `Sheet` — every page imports this (completed 2026-06-17)
 - [x] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test (completed 2026-06-18)
-- [ ] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages
+- [x] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages (completed 2026-06-18)
 - [ ] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton
 - [ ] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain
 - [ ] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent
@@ -85,10 +85,10 @@ Decimal phases appear between their surrounding integers in numeric order.
   2. `components/ui/DataTable.tsx` renders a virtualized body with a sticky header, column sort, pinned column, `onRowClick`, inline row-expand, and a density toggle — typed with `ColumnDef<T>` generics.
   3. The primitive renders correctly in both light and dark themes and introduces no new WebGL context; `npx tsc --noEmit` exits 0.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
 - [x] 03-01-PLAN.md — Install @tanstack/react-table v8 + write the failing DataTable contract test suite (RED) (FND-05) [wave 1]
-- [ ] 03-02-PLAN.md — Implement components/ui/DataTable.tsx to GREEN: sort, glass sticky header, pinned column, accordion expand, density toggle, two-message empty state (FND-05) [wave 2]
+- [x] 03-02-PLAN.md — Implement components/ui/DataTable.tsx to GREEN: sort, glass sticky header, pinned column, accordion expand, density toggle, two-message empty state (FND-05) [wave 2]
 
 **UI hint**: yes
 
@@ -180,7 +180,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 |-------|----------------|--------|-----------|
 | 1. Shared Design Foundation | 6/6 | Complete   | 2026-06-17 |
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
-| 3. DataTable Primitive | 1/2 | In Progress|  |
+| 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
 | 4. /users Table & Polish | 0/TBD | Not started | - |
 | 5. /access-analysis Depth & Cross-Filtering | 0/TBD | Not started | - |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |

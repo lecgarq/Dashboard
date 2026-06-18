@@ -5,16 +5,16 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
-stopped_at: Completed 03-01 (react-table v8 installed; DataTable RED contract locked)
-last_updated: "2026-06-18T15:49:36.309Z"
+stopped_at: Completed 03-02 (DataTable GREEN — all 11 FND-05 tests pass; tsc 0)
+last_updated: "2026-06-18T15:57:14.981Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 14
-  completed_plans: 13
-  percent: 29
+  completed_plans: 14
+  percent: 43
 ---
 
 # Project State
@@ -59,6 +59,7 @@ Progress: [██████░░░░] 58%
 | Phase 02-users-decomposition P04 | 7 | 3 tasks | 4 files |
 | Phase 02-users-decomposition P05 | 420 | 3 tasks | 4 files |
 | Phase 03 P01 | 9min | 2 tasks | 3 files |
+| Phase 03-datatable-primitive P02 | 4min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -88,6 +89,8 @@ Recent decisions affecting current work:
 - [Phase ?]: ColumnDef<MockRow, string>[] (explicit value-type param) required with createColumnHelper — TanStack Table v8 strict generics
 - [Phase ?]: @ts-expect-error on RED-step component imports keeps tsc exit 0 while preserving runtime RED failure
 - [Phase ?]: Plan 02 must implement data-expand/data-cell/data-density/data-clear-filters attributes as test selector surface
+- [Phase ?]: AnimatePresence inside conditional: framer-motion exit async in jsdom; React must control DOM presence
+- [Phase ?]: Cross-wave @ts-expect-error removal: TS2307 suppression becomes TS2578 once DataTable.tsx exists; must remove in same commit
 
 ### Pending Todos
 
@@ -114,6 +117,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T15:49:36.302Z
-Stopped at: Completed 03-01 (react-table v8 installed; DataTable RED contract locked)
+Last session: 2026-06-18T15:57:14.974Z
+Stopped at: Completed 03-02 (DataTable GREEN — all 11 FND-05 tests pass; tsc 0)
 Resume file: None
