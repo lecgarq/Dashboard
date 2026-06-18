@@ -101,6 +101,33 @@ describe("UsersTableHeader", () => {
   });
 
   // -------------------------------------------------------------------------
+  // Case 3b (G2 regression): mounting with 0 (data not loaded yet) then
+  // receiving real values must animate up to the real targets — NOT stay
+  // frozen at 0. This reproduces the live bug where the header mounts before
+  // the async directory data loads and the count-up captured 0 forever.
+  // -------------------------------------------------------------------------
+  it("animates up to the real target when values arrive after an initial 0 (async data load)", async () => {
+    const { rerender } = render(
+      <UsersTableHeader totalUsers={0} active30d={0} admins={0} />,
+    );
+
+    // Initially 0 (data still loading)
+    expect(document.body.textContent ?? "").toContain("0");
+
+    // Data arrives — parent re-renders with real values
+    rerender(<UsersTableHeader totalUsers={3367} active30d={742} admins={88} />);
+
+    await act(async () => {
+      vi.advanceTimersByTime(1500);
+    });
+
+    const allText = document.body.textContent ?? "";
+    expect(allText).toContain("3,367");
+    expect(allText).toContain("742");
+    expect(allText).toContain("88");
+  });
+
+  // -------------------------------------------------------------------------
   // Case 4: KPI tiles use PremiumSurface glass styling
   // -------------------------------------------------------------------------
   it("KPI tiles are wrapped in a glass surface", () => {

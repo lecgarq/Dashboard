@@ -30,48 +30,56 @@ const HeaderParticleAccent = dynamic(
 );
 
 // ---------------------------------------------------------------------------
-// AnimatedNumber — count-up hook (once per mount, ease-out ~1s)
-// Uses requestAnimationFrame for deterministic testability.
-// Depends only on the initial value so re-renders don't restart the animation.
+// AnimatedNumber — count-up hook (ease-out ~1s), re-armed on value CHANGE.
+//
+// The directory data loads asynchronously, so the header first mounts with 0
+// and the real KPI values arrive a moment later. A "fire once on mount" guard
+// would capture that initial 0 and freeze forever (the G2 live bug). Instead we
+// animate from the current displayed value to the target whenever the target
+// CHANGES — so it counts up once when data lands, and does NOT restart on
+// incidental re-renders (sort/filter/density/panel-open) because those don't
+// change the KPI value. Uses requestAnimationFrame for deterministic testing.
 // ---------------------------------------------------------------------------
 function useAnimatedNumber(target: number): number {
-  // Capture the initial target on mount — never update this dep to prevent re-firing.
-  const initialTarget = useRef(target);
   const [displayed, setDisplayed] = useState(0);
-  const hasAnimated = useRef(false);
+  // The value we're animating FROM (the last rendered frame's number).
+  const fromRef = useRef(0);
+  // The last target we kicked off an animation toward — guards against
+  // restarting when a re-render passes the SAME value.
+  const lastTargetRef = useRef<number | null>(null);
 
   useEffect(() => {
-    if (hasAnimated.current) return;
-    hasAnimated.current = true;
+    if (lastTargetRef.current === target) return; // unchanged value → no restart
+    lastTargetRef.current = target;
 
-    const finalValue = initialTarget.current;
-    if (finalValue === 0) {
-      setDisplayed(0);
+    const from = fromRef.current;
+    if (from === target) {
+      setDisplayed(target);
       return;
     }
 
     const duration = 1000; // ms ease-out
     const startTime = performance.now();
-
     let rafId: number;
 
     function tick(now: number) {
-      const elapsed = now - startTime;
-      const progress = Math.min(elapsed / duration, 1);
+      const progress = Math.min((now - startTime) / duration, 1);
       // ease-out cubic: f(t) = 1 - (1-t)^3
       const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(eased * finalValue);
+      const current = Math.round(from + (target - from) * eased);
       setDisplayed(current);
+      fromRef.current = current;
 
       if (progress < 1) {
         rafId = requestAnimationFrame(tick);
+      } else {
+        fromRef.current = target; // snap to exact target at the end
       }
     }
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // empty dep array — fires once on mount only
+  }, [target]); // re-arm whenever the target value changes
 
   return displayed;
 }
