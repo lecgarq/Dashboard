@@ -24,17 +24,13 @@ import {
   AlertCircle,
   LayoutGrid,
   List,
-  ChevronDown,
-  ChevronRight,
   X,
   DollarSign,
   Filter,
   UserCircle,
   Activity,
   UserPlus,
-  Database,
   CheckCircle2,
-  CircleDashed,
   ShieldCheck,
   ArrowUp,
   ArrowDown,
@@ -70,6 +66,9 @@ import {
 import type { OrgPerson, LocalDirectoryUser, GroupByField, ViewMode } from "./directoryUtils";
 import { normalize, uniqueSorted, parseSearchTokens, matchesPerson } from "./directoryUtils";
 import { PersonDetailModal, PersonAvatar } from "./PersonDetailModal";
+import { STATUS_PILL_LABEL, StatusPill, AdminPill, AccBadge } from "./DirectoryPills";
+import { DataCoverageStrip } from "./DataCoverageStrip";
+import { CollapsibleGroup } from "./CollapsibleGroup";
 import { countGroupedItems, limitGroupedItems } from "./directoryRenderWindow";
 import { useVisibleRowEmails } from "./useVisibleRowEmails";
 import { moduleLabel } from "@/lib/acc/modules";
@@ -284,123 +283,9 @@ function LastFileActivityCell({
 
 // ---------------------------------------------------------------------------
 // Phase 09 LIST-01 / LIST-02 — Status + Admin pills
-//
-// Pill text is load-bearing (CONTEXT lock) — color is decoration only. Each
-// pill is rendered as a <button type="button"> for keyboard / screen-reader
-// access; Tooltip provides DASH-18 hover detail. Click handlers are wired by
-// the parent (Task 3) so T1 ships purely visual markup.
 // ---------------------------------------------------------------------------
-
-const STATUS_PILL_LABEL: Record<AggregatedStatus, string> = {
-  active: "Active",
-  pending: "Pending",
-  deleted: "Deleted",
-};
-
-const STATUS_PILL_CLASS: Record<AggregatedStatus, string> = {
-  active: "bg-emerald-500/15 text-emerald-300 border border-emerald-500/30",
-  pending: "bg-amber-500/15 text-amber-300 border border-amber-500/30",
-  deleted: "bg-muted text-muted-foreground border border-border",
-};
-
-/**
- * Aggregated status pill (LIST-01). Renders a button-wrapped Badge whose
- * label is the canonical AggregatedStatus literal. When status is undefined
- * (enrichedUsers still in flight) renders a low-opacity skeleton badge.
- */
-function StatusPill({
-  status,
-  onClick,
-}: {
-  status: AggregatedStatus | undefined;
-  onClick?: (status: AggregatedStatus) => void;
-}) {
-  if (status === undefined) {
-    return (
-      <Badge variant="outline" className="opacity-50 text-[10px] px-1.5 py-0">
-        …
-      </Badge>
-    );
-  }
-  const label = STATUS_PILL_LABEL[status];
-  const klass = STATUS_PILL_CLASS[status];
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label={`Filter by status: ${label}`}
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.(status);
-          }}
-          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
-        >
-          <Badge className={cn("text-[10px] px-2 py-0", klass)}>{label}</Badge>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Aggregated across all projects
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-/**
- * Inline Project-Admin pill (LIST-02). Only rendered when projectAdmin is
- * strictly true (any-project admin aggregation already handled by
- * enrichedUsers).
- */
-function AdminPill({ onClick }: { onClick?: () => void }) {
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <button
-          type="button"
-          aria-label="Filter to project admins only"
-          onClick={(e) => {
-            e.stopPropagation();
-            onClick?.();
-          }}
-          className="focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-full"
-        >
-          <Badge
-            variant="default"
-            className="ml-2 text-[10px] px-1.5 py-0 gap-1"
-          >
-            <ShieldCheck size={9} />
-            Admin
-          </Badge>
-        </button>
-      </TooltipTrigger>
-      <TooltipContent side="top">
-        Project Admin on at least one project
-      </TooltipContent>
-    </Tooltip>
-  );
-}
-
-/** Small ACC project count badge shown on person cards/rows */
-function AccBadge({ summary }: { summary: BulkAccUser | undefined }) {
-  if (!summary) return null;
-  if (summary.hasNoProjects) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-400 bg-amber-500/10 border border-amber-500/20 rounded-full px-1.5 py-0.5 shrink-0">
-        <AlertCircle size={9} className="shrink-0" />
-        No projects
-      </span>
-    );
-  }
-  if (summary.projectCount > 0) {
-    return (
-      <span className="inline-flex items-center gap-1 text-[10px] font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-1.5 py-0.5 shrink-0">
-        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0" />
-        {summary.projectCount} {summary.projectCount === 1 ? "project" : "projects"}
-      </span>
-    );
-  }
-  return null;
-}
+// STATUS_PILL_LABEL, STATUS_PILL_CLASS, StatusPill, AdminPill, AccBadge moved
+// to ./DirectoryPills (USR-01 decomposition, Wave 2).
 
 function PersonCard({
   person,
@@ -659,39 +544,7 @@ function PersonRowList({
   );
 }
 
-function CollapsibleGroup({
-  label,
-  count,
-  children,
-  defaultOpen = true,
-}: {
-  label: string;
-  count: number;
-  children: React.ReactNode;
-  defaultOpen?: boolean;
-}) {
-  const [open, setOpen] = useState(defaultOpen);
-
-  return (
-    <div>
-      <button
-        onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 mb-2 group"
-      >
-        {open ? (
-          <ChevronDown size={14} className="text-primary" />
-        ) : (
-          <ChevronRight size={14} className="text-muted-foreground group-hover:text-primary transition-colors" />
-        )}
-        <span className="text-sm font-semibold text-foreground">{label}</span>
-        <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
-          {count}
-        </Badge>
-      </button>
-      {open && children}
-    </div>
-  );
-}
+// CollapsibleGroup moved to ./CollapsibleGroup (USR-01 decomposition, Wave 2).
 
 function ActiveFilterPill({
   label,
@@ -716,54 +569,7 @@ function ActiveFilterPill({
   );
 }
 
-function CoveragePill({
-  label,
-  available,
-  loading,
-  detail,
-}: {
-  label: string;
-  available: boolean;
-  loading?: boolean;
-  detail?: string;
-}) {
-  const Icon = loading ? CircleDashed : available ? CheckCircle2 : AlertCircle;
-  return (
-    <span
-      title={detail}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px] font-medium",
-        loading
-          ? "border-border bg-card text-muted-foreground"
-          : available
-            ? "border-emerald-500/25 bg-emerald-500/10 text-emerald-500"
-            : "border-amber-500/25 bg-amber-500/10 text-amber-500",
-      )}
-    >
-      <Icon size={12} className={cn("shrink-0", loading && "animate-spin")} />
-      {label}
-    </span>
-  );
-}
-
-function DataCoverageStrip({
-  coverage,
-}: {
-  coverage: Array<{ label: string; available: boolean; loading?: boolean; detail?: string }>;
-}) {
-  return (
-    <div className="flex flex-wrap items-center gap-2 rounded-xl border border-border/60 bg-card/70 px-3 py-2">
-      <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-        <Database size={12} />
-        Data Coverage
-      </span>
-      <div className="h-4 w-px bg-border/60" />
-      {coverage.map((item) => (
-        <CoveragePill key={item.label} {...item} />
-      ))}
-    </div>
-  );
-}
+// CoveragePill, DataCoverageStrip moved to ./DataCoverageStrip (USR-01 decomposition, Wave 2).
 
 function ActivityAuditPanel({
   users,
