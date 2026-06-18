@@ -6,7 +6,7 @@ import { trpc } from "@/lib/core/trpc";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { AlertCircle, RefreshCw } from "lucide-react";
-import { motion, fadeIn, useSafeVariants } from "@/components/ui/motion";
+import { motion, fadeUp, useSafeVariants } from "@/components/ui/motion";
 import type { BulkAccUser } from "@/lib/acc/acc-types";
 import { type AggregatedStatus } from "@/lib/acc/accStatusReduction";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -47,7 +47,9 @@ const DIRECTORY_RENDER_BATCH = 160;
 // ---------------------------------------------------------------------------
 export function UsersDirectoryClient() {
   // ---- Motion facade — called ONCE at component scope (Rules of Hooks) ------
-  const safeFade = useSafeVariants(fadeIn);
+  // fadeUp (opacity + gentle upward drift, 0.35s) gives a perceptible calm
+  // entrance; plain opacity-only fadeIn at 0.25s was imperceptible (G3).
+  const safeFade = useSafeVariants(fadeUp);
 
   // ---- Store state (batched reads via useShallow) -------------------------
   const { search, groupBy, activitySort, selectedEmail, activityEmail, activatedEmails,
