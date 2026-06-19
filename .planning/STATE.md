@@ -5,15 +5,15 @@ milestone_name: milestone
 current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
-stopped_at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
-last_updated: "2026-06-19T17:52:27.831Z"
+stopped_at: Completed 06-04 (FormaProposalClient wiring — FRM-01+FRM-02; tsc 0)
+last_updated: "2026-06-19T17:53:33.236Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 28
-  completed_plans: 29
+  completed_plans: 30
   percent: 71
 ---
 
@@ -68,6 +68,7 @@ Progress: [██████░░░░] 58%
 | Phase 05 P04 | 20min | 4 tasks | 7 files |
 | Phase 05 P05 | continuation | 3 tasks | 7 files |
 | Phase 06 P01 | 5min | 2 tasks | 4 files |
+| Phase 06 P04 | 4min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -106,6 +107,8 @@ Recent decisions affecting current work:
 - [Phase ?]: KPI no-reanimate guard via useRef
 - [Phase ?]: Raise the token, not the threshold: light cSub/cAxis nudged to zinc-600 (#52525b, ~7.0:1) rather than loosening the 4.5 WCAG AA floor [Phase 05-05]
 - [Phase ?]: chart polish
+- [Phase ?]: FRM-01: HierarchyView deferred via dynamic(ssr:false) with HierarchyViewSkeleton fallback + idle prefetch
+- [Phase ?]: FRM-02: FormaParticleAccent frameloop=demand / opacity 0.18 behind editor at z-0; PremiumSurface on outer containers only; folder rows + tier chips stay flat
 
 ### Pending Todos
 
@@ -132,6 +135,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-19T17:52:27.823Z
-Stopped at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
+Last session: 2026-06-19T17:53:33.229Z
+Stopped at: Completed 06-04 (FormaProposalClient wiring — FRM-01+FRM-02; tsc 0)
 Resume file: None

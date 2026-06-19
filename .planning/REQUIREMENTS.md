@@ -64,7 +64,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Per-Page: /forma-proposal
 
 - [x] **FRM-01**: `HierarchyView` is split (layout hook + canvas render + thin shell) with its public API unchanged; heavy d3 bundle deferred via `dynamic(ssr:false)`
-- [ ] **FRM-02**: Permission-editor panels use `PremiumSurface` depth; a selective real-3D background accent is added (`frameloop="demand"`, `pointer-events:none`)
+- [x] **FRM-02**: Permission-editor panels use `PremiumSurface` depth; a selective real-3D background accent is added (`frameloop="demand"`, `pointer-events:none`)
 
 ### Data Integrity (New Analytics Gate)
 
@@ -135,7 +135,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | TPL-02 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 | TPL-03 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 | FRM-01 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
-| FRM-02 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| FRM-02 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 
 **Note:** Phase 7 (Pre-Workshop UAT) is a cross-cutting verification gate — it re-exercises VIS-05, PERF-01..05, THM-01, and INT-01..05 across all four pages but owns no requirement exclusively. Each of those requirements is owned by the phase that builds it (above) and re-verified at the projector in Phase 7.
 
