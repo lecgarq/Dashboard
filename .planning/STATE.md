@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
-milestone_name: milestone
-status: complete
+milestone: v2.0
+milestone_name: Workshop-Grade UI/UX Overhaul
+status: shipped
 current_phase: 7
 current_phase_name: Pre-Workshop UAT
-stopped_at: "Milestone v1.0 COMPLETE — all 7 phases verified; Phase 7 owner-approved on the projector"
+stopped_at: "Milestone v2.0 SHIPPED + archived (tag v2.0, local) — all 7 phases verified; Phase 7 owner-approved on the projector. Next: /gsd:new-milestone"
 last_updated: "2026-06-19T22:03:09.334Z"
 last_activity: 2026-06-19
 last_activity_desc: "07-02: owner projector sign-off recorded; Phase 7 verification passed 4/4; milestone v1.0 complete"
@@ -21,16 +21,16 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-17)
+See: .planning/PROJECT.md (updated 2026-06-19)
 
 **Core value:** When these 4 pages are presented in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live.
-**Current focus:** Milestone v1.0 COMPLETE — all 7 phases shipped and verified.
+**Current focus:** Milestone v2.0 SHIPPED + archived (tag `v2.0`). Planning next milestone — run `/gsd:new-milestone`.
 
 ## Current Position
 
 Phase: 7 of 7 (Pre-Workshop UAT) — COMPLETE
 Plan: 2 of 2 in phase (both plans executed; owner projector checkpoint resolved)
-Status: Milestone v1.0 complete — Phase 7 verification passed 4/4; owner recorded "approved on the projector" 2026-06-19
+Status: Milestone v2.0 SHIPPED + archived (tag `v2.0`, local) — Phase 7 verification passed 4/4; owner recorded "approved on the projector" 2026-06-19
 Last activity: 2026-06-19 — 07-02: owner projector sign-off (ALL-GREEN engineering report + every BLOCK cleared); Phase 7 verified
 
 Progress: [██████████] 100%
@@ -143,6 +143,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-19T22:03:09.334Z
-Stopped at: Phase 7 COMPLETE — milestone v1.0 done (all 7 phases verified; owner approved on the projector)
-Resume file: .planning/phases/07-pre-workshop-uat/07-VERIFICATION.md
+Last session: 2026-06-19 — milestone v2.0 archived (tag `v2.0`, local)
+Stopped at: Milestone v2.0 SHIPPED + archived (all 7 phases verified; owner approved on the projector). Next: /gsd:new-milestone
+Resume file: .planning/MILESTONES.md

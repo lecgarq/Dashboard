@@ -20,19 +20,28 @@ When these pages are presented to all users in a workshop, the data makes people
 - ✓ `/forma-proposal` — role-permission draft editor (permissions + hierarchy modes), tier assignment, JSON/CSV export, local draft persistence — existing
 - ✓ Tech foundation — Next.js 16 App Router + React 19, tRPC + Prisma/PostgreSQL, ECharts, Tailwind/shadcn, light+dark theming — existing
 
+<!-- Shipped & validated in v2.0 (Workshop-Grade UI/UX Overhaul), owner-approved on the projector 2026-06-19 -->
+
+- ✓ **Speed** — skeletons + progressive/tiered load across all 4 pages; each tRPC endpoint fetched once; no perf regression — v2.0 (PERF-01..05)
+- ✓ **Visual depth** — premium 2.5D look (glass, soft shadows, gradients, layered cards); donuts no longer flat, both themes — v2.0 (VIS-01, VIS-02, ACC-01)
+- ✓ **3D hero accents** — selective real-3D confined to `/users` header + `/forma-proposal` background, off all data surfaces — v2.0 (VIS-06, FRM-02)
+- ✓ **Interactivity** — clickable rows/chart segments → shared slide-in panel; `/access-analysis` client-side cross-filtering with zero new queries — v2.0 (INT-01..05)
+- ✓ **De-bloat & layout** — 2,474-line `/users` monolith decomposed to a 314-line shell behind a golden-path test — v2.0 (USR-01)
+- ✓ **`/users` redesign** — premium virtualized `DataTable` (pinned name, frosted sticky header, sortable, density toggle, row-click/expand) — v2.0 (USR-02, FND-05)
+- ✓ **Cohesive look-and-feel** — one shared design language (tokens, `PremiumSurface`, themed `EChart`, motion facade, `DrillSheet`) across all 4 pages; light + dark first-class — v2.0 (FND-01..04, THM-01)
+- ✓ **Tasteful motion** — staggered reveal under a hard budget; drill motion ≤200ms, fires only on mount/drill — v2.0 (VIS-03, VIS-05)
+- ✓ **New per-page analytics** — gated to the existing Prisma DB; under-covered sources labeled in the UI — v2.0 (NA-01)
+
 ### Active
 
-<!-- This milestone. Hypotheses until shipped and validated in a workshop. -->
+<!-- Next milestone — define with /gsd:new-milestone. -->
 
-- [ ] **Speed** — all 4 pages load fast and respond instantly (skeletons / progressive load); no perf regressions
-- [ ] **Visual depth** — premium "2.5D" look (glass, soft shadows, gradients, layered cards); charts that don't look flat
-- [ ] **3D hero accents** — one or two selective WebGL/3D "wow" moments for the workshop, used sparingly
-- [ ] **Interactivity** — clickable rows, fields, and chart segments with drill-downs across all 4 pages
-- [ ] **De-bloat & layout** — eliminate overlapping/cramped elements; split the `/users` 2,474-line monolith
-- [ ] **`/users` redesign** — rebuild the virtualized list into a premium, clickable data-table
-- [ ] **Cohesive look-and-feel** — one design language across the 4 pages; light + dark both first-class
-- [ ] **Tasteful motion** — transitions guide the eye, never overwhelm
-- [ ] **New per-page analytics** — propose new views/metrics where they strengthen the data story, strictly derivable from the existing Prisma DB
+v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate seeds carried forward (see ROADMAP.md → v-next):
+
+- [ ] **FRM-V2-01** — Forma role-permission diff view (needs a new `template.getBaseline(roleId)` tRPC query)
+- [ ] **ACC-V2-01** — Project-grouped persistent accordion in the `/access-analysis` project picker
+- [ ] **NA-V2-01** — Additional new per-page analytics beyond the gated set
+- [ ] **`/users` data freshness** — auto-refresh without a manual browser reload (pre-existing app-wide caching trade-off)
 
 ### Out of Scope
 
@@ -43,6 +52,7 @@ When these pages are presented to all users in a workshop, the data makes people
 
 ## Context
 
+- **Current state (shipped v2.0, 2026-06-19).** The Workshop-Grade UI/UX Overhaul shipped all 28 in-scope requirements across 7 phases (30 plans), owner-approved on the projector. The 4 target pages now share one design language; `/users` was decomposed (2,474 → 314-line shell) and rebuilt on a reusable `DataTable`. ~36k insertions over 3 days (incl. planning re-init). Deploy = local rebuild on :3000 (not merged to `deploy`). Tagged `v2.0` (the `v1.0` tag belongs to the May 2026 ACC Users Graph milestone). Full record: `.planning/MILESTONES.md` + `.planning/milestones/v2.0-*.md`.
 - **Brownfield, mature codebase.** Full codebase map lives in `.planning/codebase/` (ARCHITECTURE, STACK, STRUCTURE, CONVENTIONS, TESTING, CONCERNS, INTEGRATIONS), refreshed 2026-06-17.
 - **Audience model.** Luis is the sole developer and presenter; he runs these pages in live workshops for all users. Success = the audience *sees* the data and stays engaged during the session — not user self-service engagement metrics.
 - **Design references** (the *feel*, not the content): [landonorris.com](https://landonorris.com/), [igloo.inc](https://www.igloo.inc/), [orano.group innovation slider](https://www.orano.group/experience/innovation/en/slider) — dark, cinematic, depth-rich, motion-guided experiences. None are analytics tools; the brief is to translate that premium experience feeling onto interactive pies, donuts, and tables.
@@ -63,12 +73,12 @@ When these pages are presented to all users in a workshop, the data makes people
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Premium 2.5D depth + *selective* 3D hero accents (not full WebGL on data pages) | Honors the "not flat" + "not overwhelming" + speed tension; the real-3D experience is reserved for the carved-out spatial-graph project | — Pending |
-| Light + dark both first-class and equally refined | Workshops may run on either; daily use varies; refs are dark but the app already ships both | — Pending |
-| Mix treatment per page (`/users` redesign; others polish + depth + new views) | Matches each page's current state — `/users` is a monolith, the others are already clean | — Pending |
-| New analytics bounded strictly to the existing Prisma DB | DB is the source of truth; prevents the "new analytics" scope from ballooning into data engineering | — Pending |
-| `/users/spatial-graph` deferred to its own project | It needs full dedicated attention (real 3D); excluding it keeps this milestone focused | — Pending |
-| Adopt the `scripts/repo-map` toolchain as the standing input for per-phase research & a regression ratchet | Gives planning agents precise structural facts (dep graph for the `/users` split, ast-grep sweeps for the foundation/perf work, `prisma-access` for the NA feasibility gate); `repo-map:check` guards against re-introducing redundant fetches | — Pending |
+| Premium 2.5D depth + *selective* 3D hero accents (not full WebGL on data pages) | Honors the "not flat" + "not overwhelming" + speed tension; the real-3D experience is reserved for the carved-out spatial-graph project | ✓ Good — shipped v2.0; real 3D stayed off data pages, GPU < 400MB held |
+| Light + dark both first-class and equally refined | Workshops may run on either; daily use varies; refs are dark but the app already ships both | ✓ Good — both themes validated incl. WCAG AA at projector brightness (THM-01) |
+| Mix treatment per page (`/users` redesign; others polish + depth + new views) | Matches each page's current state — `/users` is a monolith, the others are already clean | ✓ Good — `/users` fully rebuilt on DataTable; others polished without rewrite |
+| New analytics bounded strictly to the existing Prisma DB | DB is the source of truth; prevents the "new analytics" scope from ballooning into data engineering | ✓ Good — NA-01 feasibility gate held; under-covered sources labeled in UI |
+| `/users/spatial-graph` deferred to its own project | It needs full dedicated attention (real 3D); excluding it keeps this milestone focused | ✓ Good — boundary held; zero files under `users/access-analysis/` touched |
+| Adopt the `scripts/repo-map` toolchain as the standing input for per-phase research & a regression ratchet | Gives planning agents precise structural facts (dep graph for the `/users` split, ast-grep sweeps for the foundation/perf work, `prisma-access` for the NA feasibility gate); `repo-map:check` guards against re-introducing redundant fetches | ✓ Good — used as standing research input + fetch/effect regression ratchet |
 
 ---
-*Last updated: 2026-06-17 after initialization + repo-map toolchain integration*
+*Last updated: 2026-06-19 after v2.0 milestone (Workshop-Grade UI/UX Overhaul) completion*
