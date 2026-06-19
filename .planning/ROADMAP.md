@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages (completed 2026-06-18)
 - [x] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton (completed 2026-06-18)
 - [x] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain (completed 2026-06-19)
-- [ ] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent
+- [x] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent (completed 2026-06-19)
 - [ ] **Phase 7: Pre-Workshop UAT** - Projector-brightness simulation, contrast/perf/motion/boundary gates across all 4 pages
 
 ## Phase Details
@@ -158,7 +158,7 @@ Plans:
   4. `/forma-proposal` permission-editor panels use `PremiumSurface` depth and a selective real-3D background accent renders with `frameloop="demand"` and `pointer-events:none` (off the data region).
   5. Both pages are polished and legible in light and dark themes; `npx tsc --noEmit` exits 0 and no new WebGL context appears on a data surface.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 
@@ -166,7 +166,7 @@ Plans:
 - [x] 06-02-PLAN.md — /forma-proposal HierarchyView split: useHierarchyLayout hook + HierarchyCanvas + thin shell, public API unchanged (FRM-01) [wave 1]
 - [x] 06-03-PLAN.md — /template-mty members table → premium DataTable (toolbar shell + 5 columns + row-click profile + test update) (TPL-01, TPL-03) [wave 2]
 - [x] 06-04-PLAN.md — /forma-proposal client wiring: dynamic(ssr:false) HierarchyView + skeleton + idle prefetch + FormaParticleAccent + PremiumSurface depth + loading.tsx (FRM-01, FRM-02) [wave 2]
-- [ ] 06-05-PLAN.md — /template-mty role graph: settle-and-freeze + click-vs-drag + in-bounds label clamp + RoleOverviewSheet drill (TPL-02) [wave 3]
+- [x] 06-05-PLAN.md — /template-mty role graph: settle-and-freeze + click-vs-drag + in-bounds label clamp + RoleOverviewSheet drill (TPL-02) [wave 3]
 
 **UI hint**: yes
 
@@ -207,5 +207,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
 | 5. /access-analysis Depth & Cross-Filtering | 5/5 | Complete   | 2026-06-19 |
-| 6. /template-mty & /forma-proposal Polish | 4/5 | In Progress|  |
+| 6. /template-mty & /forma-proposal Polish | 5/5 | Complete   | 2026-06-19 |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |

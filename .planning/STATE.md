@@ -6,15 +6,15 @@ current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
 stopped_at: Completed 06-04 (FormaProposalClient wiring — FRM-01+FRM-02; tsc 0)
-last_updated: "2026-06-19T17:53:33.236Z"
+last_updated: "2026-06-19T18:03:14.333Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 28
-  completed_plans: 30
-  percent: 71
+  completed_plans: 31
+  percent: 86
 ---
 
 # Project State
@@ -69,6 +69,7 @@ Progress: [██████░░░░] 58%
 | Phase 05 P05 | continuation | 3 tasks | 7 files |
 | Phase 06 P01 | 5min | 2 tasks | 4 files |
 | Phase 06 P04 | 4min | 2 tasks | 4 files |
+| Phase 06 P05 | 6min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -109,6 +110,9 @@ Recent decisions affecting current work:
 - [Phase ?]: chart polish
 - [Phase ?]: FRM-01: HierarchyView deferred via dynamic(ssr:false) with HierarchyViewSkeleton fallback + idle prefetch
 - [Phase ?]: FRM-02: FormaParticleAccent frameloop=demand / opacity 0.18 behind editor at z-0; PremiumSurface on outer containers only; folder rows + tier chips stay flat
+- [Phase ?]: 06-05
+- [Phase ?]: 06-05
+- [Phase ?]: 06-05
 
 ### Pending Todos
 
@@ -135,6 +139,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-19T17:53:33.229Z
+Last session: 2026-06-19T18:03:14.326Z
 Stopped at: Completed 06-04 (FormaProposalClient wiring — FRM-01+FRM-02; tsc 0)
 Resume file: None
