@@ -10,7 +10,7 @@ import { ActivityByRolePieChart } from "./ActivityByRolePieChart";
 import { CompaniesPieChart } from "./CompaniesPieChart";
 import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { CoordinationByProject } from "./CoordinationByProject";
-import { FolderPermissionTerrain } from "./FolderPermissionTerrain";
+import { TerrainReveal } from "./TerrainReveal";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
 import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
@@ -235,19 +235,14 @@ export function AccessAnalysisCharts({
         </section></Reveal>
       ) : null}
 
-      {terrainProjects && terrainProjects.length > 0 && loadTerrain && (
-        <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader
-            title="Folder permission terrain"
-            subtitle="Per project: each Level-2 folder × role, coloured by permission tier and raised by the number of users in that role. Pick a project, hover a block, click to list its users."
-          />
-          <FolderPermissionTerrain
+      {terrainProjects && terrainProjects.length > 0 && loadTerrain && loadOverview && (
+        <Reveal>
+          <TerrainReveal
             projects={terrainProjects}
-            initial={initialTerrain ?? null}
             loadTerrain={loadTerrain}
             loadOverview={loadOverview}
           />
-        </section></Reveal>
+        </Reveal>
       )}
 
       <Reveal><section className="flex flex-col gap-3">
