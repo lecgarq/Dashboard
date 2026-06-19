@@ -141,7 +141,9 @@ export function RolesPieChart({
   // ECharts colors are baked into the JS option (not CSS), so branch on theme.
   // cTitle/cSub used in title center-labels + tooltip formatter HTML (not injected by mergeEChartsTheme).
   const cTitle = dark ? "#fafafa" : "#111827";
-  const cSub = dark ? "#a1a1aa" : "#6b7280";
+  // #52525b (zinc-600) — nudged from #6b7280 (gray-500, 4.6:1 marginal) to give
+  // genuine projector headroom while remaining a muted sub-label. ~7.0:1 on #fff.
+  const cSub = dark ? "#a1a1aa" : "#52525b";
   const cSlice = dark ? "#18181b" : "#ffffff"; // matches the card so gaps blend
   const cShadow = dark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.12)";
   const cShadowHover = dark ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0.2)";

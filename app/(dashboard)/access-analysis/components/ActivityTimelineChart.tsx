@@ -40,7 +40,9 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
 
   // cAxis/cSplit injected by mergeEChartsTheme via the canonical wrapper.
   // cTitle used in tooltip formatter HTML (not injected by mergeEChartsTheme).
-  const cAxis = dark ? "#a1a1aa" : "#6b7280";
+  // #52525b (zinc-600) — nudged from #6b7280 (gray-500, 4.6:1 marginal) to give
+  // genuine projector headroom while remaining a muted sub-label. ~7.0:1 on #fff.
+  const cAxis = dark ? "#a1a1aa" : "#52525b";
   const cTitle = dark ? "#fafafa" : "#111827";
 
   const lineSeries: LineSeriesOption = {

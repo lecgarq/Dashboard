@@ -61,7 +61,9 @@ export function ModulesPieChart({ summary }: { summary: ModuleSummary }) {
 
   // Precompute a rich tooltip per slice: header + top activity types.
   const cTitle = dark ? "#fafafa" : "#111827";
-  const cSub = dark ? "#a1a1aa" : "#6b7280";
+  // #52525b (zinc-600) — nudged from #6b7280 (gray-500, 4.6:1 marginal) to give
+  // genuine projector headroom while remaining a muted sub-label. ~7.0:1 on #fff.
+  const cSub = dark ? "#a1a1aa" : "#52525b";
   const tooltipByName = useMemo(() => {
     const m = new Map<string, string>();
     for (const s of slices) {
