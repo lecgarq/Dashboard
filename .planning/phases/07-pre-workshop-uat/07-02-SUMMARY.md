@@ -126,12 +126,9 @@ No new network endpoints, auth paths, or file access patterns introduced. This p
 
 ## Next Step
 
-Task 3 is a blocking-human checkpoint. The owner must:
-1. Follow UAT-RUNBOOK.md to build, serve on :3100, run gate wrapper until ALL-GREEN
-2. Walk the Owner Perceptual Checklist on the real secondary display at projector-reduced brightness
-3. Fill in the Combined Sign-Off section and record "approved on the projector" to complete Phase 7
+Task 3 (blocking-human checkpoint) RESOLVED on 2026-06-19. The owner built/served the UAT copy on :3100, ran the gate wrapper to ALL-GREEN, walked the Owner Perceptual Checklist on the secondary display at projector-reduced brightness (all four pages, both themes), cleared every BLOCK, and recorded **"approved on the projector"** in the Combined Sign-Off section of UAT-REPORT.md. Phase 7 DoD met.
 
 ---
 *Phase: 07-pre-workshop-uat*
-*Completed (Tasks 1-2): 2026-06-19*
-*Status: blocked-at-checkpoint (Task 3: owner live projector pass)*
+*Completed (Tasks 1-3): 2026-06-19*
+*Status: COMPLETE — owner recorded "approved on the projector"; engineering report ALL-GREEN; every BLOCK cleared*

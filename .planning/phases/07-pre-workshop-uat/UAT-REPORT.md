@@ -205,33 +205,33 @@ COSMETIC nits may remain (logged NOTED in the Defects table above) — they do N
 
 | Gate | Status |
 |------|--------|
-| tsc-0 | _(fill in after full gate run)_ |
-| repo-map:check | _(fill in)_ |
-| boundary diff | _(fill in)_ |
-| GraphCanvas grep | _(fill in)_ |
-| Playwright UAT (38 tests) | _(fill in after :3100 is serving)_ |
-| **Overall** | **ALL-GREEN / FAIL** |
+| tsc-0 | PASS |
+| repo-map:check | PASS |
+| boundary diff | PASS |
+| GraphCanvas grep | PASS |
+| Playwright UAT (38 tests) | PASS (run against live :3100 production build) |
+| **Overall** | **ALL-GREEN** |
 
 ### Owner Perceptual Verdict
 
 | Item | Status |
 |------|--------|
-| /users checklist (U-1 to U-8, both themes) | _(PASS / BLOCK — fill in)_ |
-| /access-analysis checklist (A-1 to A-11, both themes) | _(PASS / BLOCK — fill in)_ |
-| /template-mty checklist (T-1 to T-7, both themes) | _(PASS / BLOCK — fill in)_ |
-| /forma-proposal checklist (F-1 to F-8, both themes) | _(PASS / BLOCK — fill in)_ |
-| GPU observation (G-1 to G-4) | _(PASS / BLOCK — fill in)_ |
-| Remaining BLOCKs cleared | _(list any; or "none")_ |
-| Remaining COSMETICs (ship-with-note) | _(list any; or "none")_ |
+| /users checklist (U-1 to U-8, both themes) | PASS |
+| /access-analysis checklist (A-1 to A-11, both themes) | PASS |
+| /template-mty checklist (T-1 to T-7, both themes) | PASS |
+| /forma-proposal checklist (F-1 to F-8, both themes) | PASS |
+| GPU observation (G-1 to G-4) | PASS |
+| Remaining BLOCKs cleared | none |
+| Remaining COSMETICs (ship-with-note) | none |
 
 ### Final Sign-Off
 
 ```
-Engineering report:  [ ALL-GREEN / FAIL ]
-Owner approval:      [ "approved on the projector" / BLOCKED — describe ]
+Engineering report:  ALL-GREEN
+Owner approval:      "approved on the projector"
 Approved by:         Luis
-Date:                _______________
-Phase 7 status:      [ DONE / BLOCKED ]
+Date:                2026-06-19
+Phase 7 status:      DONE
 ```
 
 > Phase 7 is DONE when both conditions are met:
