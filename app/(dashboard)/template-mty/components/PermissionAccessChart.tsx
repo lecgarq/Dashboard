@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { EChartsOption } from "echarts";
 import type { PermissionAccessSummary } from "../permissionAccess";
@@ -79,18 +80,21 @@ export function PermissionAccessChart({ summary }: { summary: PermissionAccessSu
 
   if (rows.length === 0) {
     return (
-      <div className="flex h-[200px] items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <PremiumSurface variant="inset" className="flex h-[200px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+        <svg viewBox="0 0 24 24" fill="none" className="h-9 w-9 opacity-40" stroke="currentColor" strokeWidth="1.5">
+          <path d="M3 7h18M3 12h12M3 17h8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
         No folder permission data for this template.
-      </div>
+      </PremiumSurface>
     );
   }
 
   return (
-    <div className="panel-elevated p-5">
+    <PremiumSurface variant="base" className="p-5">
       <EChart option={option} height={Math.max(180, rows.length * 38 + 24)} notMerge={false} />
       <p className="mt-2 px-1 text-xs text-muted-foreground">
         A role can grant several tiers across folders, so a member is counted under every tier their role grants.
       </p>
-    </div>
+    </PremiumSurface>
   );
 }

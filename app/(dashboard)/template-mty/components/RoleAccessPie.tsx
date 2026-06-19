@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { EChartsOption } from "echarts";
 import type { RoleTreeNode } from "@/lib/server/templateRoleTree";
@@ -21,6 +22,15 @@ function fmtPct(value: number, total: number): string {
   return p > 0 && p < 0.1 ? "<0.1%" : `${p.toFixed(1)}%`;
 }
 
+/** Lighten a hex color by mixing it toward white by `amt` (0–1). */
+function lighten(hex: string, amt: number): string {
+  const n = parseInt(hex.replace("#", ""), 16);
+  const r = Math.min(255, ((n >> 16) & 0xff) + Math.round((255 - ((n >> 16) & 0xff)) * amt));
+  const g = Math.min(255, ((n >> 8) & 0xff) + Math.round((255 - ((n >> 8) & 0xff)) * amt));
+  const b = Math.min(255, (n & 0xff) + Math.round((255 - (n & 0xff)) * amt));
+  return `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+}
+
 export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
@@ -31,6 +41,8 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
   const cTipBg = dark ? "rgba(24,24,27,0.96)" : "rgba(255,255,255,0.98)";
   const cTipBorder = dark ? "#3f3f46" : "#e5e7eb";
   const cSlice = dark ? "#18181b" : "#ffffff";
+  const cShadow = dark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.12)";
+  const cShadowHover = dark ? "rgba(0,0,0,0.65)" : "rgba(0,0,0,0.2)";
 
   const slices = useMemo<Slice[]>(
     () =>
@@ -74,27 +86,70 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
         type: "pie",
         radius: ["54%", "80%"],
         center: ["50%", "50%"],
-        padAngle: 1.5,
-        minAngle: 3,
+        padAngle: 2,
+        minAngle: 2,
         label: { show: false },
         labelLine: { show: false },
-        itemStyle: { borderColor: cSlice, borderWidth: 2, borderRadius: 5 },
-        emphasis: { focus: "self", scaleSize: 10, label: { show: true, formatter: "{b}\n{c}", fontSize: 13, fontWeight: 700, color: cTitle } },
-        data: slices.map((s) => ({ name: s.name, value: s.value, itemStyle: { color: s.color } })),
+        // Full donut treatment: per-slice gradient + rounded ends + hover glow
+        itemStyle: {
+          borderColor: cSlice,
+          borderWidth: 3,
+          borderRadius: 7,
+          shadowBlur: 14,
+          shadowColor: cShadow,
+        },
+        emphasis: {
+          focus: "self",
+          scaleSize: 12,
+          itemStyle: {
+            shadowBlur: 28,
+            shadowColor: cShadowHover,
+          },
+          label: { show: true, formatter: "{b}\n{c}", fontSize: 13, fontWeight: 700, color: cTitle },
+        },
+        blur: { itemStyle: { opacity: 0.22 } },
+        universalTransition: true,
+        animationType: "scale",
+        animationEasing: "elasticOut",
+        // Per-slice linear gradient + active-selection glow
+        data: slices.map((s) => {
+          const base = s.color;
+          const isActive = s.roleId === selectedId;
+          return {
+            name: s.name,
+            value: s.value,
+            itemStyle: {
+              color: {
+                type: "linear" as const,
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: lighten(base, 0.22) },
+                  { offset: 1, color: base },
+                ],
+              },
+              shadowBlur: isActive ? 24 : 0,
+              shadowColor: isActive ? base + "99" : undefined,
+            },
+          };
+        }),
       },
     ],
-  }), [slices, nodes.length, byName, cTitle, cSub, cTipBg, cTipBorder, cSlice]);
+  }), [slices, nodes.length, byName, cTitle, cSub, cTipBg, cTipBorder, cSlice, cShadow, cShadowHover, selectedId]);
 
   if (nodes.length === 0) {
     return (
-      <div className="flex h-[300px] items-center justify-center rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <PremiumSurface variant="inset" className="flex h-[300px] flex-col items-center justify-center gap-2 text-sm text-muted-foreground">
+        <svg viewBox="0 0 24 24" fill="none" className="h-9 w-9 opacity-40" stroke="currentColor" strokeWidth="1.5">
+          <path d="M12 3a9 9 0 1 0 9 9" strokeLinecap="round" />
+          <path d="M12 3v9h9" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
         No folder permissions found for this template.
-      </div>
+      </PremiumSurface>
     );
   }
 
   return (
-    <div className="panel-elevated p-5">
+    <PremiumSurface variant="base" className="p-5">
       <EChart
         option={option}
         height={360}
@@ -148,6 +203,6 @@ export function RoleAccessPie({ nodes }: { nodes: RoleTreeNode[] }) {
           </div>
         </div>
       )}
-    </div>
+    </PremiumSurface>
   );
 }

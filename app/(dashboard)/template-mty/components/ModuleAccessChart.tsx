@@ -2,6 +2,7 @@
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
 import { EChart } from "@/components/ui/EChart";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import type { EChartsOption } from "echarts";
 import type { ModuleAccessSummary } from "../moduleAccess";
 
@@ -54,16 +55,22 @@ export function ModuleAccessChart({ summary }: { summary: ModuleAccessSummary })
 
   if (!summary.hasData) {
     return (
-      <div className="flex min-h-[160px] flex-col items-center justify-center gap-1 rounded-2xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+      <PremiumSurface variant="inset" className="flex min-h-[160px] flex-col items-center justify-center gap-2 p-6 text-center text-sm text-muted-foreground">
+        <svg viewBox="0 0 24 24" fill="none" className="h-9 w-9 opacity-40" stroke="currentColor" strokeWidth="1.5">
+          <rect x="3" y="3" width="7" height="7" rx="1" />
+          <rect x="14" y="3" width="7" height="7" rx="1" />
+          <rect x="3" y="14" width="7" height="7" rx="1" />
+          <rect x="14" y="14" width="7" height="7" rx="1" />
+        </svg>
         <span className="font-medium text-foreground">No module access captured yet</span>
         <span>Add <code className="rounded bg-muted px-1.5 py-0.5">modules</code> to each member in <code className="rounded bg-muted px-1.5 py-0.5">lib/acc/template-mty-roster.ts</code>.</span>
-      </div>
+      </PremiumSurface>
     );
   }
 
   return (
-    <div className="panel-elevated p-5">
+    <PremiumSurface variant="base" className="p-5">
       <EChart option={option} height={Math.max(160, slices.length * 34 + 24)} notMerge={false} />
-    </div>
+    </PremiumSurface>
   );
 }
