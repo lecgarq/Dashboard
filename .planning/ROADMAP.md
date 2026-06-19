@@ -158,10 +158,18 @@ Plans:
   4. `/forma-proposal` permission-editor panels use `PremiumSurface` depth and a selective real-3D background accent renders with `frameloop="demand"` and `pointer-events:none` (off the data region).
   5. Both pages are polished and legible in light and dark themes; `npx tsc --noEmit` exits 0 and no new WebGL context appears on a data surface.
 
-**Plans**: TBD
+**Plans**: 5 plans (3 waves)
+
+Plans:
+- [ ] 06-01-PLAN.md — /template-mty charts: loading.tsx + shared themed EChart swap + full donut treatment + PremiumSurface roots/empty-states (TPL-02, TPL-03) [wave 1]
+- [ ] 06-02-PLAN.md — /forma-proposal HierarchyView split: useHierarchyLayout hook + HierarchyCanvas + thin shell, public API unchanged (FRM-01) [wave 1]
+- [ ] 06-03-PLAN.md — /template-mty members table → premium DataTable (toolbar shell + 5 columns + row-click profile + test update) (TPL-01, TPL-03) [wave 2]
+- [ ] 06-04-PLAN.md — /forma-proposal client wiring: dynamic(ssr:false) HierarchyView + skeleton + idle prefetch + FormaParticleAccent + PremiumSurface depth + loading.tsx (FRM-01, FRM-02) [wave 2]
+- [ ] 06-05-PLAN.md — /template-mty role graph: settle-and-freeze + click-vs-drag + in-bounds label clamp + RoleOverviewSheet drill (TPL-02) [wave 3]
+
 **UI hint**: yes
 
-**Phase context / research note**: Depends on Phase 1 (foundation) and Phase 3 (`DataTable` for the `/template-mty` members table); parallel-safe with Phases 4 and 5. Mechanical work (PremiumSurface wiring + `HierarchyView` split). The Forma diff view is DEFERRED to v2 (needs a new `template.getBaseline(roleId)` tRPC query — out of this milestone). Pitfalls: WebGL competing with data panels (Pitfall 1 — the R3F sphere is `frameloop:demand` + `pointer-events:none`, off the editor). Per-phase research: `npm run repo-map` + dep graph for the `HierarchyView` split boundary; confirm GPU < 400MB for the background sphere.
+**Phase context / research note**: Depends on Phase 1 (foundation) and Phase 3 (`DataTable` for the `/template-mty` members table); parallel-safe with Phases 4 and 5. Mechanical work (PremiumSurface wiring + `HierarchyView` split). The Forma diff view is DEFERRED to v2 (needs a new `template.getBaseline(roleId)` tRPC query — out of this milestone). Pitfalls: WebGL competing with data panels (Pitfall 1 — the R3F accent is `frameloop:demand` + `pointer-events:none`, off the editor). Two independent page tracks run in parallel waves: /template-mty (06-01 → 06-03 → 06-05) and /forma-proposal (06-02 → 06-04); test-fixture updates land in the same plan as each migration so the suite is never left red. Per-phase research: `npm run repo-map` + dep graph for the `HierarchyView` split boundary; confirm GPU < 400MB for the background accent.
 
 ### Phase 7: Pre-Workshop UAT
 
@@ -198,5 +206,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
 | 5. /access-analysis Depth & Cross-Filtering | 5/5 | Complete   | 2026-06-19 |
-| 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
+| 6. /template-mty & /forma-proposal Polish | 0/5 | Planned | - |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |
