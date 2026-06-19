@@ -42,6 +42,8 @@ vi.mock("@/lib/server/projectCoverageView", () => ({
 }));
 // Empty terrain project list -> the folder-permission terrain section is omitted,
 // keeping this test focused on the roles donut.
+// loadFolderPermissionTerrain is NOT imported or called by page.tsx (terrain is now
+// lazy via TerrainReveal — expands on click, not pre-loaded at mount).
 vi.mock("@/lib/server/folderPermissionTerrainView", () => ({
   loadTerrainProjects: vi.fn(async () => []),
   loadFolderPermissionTerrain: vi.fn(async () => null),
@@ -71,11 +73,16 @@ vi.mock("echarts-for-react", () => ({
   },
 }));
 
-import AccessAnalysisRoute from "./page";
+// Import the MainCharts RSC directly so Suspense tiers don't prevent async resolution.
+// Page.tsx splits the data-loading RSC (MainCharts) from the route shell (AccessAnalysisRoute)
+// so the route's Suspense fallback is testable independently. Tests here render MainCharts
+// directly to bypass the Suspense boundary.
+import { MainCharts } from "./page";
+import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrainView";
 
 describe("AccessAnalysisRoute (roles donut)", () => {
   it("buckets single role, Multiple roles, and Unknown, and reports the role count", async () => {
-    const ui = await AccessAnalysisRoute();
+    const ui = await MainCharts();
     const { getAllByTestId, getByText } = render(ui);
     // Two donuts now render an echart (roles + companies). Pick the roles donut
     // by its subtext, which names "roles" ("N roles · M user–project memberships").
@@ -90,8 +97,14 @@ describe("AccessAnalysisRoute (roles donut)", () => {
     expect(names).toContain("Unknown");
     // Distinct roles seen anywhere = Admin, Member = 2.
     expect(el.getAttribute("data-subtexts")).toContain("2 roles");
-    expect(getByText("Access Analysis")).toBeTruthy();
     // The modules section is wired in below the roles donut.
     expect(getByText(/Activity by module/)).toBeTruthy();
+  });
+
+  it("does NOT call loadFolderPermissionTerrain during initial render (terrain is lazy)", async () => {
+    // Terrain pre-load was the expensive sequential blocking await removed in 05-04.
+    // It must not be called at page load — only on TerrainReveal expand.
+    await MainCharts();
+    expect(loadFolderPermissionTerrain).not.toHaveBeenCalled();
   });
 });
