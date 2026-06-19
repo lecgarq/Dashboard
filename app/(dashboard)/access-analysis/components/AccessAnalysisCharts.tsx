@@ -24,7 +24,7 @@ import { rankDormantByPeople } from "../dormantActivity";
 import { summarizeActivityTimeline, type ActivityTimelineRow } from "../timelineCounts";
 import { summarizeCoordination } from "../coordinationCounts";
 import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectRoleRow, type SliceFilters } from "../projectFilter";
-import { PillBar } from "./PillBar";
+import { FilterBanner } from "./FilterBanner";
 import { PeopleDrillList } from "./PeopleDrillList";
 import { DrillSheet } from "@/components/ui/DrillSheet";
 import { groupProjectOptions } from "../projectGroups";
@@ -240,12 +240,20 @@ export function AccessAnalysisCharts({
         coverage={coverageMap}
       />
 
-      <PillBar
-        filters={sliceFilters}
-        onRemove={(d) => toggleSliceFilter(d, sliceFilters[d])}
-        onClear={() => setSliceFilters({})}
-        labels={{ role: "Role", company: "Company" }}
-      />
+      {Object.keys(sliceFilters).length === 0 ? (
+        <p data-testid="filter-idle-tip" className="text-sm text-muted-foreground">
+          <span aria-hidden>💡 </span>Tip — click any chart slice to filter the dashboard.
+        </p>
+      ) : (
+        <FilterBanner
+          filters={sliceFilters}
+          shown={sliceFilteredProjectIds.size}
+          total={selected.size}
+          onRemove={(d) => toggleSliceFilter(d, sliceFilters[d])}
+          onClear={() => setSliceFilters({})}
+          labels={{ role: "Role", company: "Company" }}
+        />
+      )}
 
       {/* Activity over time — full-width, activity-derived → coverage badge */}
       {timelineRows ? (

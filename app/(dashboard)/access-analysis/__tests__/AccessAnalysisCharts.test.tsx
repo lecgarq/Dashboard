@@ -153,6 +153,24 @@ const roleRowsRich: ProjectRoleRow[] = [
 ];
 
 describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
+  it("shows the idle tip when nothing is filtered", () => {
+    const { getByTestId, queryByTestId } = render(
+      <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,
+    );
+    expect(getByTestId("filter-idle-tip").textContent).toContain("click any chart slice");
+    expect(queryByTestId("filter-banner")).toBeFalsy();
+  });
+
+  it("swaps the idle tip for the FilterBanner with N-of-M scope on slice click", () => {
+    const { getByTestId, queryByTestId } = render(
+      <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,
+    );
+    fireEvent.click(within(getByTestId("role-legend")).getByRole("button", { name: /Member/ }));
+    expect(queryByTestId("filter-idle-tip")).toBeFalsy();
+    expect(getByTestId("filter-banner").textContent).toContain("Member");
+    expect(getByTestId("filter-scope").textContent).toMatch(/Showing \d+ of \d+ projects/);
+  });
+
   it("clicking a legend role button sets a pill and rebuckets the company donut", () => {
     const { getByTestId } = render(
       <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,
@@ -161,8 +179,8 @@ describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
     fireEvent.click(
       within(getByTestId("role-legend")).getByRole("button", { name: /Member/ }),
     );
-    // A slice-pill-bar should appear with a "Member" pill
-    const pillBar = getByTestId("slice-pill-bar");
+    // A filter-banner should appear with a "Member" pill
+    const pillBar = getByTestId("filter-banner");
     expect(pillBar.textContent).toContain("Member");
     // Company legend should now only show companies of Member-holding people
     // (roleRowsRich has no company → falls to Unknown company; both rows carry
@@ -184,14 +202,14 @@ describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
     );
     const memberBtn = within(getByTestId("role-legend")).getByRole("button", { name: /Member/ });
     fireEvent.click(memberBtn);
-    expect(getByTestId("slice-pill-bar").textContent).toContain("Member");
+    expect(getByTestId("filter-banner").textContent).toContain("Member");
     // Second click on legend — toggleDrill closes drill AND toggleSliceFilter removes the filter
     fireEvent.click(memberBtn);
-    // After toggle-off the pill bar should be gone (empty → renders null)
-    expect(queryByTestId("slice-pill-bar")).toBeFalsy();
+    // After toggle-off the filter-banner should be gone (empty → renders null)
+    expect(queryByTestId("filter-banner")).toBeFalsy();
   });
 
-  it("Clear all on PillBar removes slice pills but leaves Project Picker untouched", () => {
+  it("Clear filters on FilterBanner removes slice pills but leaves Project Picker untouched", () => {
     const { getByTestId, getByRole, queryByTestId, getAllByRole } = render(
       <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,
     );
@@ -199,10 +217,10 @@ describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
     fireEvent.click(
       within(getByTestId("role-legend")).getByRole("button", { name: /Member/ }),
     );
-    expect(getByTestId("slice-pill-bar").textContent).toContain("Member");
-    // Click "Clear all" on the PillBar
-    fireEvent.click(getByRole("button", { name: /clear all/i }));
-    expect(queryByTestId("slice-pill-bar")).toBeFalsy();
+    expect(getByTestId("filter-banner").textContent).toContain("Member");
+    // Click "Clear filters" on the FilterBanner
+    fireEvent.click(getByRole("button", { name: /clear filters/i }));
+    expect(queryByTestId("filter-banner")).toBeFalsy();
     // Project Picker checkboxes are still all checked (selected is unchanged)
     fireEvent.focus(getByTestId("project-search"));
     const boxes = getAllByRole("checkbox") as HTMLInputElement[];
@@ -221,7 +239,7 @@ describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
     fireEvent.click(within(getByTestId("role-legend")).getByRole("button", { name: /Member/ }));
     // Set company filter — after role filter only LECG row remains; click LECG in company legend
     fireEvent.click(within(getByTestId("company-legend")).getByRole("button", { name: /LECG/ }));
-    const pillBar = getByTestId("slice-pill-bar");
+    const pillBar = getByTestId("filter-banner");
     expect(pillBar.textContent).toContain("Role");
     expect(pillBar.textContent).toContain("Member");
     expect(pillBar.textContent).toContain("Company");
@@ -249,8 +267,8 @@ describe("AccessAnalysisCharts — INT-02 View N people", () => {
     fireEvent.click(
       within(getByTestId("role-legend")).getByRole("button", { name: /Member/ }),
     );
-    // Pill bar appeared — cross-filter fired
-    expect(getByTestId("slice-pill-bar").textContent).toContain("Member");
+    // Filter banner appeared — cross-filter fired
+    expect(getByTestId("filter-banner").textContent).toContain("Member");
     // But people-sheet must NOT be open
     expect(queryByTestId("people-sheet")).toBeFalsy();
   });
