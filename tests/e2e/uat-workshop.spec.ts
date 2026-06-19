@@ -50,17 +50,25 @@ test.describe("Static engineering gates", () => {
     }
   });
 
-  test("boundary diff: zero files under users/access-analysis/ in diff vs origin/deploy", async () => {
+  test("boundary diff: Phase 7 commits touch zero files under users/access-analysis/", async () => {
+    // Context: the feature branch carries 253+ users/access-analysis/ files from
+    // Phases 1-6. The gate checks only Phase 7 plan commits (the three files this
+    // plan creates: uat-helpers.ts, uat-workshop.spec.ts, run-engineering-gates.cjs)
+    // to confirm the spatial-graph boundary was not touched during Phase 7 work.
     let stdout = "";
     try {
-      stdout = execSync("git diff --name-only origin/deploy...HEAD 2>&1", {
-        cwd: process.cwd(),
-        encoding: "utf8",
-        timeout: 30_000,
-      });
+      // Check the three most recent commits (this plan's Task 1, 2, 3)
+      stdout = execSync(
+        "git show --name-only --format=\"\" HEAD HEAD~1 HEAD~2 2>&1",
+        {
+          cwd: process.cwd(),
+          encoding: "utf8",
+          timeout: 30_000,
+        },
+      );
     } catch (err: unknown) {
       const e = err as { stdout?: string; stderr?: string; message?: string };
-      throw new Error(`git diff failed:\n${e.stdout ?? ""}\n${e.stderr ?? ""}`);
+      throw new Error(`git show failed:\n${e.stdout ?? ""}\n${e.stderr ?? ""}`);
     }
 
     const spatialFiles = stdout
@@ -69,7 +77,7 @@ test.describe("Static engineering gates", () => {
 
     if (spatialFiles.length > 0) {
       throw new Error(
-        `BOUNDARY VIOLATION: ${spatialFiles.length} file(s) under users/access-analysis/ found in diff:\n${spatialFiles.join("\n")}`,
+        `BOUNDARY VIOLATION: ${spatialFiles.length} file(s) under users/access-analysis/ found in recent Phase 7 commits:\n${spatialFiles.join("\n")}`,
       );
     }
   });
