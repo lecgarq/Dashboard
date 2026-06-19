@@ -57,7 +57,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Per-Page: /template-mty
 
-- [ ] **TPL-01**: The members table uses the premium `DataTable` (sort + row-click → slide-in profile)
+- [x] **TPL-01**: The members table uses the premium `DataTable` (sort + row-click → slide-in profile)
 - [x] **TPL-02**: Role pies use shared depth/glow theming; the role-similarity graph shows non-clipped hover labels and node-click → slide-in role members
 - [x] **TPL-03**: All panels use `PremiumSurface` + staggered reveal + skeleton
 
@@ -131,7 +131,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
+| TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 | TPL-02 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 | TPL-03 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
 | FRM-01 | Phase 6 — /template-mty & /forma-proposal Polish | Complete |
