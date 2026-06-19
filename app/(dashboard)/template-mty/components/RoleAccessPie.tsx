@@ -1,7 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
 import { useTheme } from "next-themes";
-import { EChart } from "@/app/(dashboard)/access-analysis/components/EChart";
+import { EChart } from "@/components/ui/EChart";
 import { TIER_COLORS } from "@/app/(dashboard)/access-analysis/folderTerrain";
 import type { EChartsOption } from "echarts";
 import type { RoleTreeNode } from "@/lib/server/templateRoleTree";

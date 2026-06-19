@@ -1,7 +1,7 @@
 "use client";
 import { useMemo } from "react";
 import { useTheme } from "next-themes";
-import { EChart } from "@/app/(dashboard)/access-analysis/components/EChart";
+import { EChart } from "@/components/ui/EChart";
 import type { EChartsOption } from "echarts";
 import type { ModuleAccessSummary } from "../moduleAccess";
 
