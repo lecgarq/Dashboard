@@ -106,50 +106,140 @@ Expected attachments (after Playwright run):
 
 ## Owner Perceptual Checklist (Live Projector Pass)
 
-**Instructions:** Run on secondary display at projector-reduced brightness (1280px).
-Both light and dark (zinc) themes. Mark each:
-- PASS = looks great on the projector
-- BLOCK = broken in the room (invisible/illegible label, clipped modal, horizontal overflow, page error, drill does not open)
-- COSMETIC = nit, ships as-is
+**Run on secondary display at projector-reduced brightness (1280px).**
+**Both light and dark (zinc) themes. Mark each item PASS / BLOCK / COSMETIC.**
+
+### Blocker Bar Definition
+
+| Verdict | Meaning | Action |
+|---------|---------|--------|
+| **PASS** | Looks correct and legible on the projector | None |
+| **BLOCK** | Room-breaking: invisible/illegible label, clipped modal, horizontal overflow you can feel, page error/crash, a drill that does not open | Must fix before sign-off — use inline fix-and-re-run loop |
+| **COSMETIC** | Polish nit — color tweak, spacing, minor label truncation that does not impair readability | Ships as-is; log NOTED in Defects table; does NOT hold the phase |
+
+---
 
 ### /users
-- [ ] No horizontal overflow at 1280px
-- [ ] Data labels legible at projector brightness (both themes)
-- [ ] Table rows crisp -- sticky header visible, density toggle works
-- [ ] Row click -> DrillSheet slides in smoothly (<=200ms, directional)
-- [ ] Motion fires only on mount, not on filter changes
-- [ ] No clipped modals or panels
+
+| # | Check | Light | Dark | Notes |
+|---|-------|-------|------|-------|
+| U-1 | No horizontal overflow at 1280px (no sideways scroll) | [ ] | [ ] | |
+| U-2 | Data labels legible at projector brightness | [ ] | [ ] | |
+| U-3 | Table rows crisp — sticky header visible, density toggle works | [ ] | [ ] | |
+| U-4 | Row click → DrillSheet slides in smoothly (≤200ms, directional from right) | [ ] | [ ] | |
+| U-5 | Motion fires on mount/drill only — NOT on filter/sort changes | [ ] | [ ] | |
+| U-6 | No clipped modals or panels at 1280px | [ ] | [ ] | |
+| U-7 | HeaderParticleAccent visible but subtle in the header area | [ ] | [ ] | |
+| U-8 | Stat cards (Admin / Roles / Modules) clickable → inline expansion | [ ] | [ ] | |
+
+---
 
 ### /access-analysis
-- [ ] KPIs + donuts load first (streaming, not one big load)
-- [ ] Donut legend click -> inline people drill (PeopleDrillList appears)
-- [ ] "View N people" button -> DrillSheet slides in
-- [ ] Terrain "Show" button -> terrain mounts, interactive (3D orbit + zoom)
-- [ ] Coordination row expand -> lazy clash data loads
-- [ ] Filter banner visible when project selected, Clear works
-- [ ] Cross-filter updates all panels without page navigation
-- [ ] No horizontal overflow at 1280px
+
+| # | Check | Light | Dark | Notes |
+|---|-------|-------|------|-------|
+| A-1 | KPIs + donuts load first (streaming skeleton, NOT one big load) | [ ] | [ ] | |
+| A-2 | Donut legend click → inline PeopleDrillList appears above legend | [ ] | [ ] | |
+| A-3 | "View N people" button → DrillSheet slides in from right | [ ] | [ ] | |
+| A-4 | Terrain "Show" button → FolderPermissionTerrain mounts + interactive | [ ] | [ ] | |
+| A-5 | Coordination row expand → lazy clash data loads (no error, data appears) | [ ] | [ ] | |
+| A-6 | Filter banner visible when project selected; scope label shows "N of M projects" | [ ] | [ ] | |
+| A-7 | Filter banner "Clear" dismisses the banner + panels revert to full scope | [ ] | [ ] | |
+| A-8 | Cross-filter updates all panels without page navigation | [ ] | [ ] | |
+| A-9 | No horizontal overflow at 1280px | [ ] | [ ] | |
+| A-10 | KPI values, donut labels, and axis labels legible at projector brightness | [ ] | [ ] | |
+| A-11 | Dark theme: zinc background (#09090B), no blue cast, no illegible labels | n/a | [ ] | |
+
+---
 
 ### /template-mty
-- [ ] Members table loads, search works, row click -> profile drawer
-- [ ] Role-similarity graph settles + node click -> RoleOverviewSheet
-- [ ] Terrain expand works
+
+| # | Check | Light | Dark | Notes |
+|---|-------|-------|------|-------|
+| T-1 | Members table loads with data, search input filters rows | [ ] | [ ] | |
+| T-2 | Table row click → AuthorProfileDrawer slides in from right | [ ] | [ ] | |
+| T-3 | Role-similarity graph settles (stops animating) after load | [ ] | [ ] | |
+| T-4 | Graph node click → RoleOverviewSheet dialog opens with role name | [ ] | [ ] | |
+| T-5 | Terrain expand/collapse cycle works (Show → terrain mounts, hide → dismounts) | [ ] | [ ] | |
+| T-6 | Labels legible at projector brightness (table headers, graph node labels, drawer text) | [ ] | [ ] | |
+| T-7 | No clipped modals or panels at 1280px | [ ] | [ ] | |
+
+---
 
 ### /forma-proposal
-- [ ] Role rail loads (VDC Specialist visible)
-- [ ] Click role -> folder tree updates
-- [ ] Set tier -> tier chip updates
-- [ ] Reload -> draft persists
-- [ ] Export JSON downloads
-- [ ] R3F particle accent visible but subtle (z-0, opacity 0.18)
-- [ ] No clipped modals at 1280px
 
-### GPU Observation (owner, DevTools -> chrome://gpu or Memory tab)
-- [ ] GPU memory stays below 400MB across all four pages
-- [ ] /users HeaderParticleAccent canvas count = 1 (not more)
-- [ ] /forma-proposal FormaParticleAccent canvas count = 1 (not more)
+| # | Check | Light | Dark | Notes |
+|---|-------|-------|------|-------|
+| F-1 | Role rail loads (VDC Specialist visible in the rail) | [ ] | [ ] | |
+| F-2 | Click role → folder tree in editor updates to show that role's folders | [ ] | [ ] | |
+| F-3 | Set tier via TierPicker → tier chip updates immediately | [ ] | [ ] | |
+| F-4 | Reload page → draft persists (tier + role selection restored from localStorage) | [ ] | [ ] | |
+| F-5 | Export JSON button → file downloads to browser downloads folder | [ ] | [ ] | |
+| F-6 | FormaParticleAccent (R3F) visible but subtle — behind editor, opacity ~0.18, not distracting | [ ] | [ ] | |
+| F-7 | No clipped modals or panels at 1280px | [ ] | [ ] | |
+| F-8 | Labels legible at projector brightness (role names, folder names, tier labels) | [ ] | [ ] | |
+
+---
+
+### GPU Observation (owner — DevTools or chrome://gpu)
+
+Open Chrome DevTools (F12) → Memory tab, or navigate to `chrome://gpu` in a separate tab.
+Browse all four pages, interact with drills, then check GPU memory.
+
+| # | Check | Result | Notes |
+|---|-------|--------|-------|
+| G-1 | GPU memory stays below 400MB across all four pages | [ ] | Record observed peak: ___ MB |
+| G-2 | /users: HeaderParticleAccent canvas count = 1 (not more) | [ ] | Verify in DevTools → Elements (count `<canvas>` in header) |
+| G-3 | /forma-proposal: FormaParticleAccent canvas count ≤ 1 | [ ] | Verify in DevTools → Elements |
+| G-4 | /access-analysis and /template-mty: zero WebGL canvases (ECharts uses SVG) | [ ] | Verify in DevTools → Elements |
+
+---
+
+## Combined Sign-Off
+
+**Definition of Done:** Engineering report ALL-GREEN **AND** owner records "approved on the projector" with every BLOCK item cleared.
+
+COSMETIC nits may remain (logged NOTED in the Defects table above) — they do NOT hold Phase 7.
+
+### Engineering Gate Status
+
+| Gate | Status |
+|------|--------|
+| tsc-0 | _(fill in after full gate run)_ |
+| repo-map:check | _(fill in)_ |
+| boundary diff | _(fill in)_ |
+| GraphCanvas grep | _(fill in)_ |
+| Playwright UAT (38 tests) | _(fill in after :3100 is serving)_ |
+| **Overall** | **ALL-GREEN / FAIL** |
+
+### Owner Perceptual Verdict
+
+| Item | Status |
+|------|--------|
+| /users checklist (U-1 to U-8, both themes) | _(PASS / BLOCK — fill in)_ |
+| /access-analysis checklist (A-1 to A-11, both themes) | _(PASS / BLOCK — fill in)_ |
+| /template-mty checklist (T-1 to T-7, both themes) | _(PASS / BLOCK — fill in)_ |
+| /forma-proposal checklist (F-1 to F-8, both themes) | _(PASS / BLOCK — fill in)_ |
+| GPU observation (G-1 to G-4) | _(PASS / BLOCK — fill in)_ |
+| Remaining BLOCKs cleared | _(list any; or "none")_ |
+| Remaining COSMETICs (ship-with-note) | _(list any; or "none")_ |
+
+### Final Sign-Off
+
+```
+Engineering report:  [ ALL-GREEN / FAIL ]
+Owner approval:      [ "approved on the projector" / BLOCKED — describe ]
+Approved by:         Luis
+Date:                _______________
+Phase 7 status:      [ DONE / BLOCKED ]
+```
+
+> Phase 7 is DONE when both conditions are met:
+> 1. Engineering report = ALL-GREEN
+> 2. Owner records the phrase **"approved on the projector"** with every BLOCK item cleared
 
 ---
 
 *Generated by `node scripts/uat/run-engineering-gates.cjs`*
+*Owner Perceptual Checklist added by plan 07-02*
 *Phase 7 Pre-Workshop UAT -- LECG Dashboard*
