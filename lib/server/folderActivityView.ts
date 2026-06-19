@@ -24,6 +24,11 @@ const treeCache = new Map<string, { at: number; rows: FolderActivityRow[] }>();
  * Folder-scoped activity totals per project, for the given project ids. One
  * grouped index scan over AccActivityAccds (folder rows only), names merged from
  * AccDcProject in JS (mirrors moduleActivityView). Sorted by activity desc.
+ *
+ * The `userEmail IS NOT NULL` filter matches loadFolderActivityTree's filter, so a
+ * project's headline `activity` reconciles exactly with the sum of its drill-down
+ * (role → user) tree — a user-less (system) action can't be attributed to a role,
+ * so it is excluded from both the headline and the tree rather than only the tree.
  */
 export async function loadFolderActivityProjects(projectIds: string[]): Promise<ProjectActivityTotal[]> {
   if (projectIds.length === 0) return [];
@@ -40,6 +45,7 @@ export async function loadFolderActivityProjects(projectIds: string[]): Promise<
       FROM "AccActivityAccds"
       WHERE "projectId" = ANY(${projectIds})
         AND "folderName" IS NOT NULL AND "folderName" <> ''
+        AND "userEmail" IS NOT NULL
       GROUP BY "projectId"
     `,
     db.accDcProject.findMany({ select: { id: true, name: true } }),
