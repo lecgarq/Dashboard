@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton (completed 2026-06-18)
 - [x] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain (completed 2026-06-19)
 - [x] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent (completed 2026-06-19)
-- [ ] **Phase 7: Pre-Workshop UAT** - Projector-brightness simulation, contrast/perf/motion/boundary gates across all 4 pages
+- [x] **Phase 7: Pre-Workshop UAT** - Projector-brightness simulation, contrast/perf/motion/boundary gates across all 4 pages (completed 2026-06-19)
 
 ## Phase Details
 
@@ -184,10 +184,10 @@ Plans:
   3. `prefers-reduced-motion: reduce` (DevTools) leaves layout unchanged with animations disabled; the Network tab confirms each tRPC endpoint is called once per page load; GPU memory stays < 400MB.
   4. `npx tsc --noEmit` exits 0 including test files; `git diff --name-only` confirms zero `/users` work touched files under `users/access-analysis/` (spatial-graph boundary); a grep confirms no conditional `GraphCanvas` mount pattern was introduced.
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans executed
 
 - [x] 07-01-PLAN.md — Automated UAT harness: production-build :3100 Playwright spec (4 pages) + every scriptable gate (tsc-0, repo-map:check, boundary greps, fetch-once, canvas/GPU, reduced-motion, 1280px overflow, WCAG AA both themes) + drill smoke + single engineering report; inline fix-and-re-run loop [wave 1]
-- [ ] 07-02-PLAN.md — Owner perceptual gate: build-and-serve-on-:3100 runbook + per-page projector checklist (both themes) + combined sign-off (DoD = report ALL-GREEN AND owner "approved on the projector") [wave 2]
+- [x] 07-02-PLAN.md — Owner perceptual gate: build-and-serve-on-:3100 runbook + per-page projector checklist (both themes) + combined sign-off (DoD = report ALL-GREEN AND owner "approved on the projector") [wave 2]
 
 **UI hint**: yes
 
@@ -212,4 +212,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
 | 5. /access-analysis Depth & Cross-Filtering | 5/5 | Complete   | 2026-06-19 |
 | 6. /template-mty & /forma-proposal Polish | 5/5 | Complete   | 2026-06-19 |
-| 7. Pre-Workshop UAT | 1/2 | In Progress|  |
+| 7. Pre-Workshop UAT | 2/2 | Complete   | 2026-06-19 |
