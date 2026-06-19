@@ -926,7 +926,9 @@ No new threat patterns introduced.
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+> Both resolved during planning: Q1 → plan 06-05 (hoist `selectedRoleId` in `TemplateAnalysisCharts`, feed `RoleOverviewSheet` from already-loaded `overview.members` — no new query); Q2 → plan 06-01 (all three chart files confirmed importing the old wrapper; swapped to `@/components/ui/EChart` in the same commit).
 
 1. **Role-overview drill data source for TPL-02**
    - What we know: `RoleSimilarityGraph` receives `graph: RoleSimilarityGraph` (nodes with `roleId`, `roleName`, `folderCount`, `maxRank`). The members table data (`overview.members`) is passed separately to `TemplateMembersTable`.
