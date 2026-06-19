@@ -73,11 +73,11 @@ vi.mock("echarts-for-react", () => ({
   },
 }));
 
-// Import the MainCharts RSC directly so Suspense tiers don't prevent async resolution.
-// Page.tsx splits the data-loading RSC (MainCharts) from the route shell (AccessAnalysisRoute)
-// so the route's Suspense fallback is testable independently. Tests here render MainCharts
-// directly to bypass the Suspense boundary.
-import { MainCharts } from "./page";
+// Import MainCharts directly from mainCharts.tsx (not from page.tsx) so Suspense
+// tiers don't prevent async resolution. The route shell (page.tsx) wraps MainCharts
+// in <Suspense> — jsdom/RTL don't resolve async RSC children automatically, so we
+// bypass the boundary here and await MainCharts directly.
+import { MainCharts } from "./mainCharts";
 import { loadFolderPermissionTerrain } from "@/lib/server/folderPermissionTerrainView";
 
 describe("AccessAnalysisRoute (roles donut)", () => {

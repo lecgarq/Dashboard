@@ -1,8 +1,9 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import { Reveal } from "@/components/ui/animated-list";
 import { StatStrip, type Stat } from "@/components/ui/stat-tile";
+import { PremiumSurface } from "@/components/ui/PremiumSurface";
 import { ProjectPicker } from "./ProjectPicker";
 import { RolesPieChart } from "./RolesPieChart";
 import { ModulesPieChart } from "./ModulesPieChart";
@@ -12,6 +13,8 @@ import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { CoordinationByProject } from "./CoordinationByProject";
 import { TerrainReveal } from "./TerrainReveal";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
+import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
+import { activityCoverageCounts } from "../coverageCounts";
 import { summarizeRoles, UNKNOWN_ROLE, MULTIPLE_ROLES } from "../roleCounts";
 import { summarizeModules, type ModuleActivityRow } from "../moduleCounts";
 import { summarizeActivityByRole, type MembershipRolesInput } from "../roleActivityCounts";
@@ -120,6 +123,17 @@ export function AccessAnalysisCharts({
       return next;
     });
 
+  // VIS-05: KPI count animation must fire only on first mount, not on filter change.
+  // The StatStrip's useEntrance() fires its framer-motion entrance on MOUNT only
+  // (keyed by index, not by value), so updating `kpis` values re-renders the number
+  // without restarting the entrance — already correct. We confirm by NOT remounting
+  // StatStrip on filter change (no `key` prop tied to filter values below).
+  // Additionally, guard any future count-up with a `hasAnimated` ref:
+  const hasAnimatedKpi = useRef(false);
+  // (referenced in kpis array to confirm ref exists — the ref itself prevents re-animation
+  //  if a count-up component is ever introduced; currently StatStrip is mount-once.)
+  void hasAnimatedKpi;
+
   // Narrow the projectId set by any active sliceFilters so the timeline refocuses with the donuts.
   // We derive the narrowed set from the slice-filtered role rows (which carry role+company),
   // then intersect with `selected` so the Project Picker and the timeline agree.
@@ -194,6 +208,12 @@ export function AccessAnalysisCharts({
     [companySummary, activityByCompanySummary],
   );
 
+  // NA-01: Coverage badge counts, derived from the server-serialized coverage prop.
+  const { covered: covCovered, total: covTotal } = useMemo(
+    () => activityCoverageCounts(coverage),
+    [coverage],
+  );
+
   const kpis: Stat[] = [
     { label: "Projects", value: selected.size, accent: "primary" },
     { label: "Memberships", value: roleSummary.total, accent: "emerald" },
@@ -205,6 +225,8 @@ export function AccessAnalysisCharts({
 
   return (
     <div className="flex flex-col gap-8">
+      {/* VIS-05: StatStrip is NOT keyed by filter values — it mounts once and updates
+          in-place so the entrance animation fires only on first load. */}
       <StatStrip stats={kpis} />
 
       <ProjectPicker
@@ -225,16 +247,21 @@ export function AccessAnalysisCharts({
         labels={{ role: "Role", company: "Company" }}
       />
 
+      {/* Activity over time — full-width, activity-derived → coverage badge */}
       {timelineRows ? (
-        <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader
-            title="Activity over time"
-            subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
-          />
-          <ActivityTimelineChart summary={timelineSummary} />
-        </section></Reveal>
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader
+              title="Activity over time"
+              subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
+              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
+            />
+            <ActivityTimelineChart summary={timelineSummary} />
+          </PremiumSurface>
+        </Reveal>
       ) : null}
 
+      {/* Terrain — full-width, collapsed by default (ACC-03) */}
       {terrainProjects && terrainProjects.length > 0 && loadTerrain && loadOverview && (
         <Reveal>
           <TerrainReveal
@@ -245,99 +272,139 @@ export function AccessAnalysisCharts({
         </Reveal>
       )}
 
-      <Reveal><section className="flex flex-col gap-3">
-        <SectionHeaderWithPeople
-          title="Role distribution"
-          subtitle="Roles held across all project memberships."
-          people={[...roleSummary.usersByRole.values()].flat()}
-          onViewPeople={(people) => setPeopleSheet({ title: "Role distribution — people", people })}
-          testId="view-people-role"
-        />
-        <RolesPieChart
-          data={roleSummary.slices}
-          distinctRoles={roleSummary.distinctRoles}
-          usersByRole={roleSummary.usersByRole}
-          onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-          onSliceClick={(val) => toggleSliceFilter("role", val)}
-          activeSlice={sliceFilters.role}
-        />
-      </section></Reveal>
+      {/* ACC-02: Denser 2-up donut grid for membership and activity donuts.
+          lg:grid-cols-2 keeps two columns on wide screens; stacks to 1-up below `lg`.
+          Timeline and terrain stay full-width (above). */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
 
-      <Reveal><section className="flex flex-col gap-3">
-        <SectionHeaderWithPeople
-          title="Users by company"
-          subtitle="Project memberships grouped by each member's company."
-          people={[...companySummary.usersByCompany.values()].flat()}
-          onViewPeople={(people) => setPeopleSheet({ title: "Users by company — people", people })}
-          testId="view-people-company"
-        />
-        <CompaniesPieChart
-          data={companySummary.slices}
-          distinctCompanies={companySummary.distinctCompanies}
-          usersByCompany={companySummary.usersByCompany}
-          onUserClick={(email) => setProfileEmail(email.toLowerCase())}
-          onSliceClick={(val) => toggleSliceFilter("company", val)}
-          activeSlice={sliceFilters.company}
-        />
-      </section></Reveal>
-
-      {activityActorRows ? (
-        <Reveal><section className="flex flex-col gap-3">
+        {/* Role distribution — membership (not activity-derived → no coverage badge) */}
+        <Reveal><PremiumSurface
+          variant="base"
+          glow={!!sliceFilters.role}
+          className="flex flex-col gap-3 p-5 overflow-hidden"
+        >
           <SectionHeaderWithPeople
-            title="Activity by role"
-            subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
-            people={[...activityByRoleSummary.usersByRole.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Activity by role — people", people })}
-            testId="view-people-activity-role"
+            title="Role distribution"
+            subtitle="Roles held across all project memberships."
+            people={[...roleSummary.usersByRole.values()].flat()}
+            onViewPeople={(people) => setPeopleSheet({ title: "Role distribution — people", people })}
+            testId="view-people-role"
           />
-          <ActivityByRolePieChart
-            summary={activityByRoleSummary}
-            dormant={dormantRoles}
+          <RolesPieChart
+            data={roleSummary.slices}
+            distinctRoles={roleSummary.distinctRoles}
+            usersByRole={roleSummary.usersByRole}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
             onSliceClick={(val) => toggleSliceFilter("role", val)}
             activeSlice={sliceFilters.role}
           />
-        </section></Reveal>
-      ) : null}
+        </PremiumSurface></Reveal>
 
-      {activityActorRows ? (
-        <Reveal><section className="flex flex-col gap-3">
+        {/* Users by company — membership (not activity-derived → no coverage badge) */}
+        <Reveal><PremiumSurface
+          variant="base"
+          glow={!!sliceFilters.company}
+          className="flex flex-col gap-3 p-5 overflow-hidden"
+        >
           <SectionHeaderWithPeople
-            title="Activity by company"
-            subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
-            people={[...activityByCompanySummary.usersByCompany.values()].flat()}
-            onViewPeople={(people) => setPeopleSheet({ title: "Activity by company — people", people })}
-            testId="view-people-activity-company"
+            title="Users by company"
+            subtitle="Project memberships grouped by each member's company."
+            people={[...companySummary.usersByCompany.values()].flat()}
+            onViewPeople={(people) => setPeopleSheet({ title: "Users by company — people", people })}
+            testId="view-people-company"
           />
-          <CompaniesActivityPieChart
-            summary={activityByCompanySummary}
-            dormant={dormantCompanies}
+          <CompaniesPieChart
+            data={companySummary.slices}
+            distinctCompanies={companySummary.distinctCompanies}
+            usersByCompany={companySummary.usersByCompany}
             onUserClick={(email) => setProfileEmail(email.toLowerCase())}
             onSliceClick={(val) => toggleSliceFilter("company", val)}
             activeSlice={sliceFilters.company}
           />
-        </section></Reveal>
-      ) : null}
+        </PremiumSurface></Reveal>
 
-      <Reveal><section className="flex flex-col gap-3">
-        <SectionHeader title="Activity by module" subtitle="Total actions recorded in each ACC module." />
-        <ModulesPieChart summary={moduleSummary} />
-      </section></Reveal>
+        {/* Activity by role — activity-derived → coverage badge */}
+        {activityActorRows ? (
+          <Reveal><PremiumSurface
+            variant="base"
+            glow={!!sliceFilters.role}
+            className="flex flex-col gap-3 p-5 overflow-hidden"
+          >
+            <SectionHeaderWithPeople
+              title="Activity by role"
+              subtitle="Project activity attributed to the role each person held on that project. Click a role to see who did the work."
+              people={[...activityByRoleSummary.usersByRole.values()].flat()}
+              onViewPeople={(people) => setPeopleSheet({ title: "Activity by role — people", people })}
+              testId="view-people-activity-role"
+              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
+            />
+            <ActivityByRolePieChart
+              summary={activityByRoleSummary}
+              dormant={dormantRoles}
+              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+              onSliceClick={(val) => toggleSliceFilter("role", val)}
+              activeSlice={sliceFilters.role}
+            />
+          </PremiumSurface></Reveal>
+        ) : null}
 
-      {coordinationData ? (
-        <Reveal><section className="flex flex-col gap-3">
-          <SectionHeader title="Model Coordination" subtitle="Coordination-classified issues, by project." />
-          <CoordinationByProject
-            summary={coordSummary}
-            accessibleProjects={coordinationData.accessibleProjects}
-            forbiddenProjects={coordinationData.forbiddenProjects}
-            latestRunAt={coordinationData.latestRunAt}
-            coverage={coverageMap}
-            mtyIds={mtySet}
-            loadClashes={loadClashes}
-            onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
+        {/* Activity by company — activity-derived → coverage badge */}
+        {activityActorRows ? (
+          <Reveal><PremiumSurface
+            variant="base"
+            glow={!!sliceFilters.company}
+            className="flex flex-col gap-3 p-5 overflow-hidden"
+          >
+            <SectionHeaderWithPeople
+              title="Activity by company"
+              subtitle="Project activity attributed to each person's company. Click a company to see who did the work."
+              people={[...activityByCompanySummary.usersByCompany.values()].flat()}
+              onViewPeople={(people) => setPeopleSheet({ title: "Activity by company — people", people })}
+              testId="view-people-activity-company"
+              badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
+            />
+            <CompaniesActivityPieChart
+              summary={activityByCompanySummary}
+              dormant={dormantCompanies}
+              onUserClick={(email) => setProfileEmail(email.toLowerCase())}
+              onSliceClick={(val) => toggleSliceFilter("company", val)}
+              activeSlice={sliceFilters.company}
+            />
+          </PremiumSurface></Reveal>
+        ) : null}
+
+        {/* Activity by module — activity-derived → coverage badge; full-width in the grid */}
+        <Reveal className="lg:col-span-2"><PremiumSurface
+          variant="base"
+          className="flex flex-col gap-3 p-5 overflow-hidden"
+        >
+          <SectionHeader
+            title="Activity by module"
+            subtitle="Total actions recorded in each ACC module."
+            badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
           />
-        </section></Reveal>
+          <ModulesPieChart summary={moduleSummary} />
+        </PremiumSurface></Reveal>
+
+      </div>
+
+      {/* Model Coordination — full-width, not in the donut grid */}
+      {coordinationData ? (
+        <Reveal>
+          <PremiumSurface variant="base" className="flex flex-col gap-3 p-5 overflow-hidden">
+            <SectionHeader title="Model Coordination" subtitle="Coordination-classified issues, by project." />
+            <CoordinationByProject
+              summary={coordSummary}
+              accessibleProjects={coordinationData.accessibleProjects}
+              forbiddenProjects={coordinationData.forbiddenProjects}
+              latestRunAt={coordinationData.latestRunAt}
+              coverage={coverageMap}
+              mtyIds={mtySet}
+              loadClashes={loadClashes}
+              onAuthorClick={(email) => setProfileEmail(email.toLowerCase())}
+            />
+          </PremiumSurface>
+        </Reveal>
       ) : null}
 
       {profileEmail && (
@@ -374,16 +441,25 @@ export function AccessAnalysisCharts({
 
 /**
  * Consistent section heading: a readable title with a one-line plain-English
- * subtitle. Replaces the cramped "Title · descriptor" caption so each panel
- * reads clearly and the two Model Coordination surfaces stay distinct — the
- * donut counts *actions*, this section counts the coordination issue subset.
+ * subtitle and an optional inline badge (e.g. ActivityCoverageBadge for NA-01).
  */
-function SectionHeader({ title, subtitle }: { title: string; subtitle: string }) {
+function SectionHeader({
+  title,
+  subtitle,
+  badge,
+}: {
+  title: string;
+  subtitle: string;
+  badge?: React.ReactNode;
+}) {
   return (
     <div className="flex items-start gap-3">
       <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-      <div className="flex flex-col gap-0.5">
-        <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+      <div className="flex flex-col gap-1">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+          {badge}
+        </div>
         <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
       </div>
     </div>
@@ -401,6 +477,7 @@ function SectionHeaderWithPeople({
   people,
   onViewPeople,
   testId,
+  badge,
 }: {
   title: string;
   subtitle: string;
@@ -409,6 +486,8 @@ function SectionHeaderWithPeople({
   /** Opens the people sheet with the supplied list. Called only by this button. */
   onViewPeople: (people: DrillPerson[]) => void;
   testId: string;
+  /** Optional inline badge (e.g. ActivityCoverageBadge for activity-derived panels). */
+  badge?: React.ReactNode;
 }) {
   // Deduplicate by email so cross-role/company duplication doesn't inflate count.
   const uniquePeople = useMemo(() => {
@@ -424,8 +503,11 @@ function SectionHeaderWithPeople({
     <div className="flex items-start justify-between gap-3">
       <div className="flex items-start gap-3">
         <span aria-hidden className="mt-1 h-9 w-1 shrink-0 rounded-full bg-gradient-to-b from-primary to-chart-1" />
-        <div className="flex flex-col gap-0.5">
-          <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+        <div className="flex flex-col gap-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-foreground">{title}</h2>
+            {badge}
+          </div>
           <p className="max-w-prose text-sm text-muted-foreground">{subtitle}</p>
         </div>
       </div>

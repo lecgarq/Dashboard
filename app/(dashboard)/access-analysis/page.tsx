@@ -1,83 +1,9 @@
 import { Suspense } from "react";
-import { loadInstanceView } from "@/lib/server/accessInstanceView";
-import { loadModuleActivity } from "@/lib/server/moduleActivityView";
-import { loadActivityByActor } from "@/lib/server/activityByActorView";
-import { loadCoordinationByProject } from "@/lib/server/coordinationByProjectView";
-import { loadProjectCoverage } from "@/lib/server/projectCoverageView";
-import { loadTerrainProjects } from "@/lib/server/folderPermissionTerrainView";
-import { loadActivityTimeline } from "@/lib/server/activityTimelineView";
-import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
+import { MainCharts } from "./mainCharts";
 import { KpiStripSkeleton, DonutGridSkeleton, TimelineSkeleton } from "./components/DonutSkeletons";
-import { loadProjectClashes } from "./coordinationActions";
-import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
-import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
-import type { ProjectRoleRow } from "./projectFilter";
 
 export const metadata = { title: "Access Analysis" };
 export const dynamic = "force-dynamic";
-
-/**
- * Tier 1: Loads all fast parallel fetches — KPIs + donuts + timeline data.
- * The expensive sequential `loadFolderPermissionTerrain(defaultProject.id)` is
- * GONE — terrain now builds its account-wide overview on expand via TerrainReveal.
- *
- * Decomposition rationale (documented for SUMMARY):
- * - Wrapping the whole <AccessAnalysisCharts> in one Suspense boundary is the
- *   cleanest decomposition because AccessAnalysisCharts owns the cross-filter
- *   state (sliceFilters, selected) that ties donuts + timeline together.
- *   Splitting the client component across multiple Suspense boundaries would
- *   require lifting cross-filter state into a Zustand store or context, which
- *   is an architectural change (Rule 4 boundary). This approach still achieves
- *   the key goal: no single blocking Promise.all on the expensive terrain load.
- */
-/** Exported for direct testing — bypasses the Suspense boundary so async RSC
- * can be awaited in Vitest without the route shell's skeleton fallback. */
-export async function MainCharts() {
-  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timelineRows] =
-    await Promise.all([
-      loadInstanceView(),
-      loadModuleActivity(),
-      loadActivityByActor(),
-      loadCoordinationByProject(),
-      loadProjectCoverage(),
-      loadTerrainProjects(),
-      loadActivityTimeline(),
-    ]);
-
-  // Slim per-membership rows for client-side filtering.
-  const rows: ProjectRoleRow[] = view.map((v) => ({
-    projectId: v.projectId,
-    projectName: v.projectName,
-    roles: v.roles,
-    company: v.company,
-    name: v.name,
-    email: v.email,
-  }));
-
-  const membershipRows = view.map((v) => ({
-    projectId: v.projectId,
-    email: v.email,
-    roles: v.roles,
-    company: v.company,
-  }));
-
-  return (
-    <AccessAnalysisCharts
-      roleRows={rows}
-      moduleRows={moduleRows}
-      timelineRows={timelineRows}
-      activityActorRows={activityActorRows}
-      membershipRows={membershipRows}
-      coordinationData={coordinationData}
-      coverage={coverage}
-      mtyIds={mtyAllowlist as string[]}
-      loadClashes={loadProjectClashes}
-      terrainProjects={terrainProjects}
-      loadTerrain={loadTerrainForProject}
-      loadOverview={loadOverviewTerrain}
-    />
-  );
-}
 
 export default async function AccessAnalysisRoute() {
   return (
@@ -104,7 +30,15 @@ export default async function AccessAnalysisRoute() {
          * Suspense boundary: the header above paints immediately (static RSC),
          * then the skeleton shows while MainCharts awaits all 7 fast parallel
          * fetches. The terrain is no longer in this Promise.all — it lazy-loads
-         * only when the user expands TerrainReveal.
+         * only when the user expands TerrainReveal (ACC-03).
+         *
+         * Decomposition decision (05-04 SUMMARY): AccessAnalysisCharts owns the
+         * cross-filter state (sliceFilters, selected) that ties donuts + timeline
+         * together. Splitting the client component across multiple Suspense
+         * boundaries would require lifting cross-filter state into a Zustand store
+         * or context — an architectural change (Rule 4). Instead: MainCharts is
+         * a single async RSC in a single Suspense so the client component mounts
+         * once with all data, while skeleton fallbacks paint immediately.
          */}
         <Suspense
           fallback={
