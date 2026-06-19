@@ -24,7 +24,7 @@ Replaces the tiny `text-xs` pill row (`AccessAnalysisCharts.tsx:243`) as the hea
 
 - Renders **null** when `sliceFilters` is empty (no layout waste) — the idle tip (below) occupies that slot instead.
 - When one or more filters are active, renders a full-width, elevated band:
-  - `🔍 Filtered:` label + one readable chip per active dimension (`Role = Architect ✕`), reusing the existing tested `PillBar` chip remove/clear logic folded inside the banner.
+  - `🔍 Filtered:` label + one readable chip per active dimension (`Role = Architect ✕`). `FilterBanner` **absorbs** the chip + per-chip-remove markup that `PillBar` carries today (one `Clear` only — the banner's prominent `Clear filters`; there is no second "Clear all"). The standalone `PillBar` row is removed from the `AccessAnalysisCharts` render.
   - **Scope line:** `Showing N of M projects`.
     - `M` = distinct `projectId` count in `filterRowsBySelection(roleRows, selected)` (the current Project-Picker view; default all ≈ 1,152).
     - `N` = distinct `projectId` count after `applySliceFilters(...)` (i.e. `sliceFilteredProjectIds.size`).
@@ -64,6 +64,7 @@ slice click → toggleSliceFilter(dim, val)        (unchanged)
   - renders `Showing N of M projects` with provided counts;
   - renders one chip per active dimension; chip ✕ calls `onRemove(dim)`;
   - `Clear filters` calls `onClear`.
+  - (PillBar's existing chip/remove/clear assertions are re-homed here, since the banner absorbs that behavior.)
 - **`AccessAnalysisCharts.test.tsx` (update):**
   - idle tip visible when no filter; replaced by banner after a slice click;
   - banner scope text reflects the filtered project count;
@@ -78,7 +79,7 @@ slice click → toggleSliceFilter(dim, val)        (unchanged)
 | `app/(dashboard)/access-analysis/components/FilterBanner.tsx` | NEW — banner: icon + chips + scope line + Clear filters |
 | `app/(dashboard)/access-analysis/__tests__/FilterBanner.test.tsx` | NEW — banner unit tests |
 | `app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx` | swap pill row → FilterBanner, add idle tip, compute N/M scope, restyle "View people" as a button |
-| `app/(dashboard)/access-analysis/components/PillBar.tsx` | chips reused inside the banner; keep public API (may be imported by FilterBanner) |
+| `app/(dashboard)/access-analysis/components/PillBar.tsx` | superseded — chip/remove/clear behavior absorbed by FilterBanner; no longer rendered on the page (file may be deleted or left unused) |
 | `app/(dashboard)/access-analysis/components/RolesPieChart.tsx` | `cursor: 'pointer'` on filterable series |
 | `app/(dashboard)/access-analysis/components/CompaniesPieChart.tsx` | `cursor: 'pointer'` on filterable series |
 | `app/(dashboard)/access-analysis/components/ActivityByRolePieChart.tsx` | `cursor: 'pointer'` on filterable series |
