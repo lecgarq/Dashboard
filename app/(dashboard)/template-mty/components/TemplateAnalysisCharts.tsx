@@ -16,7 +16,7 @@ import { PermissionAccessChart } from "./PermissionAccessChart";
 import { ModuleAccessChart } from "./ModuleAccessChart";
 import { RoleAccessPie } from "./RoleAccessPie";
 import { RoleSimilarityGraph } from "./RoleSimilarityGraph";
-import { TemplateMembersTable } from "./TemplateMembersTable";
+import { TemplateMembersTableShell } from "./TemplateMembersTableShell";
 
 // Lazy: keeps the heavy shared users-profile + tRPC chain out of the initial
 // template-mty bundle — loads only once a member row is first clicked. Mirrors
@@ -72,7 +72,7 @@ export function TemplateAnalysisCharts({
       <Reveal>
         <section className="flex flex-col gap-3">
           <SectionHeader title="Project members" subtitle="The roster that projects created from this template inherit — with each member's role, company, and access level." />
-          <TemplateMembersTable
+          <TemplateMembersTableShell
             members={overview.members}
             onSelectMember={(email) => setProfileEmail(email.toLowerCase())}
           />
