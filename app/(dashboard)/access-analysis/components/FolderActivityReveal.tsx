@@ -25,11 +25,13 @@ export function FolderActivityReveal({
   memberships,
   loadProjects,
   loadTree,
+  onUserClick,
 }: {
   selectedProjectIds: string[];
   memberships: MembershipRolesInput[];
   loadProjects: (ids: string[]) => Promise<ProjectActivityTotal[]>;
   loadTree: (projectId: string) => Promise<FolderActivityRow[]>;
+  onUserClick?: (email: string) => void;
 }) {
   const [open, setOpen] = useState(false);
   const [projects, setProjects] = useState<ProjectActivityTotal[] | null>(null);
@@ -121,7 +123,7 @@ export function FolderActivityReveal({
 
           {!loadingProjects && single && (
             summaries.get(single.projectId) ? (
-              <FolderActivityByRole summary={summaries.get(single.projectId)!} onUserClick={undefined} />
+              <FolderActivityByRole summary={summaries.get(single.projectId)!} onUserClick={onUserClick} />
             ) : (
               <p className="py-6 text-center text-sm text-muted-foreground">Loading {single.projectName}…</p>
             )
@@ -148,7 +150,7 @@ export function FolderActivityReveal({
                     {pOpen && (
                       <div className="border-t border-border px-3 py-2">
                         {summary ? (
-                          <FolderActivityByRole summary={summary} onUserClick={undefined} />
+                          <FolderActivityByRole summary={summary} onUserClick={onUserClick} />
                         ) : (
                           <p className="py-4 text-center text-xs text-muted-foreground">Loading {p.projectName}…</p>
                         )}

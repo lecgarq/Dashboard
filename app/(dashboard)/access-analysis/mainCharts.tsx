@@ -21,6 +21,7 @@ import { loadActivityTimeline } from "@/lib/server/activityTimelineView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import { loadProjectClashes } from "./coordinationActions";
 import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
+import { loadFolderActivityProjectsAction, loadFolderActivityTreeAction } from "./folderActivityActions";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
@@ -67,6 +68,8 @@ export async function MainCharts() {
       terrainProjects={terrainProjects}
       loadTerrain={loadTerrainForProject}
       loadOverview={loadOverviewTerrain}
+      loadFolderActivityProjects={loadFolderActivityProjectsAction}
+      loadFolderActivityTree={loadFolderActivityTreeAction}
     />
   );
 }

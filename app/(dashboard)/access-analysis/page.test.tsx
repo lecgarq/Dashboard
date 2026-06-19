@@ -56,6 +56,10 @@ vi.mock("./folderTerrainActions", () => ({
   loadTerrainForProject: vi.fn(async () => null),
   loadOverviewTerrain: vi.fn(async () => null),
 }));
+vi.mock("./folderActivityActions", () => ({
+  loadFolderActivityProjectsAction: vi.fn(async () => []),
+  loadFolderActivityTreeAction: vi.fn(async () => []),
+}));
 /* eslint-disable @typescript-eslint/no-explicit-any */
 vi.mock("echarts-for-react", () => ({
   default: (props: { option: any }) => {

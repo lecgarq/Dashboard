@@ -12,6 +12,7 @@ import { CompaniesPieChart } from "./CompaniesPieChart";
 import { CompaniesActivityPieChart } from "./CompaniesActivityPieChart";
 import { CoordinationByProject } from "./CoordinationByProject";
 import { TerrainReveal } from "./TerrainReveal";
+import { FolderActivityReveal } from "./FolderActivityReveal";
 import { ActivityTimelineChart } from "./ActivityTimelineChart";
 import { ActivityCoverageBadge } from "./ActivityCoverageBadge";
 import { activityCoverageCounts } from "../coverageCounts";
@@ -34,6 +35,8 @@ import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
 import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
+import type { ProjectActivityTotal } from "@/lib/server/folderActivityView";
+import type { FolderActivityRow } from "../folderActivityCounts";
 
 // Lazy: keeps the (heavy) shared users-profile + tRPC chain out of the initial
 // Access Analysis bundle — it loads only once an author name is first clicked.
@@ -65,6 +68,8 @@ export function AccessAnalysisCharts({
   initialTerrain,
   loadTerrain,
   loadOverview,
+  loadFolderActivityProjects,
+  loadFolderActivityTree,
 }: {
   roleRows: ProjectRoleRow[];
   moduleRows: ModuleActivityRow[];
@@ -82,6 +87,8 @@ export function AccessAnalysisCharts({
   initialTerrain?: FolderTerrainData | null;
   loadTerrain?: (projectId: string) => Promise<FolderTerrainData | null>;
   loadOverview?: () => Promise<FolderTerrainData | null>;
+  loadFolderActivityProjects?: (ids: string[]) => Promise<ProjectActivityTotal[]>;
+  loadFolderActivityTree?: (projectId: string) => Promise<FolderActivityRow[]>;
 }) {
   const options = useMemo(
     () => projectOptions([...roleRows, ...moduleRows, ...(timelineRows ?? []), ...(coordinationData?.rows ?? [])]),
@@ -276,6 +283,19 @@ export function AccessAnalysisCharts({
             projects={terrainProjects}
             loadTerrain={loadTerrain}
             loadOverview={loadOverview}
+          />
+        </Reveal>
+      )}
+
+      {/* Folder Activity by Role — full-width, collapsed by default (lazy load) */}
+      {loadFolderActivityProjects && loadFolderActivityTree && (
+        <Reveal>
+          <FolderActivityReveal
+            selectedProjectIds={[...selected]}
+            memberships={membershipRows ?? []}
+            loadProjects={loadFolderActivityProjects}
+            loadTree={loadFolderActivityTree}
+            onUserClick={(email) => setProfileEmail(email.toLowerCase())}
           />
         </Reveal>
       )}
