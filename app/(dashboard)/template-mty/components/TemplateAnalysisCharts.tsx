@@ -1,6 +1,6 @@
 // app/(dashboard)/template-mty/components/TemplateAnalysisCharts.tsx
 "use client";
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Reveal } from "@/components/ui/animated-list";
 import { StatStrip } from "@/components/ui/stat-tile";
@@ -16,6 +16,7 @@ import { PermissionAccessChart } from "./PermissionAccessChart";
 import { ModuleAccessChart } from "./ModuleAccessChart";
 import { RoleAccessPie } from "./RoleAccessPie";
 import { RoleSimilarityGraph } from "./RoleSimilarityGraph";
+import { RoleOverviewSheet } from "./RoleOverviewSheet";
 import { TemplateMembersTableShell } from "./TemplateMembersTableShell";
 
 // Lazy: keeps the heavy shared users-profile + tRPC chain out of the initial
@@ -51,7 +52,42 @@ export function TemplateAnalysisCharts({
   roleTree: RoleTreeNode[];
   roleSimilarity: RoleSimilarityGraphData;
 }) {
+  // Shared profile drill target (INT-01) — used by member-table rows and role-overview member rows
   const [profileEmail, setProfileEmail] = useState<string | null>(null);
+
+  // Role overview drill state (TPL-02) — hoisted here so RoleOverviewSheet can
+  // derive its data from already-loaded page props (NA-01: no new query).
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+
+  // Derive role overview data from already-loaded page data (NA-01)
+  const selectedRoleNode = useMemo(
+    () => roleSimilarity.nodes.find((n) => n.roleId === selectedRoleId) ?? null,
+    [roleSimilarity.nodes, selectedRoleId],
+  );
+
+  const selectedRoleTreeNode = useMemo(
+    () => roleTree.find((n) => n.roleId === selectedRoleId) ?? null,
+    [roleTree, selectedRoleId],
+  );
+
+  // Tier breakdown for the selected role from roleTree (folderCount per tier)
+  const selectedRoleTiers = useMemo(() => {
+    if (!selectedRoleTreeNode) return [];
+    return selectedRoleTreeNode.tiers.map((t) => ({
+      label: t.label,
+      rank: t.rank,
+      count: t.folders.length,
+    }));
+  }, [selectedRoleTreeNode]);
+
+  // Members who hold the selected role — filtered from already-loaded overview.members
+  const membersForRole = useMemo(() => {
+    if (!selectedRoleNode) return [];
+    return overview.members.filter(
+      (m) => m.role === selectedRoleNode.roleName,
+    );
+  }, [overview.members, selectedRoleNode]);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="flex flex-col gap-3">
@@ -122,10 +158,29 @@ export function TemplateAnalysisCharts({
       <Reveal>
         <section className="flex flex-col gap-3">
           <SectionHeader title="Role similarity" subtitle="How alike the 29 roles are by their explicitly-set folder permissions — folders whose permissions differ from their parent (inherited folders excluded, the top Project Files folder included). Roles that grant the same folders at the same tiers are pulled together; clusters are effectively-interchangeable roles." />
-          <RoleSimilarityGraph graph={roleSimilarity} />
+          <RoleSimilarityGraph
+            graph={roleSimilarity}
+            onNodeClick={(roleId) => setSelectedRoleId(roleId)}
+          />
         </section>
       </Reveal>
 
+      {/* Role overview drill sheet (TPL-02) — data derived from page props, no new query (NA-01) */}
+      <RoleOverviewSheet
+        open={!!selectedRoleId}
+        onClose={() => setSelectedRoleId(null)}
+        roleName={selectedRoleNode?.roleName ?? null}
+        folderCount={selectedRoleNode?.folderCount ?? 0}
+        tiers={selectedRoleTiers}
+        members={membersForRole}
+        onMemberClick={(email) => {
+          // Close role sheet first, then open profile (single sheet visible — INT-01)
+          setSelectedRoleId(null);
+          setProfileEmail(email.toLowerCase());
+        }}
+      />
+
+      {/* Shared profile drill target (INT-01) */}
       {profileEmail && (
         <AuthorProfileDrawer email={profileEmail} onClose={() => setProfileEmail(null)} />
       )}
