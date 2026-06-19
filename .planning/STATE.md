@@ -2,19 +2,13 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-current_phase: 2
-current_phase_name: /users Decomposition
-status: verifying
-stopped_at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
-last_updated: "2026-06-19T15:36:23.870Z"
-last_activity: 2026-06-18
-last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
+status: unknown
+last_updated: "2026-06-19T16:47:04.890Z"
 progress:
-  total_phases: 7
+  total_phases: 5
   completed_phases: 5
   total_plans: 23
   completed_plans: 26
-  percent: 71
 ---
 
 # Project State
