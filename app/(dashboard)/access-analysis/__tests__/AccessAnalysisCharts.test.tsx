@@ -248,6 +248,16 @@ describe("AccessAnalysisCharts — INT-04 slice cross-filter", () => {
 });
 
 describe("AccessAnalysisCharts — INT-02 View N people", () => {
+  it("renders the View people control as a distinct icon button", () => {
+    const { getByTestId } = render(
+      <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,
+    );
+    const btn = getByTestId("view-people-role");
+    expect(btn.tagName).toBe("BUTTON");
+    expect(btn.querySelector("svg")).toBeTruthy(); // people icon present
+    expect(btn.textContent).toContain("View");
+  });
+
   it("'View N people' button opens the people sheet", () => {
     const { getByTestId } = render(
       <AccessAnalysisCharts roleRows={roleRowsRich} moduleRows={moduleRows} />,

@@ -524,9 +524,14 @@ function SectionHeaderWithPeople({
           type="button"
           data-testid={testId}
           onClick={() => onViewPeople(uniquePeople)}
-          className="shrink-0 rounded-full border border-primary/40 bg-primary/10 px-3 py-1 text-xs font-medium text-primary transition hover:bg-primary/20"
+          className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-primary/50 bg-primary/10 px-3 py-1 text-xs font-semibold text-primary shadow-sm transition hover:bg-primary/20"
         >
-          View {uniquePeople.length} {uniquePeople.length === 1 ? "person" : "people"} →
+          <svg aria-hidden viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-3.5 w-3.5">
+            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" strokeLinecap="round" strokeLinejoin="round" />
+            <circle cx="9" cy="7" r="4" />
+            <path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13A4 4 0 0 1 16 11" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          View {uniquePeople.length} {uniquePeople.length === 1 ? "person" : "people"}
         </button>
       )}
     </div>
