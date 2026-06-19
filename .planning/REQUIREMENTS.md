@@ -26,18 +26,18 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 ### Interactivity & Drill-down
 
 - [x] **INT-01**: A single shared slide-in detail panel (shadcn `Sheet`) is the drill-target for every click source across the 4 pages
-- [ ] **INT-02**: Chart segments are clickable and open the relevant people/detail in the slide-in panel
+- [x] **INT-02**: Chart segments are clickable and open the relevant people/detail in the slide-in panel
 - [x] **INT-03**: Table rows are clickable (open detail) and expandable inline (summary) without full-page navigation
-- [ ] **INT-04**: On `/access-analysis`, clicking a chart cross-filters the other charts client-side (zero new queries)
+- [x] **INT-04**: On `/access-analysis`, clicking a chart cross-filters the other charts client-side (zero new queries)
 - [x] **INT-05**: An active-filter / drill-state pill bar shows current filters with one-click dismiss
 
 ### Visual Depth & Motion
 
-- [ ] **VIS-01**: Chart panels and key surfaces use 2.5D depth (glass, layered shadow, catch-light) and no longer look flat — in both themes
+- [x] **VIS-01**: Chart panels and key surfaces use 2.5D depth (glass, layered shadow, catch-light) and no longer look flat — in both themes
 - [x] **VIS-02**: Donut/pie charts use gradient fills, selected-segment glow, and rounded segments
 - [x] **VIS-03**: Page content reveals with a staggered entrance under a hard motion budget (< 400ms total, once per load)
 - [x] **VIS-04**: KPI numbers count up smoothly on first load
-- [ ] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
+- [x] **VIS-05**: Drill-down transitions are smooth and directional (≤ 200ms); motion fires only on mount/drill, never on filter change
 - [x] **VIS-06**: One or two selective real-3D hero accents appear only on non-data regions (`/forma-proposal` background, `/users` header) — never on data pages
 
 ### Theming & Legibility
@@ -51,9 +51,9 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Per-Page: /access-analysis
 
-- [ ] **ACC-01**: All panels are wrapped in `PremiumSurface` with depth + staggered reveal
+- [x] **ACC-01**: All panels are wrapped in `PremiumSurface` with depth + staggered reveal
 - [x] **ACC-02**: All donuts + the timeline use the shared themed `EChart` wrapper with depth/glow and `universalTransition` drill morphs
-- [ ] **ACC-03**: Folder-permission terrain is click-to-expand / lazy-loaded (no 2–3s lag on first interaction)
+- [x] **ACC-03**: Folder-permission terrain is click-to-expand / lazy-loaded (no 2–3s lag on first interaction)
 
 ### Per-Page: /template-mty
 
@@ -118,17 +118,17 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | INT-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-03 | Phase 4 — /users Table & Polish | Complete |
 | VIS-04 | Phase 4 — /users Table & Polish | Complete |
-| ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| ACC-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | ACC-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| ACC-03 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| ACC-03 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | PERF-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | PERF-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| INT-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
-| INT-04 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| INT-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
+| INT-04 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | INT-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| VIS-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | VIS-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
 | NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |

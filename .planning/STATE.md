@@ -6,14 +6,14 @@ current_phase: 2
 current_phase_name: /users Decomposition
 status: verifying
 stopped_at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
-last_updated: "2026-06-18T23:31:38.940Z"
+last_updated: "2026-06-19T15:21:23.543Z"
 last_activity: 2026-06-18
 last_activity_desc: "02-06: ActivityAuditPanel + DirectoryFilterBar extraction; 314-line shell; projector sign-off"
 progress:
   total_phases: 7
   completed_phases: 4
   total_plans: 23
-  completed_plans: 24
+  completed_plans: 25
   percent: 57
 ---
 
@@ -65,6 +65,7 @@ Progress: [██████░░░░] 58%
 | Phase 04-users-table-polish P04 | 9min | 3 tasks | 7 files |
 | Phase 05 P02 | 8min | 3 tasks | 8 files |
 | Phase 05-access-analysis-depth P03 | 2min | 2 tasks | 4 files |
+| Phase 05 P04 | 20min | 4 tasks | 7 files |
 
 ## Accumulated Context
 
@@ -98,6 +99,9 @@ Recent decisions affecting current work:
 - [Phase ?]: Cross-wave @ts-expect-error removal: TS2307 suppression becomes TS2578 once DataTable.tsx exists; must remove in same commit
 - [Phase ?]: [Phase 04-02]: UserProfilePanel.tsx gains optional person?: OrgPerson prop; dialog variant renders person chrome (banner avatar, name, title, badge tags, contact rows) when supplied; rail ignores it; PersonAvatar imported from PersonDetailModal to avoid duplication
 - [Phase ?]: Timeline slice-narrowing via sliceFilteredProjectIds; moduleSummary stays picker-only; people sheet from in-memory summaries
+- [Phase ?]: Suspense boundary wraps full data tier; mainCharts.tsx non-page RSC extraction
+- [Phase ?]: TerrainReveal lazy-load via loadOverview on expand
+- [Phase ?]: KPI no-reanimate guard via useRef
 
 ### Pending Todos
 
@@ -124,6 +128,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-18T23:31:38.933Z
+Last session: 2026-06-19T15:21:23.535Z
 Stopped at: Completed 05-02 (cross-filter + PillBar + View N people — 22 tests green; tsc 0)
 Resume file: None
