@@ -17,7 +17,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 2: /users Decomposition** - Break the 2,474-line monolith into a Zustand store + single data hook + sub-components behind a golden-path test (completed 2026-06-18)
 - [x] **Phase 3: DataTable Primitive** - One virtualized `DataTable` (sort, sticky header, row-click, inline expand, density toggle) for the table pages (completed 2026-06-18)
 - [x] **Phase 4: /users Table & Polish** - Premium clickable data-table directory, deferred heavy payload, header 3D accent, skeleton (completed 2026-06-18)
-- [ ] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain
+- [x] **Phase 5: /access-analysis Depth & Cross-Filtering** - Suspense tiers, depth/glow donuts, client-side cross-filtering, pill bar, lazy terrain (completed 2026-06-19)
 - [ ] **Phase 6: /template-mty & /forma-proposal Polish** - Premium table + depth pies + graph drill; `HierarchyView` split + deferred d3 + 3D background accent
 - [ ] **Phase 7: Pre-Workshop UAT** - Projector-brightness simulation, contrast/perf/motion/boundary gates across all 4 pages
 
@@ -131,7 +131,7 @@ Decimal phases appear between their surrounding integers in numeric order.
   4. Drill/reveal motion is smooth and directional (≤200ms), fires only on mount/drill (never on filter change), and KPI numbers count up on first load; all data labels meet WCAG AA contrast at projector brightness in both themes (THM-01 verified here on the densest data surface).
   5. No new WebGL context is introduced (GPU < 400MB); each tRPC endpoint is fetched once; every new per-page metric passed a Prisma-schema feasibility gate (named model, stated coverage, no schema change) and under-covered sources (e.g. `AccActivity` 428/1,152) are labeled as such in the UI.
 
-**Plans**: 4/5 plans executed
+**Plans**: 5/5 plans complete
 
 Plans:
 
@@ -139,7 +139,7 @@ Plans:
 - [x] 05-02-PLAN.md — Cross-filter: sliceFilters state + PillBar + onSliceClick lift (4 donuts) + "View N people →" slide-in (INT-02/04/05, VIS-05) [wave 2]
 - [x] 05-03-PLAN.md — ActivityCoverageBadge component + pure coverageCounts helper (NA-01) [wave 2]
 - [x] 05-04-PLAN.md — Presentation surgery: Suspense tiers + PremiumSurface 2-up grid + lazy TerrainReveal + badge placement + KPI no-reanimate (ACC-01/03, PERF-02, VIS-01) [wave 3]
-- [ ] 05-05-PLAN.md — THM-01 WCAG AA chart-label contrast gate (automated + projector sign-off) [wave 4]
+- [x] 05-05-PLAN.md — THM-01 WCAG AA chart-label contrast gate (automated + projector sign-off) [wave 4]
 
 **UI hint**: yes
 
@@ -197,6 +197,6 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 2. /users Decomposition | 6/6 | Complete   | 2026-06-18 |
 | 3. DataTable Primitive | 2/2 | Complete   | 2026-06-18 |
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
-| 5. /access-analysis Depth & Cross-Filtering | 4/5 | In Progress|  |
+| 5. /access-analysis Depth & Cross-Filtering | 5/5 | Complete   | 2026-06-19 |
 | 6. /template-mty & /forma-proposal Polish | 0/TBD | Not started | - |
 | 7. Pre-Workshop UAT | 0/TBD | Not started | - |

@@ -42,7 +42,7 @@ Scoped to 4 pages — `/users`, `/access-analysis`, `/template-mty`, `/forma-pro
 
 ### Theming & Legibility
 
-- [ ] **THM-01**: All 4 pages are fully polished and legible in both light and dark (zinc) themes — including chart canvases and projector-brightness data-label contrast (WCAG AA on data values)
+- [x] **THM-01**: All 4 pages are fully polished and legible in both light and dark (zinc) themes — including chart canvases and projector-brightness data-label contrast (WCAG AA on data values)
 
 ### Per-Page: /users
 
@@ -129,7 +129,7 @@ Each v1 requirement maps to exactly one phase. See ROADMAP.md for phase detail.
 | VIS-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | VIS-02 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | VIS-05 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
-| THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Pending |
+| THM-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | NA-01 | Phase 5 — /access-analysis Depth & Cross-Filtering | Complete |
 | TPL-01 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
 | TPL-02 | Phase 6 — /template-mty & /forma-proposal Polish | Pending |
