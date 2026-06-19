@@ -1,6 +1,7 @@
 "use client";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
+import { useReducedMotion } from "framer-motion";
 import {
   forceSimulation, forceLink, forceManyBody, forceCenter, forceCollide,
   type Simulation, type SimulationNodeDatum, type SimulationLinkDatum,
@@ -16,15 +17,25 @@ interface PEdge extends SimulationLinkDatum<PNode> {
 }
 
 const H = 500;
+const CLICK_THRESHOLD_PX = 6;
+const CLICK_DURATION_MS = 250;
 const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
 
-export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
+export function RoleSimilarityGraph({
+  graph,
+  onNodeClick,
+}: {
+  graph: GraphData;
+  onNodeClick?: (roleId: string) => void;
+}) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light";
   const ink = dark ? "#e4e4e7" : "#27272a";
   const sub = dark ? "#a1a1aa" : "#6b7280";
   const edgeColor = dark ? "rgba(161,161,170,0.55)" : "rgba(82,82,91,0.5)";
   const nodeStroke = dark ? "#09090b" : "#ffffff";
+
+  const reducedMotion = useReducedMotion();
 
   const wrapRef = useRef<HTMLDivElement | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
@@ -43,6 +54,7 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   const radius = useMemo(() => (fc: number) => 6 + 16 * Math.sqrt(fc / maxFolders), [maxFolders]);
 
   // Deterministic circle seed so the first paint isn't a pile; d3 then settles it.
+  // NOTE: Do NOT add theme/dark to these deps — colors are read at render time (Pitfall 6).
   const { pnodes, pedges, neighbors } = useMemo(() => {
     const N = graph.nodes.length;
     const pnodes: PNode[] = graph.nodes.map((n, i) => ({
@@ -70,10 +82,17 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
       .force("charge", forceManyBody<PNode>().strength(-230))
       .force("center", forceCenter(width / 2, H / 2))
       .force("collide", forceCollide<PNode>().radius((d) => d.r + 5))
-      .on("tick", frame);
+      .on("tick", frame)
+      .on("end", () => { sim.stop(); }); // settle-and-freeze: stop after alphaMin reached
+
+    // Under reduced-motion: skip animation entirely — use seed positions as final layout
+    if (reducedMotion) {
+      sim.stop();
+    }
+
     simRef.current = sim;
     return () => { sim.stop(); };
-  }, [pnodes, pedges, width]);
+  }, [pnodes, pedges, width, reducedMotion]);
 
   // Pan/zoom view transform (translate in screen px, then scale). Kept in a ref so
   // the imperative wheel/pointer handlers read the latest without stale closures.
@@ -107,24 +126,44 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   }, []);
 
   const [hover, setHover] = useState<string | null>(null);
-  const ix = useRef<{ mode: "none" | "node" | "pan"; node: PNode | null; lastX: number; lastY: number }>({ mode: "none", node: null, lastX: 0, lastY: 0 });
+  // Extend ix to track totalMovement and downTime for click-vs-drag detection
+  const ix = useRef<{
+    mode: "none" | "node" | "pan";
+    node: PNode | null;
+    lastX: number;
+    lastY: number;
+    totalMovement: number;
+    downTime: number;
+  }>({ mode: "none", node: null, lastX: 0, lastY: 0, totalMovement: 0, downTime: 0 });
 
   const onNodeDown = (n: PNode) => (e: React.PointerEvent) => {
     e.preventDefault();
     e.stopPropagation(); // don't also start a background pan
-    ix.current = { mode: "node", node: n, lastX: e.clientX, lastY: e.clientY };
+    ix.current = {
+      mode: "node",
+      node: n,
+      lastX: e.clientX,
+      lastY: e.clientY,
+      totalMovement: 0,
+      downTime: performance.now(),
+    };
     const g = screenToGraph(e.clientX, e.clientY);
     n.fx = g.x; n.fy = g.y;
     simRef.current?.alphaTarget(0.3).restart();
     svgRef.current?.setPointerCapture?.(e.pointerId);
   };
   const onSvgDown = (e: React.PointerEvent) => {
-    ix.current = { mode: "pan", node: null, lastX: e.clientX, lastY: e.clientY };
+    ix.current = { mode: "pan", node: null, lastX: e.clientX, lastY: e.clientY, totalMovement: 0, downTime: performance.now() };
     svgRef.current?.setPointerCapture?.(e.pointerId);
   };
   const onMove = (e: React.PointerEvent) => {
     const s = ix.current;
     if (s.mode === "node" && s.node) {
+      const dx = e.clientX - s.lastX;
+      const dy = e.clientY - s.lastY;
+      s.totalMovement += Math.hypot(dx, dy);
+      s.lastX = e.clientX;
+      s.lastY = e.clientY;
       const g = screenToGraph(e.clientX, e.clientY);
       s.node.fx = g.x; s.node.fy = g.y;
     } else if (s.mode === "pan") {
@@ -134,10 +173,23 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
       setView({ x: v.x + dx, y: v.y + dy, k: v.k });
     }
   };
-  const onUp = () => {
+  const onUp = (e?: React.PointerEvent) => {
     const s = ix.current;
-    if (s.mode === "node" && s.node) { s.node.fx = null; s.node.fy = null; simRef.current?.alphaTarget(0); }
-    ix.current = { mode: "none", node: null, lastX: 0, lastY: 0 };
+    if (s.mode === "node" && s.node) {
+      const elapsed = performance.now() - s.downTime;
+      // Click-vs-drag: small movement AND short duration → treat as click
+      if (s.totalMovement < CLICK_THRESHOLD_PX && elapsed < CLICK_DURATION_MS) {
+        // Release fix before firing click (so layout stays stable)
+        s.node.fx = null; s.node.fy = null;
+        simRef.current?.alphaTarget(0);
+        onNodeClick?.(s.node.roleId);
+      } else {
+        // It was a drag — release and let sim coast to freeze
+        s.node.fx = null; s.node.fy = null;
+        simRef.current?.alphaTarget(0);
+      }
+    }
+    ix.current = { mode: "none", node: null, lastX: 0, lastY: 0, totalMovement: 0, downTime: 0 };
   };
 
   if (graph.nodes.length === 0) {
@@ -153,11 +205,14 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
   const hovered = hover ? pnodes.find((n) => n.roleId === hover) ?? null : null;
   const v = viewRef.current;
 
+  // Label margin for in-bounds clamping
+  const LABEL_MARGIN_X = 40;
+
   return (
     <div className="panel-elevated p-5">
       <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
         <p className="px-1 text-xs text-muted-foreground">
-          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it.
+          Each dot is a role; lines join roles with similar folder access (thicker/closer = more similar). Size = folders reached, colour = highest tier. Scroll to zoom, drag the background to pan, drag a dot to move it. Click a dot to see role details.
         </p>
         <div className="flex items-center gap-2 text-[11px]" style={{ color: sub }}>
           {TIER_LEGEND.map((t) => (
@@ -201,14 +256,28 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
             })}
             {pnodes.map((n) => {
               const lit = isLit(n.roleId);
+              // In-bounds clamping for label position
+              const labelX = clamp(n.x ?? (width / 2), LABEL_MARGIN_X, width - LABEL_MARGIN_X);
+              const labelY = clamp((n.y ?? (H / 2)) + n.r + 9 / v.k, 12, H - 12);
               return (
-                <g key={n.roleId} style={{ cursor: "grab" }}
-                   onPointerDown={onNodeDown(n)}
-                   onMouseEnter={() => setHover(n.roleId)}
-                   onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
+                <g
+                  key={n.roleId}
+                  data-role-node={n.roleId}
+                  style={{ cursor: "pointer" }}
+                  onPointerDown={onNodeDown(n)}
+                  onMouseEnter={() => setHover(n.roleId)}
+                  onMouseLeave={() => setHover((h) => (h === n.roleId ? null : h))}
                 >
                   <circle cx={n.x} cy={n.y} r={n.r} fill={TIER_COLORS[n.maxRank]} stroke={nodeStroke} strokeWidth={1.5 / v.k} opacity={lit ? 1 : 0.18} />
-                  <text x={n.x} y={(n.y ?? 0) + n.r + 9 / v.k} textAnchor="middle" fontSize={9 / v.k} fill={ink} opacity={lit ? 0.9 : 0.12} pointerEvents="none">
+                  <text
+                    x={labelX}
+                    y={labelY}
+                    textAnchor="middle"
+                    fontSize={9 / v.k}
+                    fill={ink}
+                    opacity={lit ? 0.9 : 0.12}
+                    pointerEvents="none"
+                  >
                     {n.roleName.length > 18 ? n.roleName.slice(0, 17) + "…" : n.roleName}
                   </text>
                 </g>
@@ -227,13 +296,20 @@ export function RoleSimilarityGraph({ graph }: { graph: GraphData }) {
         </button>
 
         {hovered && (
-          <div className="pointer-events-none absolute left-3 top-3 max-w-[260px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+          <div
+            className="pointer-events-none absolute left-3 top-3 max-w-[260px] rounded-lg border border-border bg-popover/95 px-3 py-2 text-xs shadow-lg backdrop-blur"
+            // Tooltip stays pinned top-left (already in-bounds). If it ever follows a node,
+            // clamp via CSS: left/top must not exceed panel - card dimensions.
+          >
             <div className="font-semibold text-foreground">{hovered.roleName}</div>
             <div className="text-muted-foreground">{hovered.folderCount} folders</div>
             {hoverNeighbors && hoverNeighbors.size > 0 && (
               <div className="mt-1 text-muted-foreground">
                 Most similar: <span className="text-foreground/90">{[...hoverNeighbors].map((id) => pnodes.find((p) => p.roleId === id)?.roleName ?? id).slice(0, 5).join(", ")}</span>
               </div>
+            )}
+            {onNodeClick && (
+              <div className="mt-1.5 text-[10px] text-primary/70">Click to open role details</div>
             )}
           </div>
         )}
