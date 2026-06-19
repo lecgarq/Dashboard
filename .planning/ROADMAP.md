@@ -184,7 +184,11 @@ Plans:
   3. `prefers-reduced-motion: reduce` (DevTools) leaves layout unchanged with animations disabled; the Network tab confirms each tRPC endpoint is called once per page load; GPU memory stays < 400MB.
   4. `npx tsc --noEmit` exits 0 including test files; `git diff --name-only` confirms zero `/users` work touched files under `users/access-analysis/` (spatial-graph boundary); a grep confirms no conditional `GraphCanvas` mount pattern was introduced.
 
-**Plans**: TBD
+**Plans**: 2 plans
+
+- [ ] 07-01-PLAN.md — Automated UAT harness: production-build :3100 Playwright spec (4 pages) + every scriptable gate (tsc-0, repo-map:check, boundary greps, fetch-once, canvas/GPU, reduced-motion, 1280px overflow, WCAG AA both themes) + drill smoke + single engineering report; inline fix-and-re-run loop [wave 1]
+- [ ] 07-02-PLAN.md — Owner perceptual gate: build-and-serve-on-:3100 runbook + per-page projector checklist (both themes) + combined sign-off (DoD = report ALL-GREEN AND owner "approved on the projector") [wave 2]
+
 **UI hint**: yes
 
 **Phase context / research note**: Live-room projector simulation is the only valid acceptance test; runs last after all three polish phases. No new requirements — it is the cross-cutting verification gate (`VIS-05` drill-motion correctness and the negative-case boundary checks are asserted here in aggregate). Per-phase research: re-run `npm run repo-map:check` for a final regression ratchet (new fetch calls / effects) and the `router-push` report to confirm drills use the slide-in panel rather than full-page navigation.
@@ -208,4 +212,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4 → 5 → 6 → 7
 | 4. /users Table & Polish | 4/4 | Complete   | 2026-06-18 |
 | 5. /access-analysis Depth & Cross-Filtering | 5/5 | Complete   | 2026-06-19 |
 | 6. /template-mty & /forma-proposal Polish | 5/5 | Complete   | 2026-06-19 |
-| 7. Pre-Workshop UAT | 0/TBD | Not started | - |
+| 7. Pre-Workshop UAT | 0/2 | Not started | - |
