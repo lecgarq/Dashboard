@@ -1,0 +1,45 @@
+{
+  "generatedAt": "2026-06-17T00:00:00.000Z",
+  "policy": {
+    "notes": "dependency-cruiser errors and circular imports fail immediately. Existing warnings are visible but non-blocking while they are tracked down."
+  },
+  "errorCounts": [],
+  "warningCounts": [
+    {
+      "id": "no-scripts-to-app",
+      "count": 6
+    }
+  ],
+  "warningEdges": [
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/build-instance-features.ts",
+      "to": "app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/build-instance-features.ts",
+      "to": "app/(dashboard)/users/access-analysis/instanceFeatureTokens.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/diag-activity-coordination.cjs",
+      "to": "app/(dashboard)/access-analysis/moduleOverrides.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/diag-activity-module-audit.cjs",
+      "to": "app/(dashboard)/access-analysis/moduleOverrides.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/diag-activity-service-xtab.cjs",
+      "to": "app/(dashboard)/access-analysis/moduleOverrides.ts"
+    },
+    {
+      "id": "no-scripts-to-app",
+      "from": "scripts/diag-activity-types.cjs",
+      "to": "app/(dashboard)/access-analysis/moduleOverrides.ts"
+    }
+  ]
+}

@@ -1,311 +1,207 @@
-<!-- refreshed: 2026-06-17 -->
 # Architecture
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
 
-## System Overview
-
-```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│                            Browser / Client (React 19)                       │
-│     TRPCProvider (httpBatchLink) → QueryClient (React Query 5)              │
-├─────────────────────────────────────────────────────────────────────────────┤
-│ App Router Pages (Next.js 16)  │  Components (TSX/CSS)   │  Client Hooks   │
-│  `app/(auth)/`                  │  `components/`           │  `lib/client/`  │
-│  `app/(dashboard)/`             │  UI (shadcn), Layouts   │  TRPC consumer  │
-│  Auth guard + Providers         │  Charts, Panels         │  State mgmt     │
-├─────────────────────────────────────────────────────────────────────────────┤
-│              TRPC API Layer (`/api/trpc/[trpc]/route.ts`)                  │
-│         Batched JSON-RPC over HTTP with SuperJSON serialization            │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                     Server-Side TRPC Routers (`server/routers/`)            │
-│   ┌─────────────────┬─────────────────┬─────────────────┬──────────────┐   │
-│   │ Core Domain     │ Integrations    │ Analysis/Graphs │ Support      │   │
-│   ├─────────────────┼─────────────────┼─────────────────┼──────────────┤   │
-│   │ families.ts     │ acc-sync.ts     │ acc-dc-graph.ts │ chat.ts      │   │
-│   │ clash.ts        │ aps-search.ts   │ acc-graph.ts    │ gmail.ts     │   │
-│   │ exam.ts         │ trello.ts       │ acc-person-graph│ calendar.ts  │   │
-│   │ tasks.ts        │ gmail.ts        │ acc-activity.ts │ search.ts    │   │
-│   │ sim.ts          │ lod.ts          │ acc-members.ts  │ lod.ts       │   │
-│   │ users.ts        │ workspace.ts    │ acc-folders.ts  │ workspace.ts │   │
-│   │ project.ts      │                 │                 │              │   │
-│   │ kpi.ts          │                 │                 │              │   │
-│   └─────────────────┴─────────────────┴─────────────────┴──────────────┘   │
-├─────────────────────────────────────────────────────────────────────────────┤
-│             Server-Side Business Logic & Data Access Layers                 │
-│   ┌──────────────────────────────────────────────────────────────────────┐  │
-│   │ Views (load* functions) — Pre-computed aggregates for pages          │  │
-│   │ `lib/server/accessInstanceView.ts`       → /access-analysis         │  │
-│   │ `lib/server/folderPermissionTerrainView` → Terrain visualization    │  │
-│   │ `lib/server/activityByActorView.ts`      → Activity by role donut   │  │
-│   │ `lib/server/moduleActivityView.ts`       → Module activity data     │  │
-│   │ `lib/server/projectCoverageView.ts`      → Coverage metrics         │  │
-│   │ `lib/server/acc-hot-cache.ts`            → Cached graph snapshots   │  │
-│   └──────────────────────────────────────────────────────────────────────┘  │
-│   ┌──────────────────────────────────────────────────────────────────────┐  │
-│   │ Business Logic — Domain-specific calculations & transformations     │  │
-│   │ `lib/acc/` — Classification, aggregation, activity analysis         │  │
-│   │ `lib/shared/` — Shared types and helpers                            │  │
-│   │ `server/actions/` — Server-side mutations                           │  │
-│   └──────────────────────────────────────────────────────────────────────┘  │
-├─────────────────────────────────────────────────────────────────────────────┤
-│                     Data Persistence Layer                                   │
-│   ┌──────────────────────┬──────────────────┬───────────────────────────┐   │
-│   │ Prisma ORM           │ External APIs    │ Client Caching            │   │
-│   ├──────────────────────┼──────────────────┼───────────────────────────┤   │
-│   │ PostgreSQL Local     │ APS (OAuth)      │ DuckDB-WASM (browser)     │   │
-│   │ (`prisma/schema.prisma`) │ ACC Data Source │ Client-side analysis   │   │
-│   │ Models: User, Project,   │ Gmail API      │                           │   │
-│   │ Task, Family, Clash,     │ Google Drive   │                           │   │
-│   │ Sim, Module, Activity    │ Trello         │                           │   │
-│   └──────────────────────────┴──────────────────┴───────────────────────────┘  │
-└─────────────────────────────────────────────────────────────────────────────┘
-```
-
-## Component Responsibilities
-
-| Component | Responsibility | File |
-|-----------|----------------|------|
-| Root Layout | Global styles, fonts, theme provider, TRPC provider, sonner toast | `app/layout.tsx` |
-| Dashboard Layout | Auth guard, sidebar, main content area, particle effects, chat/mail panels | `app/(dashboard)/layout.tsx` |
-| Auth Layout | Login, register, password reset routes | `app/(auth)/` |
-| Access Analysis Page | Server-side data aggregation, ECharts dashboard with roles/modules/activity donuts | `app/(dashboard)/access-analysis/page.tsx` |
-| Users Graph | 3D physics graph visualization, dimension sliders, profile drawer | `app/(dashboard)/users/` |
-| Sidebar | Navigation, project switcher, credential banner | `components/layout/Sidebar.tsx` |
-| TRPC Router | All RPC endpoints, auth, integrations, analysis queries | `server/routers/root.ts` |
-| Prisma Client | Database connection pool, schema-driven ORM | `server/db.ts` |
-| View Loaders | Pre-computed aggregates for /access-analysis and graph pages | `lib/server/*View.ts` |
-| ACC Hot Cache | Cached graph snapshots (nodes, edges) with invalidation | `lib/server/acc-hot-cache.ts` |
+**Primary Sources:**
+- `.tools/repo-map/architecture-summary.md`
+- `.tools/repo-map/manifest.json`
+- `.tools/repo-map/dependency-cruiser.json`
+- `server/routers/root.ts`
+- `server/trpc.ts`
+- `server/db.ts`
 
 ## Pattern Overview
 
-**Overall:** Server-Driven Hybrid Architecture
+**Overall:** Full-stack Next.js modular monolith with tRPC request boundaries, Prisma/PostgreSQL persistence, operational data-ingestion scripts, browser-heavy analytics surfaces, and an isolated Python LOD service.
 
 **Key Characteristics:**
-- **Data Layer:** PostgreSQL (Prisma ORM) + external APIs (APS, Gmail, Google Drive, Trello)
-- **API Layer:** TRPC (JSON-RPC over HTTP) with batched requests and SuperJSON serialization
-- **Rendering:** Next.js 16 App Router with RSC (Server Components) for data-heavy pages, React for interactive UI
-- **State Management:** React Query (client-side caching), Zustand (local UI state in components), RSC hydration boundaries
-- **Charts/Visualization:** ECharts (D3-like), cosmos.gl (3D GPU physics), DuckDB-WASM (client-side analytics)
-- **Auth:** NextAuth v5 (multi-provider: APS OAuth, Google, Autodesk)
+- Next.js App Router owns pages, route handlers, and layout composition under `app/`.
+- tRPC is the main typed API boundary, composed in `server/routers/root.ts`.
+- Prisma/PostgreSQL is the central persistence layer, configured through `server/db.ts` and `prisma/schema.prisma`.
+- ACC/Data Connector is the dominant domain by code volume and coupling.
+- Large browser-side visual analytics surfaces live under `app/(dashboard)/users/access-analysis/` and `app/(dashboard)/access-analysis/`.
+- Durable jobs, diagnostics, and backfills live under `scripts/`.
+- Python image/LOD processing is isolated under `services/lod-engine/`.
 
 ## Layers
 
-**Client Layer (Browser):**
-- Purpose: Interactive UI, real-time interactions, client-side analytics
-- Location: `app/(dashboard)/`, `components/`, `lib/client/`
-- Contains: TSX components, custom hooks (useQuery via TRPC), CSS modules, Tailwind styles
-- Depends on: TRPC client (via `lib/core/trpc.ts`), React Query
-- Used by: Browser, end users
+**Route and Page Layer:**
+- Purpose: Compose authenticated routes, server/client page shells, API route handlers, and dashboards.
+- Contains: `app/(auth)/`, `app/(dashboard)/`, `app/api/`, `app/layout.tsx`, `app/page.tsx`.
+- Depends on: `components/`, `lib/`, `server/` where server-safe, and tRPC client/provider wiring.
+- Used by: Browser navigation, API clients, Playwright/UAT tests.
 
-**API Layer (HTTP):**
-- Purpose: JSON-RPC bridge between client and server, request batching, auth middleware
-- Location: `app/api/trpc/[trpc]/route.ts`
-- Contains: TRPC HTTP handler, SuperJSON transformer
-- Depends on: Server routers, auth context
-- Used by: Client via httpBatchLink
+**Shared UI Layer:**
+- Purpose: Reusable UI primitives, dashboard widgets, theme/layout components, and feature widgets.
+- Contains: `components/ui/`, `components/layout/`, `components/dashboard/`, `components/families/`, `components/trello/`, `components/lod/`.
+- Depends on: React, Radix/shadcn, `lib/`, and feature-local types.
+- Boundary rule: should not import app route modules, Prisma, or server DB helpers directly.
 
-**Server Router Layer (Business Logic):**
-- Purpose: TRPC route handlers, permission checks, data fetching/transformations
-- Location: `server/routers/*.ts`
-- Contains: `protectedProcedure`, `adminProcedure`, query/mutation logic, validation (Zod)
-- Depends on: Database, external APIs, views/helpers
-- Used by: TRPC API layer
+**Feature Route Modules:**
+- Purpose: Feature-specific UI, pure transforms, graph/rendering logic, and collocated tests where a domain grew inside a route directory.
+- Examples: `app/(dashboard)/users/access-analysis/`, `app/(dashboard)/access-analysis/`, `app/(dashboard)/template-mty/`, `app/(dashboard)/forma-proposal/`.
+- Current risk: Some pure domain data such as taxonomy/module mappings is useful outside the route but still physically lives in route folders.
 
-**View Layer (Pre-computed Data):**
-- Purpose: Aggregate complex queries once, serve to pages and routers
-- Location: `lib/server/*View.ts`
-- Contains: SQL aggregations, data shape transformations (e.g., accessInstanceView → single JOIN across roles/folders)
-- Depends on: Prisma client, external APIs
-- Used by: Pages (RSC), routers, hot-cache
+**API Boundary Layer:**
+- Purpose: Validate user/session context and expose typed procedures.
+- Contains: `server/trpc.ts`, `server/routers/*.ts`, `app/api/trpc/[trpc]/route.ts`.
+- Depends on: `lib/server/`, `lib/acc/`, `server/db.ts`, provider SDKs, Zod/superjson patterns.
+- Used by: App Router pages and client components through tRPC.
 
-**Business Logic Layer (Utilities):**
-- Purpose: Domain-specific transformations, classifications, calculations
-- Location: `lib/acc/`, `lib/shared/`, `server/actions/`
-- Contains: Pure functions (classify activity, aggregate counts, merge role names)
-- Depends on: Types, data structures
-- Used by: Routers, views, pages
+**Server/Domain Layer:**
+- Purpose: Integration contracts, domain transforms, ingestion helpers, cache logic, and shared server-side business rules.
+- Contains: `lib/server/`, `lib/acc/`, `lib/google/`, `lib/forma/`, `lib/wiki/`, `lib/shared/`, `server/db.ts`, `server/auth.ts`.
+- Depends on: Prisma, external SDKs, Node runtime, typed model helpers.
+- Used by: tRPC routers, scripts, API routes, and tests.
 
-**Data Persistence Layer (Storage):**
-- Purpose: Store and retrieve persistent state
-- Location: PostgreSQL (local), external APIs (APS, Gmail, Google)
-- Contains: Prisma models (User, Project, Task, Family, Activity, etc.), third-party data
-- Depends on: Network, database credentials
-- Used by: All server logic
+**Persistence Layer:**
+- Purpose: Database schema, migrations, generated Prisma client, raw migration assets, and ERD.
+- Contains: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/migrations-raw/`, `docs/erd.md`.
+- Depends on: PostgreSQL.
+- Used by: Prisma client via `server/db.ts`, scripts, and server/lib modules.
+
+**Operational Script Layer:**
+- Purpose: Repeatable jobs, diagnostics, backfills, sync commands, repo-map tooling, and one-off investigation scripts.
+- Contains: `scripts/`, especially `scripts/acc-*`, `scripts/dc-*`, `scripts/repo-map/`, `scripts/uat/`, `scripts/scratch/`.
+- Depends on: Node core, `lib/`, Prisma/server helpers, provider SDKs.
+- Current risk: Six dependency-cruiser warnings show scripts importing route-owned app modules.
+
+**External Service Layer:**
+- Purpose: Provider-specific access for Autodesk/APS, Google, UploadThing, OpenAI, Resend, Redis/Upstash, Trello, and Hocuspocus/Yjs.
+- Contains: `lib/google/`, `lib/trello/`, `lib/server/uploadthing.ts`, `scripts/*`, server routers, API route handlers.
+- Boundary rule: secrets come from env vars; docs should list names only.
+
+**LOD Service Layer:**
+- Purpose: Python LOD/image pipeline and local server.
+- Contains: `services/lod-engine/server.py`, `services/lod-engine/img_pipeline/`.
+- Used by: `npm run lod:engine` and LOD dashboard components/routers.
 
 ## Data Flow
 
-### Primary Request Path (Access Analysis Page)
+**Interactive Dashboard Request:**
+1. User loads a route under `app/(dashboard)/`.
+2. NextAuth route guard in `auth.config.ts` decides whether the request is authorized.
+3. Page/server/client components compose UI from `components/` and feature modules.
+4. Client data requests call tRPC through `app/api/trpc/[trpc]/route.ts`.
+5. `server/trpc.ts` creates context with session, Prisma DB client, and project ID.
+6. `server/routers/root.ts` dispatches to domain routers.
+7. Routers call `lib/server/`, `lib/acc/`, `lib/google/`, Prisma, or provider SDKs.
+8. Results return through SuperJSON/tRPC and hydrate React Query/UI state.
 
-1. User navigates to `/access-analysis` → Next.js routes to `app/(dashboard)/access-analysis/page.tsx` (SSR)
-2. Page executes server-side data loaders in parallel (`loadInstanceView`, `loadModuleActivity`, `loadActivityByActor`, etc.)
-3. Each loader queries Prisma + external APIs → aggregates data (JOINs, GROUP BY)
-4. Loaders return pre-shaped rows (slim ProjectRoleRow[], AccActivity[], etc.)
-5. Page renders static `AccessAnalysisCharts` component with props
-6. Client-side: Charts hydrate as interactive ECharts instances (click to filter/drill)
-7. User clicks donut segment → PeopleDrillList component fetches TRPC query `accMembers.getByProject()`
-8. TRPC router executes query, returns people data, client renders drawer
+**ACC/Data Connector Batch Flow:**
+1. A script under `scripts/acc-*` or `scripts/dc-*` is launched manually or by cron.
+2. The script calls Autodesk/ACC/Data Connector APIs and helper modules in `lib/acc/`.
+3. Ingest/transformation helpers persist normalized records through Prisma.
+4. Dashboard routers read the updated PostgreSQL state and expose analysis/graph data.
+5. Access-analysis UI consumes results through tRPC and local graph/data transforms.
 
-**Files involved:**
-- `app/(dashboard)/access-analysis/page.tsx` (RSC, entry)
-- `lib/server/accessInstanceView.ts` (view loader)
-- `server/routers/acc-members.ts` (TRPC for drill-down)
-- `app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx` (client component wrapper)
-- `app/(dashboard)/access-analysis/components/RolesPieChart.tsx` (ECharts consumer)
+**Access-Analysis Browser Flow:**
+1. `/users` or access-analysis pages fetch bulk user/activity/project/folder datasets.
+2. Feature modules under `app/(dashboard)/users/access-analysis/` transform data into graph tables, node snapshots, selections, layouts, and analytics panels.
+3. Rendering uses React, canvas/WebGL, Cosmos/Three/D3/vgplot/ECharts, and local state contexts.
+4. Playwright UAT verifies canvas limits, reduced-motion behavior, fetch-once behavior, no overflow, and drill affordances.
 
-### Graph Rebuild Flow
-
-1. Page loads `/users/spatial-graph` → `app/(dashboard)/users/spatial-graph/page.tsx` (RSC)
-2. Page calls `loadGraphSnapshot()` via TRPC `accGraph.getSnapshot()`
-3. Router checks hot-cache (`lib/server/acc-hot-cache.ts`)
-4. If cache miss → rebuild from DB: SQL query → structure nodes/edges → cache 10min
-5. Page renders `GraphCanvas` (3D cosmos.gl) with frozen snapshot
-6. Client slider interaction → TRPC `accGraph.applySliders()` → hot-cache reposition logic
-7. Canvas updates 3D positions in real-time, GPU forces compute layout
-
-**Files involved:**
-- `server/routers/acc-graph.ts` (TRPC snapshot + slider endpoints)
-- `lib/server/acc-hot-cache.ts` (cache layer, rebuild, position recompute)
-- `app/(dashboard)/users/spatial-graph/GraphCanvas.tsx` (cosmos.gl 3D renderer)
-- `app/(dashboard)/users/access-analysis/CatalogSliderSidebar.tsx` (dimension controls)
-
-### Activity Attribution Flow
-
-1. Cron job or manual trigger calls `accSync.synchronizeProjects(projectId)`
-2. Router fetches project's ACC activities via APS SDK
-3. Calls `classifyActivity(rawAction)` from `lib/acc/activityCategories.ts`
-4. Stores `AccActivity` rows in Postgres via Prisma
-5. Later, `/access-analysis` page calls `loadActivityByActor()` which JOINs AccActivity + AccDcProjectUser
-6. Activity counts aggregate by actor's roles (via mergeRoleNames) → activity-by-role donut data
-7. Client renders donut, user clicks to drill into PeopleDrillList
-
-**Files involved:**
-- `server/routers/acc-sync.ts` (sync TRPC endpoint)
-- `lib/acc/activityCategories.ts` (pure classification)
-- `lib/server/unifiedActivitySource.ts` (merge activity sources)
-- `lib/server/activityByActorView.ts` (aggregation view)
+**Collaboration/Wiki/Chat Flow:**
+1. Dashboard components call chat/wiki/media API routes or tRPC routers.
+2. Media/upload handlers delegate to UploadThing or local route handlers.
+3. Collaborative document state uses TipTap/Yjs/Hocuspocus and database-backed persistence where configured.
 
 **State Management:**
-- **Server state:** Prisma models + external API state (APS project data, Gmail folders)
-- **Cache state:** Redis (Upstash) for session-ephemeral data, hot-cache for graph snapshots
-- **Client state:** React Query (TRPC hooks) for remote data, Zustand stores for UI state (e.g., selected project, slider values)
-- **Hydration:** HydrationBoundary in dashboard layout pre-fetches core queries (families, clash sections, kpi)
+- Server state: React Query/tRPC and Prisma/PostgreSQL.
+- Auth state: NextAuth sessions persisted through Prisma.
+- UI state: React state, context, and feature stores/hooks.
+- Persistent graph/domain state: PostgreSQL models such as `AccActivity`, `AccDc*`, `AccFolder*`, `AccMemberCache`, `AccPersonGraphSnapshot`, `AccInstanceEmbedding`.
 
 ## Key Abstractions
 
-**View Pattern (lib/server/*View.ts):**
-- Purpose: Decouple page queries from raw schema, pre-compute aggregates
-- Examples: `loadInstanceView()` → single flat table with 1 row per membership, `loadModuleActivity()` → module-activity counts
-- Pattern: Async function that JOINs Prisma models, returns typed array, called during RSC render
+**tRPC Router:**
+- Purpose: Domain API boundary with auth role checks.
+- Examples: `server/routers/users.ts`, `server/routers/acc-activity.ts`, `server/routers/acc-members.ts`, `server/routers/acc-dc-graph.ts`.
+- Pattern: Composed router map in `server/routers/root.ts`.
 
-**Router Procedure Pattern (server/routers/):**
-- Purpose: Declarative RPC endpoints with auth/validation middleware
-- Pattern: `router.query('endpoint', protectedProcedure.input(z.object(...)).query(async ({ input, ctx }) => { ... }))`
-- Middleware: `protectedProcedure` (require user), `adminProcedure` (require ADMIN role), `publicProcedure` (no auth)
+**Procedure Guards:**
+- Purpose: Auth and role enforcement at procedure boundary.
+- Examples: `protectedProcedure`, `adminProcedure`, `editorProcedure` in `server/trpc.ts`.
+- Pattern: tRPC middleware wraps context with authorized session.
 
-**Component Layering:**
-- **Page:** RSC, server-only data loading, minimal state
-- **Shell:** Client-side provider (context, Zustand), layout wrapper
-- **Panel:** Isolated feature (e.g., RolesPieChart), interactive
-- **UI:** Atomic components (Button, Dropdown), reusable
+**Prisma DB Client:**
+- Purpose: Central PostgreSQL access.
+- Example: `db` exported from `server/db.ts`.
+- Pattern: Global singleton in dev; adapter-backed Prisma client; env-driven pool config.
 
-**Dimension Catalog (lib/acc/dimensionCatalog.ts):**
-- Purpose: Registry of graph dimensions (Project, Role, User, etc.) with metadata (color, slider range)
-- Pattern: Pure data structure (`CatalogDimension[]`) + lookup helpers, drives slider UI and graph positioning
+**Feature-Local Pure Transforms:**
+- Purpose: Keep graph/table/analytics math testable outside React rendering.
+- Examples: `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts`, `app/(dashboard)/users/access-analysis/featureSnapshot.ts`, `app/(dashboard)/access-analysis/moduleOverrides.ts`.
+- Current issue: Some transforms are reused by scripts and should move out of route-owned app folders.
 
-**Activity Classification (lib/acc/activityCategories.ts):**
-- Purpose: Map raw APS action strings → business categories (Edit, View, etc.)
-- Pattern: Pure function `classifyActivity(rawAction) → ActivityCategory`
+**Repo-Map Structural Gate:**
+- Purpose: Capture dependency/AST/LLM-context snapshots and ratchet against new regressions.
+- Examples: `scripts/repo-map/generate.cjs`, `scripts/repo-map/check.cjs`, `.tools/repo-map/manifest.json`.
+- Pattern: `npm run repo-map:check` refreshes artifacts and validates baselines.
 
 ## Entry Points
 
-**Web App:**
-- Location: `app/layout.tsx` (root), `app/(auth)/login/page.tsx` (auth entry)
-- Triggers: HTTP request to `/` or `/login`
-- Responsibilities: Setup global providers, render layout tree
-
-**Protected Dashboard:**
-- Location: `app/(dashboard)/layout.tsx`
-- Triggers: Authenticated HTTP request to any `/dashboard/*` or `/` route
-- Responsibilities: Auth guard (`redirect` if no session), prefetch core TRPC queries, render sidebar + main
+**Next.js Application:**
+- `app/layout.tsx` - Root layout.
+- `app/page.tsx` - Root page.
+- `app/(auth)/` - Auth pages.
+- `app/(dashboard)/` - Main authenticated dashboards.
 
 **API Routes:**
-- Location: `app/api/trpc/[trpc]/route.ts` (TRPC RPC handler)
-- Triggers: HTTP POST to `/api/trpc/*` (batched JSON-RPC)
-- Responsibilities: Deserialize input, auth check, route to procedure, serialize output
+- `app/api/trpc/[trpc]/route.ts` - tRPC HTTP boundary.
+- `app/api/auth/[...nextauth]/route.ts` - NextAuth route.
+- `app/api/uploadthing/route.ts` - Upload route.
+- `app/api/chat/*` and `app/api/events/*` - Chat/media/event routes.
+- `app/api/wiki-media/*` and `app/api/wiki-collab-token/route.ts` - Wiki/media/collaboration routes.
 
-**Webhook Routes:**
-- Location: `app/api/clash-updates/route.ts`, `app/api/sim-updates/route.ts`
-- Triggers: External service POST (ACC webhooks)
-- Responsibilities: Parse payload, update database, trigger cron/sync
+**Server Composition:**
+- `server/routers/root.ts` - Router composition.
+- `server/trpc.ts` - tRPC context/procedures.
+- `server/db.ts` - DB client.
+- `server/auth.ts` - Auth provider setup.
 
-## Architectural Constraints
-
-- **Threading:** Single-threaded Node.js event loop; long-running queries use connection pool (PG_POOL_MAX=32 in production). No worker threads.
-- **Global state:** `_cachedProjectId` in `server/trpc.ts` (cached once per process); Prisma client singleton in `server/db.ts`; hot-cache in `lib/server/acc-hot-cache.ts` is process-local (10min TTL, invalidated on write)
-- **Circular imports:** None detected; `lib/` is always imported by `app/` or `server/`, never the reverse
-- **Build constraints:** `next build` typechecks entire codebase including test files (no ignoreBuildErrors); any tsc error blocks deploy
-- **Client-side isolation:** `"use client"` boundary enforced at component level; server-only imports fail at build time
-- **Memory constraints:** `lib/server/accessInstanceView.ts` loads ~5M AccFolderPermission rows on first load → 77s OOM risk; mitigated with GROUP BY aggregation (→ 21k rows, 9s load)
-
-## Anti-Patterns
-
-### Blocking Hot-Cache Invalidation
-
-**What happens:** Page writes new AccActivity rows to DB but hot-cache snapshot doesn't clear; next `/users/spatial-graph` load serves stale node/edge counts.
-
-**Why it's wrong:** Graph visualization shows outdated activity recency dimension; user confusion, debugging nightmare.
-
-**Do this instead:** Router endpoint that mutates data MUST call `invalidateSnapshot()` from `lib/server/acc-hot-cache.ts` before returning. Use `await db.$transaction()` for atomicity.
-
-### Bare Prisma Queries in Routes
-
-**What happens:** Router calls `db.activity.findMany({ ... })` directly instead of using `loadActivityByActor()` view.
-
-**Why it's wrong:** Duplicates complex JOINs, hard to maintain consistency, different pages compute different aggregates of the same data.
-
-**Do this instead:** Define view loader in `lib/server/*View.ts`, use it from both pages and routers. View is single source of truth for aggregation logic.
-
-### Mixing Server & Client State
-
-**What happens:** Component has `"use client"` but tries to call `db.query()` or import server-only module.
-
-**Why it's wrong:** Breaks build; Next.js rightfully rejects it. Subtle bugs if you catch imports at load-time instead of compile-time.
-
-**Do this instead:** Keep data fetching in RSC page, pass data via props to `"use client"` panels. If interactive filtering needed, fetch via TRPC hook.
-
-### Unvalidated Input in Routers
-
-**What happens:** `router.query('search', publicProcedure.input(z.string()).query(...))` accepts any string without bounds.
-
-**Why it's wrong:** Query can be large (KB+ string), causes DB query explosion, DOS risk.
-
-**Do this instead:** Always `.max(100)` on string inputs, use `.refine()` for domain validation (e.g., `projectId` must exist in DB).
+**Operational Commands:**
+- `scripts/run_dev_stack.py` - Dev stack wrapper.
+- `scripts/start-router.cjs` / `scripts/start-production.cjs` - Production/local start helpers.
+- `scripts/repo-map/generate.cjs` - Structural map generator.
+- `scripts/uat/run-engineering-gates.cjs` - UAT gate wrapper.
+- `services/lod-engine/server.py` - Python LOD engine.
 
 ## Error Handling
 
-**Strategy:** Error boundary + toast notifications + fallback UI
+**Strategy:**
+- tRPC routers throw `TRPCError` for authorization and procedure-level failures.
+- Server/script utilities generally throw `Error` or return structured result objects.
+- Playwright/UAT wrappers throw explicit errors with command output and gate context.
 
 **Patterns:**
-- **Auth errors:** `TRPCError({ code: "UNAUTHORIZED" })` thrown by middleware → caught by TRPC client → redirect to `/login` via `DualAuthGuard`
-- **Permission errors:** `TRPCError({ code: "FORBIDDEN" })` thrown by `adminProcedure` → client shows toast "Access Denied"
-- **Validation errors:** `TRPCError({ code: "BAD_REQUEST" })` from Zod parse failure → client logs validation details
-- **Network errors:** React Query retries once, then shows error toast via `onError` callback
-- **Component errors:** ErrorBoundary wraps page content, renders fallback UI instead of crashing
-- **Server errors:** `TRPCError({ code: "INTERNAL_SERVER_ERROR" })` wraps unexpected exceptions, logged to console (dev) or Sentry (prod)
+- Auth failures use `UNAUTHORIZED` / `FORBIDDEN` in `server/trpc.ts`.
+- DB connection configuration fails fast when neither `DATABASE_URL` nor `DIRECT_URL` is set.
+- Scripts and gate wrappers print actionable command output and exit non-zero on failed gates.
+- Production build strips `console.log` while preserving `console.error` and `console.warn`.
 
 ## Cross-Cutting Concerns
 
-**Logging:** No centralized logger configured; development uses `console.error/warn`, production strips `console.log` via Next.js compiler.
+**Authentication:**
+- NextAuth pages and route authorization in `auth.config.ts`.
+- Role-aware tRPC procedure guards in `server/trpc.ts`.
 
-**Validation:** Zod schemas on all TRPC inputs; Prisma schema validates database constraints; no manual runtime validation.
+**Validation:**
+- tRPC + Zod-style validation patterns in routers.
+- Prisma schema enforces persistence constraints and relations.
+- Engineering gates enforce TypeScript, repo-map, boundary, and UAT expectations.
 
-**Authentication:** NextAuth v5 with multi-provider (Autodesk APS, Google, custom email+password); session stored in secure cookie; `auth()` function in `server/auth.ts` is cached per request.
+**Performance:**
+- Browser-heavy graph/analytics code must preserve fetch-once behavior, canvas/GPU limits, reduced motion, and no-overflow UAT requirements.
+- `next.config.ts` optimizes package imports for selected UI/runtime packages and aliases DuckDB for browser safety.
 
-**Authorization:** Role-based access control (`ADMIN`, `EDITOR`, `VIEWER`) enforced in middleware (`protectedProcedure`, `adminProcedure`); per-project scoping via `ctx.projectId` (cached singleton).
-
-**Rate Limiting:** None configured at application level; relies on PostgreSQL connection pool backpressure and external API rate limits (APS: 2 req/s, Gmail: daily quota).
+**Dependency Boundaries:**
+- Current repo-map status: 0 dependency errors, 0 circulars, 6 baseline dependency warnings.
+- Known warnings are all `no-scripts-to-app`, where scripts import route-owned modules.
+- Treat `app -> lib`, `app -> components`, `components -> lib`, and `server -> lib` as expected high-traffic edges.
+- Treat `lib -> app`, `components -> app`, `server -> components`, scripts-to-app imports, and UI-to-DB imports as cleanup targets.
 
 ---
 
-*Architecture analysis: 2026-06-17*
+*Architecture analysis: 2026-06-19*
+*Update when route/API boundaries, data flow, or major service ownership changes.*

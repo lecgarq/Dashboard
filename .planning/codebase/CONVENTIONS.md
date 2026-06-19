@@ -1,165 +1,146 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
+
+**Primary Sources:**
+- `tsconfig.json`
+- `eslint.config.mjs`
+- `vitest.config.ts`
+- Representative source files under `server/`, `app/`, `components/`, `lib/`, and `tests/`
+- `.tools/repo-map/ast-grep-report.json`
+- `.tools/repo-map/dependency-cruiser.json`
 
 ## Naming Patterns
 
 **Files:**
-- Descriptive camelCase for data/logic files: `companyCounts.ts`, `accdsActivity.ts`, `activityByRolePieChart.tsx`
-- Test files co-located in `__tests__/` directories or with `.test.ts`/`.spec.ts` suffix
-- Routes use Next.js convention: `route.ts` in `app/api/[path]/`
-- Components: PascalCase for React components: `AccessAnalysisCharts.tsx`, `RolesPieChart.tsx`
-- Utility files: lowercase with hyphens for cross-cutting concerns: `create-logger.ts`, `split-windows.ts`
+- React component files use PascalCase when they export a visible component: `components/dashboard/MailPanel.tsx`, `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx`.
+- Pure helpers and feature transforms use camelCase: `graphNodesFromUsers.ts`, `moduleOverrides.ts`, `featureSnapshot.ts`.
+- Tests use `*.test.ts` or `*.test.tsx`; Playwright uses `*.spec.ts`.
+- Next route files use framework names: `page.tsx`, `layout.tsx`, `loading.tsx`, `route.ts`.
+- Scripts use `.cjs`, `.mjs`, `.ts`, or `.ps1` with descriptive kebab-case names.
 
 **Functions:**
-- Named exports for public API: `export function summarizeCompanies(...)`
-- camelCase for all function names: `fetchActivityWindow`, `collapseCompanySlices`, `labelFor`
-- Private helpers: lowercase or underscore prefix for scope (e.g., `const labelFor = (...) => ...`)
-- Server-side functions typically exported with descriptive intent: `crawlProjectActivity`, `writeLog`
+- Use camelCase for functions and hooks.
+- React hooks use `use*`: `useEventSource`, `useMailNotifications`, `useGraphRafLoop`.
+- Event handlers commonly use `handle*` when local to a component.
+- tRPC procedures are grouped under domain routers rather than exported as standalone handler functions.
 
-**Variables:**
-- camelCase for all local and module-level variables: `const counts = new Map()`, `let cbFailures = 0`
-- Constants: SCREAMING_SNAKE_CASE when truly immutable across the app: `UNKNOWN_COMPANY`, `DEFAULT_TOP`, `MAX_SPACES_TO_POLL`
-- Private module constants: lowercase if scoped: `const ACCDS_BASE = '...'` (used in one file)
-- Map/Set names are plural or descriptive: `usersByCompany`, `lastSeenTime`, `colorByName`
+**Variables and Constants:**
+- Use camelCase for local variables.
+- Use UPPER_SNAKE_CASE for durable constants and env-like flags where appropriate: `NEXT_PUBLIC_ACC_GPU_2D`, `UNMAPPED_MODULE`.
+- Prefer typed constants for domain labels/catalogs instead of raw repeated strings.
 
 **Types:**
-- PascalCase for all types and interfaces: `CompanySummary`, `AccdsPage`, `NewMessageEvent`, `RoleActivitySummary`
-- Type aliases: `type LogLevel = "debug" | "info" | "warn" | "error"`
-- Import types explicitly with `import type` to avoid circular deps and signal type-only usage
-
-**React Props:**
-- Destructured in function signature with inline interface or separate `{prop: Type}[]` block
-- Event handler callbacks: `on[Event]` pattern: `onUserClick`, `onRows`, `loadClashes`
+- Use PascalCase for interfaces and type aliases.
+- Export named domain types when they are consumed across modules.
+- Prefer `type` imports for type-only imports when practical.
+- Type augmentations live under `types/`, such as `types/next-auth.d.ts`.
 
 ## Code Style
 
 **Formatting:**
-- ESLint config at `eslint.config.mjs` (flat config, minimal rules)
-- No enforced Prettier config detected; code follows implicit style
-- Indentation: 2 spaces (visible in all samples)
-- Line breaks: 80–100 character soft limit (long lines acceptable for readability, e.g., error messages)
+- There is no dedicated Prettier config detected in the fresh map.
+- Formatting is locally consistent but mixed across older files; match nearby file style when editing.
+- Most application TypeScript uses semicolons and double quotes; some config/setup files use single quotes.
+- Do not reformat unrelated files as part of feature work.
+
+**TypeScript:**
+- `tsconfig.json` has `strict: true`, `noEmit: true`, `moduleResolution: bundler`, and `jsx: react-jsx`.
+- `noImplicitAny` is currently `false`, so new code should still prefer explicit domain types where ambiguity matters.
+- Path alias: `@/*` maps to the repository root.
 
 **Linting:**
-- ESLint v10 in use; config is minimal (ignores directories only, no other rules enforced)
-- Type checking: TypeScript strict mode enabled (`strict: true` in `tsconfig.json`)
-- `noImplicitAny: false` but all variables have explicit types in real code
-
-**String Literals:**
-- Template literals for multi-line strings and interpolation: `` `${ACCDS_BASE}/${...}` ``
-- Single quotes for simple strings (observed in imports and constants)
-- Backticks for complex expressions
-
-**Const vs Let:**
-- Prefer `const` throughout; `let` only for mutable loop counters or reassigned state (e.g., `let next = 0` in concurrent loops)
-- `var` not used
+- `eslint.config.mjs` currently mainly ignores generated/build/cache directories.
+- `npm run lint` invokes `eslint`.
+- The stronger structural guard is `npm run repo-map:check`, which runs dependency-cruiser and ast-grep.
 
 ## Import Organization
 
-**Order:**
-1. External packages: `import { describe, it, expect } from "vitest"`
-2. External UI/React: `import { useMemo, useState } from "react"`
-3. Internal type imports: `import type { RoleSlice } from "./roleCounts"`
-4. Internal module imports: `import { summarizeCompanies } from "../companyCounts"`
-5. Relative exports: `export function ...`
+**Common Order:**
+1. External packages: React, Next, tRPC, Prisma, SDKs.
+2. Absolute internal imports through `@/`.
+3. Relative imports from the same feature/module.
+4. Type-only imports where appropriate.
 
 **Path Aliases:**
-- Root alias `@/*` maps to project root: `import { Button } from "@/components/ui/button"`
-- Used consistently across the codebase for cleaner imports
-- Relative imports `.` and `..` used within same directory/adjacent modules
+- Use `@/` for root-relative application imports.
+- Relative imports are common within feature directories.
 
-**Type imports:**
-- Marked explicitly with `import type` to signal type-only usage
-- Prevents circular dependency hazards and clarifies intent
+**Boundary Rules:**
+- `app/` may import from `components/`, `lib/`, and server-safe modules where Next permits.
+- `components/` should not import route-owned `app/`, Prisma, or DB helpers.
+- `server/` and `lib/server/` may import DB and external SDKs.
+- `scripts/` should avoid importing route-owned `app/(dashboard)/...` modules. The current repo-map has six baseline warnings here.
+- Reusable taxonomy/domain transforms should move toward `lib/acc/`, `lib/domain/`, or `lib/shared/`.
 
 ## Error Handling
 
 **Patterns:**
-- Direct `throw new Error(message)` for synchronous failures: `throw new Error(\`accds ${res.status} for project...\`)`
-- Error messages include context (HTTP status, project ID, scope): makes debugging easier without stack unwinding
-- `try-catch` blocks used for async operations with potential recovery: `await fetchActivityWindow` with retry loop
-- Retry logic with exponential backoff: `Math.min(30_000, 1000 * 2 ** attempt)` (see `accdsActivity.ts`)
-- Circuit breaker pattern for stateful failures: open/half-open/closed states (see `/api/chat/stream/route.ts`)
-- Error categorization: distinguish between retryable (429, 5xx) and fatal (403, 404) errors
-- Failed promise chains in fire-and-forget contexts: `void poll()` with internal error handling
+- tRPC authorization uses `TRPCError` in `server/trpc.ts`.
+- DB config fails fast in `server/db.ts` if no database URL is present.
+- Scripts and UAT gate wrappers throw or exit with explicit command output.
+- Tests wrap shell failures with captured stdout/stderr when the failure context matters.
 
-**Type Guards:**
-- `instanceof Error` checks for error type before accessing `.message` or `.stack`
-- Check for string inclusions to classify errors: `msg.includes("timeout exceeded")` for DB pool detection
+**When to Throw:**
+- Missing required runtime configuration.
+- Unauthorized/forbidden procedure access.
+- Failed engineering gates or failed external command execution.
+- Invariant failures in pure transforms.
+
+**When to Return Structured Results:**
+- Domain transforms that classify or aggregate data should return typed objects.
+- Expected partial coverage, unknown categories, or unmapped actions should generally return explicit buckets rather than throwing.
 
 ## Logging
 
-**Framework:** Structured logging via `createLogger(scope)` factory
-- Located in `lib/server/logger.ts`
-- Not used in client-side code (server-only module)
+**Framework:**
+- No centralized logging framework was detected.
+- Server/scripts primarily use console output.
+- `next.config.ts` removes `console.log` in production and preserves `console.error`/`console.warn`.
 
 **Patterns:**
-- Create a logger once per route/service: `const logger = createLogger("chat-stream-route")`
-- Emit structured data: `logger.info("message", { userId, spaceName, ...context })`
-- Log levels: `debug`, `info`, `warn`, `error`
-- Debug logs omitted in production (`NODE_ENV !== "production"`)
-- Error objects serialized with `.message`, `.stack`, and `.code` fields for debugging
-- Circular references detected and replaced with `"[Circular]"` to prevent serialization failures
-
-**Usage:**
-- Debug for internal flow tracing: `logger.debug("New message detected in polled space", {...})`
-- Warn for recoverable failures: `logger.warn("Chat stream poll failed", { userId, error })`
-- Error for fatal conditions: `logger.error(...)`
-- Meta object accepts any JSON-serializable value; undefined values are stripped
+- Use `console.warn` for known recoverable data-quality issues.
+- Use `console.error` for operational failures.
+- Avoid adding production `console.log`; ast-grep currently reports 123 `no-console-log` findings as a visible cleanup queue.
 
 ## Comments
 
 **When to Comment:**
-- Inline comments explain *why* not *what*: `// accds filter[created_at]=a..b may be inclusive on both ends`
-- Reference external context (APIs, specs): `// Bucket for memberships with no resolvable company name`
-- Explain non-obvious algorithm choices: `// windows must not overlap at the seam`
-- Flag architecture decisions or constraints: `// the main throughput lever` for `pageConcurrency > 1`
+- Explain domain decisions, invariants, and test gates.
+- Keep comments for non-obvious compatibility or performance workarounds.
+- Good examples exist in `tests/e2e/uat-workshop.spec.ts`, `next.config.ts`, `server/db.ts`, and domain mapping modules.
 
-**JSDoc/TSDoc:**
-- Function-level JSDoc for public APIs with multi-line descriptions
-- Field-level JSDoc (one-liner) for object properties: `/** Company -> membership count, desc; ... */`
-- Omitted for simple functions or when type signatures are self-explanatory
-- Pattern: `/** Multi-line description of behavior, including side effects, preconditions. */`
+**TODO Comments:**
+- ast-grep currently reports 5 `unsafe-todo` findings.
+- New TODOs should include enough context to be actionable and should not hide known blockers in source comments.
 
 ## Function Design
 
-**Size:** Functions typically 10–50 lines; larger functions (100+) used for complex logic but broken into internal helpers
-- Example: `fetchActivityWindow` is ~45 lines including retry loop
-- Example: `mapLimit` is an internal helper ~25 lines for bounded concurrency
+**Preferred:**
+- Keep pure transforms small, exported, and unit-tested.
+- Use guard clauses and explicit return objects for complex domain mapping.
+- Put data-shaping helpers outside React components when the same logic feeds scripts, routers, or tests.
 
-**Parameters:**
-- Prefer object parameters for functions with >2 args: `fetchActivityWindow({getToken, projectId, ...})`
-- Positional args for simple, obvious parameters: `summarizeCompanies(rows)`
-- Readonly arrays for input data to signal immutability: `ReadonlyArray<T>`
-
-**Return Values:**
-- Single return object for multiple outputs: `{ slices, distinctCompanies, total, usersByCompany }`
-- Void for side-effect-only functions (logging, DOM updates)
-- Promise for async functions; no implicit Promise wrapping
-
-**Utility Functions:**
-- Exported at module level; rarely nested
-- Named with intent-driven verbs: `summarize`, `collapse`, `filter`, `crawl`, `normalize`
-- Pure functions preferred; side effects (logging, I/O) encapsulated in route/component handlers
+**Watch Outs:**
+- Fresh repo-map reports 148 large `useEffect` matches. New side effects in large render modules should be treated carefully.
+- Large access-analysis modules combine rendering, graph math, state, and data transforms; extract pure helpers before changing behavior.
 
 ## Module Design
 
 **Exports:**
-- One primary export per file or multiple related exports
-- `export interface` for types consumed by other modules
-- `export function` for public API; private helpers via `const` (not exported)
-- No default exports in utility modules (using named exports enforces clarity)
+- Named exports are common for utilities, constants, routers, and testable helpers.
+- React route/page files follow Next.js export conventions.
+- Avoid broad barrel files if they blur server/client boundaries.
 
-**Barrel Files:**
-- `components/index.ts` pattern observed for component re-exports (not verified as universal)
-- Generally avoided for deep modules; explicit imports preferred
+**Tests:**
+- Collocate tests near source or use nearby `__tests__/` folders.
+- Use pure helper extraction to make route-heavy logic easier to test with Vitest.
 
-**File Organization:**
-- Types and interfaces at top of file before implementation
-- Public functions after types, in order of complexity/importance
-- Private helpers (const functions) at bottom
-- Example: `companyCounts.ts` exports `CompanySummary` interface, then `labelFor` helper, then public `summarizeCompanies` and `collapseCompanySlices`
+**Generated Artifacts:**
+- Do not hand-edit `.tools/repo-map/*`, `.next*`, `playwright-report/`, or `test-results/`.
+- Regenerate repo-map with `npm run repo-map:check`.
 
 ---
 
-*Convention analysis: 2026-06-17*
+*Convention analysis: 2026-06-19*
+*Update when formatting, linting, dependency-boundary, or module ownership rules change.*

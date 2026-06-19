@@ -1,201 +1,128 @@
 # Technology Stack
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
+
+**Primary Sources:**
+- Fresh repo-map run: `.tools/repo-map/manifest.json` generated at `2026-06-19T22:30:32.287Z`
+- Architecture digest: `.tools/repo-map/architecture-summary.md`
+- Project manifest: `package.json`
+- Build/test configs: `tsconfig.json`, `next.config.ts`, `vitest.config.ts`, `playwright.config.ts`
 
 ## Languages
 
 **Primary:**
-- TypeScript 6.0.3 - Full codebase, server and client (ES2017 target)
-- JavaScript - Build scripts, configuration files
-- Python 3.x - LOD engine service and data pipeline scripts
+- TypeScript - Main application, server routers, domain logic, tests, and scripts.
+- TSX - Next.js App Router pages and React components under `app/` and `components/`.
 
 **Secondary:**
-- SQL - Prisma queries, database operations
-- JSX/TSX - React component definitions
+- JavaScript/CJS/MJS - Runtime scripts, Electron entry point, config glue, and GSD/repo-map tooling.
+- Python - LOD/image processing service under `services/lod-engine/`.
+- SQL/Prisma schema - PostgreSQL schema, migrations, and generated ORM model definitions under `prisma/`.
 
 ## Runtime
 
 **Environment:**
-- Node.js ≥22 - Primary runtime for Next.js server and scripts
-- Python 3.x - LOD engine ML pipeline execution
+- Node.js `>=22` - Required by `package.json` and used for Next.js, tRPC, scripts, Prisma, repo-map, and Electron.
+- Browser runtime - React 19 client surfaces, canvas/WebGL visualizations, DuckDB WASM, charts, and collaboration UI.
+- Python 3.x - Required for `services/lod-engine/server.py` and `services/lod-engine/img_pipeline/`.
 
 **Package Manager:**
-- npm - Primary package management
-- Lockfile: Present (package-lock.json assumed via standard npm workflow)
+- npm - Primary package manager.
+- Lockfile: `package-lock.json` present.
 
 ## Frameworks
 
 **Core:**
-- Next.js 16.2.6 - Full-stack React application framework
-- React 19.2.6 - UI component library
-- React DOM 19.2.6 - DOM rendering
+- Next.js `^16.2.6` - App Router web application and API routes.
+- React `19.2.6` / React DOM `19.2.6` - UI runtime.
+- tRPC `^11.17.0` - Typed API boundary through `server/trpc.ts`, `server/routers/root.ts`, and `app/api/trpc/[trpc]/route.ts`.
+- Prisma `^7.8.0` with `@prisma/adapter-pg` - PostgreSQL ORM and adapter-based DB access.
+- NextAuth `5.0.0-beta.31` - Authentication and route authorization.
 
-**Backend/Data:**
-- Prisma 7.8.0 - ORM and database abstraction layer (`prisma/schema.prisma`)
-- tRPC 11.17.0 - Type-safe client-server communication (`server/trpc.ts`, `server/routers/`)
-- Superjson 2.2.6 - JSON serialization transformer for tRPC
+**UI/Data Visualization:**
+- Radix UI/shadcn components - Local UI primitives in `components/ui/`.
+- TanStack React Query/Table/Virtual - Server state, table primitives, and virtualized lists.
+- ECharts and `echarts-for-react` - Dashboard charts.
+- `@cosmos.gl/graph`, `three`, `@react-three/fiber`, `d3-*`, `@uwdata/vgplot`, and Mosaic packages - Access-analysis graphing, layout, and analytics surfaces.
+- TipTap, Yjs, and Hocuspocus - Collaborative editing and wiki-style rich text.
 
-**Frontend UI:**
-- TailwindCSS 4.3.0 - Utility-first CSS framework
-- Radix UI 1.4.3 - Unstyled, accessible UI components
-- Shadcn/ui 4.7.0 - Component library built on Radix UI
-- Framer Motion 12.38.0 - Animation and motion library
-- ECharts 6.1.0 - Data visualization library
-- Cosmos.gl 3.0.0-beta.9 - 3D graph visualization (spatial-graph)
-- Three.js 0.184.0 - 3D graphics library
-
-**Rich Text / Collaboration:**
-- TipTap 3.23.1 - Headless rich text editor
-- Yjs 13.6.30 - CRDT-based collaborative editing
-- Hocuspocus 4.0.0 - WebSocket server for real-time collaboration
-
-**Data Processing:**
-- DuckDB-WASM 1.33.1-dev45.0 - In-browser analytical database
-- Mosaic 0.25.0 (@uwdata) - Data-driven visualization framework
-- Apache Arrow 17.0.0 - Columnar data format
-- CSV Parse 6.2.1 - CSV file parsing
-
-**Server/Network:**
-- tRPC Server 11.17.0 - RPC handler for `server/routers/`
-- Uploadthing 7.7.4 - File upload handling
-- WebSocket (ws) 8.20.0 - WebSocket protocol support
-- Google APIs 171.4.0 - Gmail, Calendar, Drive, Directory, Forms, Sheets integration
-- OpenAI 6.37.0 - AI/LLM integration for family descriptions
-
-**Data/State:**
-- TanStack React Query 5.100.14 - Async state management
-- Zustand - State management (inferred from memory context)
-- Zod 4.4.3 - TypeScript-first schema validation
-
-**Testing:**
-- Vitest 4.1.6 - Unit test runner
-- Playwright 1.59.1 - E2E browser automation and testing
-- @testing-library/react 16.3.2 - React component testing utilities
-- jsdom 29.1.1 - DOM environment for Node.js tests
-- fast-check 3.23.2 - Property-based testing
+**Testing and Verification:**
+- Vitest `^4.1.6` - Unit/component test runner.
+- Playwright `^1.59.1` - E2E and UAT verification.
+- TypeScript compiler `^6.0.3` - `npx tsc --noEmit` is a required engineering gate.
+- repo-map toolchain - `repomix`, `dependency-cruiser`, and `@ast-grep/cli` driven by `scripts/repo-map/generate.cjs`.
 
 **Build/Dev:**
-- Webpack - Configured via Next.js (custom aliases for DuckDB)
-- PostCSS 8.5.14 (@tailwindcss/postcss 4.3.0) - CSS transformation
-- ESLint 10.3.0 - JavaScript linting (eslint-config-next 16.2.6)
-- TypeScript 6.0.3 - Type checking and compilation
-- tsx 4.21.0 - TypeScript file execution
-- Knip 6.12.2 - Unused import detection
-- Patch Package 8.0.1 - Node module patching
+- Next webpack build path - `next dev --webpack`, `next build --webpack`, and isolated `NEXT_DIST_DIR` builds.
+- Tailwind CSS 4 via `@tailwindcss/postcss`.
+- Electron `^42.1.0` for desktop entry point `electron/main.cjs`.
+- Prisma ERD generation through `prisma-erd-generator`.
 
 ## Key Dependencies
 
 **Critical:**
-- @prisma/client 7.8.0 - Database interaction layer
-- @prisma/adapter-pg 7.8.0 - PostgreSQL adapter for connection pooling (PrismaPg)
-- next-auth 5.0.0-beta.31 - Authentication framework
-- @auth/prisma-adapter 2.11.2 - NextAuth database adapter
+- `@prisma/client` / `@prisma/adapter-pg` - Database access through `server/db.ts`.
+- `@trpc/server`, `@trpc/client`, `@trpc/react-query` - Typed API layer.
+- `next-auth` and `@auth/prisma-adapter` - Auth/session persistence.
+- `googleapis` - Gmail, Calendar, Drive, and service-account integrations.
+- `@aps_sdk/authentication`, `@aps_sdk/model-derivative`, `@aps_sdk/oss` - Autodesk Platform Services integrations.
+- `@duckdb/duckdb-wasm` and `apache-arrow` - Browser-side analytics/data processing in access-analysis.
+- `uploadthing` / `@uploadthing/react` - File upload/media integration.
+- `openai` - AI generation API integration.
+- `@upstash/redis` / `ws` - Cache/realtime support where configured.
 
-**Infrastructure:**
-- @aps_sdk/authentication 1.0.1 - Autodesk APS authentication
-- @aps_sdk/model-derivative 1.2.1 - Model translation and manifest
-- @aps_sdk/oss 1.3.3 - Object storage (bucket upload/download)
-- googleapis 171.4.0 - Google Workspace APIs (Gmail, Calendar, Drive, Directory, Sheets, Forms, Chat)
-- openai 6.37.0 - OpenAI API for LLM integration
-
-**Real-time:**
-- @hocuspocus/server 4.0.0 - Collaboration server
-- @hocuspocus/provider 4.0.0 - Hocuspocus client provider
-- @hocuspocus/extension-database 4.0.0 - Database persistence
-- @hocuspocus/extension-logger 4.0.0 - Logging
-- yjs 13.6.30 - Shared data structures
-- y-protocols 1.0.7 - Protocol support
-- @tiptap/y-tiptap 3.0.3 - TipTap + Yjs integration
-- ws 8.20.0 - WebSocket implementation
-
-**Storage/Caching:**
-- @upstash/redis 1.38.0 - Redis cache client (optional, configured via env)
-- pg 8.20.0 - PostgreSQL client (native driver for Prisma fallback)
-- unzipper 0.12.3 - ZIP file extraction
-
-**File Upload:**
-- @uploadthing/react 7.3.3 - React components for Uploadthing
-- uploadthing 7.7.4 - File upload service
-- excel-related: xlsx (0.20.3 from CDN sheetjs.com)
-- react-pdf 10.4.1 - PDF rendering
-
-**Accessibility/UI:**
-- lucide-react 1.14.0 - Icon library
-- Radix UI form/dialog/popover components
-- sonner 2.0.7 - Toast notifications
-- clsx 2.1.1 - Conditional className binding
-- tailwind-merge 3.6.0 - Tailwind class merging
-- next-themes 0.4.6 - Theme management
-
-**Utilities:**
-- date-fns 4.1.0 - Date manipulation
-- bcryptjs 3.0.3 - Password hashing
-- d3-force 3.0.0 - Force-directed layout
-- d3-force-3d 3.0.6 - 3D force simulation
-- d3-hierarchy 3.1.2 - Hierarchical layout
-- d3-scale-chromatic 3.1.0 - Color scales
-- class-variance-authority 0.7.1 - Component variant management
-- p-limit 7.3.0 - Promise concurrency limit
-- server-only 0.0.1 - Server-only code marker
-
-**ML/Python (LOD Engine):**
-- FastAPI - Web framework for LOD engine
-- PyTorch - Deep learning framework
-- Transformers (HuggingFace) - SigLIP model
-- NumPy - Numerical computing
-- YAML - Configuration parsing
+**Infrastructure and Tooling:**
+- `dependency-cruiser` - Dependency graph and boundary rule reports.
+- `repomix` - LLM-friendly source snapshots in `.tools/repo-map/`.
+- `@ast-grep/cli` - Structural code scans for fetch/useEffect/router/Prisma patterns.
+- `knip` - Unused-code/dependency analysis.
+- `patch-package` - Local package patches under `patches/`.
 
 ## Configuration
 
 **Environment:**
-- `.env` file (not committed) - Runtime secrets and configuration
-- Environment variables required:
-  - `DATABASE_URL` or `DIRECT_URL` - PostgreSQL connection string
-  - `AUTH_SECRET` / `NEXTAUTH_SECRET` - NextAuth signing secret
-  - `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Google OAuth
-  - `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` - Google Chat OAuth (optional)
-  - `APS_CLIENT_ID`, `APS_CLIENT_SECRET` - Autodesk APS OAuth
-  - `OPENAI_API_KEY` - OpenAI API key
-  - `UPLOADTHING_TOKEN` - Uploadthing secret
-  - `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` - Redis cache (optional)
-  - `PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS` - Connection pool tuning
-  - `ADMIN_EMAIL`, `ADMIN_EMAIL_ALIAS` - Admin identity configuration
-  - `AUTH_URL` / `NEXTAUTH_URL` - Authentication URL
-  - `NODE_ENV` - Runtime environment (development/production)
-  - `NEXT_PUBLIC_*` - Public environment variables (visible to client)
+- Example file: `.env.example`.
+- Required categories include auth (`AUTH_SECRET`, `NEXTAUTH_SECRET`), database (`DATABASE_URL`, `DIRECT_URL`), Google, Autodesk/APS, UploadThing, OpenAI, Resend, Redis/Upstash, and feature flags.
+- Do not document or copy values from `.env`; only env var names belong in docs.
 
-**Build:**
-- `next.config.ts` (`C:\LECG\Dashboard\next.config.ts`) - Next.js configuration with webpack customization for DuckDB
-- `tsconfig.json` - TypeScript compiler options
-- `vitest.config.ts` - Unit test runner configuration
-- `playwright.config.ts` - E2E test configuration
-- `playwright.verify.config.ts` - Verification test suite
-- `postcss.config.mjs` - PostCSS with Tailwind
-- `eslint.config.mjs` - ESLint linting rules
-- `auth.config.ts` - NextAuth configuration
-- `prisma.config.ts` - Prisma configuration
-
-**Database:**
-- `prisma/schema.prisma` - Schema definition for Prisma ORM
-- PostgreSQL 18+ (via local `.local/postgresql18/` or remote Railway/Supabase)
-- Connection pooling via PrismaPg (native PostgreSQL adapter)
-- Local postgres instance managed via `scripts/postgres-local.js`
+**Build and Runtime Config:**
+- `next.config.ts` - Next config, DuckDB browser aliases, server external packages, allowed server-action origins, and package import optimization.
+- `tsconfig.json` - Strict TypeScript with `@/*` path alias to repo root and broad project include.
+- `eslint.config.mjs` - Ignore-focused ESLint config for generated/build/cache directories.
+- `prisma.config.ts` and `prisma/schema.prisma` - Prisma configuration and schema.
+- `proxy.ts`, `auth.config.ts`, `server/auth.ts` - Auth/routing guard surface.
 
 ## Platform Requirements
 
 **Development:**
-- Node.js ≥22
-- Python 3.x (for LOD engine)
-- PostgreSQL 18+ (local or remote)
-- Git
-- Playwright dependencies (Chromium browser)
+- Node.js 22 or newer.
+- npm install with `postinstall` running Prisma generate, patch-package, and DuckDB WASM copy.
+- PostgreSQL available through `DATABASE_URL` or `DIRECT_URL`.
+- Python available for the LOD service when working in `services/lod-engine/`.
+- Optional local DB helpers: `npm run db:start`, `npm run db:stop`, `npm run db:status`.
 
-**Production:**
-- Deployment target: Railway (historical, now local Windows Task Scheduler per memory context)
-- Node.js ≥22 runtime
-- PostgreSQL database
-- Redis (optional, for caching)
+**Production/Runtime:**
+- Next.js server/runtime with PostgreSQL.
+- `server/db.ts` prefers `DIRECT_URL` in production when present and uses pool sizing env vars (`PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`).
+- Image remotes are constrained in `next.config.ts` to UploadThing, UTFS, and Google profile image hosts.
+- Local production start is wrapped by `scripts/start-router.cjs` and `scripts/start-production.cjs`.
+
+## Codebase Map Tooling
+
+**Refresh:**
+```powershell
+npm run repo-map:check
+```
+
+**Outputs:**
+- `.tools/repo-map/manifest.json`
+- `.tools/repo-map/architecture-summary.md`
+- `.tools/repo-map/dependency-cruiser.json`
+- `.tools/repo-map/dependency-graph.mmd`
+- `.tools/repo-map/ast-grep-report.json`
+- `.tools/repo-map/repomix/*.xml`
 
 ---
 
-*Stack analysis: 2026-06-17*
+*Stack analysis: 2026-06-19*
+*Update after major dependency, runtime, or deployment changes.*

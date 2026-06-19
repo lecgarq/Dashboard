@@ -1,262 +1,156 @@
 # External Integrations
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
+
+**Primary Sources:**
+- `.tools/repo-map/manifest.json`
+- `.tools/repo-map/architecture-summary.md`
+- `.env.example`
+- `package.json`
+- `server/routers/root.ts`
+- `server/db.ts`
+- `auth.config.ts`
 
 ## APIs & External Services
 
-**Autodesk APS (Architecture, Engineering & Construction Cloud):**
-- APS Authentication - Three-legged OAuth for user-context authorization
-  - SDK: `@aps_sdk/authentication` 1.0.1
-  - Auth file: `server/auth.ts` (Autodesk provider at lines 69-105)
-  - Env vars: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`
-  - Scopes: `openid data:read data:create viewables:read user:read account:read`
-  - Token endpoints: `https://developer.api.autodesk.com/authentication/v2/*`
-  - Usage: `lib/server/integrations/aps.ts`, `lib/acc/dcIngest.ts`
+**Autodesk Platform Services / ACC:**
+- Purpose: Autodesk Construction Cloud data ingestion, account/project/member/activity/folder/issue workflows, model derivative access, OSS, and access-analysis datasets.
+- SDK/Client: `@aps_sdk/authentication`, `@aps_sdk/model-derivative`, `@aps_sdk/oss`, plus ACC/Data Connector scripts under `scripts/acc-*.cjs`, `scripts/dc-*.cjs`, and server/lib code under `lib/acc/`.
+- Auth/env: `APS_CLIENT_ID`, `APS_CLIENT_SECRET`, `APS_CALLBACK_URL`, `APS_SCOPES`, `APS_PROJECT-ID`, `APS_HUB_ID`.
+- Key code paths: `server/routers/acc-sync.ts`, `server/routers/acc-activity.ts`, `server/routers/acc-members.ts`, `server/routers/acc-folders.ts`, `server/routers/acc-dc-graph.ts`, `lib/acc/`.
 
-- APS Model Derivative - 3D model translation to SVF2
-  - SDK: `@aps_sdk/model-derivative` 1.2.1
-  - File: `lib/server/integrations/aps.ts` (lines 49-73)
-  - Methods: `translateToSvf2()`, `getManifest()`
-  - Used for BIM model processing
+**Google APIs:**
+- Purpose: OAuth sign-in, Gmail/mail panel, Calendar, Drive/Sheets-backed workflows, and chat/mail support surfaces.
+- SDK/Client: `googleapis`.
+- Auth/env: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`, `GOOGLE_SERVICE_ACCOUNT_KEY`, `GOOGLE_DRIVE_FOLDER_ID`, `GOOGLE_SHEETS_ID`.
+- Key code paths: `lib/google/`, `server/routers/gmail.ts`, `server/routers/calendar.ts`, `server/routers/chat.ts`, `components/dashboard/MailPanel.tsx`, `components/dashboard/chat-panel/`.
 
-- APS Object Storage (OSS) - Bucket upload/download
-  - SDK: `@aps_sdk/oss` 1.3.3
-  - File: `lib/server/integrations/aps.ts` (lines 26-47)
-  - Bucket key: `bim_dashboard_families_[CLIENT_ID_PREFIX]`
-  - Method: `uploadToAps()`
+**OpenAI API:**
+- Purpose: AI generation features, including description generation.
+- SDK/Client: `openai`.
+- Auth/env: `OPENAI_API_KEY`, `OPENAI_MODEL`.
+- Key code paths: `app/api/ai/generate-description/route.ts` and server/client helpers that call the OpenAI SDK.
 
-- APS Data Connector - Access Analysis data extraction
-  - Requires 3-legged user-context auth (Data Connector mandates)
-  - Used for ACC project/folder/permission data retrieval
-  - Implementation: `lib/acc/dcIngest.ts`
+**UploadThing / UTFS:**
+- Purpose: Upload and serve media/files.
+- SDK/Client: `uploadthing`, `@uploadthing/react`.
+- Auth/env: `UPLOADTHING_SECRET`, `UPLOADTHING_APP_ID`, `UPLOADTHING_TOKEN`.
+- Key code paths: `app/api/uploadthing/route.ts`, `lib/server/uploadthing.ts`.
+- Image hosts allowed in `next.config.ts`: `uploadthing.com`, `utfs.io`.
 
-**Google Workspace APIs:**
-- Google OAuth - Primary auth provider
-  - SDK: `googleapis` 171.4.0
-  - Auth config: `server/auth.ts` (GoogleProvider, lines 38-50)
-  - Env vars: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`
-  - Scopes: openid, email, profile, calendar, chat, directory, drive, mail
-  - Client: `lib/server/google-service-auth.ts` → `buildPrimaryGoogleOAuthClient()`
+**Resend:**
+- Purpose: Password reset / transactional email support.
+- Auth/env: `RESEND_API_KEY`, `RESEND_EMAIL`, `RESEND_ID`.
+- Key code paths: `lib/server/email.ts`.
 
-- Google Chat OAuth - Separate OAuth flow for Chat integrations
-  - Env vars: `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET`
-  - Falls back to `GOOGLE_CLIENT_ID` / `GOOGLE_CLIENT_SECRET` if not configured
-  - Scopes defined in `lib/google/oauth.ts` (lines 18-25)
-  - Auth: `server/auth.ts` (lines 51-67)
+**Redis / Upstash:**
+- Purpose: Cache or realtime coordination where configured.
+- SDK/Client: `@upstash/redis`, `ws`.
+- Auth/env: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`, `REDIS_URL`.
 
-- Gmail - Email access and message retrieval
-  - API: `gmail()` from googleapis
-  - File: `lib/server/user-gmail.ts`, `lib/google/gmail.ts`
-  - Scope: `https://mail.google.com/`
-  - Usage: Chat module, email sync
-
-- Google Calendar - Event retrieval and sync
-  - API: `calendar()` from googleapis
-  - File: `lib/google/calendar.ts`
-  - Scope: `https://www.googleapis.com/auth/calendar`
-
-- Google Drive - File access and listing
-  - API: `drive()` from googleapis
-  - File: `lib/google/drive.ts`, `lib/server/wiki-media-drive.ts`
-  - Scope: `https://www.googleapis.com/auth/drive`
-  - Used for wiki media and family document storage
-
-- Google Directory - User/group management
-  - API: `admin()` from googleapis
-  - File: `lib/google/directory.ts`
-  - Scope: `https://www.googleapis.com/auth/directory.readonly`
-
-- Google Sheets - Approval list and user management
-  - API: `sheets()` from googleapis
-  - File: `lib/google/sheets.ts`
-  - Usage: Email approval workflow, admin notifications
-
-- Google Forms - Form data collection
-  - API: `forms()` from googleapis
-  - File: `lib/google/forms.ts`
-
-- Google Chat - Messaging and space integration
-  - API: `chat()` from googleapis
-  - File: `lib/google/chat.ts`
-  - Scopes: memberships.readonly, messages, spaces.readonly
+**Trello:**
+- Purpose: Trello board/card integrations and callback flows.
+- Integration method: API route callbacks and router/client helpers.
+- Key code paths: `server/routers/trello.ts`, `lib/trello/client.ts`, `app/api/auth/callback/trello/route.ts`, `app/api/connect/trello/route.ts`, `components/trello/`.
 
 ## Data Storage
 
-**Databases:**
-- PostgreSQL 18+
-  - Connection: `DATABASE_URL` (pooled) or `DIRECT_URL` (direct)
-  - Client: Prisma + PrismaPg adapter (`server/db.ts`)
-  - Schema: `prisma/schema.prisma`
-  - Models: User, Account, Session, Project, ACC models (AccActivity, AccFolder, AccRole, etc.), Wiki models (ClashWiki, SimWiki), etc.
-  - Pool config: `PG_POOL_MAX` (default 5 prod, 10 dev), `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`
-  - Local instance: `.local/postgresql18/`, managed by `scripts/postgres-local.js`
+**PostgreSQL:**
+- Purpose: Primary application datastore.
+- Client: Prisma 7 via `@prisma/adapter-pg` in `server/db.ts`.
+- Connection/env: `DATABASE_URL`, `DIRECT_URL`.
+- Pool/env: `PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS`.
+- Schema/migrations: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/migrations-raw/`.
+- ERD: `docs/erd.md`.
 
-**File Storage:**
-- Uploadthing - Managed file upload service
-  - Token: `UPLOADTHING_TOKEN` (env var)
-  - Route: `app/api/uploadthing/route.ts`
-  - React client: `@uploadthing/react` 7.3.3
-  - Used for family file uploads
+**Prisma ORM:**
+- Purpose: ORM and model access for auth, project modules, ACC/Data Connector data, LOD data, tasks, wiki, and sync state.
+- Client lifecycle: global Prisma singleton in `server/db.ts` for dev reuse.
+- Guardrail: Prisma access belongs in server/lib/scripts, not client components.
 
-- Google Drive - Secondary file storage for wiki media
-  - OAuth integration via Google Drive API
-  - Route: `app/api/wiki-media/route.ts`, `app/api/wiki-media/[id]/route.ts`
-
-**In-Memory / Analytical:**
-- DuckDB-WASM - Browser-side analytical database
-  - Library: `@duckdb/duckdb-wasm` 1.33.1-dev45.0
-  - Used for access analysis charts and data aggregation
-  - Client-side columnar queries on bulk user/activity data
-
-- Mosaic - Data-driven visualization queries
-  - Libraries: `@uwdata/mosaic-core`, `@uwdata/mosaic-sql`, `@uwdata/vgplot` (0.25.0)
-  - Integration: Access Analysis visual components
-
-**Caching:**
-- Upstash Redis (optional)
-  - Client: `@upstash/redis` 1.38.0
-  - Connection: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN`
-  - File: `lib/redis.ts`
-  - Returns `null` if not configured; graceful degradation
+**Upload/File Storage:**
+- UploadThing/UTFS handles uploads and file URLs.
+- Additional media routes exist under `app/api/wiki-media/`, `app/api/chat/media/`, `app/api/chat/upload/`, and `app/api/lod-img/[fileId]/route.ts`.
 
 ## Authentication & Identity
 
-**Auth Provider:**
-- NextAuth 5.0.0-beta.31 - Multi-provider authentication
-  - Config: `auth.config.ts`, `server/auth.ts`
-  - Providers: Google, Google Chat (separate), Autodesk APS, Credentials (username/password)
-  - Adapter: `@auth/prisma-adapter` (Prisma-backed sessions/accounts)
-  - Tables: User, Account, Session, VerificationToken
+**NextAuth:**
+- Implementation: `auth.config.ts`, `server/auth.ts`, `app/api/auth/[...nextauth]/route.ts`, and Prisma adapter-backed auth models in `prisma/schema.prisma`.
+- Public routes: `/login`, `/unauthorized`, `/register`, `/forgot-password`, `/reset-password`.
+- API routes bypassed by the auth guard include `/api/auth`, `/api/connect`, `/api/trpc`, `/api/wiki-collab-token`, and `/api/wiki-media`.
+- Session/authorization helpers: `protectedProcedure`, `adminProcedure`, and `editorProcedure` in `server/trpc.ts`.
 
-**Auth Methods:**
-1. **Google OAuth** - Primary federated auth
-   - Client: `@auth/prisma-adapter`
-   - Tokens persisted in Account table
+**Google OAuth:**
+- Provider credentials: `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`.
+- Google image host allowed in `next.config.ts`: `lh3.googleusercontent.com`.
 
-2. **Autodesk APS OAuth** - 3-legged user-context auth
-   - Issuer: `https://developer.api.autodesk.com`
-   - Token URL: `https://developer.api.autodesk.com/authentication/v2/token`
-   - Profile mapping: `profile()` callback in `server/auth.ts` (lines 91-104)
-   - Persistent account linking enabled
+**Admin Promotion:**
+- Env: `ADMIN_EMAIL`.
+- Role checks are enforced at the tRPC procedure boundary through `adminProcedure` and `editorProcedure`.
 
-3. **Credentials Provider** - Local username/password
-   - File: `server/auth.ts` (lines 106-141)
-   - Password hashing: bcryptjs 3.0.3
-   - Canonical admin email mapping via `getCanonicalAdminEmail()` in `lib/auth-env.ts`
+## Realtime and Collaboration
 
-**Session Management:**
-- NextAuth session tokens stored in Session table
-- Session callbacks in auth.config.ts (callbacks.authorized)
-- Public routes: /login, /register, /forgot-password, /reset-password, /unauthorized
-- Protected routes require auth; unauthorized returns 401
+**Yjs / Hocuspocus:**
+- Purpose: Collaborative editing and document state.
+- Packages: `yjs`, `y-protocols`, `@hocuspocus/server`, `@hocuspocus/provider`, `@hocuspocus/extension-database`, `@hocuspocus/extension-logger`.
+- Key code paths: `scripts/yjs-server.mjs`, wiki/collaboration API routes, TipTap editor components.
 
-**Admin/Role System:**
-- User.role field: VIEWER, EDITOR, ADMIN
-- Admin email configuration: `ADMIN_EMAIL`, `ADMIN_EMAIL_ALIAS` (env)
-- Primary admin: `luis.cortes@hermosillo.com` (default, overridable)
-- Role-based procedures: `protectedProcedure`, `editorProcedure`, `adminProcedure` in `server/trpc.ts`
+**Server-Sent Events / Events:**
+- Key routes: `app/api/events/trello/route.ts`, `app/api/events/users/route.ts`, `app/api/clash-updates/route.ts`, `app/api/sim-updates/route.ts`.
+- Client helpers: `hooks/use-event-source.ts`, notification hooks under `hooks/`.
 
 ## Monitoring & Observability
 
-**Error Tracking:**
-- Not detected - No Sentry/DataDog/Rollbar configured
+**Application Logs:**
+- No dedicated external error-tracking SDK was detected in the fresh repo-map.
+- Runtime logging is mostly console/server logs and script output.
+- `next.config.ts` strips `console.log` in production while preserving `error` and `warn`.
 
-**Logs:**
-- File-based: `lib/server/logger.ts` (custom logger implementation)
-- Console: Development mode logs "error", "warn"; production logs "error" only
-- Prisma logs: Only errors in production (via `prisma.log` config in `server/db.ts`)
-
-**Telemetry:**
-- Custom event tracking: `lib/events/user.ts` (user-related events)
-- Ingest telemetry: `AccDcIngestRun.rowsByModule` (tracks extraction metrics)
+**Repo Structural Observability:**
+- `npm run repo-map:check` records dependency, AST, and Repomix artifacts under `.tools/repo-map/`.
+- Quality gate status on 2026-06-19: 0 dependency errors, 0 circulars, 6 dependency warnings within baseline, 0 new blocking AST findings.
 
 ## CI/CD & Deployment
 
-**Hosting:**
-- Production: Historically Railway (trial expired 2026-05-13)
-- Current: Local Windows Task Scheduler on Luis's PC via `start-local.ps1`
-- Build: `npm run build` → `.next` directory
-- Start: `npm start` on :3000 or `next start -H 0.0.0.0 --port 3000`
+**Build/Start:**
+- Build: `npm run build` -> `next build --webpack`.
+- Production start: `npm run start` or `npm run start:prod`.
+- Dev stack: `npm run dev`, `npm run dev:next`, and `npm run dev:restart`.
 
-**Local Dev Stack:**
-- Python orchestration: `scripts/run_dev_stack.py`
-- Simultaneous services:
-  - Next.js dev server (:3000)
-  - Hocuspocus collaboration server (:1234, inferred)
-  - LOD engine Python service (:8091)
-- Command: `npm run dev` or `npm run dev:restart`
-
-**Build Pipeline:**
-- Entry: `npm run build` → Next.js build with webpack
-- Checks: TypeScript noEmit in tsconfig.json (strict mode)
-- Output: `.next` directory
-- Build artifacts: `.next-e2e` (isolated e2e env), `.next-dev` (dev), `.next-deploy`, etc.
+**Local Infrastructure:**
+- PostgreSQL helpers: `scripts/postgres-local.js` via `npm run db:start|db:stop|db:status`.
+- LOD service: `npm run lod:engine`.
+- Tunnel/public preview: `npm run tunnel`, `npm run preview`.
 
 ## Environment Configuration
 
-**Required env vars:**
-- `DATABASE_URL` - PostgreSQL pooled connection
-- `DIRECT_URL` - PostgreSQL direct connection (railway/prod fallback)
-- `AUTH_SECRET` / `NEXTAUTH_SECRET` - NextAuth secret
-- `APS_CLIENT_ID`, `APS_CLIENT_SECRET` - Autodesk APS OAuth
-- `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` - Google OAuth
-- `OPENAI_API_KEY` - OpenAI LLM
-- `UPLOADTHING_TOKEN` - File uploads
-- `ADMIN_EMAIL` - Primary admin email
+**Development:**
+- Copy `.env.example` to `.env` and fill values locally.
+- Do not commit `.env` or generated secret-bearing artifacts.
+- Important dev feature flags: `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS`, `NEXT_PUBLIC_ACC_GPU_2D`, `NEXT_PUBLIC_ACC_GRAPH_TEST`.
 
-**Optional env vars:**
-- `GOOGLE_CHAT_CLIENT_ID`, `GOOGLE_CHAT_CLIENT_SECRET` - Google Chat (falls back to GOOGLE_*)
-- `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` - Redis cache
-- `NEXTAUTH_URL` / `AUTH_URL` - Auth redirect base
-- `ADMIN_EMAIL_ALIAS` - Admin email aliases (comma/newline/semicolon-separated)
-- `PG_POOL_MAX`, `PG_IDLE_TIMEOUT_MS`, `PG_CONNECTION_TIMEOUT_MS` - DB tuning
-- `OPENAI_MODEL` - LLM model selection (default: gpt-4o)
-- `LOD_SIGLIP_MODEL_ID` - ML model for LOD engine
-- `E2E_PORT`, `E2E_BASE_URL` - Playwright test config
-- `NEXT_PUBLIC_*` - Client-side public vars
-- `NEXT_DIST_DIR` - Alternative build output (e.g., .next-e2e)
-- `DC_*` - Data Connector flags (DC_PRIORITY_BACKFILL, DC_RESUME, DC_403_BISECT, etc.)
+**Testing:**
+- `vitest.setup.ts` sets test `DATABASE_URL` and `NODE_ENV=test` and mocks server-only/NextAuth boundaries.
+- `playwright.config.ts` uses isolated `NEXT_DIST_DIR=.next-e2e` and default `E2E_PORT=3100`.
 
-**Secrets location:**
-- `.env` file (git-ignored) on local machine
-- Railway environment (historical)
-- Windows Task Scheduler task environment (current prod)
+**Production:**
+- Store secrets in the deployment environment, not in repo docs.
+- `server/db.ts` prefers `DIRECT_URL` in production when available.
+- `AUTH_TRUST_HOST` and configured auth hosts affect `next.config.ts` allowed origins.
 
 ## Webhooks & Callbacks
 
-**Incoming:**
-- Uploadthing webhooks - File upload completion callbacks
-- NextAuth OAuth provider callbacks - Google, Autodesk token exchange
-- Google Drive change notifications (optional, for wiki-media sync)
+**Incoming/Callback Routes:**
+- `app/api/auth/[...nextauth]/route.ts` - NextAuth callbacks.
+- `app/api/auth/callback/trello/route.ts` - Trello auth callback.
+- `app/api/connect/[provider]/route.ts` and `app/api/connect/trello/route.ts` - Provider connection flows.
+- `app/api/uploadthing/route.ts` - UploadThing route handler.
+- `app/api/chat/stream/route.ts` and event routes - realtime/dashboard streams.
 
 **Outgoing:**
-- None detected - No outbound webhooks observed
-
-## Real-time Collaboration
-
-**WebSocket Server:**
-- Hocuspocus 4.0.0 server (`@hocuspocus/server`)
-- Connection: Yjs document sync, awareness (cursor/selection state)
-- Port: 1234 (inferred, configured in dev stack)
-- Database persistence: `@hocuspocus/extension-database`
-- Rooms: Wiki collaboration rooms (`wiki-room-${module}-${sectionId}`)
-- Token auth: JWT via `api/wiki-collab-token/route.ts` (12-hour max age)
-
-**Client Collaboration:**
-- Hocuspocus provider (`@hocuspocus/provider`)
-- TipTap + Yjs integration (`@tiptap/y-tiptap`)
-- Modules: Clash wiki, Simulation wiki
-- Real-time cursor position and selection sharing
-
-## LOD Engine Integration
-
-**Service:**
-- Python FastAPI server: `services/lod-engine/server.py`
-- Port: 8091 (default)
-- Model: SigLIP (`google/siglip-base-patch16-224` by default)
-- GPU support: CUDA device selection via `LOD_CUDA_DEVICE_INDEX`
-- Route integration: tRPC router for image processing requests
+- Autodesk/APS, Google, UploadThing, Resend, OpenAI, Redis/Upstash, and Trello calls originate from server routes, server helpers, and scripts.
 
 ---
 
-*Integration audit: 2026-06-17*
+*Integration audit: 2026-06-19*
+*Update when adding/removing external services or changing auth/env contracts.*

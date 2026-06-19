@@ -1,232 +1,171 @@
 # Codebase Concerns
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
+
+**Primary Sources:**
+- `.tools/repo-map/manifest.json`
+- `.tools/repo-map/architecture-summary.md`
+- `.tools/repo-map/dependency-cruiser.json`
+- `.tools/repo-map/ast-grep-report.json`
+- Largest-file scan of mapped source roots
+
+## Current Quality Gate Snapshot
+
+| Gate | Status | Count | Meaning |
+|---|---:|---:|---|
+| Circular imports | Pass | 0 | No circular dependency edges detected |
+| Dependency errors | Pass | 0 | No CI-blocking dependency-cruiser errors |
+| Dependency warnings | Warn | 6 | All are baseline `no-scripts-to-app` warnings |
+| AST blocking rules | Baseline | 1 / baseline 1 | No new direct-Prisma-in-UI finding |
+| AST warnings/info/hints | Report | 277 | Review queue, not a hard failure |
+| Baseline file refs | Pass | 0 | Baseline paths still exist |
 
 ## Tech Debt
 
-**Large monolithic data-ingest orchestrator:**
-- **Issue:** `lib/acc/dcIngest.ts` (1,672 LOC) handles the full Data Connector daily ingestion pipeline — quota, retries, slice polling, activity CSV parsing, admin snapshot ingestion, anomaly checks, progress tracking, and bisection fallback. It is the critical path for nightly sync and has concurrent uncommitted WIP.
-- **Files:** `lib/acc/dcIngest.ts`, `lib/acc/dcIngest.test.ts`
-- **Impact:** Changes to this file risk breaking the nightly cron schedule and silent data loss. The file blocks refactoring and cleanup until outstanding WIP lands.
-- **Fix approach:** Split into smaller domain modules (dcAnomalyChecks, ingestActivityCsv, ingestAdminSnapshot orchestration) and restructure as a pure state machine. Defer until nightly cron is stable and the active-wip branch is merged.
+**Scripts import route-owned app modules:**
+- Issue: Six dependency-cruiser warnings show scripts importing code from `app/(dashboard)/...`.
+- Files:
+  - `scripts/build-instance-features.ts` -> `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts`
+  - `scripts/build-instance-features.ts` -> `app/(dashboard)/users/access-analysis/instanceFeatureTokens.ts`
+  - `scripts/diag-activity-coordination.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts`
+  - `scripts/diag-activity-module-audit.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts`
+  - `scripts/diag-activity-service-xtab.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts`
+  - `scripts/diag-activity-types.cjs` -> `app/(dashboard)/access-analysis/moduleOverrides.ts`
+- Impact: Operational jobs depend on route-owned UI modules, making route cleanup risky and hiding domain logic in the wrong layer.
+- Fix approach: Move shared graph/taxonomy/module helpers into `lib/acc/`, `lib/domain/access-analysis/`, or `lib/shared/`, then update both scripts and UI imports.
+- Classification: Safe to plan; medium risk to implement because tests must prove behavior parity.
 
-**Telemetry disconnect in AccDcIngestRun:**
-- **Issue:** `AccDcIngestRun.rowsByModule` is always recorded as `{admin:0, docs:0, ...}` even when rows are successfully inserted. The daily cron (`scripts/dc-daily-ingest.cjs`) inserts rows directly via `dcActivityCsvIngest.ingestActivityCsv()` but never updates the telemetry field.
-- **Files:** `lib/acc/dcIngest.ts:1669-1670` (finalizeRun persists rowsByModule), `lib/acc/dcActivityCsvIngest.ts` (writes directly without telemetry callback)
-- **Impact:** Ingest metrics and reporting are unreliable; no observable proof that activity rows are actually being inserted at scale.
-- **Fix approach:** Wire a callback from `ingestActivityCsv` to track rows-inserted per module and pass the result back to `finalize()`.
+**ACC/Data Connector code is the largest and most coupled domain:**
+- Issue: The fresh map identifies ACC/Data Connector as the largest domain and first cleanup target.
+- Files: `lib/acc/dcIngest.ts` (57 KB), `lib/acc/dcIngest.test.ts` (47 KB), `lib/acc/quick-sync-extraction.ts` (35 KB), `lib/acc/folderCrawl.ts` (28 KB), `server/routers/acc-*.ts`, `scripts/acc-*`, `scripts/dc-*`.
+- Impact: Ingestion, sync, graph, activity, folder, and member concerns span routers, lib helpers, and scripts. Changes have high blast radius.
+- Fix approach: Split durable services into typed modules such as ingestion orchestration, CSV parsing, APS/Data Connector clients, folder/member transforms, and telemetry.
+- Classification: Medium risk.
 
-**Clash/Sim module duplication:**
-- **Issue:** Clash and Simulator modules share identical domain (permission graphs, user role analysis) but have separate data models (`ClashIssue` vs simulator rows), separate routers (`server/routers/acc-sync.ts` ~795 LOC and related clash logic), and cloned UI components.
-- **Files:** `server/routers/acc-sync.ts`, `lib/acc/` clash-specific modules, Clash-specific UI in `app/(dashboard)/clash/`
-- **Impact:** Bug fixes must be applied twice; adding a new feature (e.g., filter, export) doubles the effort. DB schema adds rows for both modules and bloats query results.
-- **Fix approach:** Merge the two modules under one `moduleKey`-parameterized domain model (e.g., `AccIssue` with `source: 'clash' | 'simulator'`). Requires DB migration, router consolidation, and UI refactor. Needs its own spec and session.
+**Access-analysis UI and graph modules are large and dense:**
+- Issue: Large files combine rendering, data transforms, graph interaction, state, and performance-sensitive canvas behavior.
+- Files: `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx` (55 KB), `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` (50 KB), `app/(dashboard)/access-analysis/folderTerrain.ts` (49 KB), `app/(dashboard)/users/access-analysis/GraphCanvas2D.tsx` (38 KB), `app/(dashboard)/users/access-analysis/AccessAnalysisShell.tsx` (32 KB), `app/(dashboard)/users/access-analysis/physicsLayer.ts` (29 KB).
+- Impact: Harder to change without visual regressions, redundant fetches, GPU/canvas regressions, or UAT breakage.
+- Fix approach: Extract pure transforms and selectors first; leave render shell behavior stable; verify with unit tests plus targeted Playwright/UAT.
+- Classification: Medium risk.
 
-**Taxonomy co-location in access-analysis route:**
-- **Issue:** `app/(dashboard)/users/access-analysis/accTaxonomy*` (dimension taxonomy and role/action mappings) live in a route directory but are imported by server-side ingest code and pure lib modules. This tightly couples the UI route to the domain data model.
-- **Files:** `app/(dashboard)/users/access-analysis/accTaxonomy*.ts`, imported by `lib/acc/activityCategories.ts`, `lib/acc/activityAggregate.ts`, `server/routers/acc-activity.ts`
-- **Impact:** Cannot decommission the old user-graph route without orphaning the taxonomy. The taxonomy should be immutable reference data but lives in a mutable UI route.
-- **Fix approach:** Move `app/(dashboard)/users/access-analysis/accTaxonomy*.ts` to `lib/acc/taxonomy/` and update all imports. Requires coordination with active graph-development work.
+**Route-local domain taxonomy is reused outside routes:**
+- Issue: Domain/taxonomy helpers under `app/(dashboard)/...` are used by scripts and domain modules.
+- Files: `app/(dashboard)/access-analysis/moduleOverrides.ts`, `app/(dashboard)/users/access-analysis/graphNodesFromUsers.ts`, `app/(dashboard)/users/access-analysis/instanceFeatureTokens.ts`.
+- Impact: App route directories cannot be treated as UI-only; scripts and server/domain code rely on them.
+- Fix approach: Move shared taxonomy/transform modules into a domain-owned folder, then keep route modules as UI composition only.
+- Classification: Safe to plan; medium risk to implement.
 
 ## Known Bugs
 
-**Data Connector activity ingest drift (2026-05-18 incident, **FIXED in spec, NOT YET DEPLOYED**):**
-- **Symptoms:** `AccActivity` table received zero new rows for 5 days (2026-05-13 to 2026-05-18) despite `AccDcIngestRun` reporting `status='success'` for each nightly run.
-- **Root cause:** Three compounded bugs:
-  - **Bug A:** `lib/acc/dcActivityCsvIngest.ts` writes an `ingestRunId` field to `tx.accActivity.createMany()` but `prisma/schema.prisma` model `AccActivity` has no `ingestRunId` column → every activity insert throws "column does not exist" silently.
-  - **Bug B:** `lib/acc/dcIngest.ts:979-994` catches exceptions and continues the slice loop, finalizing the run as `status='success'` with `rowsByModule={}`. No one noticed for 5 days.
-  - **Bug C:** `lib/acc/dcIngest.ts:1002-1040` always calls `ingestAdminSnapshot` even for backward-window slices. Backward windows have fewer admin users than forward, triggering the 10% anomaly threshold and rolling back the entire run. The backward-progress update is skipped due to early return before line 1042.
-- **Files:** `lib/acc/dcActivityCsvIngest.ts:163-171`, `lib/acc/dcIngest.ts:979-1040`, `prisma/schema.prisma:532-549`
-- **Impact:** Activity data is silently dropped; the 5-day backfill window is lost. A similar regression could recur if not fixed.
-- **Workaround:** Kill switch `.dc-ingest.disabled` was created at repo root. Cron is disabled until the fix lands.
-- **Fix shipped to spec:** Design document at `docs/superpowers/specs/2026-05-18-dc-ingest-drift-recovery-design.md` specifies:
-  1. Add `ingestRunId String?` column to `AccActivity` (migration).
-  2. Replace `console.error + continue` with hard abort (`status='failed'`).
-  3. Skip `ingestAdminSnapshot` for backward-only slices.
-  4. Reset `AccDcBackfillProgress` rows via `scripts/dc-reset-progress.cjs --confirm`.
-  5. Verification gate before re-enabling cron (12 step checklist).
-  - **Status:** Spec locked; implementation plan `docs/superpowers/plans/*` pending. NOT in tree yet.
+No fresh repo-map artifact proves a specific runtime bug. Treat this file as a risk map, not a defect log.
 
-**Empty-string `projectId` sentinel silent inclusion:**
-- **Symptoms:** Queries filtering `projectId != null` or `projectId IS NOT NULL` silently include admin-user records where `projectId = ''` (the empty-string sentinel for account-level permissions).
-- **Files:** `lib/acc/dcAnomalyChecks.ts`, activity tests, any snapshot query relying on `projectId` nullness
-- **Impact:** Activity counts and anomaly checks may over-count admin activity or miss admin-only edge cases.
-- **Fix approach:** Use `projectId != ''` AND `projectId IS NOT NULL` guards consistently, or refactor to a nullable `projectId` with explicit `NULL` for admin. Requires audit of all projection/filter paths.
-
-**Lasso e2e load flake (intermittent, **not a regression**):**
-- **Symptoms:** `tests/e2e/acc-dc-graph.spec.ts` lasso-selection test times out at 120s global Playwright budget under machine load on Luis's PC.
-- **Files:** `tests/e2e/acc-dc-graph.spec.ts` (lasso-drag scenario), `app/(dashboard)/users/access-analysis/LassoOverlay.tsx`
-- **Impact:** e2e suite fails intermittently under concurrent load; CI/local runs on fast machines pass. Not a code regression.
-- **Cause:** The lasso logic is correct (projection+dense OK); timeout is due to machine load and Playwright's global 120s budget, not the implementation.
-- **Workaround:** Re-run on idle machine; watch Playwright budget if adding more e2e tests.
-- **Fix approach:** None needed unless the test is mission-critical; consider splitting e2e into smaller parallel suites if flakiness impacts CI.
-
-**Chart data aggregation mismatch — user-level vs instance-level:**
-- **Symptoms:** `/access-analysis` charts render using `BulkAccUser` (aggregated per user across all projects) instead of per-instance `BulkAccProject` (one row per user/project pair).
-- **Files:** `app/(dashboard)/access-analysis/page.tsx`, `lib/server/acc-hot-cache.ts` (bulkUsers query), `app/(dashboard)/access-analysis/ChartPanel.tsx` and related chart consumers
-- **Impact:** Activity/role/permission counts in charts are user-wide, not project-specific. This hides project-level outliers and can over/under-represent per-project permission risk.
-- **Fix approach:** Refactor chart data fetchers to request per-instance snapshots, or clarify chart semantics (user-wide vs project-scoped) in the UI labels.
+If a bug is found, add:
+- Symptoms
+- Trigger/reproduction path
+- Root cause
+- Workaround
+- Fix approach
+- Test or UAT proof
 
 ## Security Considerations
 
-**APS OAuth refresh-token rotation bug — now fixed:**
-- **Risk:** APS v2 refresh tokens are single-use. Calling `refreshUserToken()` replaces the stored token; if the script doesn't persist the new token, the next call fails and breaks dashboard login.
-- **Files:** `lib/server/aps-oauth.ts`, `scripts/aps-login.cjs`, `scripts/dc-daily-ingest.cjs`
-- **Current mitigation:** The wrapper script `scripts/dc-daily-ingest.cjs` persists the new token. Direct calls to `refreshUserToken()` outside this wrapper risk breakage.
-- **Incident:** 2026-06-01 login broke when manual DC-extraction script used `refreshUserToken()` without persisting; recovered via `scripts/aps-login.cjs` (manual re-auth).
-- **Recommendations:** Add a typed return value to `refreshUserToken()` that callers MUST use (not just log); audit all callers (cron scripts, manual utilities); add a pre-flight test in CI that exercises the token refresh path.
+**Direct Prisma access in UI is baselined but still sensitive:**
+- Risk: `direct-prisma-in-ui` has 1 baseline finding.
+- File from baseline: `app/(dashboard)/access-analysis/coordinationActions.ts`.
+- Current mitigation: `repo-map:check` fails on new blocking direct-Prisma-in-UI findings.
+- Recommendation: Audit the existing baseline item before tightening the rule to zero.
+- Classification: Needs manual verification.
 
-**Admin project discovery scoped incorrectly:**
-- **Risk:** `lib/acc/dcProjectDiscovery.ts:discoverAdminProjects()` uses 2-leg authentication (no user context), which returns ALL account-level projects. The dashboard presents this as "all projects you administer" but luis's account is project-scoped admin (can't grant self Account-Admin), so the set is incomplete.
-- **Files:** `lib/acc/dcProjectDiscovery.ts`, `scripts/dc-extract-id-list.cjs`
-- **Current mitigation:** The DC Data Connector API only lists projects the authenticated user can extract from. 3-leg user-context auth works (via `refreshUserToken`). 2-leg is permanently blocked by APS (returns 403 for Data Connector scope).
-- **Impact:** 724 of 1,152 active projects are locked (403) and unreachable. The UI should clarify this limitation.
-- **Recommendations:** 
-  1. Document the scoping limit in the UI ("showing only projects you can extract from").
-  2. Wire a "needs Account-Admin to unlock" indicator for locked projects.
-  3. Update the data-discovery view to surface the unlock path.
+**Secrets must not leak into generated maps:**
+- Risk: `.tools/repo-map/repomix-output.xml` and `.tools/repo-map/repomix/*.xml` are large source snapshots.
+- Current mitigation: Repomix security check is enabled by generator config; GSD map docs should list env var names only.
+- Recommendation: Keep `.env` and secret-bearing local outputs out of committed/generated context; run secret scan before committing generated docs.
+- Classification: Safe.
 
-**Env variable secrets in committed files:**
-- **Risk:** `.env` file contains live API keys and credentials. Although `.env*` is in `.gitignore`, temporary CI/Docker setups may accidentally commit it.
-- **Files:** `.env` (not committed, but exists on disk), `docker-compose.yml` (if any)
-- **Current mitigation:** `.gitignore` prevents commit; `.env.example` exists with dummy values.
-- **Recommendations:**
-  1. Audit all `docker-compose.yml` / `Dockerfile` for inline `ENV` or `--env-file` references that might leak into images.
-  2. Add a pre-commit hook that refuses any `.env*` commits.
-  3. Use external secret management (e.g., Railway Secrets, Vercel Env Vars) for production deployment instead of local `.env` files.
+**Auth and role checks concentrate at tRPC boundary:**
+- Risk: New procedures can accidentally use `publicProcedure` when they need `protectedProcedure`, `adminProcedure`, or `editorProcedure`.
+- Files: `server/trpc.ts`, `server/routers/*.ts`.
+- Current mitigation: Role guards are available and simple.
+- Recommendation: During router changes, explicitly review procedure guard choice.
+- Classification: Safe.
 
-## Performance Bottlenecks
+## Performance Bottlenecks and Risk Areas
 
-**AccActivity bulk join on email::projectId — no index:**
-- **Issue:** `featureSnapshot.ts` joins `AccActivity` rows by `(email, projectId)` to enrich per-node activity data. The table has 623k rows; the join uses no composite index on `(email, projectId)`.
-- **Files:** `app/(dashboard)/users/access-analysis/featureSnapshot.ts`, DuckDB query builder
-- **Impact:** Cold startup of `/users/access-analysis` can spike query time to 218ms+ for large projects (measured 2026-05-25). Every session hydration runs this query.
-- **Measurement:** `bulkUsers` with `includeActivityMix` takes ~218ms on a grouped `AccActivity` query; no index, full-table scan.
-- **Fix approach:** Add a composite index `("email", "projectId")` to `AccActivity`. Add a regression test that asserts `bulkUsers` latency < 300ms under a 500k-row dataset.
+**Browser graph/analytics surfaces:**
+- Problem: Large graph modules, heavy useEffect footprint, and canvas/WebGL paths are sensitive to fetch duplication and GPU/canvas regressions.
+- Evidence: 148 `large-use-effect` matches; large files under `app/(dashboard)/users/access-analysis/` and `app/(dashboard)/access-analysis/`.
+- Improvement path: Extract side-effect-free transforms; keep effects narrow; verify fetch-once and canvas count with UAT.
+- Classification: Medium risk.
 
-**Folder terrain rendering lag on large crawl results:**
-- **Issue:** `app/(dashboard)/access-analysis/FolderPermissionTerrain.tsx` (1,041 LOC) renders a nested treemap for folder hierarchies. On projects with 10,000+ folders (e.g., Hermosillo), the component re-renders on every scroll and causes 2-3s lag.
-- **Files:** `app/(dashboard)/access-analysis/FolderPermissionTerrain.tsx`, `app/(dashboard)/access-analysis/folderTerrain.ts` (1,093 LOC math)
-- **Impact:** `/access-analysis` folder panel becomes unresponsive under large crawls.
-- **Fix approach:** Memoize the terrain layout (`useMemo` on folder tree), virtualize rows, or debounce scroll events. Measure before/after with Chrome DevTools Profiler.
+**Data Connector ingestion path:**
+- Problem: Ingestion/backfill logic has large orchestration files and broad script/lib/router touch points.
+- Evidence: `lib/acc/dcIngest.ts` and adjacent tests are among the largest source files.
+- Improvement path: Split into smaller domain services with fixture-backed tests before changing behavior.
+- Classification: Medium risk.
 
-**Mosaic/DuckDB chart rendering on client browser:**
-- **Issue:** Charts on `/access-analysis` run Mosaic + DuckDB-WASM on the client, loading and processing the full dataset in the browser. This blocks the thread during chart rendering (~50-200ms per chart).
-- **Files:** `app/(dashboard)/access-analysis/ChartPanel.tsx`, `app/(dashboard)/access-analysis/VgplotFacetChart.tsx`, `app/(dashboard)/access-analysis/components/HistogramPanel.tsx` (Mosaic-based)
-- **Impact:** Switching chart tabs or resizing the window causes layout thrashing and brief unresponsiveness.
-- **Fix approach:** Pre-aggregate chart data on the server (summary stats, bucketed distributions) and stream it to the client. Mosaic can then query the smaller dataset.
+**Repo-map generation size:**
+- Problem: Full Repomix artifacts are large and should be consulted selectively.
+- Evidence: `.tools/repo-map/repomix-output.xml` is over 2 MB; zone slices range from config to app/server.
+- Improvement path: Start analysis from `.tools/repo-map/manifest.json` and `.tools/repo-map/architecture-summary.md`; open zone XML only for focused code reading.
+- Classification: Safe.
 
 ## Fragile Areas
 
-**Dimension registry auto-creates layout targets:**
-- **Files:** `app/(dashboard)/users/access-analysis/dimensionRegistry.ts`, `app/(dashboard)/users/access-analysis/featureTargets.ts`
-- **Why fragile:** Adding a new `DimensionDescriptor` entry to `DIMENSION_REGISTRY` automatically creates a layout target in the physics simulation. If you add a descriptor without intending it as a force dimension, the layout changes unexpectedly.
-- **Safe modification:** Only add descriptors deliberately; every addition should have a corresponding test in `featureTargets.test.ts` that verifies the target is created and positioned correctly.
-- **Test coverage:** `featureTargets.test.ts` tests dimension → target mapping; `physicsClustering.test.ts` tests clustering ratio under slider sweeps.
+**UAT-critical four-page workshop surface:**
+- Files: `/users`, `/access-analysis`, `/template-mty`, `/forma-proposal`; tests in `tests/e2e/uat-workshop.spec.ts`.
+- Why fragile: UAT gates enforce fetch-once, canvas count, reduced motion, 1280px overflow, contrast, drills, and screenshots.
+- Safe modification: Run targeted unit tests, `npx tsc --noEmit`, `npm run repo-map:check`, and the UAT gate wrapper for visual/workshop changes.
 
-**Node identity keyed on `userId::projectId` — identity contract:**
-- **Files:** `app/(dashboard)/users/access-analysis/sameUserEdges.ts:parseNodeId()`, `app/(dashboard)/users/access-analysis/graphTables.ts` (builds `nodeId`), e2e test `EXPECTED_NODE_COUNT`
-- **Why fragile:** All edges, selection state, and e2e assertions depend on the exact string format `userId::projectId`. If `graphTables.ts` changes the format (e.g., to `userId|projectId`), all edges and selection logic breaks silently.
-- **Safe modification:** If you change node identity format, you MUST update:
-  1. `graphTables.ts` (where nodeId is created).
-  2. `sameUserEdges.ts` (where nodeId is parsed).
-  3. `SelectionContext.tsx` (where nodeId is keyed).
-  4. e2e spec `EXPECTED_NODE_COUNT` and any nodeId assertions.
-- **Test coverage:** `sameUserEdges.test.ts` tests parsing; e2e asserts the final node count.
+**Dependency warning baselines:**
+- Files: `.tools/repo-map/baselines/*.json`, `scripts/repo-map/check.cjs`.
+- Why fragile: Baselines intentionally allow current warnings but fail on growth.
+- Safe modification: Do not update baselines to hide regressions; fix or explicitly justify warnings.
 
-**GraphCanvas conditional rendering destroys WebGL context:**
-- **Files:** `app/(dashboard)/users/access-analysis/GraphCanvas.tsx` (dispatcher), `GraphCanvas2D.tsx`, `GraphCanvas3D.tsx`
-- **Why fragile:** **Both 2D and 3D canvas containers MUST always be mounted.** If you conditionally render one based on `mode`, the WebGL context is destroyed and the graph goes blank.
-- **Invariant:** `GraphCanvas.tsx:12-14` documents: "both containers always mounted; CSS visibility switch on mode change."
-- **Safe modification:** To switch renderers, use `visibility: hidden` on the inactive canvas, never conditionally unmount it.
-- **Test coverage:** `GraphCanvas.test.ts` tests dispatcher; e2e exercises both 2D/3D mode switches.
+**DuckDB/browser aliasing:**
+- Files: `next.config.ts`, `lib/client/emptyDuckDbNode.ts`.
+- Why fragile: DuckDB WASM is browser-oriented and server/client bundling must stay separated.
+- Safe modification: Preserve aliasing and run build/type gates after changing analytics code.
 
-**Graph physics — force simulation invariants:**
-- **Files:** `app/(dashboard)/users/access-analysis/physicsLayer.ts` (1,326 LOC), `mathLayer.ts` (target blending)
-- **Why fragile:** The force simulation tuning (spring constants, damping, target weights) is sensitive. Small changes to force coefficients or blend logic cause:
-  1. NaN propagation (all nodes vanish).
-  2. Divergent simulation (nodes scatter to infinity).
-  3. Layout regression (clustering changes unexpectedly).
-- **Safe modification:** All changes to `physicsLayer.ts` or `mathLayer.ts` MUST go through the `access-analysis-graph-development` workflow (§4 layout-math validation):
-  1. Test invariants: no NaN, determinism, blend sanity (using `mathLayer.purity.test.ts`, `physicsLayer.purity.test.ts`).
-  2. Test slider behavior: 0↔100 sweep produces monotonic clustering change (via `physicsClustering.test.ts`).
-  3. Visual UAT: verify the 0/50/100 slider positions on real data produce expected layouts.
-- **Test coverage:** Extensive pure-function and property tests; e2e asserts layout stats and clustering ratio.
+## Dependencies at Risk
 
-**Edge clique explosion — same-user edges can proliferate:**
-- **Files:** `app/(dashboard)/users/access-analysis/sameUserEdges.ts:deriveSameUserEdges()`, `linkEmphasis.ts`
-- **Why fragile:** If a user appears in N projects, `deriveSameUserEdges` creates N*(N-1)/2 edges (a clique). For a user with 1000 project instances, that's ~500k edges, overflowing the renderer and causing lag.
-- **Safe modification:** New edge types MUST implement clique-capping:
-  1. Hub pattern: keep only top K edges (e.g., top 5 projects per user).
-  2. Threshold: keep only edges above a similarity threshold.
-  3. Manual filter: allow UI to hide certain edge types.
-- **Test coverage:** `sameUserEdges.test.ts` asserts edge count doesn't exceed clique bounds; e2e watches render performance.
+**NextAuth v5 beta:**
+- Risk: Beta package surface can shift.
+- Files: `auth.config.ts`, `server/auth.ts`, `types/next-auth.d.ts`, auth route handlers.
+- Action: Treat auth upgrades as a dedicated change with login/session/role tests.
 
-**AccActivity groupBy query — index missing:**
-- **Files:** `lib/server/acc-hot-cache.ts:167-245` (activity groupBy query), `lib/acc/activityAggregate.ts` (fold logic)
-- **Why fragile:** The server-side groupBy (`AccActivity` grouped by `email, projectId, rawAction`) runs on a 623k-row table without a composite index. Any cardinality change (new modules, new action types) can spike query time.
-- **Safe modification:** Before changing `AccActivity` schema or `activityAggregate` logic, measure the groupBy query latency under realistic data volume (~500k+ rows). Add regression tests in `acc-hot-cache.test.ts`.
-- **Test coverage:** `activityAggregate.test.ts` tests fold logic; `acc-hot-cache.test.ts` tests cache hits per flag combination.
+**`@cosmos.gl/graph` beta:**
+- Risk: Graph rendering/layout package is beta and patched locally.
+- Files: `patches/@cosmos.gl+graph+3.0.0-beta.9.patch`, access-analysis graph components/tests.
+- Action: Avoid casual upgrades; verify graph UAT and canvas/GPU behavior.
 
-**Cache key versioning — stale-cache risk:**
-- **Files:** `lib/server/acc-hot-cache.ts:96-115` (cache version logic), `acc-dc-graph.ts:24` (includeActivityMix flag)
-- **Why fragile:** The cache key is built from a version string + feature flags. If a new flag (`includeActivityMix`, `includePermissionSummary`) is added but the version string is NOT incremented, the cache returns stale data for old flag combos.
-- **Incident:** 2026-05-25: `includeActivityMix` was added; if the version weren't bumped, queries with `{permission: true, activity: true}` would return data from `{permission: true, activity: false}` cache slots.
-- **Safe modification:** Every new flag in `bulkUsers` input MUST extend the version ID (e.g., from `"v2"` to `"v3"`), and the change must be tested in `acc-hot-cache.test.ts` (§93+).
-- **Test coverage:** `acc-hot-cache.test.ts` tests flag combinations and cache versioning; `acc-dc-graph.test.ts` tests router input/output.
-
-## Scaling Limits
-
-**Data Connector project extraction cap:**
-- **Current capacity:** 428 of 1,152 active projects are extractable (the rest are 403-forbidden due to luis's account-scoped admin permissions). Daily quota: 25 requests/UTC-day (APS hard-cap).
-- **Limit:** ~50 projects per request (configurable in `dcProgressiveBackfill.ts`); 25 requests = 1,250 projects/day theoretically, but only 428 are accessible.
-- **Scaling path:**
-  1. Escalate to Account-Admin role (needs Autodesk/Hermosillo enablement).
-  2. Implement 3-leg auth workflow for users to grant their own Data Connector permissions.
-  3. Partition extraction by user scope (per-user instances, ~200 admin users) and parallelize.
-
-**DuckDB-WASM memory in browser:**
-- **Current capacity:** Charts load full datasets into DuckDB-WASM. For 623k activity rows + folder hierarchies (10k+ nodes), browser memory peaks at ~500MB.
-- **Limit:** ~2GB addressable by WASM in a 64-bit browser; hitting this causes OOM crashes.
-- **Scaling path:**
-  1. Server-side aggregation (compute summary stats, bucketed distributions on Postgres, not the browser).
-  2. Streaming aggregation (fetch data in chunks, update charts incrementally).
-  3. Parquet column storage (compress and prune columns before sending to browser).
-
-**Graph physics simulation on 17k nodes:**
-- **Current capacity:** ~17k nodes; simulation runs at 107fps after 2026-06-01 optimization (GPU 2D, CPU 3D). Cold-start: ~5s initial layout.
-- **Limit:** 3D physics on CPU is O(n²) pairwise forces; ~50k nodes would run at <1fps.
-- **Scaling path:**
-  1. GPU-accelerated 3D physics (cosmos.gl v3 GPU mode, or WebGPU).
-  2. Spatial partitioning (quadtree/octree for neighbor lookup).
-  3. Viewport culling (only simulate visible nodes, LOD for distant clusters).
+**DuckDB WASM dev build:**
+- Risk: Browser analytics paths depend on specific packaging/alias behavior.
+- Files: `next.config.ts`, `scripts/copy-duckdb-wasm.cjs`, access-analysis DuckDB clients.
+- Action: Upgrade only with build, browser, and UAT verification.
 
 ## Test Coverage Gaps
 
-**dcIngest error paths — exception handling under-tested:**
-- **What's not tested:** The 10+ exception paths in `lib/acc/dcIngest.ts` (APS 503 retry, 429 quota exceeded, malformed CSV, file fetch timeout, anomaly check fail, bisect recovery). Only the happy path and one quota-exceeded case are covered in `dcIngest.test.ts`.
-- **Files:** `lib/acc/dcIngest.ts`, `lib/acc/dcIngest.test.ts` (1,254 LOC but sparse error coverage)
-- **Risk:** A new exception type (e.g., network timeout during file fetch) could silently continue and corrupt data.
-- **Priority:** **High** — the ingest path is critical; every exception must be tested for proper `finalize()` behavior.
+**No explicit coverage threshold:**
+- What's not enforced: line/branch coverage.
+- Current mitigation: large number of focused tests, TypeScript gate, repo-map gate, and Playwright/UAT gates.
+- Recommendation: Add coverage only where it guides a concrete refactor; do not add a broad threshold during architecture cleanup.
 
-**Folder terrain rendering on large crawls — no perf regression tests:**
-- **What's not tested:** `FolderPermissionTerrain.tsx` has no perf benchmarks. We measure lag anecdotally ("2-3s lag on Hermosillo crawl") but have no automated check that catches regressions.
-- **Files:** `app/(dashboard)/access-analysis/FolderPermissionTerrain.tsx`, `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` (144 LOC, snapshot only)
-- **Risk:** A future refactor could inadvertently trigger a 10x slowdown without CI catching it.
-- **Priority:** **Medium** — add a perf test that renders a 5,000-node tree and asserts `< 1s` time-to-interactive.
+**Large modules need characterization tests before atomization:**
+- Files: `lib/acc/dcIngest.ts`, `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx`, `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx`, `components/dashboard/MailPanel.tsx`.
+- Risk: Extracting helpers without behavior locks can regress live workflows.
+- Recommendation: Add narrow characterization tests before moving logic.
 
-**Access-analysis chart aggregation semantics — user-wide vs project-scoped:**
-- **What's not tested:** The chart data source is never asserted to be user-wide or project-scoped. If you refactor `BulkAccUser` to `BulkAccProject`, charts may silently change meaning.
-- **Files:** `app/(dashboard)/access-analysis/ChartPanel.tsx`, `app/(dashboard)/access-analysis/components/HistogramPanel.tsx` (Mosaic-based charts), `__tests__/` (sparse)
-- **Risk:** User-scoped charts over-represent high-volume users; a refactor could flip this and break UA.
-- **Priority:** **Medium** — add a unit test that asserts chart data is user-wide (or document the semantic clearly if it's intentional).
+## Cleanup Priority Summary
 
-**DuckDB-WASM memory leaks under rapid tab switches:**
-- **What's not tested:** Switching between `/access-analysis` charts rapidly (e.g., clicking through histogram facets in 1s intervals) can accumulate DuckDB table instances in memory without cleanup. No automated test exercises this.
-- **Files:** `app/(dashboard)/access-analysis/MosaicCoordinatorContext.tsx` (state holder), `app/(dashboard)/access-analysis/VgplotFacetChart.tsx` (renderer)
-- **Risk:** A 30-minute session could accumulate several GB of uncleaned DuckDB state.
-- **Priority:** **Low** — affects long sessions; mitigate by adding a cleanup function on unmount or a session-level memory monitor.
+1. Safe: Move shared route-owned constants/transforms into domain/shared folders where imports already cross the boundary.
+2. Safe: Keep repo-map as a standing gate and inspect warning growth after every architecture cleanup.
+3. Medium risk: Split ACC/Data Connector ingestion into smaller services with tests.
+4. Medium risk: Atomize access-analysis rendering modules by extracting pure transforms first.
+5. Needs manual verification: Decide whether the baseline direct-Prisma-in-UI finding can be removed.
+6. Needs manual verification: Separate durable scripts from diagnostics/scratch without breaking operational runbooks.
 
 ---
 
-*Concerns audit: 2026-06-17*
+*Concerns audit: 2026-06-19*
+*Update as warnings are fixed, baselines change, or new runtime defects are proven.*

@@ -1,519 +1,224 @@
 # Codebase Structure
 
-**Analysis Date:** 2026-06-17
+**Analysis Date:** 2026-06-19
+
+**Primary Sources:**
+- `.tools/repo-map/architecture-summary.md`
+- `.tools/repo-map/manifest.json`
+- `rg --files` source inventory
+- Top-level directory inspection
 
 ## Directory Layout
 
-```
-dashboard/
-├── app/                                 # Next.js 16 App Router
-│   ├── layout.tsx                       # Root layout (fonts, providers, Toaster)
-│   ├── page.tsx                         # Index redirect
-│   ├── globals.css                      # Tailwind + CSS variables
-│   ├── (auth)/                          # Unscoped auth routes
-│   │   ├── login/page.tsx
-│   │   ├── register/page.tsx
-│   │   ├── forgot-password/page.tsx
-│   │   └── reset-password/page.tsx
-│   ├── (dashboard)/                     # Protected dashboard routes
-│   │   ├── layout.tsx                   # Dashboard layout (sidebar, providers, hydration)
-│   │   ├── page.tsx                     # Home redirect
-│   │   ├── home/page.tsx                # Dashboard home
-│   │   ├── access-analysis/             # ECharts dashboard (roles, modules, activity)
-│   │   │   ├── page.tsx                 # RSC: loads views, renders AccessAnalysisCharts
-│   │   │   ├── loading.tsx              # Skeleton during SSR
-│   │   │   ├── components/              # Chart components
-│   │   │   │   ├── AccessAnalysisCharts.tsx    # Main wrapper
-│   │   │   │   ├── RolesPieChart.tsx           # ECharts donut
-│   │   │   │   ├── ModulesPieChart.tsx
-│   │   │   │   ├── ActivityByRolePieChart.tsx
-│   │   │   │   ├── ActivityTimelineChart.tsx
-│   │   │   │   ├── CompaniesPieChart.tsx
-│   │   │   │   ├── CompaniesActivityPieChart.tsx
-│   │   │   │   ├── CoordinationByProject.tsx
-│   │   │   │   ├── FolderPermissionTerrain.tsx
-│   │   │   │   ├── PeopleDrillList.tsx  # Drill-down people list
-│   │   │   │   ├── CoverageBadges.tsx
-│   │   │   │   ├── NoActivityBars.tsx
-│   │   │   │   ├── ProjectPicker.tsx
-│   │   │   │   ├── AuthorProfileDrawer.tsx
-│   │   │   │   └── EChart.tsx            # ECharts wrapper with theme
-│   │   │   ├── __tests__/               # Unit tests (co-located)
-│   │   │   │   ├── AccessAnalysisCharts.test.tsx
-│   │   │   │   ├── RolesPieChart.test.tsx
-│   │   │   │   ├── ...
-│   │   │   │   ├── page.test.tsx
-│   │   │   │   └── *.test.ts            # Pure function tests
-│   │   │   ├── page.test.tsx
-│   │   │   ├── types.ts                 # Local types (ProjectRoleRow, etc.)
-│   │   │   ├── *.ts                     # Pure functions (counts, filters, helpers)
-│   │   │   │   ├── companyActivityCounts.ts
-│   │   │   │   ├── companyCounts.ts
-│   │   │   │   ├── coordinationActions.ts
-│   │   │   │   ├── coordinationCounts.ts
-│   │   │   │   ├── roleCounts.ts
-│   │   │   │   ├── roleActivityCounts.ts
-│   │   │   │   ├── moduleOverrides.ts
-│   │   │   │   ├── modules.ts
-│   │   │   │   ├── projectFilter.ts
-│   │   │   │   ├── projectGroups.ts
-│   │   │   │   ├── timelineCounts.ts
-│   │   │   │   ├── dormantActivity.ts
-│   │   │   │   ├── folderTerrain.ts
-│   │   │   │   ├── folderTerrainActions.ts
-│   │   │   │   └── relativeTime.ts
-│   │   ├── users/                       # User directory & graph pages
-│   │   │   ├── dashboard/               # User list + stats
-│   │   │   │   ├── page.tsx
-│   │   │   │   └── loading.tsx
-│   │   │   ├── spatial-graph/           # 3D physics graph + sliders
-│   │   │   │   ├── page.tsx             # RSC: loads snapshot
-│   │   │   │   ├── GraphCanvas.tsx      # cosmos.gl 3D renderer
-│   │   │   │   ├── GraphLoadingSkeleton.tsx
-│   │   │   │   ├── loading.tsx
-│   │   │   │   └── ...
-│   │   │   ├── access-analysis/         # Dimension sidebar + sliders
-│   │   │   │   ├── page.tsx             # Redirects to /users/spatial-graph
-│   │   │   │   ├── AccessAnalysisShell.tsx
-│   │   │   │   ├── AccessAnalysisShellClient.tsx
-│   │   │   │   ├── CatalogSliderSidebar.tsx
-│   │   │   │   ├── CatalogTreeSection.tsx
-│   │   │   │   ├── CatalogCollapse.tsx
-│   │   │   │   ├── DimensionSearchBox.tsx
-│   │   │   │   ├── DimensionFilterPopover.tsx
-│   │   │   │   ├── ActiveFiltersBar.tsx
-│   │   │   │   ├── AccessEventsChart.tsx
-│   │   │   │   ├── ChartPanel.tsx
-│   │   │   │   ├── dimensionCatalog.ts
-│   │   │   │   ├── dimensionCatalog.structural.ts
-│   │   │   │   ├── *.test.ts
-│   │   │   │   └── ...
-│   │   ├── families/
-│   │   ├── clash-detection/
-│   │   ├── sim-automation/
-│   │   ├── tasks/
-│   │   ├── lod-checker/
-│   │   ├── exam/
-│   │   ├── sync-center/
-│   │   ├── trello/
-│   │   ├── settings/users/
-│   │   ├── account/setup/
-│   │   └── template-mty/
-│   └── api/                             # HTTP endpoints
-│       ├── trpc/[trpc]/route.ts         # TRPC JSON-RPC handler (batched)
-│       ├── auth/[...nextauth]/route.ts  # NextAuth callback
-│       ├── auth/callback/trello/route.ts
-│       ├── health/route.ts
-│       ├── chat/
-│       │   ├── stream/route.ts
-│       │   ├── upload/route.ts
-│       │   └── media/route.ts
-│       ├── gmail/
-│       │   └── attachment/route.ts
-│       ├── clash-updates/route.ts       # Webhook receiver
-│       ├── sim-updates/route.ts
-│       ├── events/
-│       │   ├── users/route.ts
-│       │   └── trello/route.ts
-│       ├── connect/[provider]/route.ts
-│       ├── debug/auth/route.ts
-│       ├── dev/prewarm-acc/route.ts
-│       ├── lod-img/[fileId]/route.ts
-│       ├── wiki-collab-token/route.ts
-│       ├── wiki-media/route.ts
-│       ├── uploadthing/
-│       │   ├── core.ts
-│       │   └── route.ts
-│       └── ...
-├── components/                          # React components (UI + layout)
-│   ├── layout/
-│   │   ├── Sidebar.tsx                  # Main navigation sidebar
-│   │   ├── Header.tsx
-│   │   └── ...
-│   ├── auth/
-│   │   ├── DualAuthGuard.tsx            # Client-side auth check + redirect
-│   │   ├── CredentialsBanner.tsx
-│   │   └── ...
-│   ├── dashboard/
-│   │   ├── ChatPanelWrapper.tsx         # Floating chat panel
-│   │   ├── MailPanelWrapper.tsx         # Floating mail panel
-│   │   ├── chat-panel/
-│   │   │   ├── ChatPanel.tsx
-│   │   │   └── ...
-│   │   ├── calendar/
-│   │   └── ...
-│   ├── providers/
-│   │   ├── dashboard-auth-provider.tsx
-│   │   ├── project-provider.tsx
-│   │   ├── navigation-provider.tsx
-│   │   └── ...
-│   ├── theme/
-│   │   ├── ThemeProvider.tsx            # next-themes wrapper
-│   │   ├── ThemeToggle.tsx
-│   │   └── ...
-│   ├── ui/                              # shadcn/ui primitives
-│   │   ├── Button.tsx
-│   │   ├── Dropdown.tsx
-│   │   ├── ParticleBackground.tsx
-│   │   ├── PageTransition.tsx
-│   │   └── ... (30+ shadcn components)
-│   ├── families/
-│   ├── clash/
-│   │   └── wiki-editor/                 # TipTap rich editor
-│   │       ├── WikiEditor.tsx
-│   │       ├── table-node/
-│   │       ├── slash-menu/
-│   │       └── drag-handle/
-│   ├── exam/
-│   ├── modules/
-│   ├── projects/
-│   ├── sync-center/
-│   ├── tasks/
-│   ├── trello/
-│   ├── lod/
-│   └── ... (one dir per feature)
-├── lib/                                 # Shared logic & utilities
-│   ├── core/
-│   │   ├── providers.tsx                # TRPCProvider, QueryClient setup
-│   │   ├── trpc.ts                      # TRPC React client factory
-│   │   └── ...
-│   ├── client/                          # Browser-only helpers
-│   │   ├── particle-zones.ts            # Canvas particle system
-│   │   ├── emptyDuckDbNode.ts           # Webpack alias for DuckDB
-│   │   └── ...
-│   ├── server/                          # Server-only helpers & data loaders
-│   │   ├── db.ts                        # Shared database connection
-│   │   ├── auth.ts                      # NextAuth config (also in server/)
-│   │   ├── accessInstanceView.ts        # Load: flat table of memberships
-│   │   ├── moduleActivityView.ts        # Load: module activity counts
-│   │   ├── activityByActorView.ts       # Load: activity by actor (role)
-│   │   ├── projectCoverageView.ts       # Load: coverage metrics
-│   │   ├── activityTimelineView.ts      # Load: activity over time
-│   │   ├── coordinationByProjectView.ts # Load: model coordination issues
-│   │   ├── folderPermissionTerrainView.ts # Load: folder hierarchy + perms
-│   │   ├── acc-hot-cache.ts             # Cached graph snapshots
-│   │   ├── acc-route-hydration.ts       # Pre-fetch helpers for pages
-│   │   ├── unifiedActivitySource.ts     # Merge activity sources
-│   │   ├── aps-oauth.ts                 # APS token refresh
-│   │   ├── aps-user-token.ts            # User APS token extraction
-│   │   ├── acc-admin.ts                 # ACC admin helpers
-│   │   ├── email.ts                     # Email composition + sending
-│   │   ├── google-service-auth.ts       # Google service account
-│   │   ├── logger.ts                    # Logging setup
-│   │   ├── integrations/                # External service clients
-│   │   │   ├── aps-sdk.ts
-│   │   │   ├── gmail.ts
-│   │   │   └── ...
-│   │   ├── __tests__/                   # Server-side unit tests
-│   │   └── ...
-│   ├── acc/                             # ACC data models & logic
-│   │   ├── acc-types.ts                 # TS types (AccActivity, etc.)
-│   │   ├── accessAnalysisTypes.ts
-│   │   ├── activityCategories.ts        # Pure: classify activity
-│   │   ├── activityAttribution.ts       # Pure: link activity to user
-│   │   ├── activityAggregate.ts         # Pure: sum counts
-│   │   ├── activityActorClassification.ts
-│   │   ├── activeUserTiers.ts
-│   │   ├── dimensionCatalog.ts          # Registry: graph dimensions
-│   │   ├── mty-allowlist.json           # Data: Mexico City office allowlist
-│   │   ├── embedding/                   # TF-Embedding vectors
-│   │   │   └── ...
-│   │   ├── __tests__/                   # Unit tests
-│   │   │   └── ...
-│   │   └── ... (70+ files)
-│   ├── shared/                          # Shared types & helpers
-│   │   ├── types.ts                     # Common TS types
-│   │   ├── constants.ts
-│   │   └── ...
-│   ├── colors/                          # Color scheme logic
-│   │   ├── palette.ts
-│   │   └── ...
-│   ├── modules/                         # Modules feature helpers
-│   ├── google/                          # Google API helpers
-│   ├── wiki/                            # Wiki/collaboration helpers
-│   ├── trello/                          # Trello integration
-│   ├── forma/                           # Forma (Autodesk tool) integration
-│   ├── events/                          # Event bus / webhooks
-│   ├── auth-env.ts                      # Parse auth config from env
-│   └── redis.ts                         # Upstash Redis client
-├── server/                              # Backend server logic
-│   ├── auth.ts                          # NextAuth v5 config
-│   ├── db.ts                            # Prisma client singleton
-│   ├── trpc.ts                          # TRPC context & procedures
-│   ├── routers/                         # All TRPC endpoints
-│   │   ├── root.ts                      # Router composition
-│   │   ├── families.ts
-│   │   ├── clash.ts
-│   │   ├── exam.ts
-│   │   ├── kpi.ts
-│   │   ├── tasks.ts
-│   │   ├── search.ts
-│   │   ├── users.ts
-│   │   ├── project.ts
-│   │   ├── trello.ts
-│   │   ├── sim.ts
-│   │   ├── calendar.ts
-│   │   ├── chat.ts
-│   │   ├── lod.ts
-│   │   ├── aps-search.ts
-│   │   ├── gmail.ts
-│   │   ├── workspace.ts
-│   │   ├── acc-sync.ts                  # ACC sync endpoint (webhooks)
-│   │   ├── acc-activity.ts              # Activity query endpoints
-│   │   ├── acc-folders.ts               # Folder endpoints
-│   │   ├── acc-members.ts               # Member endpoints
-│   │   ├── acc-graph.ts                 # 3D graph snapshot + sliders
-│   │   ├── acc-dc-graph.ts              # DC-only graph endpoints
-│   │   ├── acc-person-graph.ts
-│   │   ├── *.test.ts                    # Router tests
-│   │   └── ...
-│   └── actions/                         # Server-side mutations
-│       └── ...
-├── prisma/
-│   ├── schema.prisma                    # ORM schema (User, Project, Activity, etc.)
-│   ├── migrations/                      # Database migration history
-│   └── ...
-├── scripts/
-│   ├── run_dev_stack.py                 # Start Next.js + PostgreSQL
-│   ├── patch-env.js                     # Env variable patching
-│   ├── postgres-local.js                # Local PG start/stop
-│   ├── start-router.cjs                 # Production server launcher
-│   ├── copy-duckdb-wasm.cjs             # Copy WASM files to public/
-│   ├── dc-extract-id-list.cjs           # List extractable projects
-│   ├── dc-daily-ingest.cjs              # Daily cron ingestion wrapper
-│   ├── migrate-lod-data.cjs             # LOD data migration
-│   ├── yjs-server.mjs                   # Hocuspocus YJS server
-│   ├── run-tunnel.js                    # ngrok tunnel setup
-│   └── ... (data diagnostics, helpers)
-├── public/                              # Static assets (favicon, DuckDB WASM)
-│   ├── favicon.ico
-│   └── duckdb.wasm                      # Copied by postinstall
-├── docs/
-│   ├── superpowers/                     # Developer guides
-│   │   └── codebase-map/                # This codebase map
-│   ├── erd.md                           # Prisma ERD diagram
-│   ├── activity-attribution-audit.md
-│   ├── aps-reference.md
-│   ├── CRON_SETUP.md
-│   ├── runbook.md
-│   └── ... (research, audit docs)
-├── .planning/
-│   └── codebase/                        # GSD codebase analysis docs
-│       ├── ARCHITECTURE.md
-│       └── STRUCTURE.md
-├── .claude/
-│   ├── settings.json
-│   ├── projects/
-│   │   └── C--LECG-Dashboard/
-│   │       └── memory/
-│   │           ├── MEMORY.md            # Persistent project memory
-│   │           └── *.md                 # Topic files
-│   └── keybindings.json
-├── .agents/                             # GSD agent framework
-├── .env                                 # Local env config (DB, APIs, secrets)
-├── .env.example                         # Template
-├── package.json                         # npm scripts, dependencies
-├── tsconfig.json                        # TypeScript compiler config
-├── next.config.ts                       # Next.js build config
-├── vitest.config.ts                     # Unit test config
-├── playwright.config.ts                 # E2E test config
-├── eslint.config.mjs                    # ESLint rules
-├── postcss.config.mjs
-├── tailwind.config.ts                   # Tailwind CSS config
-├── auth.config.ts                       # Auth config file
-└── prisma.config.ts
+```text
+Dashboard/
+├── app/                    # Next.js App Router pages and API route handlers
+│   ├── (auth)/             # Login/register/password flows
+│   ├── (dashboard)/        # Authenticated product surfaces
+│   └── api/                # Route handlers, tRPC, auth, uploads, streams
+├── components/             # Shared React components and UI primitives
+│   ├── ui/                 # shadcn/Radix-style primitives and tests
+│   ├── dashboard/          # Mail/chat/calendar/dashboard surfaces
+│   ├── layout/             # App shell/navigation/header components
+│   └── */                  # Feature widgets
+├── hooks/                  # Shared React hooks
+├── lib/                    # Shared domain, server, integration, and client helpers
+│   ├── acc/                # ACC/Data Connector domain and ingestion helpers
+│   ├── google/             # Google API helpers
+│   ├── server/             # Server-only helpers and integration glue
+│   └── shared/             # Shared schemas/constants
+├── server/                 # tRPC setup, auth/db boundary, routers
+│   └── routers/            # Domain routers composed into appRouter
+├── prisma/                 # Prisma schema and migrations
+├── scripts/                # Jobs, diagnostics, repo-map, UAT, sync/backfill scripts
+│   ├── repo-map/           # Structural map generator/checker
+│   ├── uat/                # Engineering gate wrapper
+│   └── scratch/            # One-off diagnostics/probes
+├── services/               # Non-Next services
+│   └── lod-engine/         # Python LOD/image service
+├── tests/                  # Playwright E2E/UAT specs and helpers
+├── types/                  # Type augmentation
+├── electron/               # Desktop shell entry point
+├── docs/                   # Project docs, ERD, specs, references
+├── .planning/              # GSD planning and codebase map artifacts
+├── .tools/repo-map/        # Generated repo-map artifacts
+├── package.json            # Scripts, dependencies, Node engine
+├── tsconfig.json           # TypeScript config and @/* path alias
+├── next.config.ts          # Next.js runtime/build config
+├── vitest.config.ts        # Vitest config
+└── playwright.config.ts    # E2E config
 ```
 
 ## Directory Purposes
 
 **`app/`:**
-- Purpose: Next.js 16 App Router pages and API routes
-- Contains: Page components (RSC), layouts, loading states, API endpoints
-- Key files: `layout.tsx`, `(dashboard)/layout.tsx`, `(dashboard)/access-analysis/page.tsx`
-
-**`app/(dashboard)/access-analysis/`:**
-- Purpose: ECharts-based access dashboard (roles, modules, activity donuts)
-- Contains: Page.tsx (data loader), chart components, pure helpers (counts, filters), tests
-- Key files: `page.tsx` (RSC), `components/AccessAnalysisCharts.tsx`, `roleCounts.ts`
-
-**`app/(dashboard)/users/`:**
-- Purpose: User directory + 3D physics graph + dimension sliders
-- Contains: User list page, spatial graph page, slider sidebar, graph canvas
-- Key files: `spatial-graph/page.tsx`, `access-analysis/CatalogSliderSidebar.tsx`
-
-**`app/api/`:**
-- Purpose: HTTP endpoints (TRPC, webhooks, auth callbacks)
-- Contains: Route handlers, no rendering
-- Key files: `trpc/[trpc]/route.ts`, `auth/[...nextauth]/route.ts`
+- Purpose: Next.js routes, pages, layouts, and route handlers.
+- Contains: Route groups, page components, API route handlers, feature-local modules/tests for large dashboard surfaces.
+- Key files: `app/layout.tsx`, `app/page.tsx`, `app/api/trpc/[trpc]/route.ts`, `app/api/auth/[...nextauth]/route.ts`.
+- Important subtrees: `app/(dashboard)/users/access-analysis/`, `app/(dashboard)/access-analysis/`, `app/(dashboard)/template-mty/`, `app/(dashboard)/forma-proposal/`.
 
 **`components/`:**
-- Purpose: Reusable React components (UI + layout)
-- Contains: TSX files organized by feature, mostly client-side interactive
-- Key files: `layout/Sidebar.tsx`, `dashboard/ChatPanelWrapper.tsx`, `ui/` (shadcn)
+- Purpose: Reusable UI, feature widgets, and dashboard panel components.
+- Contains: React components, collocated tests, UI primitives, layout shell, dashboard/chat/mail/calendar views.
+- Key files: `components/ui/DataTable.tsx`, `components/ui/EChart.tsx`, `components/layout/Sidebar.tsx`, `components/dashboard/MailPanel.tsx`.
 
-**`lib/server/`:**
-- Purpose: Server-side only helpers and data loaders
-- Contains: View loaders (accessInstanceView, etc.), cache (acc-hot-cache), integrations
-- Key files: `*View.ts` (async data aggregation), `acc-hot-cache.ts` (snapshot cache), `auth.ts`
+**`hooks/`:**
+- Purpose: Shared React hooks for roles, debounce, event source, mail/chat notifications.
+- Contains: `use-*.ts` / `use-*.tsx` hooks and occasional collocated tests.
 
-**`lib/acc/`:**
-- Purpose: ACC-specific data models, types, and business logic
-- Contains: Activity classification, aggregation, dimension registry, types
-- Key files: `activityCategories.ts` (pure), `dimensionCatalog.ts` (registry), `acc-types.ts`
-
-**`lib/client/`:**
-- Purpose: Browser-only utilities
-- Contains: Particle system, DuckDB WASM, hooks
-- Key files: `particle-zones.ts`
-
-**`server/routers/`:**
-- Purpose: TRPC RPC endpoints (queries + mutations)
-- Contains: Procedure handlers with auth, validation, data fetching
-- Key files: `root.ts` (composition), `acc-sync.ts`, `acc-activity.ts`, `acc-graph.ts`
+**`lib/`:**
+- Purpose: Shared non-route logic, domain models, server helpers, integrations, and pure utilities.
+- Contains: `lib/acc/`, `lib/server/`, `lib/google/`, `lib/forma/`, `lib/trello/`, `lib/wiki/`, `lib/shared/`.
+- Key risk: code that is domain or script-safe should prefer `lib/` over `app/(dashboard)/...`.
 
 **`server/`:**
-- Purpose: Backend configuration and setup
-- Contains: Auth config, database client, TRPC context
-- Key files: `auth.ts` (NextAuth), `db.ts` (Prisma), `trpc.ts` (procedures)
+- Purpose: tRPC and server boundary.
+- Contains: `server/trpc.ts`, `server/db.ts`, `server/auth.ts`, `server/routers/*.ts`.
+- Key files: `server/routers/root.ts` composes 23 routers.
 
 **`prisma/`:**
-- Purpose: Database schema and migrations
-- Contains: ORM schema (models), migration SQL
-- Key files: `schema.prisma`
+- Purpose: Database schema, migrations, and migration-adjacent SQL.
+- Contains: `prisma/schema.prisma`, `prisma/migrations/`, `prisma/migrations-raw/`.
+- Generated artifact: ERD output at `docs/erd.md`.
 
 **`scripts/`:**
-- Purpose: Utility scripts (dev server, cron, data import)
-- Contains: Python/Node scripts for setup, import, monitoring
-- Key files: `run_dev_stack.py`, `dc-daily-ingest.cjs`
+- Purpose: Developer tools, sync jobs, ACC/Data Connector backfills, diagnostics, repo-map, UAT gates, and operational commands.
+- Key files: `scripts/repo-map/generate.cjs`, `scripts/repo-map/check.cjs`, `scripts/uat/run-engineering-gates.cjs`, `scripts/run_dev_stack.py`.
+- Current boundary issue: Six scripts import route-owned modules under `app/`.
 
-**`docs/`:**
-- Purpose: Developer documentation and audit reports
-- Contains: Architecture guides, API reference, data audits
-- Key files: `erd.md`, `aps-reference.md`, `superpowers/codebase-map/`
+**`services/lod-engine/`:**
+- Purpose: Python image/LOD service and pipeline.
+- Contains: `server.py`, `README.md`, `img_pipeline/`, provider helpers, model/tool binaries.
+
+**`tests/`:**
+- Purpose: Playwright E2E/UAT specs.
+- Contains: `tests/e2e/*.spec.ts`, `tests/e2e/uat-helpers.ts`, `playwright/global-setup.ts`.
+
+**`.tools/repo-map/`:**
+- Purpose: Generated structural intelligence.
+- Contains: `manifest.json`, `architecture-summary.md`, dependency-cruiser reports, ast-grep reports, and Repomix source slices.
+- Committed status: Generated/local artifacts; use as context, not as source code.
+
+**`.planning/`:**
+- Purpose: GSD planning workspace and codebase map.
+- Contains: `PROJECT.md`, `STATE.md`, `ROADMAP.md`, phase docs, and `.planning/codebase/*.md`.
 
 ## Key File Locations
 
 **Entry Points:**
-- `app/layout.tsx`: Root layout (global setup)
-- `app/(auth)/login/page.tsx`: Auth entry
-- `app/(dashboard)/layout.tsx`: Protected dashboard entry
-- `app/api/trpc/[trpc]/route.ts`: TRPC API entry
+- `app/layout.tsx` - Root Next layout.
+- `app/page.tsx` - Root route.
+- `app/api/trpc/[trpc]/route.ts` - tRPC HTTP entry point.
+- `server/routers/root.ts` - tRPC router map.
+- `server/trpc.ts` - tRPC context/procedure definitions.
+- `server/db.ts` - Prisma DB client.
+- `electron/main.cjs` - Electron desktop entry point.
+- `services/lod-engine/server.py` - Python LOD service entry point.
 
 **Configuration:**
-- `tsconfig.json`: TypeScript compiler options (path alias `@/*`)
-- `next.config.ts`: Next.js build, webpack aliases (DuckDB), server packages
-- `vitest.config.ts`: Unit test environment (node, globals)
-- `playwright.config.ts`: E2E test browser setup
-- `prisma/schema.prisma`: Database models
-- `package.json`: Dependencies, npm scripts
-- `server/auth.ts`: NextAuth v5 providers + callbacks
+- `package.json` - npm scripts, dependencies, Node engine.
+- `tsconfig.json` - TypeScript compiler config, strict mode, `@/*` alias.
+- `next.config.ts` - Next runtime/build settings.
+- `vitest.config.ts` / `vitest.setup.ts` - Unit test config/setup.
+- `playwright.config.ts` / `playwright.verify.config.ts` - E2E/UAT config.
+- `eslint.config.mjs` - ESLint ignore config.
+- `sgconfig.yml` - ast-grep rule config.
+- `.dependency-cruiser.cjs` - dependency boundary config.
+- `repomix.config.json` - Repomix output config.
 
 **Core Logic:**
-- `server/routers/root.ts`: TRPC router composition (19 routers mounted)
-- `server/routers/acc-sync.ts`: ACC sync endpoint (webhooks, activity ingestion)
-- `server/routers/acc-activity.ts`: Activity query endpoints
-- `server/routers/acc-graph.ts`: 3D graph snapshot + slider logic
-- `lib/server/acc-hot-cache.ts`: Cached graph snapshots (10min TTL)
-- `lib/server/accessInstanceView.ts`: Membership data aggregation
-- `lib/acc/activityCategories.ts`: Classify activity (pure function)
-- `lib/acc/dimensionCatalog.ts`: Graph dimension registry
+- `server/routers/*.ts` - API procedure modules.
+- `lib/acc/*.ts` - ACC/Data Connector domain and ingestion logic.
+- `lib/server/*.ts` - Server-only integration/business helpers.
+- `app/(dashboard)/users/access-analysis/*.ts*` - Access-analysis graph and interaction logic.
+- `app/(dashboard)/access-analysis/*.ts*` - Access-analysis charts/terrain modules.
 
 **Testing:**
-- `app/(dashboard)/access-analysis/__tests__/`: Co-located unit tests
-- `server/routers/*.test.ts`: Router-level tests
-- `lib/server/__tests__/`: Server logic tests
-- `playwright.config.ts`: E2E test config (runs against `:3100`)
+- `*.test.ts` / `*.test.tsx` - Collocated unit/component tests.
+- `components/ui/__tests__/` - UI component tests.
+- `tests/e2e/*.spec.ts` - Playwright E2E/UAT tests.
+- `scripts/uat/run-engineering-gates.cjs` - Scripted UAT gate runner.
+
+**Documentation and Generated Maps:**
+- `.planning/codebase/*.md` - Human-readable GSD codebase map.
+- `.tools/repo-map/architecture-summary.md` - Generated source-density and boundary summary.
+- `.tools/repo-map/manifest.json` - Machine-readable repo-map run manifest.
+- `docs/erd.md` - Prisma ERD.
 
 ## Naming Conventions
 
 **Files:**
-- Page routes: `page.tsx` (Next.js convention)
-- Loaders: `*View.ts` (e.g., `accessInstanceView.ts`)
-- Components: `PascalCase.tsx` (e.g., `RolesPieChart.tsx`)
-- Utilities: `camelCase.ts` (e.g., `roleCounts.ts`)
-- Tests: `*.test.ts` or `*.test.tsx` (co-located or in `__tests__/`)
-- Routes: `route.ts` for API, `page.tsx` for pages
+- PascalCase `.tsx` for React component modules: `MailPanel.tsx`, `FolderPermissionTerrain.tsx`.
+- camelCase `.ts` for pure utilities and feature helpers: `graphNodesFromUsers.ts`, `moduleOverrides.ts`.
+- kebab-case `.cjs` / `.mjs` for scripts: `start-router.cjs`, `repo-map/generate.cjs`.
+- `*.test.ts` / `*.test.tsx` for unit/component tests.
+- `*.spec.ts` for Playwright E2E tests.
+- Route files follow Next conventions: `page.tsx`, `layout.tsx`, `loading.tsx`, `route.ts`.
 
 **Directories:**
-- Feature domains: singular noun (e.g., `access-analysis`, `users`, `families`)
-- Grouping: PascalCase or kebab-case (e.g., `chat-panel`, `wiki-editor`)
-- Internal structure: lowercase (e.g., `__tests__`, `components`)
+- Feature directories generally use kebab-case or domain names: `access-analysis`, `template-mty`, `sync-center`.
+- Shared component/domain directories are plural or domain-scoped: `components/`, `server/routers/`, `lib/acc/`.
+- Test directories use `__tests__/` where tests are grouped instead of collocated.
 
-**Variables/Functions:**
-- camelCase for functions and variables (e.g., `loadInstanceView()`, `classifyActivity()`)
-- UPPER_SNAKE_CASE for constants (e.g., `PG_POOL_MAX`)
-- PascalCase for React components and types (e.g., `RolesPieChart`, `ProjectRoleRow`)
+**Special Patterns:**
+- `server/routers/<domain>.ts` exports `<domain>Router`.
+- `app/api/**/route.ts` defines Next route handlers.
+- Route-group parentheses are Next.js only: `app/(auth)/`, `app/(dashboard)/`.
+- Generated repo-map outputs live under `.tools/repo-map/` and should not become hand-edited source.
 
 ## Where to Add New Code
 
-**New Feature (e.g., new dashboard page):**
-- Primary code: Create `app/(dashboard)/my-feature/` with `page.tsx`, `components/`, `*.ts` utilities
-- Tests: Add `__tests__/` directory alongside components and pure functions
-- TRPC endpoint: If needs backend API, add `server/routers/my-feature.ts` and mount in `server/routers/root.ts`
-- Styles: Use Tailwind classes in TSX, no separate CSS files (unless shared theme tokens)
+**New Dashboard Route:**
+- Route/page shell: `app/(dashboard)/<route>/page.tsx`.
+- Loading state: `app/(dashboard)/<route>/loading.tsx` if needed.
+- Shared widgets: `components/<domain>/` or `components/ui/`.
+- Server data: `server/routers/<domain>.ts` plus `lib/server/` or `lib/<domain>/` helpers.
+- Tests: collocated `*.test.tsx` for components and `tests/e2e/*.spec.ts` for browser flows.
 
-**New Component/Module:**
-- Implementation: `components/my-module/MyComponent.tsx`
-- Sub-components: `components/my-module/SubComponent.tsx` (co-located)
-- Styles: Tailwind (inline) or CSS modules if complex
-- Tests: `components/my-module/__tests__/MyComponent.test.tsx`
+**New tRPC Procedure:**
+- Router: existing `server/routers/<domain>.ts` or a new router included in `server/routers/root.ts`.
+- Domain logic: `lib/server/` or `lib/<domain>/`.
+- DB access: server-side only through `server/db.ts`/Prisma.
+- Tests: router/unit tests near the router or helper.
 
-**Utilities & Helpers:**
-- Client-side: `lib/client/myHelper.ts`
-- Server-side: `lib/server/myHelper.ts`
-- Shared logic: `lib/shared/myHelper.ts`
-- Feature-specific: `app/(dashboard)/my-feature/myHelper.ts`
-- Pure functions: Near where used, or in `lib/acc/` if ACC-related
+**New ACC/Data Connector Logic:**
+- Pure domain helpers: `lib/acc/`.
+- Server orchestration: `lib/server/` or `server/routers/acc-*.ts`.
+- Scripts/jobs: `scripts/acc-*`, `scripts/dc-*`, or future `scripts/jobs/`.
+- Avoid placing reusable domain transforms in `app/(dashboard)/...`.
 
-**New TRPC Router:**
-1. Create `server/routers/my-router.ts` with `router()` and `export const myRouter = ...`
-2. Import in `server/routers/root.ts` and add to composition: `myRouter: myRouter`
-3. Procedures use `protectedProcedure` (default), `adminProcedure` (ADMIN only), or `publicProcedure`
-4. Add `.input(z.object(...))` for validation
-5. Add `.query()` or `.mutation()` with async handler
+**New UI Primitive:**
+- Implementation: `components/ui/`.
+- Tests: `components/ui/__tests__/`.
+- Styles: Tailwind/shadcn conventions and `app/globals.css` where global tokens are needed.
 
-**New Database Model:**
-1. Edit `prisma/schema.prisma` (add model, relations, indexes)
-2. Run `npx prisma migrate dev --name my_migration` (creates migration SQL)
-3. Use `db.myModel.findMany()` etc. in routers/views
-
-**New API Route:**
-1. Create `app/api/my-endpoint/route.ts` with `export async function GET/POST(request: Request) { ... }`
-2. Return `Response` or `NextResponse`
-3. For webhook: validate signature, parse payload, update DB, return 200
+**New Operational Script:**
+- Durable job/backfill: `scripts/` now; target cleanup shape is `scripts/jobs/`.
+- Diagnostics/probes: `scripts/scratch/` now; target cleanup shape is `scripts/diagnostics/`.
+- Shared script helpers: `scripts/lib/` or `lib/<domain>/`, not route-owned `app/`.
 
 ## Special Directories
 
-**`.next/`:**
-- Purpose: Next.js build output (compiled code, type definitions)
-- Generated: Yes (by `npm run build`)
-- Committed: No (in `.gitignore`)
-
-**`prisma/migrations/`:**
-- Purpose: Database migration history (SQL files)
-- Generated: By `npx prisma migrate dev`
-- Committed: Yes (part of version control)
-
-**`.env`:**
-- Purpose: Local environment variables (DATABASE_URL, API keys, secrets)
-- Generated: No (manually created from `.env.example`)
-- Committed: No (in `.gitignore` — secrets safety)
+**`.tools/repo-map/`:**
+- Purpose: Generated structural map from `npm run repo-map:check`.
+- Source: `scripts/repo-map/generate.cjs`.
+- Contents: Repomix XML, dependency-cruiser JSON/HTML/Mermaid/DOT/SVG, ast-grep JSON, manifest, summary.
+- Hand-edit: No.
 
 **`.planning/codebase/`:**
-- Purpose: GSD codebase analysis documents
-- Generated: By `/gsd-map-codebase` skill
-- Committed: Yes (reference for future tasks)
+- Purpose: Human-readable GSD map derived from source and repo-map artifacts.
+- Source: maintained by codebase mapping workflow.
+- Hand-edit: Yes, but refresh with `npm run repo-map:check` first.
 
-**`docs/superpowers/`:**
-- Purpose: Developer workflows and team playbooks
-- Generated: By `/gsd-docs-update` skill
-- Committed: Yes (team knowledge base)
+**`.next*`, `playwright-report/`, `test-results/`, `.tmp/`:**
+- Purpose: build/test/generated outputs.
+- Hand-edit: No.
 
-**`scripts/`:**
-- Purpose: Utility scripts for development, deployment, data operations
-- Generated: Manual creation or scaffolding
-- Committed: Yes (team tooling)
+**`services/lod-engine/img_pipeline/bin/`:**
+- Purpose: local binary/model assets for image processing.
+- Hand-edit: No, unless updating the LOD toolchain.
 
 ---
 
-*Structure analysis: 2026-06-17*
+*Structure analysis: 2026-06-19*
+*Update when folders move or ownership boundaries change.*

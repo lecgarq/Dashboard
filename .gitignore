@@ -109,3 +109,10 @@ scripts/_attic/
 
 # Local UI inspection screenshots (scripts/ui-inspect.ts, ui-prove-activity.ts)
 .ui-shots/
+
+# Repo architecture map outputs: keep policy/docs, ignore generated snapshots.
+.tools/repo-map/*
+!.tools/repo-map/baselines/
+!.tools/repo-map/baselines/**
+!.tools/repo-map/AI-ANALYSIS-PROMPT.md
+!.tools/repo-map/architecture-summary.md
