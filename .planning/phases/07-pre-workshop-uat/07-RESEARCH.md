@@ -868,22 +868,25 @@ No new packages are recommended for this phase. All tooling is already installed
 
 ---
 
-## Open Questions
+## Open Questions (RESOLVED — see 07-01 Task 1)
 
 1. **Is `NEXT_DIST_DIR=.next-uat` safe while :3000 is live?**
    - What we know: `npm run build` with a different `NEXT_DIST_DIR` writes to `.next-uat/`, not `.next/`. Next.js should not invalidate the running `.next/` instance.
    - What's unclear: Whether Next.js reads/locks the current `.next/` during a build to a different `NEXT_DIST_DIR`.
    - Recommendation: Test this in isolation first (build while :3000 is running) before relying on it. If risky, stop the :3000 Task Scheduler task before building.
+   - **Resolution (07-01 Task 1):** UNVERIFIED — default to stopping the :3000 Task Scheduler task before building. `NEXT_DIST_DIR=.next-uat` isolation is recorded as unverified; the 07-02 runbook verifies-then-falls-back. The gate wrapper never runs `npm run build`.
 
 2. **Does `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1` need to be set for the UAT build?**
    - What we know: `playwright.config.ts` sets this flag in the dev-server env. The new `/access-analysis` route (`page.tsx` → `mainCharts.tsx`) is what we're testing.
    - What's unclear: Whether the route is conditional on this flag or if it's the default.
    - Recommendation: Read `next.config.ts` for any flag-based routing. If the new access analysis is the default, this flag is unnecessary. If it's still gated, include `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS=1` in the UAT build env.
+   - **Resolution (07-01 Task 1):** NOT required — `NEXT_PUBLIC_NEW_ACCESS_ANALYSIS` appears only in `app/(dashboard)/users/page.test.tsx` as a fixture; the new `/access-analysis` route is the default. Omit the flag from the UAT build env.
 
 3. **FormaParticleAccent canvas: does it mount before role selection?**
    - What we know: `FormaProposalClient.tsx` renders `FormaParticleAccent` as a dynamic background (`ssr: false`). The component is inside the right-panel area.
    - What's unclear: Whether the R3F canvas mounts on initial load (before any role is selected) or only after a role triggers the right panel.
    - Recommendation: Navigate to `/forma-proposal` and count canvases before and after clicking the first role. Document the result in UAT execution.
+   - **Resolution (07-01 Task 1):** Harness navigates to `/forma-proposal`, counts `canvas` before and after clicking the first role, and asserts ≤1 WebGL context (FormaParticleAccent); the count is recorded in UAT-REPORT.md.
 
 ---
 
