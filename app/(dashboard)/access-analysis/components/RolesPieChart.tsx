@@ -178,6 +178,7 @@ export function RolesPieChart({
       {
         name: "Roles",
         type: "pie",
+        cursor: "pointer",
         radius: ["56%", "80%"],
         center: ["50%", "52%"],
         padAngle: 2,
