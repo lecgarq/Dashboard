@@ -5,10 +5,10 @@ milestone_name: "Access Analysis: Hub Story & Scenario Explorer"
 status: ready-to-plan
 current_phase: 8
 current_phase_name: Activity Re-Extraction (free ACCDS crawler)
-stopped_at: "Roadmap complete. Phase 8 (Activity Re-Extraction — FREE ACCDS web-session crawler, no DC quota) and Phase 9 (Structural Prerequisites) are parallel-safe first moves. Run /gsd:plan-phase 8 and /gsd:plan-phase 9."
+stopped_at: "Phase 8 context gathered (08-CONTEXT.md). Decisions: ACCDS session-cookie crawler only (no DC quota); max history; spike full ACC membership before any admin grant (the 428 ceiling is inherited, not a session limit); 2-legged folder crawl for the treemap; report-not-block currency. Run /gsd:plan-phase 8 (Phase 9 still parallel-safe)."
 last_updated: "2026-06-22"
 last_activity: 2026-06-22
-last_activity_desc: "v3.0 roadmap written — 7 phases (8–14), 27 requirements mapped, 100% coverage. Ready to plan Phase 8."
+last_activity_desc: "Phase 8 discuss-phase complete — 08-CONTEXT.md written. Centerpiece decision: a session-endpoint spike (accds/v0 on member-only projects) may unlock coverage beyond the 428 admin set with no permission change."
 progress:
   total_phases: 7
   completed_phases: 0
@@ -154,6 +154,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-22 — v3.0 roadmap written (Phases 8–14)
-Stopped at: Roadmap complete — 7 phases, 27 requirements mapped, 100% coverage. Phase 8 and Phase 9 are parallel-safe first moves.
-Resume file: .planning/ROADMAP.md (Phase 8 and Phase 9 detail sections)
+Last session: 2026-06-22 — Phase 8 context gathered (discuss-phase)
+Stopped at: 08-CONTEXT.md written. Method locked to the free ACCDS session crawler; Plan task 1 = spike full membership + test accds/v0 on member-only projects before any admin grant. Folder crawl (2-legged APS) approved for treemap data. Currency = report, don't block.
+Resume file: .planning/phases/08-activity-re-extraction/08-CONTEXT.md
