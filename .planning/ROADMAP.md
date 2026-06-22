@@ -56,7 +56,10 @@ Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned hub
   2. The crawl completes with NO DC quota (session-cookie auth) and resumes the un-crawled remainder via `ACCDS_RESUME=1`; a `SessionExpiredError` is recovered by re-running `scripts/accds-login.cjs`.
   3. `node scripts/diag-accds-recency.cjs` confirms the latest `AccActivityAccds.createdAt` is current (≈ today) across the admin project set.
   4. `node scripts/verify-accds-merge.cjs` (and/or `diag-accds-vs-dc.cjs`) confirms the fresh ACCDS data reconciles with existing `AccActivity` coverage with no silent gaps.
-**Plans**: TBD
+**Plans**: 3 plans
+- [ ] 08-01-PLAN.md — Pre-flight + membership spike: bootstrap session, enumerate full membership, test accds/v0 on a member-only project; decides crawl source (full-membership vs admin-428)
+- [ ] 08-02-PLAN.md — Full ACCDS activity crawl + resume/expiry recovery + per-project gap repair; coverage+presence gate and DC reconciliation (report-not-block)
+- [ ] 08-03-PLAN.md — 2-legged APS folder crawl (FOLD-04 enabler): populate AccFolder.totalSizeBytes; OOM-safe folder coverage gate (parallel, independent)
 **Verification gates**: `npx tsc --noEmit` = 0; stop Task Scheduler build before `npm run build`; `SELECT COUNT(DISTINCT "projectId"), MAX("createdAt") FROM "AccActivityAccds"` shows the full admin project set current through today
 **Note**: A DC `AccActivity` refresh (the quota-bound CSV path) remains OPTIONAL and is only needed if the legacy DC-sourced panels must also be made current — decided at plan time, not assumed here.
 
