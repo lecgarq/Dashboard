@@ -1,15 +1,507 @@
-# Stack Research — Premium UI/UX Techniques
+# Technology Stack
 
-**Domain:** Brownfield Next.js 16 / React 19 BIM dashboard — presentation layer overhaul
-**Researched:** 2026-06-17
-**Confidence:** MEDIUM (ECharts/Motion/Tailwind techniques); LOW (cross-verified via websearch for cutting-edge ECharts 6 specifics)
+**Project:** LECG Dashboard — /access-analysis v3.0 (Hub Story & Scenario Explorer)
+**Researched:** 2026-06-22 (v3.0 chart-types addendum)
+**Scope:** New ECharts series types (sankey, chord, calendar heatmap, treemap, pivot renderer)
+**ECharts version:** `^6.1.0` [VERIFIED from package.json — released ~May 2026, includes ECharts 6.0 chord series]
+**echarts-for-react version:** `^3.0.6` [VERIFIED from package.json]
 
-> LOCKED STACK: All framework/library decisions below are constrained to the installed stack.
-> No new frameworks. Recommend only compatible additions or usage patterns.
+> This file is an addendum to the v2.0 STACK.md (2026-06-17). The v2.0 sections (ECharts depth/polish, TanStack Table, Framer Motion, 2.5D CSS, R3F hero accents) remain valid and are appended at the bottom. The new sections (1–8) cover v3.0-specific chart types.
 
 ---
 
-## 1. ECharts 6 Depth and Polish
+## 1. Verified Stack Baseline
+
+These are already in the repo and must not be changed:
+
+| Layer | Package | Version | Role |
+|-------|---------|---------|------|
+| Chart engine | `echarts` | `^6.1.0` | All chart rendering |
+| React wrapper | `echarts-for-react` | `^3.0.6` | `ReactECharts` component |
+| Canonical wrapper | `components/ui/EChart.tsx` | repo | Theme injection, key-remount on theme switch |
+| Theme injector | `lib/colors/echartsTheme.ts` | repo | `mergeEChartsTheme`, `ECHARTS_DARK`, `ECHARTS_LIGHT` palettes |
+| Theme provider | `next-themes` | `^0.4.6` | `resolvedTheme` → `dark: bool` |
+
+**Do NOT add:** `echarts-gl`, `echarts-stat`, or any WebGL-backed charting layer. The no-new-WebGL constraint is a hard product rule (PROJECT.md, owner-approved v2.0).
+
+---
+
+## 2. Sankey — `type: 'sankey'`
+
+**Use for:** Company→Role→Module flows; permission path visualization.
+
+**Data format (exact field names — verified from SankeySeries.ts):**
+```typescript
+// nodes — `name` is the node identifier AND the label
+nodes: Array<{ name: string; [key: string]: unknown }>
+// edges — source/target reference node `name` values (not indices)
+links: Array<{ source: string; target: string; value: number }>
+// aliases: `data` = nodes, `edges` = links — both accepted
+```
+
+**Key config fields (defaults from SankeySeries.ts):**
+```typescript
+{
+  type: 'sankey',
+  orient: 'horizontal',      // 'vertical' for top-down; default 'horizontal'
+  nodeWidth: 20,             // px width of node rect
+  nodeGap: 8,                // px gap between sibling nodes
+  layoutIterations: 32,      // reduce to 8–16 for >30 nodes (perf)
+  draggable: true,           // users can reposition nodes
+  roam: false,               // pan + zoom; set true if needed
+  nodeAlign: 'justify',      // 'justify'|'left'|'right' — trailing column alignment
+  label: { position: 'right' },
+  edgeLabel: { show: false },
+  emphasis: { focus: 'adjacency' },  // highlights connected nodes+edges on hover
+  // Depth-specific styling (depth is 0-indexed from source side):
+  levels: [
+    { depth: 0, itemStyle: { color: '#6366f1' }, lineStyle: { color: 'source', opacity: 0.4 } },
+    { depth: 1, itemStyle: { color: '#8b5cf6' }, lineStyle: { color: 'source', opacity: 0.4 } },
+    { depth: 2, itemStyle: { color: '#ec4899' }, lineStyle: { color: 'source', opacity: 0.4 } },
+  ],
+}
+```
+
+**Theme wiring:** `mergeEChartsTheme` injects `tooltip` bg/border and global `textStyle`. Sankey node `itemStyle.color` and `lineStyle.color` are caller-owned — set via `levels[]`. Use `ECHARTS_DARK.chart[]` palette for depth colors. The existing `ActivityTimelineChart.tsx` pattern (lines 44–47) is the correct pattern for extracting palette values:
+```typescript
+const { resolvedTheme } = useTheme();
+const dark = resolvedTheme !== 'light';
+import { ECHARTS_DARK, ECHARTS_LIGHT } from '@/lib/colors/echartsTheme';
+const p = dark ? ECHARTS_DARK : ECHARTS_LIGHT;
+// Then use p.chart[0], p.chart[1], p.chart[2] for level colors
+```
+
+**Performance:** No progressive rendering for sankey. Pre-aggregate server-side to ≤50 nodes / ≤200 links for readable layout. Reduce `layoutIterations` to 8 if first render is slow.
+
+**Confidence:** MEDIUM (source: GitHub apache/echarts SankeySeries.ts defaults)
+
+---
+
+## 3. Chord — `type: 'chord'` [ECharts 6.0+, available in ^6.1.0]
+
+**Use for:** Firm collaboration matrix; role co-occurrence; bidirectional flow between named entities.
+
+**Critical version note:** `chord` is a **new series type added in ECharts 6.0** (released July 2025). The repo uses `^6.1.0` — this type is available. It does NOT exist in ECharts 4 or 5. Confirm `ChordSeriesOption` is exported from the top-level `echarts` package at runtime — VERIFY by importing and checking `typeof ChordSeriesOption` in a throwaway test if needed.
+
+**Data format (verified from ChordSeries.ts):**
+```typescript
+data: Array<{ id?: string; name: string; value?: number }>
+edges: Array<{ source: string | number; target: string | number; value?: number }>
+// aliases: `nodes` = data, `links` = edges — both accepted
+```
+
+**Key config fields (defaults from ChordSeries.ts defaultOption):**
+```typescript
+{
+  type: 'chord',
+  center: ['50%', '50%'],
+  radius: ['70%', '80%'],      // [inner_radius, outer_radius]
+  clockwise: true,
+  startAngle: 90,              // 12 o'clock start
+  endAngle: 'auto',            // full circle
+  padAngle: 3,                 // degrees of gap between node arcs
+  minAngle: 0,
+  itemStyle: {
+    borderRadius: [0, 0, 5, 5],  // bottom corners rounded (default)
+  },
+  lineStyle: {
+    color: 'source',   // 'source'|'target'|hex — gradient from source arc color; looks premium
+    opacity: 0.2,      // ribbons are faint at rest; pop on hover via emphasis
+  },
+  label: { show: true, position: 'outside', distance: 5 },
+  emphasis: {
+    focus: 'adjacency',          // dims all non-connected ribbons on hover
+    lineStyle: { opacity: 0.5 }, // hover ribbons are more visible
+  },
+}
+```
+
+**Theme wiring:** Same as sankey. `mergeEChartsTheme` injects tooltip/textStyle. Arc `itemStyle.color` and ribbon `lineStyle.color` are caller-owned. With `lineStyle.color: 'source'`, ribbons automatically gradient from source arc color — no extra color wiring needed for ribbons. Arc colors from `ECHARTS_DARK.chart[]`.
+
+**Chord vs graph decision rule:** Use `chord` for ≤20 named entities with a flow/co-occurrence matrix. Use `graph` (section 4) when you need force-directed layout, arbitrary topology, or want node size to encode a metric.
+
+**Performance:** No progressive rendering. Cap at ≤20 nodes, ≤100 edges for readable chord layout. Pre-aggregate server-side.
+
+**Confidence:** MEDIUM (source: GitHub apache/echarts ChordSeries.ts + ECharts 6.0 release handbook)
+
+---
+
+## 4. Graph (force / circular network) — `type: 'graph'`
+
+**Use for:** Role co-occurrence network when chord is too dense; general network visualization.
+
+**Data format (verified from GraphSeries.ts):**
+```typescript
+data: Array<{
+  id?: string; name?: string; x?: number; y?: number;
+  value?: number; category?: number;  // category = index into categories[]
+  symbolSize?: number; fixed?: boolean; draggable?: boolean;
+}>
+links: Array<{
+  source: string | number; target: string | number;
+  value?: number;
+  lineStyle?: { curveness?: number; color?: string };
+  symbol?: string | [string, string]; symbolSize?: number | [number, number];
+}>
+categories: Array<{ name: string; symbol?: string; itemStyle?: object; label?: object }>
+```
+
+**Key config fields (defaults from GraphSeries.ts):**
+```typescript
+{
+  type: 'graph',
+  layout: 'circular',          // 'circular'|'force'|'none'
+  roam: true,                  // pan + zoom
+  edgeSymbol: ['none', 'arrow'],  // arrowhead for directed graphs; ['none','none'] default
+  label: { show: false },      // show labels on emphasis only to reduce clutter
+  emphasis: { focus: 'adjacency' },
+  // Force layout params:
+  force: {
+    repulsion: 100,            // default [0,50] — increase for node spread
+    gravity: 0.1,
+    edgeLength: [80, 120],     // target edge length range
+    friction: 0.6,
+    initLayout: 'circular',    // initial positions before simulation
+    layoutAnimation: true,     // spread simulation over animation frames
+  },
+  // Circular layout: nodes arranged in a ring; good for co-occurrence matrices
+  circular: { rotateLabel: true },
+}
+```
+
+**Confidence:** MEDIUM (source: GitHub apache/echarts GraphSeries.ts defaults)
+
+---
+
+## 5. Calendar Heatmap — `type: 'heatmap'` + `calendar` component
+
+**Use for:** Activity timing calendar; hot days/weeks of ACC activity.
+
+**Requires two top-level components in the option object — this is NOT like other series:**
+
+```typescript
+import { ECHARTS_DARK, ECHARTS_LIGHT } from '@/lib/colors/echartsTheme';
+const p = dark ? ECHARTS_DARK : ECHARTS_LIGHT;
+
+const option: EChartsOption = {
+  // 1. calendar component (a coordinate system, NOT a series)
+  calendar: {
+    range: 2025,                // int year | 'YYYY-MM' | ['YYYY-MM-DD','YYYY-MM-DD']
+    cellSize: ['auto', 18],     // [col_width, row_height]; 'auto' fills available space
+    orient: 'horizontal',       // weeks go left→right (default)
+    splitLine: { show: true, lineStyle: { color: p.axis } },
+    itemStyle: { borderWidth: 1, borderColor: p.axis },
+    dayLabel: {
+      firstDay: 1,              // 1=Monday
+      nameMap: 'en',
+      color: p.text,
+    },
+    monthLabel: { nameMap: 'en', color: p.text },
+    yearLabel: { show: true, color: p.text },
+  },
+
+  // 2. visualMap — NOT injected by mergeEChartsTheme; caller-owned
+  visualMap: {
+    min: 0,
+    max: 500,                   // set from actual data max
+    calculable: true,
+    orient: 'horizontal',
+    left: 'center',
+    bottom: 0,
+    inRange: {
+      // Dark mode: zinc→indigo→violet gradient
+      color: dark ? ['#27272a', '#6366f1', '#c084fc'] : ['#f4f4f5', '#6366f1', '#7c3aed'],
+    },
+    textStyle: { color: p.text },
+  },
+
+  // 3. heatmap series — coordinateSystem MUST be 'calendar'
+  series: [{
+    type: 'heatmap',
+    coordinateSystem: 'calendar',
+    data: [
+      ['2025-01-01', 12],   // [ISO date string, numeric value]
+      ['2025-01-02', 45],
+      // ...
+    ],
+    itemStyle: { borderRadius: 2 },
+    emphasis: { itemStyle: { shadowBlur: 10, shadowColor: p.tooltipBg } },
+  }],
+
+  tooltip: { trigger: 'item' },
+};
+```
+
+**Critical:** `mergeEChartsTheme` injects `tooltip` bg/border and `textStyle`, but does NOT touch `calendar`, `visualMap`, or `series[].itemStyle`. You must manually wire `p.text` and `p.axis` into the calendar component (as shown above).
+
+**Practical note on `EChart` wrapper:** The canonical `EChart.tsx` wrapper passes `notMerge` and `lazyUpdate`. For calendar heatmap, set `notMerge={true}` when the year range changes (full re-init needed); `notMerge={false}` when only data values update within the same range.
+
+**Performance:** Calendar with 365 days is 365 data points — trivially small. No special perf handling needed. If showing multi-year ranges, keep `range` to ≤3 years per render.
+
+**Confidence:** MEDIUM–HIGH (source: CalendarModel.d.ts types + HeatmapSeries.ts coordinateSystem options + web docs)
+
+---
+
+## 6. Treemap — `type: 'treemap'`
+
+**Use for:** Folder storage size; permission surface area by folder; data reach by module.
+
+**Data format (verified from TreemapSeries.ts):**
+```typescript
+data: Array<{
+  name: string;
+  value: number;            // leaf node size; parent values auto-summed from children
+  children?: Array<...>;    // recursive hierarchy
+  itemStyle?: { color?: string };
+}>
+```
+
+**Key config fields (defaults from TreemapSeries.ts defaultOption):**
+```typescript
+{
+  type: 'treemap',
+  roam: true,                    // pan + zoom; false to disable
+  nodeClick: 'zoomToNode',       // drill into children on click; false to disable
+  sort: true,                    // descending sort (default)
+  squareRatio: 0.5 * (1 + Math.sqrt(5)),  // golden ratio — default; controls rectangle squareness
+  visibleMin: 10,                // px² — hide nodes smaller than this threshold
+  childrenVisibleMin: null,      // px² — hide grandchildren when parent is small; set ~20 for dense trees
+  leafDepth: null,               // null=show all levels; 1=one level at a time (paginated exploration)
+  breadcrumb: {
+    show: true,
+    height: 22,
+    left: 'center',
+    emptyItemWidth: 25,
+    itemStyle: { textStyle: { color: p.text } },
+  },
+  label: {
+    show: true,
+    position: 'inside',
+    distance: 0,
+    padding: 5,
+    formatter: '{b}',           // {b}=name, {c}=value, {d}=percent
+    color: '#fff',
+    fontSize: 12,
+    overflow: 'truncate',
+  },
+  upperLabel: { show: true, height: 20, color: '#fff' },  // shown on parent node tiles
+  // Per-level styling — level 0 = root group, level 1 = first children, etc.:
+  levels: [
+    {
+      itemStyle: { borderWidth: 3, borderColor: p.axis, gapWidth: 3 },
+      upperLabel: { show: true },
+    },
+    {
+      colorMappingBy: 'index',   // 'index'|'value'|'id' — how node color is assigned
+      itemStyle: { borderWidth: 1, borderColor: p.axis, gapWidth: 1 },
+    },
+    {
+      colorMappingBy: 'index',
+      itemStyle: { borderWidth: 0, gapWidth: 1 },
+    },
+  ],
+}
+```
+
+**Theme wiring:** `mergeEChartsTheme` injects tooltip/textStyle. `breadcrumb.itemStyle.textStyle.color`, `label.color`, `levels[].itemStyle.borderColor` are caller-owned — use `p.text` and `p.axis` from the palette.
+
+**Performance:** No progressive rendering. For folder trees with thousands of entries: pre-aggregate server-side to ≤3 levels deep with ≤500 leaf nodes. Use `visibleMin: 20` to hide tiny noise tiles. Set `childrenVisibleMin: 30` to hide grandchildren until a parent is drilled.
+
+**Confidence:** MEDIUM (source: GitHub apache/echarts TreemapSeries.ts + DeepWiki treemap doc)
+
+---
+
+## 7. Generic Pivot Renderer — PivotChart Component
+
+**Use for:** Scenario explorer — auto-renders bar/pie/treemap/heatmap/sankey/chord from a `measure × dimension(×dimension)` selection.
+
+### Which config aspects are shared vs. series-specific
+
+| Aspect | bar | pie | treemap | heatmap/cal | sankey | chord |
+|--------|-----|-----|---------|-------------|--------|-------|
+| `tooltip.trigger` | `'axis'` | `'item'` | `'item'` | `'item'` | `'item'` | `'item'` |
+| `mergeEChartsTheme` covers tooltip+text | yes | yes | yes | yes (partial) | yes (partial) | yes (partial) |
+| Need manual palette wiring | no | yes | yes | yes (visualMap + calendar) | yes (levels) | yes (itemStyle) |
+| `emphasis.focus` type | `'series'` | `'self'` | none | none | `'adjacency'` | `'adjacency'` |
+| `notMerge` for smooth updates | `false` | `false` | `false` | `true` (range change) | `true` | `true` |
+| Has coordinate axes (xAxis/yAxis) | yes | no | no | no | no | no |
+
+### Recommended implementation
+
+**File:** `app/(dashboard)/access-analysis/components/PivotChart.tsx` (route-owned; scenario logic is access-analysis-specific)
+
+```typescript
+type PivotSeriesKind = 'bar' | 'pie' | 'treemap' | 'heatmap' | 'sankey' | 'chord';
+
+// Static rule table — evaluated top-to-bottom, first match wins
+const PIVOT_RULES: Array<{
+  dim1: string; dim2?: string; kind: PivotSeriesKind;
+}> = [
+  { dim1: 'activity', dim2: 'date',    kind: 'heatmap' },
+  { dim1: 'company',  dim2: 'role',    kind: 'sankey'  },
+  { dim1: 'role',     dim2: 'module',  kind: 'sankey'  },
+  { dim1: 'company',  dim2: 'company', kind: 'chord'   },
+  { dim1: 'role',     dim2: 'role',    kind: 'chord'   },
+  { dim1: 'folder',   dim2: 'size',    kind: 'treemap' },
+  { dim1: 'role',                      kind: 'pie'     },
+  { dim1: 'company',                   kind: 'pie'     },
+  // fallback:
+  { dim1: '*',                         kind: 'bar'     },
+];
+
+function resolvePivotKind(dim1: string, dim2?: string): PivotSeriesKind { /* ... */ }
+```
+
+**`notMerge` policy:**
+- Set `notMerge={false}` for smooth animated updates within the same series type
+- Set `notMerge={true}` (or use `key={kind}`) when the series type changes — the `EChart.tsx` wrapper already accepts this prop
+- Calendar heatmap with a changed `range` also needs `notMerge={true}`
+
+**Data interface per kind:**
+```typescript
+// The tRPC pivot endpoint returns a discriminated union:
+type PivotResult =
+  | { kind: 'bar';      rows: Array<{ label: string; value: number }> }
+  | { kind: 'pie';      slices: Array<{ name: string; value: number }> }
+  | { kind: 'sankey';   nodes: Array<{ name: string }>; links: Array<{ source: string; target: string; value: number }> }
+  | { kind: 'chord';    data: Array<{ name: string; value?: number }>; edges: Array<{ source: string; target: string; value?: number }> }
+  | { kind: 'treemap';  data: Array<{ name: string; value: number; children?: unknown[] }> }
+  | { kind: 'heatmap';  range: number | string; points: Array<[string, number]>; max: number }
+```
+
+**Confidence:** MEDIUM (architecture recommendation based on verified ECharts API surface)
+
+---
+
+## 8. Theme Wiring — What `mergeEChartsTheme` Covers vs. What Does Not
+
+`mergeEChartsTheme` verified behavior (from `lib/colors/echartsTheme.ts`):
+
+**Injected automatically:**
+- `textStyle.color`
+- `legend[].textStyle.color`
+- `xAxis.axisLabel.color` + `xAxis.splitLine.lineStyle.color`
+- `yAxis.axisLabel.color` + `yAxis.splitLine.lineStyle.color`
+- `tooltip.backgroundColor` + `tooltip.borderColor`
+
+**NOT covered — must be wired manually in every new chart component:**
+- `visualMap` colors (calendar heatmap)
+- `calendar` component: `dayLabel.color`, `monthLabel.color`, `yearLabel.color`, `splitLine.lineStyle.color`, `itemStyle.borderColor`
+- `series[].itemStyle.color` (all series — intentionally caller-owned)
+- `series[].lineStyle.color` (sankey edges, chord ribbons, graph edges)
+- `treemap` breadcrumb, level border colors, label color
+- `chord` arc and ribbon colors
+
+**Standard pattern for uncovered fields:**
+```typescript
+import { ECHARTS_DARK, ECHARTS_LIGHT } from '@/lib/colors/echartsTheme';
+const { resolvedTheme } = useTheme();
+const dark = resolvedTheme !== 'light';
+const p = dark ? ECHARTS_DARK : ECHARTS_LIGHT;
+// Use p.text, p.axis, p.tooltipBg, p.chart[] in the option object
+```
+
+This is already the pattern in `ActivityTimelineChart.tsx` (lines 44–47) and `RolesPieChart.tsx` (lines 142–148). Follow it exactly.
+
+---
+
+## 9. Performance Guidelines
+
+### What has progressive rendering
+- `scatter`, `line`, `bar` series: `progressive: 500` + `progressiveThreshold: 3000` apply — set `hoverLayerThreshold` ≤ `progressiveThreshold` to avoid hover restarting render
+- `graph` with `layout:'force'`: `layoutAnimation: true` spreads simulation over frames (no explicit progressive needed)
+
+### What does NOT have progressive rendering — preaggregate server-side
+| Series | Practical cap | Server-side prep |
+|--------|--------------|-----------------|
+| sankey | ≤50 nodes, ≤200 links | Aggregate by Company/Role/Module in tRPC router |
+| chord | ≤20 entities, ≤100 edges | Aggregate co-occurrence matrix in tRPC router |
+| treemap | ≤3 levels, ≤500 leaves | Aggregate folder tree depth server-side |
+| calendar heatmap | ≤365 points/year | One `GROUP BY date` query per year |
+
+### Resize + dispose
+`echarts-for-react` v3 uses `ResizeObserver` internally — no manual `window.addEventListener('resize', ...)` needed. Dispose on unmount is handled by the library automatically. The `key={resolvedTheme}` on `EChart.tsx` forces a clean canvas remount on theme switch — this is already implemented and correct; do not remove it.
+
+### dataZoom
+Copy the `ActivityTimelineChart.tsx` dataZoom pattern for any bar/line chart with a large category axis:
+```typescript
+dataZoom: [
+  { type: 'inside' },
+  { type: 'slider', height: 16, bottom: 18, /* theme colors */ },
+],
+```
+Sankey, chord, and treemap use `roam: true` instead of dataZoom.
+
+### Animation budget (match existing charts)
+- Initial: `animationDuration: 600–800ms`, `animationEasing: 'elasticOut'`
+- Updates: `animationDurationUpdate: 400–550ms`, `animationEasingUpdate: 'cubicInOut'`
+- Stagger: `animationDelay: (idx) => idx * 16` (already in `RolesPieChart.tsx`)
+
+---
+
+## 10. ECharts Import Types
+
+```typescript
+// All available in echarts@6.1.0:
+import type {
+  EChartsOption,
+  SankeySeriesOption,
+  ChordSeriesOption,       // NEW in ECharts 6.0 — VERIFY export exists at runtime
+  TreemapSeriesOption,
+  HeatmapSeriesOption,
+  GraphSeriesOption,
+} from 'echarts';
+```
+
+VERIFY: If `ChordSeriesOption` is not exported from the top-level `echarts` package in the installed version, use `EChartsOption` with an inline type assertion until confirmed.
+
+---
+
+## 11. Do-Not-Add List
+
+| Package / Pattern | Why Blocked |
+|-------------------|------------|
+| `echarts-gl` | WebGL — hard constraint, no new WebGL on data surfaces |
+| Any `echarts-gl` addon | Same |
+| `d3-chord` (manual chord from scratch) | ECharts 6 native `type:'chord'` covers it; avoid dual charting stacks |
+| `recharts`, `visx`, `nivo`, `plotly.js` | Not in repo; ECharts is the sole chart engine |
+| Custom SVG chord implementation | Unnecessary given ECharts 6 native chord |
+| `echarts-stat` | Not needed; server-side aggregation covers statistical prep |
+| Additional animation libraries | Framer Motion already installed; no new animation deps |
+
+---
+
+## 12. Sources
+
+- ECharts version: `package.json` line 104 [VERIFIED]
+- EChart wrapper behavior: `components/ui/EChart.tsx` [VERIFIED]
+- Theme injector exact behavior: `lib/colors/echartsTheme.ts` [VERIFIED]
+- Chart pattern reference: `app/(dashboard)/access-analysis/components/ActivityTimelineChart.tsx`, `RolesPieChart.tsx` [VERIFIED]
+- Sankey defaults: [apache/echarts SankeySeries.ts on GitHub](https://github.com/apache/echarts/blob/master/src/chart/sankey/SankeySeries.ts) [MEDIUM]
+- Chord defaults: [apache/echarts ChordSeries.ts on GitHub](https://github.com/apache/echarts/blob/master/src/chart/chord/ChordSeries.ts) [MEDIUM]
+- Graph defaults: [apache/echarts GraphSeries.ts on GitHub](https://github.com/apache/echarts/blob/master/src/chart/graph/GraphSeries.ts) [MEDIUM]
+- Treemap defaults: [apache/echarts TreemapSeries.ts via DeepWiki](https://deepwiki.com/apache/echarts/4.4-treemap-charts) [MEDIUM]
+- Heatmap series: [apache/echarts HeatmapSeries.ts on GitHub](https://github.com/apache/echarts/blob/master/src/chart/heatmap/HeatmapSeries.ts) [MEDIUM]
+- Calendar options: [UNPKG echarts@5.0.2 CalendarModel.d.ts](https://app.unpkg.com/echarts@5.0.2/files/types/src/coord/calendar/CalendarModel.d.ts) [MEDIUM — v5 types, v6 compatible]
+- ECharts 6.0 chord release: [ECharts 6 Features Handbook](https://echarts.apache.org/handbook/en/basics/release-note/v6-feature/) [MEDIUM — official]
+- Performance guide: web search + [mintlify ECharts performance](https://www.mintlify.com/apache/echarts/guides/performance) [MEDIUM]
+- echarts-for-react dispose/resize: [npm echarts-for-react](https://www.npmjs.com/package/echarts-for-react) + [GitHub hustcc/echarts-for-react](https://github.com/hustcc/echarts-for-react) [MEDIUM]
+
+---
+
+*Stack research addendum: 2026-06-22 — milestone v3.0 new chart types for /access-analysis*
+
+---
+
+---
+
+# v2.0 Stack Research (2026-06-17) — Preserved Below
+
+*Original research for Premium UI/UX Overhaul milestone. Still valid for existing chart depth/polish, TanStack Table, Framer Motion, 2.5D CSS, and R3F hero accent guidance.*
+
+---
+
+## ECharts 6 Depth and Polish
 
 ### Gradient Fills
 
@@ -67,523 +559,95 @@ series: [{
 }]
 ```
 
-ECharts 5.3 added 4-value array form for per-corner control. The existing app already uses donut charts; adding `itemStyle.borderRadius: 8` is a one-line premium upgrade.
-
 ### Hover Lift / Emphasis
 
 The `emphasis` block controls hover state. Use `emphasis.scale` to make a segment pop forward:
 
 ```typescript
 emphasis: {
-  scale: true,           // enables scale on hover (default true for pie)
-  scaleSize: 8,          // pixels of "lift"
+  scale: true,
+  scaleSize: 8,
   itemStyle: {
     shadowBlur: 30,
     shadowColor: 'rgba(99,102,241,0.8)',
   },
-  label: {
-    fontSize: 16,
-    fontWeight: 700,
-  }
+  label: { fontSize: 16, fontWeight: 700 },
 }
 ```
 
-For bar charts, `emphasis.itemStyle.color` can shift to a brighter gradient. Pair with `blur: { itemStyle: { opacity: 0.3 } }` to de-emphasize non-hovered elements — creates strong focus effect.
-
 ### Animated Transitions
 
-ECharts has two animation layers:
-
-**Initial render animation:**
 ```typescript
-animation: true,
+// Initial render:
 animationDuration: 800,
-animationEasing: 'cubicOut',       // or 'elasticOut' for premium spring feel
-animationDelay: (idx) => idx * 40, // stagger by data index
-```
+animationEasing: 'elasticOut',
+animationDelay: (idx) => idx * 40,
 
-**Data-update animation (drill-downs, filter changes):**
-```typescript
+// Data updates:
 animationDurationUpdate: 500,
 animationEasingUpdate: 'cubicInOut',
 ```
 
-**`universalTransition`** (added in ECharts 5.2, available in 6.x) enables morphing between chart types — e.g., a pie transforming to a bar on click. Requires consistent `id` fields in data items and explicit import:
+`universalTransition` (ECharts 5.2+, in 6.x) enables morphing between chart types — requires consistent `id` fields in data items.
 
-```typescript
-import { UniversalTransition } from 'echarts/features';
-echarts.use([UniversalTransition]);
+### ECharts GL — Verdict: Skip
 
-// Then on series:
-universalTransition: { enabled: true }
-```
-
-This is the most cinematic effect in the toolkit. Use for drill-down transitions (donut → bar breakdown). **Perf: cheap — it's transform-based.**
-
-### ECharts 6 Segmented Doughnut
-
-ECharts 6 ships `@echarts-x/custom-segmented-doughnut` as an officially maintained custom series. Install separately:
-
-```bash
-npm install @echarts-x/custom-segmented-doughnut
-```
-
-Use for discrete-progress KPI rings (e.g., "72/100 projects active"). Renders as a segmented arc with gaps — looks substantially more premium than a plain donut. **This is directly applicable to the access-analysis KPI strip.**
-
-### ECharts GL — Verdict: Skip for This Milestone
-
-`echarts-gl` adds `bar3D`, `surface3D`, `scatter3D`. Assessment:
-- Separate package, thin documentation, slower update cadence
-- Layers WebGL on top of ECharts' 2D canvas architecture (not rearchitected around GPU)
-- Adds ~200KB+ to bundle
-- The app already has Three.js 0.184 and cosmos.gl for real-3D work
-
-**Decision: Do not install echarts-gl.** Use ECharts' 2D charts with gradients/shadows for "depth feel." Reserve actual 3D for Three.js hero accents (see Section 5).
-
-### ECharts Theming with next-themes
-
-ECharts 6 adds native dynamic theme switching via `chart.setTheme()` without disposing/reinitializing the instance. In the React layer (echarts-for-react wrapper), pass the `theme` prop and change it reactively:
-
-```typescript
-import { useTheme } from 'next-themes';
-
-// Existing pattern in the codebase — confirm it follows this:
-const { resolvedTheme } = useTheme();
-const echartsTheme = resolvedTheme === 'dark' ? zincDarkTheme : zincLightTheme;
-
-<ReactECharts option={option} theme={echartsTheme} />
-```
-
-Define `zincDarkTheme` and `zincLightTheme` as objects:
-
-```typescript
-const zincDarkTheme = {
-  backgroundColor: 'transparent',   // let CSS background show through
-  textStyle: { color: '#a1a1aa' },   // zinc-400
-  title: { textStyle: { color: '#f4f4f5' } },
-  legend: { textStyle: { color: '#a1a1aa' } },
-  color: ['#6366f1','#8b5cf6','#06b6d4','#10b981','#f59e0b','#ef4444'],
-  categoryAxis: { axisLabel: { color: '#71717a' }, splitLine: { lineStyle: { color: '#27272a' } } },
-  valueAxis: { axisLabel: { color: '#71717a' }, splitLine: { lineStyle: { color: '#27272a' } } },
-};
-```
-
-**Codebase note:** MEMORY.md records "ECharts must read `resolvedTheme` via `useTheme` for canvas colors" — this is already the known convention. The theme object approach above makes it systematic.
-
-**Perf:** Changing the `theme` prop triggers a chart re-init in echarts-for-react. Use `key={resolvedTheme}` to force clean remount only on theme change, not on every option change. This is the correct pattern to avoid stale canvas state.
+Do not install `echarts-gl`. Use ECharts' 2D charts with gradients/shadows for depth. Reserve actual 3D for Three.js hero accents.
 
 ---
 
-## 2. Premium Data Table
+## Premium Data Table
 
-### Recommendation: TanStack Table v8 + TanStack Virtual v3
-
-**Already partially in the stack** — `@tanstack/react-query` 5.100.14 is installed; TanStack Table v8 follows the same headless philosophy. This avoids pulling in a new heavy component library.
+**TanStack Table v8 + TanStack Virtual v3** — headless, Tailwind-native, no extra peer deps. Already partially in the stack via `@tanstack/react-query`.
 
 **Why not alternatives:**
-- `material-react-table` — requires MUI + Emotion peer deps; conflicts with the zinc/Tailwind design system
-- `AG Grid` — powerful but opinionated; 200KB+ community edition; overkill for this use case and fights Tailwind styling
-- `react-window` (already in use for the 2,474-line monolith) — too low-level; not table-semantic; no built-in sort/filter/column pinning
+- `material-react-table` — MUI/Emotion peer deps conflict with zinc/Tailwind
+- `AG Grid` — 200KB+; opinionated DOM; fights Tailwind styling
+- `react-window` — low-level; not table-semantic; no sort/filter/pinning
 
 **Install:**
 ```bash
 npm install @tanstack/react-table @tanstack/react-virtual
 ```
 
-**Core pattern:**
-```typescript
-import { useReactTable, getCoreRowModel, getSortedRowModel, flexRender } from '@tanstack/react-table';
-import { useVirtualizer } from '@tanstack/react-virtual';
+---
 
-// 1. Table logic
-const table = useReactTable({
-  data: users,        // 3,367 user rows
-  columns,
-  getCoreRowModel: getCoreRowModel(),
-  getSortedRowModel: getSortedRowModel(),
-  state: { sorting },
-  onSortingChange: setSorting,
-});
+## Framer Motion 12 — Tasteful Motion
 
-// 2. Virtualizer for the tbody
-const { rows } = table.getRowModel();
-const virtualizer = useVirtualizer({
-  count: rows.length,
-  getScrollElement: () => scrollRef.current,
-  estimateSize: () => 56,             // 56px row height
-  overscan: 10,
-});
+`framer-motion` 12.x installed. Core patterns: `whileInView` (scroll reveal), `variants` with `staggerChildren` (KPI strip stagger), `layout`/`layoutId` (drill-down expansion), `AnimatePresence` with `mode="wait"` (panel transitions).
 
-// 3. Render
-return (
-  <div ref={scrollRef} className="h-full overflow-auto">
-    <table className="w-full border-separate border-spacing-0">
-      <thead className="sticky top-0 z-10 bg-zinc-900/80 backdrop-blur-sm">
-        {/* render header groups */}
-      </thead>
-      <tbody style={{ height: virtualizer.getTotalSize() + 'px', position: 'relative' }}>
-        {virtualizer.getVirtualItems().map(virtualRow => {
-          const row = rows[virtualRow.index];
-          return (
-            <tr
-              key={row.id}
-              style={{ transform: `translateY(${virtualRow.start}px)`, position: 'absolute', width: '100%' }}
-              className="cursor-pointer hover:bg-zinc-800/60 transition-colors duration-150"
-              onClick={() => onUserClick(row.original)}
-            >
-              {row.getVisibleCells().map(cell => (
-                <td key={cell.id} className="px-4 py-3 text-sm">
-                  {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                </td>
-              ))}
-            </tr>
-          );
-        })}
-      </tbody>
-    </table>
-  </div>
-);
-```
-
-**Depth styling on the table (not flat):**
-- `thead`: `bg-zinc-900/80 backdrop-blur-sm` — frosted glass sticky header
-- `th`: `border-b border-zinc-800` — subtle separator
-- `tr` hover: `bg-zinc-800/60` — subtle lift without border flash
-- Row with activity: left `border-l-2 border-indigo-500` accent
-- Sort icons: lucide-react `ArrowUpDown`/`ArrowUp`/`ArrowDown` (already installed)
-
-**Perf:** Spacer-based virtualization renders only ~20–30 DOM rows at a time regardless of dataset size. The current 2,474-line monolith loads ~7–15MB via 6+ tRPC calls; the table itself will be fast once those queries are consolidated.
+**Hard rules:**
+- Animate `x`, `y`, `scale`, `rotate`, `opacity` only — not `width`, `height`, `top`, `left`
+- `viewport={{ once: true }}` on all scroll reveals
+- `useReducedMotion()` guard on all motion components
+- Cap stagger lists at 20 items
 
 ---
 
-## 3. Framer Motion 12 — Tasteful Motion
+## "2.5D" Depth via Tailwind 4 + CSS
 
-**Installed:** `framer-motion` 12.38.0 (also callable as `motion/react` — the package was renamed but framer-motion still ships the same API; no migration needed on this codebase).
+Dark glass card: `bg-zinc-900/60 backdrop-blur-md border border-zinc-700/50 shadow-xl shadow-black/40`
 
-### Scroll Reveal (Enter Animations)
-
-```typescript
-import { motion } from 'framer-motion';
-
-// Card entering viewport
-<motion.div
-  initial={{ opacity: 0, y: 24 }}
-  whileInView={{ opacity: 1, y: 0 }}
-  viewport={{ once: true, margin: '-80px' }}   // fire 80px before fully in view
-  transition={{ duration: 0.45, ease: [0.25, 0.46, 0.45, 0.94] }}
->
-```
-
-`viewport={{ once: true }}` is mandatory — without it, the animation replays on every scroll, which looks amateurish and wastes GPU.
-
-### Staggered Grid Reveal (KPI strip, chart panels)
-
-```typescript
-const container = {
-  hidden: {},
-  show: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } }
-};
-const item = {
-  hidden: { opacity: 0, y: 20 },
-  show:   { opacity: 1, y: 0, transition: { duration: 0.4, ease: 'easeOut' } }
-};
-
-<motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-4 gap-4">
-  {kpiCards.map(c => (
-    <motion.div key={c.id} variants={item}>
-      <KpiCard {...c} />
-    </motion.div>
-  ))}
-</motion.div>
-```
-
-Cap stagger at **20 items maximum** — beyond that, the last items animate so late the effect reads as a bug, not design.
-
-### Layout Transitions (Drill-down panels expanding)
-
-```typescript
-<motion.div layout layoutId="drillPanel" className="...">
-  {isExpanded && <DrillContent />}
-</motion.div>
-```
-
-`layout` prop auto-animates size/position changes on any structural shift. `layoutId` enables shared element transitions across pages (e.g., a donut segment expanding to a full panel). **Do not animate `height` or `width` directly — use `layout` instead; it uses transforms (GPU-only).**
-
-### AnimatePresence (Mounting/unmounting panels)
-
-```typescript
-import { AnimatePresence } from 'framer-motion';
-
-<AnimatePresence mode="wait">
-  {activePanel && (
-    <motion.div
-      key={activePanel}
-      initial={{ opacity: 0, scale: 0.98 }}
-      animate={{ opacity: 1, scale: 1 }}
-      exit={{ opacity: 0, scale: 0.96 }}
-      transition={{ duration: 0.25 }}
-    >
-      <DrillPanel />
-    </motion.div>
-  )}
-</AnimatePresence>
-```
-
-`mode="wait"` ensures the exit animation completes before the enter animation starts — prevents two panels stacking.
-
-### Micro-interactions (buttons, table rows)
-
-```typescript
-<motion.button
-  whileHover={{ scale: 1.02 }}
-  whileTap={{ scale: 0.98 }}
-  transition={{ type: 'spring', stiffness: 400, damping: 17 }}
->
-```
-
-Spring transitions feel tactile. Stiffness 300–500 / damping 15–20 gives a snappy, premium feel without oscillation.
-
-### Performance Rules (Hard constraints)
-
-| Do | Don't |
-|----|-------|
-| Animate `x`, `y`, `scale`, `rotate`, `opacity` | Animate `width`, `height`, `top`, `left`, `padding` |
-| `viewport={{ once: true }}` on all scroll reveals | Trigger animations on every scroll re-entry |
-| Cap stagger lists at 20 items | Stagger 100+ table rows |
-| Use `useReducedMotion()` guard | Ignore `prefers-reduced-motion` |
-| `will-change: transform` via Tailwind `will-change-transform` on key surfaces | Apply `will-change` globally |
-
-```typescript
-import { useReducedMotion } from 'framer-motion';
-const prefersReduced = useReducedMotion();
-const transition = prefersReduced ? { duration: 0 } : { duration: 0.4 };
-```
-
----
-
-## 4. "2.5D" Depth via Tailwind 4 + CSS
-
-### Glassmorphism Card System (Light + Dark)
-
-Tailwind 4 (installed: 4.3.0) ships `backdrop-blur-*` utilities natively. The technique requires a colorful or textured backdrop to be visible — on pure zinc `#09090B`, add a subtle gradient background layer first.
-
-**Dark mode glass card (primary pattern):**
-```
-bg-zinc-900/60 backdrop-blur-md border border-zinc-700/50 shadow-xl shadow-black/40
-```
-
-**Light mode glass card:**
-```
-bg-white/70 backdrop-blur-md border border-zinc-200/80 shadow-lg shadow-zinc-200/60
-```
-
-**With dark: prefix (Tailwind 4 variant):**
-```
-bg-white/70 dark:bg-zinc-900/60 backdrop-blur-md border border-zinc-200/80 dark:border-zinc-700/50
-shadow-lg shadow-zinc-200/50 dark:shadow-black/40
-```
-
-### Layered Shadow System (Depth Without 3D)
-
-Use multiple shadows at different offsets to create "lifted" cards that read as premium:
-
+Layered shadow with catch-light:
 ```css
-/* Tailwind 4 arbitrary value */
-shadow-[0_1px_0_0_rgba(255,255,255,0.05)_inset,0_4px_16px_0_rgba(0,0,0,0.4),0_1px_4px_0_rgba(0,0,0,0.3)]
+box-shadow: inset 0 1px 0 rgba(255,255,255,0.06), 0 4px 16px rgba(0,0,0,0.35), 0 1px 4px rgba(0,0,0,0.25);
 ```
 
-Or in `globals.css` as a utility class applied via Tailwind's `@utility`:
-
-```css
-@utility card-lifted {
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.06),   /* top edge highlight */
-    0 4px 16px rgba(0,0,0,0.35),             /* ambient lift */
-    0 1px 4px rgba(0,0,0,0.25);             /* contact shadow */
-}
-```
-
-The `inset 0 1px 0 rgba(255,255,255,0.06)` line adds a subtle "catch-light" on the top edge — this single line makes cards read as physical objects.
-
-### Gradient Borders (Premium Accent)
-
-Gradient borders are not natively in Tailwind but achievable with a pseudo-element trick or `border-image`:
-
+Ambient background blobs (CSS-only, zero JS cost):
 ```typescript
-// Component approach using a wrapper div
-<div className="p-px rounded-xl bg-gradient-to-br from-indigo-500/40 via-transparent to-purple-500/20">
-  <div className="rounded-xl bg-zinc-900 p-4">
-    {children}
-  </div>
-</div>
+<div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-indigo-900/20 rounded-full blur-3xl pointer-events-none" />
 ```
 
-The outer div has the gradient background; the inner div covers it except for 1px (`p-px` = 1px padding). This creates a gradient "border" visible only at the edge. On hover, animate the outer gradient opacity with Framer Motion for a glow-on-hover effect.
+---
 
-### Background Depth Layer
+## Selective Real-3D Hero Accents
 
-Pure zinc `#09090B` with no texture reads flat. Add a subtle gradient or noise texture behind all content:
+`three@0.184.0` already installed. `@react-three/fiber@9` (React 19 compatible) + `@react-three/drei` add ~60KB marginal cost.
 
-```typescript
-// app/layout.tsx or page root
-<div className="min-h-screen bg-zinc-950 relative overflow-hidden">
-  {/* Ambient color blobs — position:absolute, pointer-events:none, no interaction cost */}
-  <div className="absolute top-0 left-1/4 w-[600px] h-[400px] bg-indigo-900/20 rounded-full blur-3xl pointer-events-none" />
-  <div className="absolute bottom-1/4 right-0 w-[400px] h-[300px] bg-violet-900/15 rounded-full blur-3xl pointer-events-none" />
-  {children}
-</div>
-```
+**Rules:** Always `ssr: false` dynamic import. `frameloop="demand"` unless continuous animation required. `dpr={[1, 1.5]}` to cap pixel ratio. `pointer-events: none` on decorative canvases.
 
-These blurred blobs are CSS-only (no JS, no canvas) and give glassmorphism cards a visible backdrop to blur against. **Perf: pure CSS, zero runtime cost.**
-
-### Typography Depth
-
-- Use `text-transparent bg-clip-text bg-gradient-to-r from-white to-zinc-400` for hero headline text — the gradient makes white text feel three-dimensional
-- Section labels: `text-zinc-500 uppercase tracking-widest text-xs` — recede into background, create hierarchy
-- Active/selected states: `text-indigo-400` vs rest `text-zinc-400` — color alone creates depth
+**Page assignments:** `/access-analysis` → CSS gradient mesh (no WebGL). `/users` → Three.js particle field (contained). `/forma-proposal` → `MeshDistortMaterial` sphere. `/template-mty` → none needed.
 
 ---
 
-## 5. Selective Real-3D Hero Accents
-
-### When It's Worth It vs. Faking Depth
-
-The "fake 3D" via CSS (Section 4) covers 95% of the premium feel at near-zero perf cost. Real WebGL is worth adding for **one or two moments that genuinely cannot be faked** — a rotating globe on the access-analysis hero, a particle mesh on the `/users` header, a morphing blob on `/forma-proposal`.
-
-**Rule:** If the same effect can be achieved with CSS gradients + Framer Motion blur, skip Three.js for that surface.
-
-### The Lightest-Weight Approach: Raw Three.js (Already Installed)
-
-The app already ships `three@0.184.0`. Adding `@react-three/fiber@9` (R3F) adds ~60KB gzip on top of the existing Three.js bundle. Since Three.js is already loaded for `cosmos.gl`, the **marginal cost of R3F is small**.
-
-**Installation:**
-```bash
-npm install @react-three/fiber@9 @react-three/drei
-```
-
-**React 19 compatibility:** `@react-three/fiber@9` explicitly targets React 19 (v8 does not work with React 19). Use `@react-three/fiber@rc` if v9 is not yet stable by the time of implementation.
-
-**Drei** (`@react-three/drei`) provides pre-built helpers — `Float`, `MeshDistortMaterial`, `Sphere`, `Environment`, `Text3D`, `Html` — that turn a 3D hero accent from 100 lines into 10.
-
-**Lazy-load pattern (critical for perf):**
-
-```typescript
-// components/HeroGlobe.tsx
-'use client';
-import { Canvas } from '@react-three/fiber';
-import { Sphere, MeshDistortMaterial } from '@react-three/drei';
-
-export default function HeroGlobe() {
-  return (
-    <Canvas camera={{ position: [0, 0, 3] }} className="absolute inset-0 pointer-events-none">
-      <ambientLight intensity={0.4} />
-      <pointLight position={[2, 2, 2]} intensity={1.2} color="#6366f1" />
-      <Sphere args={[1, 64, 64]}>
-        <MeshDistortMaterial
-          color="#1e1b4b"
-          distort={0.25}
-          speed={1.5}
-          roughness={0.1}
-          metalness={0.8}
-        />
-      </Sphere>
-    </Canvas>
-  );
-}
-
-// In page component — dynamic import prevents SSR crash + defers bundle:
-const HeroGlobe = dynamic(() => import('@/components/HeroGlobe'), { ssr: false });
-```
-
-**Perf rules for WebGL accents:**
-- Always `ssr: false` dynamic import — Three.js requires `window`
-- Set `frameloop="demand"` on `<Canvas>` unless continuous animation is needed — renders only on camera/prop changes
-- `dpr={[1, 1.5]}` to cap pixel ratio (retina screens at 2x cost 4x pixels)
-- Keep `<Canvas>` to a contained region (`w-64 h-64`), not full-viewport — the access-analysis graph already owns the main canvas
-- `pointer-events: none` on decorative canvases — they should never capture clicks
-
-### What NOT to do
-
-- **Do not** put a full-viewport Three.js canvas on the data pages — that's the spatial-graph project's scope, explicitly deferred
-- **Do not** animate geometry in `useFrame` every tick unless motion is the purpose — use `frameloop="demand"` with state triggers instead
-- **Do not** install echarts-gl — it adds WebGL overhead without the quality of a dedicated Three.js scene
-
-### Specific Hero Accent Recommendations per Page
-
-| Page | Hero Accent | Implementation | Cost |
-|------|------------|----------------|------|
-| `/access-analysis` | Animated gradient mesh behind KPI strip | CSS `@keyframes` gradient-shift — no WebGL | Zero |
-| `/users` | Frosted glass header with subtle particle field | Three.js `Points` with 200 particles, `frameloop="demand"` | ~8KB scene |
-| `/template-mty` | None needed — data density is the premium | CSS glassmorphism cards | Zero |
-| `/forma-proposal` | Distorted sphere background blob | `MeshDistortMaterial` sphere, `ssr:false` | ~12KB scene |
-
----
-
-## 6. Compatibility and Versioning
-
-| Package | Version (installed) | Notes |
-|---------|---------------------|-------|
-| echarts | 6.1.0 | `borderRadius`, `universalTransition`, `dynamic theme` all confirmed present |
-| framer-motion | 12.38.0 | `layout`, `layoutId`, `whileInView`, `AnimatePresence` all stable; React 19 fixes confirmed in 12.39.0 — update to 12.39+ |
-| @tanstack/react-table | NOT installed | Install v8 latest |
-| @tanstack/react-virtual | NOT installed | Install v3 latest |
-| @react-three/fiber | NOT installed | Install v9 (React 19 required) |
-| @react-three/drei | NOT installed | Install latest (peer dep: three@0.184) |
-| @echarts-x/custom-segmented-doughnut | NOT installed | Optional — install only for KPI ring segments |
-| tailwindcss | 4.3.0 | `backdrop-blur-*`, `bg-*/NN` alpha syntax, `dark:` variant all available |
-| next-themes | 0.4.6 | `useTheme().resolvedTheme` is the correct hook |
-
-**Update framer-motion to 12.39.0+** before execution: version 12.39.0 fixed "Preserve in-flight motion value animations across React 19 reorder unmount/remount" — without this, layout animations on the users table re-render will flicker.
-
----
-
-## 7. Alternatives Considered
-
-| Category | Recommended | Alternative | Why Not |
-|----------|-------------|-------------|---------|
-| Data table | TanStack Table v8 + Virtual v3 | material-react-table v3 | Brings MUI/Emotion peer deps; conflicts with zinc/Tailwind design system |
-| Data table | TanStack Table v8 + Virtual v3 | AG Grid Community | 200KB+; highly opinionated DOM structure; fights Tailwind class-based styling |
-| Data table | TanStack Table v8 + Virtual v3 | react-window (current) | Low-level; not table-semantic; no sort/filter/pinning; harder to style for premium look |
-| 3D accents | R3F v9 + drei | echarts-gl | echarts-gl adds WebGL overhead with worse 3D quality; Three.js already in bundle |
-| 3D accents | R3F v9 + drei | Raw Three.js imperative | React declarative model integrates cleaner with Next.js RSC + concurrent rendering |
-| Glass depth | CSS backdrop-blur + Tailwind | react-spring parallax | Unnecessary dep; Framer Motion already installed for the same outcome |
-| Donut premium | itemStyle.borderRadius + segmented-doughnut | Replacing ECharts | ECharts 6 is already capable; replacement would be a rewrite of all chart components |
-
----
-
-## 8. What NOT to Use
-
-| Avoid | Why | Use Instead |
-|-------|-----|-------------|
-| echarts-gl | Thin maintenance, WebGL-on-canvas architecture, large bundle, conflicts with three.js scope | Three.js R3F for real-3D accents; ECharts 2D with gradients for chart depth |
-| AG Grid | Opinionated DOM, 200KB+ community edition, fights Tailwind | TanStack Table v8 (headless, Tailwind-native) |
-| material-react-table | MUI/Emotion peer deps conflict with zinc design system | TanStack Table v8 (same underlying engine, no extra deps) |
-| react-spring | Redundant with Framer Motion 12; two animation systems conflict | Framer Motion 12 (already installed) |
-| Animating `width`/`height`/`top`/`left` in Framer Motion | Triggers layout reflow on every frame; janky on lower-end machines | `layout` prop (transform-based, GPU-composited) |
-| `viewport={{ once: false }}` | Animations replay on every scroll; reads as unfinished/buggy | `viewport={{ once: true }}` |
-| Full-viewport Three.js canvas on data pages | Competes with ECharts canvases; the spatial-graph page is a separate project | Contained `<Canvas>` in a fixed-size region with `pointer-events:none` |
-| `staggerChildren` on >20 items | Last items animate so late the effect reads as a loading bug | Cap at 20 items or use grouping |
-| Tailwind `shadow-*` alone for depth | Flat single-offset shadows read as dated (2018 Material era) | Layered multi-shadow with inset catch-light highlight |
-
----
-
-## Sources
-
-- [ECharts 6 Features](https://echarts.apache.org/handbook/en/basics/release-note/v6-feature/) — confirmed feature list (confidence: MEDIUM)
-- [ECharts 5.2 Release Notes](https://echarts.apache.org/handbook/en/basics/release-note/5-2-0/) — universalTransition confirmed (confidence: MEDIUM)
-- [ECharts Doughnut Handbook](https://apache.github.io/echarts-handbook/en/how-to/chart-types/pie/doughnut/) — donut radius config (confidence: MEDIUM)
-- [ECharts Dynamic Theme PR #20705](https://github.com/apache/echarts/pull/20705) — v6 setTheme without reinit (confidence: MEDIUM)
-- [ECharts borderRadius roundup via web search](https://echarts.apache.org/handbook/en/basics/release-note/5-3-0/) — confirmed 4-value array (confidence: LOW)
-- [TanStack Table v8 virtualized rows](https://medium.com/@ashwinrishipj/building-a-high-performance-virtualized-table-with-tanstack-react-table-ced0bffb79b5) — spacer-based pattern (confidence: LOW)
-- [TanStack Virtual v3 introduction](https://tanstack.com/virtual/latest/docs/introduction) — useVirtualizer API (confidence: MEDIUM)
-- [Framer Motion performance pitfalls](https://dev.to/whoffagents/framer-motion-animations-that-dont-kill-performance-patterns-and-pitfalls-5cki) — safe vs unsafe properties (confidence: LOW)
-- [Motion v12 changelog](https://motion.dev/changelog) — React 19 fixes, axis-locked layout, new color spaces (confidence: MEDIUM)
-- [React Three Fiber v9 / React 19](https://r3f.docs.pmnd.rs/getting-started/installation) — v9 required for React 19 (confidence: MEDIUM)
-- [Glassmorphism with Tailwind — Epic Web](https://www.epicweb.dev/tips/creating-glassmorphism-effects-with-tailwind-css) — class recipes (confidence: LOW)
-- [FlyonUI Glassmorphism guide](https://flyonui.com/blog/glassmorphism-with-tailwind-css/) — blur class table (confidence: LOW)
-- [echarts-x/custom-segmented-doughnut npm](https://www.npmjs.com/package/@echarts-x/custom-segmented-doughnut) — ECharts 6 custom series (confidence: LOW)
-
----
-
-*Stack research for: LECG Dashboard Premium UI/UX Overhaul*
-*Researched: 2026-06-17*
+*v2.0 stack research: 2026-06-17*

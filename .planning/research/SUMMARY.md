@@ -1,19 +1,19 @@
 # Project Research Summary
 
-**Project:** LECG Dashboard - Workshop-Grade UI/UX Overhaul (4 pages)
-**Domain:** Brownfield Next.js 16 / React 19 BIM analytics dashboard - presentation layer surgery
-**Researched:** 2026-06-17
-**Confidence:** HIGH (architecture, pitfalls - direct codebase audit); MEDIUM (stack techniques)
+**Project:** LECG Dashboard — v3.0 Access Analysis: Hub Story & Scenario Explorer
+**Domain:** BIM/VDC operational analytics — ACC hub access, activity, and coordination
+**Researched:** 2026-06-22
+**Confidence:** HIGH (all four files grounded in verified repo source, Prisma schema, and project post-mortems)
 
 ---
 
 ## Executive Summary
 
-This is a presentation-layer overhaul of four existing, functioning pages in a mature BIM management dashboard. The audience model is unusual: Luis is the sole operator; all other users watch on a projected screen during live workshops. Every design and implementation decision must serve live, exploratory storytelling in front of a room - not self-service analytics engagement. The north-star aesthetic (landonorris.com, igloo.inc, orano.group) translates to: premium 2.5D depth via CSS/glass techniques, tasteful motion under a hard budget, selective real-3D accents off the data pages, and light/dark parity that functions on a projector. The brief resolves this tension by using CSS + ECharts depth techniques for 95% of the premium feel and reserving WebGL for one or two contained hero moments on non-data pages only.
+v3.0 turns `/access-analysis` from a flat 14-panel scroll into a navigable, sectioned hub story with a flexible scenario explorer at its center. The approach is fully additive — no existing panel is removed — and every new capability layers on top of the RSC-loader pattern already established in v2.0: async RSC functions aggregate in `Promise.all`, heavy on-demand views use server actions, and client-side transforms stay pure and testable. The tech stack requires zero new packages: ECharts `^6.1.0` (already in `package.json`) ships Sankey, calendar heatmap, treemap, and the new ECharts 6.0 chord series natively. The scenario pivot engine aggregates server-side in a new `lib/server/scenarioPivotView.ts`, fires on-demand via `scenarioActions.ts`, and auto-selects chart type client-side via a static rule table — no BI-builder complexity.
 
-The recommended approach is foundation-first, then /users decomposition, then per-page polish in parallel. The shared design foundation (depth/glow CSS tokens, PremiumSurface primitive, centralized EChart wrapper with automatic theme injection, motion.ts facade) must ship first because every per-page phase depends on it. The /users monolith (2,474 lines, 6+ tRPC queries, no real table) is the largest structural risk and must be decomposed with a golden-path integration test before any visual work. Per-page polish for /access-analysis, /template-mty, and /forma-proposal can run in parallel after the foundation is locked.
+The hard architectural prerequisite before any data-dependent view phase is DC re-extraction. The ACC Data Connector quota is ~25 requests/UTC-day; re-extracting all-time data for all 428 admin-accessible projects requires approximately 9 requests (possibly up to 18 with 403-bisect retries) spread over multiple days. All activity-dependent panels — calendar heatmap, behavior-mix, hottest files, scenario presets — are meaningless until this extraction is current. A second prerequisite is migrating `app/(dashboard)/access-analysis/moduleOverrides.ts` to `lib/acc/moduleOverrides.ts` before building the pivot engine; it fixes 4 of 6 existing dependency-cruiser boundary warnings and is the only path that lets `scenarioPivotView.ts` import the activity taxonomy without violating the lib/app boundary.
 
-The highest-impact differentiator is client-side cross-filtering (charts dim/highlight each other through a Zustand FilterContext, zero new queries). The highest risk is performance regression: the prior 77s OOM on /access-analysis was fixed via SQL GROUP-BY aggregation; any new panel that independently calls the same tRPC endpoints will re-introduce it. Every proposed new analytic must pass a Prisma-schema feasibility gate: AccActivity covers only 428/1,152 projects, no historical snapshot tables exist, and addedOn is missing from the membership feed.
+The top risks are: (1) pivot queries touching `AccFolderPermission` without SQL `LIMIT` — the v2.0 OOM incident showed this table produces 5M rows uncapped; (2) ECharts Sankey/chord cardinality blowup if node counts are not capped server-side before rendering; (3) coverage-honesty omissions on new panels — every activity-derived panel must display "428 of 1,152 projects" in-line, not in a tooltip; (4) prescriptive risk framing — no red colors, no "High Risk" labels, descriptive facts only; and (5) APS refresh-token rotation — a single-use token not persisted after an extraction run breaks the live dashboard login. All five are avoidable with the guardrails specified in PITFALLS.md.
 
 ---
 
@@ -21,226 +21,242 @@ The highest-impact differentiator is client-side cross-filtering (charts dim/hig
 
 ### Recommended Stack
 
-The stack is locked - no framework changes. Key additions: @tanstack/react-table (v8) + @tanstack/react-virtual (v3) for the /users data table; @react-three/fiber@9 + @react-three/drei for selective real-3D hero accents (Three.js already in bundle via cosmos.gl, marginal cost ~60KB gzip). framer-motion updates to 12.39.0+ for the React 19 layout-animation flicker fix. echarts-gl is explicitly rejected.
+No new packages required. The entire v3.0 feature set is covered by the existing `echarts@^6.1.0`, `echarts-for-react@^3.0.6`, `@tanstack/react-table`, `framer-motion`, and `next-themes` versions already in `package.json`. ECharts 6.0 (included in 6.1.0) added the native `type: 'chord'` series — this is the only new chart type that needs API verification before use (VERIFY: `ChordSeriesOption` export). `mergeEChartsTheme` in `lib/colors/echartsTheme.ts` covers tooltip and axis text injection automatically, but `visualMap`, `calendar`, `treemap` breadcrumb, and `chord`/`sankey` arc colors are caller-owned and must be wired manually using the `ECHARTS_DARK`/`ECHARTS_LIGHT` palette pattern from `ActivityTimelineChart.tsx` (lines 44–47).
 
-**Core technologies (locked decisions):**
+**Core technologies (unchanged from v2.0):**
+- `echarts@^6.1.0` — all chart rendering including Sankey, chord, calendar heatmap, treemap — already installed
+- `echarts-for-react@^3.0.6` — React wrapper with built-in ResizeObserver and dispose-on-unmount; instance leak risk exists only if a chart bypasses the `components/ui/EChart.tsx` wrapper
+- `lib/colors/echartsTheme.ts` — `mergeEChartsTheme`, `ECHARTS_DARK`, `ECHARTS_LIGHT`; use `ActivityTimelineChart.tsx` pattern for uncovered fields
+- `next-themes@^0.4.6` — `resolvedTheme` drives `dark: bool` for all chart palette resolution
+- Server Actions (`"use server"`) — the established pattern for on-demand heavy loads; use for `scenarioActions.ts`, NOT a new tRPC procedure
 
-- **ECharts 6.1.0** - depth via LinearGradient/RadialGradient fills, itemStyle.shadowBlur glow on accent series, itemStyle.borderRadius:8 on donuts, universalTransition for drill-down morphs, selectedMode:single for segment glow. key={resolvedTheme} forces clean remount on theme change; centralized mergeEChartsTheme(option, dark) in a shared wrapper eliminates per-chart useTheme drift. No echarts-gl.
-- **TanStack Table v8 + Virtual v3** - headless, Tailwind-native, spacer-based virtualization; replaces current react-window list in /users. Provides sort, column pinning, row expand, density toggle without MUI or AG Grid.
-- **Framer Motion 12.39.0** - GPU-only animation rules enforced via central motion.ts facade: animate only x/y/scale/rotate/opacity (never width/height/top/left); viewport once:true on all scroll reveals; stagger cap 20 items; useReducedMotion enforced at facade level.
-- **2.5D depth - pure Tailwind/CSS** - backdrop-blur-md, layered multi-shadow with inset catch-light (inset 0 1px 0 rgba(255,255,255,0.06)), ambient color blobs (CSS blur-3xl positioned divs, pointer-events none, zero runtime cost), gradient borders via p-px wrapper. No JavaScript involved.
-- **Selective real-3D - @react-three/fiber@9 + drei** - dynamic ssr:false import, frameloop:demand, dpr=[1,1.5], pointer-events:none. Used only on /forma-proposal (distorted sphere background) and /users page header (subtle particle field, 200 points). Explicitly NOT on /access-analysis or /template-mty data pages.
-- **Tailwind 4.3.0** - semantic CSS-var tokens auto-switch via CSS layer; depth tokens added to globals.css (--glow-primary, --depth-card, --depth-float, --glass-fill-dark/light, --gradient-border). No hardcoded hex in TSX.
+**Do-not-add list:** `echarts-gl`, `echarts-stat`, `d3-chord`, `recharts`, `visx`, `nivo`, any new animation library.
+
+**Cross-agent reconciliation — ECharts dispose:** Stack says `echarts-for-react` v3 handles dispose automatically; Pitfalls warns about leak risk. These are not contradictory: the risk exists only if a component calls `echarts.init()` directly, bypassing the `EChart.tsx` wrapper. Rule: always use `EChart.tsx` wrapper, never raw `echarts.init()`.
+
+---
 
 ### Expected Features
 
 **Must have (table stakes):**
-
-- Clickable chart segments to slide-in detail panel (shadcn Sheet, ~40% width, no backdrop that blacks the chart)
-- Clickable table rows to inline expand showing person summary (no modal navigation)
-- Sticky column headers + window-virtualized rows (TanStack Virtual)
-- Active-filter / drill-state pill bar with one-click dismiss
-- Skeleton loading states visible within 200ms on all 4 pages
-- Light + dark both polished (zinc dark #09090B; ECharts reads resolvedTheme)
-- Responsive layout at 1280px - no horizontal overflow, no clipped modals, no invisible labels on projector
+- B1 Sticky in-page section nav — IntersectionObserver active highlight; `scrollIntoView` not `router.push`
+- B2 Section wrappers — `SectionBlock` with `id` anchors; structural, not decorative (no card-inside-card)
+- B3 Hub-wide default landing — page header states "Across 428 admin-accessible projects (of 1,152 total)" as fact
+- B4 Section-level coverage badges — `ActivityCoverageBadge` inline with Activity section heading
+- A1 Measure picker — 3-5 measures: activity count, member count, role count, issue count
+- A2 Primary grouping dimension picker — role, company, module, folder, time, action type, project, user
+- A3 Auto chart-type selection — static rule table; no chart-type dropdown exposed
+- A5 Drill behavior — slice click → `DrillSheet` + `PeopleDrillList`; in-memory only, zero new server round-trips
+- A6 Named saved presets — 7 hardcoded TypeScript config objects; not persisted to DB
+- A7 Explorer coverage state — `ActivityCoverageBadge` always visible when measure is activity-derived
+- C1 Calendar heatmap — `AccActivity` grouped by date; manual `visualMap` + `calendar` color wiring required
+- C4 Folder reach & exposure (factual) — internal vs external access, dormant facts, storage treemap if crawl data available
+- C7 Hygiene facts — `DataTable` of junk/duplicate/outlier roles from existing `computeAllFindings()`; no severity colors
 
 **Should have (differentiators):**
+- C2 Behavior mix over time — stacked bar by action category; extend `activityTimelineView.ts` with rawAction GROUP BY
+- C3 Hottest files/models — top-N `AccActivityAccds` horizontal bar; conditional on ACCDS data completeness post-extraction
+- C5 Sankey (Company → Role → Module) — 3-level flow; top-10 companies, top-15 roles, all modules; "Other" bucket mandatory
+- A4 Optional second grouping (cross-tab heatmap) — when both dimensions ≤ 30 categories
 
-- Cross-filtering - click role donut => activity timeline + module donut filter client-side, zero new queries. Highest-impact differentiator.
-- Staggered reveal on page load - 60ms stagger between panels, total < 400ms, once per load only
-- Smooth count-up KPI numbers on first load (Framer useMotionValue + useSpring)
-- Donut selected-segment glow (selectedMode:single + itemStyle.shadowBlur) across all donut charts
-- Spotlight / focus mode - sidebar collapse shortcut for full-screen projection
-- Animated slide-in/slide-out on drill-path change (directional, 200ms ease-out)
-- universalTransition donut to bar on drill-down (most cinematic ECharts effect)
-- Column density toggle on /users table (CSS-var row height)
+**Defer to v3.1:**
+- C6 Chord / co-occurrence matrix — high complexity; VERIFY API before planning; Sankey covers the more impactful story
+- Export/download, custom user-persisted presets, date range filter UI, real-time updates, mobile-first layout
 
-**Defer to own phase or v2:**
-
-- Forma-proposal diff view (HIGH complexity, needs new tRPC query template.getBaseline(roleId), fully independent)
-- Project-grouped persistent accordion in /access-analysis (current dropdown is functional)
-- Role-similarity graph node drill in /template-mty
-- /users/spatial-graph - explicitly out of scope; separate future project
+---
 
 ### Architecture Approach
 
-The overhaul is three-zone surgery: (1) shared design-language foundation, (2) /users monolith decomposition creating Zustand + single-hook seam, (3) per-page polish on top. Backend unchanged. Critical moves: split /access-analysis single Promise.all into Suspense tiers (Tier 1 fast ~300ms; Tier 3 terrain ~9s streams later); centralize EChart in components/ui/EChart.tsx with automatic mergeEChartsTheme; create motion.ts facade for automatic reduced-motion compliance.
+Fully additive over the existing RSC-loader pattern. `mainCharts.tsx` gains `loadPivotPresets()` and `loadRoleHygiene()` in its `Promise.all`; the seven existing loaders are untouched. Novel dimension combinations fire as server actions from `scenarioActions.ts`. Auto-chart-type logic lives client-side in `ScenarioExplorer.tsx` (static rule table). Role hygiene runs server-side in new `roleHygieneView.ts` calling `computeAllFindings()` from `lib/acc/dashboardAnalytics.ts` — currently wired only to `/users`, confirmed zero references on `/access-analysis`.
 
-**Major components (new/moved):**
+**New/modified files:**
 
-1. `components/ui/PremiumSurface.tsx` - RSC-safe card primitive (base/float/glass/inset variants); replaces ad-hoc shadow patterns across all 4 pages
-2. `components/ui/EChart.tsx` - moved from access-analysis/components/, auto-injects mergeEChartsTheme(option, dark), key={resolvedTheme}; every chart drops its own useTheme call
-3. `components/ui/DataTable.tsx` - TanStack Table v8 + Virtual v3 wrapper; sticky header, sort, row expand, density toggle; used by /users and /template-mty
-4. `components/ui/motion.ts` - Framer re-export + shared variant presets (fadeUp, fadeIn, stagger) + useSafeVariants hook zeroing durations when useReducedMotion is true
-5. `lib/colors/echartsTheme.ts` - ECHARTS_DARK / ECHARTS_LIGHT palette constants; single source of truth for all chart colors
-6. `users/useDirectoryStore.ts` - Zustand store for search/filter/sort/viewMode (extracted from 2,474-line monolith)
-7. `users/useDirectoryData.ts` - all tRPC queries consolidated; fixes hydration-key cache-miss double-fetch via shared query key constants and matching staleTime
+| File | Type | Change |
+|---|---|---|
+| `lib/server/scenarioPivotView.ts` | NEW | Preset pivot aggregation; `import "server-only"` |
+| `lib/server/roleHygieneView.ts` | NEW | Runs `computeAllFindings()`; added to `Promise.all` |
+| `lib/server/activityCalendarView.ts` | NEW | `GROUP BY DATE(createdAt)`; lazy server-action candidate |
+| `lib/server/hotObjectsView.ts` | NEW | `AccActivityAccds` group by object |
+| `lib/server/interconnectionsView.ts` | NEW | Sankey + chord matrix from accessInstanceView rows |
+| `app/(dashboard)/access-analysis/scenarioActions.ts` | NEW | `"use server"` on-demand pivot |
+| `app/(dashboard)/access-analysis/components/ScenarioExplorer.tsx` | NEW | Client; rule-table chart selector |
+| `app/(dashboard)/access-analysis/components/HygieneFacts.tsx` | NEW | Client; renders `DashboardFindings` |
+| `app/(dashboard)/access-analysis/mainCharts.tsx` | MODIFY | Add new loaders to `Promise.all` |
+| `app/(dashboard)/access-analysis/components/AccessAnalysisCharts.tsx` | MODIFY | Additive: new props + panels only |
+| `lib/acc/moduleOverrides.ts` (moved from `app/`) | MIGRATE | Prerequisite; dep-cruiser warnings 6 → 2 |
+| `lib/acc/dashboardAnalytics.ts` | NO CHANGE | Already correct |
+
+**Pivot rule table (first-match wins):**
+- activity × date → calendar heatmap
+- company × role → sankey
+- role × module → sankey
+- company × company → chord
+- folder × size → treemap
+- role → pie
+- company → pie
+- * → bar (fallback)
+
+**Server caps (mandatory):**
+- Sankey: ≤50 nodes / ≤200 links; top-10 companies, top-15 roles, "Other" bucket in SQL
+- Chord: ≤20 entities / ≤100 edges
+- Treemap: ≤3 levels / ≤500 leaves
+- Pivot max-groups guard: cartesian product > 2,000 cells → return warning + top-N
+
+---
 
 ### Critical Pitfalls
 
-1. **WebGL on data pages** - DuckDB-WASM + 5 ECharts canvases already fill the GPU budget; adding Three.js causes 2-5s tab freezes. Rule: CSS 2.5D on data pages, WebGL only on /forma-proposal header and /users page header region. Chrome DevTools GPU memory < 400MB gate.
+1. **AccFolderPermission OOM** — Any pivot query touching `AccFolderPermission` without SQL `LIMIT` + `GROUP BY` will OOM. v2.0 incident: 5M rows, 77s, process killed. Every query against this table must cap at the Prisma/raw-query level. `PG_POOL_MAX=32` and 8 GB heap are backstops, not primary defenses.
 
-2. **Redundant tRPC fetching via new panels** - the 77s OOM was fixed by SQL GROUP-BY; new panels that independently call bulkUsers/activityMix/permSummary re-introduce it. Rule: new panels consume RSC props or shared context only; never new trpc.useQuery for already-fetched data. Pre-ship: Network tab, each endpoint called once per load.
+2. **Sankey/chord cardinality blowup** — ACC has 77 roles, 428 projects, ~3,367 users. Naive cross-join produces hundreds of Sankey nodes. Server-side caps and "Other" bucket must be in the server-action spec, enforced with a unit test (adversarial input → assert ≤ cap).
 
-3. **next build TypeScript gate** - build typechecks test files; prop renames not reflected in __tests__/ block the :3000 deploy. Rule: npx tsc --noEmit is the mandatory last step before any npm run build. Every prop-shape change updates test fixtures in the same commit.
+3. **ECharts instance leak** — Risk exists only when code bypasses `EChart.tsx` wrapper and calls `echarts.init()` directly. Enforce wrapper rule in every chart component. Verify with Playwright canvas-count check after each chart phase.
 
-4. **UsersDirectoryClient split regression** - filter state, virtualization ref, and tRPC cache live implicitly inside the monolith. Rule: write golden-path integration test BEFORE first extraction; run npm test count after every extraction step.
+4. **APS refresh-token rotation** — APS v2 tokens are single-use. Any DC extraction must persist both new `access_token` and `refresh_token` to DB atomically. Broke the live dashboard 2026-06-01; recovery: `node scripts/aps-login.cjs`.
 
-5. **New analytics silently under-counting** - AccActivity covers 428/1,152 projects; no historical snapshot tables; addedOn missing. Rule: every proposed metric must pass schema feasibility gate (which model, what coverage, schema change needed?) before entering the roadmap.
-
-6. **Over-animation in live workshops** - hard limits: page stagger 400ms total, panel slide-in 200ms, count-up 800ms, chart selection 150ms. Motion only on mount (once) and explicit drill-down reveals; never on filter changes.
-
-7. **GraphCanvas always-mounted invariant** - conditional rendering destroys WebGL context; reinit takes 2-5s for 17k nodes. Rule: CSS class toggle only (opacity-0 pointer-events-none absolute inset-0); never conditional unmount of GraphCanvas.
+5. **Coverage-honesty omission + prescriptive risk framing** — Two non-negotiable owner constraints: (a) every activity-derived panel shows "428 of 1,152 projects" in-line; (b) no label implies a verdict ("External access" not "Exposed"). Both are explicit acceptance criteria in every phase plan; verify with `rg -i "risk|danger|critical|exposed|suspicious"`.
 
 ---
 
 ## Implications for Roadmap
 
-### Phase 1: Shared Design Foundation
+Phases continue from v2.0 (phases 1–7 shipped). v3.0 phases are numbered 8–14.
 
-**Rationale:** Every subsequent phase imports from the foundation. Building it first prevents per-phase reinvention and eliminates theming drift across all 8+ chart components.
+### Phase 8: DC Re-Extraction (Data Currency Gate)
 
-**Delivers:**
-- globals.css depth/glow/glass token additions (--glow-primary, --depth-card, --depth-float, --glass-fill-dark/light, --gradient-border)
-- components/ui/PremiumSurface.tsx (base / float / glass / inset variants)
-- components/ui/EChart.tsx (moved, theme-aware, mergeEChartsTheme automatic injection, key={resolvedTheme})
-- lib/colors/echartsTheme.ts (ECHARTS_DARK / ECHARTS_LIGHT palettes)
-- components/ui/motion.ts (Framer re-export, fadeUp/fadeIn/stagger presets, useSafeVariants reduced-motion hook)
-- ModuleBadge.tsx moved to components/ui/
-- framer-motion updated to 12.39.0+
+**Rationale:** Hard gate — all activity-dependent views are meaningless without current data. Runs in parallel with Phase 9 (no data dependency between them).
 
-**Avoids:** Light/dark parity breakage (Pitfall 3), over-animation without central enforcement (Pitfall 6)
+**Delivers:** All 428 projects re-extracted all-time; `AccDcBackfillProgress.earliestCovered` ≤ 2019-01-02 for all 428; zero new Unmapped actions from `diag-activity-types.cjs`.
 
-**Research flag:** Standard patterns - no additional research needed.
+**Key env vars:** `DC_MAX_REQUESTS=20`, `DC_403_BISECT=1` (mandatory), `DC_DAILY_SAFE_BUDGET=20`, `DC_PRIORITY_BACKFILL=1`, `DC_SKIP_ADMIN_SNAPSHOT=1` (intra-day continuation only).
 
----
+**Phase gate:** `fully_backfilled = 428` AND `diag-activity-types.cjs` zero Unmapped. Do not proceed to Phases 12+ until this passes.
 
-### Phase 2: /users Decomposition
+**Avoids:** Pitfalls 10 (quota exhaustion), 11 (token breakage), 12 (403 cascade), 8 (taxonomy drift).
 
-**Rationale:** Highest structural risk. The Zustand + single-hook seam produced here is a prerequisite for Phase 3-A and 3-B. The golden-path integration test is the regression guard for all future /users work.
-
-**Delivers:**
-- Golden-path integration test (search => filter => click row => modal => close => filter unchanged) written BEFORE extraction
-- users/useDirectoryStore.ts - Zustand store for search/filter/sort/viewMode
-- users/useDirectoryData.ts - single hook; shared query key constants fix hydration-key cache-miss double-fetch
-- Extracted: PersonCard, PersonRow, PersonRowList, PersonDetailModal, ActivityAuditPanel, DirectoryToolbar, ActiveFilterStrip, DataCoverageStrip
-- UsersDirectoryClient.tsx reduced to ~200-line orchestrator shell
-- npx tsc --noEmit + npm test green after each extraction step
-
-**Avoids:** Split regression (Pitfall 4), redundant fetching re-introduction (Pitfall 2)
-
-**Research flag:** Standard patterns - decomposition strategy fully specified in ARCHITECTURE.md.
+**Research flag:** Standard patterns — full runbook documented in ARCHITECTURE.md §C.
 
 ---
 
-### Phase 3-A: DataTable Primitive (parallel-safe after Phase 2)
+### Phase 9: Structural Prerequisites (Parallel with Phase 8)
 
-**Rationale:** Required before /users table redesign and /template-mty members table upgrade. Isolated to components/ui/DataTable.tsx.
+**Rationale:** No data dependency; can run concurrently with Phase 8. Unblocks all subsequent phases.
 
 **Delivers:**
-- Install @tanstack/react-table v8; confirm @tanstack/react-virtual v3 (may be present as peer dep - check version; v2 to v3 is a breaking API change)
-- components/ui/DataTable.tsx - sort, sticky header, row expand, density toggle, column pinning, onRowClick, virtualized body; typed with ColumnDef<T> generics
+- `moduleOverrides.ts` migrated to `lib/acc/`; all import sites updated; dep-cruiser warnings 6 → 2
+- `CoverageHonesty` UI atom — reusable component rendering "Based on N of M projects" strip
+- `countDistinctUsers()` helper in `lib/acc/` — shared by all phases with people-count metrics
 
-**Research flag:** Standard patterns - TanStack Table v8 API well-documented.
+**Avoids:** Pitfalls 3 (OOM), 4 (coverage omission), 6 (double counting), dep-cruiser boundary violation.
+
+**Research flag:** Standard patterns. No research phase needed.
 
 ---
 
-### Phase 3-B: /users Table + Polish (after Phase 2 + 3-A)
+### Phase 10: Sectioned Hub Narrative
 
-**Delivers:**
-- Premium DataTable wired to useDirectoryData - pinned Name column, sticky frosted-glass header, row expand with AnimatePresence inline person summary
-- Column density toggle (CSS-var row height)
-- Staggered reveal on page load (60ms stagger, initial={false} on re-renders)
-- h-full overflow-y-auto page root wrapping the shell
-- Payload reduction: getOrgDirectory + getDirectory with select narrowing; enrichedUsers deferred to panel open (target < 3MB from 7-15MB)
-- Subtle particle field on /users page header only (Three.js Points, 200 particles, ssr:false, frameloop:demand - NOT on the data table region)
-- loading.tsx skeleton (toolbar row + 12 ghost cards / 20 ghost rows)
+**Rationale:** Pure layout work — must precede new analytics panels so they land in correct sections. Lowest risk phase; immediately makes the page feel like a navigable story.
 
-**Avoids:** WebGL on data table area, redundant fetching (Pitfall 2)
+**Delivers:** Sticky section nav (B1), `SectionBlock` wrappers (B2), hub-wide coverage header (B3), section-level coverage badges (B4). All 14 existing panels reorganized without changing their data or behavior.
 
----
+**Key constraints:** `scrollIntoView({ behavior: "smooth" })` not `router.push`; no card-inside-card; section labels ≤ 15 chars; `position: sticky` inside scroll container.
 
-### Phase 3-C: /access-analysis Depth + Cross-Filtering (parallel-safe after Phase 1)
+**Avoids:** Pitfall 9 (prescriptive labels — section titles factual), Pitfall 13 (theme drift — no new charts this phase).
 
-**Rationale:** /access-analysis is already the cleanest layout. Work here is depth/motion polish + Suspense tier split (fixes 9s blank screen) + cross-filtering (highest-impact differentiator, zero new queries).
-
-**Delivers:**
-- Suspense tier split: Tier 1 (KPIs + donuts, ~300ms), Tier 2 (timeline, ~1s), Tier 3 (terrain + coordination, lazy)
-- loading.tsx skeletons per tier: KPIStripSkeleton, DonutRowSkeleton, TimelineSkeleton, TerrainSkeleton
-- FilterContext (Zustand) - setRole() / setModule() / clear() dispatch
-- Chart click handlers => FilterContext => other charts re-render with filtered client-side data (zero new queries)
-- Active-filter pill bar with AnimatePresence appear/disappear
-- All donut charts: selectedMode:single, shadowBlur glow, borderRadius:8, universalTransition drill morphs
-- KPI count-up via useMotionValue + useSpring on first load
-- ECharts option objects wrapped in useMemo (prevents flicker on parent re-renders)
-- All panels wrapped in PremiumSurface primitives
-- Gradient animated mesh behind KPI strip (CSS @keyframes, no WebGL)
-- FolderPermissionTerrain behind click-to-expand lazy-load (eliminates 2-3s lag on first click)
-- AccActivity composite index (email, projectId) added
-
-**Analytics gate (before any new metric):** Confirm Prisma model, project coverage (428/1,152 or all?), no schema change required. Confirmed safe sources: AccRole, AccUser, AccActivity (428/1,152 - label as such in UI), AccFolderPermission, AccIssue, AccDcProjectUser.
-
-**Avoids:** Redundant fetching (Pitfall 2), new analytics silently under-counting (Pitfall 7), WebGL on data pages (Pitfall 1)
-
-**Research flag:** New analytics proposals need schema feasibility gate enumerated in the plan phase before implementation tasks are written.
+**Research flag:** Standard patterns. No research phase needed.
 
 ---
 
-### Phase 3-D: /template-mty + /forma-proposal Polish (parallel-safe after Phase 1 + 3-A)
+### Phase 11: Scenario Explorer Core
 
-**Delivers:**
+**Rationale:** The centerpiece. Requires Phase 9 (moduleOverrides migration) and Phase 10 (section slot). Table-stakes subset only (A1–A3, A5, A6, A7); cross-tab (A4) defers.
 
-/template-mty:
-- Members table => DataTable with sort + row click => slide-in Sheet profile
-- Role pie charts: selectedMode:single glow, borderRadius:8, universalTransition
-- Role-similarity graph: hover floating labels (not clipped tooltip), node click => Sheet with role members
-- All panels: PremiumSurface, staggered reveal on load, loading.tsx skeleton
+**Delivers:** `scenarioPivotView.ts` + `scenarioActions.ts` + `ScenarioExplorer.tsx` + mainCharts wiring. 7 hardcoded named presets. Drill on any segment → `DrillSheet`.
 
-/forma-proposal:
-- HierarchyView split: useHierarchyLayout.ts (d3 computation, no rendering) + HierarchyCanvas.tsx (SVG render) + thin HierarchyView.tsx shell (public API unchanged)
-- dynamic(() => import HierarchyCanvas, ssr:false) to defer d3 bundle
-- PremiumSurface wrapping on permission editor panels
-- Distorted sphere background blob (R3F MeshDistortMaterial, ssr:false, frameloop:demand, pointer-events:none)
-- Diff view: DEFERRED (needs new tRPC query template.getBaseline(roleId), independent, HIGH complexity)
+**Critical rules:**
+- Pivot aggregation server-side only; never client-side over raw rows
+- `scenarioActions.ts` server action for on-demand picks — NOT a new tRPC procedure
+- Auto-chart-type is a static rule table — no chart-type dropdown exposed
+- Any pivot touching `AccFolderPermission`/`AccActivity` must have max-groups guard (>2,000 cells → warning)
+- All pivot results include `coverageNote` field; component renders it unconditionally
 
-**Avoids:** Scope creep into spatial-graph code (Pitfall 10), WebGL competing with data panels (Pitfall 1)
+**Avoids:** Pitfalls 2 (cardinality), 3 (folder OOM), 4 (coverage), 1 (instance leak).
+
+**Research flag:** Needs `gsd:plan-phase --research-phase 11` — pivot aggregation query plan against real ACC data needs verification.
 
 ---
 
-### Phase 4: Pre-Workshop UAT
+### Phase 12: Activity Depth Views
 
-**Rationale:** Projector simulation is the only valid acceptance test for a workshop showcase.
+**Rationale:** Unlocked by Phase 8 (current data) and Phase 10 (section slot). Calendar heatmap and behavior-mix extend existing loader patterns with minimal risk.
 
-**Delivers:**
-- All 4 pages tested at 1280px on secondary display at projector-reduced brightness
-- WCAG AA contrast on all data labels (foreground not muted-foreground for chart values)
-- Drill-down smoke: role donut => people, activity donut => people, folder terrain expand, coordination panel
-- prefers-reduced-motion:reduce DevTools check - layout unchanged, animations disabled
-- Network tab: each tRPC endpoint called once per page load
-- npx tsc --noEmit exits 0 including test files
-- git diff --name-only for /users work confirms zero files under users/access-analysis/ (spatial-graph boundary)
-- No conditional GraphCanvas mount pattern (grep check)
+**Delivers:** C1 (calendar heatmap), C2 (behavior-mix stacked bar), C7 (hygiene facts table). C3 (hottest files) conditional on `AccActivityAccds` row count > 0 post-Phase 8.
+
+**Before speccing calendar heatmap:** Run `SELECT MIN(createdAt), MAX(createdAt), COUNT(*) FROM "AccActivity"` — VERIFY exact timestamp column name and actual date range. Default range to where ≥ 80% of activity falls, not current calendar year. (RESOLVED: timestamp column is `AccActivity.createdAt`, indexed by autodeskId/userEmail/projectId + createdAt DESC.)
+
+**Attribution honesty:** Behavior-mix must include footnote: "Model Coordination attribution may include Build activity." Every activity loader returns `{ data, attributionQuality: { resolved: N, unresolved: M } }`.
+
+**Role hygiene:** `roleHygieneView.ts` calls `computeAllFindings()` server-side; only `DashboardFindings` prop passed to client — never `BulkAccUser[]`.
+
+**Avoids:** Pitfalls 5 (attribution gap), 14 (calendar date mismatch), 13 (theme drift — manual calendar/visualMap color wiring).
+
+**Research flag:** One diagnostic query before calendar spec (timestamp column name — now resolved). Otherwise standard.
+
+---
+
+### Phase 13: Folder Reach & Exposure
+
+**Rationale:** Medium risk (large `folderPermissionTerrainView.ts` server file); comes after simpler activity phases stabilize the new loader pattern.
+
+**Delivers:** C4 — internal vs external access breakdown, who-reaches-which-folder, dormant access (surfaces `rankDormantByPeople` more prominently), storage treemap if `AccFolder.totalSizeBytes`/`fileCount` populated.
+
+**Key rules:** All `AccFolderPermission` queries use `GROUP BY` + `LIMIT`; verify response < 5s. Always `COUNT(DISTINCT email)` for people counts. Labels: "External access" not "Exposed", "Dormant access (>90 days)" not "Risk". Folder dimension in pivot: always group by tier (L1/L2), never leaf folders.
+
+**Avoids:** Pitfalls 3 (OOM), 6 (double counting), 9 (prescriptive labels).
+
+**Research flag:** Standard patterns. Treemap wiring follows STACK.md §6.
+
+---
+
+### Phase 14: Interconnections (Sankey)
+
+**Rationale:** Highest visual impact for workshop finale. Depends on stable data and section structure from prior phases. Chord (C6) deferred to v3.1 pending API verification.
+
+**Delivers:** C5 — Sankey (Company → Role → Module) with drill-to-people on link click. `lib/server/interconnectionsView.ts` + `buildSankeyLinks()`. Role names from `AccRole` via `mergeRoleNames()` — never `AccDcRole`.
+
+**Sankey caps (non-negotiable):** Top-10 companies + "Other"; top-15 roles; all modules (≤10). `layoutIterations: 8–16`. Label `fontSize` minimum 11px. `lineStyle.color: 'source'` for ribbon gradient.
+
+**Avoids:** Pitfalls 2 (cardinality — caps + unit test), 7 (AccDcRole empty).
+
+**Research flag:** Chord API needs runtime verification (`ChordSeriesOption` export) before including in this phase. Sankey patterns are well-documented in STACK.md §2.
 
 ---
 
 ### Phase Ordering Rationale
 
-- Foundation before everything - EChart wrapper, PremiumSurface, motion.ts imported by every page phase; building first eliminates per-phase reinvention and ensures theming consistency automatically.
-- /users decomposition before /users polish - Zustand store and single-hook seam are prerequisites for DataTable wiring; attempting polish on the monolith creates merge conflicts and state debt.
-- DataTable primitive before per-page table work - extracted once, prevents two separately-styled tables diverging immediately.
-- Per-page phases 3-A through 3-D are parallel - share the foundation but do not depend on each other.
-- UAT last - live-room projector simulation is the only valid acceptance test.
+- Phase 8 gates Phases 12–14 on data freshness; runs in parallel with Phase 9
+- Phase 9 gates Phase 11 on the `moduleOverrides.ts` migration; establishes shared atoms for all downstream phases
+- Phase 10 must precede Phases 11–14 so new panels land in correct section slots from day one
+- Phase 11 before 12–14: pivot engine section slot and server-action pattern must be established first
+- Phases 12 and 13 can run sequentially or in parallel (separate agents; no shared files)
+- Phase 14 is last: widest data coverage dependency; benefits from stable section structure
+
+> Optional finale: a light projector/perf UAT pass (mirroring v2.0's Phase 7) may be appended after Phase 14 if the owner wants a single pre-workshop acceptance gate; otherwise per-phase gates suffice.
 
 ### Research Flags
 
-Phases with standard patterns (skip dedicated research-phase):
-- Phase 1 (Foundation): token patterns, EChart wrapper, motion facade fully specified in STACK.md + ARCHITECTURE.md
-- Phase 2 (/users decomposition): extraction strategy fully specified; golden-path test is standard
-- Phase 3-A (DataTable): TanStack Table v8 + Virtual v3 well-documented
-- Phase 3-D: PremiumSurface wiring + HierarchyView split are mechanical
+Needs research phase before planning:
+- **Phase 11 (Scenario Explorer):** Pivot aggregation query plan against real ACC data (623k AccActivity rows, 5M AccFolderPermission); PivotResult discriminated union shape needs validation
 
-Phases needing feasibility gates during planning (plan-time gates, not research-phase):
-- Phase 3-C analytics: every proposed new analytic needs schema feasibility gate enumerated in phase plan before implementation tasks are written.
+Needs one diagnostic query result, then standard:
+- **Phase 12 (Activity Depth):** Exact timestamp column name in `AccActivity` (RESOLVED: `createdAt`)
+
+Standard patterns (no research phase needed):
+- **Phase 8:** Full runbook in ARCHITECTURE.md §C
+- **Phase 9:** File migration + helper extraction
+- **Phase 10:** IntersectionObserver + scrollIntoView
+- **Phase 13:** Extends existing terrain loader
+- **Phase 14 (Sankey only):** Patterns in STACK.md §2; chord needs API verification first
 
 ---
 
@@ -248,43 +264,64 @@ Phases needing feasibility gates during planning (plan-time gates, not research-
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | MEDIUM | ECharts 6 depth techniques verified via official docs + release notes; TanStack Table v8 from docs; R3F v9 React 19 compat from official install guide. echarts-x/custom-segmented-doughnut maturity LOW - verify before Phase 3-C |
-| Features | HIGH | Direct codebase audit of all 4 pages + owner constraints in PROJECT.md; anti-features validated against workshop context |
-| Architecture | HIGH | Direct inspection of all 4 page components, existing globals.css, and incident history from MEMORY.md. Decomposition boundaries verified against line-number audit |
-| Pitfalls | HIGH | All 10 pitfalls derive from real incidents documented in MEMORY.md and CONCERNS.md - not hypothetical |
+| Stack | HIGH | `package.json` verified; wrapper/theme behavior verified from source. Only gap: `ChordSeriesOption` runtime export (VERIFY) |
+| Features | HIGH | All grounded in verified Prisma schema, existing components, PROJECT.md owner decisions. AccActivityAccds row count and AccFolder size are LOW pending Phase 8 |
+| Architecture | HIGH | All 7 existing loaders verified; `computeAllFindings()` gap confirmed by grep; DC flag names verified from dcIngest.ts source |
+| Pitfalls | HIGH | All 16 pitfalls grounded in verified repo files and MEMORY.md post-mortems (OOM incident, token breakage, AccDcRole empty, build-blocks-on-test-error) |
 
-**Overall confidence:** HIGH for build order and structural decisions; MEDIUM for precise ECharts 6 API params (verify during Phase 1 execution).
+**Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- @echarts-x/custom-segmented-doughnut maturity: one npm source confirmed; verify before adopting for KPI rings in Phase 3-C. Fallback: standard donut with borderRadius:8 - equally premium.
-- @tanstack/react-virtual version: may already be installed as peer dep of react-query. Confirm exact version before Phase 3-A; if v2 is present, upgrade to v3 (breaking API change).
-- AccActivity composite index: (email, projectId) missing - 218ms+ GROUP-BY at 623k rows. Add in Phase 3-C, not deferred.
-- Forma-proposal diff view: when planned, confirm AccRole has a stable baseline snapshot before committing to the query design.
+All VERIFY items consolidated — planners must resolve before the relevant phase (several already resolved during synthesis, noted inline):
+
+| VERIFY Item | Phase | Status / How to Resolve |
+|---|---|---|
+| `AccActivity` timestamp column name | 12 | RESOLVED — `createdAt` (schema.prisma:553) |
+| `AccDcUser.lastSignIn` field presence | 12 | RESOLVED — present (schema.prisma:634) |
+| `classifyActivity` file path and export | 12 | RESOLVED — `lib/acc/activityCategories.ts:539` |
+| `AccFolder.fileCount` / `totalSizeBytes` presence | 13 | RESOLVED — present (schema.prisma:518–519), nullable until crawl |
+| APS token storage model | 8 | RESOLVED — `refresh_token` on the Account model (schema.prisma:43) + `server/auth.ts` |
+| `BulkAccUser[]` fields needed by `computeAllFindings()` vs DC-snapshot tables | 11/12 | Read `lib/acc/dashboardAnalytics.ts` signatures; check if `AccProjectMember` join is needed |
+| `ChordSeriesOption` export from `echarts` at runtime | v3.1 (C6) | Import type in throwaway test; if missing, use `EChartsOption` with inline type assertion |
+| `AccActivityAccds` row count after Phase 8 re-extraction | 12 | `SELECT COUNT(*) FROM "AccActivityAccds"` after Phase 8; gate C3 on count > 0 |
+| `AccFolder` size population rate after folder crawl | 13 | `SELECT COUNT(*) FILTER (WHERE "totalSizeBytes" IS NOT NULL) FROM "AccFolder"` after Phase 8 |
+| Exact attribution-gap percentage in `AccActivity` (cited 3–20%) | 12 | `SELECT COUNT(*) FILTER (WHERE "userEmail" IS NULL), COUNT(*) FROM "AccActivity"` |
 
 ---
 
 ## Sources
 
-### Primary (HIGH confidence - direct codebase audit)
-- C:/LECG/Dashboard/.planning/codebase/CONCERNS.md - performance bottlenecks, fragile invariants, known bugs
-- C:/LECG/Dashboard/.planning/codebase/TESTING.md - test framework, vitest patterns, e2e setup
-- C:/LECG/Dashboard/.planning/PROJECT.md - constraints, requirements, theming conventions, design references
-- C:/LECG/Dashboard/.planning/codebase/ARCHITECTURE.md - page structure, RSC patterns, component boundaries
-- MEMORY.md incident history - 77s OOM fix, hydration cache miss, layout thrash, GraphCanvas destroy
+### Primary — HIGH confidence (verified from repo files)
 
-### Secondary (MEDIUM confidence - official docs)
-- ECharts 6 Features + 5.2/5.3 Release Notes - universalTransition, borderRadius, dynamic theme
-- TanStack Virtual v3 docs - useVirtualizer API, spacer-based pattern
-- Motion/Framer Motion v12 changelog - React 19 layout animation fixes in 12.39.0
-- React Three Fiber v9 installation guide - React 19 requirement confirmed
+- `package.json` — ECharts 6.1.0, echarts-for-react 3.0.6 version facts [VERIFIED]
+- `components/ui/EChart.tsx` — wrapper lifecycle, `notMerge`, `key={resolvedTheme}` [VERIFIED]
+- `lib/colors/echartsTheme.ts` — `mergeEChartsTheme` covered vs uncovered fields [VERIFIED]
+- `prisma/schema.prisma` — `AccActivity` (542), `AccActivityAccds` (564), `AccDcUser` (627), `AccFolder` (506), `AccFolderPermission`, `AccRole` models [VERIFIED]
+- `app/(dashboard)/access-analysis/mainCharts.tsx` — all 7 existing loader functions [VERIFIED]
+- `lib/acc/dashboardAnalytics.ts` — `computeAllFindings` signatures; gap on `/access-analysis` confirmed by grep [VERIFIED]
+- `lib/acc/activityCategories.ts:539` — `classifyActivity` export [VERIFIED]
+- `lib/acc/dcIngest.ts` — quota mechanics, DC flag names [VERIFIED]
+- `.planning/codebase/CONCERNS.md` — `moduleOverrides.ts` boundary violation priority 1 [VERIFIED]
+- `ActivityTimelineChart.tsx` lines 44–47 — canonical palette pattern [VERIFIED]
+- MEMORY.md post-mortems — OOM incident, APS token breakage, AccDcRole empty, build-blocks-on-test-error [VERIFIED]
+- PROJECT.md — v3.0 milestone goals, owner constraints [VERIFIED]
 
-### Tertiary (LOW confidence - single source or inference)
-- @echarts-x/custom-segmented-doughnut npm page - existence confirmed, maturity unverified
-- TanStack Table v8 virtualized rows - community blog pattern (verify against official example)
-- Glassmorphism Tailwind class recipes - community sources
+### Secondary — MEDIUM confidence (external sources)
+
+- apache/echarts GitHub — SankeySeries.ts, ChordSeries.ts, TreemapSeries.ts defaults
+- ECharts 6.0 release handbook — chord series introduction (official)
+- echarts CalendarModel.d.ts — calendar option types
+- npm/GitHub echarts-for-react — ResizeObserver + dispose behavior in v3
+
+### Tertiary — LOW confidence (depends on Phase 8 results)
+
+- `AccActivityAccds` row count and coverage adequacy — depends on re-extraction outcome
+- `AccFolder` size population rate — depends on folder crawl completion
+- Exact attribution-gap percentage — needs real query against post-extraction data
 
 ---
 
-*Research completed: 2026-06-17*
+*Research completed: 2026-06-22*
 *Ready for roadmap: yes*
+*Phases: 8–14 (continuing from v2.0 phases 1–7)*
