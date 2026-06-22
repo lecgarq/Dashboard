@@ -1,4 +1,4 @@
-# LECG Dashboard — Workshop-Grade UI/UX Overhaul
+# LECG Dashboard
 
 ## What This Is
 
@@ -7,6 +7,20 @@ A premium UI/UX overhaul of four pages in the existing LECG BIM management dashb
 ## Core Value
 
 When these pages are presented to all users in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live. If everything else fails, this must: the data has to *feel* alive and impressive on screen, not flat or cramped.
+
+## Current Milestone: v3.0 — Access Analysis: Hub Story & Scenario Explorer
+
+**Goal:** Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned story of "the situation of the hub" — powered by freshly re-extracted data and a flexible scenario explorer that pivots ACC data across any dimension pair (activity×folder, role×users, company×module…). **Additive** (every existing panel preserved), **descriptive** (no synthetic risk scores — the owner judges risk), **coverage-honest** (428/1,152 labeled), fast, and clickable.
+
+**Target features:**
+- All-time data re-extraction for the 428 admin-accessible projects (free-quota DC workaround) so the exercise is current — a dedicated first phase.
+- Sectioned hub narrative: themed sections (Overview → People & Roles → Activity → Folders → Coordination → Interconnections) + sticky in-page nav + hub-wide default landing + honest coverage indicator.
+- Scenario explorer (centerpiece): a **measure × dimension (× dimension)** picker that auto-renders the right chart (bar/donut/tree/heatmap/sankey), clickable + drillable, **plus saved named presets** for the common pairs.
+- Activity depth: calendar heatmap, behavior-mix over time (view/upload/edit/delete), hottest files/models, attribution-quality honesty strip.
+- Factual folder reach & exposure: internal vs external access, who-can-reach-which-folder, dormant-access-as-fact, storage/data-reach. No scores.
+- Hygiene facts + interconnections: surface the already-computed junk/duplicate/outlier role *facts* (no severity grade) + Sankey (Company→Role→Module) + chord/matrix (firm collaboration, role co-occurrence).
+
+**Audience:** non-technical executives/project directors (need the situation of the hub at a glance) + BIM/VDC managers (validate role matrices, find coordination bottlenecks). Luis presents live.
 
 ## Requirements
 
@@ -34,14 +48,18 @@ When these pages are presented to all users in a workshop, the data makes people
 
 ### Active
 
-<!-- Next milestone — define with /gsd:new-milestone. -->
+<!-- Milestone v3.0 — Access Analysis: Hub Story & Scenario Explorer. REQ-IDs in REQUIREMENTS.md. -->
 
-v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate seeds carried forward (see ROADMAP.md → v-next):
+Additive to the existing `/access-analysis`; descriptive (no synthetic risk scores); coverage-honest (428/1,152).
 
-- [ ] **FRM-V2-01** — Forma role-permission diff view (needs a new `template.getBaseline(roleId)` tRPC query)
-- [ ] **ACC-V2-01** — Project-grouped persistent accordion in the `/access-analysis` project picker
-- [ ] **NA-V2-01** — Additional new per-page analytics beyond the gated set
-- [ ] **`/users` data freshness** — auto-refresh without a manual browser reload (pre-existing app-wide caching trade-off)
+- [ ] **Data currency** — re-extract all-time data for the 428 admin-accessible projects (free-quota DC workaround)
+- [ ] **Sectioned hub narrative** — themed sections + sticky nav + hub-wide default landing; preserves all 14 existing panels (extends **ACC-V2-01** grouped picker)
+- [ ] **Scenario explorer** — flexible measure×dimension(×dimension) pivot → auto chart type, clickable/drillable, + saved presets
+- [ ] **Activity depth** — calendar heatmap, behavior-mix over time, hottest files/models, attribution-quality honesty
+- [ ] **Folder reach & exposure (factual)** — internal/external access, who-reaches-what, dormant-access facts, storage/data-reach
+- [ ] **Hygiene facts + interconnections** — surface computed junk/duplicate/outlier role facts (no scores) + Sankey/chord (**NA-V2-01**)
+
+Deferred (not this milestone): **FRM-V2-01** Forma role-permission diff view; **`/users` data freshness** auto-refresh.
 
 ### Out of Scope
 
@@ -54,7 +72,10 @@ v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate
 
 - **Current state (shipped v2.0, 2026-06-19).** The Workshop-Grade UI/UX Overhaul shipped all 28 in-scope requirements across 7 phases (30 plans), owner-approved on the projector. The 4 target pages now share one design language; `/users` was decomposed (2,474 → 314-line shell) and rebuilt on a reusable `DataTable`. ~36k insertions over 3 days (incl. planning re-init). Deploy = local rebuild on :3000 (not merged to `deploy`). Tagged `v2.0` (the `v1.0` tag belongs to the May 2026 ACC Users Graph milestone). Full record: `.planning/MILESTONES.md` + `.planning/milestones/v2.0-*.md`.
 - **Brownfield, mature codebase.** Full codebase map lives in `.planning/codebase/` (ARCHITECTURE, STACK, STRUCTURE, CONVENTIONS, TESTING, CONCERNS, INTEGRATIONS) plus `CLEANUP-ROADMAP.md`, refreshed 2026-06-19 from the fresh `.tools/repo-map/` artifacts.
-- **Audience model.** Luis is the sole developer and presenter; he runs these pages in live workshops for all users. Success = the audience *sees* the data and stays engaged during the session — not user self-service engagement metrics.
+- **Audience model.** Luis is the sole developer and presenter; he runs these pages in live workshops. 
+  - *Primary Audience:* Non-technical executives and project directors who need to see risk and ROI immediately (they care about "who has access to what" and "is my project exposed"). 
+  - *Secondary Audience:* BIM/VDC Managers who need to validate role matrices and resolve clash bottlenecks.
+  - *Success Metric:* The audience *sees* the data and stays engaged during the session — not user self-service engagement metrics.
 - **Design references** (the *feel*, not the content): [landonorris.com](https://landonorris.com/), [igloo.inc](https://www.igloo.inc/), [orano.group innovation slider](https://www.orano.group/experience/innovation/en/slider) — dark, cinematic, depth-rich, motion-guided experiences. None are analytics tools; the brief is to translate that premium experience feeling onto interactive pies, donuts, and tables.
 - **Current page weights** (from the map): `/users` is a 2,474-line `UsersDirectoryClient` monolith with 6+ heavy tRPC queries (~7–15MB) and no real table; `/access-analysis` runs 7 parallel RSC loaders (~20MB) but is the cleanest layout; `/template-mty` is the lightest/most focused; `/forma-proposal` is a local-draft editor with a 315-line `HierarchyView` spike.
 - **Theming history** (memory): existing dark palette is **zinc, not slate** (`#09090B` bg, no blue cast); a dark-mode plan and `DARK_MODE.md` conventions already exist. Page roots must own scroll (`h-full overflow-y-auto`) and use semantic CSS-var tokens; ECharts must read `resolvedTheme` for canvas colors.
@@ -69,6 +90,13 @@ v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate
 - **Deploy**: Production runs via a local Windows Task Scheduler build on `:3000`; deploy = `npm run build` + restart of the current checkout, **not** a git deploy-branch merge. — A rebuild ships the whole working tree.
 - **Motion**: Transitions must be tasteful and never overwhelming. — Explicit owner constraint balancing "don't look flat" against "don't overwhelm."
 
+## Future Vision Themes (Ideation Vectors)
+
+When ideating new features or planning milestones, focus on these vectors:
+1. **Cross-Company Permission Bleeding (Risk):** Surfacing exactly where external subcontractors have inadvertently gained access to internal parent folders across ACC.
+2. **ACC to Forma Parity (Consistency):** Deepening the translation between Forma conceptual roles and hard ACC folder permissions so they can be diffed and synchronized.
+3. **Model Coordination Bottlenecks (Speed):** Moving beyond basic clash counts to highlight *who* is blocking resolution and *where* the spatial density of clashes is highest.
+
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
@@ -79,6 +107,10 @@ v2.0 shipped all in-scope requirements. No active milestone in flight. Candidate
 | New analytics bounded strictly to the existing Prisma DB | DB is the source of truth; prevents the "new analytics" scope from ballooning into data engineering | ✓ Good — NA-01 feasibility gate held; under-covered sources labeled in UI |
 | `/users/spatial-graph` deferred to its own project | It needs full dedicated attention (real 3D); excluding it keeps this milestone focused | ✓ Good — boundary held; zero files under `users/access-analysis/` touched |
 | Adopt the `scripts/repo-map` toolchain as the standing input for per-phase research & a regression ratchet | Gives planning agents precise structural facts (dep graph for the `/users` split, ast-grep sweeps for the foundation/perf work, `prisma-access` for the NA feasibility gate); `repo-map:check` guards against re-introducing redundant fetches | ✓ Good — used as standing research input + fetch/effect regression ratchet |
+| v3.0 is **additive, not a rewrite** of `/access-analysis` | Owner: "do not destroy what we currently have… complete redefinement is [not] a better storytelling." Reorganize + extend the 14 existing panels | — Pending |
+| v3.0 analytics are **descriptive, not prescriptive** — no synthetic risk scores/severity grades | Owner: "i dont care about risk scores… i would make it myself." Dashboard states facts; human judges risk | — Pending |
+| A "scenario" = a **dimension pair**; build a flexible pivot explorer + saved presets, not bespoke fixed charts | Owner defined scenarios as Activity×Folder, Activity×Role, Role×Users, "so on so on" — combinatorial, so a generic engine + presets covers it | — Pending |
+| Re-extract the **428 admin-accessible** projects as a **dedicated first phase** (gated before data-dependent views) | Owner asked to refresh "till today" via the free-quota workaround; quota (~25 req/UTC-day) makes it multi-day, so it leads and verifies before activity/coverage views depend on it | — Pending |
 
 ---
-*Last updated: 2026-06-19 after v2.0 milestone (Workshop-Grade UI/UX Overhaul) completion*
+*Last updated: 2026-06-22 — milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) started*

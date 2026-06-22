@@ -1,39 +1,39 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.0
-milestone_name: Workshop-Grade UI/UX Overhaul
-status: shipped
-current_phase: 7
-current_phase_name: Pre-Workshop UAT
-stopped_at: "Milestone v2.0 SHIPPED + archived (tag v2.0, local) — all 7 phases verified; Phase 7 owner-approved on the projector. Next: /gsd:new-milestone"
-last_updated: "2026-06-19T22:03:09.334Z"
-last_activity: 2026-06-19
-last_activity_desc: "07-02: owner projector sign-off recorded; Phase 7 verification passed 4/4; milestone v1.0 complete"
+milestone: v3.0
+milestone_name: "Access Analysis: Hub Story & Scenario Explorer"
+status: defining_requirements
+current_phase: 8
+current_phase_name: Defining requirements (roadmap pending)
+stopped_at: "Milestone v3.0 started — questioning complete; targeted research selected; defining requirements. Phases begin at 8."
+last_updated: "2026-06-22"
+last_activity: 2026-06-22
+last_activity_desc: "v3.0 started: questioning complete (additive/descriptive/scenario-pair scope locked); targeted research in flight; requirements next"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 30
-  completed_plans: 33
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-06-19)
+See: .planning/PROJECT.md (updated 2026-06-22)
 
-**Core value:** When these 4 pages are presented in a workshop, the data makes people lean in — fast, tactile, visually premium, and explorable live.
-**Current focus:** Milestone v2.0 SHIPPED + archived (tag `v2.0`). Planning next milestone — run `/gsd:new-milestone`.
+**Core value:** A stakeholder can read the situation of the hub at `/access-analysis` as a guided story, then pivot the extracted data across any dimension pair live — fast, clickable, and factually honest.
+**Current focus:** Milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) — defining requirements; targeted research in flight. Roadmap pending.
 
 ## Current Position
 
-Phase: 7 of 7 (Pre-Workshop UAT) — COMPLETE
-Plan: 2 of 2 in phase (both plans executed; owner projector checkpoint resolved)
-Status: Milestone v2.0 SHIPPED + archived (tag `v2.0`, local) — Phase 7 verification passed 4/4; owner recorded "approved on the projector" 2026-06-19
-Last activity: 2026-06-19 — 07-02: owner projector sign-off (ALL-GREEN engineering report + every BLOCK cleared); Phase 7 verified
+Phase: Not started (defining requirements) — phases begin at 8
+Plan: —
+Status: Defining requirements
+Last activity: 2026-06-22 — Milestone v3.0 started (questioning complete; targeted research selected)
 
-Progress: [██████████] 100%
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
