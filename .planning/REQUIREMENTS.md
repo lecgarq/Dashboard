@@ -93,18 +93,37 @@ Deferred to a future release (v3.1+). Tracked, not in this roadmap.
 
 ## Traceability
 
-Proposed mapping (finalized by the roadmapper). Each requirement maps to exactly one phase.
+Final mapping. Each requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01..04 | Phase 8 (DC Re-Extraction) | Pending |
-| PREP-01..03 | Phase 9 (Structural Prerequisites) | Pending |
-| HUB-01..04 | Phase 10 (Sectioned Hub Narrative) | Pending |
-| SCEN-01..06 | Phase 11 (Scenario Explorer) | Pending |
-| ACTD-01..04 | Phase 12 (Activity Depth) | Pending |
-| HYG-01 | Phase 12 (Activity Depth) | Pending |
-| FOLD-01..04 | Phase 13 (Folder Reach & Exposure) | Pending |
-| LINK-01 | Phase 14 (Interconnections) | Pending |
+| DATA-01 | Phase 8 (DC Re-Extraction) | Pending |
+| DATA-02 | Phase 8 (DC Re-Extraction) | Pending |
+| DATA-03 | Phase 8 (DC Re-Extraction) | Pending |
+| DATA-04 | Phase 8 (DC Re-Extraction) | Pending |
+| PREP-01 | Phase 9 (Structural Prerequisites) | Pending |
+| PREP-02 | Phase 9 (Structural Prerequisites) | Pending |
+| PREP-03 | Phase 9 (Structural Prerequisites) | Pending |
+| HUB-01 | Phase 10 (Sectioned Hub Narrative) | Pending |
+| HUB-02 | Phase 10 (Sectioned Hub Narrative) | Pending |
+| HUB-03 | Phase 10 (Sectioned Hub Narrative) | Pending |
+| HUB-04 | Phase 10 (Sectioned Hub Narrative) | Pending |
+| SCEN-01 | Phase 11 (Scenario Explorer Core) | Pending |
+| SCEN-02 | Phase 11 (Scenario Explorer Core) | Pending |
+| SCEN-03 | Phase 11 (Scenario Explorer Core) | Pending |
+| SCEN-04 | Phase 11 (Scenario Explorer Core) | Pending |
+| SCEN-05 | Phase 11 (Scenario Explorer Core) | Pending |
+| SCEN-06 | Phase 11 (Scenario Explorer Core) | Pending |
+| ACTD-01 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
+| ACTD-02 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
+| ACTD-03 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
+| ACTD-04 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
+| HYG-01 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
+| FOLD-01 | Phase 13 (Folder Reach & Exposure) | Pending |
+| FOLD-02 | Phase 13 (Folder Reach & Exposure) | Pending |
+| FOLD-03 | Phase 13 (Folder Reach & Exposure) | Pending |
+| FOLD-04 | Phase 13 (Folder Reach & Exposure) | Pending |
+| LINK-01 | Phase 14 (Interconnections — Sankey) | Pending |
 
 **Coverage:**
 - v1 requirements: 27 total
@@ -113,4 +132,4 @@ Proposed mapping (finalized by the roadmapper). Each requirement maps to exactly
 
 ---
 *Requirements defined: 2026-06-22*
-*Last updated: 2026-06-22 after initial v3.0 definition*
+*Last updated: 2026-06-22 — traceability finalized after roadmap write*

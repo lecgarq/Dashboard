@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: "Access Analysis: Hub Story & Scenario Explorer"
-status: defining_requirements
+status: ready-to-plan
 current_phase: 8
-current_phase_name: Defining requirements (roadmap pending)
-stopped_at: "Milestone v3.0 started — questioning complete; targeted research selected; defining requirements. Phases begin at 8."
+current_phase_name: DC Re-Extraction
+stopped_at: "Roadmap complete. Phase 8 (DC Re-Extraction) and Phase 9 (Structural Prerequisites) are parallel-safe first moves. Run /gsd-plan-phase 8 and /gsd-plan-phase 9."
 last_updated: "2026-06-22"
 last_activity: 2026-06-22
-last_activity_desc: "v3.0 started: questioning complete (additive/descriptive/scenario-pair scope locked); targeted research in flight; requirements next"
+last_activity_desc: "v3.0 roadmap written — 7 phases (8–14), 27 requirements mapped, 100% coverage. Ready to plan Phase 8."
 progress:
-  total_phases: 0
+  total_phases: 7
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -24,53 +24,43 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-22)
 
 **Core value:** A stakeholder can read the situation of the hub at `/access-analysis` as a guided story, then pivot the extracted data across any dimension pair live — fast, clickable, and factually honest.
-**Current focus:** Milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) — defining requirements; targeted research in flight. Roadmap pending.
+**Current focus:** Milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) — roadmap complete, ready to plan Phase 8.
 
 ## Current Position
 
-Phase: Not started (defining requirements) — phases begin at 8
+Phase: 8 — DC Re-Extraction (not yet started)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-06-22 — Milestone v3.0 started (questioning complete; targeted research selected)
+Status: Ready to plan
+Last activity: 2026-06-22 — Roadmap written (Phases 8–14, 27/27 requirements mapped)
 
 Progress: [░░░░░░░░░░] 0%
 
+**Execution order:** {8 ‖ 9} → 10 → 11 → {12 ‖ 13} → 14
+
+Phase 8 is the hard data gate for Phases 12–14. Do not proceed to those phases until Phase 8 verification passes (428 projects backfilled, zero Unmapped actions).
+
 ## Performance Metrics
 
-**Velocity:**
+**Velocity (v2.0 reference):**
 
-- Total plans completed: 6
+- Total plans completed: 30 (33 with gap-closure)
 - Phase 1 executed in 3 parallel waves (wall-clock ~16m end-to-end)
 
-**By Phase:**
+**By Phase (v2.0):**
 
 | Phase | Plans | Notes |
 |-------|-------|-------|
 | 01    | 6/6   | 3 waves, parallel executors; 48 tests, tsc 0 |
+| 02    | 6/6   | Zustand store + decomposition; 2015 baseline tests held |
+| 03    | 2/2   | DataTable primitive |
+| 04    | 4/4+3 | /users table + polish + gap-closure |
+| 05    | 5/5   | /access-analysis depth + cross-filter |
+| 06    | 5/5   | /template-mty + /forma-proposal polish |
+| 07    | 2/2   | Pre-workshop UAT; 38-test Playwright harness |
 
-**Recent Trend:**
-
-- Phase 1: 01-01..01-06 all complete; verification human_needed → approved
-- Trend: foundation primitives shipped
+**v3.0 velocity:** TBD — phases begin 2026-06-22
 
 *Updated after each plan completion*
-| Phase 02-users-decomposition P02 | 11 | 3 tasks | 6 files |
-| Phase 02 P03 | 372 | 3 tasks | 3 files |
-| Phase 02-users-decomposition P04 | 7 | 3 tasks | 4 files |
-| Phase 02-users-decomposition P05 | 420 | 3 tasks | 4 files |
-| Phase 03 P01 | 9min | 2 tasks | 3 files |
-| Phase 03-datatable-primitive P02 | 4min | 3 tasks | 2 files |
-| Phase 04-users-table-polish P02 | 2min | 2 tasks | 2 files |
-| Phase 04 P03 | 15min | 3 tasks | 6 files |
-| Phase 04-users-table-polish P04 | 9min | 3 tasks | 7 files |
-| Phase 05 P02 | 8min | 3 tasks | 8 files |
-| Phase 05-access-analysis-depth P03 | 2min | 2 tasks | 4 files |
-| Phase 05 P04 | 20min | 4 tasks | 7 files |
-| Phase 05 P05 | continuation | 3 tasks | 7 files |
-| Phase 06 P01 | 5min | 2 tasks | 4 files |
-| Phase 06 P04 | 4min | 2 tasks | 4 files |
-| Phase 06 P05 | 6min | 2 tasks | 4 files |
-| Phase 07-pre-workshop-uat P01 | 45min | 3 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -117,10 +107,22 @@ Recent decisions affecting current work:
 - [Phase ?]: Boundary diff gate checks Phase 7 commits only (HEAD~0..HEAD~2) not full branch vs origin/deploy
 - [Phase ?]: axe-core 4.10.0 CDN injection for WCAG AA contrast in Playwright — no new npm package, pinned to avoid supply drift
 - [Phase ?]: UAT gate wrapper exits 0 on BLOCKED (no server on :3100) — static-only mode valid intermediate state for CI/owner split between plans 07-01 and 07-02
+- [v3.0 Roadmap]: Phase 8 (DC Re-Extraction) and Phase 9 (Structural Prerequisites) are parallel-safe — no shared files, no data dependency.
+- [v3.0 Roadmap]: Phase 8 is a hard gate for Phases 12–14 (activity/folder/Sankey views are meaningless without current data).
+- [v3.0 Roadmap]: Phase 10 (Sectioned Hub Narrative) must precede Phases 11–14 so new panels land in correct section slots from day one.
+- [v3.0 Roadmap]: Phases 12 and 13 are parallel-safe (separate files; no shared state between activity-depth and folder-reach agents).
+- [v3.0 Roadmap]: Pivot aggregation is server-side only via scenarioActions.ts server action — NOT a new tRPC procedure.
+- [v3.0 Roadmap]: ECharts calendar/visualMap/treemap/chord/sankey arc colors are caller-owned and must be wired manually using ECHARTS_DARK/ECHARTS_LIGHT palette pattern.
+- [v3.0 Roadmap]: AccDcRole is permanently empty — role names must always come from AccRole via mergeRoleNames().
+- [v3.0 Roadmap]: All AccFolderPermission queries require GROUP BY + LIMIT at the query level (OOM prevention; v2.0 incident: 5M rows, 77s).
+- [v3.0 Roadmap]: ACTD-03 (hottest files) is conditional on AccActivityAccds row count > 0 after Phase 8; FOLD-04 (treemap) is conditional on AccFolder.totalSizeBytes IS NOT NULL after Phase 8.
 
 ### Pending Todos
 
 - [Phase 4/7 UAT] Verify `prefers-reduced-motion` at runtime via DevTools Rendering → "Emulate prefers-reduced-motion: reduce" once a page wires the motion facade. Code-level enforcement (`useSafeVariants`) is proven by 15/15 unit tests; only the live browser media-query path is unverified. (Carried forward from 01-VERIFICATION.md human_needed item, approved 2026-06-17.)
+- [v3.0 Phase 8] Run `SELECT COUNT(*) FROM "AccActivityAccds"` after re-extraction to gate ACTD-03 (hottest files panel)
+- [v3.0 Phase 8] Run `SELECT COUNT(*) FILTER (WHERE "totalSizeBytes" IS NOT NULL) FROM "AccFolder"` after Phase 8 to gate FOLD-04 (storage treemap)
+- [v3.0 Phase 12] Run `SELECT COUNT(*) FILTER (WHERE "userEmail" IS NULL), COUNT(*) FROM "AccActivity"` to verify exact attribution-gap percentage for ACTD-04
 
 ### Blockers/Concerns
 
@@ -129,6 +131,11 @@ Recent decisions affecting current work:
 - [Constraint] New analytics strictly derivable from the existing Prisma DB; `AccActivity` covers only 428/1,152 projects — label under-covered sources in the UI.
 - [Boundary] `/users/spatial-graph` is strictly out of scope; verify `git diff --name-only` touches zero files under `users/access-analysis/`.
 - [Toolchain] Per-phase research uses `.tools/repo-map/` (`npm run repo-map` then consult dep graph / ast-grep reports; `repo-map:check` ratchets against re-introduced fetches/effects).
+- [v3.0 Risk] AccFolderPermission OOM: any pivot or folder query without GROUP BY + LIMIT will OOM (v2.0 incident: 5M rows). Enforce at query level, not as a backstop.
+- [v3.0 Risk] APS refresh-token rotation: single-use tokens must be persisted atomically to DB on every rotation or the live dashboard login breaks. Recovery: `node scripts/aps-login.cjs`.
+- [v3.0 Risk] Sankey/chord cardinality: ACC has 77 roles, 428 projects, ~3,367 users. Server-side caps mandatory: ≤50 nodes / ≤200 links for Sankey; enforce with adversarial unit test.
+- [v3.0 Risk] Coverage-honesty omissions: every activity-derived panel must show "428 of 1,152 projects" inline (not in a tooltip); verify with `rg -i "risk|danger|critical|exposed|suspicious"` after each phase.
+- [v3.0 VERIFY] `ChordSeriesOption` export from `echarts` at runtime — deferred to v3.1 (C6); verify before planning chord series.
 
 ## Deferred Items
 
@@ -136,13 +143,16 @@ Items acknowledged and carried forward:
 
 | Category | Item | Status | Deferred At |
 |----------|------|--------|-------------|
-| Forma Proposal | FRM-V2-01 role-permission diff view (needs new `template.getBaseline(roleId)` query) | Deferred to v2 | 2026-06-17 |
-| Access Analysis | ACC-V2-01 project-grouped persistent accordion in picker | Deferred to v2 | 2026-06-17 |
-| Analytics | NA-V2-01 additional new analytics beyond the gated per-page set | Deferred to v2 | 2026-06-17 |
-| /users freshness | /users data requires manual browser refresh to show latest data — pre-existing refetchOnWindowFocus:false + staleTime in lib/core/providers.tsx; confirmed NOT a Phase 2 regression | Deferred to Phase 4 | 2026-06-18 |
+| Forma Proposal | FRM-V2-01 role-permission diff view (needs new `template.getBaseline(roleId)` query) | Deferred to v3.1+ | 2026-06-17 |
+| Access Analysis | ACC-V2-01 project-grouped persistent accordion in picker | Deferred to v3.1+ | 2026-06-17 |
+| Analytics | NA-V2-01 additional new analytics beyond the gated per-page set | Deferred to v3.1+ | 2026-06-17 |
+| /users freshness | /users data requires manual browser refresh to show latest data — pre-existing refetchOnWindowFocus:false + staleTime in lib/core/providers.tsx | Deferred to v3.1+ | 2026-06-18 |
+| Interconnections | LINK-V2-01 Chord/co-occurrence matrix — high complexity; needs ChordSeriesOption API verification | Deferred to v3.1 | 2026-06-22 |
+| Scenario Explorer | SCEN-V2-01 User-persisted custom presets + export/download | Deferred to v3.1 | 2026-06-22 |
+| Scenario Explorer | SCEN-V2-02 Date-range filter UI on the explorer | Deferred to v3.1 | 2026-06-22 |
 
 ## Session Continuity
 
-Last session: 2026-06-19 — milestone v2.0 archived (tag `v2.0`, local)
-Stopped at: Milestone v2.0 SHIPPED + archived (all 7 phases verified; owner approved on the projector). Next: /gsd:new-milestone
-Resume file: .planning/MILESTONES.md
+Last session: 2026-06-22 — v3.0 roadmap written (Phases 8–14)
+Stopped at: Roadmap complete — 7 phases, 27 requirements mapped, 100% coverage. Phase 8 and Phase 9 are parallel-safe first moves.
+Resume file: .planning/ROADMAP.md (Phase 8 and Phase 9 detail sections)
