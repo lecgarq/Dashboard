@@ -37,7 +37,7 @@ Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned hub
 **Execution order:** {8 ‖ 9} → 10 → 11 → {12 ‖ 13} → 14
 **Parallelization:** Phase 8 and Phase 9 are parallel-safe (no shared files). Phases 12 and 13 are parallel-safe after Phase 11. Phase 8 is a hard data gate for Phases 12–14.
 
-- [ ] **Phase 8: DC Re-Extraction** - Re-extract all-time activity data for all 428 admin-accessible projects (hard data gate)
+- [ ] **Phase 8: Activity Re-Extraction (free ACCDS crawler)** - Bring activity current via the free, no-quota ACC web-session crawler for all admin-accessible projects (hard data gate)
 - [ ] **Phase 9: Structural Prerequisites** - Migrate moduleOverrides to lib/acc, add coverage atom and distinct-user helper
 - [ ] **Phase 10: Sectioned Hub Narrative** - Sticky section nav, SectionBlock wrappers, hub-wide coverage header
 - [ ] **Phase 11: Scenario Explorer Core** - Measure × dimension pivot engine, auto chart-type, 7 named presets, DrillSheet
@@ -47,17 +47,18 @@ Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned hub
 
 ## Phase Details
 
-### Phase 8: DC Re-Extraction
-**Goal**: All 428 admin-accessible projects have current all-time activity data before any data-dependent view is built
+### Phase 8: Activity Re-Extraction (free ACCDS web-session crawler)
+**Goal**: All admin-accessible projects have current activity data (through today) before any data-dependent view is built — via the FREE, no-DC-quota ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`, session bootstrapped by `scripts/accds-login.cjs`). This is NOT the Data Connector API path; there is no ~25/day quota, no 403-bisect, and no APS refresh-token rotation. Auth is the logged-in ACC web session (`scratch/acc-session.json`, password-equivalent, gitignored).
 **Depends on**: Nothing (runs in parallel with Phase 9)
 **Requirements**: DATA-01, DATA-02, DATA-03, DATA-04
 **Success Criteria** (what must be TRUE):
-  1. A verification query shows `fully_backfilled = 428` rows with `earliestCovered <= 2019-01-02` in `AccDcBackfillProgress`
-  2. The extraction script completes across multiple daily quota windows without manual restart (DC_403_BISECT=1 handles forbidden batches; resume flag handles interruptions)
-  3. The live dashboard login remains functional throughout and after extraction (APS refresh token persisted atomically on every rotation)
-  4. `node scripts/diag-activity-types.cjs` reports zero Unmapped action types against the refreshed data
+  1. `scripts/accds-activity-ingest.cjs` has crawled every admin-accessible project (the distinct `AccActivity.projectId` set, ≈428) with `ACCDS_MONTHS_BACK` set wide enough to cover the needed history through today; `AccActivityAccds` holds rows for the full admin project set. (VERIFY at plan time whether ACCDS exposes full history or caps the trailing window.)
+  2. The crawl completes with NO DC quota (session-cookie auth) and resumes the un-crawled remainder via `ACCDS_RESUME=1`; a `SessionExpiredError` is recovered by re-running `scripts/accds-login.cjs`.
+  3. `node scripts/diag-accds-recency.cjs` confirms the latest `AccActivityAccds.createdAt` is current (≈ today) across the admin project set.
+  4. `node scripts/verify-accds-merge.cjs` (and/or `diag-accds-vs-dc.cjs`) confirms the fresh ACCDS data reconciles with existing `AccActivity` coverage with no silent gaps.
 **Plans**: TBD
-**Verification gates**: `npx tsc --noEmit` = 0; stop Task Scheduler build before `npm run build`; `SELECT COUNT(DISTINCT "projectId") FROM "AccDcBackfillProgress" WHERE "earliestCovered" <= '2019-01-02'` = 428
+**Verification gates**: `npx tsc --noEmit` = 0; stop Task Scheduler build before `npm run build`; `SELECT COUNT(DISTINCT "projectId"), MAX("createdAt") FROM "AccActivityAccds"` shows the full admin project set current through today
+**Note**: A DC `AccActivity` refresh (the quota-bound CSV path) remains OPTIONAL and is only needed if the legacy DC-sourced panels must also be made current — decided at plan time, not assumed here.
 
 ---
 

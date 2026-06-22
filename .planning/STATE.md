@@ -4,8 +4,8 @@ milestone: v3.0
 milestone_name: "Access Analysis: Hub Story & Scenario Explorer"
 status: ready-to-plan
 current_phase: 8
-current_phase_name: DC Re-Extraction
-stopped_at: "Roadmap complete. Phase 8 (DC Re-Extraction) and Phase 9 (Structural Prerequisites) are parallel-safe first moves. Run /gsd-plan-phase 8 and /gsd-plan-phase 9."
+current_phase_name: Activity Re-Extraction (free ACCDS crawler)
+stopped_at: "Roadmap complete. Phase 8 (Activity Re-Extraction — FREE ACCDS web-session crawler, no DC quota) and Phase 9 (Structural Prerequisites) are parallel-safe first moves. Run /gsd:plan-phase 8 and /gsd:plan-phase 9."
 last_updated: "2026-06-22"
 last_activity: 2026-06-22
 last_activity_desc: "v3.0 roadmap written — 7 phases (8–14), 27 requirements mapped, 100% coverage. Ready to plan Phase 8."
@@ -112,6 +112,7 @@ Recent decisions affecting current work:
 - [v3.0 Roadmap]: Phase 10 (Sectioned Hub Narrative) must precede Phases 11–14 so new panels land in correct section slots from day one.
 - [v3.0 Roadmap]: Phases 12 and 13 are parallel-safe (separate files; no shared state between activity-depth and folder-reach agents).
 - [v3.0 Roadmap]: Pivot aggregation is server-side only via scenarioActions.ts server action — NOT a new tRPC procedure.
+- [v3.0 CORRECTION — owner]: Phase 8 uses the FREE ACCDS web-session crawler (scripts/accds-activity-ingest.cjs + scripts/accds-login.cjs → AccActivityAccds), NOT the DC quota path. Session-cookie auth (scratch/acc-session.json, gitignored); resume via ACCDS_RESUME=1; re-login on SessionExpiredError; no ~25/day quota, no DC_403_BISECT, no APS refresh-token rotation. DC AccActivity refresh is optional/secondary. OPEN (decide at Phase 11/12 plan): new activity views source AccActivityAccds (fresh, folder/object-level, trailing window) vs AccActivity (DC CSV, comprehensive, quota-bound) — a data-authority call.
 - [v3.0 Roadmap]: ECharts calendar/visualMap/treemap/chord/sankey arc colors are caller-owned and must be wired manually using ECHARTS_DARK/ECHARTS_LIGHT palette pattern.
 - [v3.0 Roadmap]: AccDcRole is permanently empty — role names must always come from AccRole via mergeRoleNames().
 - [v3.0 Roadmap]: All AccFolderPermission queries require GROUP BY + LIMIT at the query level (OOM prevention; v2.0 incident: 5M rows, 77s).

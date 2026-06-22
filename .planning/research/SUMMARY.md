@@ -124,6 +124,8 @@ Phases continue from v2.0 (phases 1–7 shipped). v3.0 phases are numbered 8–1
 
 ### Phase 8: DC Re-Extraction (Data Currency Gate)
 
+> **CORRECTION (2026-06-22, owner):** The refresh uses the FREE ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`, session bootstrapped by `scripts/accds-login.cjs` → `AccActivityAccds`), NOT the Data Connector API. There is NO ~25/day quota, no `DC_403_BISECT`, and no APS refresh-token rotation — auth is the logged-in ACC web session (`scratch/acc-session.json`, gitignored). The DC quota/token/403 runbook in this file and in ARCHITECTURE.md §C applies ONLY to the OPTIONAL secondary DC `AccActivity` refresh. The corrected source of truth is ROADMAP.md Phase 8 + REQUIREMENTS DATA-01..04.
+
 **Rationale:** Hard gate — all activity-dependent views are meaningless without current data. Runs in parallel with Phase 9 (no data dependency between them).
 
 **Delivers:** All 428 projects re-extracted all-time; `AccDcBackfillProgress.earliestCovered` ≤ 2019-01-02 for all 428; zero new Unmapped actions from `diag-activity-types.cjs`.

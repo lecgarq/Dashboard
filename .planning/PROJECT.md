@@ -13,7 +13,7 @@ When these pages are presented to all users in a workshop, the data makes people
 **Goal:** Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned story of "the situation of the hub" — powered by freshly re-extracted data and a flexible scenario explorer that pivots ACC data across any dimension pair (activity×folder, role×users, company×module…). **Additive** (every existing panel preserved), **descriptive** (no synthetic risk scores — the owner judges risk), **coverage-honest** (428/1,152 labeled), fast, and clickable.
 
 **Target features:**
-- All-time data re-extraction for the 428 admin-accessible projects (free-quota DC workaround) so the exercise is current — a dedicated first phase.
+- Activity re-extraction for all admin-accessible projects via the FREE ACCDS web-session crawler (`accds-activity-ingest.cjs`, no DC quota) so the exercise is current — a dedicated first phase.
 - Sectioned hub narrative: themed sections (Overview → People & Roles → Activity → Folders → Coordination → Interconnections) + sticky in-page nav + hub-wide default landing + honest coverage indicator.
 - Scenario explorer (centerpiece): a **measure × dimension (× dimension)** picker that auto-renders the right chart (bar/donut/tree/heatmap/sankey), clickable + drillable, **plus saved named presets** for the common pairs.
 - Activity depth: calendar heatmap, behavior-mix over time (view/upload/edit/delete), hottest files/models, attribution-quality honesty strip.
@@ -52,7 +52,7 @@ When these pages are presented to all users in a workshop, the data makes people
 
 Additive to the existing `/access-analysis`; descriptive (no synthetic risk scores); coverage-honest (428/1,152).
 
-- [ ] **Data currency** — re-extract all-time data for the 428 admin-accessible projects (free-quota DC workaround)
+- [ ] **Data currency** — re-extract activity current via the FREE ACCDS web-session crawler (no DC quota) for all admin-accessible projects
 - [ ] **Sectioned hub narrative** — themed sections + sticky nav + hub-wide default landing; preserves all 14 existing panels (extends **ACC-V2-01** grouped picker)
 - [ ] **Scenario explorer** — flexible measure×dimension(×dimension) pivot → auto chart type, clickable/drillable, + saved presets
 - [ ] **Activity depth** — calendar heatmap, behavior-mix over time, hottest files/models, attribution-quality honesty
@@ -110,7 +110,7 @@ When ideating new features or planning milestones, focus on these vectors:
 | v3.0 is **additive, not a rewrite** of `/access-analysis` | Owner: "do not destroy what we currently have… complete redefinement is [not] a better storytelling." Reorganize + extend the 14 existing panels | — Pending |
 | v3.0 analytics are **descriptive, not prescriptive** — no synthetic risk scores/severity grades | Owner: "i dont care about risk scores… i would make it myself." Dashboard states facts; human judges risk | — Pending |
 | A "scenario" = a **dimension pair**; build a flexible pivot explorer + saved presets, not bespoke fixed charts | Owner defined scenarios as Activity×Folder, Activity×Role, Role×Users, "so on so on" — combinatorial, so a generic engine + presets covers it | — Pending |
-| Re-extract the **428 admin-accessible** projects as a **dedicated first phase** (gated before data-dependent views) | Owner asked to refresh "till today" via the free-quota workaround; quota (~25 req/UTC-day) makes it multi-day, so it leads and verifies before activity/coverage views depend on it | — Pending |
+| Re-extract activity via the **free ACCDS web-session crawler** (no DC quota) as a **dedicated first phase**, gated before data-dependent views | Owner confirmed the refresh is free web-session scraping (`accds-activity-ingest.cjs`), NOT the quota-bound Data Connector; it's fast + free and writes `AccActivityAccds` (folder/object events that power the new Activity×Folder + hottest-files views). DC `AccActivity` refresh is optional/secondary | — Pending |
 
 ---
 *Last updated: 2026-06-22 — milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) started*
