@@ -52,7 +52,7 @@ Tracked but **not** in the v2.1 roadmap. v2.1 ships the characterization tests t
 
 ### Structural Refactors (deferred — behind v2.1 characterization tests)
 
-- **REF-01**: split `FolderPermissionTerrain.tsx` (1,041 lines), `folderTerrain.ts` (1,093), and `HybridAnalyticsSurface.tsx` (1,326) into data-hook / transform / thin-view modules. _(§2.3)_
+- **REF-01**: split `FolderPermissionTerrain.tsx` (1,041 lines), `folderTerrain.ts` (1,093), and `HybridAnalyticsSurface.tsx` (1,326 lines) into data-hook / transform / thin-view modules. _(§2.3)_
 - **REF-02**: extract `lib/server/folderPermQuery.ts` owning the base `AccFolderPermission` join; template + access-analysis import from it. _(§6.1)_
 - **REF-03**: materialise an `AccFolderPermissionSummary` view / indexed projection to retire the raw-scan path entirely. _(§1.1, long-term)_
 
@@ -75,36 +75,34 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 
 ## Traceability
 
-Populated during roadmap creation (Phase 09+).
-
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | TBD | Pending |
-| DB-02 | TBD | Pending |
-| DB-03 | TBD | Pending |
-| DB-04 | TBD | Pending |
-| BND-01 | TBD | Pending |
-| BND-02 | TBD | Pending |
-| BND-03 | TBD | Pending |
-| BND-04 | TBD | Pending |
-| TRUTH-01 | TBD | Pending |
-| TRUTH-02 | TBD | Pending |
-| TRUTH-03 | TBD | Pending |
-| TRUTH-04 | TBD | Pending |
-| OBS-01 | TBD | Pending |
-| OBS-02 | TBD | Pending |
-| OBS-03 | TBD | Pending |
-| TYPE-01 | TBD | Pending |
-| TYPE-02 | TBD | Pending |
-| TEST-01 | TBD | Pending |
-| TEST-02 | TBD | Pending |
-| TEST-03 | TBD | Pending |
+| DB-01 | Phase 09 | Pending |
+| DB-02 | Phase 09 | Pending |
+| DB-03 | Phase 09 | Pending |
+| DB-04 | Phase 09 | Pending |
+| TEST-01 | Phase 09 | Pending |
+| BND-01 | Phase 10 | Pending |
+| BND-02 | Phase 10 | Pending |
+| BND-03 | Phase 10 | Pending |
+| BND-04 | Phase 10 | Pending |
+| TRUTH-01 | Phase 11 | Pending |
+| TRUTH-02 | Phase 11 | Pending |
+| TRUTH-03 | Phase 11 | Pending |
+| TRUTH-04 | Phase 11 | Pending |
+| OBS-01 | Phase 12 | Pending |
+| OBS-02 | Phase 12 | Pending |
+| OBS-03 | Phase 12 | Pending |
+| TYPE-01 | Phase 13 | Pending |
+| TYPE-02 | Phase 13 | Pending |
+| TEST-02 | Phase 14 | Pending |
+| TEST-03 | Phase 14 | Pending |
 
 **Coverage:**
 - v2.1 requirements: 20 total
-- Mapped to phases: 0 (roadmapper to fill)
-- Unmapped: 20 ⚠️ (resolved at roadmap creation)
+- Mapped to phases: 20 / 20 ✓
+- Unmapped: 0 ✓
 
 ---
 *Requirements defined: 2026-06-23 for milestone v2.1 (Concerns Hardening)*
-*Last updated: 2026-06-23 after initial definition*
+*Last updated: 2026-06-23 — traceability filled after roadmap creation (Phases 09–14)*
