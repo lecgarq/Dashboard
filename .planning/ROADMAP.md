@@ -70,17 +70,24 @@ Plans:
 
 ### Phase 11: Data-Truthfulness Labels
 
-**Goal**: `/access-analysis` honestly labels its data coverage for the workshop — DC project count, ACCDS date floor, module-donut caveat, and role-fallback docs are all visible or recorded.
+**Goal**: `/access-analysis` honestly labels its data coverage for the workshop — activity/DC coverage, ACCDS date floor, module-donut caveat, and role-fallback docs are all visible or recorded.
 **Depends on**: Phase 09
 **Requirements**: TRUTH-01, TRUTH-02, TRUTH-03, TRUTH-04
 **Success Criteria** (what must be TRUE):
 
-  1. The `/access-analysis` data-freshness panel shows "Based on 428 of 1,152 projects with Data Connector access" (or equivalent phrasing drawn from a live DB count); DC-derived metrics carry a visible label
-  2. Activity-timeline charts display a "Data available from [date]" footnote sourced from a `dataFloor` field on the timeline API response (`MIN(createdAt)` from `AccActivityAccds`); the footnote respects the zinc theme and uses semantic CSS-variable colors
-  3. The module-activity donut on `/access-analysis` carries a footnote or tooltip stating that classification is `rawAction`-based and that Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement)
+  1. A restrained muted header line on `/access-analysis` leads with the free-crawl activity coverage (~956 of 1,153 projects, live DB count) and labels DC-metadata-derived metrics with their own (~550 of 1,153) coverage; coverage is metric-specific, not one blanket number (owner correction: the stale "428 of 1,152 DC" framing is rejected as the headline). The existing per-chart `ActivityCoverageBadge`s are kept; the "Folder Activity by Role" view shows project names or "Unknown project", never raw GUIDs.
+  2. Activity-timeline charts display a "Data available from [Mon YYYY]" caption sourced from a `dataFloor` field on the `loadActivityTimeline()` RSC response (`MIN(createdAt)` from `AccActivityAccds`, month-year only) plus a per-project floor in the hover tooltip; the caption respects the zinc theme and uses semantic CSS-variable colors
+  3. The module-activity donut on `/access-analysis` carries a hover/focus-only ⓘ tooltip (not an always-on caption) stating that classification is `rawAction`-based and that Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement)
   4. `.planning/codebase/INTEGRATIONS.md` documents the `AccDcRole`-empty → `AccRole` fallback and the DC-conflict behavior
 
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+
+- [ ] 11-01-PLAN.md — TRUTH-04: document the `AccDcRole`-empty → `AccRole` role-name fallback + DC-conflict behavior in INTEGRATIONS.md (pure doc, wave 1)
+- [ ] 11-02-PLAN.md — TRUTH-01 (folded-in GUID fix): merge `AccProject` names into `loadFolderActivityProjects`, "Unknown project" fallback, never a raw GUID; pure resolver unit-pinned (wave 1)
+- [ ] 11-03-PLAN.md — TRUTH-02: add `dataFloor`/`floorByProject` to the `loadActivityTimeline()` RSC + "Data available from [Mon YYYY]" caption + per-project hover floor; migrate both callers (wave 1)
+- [ ] 11-04-PLAN.md — TRUTH-01 + TRUTH-03: live coverage header line (activity ~956/1,153 leads, DC ~550) + module-donut ⓘ Radix tooltip caveat + aligned INTEGRATIONS.md service note (wave 2, depends on 11-03)
+
 **UI hint**: yes
 
 ### Phase 12: Integration Health & Observability
@@ -131,7 +138,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 |-------|----------------|--------|-----------|
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
-| 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
+| 11. Data-Truthfulness Labels | 0/4 | Planned | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
 | 14. Characterization Tests | 0/TBD | Not started | - |
