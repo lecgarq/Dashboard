@@ -18,7 +18,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 ### Layering & Boundary Fixes (BND)
 
 - [ ] **BND-01**: the `app/(dashboard)/access-analysis/coordinationActions.ts` Server Action no longer imports `@/server/db` directly; the clash query runs through a tRPC procedure (`acc-members` or a new `acc-coordination`), and `ast-grep` rule `direct-prisma-in-ui` returns 0 matches. _(§2.1)_
-- [ ] **BND-02**: pure classification logic (`classifyActivity`, `donutModules`, `CATEGORY_LABELS`, `n()`) lives in `lib/acc/activityClassification.ts`, re-exported by `moduleOverrides.ts`; the four `scripts/diag-activity-*.cjs` import from `lib/` (the 4 `moduleOverrides` scripts→app dependency-cruiser warnings are cleared). _(§2.2)_
+- [x] **BND-02**: pure classification logic (`classifyActivity`, `donutModules`, `CATEGORY_LABELS`, `n()`) lives in `lib/acc/activityClassification.ts`, re-exported by `moduleOverrides.ts`; the four `scripts/diag-activity-*.cjs` import from `lib/` (the 4 `moduleOverrides` scripts→app dependency-cruiser warnings are cleared). _(§2.2)_
 - [ ] **BND-03**: `lib→app` reverse-dependency edges are enumerated via `node scripts/repo-map/check.cjs`, and every edge **not** rooted in `/users/spatial-graph` is eliminated; spatial-graph-coupled edges are documented as deferred. _(§7.1)_
 - [ ] **BND-04**: the `app→server` edges are audited; any import from a client component (not a Server Component/Action) is corrected, and the acceptable server-component edges are documented. _(§7.2)_
 
@@ -83,7 +83,7 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | DB-04 | Phase 09 | Complete (2026-06-23) |
 | TEST-01 | Phase 09 | Complete (2026-06-23) |
 | BND-01 | Phase 10 | Pending |
-| BND-02 | Phase 10 | Pending |
+| BND-02 | Phase 10 | Complete |
 | BND-03 | Phase 10 | Pending |
 | BND-04 | Phase 10 | Pending |
 | TRUTH-01 | Phase 11 | Pending |
@@ -99,6 +99,7 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | TEST-03 | Phase 14 | Pending |
 
 **Coverage:**
+
 - v2.1 requirements: 20 total
 - Mapped to phases: 20 / 20 ✓
 - Unmapped: 0 ✓

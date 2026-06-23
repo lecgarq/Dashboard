@@ -33,7 +33,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 - **Status:** Phase 10 Wave 1 complete — ready for Wave 2 (10-03)
 - **Last activity:** 2026-06-23 — Plan 10-02 (BND-02) complete: activityClassification.ts moved to lib/acc/, moduleOverrides.ts is pure re-export barrel, 4 diag scripts repointed, repo-map no-scripts-to-app 6->2, tsc clean, vitest 11/11. Commits 226b9bbf + 2b838711.
 
-Progress: [█░░░░░░░░░] 17% (1 of 6 phases)
+Progress: [██████░░░░] 60% (3 of 5 plans in phase 10; 1 of 6 phases complete)
 
 ## Status (data baseline — still current)
 
