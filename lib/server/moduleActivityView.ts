@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
-import type { ModuleActivityRow } from "@/app/(dashboard)/access-analysis/moduleCounts";
+import type { ModuleActivityRow } from "@/lib/acc/moduleCountsTypes";
 
 interface RawRow {
   projectId: string;

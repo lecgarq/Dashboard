@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
-import type { ActivityTimelineRow } from "@/app/(dashboard)/access-analysis/timelineCounts";
+import type { ActivityTimelineRow } from "@/lib/acc/timelineCounts";
 
 /** Label for the synthetic project that holds account-level (admin) activity. */
 const ACCOUNT_LEVEL = "Account-level";

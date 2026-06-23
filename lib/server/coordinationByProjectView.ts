@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
-import type { CoordinationRow } from "@/app/(dashboard)/access-analysis/coordinationCounts";
+import type { CoordinationRow } from "@/lib/acc/coordinationCounts";
 
 export interface CoordinationByProjectData {
   rows: CoordinationRow[]; // per-(project, status) validated-coordination counts

@@ -19,12 +19,8 @@ const DONUT_MODULES = donutModules();
 const LABEL_BY_ID = new Map<string, string>(DONUT_MODULES.map((m) => [m.id, m.label]));
 
 /** One shipped row: total activity for a (project, rawAction) pair. */
-export interface ModuleActivityRow {
-  projectId: string;
-  projectName: string;
-  rawAction: string;
-  count: number;
-}
+export type { ModuleActivityRow } from "@/lib/acc/moduleCountsTypes";
+import type { ModuleActivityRow } from "@/lib/acc/moduleCountsTypes";
 
 /** A single activity type within a module (for the drill-down + tooltip). */
 export interface ActivityType {
