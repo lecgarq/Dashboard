@@ -105,7 +105,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 09. DB & Config Hardening | 2/2 | Complete | Both plans complete 2026-06-23 (DB-01/02/03/04/TEST-01) |
+| 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
 | 10. Layering & Boundary Fixes | 0/TBD | Not started | - |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
