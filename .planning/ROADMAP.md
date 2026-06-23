@@ -54,7 +54,11 @@ Plans:
   2. `scripts/diag-activity-*.cjs` (all four) import classification logic from `lib/acc/activityClassification.ts`; `node scripts/repo-map/check.cjs` shows 0 `scripts→app` warnings for the `moduleOverrides` path
   3. All `lib→app` reverse-dependency edges NOT rooted in `/users/spatial-graph` are removed; `node scripts/repo-map/check.cjs` output lists only spatial-graph-coupled edges as deferred
   4. All `app→server` direct imports from client components (not Server Components/Actions) are corrected; acceptable server-component edges are documented in a comment or CONCERNS note
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 10-01-PLAN.md — BND-01: move clash drill query to `lib/server/projectClashView.ts` + new `acc-coordination` tRPC procedure + thin Server Action; `direct-prisma-in-ui` → 0 (wave 1)
+- [ ] 10-02-PLAN.md — BND-02: extract classifier to `lib/acc/activityClassification.ts`, re-export from `moduleOverrides.ts`, repoint 4 diag scripts; clears 4 `scripts→app` warnings (wave 1)
+- [ ] 10-03-PLAN.md — BND-03/BND-04: move 3 clean type modules to `lib/acc`, audit + document deferred `lib→app` (spatial-graph + Phase-14 monolith) and `app→server` edges in CONCERNS.md; full gate sequence + rebuild checkpoint (wave 2, depends on 10-01/10-02)
 
 ### Phase 11: Data-Truthfulness Labels
 **Goal**: `/access-analysis` honestly labels its data coverage for the workshop — DC project count, ACCDS date floor, module-donut caveat, and role-fallback docs are all visible or recorded.
@@ -106,7 +110,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
-| 10. Layering & Boundary Fixes | 0/TBD | Not started | - |
+| 10. Layering & Boundary Fixes | 0/3 | Not started | - |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
