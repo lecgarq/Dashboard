@@ -31,75 +31,95 @@ this milestone ships their characterization tests and warning comments.
 ## Phase Details
 
 ### Phase 09: DB & Config Hardening
+
 **Goal**: The DB schema is correctly indexed, the SSL fossil is removed, heap/pool configuration is documented in the repo, the OOM-risk path carries a warning, and the AccFolderPermission aggregate has a Vitest regression guard.
 **Depends on**: Phase 08 (data extraction complete)
 **Requirements**: DB-01, DB-02, DB-03, DB-04, TEST-01
 **Success Criteria** (what must be TRUE):
+
   1. A standalone `@@index([roleId])` is added to `AccFolderPermission` and applied via a raw `CREATE INDEX acc_folder_permission_role_id_idx` migration registered with `prisma migrate resolve` (NOT `prisma migrate dev` — the pgvector `Unsupported` column makes `migrate dev` choke); `EXPLAIN ANALYZE` on a role-joined terrain query shows "Index Scan using acc_folder_permission_role_id_idx" in the plan
   2. `scripts/count-acc-data.cjs` no longer contains `ssl:` or `rejectUnauthorized`; it uses the project Prisma client or `DATABASE_URL` pool
   3. `.env.example` contains `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining the scaling rationale
   4. `lib/server/acc-hot-cache.ts` `includePermissionContexts:true` branch carries a warning comment about ~5M-row heap risk and a `VERIFY:` note on active callers
   5. `npm test` includes a Vitest test that mocks or exercises the `AccFolderPermission` `GROUP BY` aggregate and asserts returned rows ≤ `n_roles × n_projects` (not raw permission rows), guarding the dominant OOM regression
+
 **Plans**: 2 plans
 Plans:
+
 - [x] 09-01-PLAN.md — DB-free code/doc/test changes: remove SSL fossil (DB-02), document PG_POOL_MAX/NODE_OPTIONS (DB-03), raw-scan warning comment (DB-04), OOM aggregate regression test (TEST-01) — COMPLETE 2026-06-23 (commits 66c9f404..64311fac)
 - [x] 09-02-PLAN.md — Live-DB index: add `@@index([roleId])` + raw CREATE INDEX migration + `prisma migrate resolve`, EXPLAIN ANALYZE Index-Scan proof, tsc gate + rebuild on :3000 (DB-01) — COMPLETE 2026-06-23 (commit 8d517adb)
 
 ### Phase 10: Layering & Boundary Fixes
+
 **Goal**: The `direct-prisma-in-ui` ast-grep rule returns 0 matches, the four scripts→app `moduleOverrides` dependency-cruiser warnings are cleared, and non-spatial-graph `lib→app` and client `app→server` violations are eliminated.
 **Depends on**: Phase 09
 **Requirements**: BND-01, BND-02, BND-03, BND-04
 **Success Criteria** (what must be TRUE):
+
   1. `ast-grep` rule `direct-prisma-in-ui` returns 0 matches — `coordinationActions.ts` no longer imports `@/server/db` directly; the clash query runs through a tRPC procedure
   2. `scripts/diag-activity-*.cjs` (all four) import classification logic from `lib/acc/activityClassification.ts`; `node scripts/repo-map/check.cjs` shows 0 `scripts→app` warnings for the `moduleOverrides` path
   3. All `lib→app` reverse-dependency edges NOT rooted in `/users/spatial-graph` are removed; `node scripts/repo-map/check.cjs` output lists only spatial-graph-coupled edges as deferred
   4. All `app→server` direct imports from client components (not Server Components/Actions) are corrected; acceptable server-component edges are documented in a comment or CONCERNS note
-**Plans**: 3 plans
+
+**Plans**: 2/3 plans executed
 Plans:
-- [ ] 10-01-PLAN.md — BND-01: move clash drill query to `lib/server/projectClashView.ts` + new `acc-coordination` tRPC procedure + thin Server Action; `direct-prisma-in-ui` → 0 (wave 1)
-- [ ] 10-02-PLAN.md — BND-02: extract classifier to `lib/acc/activityClassification.ts`, re-export from `moduleOverrides.ts`, repoint 4 diag scripts; clears 4 `scripts→app` warnings (wave 1)
+
+- [x] 10-01-PLAN.md — BND-01: move clash drill query to `lib/server/projectClashView.ts` + new `acc-coordination` tRPC procedure + thin Server Action; `direct-prisma-in-ui` → 0 (wave 1) — COMPLETE 2026-06-23 (commits 4392637d + e400ef61)
+- [x] 10-02-PLAN.md — BND-02: extract classifier to `lib/acc/activityClassification.ts`, re-export from `moduleOverrides.ts`, repoint 4 diag scripts; clears 4 `scripts→app` warnings (wave 1) — COMPLETE 2026-06-23 (commits 226b9bbf + 2b838711)
 - [ ] 10-03-PLAN.md — BND-03/BND-04: move 3 clean type modules to `lib/acc`, audit + document deferred `lib→app` (spatial-graph + Phase-14 monolith) and `app→server` edges in CONCERNS.md; full gate sequence + rebuild checkpoint (wave 2, depends on 10-01/10-02)
 
 ### Phase 11: Data-Truthfulness Labels
+
 **Goal**: `/access-analysis` honestly labels its data coverage for the workshop — DC project count, ACCDS date floor, module-donut caveat, and role-fallback docs are all visible or recorded.
 **Depends on**: Phase 09
 **Requirements**: TRUTH-01, TRUTH-02, TRUTH-03, TRUTH-04
 **Success Criteria** (what must be TRUE):
+
   1. The `/access-analysis` data-freshness panel shows "Based on 428 of 1,152 projects with Data Connector access" (or equivalent phrasing drawn from a live DB count); DC-derived metrics carry a visible label
   2. Activity-timeline charts display a "Data available from [date]" footnote sourced from a `dataFloor` field on the timeline API response (`MIN(createdAt)` from `AccActivityAccds`); the footnote respects the zinc theme and uses semantic CSS-variable colors
   3. The module-activity donut on `/access-analysis` carries a footnote or tooltip stating that classification is `rawAction`-based and that Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement)
   4. `.planning/codebase/INTEGRATIONS.md` documents the `AccDcRole`-empty → `AccRole` fallback and the DC-conflict behavior
+
 **Plans**: TBD
 **UI hint**: yes
 
 ### Phase 12: Integration Health & Observability
+
 **Goal**: ACCDS session expiry is visible before crawl failures, `AccDcRole`-empty is a logged warning rather than a silent condition, and stale TODO[02.5] guards are removed.
 **Depends on**: Phase 11
 **Requirements**: OBS-01, OBS-02, OBS-03
 **Success Criteria** (what must be TRUE):
+
   1. `scripts/progress-monitor.cjs` outputs `[WARN] ACCDS session expires in <N> hours` (or "session expired") before the token-refresh path runs; the health status is visible in the progress monitor web app on `localhost:4321`
   2. `lib/server/acc-hot-cache.ts` emits a `console.warn` (or equivalent structured log) when `AccDcRole` is still empty after a cache refresh, making a silent `AccRole`-sync failure observable in the server log
   3. `lib/acc/acc-admin.ts` no longer contains the two `TODO[02.5]` defensive-logging guards at lines 51 and 207; field names are confirmed against the live schema before removal
+
 **Plans**: TBD
 
 ### Phase 13: Type-Safety Guards
+
 **Goal**: `bulkUsers` lean-payload consumers cannot silently expect populated roles/modules arrays, and the `accGraphFilters` union types cannot drift without a compile-time failure.
 **Depends on**: Phase 10
 **Requirements**: TYPE-01, TYPE-02
 **Success Criteria** (what must be TRUE):
+
   1. The `bulkUsers` return type in `server/routers/acc-members.ts` marks `roles` and `modules` as `never[]` (or equivalent) with an explicit "lean payload — always empty" comment; `npx tsc --noEmit` passes
   2. `app/(dashboard)/users/accGraphFilters.ts` contains a `satisfies` or `AssertExtends` compile-time assert that fails if the two filter union types drift; `npx tsc --noEmit` confirms the assert compiles
+
 **Plans**: TBD
 
 ### Phase 14: Characterization Tests
+
 **Goal**: The access-analysis monoliths and the shared terrain query have pinning tests that make the deferred splits safe; the monolith files carry split-pending warning comments.
 **Depends on**: Phase 10
 **Requirements**: TEST-02, TEST-03
 **Success Criteria** (what must be TRUE):
+
   1. Vitest characterization tests exist for the tRPC-boundary outputs and pure transforms of `FolderPermissionTerrain.tsx`, `folderTerrain.ts`, and/or `HybridAnalyticsSurface.tsx`; the tests cover at least the primary transform entry points and assert stable output shapes
   2. Each of the three monolith files (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`, `HybridAnalyticsSurface.tsx`) carries a `// SPLIT-PENDING:` warning comment at the top referencing REF-01
   3. A characterization test pins the shared `AccFolderPermission` terrain query output (the join pattern used by both `/template-mty` and `/access-analysis`); the test asserts stable column count and row-bound; the test file references REF-02 as the deferred extraction target
   4. `npm test` passes with all new characterization tests included
+
 **Plans**: TBD
 
 ## Progress
@@ -110,7 +130,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
-| 10. Layering & Boundary Fixes | 0/3 | Not started | - |
+| 10. Layering & Boundary Fixes | 1/3 | In Progress|  |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
