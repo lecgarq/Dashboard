@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 status: in_progress
-last_updated: "2026-06-23T22:02:11.328Z"
-last_activity: "2026-06-23 — Phase 09 (DB & Config Hardening) COMPLETE + verified 5/5 must-haves; advancing to Phase 10. DB-01 index live + EXPLAIN-proven, SSL fossil removed, heap/pool env documented, raw-scan guardrail added, OOM-regression test pinned."
+last_updated: "2026-06-23T22:20:42.000Z"
+last_activity: "2026-06-23 — Phase 10 (Layering & Boundary Fixes) context captured (10-CONTEXT.md, commit 20789a30). Decisions: BND-01 → new acc-coordination tRPC procedure + thin Server Action (Claude's discretion); BND-03/04 → Conservative, defer spatial-graph edges (user); test depth → light pin tests on moved code only (Claude's discretion). Ready to plan Phase 10."
 progress:
   total_phases: 6
   completed_phases: 1
@@ -25,9 +25,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 - **Milestone:** v2.1 — Concerns Hardening
 - **Phase:** 10 of 14 — Layering & Boundary Fixes (next, not yet planned)
-- **Plan:** — (Phase 09 complete: 2/2 plans)
-- **Status:** Phase 09 complete + verified (5/5 must-haves, 09-VERIFICATION.md status: passed); ready to plan Phase 10
-- **Last activity:** 2026-06-23 — Phase 09 executed + verified (DB-01 index live + Bitmap-Index-Scan proven, DB-02/03/04 + TEST-01 closed, :3000 rebuilt; commits 66c9f404..fe82b79a)
+- **Plan:** — (Phase 10 not yet planned; 10-CONTEXT.md captured)
+- **Status:** Phase 09 complete + verified; Phase 10 context gathered (10-CONTEXT.md, commit 20789a30) — ready to plan
+- **Last activity:** 2026-06-23 — Phase 10 context captured via /gsd:discuss-phase (3 gray areas resolved: BND-01 tRPC home, BND-03/04 deferral line, test depth)
 
 Progress: [█░░░░░░░░░] 17% (1 of 6 phases)
 
@@ -102,10 +102,15 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Phase 09 complete + verified. Run `/gsd:plan-phase 10` to plan Phase 10: Layering & Boundary Fixes
-(move direct-Prisma Server Action into tRPC, extract activity classification to `lib/acc`, eliminate
-non-spatial-graph lib→app and client app→server violations). Per ROADMAP.md, Phase 10 depends on Phase 09
-(now done). Phase 11 (TRUTH labels) is also independently unblocked (depends on 09 only).
+Phase 10 context captured (`.planning/phases/10-layering-boundary-fixes/10-CONTEXT.md`). Run
+`/gsd:plan-phase 10` to plan Phase 10: Layering & Boundary Fixes. Locked context for the planner:
+BND-01 → new `acc-coordination` tRPC procedure wrapping a `lib/server` helper + keep
+`coordinationActions.ts` as a thin Server Action (call site unchanged); BND-03/04 → Conservative
+(remove only non-spatial-graph edges, document the rest as deferred); test depth → light pin tests on
+the moved `classifyActivity`/`donutModules` + clash-query shape only (heavy characterization stays in
+Phase 14). Researcher VERIFY items: fresh `repo-map check` edge enumeration, `clash.ts` vs new router,
+`root.ts` composition, exact `moduleOverrides.ts` exports + the four `diag-activity` import lines.
+Phase 11 (TRUTH labels) remains independently unblocked (depends on 09 only).
 
 ---
 *Last updated: 2026-06-23 — Phase 09 complete + verified (5/5 must-haves passed; commits 66c9f404..fe82b79a). Note: `gsd-tools phase complete` mis-reported is_last_phase:true / total_phases:1 (known CLI bug); STATE frontmatter + body repaired manually to reflect 1 of 6 phases done.*
