@@ -35,12 +35,15 @@ this milestone ships their characterization tests and warning comments.
 **Depends on**: Phase 08 (data extraction complete)
 **Requirements**: DB-01, DB-02, DB-03, DB-04, TEST-01
 **Success Criteria** (what must be TRUE):
-  1. `prisma migrate dev` applies `@@index([roleId])` on `AccFolderPermission` without error; `EXPLAIN ANALYZE` on a role-joined terrain query shows "Index Scan using acc_folder_permission_role_id_idx" in the plan
+  1. A standalone `@@index([roleId])` is added to `AccFolderPermission` and applied via a raw `CREATE INDEX acc_folder_permission_role_id_idx` migration registered with `prisma migrate resolve` (NOT `prisma migrate dev` — the pgvector `Unsupported` column makes `migrate dev` choke); `EXPLAIN ANALYZE` on a role-joined terrain query shows "Index Scan using acc_folder_permission_role_id_idx" in the plan
   2. `scripts/count-acc-data.cjs` no longer contains `ssl:` or `rejectUnauthorized`; it uses the project Prisma client or `DATABASE_URL` pool
   3. `.env.example` contains `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining the scaling rationale
   4. `lib/server/acc-hot-cache.ts` `includePermissionContexts:true` branch carries a warning comment about ~5M-row heap risk and a `VERIFY:` note on active callers
   5. `npm test` includes a Vitest test that mocks or exercises the `AccFolderPermission` `GROUP BY` aggregate and asserts returned rows ≤ `n_roles × n_projects` (not raw permission rows), guarding the dominant OOM regression
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 09-01-PLAN.md — DB-free code/doc/test changes: remove SSL fossil (DB-02), document PG_POOL_MAX/NODE_OPTIONS (DB-03), raw-scan warning comment (DB-04), OOM aggregate regression test (TEST-01)
+- [ ] 09-02-PLAN.md — Live-DB index: add `@@index([roleId])` + raw CREATE INDEX migration + `prisma migrate resolve`, EXPLAIN ANALYZE Index-Scan proof, tsc gate + rebuild on :3000 (DB-01)
 
 ### Phase 10: Layering & Boundary Fixes
 **Goal**: The `direct-prisma-in-ui` ast-grep rule returns 0 matches, the four scripts→app `moduleOverrides` dependency-cruiser warnings are cleared, and non-spatial-graph `lib→app` and client `app→server` violations are eliminated.
@@ -102,7 +105,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 09. DB & Config Hardening | 0/TBD | Not started | - |
+| 09. DB & Config Hardening | 0/2 | Not started | - |
 | 10. Layering & Boundary Fixes | 0/TBD | Not started | - |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
