@@ -537,6 +537,7 @@ model AccFolderPermission {
 
   @@unique([folderId, roleId])
   @@index([folderId])
+  @@index([roleId])
 }
 
 model AccActivity {
