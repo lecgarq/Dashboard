@@ -1,146 +1,244 @@
 # Coding Conventions
 
-**Analysis Date:** 2026-06-19
+**Analysis Date:** 2026-06-23
 
-**Primary Sources:**
-- `tsconfig.json`
-- `eslint.config.mjs`
-- `vitest.config.ts`
-- Representative source files under `server/`, `app/`, `components/`, `lib/`, and `tests/`
-- `.tools/repo-map/ast-grep-report.json`
-- `.tools/repo-map/dependency-cruiser.json`
+## TypeScript & Next.js App Router Idioms
+
+**Server vs Client boundary:**
+- Page files (`page.tsx`) are async RSC by default. Mark `export const dynamic = "force-dynamic"` when server-side data must not be cached at the route level.
+- Interactive client components require `"use client"` as the first line.
+- Server actions (data mutations / heavy server reads triggered lazily) use `"use server"` as the first line. Examples: `app/(dashboard)/access-analysis/coordinationActions.ts`, `folderTerrainActions.ts`, `folderActivityActions.ts`.
+- Pure transform/compute modules (`roleCounts.ts`, `companyCounts.ts`, etc.) carry no directive — they are safe for both client and server imports.
+- The `EChart` wrapper (`app/(dashboard)/access-analysis/components/EChart.tsx`) is `"use client"` because `echarts-for-react` relies on the DOM.
+
+**RSC data loading pattern (`access-analysis`, `template-mty`):**
+```tsx
+// page.tsx — async RSC, no hooks, no state
+export default async function AccessAnalysisRoute() {
+  return (
+    <div className="h-full overflow-y-auto text-foreground">
+      <Suspense fallback={<...Skeleton />}>
+        <MainCharts />   {/* async RSC — fetches data */}
+      </Suspense>
+    </div>
+  );
+}
+
+// mainCharts.tsx — async RSC, parallel fetches
+export async function MainCharts() {
+  const [view, moduleRows, ...] = await Promise.all([
+    loadInstanceView(),
+    loadModuleActivity(),
+    ...
+  ]);
+  return <AccessAnalysisCharts {...props} />;  // client component, receives all data
+}
+```
+
+**`/users` prefetch pattern:**
+```tsx
+// page.tsx — server-side TanStack Query prefetch
+const helpers = await createAccRouteHelpers();
+await prefetchUsersRouteAccData(helpers);
+return (
+  <HydrationBoundary state={helpers.dehydrate()}>
+    <Suspense ...><UsersDirectoryClient /></Suspense>
+  </HydrationBoundary>
+);
+```
+
+**Import path aliases:**
+- Always use `@/` alias, not relative `../../../` for cross-zone imports.
+- Examples: `@/lib/server/accessInstanceView`, `@/components/ui/PremiumSurface`, `@/server/db`.
+- In-route relative imports (`./roleCounts`, `../types`) are acceptable within the same route subtree.
 
 ## Naming Patterns
 
 **Files:**
-- React component files use PascalCase when they export a visible component: `components/dashboard/MailPanel.tsx`, `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx`.
-- Pure helpers and feature transforms use camelCase: `graphNodesFromUsers.ts`, `moduleOverrides.ts`, `featureSnapshot.ts`.
-- Tests use `*.test.ts` or `*.test.tsx`; Playwright uses `*.spec.ts`.
-- Next route files use framework names: `page.tsx`, `layout.tsx`, `loading.tsx`, `route.ts`.
-- Scripts use `.cjs`, `.mjs`, `.ts`, or `.ps1` with descriptive kebab-case names.
+- Route pages: `page.tsx`, `loading.tsx` (Next.js conventions).
+- RSC data bridges co-located with the route: `mainCharts.tsx`, `templateTerrainActions.ts`.
+- Pure domain transforms: camelCase, descriptive noun — `roleCounts.ts`, `companyCounts.ts`, `moduleCounts.ts`, `folderTerrain.ts`.
+- Type contracts: `types.ts` per route or component directory.
+- Tests: `__tests__/` folder adjacent to the code, or co-located `*.test.ts(x)` (both patterns exist).
 
 **Functions:**
-- Use camelCase for functions and hooks.
-- React hooks use `use*`: `useEventSource`, `useMailNotifications`, `useGraphRafLoop`.
-- Event handlers commonly use `handle*` when local to a component.
-- tRPC procedures are grouped under domain routers rather than exported as standalone handler functions.
+- Named exports only — no default exports for logic modules.
+- Loaders follow `load*` convention: `loadInstanceView()`, `loadModuleActivity()`, `loadTemplateOverview()`.
+- Summarizers follow `summarize*`: `summarizeRoles()`, `summarizeFolders()`.
+- Builders follow `build*`: `buildUserRows()`.
 
-**Variables and Constants:**
-- Use camelCase for local variables.
-- Use UPPER_SNAKE_CASE for durable constants and env-like flags where appropriate: `NEXT_PUBLIC_ACC_GPU_2D`, `UNMAPPED_MODULE`.
-- Prefer typed constants for domain labels/catalogs instead of raw repeated strings.
+**Variables:**
+- camelCase throughout.
+- Boolean flags: `dark`, `isInternal`, `isAdmin`, `isPrimaryAdmin`.
+- Env vars read by name with `process.env.NAME`.
 
-**Types:**
-- Use PascalCase for interfaces and type aliases.
-- Export named domain types when they are consumed across modules.
-- Prefer `type` imports for type-only imports when practical.
-- Type augmentations live under `types/`, such as `types/next-auth.d.ts`.
+**Types & Interfaces:**
+- PascalCase. Interfaces preferred over `type` aliases for object shapes.
+- Prisma-generated types imported from `@prisma/client`. Do not redefine model shapes from scratch.
 
-## Code Style
+## Component/Boundary Rules
 
-**Formatting:**
-- There is no dedicated Prettier config detected in the fresh map.
-- Formatting is locally consistent but mixed across older files; match nearby file style when editing.
-- Most application TypeScript uses semicolons and double quotes; some config/setup files use single quotes.
-- Do not reformat unrelated files as part of feature work.
+**Components must NOT reach into Prisma or `server/db` directly.** Database access belongs in:
+1. `lib/server/` view functions (e.g., `lib/server/accessInstanceView.ts`)
+2. `server/routers/` tRPC procedures
+3. `"use server"` actions co-located in the route (lazy/on-demand only)
 
-**TypeScript:**
-- `tsconfig.json` has `strict: true`, `noEmit: true`, `moduleResolution: bundler`, and `jsx: react-jsx`.
-- `noImplicitAny` is currently `false`, so new code should still prefer explicit domain types where ambiguity matters.
-- Path alias: `@/*` maps to the repository root.
+`coordinationActions.ts` is the documented exception: it imports `{ db }` from `@/server/db` inside a `"use server"` file, not inside a client component.
 
-**Linting:**
-- `eslint.config.mjs` currently mainly ignores generated/build/cache directories.
-- `npm run lint` invokes `eslint`.
-- The stronger structural guard is `npm run repo-map:check`, which runs dependency-cruiser and ast-grep.
+**`components/` is Prisma-free.** `PremiumSurface`, `DrillSheet`, `EChart`, and all shadcn/Radix-derived primitives must import only from `react`, `@/lib/core/utils`, or other pure-UI packages.
 
-## Import Organization
+## Zinc Dark Theme & CSS Variable Tokens
 
-**Common Order:**
-1. External packages: React, Next, tRPC, Prisma, SDKs.
-2. Absolute internal imports through `@/`.
-3. Relative imports from the same feature/module.
-4. Type-only imports where appropriate.
+**Background color:** `#09090B` (zinc-950). Never `slate`, never hardcoded `#18181B` or other overrides without a token.
 
-**Path Aliases:**
-- Use `@/` for root-relative application imports.
-- Relative imports are common within feature directories.
+**Semantic token usage (Tailwind classes):**
+- `bg-background` / `bg-card` / `bg-muted` — surface layers
+- `text-foreground` / `text-muted-foreground` — primary / secondary text
+- `border-border` — all dividers
+- `text-primary` / `bg-primary` — accent color
+- CSS var direct usage: `var(--card)`, `var(--primary)`, `var(--border)`, `var(--ring)` in inline styles and `<style>` blocks.
 
-**Boundary Rules:**
-- `app/` may import from `components/`, `lib/`, and server-safe modules where Next permits.
-- `components/` should not import route-owned `app/`, Prisma, or DB helpers.
-- `server/` and `lib/server/` may import DB and external SDKs.
-- `scripts/` should avoid importing route-owned `app/(dashboard)/...` modules. The current repo-map has six baseline warnings here.
-- Reusable taxonomy/domain transforms should move toward `lib/acc/`, `lib/domain/`, or `lib/shared/`.
+**Never hardcode zinc hex values** in Tailwind classes or inline styles where a semantic token exists.
 
-## Error Handling
+**Page root scroll ownership:**
+Every dashboard page root owns its own vertical scroll:
+```tsx
+<div className="h-full overflow-y-auto text-foreground">
+  {/* content */}
+</div>
+```
+The `<main>` wrapper in the dashboard layout is `overflow-hidden`. Pages must NOT use `min-h-screen` or add their own `overflow-hidden` at the root.
 
-**Patterns:**
-- tRPC authorization uses `TRPCError` in `server/trpc.ts`.
-- DB config fails fast in `server/db.ts` if no database URL is present.
-- Scripts and UAT gate wrappers throw or exit with explicit command output.
-- Tests wrap shell failures with captured stdout/stderr when the failure context matters.
+**surface-card and surface-panel CSS classes** are utility classes from `globals.css` used on auth pages and some shells. On dashboard data pages, prefer `PremiumSurface` or semantic Tailwind tokens.
 
-**When to Throw:**
-- Missing required runtime configuration.
-- Unauthorized/forbidden procedure access.
-- Failed engineering gates or failed external command execution.
-- Invariant failures in pure transforms.
+## ECharts Theme Resolution
 
-**When to Return Structured Results:**
-- Domain transforms that classify or aggregate data should return typed objects.
-- Expected partial coverage, unknown categories, or unmapped actions should generally return explicit buckets rather than throwing.
+All ECharts components read `resolvedTheme` from `next-themes` before building the chart `option`:
 
-## Logging
+```tsx
+// Every chart component that needs theme-aware colors:
+import { useTheme } from "next-themes";
 
-**Framework:**
-- No centralized logging framework was detected.
-- Server/scripts primarily use console output.
-- `next.config.ts` removes `console.log` in production and preserves `console.error`/`console.warn`.
+export function ActivityTimelineChart({ summary }) {
+  const { resolvedTheme } = useTheme();
+  const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
 
-**Patterns:**
-- Use `console.warn` for known recoverable data-quality issues.
-- Use `console.error` for operational failures.
-- Avoid adding production `console.log`; ast-grep currently reports 123 `no-console-log` findings as a visible cleanup queue.
+  const cAxis = dark ? "#a1a1aa" : "#52525b";  // zinc-400 / zinc-600
+  // ...build option using cAxis, cTitle, etc.
+}
+```
+
+**Do not hardcode chart colors for a single theme.** Always derive from `resolvedTheme`. The `EChart` wrapper itself (`components/ui/EChart.tsx`) is theme-agnostic — callers build the option.
+
+**EChart wrapper signature:**
+```tsx
+<EChart
+  option={option}           // EChartsOption
+  height={280}              // pixels
+  onEvents={handlers}       // optional
+  notMerge={true}           // default; pass false to animate diffs
+/>
+```
+
+## UI Primitives
+
+**PremiumSurface** (`components/ui/PremiumSurface.tsx`) — RSC-safe card shell with 4 depth variants:
+- `variant="base"` — `.panel-elevated` (default, catch-light + layered shadow)
+- `variant="float"` — floating card with `--depth-float` shadow
+- `variant="glass"` — frosted surface via `--surface-2` and `backdrop-blur-md`
+- `variant="inset"` — recessed panel with inset shadow
+- Optional `glow` prop adds `--glow-primary` shadow for selected/accent state.
+- Do NOT stack card-inside-card (`PremiumSurface` inside `PremiumSurface`) without a clear visual need.
+
+**DrillSheet** (`components/ui/DrillSheet.tsx`) — shared right-slide ~480px drill panel for all four pages. Is an empty shell that takes arbitrary `children`. Wire `UserProfilePanel` or list content as children.
+
+**FilterBanner** (`app/(dashboard)/access-analysis/components/FilterBanner.tsx`) — cross-filter clarity bar showing active named filters + N-of-M project scope. Shows nothing when `filters={}`.
+
+## Motion Budget
+
+- `<=200ms` for drill interactions (transitions, slide-in panels).
+- Use `tw-animate-css` Tailwind classes (`animate-fadeIn`, `animate-fade-up`) for entry animations.
+- Respect `prefers-reduced-motion` — do not run motion unconditionally.
+- Keep motion short and purposeful; no decorative scroll or parallax on data surfaces.
+
+## Card Usage Rules
+
+- Use `PremiumSurface` or `surface-card` to frame repeated items, panels, dialogs, or genuinely grouped controls.
+- Do not stack card-inside-card (`PremiumSurface` inside `PremiumSurface` with identical backgrounds).
+- Data surfaces stay flat. Only `/users` header and `/forma-proposal` background use R3F/3D accents.
+
+## Error, Empty, and Under-Covered Data Handling
+
+**Empty state pattern (inline, with icon):**
+```tsx
+if (points.length === 0) {
+  return (
+    <div className="flex h-[360px] flex-col items-center justify-center gap-3 rounded-2xl border border-border bg-card text-sm text-muted-foreground">
+      <svg .../>
+      No activity found.
+      <span className="text-xs opacity-70">Select at least one project above.</span>
+    </div>
+  );
+}
+```
+
+**Under-covered data rule:** Label under-covered analytics sources honestly. Do not hide data gaps behind silent zeros. Examples: DC-only data without activity history, AccDcRole permanently empty (roles sourced from `AccRole`).
+
+**Loading/skeleton pattern:** Co-locate skeleton components in the same folder as the route and export named exports: `KpiStripSkeleton`, `DonutGridSkeleton`, `TimelineSkeleton` (`app/(dashboard)/access-analysis/components/DonutSkeletons.tsx`).
+
+## Prisma & Database Access Patterns
+
+**Single Prisma client** exported from `server/db.ts` as `{ db }`. Pool tuned via env vars:
+- `PG_POOL_MAX` (default: 5 prod / 10 dev)
+- `PG_IDLE_TIMEOUT_MS`
+- `PG_CONNECTION_TIMEOUT_MS`
+
+**Prefer Prisma ORM calls** (`findMany`, `groupBy`, `count`) for straightforward queries.
+
+**Use `$queryRaw` for GROUP BY aggregates** where the result set must be small (e.g., aggregating 623k+ `AccActivity` rows to ~21k). Returning raw rows from large tables into the Node process causes OOM. Example in `server/routers/acc-activity.ts`:
+```ts
+// Heavy GROUP BY → use $queryRaw, not findMany
+const rows = await ctx.db.$queryRaw`
+  SELECT email, COUNT(*)::int AS rows
+  FROM "AccActivity"
+  GROUP BY email
+`;
+```
+
+**Prisma `.groupBy()`** is used for moderate aggregations (`acc-folders.ts`):
+```ts
+await db.accProjectRole.groupBy({
+  by: ["projectId"],
+  _count: { roleId: true },
+  where: { projectId: { in: projectIds } },
+});
+```
 
 ## Comments
 
-**When to Comment:**
-- Explain domain decisions, invariants, and test gates.
-- Keep comments for non-obvious compatibility or performance workarounds.
-- Good examples exist in `tests/e2e/uat-workshop.spec.ts`, `next.config.ts`, `server/db.ts`, and domain mapping modules.
+**When to comment:**
+- Architectural decisions and tradeoffs (e.g., why `MainCharts` is a single Suspense boundary, why `coordinationActions.ts` imports `db` directly).
+- Gotchas and traps (e.g., lean-payload trap on `/users`, `next build` typechecking test files).
+- Non-obvious data authority (e.g., "AccDcRole is permanently empty — source from AccRole").
 
-**TODO Comments:**
-- ast-grep currently reports 5 `unsafe-todo` findings.
-- New TODOs should include enough context to be actionable and should not hide known blockers in source comments.
+**Format:** Block comment at top of module for module-level context. Inline `//` for local decisions.
 
-## Function Design
+**JSDoc:** Not enforced across the codebase. Use for exported utility functions in `lib/` that need parameter/return docs.
 
-**Preferred:**
-- Keep pure transforms small, exported, and unit-tested.
-- Use guard clauses and explicit return objects for complex domain mapping.
-- Put data-shaping helpers outside React components when the same logic feeds scripts, routers, or tests.
+## Import Organization
 
-**Watch Outs:**
-- Fresh repo-map reports 148 large `useEffect` matches. New side effects in large render modules should be treated carefully.
-- Large access-analysis modules combine rendering, graph math, state, and data transforms; extract pure helpers before changing behavior.
+**Order (observed pattern):**
+1. Framework imports: `react`, `next/*`
+2. Third-party packages: `echarts`, `@tanstack/*`, etc.
+3. Internal `@/` aliases: `@/lib/*`, `@/components/*`, `@/server/*`
+4. Route-relative imports: `./roleCounts`, `../types`
 
-## Module Design
-
-**Exports:**
-- Named exports are common for utilities, constants, routers, and testable helpers.
-- React route/page files follow Next.js export conventions.
-- Avoid broad barrel files if they blur server/client boundaries.
-
-**Tests:**
-- Collocate tests near source or use nearby `__tests__/` folders.
-- Use pure helper extraction to make route-heavy logic easier to test with Vitest.
-
-**Generated Artifacts:**
-- Do not hand-edit `.tools/repo-map/*`, `.next*`, `playwright-report/`, or `test-results/`.
-- Regenerate repo-map with `npm run repo-map:check`.
+Blank line between groups. No barrel `index.ts` re-exports observed in route-level code.
 
 ---
 
-*Convention analysis: 2026-06-19*
-*Update when formatting, linting, dependency-boundary, or module ownership rules change.*
+**Dashboard self-check:**
+- Context: SKILL.md, source files in `app/`, `components/ui/`, `server/db.ts`, `vitest.setup.ts`, direct file reads.
+- Evidence: all patterns verified from actual source files listed above.
+- Constraints: zinc theme, semantic tokens, no Prisma in components/, h-full overflow-y-auto page root.
+- VERIFY: none — all claims grounded in verified source.
