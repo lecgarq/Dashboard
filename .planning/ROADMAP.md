@@ -42,7 +42,7 @@ this milestone ships their characterization tests and warning comments.
   5. `npm test` includes a Vitest test that mocks or exercises the `AccFolderPermission` `GROUP BY` aggregate and asserts returned rows ≤ `n_roles × n_projects` (not raw permission rows), guarding the dominant OOM regression
 **Plans**: 2 plans
 Plans:
-- [ ] 09-01-PLAN.md — DB-free code/doc/test changes: remove SSL fossil (DB-02), document PG_POOL_MAX/NODE_OPTIONS (DB-03), raw-scan warning comment (DB-04), OOM aggregate regression test (TEST-01)
+- [x] 09-01-PLAN.md — DB-free code/doc/test changes: remove SSL fossil (DB-02), document PG_POOL_MAX/NODE_OPTIONS (DB-03), raw-scan warning comment (DB-04), OOM aggregate regression test (TEST-01) — COMPLETE 2026-06-23 (commits 66c9f404..64311fac)
 - [ ] 09-02-PLAN.md — Live-DB index: add `@@index([roleId])` + raw CREATE INDEX migration + `prisma migrate resolve`, EXPLAIN ANALYZE Index-Scan proof, tsc gate + rebuild on :3000 (DB-01)
 
 ### Phase 10: Layering & Boundary Fixes
@@ -105,7 +105,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 09. DB & Config Hardening | 0/2 | Not started | - |
+| 09. DB & Config Hardening | 1/2 | In progress | Plan 01 complete (DB-02/03/04/TEST-01) |
 | 10. Layering & Boundary Fixes | 0/TBD | Not started | - |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |

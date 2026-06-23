@@ -11,9 +11,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 - **Milestone:** v2.1 — Concerns Hardening
 - **Phase:** 09 of 14 — DB & Config Hardening (first phase)
-- **Plan:** —
-- **Status:** Phase 09 context gathered / ready to plan
-- **Last activity:** 2026-06-23 — Phase 09 CONTEXT.md captured (DB-01 apply-now+rebuild, TEST-01 DB-free unit test; commit f27ef2b8)
+- **Plan:** 01 COMPLETE / Plan 02 next (DB-01 index migration + rebuild)
+- **Status:** Plan 09-01 complete (DB-02/DB-03/DB-04/TEST-01 closed)
+- **Last activity:** 2026-06-23 — Plan 09-01 executed (SSL fossil removed, .env.example documented, raw-scan guardrail added, OOM regression test added; commits 66c9f404..64311fac)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -73,6 +73,9 @@ Recent decisions affecting current work:
 - Phase 09 starts with DB work + TEST-01 (OOM regression guard) together
 - Phase 11 (TRUTH labels) depends on Phase 09 only — independent of boundary fixes
 - Phases 13/14 depend on Phase 10 (boundary fixes first, then type guards + char tests)
+- Plan 09-01: .env.example committed via !.env.example gitignore exception (opt-in pattern, no secrets)
+- Plan 09-01: TEST-01 is a pinning test (OOM fix already shipped); passes immediately in GREEN (expected)
+- Plan 09-01: DB-04 guardrail is comment-only on includePermissionContexts branch; no behavior change
 
 ### Blockers/Concerns
 
@@ -83,8 +86,9 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Run `/gsd:plan-phase 09` to plan Phase 09 from the captured context
-(`.planning/phases/09-db-config-hardening/09-CONTEXT.md`).
+Execute Plan 09-02: DB-01 index migration — run raw `CREATE INDEX acc_folder_permission_role_id_idx`,
+prove with `EXPLAIN ANALYZE`, register with `prisma migrate resolve`, then rebuild `:3000`.
+Plan file: `.planning/phases/09-db-config-hardening/09-02-PLAN.md`
 
 ---
-*Last updated: 2026-06-23 — Phase 09 context gathered (resume: .planning/phases/09-db-config-hardening/09-CONTEXT.md)*
+*Last updated: 2026-06-23 — Plan 09-01 complete (DB-02/03/04/TEST-01 closed; commits 66c9f404..64311fac)*
