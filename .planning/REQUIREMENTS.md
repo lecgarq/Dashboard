@@ -1,135 +1,110 @@
-# Requirements: LECG Dashboard — v3.0 Access Analysis: Hub Story & Scenario Explorer
+# Requirements: LECG Dashboard — v2.1 Concerns Hardening
 
-**Defined:** 2026-06-22
-**Core Value:** A stakeholder can read the situation of the hub at `/access-analysis` as a guided story, then pivot the extracted data across any dimension pair live — fast, clickable, and factually honest.
+**Defined:** 2026-06-23
+**Core Value:** Truthful, fast analytics over the fully extracted ACC dataset — every metric derivable from the local Prisma DB and honest about coverage.
+**Source:** `.planning/codebase/CONCERNS.md` (8 sections, 22 mapped concerns). Every concern is dispositioned below as in-scope (REQ-ID), deferred (Future), or out-of-scope.
 
-**Milestone principles (apply to every requirement):**
-- **Additive** — no existing panel is removed or reshaped; v3.0 reorganizes + extends.
-- **Descriptive, not prescriptive** — no synthetic risk scores, severity grades, or verdict labels ("External access", not "Exposed"). The owner judges risk.
-- **Coverage-honest** — every activity-derived surface states "428 of 1,152 projects" in-line.
+## v2.1 Requirements
 
-## v1 Requirements
+In scope for this milestone. Each maps to a roadmap phase (numbering continues from Phase 09).
 
-### Data Currency (DATA) — Phase 8
+### Database & Config Hardening (DB)
 
-- [x] **DATA-01**: The hub's activity data is re-extracted current through today for all admin-accessible projects via the FREE ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`) — no Data Connector quota. Writes `AccActivityAccds` (folder/object-level events). ✓ 2026-06-23 — expanded to full membership (956 projects with activity / 1,153 crawled), 4.55M rows.
-- [x] **DATA-02**: The crawl resumes the un-crawled remainder (`ACCDS_RESUME=1`) and recovers from session-cookie expiry (re-run `scripts/accds-login.cjs`) without manual babysitting — no quota pacing or 403-bisect. ✓ 2026-06-23 — one ~6.5h expiry recovered via re-login + done-list resume; no quota.
-- [x] **DATA-03**: The ACC web session (`scratch/acc-session.json`, password-equivalent, gitignored) is the auth; bootstrapped once and refreshed on `SessionExpiredError`. (No APS refresh-token rotation — that hazard belongs to the optional DC path only.) ✓ 2026-06-23 — cookie-only auth chain verified in source (no APS_CLIENT_ID/SECRET in the activity path).
-- [x] **DATA-04**: A recency + reconciliation check (`scripts/diag-accds-recency.cjs` + `verify-accds-merge.cjs`) confirms `AccActivityAccds` is current through today across the admin project set before downstream data-dependent phases proceed. ✓ 2026-06-23 — recency reported (latest 2026-06-23, floor 2025-06-17); verify-accds-merge all assertions passed.
+- [ ] **DB-01**: `AccFolderPermission` gains a standalone `@@index([roleId])` via a Prisma migration; `EXPLAIN ANALYZE` on a role-joined terrain query confirms the new index is used. _(CONCERNS §1.2)_
+- [ ] **DB-02**: `scripts/count-acc-data.cjs` no longer sets `ssl:{rejectUnauthorized:false}`; it connects via the project Prisma client / `DATABASE_URL` pool with no TLS-bypass flag. _(§1.3)_
+- [ ] **DB-03**: `.env.example` documents `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining why it is required for access-analysis at scale (pool × workers ≤ `max_connections`). _(§1.4, §1.5)_
+- [ ] **DB-04**: the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` carries a warning comment about the ~5M-row heap risk plus a `VERIFY:` note that no active caller enables it. _(§1.1)_
 
-### Structural Prerequisites (PREP) — Phase 9
+### Layering & Boundary Fixes (BND)
 
-- [ ] **PREP-01**: `moduleOverrides` is relocated to `lib/acc/` so server-side analytics can import the activity taxonomy without a lib/app boundary violation.
-- [ ] **PREP-02**: A reusable coverage-honesty UI atom ("Based on N of M projects") is available to every panel.
-- [ ] **PREP-03**: A shared distinct-user count helper exists so people-counts never double-count instance rows.
+- [ ] **BND-01**: the `app/(dashboard)/access-analysis/coordinationActions.ts` Server Action no longer imports `@/server/db` directly; the clash query runs through a tRPC procedure (`acc-members` or a new `acc-coordination`), and `ast-grep` rule `direct-prisma-in-ui` returns 0 matches. _(§2.1)_
+- [ ] **BND-02**: pure classification logic (`classifyActivity`, `donutModules`, `CATEGORY_LABELS`, `n()`) lives in `lib/acc/activityClassification.ts`, re-exported by `moduleOverrides.ts`; the four `scripts/diag-activity-*.cjs` import from `lib/` (the 4 `moduleOverrides` scripts→app dependency-cruiser warnings are cleared). _(§2.2)_
+- [ ] **BND-03**: `lib→app` reverse-dependency edges are enumerated via `node scripts/repo-map/check.cjs`, and every edge **not** rooted in `/users/spatial-graph` is eliminated; spatial-graph-coupled edges are documented as deferred. _(§7.1)_
+- [ ] **BND-04**: the `app→server` edges are audited; any import from a client component (not a Server Component/Action) is corrected, and the acceptable server-component edges are documented. _(§7.2)_
 
-### Sectioned Hub Narrative (HUB) — Phase 10
+### Data-Truthfulness Labels (TRUTH)
 
-- [ ] **HUB-01**: User can navigate `/access-analysis` via a sticky in-page section nav that highlights the active section.
-- [ ] **HUB-02**: The page is organized into themed sections (Overview, People & Roles, Activity, Folders, Coordination, Interconnections) with every existing panel preserved.
-- [ ] **HUB-03**: On load, the page presents a hub-wide view stating coverage as fact ("Across 428 admin-accessible projects of 1,152 total").
-- [ ] **HUB-04**: Each activity-derived section shows an inline coverage badge.
+- [ ] **TRUTH-01**: `/access-analysis` shows Data Connector coverage ("Based on 428 of 1,152 projects with Data Connector access") on the data-freshness panel, and DC-derived metrics are labeled accordingly. _(§5.2)_
+- [ ] **TRUTH-02**: activity-timeline charts display a "Data available from [date]" footnote sourced from a `dataFloor` field on the timeline API response (per-project `MIN(createdAt)` from `AccActivityAccds`, ~12-month floor). _(§2.6)_
+- [ ] **TRUTH-03**: the module-activity donut on `/access-analysis` carries a footnote/tooltip stating classification is `rawAction`-based and Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement). _(§2.5)_
+- [ ] **TRUTH-04**: the `AccDcRole`-empty → `AccRole` fallback (and its DC-conflict behavior) is documented in `.planning/codebase/INTEGRATIONS.md`. _(§2.4, doc)_
 
-### Scenario Explorer (SCEN) — Phase 11
+### Integration Health & Observability (OBS)
 
-- [ ] **SCEN-01**: User can choose a measure (activity, members, roles, issues) and a grouping dimension (role/company/module/folder/time/action/project/user) and see the result.
-- [ ] **SCEN-02**: The explorer auto-selects the appropriate chart type for the chosen pairing (no chart-type dropdown).
-- [ ] **SCEN-03**: User can click any segment to drill into the underlying people via the shared DrillSheet.
-- [ ] **SCEN-04**: User can one-click named presets for the common scenarios (Activity×Folder, Activity×Role, Activity×Module, Role×Users, and more).
-- [ ] **SCEN-05**: Every activity-derived explorer result shows its coverage note; oversized pivots are safely capped (top-N + "Other") with a visible note.
-- [ ] **SCEN-06** *(differentiator)*: User can add an optional second grouping for a cross-tab heatmap when both dimensions are small.
+- [ ] **OBS-01**: `scripts/progress-monitor.cjs` reports ACCDS session health and emits `[WARN] ACCDS session expires in <N> hours` (or "session expired") before the crawl token-refresh path runs. _(§5.1)_
+- [ ] **OBS-02**: `lib/server/acc-hot-cache.ts` logs a warning when `AccDcRole` is still empty after a cache refresh, making a silent `AccRole`-sync failure observable. _(§2.4, observable)_
+- [ ] **OBS-03**: the two stale `TODO[02.5]` defensive-logging guards in `lib/acc/acc-admin.ts` (lines 51, 207) are removed after a one-time confirmation that live field names match. _(§5.3)_
 
-### Activity Depth (ACTD) — Phase 12
+### Type-Safety & Lean-Payload Guards (TYPE)
 
-- [ ] **ACTD-01**: User can see a calendar heatmap of activity over time (by day).
-- [ ] **ACTD-02** *(differentiator)*: User can see the behavior mix over time (view / upload / edit / delete) as a stacked series.
-- [ ] **ACTD-03** *(differentiator)*: User can see the most-acted-on files/models (hottest objects) — conditional on ACCDS data completeness post-extraction.
-- [ ] **ACTD-04**: Activity views display attribution honesty (resolved vs unresolved share).
+- [ ] **TYPE-01**: the `bulkUsers` return type marks `roles`/`modules` as always-empty lean-payload fields (`never[]` and/or an explicit comment), so consumers cannot silently expect populated arrays. _(§4.1)_
+- [ ] **TYPE-02**: `app/(dashboard)/users/accGraphFilters.ts` has a compile-time assert (`satisfies` / `AssertExtends`) that fails if the two filter union types drift. _(§4.2)_
 
-### Hygiene Facts (HYG) — Phase 12
+### Test Coverage & Characterization (TEST)
 
-- [ ] **HYG-01**: User can see factual role-hygiene findings — empty/junk roles, duplicate role pairs, outlier module combinations — in a sortable table, with no severity score or risk verdict (surfaces the already-built `computeAllFindings()`).
+- [ ] **TEST-01**: a Vitest test covers the `AccFolderPermission` `GROUP BY` aggregate in `lib/server/acc-hot-cache.ts`, asserting it returns ≤ `n_roles × n_projects` rows (not raw permissions) — guarding the dominant OOM regression. _(§8.1)_
+- [ ] **TEST-02**: characterization tests pin the current tRPC-boundary outputs and pure transforms of the access-analysis monoliths (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`); the files carry a "split-pending" warning comment. _(§2.3 guardrail; split deferred → REF-01)_
+- [ ] **TEST-03**: a characterization test pins the shared `AccFolderPermission` terrain query output used by both `/template-mty` and `/access-analysis`, so the deferred `folderPermQuery` extraction can proceed safely later. _(§6.1 guardrail; extraction deferred → REF-02)_
 
-### Folder Reach & Exposure (FOLD) — Phase 13
+## Future Requirements
 
-- [ ] **FOLD-01**: User can see internal vs external access composition as a factual breakdown.
-- [ ] **FOLD-02**: User can see which external companies hold permissions on which internal folders (who-can-reach-what), grouped by folder tier.
-- [ ] **FOLD-03**: User can see dormant access as a fact (folder permissions held by users with last sign-in > 90 days).
-- [ ] **FOLD-04** *(differentiator)*: User can see folder storage distribution (size / file-count treemap) where crawl data exists, labeled where it does not.
+Tracked but **not** in the v2.1 roadmap. v2.1 ships the characterization tests that make the refactors safe.
 
-### Interconnections (LINK) — Phase 14
+### Structural Refactors (deferred — behind v2.1 characterization tests)
 
-- [ ] **LINK-01**: User can see a Sankey of Company → Role → Module access flow, capped (top-N + "Other") and clickable to drill into people.
+- **REF-01**: split `FolderPermissionTerrain.tsx` (1,041 lines), `folderTerrain.ts` (1,093), and `HybridAnalyticsSurface.tsx` (1,326) into data-hook / transform / thin-view modules. _(§2.3)_
+- **REF-02**: extract `lib/server/folderPermQuery.ts` owning the base `AccFolderPermission` join; template + access-analysis import from it. _(§6.1)_
+- **REF-03**: materialise an `AccFolderPermissionSummary` view / indexed projection to retire the raw-scan path entirely. _(§1.1, long-term)_
 
-## v2 Requirements
+### Blocked on external / data dependencies
 
-Deferred to a future release (v3.1+). Tracked, not in this roadmap.
-
-### Interconnections
-
-- **LINK-V2-01**: Chord / co-occurrence matrix (firm collaboration, role co-occurrence). High complexity; needs `ChordSeriesOption` runtime verification. Sankey covers the more impactful story first.
-
-### Scenario Explorer
-
-- **SCEN-V2-01**: User-persisted custom presets + export/download of a scenario view.
-- **SCEN-V2-02**: Date-range filter UI on the explorer.
-
-### Carried from v2.0 (not this milestone)
-
-- **FRM-V2-01**: Forma role-permission diff view (needs `template.getBaseline(roleId)` query).
-- **USR-V2-01**: `/users` data freshness / auto-refresh.
+- **DC-01**: unlock the 724 Data-Connector-403 projects via APS Account Admin provisioning. _(§5.2, external)_
+- **DC-02**: resolve the two `dataLayer.ts` TODOs (populate per-project roles/modules) once the DC CSV `activity_in_module` / `total_activity` join is wired. _(§4.1)_
+- **SVC-01**: the `service`-override classification refinement (reconcile Build vs Model Coordination for ~966 clash-issue rows) — needs design approval. _(§2.5)_
 
 ## Out of Scope
 
-| Feature | Reason |
+Explicitly excluded from v2.1. Documented to prevent scope creep.
+
+| Concern | Reason |
 |---------|--------|
-| Synthetic risk scores / severity grades / "exposed / high-risk" verdict labels | Owner explicitly judges risk himself; dashboard is descriptive only |
-| Full custom dashboard builder / general BI tool | Scope-creep; the picker + presets cover the named scenarios without a builder |
-| Re-extracting the 724 non-admin (403-locked) projects | Luis is project-scoped admin, not Account Admin; cannot self-grant access |
-| New data pipelines / external integrations beyond the DC re-extraction | Existing Prisma DB is the source of truth |
-| Wiping or redesigning the existing 14 panels | Additive milestone — preserve current panels |
-| `/users/spatial-graph` | Separate future project (real 3D) |
-| Real-time / live-updating charts, mobile-first layout | Workshop is presenter-driven on a projector; not needed for v3.0 |
+| Spatial-graph DuckDB warm-up, cosmos.gl reheat, 176-action catalog lazy-load (§3.1–3.3) | `/users/spatial-graph` is out of scope per PROJECT.md; deferred to a future spatial-graph milestone |
+| Lasso e2e 120s flake + hydration-prefetch regression test (§3.4, §3.5) | spatial-graph surface; same boundary |
+| Spatial-graph physics/e2e test splits — `physicsLayer.test.ts`, `GraphCanvas3D.test.ts`, `acc-dc-graph.spec.ts` (§8.2, §8.3) | spatial-graph surface; same boundary |
+| Moving `internalDomains.ts` / `graphNodesFromUsers.ts` / `instanceFeatureTokens.ts` into `lib/` (part of §2.2, §7.1) | touches spatial-graph route files; deferred with the spatial-graph scope (BND-02/BND-03 cover only non-spatial-graph edges) |
 
 ## Traceability
 
-Final mapping. Each requirement maps to exactly one phase.
+Populated during roadmap creation (Phase 09+).
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
-| DATA-02 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
-| DATA-03 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
-| DATA-04 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
-| PREP-01 | Phase 9 (Structural Prerequisites) | Pending |
-| PREP-02 | Phase 9 (Structural Prerequisites) | Pending |
-| PREP-03 | Phase 9 (Structural Prerequisites) | Pending |
-| HUB-01 | Phase 10 (Sectioned Hub Narrative) | Pending |
-| HUB-02 | Phase 10 (Sectioned Hub Narrative) | Pending |
-| HUB-03 | Phase 10 (Sectioned Hub Narrative) | Pending |
-| HUB-04 | Phase 10 (Sectioned Hub Narrative) | Pending |
-| SCEN-01 | Phase 11 (Scenario Explorer Core) | Pending |
-| SCEN-02 | Phase 11 (Scenario Explorer Core) | Pending |
-| SCEN-03 | Phase 11 (Scenario Explorer Core) | Pending |
-| SCEN-04 | Phase 11 (Scenario Explorer Core) | Pending |
-| SCEN-05 | Phase 11 (Scenario Explorer Core) | Pending |
-| SCEN-06 | Phase 11 (Scenario Explorer Core) | Pending |
-| ACTD-01 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
-| ACTD-02 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
-| ACTD-03 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
-| ACTD-04 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
-| HYG-01 | Phase 12 (Activity Depth & Hygiene Facts) | Pending |
-| FOLD-01 | Phase 13 (Folder Reach & Exposure) | Pending |
-| FOLD-02 | Phase 13 (Folder Reach & Exposure) | Pending |
-| FOLD-03 | Phase 13 (Folder Reach & Exposure) | Pending |
-| FOLD-04 | Phase 13 (Folder Reach & Exposure) | Pending |
-| LINK-01 | Phase 14 (Interconnections — Sankey) | Pending |
+| DB-01 | TBD | Pending |
+| DB-02 | TBD | Pending |
+| DB-03 | TBD | Pending |
+| DB-04 | TBD | Pending |
+| BND-01 | TBD | Pending |
+| BND-02 | TBD | Pending |
+| BND-03 | TBD | Pending |
+| BND-04 | TBD | Pending |
+| TRUTH-01 | TBD | Pending |
+| TRUTH-02 | TBD | Pending |
+| TRUTH-03 | TBD | Pending |
+| TRUTH-04 | TBD | Pending |
+| OBS-01 | TBD | Pending |
+| OBS-02 | TBD | Pending |
+| OBS-03 | TBD | Pending |
+| TYPE-01 | TBD | Pending |
+| TYPE-02 | TBD | Pending |
+| TEST-01 | TBD | Pending |
+| TEST-02 | TBD | Pending |
+| TEST-03 | TBD | Pending |
 
 **Coverage:**
-- v1 requirements: 27 total
-- Mapped to phases: 27
-- Unmapped: 0 ✓
+- v2.1 requirements: 20 total
+- Mapped to phases: 0 (roadmapper to fill)
+- Unmapped: 20 ⚠️ (resolved at roadmap creation)
 
 ---
-*Requirements defined: 2026-06-22*
-*Last updated: 2026-06-22 — traceability finalized after roadmap write*
+*Requirements defined: 2026-06-23 for milestone v2.1 (Concerns Hardening)*
+*Last updated: 2026-06-23 after initial definition*
