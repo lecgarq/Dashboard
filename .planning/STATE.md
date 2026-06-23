@@ -5,13 +5,21 @@
 See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** Baseline reset — all ACC data extracted and verified.
+**Current focus:** v2.1 Concerns Hardening — close `.planning/codebase/CONCERNS.md`.
 
-## Status
+## Current Position
 
-- **Milestone:** data-extraction-confirmed baseline
-- **State:** Data extraction COMPLETE and VERIFIED. Ready for next milestone
-  (`/gsd:new-milestone`).
+- **Milestone:** v2.1 — Concerns Hardening (continues from Phase 09)
+- **Phase:** Not started (defining requirements → roadmap)
+- **Plan:** —
+- **Status:** Defining requirements
+- **Last activity:** 2026-06-23 — milestone v2.1 started; scope locked (spatial-graph
+  excluded, guardrails+labels first, research skipped)
+
+## Status (data baseline — still current)
+
+- **State:** Data extraction COMPLETE and VERIFIED (census below). Baseline reset to
+  `.planning/` is committed in PROJECT.md/STATE.md; v2.1 builds on it.
 
 ## Data Extraction — Verified 2026-06-23
 
@@ -55,8 +63,8 @@ All 5 assertions PASS:
 
 ## Next Action
 
-Define the next milestone with `/gsd:new-milestone` (Active requirements are
-intentionally empty in this baseline).
+Roadmap is being created for v2.1. After approval: `/gsd:discuss-phase 09` (or
+`/gsd:plan-phase 09`).
 
 ---
-*Last updated: 2026-06-23 after data-extraction verification + planning reset*
+*Last updated: 2026-06-23 after starting milestone v2.1 (Concerns Hardening)*
