@@ -22,6 +22,7 @@ import { accMembersRouter } from "./acc-members";
 import { accGraphRouter } from "./acc-graph";
 import { accDcGraphRouter } from "./acc-dc-graph";
 import { accPersonGraphRouter } from "./acc-person-graph";
+import { accCoordinationRouter } from "./acc-coordination";
 
 export const appRouter = router({
   project: projectRouter,
@@ -47,6 +48,7 @@ export const appRouter = router({
   accGraph: accGraphRouter,
   accDcGraph: accDcGraphRouter,
   accPersonGraph: accPersonGraphRouter,
+  accCoordination: accCoordinationRouter,
 });
 
 export type AppRouter = typeof appRouter;
