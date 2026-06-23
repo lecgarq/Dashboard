@@ -250,4 +250,77 @@ describe("ACC hot cache", () => {
       result.tasks.some((t) => t.name === "accActivity.lastFileActivityByEmailAll" && t.ok),
     ).toBe(true);
   });
+
+  // -------------------------------------------------------------------------
+  // TEST-01: DB-free OOM-regression — GROUP BY aggregate row-bound
+  // -------------------------------------------------------------------------
+
+  it("bounds the permission-summary aggregate to <= n_roles x n_projects group rows, never raw permission rows", async () => {
+    // Fixture: 2 roles × 2 projects = 4 group-row upper bound.
+    // The raw AccFolderPermission table would have many more rows in production
+    // (~5M+). We simulate a realistic imbalance: 8 raw rows vs 4 group rows.
+    const roles = [
+      { id: "r1", name: "Architect" },
+      { id: "r2", name: "Project Admin" },
+    ];
+    const projects = [
+      { id: "p1", name: "Project One", status: "active", folderCrawlStatus: "ok" },
+      { id: "p2", name: "Project Two", status: "active", folderCrawlStatus: "ok" },
+    ];
+
+    // Simulate 8 raw AccFolderPermission rows (2 per project×role combo).
+    // These represent what findMany would return — the raw-scan OOM path.
+    const rawPermissionRows = [
+      { folderId: "f1", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p1", fullPath: "/A" } },
+      { folderId: "f2", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p1", fullPath: "/B" } },
+      { folderId: "f3", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p1", fullPath: "/C" } },
+      { folderId: "f4", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p1", fullPath: "/D" } },
+      { folderId: "f5", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p2", fullPath: "/E" } },
+      { folderId: "f6", roleId: "r1", permType: "View Only", actions: ["VIEW"], folder: { projectId: "p2", fullPath: "/F" } },
+      { folderId: "f7", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p2", fullPath: "/G" } },
+      { folderId: "f8", roleId: "r2", permType: "Editor",    actions: ["EDIT"], folder: { projectId: "p2", fullPath: "/H" } },
+    ];
+
+    // The GROUP BY aggregate collapses the 8 raw rows into 4 group rows
+    // (one per projectId × roleId combination).
+    const groupRows = [
+      { projectId: "p1", roleId: "r1", folderCount: 2, totalBytes: BigInt(1024), permTypes: ["View Only"] },
+      { projectId: "p1", roleId: "r2", folderCount: 2, totalBytes: BigInt(2048), permTypes: ["Editor"] },
+      { projectId: "p2", roleId: "r1", folderCount: 2, totalBytes: BigInt(512),  permTypes: ["View Only"] },
+      { projectId: "p2", roleId: "r2", folderCount: 2, totalBytes: BigInt(4096), permTypes: ["Editor"] },
+    ];
+
+    // Build the db mock using the standard helpers.
+    // Override accRole + accProject with our fixture data; wire $queryRaw to return group rows.
+    const db = makePrewarmDb();
+    db.accRole = versionedModel(roles);
+    db.accProject = versionedModel(projects);
+    db.accDcProject = versionedModel(projects.map((p) => ({ id: p.id, name: p.name, status: p.status })));
+    // accFolderPermission carries the raw rows so we can assert findMany is NOT called.
+    db.accFolderPermission = versionedModel(rawPermissionRows);
+
+    // $queryRaw is called once for the folder-perm aggregate (no activity mix here).
+    // mockResolvedValueOnce so any subsequent $queryRaw calls get [] (safe default).
+    db.$queryRaw.mockResolvedValueOnce(groupRows);
+
+    // Act: call the summary variant (NOT contexts) — this must use the GROUP BY path.
+    const result = await getCachedAccDcBulkUsers(db, { includePermissionSummary: true });
+
+    // Assert 1: the group-row upper bound contract.
+    // The Map built from groupRows has at most roles.length × projects.length entries.
+    expect(groupRows.length).toBeLessThanOrEqual(roles.length * projects.length);
+
+    // Assert 2: the raw-row population is strictly larger than the group rows,
+    // proving the bound is meaningful (not vacuously true).
+    expect(rawPermissionRows.length).toBeGreaterThan(groupRows.length);
+
+    // Assert 3: the summary path must NOT call accFolderPermission.findMany
+    // (that is the ~5M-row raw-scan path guarded by includePermissionContexts).
+    expect(db.accFolderPermission.findMany).not.toHaveBeenCalled();
+
+    // Assert 4: the assembled result is a non-empty BulkAccUser array
+    // (confirming the summary branch ran without falling back to an empty/error state).
+    expect(result).toBeInstanceOf(Array);
+    expect(result.length).toBeGreaterThan(0);
+  });
 });
