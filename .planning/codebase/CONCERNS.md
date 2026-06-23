@@ -240,6 +240,132 @@
   - `PG_POOL_MAX=32` in `.env` confirmed by rg match on `.env` line — value `n=32` appeared in a grep; confirm this is `PG_POOL_MAX` and not another env var named `n`.
   - ACCDS session cookie TTL duration (for session expiry alerting recommendation).
   - Account Admin provisioning status for Data Connector 403 coverage gap.
-  - Exact list of `lib -> app` reverse-dependency edges (need `npm run repo-map` or `node scripts/repo-map/check.cjs` output for full enumeration).
+  - Exact list of `lib -> app` reverse-dependency edges (need `npm run repo-map` or `node scripts/repo-map/check.cjs` output for full enumeration). **RESOLVED in Phase 10 — see BND-03 section below.**
   - Whether `includePermissionContexts: true` has any active production caller.
   - `AccRole` sync schedule / reliability (for AccDcRole fallback risk).
+
+---
+
+## BND-03 / BND-04 Resolution (Phase 10 — 2026-06-23)
+
+Phase 10 (Plans 10-01 through 10-03) resolved the `lib -> app` and `app -> server`
+boundary warnings conservatively. The full gate sequence passed after all changes
+(see §7.1/7.2 updates below for original concern; this section records the verdict).
+
+### BND-03 — `lib -> app` Reverse Dependencies
+
+**Audit command:** `node scripts/repo-map/check.cjs` (after `npm run repo-map`).
+**Fresh enumeration date:** 2026-06-23 (post-wave-2, dependency-cruiser.json rebuilt).
+**Edge count after Phase 10:** 21 total (was 20 before Phase 10 started;
+wave-1/2 added 3 new edges from extracted modules, removed 3 via this plan's moves).
+
+#### (1) FIXED IN PHASE 10
+
+Three `lib/server/*View.ts` files had their row-type imports pointing into `app/`.
+Each was resolved by moving the pure type/aggregation module to `lib/acc/` and
+leaving a `export *` re-export barrel at the original `app/` path (so all UI
+importers remain unchanged):
+
+| Edge removed | Fixed by | Plan |
+|---|---|---|
+| `lib/server/coordinationByProjectView.ts → app/.../coordinationCounts.ts` | `lib/acc/coordinationCounts.ts` + barrel | 10-03 Task 1 |
+| `lib/server/activityTimelineView.ts → app/.../timelineCounts.ts` | `lib/acc/timelineCounts.ts` + barrel | 10-03 Task 1 |
+| `lib/server/moduleActivityView.ts → app/.../moduleCounts.ts` | `lib/acc/moduleCountsTypes.ts` + type re-export in `moduleCounts.ts` | 10-03 Task 1 |
+
+#### (2) DEFERRED — SPATIAL-GRAPH-COUPLED (out of v2.1 scope)
+
+These edges are rooted in the `/users/spatial-graph` surface or its data pipeline.
+`internalDomains.ts` is explicitly excluded by REQUIREMENTS. All are documented-deferred
+until the spatial-graph surface enters scope (currently out of v2.1 per locked decision).
+
+| Edge | Source file | Target |
+|---|---|---|
+| dcUserAssembly → internalDomains | `lib/acc/dcUserAssembly.ts` | `app/(dashboard)/users/access-analysis/internalDomains.ts` |
+| activityAggregate → accTaxonomy | `lib/acc/activityAggregate.ts` | `app/(dashboard)/users/access-analysis/accTaxonomy.ts` |
+| acc-route-hydration → useUsersDirectoryData | `lib/server/acc-route-hydration.ts` | `app/(dashboard)/users/useUsersDirectoryData.ts` |
+| activityClassification → accTaxonomy | `lib/acc/activityClassification.ts` | `app/(dashboard)/users/access-analysis/accTaxonomy.ts` |
+| activityClassification → accNormalize | `lib/acc/activityClassification.ts` | `app/(dashboard)/users/access-analysis/accNormalize.ts` |
+
+The last two edges (activityClassification → accTaxonomy/accNormalize) were introduced
+by Plan 10-02 when the pure classification logic was moved from `moduleOverrides.ts` to
+`lib/acc/`. The taxonomy/normalize modules live under `/users/access-analysis/` and are
+spatial-graph-coupled — moving them requires the spatial-graph surface to be in scope.
+Documented per checker execution-time note #1.
+
+#### (3) DEFERRED — PHASE-14 MONOLITH (REF-01, folderTerrain.ts split required)
+
+`app/(dashboard)/access-analysis/folderTerrain.ts` is a 1,093-line monolith that is
+imported by multiple `lib/server/` view files. Moving any of these cleanly requires
+splitting `folderTerrain.ts` first (characterization tests ship in Phase 14 per REF-01).
+Moving them now would either violate the zero-behavior-change contract or pull Phase 14
+forward — both violate the locked Conservative scope decision.
+
+| Edge | Source file | Target |
+|---|---|---|
+| folderPermissionTerrainView → folderTerrain | `lib/server/folderPermissionTerrainView.ts` | `app/.../folderTerrain.ts` |
+| folderPermissionTerrainView → folderInheritance | `lib/server/folderPermissionTerrainView.ts` | `app/.../folderInheritance.ts` (imports folderTerrain) |
+| folderPermissionTerrainView → projectGroups | `lib/server/folderPermissionTerrainView.ts` | `app/.../projectGroups.ts` (imports ./projectFilter) |
+| templateFolderTerrain → folderTerrain | `lib/server/templateFolderTerrain.ts` | `app/.../folderTerrain.ts` |
+| templateFolderTerrain → folderInheritance | `lib/server/templateFolderTerrain.ts` | `app/.../folderInheritance.ts` |
+| templateRoleTree → folderTerrain | `lib/server/templateRoleTree.ts` | `app/.../folderTerrain.ts` |
+| templateView → folderTerrain | `lib/server/templateView.ts` | `app/.../folderTerrain.ts` |
+| templateView → roleCounts | `lib/server/templateView.ts` | `app/.../roleCounts.ts` |
+| templateView → permissionAccess | `lib/server/templateView.ts` | `app/(dashboard)/template-mty/permissionAccess.ts` (imports folderTerrain TIER_LEGEND) |
+| templateView → moduleAccess | `lib/server/templateView.ts` | `app/(dashboard)/template-mty/moduleAccess.ts` |
+| templateRoleSimilarity → roleSimilarity | `lib/server/templateRoleSimilarity.ts` | `app/(dashboard)/template-mty/roleSimilarity.ts` |
+| accessInstanceView → modules | `lib/server/accessInstanceView.ts` | `app/(dashboard)/access-analysis/modules.ts` |
+| accessInstanceView → types | `lib/server/accessInstanceView.ts` | `app/(dashboard)/access-analysis/types.ts` |
+| template-mty-roster → types | `lib/acc/template-mty-roster.ts` | `app/(dashboard)/access-analysis/types.ts` |
+| folderActivityView → folderActivityCounts | `lib/server/folderActivityView.ts` | `app/(dashboard)/access-analysis/folderActivityCounts.ts` |
+
+#### (4) NOTED — CLEAN EDGE (not deferred, not a violation)
+
+One additional lib→app edge is a clean, type-only import of a pure module that has NO
+imports of its own (`coordinationClash.ts` has zero import statements). This is a
+legitimate structuring choice — the type shapes live in `app/` because the data mapper
+also lives there; the `lib/server` view imports only the pure interface. Per the Phase 10
+Conservative scope decision, this is documented rather than moved:
+
+| Edge | Source | Target | Classification |
+|---|---|---|---|
+| projectClashView → coordinationClash | `lib/server/projectClashView.ts` | `app/(dashboard)/access-analysis/coordinationClash.ts` | Clean type import, zero-import target — low-priority, movable in future cleanup (NOT spatial-graph, NOT monolith) |
+
+Introduced by Plan 10-01. Checker execution-time note #1 documented this edge.
+
+**Rationale for not moving coordinationClash.ts now:** The Conservative decision locks
+scope to "remove only edges fixable outside spatial-graph AND outside the Phase-14
+monolith." Moving coordinationClash.ts to lib/ would be safe but expands the plan's
+surface. Deferring it keeps the commit boundary minimal.
+
+---
+
+### BND-04 — `app -> server` Direct Imports Audit
+
+**Audit command:** `rg -n 'from "@/server' app/ -g "*.ts" -g "*.tsx"`
+**Count post-10-01:** 28 edges (was 29 at baseline; 10-01 removed
+`coordinationActions.ts → @/server/db`; the `@/server/auth` edge in
+`coordinationActions.ts` was removed by delegation to the helper, so the net
+from coordinationActions went from 2→0, but other files account for the 28 total).
+**Date confirmed:** 2026-06-23.
+
+**Verdict: ZERO "use client" violations.** All 28 edges originate from:
+
+- `app/api/**/route.ts` route handlers (all API routes — 15 files, ~20 edges)
+- `"use server"` Server Actions:
+  - `app/(dashboard)/access-analysis/folderActivityActions.ts`
+  - `app/(dashboard)/access-analysis/folderTerrainActions.ts`
+  - `app/(dashboard)/template-mty/templateTerrainActions.ts`
+- `app/(dashboard)/layout.tsx` — RSC layout (no `"use client"` directive)
+
+No `app/` file with `"use client"` imports from `@/server/`. The direct
+`server/` imports at the RSC/Action/route layer are the expected, legitimate Next.js
+boundary pattern: Server Components and Server Actions may import from `server/`
+because they run only on the server. BND-04's deliverable is this documented verdict;
+no code fix is required.
+
+**Classification method for reproducibility:**
+1. `rg -n 'from "@/server' app/ -g "*.ts" -g "*.tsx"` — enumerate all import lines.
+2. For each file: check first line for `"use client"` (client component = violation),
+   `"use server"` (Server Action = acceptable), or neither (RSC or route = acceptable).
+3. Files under `app/api/` are always route handlers (acceptable).
+4. `app/(dashboard)/layout.tsx` is always an RSC (acceptable).
