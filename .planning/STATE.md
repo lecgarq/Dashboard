@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 status: in_progress
-last_updated: "2026-06-23T23:40:00.000Z"
-last_activity: "2026-06-23 — Phase 10 (Layering & Boundary Fixes) COMPLETE + verified (7/7 must-haves) + owner-approved rebuild on :3000. BND-01..04 all landed: clash query→accCoordination tRPC, classifier→lib/acc, 3 pure types→lib/acc, deferred lib→app/app→server edges documented in CONCERNS.md. Next = Phase 11 (TRUTH labels). 9 commits 4392637d..3dc7a40b. NOTE: `gsd-tools phase complete` mis-set status:completed/total_phases:2 (known is_last_phase bug) — repaired manually."
+last_updated: "2026-06-24T00:10:00.000Z"
+last_activity: "2026-06-23 — Phase 11 (Data-Truthfulness Labels) CONTEXT captured (11-CONTEXT.md, commit 5e0ad8b8). Owner correction locked: TRUTH-01 coverage label leads with the free-crawl activity coverage (~956/1,153), NOT the stale '428 DC' framing (428 = old DC-API-extractable; superseded). TRUTH-02 `dataFloor` is added to the `loadActivityTimeline()` RSC in lib/server/activityTimelineView.ts (NOT tRPC — resolves the open 'verify procedure' item). TRUTH-03 = ⓘ tooltip on module donut. GUID→name fix (folderActivityView.ts) folded in. Next = /gsd:plan-phase 11. Prior: Phase 10 COMPLETE+verified+owner-approved (9 commits 4392637d..3dc7a40b)."
 progress:
   total_phases: 6
   completed_phases: 2
@@ -24,10 +24,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 10 of 14 — Layering & Boundary Fixes ✓ COMPLETE + verified (7/7) + owner-approved. Next = Phase 11.
-- **Plan:** 10-01 (BND-01), 10-02 (BND-02), 10-03 (BND-03/04) all COMPLETE — 3/3 plans, owner-approved rebuild on :3000.
-- **Status:** Phase 10 complete (verifier PASSED 7/7; owner-approved identical render). Phase 11 (TRUTH labels) is next — independently unblocked (depends on Phase 09 only).
-- **Last activity:** 2026-06-23 — Phase 10 COMPLETE + verified + owner-approved. BND-01..04 landed; deferred edges documented in CONCERNS.md. 9 commits 4392637d..3dc7a40b.
+- **Phase:** 11 of 14 — Data-Truthfulness Labels. CONTEXT captured (11-CONTEXT.md). Next = plan-phase 11. (Phase 10 ✓ COMPLETE + verified + owner-approved.)
+- **Plan:** Phase 11 plans TBD. Decisions locked in 11-CONTEXT.md (4 TRUTH labels on /access-analysis + folded-in GUID→name fix).
+- **Status:** Phase 11 discuss-phase done; ready to plan. Independently unblocked (depends on Phase 09 only). Key owner correction: coverage label uses free-crawl ~956/1,153, not the stale 428-DC framing.
+- **Last activity:** 2026-06-23 — Phase 11 CONTEXT captured (commit 5e0ad8b8). TRUTH-02 dataFloor confirmed on the loadActivityTimeline() RSC (not tRPC); GUID-name fix folded in. Prior: Phase 10 COMPLETE + verified + owner-approved (9 commits 4392637d..3dc7a40b).
 
 Progress: [███░░░░░░░] 33% (2 of 6 phases — 09, 10 complete)
 
@@ -105,13 +105,26 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Phase 10 is complete, verified (7/7), and owner-approved. **Next = Phase 11 (Data-Truthfulness Labels)** — independently unblocked (depends on Phase 09 only).
+Phase 11 discuss-phase is complete — decisions captured in
+`.planning/phases/11-data-truthfulness-labels/11-CONTEXT.md` (commit 5e0ad8b8).
+**Next = `/gsd:plan-phase 11`** (after `/clear`).
 
-Run `/gsd:discuss-phase 11` (then `/gsd:plan-phase 11`) after `/clear`.
-
-**Phase 11 context / candidates:**
-- TRUTH-02 needs a `dataFloor` field added to the timeline API response — verify the exact tRPC procedure name before planning.
-- Fold in the owner-flagged Folder-Activity-by-Role name-coverage fix (see Blockers/Concerns) — it is a one-file label-truthfulness fix in `lib/server/folderActivityView.ts`.
+**Phase 11 decisions locked (see 11-CONTEXT.md):**
+- **TRUTH-01** — restrained header coverage line + keep per-chart
+  `ActivityCoverageBadge`. **Owner correction:** lead with free-crawl activity
+  coverage (~956/1,153, live count), label DC-metadata metrics with their ~550;
+  the requirement's "428 of 1,152 DC" example is rejected as the headline.
+- **TRUTH-02** — add `dataFloor` to the **`loadActivityTimeline()` RSC** in
+  `lib/server/activityTimelineView.ts` (NOT tRPC — the CTE already computes
+  per-project `MIN(createdAt)`). Account-wide "Data available from [month]"
+  caption + per-project hover.
+- **TRUTH-03** — ⓘ info-icon + Radix tooltip on the module donut; ~40.7% figure
+  in tooltip + INTEGRATIONS.md, not always-on.
+- **TRUTH-04** — document `AccDcRole`→`AccRole` fallback in INTEGRATIONS.md.
+- **Folded-in scope** — repair the raw-GUID leak in
+  `lib/server/folderActivityView.ts` by merging `AccProject` (1,153) names;
+  graceful "Unknown project" fallback. VERIFY `AccProject.id` ↔
+  `AccActivityAccds.projectId` first.
 
 ---
 *Last updated: 2026-06-23 — Phase 10 complete + verified (7/7 must-haves; 10-VERIFICATION.md PASSED) + owner-approved rebuild on :3000. Note: `gsd-tools phase complete` again mis-reported is_last_phase:true / total_phases:2 (known CLI bug); STATE frontmatter + body repaired manually to reflect 2 of 6 phases done.*
