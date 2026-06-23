@@ -37,7 +37,7 @@ Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned hub
 **Execution order:** {8 ‖ 9} → 10 → 11 → {12 ‖ 13} → 14
 **Parallelization:** Phase 8 and Phase 9 are parallel-safe (no shared files). Phases 12 and 13 are parallel-safe after Phase 11. Phase 8 is a hard data gate for Phases 12–14.
 
-- [ ] **Phase 8: Activity Re-Extraction (free ACCDS crawler)** - Bring activity current via the free, no-quota ACC web-session crawler for all admin-accessible projects (hard data gate)
+- [x] **Phase 8: Activity Re-Extraction (free ACCDS crawler)** - Bring activity current via the free, no-quota ACC web-session crawler for all admin-accessible projects (hard data gate) ✓ 2026-06-23 (231→956 projects, 4.55M rows)
 - [ ] **Phase 9: Structural Prerequisites** - Migrate moduleOverrides to lib/acc, add coverage atom and distinct-user helper
 - [ ] **Phase 10: Sectioned Hub Narrative** - Sticky section nav, SectionBlock wrappers, hub-wide coverage header
 - [ ] **Phase 11: Scenario Explorer Core** - Measure × dimension pivot engine, auto chart-type, 7 named presets, DrillSheet
@@ -56,11 +56,12 @@ Turn `/access-analysis` from a flat panel scroll into a navigable, sectioned hub
   2. The crawl completes with NO DC quota (session-cookie auth) and resumes the un-crawled remainder via `ACCDS_RESUME=1`; a `SessionExpiredError` is recovered by re-running `scripts/accds-login.cjs`.
   3. `node scripts/diag-accds-recency.cjs` confirms the latest `AccActivityAccds.createdAt` is current (≈ today) across the admin project set.
   4. `node scripts/verify-accds-merge.cjs` (and/or `diag-accds-vs-dc.cjs`) confirms the fresh ACCDS data reconciles with existing `AccActivity` coverage with no silent gaps.
-**Plans**: 3 plans
-- [ ] 08-01-PLAN.md — Pre-flight + membership spike: bootstrap session, enumerate full membership, test accds/v0 on a member-only project; decides crawl source (full-membership vs admin-428)
-- [ ] 08-02-PLAN.md — Full ACCDS activity crawl + resume/expiry recovery + per-project gap repair; coverage+presence gate and DC reconciliation (report-not-block)
-- [ ] 08-03-PLAN.md — 2-legged APS folder crawl (FOLD-04 enabler): populate AccFolder.totalSizeBytes; OOM-safe folder coverage gate (parallel, independent)
+**Plans**: 3 plans — ✓ ALL COMPLETE 2026-06-23
+- [x] 08-01-PLAN.md — Pre-flight + membership spike: bootstrap session, enumerate full membership, test accds/v0 on a member-only project; decides crawl source (full-membership vs admin-428) → **PASS: full-membership** (member-only accds/v0 returns activity, no permission change)
+- [x] 08-02-PLAN.md — Full ACCDS activity crawl + resume/expiry recovery + per-project gap repair; coverage+presence gate and DC reconciliation (report-not-block) → 1,153 crawled, 956 with activity, 4.55M rows, merge PASS
+- [x] 08-03-PLAN.md — 2-legged APS folder crawl (FOLD-04 enabler): populate AccFolder.totalSizeBytes; OOM-safe folder coverage gate (parallel, independent) → 111,308 folders sized (~3.49TB)
 **Verification gates**: `npx tsc --noEmit` = 0; stop Task Scheduler build before `npm run build`; `SELECT COUNT(DISTINCT "projectId"), MAX("createdAt") FROM "AccActivityAccds"` shows the full admin project set current through today
+**Result (2026-06-23)**: `AccActivityAccds` = 4,554,785 rows / 956 distinct projects / latest 2026-06-23 / earliest 2025-06-17. **Coverage source EXPANDED 234 admin → 1,153 full membership (956 with activity)** with zero permission change and no DC quota — the spike proved `accds/v0` is member-accessible, mooting the deferred Account-Admin grant for *reading* activity. **HISTORY FLOOR: `accds/v0` returns only a trailing ~12 months** regardless of the requested window — Phases 12–14 date views must be labeled accordingly. DC reconciliation PASS (DC backfill preserves pre-floor rows; unified 4,597,370). Independent verifier 4/4. FOLD-04 (treemap) + ACTD-03 (hottest files) gates both satisfied.
 **Note**: A DC `AccActivity` refresh (the quota-bound CSV path) remains OPTIONAL and is only needed if the legacy DC-sourced panels must also be made current — decided at plan time, not assumed here.
 
 ---

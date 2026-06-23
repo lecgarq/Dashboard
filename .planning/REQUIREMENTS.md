@@ -12,10 +12,10 @@
 
 ### Data Currency (DATA) — Phase 8
 
-- [ ] **DATA-01**: The hub's activity data is re-extracted current through today for all admin-accessible projects via the FREE ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`) — no Data Connector quota. Writes `AccActivityAccds` (folder/object-level events).
-- [ ] **DATA-02**: The crawl resumes the un-crawled remainder (`ACCDS_RESUME=1`) and recovers from session-cookie expiry (re-run `scripts/accds-login.cjs`) without manual babysitting — no quota pacing or 403-bisect.
-- [ ] **DATA-03**: The ACC web session (`scratch/acc-session.json`, password-equivalent, gitignored) is the auth; bootstrapped once and refreshed on `SessionExpiredError`. (No APS refresh-token rotation — that hazard belongs to the optional DC path only.)
-- [ ] **DATA-04**: A recency + reconciliation check (`scripts/diag-accds-recency.cjs` + `verify-accds-merge.cjs`) confirms `AccActivityAccds` is current through today across the admin project set before downstream data-dependent phases proceed.
+- [x] **DATA-01**: The hub's activity data is re-extracted current through today for all admin-accessible projects via the FREE ACCDS web-session crawler (`scripts/accds-activity-ingest.cjs`) — no Data Connector quota. Writes `AccActivityAccds` (folder/object-level events). ✓ 2026-06-23 — expanded to full membership (956 projects with activity / 1,153 crawled), 4.55M rows.
+- [x] **DATA-02**: The crawl resumes the un-crawled remainder (`ACCDS_RESUME=1`) and recovers from session-cookie expiry (re-run `scripts/accds-login.cjs`) without manual babysitting — no quota pacing or 403-bisect. ✓ 2026-06-23 — one ~6.5h expiry recovered via re-login + done-list resume; no quota.
+- [x] **DATA-03**: The ACC web session (`scratch/acc-session.json`, password-equivalent, gitignored) is the auth; bootstrapped once and refreshed on `SessionExpiredError`. (No APS refresh-token rotation — that hazard belongs to the optional DC path only.) ✓ 2026-06-23 — cookie-only auth chain verified in source (no APS_CLIENT_ID/SECRET in the activity path).
+- [x] **DATA-04**: A recency + reconciliation check (`scripts/diag-accds-recency.cjs` + `verify-accds-merge.cjs`) confirms `AccActivityAccds` is current through today across the admin project set before downstream data-dependent phases proceed. ✓ 2026-06-23 — recency reported (latest 2026-06-23, floor 2025-06-17); verify-accds-merge all assertions passed.
 
 ### Structural Prerequisites (PREP) — Phase 9
 
@@ -97,10 +97,10 @@ Final mapping. Each requirement maps to exactly one phase.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DATA-01 | Phase 8 (Activity Re-Extraction) | Pending |
-| DATA-02 | Phase 8 (Activity Re-Extraction) | Pending |
-| DATA-03 | Phase 8 (Activity Re-Extraction) | Pending |
-| DATA-04 | Phase 8 (Activity Re-Extraction) | Pending |
+| DATA-01 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
+| DATA-02 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
+| DATA-03 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
+| DATA-04 | Phase 8 (Activity Re-Extraction) | Done 2026-06-23 |
 | PREP-01 | Phase 9 (Structural Prerequisites) | Pending |
 | PREP-02 | Phase 9 (Structural Prerequisites) | Pending |
 | PREP-03 | Phase 9 (Structural Prerequisites) | Pending |

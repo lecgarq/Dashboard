@@ -2,19 +2,19 @@
 gsd_state_version: 1.0
 milestone: v3.0
 milestone_name: "Access Analysis: Hub Story & Scenario Explorer"
-status: ready-to-plan
-current_phase: 8
-current_phase_name: Activity Re-Extraction (free ACCDS crawler)
-stopped_at: "Phase 8 context gathered (08-CONTEXT.md). Decisions: ACCDS session-cookie crawler only (no DC quota); max history; spike full ACC membership before any admin grant (the 428 ceiling is inherited, not a session limit); 2-legged folder crawl for the treemap; report-not-block currency. Run /gsd:plan-phase 8 (Phase 9 still parallel-safe)."
-last_updated: "2026-06-22"
-last_activity: 2026-06-22
-last_activity_desc: "Phase 8 discuss-phase complete — 08-CONTEXT.md written. Centerpiece decision: a session-endpoint spike (accds/v0 on member-only projects) may unlock coverage beyond the 428 admin set with no permission change."
+status: in-progress
+current_phase: 9
+current_phase_name: Structural Prerequisites
+stopped_at: "Phase 8 COMPLETE (activity-re-extraction). ACCDS web-session crawl expanded activity coverage 231→956 projects (4.1x), 4.55M rows, zero DC quota; FOLD-04 folder data populated (111,308 folders, ~3.49TB). accds/v0 history floor = trailing ~12mo (label downstream date views). Next: /gsd:plan-phase 9 (parallel-safe)."
+last_updated: "2026-06-23"
+last_activity: 2026-06-23
+last_activity_desc: "Phase 8 executed + independently verified (4/4 must-haves). Spike PASS unlocked member-only accds/v0 reads (no permission change); full activity crawl + 2-legged folder crawl complete and committed (fa9fe98c, a4b21bd7, 16326adf)."
 progress:
   total_phases: 7
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  completed_phases: 1
+  total_plans: 3
+  completed_plans: 3
+  percent: 14
 ---
 
 # Project State
@@ -24,20 +24,20 @@ progress:
 See: .planning/PROJECT.md (updated 2026-06-22)
 
 **Core value:** A stakeholder can read the situation of the hub at `/access-analysis` as a guided story, then pivot the extracted data across any dimension pair live — fast, clickable, and factually honest.
-**Current focus:** Milestone v3.0 (Access Analysis: Hub Story & Scenario Explorer) — roadmap complete, ready to plan Phase 8.
+**Current focus:** Milestone v3.0 — Phase 8 (Activity Re-Extraction) complete & verified; ready to plan Phase 9 (Structural Prerequisites).
 
 ## Current Position
 
-Phase: 8 — DC Re-Extraction (not yet started)
-Plan: —
-Status: Ready to plan
-Last activity: 2026-06-22 — Roadmap written (Phases 8–14, 27/27 requirements mapped)
+Phase: 8 — Activity Re-Extraction ✓ COMPLETE & VERIFIED (2026-06-23)
+Next: Phase 9 — Structural Prerequisites (parallel-safe)
+Status: Phase 8 closed; ready to plan Phase 9
+Last activity: 2026-06-23 — Phase 8 executed + verified (ACCDS crawl 231→956 projects / 4.55M rows; FOLD-04 folder data populated)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] 14% (1/7 phases)
 
-**Execution order:** {8 ‖ 9} → 10 → 11 → {12 ‖ 13} → 14
+**Execution order:** {8 ✓ ‖ 9} → 10 → 11 → {12 ‖ 13} → 14
 
-Phase 8 is the hard data gate for Phases 12–14. Do not proceed to those phases until Phase 8 verification passes (428 projects backfilled, zero Unmapped actions).
+Phase 8 (hard data gate for Phases 12–14) PASSED: full membership (1,153) crawled, 956 projects with activity, 4.55M rows, coverage+presence gate met (recency report-only per the locked decision). accds/v0 history floor = trailing ~12 months — downstream date views must be labeled accordingly. The 197-of-1,153 projects with no activity are empty/inactive shells (labeled coverage fact, not a gap).
 
 ## Performance Metrics
 
@@ -121,8 +121,8 @@ Recent decisions affecting current work:
 ### Pending Todos
 
 - [Phase 4/7 UAT] Verify `prefers-reduced-motion` at runtime via DevTools Rendering → "Emulate prefers-reduced-motion: reduce" once a page wires the motion facade. Code-level enforcement (`useSafeVariants`) is proven by 15/15 unit tests; only the live browser media-query path is unverified. (Carried forward from 01-VERIFICATION.md human_needed item, approved 2026-06-17.)
-- [v3.0 Phase 8] Run `SELECT COUNT(*) FROM "AccActivityAccds"` after re-extraction to gate ACTD-03 (hottest files panel)
-- [v3.0 Phase 8] Run `SELECT COUNT(*) FILTER (WHERE "totalSizeBytes" IS NOT NULL) FROM "AccFolder"` after Phase 8 to gate FOLD-04 (storage treemap)
+- [v3.0 Phase 8 ✓ DONE 2026-06-23] ACTD-03 gate: `AccActivityAccds` = 4,554,785 rows / 956 distinct projects (> 0) — hottest-files panel unblocked.
+- [v3.0 Phase 8 ✓ DONE 2026-06-23] FOLD-04 gate: `AccFolder` non-null `totalSizeBytes` = 111,308 (> 0, ~3.49TB across 295 projects) — storage treemap unblocked.
 - [v3.0 Phase 12] Run `SELECT COUNT(*) FILTER (WHERE "userEmail" IS NULL), COUNT(*) FROM "AccActivity"` to verify exact attribution-gap percentage for ACTD-04
 
 ### Blockers/Concerns
@@ -154,6 +154,6 @@ Items acknowledged and carried forward:
 
 ## Session Continuity
 
-Last session: 2026-06-22 — Phase 8 context gathered (discuss-phase)
-Stopped at: 08-CONTEXT.md written. Method locked to the free ACCDS session crawler; Plan task 1 = spike full membership + test accds/v0 on member-only projects before any admin grant. Folder crawl (2-legged APS) approved for treemap data. Currency = report, don't block.
-Resume file: .planning/phases/08-activity-re-extraction/08-CONTEXT.md
+Last session: 2026-06-23 — Phase 8 planned, executed, and verified end-to-end.
+Stopped at: Phase 8 COMPLETE. Spike PASS (member-only accds/v0 works, no permission change) → full crawl 231→956 projects / 4.55M rows, no DC quota; folder crawl → 111k folders sized. Coverage gate + DC reconciliation PASS; independent verifier 4/4. accds/v0 history floor = trailing ~12mo. Next: /gsd:plan-phase 9.
+Resume file: .planning/phases/08-activity-re-extraction/08-02-SUMMARY.md
