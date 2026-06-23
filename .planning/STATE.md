@@ -3,17 +3,17 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 current_phase: 10
-current_phase_name: PLANNED, ready to execute
+current_phase_name: Wave 2 complete — blocking rebuild checkpoint pending (Task 3)
 status: in_progress
-last_updated: "2026-06-23T22:46:09.758Z"
+last_updated: "2026-06-23T23:01:25.941Z"
 last_activity: 2026-06-23
-last_activity_desc: "`/gsd:plan-phase 10` complete: planner resolved 5 VERIFY items live, checker passed with 3 non-blocking execution notes (below)"
+last_activity_desc: "Plan 10-03 (BND-03/BND-04) Tasks 1+2 complete: 3 type modules moved to lib/acc with re-export barrels; CONCERNS.md BND-03/BND-04 verdict appended; all automated gates pass (tsc, repo-map check, ast-grep direct-prisma-in-ui=0, vitest 2207/2209). Task 3 = blocking human rebuild checkpoint. Commits 0188808e + d61d6e0b."
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 3
-  percent: 17
+  completed_plans: 5
+  percent: 33
 ---
 
 # Project State
@@ -28,12 +28,12 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 10 of 14 — Layering & Boundary Fixes (PLANNED, ready to execute)
-- **Plan:** 10-01 (BND-01) COMPLETE; 10-02 (BND-02) COMPLETE; 10-03 (BND-03/04) pending (Wave 2)
-- **Status:** Phase 10 Wave 1 complete — ready for Wave 2 (10-03)
-- **Last activity:** 2026-06-23 — Plan 10-02 (BND-02) complete: activityClassification.ts moved to lib/acc/, moduleOverrides.ts is pure re-export barrel, 4 diag scripts repointed, repo-map no-scripts-to-app 6->2, tsc clean, vitest 11/11. Commits 226b9bbf + 2b838711.
+- **Phase:** 10 of 14 — Layering & Boundary Fixes (Wave 2 complete; blocking rebuild checkpoint pending)
+- **Plan:** 10-01 (BND-01) COMPLETE; 10-02 (BND-02) COMPLETE; 10-03 (BND-03/04) Tasks 1+2 COMPLETE — Task 3 = blocking human rebuild checkpoint
+- **Status:** Phase 10 automated gates DONE — awaiting owner rebuild + visual spot-check on :3000
+- **Last activity:** 2026-06-23 — Plan 10-03 Tasks 1+2 complete: 3 pure aggregation types moved to lib/acc (coordinationCounts, timelineCounts, moduleCountsTypes); lib/server view imports repointed; CONCERNS.md BND-03/BND-04 verdict appended (21 lib->app edges classified; 28 app->server edges audited, 0 violations). All automated gates pass. Commits 0188808e + d61d6e0b.
 
-Progress: [██████░░░░] 60% (3 of 5 plans in phase 10; 1 of 6 phases complete)
+Progress: [██████████] 100% (5 of 5 plans in phase 10 automated work done; rebuild checkpoint pending)
 
 ## Status (data baseline — still current)
 
@@ -108,30 +108,20 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Phase 10 is planned and checker-verified. Run `/gsd:execute-phase 10` (after `/clear`) to execute:
-Wave 1 = 10-01 (BND-01) + 10-02 (BND-02) in parallel; Wave 2 = 10-03 (BND-03/04), which ends at a
-blocking rebuild + `:3000` spot-check human checkpoint.
+**BLOCKING CHECKPOINT (Task 3 of 10-03):** Rebuild on `:3000` and confirm `/access-analysis` and `/template-mty` render identically.
 
-**Carry these 3 checker execution-time notes into execution (non-blocking, do not re-plan):**
+Steps:
+1. Stop Task Scheduler task (`LECG Dashboard`).
+2. `npx tsc --noEmit` (confirm clean — was clean at gate time).
+3. `npm run build`.
+4. Restart Task Scheduler task. Open `:3000`.
+5. Verify `/access-analysis`: module donut, coordination panel (clash drill-down), activity timeline, coordination-by-project all render identically.
+6. Verify `/template-mty`: terrain/role views render identically.
+7. Confirm no console errors, no theme/layout drift.
 
-1. **BND-03 deferred-edge list (10-03 Task 2):** also enumerate the `lib/server/projectClashView.ts →
-   app/(dashboard)/access-analysis/coordinationClash` type-only edge (new in 10-01) and the
-   `lib/acc/activityClassification.ts → accTaxonomy/accNormalize` edge (new in 10-02) in the CONCERNS.md
-   deferred narrative — both are clean type imports that the fresh `repo-map check` will surface.
+After owner approves: Phase 10 is complete. Next = Phase 11 (TRUTH labels — independently unblocked, depends on Phase 09 only).
 
-2. **BND-04 audit count (10-03):** confirm the post-10-01 `app→server` count is **28** (10-01 drops only
-   the `@/server/db` import; `@/server/auth` stays by design) before writing the audit verdict.
-
-3. **10-02 Task 2 verify one-liner:** the Node JSON parse of `dependency-cruiser.json` for the
-   `no-scripts-to-app` warning on the `moduleOverrides` path is brittle to schema changes — fine as-is,
-   just be aware if it errors.
-
-Locked plan facts: BND-01 → new `acc-coordination` tRPC procedure + `lib/server/projectClashView.ts`
-helper + thin Server Action (call site unchanged); BND-02 → `lib/acc/activityClassification.ts` verbatim
-move re-exported from `moduleOverrides.ts` + 4 diag scripts repointed; BND-03/04 → Conservative (move 3
-clean type modules, document spatial-graph + folderTerrain-monolith edges as Phase-14-deferred). NOTE:
-`moduleOverrides.ts` has **no `n()` export** — the REQUIREMENTS/CONTEXT `n` reference is stale; do not
-invent one. Phase 11 (TRUTH labels) remains independently unblocked (depends on 09 only).
+**Phase 11 context:** TRUTH-02 needs `dataFloor` field added to timeline API response — verify exact tRPC procedure name before planning.
 
 ---
 *Last updated: 2026-06-23 — Phase 09 complete + verified (5/5 must-haves passed; commits 66c9f404..fe82b79a). Note: `gsd-tools phase complete` mis-reported is_last_phase:true / total_phases:1 (known CLI bug); STATE frontmatter + body repaired manually to reflect 1 of 6 phases done.*
