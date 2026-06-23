@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
 status: in_progress
-last_updated: "2026-06-23T22:20:42.000Z"
-last_activity: "2026-06-23 — Phase 10 (Layering & Boundary Fixes) context captured (10-CONTEXT.md, commit 20789a30). Decisions: BND-01 → new acc-coordination tRPC procedure + thin Server Action (Claude's discretion); BND-03/04 → Conservative, defer spatial-graph edges (user); test depth → light pin tests on moved code only (Claude's discretion). Ready to plan Phase 10."
+last_updated: "2026-06-23T23:05:00.000Z"
+last_activity: "2026-06-23 — Phase 10 (Layering & Boundary Fixes) PLANNED + checker-verified. 3 plans / 2 waves committed 1782755a (10-01 BND-01, 10-02 BND-02 parallel in wave 1; 10-03 BND-03/04 in wave 2). gsd-plan-checker: VERIFICATION PASSED (12/12 dims; BND-03 monolith-deferral judged honest). 5 CONTEXT VERIFY items resolved live: moduleOverrides.ts has NO n() export (stale ref); clash.ts is clash-wiki/task not coordination → new acc-coordination.ts confirmed; all 29 app→server edges are Server Component/Action (zero client violations → BND-04 = audit-and-document). Ready to execute Phase 10."
 progress:
   total_phases: 6
   completed_phases: 1
@@ -24,10 +24,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 10 of 14 — Layering & Boundary Fixes (next, not yet planned)
-- **Plan:** — (Phase 10 not yet planned; 10-CONTEXT.md captured)
-- **Status:** Phase 09 complete + verified; Phase 10 context gathered (10-CONTEXT.md, commit 20789a30) — ready to plan
-- **Last activity:** 2026-06-23 — Phase 10 context captured via /gsd:discuss-phase (3 gray areas resolved: BND-01 tRPC home, BND-03/04 deferral line, test depth)
+- **Phase:** 10 of 14 — Layering & Boundary Fixes (PLANNED, ready to execute)
+- **Plan:** 10-01 (BND-01), 10-02 (BND-02), 10-03 (BND-03/04) — 3 plans / 2 waves, committed 1782755a
+- **Status:** Phase 10 planned + checker-verified (VERIFICATION PASSED, 12/12 dims) — ready to execute
+- **Last activity:** 2026-06-23 — `/gsd:plan-phase 10` complete: planner resolved 5 VERIFY items live, checker passed with 3 non-blocking execution notes (below)
 
 Progress: [█░░░░░░░░░] 17% (1 of 6 phases)
 
@@ -102,15 +102,27 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Phase 10 context captured (`.planning/phases/10-layering-boundary-fixes/10-CONTEXT.md`). Run
-`/gsd:plan-phase 10` to plan Phase 10: Layering & Boundary Fixes. Locked context for the planner:
-BND-01 → new `acc-coordination` tRPC procedure wrapping a `lib/server` helper + keep
-`coordinationActions.ts` as a thin Server Action (call site unchanged); BND-03/04 → Conservative
-(remove only non-spatial-graph edges, document the rest as deferred); test depth → light pin tests on
-the moved `classifyActivity`/`donutModules` + clash-query shape only (heavy characterization stays in
-Phase 14). Researcher VERIFY items: fresh `repo-map check` edge enumeration, `clash.ts` vs new router,
-`root.ts` composition, exact `moduleOverrides.ts` exports + the four `diag-activity` import lines.
-Phase 11 (TRUTH labels) remains independently unblocked (depends on 09 only).
+Phase 10 is planned and checker-verified. Run `/gsd:execute-phase 10` (after `/clear`) to execute:
+Wave 1 = 10-01 (BND-01) + 10-02 (BND-02) in parallel; Wave 2 = 10-03 (BND-03/04), which ends at a
+blocking rebuild + `:3000` spot-check human checkpoint.
+
+**Carry these 3 checker execution-time notes into execution (non-blocking, do not re-plan):**
+1. **BND-03 deferred-edge list (10-03 Task 2):** also enumerate the `lib/server/projectClashView.ts →
+   app/(dashboard)/access-analysis/coordinationClash` type-only edge (new in 10-01) and the
+   `lib/acc/activityClassification.ts → accTaxonomy/accNormalize` edge (new in 10-02) in the CONCERNS.md
+   deferred narrative — both are clean type imports that the fresh `repo-map check` will surface.
+2. **BND-04 audit count (10-03):** confirm the post-10-01 `app→server` count is **28** (10-01 drops only
+   the `@/server/db` import; `@/server/auth` stays by design) before writing the audit verdict.
+3. **10-02 Task 2 verify one-liner:** the Node JSON parse of `dependency-cruiser.json` for the
+   `no-scripts-to-app` warning on the `moduleOverrides` path is brittle to schema changes — fine as-is,
+   just be aware if it errors.
+
+Locked plan facts: BND-01 → new `acc-coordination` tRPC procedure + `lib/server/projectClashView.ts`
+helper + thin Server Action (call site unchanged); BND-02 → `lib/acc/activityClassification.ts` verbatim
+move re-exported from `moduleOverrides.ts` + 4 diag scripts repointed; BND-03/04 → Conservative (move 3
+clean type modules, document spatial-graph + folderTerrain-monolith edges as Phase-14-deferred). NOTE:
+`moduleOverrides.ts` has **no `n()` export** — the REQUIREMENTS/CONTEXT `n` reference is stale; do not
+invent one. Phase 11 (TRUTH labels) remains independently unblocked (depends on 09 only).
 
 ---
 *Last updated: 2026-06-23 — Phase 09 complete + verified (5/5 must-haves passed; commits 66c9f404..fe82b79a). Note: `gsd-tools phase complete` mis-reported is_last_phase:true / total_phases:1 (known CLI bug); STATE frontmatter + body repaired manually to reflect 1 of 6 phases done.*
