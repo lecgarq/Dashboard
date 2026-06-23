@@ -278,6 +278,13 @@ export async function getCachedAccDcBulkUsers(
         | Map<string, { folderCount: number; totalBytes: number; permTypes: string[] }>
         | undefined;
       if (needsFolderPerms) {
+        // WARNING (DB-04): the includePermissionContexts:true branch below materialises the
+        // FULL AccFolderPermission table (~5M+ rows) into Node heap via a findMany scan.
+        // This re-opens the OOM window that the $queryRaw GROUP BY aggregate in the else-branch
+        // was added to close (2026-06 access-analysis OOM fix). Only enable this path when
+        // raw folder-level grants are strictly required (e.g. WS2 edge-feed / per-folder ACL).
+        // VERIFY: no active non-test caller enables includePermissionContexts:true
+        // (grep confirms only test files reference this flag).
         if (includePermissionContexts) {
           rawFolderPermissions = await db.accFolderPermission.findMany({
             where: { folder: { project: { folderCrawlStatus: { in: ["ok", "partial"] } } } },
