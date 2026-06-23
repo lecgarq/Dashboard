@@ -12,8 +12,8 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 - **Milestone:** v2.1 — Concerns Hardening
 - **Phase:** 09 of 14 — DB & Config Hardening (first phase)
 - **Plan:** —
-- **Status:** Roadmap complete / ready to plan
-- **Last activity:** 2026-06-23 — v2.1 roadmap created; 6 phases (09–14), 20 requirements mapped
+- **Status:** Phase 09 context gathered / ready to plan
+- **Last activity:** 2026-06-23 — Phase 09 CONTEXT.md captured (DB-01 apply-now+rebuild, TEST-01 DB-free unit test; commit f27ef2b8)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -83,7 +83,8 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Run `/gsd:plan-phase 09` (or `/gsd:discuss-phase 09`) to begin planning Phase 09.
+Run `/gsd:plan-phase 09` to plan Phase 09 from the captured context
+(`.planning/phases/09-db-config-hardening/09-CONTEXT.md`).
 
 ---
-*Last updated: 2026-06-23 — v2.1 roadmap created (Phases 09–14, 20 requirements)*
+*Last updated: 2026-06-23 — Phase 09 context gathered (resume: .planning/phases/09-db-config-hardening/09-CONTEXT.md)*
