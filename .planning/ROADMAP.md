@@ -21,7 +21,7 @@ this milestone ships their characterization tests and warning comments.
 
 ## Phases
 
-- [ ] **Phase 09: DB & Config Hardening** - Add `roleId` index + migration, remove SSL fossil, document heap/pool env vars, guard raw-scan path, and ship the OOM-regression aggregate test
+- [x] **Phase 09: DB & Config Hardening** - Add `roleId` index + migration, remove SSL fossil, document heap/pool env vars, guard raw-scan path, and ship the OOM-regression aggregate test — COMPLETE 2026-06-23
 - [ ] **Phase 10: Layering & Boundary Fixes** - Move direct-Prisma Server Action into tRPC, extract activity classification to `lib/acc`, eliminate non-spatial-graph lib→app and client app→server violations
 - [ ] **Phase 11: Data-Truthfulness Labels** - Surface DC 428/1,152 coverage, ACCDS ~12-month data floor, module-donut service caveat, and AccDcRole fallback docs on `/access-analysis`
 - [ ] **Phase 12: Integration Health & Observability** - ACCDS session health in progress monitor, AccDcRole-empty warning in cache, remove stale TODO[02.5] guards
@@ -43,7 +43,7 @@ this milestone ships their characterization tests and warning comments.
 **Plans**: 2 plans
 Plans:
 - [x] 09-01-PLAN.md — DB-free code/doc/test changes: remove SSL fossil (DB-02), document PG_POOL_MAX/NODE_OPTIONS (DB-03), raw-scan warning comment (DB-04), OOM aggregate regression test (TEST-01) — COMPLETE 2026-06-23 (commits 66c9f404..64311fac)
-- [ ] 09-02-PLAN.md — Live-DB index: add `@@index([roleId])` + raw CREATE INDEX migration + `prisma migrate resolve`, EXPLAIN ANALYZE Index-Scan proof, tsc gate + rebuild on :3000 (DB-01)
+- [x] 09-02-PLAN.md — Live-DB index: add `@@index([roleId])` + raw CREATE INDEX migration + `prisma migrate resolve`, EXPLAIN ANALYZE Index-Scan proof, tsc gate + rebuild on :3000 (DB-01) — COMPLETE 2026-06-23 (commit 8d517adb)
 
 ### Phase 10: Layering & Boundary Fixes
 **Goal**: The `direct-prisma-in-ui` ast-grep rule returns 0 matches, the four scripts→app `moduleOverrides` dependency-cruiser warnings are cleared, and non-spatial-graph `lib→app` and client `app→server` violations are eliminated.
@@ -105,7 +105,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 09. DB & Config Hardening | 1/2 | In progress | Plan 01 complete (DB-02/03/04/TEST-01) |
+| 09. DB & Config Hardening | 2/2 | Complete | Both plans complete 2026-06-23 (DB-01/02/03/04/TEST-01) |
 | 10. Layering & Boundary Fixes | 0/TBD | Not started | - |
 | 11. Data-Truthfulness Labels | 0/TBD | Not started | - |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |

@@ -10,7 +10,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Database & Config Hardening (DB)
 
-- [ ] **DB-01**: `AccFolderPermission` gains a standalone `@@index([roleId])` via a Prisma migration; `EXPLAIN ANALYZE` on a role-joined terrain query confirms the new index is used. _(CONCERNS §1.2)_
+- [x] **DB-01**: `AccFolderPermission` gains a standalone `@@index([roleId])` via a Prisma migration; `EXPLAIN ANALYZE` on a role-joined terrain query confirms the new index is used. _(CONCERNS §1.2)_ — COMPLETE 2026-06-23 (09-02-SUMMARY.md)
 - [ ] **DB-02**: `scripts/count-acc-data.cjs` no longer sets `ssl:{rejectUnauthorized:false}`; it connects via the project Prisma client / `DATABASE_URL` pool with no TLS-bypass flag. _(§1.3)_
 - [ ] **DB-03**: `.env.example` documents `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining why it is required for access-analysis at scale (pool × workers ≤ `max_connections`). _(§1.4, §1.5)_
 - [ ] **DB-04**: the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` carries a warning comment about the ~5M-row heap risk plus a `VERIFY:` note that no active caller enables it. _(§1.1)_
@@ -77,11 +77,11 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| DB-01 | Phase 09 | Pending |
-| DB-02 | Phase 09 | Pending |
-| DB-03 | Phase 09 | Pending |
-| DB-04 | Phase 09 | Pending |
-| TEST-01 | Phase 09 | Pending |
+| DB-01 | Phase 09 | Complete (2026-06-23) |
+| DB-02 | Phase 09 | Complete (2026-06-23) |
+| DB-03 | Phase 09 | Complete (2026-06-23) |
+| DB-04 | Phase 09 | Complete (2026-06-23) |
+| TEST-01 | Phase 09 | Complete (2026-06-23) |
 | BND-01 | Phase 10 | Pending |
 | BND-02 | Phase 10 | Pending |
 | BND-03 | Phase 10 | Pending |

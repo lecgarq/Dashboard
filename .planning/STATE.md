@@ -11,9 +11,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 - **Milestone:** v2.1 — Concerns Hardening
 - **Phase:** 09 of 14 — DB & Config Hardening (first phase)
-- **Plan:** 01 COMPLETE / Plan 02 next (DB-01 index migration + rebuild)
-- **Status:** Plan 09-01 complete (DB-02/DB-03/DB-04/TEST-01 closed)
-- **Last activity:** 2026-06-23 — Plan 09-01 executed (SSL fossil removed, .env.example documented, raw-scan guardrail added, OOM regression test added; commits 66c9f404..64311fac)
+- **Plan:** 02 COMPLETE / Phase 09 done (both plans complete)
+- **Status:** Plan 09-02 complete (DB-01 index applied + EXPLAIN ANALYZE proven + :3000 rebuilt)
+- **Last activity:** 2026-06-23 — Plan 09-02 executed (acc_folder_permission_role_id_idx applied to live Postgres, prisma migrate resolve registered, Bitmap Index Scan proven, tsc clean, npm run build succeeded, :3000 restarted; commit 8d517adb)
 
 Progress: [░░░░░░░░░░] 0%
 
@@ -76,6 +76,8 @@ Recent decisions affecting current work:
 - Plan 09-01: .env.example committed via !.env.example gitignore exception (opt-in pattern, no secrets)
 - Plan 09-01: TEST-01 is a pinning test (OOM fix already shipped); passes immediately in GREEN (expected)
 - Plan 09-01: DB-04 guardrail is comment-only on includePermissionContexts branch; no behavior change
+- Plan 09-02: DB-01 index applied via pg Client + prisma migrate resolve (not migrate dev — pgvector choke); Bitmap Index Scan proven on low-frequency roleId (count=1)
+- Plan 09-02: EXPLAIN ANALYZE chose Bitmap Index Scan (not plain Index Scan) — both confirm acc_folder_permission_role_id_idx is used; success criterion met
 
 ### Blockers/Concerns
 
@@ -86,9 +88,8 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Execute Plan 09-02: DB-01 index migration — run raw `CREATE INDEX acc_folder_permission_role_id_idx`,
-prove with `EXPLAIN ANALYZE`, register with `prisma migrate resolve`, then rebuild `:3000`.
-Plan file: `.planning/phases/09-db-config-hardening/09-02-PLAN.md`
+Phase 09 complete. Start Phase 10: boundary fixes (BND-02/BND-03 — spatial-graph-coupled lib→app edges).
+Per ROADMAP.md, Phase 10 depends on Phase 09 (now done). Phase 11 (TRUTH labels) is also unblocked.
 
 ---
 *Last updated: 2026-06-23 — Plan 09-01 complete (DB-02/03/04/TEST-01 closed; commits 66c9f404..64311fac)*
