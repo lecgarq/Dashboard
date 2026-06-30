@@ -21,9 +21,47 @@ let projectsCache: { at: number; key: string; rows: ProjectActivityTotal[] } | n
 const treeCache = new Map<string, { at: number; rows: FolderActivityRow[] }>();
 
 /**
+ * Builds a merged project-name map from AccProject (authoritative live superset)
+ * and AccDcProject (Data Connector subset). AccProject names take precedence when
+ * the same id appears in both sources; the DC names fill in any gap not covered
+ * by the live superset.
+ *
+ * Split out as a pure function so it can be unit-tested without a DB connection.
+ */
+export function buildProjectNameMap(
+  accProject: ReadonlyArray<{ id: string; name: string }>,
+  accDcProject: ReadonlyArray<{ id: string; name: string }>,
+): Map<string, string> {
+  // Load DC names first so AccProject entries (authoritative) overwrite on conflict.
+  const map = new Map<string, string>();
+  for (const p of accDcProject) {
+    map.set(p.id, p.name);
+  }
+  for (const p of accProject) {
+    map.set(p.id, p.name);
+  }
+  return map;
+}
+
+/**
+ * Resolves a projectId to a human-readable name using the provided name map.
+ * Returns "Unknown project" for any id absent from the map or for a blank id —
+ * previously the code fell back to the raw project id string, which leaked
+ * internal identifiers in the "Folder Activity by Role" view.
+ *
+ * Pure function — safe to unit-test without a DB connection.
+ */
+export function resolveProjectName(nameById: Map<string, string>, projectId: string): string {
+  if (!projectId) return "Unknown project";
+  return nameById.get(projectId) ?? "Unknown project";
+}
+
+/**
  * Folder-scoped activity totals per project, for the given project ids. One
  * grouped index scan over AccActivityAccds (folder rows only), names merged from
- * AccDcProject in JS (mirrors moduleActivityView). Sorted by activity desc.
+ * AccProject (1,153 live superset) + AccDcProject (550 DC subset) in JS. Sorted
+ * by activity desc. Unresolved project ids render as "Unknown project" — never
+ * as a raw GUID.
  *
  * The `userEmail IS NOT NULL` filter matches loadFolderActivityTree's filter, so a
  * project's headline `activity` reconciles exactly with the sum of its drill-down
@@ -37,7 +75,7 @@ export async function loadFolderActivityProjects(projectIds: string[]): Promise<
     return projectsCache.rows;
   }
 
-  const [raw, projects] = await Promise.all([
+  const [raw, accProjects, dcProjects] = await Promise.all([
     db.$queryRaw<RawProjectRow[]>`
       SELECT "projectId" AS "projectId",
              COUNT(*)::int AS activity,
@@ -48,14 +86,18 @@ export async function loadFolderActivityProjects(projectIds: string[]): Promise<
         AND "userEmail" IS NOT NULL
       GROUP BY "projectId"
     `,
+    // AccProject is the authoritative live superset (1,153 projects); its names
+    // take precedence over AccDcProject in the merged map.
+    db.accProject.findMany({ select: { id: true, name: true } }),
     db.accDcProject.findMany({ select: { id: true, name: true } }),
   ]);
-  const nameById = new Map(projects.map((p) => [p.id, p.name]));
+
+  const nameById = buildProjectNameMap(accProjects, dcProjects);
 
   const rows: ProjectActivityTotal[] = raw
     .map((r) => ({
       projectId: r.projectId,
-      projectName: nameById.get(r.projectId) ?? r.projectId,
+      projectName: resolveProjectName(nameById, r.projectId),
       activity: r.activity,
       folders: r.folders,
     }))
