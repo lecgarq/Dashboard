@@ -145,6 +145,18 @@ None beyond the plan's threat model. The name-merge precedence is deterministic 
 - **Gates:** Vitest run (7/7 passed). `npx tsc --noEmit` (0 errors from my files; 1 pre-existing error from plan 11-03 in `mainCharts.tsx` — out of scope). Visual GUID-absence check deferred to end-of-phase per `human_verify_mode: end-of-phase`.
 - **VERIFY:** Visual check on rebuilt `:3000` that "Folder Activity by Role" shows no raw GUIDs. Pre-existing tsc error in `mainCharts.tsx` needs resolution (plan 11-03 scope).
 
+## Self-Check: PASSED
+
+| Check | Status |
+|-------|--------|
+| `lib/server/folderActivityView.ts` exists | FOUND |
+| `lib/server/__tests__/folderActivityView.test.ts` exists | FOUND |
+| `11-02-SUMMARY.md` exists | FOUND |
+| Commit `045d89cb` (RED test) | FOUND in git log |
+| Commit `8e9c88ec` (GREEN implementation) | FOUND in git log |
+| Vitest 7/7 pass (final run) | PASSED |
+| `npx tsc --noEmit` (final run — full tree) | PASSED (0 errors; prior single-error was from 11-03 mid-execution, resolved by 11-03 caller-update commits) |
+
 ---
 *Phase: 11-data-truthfulness-labels*
 *Completed: 2026-06-30*

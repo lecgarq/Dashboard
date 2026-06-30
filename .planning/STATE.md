@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
 current_phase: 11
-current_phase_name: 4 plans, commit ece2c92f
+current_phase_name: TRUTH-04 doc
 status: in_progress
-last_updated: "2026-06-30T15:05:26.177Z"
+last_updated: "2026-06-30T15:07:53.930Z"
 last_activity: 2026-06-30
-last_activity_desc: Phase 11 Plan 11-01 completed; `11-01-SUMMARY.md` exists. Continue execute-phase 11 with 11-02/11-03, then 11-04.
+last_activity_desc: Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 7
+  completed_plans: 8
   percent: 33
 ---
 
@@ -29,7 +29,7 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 - **Milestone:** v2.1 — Concerns Hardening
 - **Phase:** 11 of 14 — Data-Truthfulness Labels. Wave 1 COMPLETE: 11-01 (TRUTH-04 doc) ✓, 11-02 (GUID→name fix) ✓, 11-03 (dataFloor) ✓. Wave 2 = 11-04 (coverage header + module ⓘ tooltip), depends on 11-03.
-- **Plan:** 3 of 4 Phase 11 plans executed. Next = 11-04 (Wave 2).
+- **Plan:** 4 of 4 Phase 11 plans executed. Next = 11-04 (Wave 2).
 - **Status:** Phase 11 Wave 1 complete. 11-01 (TRUTH-04 doc), 11-02 (folderActivity GUID fix + Vitest), 11-03 (dataFloor RSC + buildFloors) all shipped. 11-04 (coverage header + ⓘ tooltip) is Wave 2, depends on 11-03. Key owner correction baked into 11-04: coverage header leads with free-crawl ~956/1,153, not the stale 428-DC framing. Pre-existing tsc error in mainCharts.tsx (from 11-03 type change) needs resolution in 11-04 or a follow-up.
 - **Last activity:** 2026-06-30 — Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
 
