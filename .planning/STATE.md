@@ -1,15 +1,13 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
+milestone: v1.0
 milestone_name: Concerns Hardening
-current_phase: 13
-current_phase_name: Type-Safety Guards
-status: in_progress
-stopped_at: Phase 12 COMPLETE + verified (automated, human_needed) + owner-approved; Phase 13 next
-last_updated: "2026-06-30T18:04:29.744Z"
-last_activity: "2026-06-30 — Phase 12 COMPLETE (OBS-01/02/03): getSessionHealth helper + crawler [WARN] preflight + :4321 monitor session-health line; [ACC-ROLES] effective-empty warn at loadInstanceView; stale TODO[02.5] diagnostics removed. Verifier human_needed (all automated gates passed: vitest 13/13 + 7/7, tsc clean, scope/secret-hygiene clean); owner-approved. 8 commits (dfe3af09..ca82f1dc)."
+status: executing
+stopped_at: Phase 13 context gathered
+last_updated: "2026-06-30T18:23:05.639Z"
+last_activity: "2026-06-30 — Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved."
 progress:
-  total_phases: 6
+  total_phases: 5
   completed_phases: 4
   total_plans: 11
   completed_plans: 11
@@ -153,6 +151,6 @@ expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the
 
 ## Session
 
-**Last session:** 2026-06-30T18:04:29.744Z
-**Stopped at:** Phase 12 COMPLETE + verified (automated) + owner-approved; Phase 13 next
-**Resume file:** .planning/phases/13-type-safety-guards/13-CONTEXT.md (not yet created — run /gsd:discuss-phase 13)
+**Last session:** 2026-06-30T18:23:05.637Z
+**Stopped at:** Phase 13 context gathered
+**Resume file:** .planning/phases/13-type-safety-guards/13-CONTEXT.md
