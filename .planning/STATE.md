@@ -3,16 +3,18 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
 current_phase: 12
-current_phase_name: Integration Health & Observability
+current_phase_name: "Integration Health & Observability. Phase 11 is complete, verified, and owner-approved on :3000."
 status: in_progress
-stopped_at: Phase 12 plan 12-02 COMPLETE (OBS-02+OBS-03); plan 12-01 (OBS-01) outstanding
-last_updated: "2026-06-30T11:40:00.000Z"
-last_activity: "2026-06-30 — Plan 12-02 COMPLETE: OBS-02 effective-empty role-resolution warn + OBS-03 stale diagnostic removal. 2 commits (cac1a07e, 72b4079d). tsc clean, 7/7 Vitest pass. mergeRoleNames pure; [ACC-ROLES] warn at loadInstanceView."
+stopped_at: Phase 12 plans 12-01 and 12-02 COMPLETE; phase verification pending
+last_updated: "2026-06-30T17:51:52.162Z"
+last_activity: 2026-06-30
+last_activity_desc: "Plan 12-01 COMPLETE (OBS-01): getSessionHealth helper, crawler startup `[WARN]`, and `:4321` monitor session-health line. Phase 12 now needs verification."
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 9
-  completed_plans: 9
+  completed_phases: 4
+  total_plans: 11
+  completed_plans: 11
+  percent: 67
 ---
 
 # Project State
@@ -28,9 +30,9 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 - **Milestone:** v2.1 — Concerns Hardening (3 of 6 phases complete: 09, 10, 11)
 - **Phase:** 12 of 14 — Integration Health & Observability. Phase 11 is complete, verified, and owner-approved on :3000.
-- **Plan:** Phase 12 has 2 wave-1 plans: 12-01 (OBS-01 ACCDS session health — outstanding) and 12-02 (OBS-02+OBS-03 — COMPLETE, 12-02-SUMMARY.md created).
-- **Status:** Phase 12 in progress — plan 12-02 complete, plan 12-01 outstanding. Milestone v2.1 in progress (Phases 12, 13, 14 remain).
-- **Last activity:** 2026-06-30 — Plan 12-02 COMPLETE (OBS-02+OBS-03): shouldWarnEmptyRoleResolution predicate + [ACC-ROLES] warn at loadInstanceView; stale TODO[02.5] diagnostics removed from acc-admin.ts. 2 commits (cac1a07e, 72b4079d).
+- **Plan:** Phase 12 has 2/2 plans complete: 12-01 (OBS-01 ACCDS session health) and 12-02 (OBS-02+OBS-03).
+- **Status:** Phase 12 implementation complete; phase verification pending. Milestone v2.1 in progress (Phases 12, 13, 14 remain).
+- **Last activity:** 2026-06-30 — Plan 12-01 COMPLETE (OBS-01): getSessionHealth helper, crawler startup `[WARN]`, and `:4321` monitor session-health line. Phase 12 now needs verification.
 
 Progress: [█████░░░░░] 50% (3 of 6 phases complete — 09, 10, 11)
 
@@ -99,6 +101,7 @@ Recent decisions affecting current work:
 - Plan 11-01: TRUTH-04 — mergeRoleNames lives in lib/server/accessInstanceView.ts; AccDcRole empty → AccRole fallback; DC wins on conflict (documented in INTEGRATIONS.md)
 - Plan 11-02: AccProject names take precedence over AccDcProject in merged name map (AccProject is live API superset, fresher); fallback = "Unknown project" (never raw GUID); pure resolver exported for Vitest isolation
 - Plan 11-02: DB verified — AccProject covers 100% of 956 ACCDS projectIds; AccDcProject covers only 495 (52%); zero residual after merge
+- Plan 12-01: OBS-01 — local ACCDS session-health helper, crawler startup preflight, and progress-monitor session line; no Autodesk call and no cookie values logged/rendered
 - Plan 12-02: OBS-02 — effective-empty predicate shouldWarnEmptyRoleResolution + [ACC-ROLES] warn at loadInstanceView; warns ONLY when both AccDcRole+AccRole yield zero names; by-design AccDcRole-empty alone stays silent
 - Plan 12-02: OBS-03 — stale TODO[02.5] diagnostic removal from acc-admin.ts code-grounded; companyRole/lastSignIn resolution intact; field names confirmed 2026-05-18
 
@@ -109,21 +112,24 @@ None blocking Phase 12 planning/execution. Key risks to track:
 - Run `npx tsc --noEmit` before any rebuild; full `npm run build` must go
   through the Task Scheduler stop/start deploy sequence or
   `node scripts/gsd-self-gate.cjs --rebuild`.
+
 - BND-02/BND-03: spatial-graph-coupled `lib→app` edges are documented-deferred, not fixed.
 - Phase 12 OBS-02: `lib/server/acc-hot-cache.ts` does not reference `AccDcRole`;
   place the warning at the verified role-resolution/cache boundary instead of
   following the stale roadmap path blindly.
+
 - Phase 12 OBS-01: ACCDS session state lives in gitignored
   `scratch/acc-session.json`; never print cookie contents while adding health
   visibility.
+
 - **RESOLVED (plan 11-02, 2026-06-30):** "Folder Activity by Role" GUID leak fixed. AccProject (1,153) merged into name resolution. DB verified: AccProject covers all 956 ACCDS projectIds (100%). Fallback = "Unknown project". 7-test Vitest pinned.
 - **RESOLVED (plan 11-04, 2026-06-30):** mainCharts.tsx tsc error was already resolved by 11-03's commit 926c57dc. tsc clean confirmed at start and end of 11-04 execution.
 
 ## Next Action
 
-Plan 12-02 COMPLETE (OBS-02+OBS-03). Milestone v2.1 continues with **Phase 12 Plan 12-01 — OBS-01 ACCDS session health**.
+Phase 12 plans 12-01 and 12-02 are COMPLETE. Milestone v2.1 continues with **Phase 12 verification**.
 
-**Next = execute plan 12-01 (ACCDS session-expiry warning in scripts/progress-monitor.cjs)**.
+**Next = verify Phase 12**.
 
 Phase 12 scope (from ROADMAP): ACCDS session-health in `scripts/progress-monitor.cjs`
 (warn before crawl token-refresh), `AccDcRole`-empty warning after cache refresh, and
@@ -143,9 +149,10 @@ Remaining v2.1 phases after 12: Phase 13 (Type-Safety Guards), Phase 14 (Charact
 | Phase 11 P03 | 6 | 3 tasks | 6 files |
 | Phase 11 P04 | 10 | 3 tasks | 6 files |
 | Phase 12 P02 | ~15min | 2 tasks | 3 files |
+| Phase 12 P01 | ~20min | 3 tasks | 4 files |
 
 ## Session
 
-**Last session:** 2026-06-30T11:40:00.000Z
-**Stopped at:** Plan 12-02 COMPLETE (OBS-02+OBS-03 — 2 commits: cac1a07e, 72b4079d); plan 12-01 (OBS-01) outstanding
-**Resume file:** .planning/phases/12-integration-health-observability/12-01-PLAN.md
+**Last session:** 2026-06-30T17:51:52.155Z
+**Stopped at:** Phase 12 plans 12-01 and 12-02 COMPLETE; phase verification pending
+**Resume file:** .planning/phases/12-integration-health-observability/12-01-SUMMARY.md
