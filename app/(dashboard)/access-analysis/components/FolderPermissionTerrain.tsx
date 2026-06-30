@@ -1,3 +1,6 @@
+// SPLIT-PENDING: REF-01 — this is the terrain monolith slated to split into data-hook,
+// transform, and thin-view modules; its server boundary is characterized by
+// lib/server/__tests__/folderPermissionTerrainView.test.ts so the split stays safe.
 "use client";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";

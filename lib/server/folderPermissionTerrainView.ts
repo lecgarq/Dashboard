@@ -1,3 +1,6 @@
+// SPLIT-PENDING: REF-02 — the base AccFolderPermission role/perm/folder join in this module
+// is the same shared join used by lib/server/templateFolderTerrain.ts; deferred extraction
+// into lib/server/folderPermQuery.ts; pinned by TEST-02 boundary tests and TEST-03 shared-query contract.
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";

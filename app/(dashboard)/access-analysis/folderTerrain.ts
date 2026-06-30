@@ -1,3 +1,6 @@
+// SPLIT-PENDING: REF-01 — this transform module is slated to be extracted in the
+// FolderPermissionTerrain split; its pure geometry is already covered by
+// app/(dashboard)/access-analysis/__tests__/folderTerrain.test.ts.
 /**
  * folderTerrain.ts
  *

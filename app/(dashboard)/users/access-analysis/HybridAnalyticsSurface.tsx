@@ -1,3 +1,5 @@
+// SPLIT-PENDING: REF-01 — this client DuckDB/Mosaic monolith is comment-only this phase
+// (real logic is browser-only; no new tests added); slated for data-hook/transform split later.
 "use client";
 
 import Link from "next/link";
