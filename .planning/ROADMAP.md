@@ -101,7 +101,13 @@ Plans:
   2. `lib/server/acc-hot-cache.ts` emits a `console.warn` (or equivalent structured log) when `AccDcRole` is still empty after a cache refresh, making a silent `AccRole`-sync failure observable in the server log
   3. `lib/acc/acc-admin.ts` no longer contains the two `TODO[02.5]` defensive-logging guards at lines 51 and 207; field names are confirmed against the live schema before removal
 
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+
+- [ ] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, &lt;12h threshold, estimate-labeled (wave 1)
+- [ ] 12-02-PLAN.md — OBS-02 + OBS-03: effective-empty `[ACC-ROLES]` warn at the real role-resolution boundary `loadInstanceView()` in `lib/server/accessInstanceView.ts` (NOT acc-hot-cache.ts); remove stale `TODO[02.5]` diagnostics from `lib/server/acc-admin.ts` (verified path; fields confirmed code-grounded) (wave 1)
+
+**Note**: OBS-02/OBS-03 paths corrected from the roadmap success criteria — verified injection point is `lib/server/accessInstanceView.ts` (`acc-hot-cache.ts` does not reference `AccDcRole`), verified diagnostics location is `lib/server/acc-admin.ts` (not `lib/acc/`). OBS-02 fires on effective-empty (both sources zero), not the by-design `AccDcRole`-empty state.
 
 ### Phase 13: Type-Safety Guards
 
@@ -139,6 +145,6 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
-| 12. Integration Health & Observability | 0/TBD | Not started | - |
+| 12. Integration Health & Observability | 0/2 | Not started | - |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
 | 14. Characterization Tests | 0/TBD | Not started | - |
