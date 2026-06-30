@@ -5,7 +5,8 @@ milestone_name: Concerns Hardening
 current_phase: 11
 current_phase_name: TRUTH-04 doc
 status: in_progress
-last_updated: "2026-06-30T15:07:53.930Z"
+stopped_at: 11-03 plan complete
+last_updated: "2026-06-30T15:08:11.598Z"
 last_activity: 2026-06-30
 last_activity_desc: Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
 progress:
@@ -148,3 +149,10 @@ Wave 2: Plan 11-04 (coverage header + module ⓘ tooltip) is next — depends on
 |-------|------|----------|-------|
 | Phase 11-data-truthfulness-labels P01 | 1 | 2 tasks | 1 files |
 | Phase 11-data-truthfulness-labels P02 | 4 | 3 tasks | 2 files |
+| Phase 11 P03 | 6 | 3 tasks | 6 files |
+
+## Session
+
+**Last session:** 2026-06-30T15:08:11.590Z
+**Stopped at:** 11-03 plan complete
+**Resume file:** none
