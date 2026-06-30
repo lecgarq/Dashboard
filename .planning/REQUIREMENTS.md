@@ -32,8 +32,8 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 ### Integration Health & Observability (OBS)
 
 - [ ] **OBS-01**: `scripts/progress-monitor.cjs` reports ACCDS session health and emits `[WARN] ACCDS session expires in <N> hours` (or "session expired") before the crawl token-refresh path runs. _(§5.1)_
-- [ ] **OBS-02**: `lib/server/acc-hot-cache.ts` logs a warning when `AccDcRole` is still empty after a cache refresh, making a silent `AccRole`-sync failure observable. _(§2.4, observable)_
-- [ ] **OBS-03**: the two stale `TODO[02.5]` defensive-logging guards in `lib/acc/acc-admin.ts` (lines 51, 207) are removed after a one-time confirmation that live field names match. _(§5.3)_
+- [x] **OBS-02**: `lib/server/accessInstanceView.ts` logs `[ACC-ROLES]` warn at loadInstanceView when effective-empty (both AccDcRole+AccRole yield zero names) — real boundary (not acc-hot-cache.ts); by-design AccDcRole-empty alone stays silent. _(§2.4, observable — completed 2026-06-30, commit cac1a07e)_
+- [x] **OBS-03**: the two stale `TODO[02.5]` defensive-logging guards in `lib/server/acc-admin.ts` (lines 51-52, 207-219) removed — code-grounded (job_title confirmed 2026-05-18; companyRole/lastSignIn consumed downstream). _(§5.3 — completed 2026-06-30, commit 72b4079d)_
 
 ### Type-Safety & Lean-Payload Guards (TYPE)
 
@@ -91,8 +91,8 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | TRUTH-03 | Phase 11 | Complete |
 | TRUTH-04 | Phase 11 | Complete |
 | OBS-01 | Phase 12 | Pending |
-| OBS-02 | Phase 12 | Pending |
-| OBS-03 | Phase 12 | Pending |
+| OBS-02 | Phase 12 | Complete |
+| OBS-03 | Phase 12 | Complete |
 | TYPE-01 | Phase 13 | Pending |
 | TYPE-02 | Phase 13 | Pending |
 | TEST-02 | Phase 14 | Pending |
