@@ -212,7 +212,7 @@ note that role names reflect the live APS state, not the DC snapshot date.
 **Notable schema decisions:**
 - Prisma datasource: `provider = "postgresql"` (no `directUrl` in schema — connection handled in `server/db.ts` adapter)
 - `AccDcRole` permanently empty — DC never delivers `admin_roles.csv`
-- `AccActivity.service` field carries Autodesk product attribution (40.7% of rows) — not used by `classifyActivity` (uses `rawAction` only)
+- `AccActivity.service` field carries Autodesk product attribution (~40.7% of rows) — not used by `classifyActivity` (uses `rawAction` only). The two attributions disagree on ~40.7% of rows: Autodesk's `service` attribution is not yet reconciled with the `rawAction`-based module classification used by the Activity-by-module donut on `/access-analysis`. This unreconciled gap is surfaced as a hover/focus-only ⓘ tooltip on that panel (TRUTH-03).
 - `AccGraphLayoutCache` — persists cosmos.gl 3D layout positions for cache reuse
 - `AccPersonGraphSnapshot` — snapshot model for person graph rebuild scripts
 

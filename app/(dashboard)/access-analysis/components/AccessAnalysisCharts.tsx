@@ -28,6 +28,12 @@ import { projectOptions, filterRowsBySelection, applySliceFilters, type ProjectR
 import { FilterBanner } from "./FilterBanner";
 import { PeopleDrillList } from "./PeopleDrillList";
 import { DrillSheet } from "@/components/ui/DrillSheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { groupProjectOptions } from "../projectGroups";
 import type { DrillPerson } from "../roleCounts";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
@@ -436,7 +442,7 @@ export function AccessAnalysisCharts({
           </PremiumSurface></Reveal>
         ) : null}
 
-        {/* Activity by module — activity-derived → coverage badge; full-width in the grid */}
+        {/* Activity by module — activity-derived → coverage badge + TRUTH-03 ⓘ caveat */}
         <Reveal className="lg:col-span-2"><PremiumSurface
           variant="base"
           className="flex flex-col gap-3 p-5 overflow-hidden"
@@ -444,7 +450,47 @@ export function AccessAnalysisCharts({
           <SectionHeader
             title="Activity by module"
             subtitle="Total actions recorded in each ACC module."
-            badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
+            badge={
+              <>
+                {/* TRUTH-03: hover/focus-only ⓘ tooltip — candid classification caveat.
+                    TooltipProvider is NOT mounted globally in this tree → wrap locally. */}
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        type="button"
+                        aria-label="About module classification"
+                        className="inline-flex items-center text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <svg
+                          aria-hidden
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-3.5 w-3.5"
+                        >
+                          <circle cx="12" cy="12" r="10" />
+                          <path d="M12 16v-4M12 8h.01" />
+                        </svg>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent
+                      data-testid="module-caveat"
+                      className="max-w-xs text-xs"
+                    >
+                      Classification is derived from each activity&apos;s{" "}
+                      <code className="font-mono">rawAction</code>. Autodesk&apos;s own{" "}
+                      <code className="font-mono">service</code> product attribution is
+                      not yet reconciled — the two disagree on ~40.7% of rows.
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <ActivityCoverageBadge covered={covCovered} total={covTotal} />
+              </>
+            }
           />
           <ModulesPieChart summary={moduleSummary} />
         </PremiumSurface></Reveal>

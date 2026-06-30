@@ -41,6 +41,10 @@ vi.mock("@/lib/server/coordinationByProjectView", () => ({
 vi.mock("@/lib/server/projectCoverageView", () => ({
   loadProjectCoverage: () => Promise.resolve([]),
 }));
+// TRUTH-01: DC coverage loader added by plan 11-04.
+vi.mock("@/lib/server/dcCoverageView", () => ({
+  loadDcCoverage: vi.fn(async () => ({ covered: 0, total: 0 })),
+}));
 // Empty terrain project list -> the folder-permission terrain section is omitted,
 // keeping this test focused on the roles donut.
 // loadFolderPermissionTerrain is NOT imported or called by page.tsx (terrain is now
