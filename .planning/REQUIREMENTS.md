@@ -24,9 +24,9 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Data-Truthfulness Labels (TRUTH)
 
-- [ ] **TRUTH-01**: `/access-analysis` shows Data Connector coverage ("Based on 428 of 1,152 projects with Data Connector access") on the data-freshness panel, and DC-derived metrics are labeled accordingly. _(§5.2)_
-- [ ] **TRUTH-02**: activity-timeline charts display a "Data available from [date]" footnote sourced from a `dataFloor` field on the timeline API response (per-project `MIN(createdAt)` from `AccActivityAccds`, ~12-month floor). _(§2.6)_
-- [ ] **TRUTH-03**: the module-activity donut on `/access-analysis` carries a footnote/tooltip stating classification is `rawAction`-based and Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement). _(§2.5)_
+- [x] **TRUTH-01**: `/access-analysis` shows Data Connector coverage ("Based on 428 of 1,152 projects with Data Connector access") on the data-freshness panel, and DC-derived metrics are labeled accordingly. _(§5.2)_
+- [x] **TRUTH-02**: activity-timeline charts display a "Data available from [date]" footnote sourced from a `dataFloor` field on the timeline API response (per-project `MIN(createdAt)` from `AccActivityAccds`, ~12-month floor). _(§2.6)_
+- [x] **TRUTH-03**: the module-activity donut on `/access-analysis` carries a footnote/tooltip stating classification is `rawAction`-based and Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement). _(§2.5)_
 - [x] **TRUTH-04**: the `AccDcRole`-empty → `AccRole` fallback (and its DC-conflict behavior) is documented in `.planning/codebase/INTEGRATIONS.md`. _(§2.4, doc)_
 
 ### Integration Health & Observability (OBS)
@@ -86,9 +86,9 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | BND-02 | Phase 10 | Complete |
 | BND-03 | Phase 10 | Complete |
 | BND-04 | Phase 10 | Complete |
-| TRUTH-01 | Phase 11 | Pending |
-| TRUTH-02 | Phase 11 | Pending |
-| TRUTH-03 | Phase 11 | Pending |
+| TRUTH-01 | Phase 11 | Complete |
+| TRUTH-02 | Phase 11 | Complete |
+| TRUTH-03 | Phase 11 | Complete |
 | TRUTH-04 | Phase 11 | Complete |
 | OBS-01 | Phase 12 | Pending |
 | OBS-02 | Phase 12 | Pending |
