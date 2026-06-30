@@ -7,7 +7,28 @@ import type { TimelineSummary } from "../timelineCounts";
 
 const ACCENT = "#38bdf8"; // sky — same accent as the Model-Coordination module
 
-export function ActivityTimelineChart({ summary }: { summary: TimelineSummary }) {
+const MONTH_NAMES = [
+  "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+  "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+];
+
+/** "YYYY-MM" -> "Mon YYYY" (month-year only, no false daily precision). */
+function fmtFloor(yyyyMm: string): string {
+  const [y, mo] = yyyyMm.split("-");
+  return `${MONTH_NAMES[Number(mo) - 1] ?? mo} ${y}`;
+}
+
+export function ActivityTimelineChart({
+  summary,
+  dataFloor,
+  floorByProject: _floorByProject,
+}: {
+  summary: TimelineSummary;
+  /** TRUTH-02: account-wide earliest activity month as "YYYY-MM". Renders as caption when present. */
+  dataFloor?: string | null;
+  /** TRUTH-02: per-project earliest activity month as "YYYY-MM". Reserved for future per-project tooltip. */
+  floorByProject?: Record<string, string>;
+}) {
   const { resolvedTheme } = useTheme();
   const dark = resolvedTheme !== "light"; // default to dark before next-themes resolves
 
@@ -44,6 +65,9 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
   // genuine projector headroom while remaining a muted sub-label. ~7.0:1 on #fff.
   const cAxis = dark ? "#a1a1aa" : "#52525b";
   const cTitle = dark ? "#fafafa" : "#111827";
+
+  // Formatted floor label for the tooltip (TRUTH-02 — account-wide scope floor).
+  const floorLabel = dataFloor ? fmtFloor(dataFloor) : null;
 
   const lineSeries: LineSeriesOption = {
     name: "Activity",
@@ -94,10 +118,15 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
           delta == null
             ? `<div style="color:${cAxis}">no ${priorYear} to compare</div>`
             : `<div style="color:${cAxis}">${delta >= 0 ? "▲ +" : "▼ −"}${Math.abs(delta).toLocaleString()} vs ${priorYear}</div>`;
+        // TRUTH-02: muted floor line in the tooltip — account-wide earliest activity month.
+        const floorLine = floorLabel
+          ? `<div style="color:${cAxis};margin-top:4px;font-size:11px">Data from ${floorLabel}</div>`
+          : "";
         return (
           `<div style="font-weight:700;color:${cTitle};margin-bottom:2px">${p.label}</div>` +
           `<div>${p.count.toLocaleString()} activities</div>` +
-          deltaLine
+          deltaLine +
+          floorLine
         );
       },
     },
@@ -135,6 +164,15 @@ export function ActivityTimelineChart({ summary }: { summary: TimelineSummary })
         {busiestYear ? <> · busiest year <b className="text-foreground">{busiestYear.year}</b></> : null}
       </div>
       <EChart option={option} height={360} notMerge={false} />
+      {/* TRUTH-02: account-wide data floor caption — month-year only, no false daily precision. */}
+      {dataFloor && floorLabel ? (
+        <p
+          data-testid="timeline-data-floor"
+          className="mt-2 text-[10px] text-muted-foreground"
+        >
+          Data available from {floorLabel}
+        </p>
+      ) : null}
     </div>
   );
 }

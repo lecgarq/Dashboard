@@ -277,7 +277,11 @@ export function AccessAnalysisCharts({
               subtitle="Total ACC activity per month across all years. Tick projects above to refocus the line; quiet months dip to zero."
               badge={<ActivityCoverageBadge covered={covCovered} total={covTotal} />}
             />
-            <ActivityTimelineChart summary={timelineSummary} />
+            <ActivityTimelineChart
+              summary={timelineSummary}
+              dataFloor={dataFloor}
+              floorByProject={floorByProject}
+            />
           </PremiumSurface>
         </Reveal>
       ) : null}
