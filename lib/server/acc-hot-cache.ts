@@ -1,6 +1,6 @@
 import "server-only";
 
-import type { BulkAccUser } from "@/lib/acc/acc-types";
+import type { BulkAccProject, BulkAccUser } from "@/lib/acc/acc-types";
 import { assembleDcUsers } from "@/lib/acc/dcUserAssembly";
 import { foldActivityRows, foldAdminActionRows, type InstanceActivity } from "@/lib/acc/activityAggregate";
 import {
@@ -389,15 +389,27 @@ export async function getCachedAccDcBulkUsers(
       // allRoles/allModules aggregates, which assembly already computed above.
       // Done post-assembly so those aggregates see the full data first.
       if (!leanProjects) return assembled;
-      return assembled.map((u) => ({
+      // TYPE-01: narrow the lean-return variant so per-project roles/modules are
+      // typed never[] at the construction site. never[] is assignable to string[]
+      // (BulkAccProject), so callers using the full BulkAccUser type are unaffected.
+      // The shared BulkAccUser / BulkAccProject interfaces in acc-types.ts are UNCHANGED.
+      type LeanBulkAccProject = Omit<BulkAccProject, "roles" | "modules"> & {
+        roles: never[];
+        modules: never[];
+      };
+      type LeanBulkAccUser = Omit<BulkAccUser, "projects"> & {
+        projects: LeanBulkAccProject[];
+      };
+      return assembled.map((u): LeanBulkAccUser => ({
         ...u,
-        projects: u.projects.map((p) => ({
+        projects: u.projects.map((p): LeanBulkAccProject => ({
           id: p.id,
           name: p.name,
           status: p.status,
           isAdmin: p.isAdmin,
-          roles: [] as string[],
-          modules: [] as string[],
+          // lean payload — always empty; use bulkUser / hover-prefetch for per-project data
+          roles: [] as never[],
+          modules: [] as never[],
         })),
       }));
     },
