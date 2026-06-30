@@ -1,3 +1,9 @@
+// SPLIT-PENDING: REF-02 — the base AccFolderPermission role/perm/folder join in
+// loadTemplateFolderTerrain (the $queryRaw block selecting folder_id, role_id,
+// role_name, perm_type, n_actions) is the shared join also run by
+// lib/server/folderPermissionTerrainView.ts (/access-analysis). Deferred
+// extraction target: lib/server/folderPermQuery.ts. Column contract pinned by
+// lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts (TEST-03).
 import "server-only";
 import { db } from "@/server/db";
 import {
