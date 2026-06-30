@@ -58,6 +58,8 @@ export function AccessAnalysisCharts({
   roleRows,
   moduleRows,
   timelineRows,
+  dataFloor,
+  floorByProject,
   activityActorRows,
   membershipRows,
   coordinationData,
@@ -75,6 +77,10 @@ export function AccessAnalysisCharts({
   moduleRows: ModuleActivityRow[];
   /** Per-(project, month) activity totals for the Activity timeline. When omitted, that section is hidden. */
   timelineRows?: ActivityTimelineRow[];
+  /** TRUTH-02: account-wide earliest activity month as "YYYY-MM", or null. Shown as caption under the timeline. */
+  dataFloor?: string | null;
+  /** TRUTH-02: per-project earliest activity month as "YYYY-MM". Key "" = account-level bucket. */
+  floorByProject?: Record<string, string>;
   /** Per-(project, actor) activity totals for the Activity-by-role donut. When omitted, that section is hidden. */
   activityActorRows?: ActivityActorRow[];
   /** Slim memberships (projectId, email, roles) used to attribute activity to a role. */

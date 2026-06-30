@@ -26,7 +26,7 @@ import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
 export async function MainCharts() {
-  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timelineRows] =
+  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timeline] =
     await Promise.all([
       loadInstanceView(),
       loadModuleActivity(),
@@ -58,7 +58,9 @@ export async function MainCharts() {
     <AccessAnalysisCharts
       roleRows={rows}
       moduleRows={moduleRows}
-      timelineRows={timelineRows}
+      timelineRows={timeline.rows}
+      dataFloor={timeline.dataFloor}
+      floorByProject={timeline.floorByProject}
       activityActorRows={activityActorRows}
       membershipRows={membershipRows}
       coordinationData={coordinationData}

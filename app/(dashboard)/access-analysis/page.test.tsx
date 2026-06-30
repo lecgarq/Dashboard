@@ -30,8 +30,9 @@ vi.mock("@/lib/server/activityByActorView", () => ({
 }));
 // Empty timeline -> the Activity-over-time section renders its empty state
 // (no echart), so the singular getByTestId("echart") still resolves the roles donut.
+// Shape matches the new ActivityTimelineResult { rows, dataFloor, floorByProject }.
 vi.mock("@/lib/server/activityTimelineView", () => ({
-  loadActivityTimeline: vi.fn(async () => []),
+  loadActivityTimeline: vi.fn(async () => ({ rows: [], dataFloor: null, floorByProject: {} })),
 }));
 vi.mock("@/lib/server/coordinationByProjectView", () => ({
   loadCoordinationByProject: () =>
