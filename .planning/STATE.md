@@ -2,19 +2,18 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
-current_phase: 11
-current_phase_name: Data-Truthfulness Labels
+current_phase: 12
+current_phase_name: Integration Health & Observability
 status: in_progress
-stopped_at: 11-04 plan complete — Phase 11 DONE
-last_updated: "2026-06-30T09:16:00.000Z"
-last_activity: 2026-06-30
-last_activity_desc: Phase 11 Plan 11-04 completed (TRUTH-01 coverage header + TRUTH-03 module tooltip; commits 327d0e13+71305f5c+295fbbed). Phase 11 all 4 plans done. Next = Phase 12 or end-of-phase visual UAT rebuild.
+stopped_at: Phase 11 COMPLETE + verified (4/4) + owner-approved on :3000 rebuild. Next = Phase 12.
+last_updated: "2026-06-30T17:09:05.856Z"
+last_activity: 2026-06-30 — Phase 11 (Data-Truthfulness Labels) COMPLETE: 4/4 plans, verifier 4/4 must-haves, owner-approved after :3000 rebuild (build exit 0, /api/health 200). TRUTH-01..04 shipped on /access-analysis. Next = Phase 12 (Integration Health & Observability).
 progress:
   total_phases: 6
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 9
   completed_plans: 9
-  percent: 100
+  percent: 50
 ---
 
 # Project State
@@ -24,17 +23,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening — Phase 11 (Data-Truthfulness Labels)
+**Current focus:** v2.1 Concerns Hardening — Phase 12 (Integration Health & Observability)
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 11 of 14 — Data-Truthfulness Labels. ALL 4 PLANS COMPLETE: 11-01 (TRUTH-04 doc) ✓, 11-02 (GUID→name fix) ✓, 11-03 (dataFloor) ✓, 11-04 (coverage header + module ⓘ tooltip) ✓.
-- **Plan:** 4 of 4 Phase 11 plans executed. Phase 11 DONE.
-- **Status:** Phase 11 complete. All TRUTH deliverables shipped: TRUTH-01 (coverage header line, activity leads, DC secondary), TRUTH-02 (dataFloor caption on timeline), TRUTH-03 (module-donut ⓘ tooltip with rawAction/40.7% caveat), TRUTH-04 (INTEGRATIONS.md role-fallback doc). Plus folded-in GUID-leak fix (11-02). Visual UAT rebuild deferred to end-of-phase.
-- **Last activity:** 2026-06-30 — Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
+- **Milestone:** v2.1 — Concerns Hardening (3 of 6 phases complete: 09, 10, 11)
+- **Phase:** 11 of 14 ✓ COMPLETE + verified (4/4 must-haves) + owner-approved on :3000. Next = Phase 12 — Integration Health & Observability.
+- **Plan:** Phase 11 done — 11-01 (TRUTH-04 doc) ✓, 11-02 (GUID→name fix) ✓, 11-03 (dataFloor) ✓, 11-04 (coverage header + module ⓘ tooltip) ✓. Phase 12 plans not yet created.
+- **Status:** Phase 11 closed. Milestone v2.1 in progress (Phases 12, 13, 14 remain). Phase 12 ready to discuss/plan.
+- **Last activity:** 2026-06-30 — Phase 11 COMPLETE: verifier 4/4, owner-approved after :3000 rebuild (build exit 0, /api/health 200, /access-analysis 307→login). 16 commits (81766701..63a509a4). TRUTH-01..04 live on /access-analysis. GUID→name fix (11-02) live: AccProject superset covers 100% of the 956 activity projects.
 
-Progress: [█████████░] 89% (8 of 9 plans done; 2 of 6 phases fully complete)
+Progress: [█████░░░░░] 50% (3 of 6 phases complete — 09, 10, 11)
 
 ## Status (data baseline — still current)
 
@@ -114,33 +113,19 @@ None blocking Phase 11 continuation. Key risks to track:
 
 ## Next Action
 
-Phase 11 ALL PLANS COMPLETE: 11-01 ✓ 11-02 ✓ 11-03 ✓ 11-04 ✓.
-**Next = end-of-phase visual UAT rebuild** (rebuild on :3000, verify coverage header + module tooltip + floor caption; zinc theme; no 428 in UI). Do NOT run `npm run build` while :3000 is serving.
-**After rebuild UAT:** advance to Phase 12.
+Phase 11 COMPLETE + verified + owner-approved on :3000 (TRUTH-01..04 live; GUID→name
+fix live). Milestone v2.1 continues with **Phase 12 — Integration Health & Observability**.
 
-**Phase 11 decisions locked (see 11-CONTEXT.md):**
+**Next = `/gsd:discuss-phase 12`** (no 12-CONTEXT.md yet) **or `/gsd:plan-phase 12`** (after `/clear`).
 
-- **TRUTH-01** — restrained header coverage line + keep per-chart
-  `ActivityCoverageBadge`. **Owner correction:** lead with free-crawl activity
-  coverage (~956/1,153, live count), label DC-metadata metrics with their ~550;
-  the requirement's "428 of 1,152 DC" example is rejected as the headline.
+Phase 12 scope (from ROADMAP): ACCDS session-health in `scripts/progress-monitor.cjs`
+(warn before crawl token-refresh), `AccDcRole`-empty warning after cache refresh, and
+remove stale `TODO[02.5]` guards. Requirements: OBS-01, OBS-02, OBS-03.
 
-- **TRUTH-02** — add `dataFloor` to the **`loadActivityTimeline()` RSC** in
-  `lib/server/activityTimelineView.ts` (NOT tRPC — the CTE already computes
-  per-project `MIN(createdAt)`). Account-wide "Data available from [month]"
-  caption + per-project hover.
-
-- **TRUTH-03** — ⓘ info-icon + Radix tooltip on the module donut; ~40.7% figure
-  in tooltip + INTEGRATIONS.md, not always-on.
-
-- **TRUTH-04** — document `AccDcRole`→`AccRole` fallback in INTEGRATIONS.md.
-- **Folded-in scope** — repair the raw-GUID leak in
-  `lib/server/folderActivityView.ts` by merging `AccProject` (1,153) names;
-  graceful "Unknown project" fallback. VERIFY `AccProject.id` ↔
-  `AccActivityAccds.projectId` first.
+Remaining v2.1 phases after 12: Phase 13 (Type-Safety Guards), Phase 14 (Characterization Tests).
 
 ---
-*Last updated: 2026-06-23 — Phase 10 complete + verified (7/7 must-haves; 10-VERIFICATION.md PASSED) + owner-approved rebuild on :3000. Note: `gsd-tools phase complete` again mis-reported is_last_phase:true / total_phases:2 (known CLI bug); STATE frontmatter + body repaired manually to reflect 2 of 6 phases done.*
+*Last updated: 2026-06-30 — Phase 11 complete + verified (4/4 must-haves; 11-VERIFICATION.md, status human_needed→owner-approved) + owner-approved rebuild on :3000 (build exit 0, /api/health 200). Note: `gsd-tools phase complete` again mis-reported is_last_phase:true / next_phase:null / total_phases:3 / status:completed (known CLI bug); STATE frontmatter + body repaired manually to 3 of 6 phases done, milestone in_progress, current_phase 12.*
 
 ## Performance Metrics
 
