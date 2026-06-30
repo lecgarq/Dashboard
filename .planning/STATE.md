@@ -2,15 +2,19 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
+current_phase: 13
+current_phase_name: Type-Safety Guards
 status: executing
-stopped_at: Phase 13 context gathered
-last_updated: "2026-06-30T18:23:05.639Z"
-last_activity: "2026-06-30 — Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved."
+stopped_at: Phase 13 Plan 01 complete — TYPE-01/TYPE-02 guards live
+last_updated: "2026-06-30T18:46:03.947Z"
+last_activity: 2026-06-30
+last_activity_desc: "Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved."
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 11
-  completed_plans: 11
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 12
+  completed_plans: 12
+  percent: 83
 ---
 
 # Project State
@@ -24,13 +28,13 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening (4 of 6 phases complete: 09, 10, 11, 12)
-- **Phase:** 12 of 14 ✓ COMPLETE + verified (automated; verifier status human_needed — all automated gates passed) + owner-approved. Next = Phase 13 — Type-Safety Guards.
-- **Plan:** Phase 12 had 2/2 plans complete: 12-01 (OBS-01 ACCDS session health) and 12-02 (OBS-02 role-resolution warning + OBS-03 stale-diagnostic removal).
-- **Status:** Phase 12 closed. Milestone v2.1 in progress (Phases 13, 14 remain). Phase 13 ready to discuss/plan.
-- **Last activity:** 2026-06-30 — Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved.
+- **Milestone:** v2.1 — Concerns Hardening (5 of 6 phases complete: 09, 10, 11, 12, 13)
+- **Phase:** 13 of 14 ✓ COMPLETE — TYPE-01/TYPE-02 compile-time guards live. Next = Phase 14 — Characterization Tests.
+- **Plan:** Phase 13 had 1/1 plan complete: 13-01 (TYPE-01 lean never[] guard + TYPE-02 drift assert).
+- **Status:** Phase 13 closed. Milestone v2.1 in progress (Phase 14 remains). TYPE-01 and TYPE-02 requirements marked complete.
+- **Last activity:** 2026-06-30 — Phase 13 COMPLETE: 2 commits (e0d46b91, 965993fd). TYPE-01: lean bulkUsers roles/modules typed never[] at construction site. TYPE-02: one-directional subset drift assert in accGraphFilters.ts. tsc clean, vitest 51/51, negative-case proofs confirmed and reverted.
 
-Progress: [██████░░░░] 67% (4 of 6 phases complete — 09, 10, 11, 12)
+Progress: [██████████] 83% (5 of 6 phases complete — 09, 10, 11, 12, 13)
 
 ## Status (data baseline — still current)
 
@@ -118,25 +122,23 @@ None blocking Phase 13 planning/execution. Key risks to track:
 - **RESOLVED (Phase 12, 2026-06-30):** OBS-03 — stale `TODO[02.5]` diagnostics removed from `acc-admin.ts`; `companyRole`/`lastSignIn` resolution intact.
 - **RESOLVED (plan 11-02, 2026-06-30):** "Folder Activity by Role" GUID leak fixed. AccProject (1,153) merged into name resolution. DB verified: AccProject covers all 956 ACCDS projectIds (100%). Fallback = "Unknown project". 7-test Vitest pinned.
 - **RESOLVED (plan 11-04, 2026-06-30):** mainCharts.tsx tsc error was already resolved by 11-03's commit 926c57dc. tsc clean confirmed at start and end of 11-04 execution.
+- **RESOLVED (plan 13-01, 2026-06-30):** TYPE-01 — lean bulkUsers roles/modules now typed never[] via LeanBulkAccProject/LeanBulkAccUser at getCachedAccDcBulkUsers lean construction site. TYPE-02 — _DimKeysAreValid/_dimKeyGuard one-directional subset assert live in accGraphFilters.ts (type-only import). tsc clean, vitest 51/51.
 
 ## Next Action
 
-Phase 12 COMPLETE + verified (automated) + owner-approved. Milestone v2.1 continues with
-**Phase 13 — Type-Safety Guards**.
+Phase 13 COMPLETE — TYPE-01/TYPE-02 compile-time guards live. Milestone v2.1 continues with
+**Phase 14 — Characterization Tests**.
 
-**Next = `/gsd:discuss-phase 13`** (no 13-CONTEXT.md yet) **or `/gsd:plan-phase 13`** (after `/clear`).
+**Next = `/gsd:discuss-phase 14`** or **`/gsd:plan-phase 14`** (after `/clear`).
 
-Phase 13 scope (from ROADMAP): mark `bulkUsers` lean-payload fields as `never[]`, add an
-`accGraphFilters` compile-time drift assert. Requirements: per REQUIREMENTS.md (TYPE-*).
-
-Remaining v2.1 phases after 13: Phase 14 (Characterization Tests).
+Phase 14 scope (from ROADMAP): characterization tests for boundary-critical modules (CHAR-01, CHAR-02, etc.).
 
 Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
 run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
 expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the session scratchpad.
 
 ---
-*Last updated: 2026-06-30 — Phase 12 complete + verified (verifier status human_needed; all automated gates passed: vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean) + owner-approved. Note: `gsd-tools phase complete` AGAIN mis-reported is_last_phase:true / next_phase:null / total_phases:4 / status:completed / milestone:v1.0 and DROPPED current_phase (known CLI bug); STATE frontmatter + body repaired manually to 4 of 6 phases done, milestone v2.1 in_progress, current_phase 13. ROADMAP checkbox updated correctly by the CLI this time.*
+*Last updated: 2026-06-30 — Phase 13 complete: 2 commits (e0d46b91, 965993fd). TYPE-01 and TYPE-02 requirements marked complete. tsc clean, vitest 51/51 accGraphFilters. ROADMAP phase 13 updated to Complete via CLI (roadmap.update-plan-progress 13). Note: state.advance-plan failed (known CLI bug — "Cannot parse Current Plan or Total Plans"); frontmatter + body repaired manually to 5 of 6 phases done, milestone v2.1, current_phase 14 next.*
 
 ## Performance Metrics
 
@@ -148,9 +150,10 @@ expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the
 | Phase 11 P04 | 10 | 3 tasks | 6 files |
 | Phase 12 P02 | ~15min | 2 tasks | 3 files |
 | Phase 12 P01 | ~20min | 3 tasks | 4 files |
+| Phase 13 P01 | 390s | 2 tasks | 2 files |
 
 ## Session
 
-**Last session:** 2026-06-30T18:23:05.637Z
-**Stopped at:** Phase 13 context gathered
-**Resume file:** .planning/phases/13-type-safety-guards/13-CONTEXT.md
+**Last session:** 2026-06-30T18:46:03.940Z
+**Stopped at:** Phase 13 Plan 01 complete — TYPE-01/TYPE-02 guards live
+**Resume file:** .planning/phases/13-type-safety-guards/13-01-SUMMARY.md

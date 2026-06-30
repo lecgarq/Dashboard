@@ -25,7 +25,7 @@ this milestone ships their characterization tests and warning comments.
 - [x] **Phase 10: Layering & Boundary Fixes** - Move direct-Prisma Server Action into tRPC, extract activity classification to `lib/acc`, eliminate non-spatial-graph lib→app and client app→server violations (completed 2026-06-23)
 - [x] **Phase 11: Data-Truthfulness Labels** - Surface DC 428/1,152 coverage, ACCDS ~12-month data floor, module-donut service caveat, and AccDcRole fallback docs on `/access-analysis` (completed 2026-06-30)
 - [x] **Phase 12: Integration Health & Observability** - ACCDS session health in progress monitor, AccDcRole-empty warning in cache, remove stale TODO[02.5] guards (completed 2026-06-30)
-- [ ] **Phase 13: Type-Safety Guards** - Mark `bulkUsers` lean-payload fields as `never[]`, add `accGraphFilters` compile-time drift assert
+- [x] **Phase 13: Type-Safety Guards** - Mark `bulkUsers` lean-payload fields as `never[]`, add `accGraphFilters` compile-time drift assert (completed 2026-06-30)
 - [ ] **Phase 14: Characterization Tests** - Pin access-analysis monolith tRPC boundaries and shared terrain query output so deferred splits are safe
 
 ## Phase Details
@@ -119,10 +119,10 @@ Plans:
   1. The `bulkUsers` return type in `server/routers/acc-members.ts` marks `roles` and `modules` as `never[]` (or equivalent) with an explicit "lean payload — always empty" comment; `npx tsc --noEmit` passes
   2. `app/(dashboard)/users/accGraphFilters.ts` contains a `satisfies` or `AssertExtends` compile-time assert that fails if the two filter union types drift; `npx tsc --noEmit` confirms the assert compiles
 
-**Plans**: 1 plan
+**Plans**: 1/1 plans complete
 Plans:
 
-- [ ] 13-01-PLAN.md — TYPE-01: type the lean `bulkUsers` return `roles`/`modules` as `never[]` at the verified construction site `lib/server/acc-hot-cache.ts` (`getCachedAccDcBulkUsers` lean branch) — NOT `acc-members.ts`, which has no `bulkUsers` proc; + TYPE-02: one-directional subset drift assert (`SimilarityDimKey` ⊆ `SimilarityDim`) with a type-only import in `app/(dashboard)/users/accGraphFilters.ts` (wave 1)
+- [x] 13-01-PLAN.md — TYPE-01: type the lean `bulkUsers` return `roles`/`modules` as `never[]` at the verified construction site `lib/server/acc-hot-cache.ts` (`getCachedAccDcBulkUsers` lean branch) — NOT `acc-members.ts`, which has no `bulkUsers` proc; + TYPE-02: one-directional subset drift assert (`SimilarityDimKey` ⊆ `SimilarityDim`) with a type-only import in `app/(dashboard)/users/accGraphFilters.ts` (wave 1)
 
 ### Phase 14: Characterization Tests
 
@@ -149,5 +149,5 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
 | 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
-| 13. Type-Safety Guards | 0/TBD | Not started | - |
+| 13. Type-Safety Guards | 1/1 | Complete   | 2026-06-30 |
 | 14. Characterization Tests | 0/TBD | Not started | - |

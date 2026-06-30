@@ -37,8 +37,8 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Type-Safety & Lean-Payload Guards (TYPE)
 
-- [ ] **TYPE-01**: the `bulkUsers` return type marks `roles`/`modules` as always-empty lean-payload fields (`never[]` and/or an explicit comment), so consumers cannot silently expect populated arrays. _(§4.1)_
-- [ ] **TYPE-02**: `app/(dashboard)/users/accGraphFilters.ts` has a compile-time assert (`satisfies` / `AssertExtends`) that fails if the two filter union types drift. _(§4.2)_
+- [x] **TYPE-01**: the `bulkUsers` return type marks `roles`/`modules` as always-empty lean-payload fields (`never[]` and/or an explicit comment), so consumers cannot silently expect populated arrays. _(§4.1)_
+- [x] **TYPE-02**: `app/(dashboard)/users/accGraphFilters.ts` has a compile-time assert (`satisfies` / `AssertExtends`) that fails if the two filter union types drift. _(§4.2)_
 
 ### Test Coverage & Characterization (TEST)
 
@@ -93,8 +93,8 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | OBS-01 | Phase 12 | Complete |
 | OBS-02 | Phase 12 | Complete |
 | OBS-03 | Phase 12 | Complete |
-| TYPE-01 | Phase 13 | Pending |
-| TYPE-02 | Phase 13 | Pending |
+| TYPE-01 | Phase 13 | Complete |
+| TYPE-02 | Phase 13 | Complete |
 | TEST-02 | Phase 14 | Pending |
 | TEST-03 | Phase 14 | Pending |
 
