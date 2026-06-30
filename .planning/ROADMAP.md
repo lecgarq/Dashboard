@@ -149,5 +149,5 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
 | 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
-| 13. Type-Safety Guards | 1/1 | Complete   | 2026-06-30 |
+| 13. Type-Safety Guards | 1/1 | Complete    | 2026-06-30 |
 | 14. Characterization Tests | 0/TBD | Not started | - |

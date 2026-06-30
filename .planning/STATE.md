@@ -2,19 +2,15 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
-current_phase: 13
-current_phase_name: Type-Safety Guards
 status: executing
-stopped_at: Phase 13 Plan 01 complete — TYPE-01/TYPE-02 guards live
-last_updated: "2026-06-30T18:46:03.947Z"
-last_activity: 2026-06-30
-last_activity_desc: "Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved."
+stopped_at: Phase 13 COMPLETE + verified — TYPE-01/TYPE-02 guards live; Phase 14 (Characterization Tests) remains
+last_updated: "2026-06-30T18:53:57.171Z"
+last_activity: "2026-06-30 — Phase 13 COMPLETE: 2 commits (e0d46b91, 965993fd). TYPE-01: lean bulkUsers roles/modules typed never[] at construction site. TYPE-02: one-directional subset drift assert in accGraphFilters.ts. tsc clean, vitest 51/51, negative-case proofs confirmed and reverted."
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 12
   completed_plans: 12
-  percent: 83
 ---
 
 # Project State
@@ -24,14 +20,14 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening — Phase 13 (Type-Safety Guards)
+**Current focus:** v2.1 Concerns Hardening — Phase 14 (Characterization Tests)
 
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening (5 of 6 phases complete: 09, 10, 11, 12, 13)
 - **Phase:** 13 of 14 ✓ COMPLETE — TYPE-01/TYPE-02 compile-time guards live. Next = Phase 14 — Characterization Tests.
 - **Plan:** Phase 13 had 1/1 plan complete: 13-01 (TYPE-01 lean never[] guard + TYPE-02 drift assert).
-- **Status:** Phase 13 closed. Milestone v2.1 in progress (Phase 14 remains). TYPE-01 and TYPE-02 requirements marked complete.
+- **Status:** Milestone v2.1 in progress — Phase 13 closed + verified (status: passed, 7/7 must-haves). Phase 14 (Characterization Tests) remains — the final v2.1 phase. NOTE: `gsd-tools phase complete` AGAIN mis-reported is_last_phase:true / next_phase:null and set status:completed + progress 5/5 (known CLI bug); STATE repaired manually to status:executing, 5 of 6 phases, Phase 14 next.
 - **Last activity:** 2026-06-30 — Phase 13 COMPLETE: 2 commits (e0d46b91, 965993fd). TYPE-01: lean bulkUsers roles/modules typed never[] at construction site. TYPE-02: one-directional subset drift assert in accGraphFilters.ts. tsc clean, vitest 51/51, negative-case proofs confirmed and reverted.
 
 Progress: [██████████] 83% (5 of 6 phases complete — 09, 10, 11, 12, 13)
