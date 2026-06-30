@@ -24,7 +24,7 @@ this milestone ships their characterization tests and warning comments.
 - [x] **Phase 09: DB & Config Hardening** - Add `roleId` index + migration, remove SSL fossil, document heap/pool env vars, guard raw-scan path, and ship the OOM-regression aggregate test — COMPLETE 2026-06-23
 - [x] **Phase 10: Layering & Boundary Fixes** - Move direct-Prisma Server Action into tRPC, extract activity classification to `lib/acc`, eliminate non-spatial-graph lib→app and client app→server violations (completed 2026-06-23)
 - [x] **Phase 11: Data-Truthfulness Labels** - Surface DC 428/1,152 coverage, ACCDS ~12-month data floor, module-donut service caveat, and AccDcRole fallback docs on `/access-analysis` (completed 2026-06-30)
-- [ ] **Phase 12: Integration Health & Observability** - ACCDS session health in progress monitor, AccDcRole-empty warning in cache, remove stale TODO[02.5] guards
+- [x] **Phase 12: Integration Health & Observability** - ACCDS session health in progress monitor, AccDcRole-empty warning in cache, remove stale TODO[02.5] guards (completed 2026-06-30)
 - [ ] **Phase 13: Type-Safety Guards** - Mark `bulkUsers` lean-payload fields as `never[]`, add `accGraphFilters` compile-time drift assert
 - [ ] **Phase 14: Characterization Tests** - Pin access-analysis monolith tRPC boundaries and shared terrain query output so deferred splits are safe
 
@@ -104,7 +104,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 
-- [ ] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, &lt;12h threshold, estimate-labeled (wave 1)
+- [x] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, &lt;12h threshold, estimate-labeled (wave 1) — COMPLETE 2026-06-30
 - [x] 12-02-PLAN.md — OBS-02 + OBS-03: effective-empty `[ACC-ROLES]` warn at the real role-resolution boundary `loadInstanceView()` in `lib/server/accessInstanceView.ts` (NOT acc-hot-cache.ts); remove stale `TODO[02.5]` diagnostics from `lib/server/acc-admin.ts` (verified path; fields confirmed code-grounded) (wave 1) — COMPLETE 2026-06-30, commits cac1a07e + 72b4079d
 
 **Note**: OBS-02/OBS-03 paths corrected from the roadmap success criteria — verified injection point is `lib/server/accessInstanceView.ts` (`acc-hot-cache.ts` does not reference `AccDcRole`), verified diagnostics location is `lib/server/acc-admin.ts` (not `lib/acc/`). OBS-02 fires on effective-empty (both sources zero), not the by-design `AccDcRole`-empty state.
@@ -145,6 +145,6 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
-| 12. Integration Health & Observability | 1/2 | In progress | 12-02 done (OBS-02+OBS-03); 12-01 (OBS-01) outstanding |
+| 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
 | 14. Characterization Tests | 0/TBD | Not started | - |

@@ -2,19 +2,17 @@
 gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
-current_phase: 12
-current_phase_name: "Integration Health & Observability. Phase 11 is complete, verified, and owner-approved on :3000."
+current_phase: 13
+current_phase_name: Type-Safety Guards
 status: in_progress
-stopped_at: Phase 12 plans 12-01 and 12-02 COMPLETE; phase verification pending
-last_updated: "2026-06-30T17:51:52.162Z"
-last_activity: 2026-06-30
-last_activity_desc: "Plan 12-01 COMPLETE (OBS-01): getSessionHealth helper, crawler startup `[WARN]`, and `:4321` monitor session-health line. Phase 12 now needs verification."
+stopped_at: Phase 12 COMPLETE + verified (automated, human_needed) + owner-approved; Phase 13 next
+last_updated: "2026-06-30T18:04:29.744Z"
+last_activity: "2026-06-30 — Phase 12 COMPLETE (OBS-01/02/03): getSessionHealth helper + crawler [WARN] preflight + :4321 monitor session-health line; [ACC-ROLES] effective-empty warn at loadInstanceView; stale TODO[02.5] diagnostics removed. Verifier human_needed (all automated gates passed: vitest 13/13 + 7/7, tsc clean, scope/secret-hygiene clean); owner-approved. 8 commits (dfe3af09..ca82f1dc)."
 progress:
   total_phases: 6
   completed_phases: 4
   total_plans: 11
   completed_plans: 11
-  percent: 67
 ---
 
 # Project State
@@ -24,17 +22,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening — Phase 12 (Integration Health & Observability)
+**Current focus:** v2.1 Concerns Hardening — Phase 13 (Type-Safety Guards)
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening (3 of 6 phases complete: 09, 10, 11)
-- **Phase:** 12 of 14 — Integration Health & Observability. Phase 11 is complete, verified, and owner-approved on :3000.
-- **Plan:** Phase 12 has 2/2 plans complete: 12-01 (OBS-01 ACCDS session health) and 12-02 (OBS-02+OBS-03).
-- **Status:** Phase 12 implementation complete; phase verification pending. Milestone v2.1 in progress (Phases 12, 13, 14 remain).
-- **Last activity:** 2026-06-30 — Plan 12-01 COMPLETE (OBS-01): getSessionHealth helper, crawler startup `[WARN]`, and `:4321` monitor session-health line. Phase 12 now needs verification.
+- **Milestone:** v2.1 — Concerns Hardening (4 of 6 phases complete: 09, 10, 11, 12)
+- **Phase:** 12 of 14 ✓ COMPLETE + verified (automated; verifier status human_needed — all automated gates passed) + owner-approved. Next = Phase 13 — Type-Safety Guards.
+- **Plan:** Phase 12 had 2/2 plans complete: 12-01 (OBS-01 ACCDS session health) and 12-02 (OBS-02 role-resolution warning + OBS-03 stale-diagnostic removal).
+- **Status:** Phase 12 closed. Milestone v2.1 in progress (Phases 13, 14 remain). Phase 13 ready to discuss/plan.
+- **Last activity:** 2026-06-30 — Phase 12 COMPLETE: 8 commits (dfe3af09..ca82f1dc). OBS-01/02/03 live. Verifier human_needed (vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean); the 3 outstanding items are operator eyeball-only (monitor color line, crawler [WARN], [ACC-ROLES] warn which cannot fire in prod). Owner-approved.
 
-Progress: [█████░░░░░] 50% (3 of 6 phases complete — 09, 10, 11)
+Progress: [██████░░░░] 67% (4 of 6 phases complete — 09, 10, 11, 12)
 
 ## Status (data baseline — still current)
 
@@ -107,38 +105,40 @@ Recent decisions affecting current work:
 
 ### Blockers/Concerns
 
-None blocking Phase 12 planning/execution. Key risks to track:
+None blocking Phase 13 planning/execution. Key risks to track:
 
 - Run `npx tsc --noEmit` before any rebuild; full `npm run build` must go
   through the Task Scheduler stop/start deploy sequence or
   `node scripts/gsd-self-gate.cjs --rebuild`.
 
 - BND-02/BND-03: spatial-graph-coupled `lib→app` edges are documented-deferred, not fixed.
-- Phase 12 OBS-02: `lib/server/acc-hot-cache.ts` does not reference `AccDcRole`;
-  place the warning at the verified role-resolution/cache boundary instead of
-  following the stale roadmap path blindly.
+- Phase 13 (Type-Safety Guards): mark `bulkUsers` lean-payload fields as `never[]`,
+  add `accGraphFilters` compile-time drift assert. Phases 13/14 depend on Phase 10.
 
-- Phase 12 OBS-01: ACCDS session state lives in gitignored
-  `scratch/acc-session.json`; never print cookie contents while adding health
-  visibility.
-
+- **RESOLVED (Phase 12, 2026-06-30):** OBS-01 — ACCDS session health now visible before a crawl fails (crawler `[WARN]` preflight + `:4321` monitor green/amber/red line); local cookie-file read only, no Autodesk call, no cookie values logged.
+- **RESOLVED (Phase 12, 2026-06-30):** OBS-02 — silent role-resolution failure now logs `[ACC-ROLES]` at the verified `loadInstanceView` boundary on effective-empty (deliberate divergence from roadmap's `acc-hot-cache.ts`, which never references `AccDcRole`).
+- **RESOLVED (Phase 12, 2026-06-30):** OBS-03 — stale `TODO[02.5]` diagnostics removed from `acc-admin.ts`; `companyRole`/`lastSignIn` resolution intact.
 - **RESOLVED (plan 11-02, 2026-06-30):** "Folder Activity by Role" GUID leak fixed. AccProject (1,153) merged into name resolution. DB verified: AccProject covers all 956 ACCDS projectIds (100%). Fallback = "Unknown project". 7-test Vitest pinned.
 - **RESOLVED (plan 11-04, 2026-06-30):** mainCharts.tsx tsc error was already resolved by 11-03's commit 926c57dc. tsc clean confirmed at start and end of 11-04 execution.
 
 ## Next Action
 
-Phase 12 plans 12-01 and 12-02 are COMPLETE. Milestone v2.1 continues with **Phase 12 verification**.
+Phase 12 COMPLETE + verified (automated) + owner-approved. Milestone v2.1 continues with
+**Phase 13 — Type-Safety Guards**.
 
-**Next = verify Phase 12**.
+**Next = `/gsd:discuss-phase 13`** (no 13-CONTEXT.md yet) **or `/gsd:plan-phase 13`** (after `/clear`).
 
-Phase 12 scope (from ROADMAP): ACCDS session-health in `scripts/progress-monitor.cjs`
-(warn before crawl token-refresh), `AccDcRole`-empty warning after cache refresh, and
-remove stale `TODO[02.5]` guards. Requirements: OBS-01, OBS-02, OBS-03.
+Phase 13 scope (from ROADMAP): mark `bulkUsers` lean-payload fields as `never[]`, add an
+`accGraphFilters` compile-time drift assert. Requirements: per REQUIREMENTS.md (TYPE-*).
 
-Remaining v2.1 phases after 12: Phase 13 (Type-Safety Guards), Phase 14 (Characterization Tests).
+Remaining v2.1 phases after 13: Phase 14 (Characterization Tests).
+
+Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
+run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
+expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the session scratchpad.
 
 ---
-*Last updated: 2026-06-30 — Phase 11 complete + verified (4/4 must-haves; 11-VERIFICATION.md, status human_needed→owner-approved) + owner-approved rebuild on :3000 (build exit 0, /api/health 200). Note: `gsd-tools phase complete` again mis-reported is_last_phase:true / next_phase:null / total_phases:3 / status:completed (known CLI bug); STATE frontmatter + body repaired manually to 3 of 6 phases done, milestone in_progress, current_phase 12.*
+*Last updated: 2026-06-30 — Phase 12 complete + verified (verifier status human_needed; all automated gates passed: vitest 13/13 + 7/7, tsc clean, scope + secret hygiene clean) + owner-approved. Note: `gsd-tools phase complete` AGAIN mis-reported is_last_phase:true / next_phase:null / total_phases:4 / status:completed / milestone:v1.0 and DROPPED current_phase (known CLI bug); STATE frontmatter + body repaired manually to 4 of 6 phases done, milestone v2.1 in_progress, current_phase 13. ROADMAP checkbox updated correctly by the CLI this time.*
 
 ## Performance Metrics
 
@@ -153,6 +153,6 @@ Remaining v2.1 phases after 12: Phase 13 (Type-Safety Guards), Phase 14 (Charact
 
 ## Session
 
-**Last session:** 2026-06-30T17:51:52.155Z
-**Stopped at:** Phase 12 plans 12-01 and 12-02 COMPLETE; phase verification pending
-**Resume file:** .planning/phases/12-integration-health-observability/12-01-SUMMARY.md
+**Last session:** 2026-06-30T18:04:29.744Z
+**Stopped at:** Phase 12 COMPLETE + verified (automated) + owner-approved; Phase 13 next
+**Resume file:** .planning/phases/13-type-safety-guards/13-CONTEXT.md (not yet created — run /gsd:discuss-phase 13)
