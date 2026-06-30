@@ -11,7 +11,7 @@ export class SessionExpiredError extends Error {
   }
 }
 
-interface StorageCookie { name: string; value: string; domain: string }
+interface StorageCookie { name: string; value: string; domain: string; expires?: number }
 export interface StorageState { cookies: StorageCookie[] }
 export interface FreshToken { accessToken: string; expSec: number }
 
@@ -92,5 +92,137 @@ export function createTokenProvider(
         .catch((e) => { inflight = null; throw e; });
     }
     return (await inflight).accessToken;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Session-health helper (OBS-01) — local file read, no Autodesk network call
+// ---------------------------------------------------------------------------
+
+/** Warning threshold in hours: emit a WARN when session expires in < 12h. */
+export const SESSION_WARN_HOURS = 12;
+
+export type SessionHealthState = 'healthy' | 'expiring' | 'expired' | 'missing' | 'unknown';
+
+export interface SessionHealth {
+  /** Overall health state of the ACCDS web session. */
+  state: SessionHealthState;
+  /** ISO 8601 timestamp of the computed session expiry (null when state is missing/unknown). */
+  expiresAt: string | null;
+  /** Hours until expiry, rounded (null when state is missing/unknown or expired). */
+  hoursRemaining: number | null;
+  /**
+   * True when the expiry is a best-effort estimate.
+   * The implementation uses the MAX positive `expires` among autodesk.com cookies
+   * as the outer bound; the exact durable auth cookie is not pinpointed.
+   * VERIFY: In the real scratch/acc-session.json, `PF.PERSISTENT` on
+   * .auth.autodesk.com (~550h) may be the accurate auth marker, but the MAX
+   * approach with estimate=true is used per OBS-01 design to avoid hardcoding
+   * a specific cookie name.
+   */
+  estimate: boolean;
+  /** Number of autodesk.com domain cookies found in the session file. */
+  cookieCount: number;
+  /** Short, secret-free human-readable status line. */
+  message: string;
+}
+
+/** Extended cookie shape that Playwright writes — includes optional expires (Unix seconds, -1 = session). */
+interface SessionCookie {
+  name: string;
+  value: string;
+  domain: string;
+  expires?: number;
+}
+
+/**
+ * Read ACCDS session health from a Playwright storageState file without making any
+ * Autodesk network calls. Cookie *values* are never included in the returned object.
+ * Use getSessionHealth() as a startup preflight before kicking off a long crawl.
+ */
+export async function getSessionHealth(sessionPath: string): Promise<SessionHealth> {
+  let raw: string;
+  try {
+    raw = await readFile(sessionPath, 'utf8');
+  } catch (err: unknown) {
+    if ((err as { code?: string }).code === 'ENOENT') {
+      return {
+        state: 'missing',
+        expiresAt: null,
+        hoursRemaining: null,
+        estimate: false, // certain: the file is absent
+        cookieCount: 0,
+        message: 'Session file not found — run scripts/accds-login.cjs to create it.',
+      };
+    }
+    throw err;
+  }
+
+  let parsed: { cookies?: SessionCookie[] };
+  try {
+    parsed = JSON.parse(raw) as { cookies?: SessionCookie[] };
+  } catch {
+    return {
+      state: 'unknown',
+      expiresAt: null,
+      hoursRemaining: null,
+      estimate: true,
+      cookieCount: 0,
+      message: 'Session file is not valid JSON — re-run scripts/accds-login.cjs.',
+    };
+  }
+
+  // Keep only autodesk.com cookies, matching the domain filter in cookieHeaderFromStorageState.
+  const authdeskCookies = (parsed.cookies ?? []).filter(
+    (c) => c.domain?.includes('autodesk.com'),
+  );
+  const cookieCount = authdeskCookies.length;
+
+  // Outer bound: MAX positive numeric `expires` (Unix seconds) among autodesk.com cookies.
+  // Playwright sets expires=-1 for session cookies (no expiry).
+  let maxExpiresSec = -1;
+  for (const c of authdeskCookies) {
+    const exp = c.expires;
+    if (typeof exp === 'number' && exp > 0 && exp > maxExpiresSec) {
+      maxExpiresSec = exp;
+    }
+  }
+
+  if (maxExpiresSec < 0) {
+    // All autodesk.com cookies are session cookies (expires=-1) or absent.
+    return {
+      state: 'unknown',
+      expiresAt: null,
+      hoursRemaining: null,
+      estimate: true,
+      cookieCount,
+      message: 'Expiry not encoded in session file — run scripts/accds-login.cjs to be safe.',
+    };
+  }
+
+  const expiresAtMs = maxExpiresSec * 1000;
+  const expiresAt = new Date(expiresAtMs).toISOString();
+  const hoursRemaining = Math.round((expiresAtMs - Date.now()) / 3_600_000);
+
+  let state: SessionHealthState;
+  let message: string;
+  if (hoursRemaining <= 0) {
+    state = 'expired';
+    message = 'Session has expired — run scripts/accds-login.cjs.';
+  } else if (hoursRemaining < SESSION_WARN_HOURS) {
+    state = 'expiring';
+    message = `Session expires in ${hoursRemaining}h — re-run scripts/accds-login.cjs before a long crawl.`;
+  } else {
+    state = 'healthy';
+    message = `Session healthy — expires in ${hoursRemaining}h.`;
+  }
+
+  return {
+    state,
+    expiresAt,
+    hoursRemaining,
+    estimate: true, // Best-effort outer bound (MAX positive expires); exact auth cookie not identified.
+    cookieCount,
+    message,
   };
 }
