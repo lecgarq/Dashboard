@@ -32,6 +32,7 @@ import { groupProjectOptions } from "../projectGroups";
 import type { DrillPerson } from "../roleCounts";
 import type { CoordinationByProjectData } from "@/lib/server/coordinationByProjectView";
 import type { ProjectCoverage } from "@/lib/server/projectCoverageView";
+import type { DcCoverage } from "@/lib/server/dcCoverageView";
 import type { ActivityActorRow } from "@/lib/server/activityByActorView";
 import type { ClashIssue } from "../coordinationClash";
 import type { FolderTerrainData, TerrainProjectOption } from "../folderTerrain";
@@ -64,6 +65,7 @@ export function AccessAnalysisCharts({
   membershipRows,
   coordinationData,
   coverage,
+  dcCoverage,
   mtyIds,
   loadClashes,
   terrainProjects,
@@ -87,6 +89,8 @@ export function AccessAnalysisCharts({
   membershipRows?: MembershipRolesInput[];
   coordinationData?: CoordinationByProjectData;
   coverage?: ProjectCoverage[];
+  /** TRUTH-01: live DC-metadata coverage (AccDcProject count over AccProject total). */
+  dcCoverage?: DcCoverage;
   mtyIds?: string[];
   loadClashes?: (projectId: string) => Promise<ClashIssue[]>;
   terrainProjects?: TerrainProjectOption[];
@@ -241,6 +245,27 @@ export function AccessAnalysisCharts({
       {/* VIS-05: StatStrip is NOT keyed by filter values — it mounts once and updates
           in-place so the entrance animation fires only on first load. */}
       <StatStrip stats={kpis} />
+
+      {/* TRUTH-01: metric-specific coverage header. Activity (~956/1,153 via free ACCDS
+          crawl) leads; DC-metadata coverage (~550/1,153) is labeled separately.
+          All counts come from live server props — no hard-coded literals. */}
+      {covTotal > 0 && (
+        <p data-testid="coverage-header" className="text-xs text-muted-foreground -mt-4">
+          Activity data covers{" "}
+          <span className="tabular-nums">{covCovered}</span>{" "}
+          of{" "}
+          <span className="tabular-nums">{covTotal}</span>{" "}
+          ACC projects
+          {dcCoverage != null && (
+            <>
+              {" · "}Data Connector metadata covers{" "}
+              <span className="tabular-nums">{dcCoverage.covered}</span>{" "}
+              of{" "}
+              <span className="tabular-nums">{dcCoverage.total}</span>
+            </>
+          )}
+        </p>
+      )}
 
       <ProjectPicker
         options={options}

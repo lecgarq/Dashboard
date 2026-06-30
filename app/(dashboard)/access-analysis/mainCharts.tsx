@@ -18,6 +18,7 @@ import { loadCoordinationByProject } from "@/lib/server/coordinationByProjectVie
 import { loadProjectCoverage } from "@/lib/server/projectCoverageView";
 import { loadTerrainProjects } from "@/lib/server/folderPermissionTerrainView";
 import { loadActivityTimeline } from "@/lib/server/activityTimelineView";
+import { loadDcCoverage } from "@/lib/server/dcCoverageView";
 import { AccessAnalysisCharts } from "./components/AccessAnalysisCharts";
 import { loadProjectClashes } from "./coordinationActions";
 import { loadTerrainForProject, loadOverviewTerrain } from "./folderTerrainActions";
@@ -26,7 +27,7 @@ import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import type { ProjectRoleRow } from "./projectFilter";
 
 export async function MainCharts() {
-  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timeline] =
+  const [view, moduleRows, activityActorRows, coordinationData, coverage, terrainProjects, timeline, dcCoverage] =
     await Promise.all([
       loadInstanceView(),
       loadModuleActivity(),
@@ -35,6 +36,7 @@ export async function MainCharts() {
       loadProjectCoverage(),
       loadTerrainProjects(),
       loadActivityTimeline(),
+      loadDcCoverage(),
     ]);
 
   // Slim per-membership rows for client-side filtering.
@@ -65,6 +67,7 @@ export async function MainCharts() {
       membershipRows={membershipRows}
       coordinationData={coordinationData}
       coverage={coverage}
+      dcCoverage={dcCoverage}
       mtyIds={mtyAllowlist as string[]}
       loadClashes={loadProjectClashes}
       terrainProjects={terrainProjects}
