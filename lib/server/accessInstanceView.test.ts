@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildInstanceView, mergeRoleNames, type RawDc } from "./accessInstanceView";
+import { buildInstanceView, mergeRoleNames, shouldWarnEmptyRoleResolution, type RawDc } from "./accessInstanceView";
 
 describe("mergeRoleNames", () => {
   it("falls back to live AccRole names when the DC snapshot table is empty (the roles=0 regression)", () => {
@@ -17,6 +17,20 @@ describe("mergeRoleNames", () => {
       [{ id: "r1", name: "Live Name" }],
     );
     expect(merged.get("r1")).toBe("DC Name"); // DC wins per snapshot architecture
+  });
+});
+
+describe("shouldWarnEmptyRoleResolution", () => {
+  it("returns true when both AccDcRole and AccRole are empty (the real silent failure)", () => {
+    expect(shouldWarnEmptyRoleResolution([], [])).toBe(true);
+  });
+
+  it("returns false when AccRole fallback resolves (normal operation — AccDcRole empty by design is NOT a failure)", () => {
+    expect(shouldWarnEmptyRoleResolution([], [{ id: "r1", name: "Construction Manager" }])).toBe(false);
+  });
+
+  it("returns false when DC source resolves role names", () => {
+    expect(shouldWarnEmptyRoleResolution([{ id: "r1", name: "DC Role" }], [])).toBe(false);
   });
 });
 

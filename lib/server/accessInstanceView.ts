@@ -1,3 +1,10 @@
+// NOTE (OBS-02 deliberate divergence): The roadmap attributes the "after a cache
+// refresh" warning to lib/server/acc-hot-cache.ts, but that file does not reference
+// AccDcRole. The real role-resolution boundary is loadInstanceView() in THIS file,
+// where mergeRoleNames runs. The warning fires on effective-empty (merged map size 0),
+// NOT on the by-design AccDcRole-empty state alone (which is always empty and would
+// warn every refresh). This is intentional and documented in 12-02-SUMMARY.md.
+
 import "server-only";
 import { db } from "@/server/db";
 import { reduceModules } from "@/app/(dashboard)/access-analysis/modules";
@@ -33,6 +40,23 @@ export function mergeRoleNames(
   for (const r of live) map.set(r.id, r.name);
   for (const r of dc) map.set(r.id, r.name); // DC overrides live
   return map;
+}
+
+/**
+ * Returns true only when role-name resolution is effectively empty — i.e. BOTH the
+ * AccDcRole snapshot AND the live AccRole fallback yield zero usable role names.
+ * This is the real silent failure condition (role labels will be blank for all users).
+ *
+ * Returns false whenever either source produces at least one name, including the
+ * normal production state where AccDcRole is empty by design and AccRole carries
+ * 100% of assigned role names — that by-design AccDcRole-empty state alone is NOT
+ * a warning condition.
+ */
+export function shouldWarnEmptyRoleResolution(
+  dc: Array<{ id: string; name: string }>,
+  live: Array<{ id: string; name: string }>,
+): boolean {
+  return mergeRoleNames(dc, live).size === 0;
 }
 
 export function buildInstanceView(raw: RawDc): AccessInstance[] {
@@ -100,6 +124,11 @@ export async function loadInstanceView(force = false): Promise<AccessInstance[]>
     db.accDcCompany.findMany({ select: { id: true, name: true } }),
   ]);
   const roleNames = [...mergeRoleNames(dcRoleNames, liveRoleNames)].map(([id, name]) => ({ id, name }));
+  if (shouldWarnEmptyRoleResolution(dcRoleNames, liveRoleNames)) {
+    console.warn(
+      "[ACC-ROLES] Role-name resolution is empty after refresh — both the AccDcRole snapshot and the AccRole live fallback returned zero usable role names. Role labels will be blank for all users. Check that the AccRole sync has run (server/routers/users/acc-roles.ts)."
+    );
+  }
   const view = buildInstanceView({ projectUsers, users, projects, products, roles, roleNames, companies, companyNames });
   cache = { at: Date.now(), view };
   return view;
