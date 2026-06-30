@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
 current_phase: 14
-current_phase_name: both plans 14-01 and 14-02 now COMPLETE
+current_phase_name: characterization-tests
 status: executing
-stopped_at: Phase 14 plan 14-02 complete (TEST-03 contract pin)
-last_updated: "2026-06-30T22:16:01.456Z"
+stopped_at: Phase 14 COMPLETE + verified (4/4 must-haves); milestone v2.1 all 6 phases done — awaiting closeout
+last_updated: "2026-06-30T22:30:00.000Z"
 last_activity: 2026-06-30
-last_activity_desc: "Phase 14 plan 14-02 COMPLETE: 2 commits (f8e15f6e, 243d10e9). TEST-03: shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column contract, row-bound, project-scope, null-path). REF-02 SPLIT-PENDING signpost added to templateFolderTerrain.ts. tsc clean, vitest 5/5."
+last_activity_desc: "Phase 14 COMPLETE + VERIFIED (status: passed, 4/4 must-haves). 14-01 (TEST-02): golden-master pins for loadFolderPermissionTerrain/loadFolderPermissionOverview + loadTerrainProjects shape pin in folderPermissionTerrainView.test.ts; REF-01 SPLIT-PENDING signposts on the 3 terrain monoliths + REF-02 on folderPermissionTerrainView.ts (commits 9a5173f0, 69f2139a). 14-02 (TEST-03): shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column set, row-bound, project-scope, null-path) + REF-02 signpost on templateFolderTerrain.ts (commits f8e15f6e, 243d10e9). 9/9 new tests green, tsc clean. Milestone v2.1 (Concerns Hardening) all 6 phases complete — next = /gsd:complete-milestone."
 progress:
   total_phases: 6
   completed_phases: 6
@@ -24,17 +24,17 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening — Phase 14 (Characterization Tests)
+**Current focus:** v2.1 Concerns Hardening COMPLETE — all 6 phases done; awaiting milestone closeout
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening (5 of 6 phases complete: 09, 10, 11, 12, 13; Phase 14 executing)
-- **Phase:** 14 of 14 — Characterization Tests (both plans 14-01 and 14-02 now COMPLETE)
-- **Plan:** Phase 14 had 2/2 plans complete: 14-01 (TEST-02 boundary pins + SPLIT-PENDING signposts) + 14-02 (TEST-03 shared query contract + REF-02 signpost).
-- **Status:** Milestone v2.1 in progress — Phase 14 plans all complete. Pending: final self-gate and milestone close.
-- **Last activity:** 2026-06-30 — Phase 14 plan 14-02 COMPLETE: 2 commits (f8e15f6e, 243d10e9). TEST-03: shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column contract, row-bound, project-scope, null-path). REF-02 SPLIT-PENDING signpost added to templateFolderTerrain.ts. tsc clean, vitest 5/5.
+- **Milestone:** v2.1 — Concerns Hardening (6 of 6 phases complete: 09, 10, 11, 12, 13, 14 ✓) — awaiting `/gsd:complete-milestone`
+- **Phase:** 14 of 14 ✓ COMPLETE + VERIFIED (status: passed, 4/4 must-haves) — Characterization Tests.
+- **Plan:** Phase 14 had 2/2 plans complete: 14-01 (TEST-02 boundary pins + REF-01/REF-02 SPLIT-PENDING signposts) + 14-02 (TEST-03 shared-query contract + REF-02 signpost).
+- **Status:** Milestone v2.1 fully executed + verified. Phase 14 closed (verifier 4/4). Next = milestone closeout (`/gsd:complete-milestone`). NOTE: `gsd-tools phase complete` NOT run for Phase 14 — its outputs (ROADMAP all-Complete, REQUIREMENTS TEST-02/03 Complete, STATE 6/6) were already written by the plan-execution docs commits; running the known-buggy CLI would risk blanking a correct STATE. Self-gate `--rebuild` intentionally skipped: test+comment-only phase, no route/behavior change, and a whole-tree rebuild would ship unrelated branch WIP to `:3000`.
+- **Last activity:** 2026-06-30 — Phase 14 COMPLETE + VERIFIED. 14-01 commits 9a5173f0/69f2139a; 14-02 commits f8e15f6e/243d10e9. 9/9 new characterization tests green, tsc clean. 2 pre-existing failures in FolderPermissionTerrain.test.tsx confirmed out-of-scope branch WIP (untouched by Phase 14).
 
-Progress: [████████████] 90%+ (Phase 14 plans done — final gate + milestone close pending)
+Progress: [████████████] 100% (all 6 phases complete + verified — milestone closeout pending)
 
 ## Status (data baseline — still current)
 
@@ -126,21 +126,25 @@ None blocking Phase 13 planning/execution. Key risks to track:
 
 ## Next Action
 
-Phase 14 plans 14-01 and 14-02 are both COMPLETE. Summaries exist at
-`.planning/phases/14-characterization-tests/14-01-SUMMARY.md` and
-`.planning/phases/14-characterization-tests/14-02-SUMMARY.md`.
+Phase 14 is COMPLETE + VERIFIED (verifier status: passed, 4/4 must-haves;
+`.planning/phases/14-characterization-tests/14-VERIFICATION.md`). Both plan
+summaries exist (14-01-SUMMARY.md, 14-02-SUMMARY.md). Milestone v2.1 (Concerns
+Hardening) now has all 6 phases complete + verified.
 
-**Next = run phase verification then close Phase 14 / Milestone v2.1.**
+**Next = `/gsd:complete-milestone` (after `/clear`).**
 
-Steps:
+Milestone-close inputs already true:
+- All 6 phases (09–14) Complete in ROADMAP; all v2.1 requirements satisfied.
+- TEST-02 + TEST-03 marked Complete in REQUIREMENTS.md.
+- 9/9 new characterization tests green; `npx tsc --noEmit` clean.
 
-1. `npx tsc --noEmit` — whole-tree clean (confirmed at end of each plan)
-2. `npm test` — full Vitest suite green with all new characterization tests
-3. `node scripts/gsd-self-gate.cjs --rebuild` (if exists) or manual rebuild sequence for milestone close
-4. `/gsd:complete-milestone v2.1`
-
-Phase 14 scope (from ROADMAP): characterization tests for boundary-critical modules
-covering TEST-02 and TEST-03. Both requirements now met.
+Deliberate deferrals carried into closeout (not blockers):
+- Self-gate `--rebuild` NOT run for Phase 14 (test+comment-only; whole-tree rebuild
+  would ship unrelated branch WIP to `:3000`). Run it as part of milestone-close
+  only if a clean rebuild of the intended working tree is desired.
+- 2 pre-existing failures in `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx`
+  are uncommitted branch WIP unrelated to Phase 14 — a full `npm test` is not 100%
+  green until that WIP is resolved or committed.
 
 Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
 run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
