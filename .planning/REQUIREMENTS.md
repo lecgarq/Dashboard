@@ -44,7 +44,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 - [ ] **TEST-01**: a Vitest test covers the `AccFolderPermission` `GROUP BY` aggregate in `lib/server/acc-hot-cache.ts`, asserting it returns ≤ `n_roles × n_projects` rows (not raw permissions) — guarding the dominant OOM regression. _(§8.1)_
 - [ ] **TEST-02**: characterization tests pin the current tRPC-boundary outputs and pure transforms of the access-analysis monoliths (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`); the files carry a "split-pending" warning comment. _(§2.3 guardrail; split deferred → REF-01)_
-- [ ] **TEST-03**: a characterization test pins the shared `AccFolderPermission` terrain query output used by both `/template-mty` and `/access-analysis`, so the deferred `folderPermQuery` extraction can proceed safely later. _(§6.1 guardrail; extraction deferred → REF-02)_
+- [x] **TEST-03**: a characterization test pins the shared `AccFolderPermission` terrain query output used by both `/template-mty` and `/access-analysis`, so the deferred `folderPermQuery` extraction can proceed safely later. _(§6.1 guardrail; extraction deferred → REF-02)_
 
 ## Future Requirements
 
@@ -96,7 +96,7 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 | TYPE-01 | Phase 13 | Complete |
 | TYPE-02 | Phase 13 | Complete |
 | TEST-02 | Phase 14 | Pending |
-| TEST-03 | Phase 14 | Pending |
+| TEST-03 | Phase 14 | Complete |
 
 **Coverage:**
 

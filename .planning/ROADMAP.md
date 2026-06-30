@@ -136,10 +136,10 @@ Plans:
   3. A characterization test pins the shared `AccFolderPermission` terrain query output (the join pattern used by both `/template-mty` and `/access-analysis`); the test asserts stable column count and row-bound; the test file references REF-02 as the deferred extraction target
   4. `npm test` passes with all new characterization tests included
 
-**Plans**: 2 plans
+**Plans**: 1/2 plans executed
 
 - [ ] 14-01-PLAN.md — TEST-02: golden-master `loadFolderPermissionTerrain` / `loadFolderPermissionOverview` (+ `loadTerrainProjects` shape pin) in `lib/server/__tests__/folderPermissionTerrainView.test.ts`; add `// SPLIT-PENDING:` REF-01 comments to the three monoliths + REF-02 comment on `folderPermissionTerrainView.ts` (wave 1)
-- [ ] 14-02-PLAN.md — TEST-03: pin the shared `AccFolderPermission` terrain-query contract (5-column set + row-bound + project scope, references REF-02) via `loadTemplateFolderTerrain` in `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`; add `// SPLIT-PENDING:` REF-02 comment on `templateFolderTerrain.ts` (wave 1)
+- [x] 14-02-PLAN.md — TEST-03: pin the shared `AccFolderPermission` terrain-query contract (5-column set + row-bound + project scope, references REF-02) via `loadTemplateFolderTerrain` in `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`; add `// SPLIT-PENDING:` REF-02 comment on `templateFolderTerrain.ts` (wave 1)
 
 ## Progress
 
@@ -153,4 +153,4 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
 | 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
 | 13. Type-Safety Guards | 1/1 | Complete    | 2026-06-30 |
-| 14. Characterization Tests | 0/2 | Planned | - |
+| 14. Characterization Tests | 1/2 | In Progress|  |

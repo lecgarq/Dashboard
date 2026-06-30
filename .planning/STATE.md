@@ -1,16 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v2.1
 milestone_name: Concerns Hardening
+current_phase: 14
+current_phase_name: both plans 14-01 and 14-02 now COMPLETE
 status: executing
-stopped_at: Phase 14 context gathered
-last_updated: "2026-06-30T21:42:33.922Z"
-last_activity: "2026-06-30 — Phase 13 COMPLETE: 2 commits (e0d46b91, 965993fd). TYPE-01: lean bulkUsers roles/modules typed never[] at construction site. TYPE-02: one-directional subset drift assert in accGraphFilters.ts. tsc clean, vitest 51/51, negative-case proofs confirmed and reverted."
+stopped_at: Phase 14 plan 14-02 complete (TEST-03 contract pin)
+last_updated: "2026-06-30T22:13:44.257Z"
+last_activity: 2026-06-30
+last_activity_desc: "Phase 14 plan 14-02 COMPLETE: 2 commits (f8e15f6e, 243d10e9). TEST-03: shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column contract, row-bound, project-scope, null-path). REF-02 SPLIT-PENDING signpost added to templateFolderTerrain.ts. tsc clean, vitest 5/5."
 progress:
   total_phases: 6
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_plans: 14
+  completed_plans: 13
+  percent: 83
 ---
 
 # Project State
@@ -24,13 +28,13 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening (5 of 6 phases complete: 09, 10, 11, 12, 13)
-- **Phase:** 13 of 14 ✓ COMPLETE — TYPE-01/TYPE-02 compile-time guards live. Next = Phase 14 — Characterization Tests.
-- **Plan:** Phase 13 had 1/1 plan complete: 13-01 (TYPE-01 lean never[] guard + TYPE-02 drift assert).
-- **Status:** Milestone v2.1 in progress — Phase 13 closed + verified (status: passed, 7/7 must-haves). Phase 14 (Characterization Tests) remains — the final v2.1 phase. NOTE: `gsd-tools phase complete` AGAIN mis-reported is_last_phase:true / next_phase:null and set status:completed + progress 5/5 (known CLI bug); STATE repaired manually to status:executing, 5 of 6 phases, Phase 14 next.
-- **Last activity:** 2026-06-30 — Phase 13 COMPLETE: 2 commits (e0d46b91, 965993fd). TYPE-01: lean bulkUsers roles/modules typed never[] at construction site. TYPE-02: one-directional subset drift assert in accGraphFilters.ts. tsc clean, vitest 51/51, negative-case proofs confirmed and reverted.
+- **Milestone:** v2.1 — Concerns Hardening (5 of 6 phases complete: 09, 10, 11, 12, 13; Phase 14 executing)
+- **Phase:** 14 of 14 — Characterization Tests (both plans 14-01 and 14-02 now COMPLETE)
+- **Plan:** Phase 14 had 2/2 plans complete: 14-01 (TEST-02 boundary pins + SPLIT-PENDING signposts) + 14-02 (TEST-03 shared query contract + REF-02 signpost).
+- **Status:** Milestone v2.1 in progress — Phase 14 plans all complete. Pending: final self-gate and milestone close.
+- **Last activity:** 2026-06-30 — Phase 14 plan 14-02 COMPLETE: 2 commits (f8e15f6e, 243d10e9). TEST-03: shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column contract, row-bound, project-scope, null-path). REF-02 SPLIT-PENDING signpost added to templateFolderTerrain.ts. tsc clean, vitest 5/5.
 
-Progress: [██████████] 83% (5 of 6 phases complete — 09, 10, 11, 12, 13)
+Progress: [████████████] 90%+ (Phase 14 plans done — final gate + milestone close pending)
 
 ## Status (data baseline — still current)
 
@@ -122,12 +126,21 @@ None blocking Phase 13 planning/execution. Key risks to track:
 
 ## Next Action
 
-Phase 13 COMPLETE — TYPE-01/TYPE-02 compile-time guards live. Milestone v2.1 continues with
-**Phase 14 — Characterization Tests**.
+Phase 14 plans 14-01 and 14-02 are both COMPLETE. Summaries exist at
+`.planning/phases/14-characterization-tests/14-01-SUMMARY.md` and
+`.planning/phases/14-characterization-tests/14-02-SUMMARY.md`.
 
-**Next = `/gsd:discuss-phase 14`** or **`/gsd:plan-phase 14`** (after `/clear`).
+**Next = run phase verification then close Phase 14 / Milestone v2.1.**
 
-Phase 14 scope (from ROADMAP): characterization tests for boundary-critical modules (CHAR-01, CHAR-02, etc.).
+Steps:
+
+1. `npx tsc --noEmit` — whole-tree clean (confirmed at end of each plan)
+2. `npm test` — full Vitest suite green with all new characterization tests
+3. `node scripts/gsd-self-gate.cjs --rebuild` (if exists) or manual rebuild sequence for milestone close
+4. `/gsd:complete-milestone v2.1`
+
+Phase 14 scope (from ROADMAP): characterization tests for boundary-critical modules
+covering TEST-02 and TEST-03. Both requirements now met.
 
 Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
 run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
@@ -150,6 +163,6 @@ expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the
 
 ## Session
 
-**Last session:** 2026-06-30T21:42:33.920Z
-**Stopped at:** Phase 14 context gathered
+**Last session:** 2026-06-30T22:13:44.249Z
+**Stopped at:** Phase 14 planned; ready to execute 14-01 and 14-02
 **Resume file:** .planning/phases/14-characterization-tests/14-CONTEXT.md
