@@ -2,14 +2,18 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: Concerns Hardening
+current_phase: 11
+current_phase_name: 4 plans, commit ece2c92f
 status: in_progress
-last_updated: "2026-06-24T00:10:00.000Z"
-last_activity: "2026-06-23 — Phase 11 (Data-Truthfulness Labels) CONTEXT captured (11-CONTEXT.md, commit 5e0ad8b8). Owner correction locked: TRUTH-01 coverage label leads with the free-crawl activity coverage (~956/1,153), NOT the stale '428 DC' framing (428 = old DC-API-extractable; superseded). TRUTH-02 `dataFloor` is added to the `loadActivityTimeline()` RSC in lib/server/activityTimelineView.ts (NOT tRPC — resolves the open 'verify procedure' item). TRUTH-03 = ⓘ tooltip on module donut. GUID→name fix (folderActivityView.ts) folded in. Next = /gsd:plan-phase 11. Prior: Phase 10 COMPLETE+verified+owner-approved (9 commits 4392637d..3dc7a40b)."
+last_updated: "2026-06-30T15:02:16.186Z"
+last_activity: 2026-06-30
+last_activity_desc: "Session resumed; STATE corrected (planning was already complete, not pending). Phase 11 plans 11-01..11-04 verified present (commit ece2c92f). Prior: Phase 10 COMPLETE + verified + owner-approved (9 commits 4392637d..3dc7a40b)."
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 5
-  completed_plans: 5
+  total_plans: 9
+  completed_plans: 6
+  percent: 33
 ---
 
 # Project State
@@ -24,10 +28,10 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 11 of 14 — Data-Truthfulness Labels. CONTEXT captured (11-CONTEXT.md). Next = plan-phase 11. (Phase 10 ✓ COMPLETE + verified + owner-approved.)
-- **Plan:** Phase 11 plans TBD. Decisions locked in 11-CONTEXT.md (4 TRUTH labels on /access-analysis + folded-in GUID→name fix).
-- **Status:** Phase 11 discuss-phase done; ready to plan. Independently unblocked (depends on Phase 09 only). Key owner correction: coverage label uses free-crawl ~956/1,153, not the stale 428-DC framing.
-- **Last activity:** 2026-06-23 — Phase 11 CONTEXT captured (commit 5e0ad8b8). TRUTH-02 dataFloor confirmed on the loadActivityTimeline() RSC (not tRPC); GUID-name fix folded in. Prior: Phase 10 COMPLETE + verified + owner-approved (9 commits 4392637d..3dc7a40b).
+- **Phase:** 11 of 14 — Data-Truthfulness Labels. PLANNED (4 plans, commit ece2c92f); no SUMMARYs → not executed. Next = execute-phase 11. (Phase 10 ✓ COMPLETE + verified + owner-approved.)
+- **Plan:** 1 of 4 Phase 11 plans executed. Wave 1 = 11-01 (TRUTH-04 doc), 11-02 (GUID→name fix), 11-03 (dataFloor). Wave 2 = 11-04 (coverage header + module ⓘ tooltip), depends on 11-03.
+- **Status:** Phase 11 discuss + plan done; ready to EXECUTE. Independently unblocked (depends on Phase 09 only). Key owner correction baked into 11-04: coverage header leads with free-crawl ~956/1,153, not the stale 428-DC framing.
+- **Last activity:** 2026-06-30 — Session resumed; STATE corrected (planning was already complete, not pending). Phase 11 plans 11-01..11-04 verified present (commit ece2c92f). Prior: Phase 10 COMPLETE + verified + owner-approved (9 commits 4392637d..3dc7a40b).
 
 Progress: [███░░░░░░░] 33% (2 of 6 phases — 09, 10 complete)
 
@@ -93,6 +97,7 @@ Recent decisions affecting current work:
 - Plan 09-01: DB-04 guardrail is comment-only on includePermissionContexts branch; no behavior change
 - Plan 09-02: DB-01 index applied via pg Client + prisma migrate resolve (not migrate dev — pgvector choke); Bitmap Index Scan proven on low-frequency roleId (count=1)
 - Plan 09-02: EXPLAIN ANALYZE chose Bitmap Index Scan (not plain Index Scan) — both confirm acc_folder_permission_role_id_idx is used; success criterion met
+- [Phase ?]: TRUTH-04: mergeRoleNames lives in lib/server/accessInstanceView.ts; AccDcRole empty → AccRole fallback; DC wins on conflict
 
 ### Blockers/Concerns
 
@@ -105,21 +110,26 @@ None blocking Phase 09. Key risks to track:
 
 ## Next Action
 
-Phase 11 discuss-phase is complete — decisions captured in
-`.planning/phases/11-data-truthfulness-labels/11-CONTEXT.md` (commit 5e0ad8b8).
-**Next = `/gsd:plan-phase 11`** (after `/clear`).
+Phase 11 is fully planned — 4 plans in
+`.planning/phases/11-data-truthfulness-labels/` (11-01..11-04, commit ece2c92f),
+decisions in 11-CONTEXT.md. No SUMMARYs → execution not started.
+**Next = `/gsd:execute-phase 11`** (after `/clear`).
 
 **Phase 11 decisions locked (see 11-CONTEXT.md):**
+
 - **TRUTH-01** — restrained header coverage line + keep per-chart
   `ActivityCoverageBadge`. **Owner correction:** lead with free-crawl activity
   coverage (~956/1,153, live count), label DC-metadata metrics with their ~550;
   the requirement's "428 of 1,152 DC" example is rejected as the headline.
+
 - **TRUTH-02** — add `dataFloor` to the **`loadActivityTimeline()` RSC** in
   `lib/server/activityTimelineView.ts` (NOT tRPC — the CTE already computes
   per-project `MIN(createdAt)`). Account-wide "Data available from [month]"
   caption + per-project hover.
+
 - **TRUTH-03** — ⓘ info-icon + Radix tooltip on the module donut; ~40.7% figure
   in tooltip + INTEGRATIONS.md, not always-on.
+
 - **TRUTH-04** — document `AccDcRole`→`AccRole` fallback in INTEGRATIONS.md.
 - **Folded-in scope** — repair the raw-GUID leak in
   `lib/server/folderActivityView.ts` by merging `AccProject` (1,153) names;
@@ -128,3 +138,9 @@ Phase 11 discuss-phase is complete — decisions captured in
 
 ---
 *Last updated: 2026-06-23 — Phase 10 complete + verified (7/7 must-haves; 10-VERIFICATION.md PASSED) + owner-approved rebuild on :3000. Note: `gsd-tools phase complete` again mis-reported is_last_phase:true / total_phases:2 (known CLI bug); STATE frontmatter + body repaired manually to reflect 2 of 6 phases done.*
+
+## Performance Metrics
+
+| Phase | Plan | Duration | Notes |
+|-------|------|----------|-------|
+| Phase 11-data-truthfulness-labels P01 | 1 | 2 tasks | 1 files |
