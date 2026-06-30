@@ -26,7 +26,7 @@ this milestone ships their characterization tests and warning comments.
 - [x] **Phase 11: Data-Truthfulness Labels** - Surface DC 428/1,152 coverage, ACCDS ~12-month data floor, module-donut service caveat, and AccDcRole fallback docs on `/access-analysis` (completed 2026-06-30)
 - [x] **Phase 12: Integration Health & Observability** - ACCDS session health in progress monitor, AccDcRole-empty warning in cache, remove stale TODO[02.5] guards (completed 2026-06-30)
 - [x] **Phase 13: Type-Safety Guards** - Mark `bulkUsers` lean-payload fields as `never[]`, add `accGraphFilters` compile-time drift assert (completed 2026-06-30)
-- [ ] **Phase 14: Characterization Tests** - Pin access-analysis monolith tRPC boundaries and shared terrain query output so deferred splits are safe
+- [x] **Phase 14: Characterization Tests** - Pin access-analysis monolith tRPC boundaries and shared terrain query output so deferred splits are safe (completed 2026-06-30)
 
 ## Phase Details
 
@@ -136,9 +136,9 @@ Plans:
   3. A characterization test pins the shared `AccFolderPermission` terrain query output (the join pattern used by both `/template-mty` and `/access-analysis`); the test asserts stable column count and row-bound; the test file references REF-02 as the deferred extraction target
   4. `npm test` passes with all new characterization tests included
 
-**Plans**: 1/2 plans executed
+**Plans**: 2/2 plans complete
 
-- [ ] 14-01-PLAN.md — TEST-02: golden-master `loadFolderPermissionTerrain` / `loadFolderPermissionOverview` (+ `loadTerrainProjects` shape pin) in `lib/server/__tests__/folderPermissionTerrainView.test.ts`; add `// SPLIT-PENDING:` REF-01 comments to the three monoliths + REF-02 comment on `folderPermissionTerrainView.ts` (wave 1)
+- [x] 14-01-PLAN.md — TEST-02: golden-master `loadFolderPermissionTerrain` / `loadFolderPermissionOverview` (+ `loadTerrainProjects` shape pin) in `lib/server/__tests__/folderPermissionTerrainView.test.ts`; add `// SPLIT-PENDING:` REF-01 comments to the three monoliths + REF-02 comment on `folderPermissionTerrainView.ts` (wave 1)
 - [x] 14-02-PLAN.md — TEST-03: pin the shared `AccFolderPermission` terrain-query contract (5-column set + row-bound + project scope, references REF-02) via `loadTemplateFolderTerrain` in `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`; add `// SPLIT-PENDING:` REF-02 comment on `templateFolderTerrain.ts` (wave 1)
 
 ## Progress
@@ -153,4 +153,4 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 | 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
 | 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
 | 13. Type-Safety Guards | 1/1 | Complete    | 2026-06-30 |
-| 14. Characterization Tests | 1/2 | In Progress|  |
+| 14. Characterization Tests | 2/2 | Complete   | 2026-06-30 |
