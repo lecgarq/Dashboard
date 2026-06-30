@@ -7,12 +7,26 @@
  * Plan 07-04: Phase 7 dimensions (GRAPH7-06, GRAPH7-09, FILT-EXT)
  */
 
+// TYPE-02: type-only import — erased at runtime, pulls no runtime deps from
+// userSimilarity.ts into this pure module (which is imported by both client UI
+// and pure Vitest tests). No cross-module cycle: userSimilarity.ts does not
+// import this file.
+import type { SimilarityDim } from "@/lib/acc/userSimilarity";
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Phase 7 type aliases
 // NOTE: SimilarityDimKey must stay in sync with `SimilarityDim` in
 // lib/acc/userSimilarity.ts. Kept local here to avoid a cross-module type-only
 // cycle (this module is imported by both client UI and pure unit tests).
-// TODO: if the two unions ever drift, add a compile-time assert helper.
+//
+// TYPE-02 compile-time drift guard (Plan 13-01): one-directional SUBSET assert.
+// Every SimilarityDimKey must be a valid SimilarityDim (7 ⊆ 12 today).
+// If a filter key is renamed/removed so it no longer maps to the engine union,
+// _DimKeysAreValid resolves to ["DRIFT", <drifted key>] and the = true
+// assignment below fails to compile, naming the offending key via
+// Exclude<SimilarityDimKey, SimilarityDim>. NOT bidirectional — the 5 engine-
+// only dims (admin-tier, internal-external, company-role, module-mix,
+// firm-affiliation) are intentionally absent from SimilarityDimKey.
 // ─────────────────────────────────────────────────────────────────────────────
 
 export type PermTierKey = "view" | "upload" | "edit" | "control";
@@ -24,6 +38,16 @@ export type SimilarityDimKey =
   | "data-coverage"
   | "last-sign-in"
   | "recent-additions";
+
+// TYPE-02 subset guard — compiles when SimilarityDimKey ⊆ SimilarityDim.
+// Resolves to ["DRIFT", <key>] and fails assignment below when a filter key
+// drifts out of the engine union.
+type _DimKeysAreValid =
+  SimilarityDimKey extends SimilarityDim
+    ? true
+    : ["DRIFT", Exclude<SimilarityDimKey, SimilarityDim>];
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const _dimKeyGuard: _DimKeysAreValid = true;
 
 type ViewMode = "multi" | "user-only";
 type GraphNodeKind =
