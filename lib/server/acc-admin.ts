@@ -48,9 +48,6 @@ function getString(v: unknown): string {
   return typeof v === "string" ? v : "";
 }
 
-// TODO[02.5]: remove after first sync confirms field names
-let loggedRawShape = false;
-
 // Retry on 429 (quota/rate limit) with either the server-provided Retry-After or
 // exponential backoff. Up to 4 attempts. Everything else returns the first response.
 export async function fetchWithRetry(url: string, init: RequestInit, maxAttempts = 4): Promise<Response> {
@@ -204,19 +201,6 @@ export async function fetchAllAccUsers(
 
   while (offset < maxUsers) {
     const users = await fetchHqUsers(`${baseUrl}?limit=${limit}&offset=${offset}`, accessToken, signal);
-    // TODO[02.5-D]: remove after first sync confirms field names. We log keys
-    // for the first user AND a redacted sample to confirm whether company_role
-    // / last_sign_in / last_activity / lastSignIn are the actual HQ v1 keys.
-    if (!loggedRawShape && Array.isArray(users) && users.length > 0) {
-      const sample = users[0] as Record<string, unknown>;
-      const keys = Object.keys(sample);
-      const roleHits = keys.filter((k) => /role/i.test(k));
-      const signInHits = keys.filter((k) => /sign|activ|login|last/i.test(k));
-      console.info("[02.5-D-DIAG] HQ v1 user keys:", keys);
-      console.info("[02.5-D-DIAG] role-like keys:", roleHits, "sample values:", roleHits.map((k) => sample[k]));
-      console.info("[02.5-D-DIAG] activity-like keys:", signInHits, "sample values:", signInHits.map((k) => sample[k]));
-      loggedRawShape = true;
-    }
     for (const u of users) {
       const role = getString(u.role) || getString(u.access_level) || "user";
       all.push({
