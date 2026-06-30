@@ -64,6 +64,42 @@
 - Known gap: `AccDcRole` permanently empty (DC never sends `admin_roles.csv`); role names sourced from live `AccRole` via `mergeRoleNames`
 - Known gap: `AccDcIngestRun.rowsByModule` always 0 (telemetry skipped); measure from `AccActivity` directly
 
+**Role-name fallback (`AccDcRole` → `AccRole`):**
+
+The DC snapshot architecture intended `AccDcRole` as the authoritative role-name table,
+populated from `admin_roles.csv`. In production, Autodesk never delivers that file, so
+`AccDcRole` is permanently empty. Without a fallback every `AccDcProjectUserRole`
+assignment resolves to an unknown name and is silently dropped in the downstream join —
+causing role counts to display as 0 on `/access-analysis`.
+
+The fix lives in `lib/server/accessInstanceView.ts`. The exported `mergeRoleNames`
+function accepts two sources and returns a single `Map<id, name>`:
+
+1. All `AccRole` rows (live APS account-roles API, synced by `scripts/sync-acc-users.ts`)
+   are loaded into the map first.
+2. All `AccDcRole` rows are applied on top — **DC wins on conflict**, by design, matching
+   the general snapshot-takes-precedence architecture.
+
+Both models use the same APS role ID as the primary key (`AccRole.id` / `AccDcRole.id`),
+so the merge is a direct id-keyed overlay.
+
+`loadInstanceView()` (same file) queries both tables in parallel via `Promise.all`,
+calls `mergeRoleNames`, then passes the merged list to `buildInstanceView`. Any
+`AccDcProjectUserRole` entry whose `roleId` is absent from the merged map is silently
+skipped (`if (!name) continue`) — no error, no placeholder. This silent-drop is tested
+in `lib/server/accessInstanceView.test.ts` ("drops an assignment when no name source has
+the roleId") to prevent the bug from regressing without visibility.
+
+**Conflict behavior when DC supplies a name:** If `AccDcRole` is ever populated (i.e.,
+Autodesk resumes delivering `admin_roles.csv`), the DC name will override the `AccRole`
+name for any shared role id. `AccRole` then acts as the fallback baseline only.
+
+**Downstream label requirement:** Role names shown on `/access-analysis` currently come
+from `AccRole` (live APS sync), not from the DC extraction window. This inverts the
+usual DC-snapshot authority for role data: the "live" source is the ground truth until
+DC delivers `admin_roles.csv`. Downstream views that present role-derived metrics should
+note that role names reflect the live APS state, not the DC snapshot date.
+
 **Folder crawl:**
 - Script: `scripts/folder-crawl-cron.cjs` (cron job)
 - Dry-run: `scripts/dry-run-folder-crawl.cjs`
