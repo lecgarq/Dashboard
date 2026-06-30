@@ -3,18 +3,18 @@ gsd_state_version: 1.0
 milestone: v2.1
 milestone_name: Concerns Hardening
 current_phase: 11
-current_phase_name: TRUTH-04 doc
+current_phase_name: Data-Truthfulness Labels
 status: in_progress
-stopped_at: 11-03 plan complete
-last_updated: "2026-06-30T15:08:11.598Z"
+stopped_at: 11-04 plan complete — Phase 11 DONE
+last_updated: "2026-06-30T09:16:00.000Z"
 last_activity: 2026-06-30
-last_activity_desc: Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
+last_activity_desc: Phase 11 Plan 11-04 completed (TRUTH-01 coverage header + TRUTH-03 module tooltip; commits 327d0e13+71305f5c+295fbbed). Phase 11 all 4 plans done. Next = Phase 12 or end-of-phase visual UAT rebuild.
 progress:
   total_phases: 6
   completed_phases: 2
   total_plans: 9
-  completed_plans: 8
-  percent: 33
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -29,12 +29,12 @@ See: `.planning/PROJECT.md` (updated 2026-06-23)
 ## Current Position
 
 - **Milestone:** v2.1 — Concerns Hardening
-- **Phase:** 11 of 14 — Data-Truthfulness Labels. Wave 1 COMPLETE: 11-01 (TRUTH-04 doc) ✓, 11-02 (GUID→name fix) ✓, 11-03 (dataFloor) ✓. Wave 2 = 11-04 (coverage header + module ⓘ tooltip), depends on 11-03.
-- **Plan:** 4 of 4 Phase 11 plans executed. Next = 11-04 (Wave 2).
-- **Status:** Phase 11 Wave 1 complete. 11-01 (TRUTH-04 doc), 11-02 (folderActivity GUID fix + Vitest), 11-03 (dataFloor RSC + buildFloors) all shipped. 11-04 (coverage header + ⓘ tooltip) is Wave 2, depends on 11-03. Key owner correction baked into 11-04: coverage header leads with free-crawl ~956/1,153, not the stale 428-DC framing. Pre-existing tsc error in mainCharts.tsx (from 11-03 type change) needs resolution in 11-04 or a follow-up.
+- **Phase:** 11 of 14 — Data-Truthfulness Labels. ALL 4 PLANS COMPLETE: 11-01 (TRUTH-04 doc) ✓, 11-02 (GUID→name fix) ✓, 11-03 (dataFloor) ✓, 11-04 (coverage header + module ⓘ tooltip) ✓.
+- **Plan:** 4 of 4 Phase 11 plans executed. Phase 11 DONE.
+- **Status:** Phase 11 complete. All TRUTH deliverables shipped: TRUTH-01 (coverage header line, activity leads, DC secondary), TRUTH-02 (dataFloor caption on timeline), TRUTH-03 (module-donut ⓘ tooltip with rawAction/40.7% caveat), TRUTH-04 (INTEGRATIONS.md role-fallback doc). Plus folded-in GUID-leak fix (11-02). Visual UAT rebuild deferred to end-of-phase.
 - **Last activity:** 2026-06-30 — Phase 11 Plan 11-02 completed (GUID-leak fix + Vitest; commits 045d89cb+8e9c88ec). Plan 11-03 (dataFloor) already committed (e042f1a2). Next = execute plan 11-04 (coverage header + module ⓘ tooltip, Wave 2).
 
-Progress: [████████░░] 78% (7 of 9 plans done; 2 of 6 phases fully complete)
+Progress: [█████████░] 89% (8 of 9 plans done; 2 of 6 phases fully complete)
 
 ## Status (data baseline — still current)
 
@@ -110,14 +110,13 @@ None blocking Phase 11 continuation. Key risks to track:
 - BND-02/BND-03: spatial-graph-coupled `lib→app` edges are documented-deferred, not fixed
 - TRUTH-02: needs `dataFloor` field added to timeline API response — verify exact tRPC procedure name before planning
 - **RESOLVED (plan 11-02, 2026-06-30):** "Folder Activity by Role" GUID leak fixed. AccProject (1,153) merged into name resolution. DB verified: AccProject covers all 956 ACCDS projectIds (100%). Fallback = "Unknown project". 7-test Vitest pinned.
-- **OPEN (pre-existing tsc error from plan 11-03):** `mainCharts.tsx:61` type mismatch — `ActivityTimelineResult` vs `ActivityTimelineRow[]`. Caused by 11-03's type change to `loadActivityTimeline()`. Must be fixed in plan 11-04 or before rebuild.
+- **RESOLVED (plan 11-04, 2026-06-30):** mainCharts.tsx tsc error was already resolved by 11-03's commit 926c57dc. tsc clean confirmed at start and end of 11-04 execution.
 
 ## Next Action
 
-Phase 11 Wave 1 complete: 11-01 ✓ (TRUTH-04 doc), 11-02 ✓ (GUID→name fix), 11-03 ✓ (dataFloor).
-Wave 2: Plan 11-04 (coverage header + module ⓘ tooltip) is next — depends on 11-03.
-**Blocker for rebuild:** `mainCharts.tsx:61` tsc error from 11-03 must be fixed before `npm run build`.
-**Next = execute plan 11-04** (coverage header + module ⓘ tooltip + fix the mainCharts tsc error).
+Phase 11 ALL PLANS COMPLETE: 11-01 ✓ 11-02 ✓ 11-03 ✓ 11-04 ✓.
+**Next = end-of-phase visual UAT rebuild** (rebuild on :3000, verify coverage header + module tooltip + floor caption; zinc theme; no 428 in UI). Do NOT run `npm run build` while :3000 is serving.
+**After rebuild UAT:** advance to Phase 12.
 
 **Phase 11 decisions locked (see 11-CONTEXT.md):**
 
@@ -150,9 +149,10 @@ Wave 2: Plan 11-04 (coverage header + module ⓘ tooltip) is next — depends on
 | Phase 11-data-truthfulness-labels P01 | 1 | 2 tasks | 1 files |
 | Phase 11-data-truthfulness-labels P02 | 4 | 3 tasks | 2 files |
 | Phase 11 P03 | 6 | 3 tasks | 6 files |
+| Phase 11 P04 | 10 | 3 tasks | 6 files |
 
 ## Session
 
-**Last session:** 2026-06-30T15:08:11.590Z
-**Stopped at:** 11-03 plan complete
+**Last session:** 2026-06-30T09:16:00.000Z
+**Stopped at:** 11-04 plan complete — Phase 11 ALL DONE
 **Resume file:** none
