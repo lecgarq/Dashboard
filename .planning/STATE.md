@@ -1,19 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
+milestone: v1.0
 milestone_name: Concerns Hardening
-current_phase: 12
-current_phase_name: Integration Health & Observability
-status: in_progress
-stopped_at: Phase 11 COMPLETE + verified (4/4) + owner-approved on :3000 rebuild. Next = Phase 12.
-last_updated: "2026-06-30T17:09:05.856Z"
-last_activity: 2026-06-30 — Phase 11 (Data-Truthfulness Labels) COMPLETE: 4/4 plans, verifier 4/4 must-haves, owner-approved after :3000 rebuild (build exit 0, /api/health 200). TRUTH-01..04 shipped on /access-analysis. Next = Phase 12 (Integration Health & Observability).
+status: executing
+stopped_at: Phase 12 context gathered
+last_updated: "2026-06-30T17:18:45.868Z"
+last_activity: "2026-06-30 — Phase 11 COMPLETE: verifier 4/4, owner-approved after :3000 rebuild (build exit 0, /api/health 200, /access-analysis 307→login). 16 commits (81766701..63a509a4). TRUTH-01..04 live on /access-analysis. GUID→name fix (11-02) live: AccProject superset covers 100% of the 956 activity projects."
 progress:
-  total_phases: 6
+  total_phases: 4
   completed_phases: 3
   total_plans: 9
   completed_plans: 9
-  percent: 50
 ---
 
 # Project State
@@ -138,6 +135,6 @@ Remaining v2.1 phases after 12: Phase 13 (Type-Safety Guards), Phase 14 (Charact
 
 ## Session
 
-**Last session:** 2026-06-30T09:16:00.000Z
-**Stopped at:** 11-04 plan complete — Phase 11 ALL DONE
-**Resume file:** none
+**Last session:** 2026-06-30T17:18:45.866Z
+**Stopped at:** Phase 12 context gathered
+**Resume file:** .planning/phases/12-integration-health-observability/12-CONTEXT.md
