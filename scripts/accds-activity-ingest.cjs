@@ -25,13 +25,18 @@ function createPrisma() {
   return new PrismaClient({ adapter: new PrismaPg({ connectionString: url, max: CONCURRENCY + 2, idleTimeoutMillis: 10_000, connectionTimeoutMillis: 5_000 }), log: ['error'] });
 }
 
-const { loadCookieHeader, createTokenProvider } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsToken.ts'));
+const {
+  loadCookieHeader,
+  createTokenProvider,
+  getSessionHealth,
+  SESSION_WARN_HOURS,
+} = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsToken.ts'));
 const { crawlProjectActivity } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsActivity.ts'));
 const { mapAccdsRow } = require(path.resolve(__dirname, '..', 'lib', 'acc', 'accdsActivityMap.ts'));
 const pLimitMod = require('p-limit');
 const pLimit = pLimitMod.default || pLimitMod;
 
-const SESSION = path.join(process.cwd(), 'scratch', 'acc-session.json');
+const SESSION = process.env.ACC_SESSION_PATH || path.join(process.cwd(), 'scratch', 'acc-session.json');
 const MONTHS_BACK = Number(process.env.ACCDS_MONTHS_BACK || 12);
 const ONLY = process.env.ACCDS_PROJECT || null;
 const NAME_LIKE = process.env.ACCDS_NAME_LIKE || null; // case-insensitive regex on project name (e.g. office prefix "MTY")
@@ -39,10 +44,33 @@ const RESUME = process.env.ACCDS_RESUME === '1'; // skip projects that already h
 const CONCURRENCY = Number(process.env.ACCDS_CONCURRENCY || 6); // projects crawled in parallel
 const PAGE_CONCURRENCY = Number(process.env.ACCDS_PAGE_CONCURRENCY || 8); // pages fetched in parallel per window (main throughput lever)
 
+function logSessionPreflight(health) {
+  const suffix = health.estimate ? ' (est.)' : '';
+  if (health.state === 'healthy') {
+    console.log(`[accds] session healthy - expires in ${health.hoursRemaining}h${suffix}`);
+    return;
+  }
+  if (health.state === 'expiring') {
+    console.warn(`[WARN] ACCDS session expires in ${health.hoursRemaining} hours (< ${SESSION_WARN_HOURS}h threshold)${suffix}; re-run scripts/accds-login.cjs before a long crawl`);
+    return;
+  }
+  if (health.state === 'expired') {
+    console.warn('[WARN] ACCDS session expired - run scripts/accds-login.cjs');
+    return;
+  }
+  if (health.state === 'missing') {
+    console.warn('[WARN] ACCDS session missing - run scripts/accds-login.cjs');
+    return;
+  }
+  console.warn(`[WARN] ACCDS session expiry unknown${suffix}; re-run scripts/accds-login.cjs before a long crawl`);
+}
+
 async function main() {
   const prisma = createPrisma();
   const runId = 'accds-' + new Date().toISOString();
   try {
+    const sessionHealth = await getSessionHealth(SESSION);
+    logSessionPreflight(sessionHealth);
     const cookieHeader = await loadCookieHeader(SESSION);
     const getToken = createTokenProvider(cookieHeader);
 
