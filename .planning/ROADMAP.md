@@ -80,11 +80,11 @@ Plans:
   3. The module-activity donut on `/access-analysis` carries a hover/focus-only ⓘ tooltip (not an always-on caption) stating that classification is `rawAction`-based and that Autodesk's `service` attribution is not yet reconciled (~40.7% disagreement)
   4. `.planning/codebase/INTEGRATIONS.md` documents the `AccDcRole`-empty → `AccRole` fallback and the DC-conflict behavior
 
-**Plans**: 1/4 plans executed
+**Plans**: 2/4 plans executed
 Plans:
 
 - [x] 11-01-PLAN.md — TRUTH-04: document the `AccDcRole`-empty → `AccRole` role-name fallback + DC-conflict behavior in INTEGRATIONS.md (pure doc, wave 1)
-- [ ] 11-02-PLAN.md — TRUTH-01 (folded-in GUID fix): merge `AccProject` names into `loadFolderActivityProjects`, "Unknown project" fallback, never a raw GUID; pure resolver unit-pinned (wave 1)
+- [x] 11-02-PLAN.md — TRUTH-01 (folded-in GUID fix): merge `AccProject` names into `loadFolderActivityProjects`, "Unknown project" fallback, never a raw GUID; pure resolver unit-pinned (wave 1)
 - [ ] 11-03-PLAN.md — TRUTH-02: add `dataFloor`/`floorByProject` to the `loadActivityTimeline()` RSC + "Data available from [Mon YYYY]" caption + per-project hover floor; migrate both callers (wave 1)
 - [ ] 11-04-PLAN.md — TRUTH-01 + TRUTH-03: live coverage header line (activity ~956/1,153 leads, DC ~550) + module-donut ⓘ Radix tooltip caveat + aligned INTEGRATIONS.md service note (wave 2, depends on 11-03)
 
@@ -138,7 +138,7 @@ Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of bo
 |-------|----------------|--------|-----------|
 | 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
 | 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
-| 11. Data-Truthfulness Labels | 1/4 | In Progress|  |
+| 11. Data-Truthfulness Labels | 2/4 | In Progress|  |
 | 12. Integration Health & Observability | 0/TBD | Not started | - |
 | 13. Type-Safety Guards | 0/TBD | Not started | - |
 | 14. Characterization Tests | 0/TBD | Not started | - |
