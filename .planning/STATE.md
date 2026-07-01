@@ -4,17 +4,17 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 15
 current_phase_name: shared-query-extraction
-status: ready-to-plan
-stopped_at: Phase 15 context gathered (2026-07-01) — QUERY-01 design locked (base-join-only; one loadFolderPermRows(projectId,{l2Only}) returning raw snake_case rows; plain tagged-template $queryRaw to keep TEST-03/TEST-02 byte-identical); ready to /gsd:plan-phase 15
+status: in-progress
+stopped_at: Phase 15 Plan 01 complete (2026-07-01) — QUERY-01/REF-02 shipped; shared folderPermQuery.ts owns base join; both terrain loaders rewired; TEST-02/TEST-03 9/9 passed byte-identical; tsc 0 errors; owner approved visual parity; commit a4d923ca
 last_updated: "2026-07-01T00:00:00.000Z"
 last_activity: 2026-07-01
-last_activity_desc: "v2.2 Structural Refactors: 8 requirements + 5-phase roadmap (15–19) defined and owner-approved. QUERY-01→Ph15, SPLIT-01/02→Ph16, SPLIT-03/04→Ph17, PROJ-01→Ph18, PROJ-02/03→Ph19. Next = /gsd:discuss-phase 15 (Phase 15 = REF-02 folderPermQuery extraction, the foundation for the splits + projection)."
+last_activity_desc: "Phase 15 Plan 01 complete — extracted shared folderPermQuery.ts (QUERY-01/REF-02). Both terrain loaders (templateFolderTerrain.ts + folderPermissionTerrainView.ts) rewired to call loadFolderPermRows; TEST-02+TEST-03 byte-identical; tsc 0 errors; owner approved. Next = /gsd:plan-phase 16 (folderTerrain monolith split)."
 progress:
   total_phases: 5
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 8
-  completed_plans: 0
-  percent: 0
+  completed_plans: 1
+  percent: 20
 ---
 
 # Project State
@@ -29,18 +29,18 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 15 of 19 — Shared Query Extraction (QUERY-01). Not started; ready to plan.
-- **Plan:** — (roadmap seeds 8 plans across 15–19; `/gsd:plan-phase 15` formalizes 15-01)
-- **Status:** Roadmap approved — ready to plan Phase 15.
-- **Last activity:** 2026-07-01 — v2.1 shipped + tagged `v2.1`; v2.2 requirements + roadmap defined and owner-approved.
+- **Phase:** 15 of 19 — Shared Query Extraction (QUERY-01). COMPLETE (1/1 plan done).
+- **Plan:** 15-01 complete — `lib/server/folderPermQuery.ts` created; both terrain loaders rewired; commit `a4d923ca`.
+- **Status:** Phase 15 complete. Ready to plan Phase 16 (folderTerrain monolith split).
+- **Last activity:** 2026-07-01 — Phase 15 Plan 01 (QUERY-01/REF-02) shipped; shared folderPermQuery.ts owns the base AccFolderPermission join; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved.
 
-Progress: [░░░░░░░░░░░░] 0% — v2.2 roadmap approved (0 of 5 phases)
+Progress: [##░░░░░░░░░░] 20% — v2.2: 1 of 5 phases complete (1/8 plans)
 
 **Roadmap (Phases 15–19):**
 
 | # | Phase | Reqs | Plans |
 |---|-------|------|-------|
-| 15 | Shared Query Extraction | QUERY-01 | 0/1 |
+| 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
 | 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 0/2 |
 | 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 0/2 |
 | 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 0/1 |
@@ -87,6 +87,8 @@ All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unifie
 v2.1 (shipped) decisions are recorded in `PROJECT.md` Key Decisions + the per-plan
 SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 work:
 
+- **QUERY-01/REF-02 shipped (2026-07-01, commit a4d923ca).** `lib/server/folderPermQuery.ts` owns the shared base `AccFolderPermission` join. Both terrain loaders (`templateFolderTerrain.ts` all-folders; `folderPermissionTerrainView.ts` l2Only) consume it via `loadFolderPermRows(projectId, { l2Only? })`. Plain tagged-template `db.$queryRaw` (no Prisma.sql) keeps TEST-02/TEST-03 byte-identical. Phase 16 splits and Phase 18 projection build on this shared owner.
+
 - **Behavior-preserving refactors only.** REF-01/REF-02/REF-03 must keep their
   characterization tests (TEST-02 `folderPermissionTerrainView.test.ts`, TEST-03
   `templateFolderTerrain.sharedQuery.test.ts`, TEST-01 OOM guard) byte-identical /
@@ -122,14 +124,14 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-v2.2 requirements + roadmap are defined and owner-approved (5 phases, 15–19). Start
-execution with **`/gsd:discuss-phase 15`** (or `/gsd:plan-phase 15` to skip discussion).
-Phase 15 = REF-02 (extract `lib/server/folderPermQuery.ts`) — the foundation the REF-01
-splits (Phases 16–17) and the REF-03 projection (Phases 18–19) both build on. `/clear`
-first for a fresh context window.
+Phase 15 is complete. The shared `lib/server/folderPermQuery.ts` join owner is live.
+**Next: `/gsd:plan-phase 16`** — folderTerrain monolith split (SPLIT-01: `folderTerrain.ts`
+1,096 lines; SPLIT-02: `FolderPermissionTerrain.tsx` 1,044 lines). Both consume the now-
+centralised `loadFolderPermRows`; TEST-02 golden masters must remain byte-identical after
+the split.
 
-Early housekeeping to fold into v2.2 execution: resolve the 2 pre-existing WIP failures
-in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface).
+Early housekeeping to fold into Phase 16: resolve the 2 pre-existing WIP failures
+in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface directly).
 
 ---
 *Last updated: 2026-07-01 — v2.2 (Structural Refactors) requirements + roadmap defined and owner-approved (5 phases, 15–19). Ready to plan Phase 15.*
@@ -137,5 +139,5 @@ in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface).
 ## Session
 
 **Last session:** 2026-07-01
-**Stopped at:** Phase 15 context gathered — QUERY-01 (REF-02) extraction design locked
-**Resume file:** .planning/phases/15-shared-query-extraction/15-CONTEXT.md → /gsd:plan-phase 15
+**Stopped at:** Phase 15 Plan 01 complete — QUERY-01/REF-02 shipped (commit a4d923ca); 15-01-SUMMARY.md written
+**Resume file:** .planning/phases/15-shared-query-extraction/15-01-SUMMARY.md → /gsd:plan-phase 16

@@ -154,7 +154,7 @@ Plans:
 
 ## Phases
 
-- [ ] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical
+- [x] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical — COMPLETE 2026-07-01
 - [ ] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically
 - [ ] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically
 - [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet
@@ -176,7 +176,7 @@ Plans:
 **Plans**: 1 plan
 
 Plans:
-- [ ] 15-01-PLAN.md — QUERY-01: create `lib/server/folderPermQuery.ts` (shared base join via `loadFolderPermRows(projectId, { l2Only })`), rewire `templateFolderTerrain.ts` (all-folders) + `folderPermissionTerrainView.ts` (l2Only), verify TEST-02/TEST-03 byte-identical, tsc clean, owner visual parity
+- [x] 15-01-PLAN.md — QUERY-01: create `lib/server/folderPermQuery.ts` (shared base join via `loadFolderPermRows(projectId, { l2Only })`), rewire `templateFolderTerrain.ts` (all-folders) + `folderPermissionTerrainView.ts` (l2Only), verify TEST-02/TEST-03 byte-identical, tsc clean, owner visual parity — COMPLETE 2026-07-01 (commit a4d923ca)
 
 ### Phase 16: folderTerrain Monolith Split
 
@@ -259,7 +259,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 12. Integration Health & Observability | 2/2 | Complete | 2026-06-30 |
 | 13. Type-Safety Guards | 1/1 | Complete | 2026-06-30 |
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
-| 15. Shared Query Extraction | 0/1 | Not started | - |
+| 15. Shared Query Extraction | 1/1 | Complete | 2026-07-01 |
 | 16. folderTerrain Monolith Split | 0/2 | Not started | - |
 | 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
