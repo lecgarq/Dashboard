@@ -4,11 +4,11 @@ milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 16
 current_phase_name: folderTerrain-monolith-split
-status: ready-to-plan
-stopped_at: Phase 15 complete — QUERY-01/REF-02 shipped (commit a4d923ca); shared folderPermQuery.ts owns the base AccFolderPermission join; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved. Next = /gsd:plan-phase 16.
-last_updated: "2026-07-01T18:40:58.985Z"
+status: ready-to-execute
+stopped_at: Phase 16 planned — 2 plans (16-01 SPLIT-01 folderTerrain.ts; 16-02 SPLIT-02 FolderPermissionTerrain.tsx) created + checker-verified (0 blockers/0 warnings; all 5 goal-backward points confirmed); committed ce93372a (ROADMAP + 2 PLAN.md, no WIP swept). Next = /gsd:execute-phase 16.
+last_updated: "2026-07-01T21:46:37.000Z"
 last_activity: 2026-07-01
-last_activity_desc: "Phase 15 Plan 01 (QUERY-01/REF-02) shipped: shared lib/server/folderPermQuery.ts owns the base AccFolderPermission join; both terrain loaders rewired to loadFolderPermRows; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved. Phase 15 complete (1/1). Next = /gsd:plan-phase 16."
+last_activity_desc: "Phase 16 planned + verified: 2 plans in 2 waves (16-02 depends_on 16-01). SPLIT-01 → folderTerrain.ts (1,096 L) into 4 pure geometry sub-modules + thin barrel; SPLIT-02 → FolderPermissionTerrain.tsx (1,044 L) into camera hook + terrainViewModel + TerrainStage/TerrainControls + thin shell (2 pre-existing WIP test failures folded in as 16-02 Task 1). Byte-identical pins: folderTerrain.test.ts (direct), FolderPermissionTerrain.test.tsx, TEST-02 (transitive). Committed ce93372a. Next = /gsd:execute-phase 16."
 progress:
   total_phases: 5
   completed_phases: 1
@@ -29,10 +29,10 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 ## Current Position
 
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 15 of 19 — Shared Query Extraction (QUERY-01). COMPLETE (1/1 plan done).
-- **Plan:** 15-01 complete — `lib/server/folderPermQuery.ts` created; both terrain loaders rewired; commit `a4d923ca`.
-- **Status:** Phase 15 complete (1/1) — Phase 16 ready to plan (v2.2: 1 of 5 phases done)
-- **Last activity:** 2026-07-01 — Phase 15 Plan 01 (QUERY-01/REF-02) shipped; shared folderPermQuery.ts owns the base AccFolderPermission join; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved.
+- **Phase:** 16 of 19 — folderTerrain Monolith Split (SPLIT-01, SPLIT-02). PLANNED + verified (0/2 plans executed).
+- **Plan:** 16-01 (SPLIT-01) + 16-02 (SPLIT-02) created + checker-verified (0 blockers); committed `ce93372a`. Phase 15 shipped `a4d923ca`.
+- **Status:** Phase 16 planned — ready to execute (`/gsd:execute-phase 16`). v2.2: 1 of 5 phases complete.
+- **Last activity:** 2026-07-01 — Phase 16 planned + verified. 2 plans, 2 waves (16-02 depends_on 16-01); 2 pre-existing WIP failures in `FolderPermissionTerrain.test.tsx` folded in as 16-02 Task 1; byte-identical pins honored (original filenames kept as barrel/shell).
 
 Progress: [##░░░░░░░░░░] 20% — v2.2: 1 of 5 phases complete (1/8 plans)
 
@@ -124,20 +124,30 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-Phase 15 is complete. The shared `lib/server/folderPermQuery.ts` join owner is live.
-**Next: `/gsd:plan-phase 16`** — folderTerrain monolith split (SPLIT-01: `folderTerrain.ts`
-1,096 lines; SPLIT-02: `FolderPermissionTerrain.tsx` 1,044 lines). Both consume the now-
-centralised `loadFolderPermRows`; TEST-02 golden masters must remain byte-identical after
-the split.
+Phase 16 is planned and checker-verified (0 blockers). 2 plans committed at `ce93372a`.
+**Next: `/gsd:execute-phase 16`** (`/clear` first — fresh context window).
 
-Early housekeeping to fold into Phase 16: resolve the 2 pre-existing WIP failures
-in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface directly).
+- **16-01 (SPLIT-01, wave 1):** `folderTerrain.ts` (1,096 L, all-pure) → 4 co-located geometry
+  sub-modules (`folderTerrainModel` / `folderTerrainLayout` / `folderTerrainScene` /
+  `folderTerrainCamera`) + a thin re-export barrel keeping the original filename. Byte-identical
+  pins: `folderTerrain.test.ts` (direct, 30+ symbols) + TEST-02 (transitive via
+  `folderPermissionTerrainView.ts`). Owner visual-parity checkpoint on `/access-analysis` + `/template-mty`.
+- **16-02 (SPLIT-02, wave 2, depends_on 16-01):** Task 1 fixes the 2 pre-existing WIP failures
+  in `FolderPermissionTerrain.test.tsx` FIRST (green baseline), then split `FolderPermissionTerrain.tsx`
+  (1,044 L) → `useFolderPermissionTerrainCamera` hook + `terrainViewModel` (pure) +
+  `TerrainStage`/`TerrainControls` presentational + thin shell. Gate: tsc + vitest + `/access-analysis`
+  parity.
+
+Guardrails carried into execution: byte-identical tests (no test edits), ~400-line ceiling per
+file, co-located only (no `lib/acc` migration on critical path — deferred VERIFY), explicit-path
+commits with `git diff --cached --name-only` proof, `npx tsc --noEmit` before any rebuild,
+no new WebGL, zinc theme untouched, `/users/spatial-graph` not touched.
 
 ---
-*Last updated: 2026-07-01 — Phase 15 (QUERY-01/REF-02) complete (commit a4d923ca). v2.2: 1 of 5 phases done. Ready to plan Phase 16.*
+*Last updated: 2026-07-01 — Phase 16 planned + verified (commit ce93372a). v2.2: 1 of 5 phases done. Ready to execute Phase 16.*
 
 ## Session
 
 **Last session:** 2026-07-01
-**Stopped at:** Phase 15 Plan 01 complete — QUERY-01/REF-02 shipped (commit a4d923ca); 15-01-SUMMARY.md written
-**Resume file:** .planning/phases/15-shared-query-extraction/15-01-SUMMARY.md → /gsd:plan-phase 16
+**Stopped at:** Phase 16 planned + checker-verified — 2 plans (16-01/16-02) committed `ce93372a`; STATE + ROADMAP updated
+**Resume file:** .planning/phases/16-folderterrain-monolith-split/16-01-PLAN.md → /gsd:execute-phase 16
