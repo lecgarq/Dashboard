@@ -4,10 +4,10 @@ milestone: v2.1
 milestone_name: Concerns Hardening
 current_phase: 14
 current_phase_name: characterization-tests
-status: executing
-stopped_at: Phase 14 COMPLETE + verified (4/4 must-haves); milestone v2.1 all 6 phases done — awaiting closeout
-last_updated: "2026-06-30T22:30:00.000Z"
-last_activity: 2026-06-30
+status: shipped
+stopped_at: v2.1 milestone CLOSED via safe logical close (2026-07-01) — tagged v2.1; MILESTONES.md/RETROSPECTIVE.md/milestones archival deferred pending .planning migration
+last_updated: "2026-07-01T00:00:00.000Z"
+last_activity: 2026-07-01
 last_activity_desc: "Phase 14 COMPLETE + VERIFIED (status: passed, 4/4 must-haves). 14-01 (TEST-02): golden-master pins for loadFolderPermissionTerrain/loadFolderPermissionOverview + loadTerrainProjects shape pin in folderPermissionTerrainView.test.ts; REF-01 SPLIT-PENDING signposts on the 3 terrain monoliths + REF-02 on folderPermissionTerrainView.ts (commits 9a5173f0, 69f2139a). 14-02 (TEST-03): shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column set, row-bound, project-scope, null-path) + REF-02 signpost on templateFolderTerrain.ts (commits f8e15f6e, 243d10e9). 9/9 new tests green, tsc clean. Milestone v2.1 (Concerns Hardening) all 6 phases complete — next = /gsd:complete-milestone."
 progress:
   total_phases: 6
@@ -21,20 +21,20 @@ progress:
 
 ## Project Reference
 
-See: `.planning/PROJECT.md` (updated 2026-06-23)
+See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening COMPLETE — all 6 phases done; awaiting milestone closeout
+**Current focus:** v2.1 Concerns Hardening SHIPPED (2026-07-01, tagged v2.1) — planning next milestone
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening (6 of 6 phases complete: 09, 10, 11, 12, 13, 14 ✓) — awaiting `/gsd:complete-milestone`
+- **Milestone:** v2.1 — Concerns Hardening ✓ SHIPPED 2026-07-01 (6 of 6 phases: 09, 10, 11, 12, 13, 14; 20/20 requirements complete + verified). Closed via safe logical close, tagged `v2.1`.
 - **Phase:** 14 of 14 ✓ COMPLETE + VERIFIED (status: passed, 4/4 must-haves) — Characterization Tests.
 - **Plan:** Phase 14 had 2/2 plans complete: 14-01 (TEST-02 boundary pins + REF-01/REF-02 SPLIT-PENDING signposts) + 14-02 (TEST-03 shared-query contract + REF-02 signpost).
-- **Status:** Milestone v2.1 fully executed + verified. Phase 14 closed (verifier 4/4). Next = milestone closeout (`/gsd:complete-milestone`). NOTE: `gsd-tools phase complete` NOT run for Phase 14 — its outputs (ROADMAP all-Complete, REQUIREMENTS TEST-02/03 Complete, STATE 6/6) were already written by the plan-execution docs commits; running the known-buggy CLI would risk blanking a correct STATE. Self-gate `--rebuild` intentionally skipped: test+comment-only phase, no route/behavior change, and a whole-tree rebuild would ship unrelated branch WIP to `:3000`.
-- **Last activity:** 2026-06-30 — Phase 14 COMPLETE + VERIFIED. 14-01 commits 9a5173f0/69f2139a; 14-02 commits f8e15f6e/243d10e9. 9/9 new characterization tests green, tsc clean. 2 pre-existing failures in FolderPermissionTerrain.test.tsx confirmed out-of-scope branch WIP (untouched by Phase 14).
+- **Status:** Milestone v2.1 SHIPPED. Closed via **safe logical close** (Luis's call, 2026-07-01): tag `v2.1` + PROJECT/STATE/REQUIREMENTS evolved in place. DEFERRED (pending `.planning/` migration): full archival — no `MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/v2.1-*` written, `REQUIREMENTS.md` kept in place (not deleted). The migration deleted `MILESTONES.md` + `milestones/` in the working tree while v1.0/v2.0 history lives only in HEAD; recreating them would drop that history. NOTE: `gsd-tools phase complete` / `milestone complete` intentionally NOT run (known-buggy + would fight the migration). Self-gate `--rebuild` skipped (test+comment-only phase; whole-tree rebuild ships unrelated branch WIP).
+- **Last activity:** 2026-07-01 — v2.1 milestone closed (tag `v2.1` at commit 5719628f; PROJECT.md/STATE.md/REQUIREMENTS.md evolved). Phase 14 was COMPLETE + VERIFIED 2026-06-30 (14-01 commits 9a5173f0/69f2139a; 14-02 f8e15f6e/243d10e9; 9/9 new tests green, tsc clean). 2 pre-existing failures in FolderPermissionTerrain.test.tsx are out-of-scope branch WIP.
 
-Progress: [████████████] 100% (all 6 phases complete + verified — milestone closeout pending)
+Progress: [████████████] 100% — v2.1 SHIPPED (all 6 phases complete + verified; full archival deferred)
 
 ## Status (data baseline — still current)
 
@@ -126,32 +126,32 @@ None blocking Phase 13 planning/execution. Key risks to track:
 
 ## Next Action
 
-Phase 14 is COMPLETE + VERIFIED (verifier status: passed, 4/4 must-haves;
-`.planning/phases/14-characterization-tests/14-VERIFICATION.md`). Both plan
-summaries exist (14-01-SUMMARY.md, 14-02-SUMMARY.md). Milestone v2.1 (Concerns
-Hardening) now has all 6 phases complete + verified.
+Milestone v2.1 (Concerns Hardening) is SHIPPED — all 6 phases (09–14) complete +
+verified, 20/20 requirements done, tagged `v2.1` (safe logical close, 2026-07-01).
 
-**Next = `/gsd:complete-milestone` (after `/clear`).**
+**Next = `/gsd:new-milestone` (after `/clear`).** Prime seeds (see PROJECT.md Active
++ REQUIREMENTS.md Future): REF-01 monolith splits and REF-02 `folderPermQuery`
+extraction (both now safe behind v2.1 TEST-02/TEST-03), REF-03 summary projection,
+SVC-01 service-override, and a dedicated spatial-graph milestone.
 
-Milestone-close inputs already true:
-- All 6 phases (09–14) Complete in ROADMAP; all v2.1 requirements satisfied.
-- TEST-02 + TEST-03 marked Complete in REQUIREMENTS.md.
-- 9/9 new characterization tests green; `npx tsc --noEmit` clean.
-
-Deliberate deferrals carried into closeout (not blockers):
-- Self-gate `--rebuild` NOT run for Phase 14 (test+comment-only; whole-tree rebuild
-  would ship unrelated branch WIP to `:3000`). Run it as part of milestone-close
-  only if a clean rebuild of the intended working tree is desired.
-- 2 pre-existing failures in `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx`
-  are uncommitted branch WIP unrelated to Phase 14 — a full `npm test` is not 100%
-  green until that WIP is resolved or committed.
+Pending bookkeeping (deferred by the safe logical close — do these when convenient):
+1. **Finish the `.planning/` migration**, then complete the full v2.1 archival:
+   recreate/settle `MILESTONES.md` + `RETROSPECTIVE.md` + `milestones/` (v1.0/v2.0
+   history is currently only in git HEAD), write `milestones/v2.1-ROADMAP.md` +
+   `v2.1-REQUIREMENTS.md`, and fresh-start `REQUIREMENTS.md` for the next milestone.
+   `REQUIREMENTS.md` was intentionally kept in place (not deleted).
+2. **Push tag** `v2.1` to origin only if you want it remote (v1.0/v2.0 are local-only;
+   ask-before-push honored — currently local).
+3. Resolve/commit the 2 pre-existing WIP failures in
+   `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` so a
+   full `npm test` is 100% green.
 
 Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
 run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
 expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the session scratchpad.
 
 ---
-*Last updated: 2026-06-30 — Phase 13 complete: 2 commits (e0d46b91, 965993fd). TYPE-01 and TYPE-02 requirements marked complete. tsc clean, vitest 51/51 accGraphFilters. ROADMAP phase 13 updated to Complete via CLI (roadmap.update-plan-progress 13). Note: state.advance-plan failed (known CLI bug — "Cannot parse Current Plan or Total Plans"); frontmatter + body repaired manually to 5 of 6 phases done, milestone v2.1, current_phase 14 next.*
+*Last updated: 2026-07-01 — v2.1 milestone SHIPPED via safe logical close. Tag `v2.1` at commit 5719628f; PROJECT.md/STATE.md/REQUIREMENTS.md evolved in place. Full archival (MILESTONES.md/RETROSPECTIVE.md/milestones/v2.1-*) + REQUIREMENTS.md fresh-start deferred pending the in-flight `.planning/` migration. Phase 14 verified 4/4 (9/9 new tests, tsc clean).*
 
 ## Performance Metrics
 

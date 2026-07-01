@@ -13,31 +13,27 @@ Truthful, fast-to-read analytics over the **fully extracted ACC dataset** — ev
 metric on the workshop pages must be derivable from the local Prisma DB and honest
 about its coverage.
 
-## Current Milestone: v2.1 Concerns Hardening
+## Current State
 
-**Goal:** Close the concerns mapped in `.planning/codebase/CONCERNS.md` — harden the
-DB/config layer, repair layering boundaries, surface data-truthfulness labels on the
-workshop pages, add integration-health observability, and backfill the highest-value
-test, **without** reworking the out-of-scope spatial-graph and without high-risk
-monolith splits on the live demo dashboard.
+**Shipped:** v2.1 Concerns Hardening — closed 2026-07-01 (6 phases, 14 plans;
+Phases 09–14). Closed the `.planning/codebase/CONCERNS.md` debt map: DB/config
+hardening (`roleId` index, ssl fossil removed, heap/pool docs, raw-scan guardrail),
+layering & boundary fixes (Prisma-out-of-Server-Action, classifier extraction,
+lib→app / app→server audits), data-truthfulness labels on the workshop pages,
+integration-health observability, type-safety & lean-payload guards, and
+characterization tests that make the deferred monolith/query refactors safe. All
+20 v2.1 requirements complete + verified. Tagged `v2.1` (local).
 
-**Scope decisions (2026-06-23):**
+**Close method:** "safe logical close" — tag + PROJECT/STATE evolution with
+requirements kept in place. Full archival (MILESTONES.md / RETROSPECTIVE.md /
+`milestones/v2.1-*`) was intentionally deferred because `.planning/` is mid-migration
+(see Context). Deploy = rebuild on `:3000` (not a branch merge); a full-tree rebuild
+for this milestone was deferred (test+comment-only final phase, branch carries
+unrelated WIP).
 
-- **Spatial-graph excluded** — CONCERNS.md §3 and the large spatial-graph test
-  refactors (§8.2, §8.3) honor the `/users/spatial-graph` out-of-scope boundary;
-  deferred to a future spatial-graph milestone.
-- **Guardrails + labels first** — the 1,000+ line monolith splits (§2.3) and the
-  shared `folderPermQuery` extraction (§6.1) are deferred; this milestone ships their
-  characterization tests and warning comments so a later split is safe.
-
-**Target categories:**
-
-- Database & config hardening (`roleId` index, ssl fossil, `.env.example` heap/pool docs, raw-scan guardrail)
-- Layering & boundary fixes (Prisma-in-Server-Action, scripts→app classification extraction, lib→app / app→server audits)
-- Data-truthfulness labels (DC 428/1,152 coverage, ACCDS ~12-mo floor, module-donut service caveat, AccDcRole fallback)
-- Integration health & observability (ACCDS session health, AccDcRole-empty warning, stale TODO cleanup)
-- Type-safety & lean-payload guards (bulkUsers empty roles/modules, accGraphFilters drift assert)
-- Test coverage & characterization (AccFolderPermission aggregate test + monolith/terrain characterization tests)
+**Current focus:** Planning the next milestone. Prime candidates: the deferred
+structural refactors — now safe behind v2.1 characterization tests — and a dedicated
+spatial-graph milestone.
 
 ## Requirements
 
@@ -45,30 +41,42 @@ monolith splits on the live demo dashboard.
 
 <!-- Shipped and confirmed. -->
 
-- ✓ **All ACC data extracted and verified** — confirmed 2026-06-23 against the live
-  local DB. See `.planning/STATE.md` for the full census and verification evidence.
+- ✓ **All ACC data extracted and verified** — 2026-06-23 against the live local DB
+  (full census + evidence in `.planning/STATE.md`).
+- ✓ **Database & config hardening** (DB-01–DB-04) — v2.1
+- ✓ **Layering & boundary fixes** (BND-01–BND-04) — v2.1
+- ✓ **Data-truthfulness labels** (TRUTH-01–TRUTH-04) — v2.1
+- ✓ **Integration health & observability** (OBS-01–OBS-03) — v2.1
+- ✓ **Type-safety & lean-payload guards** (TYPE-01, TYPE-02) — v2.1
+- ✓ **Test coverage & characterization** (TEST-01, TEST-02, TEST-03) — v2.1
 
 ### Active
 
-<!-- Current scope (v2.1 Concerns Hardening). Detail + REQ-IDs in REQUIREMENTS.md. -->
+<!-- Candidate seeds for the next milestone — not yet scoped. Detail in REQUIREMENTS.md Future section. -->
 
-- [ ] **DB** — `roleId` index + migration, remove `ssl` fossil, document `PG_POOL_MAX`/`NODE_OPTIONS`, guard the raw 5M-row permission scan path.
-- [ ] **BND** — move direct-Prisma Server Action into a tRPC procedure, extract pure activity classification to `lib/acc`, audit/reduce lib→app and app→server boundary edges.
-- [ ] **TRUTH** — label DC 428/1,152 coverage, ACCDS ~12-month data floor, module-donut `service` caveat, and the AccDcRole fallback honestly on the workshop pages.
-- [ ] **OBS** — ACCDS session-health check, AccDcRole-empty warning after cache refresh, remove stale `TODO[02.5]` guards.
-- [ ] **TYPE** — mark `bulkUsers` lean-payload roles/modules as always-empty, add the `accGraphFilters` union-drift assert.
-- [ ] **TEST** — Vitest for the AccFolderPermission GROUP BY aggregate; characterization tests around the access-analysis monoliths and shared terrain query.
+- [ ] **REF-01** — split the three access-analysis monoliths
+  (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`, `HybridAnalyticsSurface.tsx`)
+  into data-hook / transform / thin-view modules; now safe behind the v2.1
+  characterization tests (TEST-02).
+- [ ] **REF-02** — extract `lib/server/folderPermQuery.ts` (shared
+  `AccFolderPermission` join used by `/template-mty` + `/access-analysis`); pinned by
+  the v2.1 shared-query contract test (TEST-03).
+- [ ] **REF-03** — materialise an `AccFolderPermissionSummary` projection to retire
+  the raw 5M-row permission scan path.
+- [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
+  Model Coordination for ~966 clash-issue rows); needs design approval.
+- [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
+  (CONCERNS.md §3 + §8.2/8.3): DuckDB warm-up, cosmos.gl reheat, 176-action catalog
+  lazy-load, lasso e2e flake, hydration-prefetch test, physics/e2e test splits.
+- [ ] **DC-01 / DC-02** (external/data-blocked) — unlock the 724 DC-403 projects via
+  APS Account Admin provisioning; wire per-project roles/modules once the DC CSV
+  `activity_in_module` / `total_activity` join lands.
 
 ### Out of Scope
 
-- `/users/spatial-graph` rework — out of scope unless explicitly re-scoped. For
-  v2.1 this defers CONCERNS.md §3.1–3.5 (DuckDB warm-up, cosmos reheat, catalog
-  lazy-load, lasso flake, hydration test) and the spatial-graph test refactors
-  §8.2/§8.3, plus any lib→app / scripts→app edge fixes that require moving
-  spatial-graph modules (`internalDomains.ts`, `graphNodesFromUsers.ts`,
-  `instanceFeatureTokens.ts`).
-- Monolith splits (§2.3) and `folderPermQuery` extraction (§6.1) — deferred; v2.1
-  ships only their characterization tests and warning comments.
+- `/users/spatial-graph` rework — out of scope unless explicitly re-scoped (its
+  concerns are seeded above as a dedicated future milestone, not folded into
+  general work).
 - New WebGL on data surfaces — confined to approved `/users` header and
   `/forma-proposal` background accents.
 - New analytics not derivable from the Prisma DB — under-covered sources are
@@ -76,12 +84,20 @@ monolith splits on the live demo dashboard.
 
 ## Context
 
-- Prior history (v2.0 milestone + Phases 01–08, including the Phase 8 activity
-  re-extraction) is preserved in git history and the stale `.planning.backup/`
-  snapshot. This baseline intentionally resets `.planning/` to a clean record of
-  the confirmed data-extraction state.
+- **v2.1 shipped 2026-07-01**, tagged `v2.1` (local-only, consistent with `v1.0`/`v2.0`).
+  Prior history (v2.0 milestone + Phases 01–08, incl. the Phase 8 activity
+  re-extraction) is preserved in git history and the `.planning.backup/` snapshot.
+- **`.planning/` is mid-migration.** `MILESTONES.md`, `RETROSPECTIVE.md`, and the
+  `milestones/` archive directory (holding the v1.0 + v2.0 archives) are deleted in the
+  working tree (uncommitted) while that history remains in git HEAD. v2.1 was closed
+  via a safe logical close to avoid dropping that history; finishing the migration and
+  the full v2.1 archival is a pending bookkeeping task.
 - Data extraction used a free ACCDS member-accessible web-session crawl (no Data
-  Connector quota) plus a folder crawl; both are reflected in the census below.
+  Connector quota) plus a folder crawl; census in `.planning/STATE.md`.
+- Known local test debt: 2 pre-existing failing tests in
+  `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` are
+  uncommitted branch WIP unrelated to v2.1 — a full `npm test` is not 100% green until
+  that WIP is resolved.
 
 ## Constraints
 
@@ -96,12 +112,13 @@ monolith splits on the live demo dashboard.
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Reset `.planning/` to a data-extraction-confirmed baseline | Owner wanted a clean history showing only "data extracted + verified" | — Pending |
+| Reset `.planning/` to a data-extraction-confirmed baseline | Owner wanted a clean history showing only "data extracted + verified" | ✓ Good — baseline held through all of v2.1 |
 | Keep upgraded `config.json` (runtime/claude, agent_skills, build/test commands) | Recent intentional GSD config upgrade | ✓ Good |
-| v2.1 milestone = close CONCERNS.md (not a feature release) | All 22 mapped concerns deserve a disposition; debt-closure protects the live workshop | — Pending |
-| Exclude `/users/spatial-graph` concerns (§3, §8.2/8.3) from v2.1 | Honors the standing out-of-scope boundary; lowest risk to the interactive graph | — Pending |
-| Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | — Pending |
-| Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | — Pending |
+| v2.1 milestone = close CONCERNS.md (not a feature release) | All 22 mapped concerns deserve a disposition; debt-closure protects the live workshop | ✓ Good — 20/20 requirements shipped + verified |
+| Exclude `/users/spatial-graph` concerns (§3, §8.2/8.3) from v2.1 | Honors the standing out-of-scope boundary; lowest risk to the interactive graph | ✓ Good — boundary held; no spatial-graph churn in the diff |
+| Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | ✓ Good — REF-01/REF-02 now safe behind TEST-02/TEST-03 |
+| Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | ✓ Good — no rework needed |
+| Close v2.1 via "safe logical close" (tag + evolve; no archival, requirements kept in place) | `.planning/` mid-migration deleted MILESTONES.md + `milestones/` in the working tree; full archival would drop v1.0/v2.0 history that lives only in HEAD | — Pending — finish migration, then archive v2.1 |
 
 ---
-*Last updated: 2026-06-23 after starting milestone v2.1 (Concerns Hardening)*
+*Last updated: 2026-07-01 after v2.1 milestone close (safe logical close; `.planning/` migration + full archival pending)*

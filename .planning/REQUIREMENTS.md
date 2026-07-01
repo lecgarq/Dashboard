@@ -1,19 +1,20 @@
 # Requirements: LECG Dashboard — v2.1 Concerns Hardening
 
 **Defined:** 2026-06-23
+**Shipped:** 2026-07-01 — all 20 v2.1 requirements complete + verified; milestone tagged `v2.1` (safe logical close). Kept in place (not archived) while `.planning/` migration settles.
 **Core Value:** Truthful, fast analytics over the fully extracted ACC dataset — every metric derivable from the local Prisma DB and honest about coverage.
 **Source:** `.planning/codebase/CONCERNS.md` (8 sections, 22 mapped concerns). Every concern is dispositioned below as in-scope (REQ-ID), deferred (Future), or out-of-scope.
 
 ## v2.1 Requirements
 
-In scope for this milestone. Each maps to a roadmap phase (numbering continues from Phase 09).
+In scope for this milestone. Each maps to a roadmap phase (numbering continues from Phase 09). All shipped.
 
 ### Database & Config Hardening (DB)
 
 - [x] **DB-01**: `AccFolderPermission` gains a standalone `@@index([roleId])` via a Prisma migration; `EXPLAIN ANALYZE` on a role-joined terrain query confirms the new index is used. _(CONCERNS §1.2)_ — COMPLETE 2026-06-23 (09-02-SUMMARY.md)
-- [ ] **DB-02**: `scripts/count-acc-data.cjs` no longer sets `ssl:{rejectUnauthorized:false}`; it connects via the project Prisma client / `DATABASE_URL` pool with no TLS-bypass flag. _(§1.3)_
-- [ ] **DB-03**: `.env.example` documents `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining why it is required for access-analysis at scale (pool × workers ≤ `max_connections`). _(§1.4, §1.5)_
-- [ ] **DB-04**: the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` carries a warning comment about the ~5M-row heap risk plus a `VERIFY:` note that no active caller enables it. _(§1.1)_
+- [x] **DB-02**: `scripts/count-acc-data.cjs` no longer sets `ssl:{rejectUnauthorized:false}`; it connects via the project Prisma client / `DATABASE_URL` pool with no TLS-bypass flag. _(§1.3)_ — COMPLETE 2026-06-23 (09-01-SUMMARY.md)
+- [x] **DB-03**: `.env.example` documents `PG_POOL_MAX=32` and `NODE_OPTIONS=--max-old-space-size=8192`, each with a comment explaining why it is required for access-analysis at scale (pool × workers ≤ `max_connections`). _(§1.4, §1.5)_ — COMPLETE 2026-06-23 (09-01-SUMMARY.md)
+- [x] **DB-04**: the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` carries a warning comment about the ~5M-row heap risk plus a `VERIFY:` note that no active caller enables it. _(§1.1)_ — COMPLETE 2026-06-23 (09-01-SUMMARY.md)
 
 ### Layering & Boundary Fixes (BND)
 
@@ -42,18 +43,18 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Test Coverage & Characterization (TEST)
 
-- [ ] **TEST-01**: a Vitest test covers the `AccFolderPermission` `GROUP BY` aggregate in `lib/server/acc-hot-cache.ts`, asserting it returns ≤ `n_roles × n_projects` rows (not raw permissions) — guarding the dominant OOM regression. _(§8.1)_
+- [x] **TEST-01**: a Vitest test covers the `AccFolderPermission` `GROUP BY` aggregate in `lib/server/acc-hot-cache.ts`, asserting it returns ≤ `n_roles × n_projects` rows (not raw permissions) — guarding the dominant OOM regression. _(§8.1)_ — COMPLETE 2026-06-23 (09-01-SUMMARY.md)
 - [x] **TEST-02**: characterization tests pin the current tRPC-boundary outputs and pure transforms of the access-analysis monoliths (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`); the files carry a "split-pending" warning comment. _(§2.3 guardrail; split deferred → REF-01)_
 - [x] **TEST-03**: a characterization test pins the shared `AccFolderPermission` terrain query output used by both `/template-mty` and `/access-analysis`, so the deferred `folderPermQuery` extraction can proceed safely later. _(§6.1 guardrail; extraction deferred → REF-02)_
 
 ## Future Requirements
 
-Tracked but **not** in the v2.1 roadmap. v2.1 ships the characterization tests that make the refactors safe.
+Tracked but **not** in the v2.1 roadmap. v2.1 ships the characterization tests that make the refactors safe. These are the prime seeds for the next milestone.
 
-### Structural Refactors (deferred — behind v2.1 characterization tests)
+### Structural Refactors (deferred — now safe behind v2.1 characterization tests)
 
-- **REF-01**: split `FolderPermissionTerrain.tsx` (1,041 lines), `folderTerrain.ts` (1,093), and `HybridAnalyticsSurface.tsx` (1,326 lines) into data-hook / transform / thin-view modules. _(§2.3)_
-- **REF-02**: extract `lib/server/folderPermQuery.ts` owning the base `AccFolderPermission` join; template + access-analysis import from it. _(§6.1)_
+- **REF-01**: split `FolderPermissionTerrain.tsx` (1,041 lines), `folderTerrain.ts` (1,093), and `HybridAnalyticsSurface.tsx` (1,326 lines) into data-hook / transform / thin-view modules. _(§2.3; pinned by TEST-02)_
+- **REF-02**: extract `lib/server/folderPermQuery.ts` owning the base `AccFolderPermission` join; template + access-analysis import from it. _(§6.1; pinned by TEST-03)_
 - **REF-03**: materialise an `AccFolderPermissionSummary` view / indexed projection to retire the raw-scan path entirely. _(§1.1, long-term)_
 
 ### Blocked on external / data dependencies
@@ -103,7 +104,8 @@ Explicitly excluded from v2.1. Documented to prevent scope creep.
 - v2.1 requirements: 20 total
 - Mapped to phases: 20 / 20 ✓
 - Unmapped: 0 ✓
+- Shipped + verified: 20 / 20 ✓
 
 ---
 *Requirements defined: 2026-06-23 for milestone v2.1 (Concerns Hardening)*
-*Last updated: 2026-06-23 — traceability filled after roadmap creation (Phases 09–14)*
+*Last updated: 2026-07-01 — v2.1 shipped; all 20 requirements checked complete (checkbox reconciliation for DB-02/03/04 + TEST-01 to match the traceability table). Kept in place pending `.planning/` migration + archival.*
