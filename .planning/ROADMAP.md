@@ -5,11 +5,12 @@
 - ✅ **v1.0 ACC Graph** - Phases 01-06 (shipped ~2026-05)
 - ✅ **v2.0 Workshop UI Overhaul** - Phases 01-07 (shipped 2026-06-19)
 - ✅ **Phase 08 — Activity Re-extraction** (interim phase, shipped 2026-06-23)
-- 🚧 **v2.1 Concerns Hardening** - Phases 09-14 (in progress)
+- ✅ **v2.1 Concerns Hardening** - Phases 09-14 (shipped 2026-07-01)
+- 🚧 **v2.2 Structural Refactors** - Phases 15-19 (in progress)
 
 ---
 
-## 🚧 v2.1 Concerns Hardening (In Progress)
+## ✅ v2.1 Concerns Hardening (Complete — 2026-07-01)
 
 **Milestone goal:** Close the 22 mapped concerns in `.planning/codebase/CONCERNS.md` —
 harden the DB/config layer, repair layering boundaries, surface data-truthfulness labels
@@ -104,7 +105,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 
-- [x] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, &lt;12h threshold, estimate-labeled (wave 1) — COMPLETE 2026-06-30
+- [x] 12-01-PLAN.md — OBS-01: `getSessionHealth()` helper in `lib/acc/accdsToken.ts` + crawl-side startup `[WARN]` preflight in `scripts/accds-activity-ingest.cjs` + always-on session-health line on the `:4321` monitor (`scripts/progress-monitor.cjs`); local cookie-expiry read, <12h threshold, estimate-labeled (wave 1) — COMPLETE 2026-06-30
 - [x] 12-02-PLAN.md — OBS-02 + OBS-03: effective-empty `[ACC-ROLES]` warn at the real role-resolution boundary `loadInstanceView()` in `lib/server/accessInstanceView.ts` (NOT acc-hot-cache.ts); remove stale `TODO[02.5]` diagnostics from `lib/server/acc-admin.ts` (verified path; fields confirmed code-grounded) (wave 1) — COMPLETE 2026-06-30, commits cac1a07e + 72b4079d
 
 **Note**: OBS-02/OBS-03 paths corrected from the roadmap success criteria — verified injection point is `lib/server/accessInstanceView.ts` (`acc-hot-cache.ts` does not reference `AccDcRole`), verified diagnostics location is `lib/server/acc-admin.ts` (not `lib/acc/`). OBS-02 fires on effective-empty (both sources zero), not the by-design `AccDcRole`-empty state.
@@ -141,16 +142,125 @@ Plans:
 - [x] 14-01-PLAN.md — TEST-02: golden-master `loadFolderPermissionTerrain` / `loadFolderPermissionOverview` (+ `loadTerrainProjects` shape pin) in `lib/server/__tests__/folderPermissionTerrainView.test.ts`; add `// SPLIT-PENDING:` REF-01 comments to the three monoliths + REF-02 comment on `folderPermissionTerrainView.ts` (wave 1)
 - [x] 14-02-PLAN.md — TEST-03: pin the shared `AccFolderPermission` terrain-query contract (5-column set + row-bound + project scope, references REF-02) via `loadTemplateFolderTerrain` in `lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts`; add `// SPLIT-PENDING:` REF-02 comment on `templateFolderTerrain.ts` (wave 1)
 
+---
+
+## 🚧 v2.2 Structural Refactors (In Progress)
+
+**Milestone goal:** Execute the deferred structural refactors now safe behind v2.1's golden-master tests — extract the shared `AccFolderPermission` join to `lib/server/folderPermQuery.ts`, split the three access-analysis monoliths (`folderTerrain.ts`, `FolderPermissionTerrain.tsx`, `HybridAnalyticsSurface.tsx`) into data-hook / pure transform / thin-view modules, and materialise an `AccFolderPermissionSummary` projection to retire the raw ~5M-row scan path — with zero change to what the workshop pages show.
+
+**Source requirements:** `.planning/REQUIREMENTS.md` (v2.2, 8 requirements: QUERY-01, SPLIT-01–04, PROJ-01–03)
+
+**Overarching guardrail:** behavior-preserving. Characterization tests (TEST-01, TEST-02, TEST-03) stay green and byte-identical after every phase; `/access-analysis`, `/template-mty`, and `/users/access-analysis` render identically; `/users/spatial-graph` is not touched.
+
+## Phases
+
+- [ ] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical
+- [ ] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically
+- [ ] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically
+- [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet
+- [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md
+
+## Phase Details
+
+### Phase 15: Shared Query Extraction
+
+**Goal**: The base `AccFolderPermission` join lives in a single owned module (`lib/server/folderPermQuery.ts`), both terrain routes import from it instead of duplicating the SQL, and TEST-03 (`templateFolderTerrain.sharedQuery.test.ts`) passes byte-identical with no changes to the test file.
+**Depends on**: Phase 14
+**Requirements**: QUERY-01
+**Success Criteria** (what must be TRUE):
+  1. `lib/server/folderPermQuery.ts` exists and owns the 5-column `AccFolderPermission` join (row-bound, project-scoped, null-path handling) previously duplicated across `templateFolderTerrain.ts` and `folderPermissionTerrainView.ts`
+  2. Both `lib/server/templateFolderTerrain.ts` and `lib/server/folderPermissionTerrainView.ts` import the base join from `lib/server/folderPermQuery.ts`; no duplicated join SQL remains in either source file
+  3. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes byte-identical — zero changes to the test file itself; `npm test` is green
+  4. `npx tsc --noEmit` exits with 0 errors after the extraction
+  5. `/template-mty` and `/access-analysis` render identically to pre-phase (owner visual check)
+**Plans**: TBD
+
+Plans:
+- [ ] 15-01: QUERY-01 — create `lib/server/folderPermQuery.ts`, migrate shared join from `templateFolderTerrain.ts` and `folderPermissionTerrainView.ts`, verify TEST-03 byte-identical, tsc clean
+
+### Phase 16: folderTerrain Monolith Split
+
+**Goal**: `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) are each decomposed into a pure transform module and a thin orchestrator/view; no single resulting file exceeds ~400 lines; TEST-02 golden masters (`loadFolderPermissionTerrain`, `loadFolderPermissionOverview`, `loadTerrainProjects`) pass byte-identical; `/access-analysis` renders identically.
+**Depends on**: Phase 15
+**Requirements**: SPLIT-01, SPLIT-02
+**Success Criteria** (what must be TRUE):
+  1. `app/(dashboard)/access-analysis/folderTerrain.ts` is replaced by a pure transform module and a thin orchestrator; no single resulting file exceeds ~400 lines
+  2. `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` is replaced by a data-hook, a pure transform module, and a thin presentational view; no single resulting file exceeds ~400 lines
+  3. `folderPermissionTerrainView.test.ts` (TEST-02) golden masters (`loadFolderPermissionTerrain`, `loadFolderPermissionOverview`, `loadTerrainProjects`) pass byte-identical after the split — zero changes to the test file
+  4. `FolderPermissionTerrain.test.tsx` and all terrain golden masters remain green; `npm test` passes
+  5. `npx tsc --noEmit` exits clean; `/access-analysis` renders identically to pre-phase (owner visual check)
+**Plans**: TBD
+
+Plans:
+- [ ] 16-01: SPLIT-01 — split `folderTerrain.ts` into pure transform module + thin orchestrator; verify TEST-02 golden masters byte-identical, tsc clean, no file > ~400 lines
+- [ ] 16-02: SPLIT-02 — split `FolderPermissionTerrain.tsx` into data-hook + pure transform + thin presentational view; verify `FolderPermissionTerrain.test.tsx` + terrain golden masters, tsc clean, `/access-analysis` visual check
+
+### Phase 17: HybridAnalyticsSurface Split
+
+**Goal**: The main DuckDB-Wasm query path in `HybridAnalyticsSurface.tsx` is pinned by a characterization test before any code is moved (SPLIT-03 gate), then the 1,328-line file is split into a DuckDB-client data-hook / pure transform / thin view (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically.
+**Depends on**: Phase 16
+**Requirements**: SPLIT-03, SPLIT-04
+**Success Criteria** (what must be TRUE):
+  1. A new or expanded characterization test covering `HybridAnalyticsSurface.tsx`'s main DuckDB-Wasm query path is committed and `npm test` is green BEFORE any split begins — SPLIT-03 gate is met at this point
+  2. `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx` is split into a DuckDB-client data-hook + a pure transform module + a thin view; no single resulting file exceeds ~400 lines
+  3. The SPLIT-03 DuckDB-Wasm characterization test AND `HybridAnalyticsSurface.fallback.test.tsx` both pass byte-identical after the split — zero changes to either test file
+  4. `npx tsc --noEmit` exits clean after the split
+  5. `/users/access-analysis` renders identically to pre-phase (owner visual check); `/users/spatial-graph` is not touched
+**Plans**: TBD
+
+Plans:
+- [ ] 17-01: SPLIT-03 — write/expand characterization test pinning the DuckDB-Wasm main query path of `HybridAnalyticsSurface.tsx`; commit + confirm `npm test` green before any file is split
+- [ ] 17-02: SPLIT-04 — split `HybridAnalyticsSurface.tsx` into DuckDB-client hook + pure transform + thin view; verify all characterization tests byte-identical, no file > ~400 lines, tsc clean, `/users/access-analysis` visual check
+
+### Phase 18: AccFolderPermissionSummary Foundation
+
+**Goal**: An `AccFolderPermissionSummary` Prisma model is live in the local PostgreSQL database, populated by a backfill script, and a reconciliation script confirms the projection matches the live `includePermissionSummary` GROUP BY aggregate (row counts + spot-checked keys) — no consumer is switched in this phase; behavior is unchanged.
+**Depends on**: Phase 15
+**Requirements**: PROJ-01
+**Success Criteria** (what must be TRUE):
+  1. `AccFolderPermissionSummary` Prisma model + migration exists; the migration applies cleanly to the local PostgreSQL database (via `prisma migrate dev` or a manual raw migration registered with `prisma migrate resolve`)
+  2. A backfill script populates `AccFolderPermissionSummary` from `AccFolderPermission` without OOM or timeout; TEST-01 (OOM aggregate guard) passes throughout the backfill run
+  3. A reconciliation script confirms projection row counts + spot-checked folder/role/project keys match the live `includePermissionSummary` GROUP BY aggregate; the reconciliation result (match/mismatch summary) is recorded in a script log or planning note
+  4. No consumer of `includePermissionSummary` or `includePermissionContexts` is changed in this phase — zero behavior change to `/access-analysis` or `/template-mty`
+  5. `npx tsc --noEmit` exits clean after the model and script additions
+**Plans**: TBD
+
+Plans:
+- [ ] 18-01: PROJ-01 — add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation script; confirm row counts and spot-checked keys match live aggregate; tsc clean
+
+### Phase 19: Raw Scan Retirement & Refresh
+
+**Goal**: All terrain consumers and the permission-summary path read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch in `lib/server/acc-hot-cache.ts` is retired or hard-guarded; a refresh mechanism keeps the projection current; TEST-01 and all terrain golden masters pass; `/access-analysis` and `/template-mty` render identically.
+**Depends on**: Phase 18
+**Requirements**: PROJ-02, PROJ-03
+**Success Criteria** (what must be TRUE):
+  1. All `includePermissionSummary` consumers in `lib/server/acc-hot-cache.ts` and terrain files read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch is removed or behind a hard guard that throws on activation
+  2. TEST-01 (OOM aggregate guard) and all terrain golden masters (TEST-02) pass after the consumer switch; `npm test` is green
+  3. `/access-analysis` and `/template-mty` render identically to pre-phase (owner visual check)
+  4. A refresh mechanism is wired into the `dc-daily-ingest.cjs` cron path or documented as an explicit rebuild step; the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`
+  5. `npx tsc --noEmit` exits clean after all consumer and cron/refresh changes
+**Plans**: TBD
+
+Plans:
+- [ ] 19-01: PROJ-02 — switch `includePermissionSummary` consumers to read from `AccFolderPermissionSummary`; retire or hard-guard `includePermissionContexts:true`; verify TEST-01 + TEST-02 golden masters + visual check on `/access-analysis` + `/template-mty`
+- [ ] 19-02: PROJ-03 — wire refresh into `dc-daily-ingest.cjs` or document explicit rebuild step; add staleness-bound entry to `.planning/codebase/INTEGRATIONS.md`
+
 ## Progress
 
-**Execution Order:** 09 → 10 → 11 → 12 → 13 → 14
-Note: Phase 11 depends on Phase 09 (not 10) — UI labeling is independent of boundary fixes. Phases 12, 13, 14 can begin once their named dependency is complete.
+**Execution Order (v2.1):** 09 → 10 → 11 → 12 → 13 → 14
+**Execution Order (v2.2):** 15 → 16 → 17 → 18 → 19
+Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 16–17 (monolith splits). The sequences 15→16→17 and 15→18→19 could run in parallel; they are ordered here for risk management on a solo workflow.
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 09. DB & Config Hardening | 2/2 | Complete    | 2026-06-23 |
-| 10. Layering & Boundary Fixes | 3/3 | Complete    | 2026-06-23 |
-| 11. Data-Truthfulness Labels | 4/4 | Complete    | 2026-06-30 |
-| 12. Integration Health & Observability | 2/2 | Complete    | 2026-06-30 |
-| 13. Type-Safety Guards | 1/1 | Complete    | 2026-06-30 |
-| 14. Characterization Tests | 2/2 | Complete   | 2026-06-30 |
+| 09. DB & Config Hardening | 2/2 | Complete | 2026-06-23 |
+| 10. Layering & Boundary Fixes | 3/3 | Complete | 2026-06-23 |
+| 11. Data-Truthfulness Labels | 4/4 | Complete | 2026-06-30 |
+| 12. Integration Health & Observability | 2/2 | Complete | 2026-06-30 |
+| 13. Type-Safety Guards | 1/1 | Complete | 2026-06-30 |
+| 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
+| 15. Shared Query Extraction | 0/1 | Not started | - |
+| 16. folderTerrain Monolith Split | 0/2 | Not started | - |
+| 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
+| 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
+| 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |

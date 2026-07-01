@@ -54,25 +54,23 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 ## Traceability
 
-Populated during roadmap creation (phase numbering continues at 15).
-
 | Requirement | Seed | Phase | Status |
 |-------------|------|-------|--------|
-| QUERY-01 | REF-02 | TBD | Pending |
-| SPLIT-01 | REF-01 | TBD | Pending |
-| SPLIT-02 | REF-01 | TBD | Pending |
-| SPLIT-03 | REF-01 | TBD | Pending |
-| SPLIT-04 | REF-01 | TBD | Pending |
-| PROJ-01 | REF-03 | TBD | Pending |
-| PROJ-02 | REF-03 | TBD | Pending |
-| PROJ-03 | REF-03 | TBD | Pending |
+| QUERY-01 | REF-02 | Phase 15 | Pending |
+| SPLIT-01 | REF-01 | Phase 16 | Pending |
+| SPLIT-02 | REF-01 | Phase 16 | Pending |
+| SPLIT-03 | REF-01 | Phase 17 | Pending |
+| SPLIT-04 | REF-01 | Phase 17 | Pending |
+| PROJ-01 | REF-03 | Phase 18 | Pending |
+| PROJ-02 | REF-03 | Phase 19 | Pending |
+| PROJ-03 | REF-03 | Phase 19 | Pending |
 
 **Coverage:**
 
 - v2.2 requirements: 8 total
-- Mapped to phases: 0 / 8 (roadmap pending)
-- Unmapped: 8 ⚠️ (filled by roadmapper)
+- Mapped to phases: 8 / 8 ✓
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-01 — initial definition. v2.1 record preserved in PROJECT.md Validated + git HEAD.*
+*Last updated: 2026-07-01 — roadmap created; all 8 requirements mapped to Phases 15–19.*

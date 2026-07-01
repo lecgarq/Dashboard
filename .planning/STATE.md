@@ -3,16 +3,16 @@ gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Structural Refactors
 current_phase: 15
-current_phase_name: defining-requirements
-status: defining-requirements
-stopped_at: v2.2 started (2026-07-01) — REF-01/REF-02/REF-03 scope confirmed; requirements + roadmap being defined
+current_phase_name: shared-query-extraction
+status: ready-to-plan
+stopped_at: v2.2 roadmap approved (2026-07-01) — 5 phases (15–19), 8 requirements mapped; ready to plan Phase 15
 last_updated: "2026-07-01T00:00:00.000Z"
 last_activity: 2026-07-01
-last_activity_desc: "v2.2 Structural Refactors milestone opened. Owner confirmed full scope: REF-01 (split all 3 access-analysis monoliths), REF-02 (extract lib/server/folderPermQuery.ts), REF-03 (materialise AccFolderPermissionSummary + retire the includePermissionContexts raw scan). PROJECT.md updated with Current Milestone section; REQUIREMENTS.md + ROADMAP.md being written. Phase numbering continues at 15."
+last_activity_desc: "v2.2 Structural Refactors: 8 requirements + 5-phase roadmap (15–19) defined and owner-approved. QUERY-01→Ph15, SPLIT-01/02→Ph16, SPLIT-03/04→Ph17, PROJ-01→Ph18, PROJ-02/03→Ph19. Next = /gsd:discuss-phase 15 (Phase 15 = REF-02 folderPermQuery extraction, the foundation for the splits + projection)."
 progress:
-  total_phases: 0
+  total_phases: 5
   completed_phases: 0
-  total_plans: 0
+  total_plans: 8
   completed_plans: 0
   percent: 0
 ---
@@ -28,13 +28,23 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 ## Current Position
 
-- **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement).
-- **Phase:** Not started — defining requirements, then roadmap. Phase numbering continues at **15**.
-- **Plan:** —
-- **Status:** Defining requirements.
-- **Last activity:** 2026-07-01 — v2.1 (Concerns Hardening) shipped + tagged `v2.1`; v2.2 opened with owner-confirmed refactor scope.
+- **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
+- **Phase:** 15 of 19 — Shared Query Extraction (QUERY-01). Not started; ready to plan.
+- **Plan:** — (roadmap seeds 8 plans across 15–19; `/gsd:plan-phase 15` formalizes 15-01)
+- **Status:** Roadmap approved — ready to plan Phase 15.
+- **Last activity:** 2026-07-01 — v2.1 shipped + tagged `v2.1`; v2.2 requirements + roadmap defined and owner-approved.
 
-Progress: [░░░░░░░░░░░░] 0% — v2.2 defining requirements
+Progress: [░░░░░░░░░░░░] 0% — v2.2 roadmap approved (0 of 5 phases)
+
+**Roadmap (Phases 15–19):**
+
+| # | Phase | Reqs | Plans |
+|---|-------|------|-------|
+| 15 | Shared Query Extraction | QUERY-01 | 0/1 |
+| 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 0/2 |
+| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 0/2 |
+| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 0/1 |
+| 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 0/2 |
 
 ## Status (data baseline — still current)
 
@@ -112,16 +122,20 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-v2.2 requirements + roadmap are being defined now (this `/gsd:new-milestone` run). After
-the roadmap is approved: `/gsd:discuss-phase 15` (or `/gsd:plan-phase 15`) to start
-execution — recommended first phase is REF-02 (extract `folderPermQuery.ts`) since the
-REF-01 splits and REF-03 projection both build on the centralised query.
+v2.2 requirements + roadmap are defined and owner-approved (5 phases, 15–19). Start
+execution with **`/gsd:discuss-phase 15`** (or `/gsd:plan-phase 15` to skip discussion).
+Phase 15 = REF-02 (extract `lib/server/folderPermQuery.ts`) — the foundation the REF-01
+splits (Phases 16–17) and the REF-03 projection (Phases 18–19) both build on. `/clear`
+first for a fresh context window.
+
+Early housekeeping to fold into v2.2 execution: resolve the 2 pre-existing WIP failures
+in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface).
 
 ---
-*Last updated: 2026-07-01 — v2.2 (Structural Refactors) opened; requirements/roadmap in progress. Interim reset; the phase table is filled when the roadmap is approved.*
+*Last updated: 2026-07-01 — v2.2 (Structural Refactors) requirements + roadmap defined and owner-approved (5 phases, 15–19). Ready to plan Phase 15.*
 
 ## Session
 
 **Last session:** 2026-07-01
-**Stopped at:** v2.2 opened; defining requirements + roadmap via /gsd:new-milestone
-**Resume file:** .planning/REQUIREMENTS.md → .planning/ROADMAP.md
+**Stopped at:** v2.2 roadmap approved (5 phases, 15–19); ready to plan Phase 15
+**Resume file:** .planning/ROADMAP.md (Phase 15) → /gsd:discuss-phase 15
