@@ -5,7 +5,7 @@ milestone_name: Structural Refactors
 current_phase: 15
 current_phase_name: shared-query-extraction
 status: ready-to-plan
-stopped_at: v2.2 roadmap approved (2026-07-01) — 5 phases (15–19), 8 requirements mapped; ready to plan Phase 15
+stopped_at: Phase 15 context gathered (2026-07-01) — QUERY-01 design locked (base-join-only; one loadFolderPermRows(projectId,{l2Only}) returning raw snake_case rows; plain tagged-template $queryRaw to keep TEST-03/TEST-02 byte-identical); ready to /gsd:plan-phase 15
 last_updated: "2026-07-01T00:00:00.000Z"
 last_activity: 2026-07-01
 last_activity_desc: "v2.2 Structural Refactors: 8 requirements + 5-phase roadmap (15–19) defined and owner-approved. QUERY-01→Ph15, SPLIT-01/02→Ph16, SPLIT-03/04→Ph17, PROJ-01→Ph18, PROJ-02/03→Ph19. Next = /gsd:discuss-phase 15 (Phase 15 = REF-02 folderPermQuery extraction, the foundation for the splits + projection)."
@@ -137,5 +137,5 @@ in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface).
 ## Session
 
 **Last session:** 2026-07-01
-**Stopped at:** v2.2 roadmap approved (5 phases, 15–19); ready to plan Phase 15
-**Resume file:** .planning/ROADMAP.md (Phase 15) → /gsd:discuss-phase 15
+**Stopped at:** Phase 15 context gathered — QUERY-01 (REF-02) extraction design locked
+**Resume file:** .planning/phases/15-shared-query-extraction/15-CONTEXT.md → /gsd:plan-phase 15
