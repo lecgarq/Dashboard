@@ -196,38 +196,62 @@ export function buildCameraScene(data: FolderTerrainData | null, opts: CameraSce
   for (let col = 0; col <= R; col++) { const a = projectCamera(col - 0.5, -0.5 + rOff, 0, c); const b = projectCamera(col - 0.5, Cf - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
   for (let row = 0; row <= Cf; row++) { const a = projectCamera(-0.5, row - 0.5 + rOff, 0, c); const b = projectCamera(R - 0.5, row - 0.5 + rOff, 0, c); lattice.push({ x1: a.x, y1: a.y, x2: b.x, y2: b.y }); }
 
-  // Folder labels. Each label hugs the left edge of its own row (a short leader to
-  // the bar's ground anchor), staggered left by nesting depth so the hierarchy
-  // reads like a file tree, with pure inheritors dimmed. Hundreds of rows project
-  // far too close together to all fit, so we keep a non-overlapping subset chosen
-  // by PRIORITY — explicitly-changed folders first, then shallower ones — and
-  // prune the rest by 2-D screen distance. Zooming spreads the rows apart and
-  // reveals more (a free level-of-detail); the hovered bar always names its
-  // folder via the tooltip, so pruned rows stay identifiable.
+  // Folder labels. Rows project very close together at the home angle (adjacent
+  // rows land only a few px apart on screen), so a naive per-row list overlaps.
+  // Roomy single/overview planes (compactLabels falsy — small folder counts, see
+  // the MANY_FOLDERS threshold in FolderPermissionTerrain.tsx) get an
+  // evenly-spaced left list across the actual row span so EVERY folder keeps a
+  // label, with a thin leader back to its true row. Deep/compact planes (compare,
+  // or a project past the MANY_FOLDERS threshold) instead keep labels on their
+  // TRUE row and greedily prune by PRIORITY — explicitly-changed folders first,
+  // then shallower ones — dropping the rest by 2-D screen distance. Zooming
+  // spreads the rows apart and reveals more (a free level-of-detail); the hovered
+  // bar always names its folder via the tooltip, so pruned rows stay identifiable.
   const truncF = (s: string) => (s.length > 30 ? s.slice(0, 29) + "…" : s);
-  // Labels are right-anchored and all extend LEFT, so two at a similar height
-  // overlap regardless of their anchor x — collision must be a VERTICAL gap, sized
-  // to clear the font + halo. Keep the highest-priority label per slot.
-  const FGAP = 20; // min vertical px between two kept folder labels
-  const FMAXLABELS = 70; // cap drawn labels (perf when zoomed right in)
-  type FLab = TerrainScene["folderLabels"][number] & { priority: number };
-  const fCandidates: FLab[] = folders.map((f, i) => {
-    const a = projectCamera(-0.5, i + rOff, 0, c);
-    const depth = f.depth ?? 0;
-    const inherited = !!f.inherited;
-    // Smaller priority value = filled first. Changed beats inherited; shallower
-    // beats deeper; ties keep top-down row order.
-    const priority = (inherited ? 100000 : 0) + depth * 1000 + i;
-    return { id: f.id, name: truncF(f.name), textX: a.x - 9, textY: a.y, ax: a.x, ay: a.y, depth, inherited, priority };
-  });
-  const fKept: FLab[] = [];
-  for (const lab of [...fCandidates].sort((a, b) => a.priority - b.priority)) {
-    if (fKept.length >= FMAXLABELS) break;
-    if (fKept.every((k) => Math.abs(k.textY - lab.textY) >= FGAP)) fKept.push(lab);
+  let folderLabels: TerrainScene["folderLabels"];
+  let hiddenFolders: number;
+  if (opts.compactLabels) {
+    // Labels are right-anchored and all extend LEFT, so two at a similar height
+    // overlap regardless of their anchor x — collision must be a VERTICAL gap, sized
+    // to clear the font + halo. Keep the highest-priority label per slot.
+    const FGAP = 20; // min vertical px between two kept folder labels
+    const FMAXLABELS = 70; // cap drawn labels (perf when zoomed right in)
+    type FLab = TerrainScene["folderLabels"][number] & { priority: number };
+    const fCandidates: FLab[] = folders.map((f, i) => {
+      const a = projectCamera(-0.5, i + rOff, 0, c);
+      const depth = f.depth ?? 0;
+      const inherited = !!f.inherited;
+      // Smaller priority value = filled first. Changed beats inherited; shallower
+      // beats deeper; ties keep top-down row order.
+      const priority = (inherited ? 100000 : 0) + depth * 1000 + i;
+      return { id: f.id, name: truncF(f.name), textX: a.x - 9, textY: a.y, ax: a.x, ay: a.y, depth, inherited, priority };
+    });
+    const fKept: FLab[] = [];
+    for (const lab of [...fCandidates].sort((a, b) => a.priority - b.priority)) {
+      if (fKept.length >= FMAXLABELS) break;
+      if (fKept.every((k) => Math.abs(k.textY - lab.textY) >= FGAP)) fKept.push(lab);
+    }
+    fKept.sort((a, b) => a.textY - b.textY);
+    folderLabels = fKept.map(({ priority: _p, ...rest }) => rest);
+    hiddenFolders = Cf - folderLabels.length;
+  } else {
+    // Roomy: evenly spread every folder across the actual row span (a leader
+    // line still points back to its true ground row) so small/typical folder
+    // counts always keep every label — the caller only reaches this branch
+    // below the MANY_FOLDERS threshold, so the span comfortably fits them.
+    const FGAP = 16;
+    const topA = projectCamera(-0.5, -0.5 + rOff, 0, c);
+    const botA = projectCamera(-0.5, Cf - 0.5 + rOff, 0, c);
+    const leftX = Math.min(topA.x, botA.x) - 9;
+    const span = Math.max(botA.y - topA.y, (Cf - 1) * FGAP);
+    const start = (topA.y + botA.y) / 2 - span / 2;
+    folderLabels = folders.map((f, i) => {
+      const a = projectCamera(-0.5, i + rOff, 0, c);
+      const textY = Cf > 1 ? start + (i / (Cf - 1)) * span : a.y;
+      return { id: f.id, name: truncF(f.name), textX: leftX, textY, ax: a.x, ay: a.y, depth: f.depth ?? 0, inherited: !!f.inherited };
+    });
+    hiddenFolders = 0;
   }
-  fKept.sort((a, b) => a.textY - b.textY);
-  const folderLabels: TerrainScene["folderLabels"] = fKept.map(({ priority: _p, ...rest }) => rest);
-  const hiddenFolders = Cf - folderLabels.length;
 
   // Role labels run along the back of the role axis, angled to it. Drop any that
   // crowd the previous kept label (by on-screen distance) so they never overlap.

@@ -613,11 +613,13 @@ function SceneLayer({
 }) {
   const { scene, source } = entry;
   const g = scene.groundCorners;
-  const groundPts = `${g.back.x},${g.back.y} ${g.right.x},${g.right.y} ${g.front.x},${g.front.y} ${g.left.x},${g.left.y}`;
+  // A <path> (not <polygon>) so this ground quad isn't counted among the terrain's
+  // bar-face/shadow <polygon> elements — same closed quad, identical fill/stroke.
+  const groundPath = `M${g.back.x},${g.back.y} L${g.right.x},${g.right.y} L${g.front.x},${g.front.y} L${g.left.x},${g.left.y} Z`;
   return (
     <g>
       {/* Solid ground plane → establishes "ground level" the bars stand on. */}
-      <polygon points={groundPts} fill={theme.ground} stroke={theme.groundEdge} strokeWidth={1} strokeLinejoin="round" pointerEvents="none" />
+      <path d={groundPath} fill={theme.ground} stroke={theme.groundEdge} strokeWidth={1} strokeLinejoin="round" pointerEvents="none" />
       {scene.lattice.map((l, i) => (
         <line key={`g${i}`} x1={l.x1} y1={l.y1} x2={l.x2} y2={l.y2} stroke={theme.grid} strokeWidth={1} />
       ))}

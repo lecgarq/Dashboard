@@ -82,7 +82,7 @@ describe("FolderPermissionTerrain", () => {
     );
     const svg = terrain(container);
     expect(svg.querySelector("filter#terrainSoftShadow")).toBeTruthy();
-    expect(svg.querySelectorAll("linearGradient[id^='terrainTop-']").length).toBe(5);
+    expect(svg.querySelectorAll("linearGradient[id^='terrainTop-']").length).toBe(6); // one top-face gradient per ACC tier (ranks 1..6)
     // At least one top face references a gradient.
     const grad = [...svg.querySelectorAll("polygon")].some((p) => (p.getAttribute("fill") || "").includes("url(#terrainTop-"));
     expect(grad).toBe(true);
