@@ -2,21 +2,14 @@
 // transform, and thin-view modules; its server boundary is characterized by
 // lib/server/__tests__/folderPermissionTerrainView.test.ts so the split stays safe.
 "use client";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useTheme } from "next-themes";
 import {
   colorForRank,
   tierTextColor,
-  buildCameraScene,
-  buildSharedAxes,
-  buildStackedScenes,
   projectCamera,
-  easeCamera,
   HOME_YAW,
   HOME_PITCH,
-  MIN_PITCH,
-  MAX_PITCH,
-  STEP,
   TIER_LEGEND,
   TIER_COLORS,
   TIER_GRADIENTS,
@@ -28,173 +21,23 @@ import {
   type TerrainScene,
 } from "../folderTerrain";
 import { officeLabel } from "../projectGroups";
-
-type Mode = "single" | "compare" | "overview";
-type Metric = "users" | "projects";
-type DragMode = "select" | "orbit" | "pan";
-type Hover = { cell: TerrainCell; x: number; y: number } | null;
-type Picked = { cell: TerrainCell; source: FolderTerrainData } | null;
-
-const PLANE_GAP = 64; // airy screen-px gap between stacked floating planes
-const SLAB_MAXBAR = 44; // shorter bars so stacked planes stay legible
-const VIEW_H = 520; // fixed stage height (px)
-const clamp = (v: number, a: number, b: number) => Math.max(a, Math.min(b, v));
-
-/** Blend #rrggbb `hex` toward #rrggbb `target` by t (0 = hex, 1 = target).
- *  Used to desaturate inheritor bars toward neutral while keeping their tier hue. */
-function mixHex(hex: string, target: string, t: number): string {
-  const a = parseInt(hex.slice(1), 16), b = parseInt(target.slice(1), 16);
-  const ch = (s: number) => { const ca = (a >> s) & 255, cb = (b >> s) & 255; return Math.round(ca + (cb - ca) * t); };
-  return `#${((1 << 24) | (ch(16) << 16) | (ch(8) << 8) | ch(0)).toString(16).slice(1)}`;
-}
-
-interface Theme {
-  ink: string; sub: string; grid: string; connector: string; hot: string; shadow: string; topEdge: string;
-  /** Dark seam stroked around every bar face so overlapping bars stay distinct. */
-  edge: string;
-  /** Solid floor plane fill + outline, so "ground level" is unambiguous. */
-  ground: string; groundEdge: string;
-  /** Halo behind labels so they stay legible over the bars. */
-  halo: string;
-  dark: boolean;
-}
-interface SceneEntry { scene: TerrainScene; source: FolderTerrainData; label?: string; labelX?: number; labelY?: number; }
-interface StageView { scenes: SceneEntry[]; connectors: { x1: number; y1: number; x2: number; y2: number }[]; metric: Metric; empty: string | null; }
-
-// ---------------------------------------------------------------------------
-// Camera hook — Revit-style navigation around a fixed pivot.
-//   wheel               → zoom toward cursor
-//   middle-drag         → pan
-//   shift + middle-drag → orbit (spin + tilt)
-//   left-drag           → follows the active tool button (Orbit/Pan) for
-//                         trackpads without a middle button; otherwise select
-// rAF-coalesced so a burst of pointer events repaints once per frame.
-// ---------------------------------------------------------------------------
-function useCamera(viewport: { w: number; h: number }) {
-  const camRef = useRef<Camera>({
-    pivotCol: 0, pivotRow: 0, yaw: HOME_YAW, pitch: HOME_PITCH, scale: 1,
-    anchorX: viewport.w / 2, anchorY: viewport.h / 2,
-  });
-  const [cam, setCam] = useState<Camera>(camRef.current);
-  const raf = useRef<number | null>(null);
-  const tweenRaf = useRef<number | null>(null);
-  const commit = useCallback(() => { raf.current = null; setCam({ ...camRef.current }); }, []);
-  const schedule = useCallback(() => { if (raf.current == null) raf.current = requestAnimationFrame(commit); }, [commit]);
-  // Direct manipulation (orbit/pan/zoom/repivot) cancels any in-flight tween.
-  const apply = useCallback((patch: Partial<Camera>) => {
-    if (tweenRaf.current) { cancelAnimationFrame(tweenRaf.current); tweenRaf.current = null; }
-    camRef.current = { ...camRef.current, ...patch };
-    schedule();
-  }, [schedule]);
-
-  const [dragMode, setDragMode] = useState<DragMode>("select");
-  const drag = useRef({ active: false, button: 0, dragged: false, lastX: 0, lastY: 0, startX: 0, startY: 0 });
-
-  const onPointerDown = useCallback((e: React.PointerEvent) => {
-    const left = e.button === 0, mid = e.button === 1;
-    const engage = mid || (left && dragMode !== "select");
-    drag.current = { active: engage, button: e.button, dragged: false, lastX: e.clientX, lastY: e.clientY, startX: e.clientX, startY: e.clientY };
-    if (engage) {
-      if (mid) e.preventDefault();
-      (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
-    }
-  }, [dragMode]);
-
-  const onPointerMove = useCallback((e: React.PointerEvent) => {
-    const d = drag.current;
-    if (!d.active) return;
-    const dx = e.clientX - d.lastX, dy = e.clientY - d.lastY;
-    d.lastX = e.clientX; d.lastY = e.clientY;
-    if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 4) d.dragged = true;
-    const mid = d.button === 1;
-    const orbit = (mid && e.shiftKey) || (d.button === 0 && dragMode === "orbit");
-    const pan = (mid && !e.shiftKey) || (d.button === 0 && dragMode === "pan");
-    const c = camRef.current;
-    if (orbit) apply({ yaw: c.yaw + dx * 0.009, pitch: clamp(c.pitch + dy * 0.006, MIN_PITCH, MAX_PITCH) });
-    else if (pan) apply({ anchorX: c.anchorX + dx, anchorY: c.anchorY + dy });
-  }, [apply, dragMode]);
-
-  const onPointerUp = useCallback((e: React.PointerEvent) => {
-    if (drag.current.active) (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
-    drag.current.active = false;
-  }, []);
-
-  const wheelZoom = useCallback((clientX: number, clientY: number, deltaY: number, rect: DOMRect) => {
-    const cx = clientX - rect.left, cy = clientY - rect.top;
-    const c = camRef.current;
-    const k = clamp(c.scale * Math.exp(-deltaY * 0.0012), 0.16, 4) / c.scale;
-    apply({ scale: c.scale * k, anchorX: cx - (cx - c.anchorX) * k, anchorY: cy - (cy - c.anchorY) * k });
-  }, [apply]);
-
-  // Re-pivot to a clicked cell WITHOUT moving it: keep the cell's current ground
-  // point fixed (anchor = where it projects right now), so orbit then spins
-  // around that square in place — no jump.
-  const setPivotCell = useCallback((col: number, row: number) => {
-    const c = camRef.current;
-    const here = projectCamera(col, row, 0, c);
-    apply({ pivotCol: col, pivotRow: row, anchorX: here.x, anchorY: here.y });
-  }, [apply]);
-
-  // Cubic-eased camera move (Frame / Reset). Reduced-motion → snap instantly.
-  const tweenTo = useCallback((target: Camera, ms = 300) => {
-    if (tweenRaf.current) cancelAnimationFrame(tweenRaf.current);
-    if (prefersReducedMotion()) { camRef.current = { ...target }; setCam({ ...target }); return; }
-    const from = { ...camRef.current };
-    let start = 0;
-    const step = (t: number) => {
-      if (!start) start = t;
-      const k = Math.min(1, (t - start) / ms);
-      camRef.current = easeCamera(from, target, k);
-      setCam({ ...camRef.current });
-      if (k < 1) tweenRaf.current = requestAnimationFrame(step);
-    };
-    tweenRaf.current = requestAnimationFrame(step);
-  }, []);
-
-  const framePivot = useCallback(() => { tweenTo({ ...camRef.current, anchorX: viewport.w / 2, anchorY: viewport.h / 2 }); }, [tweenTo, viewport.w, viewport.h]);
-
-  // Instant reframe — used when the active data set changes (grow-in + cross-fade
-  // cover the visual transition; a camera tween here would fight them).
-  const resetTo = useCallback((pivotCol: number, pivotRow: number, scale = 1) => {
-    if (tweenRaf.current) { cancelAnimationFrame(tweenRaf.current); tweenRaf.current = null; }
-    camRef.current = { pivotCol, pivotRow, yaw: HOME_YAW, pitch: HOME_PITCH, scale, anchorX: viewport.w / 2, anchorY: viewport.h / 2 };
-    setCam({ ...camRef.current });
-  }, [viewport.w, viewport.h]);
-
-  useEffect(() => () => { if (raf.current) cancelAnimationFrame(raf.current); if (tweenRaf.current) cancelAnimationFrame(tweenRaf.current); }, []);
-
-  return {
-    cam, dragRef: drag, dragMode, setDragMode,
-    handlers: { onPointerDown, onPointerMove, onPointerUp, onPointerLeave: onPointerUp },
-    wheelZoom, setPivotCell, framePivot, resetTo, tweenTo,
-  };
-}
-
-function prefersReducedMotion(): boolean {
-  if (typeof window === "undefined" || !window.matchMedia) return false;
-  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-
-/** Eases a 0→1 growth factor whenever `key` changes (bar grow-in). */
-function useGrowth(key: string): number {
-  const [g, setG] = useState(() => (prefersReducedMotion() ? 1 : 0));
-  const raf = useRef<number | null>(null);
-  useEffect(() => {
-    if (prefersReducedMotion()) { setG(1); return; }
-    let start = 0;
-    const D = 460;
-    setG(0);
-    const tick = (t: number) => {
-      if (!start) start = t;
-      const p = Math.min(1, (t - start) / D);
-      setG(1 - Math.pow(1 - p, 3)); // ease-out cubic
-      if (p < 1) raf.current = requestAnimationFrame(tick);
-    };
-    raf.current = requestAnimationFrame(tick);
-    return () => { if (raf.current) cancelAnimationFrame(raf.current); };
-  }, [key]);
-  return g;
-}
+import { useCamera, useGrowth, prefersReducedMotion } from "./useFolderPermissionTerrainCamera";
+import {
+  type Mode,
+  type Metric,
+  type Hover,
+  type Picked,
+  type Theme,
+  type SceneEntry,
+  type StageView,
+  VIEW_H,
+  mixHex,
+  activeDims,
+  defaultPivot,
+  fitScale,
+  buildView,
+  crossProjectTiers,
+} from "./terrainViewModel";
 
 // ---------------------------------------------------------------------------
 export function FolderPermissionTerrain({
@@ -382,80 +225,6 @@ export function FolderPermissionTerrain({
       )}
     </div>
   );
-}
-
-// ---------------------------------------------------------------------------
-// Pivot defaults + scene composition
-// ---------------------------------------------------------------------------
-const centerPivot = (R: number, Cf: number) => ({ col: (R - 1) / 2, row: (Cf - 1) / 2 });
-
-/** Grid dimensions of the active view (role columns × folder rows). */
-function activeDims(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[]): { R: number; Cf: number } {
-  if (mode === "single" && single) return { R: single.roles.length, Cf: single.folders.length };
-  if (mode === "overview" && overview) return { R: overview.roles.length, Cf: overview.folders.length };
-  if (mode === "compare" && compareDatas.length >= 2) { const axes = buildSharedAxes(compareDatas); return { R: axes.roles.length, Cf: axes.folders.length }; }
-  return { R: 1, Cf: 1 };
-}
-
-function defaultPivot(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[]) {
-  const { R, Cf } = activeDims(mode, single, overview, compareDatas);
-  return R > 0 && Cf > 0 ? centerPivot(R, Cf) : { col: 0, row: 0 };
-}
-
-/**
- * Default zoom that frames the whole footprint at the home angle. Only ever zooms
- * OUT (capped at 1), so small terrains keep their natural size while a deep field
- * (e.g. the template's 177 folders) loads fully visible — zoom in then reveals
- * more labels (level-of-detail).
- */
-function fitScale(R: number, Cf: number, vw: number, vh: number): number {
-  const k = Math.SQRT1_2; // sin = cos at the 45° home yaw
-  const sp = Math.sin(HOME_PITCH), cp = Math.cos(HOME_PITCH);
-  const spanW = Math.max(1, (R + Cf) * k * STEP);
-  const spanH = Math.max(1, (R + Cf) * k * sp * STEP + 90 * cp);
-  return Math.max(0.16, Math.min((vw * 0.86) / spanW, (vh * 0.82) / spanH, 1));
-}
-
-function buildView(mode: Mode, single: FolderTerrainData | null, overview: FolderTerrainData | null, compareDatas: FolderTerrainData[], cam: Camera, viewport: { w: number; h: number }, busy: boolean, growth: number): StageView {
-  const blank = (empty: string): StageView => ({ scenes: [], connectors: [], metric: "users", empty });
-
-  // Many folders (e.g. the template's all-changed terrain) overflow the roomy
-  // evenly-spaced folder-label list, so fall back to compact, collision-pruned
-  // labels past this count; small terrains keep the spacious leader list.
-  const MANY_FOLDERS = 20;
-
-  if (mode === "single") {
-    if (!single) return blank(busy ? "Loading terrain…" : "No folder-permission data for this project.");
-    const scene = buildCameraScene(single, { camera: cam, viewport, growth, compactLabels: single.folders.length > MANY_FOLDERS });
-    return { scenes: [{ scene, source: single }], connectors: [], metric: "users", empty: null };
-  }
-  if (mode === "overview") {
-    if (!overview) return blank(busy ? "Loading overview…" : "Overview unavailable.");
-    const scene = buildCameraScene(overview, { camera: cam, viewport, growth, compactLabels: overview.folders.length > MANY_FOLDERS });
-    return { scenes: [{ scene, source: overview }], connectors: [], metric: "projects", empty: null };
-  }
-  // compare — separated floating planes, one per project, on a shared camera.
-  if (compareDatas.length < 2) return blank(busy ? "Loading projects…" : "Pick at least two projects to compare.");
-  const axes = buildSharedAxes(compareDatas);
-  const stacked = buildStackedScenes(compareDatas, axes, cam, viewport, { maxBar: SLAB_MAXBAR, gap: PLANE_GAP, growth });
-  const scenes: SceneEntry[] = stacked.planes.map((p) => ({
-    scene: p.scene,
-    source: p.source,
-    label: p.label,
-    labelX: p.headerX,
-    labelY: p.headerY,
-  }));
-  return { scenes, connectors: stacked.connectors, metric: "users", empty: null };
-}
-
-/** Per-project tier for one cell, across the compare set (for the detail card). */
-function crossProjectTiers(cell: TerrainCell, datas: FolderTerrainData[]): { project: string; tier: string; rank: number }[] {
-  const out: { project: string; tier: string; rank: number }[] = [];
-  for (const d of datas) {
-    const hit = d.cells.find((c) => c.folderName === cell.folderName && c.roleId === cell.roleId);
-    if (hit) out.push({ project: d.projectName, tier: hit.tier, rank: hit.rank });
-  }
-  return out;
 }
 
 // ---------------------------------------------------------------------------
