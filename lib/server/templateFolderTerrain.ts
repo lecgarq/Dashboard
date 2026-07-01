@@ -1,11 +1,11 @@
-// SPLIT-PENDING: REF-02 — the base AccFolderPermission role/perm/folder join in
-// loadTemplateFolderTerrain (the $queryRaw block selecting folder_id, role_id,
-// role_name, perm_type, n_actions) is the shared join also run by
-// lib/server/folderPermissionTerrainView.ts (/access-analysis). Deferred
-// extraction target: lib/server/folderPermQuery.ts. Column contract pinned by
-// lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts (TEST-03).
+// REF-02 extraction complete — the shared base AccFolderPermission join
+// (folder_id, role_id, role_name, perm_type, n_actions) now lives in
+// lib/server/folderPermQuery.ts. loadTemplateFolderTerrain calls
+// loadFolderPermRows(TEMPLATE_MTY_ID) instead of inlining the $queryRaw.
+// Column contract pinned by lib/server/__tests__/templateFolderTerrain.sharedQuery.test.ts (TEST-03).
 import "server-only";
 import { db } from "@/server/db";
+import { loadFolderPermRows } from "@/lib/server/folderPermQuery";
 import {
   rankForTier,
   type FolderTerrainData,
@@ -176,14 +176,7 @@ export async function loadTemplateFolderTerrain(): Promise<FolderTerrainData | n
       where: { projectId: TEMPLATE_MTY_ID },
       select: { id: true, parentId: true, name: true, fullPath: true },
     }),
-    db.$queryRaw<Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string; n_actions: number }>>`
-      SELECT fp."folderId" AS folder_id, fp."roleId" AS role_id, r.name AS role_name, fp."permType" AS perm_type,
-             COALESCE(cardinality(fp.actions), 0)::int AS n_actions
-      FROM "AccFolderPermission" fp
-      JOIN "AccRole" r ON r.id = fp."roleId"
-      JOIN "AccFolder" f ON f.id = fp."folderId"
-      WHERE f."projectId" = ${TEMPLATE_MTY_ID}
-    `,
+    loadFolderPermRows(TEMPLATE_MTY_ID),
   ]);
   if (!project) return null;
 

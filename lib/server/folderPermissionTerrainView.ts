@@ -1,9 +1,11 @@
-// SPLIT-PENDING: REF-02 — the base AccFolderPermission role/perm/folder join in this module
-// is the same shared join used by lib/server/templateFolderTerrain.ts; deferred extraction
-// into lib/server/folderPermQuery.ts; pinned by TEST-02 boundary tests and TEST-03 shared-query contract.
+// REF-02 extraction complete — the shared base AccFolderPermission join now lives in
+// lib/server/folderPermQuery.ts. loadFolderPermissionTerrain calls
+// loadFolderPermRows(projectId, { l2Only: true }) instead of inlining the $queryRaw.
+// Pinned by TEST-02 boundary tests and TEST-03 shared-query contract.
 import "server-only";
 import { Prisma } from "@prisma/client";
 import { db } from "@/server/db";
+import { loadFolderPermRows } from "@/lib/server/folderPermQuery";
 import { officeCodeFor } from "@/app/(dashboard)/access-analysis/projectGroups";
 import mtyAllowlist from "@/lib/acc/mty-allowlist.json";
 import {
@@ -93,18 +95,7 @@ export async function loadFolderPermissionTerrain(
       JOIN "AccFolder" parent ON f."parentId" = parent.id AND parent.name = 'Project Files'
       WHERE f."projectId" = ${projectId}
     `,
-    db.$queryRaw<
-      Array<{ folder_id: string; role_id: string; role_name: string; perm_type: string; n_actions: number }>
-    >`
-      SELECT fp."folderId" AS folder_id, fp."roleId" AS role_id,
-             r.name AS role_name, fp."permType" AS perm_type,
-             COALESCE(cardinality(fp.actions), 0)::int AS n_actions
-      FROM "AccFolderPermission" fp
-      JOIN "AccRole" r ON r.id = fp."roleId"
-      JOIN "AccFolder" f ON f.id = fp."folderId"
-      JOIN "AccFolder" parent ON f."parentId" = parent.id AND parent.name = 'Project Files'
-      WHERE f."projectId" = ${projectId}
-    `,
+    loadFolderPermRows(projectId, { l2Only: true }),
     // Parent ("Project Files") own grants per role — the source an inherited
     // (empty-actions) child folder defers to instead of the "View Only" floor.
     db.$queryRaw<Array<{ role_id: string; perm_type: string; n_actions: number }>>`
