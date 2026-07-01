@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.1
-milestone_name: Concerns Hardening
-current_phase: 14
-current_phase_name: characterization-tests
-status: shipped
-stopped_at: v2.1 milestone CLOSED via safe logical close (2026-07-01) — tagged v2.1; MILESTONES.md/RETROSPECTIVE.md/milestones archival deferred pending .planning migration
+milestone: v2.2
+milestone_name: Structural Refactors
+current_phase: 15
+current_phase_name: defining-requirements
+status: defining-requirements
+stopped_at: v2.2 started (2026-07-01) — REF-01/REF-02/REF-03 scope confirmed; requirements + roadmap being defined
 last_updated: "2026-07-01T00:00:00.000Z"
 last_activity: 2026-07-01
-last_activity_desc: "Phase 14 COMPLETE + VERIFIED (status: passed, 4/4 must-haves). 14-01 (TEST-02): golden-master pins for loadFolderPermissionTerrain/loadFolderPermissionOverview + loadTerrainProjects shape pin in folderPermissionTerrainView.test.ts; REF-01 SPLIT-PENDING signposts on the 3 terrain monoliths + REF-02 on folderPermissionTerrainView.ts (commits 9a5173f0, 69f2139a). 14-02 (TEST-03): shared AccFolderPermission query contract pinned via loadTemplateFolderTerrain (5-column set, row-bound, project-scope, null-path) + REF-02 signpost on templateFolderTerrain.ts (commits f8e15f6e, 243d10e9). 9/9 new tests green, tsc clean. Milestone v2.1 (Concerns Hardening) all 6 phases complete — next = /gsd:complete-milestone."
+last_activity_desc: "v2.2 Structural Refactors milestone opened. Owner confirmed full scope: REF-01 (split all 3 access-analysis monoliths), REF-02 (extract lib/server/folderPermQuery.ts), REF-03 (materialise AccFolderPermissionSummary + retire the includePermissionContexts raw scan). PROJECT.md updated with Current Milestone section; REQUIREMENTS.md + ROADMAP.md being written. Phase numbering continues at 15."
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,22 +24,21 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.1 Concerns Hardening SHIPPED (2026-07-01, tagged v2.1) — planning next milestone
+**Current focus:** v2.2 Structural Refactors — REF-01/REF-02/REF-03, all behavior-preserving behind v2.1's characterization tests. Defining requirements + roadmap.
 
 ## Current Position
 
-- **Milestone:** v2.1 — Concerns Hardening ✓ SHIPPED 2026-07-01 (6 of 6 phases: 09, 10, 11, 12, 13, 14; 20/20 requirements complete + verified). Closed via safe logical close, tagged `v2.1`.
-- **Phase:** 14 of 14 ✓ COMPLETE + VERIFIED (status: passed, 4/4 must-haves) — Characterization Tests.
-- **Plan:** Phase 14 had 2/2 plans complete: 14-01 (TEST-02 boundary pins + REF-01/REF-02 SPLIT-PENDING signposts) + 14-02 (TEST-03 shared-query contract + REF-02 signpost).
-- **Status:** Milestone v2.1 SHIPPED. Closed via **safe logical close** (Luis's call, 2026-07-01): tag `v2.1` + PROJECT/STATE/REQUIREMENTS evolved in place. DEFERRED (pending `.planning/` migration): full archival — no `MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/v2.1-*` written, `REQUIREMENTS.md` kept in place (not deleted). The migration deleted `MILESTONES.md` + `milestones/` in the working tree while v1.0/v2.0 history lives only in HEAD; recreating them would drop that history. NOTE: `gsd-tools phase complete` / `milestone complete` intentionally NOT run (known-buggy + would fight the migration). Self-gate `--rebuild` skipped (test+comment-only phase; whole-tree rebuild ships unrelated branch WIP).
-- **Last activity:** 2026-07-01 — v2.1 milestone closed (tag `v2.1` at commit 5719628f; PROJECT.md/STATE.md/REQUIREMENTS.md evolved). Phase 14 was COMPLETE + VERIFIED 2026-06-30 (14-01 commits 9a5173f0/69f2139a; 14-02 f8e15f6e/243d10e9; 9/9 new tests green, tsc clean). 2 pre-existing failures in FolderPermissionTerrain.test.tsx are out-of-scope branch WIP.
+- **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement).
+- **Phase:** Not started — defining requirements, then roadmap. Phase numbering continues at **15**.
+- **Plan:** —
+- **Status:** Defining requirements.
+- **Last activity:** 2026-07-01 — v2.1 (Concerns Hardening) shipped + tagged `v2.1`; v2.2 opened with owner-confirmed refactor scope.
 
-Progress: [████████████] 100% — v2.1 SHIPPED (all 6 phases complete + verified; full archival deferred)
+Progress: [░░░░░░░░░░░░] 0% — v2.2 defining requirements
 
 ## Status (data baseline — still current)
 
-- **State:** Data extraction COMPLETE and VERIFIED (census below). Baseline reset to
-  `.planning/` is committed in PROJECT.md/STATE.md; v2.1 builds on it.
+- **State:** Data extraction COMPLETE and VERIFIED (census below), unchanged since 2026-06-23. v2.1 shipped on this baseline; v2.2 refactors it without changing the data or what the workshop pages show.
 
 ## Data Extraction — Verified 2026-06-23
 
@@ -67,106 +66,62 @@ Confirmed read-only against the live local PostgreSQL DB.
 
 ### Merge integrity (`scripts/verify-accds-merge.cjs`, partitioned mode)
 
-All 5 assertions PASS:
+All 5 assertions PASS: `accds=4,554,785 dc_backfill=41,714 dc_admin=871`; unified total `4,597,370` == merged query `4,597,370`; backfill + account-admin rows kept; boundary spot-check reconciles.
 
-- `accds=4,554,785  dc_backfill=41,714  dc_admin=871`
-- Unified total `4,597,370` == merged query `4,597,370` (reconciliation)
-- backfill kept (41,714), account-level admin kept (871)
-- boundary spot-check (latest-start project) reconciles
-
-### Notes
-
-- Folder total size is **3.17 TB** now vs ~3.4 TB recorded at crawl time — minor
-  drift, not a correctness failure.
-
-- All other figures match the recorded activity re-extraction gates to the row (4.55M activity
-  rows, 956 projects, 111,308 sized folders).
+> Note: `AccFolderPermission` = ~6.04M rows here (census) — the "~5M-row scan" language in code/CONCERNS predates the last folder crawl; REF-03 targets whichever count is live at build time.
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
+v2.1 (shipped) decisions are recorded in `PROJECT.md` Key Decisions + the per-plan
+SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 work:
 
-- v2.1 scope lock: spatial-graph excluded, guardrails+labels first, research skipped
-- Phase 09 starts with DB work + TEST-01 (OOM regression guard) together
-- Phase 11 (TRUTH labels) depends on Phase 09 only — independent of boundary fixes
-- Phases 13/14 depend on Phase 10 (boundary fixes first, then type guards + char tests)
-- Plan 09-01: .env.example committed via !.env.example gitignore exception (opt-in pattern, no secrets)
-- Plan 09-01: TEST-01 is a pinning test (OOM fix already shipped); passes immediately in GREEN (expected)
-- Plan 09-01: DB-04 guardrail is comment-only on includePermissionContexts branch; no behavior change
-- Plan 09-02: DB-01 index applied via pg Client + prisma migrate resolve (not migrate dev — pgvector choke); Bitmap Index Scan proven on low-frequency roleId (count=1)
-- Plan 09-02: EXPLAIN ANALYZE chose Bitmap Index Scan (not plain Index Scan) — both confirm acc_folder_permission_role_id_idx is used; success criterion met
-- Plan 11-01: TRUTH-04 — mergeRoleNames lives in lib/server/accessInstanceView.ts; AccDcRole empty → AccRole fallback; DC wins on conflict (documented in INTEGRATIONS.md)
-- Plan 11-02: AccProject names take precedence over AccDcProject in merged name map (AccProject is live API superset, fresher); fallback = "Unknown project" (never raw GUID); pure resolver exported for Vitest isolation
-- Plan 11-02: DB verified — AccProject covers 100% of 956 ACCDS projectIds; AccDcProject covers only 495 (52%); zero residual after merge
-- Plan 12-01: OBS-01 — local ACCDS session-health helper, crawler startup preflight, and progress-monitor session line; no Autodesk call and no cookie values logged/rendered
-- Plan 12-02: OBS-02 — effective-empty predicate shouldWarnEmptyRoleResolution + [ACC-ROLES] warn at loadInstanceView; warns ONLY when both AccDcRole+AccRole yield zero names; by-design AccDcRole-empty alone stays silent
-- Plan 12-02: OBS-03 — stale TODO[02.5] diagnostic removal from acc-admin.ts code-grounded; companyRole/lastSignIn resolution intact; field names confirmed 2026-05-18
+- **Behavior-preserving refactors only.** REF-01/REF-02/REF-03 must keep their
+  characterization tests (TEST-02 `folderPermissionTerrainView.test.ts`, TEST-03
+  `templateFolderTerrain.sharedQuery.test.ts`, TEST-01 OOM guard) byte-identical /
+  green. No workshop-visible change.
+- **Sequence:** REF-02 (extract shared `folderPermQuery.ts`) lands before/with the
+  REF-01 splits so both `/template-mty` and `/access-analysis` consume one owned query;
+  REF-03 (summary projection) builds on the centralised query.
+- **`HybridAnalyticsSurface.tsx` pin is thin** — only `HybridAnalyticsSurface.fallback.test.tsx`
+  (fallback path). Widen its characterization net (main DuckDB-Wasm path) BEFORE splitting.
+- **REF-03 is the risk carrier** — it adds a Prisma migration + backfill on the live
+  `AccFolderPermission` table (~6M rows). Reconcile projection-vs-live-aggregate parity
+  before retiring the `includePermissionContexts` raw scan in `lib/server/acc-hot-cache.ts`.
+  A materialised summary needs a refresh path (wire into the existing ingest cron or a
+  rebuild step); bound + document staleness.
+- **Gates:** `npx tsc --noEmit` before any rebuild; deploy = rebuild + Task Scheduler
+  restart on `:3000` (not a branch merge); Prisma migrations on this DB have historically
+  choked on pgvector — apply via raw `ALTER` + `prisma migrate resolve` when `migrate dev` fails.
+- **`.planning/` mid-migration:** `MILESTONES.md`/`RETROSPECTIVE.md`/`milestones/` are
+  deleted in the working tree; v1.0/v2.0 history lives only in git HEAD. v2.2 evolves
+  PROJECT/STATE/REQUIREMENTS in place (same "safe logical close" pattern as v2.1).
 
 ### Blockers/Concerns
 
-None blocking Phase 13 planning/execution. Key risks to track:
-
-- Run `npx tsc --noEmit` before any rebuild; full `npm run build` must go
-  through the Task Scheduler stop/start deploy sequence or
-  `node scripts/gsd-self-gate.cjs --rebuild`.
-
-- BND-02/BND-03: spatial-graph-coupled `lib→app` edges are documented-deferred, not fixed.
-- Phase 13 (Type-Safety Guards): mark `bulkUsers` lean-payload fields as `never[]`,
-  add `accGraphFilters` compile-time drift assert. Phases 13/14 depend on Phase 10.
-
-- **RESOLVED (Phase 12, 2026-06-30):** OBS-01 — ACCDS session health now visible before a crawl fails (crawler `[WARN]` preflight + `:4321` monitor green/amber/red line); local cookie-file read only, no Autodesk call, no cookie values logged.
-- **RESOLVED (Phase 12, 2026-06-30):** OBS-02 — silent role-resolution failure now logs `[ACC-ROLES]` at the verified `loadInstanceView` boundary on effective-empty (deliberate divergence from roadmap's `acc-hot-cache.ts`, which never references `AccDcRole`).
-- **RESOLVED (Phase 12, 2026-06-30):** OBS-03 — stale `TODO[02.5]` diagnostics removed from `acc-admin.ts`; `companyRole`/`lastSignIn` resolution intact.
-- **RESOLVED (plan 11-02, 2026-06-30):** "Folder Activity by Role" GUID leak fixed. AccProject (1,153) merged into name resolution. DB verified: AccProject covers all 956 ACCDS projectIds (100%). Fallback = "Unknown project". 7-test Vitest pinned.
-- **RESOLVED (plan 11-04, 2026-06-30):** mainCharts.tsx tsc error was already resolved by 11-03's commit 926c57dc. tsc clean confirmed at start and end of 11-04 execution.
-- **RESOLVED (plan 13-01, 2026-06-30):** TYPE-01 — lean bulkUsers roles/modules now typed never[] via LeanBulkAccProject/LeanBulkAccUser at getCachedAccDcBulkUsers lean construction site. TYPE-02 — _DimKeysAreValid/_dimKeyGuard one-directional subset assert live in accGraphFilters.ts (type-only import). tsc clean, vitest 51/51.
+- None blocking v2.2 planning. Risks tracked above (REF-03 migration/backfill/refresh;
+  thin `HybridAnalyticsSurface` pin).
+- **Pre-existing branch WIP:** 2 failing tests in
+  `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` are
+  unrelated uncommitted WIP — a full `npm test` is not 100% green until resolved. Resolve
+  early in v2.2 since REF-01 touches that surface.
+- Branch is `feat/access-analysis-redesign` with heavy uncommitted WIP + the `.planning/`
+  migration deletions in the working tree. **Commit by explicit path only** (never `-A`/`.`);
+  check `git diff --cached --name-only` before every commit.
 
 ## Next Action
 
-Milestone v2.1 (Concerns Hardening) is SHIPPED — all 6 phases (09–14) complete +
-verified, 20/20 requirements done, tagged `v2.1` (safe logical close, 2026-07-01).
-
-**Next = `/gsd:new-milestone` (after `/clear`).** Prime seeds (see PROJECT.md Active
-+ REQUIREMENTS.md Future): REF-01 monolith splits and REF-02 `folderPermQuery`
-extraction (both now safe behind v2.1 TEST-02/TEST-03), REF-03 summary projection,
-SVC-01 service-override, and a dedicated spatial-graph milestone.
-
-Pending bookkeeping (deferred by the safe logical close — do these when convenient):
-1. **Finish the `.planning/` migration**, then complete the full v2.1 archival:
-   recreate/settle `MILESTONES.md` + `RETROSPECTIVE.md` + `milestones/` (v1.0/v2.0
-   history is currently only in git HEAD), write `milestones/v2.1-ROADMAP.md` +
-   `v2.1-REQUIREMENTS.md`, and fresh-start `REQUIREMENTS.md` for the next milestone.
-   `REQUIREMENTS.md` was intentionally kept in place (not deleted).
-2. **Push tag** `v2.1` to origin only if you want it remote (v1.0/v2.0 are local-only;
-   ask-before-push honored — currently local).
-3. Resolve/commit the 2 pre-existing WIP failures in
-   `app/(dashboard)/access-analysis/__tests__/FolderPermissionTerrain.test.tsx` so a
-   full `npm test` is 100% green.
-
-Optional operator smoke checks still open for Phase 12 (non-blocking, owner-approved without them):
-run the `:4321` monitor and confirm the green/amber/red session line; run the crawler with an
-expiring fixture and confirm the `[WARN]` preflight prints. Fixtures left in the session scratchpad.
+v2.2 requirements + roadmap are being defined now (this `/gsd:new-milestone` run). After
+the roadmap is approved: `/gsd:discuss-phase 15` (or `/gsd:plan-phase 15`) to start
+execution — recommended first phase is REF-02 (extract `folderPermQuery.ts`) since the
+REF-01 splits and REF-03 projection both build on the centralised query.
 
 ---
-*Last updated: 2026-07-01 — v2.1 milestone SHIPPED via safe logical close. Tag `v2.1` at commit 5719628f; PROJECT.md/STATE.md/REQUIREMENTS.md evolved in place. Full archival (MILESTONES.md/RETROSPECTIVE.md/milestones/v2.1-*) + REQUIREMENTS.md fresh-start deferred pending the in-flight `.planning/` migration. Phase 14 verified 4/4 (9/9 new tests, tsc clean).*
-
-## Performance Metrics
-
-| Phase | Plan | Duration | Notes |
-|-------|------|----------|-------|
-| Phase 11-data-truthfulness-labels P01 | 1 | 2 tasks | 1 files |
-| Phase 11-data-truthfulness-labels P02 | 4 | 3 tasks | 2 files |
-| Phase 11 P03 | 6 | 3 tasks | 6 files |
-| Phase 11 P04 | 10 | 3 tasks | 6 files |
-| Phase 12 P02 | ~15min | 2 tasks | 3 files |
-| Phase 12 P01 | ~20min | 3 tasks | 4 files |
-| Phase 13 P01 | 390s | 2 tasks | 2 files |
+*Last updated: 2026-07-01 — v2.2 (Structural Refactors) opened; requirements/roadmap in progress. Interim reset; the phase table is filled when the roadmap is approved.*
 
 ## Session
 
-**Last session:** 2026-06-30T22:16:01.449Z
-**Stopped at:** Phase 14 planned; ready to execute 14-01 and 14-02
-**Resume file:** .planning/phases/14-characterization-tests/14-CONTEXT.md
+**Last session:** 2026-07-01
+**Stopped at:** v2.2 opened; defining requirements + roadmap via /gsd:new-milestone
+**Resume file:** .planning/REQUIREMENTS.md → .planning/ROADMAP.md

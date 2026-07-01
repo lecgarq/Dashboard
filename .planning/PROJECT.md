@@ -31,9 +31,34 @@ requirements kept in place. Full archival (MILESTONES.md / RETROSPECTIVE.md /
 for this milestone was deferred (test+comment-only final phase, branch carries
 unrelated WIP).
 
-**Current focus:** Planning the next milestone. Prime candidates: the deferred
-structural refactors — now safe behind v2.1 characterization tests — and a dedicated
-spatial-graph milestone.
+**Current focus:** v2.2 Structural Refactors — executing the deferred refactors now
+safe behind v2.1's characterization tests. Phase numbering continues at Phase 15.
+
+## Current Milestone: v2.2 Structural Refactors
+
+**Goal:** Restructure the access-analysis hot paths behind v2.1's golden-master tests —
+split the three monoliths, centralise the shared `AccFolderPermission` query, and retire
+the raw ~5M-row permission scan with a materialised summary — with **zero change to what
+the workshop pages show**.
+
+**Target features** (REQ-level detail in `REQUIREMENTS.md`):
+
+- **REF-02** — extract `lib/server/folderPermQuery.ts` owning the base
+  `AccFolderPermission` join; `/template-mty` (`templateFolderTerrain.ts`) and
+  `/access-analysis` (`folderPermissionTerrainView.ts`) import it. Pinned by TEST-03
+  (`templateFolderTerrain.sharedQuery.test.ts`).
+- **REF-01** — split `folderTerrain.ts` (1,096), `FolderPermissionTerrain.tsx` (1,044),
+  and `HybridAnalyticsSurface.tsx` (1,328) into data-hook / transform / thin-view. The
+  `HybridAnalyticsSurface` pin is thin (fallback-only) — widen its characterization net
+  before splitting. Pinned by TEST-02 (`folderPermissionTerrainView.test.ts`).
+- **REF-03** — materialise `AccFolderPermissionSummary` (Prisma model + migration +
+  backfill + refresh) and retire the `includePermissionContexts` raw-scan branch in
+  `lib/server/acc-hot-cache.ts`; reconcile the projection against the live aggregate
+  first. Guarded by TEST-01 (OOM regression).
+
+**Guardrail:** behavior-preserving. Every split/extraction keeps its characterization
+test byte-identical; REF-03 proves projection-vs-live parity before the raw path is
+retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 ## Requirements
 
@@ -52,16 +77,16 @@ spatial-graph milestone.
 
 ### Active
 
-<!-- Candidate seeds for the next milestone — not yet scoped. Detail in REQUIREMENTS.md Future section. -->
+<!-- REF-01/REF-02/REF-03 are the committed v2.2 scope (see Current Milestone above + REQUIREMENTS.md). SVC-01, spatial-graph, DC-01/02 remain deferred candidates for a later milestone. -->
 
-- [ ] **REF-01** — split the three access-analysis monoliths
+- [ ] **REF-01** (v2.2) — split the three access-analysis monoliths
   (`FolderPermissionTerrain.tsx`, `folderTerrain.ts`, `HybridAnalyticsSurface.tsx`)
   into data-hook / transform / thin-view modules; now safe behind the v2.1
   characterization tests (TEST-02).
-- [ ] **REF-02** — extract `lib/server/folderPermQuery.ts` (shared
+- [ ] **REF-02** (v2.2) — extract `lib/server/folderPermQuery.ts` (shared
   `AccFolderPermission` join used by `/template-mty` + `/access-analysis`); pinned by
   the v2.1 shared-query contract test (TEST-03).
-- [ ] **REF-03** — materialise an `AccFolderPermissionSummary` projection to retire
+- [ ] **REF-03** (v2.2) — materialise an `AccFolderPermissionSummary` projection to retire
   the raw 5M-row permission scan path.
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
@@ -119,6 +144,8 @@ spatial-graph milestone.
 | Defer monolith splits (§2.3) + `folderPermQuery` extraction (§6.1); ship characterization tests first | Low-risk delivery on a live demo dashboard; splits are safe only behind tests | ✓ Good — REF-01/REF-02 now safe behind TEST-02/TEST-03 |
 | Skip domain research for v2.1 | Debt-closure against already-specified guardrails — no new ecosystem to research | ✓ Good — no rework needed |
 | Close v2.1 via "safe logical close" (tag + evolve; no archival, requirements kept in place) | `.planning/` mid-migration deleted MILESTONES.md + `milestones/` in the working tree; full archival would drop v1.0/v2.0 history that lives only in HEAD | — Pending — finish migration, then archive v2.1 |
+| v2.2 = full structural-refactor scope (REF-01 all 3 monoliths + REF-02 + REF-03 DB projection) | The characterization tests shipped in v2.1 exist precisely to make these safe; owner chose the widest slice incl. the summary projection | — Pending |
+| v2.2 fresh-starts `REQUIREMENTS.md` in place (v2.1 record preserved in Validated above + git HEAD) | Consistent with the deferred-archival close; `milestones/` is still deleted mid-migration so re-creating an archive dir would re-open that history question | — Pending |
 
 ---
-*Last updated: 2026-07-01 after v2.1 milestone close (safe logical close; `.planning/` migration + full archival pending)*
+*Last updated: 2026-07-01 after starting milestone v2.2 (Structural Refactors) — REF-01/REF-02/REF-03; Phases 15+*
