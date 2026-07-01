@@ -189,11 +189,11 @@ Plans:
   3. `folderPermissionTerrainView.test.ts` (TEST-02) golden masters (`loadFolderPermissionTerrain`, `loadFolderPermissionOverview`, `loadTerrainProjects`) pass byte-identical after the split — zero changes to the test file
   4. `FolderPermissionTerrain.test.tsx` and all terrain golden masters remain green; `npm test` passes
   5. `npx tsc --noEmit` exits clean; `/access-analysis` renders identically to pre-phase (owner visual check)
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 16-01: SPLIT-01 — split `folderTerrain.ts` into pure transform module + thin orchestrator; verify TEST-02 golden masters byte-identical, tsc clean, no file > ~400 lines
-- [ ] 16-02: SPLIT-02 — split `FolderPermissionTerrain.tsx` into data-hook + pure transform + thin presentational view; verify `FolderPermissionTerrain.test.tsx` + terrain golden masters, tsc clean, `/access-analysis` visual check
+- [ ] 16-01-PLAN.md — SPLIT-01: split the pure `folderTerrain.ts` (1,096 lines) into `folderTerrainModel` / `folderTerrainLayout` / `folderTerrainScene` / `folderTerrainCamera` + a thin barrel; direct pins `folderTerrain.test.ts` + TEST-02 byte-identical, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 1)
+- [ ] 16-02-PLAN.md — SPLIT-02: fix the 2 pre-existing `FolderPermissionTerrain.test.tsx` WIP failures first, then split the 1,044-line component into `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure transforms) + `TerrainStage` + `TerrainControls` (presentational) + thin shell; `FolderPermissionTerrain.test.tsx` fully green + byte-identical, TEST-02 green, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 2, depends on 16-01)
 
 ### Phase 17: HybridAnalyticsSurface Split
 
