@@ -259,7 +259,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 12. Integration Health & Observability | 2/2 | Complete | 2026-06-30 |
 | 13. Type-Safety Guards | 1/1 | Complete | 2026-06-30 |
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
-| 15. Shared Query Extraction | 1/1 | Complete | 2026-07-01 |
+| 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
 | 16. folderTerrain Monolith Split | 0/2 | Not started | - |
 | 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |

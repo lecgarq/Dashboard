@@ -16,7 +16,7 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Shared Query Extraction (QUERY → REF-02)
 
-- [ ] **QUERY-01**: the base `AccFolderPermission` join is extracted from `lib/server/templateFolderTerrain.ts` into a new `lib/server/folderPermQuery.ts` (owning the TEST-03 contract: 5-column set, row-bound, project-scoped, null-path handling). Both `templateFolderTerrain.ts` (`/template-mty`) and `lib/server/folderPermissionTerrainView.ts` (`/access-analysis`) import the base query from it — no duplicated join SQL. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes unchanged.
+- [x] **QUERY-01**: the base `AccFolderPermission` join is extracted from `lib/server/templateFolderTerrain.ts` into a new `lib/server/folderPermQuery.ts` (owning the TEST-03 contract: 5-column set, row-bound, project-scoped, null-path handling). Both `templateFolderTerrain.ts` (`/template-mty`) and `lib/server/folderPermissionTerrainView.ts` (`/access-analysis`) import the base query from it — no duplicated join SQL. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes unchanged.
 
 ### Monolith Splits (SPLIT → REF-01)
 
@@ -56,7 +56,7 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 | Requirement | Seed | Phase | Status |
 |-------------|------|-------|--------|
-| QUERY-01 | REF-02 | Phase 15 | Pending |
+| QUERY-01 | REF-02 | Phase 15 | Complete (2026-07-01, a4d923ca) |
 | SPLIT-01 | REF-01 | Phase 16 | Pending |
 | SPLIT-02 | REF-01 | Phase 16 | Pending |
 | SPLIT-03 | REF-01 | Phase 17 | Pending |

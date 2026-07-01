@@ -2,13 +2,13 @@
 gsd_state_version: 1.0
 milestone: v2.2
 milestone_name: Structural Refactors
-current_phase: 15
-current_phase_name: shared-query-extraction
-status: in-progress
-stopped_at: Phase 15 Plan 01 complete (2026-07-01) — QUERY-01/REF-02 shipped; shared folderPermQuery.ts owns base join; both terrain loaders rewired; TEST-02/TEST-03 9/9 passed byte-identical; tsc 0 errors; owner approved visual parity; commit a4d923ca
-last_updated: "2026-07-01T00:00:00.000Z"
+current_phase: 16
+current_phase_name: folderTerrain-monolith-split
+status: ready-to-plan
+stopped_at: Phase 15 complete — QUERY-01/REF-02 shipped (commit a4d923ca); shared folderPermQuery.ts owns the base AccFolderPermission join; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved. Next = /gsd:plan-phase 16.
+last_updated: "2026-07-01T18:40:58.985Z"
 last_activity: 2026-07-01
-last_activity_desc: "Phase 15 Plan 01 complete — extracted shared folderPermQuery.ts (QUERY-01/REF-02). Both terrain loaders (templateFolderTerrain.ts + folderPermissionTerrainView.ts) rewired to call loadFolderPermRows; TEST-02+TEST-03 byte-identical; tsc 0 errors; owner approved. Next = /gsd:plan-phase 16 (folderTerrain monolith split)."
+last_activity_desc: "Phase 15 Plan 01 (QUERY-01/REF-02) shipped: shared lib/server/folderPermQuery.ts owns the base AccFolderPermission join; both terrain loaders rewired to loadFolderPermRows; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved. Phase 15 complete (1/1). Next = /gsd:plan-phase 16."
 progress:
   total_phases: 5
   completed_phases: 1
@@ -31,7 +31,7 @@ See: `.planning/PROJECT.md` (updated 2026-07-01)
 - **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
 - **Phase:** 15 of 19 — Shared Query Extraction (QUERY-01). COMPLETE (1/1 plan done).
 - **Plan:** 15-01 complete — `lib/server/folderPermQuery.ts` created; both terrain loaders rewired; commit `a4d923ca`.
-- **Status:** Phase 15 complete. Ready to plan Phase 16 (folderTerrain monolith split).
+- **Status:** Phase 15 complete (1/1) — Phase 16 ready to plan (v2.2: 1 of 5 phases done)
 - **Last activity:** 2026-07-01 — Phase 15 Plan 01 (QUERY-01/REF-02) shipped; shared folderPermQuery.ts owns the base AccFolderPermission join; TEST-02/TEST-03 9/9 byte-identical; tsc 0 errors; owner visual parity approved.
 
 Progress: [##░░░░░░░░░░] 20% — v2.2: 1 of 5 phases complete (1/8 plans)
@@ -134,7 +134,7 @@ Early housekeeping to fold into Phase 16: resolve the 2 pre-existing WIP failure
 in `FolderPermissionTerrain.test.tsx` (Phase 16 touches that surface directly).
 
 ---
-*Last updated: 2026-07-01 — v2.2 (Structural Refactors) requirements + roadmap defined and owner-approved (5 phases, 15–19). Ready to plan Phase 15.*
+*Last updated: 2026-07-01 — Phase 15 (QUERY-01/REF-02) complete (commit a4d923ca). v2.2: 1 of 5 phases done. Ready to plan Phase 16.*
 
 ## Session
 
