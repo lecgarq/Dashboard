@@ -168,14 +168,17 @@ Plans:
 **Depends on**: Phase 14
 **Requirements**: QUERY-01
 **Success Criteria** (what must be TRUE):
+
   1. `lib/server/folderPermQuery.ts` exists and owns the 5-column `AccFolderPermission` join (row-bound, project-scoped, null-path handling) previously duplicated across `templateFolderTerrain.ts` and `folderPermissionTerrainView.ts`
   2. Both `lib/server/templateFolderTerrain.ts` and `lib/server/folderPermissionTerrainView.ts` import the base join from `lib/server/folderPermQuery.ts`; no duplicated join SQL remains in either source file
   3. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes byte-identical — zero changes to the test file itself; `npm test` is green
   4. `npx tsc --noEmit` exits with 0 errors after the extraction
   5. `/template-mty` and `/access-analysis` render identically to pre-phase (owner visual check)
+
 **Plans**: 1 plan
 
 Plans:
+
 - [x] 15-01-PLAN.md — QUERY-01: create `lib/server/folderPermQuery.ts` (shared base join via `loadFolderPermRows(projectId, { l2Only })`), rewire `templateFolderTerrain.ts` (all-folders) + `folderPermissionTerrainView.ts` (l2Only), verify TEST-02/TEST-03 byte-identical, tsc clean, owner visual parity — COMPLETE 2026-07-01 (commit a4d923ca)
 
 ### Phase 16: folderTerrain Monolith Split
@@ -184,16 +187,19 @@ Plans:
 **Depends on**: Phase 15
 **Requirements**: SPLIT-01, SPLIT-02
 **Success Criteria** (what must be TRUE):
+
   1. `app/(dashboard)/access-analysis/folderTerrain.ts` is replaced by a pure transform module and a thin orchestrator; no single resulting file exceeds ~400 lines
   2. `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` is replaced by a data-hook, a pure transform module, and a thin presentational view; no single resulting file exceeds ~400 lines
   3. `folderPermissionTerrainView.test.ts` (TEST-02) golden masters (`loadFolderPermissionTerrain`, `loadFolderPermissionOverview`, `loadTerrainProjects`) pass byte-identical after the split — zero changes to the test file
   4. `FolderPermissionTerrain.test.tsx` and all terrain golden masters remain green; `npm test` passes
   5. `npx tsc --noEmit` exits clean; `/access-analysis` renders identically to pre-phase (owner visual check)
-**Plans**: 2 plans
+
+**Plans**: 2/2 plans executed (16-02 checkpoint-pending — owner visual parity confirmation open)
 
 Plans:
-- [ ] 16-01-PLAN.md — SPLIT-01: split the pure `folderTerrain.ts` (1,096 lines) into `folderTerrainModel` / `folderTerrainLayout` / `folderTerrainScene` / `folderTerrainCamera` + a thin barrel; direct pins `folderTerrain.test.ts` + TEST-02 byte-identical, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 1)
-- [ ] 16-02-PLAN.md — SPLIT-02: fix the 2 pre-existing `FolderPermissionTerrain.test.tsx` WIP failures first, then split the 1,044-line component into `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure transforms) + `TerrainStage` + `TerrainControls` (presentational) + thin shell; `FolderPermissionTerrain.test.tsx` fully green + byte-identical, TEST-02 green, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 2, depends on 16-01)
+
+- [x] 16-01-PLAN.md — SPLIT-01: split the pure `folderTerrain.ts` (1,096 lines) into `folderTerrainModel` / `folderTerrainLayout` / `folderTerrainScene` / `folderTerrainCamera` + a thin barrel; direct pins `folderTerrain.test.ts` + TEST-02 byte-identical, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 1)
+- [x] 16-02-PLAN.md — SPLIT-02: fixed the 2 pre-existing `FolderPermissionTerrain.test.tsx` WIP failures first (root-cause: folder-label over-pruning + a ground-plane polygon miscount), then split the 1,046-line component into `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure transforms) + `TerrainStage` + `TerrainControls` (presentational) + thin shell; `FolderPermissionTerrain.test.tsx` fully green (13/13) + byte-identical, TEST-02 green, tsc clean, all 5 files ≤ ~400 lines — commits `0dbae11f`/`40126798`/`224519a4`; owner parity on /access-analysis + /template-mty PENDING (wave 2, depends on 16-01)
 
 ### Phase 17: HybridAnalyticsSurface Split
 
@@ -201,14 +207,17 @@ Plans:
 **Depends on**: Phase 16
 **Requirements**: SPLIT-03, SPLIT-04
 **Success Criteria** (what must be TRUE):
+
   1. A new or expanded characterization test covering `HybridAnalyticsSurface.tsx`'s main DuckDB-Wasm query path is committed and `npm test` is green BEFORE any split begins — SPLIT-03 gate is met at this point
   2. `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx` is split into a DuckDB-client data-hook + a pure transform module + a thin view; no single resulting file exceeds ~400 lines
   3. The SPLIT-03 DuckDB-Wasm characterization test AND `HybridAnalyticsSurface.fallback.test.tsx` both pass byte-identical after the split — zero changes to either test file
   4. `npx tsc --noEmit` exits clean after the split
   5. `/users/access-analysis` renders identically to pre-phase (owner visual check); `/users/spatial-graph` is not touched
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 17-01: SPLIT-03 — write/expand characterization test pinning the DuckDB-Wasm main query path of `HybridAnalyticsSurface.tsx`; commit + confirm `npm test` green before any file is split
 - [ ] 17-02: SPLIT-04 — split `HybridAnalyticsSurface.tsx` into DuckDB-client hook + pure transform + thin view; verify all characterization tests byte-identical, no file > ~400 lines, tsc clean, `/users/access-analysis` visual check
 
@@ -218,14 +227,17 @@ Plans:
 **Depends on**: Phase 15
 **Requirements**: PROJ-01
 **Success Criteria** (what must be TRUE):
+
   1. `AccFolderPermissionSummary` Prisma model + migration exists; the migration applies cleanly to the local PostgreSQL database (via `prisma migrate dev` or a manual raw migration registered with `prisma migrate resolve`)
   2. A backfill script populates `AccFolderPermissionSummary` from `AccFolderPermission` without OOM or timeout; TEST-01 (OOM aggregate guard) passes throughout the backfill run
   3. A reconciliation script confirms projection row counts + spot-checked folder/role/project keys match the live `includePermissionSummary` GROUP BY aggregate; the reconciliation result (match/mismatch summary) is recorded in a script log or planning note
   4. No consumer of `includePermissionSummary` or `includePermissionContexts` is changed in this phase — zero behavior change to `/access-analysis` or `/template-mty`
   5. `npx tsc --noEmit` exits clean after the model and script additions
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 18-01: PROJ-01 — add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation script; confirm row counts and spot-checked keys match live aggregate; tsc clean
 
 ### Phase 19: Raw Scan Retirement & Refresh
@@ -234,14 +246,17 @@ Plans:
 **Depends on**: Phase 18
 **Requirements**: PROJ-02, PROJ-03
 **Success Criteria** (what must be TRUE):
+
   1. All `includePermissionSummary` consumers in `lib/server/acc-hot-cache.ts` and terrain files read from `AccFolderPermissionSummary`; the `includePermissionContexts:true` raw-scan branch is removed or behind a hard guard that throws on activation
   2. TEST-01 (OOM aggregate guard) and all terrain golden masters (TEST-02) pass after the consumer switch; `npm test` is green
   3. `/access-analysis` and `/template-mty` render identically to pre-phase (owner visual check)
   4. A refresh mechanism is wired into the `dc-daily-ingest.cjs` cron path or documented as an explicit rebuild step; the staleness bound is documented in `.planning/codebase/INTEGRATIONS.md`
   5. `npx tsc --noEmit` exits clean after all consumer and cron/refresh changes
+
 **Plans**: TBD
 
 Plans:
+
 - [ ] 19-01: PROJ-02 — switch `includePermissionSummary` consumers to read from `AccFolderPermissionSummary`; retire or hard-guard `includePermissionContexts:true`; verify TEST-01 + TEST-02 golden masters + visual check on `/access-analysis` + `/template-mty`
 - [ ] 19-02: PROJ-03 — wire refresh into `dc-daily-ingest.cjs` or document explicit rebuild step; add staleness-bound entry to `.planning/codebase/INTEGRATIONS.md`
 
@@ -260,7 +275,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 13. Type-Safety Guards | 1/1 | Complete | 2026-06-30 |
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
 | 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
-| 16. folderTerrain Monolith Split | 0/2 | Not started | - |
+| 16. folderTerrain Monolith Split | 2/2 | In Progress (checkpoint-pending) | - |
 | 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
 | 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |
