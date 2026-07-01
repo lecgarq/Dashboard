@@ -155,7 +155,7 @@ Plans:
 ## Phases
 
 - [x] **Phase 15: Shared Query Extraction** - Extract the base `AccFolderPermission` join to `lib/server/folderPermQuery.ts`; both terrain routes import from it; TEST-03 contract passes byte-identical — COMPLETE 2026-07-01
-- [ ] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically
+- [x] **Phase 16: folderTerrain Monolith Split** - Split `folderTerrain.ts` (1,096 lines) and `FolderPermissionTerrain.tsx` (1,044 lines) into data-hook / pure transform / thin-view modules; TEST-02 golden masters pass byte-identical; `/access-analysis` renders identically (completed 2026-07-01)
 - [ ] **Phase 17: HybridAnalyticsSurface Split** - Widen the `HybridAnalyticsSurface` characterization net to pin the DuckDB-Wasm main path (SPLIT-03), then split the 1,328-line file (SPLIT-04); all characterization tests pass byte-identical; `/users/access-analysis` renders identically
 - [ ] **Phase 18: AccFolderPermissionSummary Foundation** - Add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation proof that projection matches the live aggregate; no consumer switched yet
 - [ ] **Phase 19: Raw Scan Retirement & Refresh** - Switch terrain consumers to `AccFolderPermissionSummary`, retire the `includePermissionContexts:true` raw-scan branch, and wire a refresh mechanism into the ingest cron; document staleness bound in INTEGRATIONS.md
@@ -194,12 +194,12 @@ Plans:
   4. `FolderPermissionTerrain.test.tsx` and all terrain golden masters remain green; `npm test` passes
   5. `npx tsc --noEmit` exits clean; `/access-analysis` renders identically to pre-phase (owner visual check)
 
-**Plans**: 2/2 plans executed (16-02 checkpoint-pending — owner visual parity confirmation open)
+**Plans**: 2/2 plans complete — owner visual parity CONFIRMED 2026-07-01 (both pages verified on fresh :3000 build `224519a4`); phase-goal verifier PASSED 12/12
 
 Plans:
 
 - [x] 16-01-PLAN.md — SPLIT-01: split the pure `folderTerrain.ts` (1,096 lines) into `folderTerrainModel` / `folderTerrainLayout` / `folderTerrainScene` / `folderTerrainCamera` + a thin barrel; direct pins `folderTerrain.test.ts` + TEST-02 byte-identical, tsc clean, no file > ~400 lines, owner parity on /access-analysis + /template-mty (wave 1)
-- [x] 16-02-PLAN.md — SPLIT-02: fixed the 2 pre-existing `FolderPermissionTerrain.test.tsx` WIP failures first (root-cause: folder-label over-pruning + a ground-plane polygon miscount), then split the 1,046-line component into `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure transforms) + `TerrainStage` + `TerrainControls` (presentational) + thin shell; `FolderPermissionTerrain.test.tsx` fully green (13/13) + byte-identical, TEST-02 green, tsc clean, all 5 files ≤ ~400 lines — commits `0dbae11f`/`40126798`/`224519a4`; owner parity on /access-analysis + /template-mty PENDING (wave 2, depends on 16-01)
+- [x] 16-02-PLAN.md — SPLIT-02: fixed the 2 pre-existing `FolderPermissionTerrain.test.tsx` WIP failures first (root-cause: folder-label over-pruning + a ground-plane polygon miscount), then split the 1,046-line component into `useFolderPermissionTerrainCamera` (hook) + `terrainViewModel` (pure transforms) + `TerrainStage` + `TerrainControls` (presentational) + thin shell; `FolderPermissionTerrain.test.tsx` fully green (13/13) + byte-identical, TEST-02 green, tsc clean, all 5 files ≤ ~400 lines — commits `0dbae11f`/`40126798`/`224519a4`; owner parity on /access-analysis + /template-mty CONFIRMED 2026-07-01 (fresh :3000 rebuild) (wave 2, depends on 16-01)
 
 ### Phase 17: HybridAnalyticsSurface Split
 
@@ -275,7 +275,7 @@ Note: Phase 18 depends on Phase 15 (shared query) but is independent of Phases 1
 | 13. Type-Safety Guards | 1/1 | Complete | 2026-06-30 |
 | 14. Characterization Tests | 2/2 | Complete | 2026-06-30 |
 | 15. Shared Query Extraction | 1/1 | Complete    | 2026-07-01 |
-| 16. folderTerrain Monolith Split | 2/2 | In Progress (checkpoint-pending) | - |
+| 16. folderTerrain Monolith Split | 2/2 | Complete    | 2026-07-01 |
 | 17. HybridAnalyticsSurface Split | 0/2 | Not started | - |
 | 18. AccFolderPermissionSummary Foundation | 0/1 | Not started | - |
 | 19. Raw Scan Retirement & Refresh | 0/2 | Not started | - |

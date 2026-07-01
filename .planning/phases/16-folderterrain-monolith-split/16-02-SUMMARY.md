@@ -3,7 +3,7 @@ phase: 16-folderterrain-monolith-split
 plan: "02"
 subsystem: access-analysis/FolderPermissionTerrain
 tags: [refactor, split, react-hook, view-model, presentational-view, SPLIT-02]
-status: checkpoint-pending
+status: complete
 
 dependency_graph:
   requires: [16-01]

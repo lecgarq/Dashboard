@@ -20,8 +20,8 @@ In scope for this milestone. Each maps to a roadmap phase (numbering continues f
 
 ### Monolith Splits (SPLIT → REF-01)
 
-- [ ] **SPLIT-01**: `app/(dashboard)/access-analysis/folderTerrain.ts` (1,096 lines) is split into a pure transform module + a thin orchestrator (no single file > ~400 lines). The `folderPermissionTerrainView.test.ts` golden masters (`loadFolderPermissionTerrain` / `loadFolderPermissionOverview` / `loadTerrainProjects`) pass byte-identical.
-- [ ] **SPLIT-02**: `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` (1,044 lines) is split into a data-hook, a pure transform module, and a thin presentational view. `FolderPermissionTerrain.test.tsx` + the terrain golden masters pass; `/access-analysis` renders identically (owner visual check).
+- [x] **SPLIT-01**: `app/(dashboard)/access-analysis/folderTerrain.ts` (1,096 lines) is split into a pure transform module + a thin orchestrator (no single file > ~400 lines). The `folderPermissionTerrainView.test.ts` golden masters (`loadFolderPermissionTerrain` / `loadFolderPermissionOverview` / `loadTerrainProjects`) pass byte-identical. — Complete 2026-07-01 (Phase 16, commits `3cfd3734`/`71df53db`)
+- [x] **SPLIT-02**: `app/(dashboard)/access-analysis/components/FolderPermissionTerrain.tsx` (1,044 lines) is split into a data-hook, a pure transform module, and a thin presentational view. `FolderPermissionTerrain.test.tsx` + the terrain golden masters pass; `/access-analysis` renders identically (owner visual check). — Complete 2026-07-01 (Phase 16, commits `0dbae11f`/`40126798`/`224519a4`; owner-approved)
 - [ ] **SPLIT-03**: characterization coverage for `app/(dashboard)/users/access-analysis/HybridAnalyticsSurface.tsx` is widened to pin its **main** DuckDB-Wasm query path (today only `HybridAnalyticsSurface.fallback.test.tsx` covers the fallback). The new/expanded test is green **before** any split.
 - [ ] **SPLIT-04**: `HybridAnalyticsSurface.tsx` (1,328 lines) is split into a DuckDB-client data-hook + a pure transform + a thin view. SPLIT-03's tests and the fallback test pass; `/users/access-analysis` renders identically.
 
@@ -57,8 +57,8 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 | Requirement | Seed | Phase | Status |
 |-------------|------|-------|--------|
 | QUERY-01 | REF-02 | Phase 15 | Complete (2026-07-01, a4d923ca) |
-| SPLIT-01 | REF-01 | Phase 16 | Pending |
-| SPLIT-02 | REF-01 | Phase 16 | Pending |
+| SPLIT-01 | REF-01 | Phase 16 | Complete (2026-07-01, 3cfd3734/71df53db) |
+| SPLIT-02 | REF-01 | Phase 16 | Complete (2026-07-01, 0dbae11f/40126798/224519a4) |
 | SPLIT-03 | REF-01 | Phase 17 | Pending |
 | SPLIT-04 | REF-01 | Phase 17 | Pending |
 | PROJ-01 | REF-03 | Phase 18 | Pending |
@@ -73,4 +73,4 @@ Explicitly excluded from v2.2. Documented to prevent scope creep.
 
 ---
 *Requirements defined: 2026-07-01 for milestone v2.2 (Structural Refactors)*
-*Last updated: 2026-07-01 — roadmap created; all 8 requirements mapped to Phases 15–19.*
+*Last updated: 2026-07-01 — Phase 16 closed: QUERY-01, SPLIT-01, SPLIT-02 complete (3/8). Phases 17–19 (SPLIT-03/04, PROJ-01/02/03) pending.*
