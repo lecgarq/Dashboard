@@ -173,10 +173,10 @@ Plans:
   3. `templateFolderTerrain.sharedQuery.test.ts` (TEST-03) passes byte-identical — zero changes to the test file itself; `npm test` is green
   4. `npx tsc --noEmit` exits with 0 errors after the extraction
   5. `/template-mty` and `/access-analysis` render identically to pre-phase (owner visual check)
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
-- [ ] 15-01: QUERY-01 — create `lib/server/folderPermQuery.ts`, migrate shared join from `templateFolderTerrain.ts` and `folderPermissionTerrainView.ts`, verify TEST-03 byte-identical, tsc clean
+- [ ] 15-01-PLAN.md — QUERY-01: create `lib/server/folderPermQuery.ts` (shared base join via `loadFolderPermRows(projectId, { l2Only })`), rewire `templateFolderTerrain.ts` (all-folders) + `folderPermissionTerrainView.ts` (l2Only), verify TEST-02/TEST-03 byte-identical, tsc clean, owner visual parity
 
 ### Phase 16: folderTerrain Monolith Split
 
