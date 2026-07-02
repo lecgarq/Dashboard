@@ -40,8 +40,31 @@ history lives only in git HEAD, so resurrecting the archive directory is a separ
 task, not part of this close. Deploy = rebuild on `:3000` (not a branch merge); v2.2's final
 phase WAS rebuilt on `:3000` (owner-consented) to verify parity.
 
-**Current focus:** planning the next milestone. Deferred candidates carried in Active below:
-SVC-01, the `/users/spatial-graph` concerns milestone, and the DC-01/DC-02 external-data unlocks.
+**Current focus:** v2.3 New Graphs (opened 2026-07-02). Deferred candidates carried in
+Active below: SVC-01, the `/users/spatial-graph` concerns milestone, and the DC-01/DC-02
+external-data unlocks.
+
+## Current Milestone: v2.3 New Graphs
+
+**Goal:** Add new truthful charts to `/access-analysis` and `/template-mty` from
+existing-but-unvisualized Prisma data, following the established panel registration
+pattern — no new data sources, no new WebGL, honest coverage labels throughout.
+
+**Target features** (candidate pool from ROADMAP.md "v2.3 Candidates (Seeds)";
+final scope set in REQUIREMENTS.md):
+
+- AccIssue funnel — issues over time / by status / by type (full issue set, not
+  just the coordination-classified subset)
+- Permission footprint by role — `AccFolderPermissionSummary` (materialized in
+  Ph18, never charted): folder-count / bytes reach per role
+- Ingest freshness / throughput panel — `AccDcIngestRun` (measure rows from
+  `AccActivity` directly; `rowsByModule` telemetry is a known zero)
+- Issue-fetch coverage donut — `AccIssueFetchRun` honest-coverage labeling
+- Dormant users by `lastSignIn` recency — `AccProjectMember.lastSignIn`
+- Activity verb / object-type breakdown — `AccActivityAccds` (respect ~12-mo floor label)
+- Folder storage treemap — `AccFolder` crawl rollups
+- Permission tier × folder-depth heatmap — 2D view via `folderPermQuery`
+- Provisioned-vs-active module coverage — provisioning data vs charted activity
 
 ## Shipped Milestone: v2.2 Structural Refactors — ✅ SHIPPED 2026-07-02
 
@@ -89,16 +112,12 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 
 ### Active
 
-<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. SVC-01, spatial-graph, DC-01/02 remain deferred candidates for the next milestone. -->
+<!-- v2.2 (REF-01/REF-02/REF-03) shipped → moved to Validated. New graphs promoted to Current Milestone v2.3 (2026-07-02). SVC-01, spatial-graph, DC-01/02 remain deferred candidates. -->
 
-- [ ] **New graphs for `/access-analysis` + `/template-mty`** (lead candidate for
-  v2.3, owner direction 2026-07-02) — add charts from existing-but-unvisualized
-  Prisma data: `AccIssue` timeline/status/type, `AccFolderPermissionSummary`
-  permission-footprint charts (materialized in Ph18, never charted),
-  `AccDcIngestRun` data-freshness panel, `AccProjectMember.lastSignIn` dormancy,
-  `AccActivityAccds` verb/object-type breakdowns, `AccFolder` storage rollups,
-  tier×depth heatmap via `folderPermQuery`, provisioned-vs-active module coverage.
-  Full inventory + registration pattern: ROADMAP.md "v2.3 Candidates (Seeds)".
+- [ ] **New graphs for `/access-analysis` + `/template-mty`** — **CURRENT
+  MILESTONE v2.3** (see Current Milestone section above; scoped in
+  REQUIREMENTS.md). Full inventory + registration pattern: ROADMAP.md "v2.3
+  Candidates (Seeds)".
 - [ ] **SVC-01** — `service`-override classification refinement (reconcile Build vs
   Model Coordination for ~966 clash-issue rows); needs design approval.
 - [ ] **Spatial-graph milestone** — the deferred `/users/spatial-graph` concerns
@@ -171,4 +190,4 @@ retired. No workshop-visible change; `/users/spatial-graph` stays untouched.
 | Rebuild `:3000` (owner-consented) to verify v2.2 parity, unlike v2.1 | The final phase was a server-side data-source swap → a rebuild is required to see it; owner explicitly approved stopping `:3000` (build 500s a live app per deploy-sequence) | ✓ Good — real owner visual sign-off on `/access-analysis` + `/template-mty` (unlike Phase 17's test-basis-only) |
 
 ---
-*Last updated: 2026-07-02 after v2.2 milestone (Structural Refactors) close — REF-01/REF-02/REF-03 shipped, Phases 15–19; safe logical close, tagged `v2.2`.*
+*Last updated: 2026-07-02 after starting milestone v2.3 New Graphs (new charts for `/access-analysis` + `/template-mty` from existing Prisma data).*

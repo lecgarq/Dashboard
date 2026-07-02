@@ -1,20 +1,20 @@
 ---
 gsd_state_version: 1.0
-milestone: v2.2
-milestone_name: Structural Refactors
-current_phase: 19
-current_phase_name: Raw Scan Retirement & Refresh (PROJ-02/PROJ-03)
-status: milestone-shipped
-stopped_at: "v2.2 Structural Refactors SHIPPED + closed 2026-07-02 (safe-logical-close, tagged v2.2). Phase 19 CLOSED (2/2 plans). 19-02 (PROJ-03) Task 2 (owner visual parity checkpoint, gate=blocking) APPROVED 2026-07-02 (commit a92ffe0d): a fresh :3000 rebuild ran with the owner's go — Task Scheduler 'LECG Dashboard Local' stopped + port freed, npx tsc --noEmit 0, npm run build (next build --webpack) 0 with full route manifest, task restarted (State=Running, :3000 listening), /api/health 200, workshop routes (/access-analysis /template-mty /users/access-analysis /forma-proposal /users) 307 auth-redirect (no 500s), owner confirmed both pages render identically. gsd-verifier PASSED 10/10 (19-VERIFICATION.md) with every gate independently re-run (fresh tsc 0; 42 targeted tests + 12 terrain golden-master tests green; fresh verify-folder-perm-summary.cjs PASS 22,082==22,082/0 mismatches; terrain confirmed untouched via git log; scope fence clean). All 8/8 v2.2 requirements complete."
-last_updated: "2026-07-02T23:45:00Z"
+milestone: v2.3
+milestone_name: New Graphs
+current_phase: null
+current_phase_name: Not started (defining requirements)
+status: defining-requirements
+stopped_at: "Milestone v2.3 New Graphs opened 2026-07-02 — defining requirements. Scope: new charts for /access-analysis + /template-mty from existing-but-unvisualized Prisma data (candidate pool: ROADMAP.md 'v2.3 Candidates (Seeds)'). Prior milestone v2.2 Structural Refactors SHIPPED + closed 2026-07-02 (safe-logical-close, tagged v2.2; 5/5 phases 15-19, 9/9 plans, 8/8 requirements, owner parity approved after :3000 rebuild)."
+last_updated: "2026-07-02T23:59:00Z"
 last_activity: 2026-07-02
-last_activity_desc: "execute-phase 19 CLOSED: 19-01 (PROJ-02, 9dbe606b/08e78f9c) consumer switch + hard-guard, 19-02 (PROJ-03, e34ec7e7) cron refresh + staleness doc, owner visual parity checkpoint APPROVED (a92ffe0d) after a fresh :3000 rebuild driven with owner consent, then gsd-verifier PASSED 10/10 (19-VERIFICATION.md). Phase 19 complete (2/2 plans); v2.2 milestone functionally done (5/5 phases, 9/9 plans, 8/8 requirements). Next: /gsd:complete-milestone to formally close v2.2."
+last_activity_desc: "Milestone v2.3 New Graphs started — PROJECT.md updated (Current Milestone section + Active promotion), STATE.md reset. Next: requirements definition → roadmap."
 progress:
-  total_phases: 5
-  completed_phases: 5
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -24,27 +24,15 @@ progress:
 See: `.planning/PROJECT.md` (updated 2026-07-01)
 
 **Core value:** Truthful, fast analytics over the fully extracted ACC dataset.
-**Current focus:** v2.2 Structural Refactors **SHIPPED + closed 2026-07-02** (safe-logical-close, tagged `v2.2`) — REF-01/REF-02/REF-03 all behavior-preserving behind v2.1's characterization tests; 5/5 phases (15–19), 9/9 plans, 8/8 requirements. **Next: planning the next milestone (`/gsd:new-milestone`).**
+**Current focus:** v2.3 New Graphs (opened 2026-07-02) — new charts for `/access-analysis` + `/template-mty` from existing-but-unvisualized Prisma data. Defining requirements.
 
 ## Current Position
 
-- **Milestone:** v2.2 — Structural Refactors (opened 2026-07-01). Full scope: REF-01 (all 3 monoliths) + REF-02 (shared `folderPermQuery` extraction) + REF-03 (`AccFolderPermissionSummary` projection + raw-scan retirement). **Roadmap approved:** 5 phases (15–19), 8 requirements mapped 8/8.
-- **Phase:** 19 of 19 — Raw Scan Retirement & Refresh (PROJ-02/PROJ-03). COMPLETE + goal-verified 10/10 (2/2 plans; owner visual parity APPROVED). This is the FINAL v2.2 phase — its completion finishes the milestone's execution.
-- **Plan:** 19-02 (PROJ-03) Task 1 shipped `e34ec7e7` (cron refresh wiring: `dc-daily-ingest.cjs` success branch now refreshes `AccFolderPermissionSummary` first, before the person-graph rebuild and `build-instance-features.ts`; `.planning/codebase/INTEGRATIONS.md` documents the staleness bound). Task 2 (owner visual parity checkpoint, `gate="blocking"`) PENDING. 19-01 (PROJ-02) shipped `9dbe606b` (consumer switch: `includePermissionSummary` else-branch now reads `db.accFolderPermissionSummary.findMany` instead of the live `$queryRaw` GROUP BY) + `08e78f9c` (hard-guard: `includePermissionContexts:true` throws by default, escape hatch `ACC_ALLOW_RAW_PERMISSION_SCAN=1` documented in `.env.example`). `lib/acc/dcUserAssembly.ts` untouched — Map contents identical, derived dims unchanged. 18-01 (PROJ-01) shipped `77909b10` (model + migration) + `9d55539c` (server-side backfill) + `fb8ba765` (reconciliation script + PASS verdict). 17-02 (SPLIT-04) shipped `e0bb6e66` + `da2f230b`; 17-01 (SPLIT-03) shipped `b6084f5f`. Phase 16 CLOSED (16-01 `3cfd3734`+`71df53db`; 16-02 `0dbae11f`+`40126798`+`224519a4`, owner-approved). Phase 15 shipped `a4d923ca`; its plans committed `ce93372a`.
-- **Status:** Phase 19 CLOSED (2/2 plans; gsd-verifier PASSED 10/10, `19-VERIFICATION.md`; owner visual parity on `/access-analysis` + `/template-mty` APPROVED 2026-07-02 after a fresh `:3000` rebuild). v2.2: **5 of 5 phases complete, 9/9 plans, 8/8 requirements** — milestone functionally complete, awaiting formal close (`/gsd:complete-milestone`).
-- **Last activity:** 2026-07-02 — 19-02 (PROJ-03) Task 1 executed and committed by explicit path (`e34ec7e7`): non-fatal refresh block inserted as the first step of `dc-daily-ingest.cjs`'s success branch (invokes `node scripts/backfill-folder-perm-summary.cjs` verbatim), `.planning/codebase/INTEGRATIONS.md` staleness-bound doc added. All automated gates green: `node --check`, backfill re-run (22,082 rows, within bound), `verify-folder-perm-summary.cjs` VERDICT PASS, `npx tsc --noEmit` clean, full `npm test` 2256/1-skipped (identical to 19-01 baseline). Task 2 (`checkpoint:human-verify`, `gate="blocking"`) deliberately STOPPED — requires owner-performed `:3000` rebuild + visual check, cannot be auto-approved or automated. REQUIREMENTS.md traceability table corrected (PROJ-02/PROJ-03 were left stale at "Pending" by 19-01; now "Complete").
-
-Progress: [##########] 100% — v2.2: 5 of 5 phases complete, 9/9 plans (Phase 19 CLOSED, goal-verified 10/10, owner-approved)
-
-**Roadmap (Phases 15–19):**
-
-| # | Phase | Reqs | Plans |
-|---|-------|------|-------|
-| 15 | Shared Query Extraction | QUERY-01 | 1/1 ✅ |
-| 16 | Monolith Splits (access-analysis) | SPLIT-01, SPLIT-02 | 2/2 ✅ (owner-approved) |
-| 17 | HybridAnalyticsSurface Split | SPLIT-03, SPLIT-04 | 2/2 ✅ (test-basis parity — no live mount; owner review open) |
-| 18 | AccFolderPermissionSummary Foundation | PROJ-01 | 1/1 ✅ (reconciliation PASS; goal-verified 6/6) |
-| 19 | Raw Scan Retirement & Refresh | PROJ-02, PROJ-03 | 2/2 ✅ (goal-verified 10/10; owner visual parity approved) |
+- **Milestone:** v2.3 — New Graphs (opened 2026-07-02). Scope: new ECharts panels on `/access-analysis` and `/template-mty` derived from existing Prisma models (candidate pool: ROADMAP.md "v2.3 Candidates (Seeds)"); no new data sources, no new WebGL, honest coverage labels.
+- **Phase:** Not started (defining requirements)
+- **Plan:** —
+- **Status:** Defining requirements
+- **Last activity:** 2026-07-02 — Milestone v2.3 started (PROJECT.md Current Milestone section added; STATE.md reset). Prior milestone v2.2 Structural Refactors shipped + closed 2026-07-02 (safe-logical-close, tagged `v2.2`; details in PROJECT.md Shipped Milestone section and `.planning/phases/15..19` artifacts).
 
 ## Status (data baseline — still current)
 
@@ -195,52 +183,28 @@ SUMMARY files in `.planning/phases/09..14`. Decisions that still constrain v2.2 
 
 ## Next Action
 
-v2.2 Structural Refactors is **SHIPPED + closed 2026-07-02** — 5/5 phases (15–19), 9/9 plans,
-8/8 requirements, every phase goal-verified (Phase 19: gsd-verifier 10/10), owner visual parity
-approved on `/access-analysis` + `/template-mty` after a fresh `:3000` rebuild. Closed via the
-**safe-logical-close** pattern (matching v2.1): PROJECT.md evolved (REF-01/02/03 → Validated,
-Key Decisions outcomes recorded), ROADMAP v2.2 marked ✅ shipped, tagged `v2.2` (local, consistent
-with `v1.0`/`v2.0`/`v2.1`). Physical archival (MILESTONES.md / RETROSPECTIVE.md / `milestones/v2.2-*`)
-intentionally DEFERRED — `.planning/` is mid-migration and those files remain deleted in the working
-tree; resurrecting the archive dir would re-open the v1.0/v2.0 history question and is a separate
-migration task (not done unless the owner asks).
+Milestone **v2.3 New Graphs** opened 2026-07-02. Requirements definition in progress
+(`/gsd:new-milestone` cycle): scope the ROADMAP.md "v2.3 Candidates (Seeds)" inventory
+into REQUIREMENTS.md with REQ-IDs, then roadmap (phases continue from 20).
 
-**Next: `/gsd:new-milestone`** to start the next cycle (questioning → requirements → roadmap).
-**Lead candidate (owner direction, 2026-07-02): new graphs for `/access-analysis` and `/template-mty`** —
-grounded opportunities inventoried in ROADMAP.md "v2.3 Candidates (Seeds)" (AccIssue timeline/status,
-AccFolderPermissionSummary footprint charts, AccDcIngestRun freshness panel, lastSignIn dormancy,
-AccActivityAccds verb/object breakdowns, folder-storage treemap, tier×depth heatmap, provisioned-vs-active).
-Other deferred candidates to consider: SVC-01 (service-override classification), the `/users/spatial-graph`
-concerns milestone, DC-01/DC-02 external-data unlocks, and the per-folder terrain projection seed
-from Phase 19. All work remains on `feat/access-analysis-redesign`; deploy stays local `:3000`
-rebuild (Railway retired). The v2.2 tag was created locally — pushing it to `origin` is the owner's call.
+Prior milestone **v2.2 Structural Refactors** shipped + closed 2026-07-02 via safe-logical-close
+(tagged `v2.2` local; 5/5 phases 15–19, 9/9 plans, 8/8 requirements; owner parity approved after
+a fresh `:3000` rebuild). Full record: PROJECT.md Shipped Milestone section, `.planning/phases/15..19`
+SUMMARY/VERIFICATION artifacts, and git history. Physical archival (MILESTONES.md / RETROSPECTIVE.md /
+`milestones/`) remains intentionally DEFERRED per the `.planning/` mid-migration caveat.
 
-- **18-01 (PROJ-01) — DONE + VERIFIED:** `AccFolderPermissionSummary` Prisma model + migration
-  + backfill script + reconciliation script, proving projection parity with the live
-  `includePermissionSummary` GROUP BY aggregate (22,082 == 22,082 rows, 0 mismatches, 20/20
-  spot-checks). See `18-01-SUMMARY.md`, `18-RECONCILIATION.md`, `18-VERIFICATION.md`.
-
-- **19-01 (PROJ-02) — DONE:** consumer switch + hard-guard shipped. See `19-01-SUMMARY.md`
-  for full command output, evidence, and the split-commit technique used to keep both tasks
-  in separate commits despite interleaved code regions in `acc-hot-cache.ts`.
-
-- **19-02 (PROJ-03) Task 1 — DONE:** cron refresh + staleness-bound doc shipped (`e34ec7e7`).
-  See `19-02-SUMMARY.md` for full command output and evidence. Task 2 (owner visual parity
-  checkpoint) is the final v2.2 acceptance gate and has NOT been performed yet.
-
-Guardrails carried forward: byte-identical characterization tests (no test edits), ~400-line
-ceiling per file, explicit-path commits with `git diff --cached --name-only` proof,
+Guardrails carried forward: explicit-path commits with `git diff --cached --name-only` proof,
 `npx tsc --noEmit` before any rebuild, no new WebGL on data surfaces, zinc theme untouched,
-`/users/spatial-graph` not touched.
+`/users/spatial-graph` not touched, honest coverage labels on under-covered sources.
 
 Carried-forward open item: owner visual sign-off on the Phase 17 SPLIT-04 split is still
-pending (test-basis-only acceptance) — see Blockers/Concerns above.
+pending (test-basis-only acceptance — no live mount) — see Blockers/Concerns above.
 
 ---
-*Last updated: 2026-07-02 — execute-phase 19 CLOSED. 19-01 (PROJ-02, `9dbe606b`/`08e78f9c`): consumer switch to `AccFolderPermissionSummary` + hard-guard of the raw scan. 19-02 (PROJ-03, `e34ec7e7`): cron refresh + staleness doc. Owner visual parity checkpoint APPROVED (`a92ffe0d`) after a fresh `:3000` rebuild driven with owner consent (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health` 200, workshop routes 307, no 500s). gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`), every gate independently re-run. v2.2: 5/5 phases, 9/9 plans, 8/8 requirements — functionally complete. Next: `/gsd:complete-milestone` to formally close v2.2.*
+*Last updated: 2026-07-02 — Milestone v2.3 New Graphs started. PROJECT.md updated (Current Milestone section; new-graphs Active item promoted), STATE.md reset. Next: requirements → roadmap.*
 
 ## Session
 
-**Last session:** 2026-07-02 (execute-phase 19 → both plans executed, owner visual parity checkpoint approved, phase goal-verified 10/10, Phase 19 CLOSED)
-**Stopped at:** Phase 19 CLOSED — v2.2 functionally complete (5/5 phases, 9/9 plans, 8/8 requirements). 19-01 (PROJ-02) consumer switch + hard-guard (`9dbe606b`/`08e78f9c`); 19-02 (PROJ-03) cron refresh + staleness doc (`e34ec7e7`); owner visual parity checkpoint APPROVED (`a92ffe0d`) after a fresh `:3000` rebuild (Task Scheduler stop → tsc 0 → `npm run build` 0 → restart → `/api/health` 200, workshop routes 307, no 500s, owner confirmed identical render); gsd-verifier PASSED 10/10 (`19-VERIFICATION.md`). ROADMAP/STATE/REQUIREMENTS synced by explicit-path edits (gsd-tools `phase complete` NOT used — it corrupts this repo's STATE frontmatter).
-**Resume file:** none — Phase 19 complete + verified. Next: `/gsd:complete-milestone` to formally close v2.2 (safe-logical-close pattern; `.planning/` archival files remain deleted in the working tree per the mid-migration caveat).
+**Last session:** 2026-07-02 (new-milestone → v2.3 New Graphs opened; PROJECT.md + STATE.md updated)
+**Stopped at:** Defining requirements for v2.3 (scoping the ROADMAP.md seed inventory into REQUIREMENTS.md).
+**Resume file:** none — continue the `/gsd:new-milestone` cycle (requirements → roadmap).
