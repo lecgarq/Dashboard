@@ -234,11 +234,11 @@ Plans:
   4. No consumer of `includePermissionSummary` or `includePermissionContexts` is changed in this phase — zero behavior change to `/access-analysis` or `/template-mty`
   5. `npx tsc --noEmit` exits clean after the model and script additions
 
-**Plans**: TBD
+**Plans**: 1 plan
 
 Plans:
 
-- [ ] 18-01: PROJ-01 — add `AccFolderPermissionSummary` Prisma model + migration + backfill script + reconciliation script; confirm row counts and spot-checked keys match live aggregate; tsc clean
+- [ ] 18-01-PLAN.md — PROJ-01: add `AccFolderPermissionSummary` Prisma model + migration (pgvector-safe raw + `migrate resolve` fallback), server-side `INSERT...SELECT...GROUP BY` backfill (`folderCrawlStatus IN ('ok','partial')`, OOM-safe, TEST-01 green), and a reconciliation script proving projection == live aggregate (row counts + 0 mismatches + spot-checked keys) recorded in `18-RECONCILIATION.md`; no consumer switched; tsc clean (wave 1)
 
 ### Phase 19: Raw Scan Retirement & Refresh
 
