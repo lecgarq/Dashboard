@@ -540,6 +540,26 @@ model AccFolderPermission {
   @@index([roleId])
 }
 
+// PROJ-01 (REF-03 foundation) — projection that mirrors the live
+// includePermissionSummary GROUP BY aggregate in lib/server/acc-hot-cache.ts:304-317
+// row-for-row: per (projectId, roleId), distinct folder count, summed folder bytes,
+// distinct permTypes. Populated by scripts/backfill-folder-perm-summary.cjs via a
+// server-side INSERT...SELECT...GROUP BY — never a Node-side scan of the ~6M-row
+// AccFolderPermission table. No consumer reads this model yet (Phase 19 switches it).
+model AccFolderPermissionSummary {
+  id          String   @id @default(cuid())
+  projectId   String
+  roleId      String
+  folderCount Int
+  totalBytes  BigInt
+  permTypes   String[]
+  refreshedAt DateTime @default(now())
+
+  @@unique([projectId, roleId])
+  @@index([projectId])
+  @@index([roleId])
+}
+
 model AccActivity {
   id         String   @id @default(cuid())
   autodeskId String
